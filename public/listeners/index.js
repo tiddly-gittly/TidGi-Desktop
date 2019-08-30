@@ -38,10 +38,11 @@ const {
 const createMenu = require('../libs/create-menu');
 
 const addWorkspaceWindow = require('../windows/add-workspace');
+const codeInjectionWindow = require('../windows/code-injection');
+const editWorkspaceWindow = require('../windows/edit-workspace');
+const licenseRegistrationWindow = require('../windows/license-registration');
 const mainWindow = require('../windows/main');
 const preferencesWindow = require('../windows/preferences');
-const editWorkspaceWindow = require('../windows/edit-workspace');
-const codeInjectionWindow = require('../windows/code-injection');
 
 const loadListeners = () => {
   ipcMain.on('request-open-in-browser', (e, url) => {
@@ -140,6 +141,10 @@ const loadListeners = () => {
 
   ipcMain.on('request-show-add-workspace-window', () => {
     addWorkspaceWindow.show();
+  });
+
+  ipcMain.on('request-show-license-registration-window', () => {
+    licenseRegistrationWindow.show();
   });
 
   ipcMain.on('request-show-require-restart-dialog', () => {

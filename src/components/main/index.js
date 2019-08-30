@@ -24,6 +24,7 @@ import {
   requestShowAddWorkspaceWindow,
   requestShowEditWorkspaceWindow,
   requestShowPreferencesWindow,
+  requestShowLicenseRegistrationWindow,
 } from '../../senders';
 
 const { remote } = window.require('electron');
@@ -157,7 +158,16 @@ const Main = ({
               }}
             />
           ))}
-          <WorkspaceSelector id="add" onClick={requestShowAddWorkspaceWindow} />
+          <WorkspaceSelector
+            id="add"
+            onClick={() => {
+              if (Object.keys(workspaces).length > 1) {
+                requestShowLicenseRegistrationWindow();
+                return;
+              }
+              requestShowAddWorkspaceWindow();
+            }}
+          />
         </div>
         {!navigationBar && (
         <div className={classes.end}>
