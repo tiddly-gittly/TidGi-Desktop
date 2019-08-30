@@ -1,0 +1,30 @@
+{
+  "name": "catalog",
+  "version": "0.0.0",
+  "engines": {
+    "node": ">=12.0.0 <13.0.0"
+  },
+  "description": "A collection of apps for Singlebox",
+  "main": "script/build.js",
+  "author": "Quang Lam <quang.lam2807@gmail.com>",
+  "private": true,
+  "scripts": {
+    "test": "mocha --reporter min tests/human-data.js",
+    "lint": "eslint ./lib ./tests ./scripts --ext js",
+    "build:pack": "node scripts/pack.js",
+    "build:publish": "node scripts/publish.js"
+  },
+  "dependencies": {
+    "algoliasearch": "3.33.0",
+    "chai": "4.2.0",
+    "clean-deep": "3.0.2",
+    "fs-extra": "8.1.0",
+    "image-size": "0.7.4",
+    "is-url": "1.2.4",
+    "mocha": "6.1.4",
+    "promise-queue": "2.2.5",
+    "sharp": "0.22.1",
+    "slugg": "1.2.1",
+    "yamljs": "0.3.0"
+  }
+}

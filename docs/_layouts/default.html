@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="{{ page.lang | default: site.lang | default: "en" }}">
+
+  {% include head.html %}
+
+  <body>
+    <nav class="navbar is-spaced">
+      <div class="container">
+        <div class="navbar-brand">
+          <a class="navbar-item porfolio" href="https://quanglam2807.com">
+            QL
+          </a>
+          <a class="navbar-item" href="/">
+            <img src="{{ '/images/logo.png' | relative_url }}" alt="Singlebox">
+          </a>
+          <span class="navbar-burger burger" data-target="navbarMenu" aria-label="menu" aria-expanded="false">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+        </div>
+        <div id="navbarMenu" class="navbar-menu">
+          <div class="navbar-end">
+            <a class="navbar-item" href="/catalog/">
+              Catalog
+            </a>
+            <a class="navbar-item" href="/pricing">
+              Pricing
+            </a>
+            <a class="navbar-item" href="/privacy">
+              Privacy
+            </a>
+            <a class="navbar-item" href="/support">
+              Support
+            </a>
+            <a class="navbar-item" href="https://github.com/quanglam2807/singlebox" alt="GitHub">
+              <i class="fab fa-github" title="GitHub"></i>
+            </a>
+          </div>
+        </div>
+      </div>
+    </nav>
+    <main>
+      {{ content }}
+    </main>
+    <footer class="footer">
+      <div class="container has-text-centered">
+        <p><small>
+          <span>Made with ❤ by </span>
+          <a href="https://quanglam2807.com/">Quang Lam</a>.
+        </small></p>
+      </div>
+    </footer>
+
+    <script src="{{ '/assets/app.min.js' | relative_url }}"></script>
+  </body>
+</html>

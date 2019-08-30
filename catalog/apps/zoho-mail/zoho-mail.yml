@@ -1,0 +1,4 @@
+name: 'Zoho Mail'
+url: 'https://mail.zoho.com'
+category: Productivity
+mailtoHandler: 'https://mail.zoho.com/mail/compose.do?extsrc=mailto&mode=compose&tp=zb&ct=%s'

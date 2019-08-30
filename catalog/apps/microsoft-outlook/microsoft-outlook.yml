@@ -1,0 +1,5 @@
+name: 'Microsoft Outlook'
+url: 'https://outlook.live.com/owa/'
+category: Productivity
+mailtoHandler: 'https://outlook.live.com/owa/?path=/mail/action/compose&to=%s'
+featured: true
