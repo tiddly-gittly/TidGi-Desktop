@@ -121,6 +121,7 @@ const Main = ({
   isFullScreen,
   isLoading,
   navigationBar,
+  registered,
   workspaces,
 }) => (
   <div className={classes.outerRoot}>
@@ -161,7 +162,7 @@ const Main = ({
           <WorkspaceSelector
             id="add"
             onClick={() => {
-              if (Object.keys(workspaces).length > 1) {
+              if (!registered && Object.keys(workspaces).length > 1) {
                 requestShowLicenseRegistrationWindow();
                 return;
               }
@@ -221,6 +222,7 @@ Main.propTypes = {
   isFullScreen: PropTypes.bool.isRequired,
   isLoading: PropTypes.bool.isRequired,
   navigationBar: PropTypes.bool.isRequired,
+  registered: PropTypes.bool.isRequired,
   workspaces: PropTypes.object.isRequired,
 };
 
@@ -229,6 +231,7 @@ const mapStateToProps = (state) => ({
   isFullScreen: state.general.isFullScreen,
   isLoading: state.general.isLoading,
   navigationBar: state.preferences.navigationBar,
+  registered: state.preferences.registered,
   workspaces: state.workspaces,
 });
 
