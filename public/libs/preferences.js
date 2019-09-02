@@ -22,7 +22,12 @@ const defaultPreferences = {
 
 const getPreferences = () => ({ ...defaultPreferences, ...settings.get(`preferences.${v}`) });
 
-const getPreference = (name) => settings.get(`preferences.${v}.${name}`) || defaultPreferences[name];
+const getPreference = (name) => {
+  if (settings.has(`preferences.${v}.${name}`)) {
+    return settings.get(`preferences.${v}.${name}`);
+  }
+  return defaultPreferences[name];
+};
 
 const setPreference = (name, value) => {
   settings.set(`preferences.${v}.${name}`, value);
