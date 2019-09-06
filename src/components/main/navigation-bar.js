@@ -28,6 +28,8 @@ const styles = (theme) => ({
     alignItems: 'center',
     paddingLeft: theme.spacing.unit,
     paddingRight: theme.spacing.unit,
+    WebkitAppRegion: 'drag',
+    WebkitUserSelect: 'none',
   },
   left: {
     flex: 1,
