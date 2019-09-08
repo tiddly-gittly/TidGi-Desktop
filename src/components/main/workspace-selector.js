@@ -102,7 +102,9 @@ const WorkspaceSelector = ({
         {badgeCount > 9 ? '*' : badgeCount}
       </div>
     )}
-    <p className={classes.shortcutText}>{id === 'add' ? 'Add' : `⌘ + ${order + 1}`}</p>
+    {(id === 'add' || order < 9) && (
+      <p className={classes.shortcutText}>{id === 'add' ? 'Add' : `⌘ + ${order + 1}`}</p>
+    )}
   </div>
 );
 

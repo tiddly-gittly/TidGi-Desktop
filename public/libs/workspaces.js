@@ -129,7 +129,10 @@ const setWorkspacePicture = (id, sourcePicturePath) => {
         pictureId,
         picturePath: destPicturePath,
       });
-      return fsExtra.remove(currentPicturePath);
+      if (currentPicturePath) {
+        return fsExtra.remove(currentPicturePath);
+      }
+      return null;
     })
     .catch(console.log);
 };
