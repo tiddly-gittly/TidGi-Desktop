@@ -1,33 +1,14 @@
 language: node_js
 node_js: 12
-matrix:
-  fast_finish: true
-  include:
-  - os: osx
-    osx_image: xcode10.2
-  - os: linux
-    env:
-    - CC=clang CXX=clang++ npm_config_clang=1
-    compiler: clang
-    addons:
-      apt:
-        packages:
-        - python3
-        - python3-pip
-        - python3-setuptools
-        - libxkbfile-dev
-        - libx11-dev
+os: osx
+osx_image: xcode10.2
 cache: yarn
-before_install:
-- if [ "$TRAVIS_OS_NAME" == "linux" -a "$TRAVIS_PULL_REQUEST" == "false" ]; then sudo snap install snapcraft --classic; fi
-- if [ "$TRAVIS_OS_NAME" == "linux" -a "$TRAVIS_PULL_REQUEST" == "false" ]; then echo "$SNAP_TOKEN" | snapcraft login --with -; fi
 before_script:
 - yarn lint
 script:
 - yarn dist
-- if [ "$TRAVIS_OS_NAME" == "linux" ]; then yarn catalog:install && yarn catalog:test; fi
-- if [ "$TRAVIS_OS_NAME" == "linux" -a "$TRAVIS_BRANCH" == "master" -a "$TRAVIS_PULL_REQUEST" == "false" ]; then yarn
-  catalog:install && yarn catalog:pack && yarn catalog:publish; fi
+- yarn catalog:install && yarn catalog:test
+- if [ "$TRAVIS_BRANCH" == "master" -a "$TRAVIS_PULL_REQUEST" == "false" ]; then yarn catalog:pack && yarn catalog:publish; fi
 notifications:
   email: false
 deploy:
@@ -41,7 +22,6 @@ deploy:
   skip_cleanup: true
   on:
     repo: quanglam2807/singlebox
-    condition: $TRAVIS_OS_NAME = linux
 branches:
   only:
     - master

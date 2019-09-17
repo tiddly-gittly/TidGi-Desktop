@@ -19,9 +19,6 @@ url: "https://singleboxapp.com" # the base hostname & protocol for your site, e.
 
 # Custom
 singlebox_version: 1.0.4
-collections:
-  catalog:
-    output: true
 
 # Build settings
 markdown: kramdown

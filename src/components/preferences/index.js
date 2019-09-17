@@ -122,8 +122,7 @@ const Preferences = ({
       <List dense>
         <ListItem>
           <ListItemText
-            primary={window.process.platform === 'win32'
-              ? 'Attach to taskbar' : 'Attach to menubar'}
+            primary="Attach to menubar"
           />
           <Switch
             checked={attachToMenubar}
@@ -290,30 +289,26 @@ const Preferences = ({
       </List>
     </Paper>
 
-    {window.process.platform !== 'linux' && (
-      <>
-        <Typography variant="subtitle2" className={classes.sectionTitle}>
-          System
-        </Typography>
-        <Paper className={classes.paper}>
-          <List dense>
-            <StatedMenu
-              id="openAtLogin"
-              buttonElement={(
-                <ListItem button>
-                  <ListItemText primary="Open at login" secondary={getOpenAtLoginString(openAtLogin)} />
-                  <ChevronRightIcon color="action" />
-                </ListItem>
-              )}
-            >
-              <MenuItem onClick={() => requestSetSystemPreference('openAtLogin', 'yes')}>Yes</MenuItem>
-              <MenuItem onClick={() => requestSetSystemPreference('openAtLogin', 'yes-hidden')}>Yes, but minimized</MenuItem>
-              <MenuItem onClick={() => requestSetSystemPreference('openAtLogin', 'no')}>No</MenuItem>
-            </StatedMenu>
-          </List>
-        </Paper>
-      </>
-    )}
+    <Typography variant="subtitle2" className={classes.sectionTitle}>
+      System
+    </Typography>
+    <Paper className={classes.paper}>
+      <List dense>
+        <StatedMenu
+          id="openAtLogin"
+          buttonElement={(
+            <ListItem button>
+              <ListItemText primary="Open at login" secondary={getOpenAtLoginString(openAtLogin)} />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+          )}
+        >
+          <MenuItem onClick={() => requestSetSystemPreference('openAtLogin', 'yes')}>Yes</MenuItem>
+          <MenuItem onClick={() => requestSetSystemPreference('openAtLogin', 'yes-hidden')}>Yes, but minimized</MenuItem>
+          <MenuItem onClick={() => requestSetSystemPreference('openAtLogin', 'no')}>No</MenuItem>
+        </StatedMenu>
+      </List>
+    </Paper>
 
     <Typography variant="subtitle2" className={classes.sectionTitle}>
       Reset
