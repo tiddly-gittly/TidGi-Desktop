@@ -61,9 +61,11 @@ const getOpenAtLoginString = (openAtLogin) => {
 };
 
 const Preferences = ({
+  askForDownloadPath,
   attachToMenubar,
   classes,
   cssCodeInjection,
+  downloadPath,
   isDefaultMailClient,
   jsCodeInjection,
   navigationBar,
@@ -201,6 +203,47 @@ const Preferences = ({
     </Paper>
 
     <Typography variant="subtitle2" className={classes.sectionTitle}>
+      Downloads
+    </Typography>
+    <Paper className={classes.paper}>
+      <List dense>
+        <ListItem
+          button
+          onClick={() => {
+            remote.dialog.showOpenDialog(remote.getCurrentWindow(), {
+              properties: ['openDirectory'],
+            }).then((result) => {
+              if (!result.canceled && result.filePaths) {
+                requestSetPreference('downloadPath', result.filePaths[0]);
+              }
+            }).catch((err) => {
+              console.log(err);
+            });
+          }}
+        >
+          <ListItemText
+            primary="Download Location"
+            secondary={downloadPath}
+          />
+          <ChevronRightIcon color="action" />
+        </ListItem>
+        <Divider />
+        <ListItem>
+          <ListItemText primary="Ask where to save each file before downloading" />
+          <Switch
+            checked={askForDownloadPath}
+            onChange={(e) => {
+              requestSetPreference('askForDownloadPath', e.target.checked);
+            }}
+            classes={{
+              switchBase: classes.switchBase,
+            }}
+          />
+        </ListItem>
+      </List>
+    </Paper>
+
+    <Typography variant="subtitle2" className={classes.sectionTitle}>
       Privacy &amp; Security
     </Typography>
     <Paper className={classes.paper}>
@@ -274,22 +317,6 @@ const Preferences = ({
     </Paper>
 
     <Typography variant="subtitle2" className={classes.sectionTitle}>
-      Developers
-    </Typography>
-    <Paper className={classes.paper}>
-      <List dense>
-        <ListItem button onClick={() => requestShowCodeInjectionWindow('js')}>
-          <ListItemText primary="JS Code Injection" secondary={jsCodeInjection ? 'Set' : 'Not set'} />
-          <ChevronRightIcon color="action" />
-        </ListItem>
-        <ListItem button onClick={() => requestShowCodeInjectionWindow('css')}>
-          <ListItemText primary="CSS Code Injection" secondary={cssCodeInjection ? 'Set' : 'Not set'} />
-          <ChevronRightIcon color="action" />
-        </ListItem>
-      </List>
-    </Paper>
-
-    <Typography variant="subtitle2" className={classes.sectionTitle}>
       System
     </Typography>
     <Paper className={classes.paper}>
@@ -307,6 +334,22 @@ const Preferences = ({
           <MenuItem onClick={() => requestSetSystemPreference('openAtLogin', 'yes-hidden')}>Yes, but minimized</MenuItem>
           <MenuItem onClick={() => requestSetSystemPreference('openAtLogin', 'no')}>No</MenuItem>
         </StatedMenu>
+      </List>
+    </Paper>
+
+    <Typography variant="subtitle2" className={classes.sectionTitle}>
+      Developers
+    </Typography>
+    <Paper className={classes.paper}>
+      <List dense>
+        <ListItem button onClick={() => requestShowCodeInjectionWindow('js')}>
+          <ListItemText primary="JS Code Injection" secondary={jsCodeInjection ? 'Set' : 'Not set'} />
+          <ChevronRightIcon color="action" />
+        </ListItem>
+        <ListItem button onClick={() => requestShowCodeInjectionWindow('css')}>
+          <ListItemText primary="CSS Code Injection" secondary={cssCodeInjection ? 'Set' : 'Not set'} />
+          <ChevronRightIcon color="action" />
+        </ListItem>
       </List>
     </Paper>
 
@@ -330,9 +373,11 @@ Preferences.defaultProps = {
 };
 
 Preferences.propTypes = {
+  askForDownloadPath: PropTypes.bool.isRequired,
   attachToMenubar: PropTypes.bool.isRequired,
   classes: PropTypes.object.isRequired,
   cssCodeInjection: PropTypes.string,
+  downloadPath: PropTypes.string.isRequired,
   isDefaultMailClient: PropTypes.bool.isRequired,
   jsCodeInjection: PropTypes.string,
   navigationBar: PropTypes.bool.isRequired,
@@ -347,8 +392,10 @@ Preferences.propTypes = {
 };
 
 const mapStateToProps = (state) => ({
+  askForDownloadPath: state.preferences.askForDownloadPath,
   attachToMenubar: state.preferences.attachToMenubar,
   cssCodeInjection: state.preferences.cssCodeInjection,
+  downloadPath: state.preferences.downloadPath,
   isDefaultMailClient: state.general.isDefaultMailClient,
   jsCodeInjection: state.preferences.jsCodeInjection,
   navigationBar: state.preferences.navigationBar,

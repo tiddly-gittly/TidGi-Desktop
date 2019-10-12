@@ -5,6 +5,7 @@ const {
   shell,
 } = require('electron');
 const path = require('path');
+const fsExtra = require('fs-extra');
 
 const { getPreferences } = require('./preferences');
 const {
@@ -137,6 +138,23 @@ const addView = (browserWindow, workspace) => {
 
     // open external url in browser if domain doesn't match.
     shell.openExternal(nextUrl);
+  });
+
+  // Handle downloads
+  // https://electronjs.org/docs/api/download-item
+  view.webContents.session.on('will-download', (event, item) => {
+    const {
+      askForDownloadPath,
+      downloadPath,
+    } = getPreferences();
+
+    // Set the save path, making Electron not to prompt a save dialog.
+    if (!askForDownloadPath) {
+      const finalFilePath = path.join(downloadPath, item.getFilename());
+      if (!fsExtra.existsSync(finalFilePath)) {
+        item.setSavePath(finalFilePath);
+      }
+    }
   });
 
   // Hide Electron from UA to improve compatibility
