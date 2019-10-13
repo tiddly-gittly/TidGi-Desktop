@@ -203,6 +203,7 @@ const loadListeners = () => {
 
   ipcMain.on('request-set-workspace', (e, id, opts) => {
     setWorkspace(id, opts);
+    createMenu();
   });
 
   ipcMain.on('request-set-workspace-picture', (e, id, picturePath) => {

@@ -8,6 +8,8 @@ import Typography from '@material-ui/core/Typography';
 
 import SettingsIcon from '@material-ui/icons/SettingsSharp';
 
+import { sortableContainer, sortableElement } from 'react-sortable-hoc';
+
 import connectComponent from '../../helpers/connect-component';
 import getWorkspacesAsList from '../../helpers/get-workspaces-as-list';
 
@@ -21,10 +23,11 @@ import arrowBlack from '../../images/arrow-black.png';
 import {
   requestRemoveWorkspace,
   requestSetActiveWorkspace,
+  requestSetWorkspace,
   requestShowAddWorkspaceWindow,
   requestShowEditWorkspaceWindow,
-  requestShowPreferencesWindow,
   requestShowLicenseRegistrationWindow,
+  requestShowPreferencesWindow,
 } from '../../senders';
 
 const { remote } = window.require('electron');
@@ -115,6 +118,44 @@ const styles = (theme) => ({
   },
 });
 
+const SortableItem = sortableElement(({ value }) => {
+  const { index, workspace } = value;
+  const {
+    active, id, name, badgeCount, picturePath,
+  } = workspace;
+  return (
+    <WorkspaceSelector
+      active={active}
+      id={id}
+      key={id}
+      name={name}
+      badgeCount={badgeCount}
+      picturePath={picturePath}
+      order={index}
+      onClick={() => requestSetActiveWorkspace(id)}
+      onContextMenu={(e) => {
+        e.preventDefault();
+
+        const template = [
+          {
+            label: 'Edit Workspace',
+            click: () => requestShowEditWorkspaceWindow(id),
+          },
+          {
+            label: 'Remove Workspace',
+            click: () => requestRemoveWorkspace(id),
+          },
+        ];
+        const menu = remote.Menu.buildFromTemplate(template);
+
+        menu.popup(remote.getCurrentWindow());
+      }}
+    />
+  );
+});
+
+const SortableContainer = sortableContainer(({ children }) => <div>{children}</div>);
+
 const Main = ({
   classes,
   didFailLoad,
@@ -123,98 +164,90 @@ const Main = ({
   navigationBar,
   registered,
   workspaces,
-}) => (
-  <div className={classes.outerRoot}>
-    <div className={classes.root}>
-      <div className={classes.sidebarRoot}>
-        <div className={classNames(classes.sidebarTop,
-          isFullScreen && classes.sidebarTopFullScreen)}
-        >
-          {getWorkspacesAsList(workspaces).map((workspace, i) => (
+}) => {
+  const workspacesList = getWorkspacesAsList(workspaces);
+  return (
+    <div className={classes.outerRoot}>
+      <div className={classes.root}>
+        <div className={classes.sidebarRoot}>
+          <div className={classNames(classes.sidebarTop,
+            isFullScreen && classes.sidebarTopFullScreen)}
+          >
+            <SortableContainer
+              pressDelay={100}
+              onSortEnd={({ oldIndex, newIndex }) => {
+                if (oldIndex === newIndex) return;
+                const oldWorkspace = workspacesList[oldIndex];
+                const newWorkspace = workspacesList[newIndex];
+                requestSetWorkspace(oldWorkspace.id, {
+                  order: newWorkspace.order,
+                });
+                requestSetWorkspace(newWorkspace.id, {
+                  order: oldWorkspace.order,
+                });
+              }}
+            >
+              {workspacesList.map((workspace, i) => (
+                <SortableItem key={`item-${workspace.id}`} index={i} value={{ index: i, workspace }} />
+              ))}
+            </SortableContainer>
             <WorkspaceSelector
-              active={workspace.active}
-              id={workspace.id}
-              key={workspace.id}
-              name={workspace.name}
-              badgeCount={workspace.badgeCount}
-              picturePath={workspace.picturePath}
-              order={i}
-              onClick={() => requestSetActiveWorkspace(workspace.id)}
-              onContextMenu={(e) => {
-                e.preventDefault();
-
-                const template = [
-                  {
-                    label: 'Edit Workspace',
-                    click: () => requestShowEditWorkspaceWindow(workspace.id),
-                  },
-                  {
-                    label: 'Remove Workspace',
-                    click: () => requestRemoveWorkspace(workspace.id),
-                  },
-                ];
-                const menu = remote.Menu.buildFromTemplate(template);
-
-                menu.popup(remote.getCurrentWindow());
+              id="add"
+              onClick={() => {
+                if (!registered && Object.keys(workspaces).length > 1) {
+                  requestShowLicenseRegistrationWindow();
+                  return;
+                }
+                requestShowAddWorkspaceWindow();
               }}
             />
-          ))}
-          <WorkspaceSelector
-            id="add"
-            onClick={() => {
-              if (!registered && Object.keys(workspaces).length > 1) {
-                requestShowLicenseRegistrationWindow();
-                return;
-              }
-              requestShowAddWorkspaceWindow();
-            }}
-          />
-        </div>
-        {!navigationBar && (
-        <div className={classes.end}>
-          <IconButton aria-label="Preferences" onClick={requestShowPreferencesWindow}>
-            <SettingsIcon />
-          </IconButton>
-        </div>
-        )}
-      </div>
-      <div className={classes.contentRoot}>
-        {navigationBar && <NavigationBar />}
-        <FindInPage />
-        <div className={classes.innerContentRoot}>
-          {Object.keys(workspaces).length > 0 && didFailLoad && !isLoading && (
-            <div>
-              <Typography align="center" variant="h6">
-                No internet
-              </Typography>
-
-              <Typography align="center" variant="body1">
-                Try: - Checking the network cables, modem, and router. - Reconnecting to Wi-Fi.
-              </Typography>
-
-              <Typography align="center" variant="body1">
-                Press ⌘ + R to reload.
-              </Typography>
-            </div>
+          </div>
+          {!navigationBar && (
+          <div className={classes.end}>
+            <IconButton aria-label="Preferences" onClick={requestShowPreferencesWindow}>
+              <SettingsIcon />
+            </IconButton>
+          </div>
           )}
-          {Object.keys(workspaces).length > 0 && isLoading && <CircularProgress />}
-          {Object.keys(workspaces).length < 1 && (
-            <div>
-              <div alt="Arrow" className={classes.arrow} />
-              <div className={classes.tip}>
-                <span className={classes.inlineBlock}>Click</span>
-                <div className={classes.avatar}>
-                  +
-                </div>
-                <span className={classes.inlineBlock}>to get started!</span>
+        </div>
+        <div className={classes.contentRoot}>
+          {navigationBar && <NavigationBar />}
+          <FindInPage />
+          <div className={classes.innerContentRoot}>
+            {Object.keys(workspaces).length > 0 && didFailLoad && !isLoading && (
+              <div>
+                <Typography align="center" variant="h6">
+                  No internet
+                </Typography>
+
+                <Typography align="center" variant="body1">
+                  Try: - Checking the network cables, modem, and router. - Reconnecting to Wi-Fi.
+                </Typography>
+
+                <Typography align="center" variant="body1">
+                  Press ⌘ + R to reload.
+                </Typography>
               </div>
-            </div>
-          )}
+            )}
+            {Object.keys(workspaces).length > 0 && isLoading && <CircularProgress />}
+            {Object.keys(workspaces).length < 1 && (
+              <div>
+                <div alt="Arrow" className={classes.arrow} />
+                <div className={classes.tip}>
+                  <span className={classes.inlineBlock}>Click</span>
+                  <div className={classes.avatar}>
+                    +
+                  </div>
+                  <span className={classes.inlineBlock}>to get started!</span>
+                </div>
+              </div>
+            )}
+          </div>
         </div>
       </div>
     </div>
-  </div>
-);
+  );
+};
 
 Main.propTypes = {
   classes: PropTypes.object.isRequired,
