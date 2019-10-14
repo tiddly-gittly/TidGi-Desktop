@@ -263,7 +263,7 @@ const Preferences = ({
         </ListItem>
         <Divider />
         <ListItem>
-          <ListItemText primary="Share browsing data betwwen workspaces" />
+          <ListItemText primary="Share browsing data between workspaces" />
           <Switch
             checked={shareWorkspaceBrowsingData}
             onChange={(e) => {
