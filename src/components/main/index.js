@@ -116,6 +116,10 @@ const styles = (theme) => ({
     left: 180,
     fontFamily: theme.typography.fontFamily,
   },
+  grabbing: {
+    cursor: 'grabbing !important',
+    pointerEvents: 'auto !important',
+  },
 });
 
 const SortableItem = sortableElement(({ value }) => {
@@ -174,7 +178,8 @@ const Main = ({
             isFullScreen && classes.sidebarTopFullScreen)}
           >
             <SortableContainer
-              pressDelay={100}
+              pressDelay={250}
+              helperClass={classes.grabbing}
               onSortEnd={({ oldIndex, newIndex }) => {
                 if (oldIndex === newIndex) return;
                 const oldWorkspace = workspacesList[oldIndex];
