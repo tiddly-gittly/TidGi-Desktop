@@ -27,6 +27,7 @@ const opts = {
       gatekeeperAssess: false,
       entitlements: 'build-resources/entitlements.mac.plist',
       entitlementsInherit: 'build-resources/entitlements.mac.plist',
+      darkModeSupport: true,
     },
     afterSign: (context) => {
       const shouldNotarize = context.electronPlatformName === 'darwin' && (
