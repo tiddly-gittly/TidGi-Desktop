@@ -37,7 +37,7 @@
     "menubar": "7.0.0",
     "node-fetch": "2.6.0",
     "request": "2.88.0",
-    "request-promise-native": "1.0.7",
+    "request-promise-native": "1.0.8",
     "semver": "6.3.0",
     "tmp": "0.1.0",
     "uuid": "3.3.3"
@@ -52,7 +52,7 @@
     "classnames": "2.2.6",
     "concurrently": "5.0.0",
     "cross-env": "6.0.3",
-    "electron": "6.1.2",
+    "electron": "6.1.4",
     "electron-builder": "21.2.0",
     "electron-notarize": "0.1.1",
     "eslint": "6.1.0",
