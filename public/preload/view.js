@@ -118,6 +118,41 @@ window.onload = () => {
       document.body.removeChild(linkPreview);
     }
   });
+
+  // Fix WhatsApp requires Google Chrome 49+ bug
+  // https://github.com/meetfranz/recipe-whatsapp/blob/master/webview.js
+  setTimeout(() => {
+    if (!window.location.hostname.includes('web.whatsapp.com')) {
+      return;
+    }
+    const elem = document.querySelector('.landing-title.version-title');
+    if (elem && elem.innerText.toLowerCase().includes('google chrome')) {
+      window.location.reload();
+    }
+  }, 1000);
+
+  window.addEventListener('beforeunload', async () => {
+    if (!window.location.hostname.includes('web.whatsapp.com')) {
+      return;
+    }
+    try {
+      const webContents = remote.getCurrentWebContents();
+      const { session } = webContents;
+      session.flushStorageData();
+      session.clearStorageData({
+        storages: ['appcache', 'serviceworkers', 'cachestorage', 'websql', 'indexdb'],
+      });
+
+      const registrations = await window.navigator.serviceWorker.getRegistrations();
+
+      registrations.forEach((r) => {
+        r.unregister();
+        console.log('ServiceWorker unregistered');
+      });
+    } catch (err) {
+      console.err(err);
+    }
+  });
 };
 
 // Fix Can't show file list of Google Drive
