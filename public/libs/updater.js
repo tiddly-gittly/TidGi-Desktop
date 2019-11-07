@@ -8,12 +8,13 @@ const mainWindow = require('../windows/main');
 
 global.updateSilent = true;
 global.updateAvailable = false;
+global.updaterProgressObj = null;
 
 autoUpdater.on('update-available', (info) => {
   if (!global.updateSilent) {
     dialog.showMessageBox(mainWindow.get(), {
       title: 'An Update is Available',
-      message: 'There is an available update. It is being downloaded. We will let you know when it is ready',
+      message: 'There is an available update. It is being downloaded. We will let you know when it is ready.',
     });
     global.updateSilent = true;
   }
@@ -22,6 +23,7 @@ autoUpdater.on('update-available', (info) => {
 });
 
 autoUpdater.on('update-not-available', (info) => {
+  global.updaterProgressObj = null;
   if (!global.updateSilent) {
     dialog.showMessageBox(mainWindow.get(), {
       title: 'No Updates',
@@ -31,9 +33,11 @@ autoUpdater.on('update-not-available', (info) => {
   }
 
   sendToAllWindows('log', info);
+  createMenu();
 });
 
 autoUpdater.on('error', (err) => {
+  global.updaterProgressObj = null;
   if (!global.updateSilent) {
     dialog.showMessageBox(mainWindow.get(), {
       title: 'Failed to Check for Updates',
@@ -43,10 +47,22 @@ autoUpdater.on('error', (err) => {
   }
 
   sendToAllWindows('log', err);
+  createMenu();
+});
+
+autoUpdater.on('update-cancelled', () => {
+  global.updaterProgressObj = null;
+  createMenu();
+});
+
+autoUpdater.on('download-progress', (progressObj) => {
+  global.updaterProgressObj = progressObj;
+  createMenu();
 });
 
 autoUpdater.on('update-downloaded', (info) => {
   global.updateDownloaded = true;
+  global.updaterProgressObj = null;
 
   createMenu();
 

@@ -1,4 +1,5 @@
 const {
+  app,
   Menu,
   clipboard,
   shell,
@@ -33,6 +34,19 @@ const {
 } = require('./views');
 
 const FIND_IN_PAGE_HEIGHT = 42;
+
+// https://stackoverflow.com/a/18650828
+function formatBytes(bytes, decimals = 2) {
+  if (bytes === 0) return '0 Bytes';
+
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return `${parseFloat((bytes / k ** i).toFixed(dm))} ${sizes[i]}`;
+}
 
 function createMenu() {
   const registered = getPreference('registered');
@@ -316,6 +330,31 @@ function createMenu() {
     },
   ];
 
+  const updaterMenuItem = {
+    label: 'Check for Updates...',
+    click: () => {
+      global.updateSilent = false;
+      autoUpdater.checkForUpdates();
+    },
+    visible: updaterEnabled,
+  };
+  if (global.updateDownloaded) {
+    updaterMenuItem.label = 'Restart to apply updates...';
+    updaterMenuItem.click = () => {
+      setImmediate(() => {
+        app.removeAllListeners('window-all-closed');
+        if (mainWindow.get() != null) {
+          mainWindow.get().close();
+        }
+        autoUpdater.quitAndInstall(false);
+      });
+    };
+  } else if (global.updaterProgressObj) {
+    const { transferred, total, bytesPerSecond } = global.updaterProgressObj;
+    updaterMenuItem.label = `Downloading updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
+    updaterMenuItem.enabled = false;
+  }
+
   if (process.platform === 'darwin') {
     template.unshift({
       label: 'Singlebox',
@@ -331,14 +370,7 @@ function createMenu() {
           click: registered ? null : () => licenseRegistrationWindow.show(),
         },
         { type: 'separator' },
-        {
-          label: 'Check for Updates...',
-          click: () => {
-            global.updateSilent = false;
-            autoUpdater.checkForUpdates();
-          },
-          visible: updaterEnabled,
-        },
+        updaterMenuItem,
         { type: 'separator' },
         {
           label: 'Preferences...',
@@ -387,14 +419,7 @@ function createMenu() {
           click: registered ? null : () => licenseRegistrationWindow.show(),
         },
         { type: 'separator' },
-        {
-          label: 'Check for Updates...',
-          click: () => {
-            global.updateSilent = false;
-            autoUpdater.checkForUpdates();
-          },
-          visible: updaterEnabled,
-        },
+        updaterMenuItem,
         { type: 'separator' },
         {
           label: 'Preferences...',
