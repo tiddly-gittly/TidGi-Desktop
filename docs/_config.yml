@@ -18,7 +18,7 @@ baseurl: "" # the subpath of your site, e.g. /blog
 url: "https://singleboxapp.com" # the base hostname & protocol for your site, e.g. http://example.com
 
 # Custom
-singlebox_version: 1.4.0
+singlebox_version: 1.4.1
 
 # Build settings
 markdown: kramdown
