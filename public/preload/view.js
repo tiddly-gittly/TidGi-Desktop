@@ -157,9 +157,13 @@ window.onload = () => {
 
 // Fix Can't show file list of Google Drive
 // https://github.com/electron/electron/issues/16587
+
+// Fix chrome.runtime.sendMessage is undefined for FastMail
+// https://github.com/quanglam2807/singlebox/issues/21
 webFrame.executeJavaScript(`
 window.chrome = {
   runtime: {
+    sendMessage: () => {},
     connect: () => {
       return {
         onMessage: {

@@ -1070,12 +1070,12 @@
     ajv "^6.1.0"
     ajv-keywords "^3.1.0"
 
-"@felixrieseberg/spellchecker@^4.0.10":
-  version "4.0.10"
-  resolved "https://registry.yarnpkg.com/@felixrieseberg/spellchecker/-/spellchecker-4.0.10.tgz#ec4b11bcaa98a45d0f1c768a2f3dfb2b8768ed3f"
-  integrity sha512-b+BlHcBXjx+W7yGNAtoVpAv8dvmAQ8Tp2YhNjqxIgocb6Wq1nKLl4jfu9DG60UWC0hTNvvQ74ny9ojiUFNqGSA==
+"@felixrieseberg/spellchecker@^4.0.12":
+  version "4.0.12"
+  resolved "https://registry.yarnpkg.com/@felixrieseberg/spellchecker/-/spellchecker-4.0.12.tgz#ec7bea6c1539d6a6f852a16d514c42f7dc9b5798"
+  integrity sha512-jLAPnRALB1I6Un8ldHVJfJid7m2R1qXoafFF/95sdm7R5VPOsZ3xTreZ/wLKO5x9AdsD2t9zpOcjDFTsCf3VzQ==
   dependencies:
-    nan "^2.13.2"
+    nan "^2.14.0"
 
 "@hapi/address@2.x.x":
   version "2.0.0"
@@ -5146,13 +5146,13 @@ electron-settings@3.2.0:
     clone "^2.1.1"
     jsonfile "^4.0.0"
 
-electron-spellchecker@2.2.0:
-  version "2.2.0"
-  resolved "https://registry.yarnpkg.com/electron-spellchecker/-/electron-spellchecker-2.2.0.tgz#e140dd0207d6e5351ca1fa695e307b3bbcea204f"
-  integrity sha512-QkOVgjmjx6bDkqNshRTfVzEz9ctjiKVPZw77YLS0sQReP320QNtTXAKyo+01TORWk58RFT/LdxPZ/aejLdPmOA==
+electron-spellchecker@2.2.1:
+  version "2.2.1"
+  resolved "https://registry.yarnpkg.com/electron-spellchecker/-/electron-spellchecker-2.2.1.tgz#5e02ece5dd5a97169a79fc066e33d87cb550e1aa"
+  integrity sha512-IqxJmYq/5qyTNo9ONxHr9D/9UxiXVvDbl01s2f71S3aAHtDIc7I7qqEycvNUlFGR1WVBgFc/VzV4+deQwxgikA==
   dependencies:
     "@aabuhijleh/electron-remote" "^1.4.0"
-    "@felixrieseberg/spellchecker" "^4.0.10"
+    "@felixrieseberg/spellchecker" "^4.0.12"
     bcp47 "^1.1.2"
     cld "^2.5.1"
     debug "^4.1.1"
@@ -8920,7 +8920,7 @@ mute-stream@0.0.8:
   resolved "https://registry.yarnpkg.com/mute-stream/-/mute-stream-0.0.8.tgz#1630c42b2251ff81e2a283de96a5497ea92e5e0d"
   integrity sha512-nnbWWOkoWyUsTjKrhgD0dcz22mdkSnpYqbEjIm2nhwhuxlSkpywJmBo8h0ZqJdkp73mb90SssHkN4rsRaBAfAA==
 
-nan@^2.12.1, nan@^2.13.2, nan@^2.9.2:
+nan@^2.12.1, nan@^2.13.2, nan@^2.14.0, nan@^2.9.2:
   version "2.14.0"
   resolved "https://registry.yarnpkg.com/nan/-/nan-2.14.0.tgz#7818f722027b2459a86f0295d434d1fc2336c52c"
   integrity sha512-INOFj37C7k3AfaNTtX8RhsTw7qRy7eLET14cROi9+5HAVbbHuIWUHEauBv5qT4Av2tWasiTY1Jw6puUNqRJXQg==
