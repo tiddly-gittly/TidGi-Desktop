@@ -4,9 +4,13 @@ on:
   push:
     branches:
       - master
+    paths:
+      - 'catalog/**'
   pull_request:
     branches:
       - master
+    paths:
+      - 'catalog/**'
 
 jobs:
   build:

@@ -6,9 +6,13 @@ on:
       - master
     tags:
       - "v*.*.*"
+    paths-ignore:
+      - 'catalog/**'
   pull_request:
     branches:
       - master
+    paths-ignore:
+      - 'catalog/**'
 
 jobs:
   build:
