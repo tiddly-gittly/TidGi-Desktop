@@ -30,9 +30,7 @@ const opts = {
       darkModeSupport: true,
     },
     afterSign: (context) => {
-      const shouldNotarize = context.electronPlatformName === 'darwin' && (
-        process.env.TRAVIS_PULL_REQUEST === 'false'
-        || process.env.CSC_FOR_PULL_REQUEST === 'true');
+      const shouldNotarize = process.platform === 'darwin' && context.electronPlatformName === 'darwin' && process.env.CI_BUILD_TAG;
       if (!shouldNotarize) return null;
 
       console.log('Notarizing app...');

@@ -1,4 +1,8 @@
-# Singlebox [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](https://opensource.org/licenses/MPL-2.0) [![Travis Build Status](https://travis-ci.com/quanglam2807/singlebox.svg?branch=master)](https://travis-ci.com/quanglam2807/singlebox)
+# Singlebox [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
+
+|macOS|Catalog|
+|---|---|
+|[![GitHub Actions Build Status](https://github.com/quanglam2807/singlebox/workflows/macOS/badge.svg)](https://github.com/quanglam2807/singlebox/actions)|[![GitHub Actions Build Status](https://github.com/quanglam2807/singlebox/workflows/Catalog/badge.svg)](https://github.com/quanglam2807/singlebox/actions)|
 
 **[Singlebox](https://singleboxapp.com)** - All Your Apps in One Single Window.
 
@@ -19,7 +23,6 @@ cd singlebox
 
 # install the dependencies
 yarn
-yarn template:install
 
 # Run development mode
 yarn electron-dev

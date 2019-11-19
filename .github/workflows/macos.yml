@@ -1,0 +1,40 @@
+name: macOS
+
+on:
+  push:
+    branches:
+      - master
+    tags:
+      - "v*.*.*"
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: macos-latest
+
+    steps:
+    - uses: actions/checkout@v1
+      with:
+        fetch-depth: 1
+        submodules: false
+    - name: Set up Node.js
+      uses: actions/setup-node@v1
+      with:
+        node-version: 12.x
+    - run: yarn
+    - run: yarn lint
+    - name: Get tag name
+      run: echo ::set-env name=CI_BUILD_TAG::${GITHUB_REF/refs\/tags\//}
+      if: startsWith(github.ref, 'refs/tags/')
+    - run: yarn dist
+      env:
+        CI: true
+        CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        CSC_KEY_PASSWORD: ${{ secrets.CSC_KEY_PASSWORD }}
+        CSC_LINK: ${{ secrets.CSC_LINK }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        REACT_APP_LICENSE_SECRET: ${{ secrets.REACT_APP_LICENSE_SECRET }}
