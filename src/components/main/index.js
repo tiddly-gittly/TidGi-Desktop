@@ -178,7 +178,7 @@ const Main = ({
             isFullScreen && classes.sidebarTopFullScreen)}
           >
             <SortableContainer
-              pressDelay={250}
+              distance={10}
               helperClass={classes.grabbing}
               onSortEnd={({ oldIndex, newIndex }) => {
                 if (oldIndex === newIndex) return;

@@ -94,7 +94,7 @@ const WorkspaceSelector = ({
   >
     <div className={classes.avatar}>
       {id !== 'add' ? (
-        <img alt="Icon" className={classes.avatarPicture} src={picturePath ? `file://${picturePath}` : defaultIcon} />
+        <img alt="Icon" className={classes.avatarPicture} src={picturePath ? `file://${picturePath}` : defaultIcon} draggable={false} />
       ) : '+'}
     </div>
     {badgeCount > 0 && (
