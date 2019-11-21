@@ -5,11 +5,18 @@ import Button from '@material-ui/core/Button';
 import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import Paper from '@material-ui/core/Paper';
+import IconButton from '@material-ui/core/IconButton';
+import MoreVertIcon from '@material-ui/icons/MoreVert';
+import MenuItem from '@material-ui/core/MenuItem';
 
 import connectComponent from '../../helpers/connect-component';
 import isUrl from '../../helpers/is-url';
 import extractHostname from '../../helpers/extract-hostname';
 import { requestCreateWorkspace } from '../../senders';
+
+import StatedMenu from '../shared/stated-menu';
+
+import { updateForm, updateMode } from '../../state/add-workspace/actions';
 
 const { remote } = window.require('electron');
 
@@ -41,14 +48,14 @@ const styles = (theme) => ({
   },
   actionContainer: {
     display: 'flex',
-    flexDirection: 'column',
-    justifyContent: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingLeft: theme.spacing.unit,
-    paddingRight: theme.spacing.unit,
   },
   actionButton: {
     minWidth: 'auto',
     boxShadow: 'none',
+    marginRight: theme.spacing.unit,
   },
   infoContainer: {
     display: 'flex',
@@ -57,6 +64,7 @@ const styles = (theme) => ({
     paddingLeft: theme.spacing.unit,
     paddingRight: theme.spacing.unit,
     flex: 1,
+    overflow: 'hidden',
   },
 });
 
@@ -67,6 +75,8 @@ const AppCard = (props) => {
     icon128,
     mailtoHandler,
     name,
+    onUpdateForm,
+    onUpdateMode,
     url,
   } = props;
 
@@ -101,6 +111,26 @@ const AppCard = (props) => {
           >
             Add
           </Button>
+          <StatedMenu
+            id={`more-menu-${extractHostname(url)}`}
+            buttonElement={(
+              <IconButton aria-label="Delete" className={classes.topRight}>
+                <MoreVertIcon fontSize="small" />
+              </IconButton>
+            )}
+          >
+            <MenuItem
+              onClick={() => {
+                onUpdateForm({
+                  name, homeUrl: url, picturePath: icon, mailtoHandler,
+                });
+                onUpdateMode('custom');
+              }}
+            >
+              Create custom app from&nbsp;
+              {name}
+            </MenuItem>
+          </StatedMenu>
         </div>
       </Paper>
     </Grid>
@@ -118,13 +148,20 @@ AppCard.propTypes = {
   icon: PropTypes.string.isRequired,
   mailtoHandler: PropTypes.string,
   name: PropTypes.string.isRequired,
+  onUpdateForm: PropTypes.func.isRequired,
+  onUpdateMode: PropTypes.func.isRequired,
   url: PropTypes.string.isRequired,
+};
+
+const actionCreators = {
+  updateForm,
+  updateMode,
 };
 
 
 export default connectComponent(
   AppCard,
   null,
-  null,
+  actionCreators,
   styles,
 );

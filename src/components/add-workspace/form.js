@@ -12,6 +12,8 @@ import defaultIcon from '../../images/default-icon.png';
 
 import EnhancedDialogTitle from './enhanced-dialog-title';
 
+import isUrl from '../../helpers/is-url';
+
 const styles = (theme) => ({
   root: {
     background: theme.palette.background.paper,
@@ -65,6 +67,14 @@ const styles = (theme) => ({
   },
 });
 
+const getValidIconPath = (iconPath) => {
+  if (iconPath) {
+    if (isUrl(iconPath)) return iconPath;
+    return `file://${iconPath}`;
+  }
+  return defaultIcon;
+};
+
 const AddWorkspaceCustom = ({
   classes,
   homeUrl,
@@ -113,7 +123,7 @@ const AddWorkspaceCustom = ({
       <div className={classes.avatarFlex}>
         <div className={classes.avatarLeft}>
           <div className={classes.avatar}>
-            <img alt="Icon" className={classes.avatarPicture} src={picturePath ? `file://${picturePath}` : defaultIcon} />
+            <img alt="Icon" className={classes.avatarPicture} src={getValidIconPath(picturePath)} />
           </div>
         </div>
         <div className={classes.avatarRight}>
