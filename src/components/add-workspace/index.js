@@ -19,6 +19,8 @@ import { getHits, updateMode } from '../../state/add-workspace/actions';
 import { getShouldUseDarkMode } from '../../state/general/utils';
 
 import AppCard from './app-card';
+import SubmitAppCard from './submit-app-card';
+import AddCustomAppCard from './add-custom-app-card';
 import NoConnection from './no-connection';
 import EmptyState from './empty-state';
 import SearchBox from './search-box';
@@ -105,11 +107,10 @@ class AddWorkspace extends React.Component {
       if (!isGetting && hits.length < 1) {
         return (
           <EmptyState icon={SearchIcon} title="No Matching Results">
-            <>
-              Please create a custom app instead
-              <br />
-              or submit a new app to the catalog (Help &gt; Report an Issue...).
-            </>
+            <Grid container spacing={16}>
+              <AddCustomAppCard />
+              <SubmitAppCard />
+            </Grid>
           </EmptyState>
         );
       }
@@ -128,6 +129,7 @@ class AddWorkspace extends React.Component {
                 mailtoHandler={app.mailtoHandler}
               />
             ))}
+            {!isGetting && <SubmitAppCard />}
           </Grid>
 
           {!isGetting && (
@@ -181,7 +183,7 @@ class AddWorkspace extends React.Component {
           className={classes.bottomNavigation}
         >
           <BottomNavigationAction label="Catalog" value="catalog" icon={<ViewListIcon />} />
-          <BottomNavigationAction label="Custom" value="custom" icon={<CreateIcon />} />
+          <BottomNavigationAction label="Add Custom App" value="custom" icon={<CreateIcon />} />
         </BottomNavigation>
       </div>
     );
