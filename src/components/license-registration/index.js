@@ -41,7 +41,7 @@ const DialogLicenseRegistration = (props) => {
       <DialogContent>
         <DialogContentText className={classes.dialogContentText}>
           You are currently running a trial version of Singlebox which only
-            lets you to add up to two apps.
+            lets you add up to two apps.
            To remove the trial limitations, please purchase a
            perpetual license key ($9.99) from our store.
         </DialogContentText>

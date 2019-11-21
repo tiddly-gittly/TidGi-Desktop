@@ -319,8 +319,20 @@ function createMenu() {
       role: 'help',
       submenu: [
         {
-          label: 'Report an Issue...',
+          label: 'Singlebox Support',
+          click: () => shell.openExternal('https://singleboxapp.com/support'),
+        },
+        {
+          label: 'Report a Bug via GitHub...',
           click: () => shell.openExternal('https://github.com/quanglam2807/singlebox/issues'),
+        },
+        {
+          label: 'Request a New Feature via GitHub...',
+          click: () => shell.openExternal('https://github.com/quanglam2807/singlebox/issues/new?template=feature.md&title=feature%3A+'),
+        },
+        {
+          label: 'Submit New App to Catalog...',
+          click: () => shell.openExternal('https://github.com/quanglam2807/singlebox/issues/new?template=app.md&title=app%3A+'),
         },
         {
           label: 'Learn More...',
