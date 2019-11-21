@@ -186,7 +186,6 @@ const addView = (browserWindow, workspace) => {
       const inc = parseInt(incStr, 10) || 0;
       badgeCounts[workspace.id] = inc;
       sendToAllWindows('set-workspace', workspace.id, {
-        ...workspace,
         badgeCount: inc,
       });
 
