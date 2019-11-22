@@ -25,11 +25,21 @@ const createAsync = () => {
   const updaterEnabled = process.env.SNAP == null && !process.mas && !process.windowsStore;
   const attachToMenubar = getPreference('attachToMenubar');
   if (attachToMenubar) {
+    const menubarWindowState = windowStateKeeper({
+      file: 'window-state-menubar.json',
+      defaultWidth: 400,
+      defaultHeight: 400,
+    });
+
     mb = menubar({
       index: REACT_PATH,
       icon: path.resolve(__dirname, '..', 'menubarTemplate.png'),
       preloadWindow: true,
       browserWindow: {
+        x: menubarWindowState.x,
+        y: menubarWindowState.y,
+        width: menubarWindowState.width,
+        height: menubarWindowState.height,
         webPreferences: {
           nodeIntegration: true,
         },
@@ -63,6 +73,8 @@ const createAsync = () => {
     return new Promise((resolve, reject) => {
       try {
         mb.on('after-create-window', () => {
+          menubarWindowState.manage(mb.window);
+
           mb.window.on('focus', () => {
             const view = mb.window.getBrowserView();
             if (view && view.webContents) {
