@@ -42,27 +42,6 @@ const addView = (browserWindow, workspace) => {
     },
   });
 
-  if (workspace.active) {
-    browserWindow.setBrowserView(view);
-
-    const contentSize = browserWindow.getContentSize();
-
-    const offsetTitlebar = 0;
-    const x = 68;
-    const y = global.showNavigationBar ? 36 + offsetTitlebar : 0 + offsetTitlebar;
-
-    view.setBounds({
-      x,
-      y,
-      width: contentSize[0] - x,
-      height: contentSize[1] - y,
-    });
-    view.setAutoResize({
-      width: true,
-      height: true,
-    });
-  }
-
   view.webContents.on('did-start-loading', () => {
     if (getWorkspace(workspace.id).active) {
       didFailLoad[workspace.id] = false;
@@ -81,6 +60,16 @@ const addView = (browserWindow, workspace) => {
       lastUrl: currentUrl,
     });
   });
+
+  if (workspace.active) {
+    const handleFocus = () => {
+      // focus on webview
+      // https://github.com/quanglam2807/webcatalog/issues/398
+      view.webContents.focus();
+      view.webContents.removeListener('did-stop-loading', handleFocus);
+    };
+    view.webContents.on('did-stop-loading', handleFocus);
+  }
 
   // https://electronjs.org/docs/api/web-contents#event-did-fail-load
   view.webContents.on('did-fail-load', (e, errorCode, errorDesc, validateUrl, isMainFrame) => {
@@ -212,6 +201,27 @@ const addView = (browserWindow, workspace) => {
     || workspace.homeUrl);
 
   views[workspace.id] = view;
+
+  if (workspace.active) {
+    browserWindow.setBrowserView(view);
+
+    const contentSize = browserWindow.getContentSize();
+
+    const offsetTitlebar = 0;
+    const x = 68;
+    const y = global.showNavigationBar ? 36 + offsetTitlebar : 0 + offsetTitlebar;
+
+    view.setBounds({
+      x,
+      y,
+      width: contentSize[0] - x,
+      height: contentSize[1] - y,
+    });
+    view.setAutoResize({
+      width: true,
+      height: true,
+    });
+  }
 };
 
 const getView = (id) => views[id];
@@ -243,6 +253,10 @@ const setActiveView = (browserWindow, id) => {
     width: true,
     height: true,
   });
+
+  // focus on webview
+  // https://github.com/quanglam2807/webcatalog/issues/398
+  view.webContents.focus();
 
   sendToAllWindows('update-is-loading', view.webContents.isLoading());
   sendToAllWindows('update-did-fail-load', Boolean(didFailLoad[id]));

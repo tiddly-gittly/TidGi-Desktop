@@ -62,6 +62,15 @@ const createAsync = () => {
 
     return new Promise((resolve, reject) => {
       try {
+        mb.on('after-create-window', () => {
+          mb.window.on('focus', () => {
+            const view = mb.window.getBrowserView();
+            if (view && view.webContents) {
+              view.webContents.focus();
+            }
+          });
+        });
+
         mb.on('ready', () => {
           mb.tray.on('right-click', () => {
             mb.tray.popUpContextMenu(contextMenu);
@@ -127,6 +136,13 @@ const createAsync = () => {
 
   win.on('closed', () => {
     win = null;
+  });
+
+  win.on('focus', () => {
+    const view = win.getBrowserView();
+    if (view && view.webContents) {
+      view.webContents.focus();
+    }
   });
 
   return Promise.resolve();
