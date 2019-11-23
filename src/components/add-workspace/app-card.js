@@ -55,7 +55,7 @@ const styles = (theme) => ({
   actionButton: {
     minWidth: 'auto',
     boxShadow: 'none',
-    marginRight: theme.spacing.unit,
+    marginLeft: theme.spacing.unit,
   },
   infoContainer: {
     display: 'flex',
@@ -99,18 +99,6 @@ const AppCard = (props) => {
           </Typography>
         </div>
         <div className={classes.actionContainer}>
-          <Button
-            className={classes.actionButton}
-            color="primary"
-            size="medium"
-            variant="contained"
-            onClick={() => {
-              requestCreateWorkspace(name, url, icon128, mailtoHandler);
-              remote.getCurrentWindow().close();
-            }}
-          >
-            Add
-          </Button>
           <StatedMenu
             id={`more-menu-${extractHostname(url)}`}
             buttonElement={(
@@ -131,6 +119,18 @@ const AppCard = (props) => {
               {name}
             </MenuItem>
           </StatedMenu>
+          <Button
+            className={classes.actionButton}
+            color="primary"
+            size="medium"
+            variant="contained"
+            onClick={() => {
+              requestCreateWorkspace(name, url, icon128, mailtoHandler);
+              remote.getCurrentWindow().close();
+            }}
+          >
+            Add
+          </Button>
         </div>
       </Paper>
     </Grid>
