@@ -42,6 +42,7 @@ const createAsync = () => {
         height: menubarWindowState.height,
         webPreferences: {
           nodeIntegration: true,
+          preload: path.join(__dirname, '..', 'preload', 'menubar.js'),
         },
       },
     });
