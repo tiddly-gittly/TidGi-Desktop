@@ -156,7 +156,7 @@ const loadListeners = () => {
     }, (response) => {
       if (response === 0) {
         app.relaunch();
-        app.quit();
+        app.exit(0);
       }
     });
   });
