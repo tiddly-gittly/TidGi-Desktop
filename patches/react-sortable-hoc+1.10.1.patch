@@ -1,0 +1,17 @@
+diff --git a/node_modules/react-sortable-hoc/dist/react-sortable-hoc.esm.js b/node_modules/react-sortable-hoc/dist/react-sortable-hoc.esm.js
+index e996530..81fb119 100644
+--- a/node_modules/react-sortable-hoc/dist/react-sortable-hoc.esm.js
++++ b/node_modules/react-sortable-hoc/dist/react-sortable-hoc.esm.js
+@@ -582,7 +582,11 @@ function sortableContainer(WrappedComponent) {
+             distance = _this$props.distance,
+             shouldCancelStart = _this$props.shouldCancelStart;
+ 
+-        if (event.button === 2 || shouldCancelStart(event)) {
++        // https://github.com/clauderic/react-sortable-hoc/issues/256
++        var isRightClick = (event.buttons === 1 && event.ctrlKey === true) // macOS trackpad ctrl click
++          || event.which === 3 || event.button === 2; // Regular mouse or macOS double-finger tap
++
++        if (isRightClick || shouldCancelStart(event)) {
+           return;
+         }
+ 
