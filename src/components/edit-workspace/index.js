@@ -5,10 +5,12 @@ import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 
 import connectComponent from '../../helpers/connect-component';
+import getMailtoUrl from '../../helpers/get-mailto-url';
 
 import defaultIcon from '../../images/default-icon.png';
 
 import { updateForm, save } from '../../state/edit-workspace/actions';
+
 
 const styles = (theme) => ({
   root: {
@@ -67,6 +69,7 @@ const EditWorkspace = ({
   classes,
   homeUrl,
   homeUrlError,
+  isMailApp,
   name,
   nameError,
   onSave,
@@ -104,6 +107,7 @@ const EditWorkspace = ({
         }}
         value={homeUrl}
         onChange={(e) => onUpdateForm({ homeUrl: e.target.value })}
+        helperText={!homeUrlError && isMailApp && 'Email app detected.'}
       />
       <div className={classes.avatarFlex}>
         <div className={classes.avatarLeft}>
@@ -161,6 +165,7 @@ EditWorkspace.propTypes = {
   classes: PropTypes.object.isRequired,
   homeUrl: PropTypes.string.isRequired,
   homeUrlError: PropTypes.string,
+  isMailApp: PropTypes.bool.isRequired,
   name: PropTypes.string.isRequired,
   nameError: PropTypes.string,
   onSave: PropTypes.func.isRequired,
@@ -171,6 +176,7 @@ EditWorkspace.propTypes = {
 const mapStateToProps = (state) => ({
   homeUrl: state.editWorkspace.form.homeUrl,
   homeUrlError: state.editWorkspace.form.homeUrlError,
+  isMailApp: Boolean(getMailtoUrl(state.editWorkspace.form.homeUrl)),
   id: state.editWorkspace.form.id,
   name: state.editWorkspace.form.name,
   nameError: state.editWorkspace.form.nameError,

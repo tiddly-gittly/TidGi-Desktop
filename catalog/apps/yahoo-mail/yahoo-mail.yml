@@ -1,4 +1,3 @@
 name: 'Yahoo Mail'
 url: 'https://mail.yahoo.com'
 category: Productivity
-mailtoHandler: 'https://compose.mail.yahoo.com/?To=%s'

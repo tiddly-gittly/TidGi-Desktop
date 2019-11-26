@@ -108,7 +108,7 @@ export const save = () => (dispatch, getState) => {
     return dispatch(updateForm(validatedChanges));
   }
 
-  requestCreateWorkspace(form.name, form.homeUrl, form.picturePath, form.mailtoHandler);
+  requestCreateWorkspace(form.name, form.homeUrl.trim(), form.picturePath);
   remote.getCurrentWindow().close();
   return null;
 };

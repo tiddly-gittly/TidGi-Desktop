@@ -17,7 +17,7 @@ import connectComponent from '../../helpers/connect-component';
 
 import StatedMenu from '../shared/stated-menu';
 
-import { updateIsDefaultMailClient } from '../../state/general/actions';
+import { updateIsDefaultMailClient, updateIsDefaultWebBrowser } from '../../state/general/actions';
 
 import {
   requestOpenInBrowser,
@@ -51,7 +51,7 @@ const styles = (theme) => ({
 const getThemeString = (theme) => {
   if (theme === 'light') return 'Light';
   if (theme === 'dark') return 'Dark';
-  return 'Automatic';
+  return 'System default';
 };
 
 const getOpenAtLoginString = (openAtLogin) => {
@@ -67,9 +67,11 @@ const Preferences = ({
   cssCodeInjection,
   downloadPath,
   isDefaultMailClient,
+  isDefaultWebBrowser,
   jsCodeInjection,
   navigationBar,
   onUpdateIsDefaultMailClient,
+  onUpdateIsDefaultWebBrowser,
   openAtLogin,
   rememberLastPageVisited,
   shareWorkspaceBrowsingData,
@@ -93,7 +95,7 @@ const Preferences = ({
             </ListItem>
           )}
         >
-          <MenuItem onClick={() => requestSetPreference('theme', 'automatic')}>Automatic</MenuItem>
+          <MenuItem onClick={() => requestSetPreference('theme', 'automatic')}>System default</MenuItem>
           <MenuItem onClick={() => requestSetPreference('theme', 'light')}>Light</MenuItem>
           <MenuItem onClick={() => requestSetPreference('theme', 'dark')}>Dark</MenuItem>
         </StatedMenu>
@@ -288,7 +290,7 @@ const Preferences = ({
     </Paper>
 
     <Typography variant="subtitle2" className={classes.sectionTitle}>
-      Default Email Client
+      Default App
     </Typography>
     <Paper className={classes.paper}>
       <List dense>
@@ -307,6 +309,29 @@ const Preferences = ({
               onClick={() => {
                 remote.app.setAsDefaultProtocolClient('mailto');
                 onUpdateIsDefaultMailClient(remote.app.isDefaultProtocolClient('mailto'));
+              }}
+            >
+              Make default
+            </Button>
+          </ListItem>
+        )}
+        <Divider />
+        {isDefaultWebBrowser ? (
+          <ListItem>
+            <ListItemText secondary="Singlebox is your default web browser." />
+          </ListItem>
+        ) : (
+          <ListItem>
+            <ListItemText primary="Default web browser" secondary="Make Singlebox the default web browser." />
+            <Button
+              variant="outlined"
+              size="small"
+              color="default"
+              className={classes.button}
+              onClick={() => {
+                remote.app.setAsDefaultProtocolClient('http');
+                remote.app.setAsDefaultProtocolClient('https');
+                onUpdateIsDefaultWebBrowser(remote.app.isDefaultProtocolClient('http'));
               }}
             >
               Make default
@@ -379,9 +404,11 @@ Preferences.propTypes = {
   cssCodeInjection: PropTypes.string,
   downloadPath: PropTypes.string.isRequired,
   isDefaultMailClient: PropTypes.bool.isRequired,
+  isDefaultWebBrowser: PropTypes.bool.isRequired,
   jsCodeInjection: PropTypes.string,
   navigationBar: PropTypes.bool.isRequired,
   onUpdateIsDefaultMailClient: PropTypes.func.isRequired,
+  onUpdateIsDefaultWebBrowser: PropTypes.func.isRequired,
   openAtLogin: PropTypes.oneOf(['yes', 'yes-hidden', 'no']).isRequired,
   rememberLastPageVisited: PropTypes.bool.isRequired,
   shareWorkspaceBrowsingData: PropTypes.bool.isRequired,
@@ -410,6 +437,7 @@ const mapStateToProps = (state) => ({
 
 const actionCreators = {
   updateIsDefaultMailClient,
+  updateIsDefaultWebBrowser,
 };
 
 export default connectComponent(

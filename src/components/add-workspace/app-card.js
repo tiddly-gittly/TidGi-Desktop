@@ -73,7 +73,6 @@ const AppCard = (props) => {
     classes,
     icon,
     icon128,
-    mailtoHandler,
     name,
     onUpdateForm,
     onUpdateMode,
@@ -110,7 +109,7 @@ const AppCard = (props) => {
             <MenuItem
               onClick={() => {
                 onUpdateForm({
-                  name, homeUrl: url, picturePath: icon, mailtoHandler,
+                  name, homeUrl: url, picturePath: icon,
                 });
                 onUpdateMode('custom');
               }}
@@ -125,7 +124,7 @@ const AppCard = (props) => {
             size="medium"
             variant="contained"
             onClick={() => {
-              requestCreateWorkspace(name, url, icon128, mailtoHandler);
+              requestCreateWorkspace(name, url, icon128);
               remote.getCurrentWindow().close();
             }}
           >
@@ -138,7 +137,6 @@ const AppCard = (props) => {
 };
 
 AppCard.defaultProps = {
-  mailtoHandler: null,
   icon128: null,
 };
 
@@ -146,7 +144,6 @@ AppCard.propTypes = {
   classes: PropTypes.object.isRequired,
   icon128: PropTypes.string,
   icon: PropTypes.string.isRequired,
-  mailtoHandler: PropTypes.string,
   name: PropTypes.string.isRequired,
   onUpdateForm: PropTypes.func.isRequired,
   onUpdateMode: PropTypes.func.isRequired,

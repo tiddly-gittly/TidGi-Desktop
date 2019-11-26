@@ -43,7 +43,7 @@ export const save = () => (dispatch, getState) => {
     id,
     {
       name: form.name,
-      homeUrl: form.homeUrl,
+      homeUrl: form.homeUrl.trim(),
     },
   );
 

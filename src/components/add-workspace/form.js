@@ -5,14 +5,14 @@ import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 
 import connectComponent from '../../helpers/connect-component';
+import isUrl from '../../helpers/is-url';
+import getMailtoUrl from '../../helpers/get-mailto-url';
 
 import { updateForm, save } from '../../state/add-workspace/actions';
 
 import defaultIcon from '../../images/default-icon.png';
 
 import EnhancedDialogTitle from './enhanced-dialog-title';
-
-import isUrl from '../../helpers/is-url';
 
 const styles = (theme) => ({
   root: {
@@ -79,6 +79,7 @@ const AddWorkspaceCustom = ({
   classes,
   homeUrl,
   homeUrlError,
+  isMailApp,
   name,
   nameError,
   onSave,
@@ -87,7 +88,7 @@ const AddWorkspaceCustom = ({
 }) => (
   <div className={classes.root}>
     <EnhancedDialogTitle>
-      Add Custom App
+      Add Custom Workspace
     </EnhancedDialogTitle>
     <div>
       <TextField
@@ -119,6 +120,7 @@ const AddWorkspaceCustom = ({
         }}
         value={homeUrl}
         onChange={(e) => onUpdateForm({ homeUrl: e.target.value })}
+        helperText={!homeUrlError && isMailApp && 'Email app detected.'}
       />
       <div className={classes.avatarFlex}>
         <div className={classes.avatarLeft}>
@@ -178,6 +180,7 @@ AddWorkspaceCustom.propTypes = {
   classes: PropTypes.object.isRequired,
   homeUrl: PropTypes.string,
   homeUrlError: PropTypes.string,
+  isMailApp: PropTypes.bool.isRequired,
   name: PropTypes.string,
   nameError: PropTypes.string,
   onSave: PropTypes.func.isRequired,
@@ -188,6 +191,7 @@ AddWorkspaceCustom.propTypes = {
 const mapStateToProps = (state) => ({
   homeUrl: state.addWorkspace.form.homeUrl,
   homeUrlError: state.addWorkspace.form.homeUrlError,
+  isMailApp: Boolean(getMailtoUrl(state.addWorkspace.form.homeUrl)),
   name: state.addWorkspace.form.name,
   nameError: state.addWorkspace.form.nameError,
   picturePath: state.addWorkspace.form.picturePath,

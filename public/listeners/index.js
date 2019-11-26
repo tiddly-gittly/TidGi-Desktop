@@ -173,8 +173,8 @@ const loadListeners = () => {
     e.returnValue = workspaces;
   });
 
-  ipcMain.on('request-create-workspace', (e, name, homeUrl, picture, mailtoHandler) => {
-    createWorkspaceView(name, homeUrl, picture, mailtoHandler);
+  ipcMain.on('request-create-workspace', (e, name, homeUrl, picture) => {
+    createWorkspaceView(name, homeUrl, picture);
     createMenu();
   });
 

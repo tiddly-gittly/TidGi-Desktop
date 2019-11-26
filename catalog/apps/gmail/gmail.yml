@@ -1,5 +1,3 @@
 name: Gmail
 url: 'https://gmail.com'
 category: Productivity
-mailtoHandler: 'https://mail.google.com/mail/?extsrc=mailto&url=%s'
-featured: true

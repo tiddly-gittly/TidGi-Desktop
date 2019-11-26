@@ -9,34 +9,43 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 import connectComponent from '../../helpers/connect-component';
 import getWorkspacesAsList from '../../helpers/get-workspaces-as-list';
+import getMailtoUrl from '../../helpers/get-mailto-url';
 
 import { requestLoadURL } from '../../senders';
 
 const { remote } = window.require('electron');
 
-const OpenUrlWith = ({ workspaces }) => (
-  <List dense>
-    {getWorkspacesAsList(workspaces).map((workspace) => workspace.mailtoHandler && (
+const OpenUrlWith = ({ workspaces }) => {
+  const incomingUrl = remote.getGlobal('incomingUrl');
+  const isMailtoUrl = incomingUrl.startsWith('mailto:');
+
+  const renderWorkspace = (workspace, i) => {
+    if (isMailtoUrl && !getMailtoUrl(workspace.homeUrl)) return null;
+    return (
       <ListItem
         button
         onClick={() => {
-          const incomingUrl = remote.getGlobal('incomingUrl');
-
-          const u = incomingUrl.startsWith('mailto:') ? workspace.mailtoHandler.replace('%s', incomingUrl) : incomingUrl;
+          const u = isMailtoUrl ? getMailtoUrl(workspace.homeUrl).replace('%s', incomingUrl) : incomingUrl;
 
           requestLoadURL(u, workspace.id);
           remote.getCurrentWindow().close();
         }}
       >
         <ListItemText
-          primary={workspace.name || `Workspace ${workspace.order + 1}`}
-          secondary={`#${workspace.order + 1}`}
+          primary={workspace.name || `Workspace ${i + 1}`}
+          secondary={`#${i + 1}`}
         />
         <ChevronRightIcon color="action" />
       </ListItem>
-    ))}
-  </List>
-);
+    );
+  };
+
+  return (
+    <List dense>
+      {getWorkspacesAsList(workspaces).map(renderWorkspace)}
+    </List>
+  );
+};
 
 OpenUrlWith.propTypes = {
   workspaces: PropTypes.object.isRequired,

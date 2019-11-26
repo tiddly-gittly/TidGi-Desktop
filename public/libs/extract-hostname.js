@@ -24,4 +24,4 @@ const extractHostname = (url) => {
   }
 };
 
-export default extractHostname;
+module.exports = extractHostname;

@@ -25,7 +25,6 @@ The yml file requires just a few fields:
 name: Gmail
 url: 'https://gmail.com'
 category: Productivity
-mailtoHandler: 'https://mail.google.com/mail/?extsrc=mailto&url=%s'
 ```
 
 The human then opens a PR. Tests pass, the PR gets merged. Yay!
@@ -69,7 +68,6 @@ apps
   - Social Networking
   - Utilities
   - Video
-- `mailtoHandler` is not required, specifies the URL pattern to handle `mailto` links. See [Navigator.registerProtocolHandler() Web API](https://developer.mozilla.org/en-US/docs/Web/API/Navigator/registerProtocolHandler). Example: `https://mail.google.com/mail/?extsrc=mailto&url=%s`.
 
 ### Icons
 

@@ -19,8 +19,8 @@ const {
 
 const mainWindow = require('../windows/main');
 
-const createWorkspaceView = (name, homeUrl, picture, mailtoHandler) => {
-  const newWorkspace = createWorkspace(name, homeUrl, picture, mailtoHandler);
+const createWorkspaceView = (name, homeUrl, picture) => {
+  const newWorkspace = createWorkspace(name, homeUrl, picture);
 
   setActiveWorkspace(newWorkspace.id);
   addView(mainWindow.get(), getWorkspace(newWorkspace.id));

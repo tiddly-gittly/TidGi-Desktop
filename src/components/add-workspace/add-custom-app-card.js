@@ -63,7 +63,7 @@ const AddCustomAppCard = (props) => {
         </div>
         <div className={classes.infoContainer}>
           <Typography variant="subtitle1" className={classes.appName}>
-            Add Custom App
+            Add Custom Workspace
           </Typography>
           <Typography variant="body1" color="textSecondary" className={classes.appUrl}>
             Make it your own!

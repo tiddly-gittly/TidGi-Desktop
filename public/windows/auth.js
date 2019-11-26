@@ -1,7 +1,7 @@
 const { BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
 
-const { REACT_PATH } = require('../constants');
+const { REACT_PATH } = require('../constants/paths');
 const { getPreference } = require('../libs/preferences');
 
 const mainWindow = require('./main');

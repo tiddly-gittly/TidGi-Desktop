@@ -16,7 +16,6 @@ export const requestShowAddWorkspaceWindow = () => ipcRenderer.send('request-sho
 export const requestShowCodeInjectionWindow = (type) => ipcRenderer.send('request-show-code-injection-window', type);
 export const requestShowLicenseRegistrationWindow = (type) => ipcRenderer.send('request-show-license-registration-window', type);
 
-
 // Preferences
 export const getPreference = (name) => ipcRenderer.sendSync('get-preference', name);
 export const getPreferences = () => ipcRenderer.sendSync('get-preferences');
@@ -32,7 +31,7 @@ export const requestSetSystemPreference = (name, value) => ipcRenderer.send('req
 // Workspace
 export const getWorkspace = (id) => ipcRenderer.sendSync('get-workspace', id);
 export const getWorkspaces = () => ipcRenderer.sendSync('get-workspaces');
-export const requestCreateWorkspace = (name, homeUrl, picture, mailtoHandler) => ipcRenderer.send('request-create-workspace', name, homeUrl, picture, mailtoHandler);
+export const requestCreateWorkspace = (name, homeUrl, picture) => ipcRenderer.send('request-create-workspace', name, homeUrl, picture);
 export const requestSetWorkspace = (id, opts) => ipcRenderer.send('request-set-workspace', id, opts);
 export const requestSetWorkspacePicture = (id, picturePath) => ipcRenderer.send('request-set-workspace-picture', id, picturePath);
 export const requestRemoveWorkspacePicture = (id) => ipcRenderer.send('request-remove-workspace-picture', id);

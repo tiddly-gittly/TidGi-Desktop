@@ -6,6 +6,7 @@ import {
   UPDATE_DID_FAIL_LOAD,
   UPDATE_IS_DARK_MODE,
   UPDATE_IS_DEFAULT_MAIL_CLIENT,
+  UPDATE_IS_DEFAULT_WEB_BROWSER,
   UPDATE_IS_FULL_SCREEN,
   UPDATE_IS_LOADING,
 } from '../../constants/actions';
@@ -40,6 +41,14 @@ const isDefaultMailClient = (state = remote.app.isDefaultProtocolClient('mailto'
   }
 };
 
+const isDefaultWebBrowser = (state = remote.app.isDefaultProtocolClient('http'), action) => {
+  switch (action.type) {
+    case UPDATE_IS_DEFAULT_WEB_BROWSER: return action.isDefaultWebBrowser;
+    default: return state;
+  }
+};
+
+
 const isDarkMode = (state = remote.systemPreferences.isDarkMode(), action) => {
   switch (action.type) {
     case UPDATE_IS_DARK_MODE: return action.isDarkMode;
@@ -67,6 +76,7 @@ export default combineReducers({
   didFailLoad,
   isDarkMode,
   isDefaultMailClient,
+  isDefaultWebBrowser,
   isFullScreen,
   isLoading,
 });

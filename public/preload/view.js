@@ -16,9 +16,20 @@ window.global = {};
 window.ipcRenderer = ipcRenderer;
 
 window.onload = () => {
-  window.close = () => {
-    ipcRenderer.send('request-go-home');
-  };
+  // overwrite gmail email discard button
+  if (window.location.href.startsWith('https://mail.google.com') && window.location.href.includes('source=mailto')) {
+    const checkExist = setInterval(() => {
+      if (document.getElementById(':qz')) {
+        const discardButton = document.getElementById(':qz');
+        // https://stackoverflow.com/a/46986927
+        discardButton.addEventListener('click', (e) => {
+          e.stopPropagation();
+          ipcRenderer.send('request-go-home');
+        }, true);
+        clearInterval(checkExist);
+      }
+    }, 100); // check every 100ms
+  }
 
   const jsCodeInjection = ipcRenderer.sendSync('get-preference', 'jsCodeInjection');
   const cssCodeInjection = ipcRenderer.sendSync('get-preference', 'cssCodeInjection');
