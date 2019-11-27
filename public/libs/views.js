@@ -112,6 +112,7 @@ const addView = (browserWindow, workspace) => {
     if (
       nextDomain === 'accounts.google.com'
       || nextDomain === 'feedly.com'
+      || (curDomain.includes('asana.com') && nextDomain.includes('asana.com'))
     ) {
       e.preventDefault();
       view.webContents.loadURL(nextUrl);
