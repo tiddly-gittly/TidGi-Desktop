@@ -213,6 +213,16 @@ const loadListeners = () => {
     createMenu();
   });
 
+  ipcMain.on('request-realign-active-workspace', () => {
+    global.attachToMenubar = getPreference('attachToMenubar');
+    global.showSidebar = getPreference('sidebar');
+    global.showNavigationBar = getPreference('navigationBar');
+
+    const activeWorkspace = getActiveWorkspace();
+    setActiveWorkspaceView(activeWorkspace.id);
+    createMenu();
+  });
+
   ipcMain.on('request-open-url-in-workspace', (e, url, id) => {
     if (id) {
       // if id is defined, switch to that workspace
