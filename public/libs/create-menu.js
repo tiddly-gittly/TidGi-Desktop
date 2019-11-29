@@ -13,6 +13,8 @@ const addWorkspaceWindow = require('../windows/add-workspace');
 const preferencesWindow = require('../windows/preferences');
 const editWorkspaceWindow = require('../windows/edit-workspace');
 const licenseRegistrationWindow = require('../windows/license-registration');
+const pauseNotificationsWindow = require('../windows/notifications');
+
 
 const { getPreference } = require('./preferences');
 
@@ -224,6 +226,19 @@ function createMenu() {
               label: 'Edit Workspace Window',
               click: () => {
                 const win = editWorkspaceWindow.get();
+                if (win != null) {
+                  if (win.webContents.isDevToolsOpened()) {
+                    win.webContents.closeDevTools();
+                  } else {
+                    win.webContents.openDevTools({ mode: 'detach' });
+                  }
+                }
+              },
+            },
+            {
+              label: 'Notifications Window',
+              click: () => {
+                const win = pauseNotificationsWindow.get();
                 if (win != null) {
                   if (win.webContents.isDevToolsOpened()) {
                     win.webContents.closeDevTools();

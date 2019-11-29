@@ -39,8 +39,7 @@ fs.readdirSync(appPath)
         .resize(128, 128)
         .toFile(path.join(distPath, `${slug}/${slug}-icon-128.png`)))
       .catch((e) => {
-        // eslint-disable-next-line
-        console.log(e);
+        console.log(e); // eslint-disable-line no-console
         process.exit(1);
       }));
 

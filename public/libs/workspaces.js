@@ -134,7 +134,7 @@ const setWorkspacePicture = (id, sourcePicturePath) => {
       }
       return null;
     })
-    .catch(console.log);
+    .catch(console.log); // eslint-disable-line no-console
 };
 
 const removeWorkspacePicture = (id) => {

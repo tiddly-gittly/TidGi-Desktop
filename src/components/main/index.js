@@ -6,7 +6,8 @@ import CircularProgress from '@material-ui/core/CircularProgress';
 import IconButton from '@material-ui/core/IconButton';
 import Typography from '@material-ui/core/Typography';
 
-import SettingsIcon from '@material-ui/icons/SettingsSharp';
+import NotificationsIcon from '@material-ui/icons/Notifications';
+import NotificationsPausedIcon from '@material-ui/icons/NotificationsPaused';
 
 import { sortableContainer, sortableElement } from 'react-sortable-hoc';
 
@@ -27,7 +28,7 @@ import {
   requestShowAddWorkspaceWindow,
   requestShowEditWorkspaceWindow,
   requestShowLicenseRegistrationWindow,
-  requestShowPreferencesWindow,
+  requestShowPauseNotificationsWindow,
 } from '../../senders';
 
 const { remote } = window.require('electron');
@@ -167,6 +168,7 @@ const Main = ({
   isLoading,
   navigationBar,
   registered,
+  shouldPauseNotifications,
   workspaces,
 }) => {
   const workspacesList = getWorkspacesAsList(workspaces);
@@ -209,8 +211,8 @@ const Main = ({
           </div>
           {!navigationBar && (
           <div className={classes.end}>
-            <IconButton aria-label="Preferences" onClick={requestShowPreferencesWindow}>
-              <SettingsIcon />
+            <IconButton aria-label="Notifications" onClick={requestShowPauseNotificationsWindow} className={classes.iconButton}>
+              {shouldPauseNotifications ? <NotificationsPausedIcon /> : <NotificationsIcon />}
             </IconButton>
           </div>
           )}
@@ -261,6 +263,7 @@ Main.propTypes = {
   isLoading: PropTypes.bool.isRequired,
   navigationBar: PropTypes.bool.isRequired,
   registered: PropTypes.bool.isRequired,
+  shouldPauseNotifications: PropTypes.bool.isRequired,
   workspaces: PropTypes.object.isRequired,
 };
 
@@ -270,6 +273,7 @@ const mapStateToProps = (state) => ({
   isLoading: state.general.isLoading,
   navigationBar: state.preferences.navigationBar,
   registered: state.preferences.registered,
+  shouldPauseNotifications: state.notifications.pauseNotificationsInfo !== null,
   workspaces: state.workspaces,
 });
 

@@ -35,6 +35,11 @@ const {
   loadURL,
 } = require('../libs/workspaces-views');
 
+const {
+  updatePauseNotificationsInfo,
+  getPauseNotificationsInfo,
+} = require('../libs/notifications');
+
 const createMenu = require('../libs/create-menu');
 
 const addWorkspaceWindow = require('../windows/add-workspace');
@@ -43,6 +48,7 @@ const editWorkspaceWindow = require('../windows/edit-workspace');
 const licenseRegistrationWindow = require('../windows/license-registration');
 const mainWindow = require('../windows/main');
 const preferencesWindow = require('../windows/preferences');
+const notificationsWindow = require('../windows/notifications');
 
 const loadListeners = () => {
   ipcMain.on('request-open-in-browser', (e, url) => {
@@ -147,6 +153,10 @@ const loadListeners = () => {
     licenseRegistrationWindow.show();
   });
 
+  ipcMain.on('request-show-notifications-window', () => {
+    notificationsWindow.show();
+  });
+
   ipcMain.on('request-show-require-restart-dialog', () => {
     dialog.showMessageBox({
       type: 'question',
@@ -161,6 +171,14 @@ const loadListeners = () => {
     });
   });
 
+  // Notifications
+  ipcMain.on('get-pause-notifications-info', (e) => {
+    e.returnValue = getPauseNotificationsInfo();
+  });
+
+  ipcMain.on('request-update-pause-notifications-info', () => {
+    updatePauseNotificationsInfo();
+  });
 
   // Workspaces
   ipcMain.on('get-workspace', (e, id) => {

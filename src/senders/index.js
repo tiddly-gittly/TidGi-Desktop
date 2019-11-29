@@ -14,7 +14,12 @@ export const requestShowPreferencesWindow = () => ipcRenderer.send('request-show
 export const requestShowEditWorkspaceWindow = (id) => ipcRenderer.send('request-show-edit-workspace-window', id);
 export const requestShowAddWorkspaceWindow = () => ipcRenderer.send('request-show-add-workspace-window');
 export const requestShowCodeInjectionWindow = (type) => ipcRenderer.send('request-show-code-injection-window', type);
-export const requestShowLicenseRegistrationWindow = (type) => ipcRenderer.send('request-show-license-registration-window', type);
+export const requestShowLicenseRegistrationWindow = () => ipcRenderer.send('request-show-license-registration-window');
+export const requestShowPauseNotificationsWindow = () => ipcRenderer.send('request-show-notifications-window');
+
+// Notifications
+export const requestUpdatePauseNotificationsInfo = () => ipcRenderer.send('request-update-pause-notifications-info');
+export const getPauseNotificationsInfo = () => ipcRenderer.sendSync('get-pause-notifications-info');
 
 // Preferences
 export const getPreference = (name) => ipcRenderer.sendSync('get-preference', name);

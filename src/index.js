@@ -18,6 +18,7 @@ import LicenseRegistration from './components/license-registration';
 import Main from './components/main';
 import OpenUrlWith from './components/open-url-with';
 import Preferences from './components/preferences';
+import Notifications from './components/notifications';
 
 import getWorkspacesAsList from './helpers/get-workspaces-as-list';
 
@@ -61,6 +62,10 @@ const runApp = () => {
       App = LicenseRegistration;
       break;
     }
+    case 'notifications': {
+      App = Notifications;
+      break;
+    }
     default: {
       App = Main;
     }
@@ -94,6 +99,8 @@ const runApp = () => {
     document.title = `Edit ${codeInjectionType.toUpperCase()} Code Injection`;
   } else if (window.mode === 'code-injection') {
     document.title = 'Sign in';
+  } else if (window.mode === 'notifications') {
+    document.title = 'Notifications';
   } else {
     document.title = 'Singlebox';
   }

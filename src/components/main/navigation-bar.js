@@ -7,6 +7,7 @@ import ArrowForwardIcon from '@material-ui/icons/ArrowForward';
 import HomeIcon from '@material-ui/icons/Home';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import SettingsIcon from '@material-ui/icons/SettingsSharp';
+import NotificationsIcon from '@material-ui/icons/Notifications';
 
 import connectComponent from '../../helpers/connect-component';
 
@@ -16,6 +17,7 @@ import {
   requestGoHome,
   requestReload,
   requestShowPreferencesWindow,
+  requestShowPauseNotificationsWindow,
 } from '../../senders';
 
 const styles = (theme) => ({
@@ -59,6 +61,9 @@ const NavigationBar = ({ canGoBack, canGoForward, classes }) => (
       </IconButton>
     </div>
     <div>
+      <IconButton aria-label="Notifications" onClick={requestShowPauseNotificationsWindow} className={classes.iconButton}>
+        <NotificationsIcon className={classes.icon} />
+      </IconButton>
       <IconButton aria-label="Preferences" className={classes.iconButton} onClick={requestShowPreferencesWindow}>
         <SettingsIcon className={classes.icon} />
       </IconButton>

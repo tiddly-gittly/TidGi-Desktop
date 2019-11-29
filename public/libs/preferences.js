@@ -14,6 +14,19 @@ const getDefaultDownloadsPath = () => {
   throw Error('Unsupported platform');
 };
 
+const getDefaultPauseNotificationsByScheduleFrom = () => {
+  const d = new Date();
+  d.setHours(23);
+  d.setMinutes(0);
+  return d.toString();
+};
+
+const getDefaultPauseNotificationsByScheduleTo = () => {
+  const d = new Date();
+  d.setHours(7);
+  d.setMinutes(0);
+  return d.toString();
+};
 
 const defaultPreferences = {
   askForDownloadPath: true,
@@ -22,6 +35,10 @@ const defaultPreferences = {
   downloadPath: getDefaultDownloadsPath(),
   jsCodeInjection: null,
   navigationBar: false,
+  pauseNotifications: null,
+  pauseNotificationsBySchedule: false,
+  pauseNotificationsByScheduleFrom: getDefaultPauseNotificationsByScheduleFrom(),
+  pauseNotificationsByScheduleTo: getDefaultPauseNotificationsByScheduleTo(),
   registered: false,
   rememberLastPageVisited: false,
   shareWorkspaceBrowsingData: false,
@@ -46,6 +63,10 @@ const setPreference = (name, value) => {
 
   if (name === 'registered') {
     ipcMain.emit('create-menu');
+  }
+
+  if (name.startsWith('pauseNotifications')) {
+    ipcMain.emit('request-update-pause-notifications-info');
   }
 };
 

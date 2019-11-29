@@ -2,9 +2,9 @@ const { BrowserWindow } = require('electron');
 const path = require('path');
 
 const { REACT_PATH } = require('../constants/paths');
+const { getPreference } = require('../libs/preferences');
 
 const mainWindow = require('./main');
-const { getPreference } = require('../libs/preferences');
 
 let win;
 
@@ -14,7 +14,7 @@ const create = () => {
   const attachToMenubar = getPreference('attachToMenubar');
 
   win = new BrowserWindow({
-    width: 500,
+    width: 400,
     height: 600,
     resizable: false,
     maximizable: false,
@@ -23,7 +23,8 @@ const create = () => {
     autoHideMenuBar: true,
     webPreferences: {
       nodeIntegration: true,
-      preload: path.join(__dirname, '..', 'preload', 'preferences.js'),
+      webSecurity: false,
+      preload: path.join(__dirname, '..', 'preload', 'notifications.js'),
     },
     parent: attachToMenubar ? null : mainWindow.get(),
   });

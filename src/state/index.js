@@ -12,6 +12,7 @@ import editWorkspace from './edit-workspace/reducers';
 import findInPage from './find-in-page/reducers';
 import general from './general/reducers';
 import licenseRegistration from './license-registration/reducers';
+import notifications from './notifications/reducers';
 import preferences from './preferences/reducers';
 import systemPreferences from './system-preferences/reducers';
 import workspaces from './workspaces/reducers';
@@ -26,6 +27,7 @@ const rootReducer = combineReducers({
   findInPage,
   general,
   licenseRegistration,
+  notifications,
   preferences,
   systemPreferences,
   workspaces,
