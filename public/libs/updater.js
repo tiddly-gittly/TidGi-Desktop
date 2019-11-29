@@ -80,8 +80,10 @@ autoUpdater.on('update-downloaded', (info) => {
       // https://github.com/electron-userland/electron-builder/issues/1604
       setImmediate(() => {
         app.removeAllListeners('window-all-closed');
-        if (mainWindow.get() != null) {
-          mainWindow.get().close();
+        const win = mainWindow.get();
+        if (win != null) {
+          win.forceClose = true;
+          win.close();
         }
         autoUpdater.quitAndInstall(false);
       });

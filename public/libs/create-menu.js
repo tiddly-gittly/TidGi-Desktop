@@ -355,8 +355,10 @@ function createMenu() {
     updaterMenuItem.click = () => {
       setImmediate(() => {
         app.removeAllListeners('window-all-closed');
-        if (mainWindow.get() != null) {
-          mainWindow.get().close();
+        const win = mainWindow.get();
+        if (win != null) {
+          win.forceClose = true;
+          win.close();
         }
         autoUpdater.quitAndInstall(false);
       });
