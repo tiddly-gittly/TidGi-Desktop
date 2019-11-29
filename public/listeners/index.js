@@ -1,4 +1,5 @@
 const {
+  Notification,
   app,
   dialog,
   ipcMain,
@@ -172,6 +173,17 @@ const loadListeners = () => {
   });
 
   // Notifications
+  ipcMain.on('request-show-notification', (e, opts) => {
+    if (Notification.isSupported()) {
+      const notif = new Notification(opts);
+      notif.show();
+    }
+  });
+
+  ipcMain.on('get-pause-notifications-info', (e) => {
+    e.returnValue = getPauseNotificationsInfo();
+  });
+
   ipcMain.on('get-pause-notifications-info', (e) => {
     e.returnValue = getPauseNotificationsInfo();
   });

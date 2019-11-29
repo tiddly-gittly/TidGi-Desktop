@@ -142,7 +142,8 @@ const updatePauseNotificationsInfo = () => {
   // create new update timeout
   const addTimeout = (d) => {
     const t = new Date(d).getTime() - new Date().getTime();
-    if (t > 0) {
+    // https://github.com/nodejs/node-v0.x-archive/issues/8656
+    if (t > 0 && t < 2147483647) {
       const newTimeout = setTimeout(() => {
         updatePauseNotificationsInfo();
       }, t);

@@ -18,6 +18,7 @@ export const requestShowLicenseRegistrationWindow = () => ipcRenderer.send('requ
 export const requestShowPauseNotificationsWindow = () => ipcRenderer.send('request-show-notifications-window');
 
 // Notifications
+export const requestShowNotification = (opts) => ipcRenderer.send('request-show-notification', opts);
 export const requestUpdatePauseNotificationsInfo = () => ipcRenderer.send('request-update-pause-notifications-info');
 export const getPauseNotificationsInfo = () => ipcRenderer.sendSync('get-pause-notifications-info');
 

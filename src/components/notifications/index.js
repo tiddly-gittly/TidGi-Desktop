@@ -22,6 +22,7 @@ import connectComponent from '../../helpers/connect-component';
 import {
   requestSetPreference,
   requestShowPreferencesWindow,
+  requestShowNotification,
 } from '../../senders';
 
 import StatedMenu from '../shared/stated-menu';
@@ -29,7 +30,7 @@ import StatedMenu from '../shared/stated-menu';
 // https://www.sketchappsources.com/free-source/2501-iphone-app-background-sketch-freebie-resource.html
 import nightBackgroundPng from '../../images/night-background.png';
 
-const styles = () => ({
+const styles = (theme) => ({
   hidden: {
     display: 'none',
   },
@@ -41,6 +42,9 @@ const styles = () => ({
     height: 210,
     backgroundSize: 400,
     alignItems: 'flex-end',
+  },
+  pausingHeaderText: {
+    color: theme.palette.common.white,
   },
 });
 
@@ -108,10 +112,10 @@ const DialogPauseNotifications = (props) => {
 
   const pauseNotif = (tilDate) => {
     requestSetPreference('pauseNotifications', `pause:${tilDate.toString()}`);
-    const notif = new window.Notification('Notifications paused', {
+    requestShowNotification({
+      title: 'Notifications paused',
       body: `Notifications paused until ${formatDate(tilDate)}.`,
     });
-    setTimeout(notif.close.bind(notif), 2000);
     remote.getCurrentWindow().close();
   };
 
@@ -126,6 +130,7 @@ const DialogPauseNotifications = (props) => {
           <ListItem classes={{ root: classes.pausingHeader }}>
             <ListItemText
               primary={`Notifications paused until ${formatDate(new Date(pauseNotificationsInfo.tilDate))}.`}
+              classes={{ primary: classes.pausingHeaderText }}
             />
           </ListItem>
           <ListItem button>
@@ -140,10 +145,10 @@ const DialogPauseNotifications = (props) => {
                 } else {
                   requestSetPreference('pauseNotifications', null);
                 }
-                const notif = new window.Notification('Notifications resumed', {
+                requestShowNotification({
+                  title: 'Notifications resumed',
                   body: 'Notifications are now resumed.',
                 });
-                setTimeout(notif.close.bind(notif), 2000);
                 remote.getCurrentWindow().close();
               }}
             />
