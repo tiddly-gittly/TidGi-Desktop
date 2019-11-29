@@ -47,6 +47,7 @@
     "@material-ui/core": "3.9.3",
     "@material-ui/icons": "3.0.2",
     "algoliasearch": "3.35.1",
+    "babel-eslint": "10.0.3",
     "babel-preset-env": "1.7.0",
     "babel-preset-react": "6.24.1",
     "blueimp-md5": "2.12.0",
