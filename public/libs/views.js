@@ -105,14 +105,17 @@ const addView = (browserWindow, workspace) => {
   });
 
   view.webContents.on('new-window', (e, nextUrl, frameName, disposition, options) => {
-    const curDomain = extractDomain(getWorkspace(workspace.id).homeUrl);
+    const appDomain = extractDomain(getWorkspace(workspace.id).homeUrl);
     const nextDomain = extractDomain(nextUrl);
 
     // load in same window
     if (
+      // Google: Switch account
       nextDomain === 'accounts.google.com'
+      // https://github.com/quanglam2807/appifier/issues/70
       || nextDomain === 'feedly.com'
-      || (curDomain.includes('asana.com') && nextDomain.includes('asana.com'))
+      // https://github.com/quanglam2807/webcatalog/issues/315
+      || (appDomain.includes('asana.com') && nextDomain.includes('asana.com'))
     ) {
       e.preventDefault();
       view.webContents.loadURL(nextUrl);
@@ -120,7 +123,14 @@ const addView = (browserWindow, workspace) => {
     }
 
     // open new window normally if domain is not defined or same domain (about:)
-    if (nextDomain === null || nextDomain === curDomain || nextUrl.indexOf('oauth') > -1) {
+    if (
+      nextDomain === null
+      || nextDomain === appDomain
+      || nextUrl.indexOf('oauth') > -1
+      // https://github.com/quanglam2807/webcatalog/issues/282#issuecomment-513547183
+      || (appDomain.includes('mail.google.com') && nextDomain.includes('gmail.com'))
+      || (appDomain.includes('gmail.com') && nextDomain.includes('mail.google.com'))
+    ) {
       // e.preventDefault();
       // https://gist.github.com/Gvozd/2cec0c8c510a707854e439fb15c561b0
       // options.webPreferences.affinity is not needed
