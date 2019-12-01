@@ -77,19 +77,19 @@ class AppWrapper extends React.Component {
       palette: {
         type: shouldUseDarkMode ? 'dark' : 'light',
         primary: {
-          light: red[300],
-          main: red[500],
-          dark: red[700],
-        },
-        secondary: {
           light: blue[300],
           main: blue[600],
           dark: blue[800],
         },
-        error: {
+        secondary: {
           light: pink[300],
-          main: pink[500],
-          dark: pink[700],
+          main: pink[600],
+          dark: pink[800],
+        },
+        error: {
+          light: red[300],
+          main: red[500],
+          dark: red[700],
         },
       },
     };
