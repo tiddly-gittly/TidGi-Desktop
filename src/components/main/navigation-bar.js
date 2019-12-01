@@ -18,7 +18,7 @@ import {
   requestGoHome,
   requestReload,
   requestShowPreferencesWindow,
-  requestShowPauseNotificationsWindow,
+  requestShowNotificationsWindow,
 } from '../../senders';
 
 const styles = (theme) => ({
@@ -67,7 +67,7 @@ const NavigationBar = ({
       </IconButton>
     </div>
     <div>
-      <IconButton aria-label="Notifications" onClick={requestShowPauseNotificationsWindow} className={classes.iconButton}>
+      <IconButton aria-label="Notifications" onClick={requestShowNotificationsWindow} className={classes.iconButton}>
         {shouldPauseNotifications
           ? <NotificationsPausedIcon className={classes.icon} />
           : <NotificationsIcon className={classes.icon} />}

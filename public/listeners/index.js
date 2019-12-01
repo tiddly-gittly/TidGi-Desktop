@@ -184,10 +184,6 @@ const loadListeners = () => {
     e.returnValue = getPauseNotificationsInfo();
   });
 
-  ipcMain.on('get-pause-notifications-info', (e) => {
-    e.returnValue = getPauseNotificationsInfo();
-  });
-
   ipcMain.on('request-update-pause-notifications-info', () => {
     updatePauseNotificationsInfo();
   });

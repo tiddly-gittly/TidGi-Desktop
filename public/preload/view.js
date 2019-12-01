@@ -169,6 +169,7 @@ ipcRenderer.on('should-pause-notifications-changed', (e, val) => {
 
 // Fix chrome.runtime.sendMessage is undefined for FastMail
 // https://github.com/quanglam2807/singlebox/issues/21
+const initialShouldPauseNotifications = ipcRenderer.sendSync('get-pause-notifications-info') != null;
 webFrame.executeJavaScript(`
 window.chrome = {
   runtime: {
@@ -198,7 +199,7 @@ window.desktop = undefined;
 (function() {
   const oldNotification = window.Notification;
 
-  let shouldPauseNotifications = false;
+  let shouldPauseNotifications = ${initialShouldPauseNotifications};
 
   window.addEventListener('message', function(e) {
     if (!e.data || e.data.type !== 'should-pause-notifications-changed') return;

@@ -28,7 +28,7 @@ import {
   requestShowAddWorkspaceWindow,
   requestShowEditWorkspaceWindow,
   requestShowLicenseRegistrationWindow,
-  requestShowPauseNotificationsWindow,
+  requestShowNotificationsWindow,
 } from '../../senders';
 
 const { remote } = window.require('electron');
@@ -211,7 +211,7 @@ const Main = ({
           </div>
           {!navigationBar && (
           <div className={classes.end}>
-            <IconButton aria-label="Notifications" onClick={requestShowPauseNotificationsWindow} className={classes.iconButton}>
+            <IconButton aria-label="Notifications" onClick={requestShowNotificationsWindow} className={classes.iconButton}>
               {shouldPauseNotifications ? <NotificationsPausedIcon /> : <NotificationsIcon />}
             </IconButton>
           </div>

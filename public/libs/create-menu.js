@@ -13,7 +13,7 @@ const addWorkspaceWindow = require('../windows/add-workspace');
 const preferencesWindow = require('../windows/preferences');
 const editWorkspaceWindow = require('../windows/edit-workspace');
 const licenseRegistrationWindow = require('../windows/license-registration');
-const pauseNotificationsWindow = require('../windows/notifications');
+const notificationsWindow = require('../windows/notifications');
 
 
 const { getPreference } = require('./preferences');
@@ -238,7 +238,7 @@ function createMenu() {
             {
               label: 'Notifications Window',
               click: () => {
-                const win = pauseNotificationsWindow.get();
+                const win = notificationsWindow.get();
                 if (win != null) {
                   if (win.webContents.isDevToolsOpened()) {
                     win.webContents.closeDevTools();
@@ -408,6 +408,11 @@ function createMenu() {
         },
         { type: 'separator' },
         {
+          label: 'Notifications...',
+          click: () => notificationsWindow.show(),
+        },
+        { type: 'separator' },
+        {
           label: 'Clear Browsing Data...',
           accelerator: 'CmdOrCtrl+Shift+Delete',
           click: () => {
@@ -454,6 +459,11 @@ function createMenu() {
           label: 'Preferences...',
           accelerator: 'Ctrl+,',
           click: () => preferencesWindow.show(),
+        },
+        { type: 'separator' },
+        {
+          label: 'Notifications...',
+          click: () => notificationsWindow.show(),
         },
         { type: 'separator' },
         {
