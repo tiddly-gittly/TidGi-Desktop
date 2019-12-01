@@ -40,11 +40,12 @@ window.onload = () => {
   }
 
   const spellChecker = ipcRenderer.sendSync('get-preference', 'spellChecker');
+  const spellCheckerLanguages = ipcRenderer.sendSync('get-preference', 'spellCheckerLanguages');
 
   if (spellChecker) {
     window.spellCheckHandler = new SpellCheckHandler();
     setTimeout(() => window.spellCheckHandler.attachToInput(), 1000);
-    window.spellCheckHandler.switchLanguage('en-US');
+    window.spellCheckHandler.switchLanguage(spellCheckerLanguages[0]);
   }
 
   window.contextMenuBuilder = new ContextMenuBuilder(
