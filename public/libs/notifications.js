@@ -31,7 +31,7 @@ const getCurrentScheduledDateTime = () => {
       const to = new Date();
       to.setDate(to.getDate() + 1);
       to.setHours(mockToDate.getHours());
-      to.setMinutes(mockToDate.getMinutes()); // til 7 AM of tommorow
+      to.setMinutes(mockToDate.getMinutes()); // til 7 AM of tomorrow
       return { from, to };
     }
     if (currentMinute >= 0 && currentMinute <= toMinute) {
