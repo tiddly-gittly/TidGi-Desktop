@@ -22,7 +22,7 @@ const { remote } = window.require('electron');
 
 const styles = (theme) => ({
   card: {
-    width: 350,
+    width: 450,
     boxSizing: 'border-box',
     borderRadius: 4,
     padding: theme.spacing.unit * 1.5,
@@ -114,7 +114,7 @@ const AppCard = (props) => {
                 onUpdateMode('custom');
               }}
             >
-              Create custom app from&nbsp;
+              Create custom workspace from&nbsp;
               {name}
             </MenuItem>
           </StatedMenu>
