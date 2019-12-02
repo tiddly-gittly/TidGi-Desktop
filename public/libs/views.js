@@ -108,45 +108,52 @@ const addView = (browserWindow, workspace) => {
     const appDomain = extractDomain(getWorkspace(workspace.id).homeUrl);
     const nextDomain = extractDomain(nextUrl);
 
+    // open new window normally if requested, or domain is not defined(about:)
+    if (
+      nextDomain === null
+      || disposition === 'new-window'
+    ) {
+      // https://gist.github.com/Gvozd/2cec0c8c510a707854e439fb15c561b0
+      Object.assign(options, {
+        parent: browserWindow,
+      });
+      return;
+    }
+
     // load in same window
     if (
       // Google: Switch account
       nextDomain === 'accounts.google.com'
-      // https://github.com/quanglam2807/appifier/issues/70
-      || nextDomain === 'feedly.com'
       // https://github.com/quanglam2807/webcatalog/issues/315
-      || (appDomain.includes('asana.com') && nextDomain.includes('asana.com'))
+      || nextDomain === appDomain
     ) {
       e.preventDefault();
       view.webContents.loadURL(nextUrl);
       return;
     }
 
-    // open new window normally if domain is not defined or same domain (about:)
-    if (
-      nextDomain === null
-      || nextDomain === appDomain
-      || nextUrl.indexOf('oauth') > -1
-      // https://github.com/quanglam2807/webcatalog/issues/282#issuecomment-513547183
-      || (appDomain.includes('mail.google.com') && nextDomain.includes('gmail.com'))
-      || (appDomain.includes('gmail.com') && nextDomain.includes('mail.google.com'))
-    ) {
-      // e.preventDefault();
-      // https://gist.github.com/Gvozd/2cec0c8c510a707854e439fb15c561b0
-      // options.webPreferences.affinity is not needed
-      Object.assign(options, {
-        parent: browserWindow,
-      });
-      // default behavior is similar so no need for overwriting
-      // const popupWin = new BrowserWindow(options);
-      // e.newGuest = popupWin;
-
-      return;
+    // open external url in browser
+    if (disposition === 'foreground-tab') {
+      e.preventDefault();
+      shell.openExternal(nextUrl);
     }
+  });
 
-    // open external url in browser if domain doesn't match.
-    e.preventDefault();
-    shell.openExternal(nextUrl);
+  // Handle downloads
+  // https://electronjs.org/docs/api/download-item
+  view.webContents.session.on('will-download', (event, item) => {
+    const {
+      askForDownloadPath,
+      downloadPath,
+    } = getPreferences();
+
+    // Set the save path, making Electron not to prompt a save dialog.
+    if (!askForDownloadPath) {
+      const finalFilePath = path.join(downloadPath, item.getFilename());
+      if (!fsExtra.existsSync(finalFilePath)) {
+        item.setSavePath(finalFilePath);
+      }
+    }
   });
 
   // Handle downloads
