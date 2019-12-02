@@ -120,10 +120,12 @@ const updatePauseNotificationsInfo = () => {
 
   // Send update to webview
   const shouldPauseNotifications = pauseNotificationsInfo !== null;
+  const shouldMuteAudio = shouldPauseNotifications && getPreference('pauseNotificationsMuteAudio');
   const views = mainWindow.get().getBrowserViews();
   if (views) {
     views.forEach((view) => {
       view.webContents.send('should-pause-notifications-changed', shouldPauseNotifications);
+      view.webContents.setAudioMuted(shouldMuteAudio);
     });
   }
   sendToAllWindows('should-pause-notifications-changed', pauseNotificationsInfo);

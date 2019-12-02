@@ -99,6 +99,7 @@ const defaultPreferences = {
   pauseNotificationsBySchedule: false,
   pauseNotificationsByScheduleFrom: getDefaultPauseNotificationsByScheduleFrom(),
   pauseNotificationsByScheduleTo: getDefaultPauseNotificationsByScheduleTo(),
+  pauseNotificationsMuteAudio: false,
   registered: false,
   rememberLastPageVisited: false,
   shareWorkspaceBrowsingData: false,
