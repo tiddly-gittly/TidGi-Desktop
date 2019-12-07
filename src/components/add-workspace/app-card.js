@@ -25,7 +25,7 @@ const styles = (theme) => ({
     width: 450,
     boxSizing: 'border-box',
     borderRadius: 4,
-    padding: theme.spacing.unit * 1.5,
+    padding: theme.spacing.unit,
     display: 'flex',
   },
   appName: {
@@ -41,10 +41,10 @@ const styles = (theme) => ({
     textOverflow: 'ellipsis',
   },
   paperIcon: {
-    width: 64,
-    height: 64,
+    width: 48,
+    height: 48,
     borderRadius: 8,
-    boxShadow: 'rgba(0, 0, 0, 0.16) 0px 1px 2px, rgba(0, 0, 0, 0.23) 0px 1px 2px',
+    boxShadow: theme.shadows[1],
   },
   actionContainer: {
     display: 'flex',
@@ -90,7 +90,7 @@ const AppCard = (props) => {
           />
         </div>
         <div className={classes.infoContainer}>
-          <Typography variant="subtitle1" className={classes.appName}>
+          <Typography variant="subtitle2" className={classes.appName}>
             {name}
           </Typography>
           <Typography variant="body1" color="textSecondary" className={classes.appUrl}>
@@ -114,7 +114,7 @@ const AppCard = (props) => {
                 onUpdateMode('custom');
               }}
             >
-              Create custom workspace from&nbsp;
+              Create Custom Workspace from&nbsp;
               {name}
             </MenuItem>
           </StatedMenu>

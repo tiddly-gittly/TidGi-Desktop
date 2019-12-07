@@ -43,6 +43,7 @@ const {
 
 const createMenu = require('../libs/create-menu');
 
+const aboutWindow = require('../windows/about');
 const addWorkspaceWindow = require('../windows/add-workspace');
 const codeInjectionWindow = require('../windows/code-injection');
 const editWorkspaceWindow = require('../windows/edit-workspace');
@@ -136,6 +137,10 @@ const loadListeners = () => {
         ipcMain.emit('request-show-require-restart-dialog');
       }
     });
+  });
+
+  ipcMain.on('request-show-about-window', () => {
+    aboutWindow.show();
   });
 
   ipcMain.on('request-show-preferences-window', () => {

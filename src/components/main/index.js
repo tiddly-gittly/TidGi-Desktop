@@ -104,7 +104,7 @@ const styles = (theme) => ({
     textTransform: 'uppercase',
     marginLeft: theme.spacing.unit,
     marginRight: theme.spacing.unit,
-    boxShadow: 'rgba(0, 0, 0, 0.16) 0px 1px 2px, rgba(0, 0, 0, 0.23) 0px 1px 2px',
+    boxShadow: theme.shadows[1],
   },
   inlineBlock: {
     display: 'inline-block',

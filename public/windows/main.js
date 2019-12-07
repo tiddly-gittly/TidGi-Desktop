@@ -11,19 +11,19 @@ const path = require('path');
 
 const { REACT_PATH } = require('../constants/paths');
 const { getPreference } = require('../libs/preferences');
+const formatBytes = require('../libs/format-bytes');
 
 let win;
 let mb = {};
+let attachToMenubar;
 
 const get = () => {
-  const attachToMenubar = getPreference('attachToMenubar');
   if (attachToMenubar) return mb.window;
   return win;
 };
 
 const createAsync = () => {
-  const updaterEnabled = process.env.SNAP == null && !process.mas && !process.windowsStore;
-  const attachToMenubar = getPreference('attachToMenubar');
+  attachToMenubar = getPreference('attachToMenubar');
   if (attachToMenubar) {
     const menubarWindowState = windowStateKeeper({
       file: 'window-state-menubar.json',
@@ -42,34 +42,11 @@ const createAsync = () => {
         height: menubarWindowState.height,
         webPreferences: {
           nodeIntegration: true,
+          webSecurity: false,
           preload: path.join(__dirname, '..', 'preload', 'menubar.js'),
         },
       },
     });
-
-    const contextMenu = Menu.buildFromTemplate([
-      { role: 'about' },
-      {
-        label: 'Check for Updates...',
-        click: () => {
-          global.updateSilent = false;
-          autoUpdater.checkForUpdates();
-        },
-        visible: updaterEnabled,
-      },
-      { type: 'separator' },
-      {
-        label: 'Preferences...',
-        click: () => ipcMain.emit('request-show-preferences-window'),
-      },
-      { type: 'separator' },
-      {
-        label: 'Quit',
-        click: () => {
-          mb.app.quit();
-        },
-      },
-    ]);
 
     return new Promise((resolve, reject) => {
       try {
@@ -85,6 +62,74 @@ const createAsync = () => {
         });
 
         mb.on('ready', () => {
+          const registered = getPreference('registered');
+          const updaterEnabled = process.env.SNAP == null && !process.mas && !process.windowsStore;
+
+          const updaterMenuItem = {
+            label: 'Check for Updates...',
+            click: () => {
+              global.updateSilent = false;
+              autoUpdater.checkForUpdates();
+            },
+            visible: updaterEnabled,
+          };
+          if (global.updateDownloaded) {
+            updaterMenuItem.label = 'Restart to Apply Updates...';
+            updaterMenuItem.click = () => {
+              setImmediate(() => {
+                app.removeAllListeners('window-all-closed');
+                if (get() != null) {
+                  get().forceClose = true;
+                  get().close();
+                }
+                autoUpdater.quitAndInstall(false);
+              });
+            };
+          } else if (global.updaterProgressObj) {
+            const { transferred, total, bytesPerSecond } = global.updaterProgressObj;
+            updaterMenuItem.label = `Downloading Updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
+            updaterMenuItem.enabled = false;
+          }
+
+          const contextMenu = Menu.buildFromTemplate([
+            {
+              label: 'About Singlebox',
+              click: () => ipcMain.emit('request-show-about-window'),
+            },
+            { type: 'separator' },
+            {
+              label: registered ? 'Registered' : 'Registration...',
+              enabled: !registered,
+              click: registered ? null : () => ipcMain.emit('request-show-license-registration-window'),
+            },
+            { type: 'separator' },
+            updaterMenuItem,
+            { type: 'separator' },
+            {
+              label: 'Preferences...',
+              accelerator: 'CmdOrCtrl+,',
+              click: () => ipcMain.emit('request-show-preferences-window'),
+            },
+            { type: 'separator' },
+            {
+              label: 'Notifications...',
+              click: () => ipcMain.emit('request-show-notifications-window'),
+            },
+            { type: 'separator' },
+            {
+              label: 'Clear Browsing Data...',
+              accelerator: 'CmdOrCtrl+Shift+Delete',
+              click: () => ipcMain.emit('request-clear-browsing-data'),
+            },
+            { type: 'separator' },
+            {
+              label: 'Quit',
+              click: () => {
+                mb.app.quit();
+              },
+            },
+          ]);
+
           mb.tray.on('right-click', () => {
             mb.tray.popUpContextMenu(contextMenu);
           });
@@ -162,8 +207,6 @@ const createAsync = () => {
 };
 
 const show = () => {
-  const attachToMenubar = getPreference('attachToMenubar');
-
   if (attachToMenubar) {
     if (mb == null) {
       createAsync();

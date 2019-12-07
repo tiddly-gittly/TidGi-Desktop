@@ -6,6 +6,7 @@ import LinearProgress from '@material-ui/core/LinearProgress';
 import Grid from '@material-ui/core/Grid';
 import BottomNavigation from '@material-ui/core/BottomNavigation';
 import BottomNavigationAction from '@material-ui/core/BottomNavigationAction';
+import Paper from '@material-ui/core/Paper';
 
 import SearchIcon from '@material-ui/icons/Search';
 import ViewListIcon from '@material-ui/icons/ViewList';
@@ -42,9 +43,6 @@ const styles = (theme) => ({
   },
   paper: {
     zIndex: 1,
-    display: 'flex',
-    paddingLeft: theme.spacing.unit,
-    paddingRight: theme.spacing.unit,
   },
   scrollContainer: {
     flex: 1,
@@ -65,6 +63,16 @@ const styles = (theme) => ({
   searchByAlgolia: {
     height: 20,
     cursor: 'pointer',
+  },
+  bottomNavigation: {
+    height: 40,
+  },
+  bottomNavigationActionWrapper: {
+    flexDirection: 'row',
+  },
+  bottomNavigationActionLabel: {
+    fontSize: '0.8rem !important',
+    paddingLeft: 4,
   },
 });
 
@@ -108,8 +116,12 @@ class AddWorkspace extends React.Component {
         return (
           <EmptyState icon={SearchIcon} title="No Matching Results">
             <Grid container spacing={16}>
-              <AddCustomAppCard />
-              <SubmitAppCard />
+              <Grid item xs={12}>
+                <AddCustomAppCard />
+              </Grid>
+              <Grid item xs={12}>
+                <SubmitAppCard />
+              </Grid>
             </Grid>
           </EmptyState>
         );
@@ -175,15 +187,33 @@ class AddWorkspace extends React.Component {
           </>
         ) : <Form />}
 
-        <BottomNavigation
-          showLabels
-          value={mode}
-          onChange={(e, value) => onUpdateMode(value)}
-          className={classes.bottomNavigation}
-        >
-          <BottomNavigationAction label="Catalog" value="catalog" icon={<ViewListIcon />} />
-          <BottomNavigationAction label="Custom Workspace" value="custom" icon={<CreateIcon />} />
-        </BottomNavigation>
+        <Paper elevation={2} className={classes.paper}>
+          <BottomNavigation
+            showLabels
+            value={mode}
+            onChange={(e, value) => onUpdateMode(value)}
+            classes={{ root: classes.bottomNavigation }}
+          >
+            <BottomNavigationAction
+              label="Catalog"
+              value="catalog"
+              icon={<ViewListIcon />}
+              classes={{
+                wrapper: classes.bottomNavigationActionWrapper,
+                label: classes.bottomNavigationActionLabel,
+              }}
+            />
+            <BottomNavigationAction
+              label="Custom Workspace"
+              value="custom"
+              icon={<CreateIcon />}
+              classes={{
+                wrapper: classes.bottomNavigationActionWrapper,
+                label: classes.bottomNavigationActionLabel,
+              }}
+            />
+          </BottomNavigation>
+        </Paper>
       </div>
     );
   }

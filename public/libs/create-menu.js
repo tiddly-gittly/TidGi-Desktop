@@ -15,8 +15,8 @@ const editWorkspaceWindow = require('../windows/edit-workspace');
 const licenseRegistrationWindow = require('../windows/license-registration');
 const notificationsWindow = require('../windows/notifications');
 
-
 const { getPreference } = require('./preferences');
+const formatBytes = require('./format-bytes');
 
 const {
   getWorkspaces,
@@ -36,19 +36,6 @@ const {
 } = require('./views');
 
 const FIND_IN_PAGE_HEIGHT = 42;
-
-// https://stackoverflow.com/a/18650828
-function formatBytes(bytes, decimals = 2) {
-  if (bytes === 0) return '0 Bytes';
-
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return `${parseFloat((bytes / k ** i).toFixed(dm))} ${sizes[i]}`;
-}
 
 function createMenu() {
   const registered = getPreference('registered');
@@ -366,7 +353,7 @@ function createMenu() {
     visible: updaterEnabled,
   };
   if (global.updateDownloaded) {
-    updaterMenuItem.label = 'Restart to apply updates...';
+    updaterMenuItem.label = 'Restart to Apply Updates...';
     updaterMenuItem.click = () => {
       setImmediate(() => {
         app.removeAllListeners('window-all-closed');
@@ -380,7 +367,7 @@ function createMenu() {
     };
   } else if (global.updaterProgressObj) {
     const { transferred, total, bytesPerSecond } = global.updaterProgressObj;
-    updaterMenuItem.label = `Downloading updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
+    updaterMenuItem.label = `Downloading Updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
     updaterMenuItem.enabled = false;
   }
 
@@ -403,7 +390,7 @@ function createMenu() {
         { type: 'separator' },
         {
           label: 'Preferences...',
-          accelerator: 'Cmd+,',
+          accelerator: 'CmdOrCtrl+,',
           click: () => preferencesWindow.show(),
         },
         { type: 'separator' },
@@ -457,7 +444,7 @@ function createMenu() {
         { type: 'separator' },
         {
           label: 'Preferences...',
-          accelerator: 'Ctrl+,',
+          accelerator: 'CmdOrCtrl+,',
           click: () => preferencesWindow.show(),
         },
         { type: 'separator' },

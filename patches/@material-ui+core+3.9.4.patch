@@ -1,0 +1,13 @@
+diff --git a/node_modules/@material-ui/core/MenuItem/MenuItem.js b/node_modules/@material-ui/core/MenuItem/MenuItem.js
+index bc82060..f042924 100644
+--- a/node_modules/@material-ui/core/MenuItem/MenuItem.js
++++ b/node_modules/@material-ui/core/MenuItem/MenuItem.js
+@@ -30,7 +30,7 @@ var styles = function styles(theme) {
+   return {
+     /* Styles applied to the root element. */
+     root: (0, _extends2.default)({}, theme.typography.subheading, {
+-      height: 24,
++      height: 16,
+       boxSizing: 'content-box',
+       width: 'auto',
+       overflow: 'hidden',

@@ -42,7 +42,7 @@ const styles = (theme) => ({
     textAlign: 'center',
     fontWeight: 500,
     textTransform: 'uppercase',
-    boxShadow: 'rgba(0, 0, 0, 0.16) 0px 1px 2px, rgba(0, 0, 0, 0.23) 0px 1px 2px',
+    boxShadow: theme.shadows[1],
   },
   avatarPicture: {
     height: 32,
