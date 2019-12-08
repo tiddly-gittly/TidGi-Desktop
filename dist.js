@@ -2,12 +2,29 @@
 const builder = require('electron-builder');
 const { notarize } = require('electron-notarize');
 
-const { Platform } = builder;
+const { Arch, Platform } = builder;
 
 console.log(`Machine: ${process.platform}`);
 
+let targets;
+switch (process.platform) {
+  case 'darwin': {
+    targets = Platform.MAC.createTarget();
+    break;
+  }
+  case 'win32': {
+    targets = Platform.WINDOWS.createTarget(['nsis'], Arch.x64);
+    break;
+  }
+  default:
+  case 'linux': {
+    targets = Platform.LINUX.createTarget(['AppImage', 'snap'], Arch.x64);
+    break;
+  }
+}
+
 const opts = {
-  targets: Platform.MAC.createTarget(),
+  targets,
   config: {
     appId: 'com.singlebox.app',
     productName: 'Singlebox',
@@ -28,6 +45,19 @@ const opts = {
       entitlements: 'build-resources/entitlements.mac.plist',
       entitlementsInherit: 'build-resources/entitlements.mac.plist',
       darkModeSupport: true,
+    },
+    linux: {
+      category: 'Utility',
+      packageCategory: 'utils',
+    },
+    snap: {
+      publish: [
+        {
+          provider: 'snapStore',
+          channels: ['edge'],
+        },
+        'github',
+      ],
     },
     afterSign: (context) => {
       const shouldNotarize = process.platform === 'darwin' && context.electronPlatformName === 'darwin' && process.env.CI_BUILD_TAG;

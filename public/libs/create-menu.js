@@ -1,9 +1,9 @@
 const {
-  app,
   Menu,
+  app,
   clipboard,
+  ipcMain,
   shell,
-  dialog,
 } = require('electron');
 const { autoUpdater } = require('electron-updater');
 
@@ -28,7 +28,6 @@ const {
 const {
   setActiveWorkspaceView,
   removeWorkspaceView,
-  clearBrowsingData,
 } = require('./workspaces-views');
 
 const {
@@ -390,7 +389,6 @@ function createMenu() {
         { type: 'separator' },
         {
           label: 'Preferences...',
-          accelerator: 'CmdOrCtrl+,',
           click: () => preferencesWindow.show(),
         },
         { type: 'separator' },
@@ -401,19 +399,7 @@ function createMenu() {
         { type: 'separator' },
         {
           label: 'Clear Browsing Data...',
-          accelerator: 'CmdOrCtrl+Shift+Delete',
-          click: () => {
-            dialog.showMessageBox(preferencesWindow.get() || mainWindow.get(), {
-              type: 'question',
-              buttons: ['Clear Now', 'Cancel'],
-              message: 'Are you sure? All browsing data will be cleared. This action cannot be undone.',
-              cancelId: 1,
-            }, (response) => {
-              if (response === 0) {
-                clearBrowsingData();
-              }
-            });
-          },
+          click: () => ipcMain.emit('request-clear-browsing-data'),
         },
         { type: 'separator' },
         { role: 'services', submenu: [] },
@@ -456,18 +442,7 @@ function createMenu() {
         {
           label: 'Clear Browsing Data...',
           accelerator: 'CmdOrCtrl+Shift+Delete',
-          click: () => {
-            dialog.showMessageBox(preferencesWindow.get() || mainWindow.get(), {
-              type: 'question',
-              buttons: ['Clear Now', 'Cancel'],
-              message: 'Are you sure? All browsing data will be cleared. This action cannot be undone.',
-              cancelId: 1,
-            }, (response) => {
-              if (response === 0) {
-                clearBrowsingData();
-              }
-            });
-          },
+          click: () => ipcMain.emit('request-clear-browsing-data'),
         },
         { type: 'separator' },
         { role: 'quit', label: 'Exit' },

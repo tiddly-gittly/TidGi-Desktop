@@ -11,6 +11,7 @@
     "react/jsx-filename-extension": [1, { "extensions": [".js"] }],
     "react/forbid-prop-types": [0],
     "import/prefer-default-export": [0],
-    "camelcase": [0]
+    "camelcase": [0],
+    "linebreak-style": [0]
   }
 }

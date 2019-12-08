@@ -7,12 +7,7 @@ const sendToAllWindows = require('../libs/send-to-all-windows');
 // scope
 const v = '2018.2';
 
-const getDefaultDownloadsPath = () => {
-  if (process.platform === 'darwin') {
-    return path.join(app.getPath('home'), 'Downloads');
-  }
-  throw Error('Unsupported platform');
-};
+const getDefaultDownloadsPath = () => path.join(app.getPath('home'), 'Downloads');
 
 const getDefaultPauseNotificationsByScheduleFrom = () => {
   const d = new Date();

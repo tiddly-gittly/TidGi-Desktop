@@ -107,7 +107,6 @@ const createAsync = () => {
             { type: 'separator' },
             {
               label: 'Preferences...',
-              accelerator: 'CmdOrCtrl+,',
               click: () => ipcMain.emit('request-show-preferences-window'),
             },
             { type: 'separator' },
@@ -118,12 +117,11 @@ const createAsync = () => {
             { type: 'separator' },
             {
               label: 'Clear Browsing Data...',
-              accelerator: 'CmdOrCtrl+Shift+Delete',
               click: () => ipcMain.emit('request-clear-browsing-data'),
             },
             { type: 'separator' },
             {
-              label: 'Quit',
+              role: 'quit',
               click: () => {
                 mb.app.quit();
               },

@@ -203,9 +203,9 @@ const Preferences = ({
             }}
           />
         </ListItem>
-        <Divider />
         {window.process.platform === 'darwin' && (
           <>
+            <Divider />
             <ListItem classes={{ gutters: classes.listItemSwitchGutters }}>
               <ListItemText
                 primary="Swipe to navigate"
