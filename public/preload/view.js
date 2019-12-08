@@ -113,18 +113,10 @@ window.onload = () => {
   });
 
   // overwrite gmail email discard button
-  if (window.location.hostname.includes('mail.google.com') && window.location.href.includes('source=mailto')) {
-    const checkExist = setInterval(() => {
-      if (document.getElementById(':qz')) {
-        const discardButton = document.getElementById(':qz');
-        // https://stackoverflow.com/a/46986927
-        discardButton.addEventListener('click', (e) => {
-          e.stopPropagation();
-          ipcRenderer.send('request-go-home');
-        }, true);
-        clearInterval(checkExist);
-      }
-    }, 100); // check every 100ms
+  if (window.location.hostname.includes('mail.google.com')) {
+    const node = document.createElement('script');
+    node.innerHTML = 'window.close = () => { window.location.href = \'https://mail.google.com\' }';
+    document.body.appendChild(node);
   }
 
   // Fix WhatsApp requires Google Chrome 49+ bug
