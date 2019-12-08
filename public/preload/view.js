@@ -172,32 +172,31 @@ ipcRenderer.on('should-pause-notifications-changed', (e, val) => {
 // https://github.com/quanglam2807/singlebox/issues/21
 const initialShouldPauseNotifications = ipcRenderer.sendSync('get-pause-notifications-info') != null;
 webFrame.executeJavaScript(`
-window.chrome = {
-  runtime: {
-    sendMessage: () => {},
-    connect: () => {
-      return {
-        onMessage: {
-          addListener: () => {},
-          removeListener: () => {},
-        },
-        postMessage: () => {},
-        disconnect: () => {},
+(function() {
+  window.chrome = {
+    runtime: {
+      sendMessage: () => {},
+      connect: () => {
+        return {
+          onMessage: {
+            addListener: () => {},
+            removeListener: () => {},
+          },
+          postMessage: () => {},
+          disconnect: () => {},
+        }
       }
     }
   }
-}
 
-window.electronSafeIpc = {
-  send: () => null,
-  on: () => null,
-};
-window.desktop = undefined;
+  window.electronSafeIpc = {
+    send: () => null,
+    on: () => null,
+  };
+  window.desktop = undefined;
 
-
-// Customize Notification behavior
-// https://stackoverflow.com/questions/53390156/how-to-override-javascript-web-api-notification-object
-(function() {
+  // Customize Notification behavior
+  // https://stackoverflow.com/questions/53390156/how-to-override-javascript-web-api-notification-object
   const oldNotification = window.Notification;
 
   let shouldPauseNotifications = ${initialShouldPauseNotifications};
@@ -216,7 +215,7 @@ window.desktop = undefined;
   window.Notification.requestPermission = oldNotification.requestPermission;
   Object.defineProperty(Notification, 'permission', {
     get() {
-      return 'granted';
+      return oldNotification.permission;
     }
   });
 })();

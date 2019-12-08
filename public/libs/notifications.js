@@ -1,6 +1,9 @@
-const mainWindow = require('../windows/main');
 const { getPreference } = require('./preferences');
 const sendToAllWindows = require('./send-to-all-windows');
+const {
+  setViewsAudioPref,
+  setViewsNotificationsPref,
+} = require('./views');
 
 let pauseNotificationsInfo;
 
@@ -121,13 +124,8 @@ const updatePauseNotificationsInfo = () => {
   // Send update to webview
   const shouldPauseNotifications = pauseNotificationsInfo !== null;
   const shouldMuteAudio = shouldPauseNotifications && getPreference('pauseNotificationsMuteAudio');
-  const views = mainWindow.get().getBrowserViews();
-  if (views) {
-    views.forEach((view) => {
-      view.webContents.send('should-pause-notifications-changed', shouldPauseNotifications);
-      view.webContents.setAudioMuted(shouldMuteAudio);
-    });
-  }
+  setViewsAudioPref(shouldMuteAudio);
+  setViewsNotificationsPref(shouldPauseNotifications);
   sendToAllWindows('should-pause-notifications-changed', pauseNotificationsInfo);
 
   // set schedule for reupdating
