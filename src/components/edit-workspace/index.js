@@ -22,7 +22,10 @@ const styles = (theme) => ({
     background: theme.palette.background.paper,
     height: '100vh',
     width: '100vw',
-    padding: theme.spacing.unit * 3,
+    paddingTop: theme.spacing.unit * 3,
+    paddingBottom: theme.spacing.unit * 3,
+    paddingLeft: theme.spacing.unit * 2,
+    paddingRight: theme.spacing.unit * 2,
     display: 'flex',
     flexDirection: 'column',
   },
@@ -75,6 +78,8 @@ const styles = (theme) => ({
 
 const EditWorkspace = ({
   classes,
+  disableAudio,
+  disableNotifications,
   hibernateWhenUnused,
   homeUrl,
   homeUrlError,
@@ -168,6 +173,28 @@ const EditWorkspace = ({
             }}
           />
         </ListItem>
+        <ListItem disableGutters>
+          <ListItemText primary="Disable notifications" secondary="Prevent workspace from sending notifications." />
+          <Switch
+            color="primary"
+            checked={disableNotifications}
+            onChange={(e) => onUpdateForm({ disableNotifications: e.target.checked })}
+            classes={{
+              switchBase: classes.switchBase,
+            }}
+          />
+        </ListItem>
+        <ListItem disableGutters>
+          <ListItemText primary="Disable audio" secondary="Prevent workspace from playing audio." />
+          <Switch
+            color="primary"
+            checked={disableAudio}
+            onChange={(e) => onUpdateForm({ disableAudio: e.target.checked })}
+            classes={{
+              switchBase: classes.switchBase,
+            }}
+          />
+        </ListItem>
       </List>
     </div>
     <div>
@@ -186,6 +213,9 @@ EditWorkspace.defaultProps = {
 
 EditWorkspace.propTypes = {
   classes: PropTypes.object.isRequired,
+  disableAudio: PropTypes.bool.isRequired,
+  disableNotifications: PropTypes.bool.isRequired,
+  hibernateWhenUnused: PropTypes.bool.isRequired,
   homeUrl: PropTypes.string.isRequired,
   homeUrlError: PropTypes.string,
   isMailApp: PropTypes.bool.isRequired,
@@ -194,10 +224,11 @@ EditWorkspace.propTypes = {
   onSave: PropTypes.func.isRequired,
   onUpdateForm: PropTypes.func.isRequired,
   picturePath: PropTypes.string,
-  hibernateWhenUnused: PropTypes.bool.isRequired,
 };
 
 const mapStateToProps = (state) => ({
+  disableAudio: Boolean(state.editWorkspace.form.disableAudio),
+  disableNotifications: Boolean(state.editWorkspace.form.disableNotifications),
   hibernateWhenUnused: Boolean(state.editWorkspace.form.hibernateWhenUnused),
   homeUrl: state.editWorkspace.form.homeUrl,
   homeUrlError: state.editWorkspace.form.homeUrlError,

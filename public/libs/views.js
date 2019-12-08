@@ -230,11 +230,9 @@ const addView = (browserWindow, workspace) => {
   if (shouldMuteAudio !== undefined) {
     view.webContents.setAudioMuted(shouldMuteAudio);
   }
-  if (shouldPauseNotifications !== undefined) {
-    view.webContents.once('did-stop-loading', () => {
-      view.webContents.send('should-pause-notifications-changed', shouldPauseNotifications);
-    });
-  }
+  view.webContents.once('did-stop-loading', () => {
+    view.webContents.send('should-pause-notifications-changed', workspace.disableNotifications || shouldPauseNotifications);
+  });
 
   views[workspace.id] = view;
 
@@ -330,19 +328,30 @@ const removeView = (id) => {
 };
 
 const setViewsAudioPref = (_shouldMuteAudio) => {
-  shouldMuteAudio = _shouldMuteAudio;
-  Object.values(views).forEach((view) => {
+  if (_shouldMuteAudio !== undefined) {
+    shouldMuteAudio = _shouldMuteAudio;
+  }
+  Object.keys(views).forEach((id) => {
+    const view = views[id];
     if (view != null) {
-      view.webContents.setAudioMuted(_shouldMuteAudio);
+      const workspace = getWorkspace(id);
+      view.webContents.setAudioMuted(workspace.disableAudio || shouldMuteAudio);
     }
   });
 };
 
 const setViewsNotificationsPref = (_shouldPauseNotifications) => {
-  shouldPauseNotifications = _shouldPauseNotifications;
-  Object.values(views).forEach((view) => {
+  if (_shouldPauseNotifications !== undefined) {
+    shouldPauseNotifications = _shouldPauseNotifications;
+  }
+  Object.keys(views).forEach((id) => {
+    const view = views[id];
     if (view != null) {
-      view.webContents.send('should-pause-notifications-changed', _shouldPauseNotifications);
+      const workspace = getWorkspace(id);
+      view.webContents.send(
+        'should-pause-notifications-changed',
+        Boolean(workspace.disableNotifications || shouldPauseNotifications),
+      );
     }
   });
 };

@@ -44,6 +44,9 @@ export const save = () => (dispatch, getState) => {
     {
       name: form.name,
       homeUrl: form.homeUrl.trim(),
+      // prefs
+      disableAudio: Boolean(form.disableAudio),
+      disableNotifications: Boolean(form.disableNotifications),
       hibernateWhenUnused: Boolean(form.hibernateWhenUnused),
     },
   );

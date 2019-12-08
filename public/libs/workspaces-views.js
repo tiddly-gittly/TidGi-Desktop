@@ -8,6 +8,7 @@ const {
   getPreviousWorkspace,
   getWorkspace,
   getWorkspaces,
+  setWorkspace,
   setWorkspacePicture,
 } = require('./workspaces');
 
@@ -15,6 +16,8 @@ const {
   addView,
   setActiveView,
   removeView,
+  setViewsAudioPref,
+  setViewsNotificationsPref,
 } = require('./views');
 
 const mainWindow = require('../windows/main');
@@ -29,6 +32,12 @@ const createWorkspaceView = (name, homeUrl, picture) => {
   if (picture) {
     setWorkspacePicture(newWorkspace.id, picture);
   }
+};
+
+const setWorkspaceView = (id, opts) => {
+  setWorkspace(id, opts);
+  setViewsAudioPref();
+  setViewsNotificationsPref();
 };
 
 const setActiveWorkspaceView = (id) => {
@@ -70,9 +79,10 @@ const loadURL = (url, id) => {
 };
 
 module.exports = {
-  createWorkspaceView,
-  setActiveWorkspaceView,
-  removeWorkspaceView,
   clearBrowsingData,
+  createWorkspaceView,
   loadURL,
+  removeWorkspaceView,
+  setActiveWorkspaceView,
+  setWorkspaceView,
 };

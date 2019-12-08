@@ -23,17 +23,17 @@ const {
   getActiveWorkspace,
   getWorkspace,
   getWorkspaces,
-  setWorkspace,
   setWorkspacePicture,
   removeWorkspacePicture,
 } = require('../libs/workspaces');
 
 const {
-  createWorkspaceView,
-  setActiveWorkspaceView,
-  removeWorkspaceView,
   clearBrowsingData,
+  createWorkspaceView,
   loadURL,
+  removeWorkspaceView,
+  setActiveWorkspaceView,
+  setWorkspaceView,
 } = require('../libs/workspaces-views');
 
 const {
@@ -243,7 +243,7 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-set-workspace', (e, id, opts) => {
-    setWorkspace(id, opts);
+    setWorkspaceView(id, opts);
     createMenu();
   });
 
