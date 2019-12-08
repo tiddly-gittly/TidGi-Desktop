@@ -1,5 +1,6 @@
 const {
   BrowserView,
+  BrowserWindow,
   app,
   session,
   shell,
@@ -107,7 +108,7 @@ const addView = (browserWindow, workspace) => {
     }
   });
 
-  view.webContents.on('new-window', (e, nextUrl, frameName, disposition, options) => {
+  const handleNewWindow = (e, nextUrl, frameName, disposition, options) => {
     const appDomain = extractDomain(getWorkspace(workspace.id).homeUrl);
     const nextDomain = extractDomain(nextUrl);
 
@@ -117,9 +118,18 @@ const addView = (browserWindow, workspace) => {
       || disposition === 'new-window'
     ) {
       // https://gist.github.com/Gvozd/2cec0c8c510a707854e439fb15c561b0
+      /*
       Object.assign(options, {
         parent: browserWindow,
       });
+      */
+      e.preventDefault();
+      Object.assign(options, {
+        parent: browserWindow,
+      });
+      const popupWin = new BrowserWindow(options);
+      popupWin.webContents.on('new-window', handleNewWindow);
+      e.newGuest = popupWin;
       return;
     }
 
@@ -131,7 +141,7 @@ const addView = (browserWindow, workspace) => {
       || nextDomain === appDomain
     ) {
       e.preventDefault();
-      view.webContents.loadURL(nextUrl);
+      e.sender.loadURL(nextUrl);
       return;
     }
 
@@ -140,7 +150,8 @@ const addView = (browserWindow, workspace) => {
       e.preventDefault();
       shell.openExternal(nextUrl);
     }
-  });
+  };
+  view.webContents.on('new-window', handleNewWindow);
 
   // Handle downloads
   // https://electronjs.org/docs/api/download-item
