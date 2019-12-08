@@ -124,6 +124,7 @@ const hunspellLanguagesMap = {
 };
 
 const Preferences = ({
+  allowPrerelease,
   askForDownloadPath,
   attachToMenubar,
   classes,
@@ -524,7 +525,7 @@ const Preferences = ({
     </Paper>
 
     <Typography variant="subtitle2" className={classes.sectionTitle}>
-      Developers
+      Advanced
     </Typography>
     <Paper className={classes.paper}>
       <List dense>
@@ -536,6 +537,22 @@ const Preferences = ({
         <ListItem button onClick={() => requestShowCodeInjectionWindow('css')}>
           <ListItemText primary="CSS Code Injection" secondary={cssCodeInjection ? 'Set' : 'Not set'} />
           <ChevronRightIcon color="action" />
+        </ListItem>
+        <Divider />
+        <ListItem classes={{ gutters: classes.listItemSwitchGutters }}>
+          <ListItemText
+            primary="Receive pre-release updates"
+          />
+          <Switch
+            checked={allowPrerelease}
+            onChange={(e) => {
+              requestSetPreference('allowPrerelease', e.target.checked);
+              requestShowRequireRestartDialog();
+            }}
+            classes={{
+              switchBase: classes.switchBase,
+            }}
+          />
         </ListItem>
       </List>
     </Paper>
@@ -560,6 +577,7 @@ Preferences.defaultProps = {
 };
 
 Preferences.propTypes = {
+  allowPrerelease: PropTypes.bool.isRequired,
   askForDownloadPath: PropTypes.bool.isRequired,
   attachToMenubar: PropTypes.bool.isRequired,
   classes: PropTypes.object.isRequired,
@@ -586,6 +604,7 @@ Preferences.propTypes = {
 };
 
 const mapStateToProps = (state) => ({
+  allowPrerelease: state.preferences.allowPrerelease,
   askForDownloadPath: state.preferences.askForDownloadPath,
   attachToMenubar: state.preferences.attachToMenubar,
   cssCodeInjection: state.preferences.cssCodeInjection,

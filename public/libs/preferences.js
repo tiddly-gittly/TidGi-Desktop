@@ -89,6 +89,7 @@ const getDefaultSpellCheckerLanguages = () => {
 };
 
 const defaultPreferences = {
+  allowPrerelease: false,
   askForDownloadPath: true,
   attachToMenubar: false,
   cssCodeInjection: null,

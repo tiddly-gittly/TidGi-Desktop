@@ -1,5 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 const { app, protocol, ipcMain } = require('electron');
+const { autoUpdater } = require('electron-updater');
 
 const loadListeners = require('./listeners');
 
@@ -61,6 +62,8 @@ if (!gotTheLock) {
     global.attachToMenubar = getPreference('attachToMenubar');
     global.showNavigationBar = getPreference('navigationBar');
     global.MAILTO_URLS = MAILTO_URLS;
+
+    autoUpdater.allowPrerelease = getPreference('allowPrerelease');
 
     commonInit();
   });
