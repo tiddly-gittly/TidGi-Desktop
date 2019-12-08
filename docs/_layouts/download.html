@@ -1,0 +1,162 @@
+---
+layout: default
+---
+<div class="hero-body">
+  <div class="container">
+    <div class="has-text-centered">
+      <h1 class="title is-3">
+        All Your Apps in One Single Window
+      </h1>
+      <h2 class="subtitle">
+        Declutter your workflow and boost productivity with Singlebox.
+      </h2>
+
+      {% if page.platform == "mac" %}
+      <div class="buttons is-centered">
+        <a class="button is-medium is-black" href="https://github.com/quanglam2807/singlebox/releases/download/v{{ site.singlebox_version }}/Singlebox-{{ site.singlebox_version }}.dmg">
+          <i class="fab fa-apple"></i>
+          <span>&nbsp; Download for macOS</span>
+        </a>
+        <a class="button is-medium is-link" href="https://webcatalog.onfastspring.com/singlebox/singleboxapp">
+          <span>Buy Now - $9<small class="price-end">.99</small></span>
+        </a>
+      </div>
+      <p><small>Version {{ site.singlebox_version }} (<a href="https://github.com/quanglam2807/singlebox/releases">Release Notes</a>). macOS 10.10 or later, 64-bit.</small></p>
+      <br />
+      <p>Also available on&nbsp;&nbsp;&nbsp;<a href="/download/windows"><i class="fab fa-windows"></i> Windows</a> | <a href="/download/linux"><i class="fab fa-linux"></i> Linux</a>.</p>
+      {% elsif page.platform == "linux" %}
+      <div class="buttons is-centered">
+        <a href="https://snapcraft.io/singlebox" title="Snap Store" class="download-btn">
+          <img src="/images/snap-store.png">
+        </a>
+        <a class="button is-medium is-link" href="https://webcatalog.onfastspring.com/singleboxapp">
+          <span>&nbsp; Buy Now - $9<small class="price-end">.99</small></span>
+        </a>
+      </div>
+      <p><small>Also available as <a href="https://github.com/quanglam2807/singlebox/releases/download/v{{ site.singlebox_version }}/Singlebox-{{ site.singlebox_version }}.AppImage">AppImage</a>.</small></p>
+      <p><small>Version {{ site.singlebox_version }} (<a href="https://github.com/quanglam2807/singlebox/releases">Release Notes</a>). Linux, 64-bit.</small></p>
+      <br />
+      <p>Also available on&nbsp;&nbsp;&nbsp;<a href="/download/mac"><i class="fab fa-apple"></i> macOS</a> | <a href="/download/windows"><i class="fab fa-windows"></i> Windows</a>.</p>
+      {% elsif page.platform == "windows" %}
+      <div class="buttons is-centered">
+        <a class="button is-medium is-black" href="https://github.com/quanglam2807/singlebox/releases/download/v{{ site.singlebox_version }}/singlebox-setup-{{ site.singlebox_version }}.exe">
+          <i class="fab fa-windows"></i>
+          <span>&nbsp; Download for Windows</span>
+        </a>
+        <a class="button is-medium is-link" href="https://webcatalog.onfastspring.com/singleboxapp">
+        <span>&nbsp; Buy Now - $9<small class="price-end">.99</small></span>
+        </a>
+      </div>
+      <p><small>Version {{ site.singlebox_version }} (<a href="https://github.com/quanglam2807/singlebox/releases">Release Notes</a>). Windows 7 and later, 64-bit.</small></p>
+      <br />
+      <p>Also available on&nbsp;&nbsp;&nbsp;<a href="/download/mac"><i class="fab fa-apple"></i> macOS</a> | <a href="/download/linux"><i class="fab fa-linux"></i> Linux</a>.</p>
+      {% else %}
+      <div id="mac">
+        <div class="buttons is-centered">
+          <a class="button is-medium is-black" href="https://github.com/quanglam2807/singlebox/releases/download/v{{ site.singlebox_version }}/Singlebox-{{ site.singlebox_version }}.dmg">
+            <i class="fab fa-apple"></i>
+            <span>&nbsp; Download for macOS</span>
+          </a>
+          <a class="button is-medium is-link" href="https://webcatalog.onfastspring.com/singlebox/singleboxapp">
+            <span>Buy Now - $9<small class="price-end">.99</small></span>
+          </a>
+        </div>
+        <p><small>Version {{ site.singlebox_version }} (<a href="https://github.com/quanglam2807/singlebox/releases">Release Notes</a>). macOS 10.10 or later, 64-bit.</small></p>
+        <br />
+        <p>Also available on&nbsp;&nbsp;&nbsp;<a href="/download/windows"><i class="fab fa-windows"></i> Windows</a> | <a href="/download/linux"><i class="fab fa-linux"></i> Linux</a>.</p>
+      </div>
+      <div id="linux" style="display: none;">
+        <div class="buttons is-centered">
+          <a href="https://snapcraft.io/singlebox" title="Snap Store" class="download-btn">
+            <img src="/images/snap-store.png">
+          </a>
+          <a class="button is-medium is-link" href="https://webcatalog.onfastspring.com/singleboxapp">
+            <span>&nbsp; Buy Now - $9<small class="price-end">.99</small></span>
+          </a>
+        </div>
+        <p><small>Also available as <a href="https://github.com/quanglam2807/singlebox/releases/download/v{{ site.singlebox_version }}/Singlebox-{{ site.singlebox_version }}.AppImage">AppImage</a>.</small></p>
+        <p><small>Version {{ site.singlebox_version }} (<a href="https://github.com/quanglam2807/singlebox/releases">Release Notes</a>). Linux, 64-bit.</small></p>
+        <br />
+        <p>Also available on&nbsp;&nbsp;&nbsp;<a href="/download/mac"><i class="fab fa-apple"></i> macOS</a> | <a href="/download/windows"><i class="fab fa-windows"></i> Windows</a>.</p>
+      </div>
+      <div id="windows" style="display: none;">
+        <div class="buttons is-centered">
+          <a class="button is-medium is-black" href="https://github.com/quanglam2807/singlebox/releases/download/v{{ site.singlebox_version }}/singlebox-setup-{{ site.singlebox_version }}.exe">
+            <i class="fab fa-windows"></i>
+            <span>&nbsp; Download for Windows</span>
+          </a>
+          <a class="button is-medium is-link" href="https://webcatalog.onfastspring.com/singleboxapp">
+          <span>&nbsp; Buy Now - $9<small class="price-end">.99</small></span>
+          </a>
+        </div>
+        <p><small>Version {{ site.singlebox_version }} (<a href="https://github.com/quanglam2807/singlebox/releases">Release Notes</a>). Windows 7 and later, 64-bit.</small></p>
+        <br />
+        <p>Also available on&nbsp;&nbsp;&nbsp;<a href="/download/mac"><i class="fab fa-apple"></i> macOS</a> | <a href="/download/linux"><i class="fab fa-linux"></i> Linux</a>.</p>
+      </div>
+      <script>
+        if (/Linux/.test(window.navigator.platform)) {
+          document.getElementById('mac').style.display = 'none';
+          document.getElementById('linux').style.display = '';
+        }
+        else if (['Win32', 'Win64', 'Windows', 'WinCE'].indexOf(window.navigator.platform) !== -1) {
+          document.getElementById('mac').style.display = 'none';
+          document.getElementById('windows').style.display = '';
+        }
+      </script>
+      {% endif %}
+      <br />
+
+      <p>
+        <a href="/images/demos/main.png">
+          <img src="/images/demos/main.png" alt="Singlebox" class="demo_main">
+        </a>
+      </p>
+    </div>
+    <div class="content is-medium">
+      <hr />
+      <p>Web applications are becoming more and more powerful but running each of these web apps in a separate tab in your browser can be a real pain. Singlebox lets you run these web apps in a single well-organized window as independent workspaces which you can switch between easily using keyboard shortcuts. Additionally, each workspace is sandboxed, protecting you from cross-website trackers and preserving your privacy.</p>
+      <hr />
+    </div>
+    <div class="content">
+      <div class="columns is-multiline">
+        <div class="column is-full-mobile is-half-tablet is-half-desktop is-one-third-widescreen has-text-centered">
+          <a href="/images/demos/single-window.png">
+            <img src="/images/demos/single-window.png" alt="Single Window" class="demo">
+          </a>
+          <p><small><b>Single Window</b> - Switch between multiple apps quickly.</small></p>
+        </div>
+        <div class="column is-full-mobile is-half-tablet is-half-desktop is-one-third-widescreen has-text-centered">
+          <a href="/images/demos/catalog.png">
+            <img src="/images/demos/catalog.png" alt="Catalog" class="demo">
+          </a>
+          <p><small><b>Catalog</b> - Add apps quickly from our curated catalog.</small></p>
+        </div>
+        <div class="column is-full-mobile is-half-tablet is-half-desktop is-one-third-widescreen has-text-centered">
+          <a href="/images/demos/custom-apps.png">
+            <img src="/images/demos/custom-apps.png" alt="Custom Apps" class="demo">
+          </a>
+          <p><small><b>Custom Apps</b> - Create apps easily from any websites.</small></p>
+        </div>
+        <div class="column is-full-mobile is-half-tablet is-half-desktop is-one-third-widescreen has-text-centered">
+          <a href="/images/demos/notifications.png">
+            <img src="/images/demos/notifications.png" alt="Notifications" class="demo">
+          </a>
+          <p><small><b>Notifications</b> - Control notifications with scheduling.</small></p>
+        </div>
+        <div class="column is-full-mobile is-half-tablet is-half-desktop is-one-third-widescreen has-text-centered">
+          <a href="/images/demos/email-client.png">
+            <img src="/images/demos/email-client.png" alt="Email Client" class="demo">
+          </a>
+          <p><small><b>Email Client</b> - The same email apps you love, but better!</small></p>
+        </div>
+        <div class="column is-full-mobile is-half-tablet is-half-desktop is-one-third-widescreen has-text-centered">
+          <a href="/images/demos/customization.png">
+            <img src="/images/demos/customization.png" alt="Customization" class="demo">
+          </a>
+          <p><small><b>Customization</b> - Make yourself at home!</small></p>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+

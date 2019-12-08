@@ -8,11 +8,13 @@ on:
       - "v*.*.*"
     paths-ignore:
       - 'catalog/**'
+      - 'docs/**'
   pull_request:
     branches:
       - master
     paths-ignore:
       - 'catalog/**'
+      - 'docs/**'
 
 jobs:
   build:
