@@ -115,11 +115,11 @@ class AddWorkspace extends React.Component {
       if (!isGetting && hits.length < 1) {
         return (
           <EmptyState icon={SearchIcon} title="No Matching Results">
-            <Grid container spacing={16}>
-              <Grid item xs={12}>
+            <Grid container justify="center" spacing={16}>
+              <Grid item>
                 <AddCustomAppCard />
               </Grid>
-              <Grid item xs={12}>
+              <Grid item>
                 <SubmitAppCard />
               </Grid>
             </Grid>

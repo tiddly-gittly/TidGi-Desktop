@@ -18,6 +18,7 @@ const sendToAllWindows = require('./send-to-all-windows');
 const views = {};
 const badgeCounts = {};
 const didFailLoad = {};
+let activeId;
 
 const extractDomain = (fullUrl) => {
   const matches = fullUrl.match(/^https?:\/\/([^/?#]+)(?:[/?#]|$)/i);
@@ -215,6 +216,7 @@ const addView = (browserWindow, workspace) => {
   views[workspace.id] = view;
 
   if (workspace.active) {
+    activeId = workspace.id;
     browserWindow.setBrowserView(view);
 
     const contentSize = browserWindow.getContentSize();
@@ -249,38 +251,59 @@ const setActiveView = (browserWindow, id) => {
     browserWindow.send('close-find-in-page');
   }
 
-  const view = views[id];
-  browserWindow.setBrowserView(view);
+  const oldActiveId = activeId;
+  activeId = id;
 
-  const contentSize = browserWindow.getContentSize();
+  if (views[id] == null) {
+    addView(browserWindow, getWorkspace(id));
 
-  const offsetTitlebar = 0;
-  const x = 68;
-  const y = global.showNavigationBar ? 36 + offsetTitlebar : 0 + offsetTitlebar;
+    sendToAllWindows('update-is-loading', views[id].webContents.isLoading());
+    sendToAllWindows('update-did-fail-load', Boolean(didFailLoad[id]));
+  } else {
+    const view = views[id];
+    browserWindow.setBrowserView(view);
 
-  view.setBounds({
-    x,
-    y,
-    width: contentSize[0] - x,
-    height: contentSize[1] - y,
-  });
-  view.setAutoResize({
-    width: true,
-    height: true,
-  });
+    const contentSize = browserWindow.getContentSize();
 
-  // focus on webview
-  // https://github.com/quanglam2807/webcatalog/issues/398
-  view.webContents.focus();
+    const offsetTitlebar = 0;
+    const x = 68;
+    const y = global.showNavigationBar ? 36 + offsetTitlebar : 0 + offsetTitlebar;
 
-  sendToAllWindows('update-is-loading', view.webContents.isLoading());
-  sendToAllWindows('update-did-fail-load', Boolean(didFailLoad[id]));
+    view.setBounds({
+      x,
+      y,
+      width: contentSize[0] - x,
+      height: contentSize[1] - y,
+    });
+    view.setAutoResize({
+      width: true,
+      height: true,
+    });
+
+    // focus on webview
+    // https://github.com/quanglam2807/webcatalog/issues/398
+    view.webContents.focus();
+
+    sendToAllWindows('update-is-loading', view.webContents.isLoading());
+    sendToAllWindows('update-did-fail-load', Boolean(didFailLoad[id]));
+  }
+
+  // hibernate old view
+  if (oldActiveId !== activeId) {
+    const oldWorkspace = getWorkspace(oldActiveId);
+    if (oldWorkspace.hibernateWhenUnused && views[oldWorkspace.id] != null) {
+      views[oldWorkspace.id].destroy();
+      views[oldWorkspace.id] = null;
+    }
+  }
 };
 
 const removeView = (id) => {
   const view = views[id];
   session.fromPartition(`persist:${id}`).clearStorageData();
-  view.destroy();
+  if (view != null) {
+    view.destroy();
+  }
 };
 
 module.exports = {

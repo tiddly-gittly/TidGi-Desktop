@@ -49,6 +49,7 @@ if (!gotTheLock) {
 
         Object.keys(workspaceObjects).forEach((id) => {
           const workspace = workspaceObjects[id];
+          if (workspace.hibernateWhenUnused && !workspace.active) return;
           addView(mainWindow.get(), workspace);
         });
 

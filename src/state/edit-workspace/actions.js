@@ -44,6 +44,7 @@ export const save = () => (dispatch, getState) => {
     {
       name: form.name,
       homeUrl: form.homeUrl.trim(),
+      hibernateWhenUnused: Boolean(form.hibernateWhenUnused),
     },
   );
 

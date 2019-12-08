@@ -11,7 +11,7 @@ import { requestOpenInBrowser } from '../../senders';
 
 const styles = (theme) => ({
   card: {
-    width: 450,
+    width: 368,
     boxSizing: 'border-box',
     borderRadius: 4,
     padding: theme.spacing.unit * 1.5,

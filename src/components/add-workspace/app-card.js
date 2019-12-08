@@ -22,7 +22,7 @@ const { remote } = window.require('electron');
 
 const styles = (theme) => ({
   card: {
-    width: 450,
+    width: 368,
     boxSizing: 'border-box',
     borderRadius: 4,
     padding: theme.spacing.unit,
