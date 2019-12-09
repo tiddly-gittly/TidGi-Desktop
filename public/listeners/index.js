@@ -322,6 +322,9 @@ const loadListeners = () => {
     dialog.showMessageBox(mainWindow.get(), {
       type: type || 'error',
       message,
+      buttons: ['OK'],
+      cancelId: 0,
+      defaultId: 0,
     });
   });
 
