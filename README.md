@@ -1,8 +1,8 @@
 # Singlebox [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
 
-|macOS|Catalog|
-|---|---|
-|[![GitHub Actions Build Status](https://github.com/quanglam2807/singlebox/workflows/macOS/badge.svg)](https://github.com/quanglam2807/singlebox/actions)|[![GitHub Actions Build Status](https://github.com/quanglam2807/singlebox/workflows/Catalog/badge.svg)](https://github.com/quanglam2807/singlebox/actions)|
+|macOS|Linux|Windows|Catalog|
+|---|---|---|---|
+|[![GitHub Actions macOS Build Status](https://github.com/quanglam2807/singlebox/workflows/macOS/badge.svg)](https://github.com/quanglam2807/singlebox/actions?query=workflow%3AmacOS)|[![GitHub Actions Linux Build Status](https://github.com/quanglam2807/singlebox/workflows/Linux/badge.svg)](https://github.com/quanglam2807/singlebox/actions?query=workflow%3ALinux)|[![GitHub Actions Windows Build Status](https://github.com/quanglam2807/singlebox/workflows/Windows/badge.svg)](https://github.com/quanglam2807/singlebox/actions?query=workflow%3AWindows)|[![GitHub Actions Catalog Build Status](https://github.com/quanglam2807/singlebox/workflows/Catalog/badge.svg)](https://github.com/quanglam2807/singlebox/actions?query=workflow%3ACatalog)|
 
 **[Singlebox](https://singleboxapp.com)** - All Your Apps in One Single Window.
 
