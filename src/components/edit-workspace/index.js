@@ -7,6 +7,7 @@ import Divider from '@material-ui/core/Divider';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
+import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import Switch from '@material-ui/core/Switch';
 
 import connectComponent from '../../helpers/connect-component';
@@ -70,9 +71,6 @@ const styles = (theme) => ({
   },
   buttonBot: {
     marginTop: theme.spacing.unit,
-  },
-  switchBase: {
-    height: 'auto',
   },
 });
 
@@ -164,36 +162,33 @@ const EditWorkspace = ({
         <Divider />
         <ListItem disableGutters>
           <ListItemText primary="Hibernate when not used" secondary="Save CPU usage, memory and battery." />
-          <Switch
-            color="primary"
-            checked={hibernateWhenUnused}
-            onChange={(e) => onUpdateForm({ hibernateWhenUnused: e.target.checked })}
-            classes={{
-              switchBase: classes.switchBase,
-            }}
-          />
+          <ListItemSecondaryAction>
+            <Switch
+              color="primary"
+              checked={hibernateWhenUnused}
+              onChange={(e) => onUpdateForm({ hibernateWhenUnused: e.target.checked })}
+            />
+          </ListItemSecondaryAction>
         </ListItem>
         <ListItem disableGutters>
           <ListItemText primary="Disable notifications" secondary="Prevent workspace from sending notifications." />
-          <Switch
-            color="primary"
-            checked={disableNotifications}
-            onChange={(e) => onUpdateForm({ disableNotifications: e.target.checked })}
-            classes={{
-              switchBase: classes.switchBase,
-            }}
-          />
+          <ListItemSecondaryAction>
+            <Switch
+              color="primary"
+              checked={disableNotifications}
+              onChange={(e) => onUpdateForm({ disableNotifications: e.target.checked })}
+            />
+          </ListItemSecondaryAction>
         </ListItem>
         <ListItem disableGutters>
           <ListItemText primary="Disable audio" secondary="Prevent workspace from playing audio." />
-          <Switch
-            color="primary"
-            checked={disableAudio}
-            onChange={(e) => onUpdateForm({ disableAudio: e.target.checked })}
-            classes={{
-              switchBase: classes.switchBase,
-            }}
-          />
+          <ListItemSecondaryAction>
+            <Switch
+              color="primary"
+              checked={disableAudio}
+              onChange={(e) => onUpdateForm({ disableAudio: e.target.checked })}
+            />
+          </ListItemSecondaryAction>
         </ListItem>
       </List>
     </div>
