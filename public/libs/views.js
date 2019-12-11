@@ -325,6 +325,7 @@ const removeView = (id) => {
   if (view != null) {
     view.destroy();
   }
+  delete views[id];
 };
 
 const setViewsAudioPref = (_shouldMuteAudio) => {
