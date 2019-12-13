@@ -1,4 +1,5 @@
 const {
+  BrowserView,
   Notification,
   app,
   dialog,
@@ -46,11 +47,12 @@ const createMenu = require('../libs/create-menu');
 const aboutWindow = require('../windows/about');
 const addWorkspaceWindow = require('../windows/add-workspace');
 const codeInjectionWindow = require('../windows/code-injection');
+const displayMediaWindow = require('../windows/display-media');
 const editWorkspaceWindow = require('../windows/edit-workspace');
 const licenseRegistrationWindow = require('../windows/license-registration');
 const mainWindow = require('../windows/main');
-const preferencesWindow = require('../windows/preferences');
 const notificationsWindow = require('../windows/notifications');
+const preferencesWindow = require('../windows/preferences');
 
 const loadListeners = () => {
   ipcMain.on('request-open-in-browser', (e, url) => {
@@ -330,6 +332,11 @@ const loadListeners = () => {
 
   ipcMain.on('create-menu', () => {
     createMenu();
+  });
+
+  ipcMain.on('request-show-display-media-window', (e) => {
+    const viewId = BrowserView.fromWebContents(e.sender).id;
+    displayMediaWindow.show(viewId);
   });
 };
 

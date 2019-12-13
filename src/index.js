@@ -16,24 +16,26 @@ const About = React.lazy(() => import('./components/about'));
 const AddWorkspace = React.lazy(() => import('./components/add-workspace'));
 const Auth = React.lazy(() => import('./components/auth'));
 const CodeInjection = React.lazy(() => import('./components/code-injection'));
+const DisplayMedia = React.lazy(() => import('./components/display-media'));
 const EditWorkspace = React.lazy(() => import('./components/edit-workspace'));
 const LicenseRegistration = React.lazy(() => import('./components/license-registration'));
 const Main = React.lazy(() => import('./components/main'));
+const Notifications = React.lazy(() => import('./components/notifications'));
 const OpenUrlWith = React.lazy(() => import('./components/open-url-with'));
 const Preferences = React.lazy(() => import('./components/preferences'));
-const Notifications = React.lazy(() => import('./components/notifications'));
 
 const App = () => {
   switch (window.mode) {
-    case 'preferences': return <Preferences />;
-    case 'edit-workspace': return <EditWorkspace />;
-    case 'open-url-with': return <OpenUrlWith />;
-    case 'code-injection': return <CodeInjection />;
-    case 'auth': return <Auth />;
     case 'about': return <About />;
     case 'add-workspace': return <AddWorkspace />;
+    case 'auth': return <Auth />;
+    case 'code-injection': return <CodeInjection />;
+    case 'display-media': return <DisplayMedia />;
+    case 'edit-workspace': return <EditWorkspace />;
     case 'license-registration': return <LicenseRegistration />;
     case 'notifications': return <Notifications />;
+    case 'open-url-with': return <OpenUrlWith />;
+    case 'preferences': return <Preferences />;
     default: return <Main />;
   }
 };
@@ -74,6 +76,8 @@ const runApp = () => {
         document.title = 'Sign in';
       } else if (window.mode === 'notifications') {
         document.title = 'Notifications';
+      } else if (window.mode === 'display-media') {
+        document.title = 'Share your Screen';
       } else {
         document.title = 'Singlebox';
       }

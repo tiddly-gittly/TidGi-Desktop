@@ -13,7 +13,6 @@ const {
 const { MenuItem } = remote;
 
 window.global = {};
-window.ipcRenderer = ipcRenderer;
 
 window.onload = () => {
   const jsCodeInjection = ipcRenderer.sendSync('get-preference', 'jsCodeInjection');
@@ -157,6 +156,16 @@ ipcRenderer.on('should-pause-notifications-changed', (e, val) => {
   window.postMessage({ type: 'should-pause-notifications-changed', val });
 });
 
+ipcRenderer.on('display-media-id-received', (e, val) => {
+  window.postMessage({ type: 'return-display-media-id', val });
+});
+
+window.addEventListener('message', (e) => {
+  if (!e.data || e.data.type !== 'get-display-media-id') return;
+
+  ipcRenderer.send('request-show-display-media-window');
+});
+
 // Fix Can't show file list of Google Drive
 // https://github.com/electron/electron/issues/16587
 
@@ -210,5 +219,31 @@ webFrame.executeJavaScript(`
       return oldNotification.permission;
     }
   });
+
+  window.navigator.mediaDevices.getDisplayMedia = () => {
+    return new Promise((resolve, reject) => {
+      const listener = (e) => {
+        if (!e.data || e.data.type !== 'return-display-media-id') return;
+        if (e.data.val) { resolve(e.data.val); }
+        else { reject(new Error('Rejected')); }
+        window.removeEventListener('message', listener);
+      };
+
+      window.postMessage({ type: 'get-display-media-id' });
+
+      window.addEventListener('message', listener);
+    })
+      .then((id) => {
+        return navigator.mediaDevices.getUserMedia({
+          audio: false,
+          video: {
+            mandatory: {
+              chromeMediaSource: 'desktop',
+              chromeMediaSourceId: id,
+            }
+          }
+        });
+      });
+  };
 })();
 `);
