@@ -43,7 +43,7 @@ const create = (viewId) => {
     win.removeListener('close', onClose);
     win.close();
   };
-  ipcMain.on('display-media-selected', onSelected);
+  ipcMain.once('display-media-selected', onSelected);
 
   win.on('closed', () => {
     win = null;

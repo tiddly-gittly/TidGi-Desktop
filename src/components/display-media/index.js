@@ -45,35 +45,40 @@ class DisplayMedia extends React.Component {
     const { sources } = this.state;
     const { classes } = this.props;
 
+    const screenSources = sources.filter((source) => source.id.startsWith('screen'));
+    const windowSources = sources.filter((source) => source.id.startsWith('window'));
+    // remove first item as it is the display media window itself
+    windowSources.shift();
+
     return (
       <div className={classes.root}>
         <Typography variant="body1" className={classes.text}>
           The app wants to use the contents of your screen. Choose what you’d like to share.
         </Typography>
         <List>
-          {sources.map((source) => source.id.startsWith('screen') && (
-          <ListItem
-            button
-            onClick={() => {
-              const { ipcRenderer } = window.require('electron');
-              ipcRenderer.send('display-media-selected', source.id);
-            }}
-          >
-            <ListItemText primary={source.name} />
-          </ListItem>
+          {screenSources.map((source) => (
+            <ListItem
+              button
+              onClick={() => {
+                const { ipcRenderer } = window.require('electron');
+                ipcRenderer.send('display-media-selected', source.id);
+              }}
+            >
+              <ListItemText primary={source.name} />
+            </ListItem>
           ))}
           <Divider />
           <ListSubheader disableSticky>Windows</ListSubheader>
-          {sources.map((source) => !source.id.startsWith('screen') && (
-          <ListItem
-            button
-            onClick={() => {
-              const { ipcRenderer } = window.require('electron');
-              ipcRenderer.send('display-media-selected', source.id);
-            }}
-          >
-            <ListItemText primary={source.name} />
-          </ListItem>
+          {windowSources.map((source) => (
+            <ListItem
+              button
+              onClick={() => {
+                const { ipcRenderer } = window.require('electron');
+                ipcRenderer.send('display-media-selected', source.id);
+              }}
+            >
+              <ListItemText primary={source.name} />
+            </ListItem>
           ))}
         </List>
       </div>
