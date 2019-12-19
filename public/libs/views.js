@@ -110,43 +110,40 @@ const addView = (browserWindow, workspace) => {
 
   const handleNewWindow = (e, nextUrl, frameName, disposition, options) => {
     const appDomain = extractDomain(getWorkspace(workspace.id).homeUrl);
+    const currentDomain = extractDomain(e.sender.getURL());
     const nextDomain = extractDomain(nextUrl);
-
-    // open new window normally if requested, or domain is not defined(about:)
-    if (
-      nextDomain === null
-      || disposition === 'new-window'
-    ) {
-      // https://gist.github.com/Gvozd/2cec0c8c510a707854e439fb15c561b0
-      /*
-      Object.assign(options, {
-        parent: browserWindow,
-      });
-      */
-      e.preventDefault();
-      Object.assign(options, {
-        parent: browserWindow,
-      });
-      const popupWin = new BrowserWindow(options);
-      popupWin.webContents.on('new-window', handleNewWindow);
-      e.newGuest = popupWin;
-      return;
-    }
 
     // load in same window
     if (
       // Google: Switch account
       nextDomain === 'accounts.google.com'
       // https://github.com/quanglam2807/webcatalog/issues/315
-      || nextDomain === appDomain
+      || ((appDomain.includes('asana.com') || currentDomain.includes('asana.com')) && nextDomain.includes('asana.com'))
     ) {
       e.preventDefault();
       e.sender.loadURL(nextUrl);
       return;
     }
 
+    // open new window
+    if (nextDomain === appDomain || nextDomain === currentDomain) {
+      // https://gist.github.com/Gvozd/2cec0c8c510a707854e439fb15c561b0
+      e.preventDefault();
+      const newOptions = {
+        ...options,
+        parent: browserWindow,
+      };
+      const popupWin = new BrowserWindow(newOptions);
+      popupWin.webContents.on('new-window', handleNewWindow);
+      e.newGuest = popupWin;
+      return;
+    }
+
     // open external url in browser
-    if (disposition === 'foreground-tab') {
+    if (
+      nextDomain != null
+      && (disposition === 'foreground-tab' || disposition === 'background-tab')
+    ) {
       e.preventDefault();
       shell.openExternal(nextUrl);
     }
