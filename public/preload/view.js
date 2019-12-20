@@ -220,30 +220,32 @@ webFrame.executeJavaScript(`
     }
   });
 
-  window.navigator.mediaDevices.getDisplayMedia = () => {
-    return new Promise((resolve, reject) => {
-      const listener = (e) => {
-        if (!e.data || e.data.type !== 'return-display-media-id') return;
-        if (e.data.val) { resolve(e.data.val); }
-        else { reject(new Error('Rejected')); }
-        window.removeEventListener('message', listener);
-      };
+  if (window.navigator.mediaDevices) {
+    window.navigator.mediaDevices.getDisplayMedia = () => {
+      return new Promise((resolve, reject) => {
+        const listener = (e) => {
+          if (!e.data || e.data.type !== 'return-display-media-id') return;
+          if (e.data.val) { resolve(e.data.val); }
+          else { reject(new Error('Rejected')); }
+          window.removeEventListener('message', listener);
+        };
 
-      window.postMessage({ type: 'get-display-media-id' });
+        window.postMessage({ type: 'get-display-media-id' });
 
-      window.addEventListener('message', listener);
-    })
-      .then((id) => {
-        return navigator.mediaDevices.getUserMedia({
-          audio: false,
-          video: {
-            mandatory: {
-              chromeMediaSource: 'desktop',
-              chromeMediaSourceId: id,
+        window.addEventListener('message', listener);
+      })
+        .then((id) => {
+          return navigator.mediaDevices.getUserMedia({
+            audio: false,
+            video: {
+              mandatory: {
+                chromeMediaSource: 'desktop',
+                chromeMediaSourceId: id,
+              }
             }
-          }
+          });
         });
-      });
-  };
+    };
+  }
 })();
 `);

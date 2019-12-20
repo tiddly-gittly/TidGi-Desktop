@@ -190,6 +190,8 @@ const addView = (browserWindow, workspace) => {
   let uaStr = view.webContents.getUserAgent();
   uaStr = uaStr.replace(` ${app.getName()}/${app.getVersion()}`, '');
   uaStr = uaStr.replace(` Electron/${process.versions.electron}`, '');
+  // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
+  uaStr += ' Edge/12.10136';
   view.webContents.setUserAgent(uaStr);
 
   // Unread count badge
