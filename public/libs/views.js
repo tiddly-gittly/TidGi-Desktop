@@ -119,6 +119,7 @@ const addView = (browserWindow, workspace) => {
       nextDomain === 'accounts.google.com'
       // https://github.com/quanglam2807/webcatalog/issues/315
       || ((appDomain.includes('asana.com') || currentDomain.includes('asana.com')) && nextDomain.includes('asana.com'))
+      || (disposition === 'foreground-tab' && (nextDomain === appDomain || nextDomain === currentDomain))
     ) {
       e.preventDefault();
       e.sender.loadURL(nextUrl);
