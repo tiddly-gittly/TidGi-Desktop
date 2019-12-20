@@ -187,6 +187,8 @@ const addView = (browserWindow, workspace) => {
 
   let uaStr = view.webContents.getUserAgent();
   // Hide Electron from UA to improve compatibility
+  // Fix WhatsApp requires Google Chrome 49+ bug
+  uaStr = uaStr.replace(` ${app.getName()}/${app.getVersion()}`, '');
   // https://github.com/quanglam2807/webcatalog/issues/182
   uaStr = uaStr.replace(` Electron/${process.versions.electron}`, '');
   // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
