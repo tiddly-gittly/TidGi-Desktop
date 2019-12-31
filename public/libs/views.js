@@ -147,6 +147,36 @@ const addView = (browserWindow, workspace) => {
     ) {
       e.preventDefault();
       shell.openExternal(nextUrl);
+      return;
+    }
+
+    // App tries to open external link using JS
+    // nextURL === 'about:blank' but then window will redirect to the external URL
+    // https://github.com/quanglam2807/webcatalog/issues/467#issuecomment-569857721
+    if (
+      nextDomain === null
+      && (disposition === 'foreground-tab' || disposition === 'background-tab')
+    ) {
+      e.preventDefault();
+      const newOptions = {
+        ...options,
+        show: false,
+        parent: browserWindow,
+      };
+      const popupWin = new BrowserWindow(newOptions);
+      popupWin.webContents.on('new-window', handleNewWindow);
+      popupWin.webContents.once('will-navigate', (_, url) => {
+        const retrievedDomain = extractDomain(url);
+        // if the window is used for the current app, then use default behavior
+        if (retrievedDomain === appDomain || retrievedDomain === currentDomain) {
+          popupWin.show();
+        } else { // if not, open in browser
+          e.preventDefault();
+          shell.openExternal(url);
+          popupWin.close();
+        }
+      });
+      e.newGuest = popupWin;
     }
   };
   view.webContents.on('new-window', handleNewWindow);
