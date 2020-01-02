@@ -259,49 +259,17 @@ function createMenu() {
         {
           label: 'Home',
           accelerator: 'Shift+CmdOrCtrl+H',
-          click: () => {
-            const win = mainWindow.get();
-
-            if (win != null) {
-              const activeWorkspace = getActiveWorkspace();
-              const contents = win.getBrowserView().webContents;
-              contents.loadURL(activeWorkspace.homeUrl);
-              win.send('update-can-go-back', contents.canGoBack());
-              win.send('update-can-go-forward', contents.canGoForward());
-            }
-          },
+          click: () => ipcMain.emit('request-go-home'),
         },
         {
           label: 'Back',
           accelerator: 'CmdOrCtrl+[',
-          click: () => {
-            const win = mainWindow.get();
-
-            if (win != null) {
-              const contents = win.getBrowserView().webContents;
-              if (contents.canGoBack()) {
-                contents.goBack();
-                win.send('update-can-go-back', contents.canGoBack());
-                win.send('update-can-go-forward', contents.canGoForward());
-              }
-            }
-          },
+          click: () => ipcMain.emit('request-go-back'),
         },
         {
           label: 'Forward',
           accelerator: 'CmdOrCtrl+]',
-          click: () => {
-            const win = mainWindow.get();
-
-            if (win != null) {
-              const contents = win.getBrowserView().webContents;
-              if (contents.canGoForward()) {
-                contents.goForward();
-                win.send('update-can-go-back', contents.canGoBack());
-                win.send('update-can-go-forward', contents.canGoForward());
-              }
-            }
-          },
+          click: () => ipcMain.emit('request-go-forward'),
         },
         { type: 'separator' },
         {

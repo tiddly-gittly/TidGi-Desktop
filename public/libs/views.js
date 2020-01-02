@@ -46,6 +46,39 @@ const addView = (browserWindow, workspace) => {
     },
   });
 
+  // Hide Electron from UA to improve compatibility
+  // https://github.com/quanglam2807/webcatalog/issues/182
+  const uaStr = view.webContents.getUserAgent();
+  const commonUaStr = uaStr
+    // Fix WhatsApp requires Google Chrome 49+ bug
+    .replace(` ${app.getName()}/${app.getVersion()}`, '')
+    // Hide Electron from UA to improve compatibility
+    // https://github.com/quanglam2807/webcatalog/issues/182
+    .replace(` Electron/${process.versions.electron}`, '');
+  view.webContents.setUserAgent(commonUaStr);
+
+  // fix Google prevents signing in because of security concerns
+  // https://github.com/quanglam2807/webcatalog/issues/455
+  // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
+  const fakedEdgeUaStr = `${commonUaStr} Edge/18.18875`;
+  const adjustUserAgentByUrl = (url) => {
+    const navigatedDomain = extractDomain(url);
+    const currentUaStr = view.webContents.getUserAgent();
+    if (navigatedDomain === 'accounts.google.com') {
+      if (currentUaStr !== fakedEdgeUaStr) {
+        view.webContents.setUserAgent(fakedEdgeUaStr);
+        return true;
+      }
+    } else if (currentUaStr !== commonUaStr) {
+      view.webContents.setUserAgent(commonUaStr);
+      return true;
+    }
+    return false;
+  };
+  view.webContents.on('will-navigate', (e, url) => {
+    adjustUserAgentByUrl(url);
+  });
+
   view.webContents.on('did-start-loading', () => {
     if (getWorkspace(workspace.id).active) {
       didFailLoad[workspace.id] = false;
@@ -94,7 +127,18 @@ const addView = (browserWindow, workspace) => {
     }
   });
 
-  view.webContents.on('did-navigate', () => {
+  view.webContents.on('did-navigate', (e, url) => {
+    // fix Google prevents signing in because of security concerns
+    // https://github.com/quanglam2807/webcatalog/issues/455
+    // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
+    // will-navigate doesn't trigger for loadURL, goBack, goForward
+    // so user agent to needed to be double check here
+    // not the best solution as page will be unexpectedly reloaded
+    // but it won't happen very often
+    if (adjustUserAgentByUrl(url)) {
+      view.webContents.reload();
+    }
+
     if (getWorkspace(workspace.id).active) {
       sendToAllWindows('update-can-go-back', view.webContents.canGoBack());
       sendToAllWindows('update-can-go-forward', view.webContents.canGoForward());
@@ -122,6 +166,7 @@ const addView = (browserWindow, workspace) => {
       || (disposition === 'foreground-tab' && (nextDomain === appDomain || nextDomain === currentDomain))
     ) {
       e.preventDefault();
+      adjustUserAgentByUrl(nextUrl);
       e.sender.loadURL(nextUrl);
       return;
     }
@@ -215,19 +260,6 @@ const addView = (browserWindow, workspace) => {
     }
   });
 
-  let uaStr = view.webContents.getUserAgent();
-  // Hide Electron from UA to improve compatibility
-  // Fix WhatsApp requires Google Chrome 49+ bug
-  uaStr = uaStr.replace(` ${app.getName()}/${app.getVersion()}`, '');
-  // https://github.com/quanglam2807/webcatalog/issues/182
-  uaStr = uaStr.replace(` Electron/${process.versions.electron}`, '');
-  // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
-  const homeDomain = extractDomain(workspace.homeUrl);
-  if (homeDomain.includes('google.com') || homeDomain.includes('gmail.com')) {
-    uaStr += ' Edge/18.18875'; // mock EdgeHTML Edge (mocking Chromium-based Edge doesn't work)
-  }
-  view.webContents.setUserAgent(uaStr);
-
   // Unread count badge
   if (unreadCountBadge) {
     view.webContents.on('page-title-updated', (e, title) => {
@@ -292,8 +324,10 @@ const addView = (browserWindow, workspace) => {
     });
   }
 
-  view.webContents.loadURL((rememberLastPageVisited && workspace.lastUrl)
-  || workspace.homeUrl);
+  const initialUrl = (rememberLastPageVisited && workspace.lastUrl)
+    || workspace.homeUrl;
+  adjustUserAgentByUrl(initialUrl);
+  view.webContents.loadURL(initialUrl);
 };
 
 const getView = (id) => views[id];
