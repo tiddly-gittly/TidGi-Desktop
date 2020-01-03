@@ -37,15 +37,17 @@ export const requestSetSystemPreference = (name, value) => ipcRenderer.send('req
 // Workspace
 export const getWorkspace = (id) => ipcRenderer.sendSync('get-workspace', id);
 export const getWorkspaces = () => ipcRenderer.sendSync('get-workspaces');
+export const requestClearBrowsingData = () => ipcRenderer.send('request-clear-browsing-data');
 export const requestCreateWorkspace = (name, homeUrl, picture) => ipcRenderer.send('request-create-workspace', name, homeUrl, picture);
-export const requestSetWorkspace = (id, opts) => ipcRenderer.send('request-set-workspace', id, opts);
-export const requestSetWorkspacePicture = (id, picturePath) => ipcRenderer.send('request-set-workspace-picture', id, picturePath);
-export const requestRemoveWorkspacePicture = (id) => ipcRenderer.send('request-remove-workspace-picture', id);
-export const requestSetActiveWorkspace = (id) => ipcRenderer.send('request-set-active-workspace', id);
+export const requestHibernateWorkspace = (id) => ipcRenderer.send('request-hibernate-workspace', id);
+export const requestOpenUrlInWorkspace = (url, id) => ipcRenderer.send('request-open-url-in-workspace', url, id);
 export const requestRealignActiveWorkspace = () => ipcRenderer.send('request-realign-active-workspace');
 export const requestRemoveWorkspace = (id) => ipcRenderer.send('request-remove-workspace', id);
-export const requestClearBrowsingData = () => ipcRenderer.send('request-clear-browsing-data');
-export const requestOpenUrlInWorkspace = (url, id) => ipcRenderer.send('request-open-url-in-workspace', url, id);
+export const requestRemoveWorkspacePicture = (id) => ipcRenderer.send('request-remove-workspace-picture', id);
+export const requestSetActiveWorkspace = (id) => ipcRenderer.send('request-set-active-workspace', id);
+export const requestSetWorkspace = (id, opts) => ipcRenderer.send('request-set-workspace', id, opts);
+export const requestSetWorkspacePicture = (id, picturePath) => ipcRenderer.send('request-set-workspace-picture', id, picturePath);
+export const requestWakeUpWorkspace = (id) => ipcRenderer.send('request-wake-up-workspace', id);
 
 // Find In Page
 export const requestFindInPage = (text, forward) => ipcRenderer.send('request-find-in-page', text, forward);

@@ -1,21 +1,23 @@
 const { session } = require('electron');
 
 const {
-  createWorkspace,
   countWorkspaces,
-  setActiveWorkspace,
-  removeWorkspace,
+  createWorkspace,
+  getActiveWorkspace,
   getPreviousWorkspace,
   getWorkspace,
   getWorkspaces,
+  removeWorkspace,
+  setActiveWorkspace,
   setWorkspace,
   setWorkspacePicture,
 } = require('./workspaces');
 
 const {
   addView,
-  setActiveView,
+  hibernateView,
   removeView,
+  setActiveView,
   setViewsAudioPref,
   setViewsNotificationsPref,
 } = require('./views');
@@ -40,9 +42,32 @@ const setWorkspaceView = (id, opts) => {
   setViewsNotificationsPref();
 };
 
+const wakeUpWorkspaceView = (id) => {
+  addView(mainWindow.get(), getWorkspace(id));
+  setWorkspace(id, {
+    hibernated: false,
+  });
+};
+
+const hibernateWorkspaceView = (id) => {
+  if (!getWorkspace(id).active) {
+    hibernateView(id);
+    setWorkspace(id, {
+      hibernated: true,
+    });
+  }
+};
+
 const setActiveWorkspaceView = (id) => {
+  const oldActiveWorkspace = getActiveWorkspace();
+
   setActiveWorkspace(id);
   setActiveView(mainWindow.get(), id);
+
+  // hibernate old view
+  if (oldActiveWorkspace.hibernateWhenUnused && oldActiveWorkspace.id !== id) {
+    hibernateWorkspaceView(oldActiveWorkspace.id);
+  }
 };
 
 const removeWorkspaceView = (id) => {
@@ -81,8 +106,10 @@ const loadURL = (url, id) => {
 module.exports = {
   clearBrowsingData,
   createWorkspaceView,
+  hibernateWorkspaceView,
   loadURL,
   removeWorkspaceView,
   setActiveWorkspaceView,
   setWorkspaceView,
+  wakeUpWorkspaceView,
 };

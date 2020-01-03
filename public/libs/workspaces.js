@@ -82,6 +82,7 @@ const setActiveWorkspace = (id) => {
   // active new one
   const newActiveWorkspace = { ...workspaces[id] };
   newActiveWorkspace.active = true;
+  newActiveWorkspace.hibernated = false;
   workspaces[id] = newActiveWorkspace;
   sendToAllWindows('set-workspace', id, newActiveWorkspace);
   settings.set(`workspaces.${v}.${id}`, newActiveWorkspace);
@@ -170,11 +171,12 @@ const createWorkspace = (name, homeUrl) => {
   }
 
   const newWorkspace = {
+    active: false,
+    hibernated: false,
+    homeUrl,
     id: newId,
     name,
-    homeUrl,
     order: max + 1,
-    active: false,
   };
 
   workspaces[newId] = newWorkspace;

@@ -11,7 +11,7 @@ const openUrlWithWindow = require('./windows/open-url-with');
 const createMenu = require('./libs/create-menu');
 const { addView } = require('./libs/views');
 const { getPreference } = require('./libs/preferences');
-const { getWorkspaces } = require('./libs/workspaces');
+const { getWorkspaces, setWorkspace } = require('./libs/workspaces');
 const extractHostname = require('./libs/extract-hostname');
 
 const MAILTO_URLS = require('./constants/mailto-urls');
@@ -50,7 +50,12 @@ if (!gotTheLock) {
 
         Object.keys(workspaceObjects).forEach((id) => {
           const workspace = workspaceObjects[id];
-          if (workspace.hibernateWhenUnused && !workspace.active) return;
+          if (workspace.hibernateWhenUnused && !workspace.active) {
+            if (!workspace.hibernated) {
+              setWorkspace(workspace.id, { hibernated: true });
+            }
+            return;
+          }
           addView(mainWindow.get(), workspace);
         });
 

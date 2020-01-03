@@ -31,10 +31,12 @@ const {
 const {
   clearBrowsingData,
   createWorkspaceView,
+  hibernateWorkspaceView,
   loadURL,
   removeWorkspaceView,
   setActiveWorkspaceView,
   setWorkspaceView,
+  wakeUpWorkspaceView,
 } = require('../libs/workspaces-views');
 
 const {
@@ -238,6 +240,13 @@ const loadListeners = () => {
     }
   });
 
+  ipcMain.on('request-wake-up-workspace', (e, id) => {
+    wakeUpWorkspaceView(id);
+  });
+
+  ipcMain.on('request-hibernate-workspace', (e, id) => {
+    hibernateWorkspaceView(id);
+  });
 
   ipcMain.on('request-remove-workspace', (e, id) => {
     removeWorkspaceView(id);
