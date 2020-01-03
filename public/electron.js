@@ -42,6 +42,8 @@ if (!gotTheLock) {
   loadListeners();
 
   const commonInit = () => {
+    const hibernateUnusedWorkspacesAtLaunch = getPreference('hibernateUnusedWorkspacesAtLaunch');
+
     mainWindow.createAsync()
       .then(() => {
         createMenu();
@@ -50,7 +52,10 @@ if (!gotTheLock) {
 
         Object.keys(workspaceObjects).forEach((id) => {
           const workspace = workspaceObjects[id];
-          if (workspace.hibernateWhenUnused && !workspace.active) {
+          if (
+            (hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused)
+            && !workspace.active
+          ) {
             if (!workspace.hibernated) {
               setWorkspace(workspace.id, { hibernated: true });
             }

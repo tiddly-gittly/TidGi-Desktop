@@ -89,6 +89,7 @@ const defaultPreferences = {
   attachToMenubar: false,
   cssCodeInjection: null,
   downloadPath: getDefaultDownloadsPath(),
+  hibernateUnusedWorkspacesAtLaunch: false,
   jsCodeInjection: null,
   navigationBar: false,
   pauseNotifications: null,
