@@ -32,6 +32,7 @@ const addView = (browserWindow, workspace) => {
   if (views[workspace.id] != null) return;
 
   const {
+    customUserAgent,
     rememberLastPageVisited,
     shareWorkspaceBrowsingData,
     unreadCountBadge,
@@ -47,35 +48,43 @@ const addView = (browserWindow, workspace) => {
     },
   });
 
-  // Hide Electron from UA to improve compatibility
-  // https://github.com/quanglam2807/webcatalog/issues/182
-  const uaStr = view.webContents.getUserAgent();
-  const commonUaStr = uaStr
-    // Fix WhatsApp requires Google Chrome 49+ bug
-    .replace(` ${app.getName()}/${app.getVersion()}`, '')
+  let adjustUserAgentByUrl = () => false;
+  if (customUserAgent) {
+    view.webContents.setUserAgent(customUserAgent);
+  } else {
     // Hide Electron from UA to improve compatibility
     // https://github.com/quanglam2807/webcatalog/issues/182
-    .replace(` Electron/${process.versions.electron}`, '');
-  view.webContents.setUserAgent(commonUaStr);
+    const uaStr = view.webContents.getUserAgent();
+    const commonUaStr = uaStr
+      // Fix WhatsApp requires Google Chrome 49+ bug
+      .replace(` ${app.getName()}/${app.getVersion()}`, '')
+      // Hide Electron from UA to improve compatibility
+      // https://github.com/quanglam2807/webcatalog/issues/182
+      .replace(` Electron/${process.versions.electron}`, '');
+    view.webContents.setUserAgent(customUserAgent || commonUaStr);
 
-  // fix Google prevents signing in because of security concerns
-  // https://github.com/quanglam2807/webcatalog/issues/455
-  // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
-  const fakedEdgeUaStr = `${commonUaStr} Edge/18.18875`;
-  const adjustUserAgentByUrl = (url) => {
-    const navigatedDomain = extractDomain(url);
-    const currentUaStr = view.webContents.getUserAgent();
-    if (navigatedDomain === 'accounts.google.com') {
-      if (currentUaStr !== fakedEdgeUaStr) {
-        view.webContents.setUserAgent(fakedEdgeUaStr);
+    // fix Google prevents signing in because of security concerns
+    // https://github.com/quanglam2807/webcatalog/issues/455
+    // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
+    const fakedEdgeUaStr = `${commonUaStr} Edge/18.18875`;
+    adjustUserAgentByUrl = (url) => {
+      if (customUserAgent) return false;
+
+      const navigatedDomain = extractDomain(url);
+      const currentUaStr = view.webContents.getUserAgent();
+      if (navigatedDomain === 'accounts.google.com') {
+        if (currentUaStr !== fakedEdgeUaStr) {
+          view.webContents.setUserAgent(fakedEdgeUaStr);
+          return true;
+        }
+      } else if (currentUaStr !== commonUaStr) {
+        view.webContents.setUserAgent(commonUaStr);
         return true;
       }
-    } else if (currentUaStr !== commonUaStr) {
-      view.webContents.setUserAgent(commonUaStr);
-      return true;
-    }
-    return false;
-  };
+      return false;
+    };
+  }
+
   view.webContents.on('will-navigate', (e, url) => {
     adjustUserAgentByUrl(url);
   });

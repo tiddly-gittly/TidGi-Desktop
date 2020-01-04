@@ -88,6 +88,7 @@ const defaultPreferences = {
   askForDownloadPath: true,
   attachToMenubar: false,
   cssCodeInjection: null,
+  customUserAgent: null,
   downloadPath: getDefaultDownloadsPath(),
   hibernateUnusedWorkspacesAtLaunch: false,
   jsCodeInjection: null,

@@ -10,12 +10,13 @@ export const requestGoBack = () => ipcRenderer.send('request-go-back');
 export const requestGoForward = () => ipcRenderer.send('request-go-forward');
 export const requestReload = () => ipcRenderer.send('request-reload');
 
-export const requestShowPreferencesWindow = () => ipcRenderer.send('request-show-preferences-window');
-export const requestShowEditWorkspaceWindow = (id) => ipcRenderer.send('request-show-edit-workspace-window', id);
 export const requestShowAddWorkspaceWindow = () => ipcRenderer.send('request-show-add-workspace-window');
 export const requestShowCodeInjectionWindow = (type) => ipcRenderer.send('request-show-code-injection-window', type);
+export const requestShowCustomUserAgentWindow = () => ipcRenderer.send('request-show-custom-user-agent-window');
+export const requestShowEditWorkspaceWindow = (id) => ipcRenderer.send('request-show-edit-workspace-window', id);
 export const requestShowLicenseRegistrationWindow = () => ipcRenderer.send('request-show-license-registration-window');
 export const requestShowNotificationsWindow = () => ipcRenderer.send('request-show-notifications-window');
+export const requestShowPreferencesWindow = () => ipcRenderer.send('request-show-preferences-window');
 
 // Notifications
 export const requestShowNotification = (opts) => ipcRenderer.send('request-show-notification', opts);

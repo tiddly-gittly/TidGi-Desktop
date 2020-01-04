@@ -30,6 +30,7 @@ import {
   requestSetPreference,
   requestSetSystemPreference,
   requestShowCodeInjectionWindow,
+  requestShowCustomUserAgentWindow,
   requestShowRequireRestartDialog,
 } from '../../senders';
 
@@ -52,6 +53,11 @@ const styles = (theme) => ({
     marginBottom: theme.spacing.unit,
     display: 'flex',
     justifyContent: 'space-between',
+  },
+  secondaryEllipsis: {
+    textOverflow: 'ellipsis',
+    overflow: 'hidden',
+    whiteSpace: 'nowrap',
   },
 });
 
@@ -124,6 +130,7 @@ const Preferences = ({
   attachToMenubar,
   classes,
   cssCodeInjection,
+  customUserAgent,
   downloadPath,
   hibernateUnusedWorkspacesAtLaunch,
   isDefaultMailClient,
@@ -531,6 +538,15 @@ const Preferences = ({
           </ListItemSecondaryAction>
         </ListItem>
         <Divider />
+        <ListItem button onClick={requestShowCustomUserAgentWindow}>
+          <ListItemText
+            primary="Custom User Agent"
+            secondary={customUserAgent || 'Not set'}
+            classes={{ secondary: classes.secondaryEllipsis }}
+          />
+          <ChevronRightIcon color="action" />
+        </ListItem>
+        <Divider />
         <ListItem button onClick={() => requestShowCodeInjectionWindow('js')}>
           <ListItemText primary="JS Code Injection" secondary={jsCodeInjection ? 'Set' : 'Not set'} />
           <ChevronRightIcon color="action" />
@@ -576,6 +592,7 @@ const Preferences = ({
 Preferences.defaultProps = {
   cssCodeInjection: null,
   jsCodeInjection: null,
+  customUserAgent: null,
 };
 
 Preferences.propTypes = {
@@ -584,6 +601,7 @@ Preferences.propTypes = {
   attachToMenubar: PropTypes.bool.isRequired,
   classes: PropTypes.object.isRequired,
   cssCodeInjection: PropTypes.string,
+  customUserAgent: PropTypes.string,
   downloadPath: PropTypes.string.isRequired,
   hibernateUnusedWorkspacesAtLaunch: PropTypes.bool.isRequired,
   isDefaultMailClient: PropTypes.bool.isRequired,
@@ -611,6 +629,7 @@ const mapStateToProps = (state) => ({
   askForDownloadPath: state.preferences.askForDownloadPath,
   attachToMenubar: state.preferences.attachToMenubar,
   cssCodeInjection: state.preferences.cssCodeInjection,
+  customUserAgent: state.preferences.customUserAgent,
   downloadPath: state.preferences.downloadPath,
   hibernateUnusedWorkspacesAtLaunch: state.preferences.hibernateUnusedWorkspacesAtLaunch,
   isDefaultMailClient: state.general.isDefaultMailClient,

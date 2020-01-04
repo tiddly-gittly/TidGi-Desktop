@@ -15,7 +15,7 @@ export const save = () => (dispatch, getState) => {
   const codeInjectionType = window.require('electron').remote.getGlobal('codeInjectionType');
   requestSetPreference(`${codeInjectionType}CodeInjection`, form.code);
 
-  remote.getCurrentWindow().close();
-
   requestShowRequireRestartDialog();
+
+  remote.getCurrentWindow().close();
 };

@@ -49,6 +49,7 @@ const createMenu = require('../libs/create-menu');
 const aboutWindow = require('../windows/about');
 const addWorkspaceWindow = require('../windows/add-workspace');
 const codeInjectionWindow = require('../windows/code-injection');
+const customUserAgentWindow = require('../windows/custom-user-agent');
 const displayMediaWindow = require('../windows/display-media');
 const editWorkspaceWindow = require('../windows/edit-workspace');
 const licenseRegistrationWindow = require('../windows/license-registration');
@@ -128,6 +129,9 @@ const loadListeners = () => {
     codeInjectionWindow.show(type);
   });
 
+  ipcMain.on('request-show-custom-user-agent-window', () => {
+    customUserAgentWindow.show();
+  });
 
   ipcMain.on('request-reset-preferences', () => {
     dialog.showMessageBox(preferencesWindow.get(), {

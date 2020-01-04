@@ -16,6 +16,7 @@ const About = React.lazy(() => import('./components/about'));
 const AddWorkspace = React.lazy(() => import('./components/add-workspace'));
 const Auth = React.lazy(() => import('./components/auth'));
 const CodeInjection = React.lazy(() => import('./components/code-injection'));
+const CustomUserAgent = React.lazy(() => import('./components/custom-user-agent'));
 const DisplayMedia = React.lazy(() => import('./components/display-media'));
 const EditWorkspace = React.lazy(() => import('./components/edit-workspace'));
 const LicenseRegistration = React.lazy(() => import('./components/license-registration'));
@@ -30,6 +31,7 @@ const App = () => {
     case 'add-workspace': return <AddWorkspace />;
     case 'auth': return <Auth />;
     case 'code-injection': return <CodeInjection />;
+    case 'custom-user-agent': return <CustomUserAgent />;
     case 'display-media': return <DisplayMedia />;
     case 'edit-workspace': return <EditWorkspace />;
     case 'license-registration': return <LicenseRegistration />;
@@ -78,6 +80,8 @@ const runApp = () => {
         document.title = 'Notifications';
       } else if (window.mode === 'display-media') {
         document.title = 'Share your Screen';
+      } else if (window.mode === 'custom-user-agent') {
+        document.title = 'Edit Custom User Agent';
       } else {
         document.title = 'Singlebox';
       }
