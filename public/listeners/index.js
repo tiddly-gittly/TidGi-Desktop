@@ -82,8 +82,8 @@ const loadListeners = () => {
     if (close) {
       const contentSize = win.getContentSize();
 
-      const offsetTitlebar = 0;
-      const x = 68;
+      const offsetTitlebar = process.platform !== 'darwin' || global.showSidebar || global.attachToMenubar ? 0 : 22;
+      const x = global.showSidebar ? 68 : 0;
       const y = global.showNavigationBar ? 36 + offsetTitlebar : 0 + offsetTitlebar;
 
       view.setBounds({

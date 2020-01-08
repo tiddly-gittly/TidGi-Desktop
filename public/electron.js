@@ -70,6 +70,7 @@ if (!gotTheLock) {
 
   app.on('ready', () => {
     global.attachToMenubar = getPreference('attachToMenubar');
+    global.showSidebar = getPreference('sidebar');
     global.showNavigationBar = getPreference('navigationBar');
     global.MAILTO_URLS = MAILTO_URLS;
 

@@ -146,6 +146,7 @@ const Preferences = ({
   pauseNotificationsMuteAudio,
   rememberLastPageVisited,
   shareWorkspaceBrowsingData,
+  sidebar,
   spellChecker,
   spellCheckerLanguages,
   swipeToNavigate,
@@ -171,6 +172,23 @@ const Preferences = ({
           <MenuItem onClick={() => requestSetPreference('theme', 'light')}>Light</MenuItem>
           <MenuItem onClick={() => requestSetPreference('theme', 'dark')}>Dark</MenuItem>
         </StatedMenu>
+        <Divider />
+        <ListItem>
+          <ListItemText
+            primary="Show sidebar"
+            secondary="Sidebar lets you switch easily between workspaces."
+          />
+          <ListItemSecondaryAction>
+            <Switch
+              color="primary"
+              checked={sidebar}
+              onChange={(e) => {
+                requestSetPreference('sidebar', e.target.checked);
+                requestRealignActiveWorkspace();
+              }}
+            />
+          </ListItemSecondaryAction>
+        </ListItem>
         <Divider />
         <ListItem>
           <ListItemText
@@ -617,6 +635,7 @@ Preferences.propTypes = {
   pauseNotificationsMuteAudio: PropTypes.bool.isRequired,
   rememberLastPageVisited: PropTypes.bool.isRequired,
   shareWorkspaceBrowsingData: PropTypes.bool.isRequired,
+  sidebar: PropTypes.bool.isRequired,
   spellChecker: PropTypes.bool.isRequired,
   spellCheckerLanguages: PropTypes.arrayOf(PropTypes.string).isRequired,
   swipeToNavigate: PropTypes.bool.isRequired,
@@ -643,6 +662,7 @@ const mapStateToProps = (state) => ({
   pauseNotificationsMuteAudio: state.preferences.pauseNotificationsMuteAudio,
   rememberLastPageVisited: state.preferences.rememberLastPageVisited,
   shareWorkspaceBrowsingData: state.preferences.shareWorkspaceBrowsingData,
+  sidebar: state.preferences.sidebar,
   spellChecker: state.preferences.spellChecker,
   spellCheckerLanguages: state.preferences.spellCheckerLanguages,
   swipeToNavigate: state.preferences.swipeToNavigate,

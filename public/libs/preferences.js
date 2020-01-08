@@ -101,6 +101,7 @@ const defaultPreferences = {
   registered: false,
   rememberLastPageVisited: false,
   shareWorkspaceBrowsingData: false,
+  sidebar: true,
   spellChecker: true,
   spellCheckerLanguages: null,
   swipeToNavigate: true,

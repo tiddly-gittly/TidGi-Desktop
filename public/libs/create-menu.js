@@ -68,8 +68,8 @@ function createMenu() {
               const contentSize = win.getContentSize();
               const view = win.getBrowserView();
 
-              const offsetTitlebar = 0;
-              const x = 68;
+              const offsetTitlebar = process.platform !== 'darwin' || global.showSidebar || global.attachToMenubar ? 0 : 22;
+              const x = global.showSidebar ? 68 : 0;
               const y = global.showNavigationBar ? 36 + offsetTitlebar : 0 + offsetTitlebar;
 
               view.setBounds({
@@ -102,6 +102,27 @@ function createMenu() {
     {
       label: 'View',
       submenu: [
+        {
+          label: 'Show Sidebar',
+          type: 'checkbox',
+          checked: global.showSidebar,
+          accelerator: 'CmdOrCtrl+Alt+S',
+          click: () => {
+            ipcMain.emit('request-set-preference', null, 'sidebar', !global.showSidebar);
+            ipcMain.emit('request-realign-active-workspace');
+          },
+        },
+        {
+          label: 'Show Navigation Bar',
+          type: 'checkbox',
+          checked: global.showNavigationBar,
+          accelerator: 'CmdOrCtrl+Alt+N',
+          click: () => {
+            ipcMain.emit('request-set-preference', null, 'navigationBar', !global.showNavigationBar);
+            ipcMain.emit('request-realign-active-workspace');
+          },
+        },
+        { type: 'separator' },
         { role: 'togglefullscreen' },
         {
           label: 'Actual Size',
@@ -315,6 +336,10 @@ function createMenu() {
       ],
     },
     {
+      label: 'Workspaces',
+      submenu: [],
+    },
+    {
       role: 'window',
       submenu: [
         { role: 'minimize' },
@@ -474,7 +499,7 @@ function createMenu() {
         accelerator: `CmdOrCtrl+${i + 1}`,
       });
 
-      template[2].submenu[7].submenu.push({
+      template[2].submenu[template[2].submenu.length - 1].submenu.push({
         label: workspace.name || `Workspace ${i + 1}`,
         click: () => {
           const v = getView(workspace.id);

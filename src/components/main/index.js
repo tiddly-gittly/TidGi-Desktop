@@ -17,6 +17,7 @@ import getWorkspacesAsList from '../../helpers/get-workspaces-as-list';
 import WorkspaceSelector from './workspace-selector';
 import FindInPage from './find-in-page';
 import NavigationBar from './navigation-bar';
+import FakeTitleBar from './fake-title-bar';
 
 import arrowWhite from '../../images/arrow-white.png';
 import arrowBlack from '../../images/arrow-black.png';
@@ -177,6 +178,7 @@ const SortableItem = sortableElement(({ value }) => {
 const SortableContainer = sortableContainer(({ children }) => <div>{children}</div>);
 
 const Main = ({
+  attachToMenubar,
   classes,
   didFailLoad,
   isFullScreen,
@@ -184,54 +186,58 @@ const Main = ({
   navigationBar,
   registered,
   shouldPauseNotifications,
+  sidebar,
   workspaces,
 }) => {
   const workspacesList = getWorkspacesAsList(workspaces);
   return (
     <div className={classes.outerRoot}>
+      {!sidebar && !attachToMenubar && (<FakeTitleBar />)}
       <div className={classes.root}>
-        <div className={classes.sidebarRoot}>
-          <div className={classNames(classes.sidebarTop,
-            (isFullScreen || window.mode === 'menubar') && classes.sidebarTopFullScreen)}
-          >
-            <SortableContainer
-              distance={10}
-              helperClass={classes.grabbing}
-              onSortEnd={({ oldIndex, newIndex }) => {
-                if (oldIndex === newIndex) return;
-                const oldWorkspace = workspacesList[oldIndex];
-                const newWorkspace = workspacesList[newIndex];
-                requestSetWorkspace(oldWorkspace.id, {
-                  order: newWorkspace.order,
-                });
-                requestSetWorkspace(newWorkspace.id, {
-                  order: oldWorkspace.order,
-                });
-              }}
+        {sidebar && (
+          <div className={classes.sidebarRoot}>
+            <div className={classNames(classes.sidebarTop,
+              (isFullScreen || window.mode === 'menubar') && classes.sidebarTopFullScreen)}
             >
-              {workspacesList.map((workspace, i) => (
-                <SortableItem key={`item-${workspace.id}`} index={i} value={{ index: i, workspace }} />
-              ))}
-            </SortableContainer>
-            <WorkspaceSelector
-              id="add"
-              onClick={() => {
-                if (!registered && Object.keys(workspaces).length > 1) {
-                  requestShowLicenseRegistrationWindow();
-                  return;
-                }
-                requestShowAddWorkspaceWindow();
-              }}
-            />
+              <SortableContainer
+                distance={10}
+                helperClass={classes.grabbing}
+                onSortEnd={({ oldIndex, newIndex }) => {
+                  if (oldIndex === newIndex) return;
+                  const oldWorkspace = workspacesList[oldIndex];
+                  const newWorkspace = workspacesList[newIndex];
+                  requestSetWorkspace(oldWorkspace.id, {
+                    order: newWorkspace.order,
+                  });
+                  requestSetWorkspace(newWorkspace.id, {
+                    order: oldWorkspace.order,
+                  });
+                }}
+              >
+                {workspacesList.map((workspace, i) => (
+                  <SortableItem key={`item-${workspace.id}`} index={i} value={{ index: i, workspace }} />
+                ))}
+              </SortableContainer>
+              <WorkspaceSelector
+                id="add"
+                onClick={() => {
+                  if (!registered && Object.keys(workspaces).length > 1) {
+                    requestShowLicenseRegistrationWindow();
+                    return;
+                  }
+                  requestShowAddWorkspaceWindow();
+                }}
+              />
+            </div>
+            {!navigationBar && (
+            <div className={classes.end}>
+              <IconButton aria-label="Notifications" onClick={requestShowNotificationsWindow} className={classes.iconButton}>
+                {shouldPauseNotifications ? <NotificationsPausedIcon /> : <NotificationsIcon />}
+              </IconButton>
+            </div>
+            )}
           </div>
-          {!navigationBar && (
-          <div className={classes.end}>
-            <IconButton aria-label="Notifications" onClick={requestShowNotificationsWindow} className={classes.iconButton}>
-              {shouldPauseNotifications ? <NotificationsPausedIcon /> : <NotificationsIcon />}
-            </IconButton>
-          </div>
-          )}
-        </div>
+        )}
         <div className={classes.contentRoot}>
           {navigationBar && <NavigationBar />}
           <FindInPage />
@@ -272,6 +278,7 @@ const Main = ({
 };
 
 Main.propTypes = {
+  attachToMenubar: PropTypes.bool.isRequired,
   classes: PropTypes.object.isRequired,
   didFailLoad: PropTypes.bool.isRequired,
   isFullScreen: PropTypes.bool.isRequired,
@@ -279,16 +286,19 @@ Main.propTypes = {
   navigationBar: PropTypes.bool.isRequired,
   registered: PropTypes.bool.isRequired,
   shouldPauseNotifications: PropTypes.bool.isRequired,
+  sidebar: PropTypes.bool.isRequired,
   workspaces: PropTypes.object.isRequired,
 };
 
 const mapStateToProps = (state) => ({
+  attachToMenubar: state.preferences.attachToMenubar,
   didFailLoad: state.general.didFailLoad,
   isFullScreen: state.general.isFullScreen,
   isLoading: state.general.isLoading,
   navigationBar: state.preferences.navigationBar,
   registered: state.preferences.registered,
   shouldPauseNotifications: state.notifications.pauseNotificationsInfo !== null,
+  sidebar: state.preferences.sidebar,
   workspaces: state.workspaces,
 });
 
