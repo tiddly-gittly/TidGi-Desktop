@@ -289,6 +289,17 @@ const addView = (browserWindow, workspace) => {
       });
 
       app.setBadgeCount(count);
+
+      if (process.platform === 'win32') {
+        if (count > 0) {
+          browserWindow.setOverlayIcon(
+            path.resolve(__dirname, '..', 'overlay-icon.png'),
+            'You have new notifications',
+          );
+        } else {
+          browserWindow.setOverlayIcon(null);
+        }
+      }
     });
   }
 
