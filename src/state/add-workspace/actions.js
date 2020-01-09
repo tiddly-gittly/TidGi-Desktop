@@ -27,7 +27,7 @@ export const getHits = () => (dispatch, getState) => {
   const {
     isGetting,
     page,
-    query,
+    currentQuery,
     totalPage,
   } = state.addWorkspace;
 
@@ -37,15 +37,11 @@ export const getHits = () => (dispatch, getState) => {
   if (totalPage && page + 1 > totalPage) return;
 
   dispatch({
-    type: ADD_WORKSPACE_UPDATE_CURRENT_QUERY,
-    currentQuery: query,
-  });
-  dispatch({
     type: ADD_WORKSPACE_GET_REQUEST,
   });
 
   index.search({
-    query,
+    query: currentQuery,
     page: page + 1,
     hitsPerPage: 24,
   })
@@ -60,13 +56,21 @@ export const getHits = () => (dispatch, getState) => {
     }));
 };
 
-export const resetThenGetHits = () => (dispatch) => {
+export const resetThenGetHits = () => (dispatch, getState) => {
+  const state = getState();
+  const { query } = state.addWorkspace;
+
   dispatch({
     type: ADD_WORKSPACE_RESET,
+  });
+  dispatch({
+    type: ADD_WORKSPACE_UPDATE_CURRENT_QUERY,
+    currentQuery: query,
   });
   dispatch(getHits());
 };
 
+let timeout = null;
 export const updateQuery = (query) => (dispatch, getState) => {
   const state = getState();
 
@@ -78,8 +82,15 @@ export const updateQuery = (query) => (dispatch, getState) => {
     type: ADD_WORKSPACE_UPDATE_QUERY,
     query,
   });
-  if (query === '' && currentQuery !== query) {
-    dispatch(resetThenGetHits());
+  clearTimeout(timeout);
+  if (currentQuery !== query) {
+    if (query === '') {
+      dispatch(resetThenGetHits());
+    } else {
+      timeout = setTimeout(() => {
+        dispatch(resetThenGetHits());
+      }, 300);
+    }
   }
 };
 

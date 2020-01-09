@@ -2,11 +2,13 @@ import React from 'react';
 
 import PropTypes from 'prop-types';
 
+import Divider from '@material-ui/core/Divider';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import Grid from '@material-ui/core/Grid';
 import BottomNavigation from '@material-ui/core/BottomNavigation';
 import BottomNavigationAction from '@material-ui/core/BottomNavigationAction';
 import Paper from '@material-ui/core/Paper';
+import Typography from '@material-ui/core/Typography';
 
 import SearchIcon from '@material-ui/icons/Search';
 import ViewListIcon from '@material-ui/icons/ViewList';
@@ -84,6 +86,8 @@ class AddWorkspace extends React.Component {
 
     const el = this.scrollContainer;
     el.onscroll = () => {
+      const { isGetting, currentQuery, hits } = this.props;
+      if (!isGetting && currentQuery.length > 0 && hits.length < 1) return; // no result
       // Plus 300 to run ahead.
       if (el.scrollTop + 300 >= el.scrollHeight - el.offsetHeight) {
         onGetHits();
@@ -94,6 +98,7 @@ class AddWorkspace extends React.Component {
   render() {
     const {
       classes,
+      currentQuery,
       hasFailed,
       hits,
       isGetting,
@@ -116,6 +121,16 @@ class AddWorkspace extends React.Component {
         return (
           <EmptyState icon={SearchIcon} title="No Matching Results">
             <Grid container justify="center" spacing={16}>
+              <Grid item xs={12}>
+                <Typography
+                  variant="subtitle1"
+                  align="center"
+                >
+                  Your search -&nbsp;
+                  <b>{currentQuery}</b>
+                  &nbsp;- did not match any apps in the catalog.
+                </Typography>
+              </Grid>
               <Grid item>
                 <AddCustomAppCard />
               </Grid>
@@ -130,6 +145,19 @@ class AddWorkspace extends React.Component {
       return (
         <>
           <Grid container justify="center" spacing={16}>
+            {currentQuery && (
+              <Grid item xs={12}>
+                <Typography
+                  variant="subtitle1"
+                  align="left"
+                  noWrap
+                >
+                  Search results for&nbsp;
+                  <b>{currentQuery}</b>
+                </Typography>
+                <Divider className={classes.divider} />
+              </Grid>
+            )}
             {hits.map((app) => (
               <AppCard
                 key={app.id}
@@ -219,9 +247,13 @@ class AddWorkspace extends React.Component {
   }
 }
 
+AddWorkspace.defaultProps = {
+  currentQuery: '',
+};
 
 AddWorkspace.propTypes = {
   classes: PropTypes.object.isRequired,
+  currentQuery: PropTypes.string,
   hasFailed: PropTypes.bool.isRequired,
   hits: PropTypes.arrayOf(PropTypes.object).isRequired,
   isGetting: PropTypes.bool.isRequired,
@@ -232,6 +264,7 @@ AddWorkspace.propTypes = {
 };
 
 const mapStateToProps = (state) => ({
+  currentQuery: state.addWorkspace.currentQuery,
   hasFailed: state.addWorkspace.hasFailed,
   hits: state.addWorkspace.hits,
   isGetting: state.addWorkspace.isGetting,
