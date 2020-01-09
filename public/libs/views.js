@@ -294,10 +294,10 @@ const addView = (browserWindow, workspace) => {
         if (count > 0) {
           browserWindow.setOverlayIcon(
             path.resolve(__dirname, '..', 'overlay-icon.png'),
-            'You have new notifications',
+            `You have ${count} new messages.`,
           );
         } else {
-          browserWindow.setOverlayIcon(null);
+          browserWindow.setOverlayIcon(null, '');
         }
       }
     });
