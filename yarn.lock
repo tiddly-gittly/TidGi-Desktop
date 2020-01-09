@@ -8568,10 +8568,10 @@ memory-fs@^0.5.0:
     errno "^0.1.3"
     readable-stream "^2.0.1"
 
-menubar@6.0.8:
-  version "6.0.8"
-  resolved "https://registry.yarnpkg.com/menubar/-/menubar-6.0.8.tgz#deff4b4227c73149f6316c481accb1486e7c9e7f"
-  integrity sha512-S02SLiqec8MAUbV2vsUThh0P9XPKS9mrHVN3c/6T1g+tuHwFX7TRup3xCAjIGCO+Hxs32tWmjqVh4KjBGIXudQ==
+menubar@7.1.0:
+  version "7.1.0"
+  resolved "https://registry.yarnpkg.com/menubar/-/menubar-7.1.0.tgz#c92d75e78fcce6da39fced936ad75c94009699df"
+  integrity sha512-B7ITYPW0oNu5NSjaYTt9ExL6GRMVb9p+ryW+c/4Rg1/EErmDGJhwCZavnV2roGJApNiFahymHsaG9yRq2iMCkw==
   dependencies:
     electron-positioner "^4.1.0"
 

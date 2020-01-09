@@ -35,6 +35,8 @@ const createAsync = () => {
       index: REACT_PATH,
       icon: path.resolve(__dirname, '..', 'menubarTemplate.png'),
       preloadWindow: true,
+      showOnRightClick: true,
+      tooltip: 'Singlebox',
       browserWindow: {
         x: menubarWindowState.x,
         y: menubarWindowState.y,
@@ -62,73 +64,81 @@ const createAsync = () => {
         });
 
         mb.on('ready', () => {
-          const registered = getPreference('registered');
-          const updaterEnabled = process.env.SNAP == null && !process.mas && !process.windowsStore;
+          mb.tray.on('click', () => {
+            const registered = getPreference('registered');
+            const updaterEnabled = process.env.SNAP == null
+              && !process.mas && !process.windowsStore;
 
-          const updaterMenuItem = {
-            label: 'Check for Updates...',
-            click: () => {
-              global.updateSilent = false;
-              autoUpdater.checkForUpdates();
-            },
-            visible: updaterEnabled,
-          };
-          if (global.updateDownloaded) {
-            updaterMenuItem.label = 'Restart to Apply Updates...';
-            updaterMenuItem.click = () => {
-              setImmediate(() => {
-                app.removeAllListeners('window-all-closed');
-                if (get() != null) {
-                  get().forceClose = true;
-                  get().close();
-                }
-                autoUpdater.quitAndInstall(false);
-              });
-            };
-          } else if (global.updaterProgressObj) {
-            const { transferred, total, bytesPerSecond } = global.updaterProgressObj;
-            updaterMenuItem.label = `Downloading Updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
-            updaterMenuItem.enabled = false;
-          }
-
-          const contextMenu = Menu.buildFromTemplate([
-            {
-              label: 'About Singlebox',
-              click: () => ipcMain.emit('request-show-about-window'),
-            },
-            { type: 'separator' },
-            {
-              label: registered ? 'Registered' : 'Registration...',
-              enabled: !registered,
-              click: registered ? null : () => ipcMain.emit('request-show-license-registration-window'),
-            },
-            { type: 'separator' },
-            updaterMenuItem,
-            { type: 'separator' },
-            {
-              label: 'Preferences...',
-              click: () => ipcMain.emit('request-show-preferences-window'),
-            },
-            { type: 'separator' },
-            {
-              label: 'Notifications...',
-              click: () => ipcMain.emit('request-show-notifications-window'),
-            },
-            { type: 'separator' },
-            {
-              label: 'Clear Browsing Data...',
-              click: () => ipcMain.emit('request-clear-browsing-data'),
-            },
-            { type: 'separator' },
-            {
-              role: 'quit',
+            const updaterMenuItem = {
+              label: 'Check for Updates...',
               click: () => {
-                mb.app.quit();
+                global.updateSilent = false;
+                autoUpdater.checkForUpdates();
               },
-            },
-          ]);
+              visible: updaterEnabled,
+            };
+            if (global.updateDownloaded) {
+              updaterMenuItem.label = 'Restart to Apply Updates...';
+              updaterMenuItem.click = () => {
+                setImmediate(() => {
+                  app.removeAllListeners('window-all-closed');
+                  if (get() != null) {
+                    get().forceClose = true;
+                    get().close();
+                  }
+                  autoUpdater.quitAndInstall(false);
+                });
+              };
+            } else if (global.updaterProgressObj) {
+              const { transferred, total, bytesPerSecond } = global.updaterProgressObj;
+              updaterMenuItem.label = `Downloading Updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
+              updaterMenuItem.enabled = false;
+            }
 
-          mb.tray.on('right-click', () => {
+            const contextMenu = Menu.buildFromTemplate([
+              {
+                label: 'Open Singlebox',
+                click: () => mb.showWindow(),
+              },
+              {
+                type: 'separator',
+              },
+              {
+                label: 'About Singlebox',
+                click: () => ipcMain.emit('request-show-about-window'),
+              },
+              { type: 'separator' },
+              {
+                label: registered ? 'Registered' : 'Registration...',
+                enabled: !registered,
+                click: registered ? null : () => ipcMain.emit('request-show-license-registration-window'),
+              },
+              { type: 'separator' },
+              updaterMenuItem,
+              { type: 'separator' },
+              {
+                label: 'Preferences...',
+                click: () => ipcMain.emit('request-show-preferences-window'),
+              },
+              { type: 'separator' },
+              {
+                label: 'Notifications...',
+                click: () => ipcMain.emit('request-show-notifications-window'),
+              },
+              { type: 'separator' },
+              {
+                label: 'Clear Browsing Data...',
+                click: () => ipcMain.emit('request-clear-browsing-data'),
+              },
+              { type: 'separator' },
+              {
+                role: 'quit',
+                click: () => {
+                  mb.app.quit();
+                },
+              },
+            ]);
+
             mb.tray.popUpContextMenu(contextMenu);
           });
 
