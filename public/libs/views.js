@@ -25,7 +25,37 @@ let shouldPauseNotifications;
 const extractDomain = (fullUrl) => {
   const matches = fullUrl.match(/^https?:\/\/([^/?#]+)(?:[/?#]|$)/i);
   const domain = matches && matches[1];
-  return domain ? domain.replace('www.', '') : null;
+  // https://stackoverflow.com/a/9928725
+  return domain ? domain.replace(/^(www\.)/, '') : null;
+};
+
+// https://stackoverflow.com/a/14645182
+const isSubdomain = (url) => {
+  const regex = new RegExp(/^([a-z]+:\/{2})?([\w-]+\.[\w-]+\.\w+)$/);
+  return !!url.match(regex); // make sure it returns boolean
+};
+
+const equivalentDomain = (domain) => {
+  let eDomain = domain;
+
+  const prefixes = ['www', 'app', 'login', 'go', 'accounts', 'open'];
+  // app.portcast.io ~ portcast.io
+  // login.xero.com ~ xero.com
+  // go.xero.com ~ xero.com
+  // accounts.google.com ~ google.com
+  // open.spotify.com ~ spotify.com
+
+  // remove one by one not to break domain
+  prefixes.forEach((prefix) => {
+    // check if subdomain, if not return the domain
+    if (isSubdomain(domain)) {
+      // https://stackoverflow.com/a/9928725
+      const regex = new RegExp(`^(${prefix}.)`);
+      eDomain = eDomain.replace(regex, '');
+    }
+  });
+
+  return eDomain;
 };
 
 const addView = (browserWindow, workspace) => {
@@ -182,7 +212,8 @@ const addView = (browserWindow, workspace) => {
     }
 
     // open new window
-    if (nextDomain === appDomain || nextDomain === currentDomain) {
+    if (equivalentDomain(nextDomain) === equivalentDomain(appDomain)
+     || equivalentDomain(nextDomain) === equivalentDomain(currentDomain)) {
       // https://gist.github.com/Gvozd/2cec0c8c510a707854e439fb15c561b0
       e.preventDefault();
       const newOptions = {
@@ -223,7 +254,8 @@ const addView = (browserWindow, workspace) => {
       popupWin.webContents.once('will-navigate', (_, url) => {
         const retrievedDomain = extractDomain(url);
         // if the window is used for the current app, then use default behavior
-        if (retrievedDomain === appDomain || retrievedDomain === currentDomain) {
+        if (equivalentDomain(retrievedDomain) === equivalentDomain(appDomain)
+         || equivalentDomain(retrievedDomain) === equivalentDomain(currentDomain)) {
           popupWin.show();
         } else { // if not, open in browser
           e.preventDefault();
