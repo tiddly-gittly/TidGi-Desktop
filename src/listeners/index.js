@@ -15,6 +15,7 @@ import {
 import {
   updatePauseNotificationsInfo,
 } from '../state/notifications/actions';
+import { updateUpdater } from '../state/updater/actions';
 import { requestFindInPage } from '../senders';
 
 const { ipcRenderer } = window.require('electron');
@@ -75,6 +76,10 @@ const loadListeners = (store) => {
 
   ipcRenderer.on('should-pause-notifications-changed', (e, val) => {
     store.dispatch(updatePauseNotificationsInfo(val));
+  });
+
+  ipcRenderer.on('update-updater', (e, updaterObj) => {
+    store.dispatch(updateUpdater(updaterObj));
   });
 };
 

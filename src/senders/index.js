@@ -10,6 +10,10 @@ export const requestGoBack = () => ipcRenderer.send('request-go-back');
 export const requestGoForward = () => ipcRenderer.send('request-go-forward');
 export const requestReload = () => ipcRenderer.send('request-reload');
 
+export const requestQuit = () => ipcRenderer.send('request-quit');
+export const requestCheckForUpdates = (isSilent) => ipcRenderer.send('request-check-for-updates', isSilent);
+
+export const requestShowAboutWindow = () => ipcRenderer.send('request-show-about-window');
 export const requestShowAddWorkspaceWindow = () => ipcRenderer.send('request-show-add-workspace-window');
 export const requestShowCodeInjectionWindow = (type) => ipcRenderer.send('request-show-code-injection-window', type);
 export const requestShowCustomUserAgentWindow = () => ipcRenderer.send('request-show-custom-user-agent-window');

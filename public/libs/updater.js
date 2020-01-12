@@ -7,8 +7,16 @@ const createMenu = require('./create-menu');
 const mainWindow = require('../windows/main');
 
 global.updateSilent = true;
-global.updateAvailable = false;
-global.updaterProgressObj = null;
+
+global.updaterObj = {};
+
+autoUpdater.on('checking-for-update', () => {
+  global.updaterObj = {
+    status: 'checking-for-update',
+  };
+  sendToAllWindows('update-updater', global.updaterObj);
+  createMenu();
+});
 
 autoUpdater.on('update-available', (info) => {
   if (!global.updateSilent) {
@@ -22,11 +30,15 @@ autoUpdater.on('update-available', (info) => {
     global.updateSilent = true;
   }
 
-  sendToAllWindows('log', info);
+  global.updaterObj = {
+    status: 'update-available',
+    info,
+  };
+  sendToAllWindows('update-updater', global.updaterObj);
+  createMenu();
 });
 
 autoUpdater.on('update-not-available', (info) => {
-  global.updaterProgressObj = null;
   if (!global.updateSilent) {
     dialog.showMessageBox(mainWindow.get(), {
       title: 'No Updates',
@@ -38,12 +50,15 @@ autoUpdater.on('update-not-available', (info) => {
     global.updateSilent = true;
   }
 
-  sendToAllWindows('log', info);
+  global.updaterObj = {
+    status: 'update-not-available',
+    info,
+  };
+  sendToAllWindows('update-updater', global.updaterObj);
   createMenu();
 });
 
 autoUpdater.on('error', (err) => {
-  global.updaterProgressObj = null;
   if (!global.updateSilent) {
     dialog.showMessageBox(mainWindow.get(), {
       title: 'Failed to Check for Updates',
@@ -56,23 +71,37 @@ autoUpdater.on('error', (err) => {
   }
 
   sendToAllWindows('log', err);
+  global.updaterObj = {
+    status: 'error',
+    info: err,
+  };
+  sendToAllWindows('update-updater', global.updaterObj);
   createMenu();
 });
 
 autoUpdater.on('update-cancelled', () => {
-  global.updaterProgressObj = null;
+  global.updaterObj = {
+    status: 'update-cancelled',
+  };
+  sendToAllWindows('update-updater', global.updaterObj);
   createMenu();
 });
 
 autoUpdater.on('download-progress', (progressObj) => {
-  global.updaterProgressObj = progressObj;
+  global.updaterObj = {
+    status: 'download-progress',
+    info: progressObj,
+  };
+  sendToAllWindows('update-updater', global.updaterObj);
   createMenu();
 });
 
 autoUpdater.on('update-downloaded', (info) => {
-  global.updateDownloaded = true;
-  global.updaterProgressObj = null;
-
+  global.updaterObj = {
+    status: 'update-downloaded',
+    info,
+  };
+  sendToAllWindows('update-updater', global.updaterObj);
   createMenu();
 
   const dialogOpts = {
@@ -83,22 +112,22 @@ autoUpdater.on('update-downloaded', (info) => {
     cancelId: 1,
   };
 
-  dialog.showMessageBox(mainWindow.get(), dialogOpts, (response) => {
-    if (response === 0) {
-      // Fix autoUpdater.quitAndInstall() does not quit immediately
-      // https://github.com/electron/electron/issues/3583
-      // https://github.com/electron-userland/electron-builder/issues/1604
-      setImmediate(() => {
-        app.removeAllListeners('window-all-closed');
-        const win = mainWindow.get();
-        if (win != null) {
-          win.forceClose = true;
-          win.close();
-        }
-        autoUpdater.quitAndInstall(false);
-      });
-    }
-  });
+  dialog.showMessageBox(mainWindow.get(), dialogOpts)
+    .then(({ response }) => {
+      if (response === 0) {
+        // Fix autoUpdater.quitAndInstall() does not quit immediately
+        // https://github.com/electron/electron/issues/3583
+        // https://github.com/electron-userland/electron-builder/issues/1604
+        setImmediate(() => {
+          app.removeAllListeners('window-all-closed');
+          const win = mainWindow.get();
+          if (win != null) {
+            win.forceClose = true;
+            win.close();
+          }
+          autoUpdater.quitAndInstall(false);
+        });
+      }
+    })
+    .catch(console.log); // eslint-disable-line
 });
-
-autoUpdater.checkForUpdates();

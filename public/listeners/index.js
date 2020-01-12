@@ -6,6 +6,7 @@ const {
   ipcMain,
   shell,
 } = require('electron');
+const { autoUpdater } = require('electron-updater');
 
 const {
   getPreference,
@@ -350,6 +351,31 @@ const loadListeners = () => {
   ipcMain.on('request-show-display-media-window', (e) => {
     const viewId = BrowserView.fromWebContents(e.sender).id;
     displayMediaWindow.show(viewId);
+  });
+
+  ipcMain.on('request-quit', () => {
+    app.quit();
+  });
+
+  ipcMain.on('request-check-for-updates', (e, isSilent) => {
+    // https://github.com/electron-userland/electron-builder/issues/4028
+    if (!autoUpdater.isUpdaterActive()) return;
+
+    // restart & apply updates
+    if (global.updaterObj && global.updaterObj.status === 'update-downloaded') {
+      setImmediate(() => {
+        app.removeAllListeners('window-all-closed');
+        if (mainWindow.get() != null) {
+          mainWindow.get().forceClose = true;
+          mainWindow.get().close();
+        }
+        autoUpdater.quitAndInstall(false);
+      });
+    }
+
+    // check for updates
+    global.updateSilent = Boolean(isSilent);
+    autoUpdater.checkForUpdates();
   });
 };
 

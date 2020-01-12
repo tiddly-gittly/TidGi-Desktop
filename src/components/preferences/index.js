@@ -23,14 +23,19 @@ import StatedMenu from '../shared/stated-menu';
 import { updateIsDefaultMailClient, updateIsDefaultWebBrowser } from '../../state/general/actions';
 
 import {
+  requestCheckForUpdates,
   requestClearBrowsingData,
   requestOpenInBrowser,
+  requestQuit,
   requestRealignActiveWorkspace,
   requestResetPreferences,
   requestSetPreference,
   requestSetSystemPreference,
+  requestShowAboutWindow,
   requestShowCodeInjectionWindow,
   requestShowCustomUserAgentWindow,
+  requestShowLicenseRegistrationWindow,
+  requestShowNotificationsWindow,
   requestShowRequireRestartDialog,
 } from '../../senders';
 
@@ -124,6 +129,39 @@ const hunspellLanguagesMap = {
   'cy-GB': 'Welsh - Cymraeg',
 };
 
+const formatBytes = (bytes, decimals = 2) => {
+  if (bytes === 0) return '0 Bytes';
+
+  const k = 1024;
+  const dm = decimals < 0 ? 0 : decimals;
+  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
+
+  const i = Math.floor(Math.log(bytes) / Math.log(k));
+
+  return `${parseFloat((bytes / k ** i).toFixed(dm))} ${sizes[i]}`;
+};
+
+const getUpdaterDesc = (status, info) => {
+  if (status === 'download-progress') {
+    if (info != null) {
+      const { transferred, total, bytesPerSecond } = info;
+      return `Downloading updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
+    }
+    return 'Downloading updates...';
+  }
+  if (status === 'checking-for-update') {
+    return 'Checking for updates...';
+  }
+  if (status === 'update-available') {
+    return 'Downloading updates...';
+  }
+  if (status === 'update-downloaded') {
+    if (info && info.version) return `A new version (${info.version}) has been downloaded.`;
+    return 'A new version has been downloaded.';
+  }
+  return null;
+};
+
 const Preferences = ({
   allowPrerelease,
   askForDownloadPath,
@@ -144,6 +182,7 @@ const Preferences = ({
   pauseNotificationsByScheduleFrom,
   pauseNotificationsByScheduleTo,
   pauseNotificationsMuteAudio,
+  registered,
   rememberLastPageVisited,
   shareWorkspaceBrowsingData,
   sidebar,
@@ -152,6 +191,8 @@ const Preferences = ({
   swipeToNavigate,
   theme,
   unreadCountBadge,
+  updaterInfo,
+  updaterStatus,
 }) => (
   <div className={classes.root}>
     <Typography variant="subtitle2" className={classes.sectionTitle}>
@@ -264,6 +305,11 @@ const Preferences = ({
     </Typography>
     <Paper className={classes.paper}>
       <List dense>
+        <ListItem button onClick={requestShowNotificationsWindow}>
+          <ListItemText primary="Control notifications" />
+          <ChevronRightIcon color="action" />
+        </ListItem>
+        <Divider />
         <ListItem>
           <ListItemText>
             Automatically disable notifications by schedule:
@@ -604,13 +650,51 @@ const Preferences = ({
         </ListItem>
       </List>
     </Paper>
+
+    <Typography variant="subtitle2" className={classes.sectionTitle}>
+      Miscellaneous
+    </Typography>
+    <Paper className={classes.paper}>
+      <List dense>
+        <ListItem button onClick={requestShowAboutWindow}>
+          <ListItemText primary="About" />
+          <ChevronRightIcon color="action" />
+        </ListItem>
+        <Divider />
+        <ListItem button onClick={requestShowLicenseRegistrationWindow} disabled={registered}>
+          <ListItemText primary="License Registration" secondary={registered ? 'Registered. Thank you for supporting the development of Singlebox.' : null} />
+          <ChevronRightIcon color="action" />
+        </ListItem>
+        <Divider />
+        <ListItem
+          button
+          onClick={() => requestCheckForUpdates(false)}
+          disabled={updaterStatus === 'download-progress'
+            || updaterStatus === 'download-progress'
+            || updaterStatus === 'update-available'}
+        >
+          <ListItemText
+            primary={updaterStatus === 'update-downloaded' ? 'Restart to Apply Updates' : 'Check for Updates'}
+            secondary={getUpdaterDesc(updaterStatus, updaterInfo)}
+          />
+          <ChevronRightIcon color="action" />
+        </ListItem>
+        <Divider />
+        <ListItem button onClick={requestQuit}>
+          <ListItemText primary="Quit" />
+          <ChevronRightIcon color="action" />
+        </ListItem>
+      </List>
+    </Paper>
   </div>
 );
 
 Preferences.defaultProps = {
   cssCodeInjection: null,
-  jsCodeInjection: null,
   customUserAgent: null,
+  jsCodeInjection: null,
+  updaterInfo: null,
+  updaterStatus: null,
 };
 
 Preferences.propTypes = {
@@ -633,6 +717,7 @@ Preferences.propTypes = {
   pauseNotificationsByScheduleFrom: PropTypes.string.isRequired,
   pauseNotificationsByScheduleTo: PropTypes.string.isRequired,
   pauseNotificationsMuteAudio: PropTypes.bool.isRequired,
+  registered: PropTypes.bool.isRequired,
   rememberLastPageVisited: PropTypes.bool.isRequired,
   shareWorkspaceBrowsingData: PropTypes.bool.isRequired,
   sidebar: PropTypes.bool.isRequired,
@@ -641,6 +726,8 @@ Preferences.propTypes = {
   swipeToNavigate: PropTypes.bool.isRequired,
   theme: PropTypes.string.isRequired,
   unreadCountBadge: PropTypes.bool.isRequired,
+  updaterInfo: PropTypes.object,
+  updaterStatus: PropTypes.string,
 };
 
 const mapStateToProps = (state) => ({
@@ -660,6 +747,7 @@ const mapStateToProps = (state) => ({
   pauseNotificationsByScheduleFrom: state.preferences.pauseNotificationsByScheduleFrom,
   pauseNotificationsByScheduleTo: state.preferences.pauseNotificationsByScheduleTo,
   pauseNotificationsMuteAudio: state.preferences.pauseNotificationsMuteAudio,
+  registered: state.preferences.registered,
   rememberLastPageVisited: state.preferences.rememberLastPageVisited,
   shareWorkspaceBrowsingData: state.preferences.shareWorkspaceBrowsingData,
   sidebar: state.preferences.sidebar,
@@ -668,6 +756,8 @@ const mapStateToProps = (state) => ({
   swipeToNavigate: state.preferences.swipeToNavigate,
   theme: state.preferences.theme,
   unreadCountBadge: state.preferences.unreadCountBadge,
+  updaterInfo: state.updater.info,
+  updaterStatus: state.updater.status,
 });
 
 const actionCreators = {
