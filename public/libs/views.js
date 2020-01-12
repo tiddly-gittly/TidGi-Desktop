@@ -36,6 +36,8 @@ const isSubdomain = (url) => {
 };
 
 const equivalentDomain = (domain) => {
+  if (!domain) return null;
+
   let eDomain = domain;
 
   const prefixes = ['www', 'app', 'login', 'go', 'accounts', 'open'];
@@ -48,7 +50,7 @@ const equivalentDomain = (domain) => {
   // remove one by one not to break domain
   prefixes.forEach((prefix) => {
     // check if subdomain, if not return the domain
-    if (isSubdomain(domain)) {
+    if (isSubdomain(eDomain)) {
       // https://stackoverflow.com/a/9928725
       const regex = new RegExp(`^(${prefix}.)`);
       eDomain = eDomain.replace(regex, '');
