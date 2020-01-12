@@ -239,7 +239,11 @@ const Preferences = ({
           <ListItemSecondaryAction>
             <Switch
               color="primary"
-              checked={navigationBar}
+              // must show sidebar or navigation bar on Linux
+              // if not, as user can't right-click on menu bar icon
+              // they can't access preferences or notifications
+              checked={(window.process.platform === 'linux' && attachToMenubar && !sidebar) || navigationBar}
+              disabled={(window.process.platform === 'linux' && attachToMenubar && !sidebar)}
               onChange={(e) => {
                 requestSetPreference('navigationBar', e.target.checked);
                 requestRealignActiveWorkspace();
@@ -250,7 +254,9 @@ const Preferences = ({
         <Divider />
         <ListItem>
           <ListItemText
-            primary="Attach to menubar"
+            primary={window.process.platform === 'win32'
+              ? 'Attach to taskbar' : 'Attach to menu bar'}
+            secondary={window.process.platform !== 'linux' ? 'Tip: Right-click on app icon to access context menu.' : null}
           />
           <ListItemSecondaryAction>
             <Switch

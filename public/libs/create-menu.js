@@ -415,6 +415,7 @@ function createMenu() {
         {
           label: 'Preferences...',
           click: () => preferencesWindow.show(),
+          accelerator: 'CmdOrCtrl+,',
         },
         { type: 'separator' },
         {

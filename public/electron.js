@@ -71,7 +71,9 @@ if (!gotTheLock) {
   app.on('ready', () => {
     global.attachToMenubar = getPreference('attachToMenubar');
     global.showSidebar = getPreference('sidebar');
-    global.showNavigationBar = getPreference('navigationBar');
+    global.showNavigationBar = (process.platform === 'linux'
+      && global.attachToMenubar
+      && !global.showSidebar) || getPreference('navigationBar');
     global.MAILTO_URLS = MAILTO_URLS;
 
     autoUpdater.allowPrerelease = getPreference('allowPrerelease');

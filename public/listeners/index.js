@@ -226,7 +226,9 @@ const loadListeners = () => {
   ipcMain.on('request-realign-active-workspace', () => {
     global.attachToMenubar = getPreference('attachToMenubar');
     global.showSidebar = getPreference('sidebar');
-    global.showNavigationBar = getPreference('navigationBar');
+    global.showNavigationBar = (process.platform === 'linux'
+    && global.attachToMenubar
+    && !global.showSidebar) || getPreference('navigationBar');
 
     const activeWorkspace = getActiveWorkspace();
     setActiveWorkspaceView(activeWorkspace.id);
