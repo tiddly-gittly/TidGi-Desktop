@@ -675,7 +675,8 @@ const Preferences = ({
         <ListItem
           button
           onClick={() => requestCheckForUpdates(false)}
-          disabled={updaterStatus === 'download-progress'
+          disabled={updaterStatus === 'checking-for-update'
+            || updaterStatus === 'download-progress'
             || updaterStatus === 'download-progress'
             || updaterStatus === 'update-available'}
         >
