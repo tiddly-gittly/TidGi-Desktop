@@ -179,7 +179,12 @@ export const save = () => (dispatch, getState) => {
     return dispatch(updateForm(validatedChanges));
   }
 
-  requestCreateWorkspace(form.name, form.homeUrl.trim(), form.internetIcon || form.picturePath);
+  requestCreateWorkspace(
+    form.name,
+    form.homeUrl.trim(),
+    form.internetIcon || form.picturePath,
+    Boolean(form.transparentBackground),
+  );
   remote.getCurrentWindow().close();
   return null;
 };

@@ -216,8 +216,8 @@ const loadListeners = () => {
     e.returnValue = workspaces;
   });
 
-  ipcMain.on('request-create-workspace', (e, name, homeUrl, picture) => {
-    createWorkspaceView(name, homeUrl, picture);
+  ipcMain.on('request-create-workspace', (e, name, homeUrl, picture, transparentBackground) => {
+    createWorkspaceView(name, homeUrl, picture, transparentBackground);
     createMenu();
   });
 

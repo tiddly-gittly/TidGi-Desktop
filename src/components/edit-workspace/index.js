@@ -1,5 +1,6 @@
 import React from 'react';
 import PropTypes from 'prop-types';
+import classNames from 'classnames';
 
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
@@ -10,6 +11,9 @@ import ListItemText from '@material-ui/core/ListItemText';
 import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import Switch from '@material-ui/core/Switch';
 import Typography from '@material-ui/core/Typography';
+import FormGroup from '@material-ui/core/FormGroup';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Checkbox from '@material-ui/core/Checkbox';
 
 import connectComponent from '../../helpers/connect-component';
 import getMailtoUrl from '../../helpers/get-mailto-url';
@@ -63,9 +67,9 @@ const styles = (theme) => ({
     fontFamily: theme.typography.fontFamily,
     height: 64,
     width: 64,
-    background: theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white,
+    background: theme.palette.common.white,
     borderRadius: 4,
-    color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white),
+    color: theme.palette.getContrastText(theme.palette.common.white),
     fontSize: '32px',
     lineHeight: '64px',
     textAlign: 'center',
@@ -73,6 +77,10 @@ const styles = (theme) => ({
     textTransform: 'uppercase',
     userSelect: 'none',
     boxShadow: theme.shadows[1],
+  },
+  transparentAvatar: {
+    background: 'transparent',
+    boxShadow: 'none',
   },
   avatarPicture: {
     height: 64,
@@ -110,6 +118,7 @@ const EditWorkspace = ({
   onSave,
   onUpdateForm,
   picturePath,
+  transparentBackground,
 }) => (
   <div className={classes.root}>
     <div className={classes.flexGrow}>
@@ -146,7 +155,12 @@ const EditWorkspace = ({
       />
       <div className={classes.avatarFlex}>
         <div className={classes.avatarLeft}>
-          <div className={classes.avatar}>
+          <div
+            className={classNames(
+              classes.avatar,
+              transparentBackground && classes.transparentAvatar,
+            )}
+          >
             <img
               alt="Icon"
               className={classes.avatarPicture}
@@ -198,6 +212,17 @@ const EditWorkspace = ({
           >
             Reset to Default
           </Button>
+          <FormGroup>
+            <FormControlLabel
+              control={(
+                <Checkbox
+                  checked={transparentBackground}
+                  onChange={(e) => onUpdateForm({ transparentBackground: e.target.checked })}
+                />
+              )}
+              label="Use transparent background"
+            />
+          </FormGroup>
         </div>
       </div>
       <List>
@@ -265,6 +290,7 @@ EditWorkspace.propTypes = {
   onSave: PropTypes.func.isRequired,
   onUpdateForm: PropTypes.func.isRequired,
   picturePath: PropTypes.string,
+  transparentBackground: PropTypes.bool.isRequired,
 };
 
 const mapStateToProps = (state) => ({
@@ -281,6 +307,7 @@ const mapStateToProps = (state) => ({
   nameError: state.editWorkspace.form.nameError,
   order: state.editWorkspace.form.order,
   picturePath: state.editWorkspace.form.picturePath,
+  transparentBackground: Boolean(state.editWorkspace.form.transparentBackground),
 });
 
 const actionCreators = {

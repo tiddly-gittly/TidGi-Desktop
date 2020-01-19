@@ -103,6 +103,7 @@ export const save = () => (dispatch, getState) => {
       disableAudio: Boolean(form.disableAudio),
       disableNotifications: Boolean(form.disableNotifications),
       hibernateWhenUnused: Boolean(form.hibernateWhenUnused),
+      transparentBackground: Boolean(form.transparentBackground),
     },
   );
 

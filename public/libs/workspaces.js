@@ -158,7 +158,7 @@ const removeWorkspace = (id) => {
   settings.delete(`workspaces.${v}.${id}`);
 };
 
-const createWorkspace = (name, homeUrl) => {
+const createWorkspace = (name, homeUrl, transparentBackground) => {
   const newId = uuidv1();
 
   // find largest order
@@ -177,6 +177,7 @@ const createWorkspace = (name, homeUrl) => {
     id: newId,
     name,
     order: max + 1,
+    transparentBackground,
   };
 
   workspaces[newId] = newWorkspace;

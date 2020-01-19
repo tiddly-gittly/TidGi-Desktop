@@ -135,7 +135,7 @@ const styles = (theme) => ({
 const SortableItem = sortableElement(({ value }) => {
   const { index, workspace } = value;
   const {
-    active, id, name, badgeCount, picturePath, hibernated,
+    active, id, name, badgeCount, picturePath, hibernated, transparentBackground,
   } = workspace;
   return (
     <WorkspaceSelector
@@ -145,6 +145,7 @@ const SortableItem = sortableElement(({ value }) => {
       name={name}
       badgeCount={badgeCount}
       picturePath={picturePath}
+      transparentBackground={transparentBackground}
       order={index}
       onClick={() => requestSetActiveWorkspace(id)}
       onContextMenu={(e) => {
