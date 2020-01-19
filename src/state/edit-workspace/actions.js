@@ -1,5 +1,8 @@
 
-import { UPDATE_EDIT_WORKSPACE_FORM } from '../../constants/actions';
+import {
+  UPDATE_EDIT_WORKSPACE_DOWNLOADING_ICON,
+  UPDATE_EDIT_WORKSPACE_FORM,
+} from '../../constants/actions';
 
 import validate from '../../helpers/validate';
 import hasErrors from '../../helpers/has-errors';
@@ -10,7 +13,7 @@ import {
   requestRemoveWorkspacePicture,
 } from '../../senders';
 
-const { remote } = window.require('electron');
+const { ipcRenderer, remote } = window.require('electron');
 
 const getValidationRules = () => ({
   name: {
@@ -24,10 +27,62 @@ const getValidationRules = () => ({
   },
 });
 
-export const updateForm = (changes) => ({
-  type: UPDATE_EDIT_WORKSPACE_FORM,
-  changes: validate(changes, getValidationRules()),
+// to be replaced with invoke (electron 7+)
+// https://electronjs.org/docs/api/ipc-renderer#ipcrendererinvokechannel-args
+export const getWebsiteIconUrlAsync = (url) => new Promise((resolve, reject) => {
+  try {
+    const id = Date.now().toString();
+    ipcRenderer.once(id, (e, uurl) => {
+      resolve(uurl);
+    });
+    ipcRenderer.send('request-get-website-icon-url', id, url);
+  } catch (err) {
+    reject(err);
+  }
 });
+
+export const getIconFromInternet = (forceOverwrite) => (dispatch, getState) => {
+  const { form: { picturePath, homeUrl, homeUrlError } } = getState().editWorkspace;
+  if ((!forceOverwrite && picturePath) || !homeUrl || homeUrlError) return;
+
+  dispatch({
+    type: UPDATE_EDIT_WORKSPACE_DOWNLOADING_ICON,
+    downloadingIcon: true,
+  });
+
+  getWebsiteIconUrlAsync(homeUrl)
+    .then((iconUrl) => {
+      const { form } = getState().editWorkspace;
+      if (form.homeUrl === homeUrl) {
+        const changes = { internetIcon: iconUrl || form.internetIcon };
+        if (forceOverwrite) changes.picturePath = null;
+        dispatch(({
+          type: UPDATE_EDIT_WORKSPACE_FORM,
+          changes,
+        }));
+        dispatch({
+          type: UPDATE_EDIT_WORKSPACE_DOWNLOADING_ICON,
+          downloadingIcon: false,
+        });
+      }
+
+      if (forceOverwrite && !iconUrl) {
+        remote.dialog.showMessageBox(remote.getCurrentWindow(), {
+          message: 'Unable to find a suitable icon from the Internet.',
+          buttons: ['OK'],
+          cancelId: 0,
+          defaultId: 0,
+        });
+      }
+    }).catch(console.log); // eslint-disable-line no-console
+};
+
+export const updateForm = (changes) => (dispatch) => {
+  dispatch({
+    type: UPDATE_EDIT_WORKSPACE_FORM,
+    changes: validate(changes, getValidationRules()),
+  });
+};
 
 export const save = () => (dispatch, getState) => {
   const { form } = getState().editWorkspace;
@@ -53,6 +108,8 @@ export const save = () => (dispatch, getState) => {
 
   if (form.picturePath) {
     requestSetWorkspacePicture(id, form.picturePath);
+  } else if (form.internetIcon) {
+    requestSetWorkspacePicture(id, form.internetIcon);
   } else {
     requestRemoveWorkspacePicture(id);
   }

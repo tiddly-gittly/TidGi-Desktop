@@ -3,12 +3,17 @@ import PropTypes from 'prop-types';
 
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
+import Typography from '@material-ui/core/Typography';
 
 import connectComponent from '../../helpers/connect-component';
 import isUrl from '../../helpers/is-url';
 import getMailtoUrl from '../../helpers/get-mailto-url';
 
-import { updateForm, save } from '../../state/add-workspace/actions';
+import {
+  getIconFromInternet,
+  save,
+  updateForm,
+} from '../../state/add-workspace/actions';
 
 import defaultIcon from '../../images/default-icon.png';
 
@@ -39,19 +44,25 @@ const styles = (theme) => ({
     display: 'flex',
   },
   avatarLeft: {
-    padding: theme.spacing.unit,
+    paddingTop: theme.spacing.unit,
+    paddingBottom: theme.spacing.unit,
+    paddingLeft: 0,
+    paddingRight: theme.spacing.unit,
   },
   avatarRight: {
     flex: 1,
-    padding: theme.spacing.unit,
+    paddingTop: theme.spacing.unit,
+    paddingBottom: theme.spacing.unit,
+    paddingLeft: theme.spacing.unit,
+    paddingRight: 0,
   },
   avatar: {
     fontFamily: theme.typography.fontFamily,
     height: 64,
     width: 64,
-    background: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black,
+    background: theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white,
     borderRadius: 4,
-    color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black),
+    color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white),
     fontSize: '32px',
     lineHeight: '64px',
     textAlign: 'center',
@@ -70,21 +81,27 @@ const styles = (theme) => ({
   },
 });
 
-const getValidIconPath = (iconPath) => {
+const getValidIconPath = (iconPath, internetIcon) => {
   if (iconPath) {
     if (isUrl(iconPath)) return iconPath;
     return `file://${iconPath}`;
+  }
+  if (internetIcon) {
+    return internetIcon;
   }
   return defaultIcon;
 };
 
 const AddWorkspaceCustom = ({
   classes,
+  downloadingIcon,
   homeUrl,
   homeUrlError,
+  internetIcon,
   isMailApp,
   name,
   nameError,
+  onGetIconFromInternet,
   onSave,
   onUpdateForm,
   picturePath,
@@ -128,18 +145,20 @@ const AddWorkspaceCustom = ({
       <div className={classes.avatarFlex}>
         <div className={classes.avatarLeft}>
           <div className={classes.avatar}>
-            <img alt="Icon" className={classes.avatarPicture} src={getValidIconPath(picturePath)} />
+            <img alt="Icon" className={classes.avatarPicture} src={getValidIconPath(picturePath, internetIcon)} />
           </div>
         </div>
         <div className={classes.avatarRight}>
           <Button
-            variant="contained"
+            variant="outlined"
+            size="small"
             onClick={() => {
               const { remote } = window.require('electron');
               const opts = {
                 properties: ['openFile'],
                 filters: [
-                  { name: 'Images', extensions: ['jpg', 'png'] },
+                  { name: 'PNG (Portable Network Graphics)', extensions: ['png'] },
+                  { name: 'JPEG (Joint Photographic Experts Group)', extensions: ['jpg', 'jpeg'] },
                 ],
               };
               remote.dialog.showOpenDialog(remote.getCurrentWindow(), opts)
@@ -150,15 +169,29 @@ const AddWorkspaceCustom = ({
                 });
             }}
           >
-            Change Icon
+            Select Local Image...
+          </Button>
+          <Typography variant="caption">
+            PNG or JPEG.
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            className={classes.buttonBot}
+            disabled={!homeUrl || homeUrlError || downloadingIcon}
+            onClick={() => onGetIconFromInternet(true)}
+          >
+            {downloadingIcon ? 'Downloading Icon from the Internet...' : 'Download Icon from the Internet'}
           </Button>
           <br />
           <Button
-            variant="contained"
+            variant="outlined"
+            size="small"
             className={classes.buttonBot}
-            onClick={() => onUpdateForm({ picturePath: null })}
+            onClick={() => onUpdateForm({ picturePath: null, internetIcon: null })}
+            disabled={!(picturePath || internetIcon)}
           >
-            Remove Icon
+            Reset to Default
           </Button>
         </div>
       </div>
@@ -172,28 +205,34 @@ const AddWorkspaceCustom = ({
 );
 
 AddWorkspaceCustom.defaultProps = {
-  picturePath: null,
   homeUrl: '',
   homeUrlError: null,
+  internetIcon: null,
   name: '',
   nameError: null,
+  picturePath: null,
 };
 
 AddWorkspaceCustom.propTypes = {
   classes: PropTypes.object.isRequired,
+  downloadingIcon: PropTypes.bool.isRequired,
   homeUrl: PropTypes.string,
   homeUrlError: PropTypes.string,
+  internetIcon: PropTypes.string,
   isMailApp: PropTypes.bool.isRequired,
   name: PropTypes.string,
   nameError: PropTypes.string,
+  onGetIconFromInternet: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
   onUpdateForm: PropTypes.func.isRequired,
   picturePath: PropTypes.string,
 };
 
 const mapStateToProps = (state) => ({
+  downloadingIcon: state.addWorkspace.downloadingIcon,
   homeUrl: state.addWorkspace.form.homeUrl,
   homeUrlError: state.addWorkspace.form.homeUrlError,
+  internetIcon: state.addWorkspace.form.internetIcon,
   isMailApp: Boolean(getMailtoUrl(state.addWorkspace.form.homeUrl)),
   name: state.addWorkspace.form.name,
   nameError: state.addWorkspace.form.nameError,
@@ -201,8 +240,9 @@ const mapStateToProps = (state) => ({
 });
 
 const actionCreators = {
-  updateForm,
+  getIconFromInternet,
   save,
+  updateForm,
 };
 
 export default connectComponent(

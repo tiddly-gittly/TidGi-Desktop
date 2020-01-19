@@ -1,6 +1,9 @@
 import { combineReducers } from 'redux';
 
-import { UPDATE_EDIT_WORKSPACE_FORM } from '../../constants/actions';
+import {
+  UPDATE_EDIT_WORKSPACE_DOWNLOADING_ICON,
+  UPDATE_EDIT_WORKSPACE_FORM,
+} from '../../constants/actions';
 
 import { getWorkspaces } from '../../senders';
 import getWorkspacesAsList from '../../helpers/get-workspaces-as-list';
@@ -28,4 +31,12 @@ const form = (state = defaultForm, action) => {
   }
 };
 
-export default combineReducers({ form });
+const downloadingIcon = (state = false, action) => {
+  switch (action.type) {
+    case UPDATE_EDIT_WORKSPACE_DOWNLOADING_ICON: return action.downloadingIcon;
+    default: return state;
+  }
+};
+
+
+export default combineReducers({ downloadingIcon, form });

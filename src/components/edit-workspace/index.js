@@ -9,14 +9,18 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
 import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import Switch from '@material-ui/core/Switch';
+import Typography from '@material-ui/core/Typography';
 
 import connectComponent from '../../helpers/connect-component';
 import getMailtoUrl from '../../helpers/get-mailto-url';
 
 import defaultIcon from '../../images/default-icon.png';
 
-import { updateForm, save } from '../../state/edit-workspace/actions';
-
+import {
+  getIconFromInternet,
+  save,
+  updateForm,
+} from '../../state/edit-workspace/actions';
 
 const styles = (theme) => ({
   root: {
@@ -43,19 +47,25 @@ const styles = (theme) => ({
     display: 'flex',
   },
   avatarLeft: {
-    padding: theme.spacing.unit,
+    paddingTop: theme.spacing.unit,
+    paddingBottom: theme.spacing.unit,
+    paddingLeft: 0,
+    paddingRight: theme.spacing.unit,
   },
   avatarRight: {
     flex: 1,
-    padding: theme.spacing.unit,
+    paddingTop: theme.spacing.unit,
+    paddingBottom: theme.spacing.unit,
+    paddingLeft: theme.spacing.unit,
+    paddingRight: 0,
   },
   avatar: {
     fontFamily: theme.typography.fontFamily,
     height: 64,
     width: 64,
-    background: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black,
+    background: theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white,
     borderRadius: 4,
-    color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black),
+    color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white),
     fontSize: '32px',
     lineHeight: '64px',
     textAlign: 'center',
@@ -74,16 +84,29 @@ const styles = (theme) => ({
   },
 });
 
+const getValidIconPath = (iconPath, internetIcon) => {
+  if (iconPath) {
+    return `file://${iconPath}`;
+  }
+  if (internetIcon) {
+    return internetIcon;
+  }
+  return defaultIcon;
+};
+
 const EditWorkspace = ({
   classes,
   disableAudio,
   disableNotifications,
+  downloadingIcon,
   hibernateWhenUnused,
   homeUrl,
   homeUrlError,
+  internetIcon,
   isMailApp,
   name,
   nameError,
+  onGetIconFromInternet,
   onSave,
   onUpdateForm,
   picturePath,
@@ -124,18 +147,23 @@ const EditWorkspace = ({
       <div className={classes.avatarFlex}>
         <div className={classes.avatarLeft}>
           <div className={classes.avatar}>
-            <img alt="Icon" className={classes.avatarPicture} src={picturePath ? `file://${picturePath}` : defaultIcon} />
+            <img
+              alt="Icon"
+              className={classes.avatarPicture}
+              src={getValidIconPath(picturePath, internetIcon)}
+            />
           </div>
         </div>
         <div className={classes.avatarRight}>
           <Button
-            variant="contained"
+            variant="outlined"
+            size="small"
             onClick={() => {
               const { remote } = window.require('electron');
               const opts = {
                 properties: ['openFile'],
                 filters: [
-                  { name: 'Images', extensions: ['jpg', 'png'] },
+                  { name: 'Images', extensions: ['png', 'jpg', 'jpeg'] },
                 ],
               };
               remote.dialog.showOpenDialog(remote.getCurrentWindow(), opts)
@@ -146,15 +174,29 @@ const EditWorkspace = ({
                 });
             }}
           >
-            Change Icon
+            Select Local Image...
+          </Button>
+          <Typography variant="caption">
+            PNG or JPEG.
+          </Typography>
+          <Button
+            variant="outlined"
+            size="small"
+            className={classes.buttonBot}
+            disabled={!homeUrl || homeUrlError || downloadingIcon}
+            onClick={() => onGetIconFromInternet(true)}
+          >
+            {downloadingIcon ? 'Downloading Icon from the Internet...' : 'Download Icon from the Internet'}
           </Button>
           <br />
           <Button
-            variant="contained"
+            variant="outlined"
+            size="small"
             className={classes.buttonBot}
-            onClick={() => onUpdateForm({ picturePath: null })}
+            onClick={() => onUpdateForm({ picturePath: null, internetIcon: null })}
+            disabled={!(picturePath || internetIcon)}
           >
-            Remove Icon
+            Reset to Default
           </Button>
         </div>
       </div>
@@ -201,21 +243,25 @@ const EditWorkspace = ({
 );
 
 EditWorkspace.defaultProps = {
-  picturePath: null,
   homeUrlError: null,
+  internetIcon: null,
   nameError: null,
+  picturePath: null,
 };
 
 EditWorkspace.propTypes = {
   classes: PropTypes.object.isRequired,
   disableAudio: PropTypes.bool.isRequired,
   disableNotifications: PropTypes.bool.isRequired,
+  downloadingIcon: PropTypes.bool.isRequired,
   hibernateWhenUnused: PropTypes.bool.isRequired,
   homeUrl: PropTypes.string.isRequired,
   homeUrlError: PropTypes.string,
+  internetIcon: PropTypes.string,
   isMailApp: PropTypes.bool.isRequired,
   name: PropTypes.string.isRequired,
   nameError: PropTypes.string,
+  onGetIconFromInternet: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
   onUpdateForm: PropTypes.func.isRequired,
   picturePath: PropTypes.string,
@@ -224,10 +270,12 @@ EditWorkspace.propTypes = {
 const mapStateToProps = (state) => ({
   disableAudio: Boolean(state.editWorkspace.form.disableAudio),
   disableNotifications: Boolean(state.editWorkspace.form.disableNotifications),
+  downloadingIcon: state.editWorkspace.downloadingIcon,
   hibernateWhenUnused: Boolean(state.editWorkspace.form.hibernateWhenUnused),
   homeUrl: state.editWorkspace.form.homeUrl,
   homeUrlError: state.editWorkspace.form.homeUrlError,
   id: state.editWorkspace.form.id,
+  internetIcon: state.editWorkspace.form.internetIcon,
   isMailApp: Boolean(getMailtoUrl(state.editWorkspace.form.homeUrl)),
   name: state.editWorkspace.form.name,
   nameError: state.editWorkspace.form.nameError,
@@ -236,6 +284,7 @@ const mapStateToProps = (state) => ({
 });
 
 const actionCreators = {
+  getIconFromInternet,
   updateForm,
   save,
 };

@@ -24,6 +24,7 @@
   "repository": "https://github.com/quanglam2807/singlebox",
   "author": "Quang Lam <quang.lam2807@gmail.com>",
   "dependencies": {
+    "cheerio": "1.0.0-rc.3",
     "download": "7.1.0",
     "electron-is-dev": "1.1.0",
     "electron-settings": "3.2.0",

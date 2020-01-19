@@ -35,14 +35,18 @@ const styles = (theme) => ({
   avatar: {
     height: 32,
     width: 32,
-    background: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black,
+    background: theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white,
     borderRadius: 4,
-    color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black),
+    color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white),
     lineHeight: '32px',
     textAlign: 'center',
     fontWeight: 500,
     textTransform: 'uppercase',
     boxShadow: theme.shadows[1],
+  },
+  addAvatar: {
+    background: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black,
+    color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black),
   },
   avatarPicture: {
     height: 32,
@@ -92,7 +96,7 @@ const WorkspaceSelector = ({
     onContextMenu={onContextMenu}
     tabIndex="0"
   >
-    <div className={classes.avatar}>
+    <div className={classNames(classes.avatar, id === 'add' && classes.addAvatar)}>
       {id !== 'add' ? (
         <img alt="Icon" className={classes.avatarPicture} src={picturePath ? `file://${picturePath}` : defaultIcon} draggable={false} />
       ) : '+'}

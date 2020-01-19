@@ -6,9 +6,10 @@ import {
   ADD_WORKSPACE_GET_SUCCESS,
   ADD_WORKSPACE_RESET,
   ADD_WORKSPACE_UPDATE_CURRENT_QUERY,
-  ADD_WORKSPACE_UPDATE_QUERY,
+  ADD_WORKSPACE_UPDATE_DOWNLOADING_ICON,
   ADD_WORKSPACE_UPDATE_FORM,
   ADD_WORKSPACE_UPDATE_MODE,
+  ADD_WORKSPACE_UPDATE_QUERY,
 } from '../../constants/actions';
 
 const hasFailed = (state = false, action) => {
@@ -87,14 +88,22 @@ const mode = (state = defaultMode, action) => {
   }
 };
 
+const downloadingIcon = (state = false, action) => {
+  switch (action.type) {
+    case ADD_WORKSPACE_UPDATE_DOWNLOADING_ICON: return action.downloadingIcon;
+    default: return state;
+  }
+};
+
 export default combineReducers({
   currentQuery,
+  downloadingIcon,
+  form,
   hasFailed,
   hits,
   isGetting,
+  mode,
   page,
   query,
   totalPage,
-  form,
-  mode,
 });
