@@ -177,7 +177,7 @@ const EditWorkspace = ({
               const opts = {
                 properties: ['openFile'],
                 filters: [
-                  { name: 'Images', extensions: ['png', 'jpg', 'jpeg'] },
+                  { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp', 'dib'] },
                 ],
               };
               remote.dialog.showOpenDialog(remote.getCurrentWindow(), opts)
@@ -191,7 +191,7 @@ const EditWorkspace = ({
             Select Local Image...
           </Button>
           <Typography variant="caption">
-            PNG or JPEG.
+            PNG, JPEG, GIF, TIFF or BMP.
           </Typography>
           <Button
             variant="outlined"

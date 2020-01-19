@@ -171,8 +171,7 @@ const AddWorkspaceCustom = ({
               const opts = {
                 properties: ['openFile'],
                 filters: [
-                  { name: 'PNG (Portable Network Graphics)', extensions: ['png'] },
-                  { name: 'JPEG (Joint Photographic Experts Group)', extensions: ['jpg', 'jpeg'] },
+                  { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp', 'dib'] },
                 ],
               };
               remote.dialog.showOpenDialog(remote.getCurrentWindow(), opts)
@@ -186,7 +185,7 @@ const AddWorkspaceCustom = ({
             Select Local Image...
           </Button>
           <Typography variant="caption">
-            PNG or JPEG.
+            PNG, JPEG, GIF, TIFF or BMP.
           </Typography>
           <Button
             variant="outlined"
