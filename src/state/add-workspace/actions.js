@@ -158,15 +158,18 @@ export const getIconFromInternet = (forceOverwrite) => (dispatch, getState) => {
 };
 
 let timeout2;
-export const updateForm = (changes) => (dispatch) => {
+export const updateForm = (changes) => (dispatch, getState) => {
+  const oldHomeUrl = getState().addWorkspace.form.homeUrl;
+
   dispatch({
     type: ADD_WORKSPACE_UPDATE_FORM,
     changes: validate(changes, getValidationRules()),
   });
 
   clearTimeout(timeout2);
+  if (getState().addWorkspace.form.homeUrl === oldHomeUrl) return; // url didn't change
+  if (changes.internetIcon === null) return; // user explictly want to get rid of icon
   timeout2 = setTimeout(() => {
-    if (changes.internetIcon === null) return; // user explictly want to get rid of icon
     dispatch(getIconFromInternet());
   }, 300);
 };
