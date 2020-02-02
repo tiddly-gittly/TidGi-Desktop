@@ -4,8 +4,9 @@ import {
   UPDATE_EDIT_WORKSPACE_FORM,
 } from '../../constants/actions';
 
-import validate from '../../helpers/validate';
 import hasErrors from '../../helpers/has-errors';
+import isUrl from '../../helpers/is-url';
+import validate from '../../helpers/validate';
 
 import {
   requestSetWorkspace,
@@ -23,7 +24,7 @@ const getValidationRules = () => ({
   homeUrl: {
     fieldName: 'Home URL',
     required: true,
-    url: true,
+    lessStrictUrl: true,
   },
 });
 
@@ -93,12 +94,14 @@ export const save = () => (dispatch, getState) => {
   }
 
   const id = remote.getGlobal('editWorkspaceId');
+  const url = form.homeUrl.trim();
+  const homeUrl = isUrl(url) ? url : `http://${url}`;
 
   requestSetWorkspace(
     id,
     {
       name: form.name,
-      homeUrl: form.homeUrl.trim(),
+      homeUrl,
       // prefs
       disableAudio: Boolean(form.disableAudio),
       disableNotifications: Boolean(form.disableNotifications),

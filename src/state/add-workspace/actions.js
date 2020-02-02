@@ -13,6 +13,7 @@ import {
 } from '../../constants/actions';
 
 import validate from '../../helpers/validate';
+import isUrl from '../../helpers/is-url';
 import hasErrors from '../../helpers/has-errors';
 
 import { requestCreateWorkspace } from '../../senders';
@@ -182,9 +183,12 @@ export const save = () => (dispatch, getState) => {
     return dispatch(updateForm(validatedChanges));
   }
 
+  const url = form.homeUrl.trim();
+  const homeUrl = isUrl(url) ? url : `http://${url}`;
+
   requestCreateWorkspace(
     form.name,
-    form.homeUrl.trim(),
+    homeUrl,
     form.internetIcon || form.picturePath,
     Boolean(form.transparentBackground),
   );
