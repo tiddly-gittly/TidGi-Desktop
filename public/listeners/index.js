@@ -259,8 +259,17 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-remove-workspace', (e, id) => {
-    removeWorkspaceView(id);
-    createMenu();
+    dialog.showMessageBox(preferencesWindow.get() || mainWindow.get(), {
+      type: 'question',
+      buttons: ['Remove Workspace', 'Cancel'],
+      message: 'Are you sure? All browsing data of this workspace will be wiped. This action cannot be undone.',
+      cancelId: 1,
+    }, (response) => {
+      if (response === 0) {
+        removeWorkspaceView(id);
+        createMenu();
+      }
+    });
   });
 
   ipcMain.on('request-set-workspace', (e, id, opts) => {

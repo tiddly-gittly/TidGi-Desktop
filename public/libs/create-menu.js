@@ -28,7 +28,6 @@ const {
 
 const {
   setActiveWorkspaceView,
-  removeWorkspaceView,
 } = require('./workspaces-views');
 
 const {
@@ -535,8 +534,7 @@ function createMenu() {
       label: 'Remove Current Workspace',
       click: () => {
         const activeWorkspace = getActiveWorkspace();
-        removeWorkspaceView(activeWorkspace.id);
-        createMenu();
+        ipcMain.emit('request-remove-workspace', null, activeWorkspace.id);
       },
     },
     { type: 'separator' },
