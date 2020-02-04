@@ -15,15 +15,15 @@
     "build:publish": "node scripts/publish.js"
   },
   "dependencies": {
-    "algoliasearch": "3.33.0",
+    "algoliasearch": "4.0.1",
     "chai": "4.2.0",
-    "clean-deep": "3.0.2",
+    "clean-deep": "3.2.0",
     "fs-extra": "8.1.0",
-    "image-size": "0.7.4",
+    "image-size": "0.8.3",
     "is-url": "1.2.4",
-    "mocha": "6.1.4",
+    "mocha": "7.0.1",
     "promise-queue": "2.2.5",
-    "sharp": "0.22.1",
+    "sharp": "0.24.0",
     "slugg": "1.2.1",
     "yamljs": "0.3.0"
   }

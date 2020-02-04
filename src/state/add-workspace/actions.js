@@ -42,8 +42,7 @@ export const getHits = () => (dispatch, getState) => {
     type: ADD_WORKSPACE_GET_REQUEST,
   });
 
-  index.search({
-    query: currentQuery,
+  index.search(currentQuery, {
     page: page + 1,
     hitsPerPage: 24,
   })
