@@ -2,6 +2,7 @@ import { setPreference } from '../state/preferences/actions';
 import { setSystemPreference } from '../state/system-preferences/actions';
 import { setWorkspace } from '../state/workspaces/actions';
 import {
+  updateAddressBarInfo,
   updateCanGoBack,
   updateCanGoForward,
   updateDidFailLoad,
@@ -41,10 +42,13 @@ const loadListeners = (store) => {
     store.dispatch(updateCanGoBack(value));
   });
 
+  ipcRenderer.on('update-address', (e, address, edited) => {
+    store.dispatch(updateAddressBarInfo(address, edited));
+  });
+
   ipcRenderer.on('update-can-go-forward', (e, value) => {
     store.dispatch(updateCanGoForward(value));
   });
-
 
   ipcRenderer.on('update-is-loading', (e, value) => {
     store.dispatch(updateIsLoading(value));

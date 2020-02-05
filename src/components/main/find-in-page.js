@@ -137,10 +137,14 @@ const FindInPage = (props) => {
   );
 };
 
+FindInPage.defaultProps = {
+  inputRef: null,
+};
+
 FindInPage.propTypes = {
   activeMatch: PropTypes.number.isRequired,
   classes: PropTypes.object.isRequired,
-  inputRef: PropTypes.func.isRequired,
+  inputRef: PropTypes.func,
   matches: PropTypes.number.isRequired,
   onCloseFindInPage: PropTypes.func.isRequired,
   onUpdateFindInPageText: PropTypes.func.isRequired,

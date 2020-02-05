@@ -257,11 +257,14 @@ const Main = ({
             {Object.keys(workspaces).length > 0 && didFailLoad && !isLoading && (
               <div>
                 <Typography align="center" variant="h6">
-                  No internet
+                  This site can’t be reached.
                 </Typography>
 
                 <Typography align="center" variant="body1">
-                  Try: - Checking the network cables, modem, and router. - Reconnecting to Wi-Fi.
+                  Try:
+                  - Checking the network cables, modem, and router.
+                  - Checking the proxy and the firewall.
+                  - Reconnecting to Wi-Fi.
                 </Typography>
 
                 <Typography align="center" variant="body1">

@@ -157,17 +157,16 @@ const createAsync = () => {
     minHeight: 100,
     title: 'Singlebox',
     titleBarStyle: 'hidden',
-    show: !wasOpenedAsHidden,
+    show: false,
     icon: process.platform === 'linux' ? path.resolve(__dirname, '..', 'icon.png') : null,
     webPreferences: {
       nodeIntegration: true,
       webSecurity: false,
+      preload: path.join(__dirname, '..', 'preload', 'main.js'),
     },
   });
 
   mainWindowState.manage(win);
-
-  win.loadURL(REACT_PATH);
 
   // Enable swipe to navigate
   const swipeToNavigate = getPreference('swipeToNavigate');
@@ -203,7 +202,16 @@ const createAsync = () => {
     }
   });
 
-  return Promise.resolve();
+  return new Promise((resolve) => {
+    win.once('ready-to-show', () => {
+      resolve();
+      if (!wasOpenedAsHidden) {
+        win.show();
+      }
+    });
+
+    win.loadURL(REACT_PATH);
+  });
 };
 
 const show = () => {

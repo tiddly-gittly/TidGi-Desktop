@@ -3,7 +3,7 @@ const { ipcRenderer } = window.require('electron');
 
 export const requestOpenInBrowser = (url) => ipcRenderer.send('request-open-in-browser', url);
 export const requestShowMessageBox = (message, type) => ipcRenderer.send('request-show-message-box', message, type);
-export const requestLoadURL = (url, id) => ipcRenderer.send('request-load-url', url, id);
+export const requestLoadUrl = (url, id) => ipcRenderer.send('request-load-url', url, id);
 
 export const requestGoHome = () => ipcRenderer.send('request-go-home');
 export const requestGoBack = () => ipcRenderer.send('request-go-back');

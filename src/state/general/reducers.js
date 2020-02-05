@@ -9,6 +9,7 @@ import {
   UPDATE_IS_DEFAULT_WEB_BROWSER,
   UPDATE_IS_FULL_SCREEN,
   UPDATE_IS_LOADING,
+  UPDATE_ADDRESS_BAR_INFO,
 } from '../../constants/actions';
 
 const { remote } = window.require('electron');
@@ -26,6 +27,21 @@ const canGoForward = (state = false, action) => {
     default: return state;
   }
 };
+
+const address = (state = null, action) => {
+  switch (action.type) {
+    case UPDATE_ADDRESS_BAR_INFO: return action.address;
+    default: return state;
+  }
+};
+
+const addressEdited = (state = false, action) => {
+  switch (action.type) {
+    case UPDATE_ADDRESS_BAR_INFO: return action.edited;
+    default: return state;
+  }
+};
+
 
 const isFullScreen = (state = remote.getCurrentWindow().isFullScreen(), action) => {
   switch (action.type) {
@@ -71,6 +87,8 @@ const didFailLoad = (state = false, action) => {
 };
 
 export default combineReducers({
+  address,
+  addressEdited,
   canGoBack,
   canGoForward,
   didFailLoad,

@@ -70,6 +70,12 @@ const addView = (browserWindow, workspace) => {
     unreadCountBadge,
   } = getPreferences();
 
+  const contentSize = browserWindow.getContentSize();
+
+  const offsetTitlebar = process.platform !== 'darwin' || global.showSidebar || global.attachToMenubar ? 0 : 22;
+  const x = global.showSidebar ? 68 : 0;
+  const y = global.showNavigationBar ? 36 + offsetTitlebar : 0 + offsetTitlebar;
+
   const view = new BrowserView({
     webPreferences: {
       nativeWindowOpen: true,
@@ -123,6 +129,16 @@ const addView = (browserWindow, workspace) => {
 
   view.webContents.on('did-start-loading', () => {
     if (getWorkspace(workspace.id).active) {
+      // show browserView again when reloading after error
+      // see did-fail-load event
+      if (didFailLoad[workspace.id]) {
+        view.setBounds({
+          x,
+          y,
+          width: contentSize[0] - x,
+          height: contentSize[1] - y,
+        });
+      }
       didFailLoad[workspace.id] = false;
       sendToAllWindows('update-did-fail-load', false);
       sendToAllWindows('update-is-loading', true);
@@ -132,6 +148,7 @@ const addView = (browserWindow, workspace) => {
   view.webContents.on('did-stop-loading', () => {
     if (getWorkspace(workspace.id).active) {
       sendToAllWindows('update-is-loading', false);
+      sendToAllWindows('update-address', view.webContents.getURL(), false);
     }
 
     const currentUrl = view.webContents.getURL();
@@ -154,12 +171,16 @@ const addView = (browserWindow, workspace) => {
   view.webContents.on('did-fail-load', (e, errorCode, errorDesc, validateUrl, isMainFrame) => {
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {
       if (getWorkspace(workspace.id).active) {
-        if (getWorkspace(workspace.id).active) {
-          sendToAllWindows('update-loading', false);
+        sendToAllWindows('update-loading', false);
 
-          didFailLoad[workspace.id] = true;
-          sendToAllWindows('update-did-fail-load', true);
-        }
+        didFailLoad[workspace.id] = true;
+        view.setBounds({
+          x,
+          y,
+          height: 0,
+          width: 0,
+        }); // hide browserView to show error message
+        sendToAllWindows('update-did-fail-load', true);
       }
     }
 
@@ -184,13 +205,15 @@ const addView = (browserWindow, workspace) => {
     if (getWorkspace(workspace.id).active) {
       sendToAllWindows('update-can-go-back', view.webContents.canGoBack());
       sendToAllWindows('update-can-go-forward', view.webContents.canGoForward());
+      sendToAllWindows('update-address', url, false);
     }
   });
 
-  view.webContents.on('did-navigate-in-page', () => {
+  view.webContents.on('did-navigate-in-page', (e, url) => {
     if (getWorkspace(workspace.id).active) {
       sendToAllWindows('update-can-go-back', view.webContents.canGoBack());
       sendToAllWindows('update-can-go-forward', view.webContents.canGoForward());
+      sendToAllWindows('update-address', url, false);
     }
   });
 
@@ -359,13 +382,6 @@ const addView = (browserWindow, workspace) => {
 
   if (workspace.active) {
     browserWindow.setBrowserView(view);
-
-    const contentSize = browserWindow.getContentSize();
-
-    const offsetTitlebar = process.platform !== 'darwin' || global.showSidebar || global.attachToMenubar ? 0 : 22;
-    const x = global.showSidebar ? 68 : 0;
-    const y = global.showNavigationBar ? 36 + offsetTitlebar : 0 + offsetTitlebar;
-
     view.setBounds({
       x,
       y,
@@ -379,7 +395,7 @@ const addView = (browserWindow, workspace) => {
   }
 
   const initialUrl = (rememberLastPageVisited && workspace.lastUrl)
-    || workspace.homeUrl;
+  || workspace.homeUrl;
   adjustUserAgentByUrl(initialUrl);
   view.webContents.loadURL(initialUrl);
 };
@@ -398,7 +414,7 @@ const setActiveView = (browserWindow, id) => {
     addView(browserWindow, getWorkspace(id));
 
     sendToAllWindows('update-is-loading', views[id].webContents.isLoading());
-    sendToAllWindows('update-did-fail-load', Boolean(didFailLoad[id]));
+    sendToAllWindows('update-did-fail-load', false);
   } else {
     const view = views[id];
     browserWindow.setBrowserView(view);
@@ -409,12 +425,21 @@ const setActiveView = (browserWindow, id) => {
     const x = global.showSidebar ? 68 : 0;
     const y = global.showNavigationBar ? 36 + offsetTitlebar : 0 + offsetTitlebar;
 
-    view.setBounds({
-      x,
-      y,
-      width: contentSize[0] - x,
-      height: contentSize[1] - y,
-    });
+    if (didFailLoad[id]) {
+      view.setBounds({
+        x,
+        y,
+        height: 0,
+        width: 0,
+      }); // hide browserView to show error message
+    } else {
+      view.setBounds({
+        x,
+        y,
+        width: contentSize[0] - x,
+        height: contentSize[1] - y,
+      });
+    }
     view.setAutoResize({
       width: true,
       height: true,
@@ -424,6 +449,7 @@ const setActiveView = (browserWindow, id) => {
     // https://github.com/quanglam2807/webcatalog/issues/398
     view.webContents.focus();
 
+    sendToAllWindows('update-address', view.webContents.getURL(), false);
     sendToAllWindows('update-is-loading', view.webContents.isLoading());
     sendToAllWindows('update-did-fail-load', Boolean(didFailLoad[id]));
   }

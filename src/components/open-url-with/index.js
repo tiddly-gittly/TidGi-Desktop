@@ -11,7 +11,7 @@ import connectComponent from '../../helpers/connect-component';
 import getWorkspacesAsList from '../../helpers/get-workspaces-as-list';
 import getMailtoUrl from '../../helpers/get-mailto-url';
 
-import { requestLoadURL } from '../../senders';
+import { requestLoadUrl } from '../../senders';
 
 const { remote } = window.require('electron');
 
@@ -27,7 +27,7 @@ const OpenUrlWith = ({ workspaces }) => {
         onClick={() => {
           const u = isMailtoUrl ? getMailtoUrl(workspace.homeUrl).replace('%s', incomingUrl) : incomingUrl;
 
-          requestLoadURL(u, workspace.id);
+          requestLoadUrl(u, workspace.id);
           remote.getCurrentWindow().close();
         }}
       >

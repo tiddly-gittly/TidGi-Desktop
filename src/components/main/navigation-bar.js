@@ -1,25 +1,30 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 
-import IconButton from '@material-ui/core/IconButton';
 import ArrowBackIcon from '@material-ui/icons/ArrowBack';
 import ArrowForwardIcon from '@material-ui/icons/ArrowForward';
 import HomeIcon from '@material-ui/icons/Home';
-import RefreshIcon from '@material-ui/icons/Refresh';
-import SettingsIcon from '@material-ui/icons/SettingsSharp';
+import IconButton from '@material-ui/core/IconButton';
 import NotificationsIcon from '@material-ui/icons/Notifications';
 import NotificationsPausedIcon from '@material-ui/icons/NotificationsPaused';
+import RefreshIcon from '@material-ui/icons/Refresh';
+import SettingsIcon from '@material-ui/icons/SettingsSharp';
+import InputBase from '@material-ui/core/InputBase';
 
 import connectComponent from '../../helpers/connect-component';
+import isUrl from '../../helpers/is-url';
 
 import {
   requestGoBack,
   requestGoForward,
   requestGoHome,
+  requestLoadUrl,
   requestReload,
-  requestShowPreferencesWindow,
   requestShowNotificationsWindow,
+  requestShowPreferencesWindow,
 } from '../../senders';
+
+import { updateAddressBarInfo } from '../../state/general/actions';
 
 const styles = (theme) => ({
   root: {
@@ -34,8 +39,10 @@ const styles = (theme) => ({
     WebkitAppRegion: 'drag',
     WebkitUserSelect: 'none',
   },
-  left: {
+  center: {
     flex: 1,
+    paddingLeft: theme.spacing.unit,
+    paddingRight: theme.spacing.unit,
   },
   iconButton: {
     padding: 6,
@@ -43,12 +50,48 @@ const styles = (theme) => ({
   icon: {
     fontSize: '18px',
   },
+  addressBarRoot: {
+    width: '100%',
+    background: theme.palette.background.default,
+    borderRadius: 16,
+    WebkitAppRegion: 'none',
+    WebkitUserSelect: 'text',
+  },
+  addressBarInput: {
+    fontSize: '0.8em',
+    paddingLeft: 12,
+    paddingRight: 12,
+    paddingTop: 4,
+    paddingBottom: 4,
+  },
+  goButton: {
+    padding: 4,
+  },
 });
 
+const processUrl = (url) => {
+  if (!url) return url;
+
+  if (isUrl(url)) {
+    return url;
+  }
+
+  const httpUrl = `http://${url}`;
+  if (/[A-Za-z0-9]+(\.[A-Za-z0-9]+)+/.test(url) && isUrl(httpUrl)) { // match common url format
+    return httpUrl;
+  }
+
+  const processedUrl = `http://google.com/search?q=${encodeURIComponent(url)}`;
+  return processedUrl;
+};
+
 const NavigationBar = ({
+  address,
+  addressEdited,
   canGoBack,
   canGoForward,
   classes,
+  onUpdateAddressBarInfo,
   shouldPauseNotifications,
 }) => (
   <div className={classes.root}>
@@ -66,6 +109,37 @@ const NavigationBar = ({
         <HomeIcon className={classes.icon} />
       </IconButton>
     </div>
+    <div className={classes.center}>
+      <InputBase
+        classes={{ root: classes.addressBarRoot, input: classes.addressBarInput }}
+        placeholder="Search Google or type a URL"
+        type="text"
+        value={address}
+        endAdornment={addressEdited && (
+          <IconButton
+            aria-label="Go"
+            className={classes.goButton}
+            onClick={() => {
+              const processedUrl = processUrl(address);
+              onUpdateAddressBarInfo(processedUrl, false);
+              requestLoadUrl(processedUrl);
+            }}
+          >
+            <ArrowForwardIcon fontSize="small" />
+          </IconButton>
+        )}
+        onChange={(e) => {
+          onUpdateAddressBarInfo(e.target.value, true);
+        }}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter') {
+            const processedUrl = processUrl(address);
+            onUpdateAddressBarInfo(processedUrl, false);
+            requestLoadUrl(processedUrl);
+          }
+        }}
+      />
+    </div>
     <div>
       <IconButton aria-label="Notifications" onClick={requestShowNotificationsWindow} className={classes.iconButton}>
         {shouldPauseNotifications
@@ -79,22 +153,35 @@ const NavigationBar = ({
   </div>
 );
 
+NavigationBar.defaultProps = {
+  address: null,
+};
+
 NavigationBar.propTypes = {
+  address: PropTypes.string,
+  addressEdited: PropTypes.bool.isRequired,
   canGoBack: PropTypes.bool.isRequired,
   canGoForward: PropTypes.bool.isRequired,
   classes: PropTypes.object.isRequired,
+  onUpdateAddressBarInfo: PropTypes.func.isRequired,
   shouldPauseNotifications: PropTypes.bool.isRequired,
 };
 
 const mapStateToProps = (state) => ({
+  address: state.general.address,
+  addressEdited: Boolean(state.general.addressEdited),
   canGoBack: state.general.canGoBack,
   canGoForward: state.general.canGoForward,
   shouldPauseNotifications: state.notifications.pauseNotificationsInfo !== null,
 });
 
+const actionCreators = {
+  updateAddressBarInfo,
+};
+
 export default connectComponent(
   NavigationBar,
   mapStateToProps,
-  null,
+  actionCreators,
   styles,
 );

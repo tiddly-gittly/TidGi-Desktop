@@ -1,5 +1,3 @@
-window.mode = 'menubar';
-
 const {
   ContextMenuListener,
   ContextMenuBuilder,
