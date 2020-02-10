@@ -1,16 +1,3 @@
-const {
-  ContextMenuListener,
-  ContextMenuBuilder,
-} = require('electron-spellchecker');
+const contextMenu = require('electron-context-menu');
 
-// for copy paste context menu
-window.onload = () => {
-  window.contextMenuBuilder = new ContextMenuBuilder(
-    null,
-    null,
-    true,
-  );
-  window.contextMenuListener = new ContextMenuListener((info) => {
-    window.contextMenuBuilder.showPopupMenu(info);
-  });
-};
+contextMenu();

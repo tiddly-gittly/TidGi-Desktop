@@ -1,8 +1,8 @@
 diff --git a/node_modules/react-sortable-hoc/dist/react-sortable-hoc.esm.js b/node_modules/react-sortable-hoc/dist/react-sortable-hoc.esm.js
-index e996530..81fb119 100644
+index ac57135..b0f8b08 100644
 --- a/node_modules/react-sortable-hoc/dist/react-sortable-hoc.esm.js
 +++ b/node_modules/react-sortable-hoc/dist/react-sortable-hoc.esm.js
-@@ -582,7 +582,11 @@ function sortableContainer(WrappedComponent) {
+@@ -601,7 +601,11 @@ function sortableContainer(WrappedComponent) {
              distance = _this$props.distance,
              shouldCancelStart = _this$props.shouldCancelStart;
  
