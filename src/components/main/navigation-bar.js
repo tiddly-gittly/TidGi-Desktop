@@ -91,21 +91,22 @@ const NavigationBar = ({
   canGoBack,
   canGoForward,
   classes,
+  hasWorkspaces,
   onUpdateAddressBarInfo,
   shouldPauseNotifications,
 }) => (
   <div className={classes.root}>
     <div className={classes.left}>
-      <IconButton aria-label="Go back" className={classes.iconButton} disabled={!canGoBack} onClick={requestGoBack}>
+      <IconButton aria-label="Go back" className={classes.iconButton} disabled={!hasWorkspaces || !canGoBack} onClick={requestGoBack}>
         <ArrowBackIcon className={classes.icon} />
       </IconButton>
-      <IconButton aria-label="Go forward" className={classes.iconButton} disabled={!canGoForward} onClick={requestGoForward}>
+      <IconButton aria-label="Go forward" className={classes.iconButton} disabled={!hasWorkspaces || !canGoForward} onClick={requestGoForward}>
         <ArrowForwardIcon className={classes.icon} />
       </IconButton>
-      <IconButton aria-label="Reload" className={classes.iconButton} onClick={requestReload}>
+      <IconButton aria-label="Reload" className={classes.iconButton} onClick={requestReload} disabled={!hasWorkspaces}>
         <RefreshIcon className={classes.icon} />
       </IconButton>
-      <IconButton aria-label="Go home" className={classes.iconButton} onClick={requestGoHome}>
+      <IconButton aria-label="Go home" className={classes.iconButton} onClick={requestGoHome} disabled={!hasWorkspaces}>
         <HomeIcon className={classes.icon} />
       </IconButton>
     </div>
@@ -114,7 +115,8 @@ const NavigationBar = ({
         classes={{ root: classes.addressBarRoot, input: classes.addressBarInput }}
         placeholder="Search Google or type a URL"
         type="text"
-        value={address}
+        value={hasWorkspaces ? address : ''}
+        disabled={!hasWorkspaces}
         endAdornment={addressEdited && (
           <IconButton
             aria-label="Go"
@@ -163,6 +165,7 @@ NavigationBar.propTypes = {
   canGoBack: PropTypes.bool.isRequired,
   canGoForward: PropTypes.bool.isRequired,
   classes: PropTypes.object.isRequired,
+  hasWorkspaces: PropTypes.bool.isRequired,
   onUpdateAddressBarInfo: PropTypes.func.isRequired,
   shouldPauseNotifications: PropTypes.bool.isRequired,
 };
@@ -172,6 +175,7 @@ const mapStateToProps = (state) => ({
   addressEdited: Boolean(state.general.addressEdited),
   canGoBack: state.general.canGoBack,
   canGoForward: state.general.canGoForward,
+  hasWorkspaces: Object.keys(state.workspaces).length > 0,
   shouldPauseNotifications: state.notifications.pauseNotificationsInfo !== null,
 });
 

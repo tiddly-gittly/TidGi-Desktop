@@ -234,7 +234,9 @@ const loadListeners = () => {
     && !global.showSidebar) || getPreference('navigationBar');
 
     const activeWorkspace = getActiveWorkspace();
-    setActiveWorkspaceView(activeWorkspace.id);
+    if (activeWorkspace) {
+      setActiveWorkspaceView(activeWorkspace.id);
+    }
     createMenu();
   });
 
@@ -305,9 +307,9 @@ const loadListeners = () => {
   ipcMain.on('request-go-home', () => {
     const win = mainWindow.get();
 
-    if (win != null) {
-      const activeWorkspace = getActiveWorkspace();
+    if (win != null && win.getBrowserView() != null) {
       const contents = win.getBrowserView().webContents;
+      const activeWorkspace = getActiveWorkspace();
       contents.loadURL(activeWorkspace.homeUrl);
       win.send('update-can-go-back', contents.canGoBack());
       win.send('update-can-go-forward', contents.canGoForward());
@@ -317,7 +319,7 @@ const loadListeners = () => {
   ipcMain.on('request-go-back', () => {
     const win = mainWindow.get();
 
-    if (win != null) {
+    if (win != null && win.getBrowserView() != null) {
       const contents = win.getBrowserView().webContents;
       if (contents.canGoBack()) {
         contents.goBack();
@@ -330,7 +332,7 @@ const loadListeners = () => {
   ipcMain.on('request-go-forward', () => {
     const win = mainWindow.get();
 
-    if (win != null) {
+    if (win != null && win.getBrowserView() != null) {
       const contents = win.getBrowserView().webContents;
       if (contents.canGoForward()) {
         contents.goForward();

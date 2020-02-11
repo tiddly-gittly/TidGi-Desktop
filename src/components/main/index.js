@@ -121,6 +121,11 @@ const styles = (theme) => ({
     top: 112,
     left: 180,
     fontFamily: theme.typography.fontFamily,
+    userSelect: 'none',
+  },
+  tip2: {
+    fontFamily: theme.typography.fontFamily,
+    userSelect: 'none',
   },
   grabbing: {
     cursor: 'grabbing !important',
@@ -275,14 +280,26 @@ const Main = ({
             {Object.keys(workspaces).length > 0 && isLoading && <CircularProgress />}
             {Object.keys(workspaces).length < 1 && (
               <div>
-                <div alt="Arrow" className={classes.arrow} />
-                <div className={classes.tip}>
-                  <span className={classes.inlineBlock}>Click</span>
-                  <div className={classes.avatar}>
-                    +
+                {sidebar ? (
+                  <>
+                    <div alt="Arrow" className={classes.arrow} />
+                    <div className={classes.tip}>
+                      <span className={classes.inlineBlock}>Click</span>
+                      <div className={classes.avatar}>
+                        +
+                      </div>
+                      <span className={classes.inlineBlock}>to get started!</span>
+                    </div>
+                  </>
+                ) : (
+                  <div className={classes.tip2}>
+                    <span className={classes.inlineBlock}>
+                      <span>Click </span>
+                      <strong>Workspaces &gt; Add Workspace</strong>
+                      <span> to get started!</span>
+                    </span>
                   </div>
-                  <span className={classes.inlineBlock}>to get started!</span>
-                </div>
+                )}
               </div>
             )}
           </div>

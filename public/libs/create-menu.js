@@ -39,6 +39,8 @@ const FIND_IN_PAGE_HEIGHT = 42;
 function createMenu() {
   const registered = getPreference('registered');
   const updaterEnabled = process.env.SNAP == null && !process.mas && !process.windowsStore;
+  const workspaces = getWorkspaces();
+  const hasWorkspaces = Object.keys(workspaces).length > 0;
 
   const template = [
     {
@@ -59,7 +61,7 @@ function createMenu() {
           accelerator: 'CmdOrCtrl+F',
           click: () => {
             const win = mainWindow.get();
-            if (win) {
+            if (win != null && win.getBrowserView() != null) {
               win.send('open-find-in-page');
 
               const contentSize = win.getContentSize();
@@ -77,6 +79,7 @@ function createMenu() {
               });
             }
           },
+          enabled: hasWorkspaces,
         },
         {
           label: 'Find Next',
@@ -85,6 +88,7 @@ function createMenu() {
             const win = mainWindow.get();
             win.send('request-back-find-in-page', true);
           },
+          enabled: hasWorkspaces,
         },
         {
           label: 'Find Previous',
@@ -93,6 +97,7 @@ function createMenu() {
             const win = mainWindow.get();
             win.send('request-back-find-in-page', false);
           },
+          enabled: hasWorkspaces,
         },
       ],
     },
@@ -100,9 +105,7 @@ function createMenu() {
       label: 'View',
       submenu: [
         {
-          label: 'Show Sidebar',
-          type: 'checkbox',
-          checked: global.showSidebar,
+          label: global.showSidebar ? 'Hide Sidebar' : 'Show Sidebar',
           accelerator: 'CmdOrCtrl+Alt+S',
           click: () => {
             ipcMain.emit('request-set-preference', null, 'sidebar', !global.showSidebar);
@@ -110,9 +113,7 @@ function createMenu() {
           },
         },
         {
-          label: 'Show Navigation Bar',
-          type: 'checkbox',
-          checked: global.showNavigationBar,
+          label: global.showNavigationBar ? 'Hide Navigation Bar' : 'Show Navigation Bar',
           accelerator: 'CmdOrCtrl+Alt+N',
           click: () => {
             ipcMain.emit('request-set-preference', null, 'navigationBar', !global.showNavigationBar);
@@ -127,11 +128,12 @@ function createMenu() {
           click: () => {
             const win = mainWindow.get();
 
-            if (win != null) {
+            if (win != null && win.getBrowserView() != null) {
               const contents = win.getBrowserView().webContents;
               contents.setZoomFactor(1);
             }
           },
+          enabled: hasWorkspaces,
         },
         {
           label: 'Zoom In',
@@ -139,13 +141,14 @@ function createMenu() {
           click: () => {
             const win = mainWindow.get();
 
-            if (win != null) {
+            if (win != null && win.getBrowserView() != null) {
               const contents = win.getBrowserView().webContents;
               contents.getZoomFactor((zoomFactor) => {
                 contents.setZoomFactor(zoomFactor + 0.1);
               });
             }
           },
+          enabled: hasWorkspaces,
         },
         {
           label: 'Zoom Out',
@@ -153,13 +156,14 @@ function createMenu() {
           click: () => {
             const win = mainWindow.get();
 
-            if (win != null) {
+            if (win != null && win.getBrowserView() != null) {
               const contents = win.getBrowserView().webContents;
               contents.getZoomFactor((zoomFactor) => {
                 contents.setZoomFactor(zoomFactor - 0.1);
               });
             }
           },
+          enabled: hasWorkspaces,
         },
         { type: 'separator' },
         {
@@ -168,10 +172,11 @@ function createMenu() {
           click: () => {
             const win = mainWindow.get();
 
-            if (win != null) {
+            if (win != null && win.getBrowserView() != null) {
               win.getBrowserView().webContents.reload();
             }
           },
+          enabled: hasWorkspaces,
         },
         { type: 'separator' },
         {
@@ -306,16 +311,19 @@ function createMenu() {
           label: 'Home',
           accelerator: 'Shift+CmdOrCtrl+H',
           click: () => ipcMain.emit('request-go-home'),
+          enabled: hasWorkspaces,
         },
         {
           label: 'Back',
           accelerator: 'CmdOrCtrl+[',
           click: () => ipcMain.emit('request-go-back'),
+          enabled: hasWorkspaces,
         },
         {
           label: 'Forward',
           accelerator: 'CmdOrCtrl+]',
           click: () => ipcMain.emit('request-go-forward'),
+          enabled: hasWorkspaces,
         },
         { type: 'separator' },
         {
@@ -324,11 +332,12 @@ function createMenu() {
           click: () => {
             const win = mainWindow.get();
 
-            if (win != null) {
+            if (win != null && win.getBrowserView() != null) {
               const url = win.getBrowserView().webContents.getURL();
               clipboard.writeText(url);
             }
           },
+          enabled: hasWorkspaces,
         },
       ],
     },
@@ -477,7 +486,7 @@ function createMenu() {
     });
   }
 
-  Object.values(getWorkspaces())
+  Object.values(workspaces)
     .sort((a, b) => a.order - b.order)
     .forEach((workspace, i) => {
       template[4].submenu.push({
@@ -511,6 +520,7 @@ function createMenu() {
         createMenu();
       },
       accelerator: 'CmdOrCtrl+Shift+]',
+      enabled: hasWorkspaces,
     },
     {
       label: 'Select Previous Workspace',
@@ -521,6 +531,7 @@ function createMenu() {
         createMenu();
       },
       accelerator: 'CmdOrCtrl+Shift+[',
+      enabled: hasWorkspaces,
     },
     { type: 'separator' },
     {
@@ -529,6 +540,7 @@ function createMenu() {
         const activeWorkspace = getActiveWorkspace();
         editWorkspaceWindow.show(activeWorkspace.id);
       },
+      enabled: hasWorkspaces,
     },
     {
       label: 'Remove Current Workspace',
@@ -536,6 +548,7 @@ function createMenu() {
         const activeWorkspace = getActiveWorkspace();
         ipcMain.emit('request-remove-workspace', null, activeWorkspace.id);
       },
+      enabled: hasWorkspaces,
     },
     { type: 'separator' },
     {
