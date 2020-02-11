@@ -12,6 +12,7 @@ import customUserAgent from './custom-user-agent/reducers';
 import editWorkspace from './edit-workspace/reducers';
 import findInPage from './find-in-page/reducers';
 import general from './general/reducers';
+import goToUrl from './go-to-url/reducers';
 import licenseRegistration from './license-registration/reducers';
 import notifications from './notifications/reducers';
 import preferences from './preferences/reducers';
@@ -29,6 +30,7 @@ const rootReducer = combineReducers({
   editWorkspace,
   findInPage,
   general,
+  goToUrl,
   licenseRegistration,
   notifications,
   preferences,

@@ -46,16 +46,17 @@ const DialogLicenseRegistration = (props) => {
           perpetual license key ($9.99) from our store.
         </DialogContentText>
         <TextField
+          autoFocus
           fullWidth
           id=""
-          label={licenseKeyError || 'License Key'}
+          label="License Key"
           margin="normal"
           onChange={(e) => onUpdateForm({ licenseKey: e.target.value })}
           value={licenseKey}
           placeholder="0-0000000000000-00000000-00000000-00000000-00000000"
           error={Boolean(licenseKeyError)}
           variant="outlined"
-          helperText="If you have already purchased Singlebox from our store, you should have received a license key via email to enter above."
+          helperText={licenseKeyError || 'If you have already purchased Singlebox from our store, you should have received a license key via email to enter above.'}
         />
       </DialogContent>
       <DialogActions className={classes.dialogActions}>

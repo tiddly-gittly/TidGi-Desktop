@@ -122,9 +122,10 @@ const AddWorkspaceCustom = ({
     <div>
       <TextField
         id="outlined-full-width"
-        label={nameError || 'Name'}
+        label="Name"
         error={Boolean(nameError)}
         placeholder="Example: Singlebox"
+        helperText={nameError}
         fullWidth
         margin="dense"
         variant="outlined"
@@ -137,9 +138,10 @@ const AddWorkspaceCustom = ({
       />
       <TextField
         id="outlined-full-width"
-        label={homeUrlError || 'Home URL'}
+        label="Home URL"
         error={Boolean(homeUrlError)}
         placeholder="Example: https://singleboxapp.com"
+        helperText={homeUrlError || (isMailApp && 'Email app detected.')}
         fullWidth
         margin="dense"
         variant="outlined"
@@ -149,7 +151,6 @@ const AddWorkspaceCustom = ({
         }}
         value={homeUrl}
         onChange={(e) => onUpdateForm({ homeUrl: e.target.value })}
-        helperText={!homeUrlError && isMailApp && 'Email app detected.'}
       />
       <div className={classes.avatarFlex}>
         <div className={classes.avatarLeft}>

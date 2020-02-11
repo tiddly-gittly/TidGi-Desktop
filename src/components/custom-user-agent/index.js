@@ -31,6 +31,7 @@ const CustomUserAgent = ({
   <div className={classes.root}>
     <div className={classes.flexGrow}>
       <TextField
+        autoFocus
         id="outlined-full-width"
         label="User-Agent"
         placeholder=""

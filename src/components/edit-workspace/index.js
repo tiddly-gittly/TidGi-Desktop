@@ -124,9 +124,10 @@ const EditWorkspace = ({
     <div className={classes.flexGrow}>
       <TextField
         id="outlined-full-width"
-        label={nameError || 'Name'}
+        label="Name"
         error={Boolean(nameError)}
         placeholder="Optional"
+        helperText={nameError}
         fullWidth
         margin="dense"
         variant="outlined"
@@ -139,9 +140,10 @@ const EditWorkspace = ({
       />
       <TextField
         id="outlined-full-width"
-        label={homeUrlError || 'Home URL'}
+        label="Home URL"
         error={Boolean(homeUrlError)}
         placeholder="Optional"
+        helperText={homeUrlError || (isMailApp && 'Email app detected.')}
         fullWidth
         margin="dense"
         variant="outlined"
@@ -151,7 +153,6 @@ const EditWorkspace = ({
         }}
         value={homeUrl}
         onChange={(e) => onUpdateForm({ homeUrl: e.target.value })}
-        helperText={!homeUrlError && isMailApp && 'Email app detected.'}
       />
       <div className={classes.avatarFlex}>
         <div className={classes.avatarLeft}>
