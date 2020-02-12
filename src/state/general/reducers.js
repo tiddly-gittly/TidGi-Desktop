@@ -10,6 +10,7 @@ import {
   UPDATE_IS_FULL_SCREEN,
   UPDATE_IS_LOADING,
   UPDATE_ADDRESS_BAR_INFO,
+  UPDATE_TITLE,
 } from '../../constants/actions';
 
 const { remote } = window.require('electron');
@@ -42,6 +43,12 @@ const addressEdited = (state = false, action) => {
   }
 };
 
+const title = (state = '', action) => {
+  switch (action.type) {
+    case UPDATE_TITLE: return action.title;
+    default: return state;
+  }
+};
 
 const isFullScreen = (state = remote.getCurrentWindow().isFullScreen(), action) => {
   switch (action.type) {
@@ -97,4 +104,5 @@ export default combineReducers({
   isDefaultWebBrowser,
   isFullScreen,
   isLoading,
+  title,
 });

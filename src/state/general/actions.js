@@ -8,6 +8,7 @@ import {
   UPDATE_IS_DEFAULT_WEB_BROWSER,
   UPDATE_IS_FULL_SCREEN,
   UPDATE_IS_LOADING,
+  UPDATE_TITLE,
 } from '../../constants/actions';
 
 export const updateCanGoBack = (canGoBack) => ({
@@ -54,4 +55,9 @@ export const updateAddressBarInfo = (address, edited) => ({
   type: UPDATE_ADDRESS_BAR_INFO,
   address,
   edited,
+});
+
+export const updateTitle = (title) => ({
+  type: UPDATE_TITLE,
+  title,
 });

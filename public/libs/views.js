@@ -217,6 +217,12 @@ const addView = (browserWindow, workspace) => {
     }
   });
 
+  view.webContents.on('page-title-updated', (e, title) => {
+    if (getWorkspace(workspace.id).active) {
+      sendToAllWindows('update-title', title);
+    }
+  });
+
   const handleNewWindow = (e, nextUrl, frameName, disposition, options) => {
     const appDomain = extractDomain(getWorkspace(workspace.id).homeUrl);
     const currentDomain = extractDomain(e.sender.getURL());
@@ -452,6 +458,7 @@ const setActiveView = (browserWindow, id) => {
     sendToAllWindows('update-address', view.webContents.getURL(), false);
     sendToAllWindows('update-is-loading', view.webContents.isLoading());
     sendToAllWindows('update-did-fail-load', Boolean(didFailLoad[id]));
+    sendToAllWindows('update-title', view.webContents.getTitle());
   }
 };
 

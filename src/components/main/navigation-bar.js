@@ -117,7 +117,7 @@ const NavigationBar = ({
         type="text"
         value={hasWorkspaces ? address : ''}
         disabled={!hasWorkspaces}
-        endAdornment={addressEdited && (
+        endAdornment={addressEdited && address && hasWorkspaces && (
           <IconButton
             aria-label="Go"
             className={classes.goButton}

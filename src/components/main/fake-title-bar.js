@@ -20,12 +20,17 @@ const styles = (theme) => ({
     color: theme.palette.type === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgb(77, 77, 77)',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif',
     fontWeight: 500,
+    padding: '0 72px',
+    overflow: 'hidden',
+    textOverflow: 'ellipsis',
+    whiteSpace: 'nowrap',
   },
 });
 
 const FakeTitleBar = (props) => {
   const {
     classes,
+    title,
   } = props;
 
   if (window.process.platform !== 'darwin') return null;
@@ -34,18 +39,27 @@ const FakeTitleBar = (props) => {
     <div
       className={classnames(classes.root)}
     >
-      {remote.getCurrentWindow().getTitle()}
+      {window.mode === 'main' && title ? title : remote.getCurrentWindow().getTitle()}
     </div>
   );
 };
 
+FakeTitleBar.defaultProps = {
+  title: '',
+};
+
 FakeTitleBar.propTypes = {
   classes: PropTypes.object.isRequired,
+  title: PropTypes.string,
 };
+
+const mapStateToProps = (state) => ({
+  title: state.general.title,
+});
 
 export default connectComponent(
   FakeTitleBar,
-  null,
+  mapStateToProps,
   null,
   styles,
 );

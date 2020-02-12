@@ -40,6 +40,8 @@ const createAsync = () => {
         y: menubarWindowState.y,
         width: menubarWindowState.width,
         height: menubarWindowState.height,
+        minHeight: 100,
+        minWidth: 250,
         webPreferences: {
           nodeIntegration: true,
           webSecurity: false,
@@ -155,6 +157,7 @@ const createAsync = () => {
     width: mainWindowState.width,
     height: mainWindowState.height,
     minHeight: 100,
+    minWidth: 250,
     title: 'Singlebox',
     titleBarStyle: 'hidden',
     show: false,
