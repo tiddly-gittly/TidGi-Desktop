@@ -1,5 +1,8 @@
 window.mode = 'menubar';
 
+const { remote } = require('electron');
 const contextMenu = require('electron-context-menu');
 
-contextMenu();
+contextMenu({
+  window: remote.getCurrentWindow(),
+});
