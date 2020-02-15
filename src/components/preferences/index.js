@@ -171,6 +171,7 @@ const Preferences = ({
   customUserAgent,
   downloadPath,
   hibernateUnusedWorkspacesAtLaunch,
+  hideMenuBar,
   isDefaultMailClient,
   isDefaultWebBrowser,
   jsCodeInjection,
@@ -251,6 +252,27 @@ const Preferences = ({
             />
           </ListItemSecondaryAction>
         </ListItem>
+        {window.process.platform !== 'darwin' && (
+          <>
+            <Divider />
+            <ListItem>
+              <ListItemText
+                primary="Hide menu bar"
+                secondary="Hide the menu bar unless the Alt key is pressed."
+              />
+              <ListItemSecondaryAction>
+                <Switch
+                  color="primary"
+                  checked={hideMenuBar}
+                  onChange={(e) => {
+                    requestSetPreference('hideMenuBar', e.target.checked);
+                    requestShowRequireRestartDialog();
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+          </>
+        )}
         <Divider />
         <ListItem>
           <ListItemText
@@ -713,6 +735,7 @@ Preferences.propTypes = {
   customUserAgent: PropTypes.string,
   downloadPath: PropTypes.string.isRequired,
   hibernateUnusedWorkspacesAtLaunch: PropTypes.bool.isRequired,
+  hideMenuBar: PropTypes.bool.isRequired,
   isDefaultMailClient: PropTypes.bool.isRequired,
   isDefaultWebBrowser: PropTypes.bool.isRequired,
   jsCodeInjection: PropTypes.string,
@@ -745,6 +768,7 @@ const mapStateToProps = (state) => ({
   customUserAgent: state.preferences.customUserAgent,
   downloadPath: state.preferences.downloadPath,
   hibernateUnusedWorkspacesAtLaunch: state.preferences.hibernateUnusedWorkspacesAtLaunch,
+  hideMenuBar: state.preferences.hideMenuBar,
   isDefaultMailClient: state.general.isDefaultMailClient,
   isDefaultWebBrowser: state.general.isDefaultWebBrowser,
   jsCodeInjection: state.preferences.jsCodeInjection,

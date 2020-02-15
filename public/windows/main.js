@@ -162,6 +162,7 @@ const createAsync = () => {
     titleBarStyle: 'hidden',
     show: false,
     icon: process.platform === 'linux' ? path.resolve(__dirname, '..', 'icon.png') : null,
+    autoHideMenuBar: getPreference('hideMenuBar'),
     webPreferences: {
       nodeIntegration: true,
       webSecurity: false,

@@ -91,6 +91,7 @@ const defaultPreferences = {
   customUserAgent: null,
   downloadPath: getDefaultDownloadsPath(),
   hibernateUnusedWorkspacesAtLaunch: false,
+  hideMenuBar: false,
   jsCodeInjection: null,
   navigationBar: false,
   pauseNotifications: null,
