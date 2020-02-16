@@ -61,6 +61,22 @@ const equivalentDomain = (domain) => {
   return eDomain;
 };
 
+const isInternalUrl = (url, currentInternalUrls) => {
+  const domain = equivalentDomain(extractDomain(url));
+  const matchedInternalUrl = currentInternalUrls.find((internalUrl) => {
+    const internalDomain = equivalentDomain(extractDomain(internalUrl));
+    // domains match
+    return domain === internalDomain
+    // domains don't match, but current domain is referred
+    // tends to occur when authentication is placed on different domain
+    // Ex: music.yandex.ru => passport.yandex.ru?retpath=....music.yandex.ru
+    // https://github.com/quanglam2807/webcatalog/issues/546
+      || url.includes(internalDomain);
+  });
+
+  return Boolean(matchedInternalUrl);
+};
+
 const addView = (browserWindow, workspace) => {
   if (views[workspace.id] != null) return;
 
@@ -213,8 +229,10 @@ const addView = (browserWindow, workspace) => {
   });
 
   const handleNewWindow = (e, nextUrl, frameName, disposition, options) => {
-    const appDomain = extractDomain(getWorkspace(workspace.id).homeUrl);
-    const currentDomain = extractDomain(e.sender.getURL());
+    const appUrl = getWorkspace(workspace.id).homeUrl;
+    const appDomain = extractDomain(appUrl);
+    const currentUrl = e.sender.getURL();
+    const currentDomain = extractDomain(currentUrl);
     const nextDomain = extractDomain(nextUrl);
 
     // load in same window
@@ -223,7 +241,7 @@ const addView = (browserWindow, workspace) => {
       nextDomain === 'accounts.google.com'
       // https://github.com/quanglam2807/webcatalog/issues/315
       || ((appDomain.includes('asana.com') || currentDomain.includes('asana.com')) && nextDomain.includes('asana.com'))
-      || (disposition === 'foreground-tab' && (nextDomain === appDomain || nextDomain === currentDomain))
+      || (disposition === 'foreground-tab' && isInternalUrl(nextUrl, [appUrl, currentUrl]))
     ) {
       e.preventDefault();
       adjustUserAgentByUrl(nextUrl);
@@ -232,8 +250,7 @@ const addView = (browserWindow, workspace) => {
     }
 
     // open new window
-    if (equivalentDomain(nextDomain) === equivalentDomain(appDomain)
-     || equivalentDomain(nextDomain) === equivalentDomain(currentDomain)) {
+    if (isInternalUrl(nextUrl, [appUrl, currentUrl])) {
       // https://gist.github.com/Gvozd/2cec0c8c510a707854e439fb15c561b0
       e.preventDefault();
       const newOptions = {
@@ -272,10 +289,8 @@ const addView = (browserWindow, workspace) => {
       const popupWin = new BrowserWindow(newOptions);
       popupWin.webContents.on('new-window', handleNewWindow);
       popupWin.webContents.once('will-navigate', (_, url) => {
-        const retrievedDomain = extractDomain(url);
         // if the window is used for the current app, then use default behavior
-        if (equivalentDomain(retrievedDomain) === equivalentDomain(appDomain)
-         || equivalentDomain(retrievedDomain) === equivalentDomain(currentDomain)) {
+        if (isInternalUrl(url, [appUrl, currentUrl])) {
           popupWin.show();
         } else { // if not, open in browser
           e.preventDefault();
