@@ -107,6 +107,7 @@ const defaultPreferences = {
   spellCheckerLanguages: null,
   swipeToNavigate: true,
   theme: process.platform === 'darwin' ? 'automatic' : 'light',
+  titleBar: false,
   unreadCountBadge: true,
 };
 

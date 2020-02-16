@@ -191,6 +191,7 @@ const Preferences = ({
   spellCheckerLanguages,
   swipeToNavigate,
   theme,
+  titleBar,
   unreadCountBadge,
   updaterInfo,
   updaterStatus,
@@ -252,6 +253,28 @@ const Preferences = ({
             />
           </ListItemSecondaryAction>
         </ListItem>
+        {window.process.platform === 'darwin' && (
+          <>
+            <Divider />
+            <ListItem>
+              <ListItemText
+                primary="Show title bar"
+                secondary="Title bar shows you the title of the current page."
+              />
+              <ListItemSecondaryAction>
+                <Switch
+                  color="primary"
+                  checked={!attachToMenubar && !sidebar && !navigationBar ? true : titleBar}
+                  disabled={!attachToMenubar && !sidebar && !navigationBar}
+                  onChange={(e) => {
+                    requestSetPreference('titleBar', e.target.checked);
+                    requestRealignActiveWorkspace();
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+          </>
+        )}
         {window.process.platform !== 'darwin' && (
           <>
             <Divider />
@@ -755,6 +778,7 @@ Preferences.propTypes = {
   spellCheckerLanguages: PropTypes.arrayOf(PropTypes.string).isRequired,
   swipeToNavigate: PropTypes.bool.isRequired,
   theme: PropTypes.string.isRequired,
+  titleBar: PropTypes.bool.isRequired,
   unreadCountBadge: PropTypes.bool.isRequired,
   updaterInfo: PropTypes.object,
   updaterStatus: PropTypes.string,
@@ -786,6 +810,7 @@ const mapStateToProps = (state) => ({
   spellCheckerLanguages: state.preferences.spellCheckerLanguages,
   swipeToNavigate: state.preferences.swipeToNavigate,
   theme: state.preferences.theme,
+  titleBar: state.preferences.titleBar,
   unreadCountBadge: state.preferences.unreadCountBadge,
   updaterInfo: state.updater.info,
   updaterStatus: state.updater.status,

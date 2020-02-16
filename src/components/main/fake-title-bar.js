@@ -20,10 +20,15 @@ const styles = (theme) => ({
     color: theme.palette.type === 'dark' ? 'rgba(255, 255, 255, 0.7)' : 'rgb(77, 77, 77)',
     fontFamily: '-apple-system, BlinkMacSystemFont, "Helvetica Neue", Arial, sans-serif',
     fontWeight: 500,
-    padding: '0 72px',
+    paddingLeft: 72,
+    paddingRight: 72,
     overflow: 'hidden',
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
+  },
+  rootMenubar: {
+    paddingLeft: theme.spacing.unit,
+    paddingRight: theme.spacing.unit,
   },
 });
 
@@ -37,9 +42,9 @@ const FakeTitleBar = (props) => {
 
   return (
     <div
-      className={classnames(classes.root)}
+      className={classnames(classes.root, window.mode === 'menubar' && classes.rootMenubar)}
     >
-      {window.mode === 'main' && title ? title : remote.getCurrentWindow().getTitle()}
+      {(window.mode === 'main' || window.mode === 'menubar') && title ? title : remote.getCurrentWindow().getTitle()}
     </div>
   );
 };

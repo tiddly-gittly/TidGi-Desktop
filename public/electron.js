@@ -10,7 +10,7 @@ const openUrlWithWindow = require('./windows/open-url-with');
 
 const createMenu = require('./libs/create-menu');
 const { addView } = require('./libs/views');
-const { getPreference } = require('./libs/preferences');
+const { getPreference, getPreferences } = require('./libs/preferences');
 const { getWorkspaces, setWorkspace } = require('./libs/workspaces');
 const extractHostname = require('./libs/extract-hostname');
 
@@ -69,11 +69,18 @@ if (!gotTheLock) {
   };
 
   app.on('ready', () => {
-    global.attachToMenubar = getPreference('attachToMenubar');
-    global.showSidebar = getPreference('sidebar');
-    global.showNavigationBar = (process.platform === 'linux'
-      && global.attachToMenubar
-      && !global.showSidebar) || getPreference('navigationBar');
+    const {
+      attachToMenubar,
+      sidebar,
+      titleBar,
+      navigationBar,
+    } = getPreferences();
+
+    global.attachToMenubar = attachToMenubar;
+    global.sidebar = sidebar;
+    global.titleBar = titleBar;
+    global.navigationBar = navigationBar;
+
     global.MAILTO_URLS = MAILTO_URLS;
 
     autoUpdater.allowPrerelease = getPreference('allowPrerelease');

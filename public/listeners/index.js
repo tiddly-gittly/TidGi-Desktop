@@ -47,6 +47,7 @@ const {
 
 const sendToAllWindows = require('../libs/send-to-all-windows');
 const getWebsiteIconUrlAsync = require('../libs/get-website-icon-url-async');
+const getViewBounds = require('../libs/get-view-bounds');
 
 const createMenu = require('../libs/create-menu');
 
@@ -85,17 +86,7 @@ const loadListeners = () => {
     // adjust bounds to hide the gap for find in page
     if (close) {
       const contentSize = win.getContentSize();
-
-      const offsetTitlebar = process.platform !== 'darwin' || global.showSidebar || global.attachToMenubar ? 0 : 22;
-      const x = global.showSidebar ? 68 : 0;
-      const y = global.showNavigationBar ? 36 + offsetTitlebar : 0 + offsetTitlebar;
-
-      view.setBounds({
-        x,
-        y,
-        width: contentSize[0] - x,
-        height: contentSize[1] - y,
-      });
+      view.setBounds(getViewBounds(contentSize));
     }
   });
 
@@ -227,11 +218,15 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-realign-active-workspace', () => {
-    global.attachToMenubar = getPreference('attachToMenubar');
-    global.showSidebar = getPreference('sidebar');
-    global.showNavigationBar = (process.platform === 'linux'
-    && global.attachToMenubar
-    && !global.showSidebar) || getPreference('navigationBar');
+    const {
+      sidebar,
+      titleBar,
+      navigationBar,
+    } = getPreferences();
+
+    global.sidebar = sidebar;
+    global.titleBar = titleBar;
+    global.navigationBar = navigationBar;
 
     const activeWorkspace = getActiveWorkspace();
     if (activeWorkspace) {
