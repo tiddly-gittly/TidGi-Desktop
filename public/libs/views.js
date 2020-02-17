@@ -65,13 +65,15 @@ const isInternalUrl = (url, currentInternalUrls) => {
   const domain = equivalentDomain(extractDomain(url));
   const matchedInternalUrl = currentInternalUrls.find((internalUrl) => {
     const internalDomain = equivalentDomain(extractDomain(internalUrl));
-    // domains match
-    return domain === internalDomain
-    // domains don't match, but current domain is referred
-    // tends to occur when authentication is placed on different domain
+
     // Ex: music.yandex.ru => passport.yandex.ru?retpath=....music.yandex.ru
-    // https://github.com/quanglam2807/webcatalog/issues/546
-      || url.includes(internalDomain);
+    // https://github.com/quanglam2807/webcatalog/issues/546#issuecomment-586639519
+    if (domain === 'clck.yandex.ru' || domain === 'passport.yandex.ru') {
+      return url.includes(internalDomain);
+    }
+
+    // domains match
+    return domain === internalDomain;
   });
 
   return Boolean(matchedInternalUrl);
