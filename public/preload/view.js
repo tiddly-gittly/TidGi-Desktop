@@ -170,7 +170,7 @@ window.addEventListener('message', (e) => {
 // https://github.com/electron/electron/issues/16587
 
 // Fix chrome.runtime.sendMessage is undefined for FastMail
-// https://github.com/quanglam2807/singlebox/issues/21
+// https://github.com/atomery/singlebox/issues/21
 const initialShouldPauseNotifications = ipcRenderer.sendSync('get-pause-notifications-info') != null;
 webFrame.executeJavaScript(`
 (function() {

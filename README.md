@@ -2,7 +2,7 @@
 
 |macOS|Linux|Windows|Catalog|
 |---|---|---|---|
-|[![GitHub Actions macOS Build Status](https://github.com/quanglam2807/singlebox/workflows/macOS/badge.svg)](https://github.com/quanglam2807/singlebox/actions?query=workflow%3AmacOS)|[![GitHub Actions Linux Build Status](https://github.com/quanglam2807/singlebox/workflows/Linux/badge.svg)](https://github.com/quanglam2807/singlebox/actions?query=workflow%3ALinux)|[![GitHub Actions Windows Build Status](https://github.com/quanglam2807/singlebox/workflows/Windows/badge.svg)](https://github.com/quanglam2807/singlebox/actions?query=workflow%3AWindows)|[![GitHub Actions Catalog Build Status](https://github.com/quanglam2807/singlebox/workflows/Catalog/badge.svg)](https://github.com/quanglam2807/singlebox/actions?query=workflow%3ACatalog)|
+|[![GitHub Actions macOS Build Status](https://github.com/atomery/singlebox/workflows/macOS/badge.svg)](https://github.com/atomery/singlebox/actions?query=workflow%3AmacOS)|[![GitHub Actions Linux Build Status](https://github.com/atomery/singlebox/workflows/Linux/badge.svg)](https://github.com/atomery/singlebox/actions?query=workflow%3ALinux)|[![GitHub Actions Windows Build Status](https://github.com/atomery/singlebox/workflows/Windows/badge.svg)](https://github.com/atomery/singlebox/actions?query=workflow%3AWindows)|[![GitHub Actions Catalog Build Status](https://github.com/atomery/singlebox/workflows/Catalog/badge.svg)](https://github.com/atomery/singlebox/actions?query=workflow%3ACatalog)|
 
 **[Singlebox](https://singleboxapp.com)** - All Your Apps in One Single Window.
 
@@ -18,7 +18,7 @@ Singlebox has permanent licenses, which have no time limit. In other words, the 
 ## Development
 ```
 # First, clone the project:
-git clone https://github.com/quanglam2807/singlebox.git
+git clone https://github.com/atomery/singlebox.git
 cd singlebox
 
 # install the dependencies

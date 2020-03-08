@@ -21,7 +21,7 @@
     "catalog:pack": "cd catalog && yarn build:pack",
     "catalog:publish": "cd catalog && yarn build:publish"
   },
-  "repository": "https://github.com/quanglam2807/singlebox",
+  "repository": "https://github.com/atomery/singlebox",
   "author": "Quang Lam <quang.lam2807@gmail.com>",
   "dependencies": {
     "cheerio": "1.0.0-rc.3",
