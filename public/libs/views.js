@@ -89,8 +89,6 @@ const addView = (browserWindow, workspace) => {
     unreadCountBadge,
   } = getPreferences();
 
-  const contentSize = browserWindow.getContentSize();
-
   const view = new BrowserView({
     webPreferences: {
       nativeWindowOpen: true,
@@ -147,6 +145,7 @@ const addView = (browserWindow, workspace) => {
       // show browserView again when reloading after error
       // see did-fail-load event
       if (didFailLoad[workspace.id]) {
+        const contentSize = browserWindow.getContentSize();
         view.setBounds(getViewBounds(contentSize));
       }
       didFailLoad[workspace.id] = false;
@@ -184,6 +183,7 @@ const addView = (browserWindow, workspace) => {
         sendToAllWindows('update-loading', false);
 
         didFailLoad[workspace.id] = true;
+        const contentSize = browserWindow.getContentSize();
         view.setBounds(
           getViewBounds(contentSize, false, 0, 0),
         ); // hide browserView to show error message
@@ -394,6 +394,7 @@ const addView = (browserWindow, workspace) => {
 
   if (workspace.active) {
     browserWindow.setBrowserView(view);
+    const contentSize = browserWindow.getContentSize();
     view.setBounds(getViewBounds(contentSize));
     view.setAutoResize({
       width: true,
