@@ -27,4 +27,4 @@ plugins:
   - jekyll-redirect-from
   - jekyll-sitemap
 
-google_analytics: UA-124034530-10
+google_tag_manager: GTM-MFRC96N
