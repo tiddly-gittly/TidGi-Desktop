@@ -25,7 +25,7 @@ const styles = (theme) => ({
     width: 368,
     boxSizing: 'border-box',
     borderRadius: 4,
-    padding: theme.spacing.unit,
+    padding: theme.spacing(1),
     display: 'flex',
   },
   appName: {
@@ -50,19 +50,19 @@ const styles = (theme) => ({
     display: 'flex',
     flexDirection: 'row',
     alignItems: 'center',
-    paddingLeft: theme.spacing.unit,
+    paddingLeft: theme.spacing(1),
   },
   actionButton: {
     minWidth: 'auto',
     boxShadow: 'none',
-    marginLeft: theme.spacing.unit,
+    marginLeft: theme.spacing(1),
   },
   infoContainer: {
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    paddingLeft: theme.spacing.unit,
-    paddingRight: theme.spacing.unit,
+    paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(1),
     flex: 1,
     overflow: 'hidden',
   },
@@ -93,7 +93,7 @@ const AppCard = (props) => {
           <Typography variant="subtitle2" className={classes.appName}>
             {name}
           </Typography>
-          <Typography variant="body1" color="textSecondary" className={classes.appUrl}>
+          <Typography variant="body2" color="textSecondary" className={classes.appUrl}>
             {extractHostname(url)}
           </Typography>
         </div>
@@ -107,6 +107,7 @@ const AppCard = (props) => {
             )}
           >
             <MenuItem
+              dense
               onClick={() => {
                 onUpdateForm({
                   name, homeUrl: url, picturePath: icon,

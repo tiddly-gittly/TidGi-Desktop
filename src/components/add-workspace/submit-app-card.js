@@ -14,7 +14,7 @@ const styles = (theme) => ({
     width: 368,
     boxSizing: 'border-box',
     borderRadius: 4,
-    padding: theme.spacing.unit * 1.5,
+    padding: theme.spacing(1.5),
     display: 'flex',
     cursor: 'pointer',
     color: theme.palette.text.primary,
@@ -42,8 +42,8 @@ const styles = (theme) => ({
     display: 'flex',
     flexDirection: 'column',
     justifyContent: 'center',
-    paddingLeft: theme.spacing.unit,
-    paddingRight: theme.spacing.unit,
+    paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(1),
     flex: 1,
   },
 });
@@ -63,7 +63,7 @@ const SubmitAppCard = (props) => {
           <Typography variant="subtitle1" className={classes.appName}>
             Submit New App
           </Typography>
-          <Typography variant="body1" color="textSecondary" className={classes.appUrl}>
+          <Typography variant="body2" color="textSecondary" className={classes.appUrl}>
             Can&apos;t find your favorite app? Submit it!
           </Typography>
         </div>

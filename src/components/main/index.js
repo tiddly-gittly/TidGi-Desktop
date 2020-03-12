@@ -62,14 +62,14 @@ const styles = (theme) => ({
     display: 'flex',
     flexDirection: 'column',
     alignItems: 'center',
-    paddingBottom: theme.spacing.unit,
+    paddingBottom: theme.spacing(1),
     boxSizing: 'border-box',
     overflowY: 'auto',
     overflowX: 'hidden',
   },
   sidebarTop: {
     flex: 1,
-    paddingTop: window.process.platform === 'darwin' ? theme.spacing.unit * 3 : 0,
+    paddingTop: window.process.platform === 'darwin' ? theme.spacing(3) : 0,
   },
   sidebarTopFullScreen: {
     paddingTop: 0,
@@ -107,8 +107,8 @@ const styles = (theme) => ({
     textAlign: 'center',
     fontWeight: 500,
     textTransform: 'uppercase',
-    marginLeft: theme.spacing.unit,
-    marginRight: theme.spacing.unit,
+    marginLeft: theme.spacing(1),
+    marginRight: theme.spacing(1),
     boxShadow: theme.shadows[1],
   },
   inlineBlock: {
@@ -267,14 +267,14 @@ const Main = ({
                   This site can’t be reached.
                 </Typography>
 
-                <Typography align="center" variant="body1">
+                <Typography align="center" variant="body2">
                   Try:
                   - Checking the network cables, modem, and router.
                   - Checking the proxy and the firewall.
                   - Reconnecting to Wi-Fi.
                 </Typography>
 
-                <Typography align="center" variant="body1">
+                <Typography align="center" variant="body2">
                   Press ⌘ + R to reload.
                 </Typography>
               </div>

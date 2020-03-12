@@ -27,8 +27,8 @@ const styles = (theme) => ({
     whiteSpace: 'nowrap',
   },
   rootMenubar: {
-    paddingLeft: theme.spacing.unit,
-    paddingRight: theme.spacing.unit,
+    paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(1),
   },
 });
 

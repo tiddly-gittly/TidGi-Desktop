@@ -15,7 +15,7 @@ const styles = (theme) => ({
     background: theme.palette.background.paper,
     height: '100vh',
     width: '100vw',
-    padding: theme.spacing.unit * 3,
+    padding: theme.spacing(3),
     display: 'flex',
     flexDirection: 'column',
   },
@@ -24,10 +24,10 @@ const styles = (theme) => ({
   },
   button: {
     float: 'right',
-    marginLeft: theme.spacing.unit,
+    marginLeft: theme.spacing(1),
   },
   textField: {
-    marginBottom: theme.spacing.unit * 2,
+    marginBottom: theme.spacing(2),
   },
 });
 

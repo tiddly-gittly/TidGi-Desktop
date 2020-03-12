@@ -48,18 +48,18 @@ const styles = (theme) => ({
   },
   scrollContainer: {
     flex: 1,
-    paddingLeft: theme.spacing.unit * 2,
-    paddingRight: theme.spacing.unit * 2,
-    paddingTop: theme.spacing.unit * 3,
-    paddingBottom: theme.spacing.unit * 2,
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(2),
+    paddingTop: theme.spacing(3),
+    paddingBottom: theme.spacing(2),
     overflow: 'auto',
     boxSizing: 'border-box',
   },
   grid: {
-    marginBottom: theme.spacing.unit,
+    marginBottom: theme.spacing(1),
   },
   searchByAlgoliaContainer: {
-    marginTop: theme.spacing.unit * 3,
+    marginTop: theme.spacing(3),
     outline: 'none',
   },
   searchByAlgolia: {

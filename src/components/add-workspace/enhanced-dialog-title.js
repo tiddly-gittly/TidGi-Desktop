@@ -12,13 +12,13 @@ const styles = (theme) => ({
   root: {
     borderBottom: `1px solid ${theme.palette.divider}`,
     marginTop: 0,
-    marginBottom: theme.spacing.unit * 3,
+    marginBottom: theme.spacing(3),
     padding: 0,
   },
   closeButton: {
     position: 'absolute',
-    right: theme.spacing.unit,
-    top: theme.spacing.unit,
+    right: theme.spacing(1),
+    top: theme.spacing(1),
     color: theme.palette.grey[500],
   },
 });

@@ -35,18 +35,18 @@ const styles = (theme) => ({
     borderBottom: '1px solid rgba(0, 0, 0, 0.2)',
     display: 'flex',
     alignItems: 'center',
-    paddingLeft: theme.spacing.unit,
-    paddingRight: theme.spacing.unit,
+    paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(1),
     WebkitAppRegion: 'drag',
     WebkitUserSelect: 'none',
   },
   rootWithTrafficLights: {
-    paddingLeft: 68 + theme.spacing.unit,
+    paddingLeft: 68 + theme.spacing(1),
   },
   center: {
     flex: 1,
-    paddingLeft: theme.spacing.unit,
-    paddingRight: theme.spacing.unit,
+    paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(1),
   },
   iconButton: {
     padding: 6,

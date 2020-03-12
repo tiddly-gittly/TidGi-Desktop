@@ -31,10 +31,10 @@ const styles = (theme) => ({
     background: theme.palette.background.paper,
     height: '100vh',
     width: '100vw',
-    paddingTop: theme.spacing.unit * 3,
-    paddingBottom: theme.spacing.unit * 3,
-    paddingLeft: theme.spacing.unit * 2,
-    paddingRight: theme.spacing.unit * 2,
+    paddingTop: theme.spacing(3),
+    paddingBottom: theme.spacing(3),
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(2),
     display: 'flex',
     flexDirection: 'column',
   },
@@ -45,22 +45,22 @@ const styles = (theme) => ({
     float: 'right',
   },
   textField: {
-    marginBottom: theme.spacing.unit * 3,
+    marginBottom: theme.spacing(3),
   },
   avatarFlex: {
     display: 'flex',
   },
   avatarLeft: {
-    paddingTop: theme.spacing.unit,
-    paddingBottom: theme.spacing.unit,
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
     paddingLeft: 0,
-    paddingRight: theme.spacing.unit,
+    paddingRight: theme.spacing(1),
   },
   avatarRight: {
     flex: 1,
-    paddingTop: theme.spacing.unit,
-    paddingBottom: theme.spacing.unit,
-    paddingLeft: theme.spacing.unit,
+    paddingTop: theme.spacing(1),
+    paddingBottom: theme.spacing(1),
+    paddingLeft: theme.spacing(1),
     paddingRight: 0,
   },
   avatar: {
@@ -88,7 +88,10 @@ const styles = (theme) => ({
     borderRadius: 4,
   },
   buttonBot: {
-    marginTop: theme.spacing.unit,
+    marginTop: theme.spacing(1),
+  },
+  caption: {
+    display: 'block',
   },
 });
 
@@ -191,7 +194,7 @@ const EditWorkspace = ({
           >
             Select Local Image...
           </Button>
-          <Typography variant="caption">
+          <Typography variant="caption" className={classes.caption}>
             PNG, JPEG, GIF, TIFF or BMP.
           </Typography>
           <Button

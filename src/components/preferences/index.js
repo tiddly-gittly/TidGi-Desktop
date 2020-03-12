@@ -14,7 +14,7 @@ import Typography from '@material-ui/core/Typography';
 
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
-import { TimePicker } from 'material-ui-pickers';
+import { TimePicker } from '@material-ui/pickers';
 
 import connectComponent from '../../helpers/connect-component';
 
@@ -43,19 +43,19 @@ const { remote } = window.require('electron');
 
 const styles = (theme) => ({
   root: {
-    padding: theme.spacing.unit * 2,
+    padding: theme.spacing(2),
     background: theme.palette.background.default,
   },
   sectionTitle: {
-    paddingLeft: theme.spacing.unit * 2,
+    paddingLeft: theme.spacing(2),
   },
   paper: {
-    marginTop: theme.spacing.unit * 0.5,
-    marginBottom: theme.spacing.unit * 3,
+    marginTop: theme.spacing(0.5),
+    marginBottom: theme.spacing(3),
   },
   timePickerContainer: {
-    marginTop: theme.spacing.unit,
-    marginBottom: theme.spacing.unit,
+    marginTop: theme.spacing(1),
+    marginBottom: theme.spacing(1),
     display: 'flex',
     justifyContent: 'space-between',
   },
@@ -201,7 +201,7 @@ const Preferences = ({
       General
     </Typography>
     <Paper className={classes.paper}>
-      <List dense>
+      <List dense disablePadding>
         <StatedMenu
           id="theme"
           buttonElement={(
@@ -211,9 +211,9 @@ const Preferences = ({
             </ListItem>
           )}
         >
-          <MenuItem onClick={() => requestSetPreference('theme', 'automatic')}>System default</MenuItem>
-          <MenuItem onClick={() => requestSetPreference('theme', 'light')}>Light</MenuItem>
-          <MenuItem onClick={() => requestSetPreference('theme', 'dark')}>Dark</MenuItem>
+          <MenuItem dense onClick={() => requestSetPreference('theme', 'automatic')}>System default</MenuItem>
+          <MenuItem dense onClick={() => requestSetPreference('theme', 'light')}>Light</MenuItem>
+          <MenuItem dense onClick={() => requestSetPreference('theme', 'dark')}>Dark</MenuItem>
         </StatedMenu>
         <Divider />
         <ListItem>
@@ -223,6 +223,7 @@ const Preferences = ({
           />
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               checked={sidebar}
               onChange={(e) => {
@@ -240,6 +241,7 @@ const Preferences = ({
           />
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               // must show sidebar or navigation bar on Linux
               // if not, as user can't right-click on menu bar icon
@@ -263,6 +265,7 @@ const Preferences = ({
               />
               <ListItemSecondaryAction>
                 <Switch
+                  edge="end"
                   color="primary"
                   checked={!attachToMenubar && !sidebar && !navigationBar ? true : titleBar}
                   disabled={!attachToMenubar && !sidebar && !navigationBar}
@@ -285,6 +288,7 @@ const Preferences = ({
               />
               <ListItemSecondaryAction>
                 <Switch
+                  edge="end"
                   color="primary"
                   checked={hideMenuBar}
                   onChange={(e) => {
@@ -305,6 +309,7 @@ const Preferences = ({
           />
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               checked={attachToMenubar}
               onChange={(e) => {
@@ -337,6 +342,7 @@ const Preferences = ({
               />
               <ListItemSecondaryAction>
                 <Switch
+                  edge="end"
                   color="primary"
                   checked={swipeToNavigate}
                   onChange={(e) => {
@@ -355,7 +361,7 @@ const Preferences = ({
       Notifications
     </Typography>
     <Paper className={classes.paper}>
-      <List dense>
+      <List dense disablePadding>
         <ListItem button onClick={requestShowNotificationsWindow}>
           <ListItemText primary="Control notifications" />
           <ChevronRightIcon color="action" />
@@ -386,6 +392,7 @@ const Preferences = ({
           </ListItemText>
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               checked={pauseNotificationsBySchedule}
               onChange={(e) => {
@@ -399,6 +406,7 @@ const Preferences = ({
           <ListItemText primary="Mute audio when notifications are paused" />
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               checked={pauseNotificationsMuteAudio}
               onChange={(e) => {
@@ -414,6 +422,7 @@ const Preferences = ({
               <ListItemText primary="Show unread count badge" />
               <ListItemSecondaryAction>
                 <Switch
+                  edge="end"
                   color="primary"
                   checked={unreadCountBadge}
                   onChange={(e) => {
@@ -432,11 +441,12 @@ const Preferences = ({
       Languages
     </Typography>
     <Paper className={classes.paper}>
-      <List dense>
+      <List dense disablePadding>
         <ListItem>
           <ListItemText primary="Spell check" />
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               checked={spellChecker}
               onChange={(e) => {
@@ -461,6 +471,7 @@ const Preferences = ({
         >
           {Object.keys(hunspellLanguagesMap).map((code) => (
             <MenuItem
+              dense
               key={code}
               onClick={() => {
                 requestSetPreference('spellCheckerLanguages', [code]);
@@ -478,7 +489,7 @@ const Preferences = ({
       Downloads
     </Typography>
     <Paper className={classes.paper}>
-      <List dense>
+      <List dense disablePadding>
         <ListItem
           button
           onClick={() => {
@@ -504,6 +515,7 @@ const Preferences = ({
           <ListItemText primary="Ask where to save each file before downloading" />
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               checked={askForDownloadPath}
               onChange={(e) => {
@@ -519,11 +531,12 @@ const Preferences = ({
       Privacy &amp; Security
     </Typography>
     <Paper className={classes.paper}>
-      <List dense>
+      <List dense disablePadding>
         <ListItem>
           <ListItemText primary="Remember last page visited" />
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               checked={rememberLastPageVisited}
               onChange={(e) => {
@@ -538,6 +551,7 @@ const Preferences = ({
           <ListItemText primary="Share browsing data between workspaces" />
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               checked={shareWorkspaceBrowsingData}
               onChange={(e) => {
@@ -563,7 +577,7 @@ const Preferences = ({
       Default App
     </Typography>
     <Paper className={classes.paper}>
-      <List dense>
+      <List dense disablePadding>
         {isDefaultMailClient ? (
           <ListItem>
             <ListItemText secondary="Singlebox is your default email client." />
@@ -615,7 +629,7 @@ const Preferences = ({
       System
     </Typography>
     <Paper className={classes.paper}>
-      <List dense>
+      <List dense disablePadding>
         <StatedMenu
           id="openAtLogin"
           buttonElement={(
@@ -625,9 +639,9 @@ const Preferences = ({
             </ListItem>
           )}
         >
-          <MenuItem onClick={() => requestSetSystemPreference('openAtLogin', 'yes')}>Yes</MenuItem>
-          <MenuItem onClick={() => requestSetSystemPreference('openAtLogin', 'yes-hidden')}>Yes, but minimized</MenuItem>
-          <MenuItem onClick={() => requestSetSystemPreference('openAtLogin', 'no')}>No</MenuItem>
+          <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'yes')}>Yes</MenuItem>
+          <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'yes-hidden')}>Yes, but minimized</MenuItem>
+          <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'no')}>No</MenuItem>
         </StatedMenu>
       </List>
     </Paper>
@@ -636,7 +650,7 @@ const Preferences = ({
       Advanced
     </Typography>
     <Paper className={classes.paper}>
-      <List dense>
+      <List dense disablePadding>
         <ListItem>
           <ListItemText
             primary="Hibernate unused workspaces at app launch"
@@ -644,6 +658,7 @@ const Preferences = ({
           />
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               checked={hibernateUnusedWorkspacesAtLaunch}
               onChange={(e) => {
@@ -678,6 +693,7 @@ const Preferences = ({
           />
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               checked={allowPrerelease}
               onChange={(e) => {
@@ -694,7 +710,7 @@ const Preferences = ({
       Reset
     </Typography>
     <Paper className={classes.paper}>
-      <List dense>
+      <List dense disablePadding>
         <ListItem button onClick={requestResetPreferences}>
           <ListItemText primary="Restore preferences to their original defaults" />
           <ChevronRightIcon color="action" />
@@ -706,7 +722,7 @@ const Preferences = ({
       Miscellaneous
     </Typography>
     <Paper className={classes.paper}>
-      <List dense>
+      <List dense disablePadding>
         <ListItem button onClick={requestShowAboutWindow}>
           <ListItemText primary="About" />
           <ChevronRightIcon color="action" />

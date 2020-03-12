@@ -13,7 +13,7 @@ const styles = (theme) => ({
     background: theme.palette.background.paper,
     height: '100vh',
     width: '100vw',
-    padding: theme.spacing.unit * 3,
+    padding: theme.spacing(3),
     display: 'flex',
     flexDirection: 'column',
   },

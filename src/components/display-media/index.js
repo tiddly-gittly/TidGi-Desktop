@@ -14,14 +14,14 @@ const styles = (theme) => ({
   root: {
     height: '100vh',
     width: '100vw',
-    paddingTop: theme.spacing.unit * 2,
-    paddingBottom: theme.spacing.unit * 2,
+    paddingTop: theme.spacing(2),
+    paddingBottom: theme.spacing(2),
     paddingLeft: 0,
     paddingRight: 0,
   },
   text: {
-    paddingLeft: theme.spacing.unit * 2,
-    paddingRight: theme.spacing.unit * 2,
+    paddingLeft: theme.spacing(2),
+    paddingRight: theme.spacing(2),
   },
 });
 
@@ -52,7 +52,7 @@ class DisplayMedia extends React.Component {
 
     return (
       <div className={classes.root}>
-        <Typography variant="body1" className={classes.text}>
+        <Typography variant="body2" className={classes.text}>
           The app wants to use the contents of your screen. Choose what you’d like to share.
         </Typography>
         <List>

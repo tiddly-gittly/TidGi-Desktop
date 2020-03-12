@@ -48,7 +48,7 @@ const FindInPage = (props) => {
   return (
     <div className={classes.root}>
       <div className={classes.infoContainer}>
-        <Typography variant="body1">
+        <Typography variant="body2">
           <strong>{activeMatch}</strong>
           <span> / </span>
           <strong>{matches}</strong>

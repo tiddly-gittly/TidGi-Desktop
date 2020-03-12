@@ -50,7 +50,7 @@ const styles = (theme) => ({
     margin: 0,
     color: theme.palette.text.primary,
     width: '100%',
-    paddingLeft: theme.spacing.unit,
+    paddingLeft: theme.spacing(1),
     '&:focus': {
       outline: 0,
     },

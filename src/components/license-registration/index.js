@@ -18,12 +18,12 @@ import { requestOpenInBrowser } from '../../senders';
 
 const styles = (theme) => ({
   dialogContentText: {
-    marginTop: theme.spacing.unit * 2,
+    marginTop: theme.spacing(2),
   },
   dialogActions: {
     borderTop: `1px solid ${theme.palette.divider}`,
     margin: 0,
-    padding: theme.spacing.unit,
+    padding: theme.spacing(1),
   },
 });
 
