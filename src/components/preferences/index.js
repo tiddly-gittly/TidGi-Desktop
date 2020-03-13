@@ -1,18 +1,29 @@
-import React from 'react';
+import React, { useRef } from 'react';
 import PropTypes from 'prop-types';
 
 import Button from '@material-ui/core/Button';
 import Divider from '@material-ui/core/Divider';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
+import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
+import ListItemText from '@material-ui/core/ListItemText';
 import MenuItem from '@material-ui/core/MenuItem';
 import Paper from '@material-ui/core/Paper';
 import Switch from '@material-ui/core/Switch';
 import Typography from '@material-ui/core/Typography';
 
+import BuildIcon from '@material-ui/icons/Build';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
+import CodeIcon from '@material-ui/icons/Code';
+import LanguageIcon from '@material-ui/icons/Language';
+import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
+import NotificationsIcon from '@material-ui/icons/Notifications';
+import RotateLeftIcon from '@material-ui/icons/RotateLeft';
+import SecurityIcon from '@material-ui/icons/Security';
+import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
+import WidgetsIcon from '@material-ui/icons/Widgets';
 
 import { TimePicker } from '@material-ui/pickers';
 
@@ -63,6 +74,16 @@ const styles = (theme) => ({
     textOverflow: 'ellipsis',
     overflow: 'hidden',
     whiteSpace: 'nowrap',
+  },
+  sidebar: {
+    position: 'fixed',
+    width: 200,
+    color: theme.palette.text.primary,
+  },
+  inner: {
+    width: '100%',
+    maxWidth: 500,
+    float: 'right',
   },
 });
 
@@ -195,567 +216,647 @@ const Preferences = ({
   unreadCountBadge,
   updaterInfo,
   updaterStatus,
-}) => (
-  <div className={classes.root}>
-    <Typography variant="subtitle2" className={classes.sectionTitle}>
-      General
-    </Typography>
-    <Paper className={classes.paper}>
-      <List dense disablePadding>
-        <StatedMenu
-          id="theme"
-          buttonElement={(
-            <ListItem button>
-              <ListItemText primary="Theme" secondary={getThemeString(theme)} />
-              <ChevronRightIcon color="action" />
-            </ListItem>
-          )}
-        >
-          <MenuItem dense onClick={() => requestSetPreference('theme', 'automatic')}>System default</MenuItem>
-          <MenuItem dense onClick={() => requestSetPreference('theme', 'light')}>Light</MenuItem>
-          <MenuItem dense onClick={() => requestSetPreference('theme', 'dark')}>Dark</MenuItem>
-        </StatedMenu>
-        <Divider />
-        <ListItem>
-          <ListItemText
-            primary="Show sidebar"
-            secondary="Sidebar lets you switch easily between workspaces."
-          />
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              checked={sidebar}
-              onChange={(e) => {
-                requestSetPreference('sidebar', e.target.checked);
-                requestRealignActiveWorkspace();
-              }}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-        <Divider />
-        <ListItem>
-          <ListItemText
-            primary="Show navigation bar"
-            secondary="Navigation bar lets you go back, forward, home and reload."
-          />
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              // must show sidebar or navigation bar on Linux
-              // if not, as user can't right-click on menu bar icon
-              // they can't access preferences or notifications
-              checked={(window.process.platform === 'linux' && attachToMenubar && !sidebar) || navigationBar}
-              disabled={(window.process.platform === 'linux' && attachToMenubar && !sidebar)}
-              onChange={(e) => {
-                requestSetPreference('navigationBar', e.target.checked);
-                requestRealignActiveWorkspace();
-              }}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-        {window.process.platform === 'darwin' && (
-          <>
+}) => {
+  const sections = {
+    general: {
+      text: 'General',
+      Icon: WidgetsIcon,
+      ref: useRef(),
+    },
+    notifications: {
+      text: 'Notifications',
+      Icon: NotificationsIcon,
+      ref: useRef(),
+    },
+    languages: {
+      text: 'Languages',
+      Icon: LanguageIcon,
+      ref: useRef(),
+    },
+    downloads: {
+      text: 'Downloads',
+      Icon: CloudDownloadIcon,
+      ref: useRef(),
+    },
+    privacy: {
+      text: 'Privacy & Security',
+      Icon: SecurityIcon,
+      ref: useRef(),
+    },
+    system: {
+      text: 'System',
+      Icon: BuildIcon,
+      ref: useRef(),
+    },
+    updates: {
+      text: 'Updates',
+      Icon: SystemUpdateAltIcon,
+      ref: useRef(),
+    },
+    advanced: {
+      text: 'Advanced',
+      Icon: CodeIcon,
+      ref: useRef(),
+    },
+    reset: {
+      text: 'Reset',
+      Icon: RotateLeftIcon,
+      ref: useRef(),
+    },
+    miscs: {
+      text: 'Miscellaneous',
+      Icon: MoreHorizIcon,
+      ref: useRef(),
+    },
+  };
+
+  return (
+    <div className={classes.root}>
+      <div className={classes.sidebar}>
+        <List dense>
+          {Object.keys(sections).map((sectionKey, i) => {
+            const {
+              Icon, text, ref, hidden,
+            } = sections[sectionKey];
+            if (hidden) return null;
+            return (
+              <React.Fragment key={sectionKey}>
+                {i > 0 && <Divider />}
+                <ListItem button onClick={() => ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                  <ListItemIcon>
+                    <Icon />
+                  </ListItemIcon>
+                  <ListItemText
+                    primary={text}
+                  />
+                </ListItem>
+              </React.Fragment>
+            );
+          })}
+        </List>
+      </div>
+      <div className={classes.inner}>
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.general.ref}>
+          General
+        </Typography>
+        <Paper className={classes.paper}>
+          <List dense disablePadding>
+            <StatedMenu
+              id="theme"
+              buttonElement={(
+                <ListItem button>
+                  <ListItemText primary="Theme" secondary={getThemeString(theme)} />
+                  <ChevronRightIcon color="action" />
+                </ListItem>
+              )}
+            >
+              <MenuItem dense onClick={() => requestSetPreference('theme', 'automatic')}>System default</MenuItem>
+              <MenuItem dense onClick={() => requestSetPreference('theme', 'light')}>Light</MenuItem>
+              <MenuItem dense onClick={() => requestSetPreference('theme', 'dark')}>Dark</MenuItem>
+            </StatedMenu>
             <Divider />
             <ListItem>
               <ListItemText
-                primary="Show title bar"
-                secondary="Title bar shows you the title of the current page."
+                primary="Show sidebar"
+                secondary="Sidebar lets you switch easily between workspaces."
               />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
-                  checked={!attachToMenubar && !sidebar && !navigationBar ? true : titleBar}
-                  disabled={!attachToMenubar && !sidebar && !navigationBar}
+                  checked={sidebar}
                   onChange={(e) => {
-                    requestSetPreference('titleBar', e.target.checked);
+                    requestSetPreference('sidebar', e.target.checked);
                     requestRealignActiveWorkspace();
                   }}
                 />
               </ListItemSecondaryAction>
             </ListItem>
-          </>
-        )}
-        {window.process.platform !== 'darwin' && (
-          <>
             <Divider />
             <ListItem>
               <ListItemText
-                primary="Hide menu bar"
-                secondary="Hide the menu bar unless the Alt key is pressed."
+                primary="Show navigation bar"
+                secondary="Navigation bar lets you go back, forward, home and reload."
               />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
-                  checked={hideMenuBar}
+                  // must show sidebar or navigation bar on Linux
+                  // if not, as user can't right-click on menu bar icon
+                  // they can't access preferences or notifications
+                  checked={(window.process.platform === 'linux' && attachToMenubar && !sidebar) || navigationBar}
+                  disabled={(window.process.platform === 'linux' && attachToMenubar && !sidebar)}
                   onChange={(e) => {
-                    requestSetPreference('hideMenuBar', e.target.checked);
-                    requestShowRequireRestartDialog();
+                    requestSetPreference('navigationBar', e.target.checked);
+                    requestRealignActiveWorkspace();
                   }}
                 />
               </ListItemSecondaryAction>
             </ListItem>
-          </>
-        )}
-        <Divider />
-        <ListItem>
-          <ListItemText
-            primary={window.process.platform === 'win32'
-              ? 'Attach to taskbar' : 'Attach to menu bar'}
-            secondary={window.process.platform !== 'linux' ? 'Tip: Right-click on app icon to access context menu.' : null}
-          />
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              checked={attachToMenubar}
-              onChange={(e) => {
-                requestSetPreference('attachToMenubar', e.target.checked);
-                requestShowRequireRestartDialog();
-              }}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-        {window.process.platform === 'darwin' && (
-          <>
+            {window.process.platform === 'darwin' && (
+              <>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Show title bar"
+                    secondary="Title bar shows you the title of the current page."
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      color="primary"
+                      checked={!attachToMenubar && !sidebar && !navigationBar ? true : titleBar}
+                      disabled={!attachToMenubar && !sidebar && !navigationBar}
+                      onChange={(e) => {
+                        requestSetPreference('titleBar', e.target.checked);
+                        requestRealignActiveWorkspace();
+                      }}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </>
+            )}
+            {window.process.platform !== 'darwin' && (
+              <>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Hide menu bar"
+                    secondary="Hide the menu bar unless the Alt key is pressed."
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      color="primary"
+                      checked={hideMenuBar}
+                      onChange={(e) => {
+                        requestSetPreference('hideMenuBar', e.target.checked);
+                        requestShowRequireRestartDialog();
+                      }}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </>
+            )}
             <Divider />
             <ListItem>
               <ListItemText
-                primary="Swipe to navigate"
-                secondary={(
-                  <>
-                    <span>Navigate between pages with 3-finger gestures.</span>
-                    <br />
-                    <span>To enable it, you also need to change </span>
-                    <b>
-                      macOS Preferences &gt; Trackpad &gt; More Gestures &gt; Swipe between page
-                    </b>
-                    <span> to </span>
-                    <b>Swipe with three fingers</b>
-                    <span> or </span>
-                    <b>Swipe with two or three fingers.</b>
-                  </>
-                )}
+                primary={window.process.platform === 'win32'
+                  ? 'Attach to taskbar' : 'Attach to menu bar'}
+                secondary={window.process.platform !== 'linux' ? 'Tip: Right-click on app icon to access context menu.' : null}
               />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
-                  checked={swipeToNavigate}
+                  checked={attachToMenubar}
                   onChange={(e) => {
-                    requestSetPreference('swipeToNavigate', e.target.checked);
+                    requestSetPreference('attachToMenubar', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
               </ListItemSecondaryAction>
             </ListItem>
-          </>
-        )}
-      </List>
-    </Paper>
+            {window.process.platform === 'darwin' && (
+              <>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Swipe to navigate"
+                    secondary={(
+                      <>
+                        <span>Navigate between pages with 3-finger gestures.</span>
+                        <br />
+                        <span>To enable it, you also need to change </span>
+                        <b>
+                          macOS Preferences &gt; Trackpad &gt; More Gestures &gt; Swipe between page
+                        </b>
+                        <span> to </span>
+                        <b>Swipe with three fingers</b>
+                        <span> or </span>
+                        <b>Swipe with two or three fingers.</b>
+                      </>
+                    )}
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      color="primary"
+                      checked={swipeToNavigate}
+                      onChange={(e) => {
+                        requestSetPreference('swipeToNavigate', e.target.checked);
+                        requestShowRequireRestartDialog();
+                      }}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </>
+            )}
+          </List>
+        </Paper>
 
-    <Typography variant="subtitle2" className={classes.sectionTitle}>
-      Notifications
-    </Typography>
-    <Paper className={classes.paper}>
-      <List dense disablePadding>
-        <ListItem button onClick={requestShowNotificationsWindow}>
-          <ListItemText primary="Control notifications" />
-          <ChevronRightIcon color="action" />
-        </ListItem>
-        <Divider />
-        <ListItem>
-          <ListItemText>
-            Automatically disable notifications by schedule:
-            <div className={classes.timePickerContainer}>
-              <TimePicker
-                autoOk={false}
-                label="from"
-                value={new Date(pauseNotificationsByScheduleFrom)}
-                onChange={(d) => requestSetPreference('pauseNotificationsByScheduleFrom', d.toString())}
-                disabled={!pauseNotificationsBySchedule}
-              />
-              <TimePicker
-                autoOk={false}
-                label="to"
-                value={new Date(pauseNotificationsByScheduleTo)}
-                onChange={(d) => requestSetPreference('pauseNotificationsByScheduleTo', d.toString())}
-                disabled={!pauseNotificationsBySchedule}
-              />
-            </div>
-            (
-            {window.Intl.DateTimeFormat().resolvedOptions().timeZone}
-            )
-          </ListItemText>
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              checked={pauseNotificationsBySchedule}
-              onChange={(e) => {
-                requestSetPreference('pauseNotificationsBySchedule', e.target.checked);
-              }}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-        <Divider />
-        <ListItem>
-          <ListItemText primary="Mute audio when notifications are paused" />
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              checked={pauseNotificationsMuteAudio}
-              onChange={(e) => {
-                requestSetPreference('pauseNotificationsMuteAudio', e.target.checked);
-              }}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-        {window.process.platform === 'darwin' && (
-          <>
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.notifications.ref}>
+          Notifications
+        </Typography>
+        <Paper className={classes.paper}>
+          <List dense disablePadding>
+            <ListItem button onClick={requestShowNotificationsWindow}>
+              <ListItemText primary="Control notifications" />
+              <ChevronRightIcon color="action" />
+            </ListItem>
             <Divider />
             <ListItem>
-              <ListItemText primary="Show unread count badge" />
+              <ListItemText>
+                Automatically disable notifications by schedule:
+                <div className={classes.timePickerContainer}>
+                  <TimePicker
+                    autoOk={false}
+                    label="from"
+                    value={new Date(pauseNotificationsByScheduleFrom)}
+                    onChange={(d) => requestSetPreference('pauseNotificationsByScheduleFrom', d.toString())}
+                    disabled={!pauseNotificationsBySchedule}
+                  />
+                  <TimePicker
+                    autoOk={false}
+                    label="to"
+                    value={new Date(pauseNotificationsByScheduleTo)}
+                    onChange={(d) => requestSetPreference('pauseNotificationsByScheduleTo', d.toString())}
+                    disabled={!pauseNotificationsBySchedule}
+                  />
+                </div>
+                (
+                {window.Intl.DateTimeFormat().resolvedOptions().timeZone}
+                )
+              </ListItemText>
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
-                  checked={unreadCountBadge}
+                  checked={pauseNotificationsBySchedule}
                   onChange={(e) => {
-                    requestSetPreference('unreadCountBadge', e.target.checked);
+                    requestSetPreference('pauseNotificationsBySchedule', e.target.checked);
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            <Divider />
+            <ListItem>
+              <ListItemText primary="Mute audio when notifications are paused" />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={pauseNotificationsMuteAudio}
+                  onChange={(e) => {
+                    requestSetPreference('pauseNotificationsMuteAudio', e.target.checked);
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            {window.process.platform === 'darwin' && (
+              <>
+                <Divider />
+                <ListItem>
+                  <ListItemText primary="Show unread count badge" />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      color="primary"
+                      checked={unreadCountBadge}
+                      onChange={(e) => {
+                        requestSetPreference('unreadCountBadge', e.target.checked);
+                        requestShowRequireRestartDialog();
+                      }}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </>
+            )}
+          </List>
+        </Paper>
+
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.languages.ref}>
+          Languages
+        </Typography>
+        <Paper className={classes.paper}>
+          <List dense disablePadding>
+            <ListItem>
+              <ListItemText primary="Spell check" />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={spellChecker}
+                  onChange={(e) => {
+                    requestSetPreference('spellChecker', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
               </ListItemSecondaryAction>
             </ListItem>
-          </>
-        )}
-      </List>
-    </Paper>
+            <Divider />
+            <StatedMenu
+              id="spellcheckerLanguages"
+              buttonElement={(
+                <ListItem button>
+                  <ListItemText
+                    primary="Spell checking language"
+                    secondary={spellCheckerLanguages.map((code) => hunspellLanguagesMap[code]).join(' | ')}
+                  />
+                  <ChevronRightIcon color="action" />
+                </ListItem>
+              )}
+            >
+              {Object.keys(hunspellLanguagesMap).map((code) => (
+                <MenuItem
+                  dense
+                  key={code}
+                  onClick={() => {
+                    requestSetPreference('spellCheckerLanguages', [code]);
+                    requestShowRequireRestartDialog();
+                  }}
+                >
+                  {hunspellLanguagesMap[code]}
+                </MenuItem>
+              ))}
+            </StatedMenu>
+          </List>
+        </Paper>
 
-    <Typography variant="subtitle2" className={classes.sectionTitle}>
-      Languages
-    </Typography>
-    <Paper className={classes.paper}>
-      <List dense disablePadding>
-        <ListItem>
-          <ListItemText primary="Spell check" />
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              checked={spellChecker}
-              onChange={(e) => {
-                requestSetPreference('spellChecker', e.target.checked);
-                requestShowRequireRestartDialog();
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.downloads.ref}>
+          Downloads
+        </Typography>
+        <Paper className={classes.paper}>
+          <List dense disablePadding>
+            <ListItem
+              button
+              onClick={() => {
+                remote.dialog.showOpenDialog(remote.getCurrentWindow(), {
+                  properties: ['openDirectory'],
+                }).then((result) => {
+                  if (!result.canceled && result.filePaths) {
+                    requestSetPreference('downloadPath', result.filePaths[0]);
+                  }
+                }).catch((err) => {
+                  console.log(err); // eslint-disable-line no-console
+                });
               }}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-        <Divider />
-        <StatedMenu
-          id="spellcheckerLanguages"
-          buttonElement={(
-            <ListItem button>
+            >
               <ListItemText
-                primary="Spell checking language"
-                secondary={spellCheckerLanguages.map((code) => hunspellLanguagesMap[code]).join(' | ')}
+                primary="Download Location"
+                secondary={downloadPath}
               />
               <ChevronRightIcon color="action" />
             </ListItem>
-          )}
-        >
-          {Object.keys(hunspellLanguagesMap).map((code) => (
-            <MenuItem
-              dense
-              key={code}
-              onClick={() => {
-                requestSetPreference('spellCheckerLanguages', [code]);
-                requestShowRequireRestartDialog();
-              }}
-            >
-              {hunspellLanguagesMap[code]}
-            </MenuItem>
-          ))}
-        </StatedMenu>
-      </List>
-    </Paper>
+            <Divider />
+            <ListItem>
+              <ListItemText primary="Ask where to save each file before downloading" />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={askForDownloadPath}
+                  onChange={(e) => {
+                    requestSetPreference('askForDownloadPath', e.target.checked);
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+          </List>
+        </Paper>
 
-    <Typography variant="subtitle2" className={classes.sectionTitle}>
-      Downloads
-    </Typography>
-    <Paper className={classes.paper}>
-      <List dense disablePadding>
-        <ListItem
-          button
-          onClick={() => {
-            remote.dialog.showOpenDialog(remote.getCurrentWindow(), {
-              properties: ['openDirectory'],
-            }).then((result) => {
-              if (!result.canceled && result.filePaths) {
-                requestSetPreference('downloadPath', result.filePaths[0]);
-              }
-            }).catch((err) => {
-              console.log(err); // eslint-disable-line no-console
-            });
-          }}
-        >
-          <ListItemText
-            primary="Download Location"
-            secondary={downloadPath}
-          />
-          <ChevronRightIcon color="action" />
-        </ListItem>
-        <Divider />
-        <ListItem>
-          <ListItemText primary="Ask where to save each file before downloading" />
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              checked={askForDownloadPath}
-              onChange={(e) => {
-                requestSetPreference('askForDownloadPath', e.target.checked);
-              }}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-      </List>
-    </Paper>
-
-    <Typography variant="subtitle2" className={classes.sectionTitle}>
-      Privacy &amp; Security
-    </Typography>
-    <Paper className={classes.paper}>
-      <List dense disablePadding>
-        <ListItem>
-          <ListItemText primary="Remember last page visited" />
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              checked={rememberLastPageVisited}
-              onChange={(e) => {
-                requestSetPreference('rememberLastPageVisited', e.target.checked);
-                requestShowRequireRestartDialog();
-              }}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-        <Divider />
-        <ListItem>
-          <ListItemText primary="Share browsing data between workspaces" />
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              checked={shareWorkspaceBrowsingData}
-              onChange={(e) => {
-                requestSetPreference('shareWorkspaceBrowsingData', e.target.checked);
-                requestShowRequireRestartDialog();
-              }}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-        <Divider />
-        <ListItem button onClick={requestClearBrowsingData}>
-          <ListItemText primary="Clear browsing data" secondary="Clear cookies, cache, and more" />
-          <ChevronRightIcon color="action" />
-        </ListItem>
-        <Divider />
-        <ListItem button onClick={() => requestOpenInBrowser('https://singleboxapp.com/privacy')}>
-          <ListItemText primary="Privacy Policy" />
-        </ListItem>
-      </List>
-    </Paper>
-
-    <Typography variant="subtitle2" className={classes.sectionTitle}>
-      Default App
-    </Typography>
-    <Paper className={classes.paper}>
-      <List dense disablePadding>
-        {isDefaultMailClient ? (
-          <ListItem>
-            <ListItemText secondary="Singlebox is your default email client." />
-          </ListItem>
-        ) : (
-          <ListItem>
-            <ListItemText primary="Default email client" secondary="Make Singlebox the default email client." />
-            <Button
-              variant="outlined"
-              size="small"
-              color="default"
-              className={classes.button}
-              onClick={() => {
-                remote.app.setAsDefaultProtocolClient('mailto');
-                onUpdateIsDefaultMailClient(remote.app.isDefaultProtocolClient('mailto'));
-              }}
-            >
-              Make default
-            </Button>
-          </ListItem>
-        )}
-        <Divider />
-        {isDefaultWebBrowser ? (
-          <ListItem>
-            <ListItemText secondary="Singlebox is your default web browser." />
-          </ListItem>
-        ) : (
-          <ListItem>
-            <ListItemText primary="Default web browser" secondary="Make Singlebox the default web browser." />
-            <Button
-              variant="outlined"
-              size="small"
-              color="default"
-              className={classes.button}
-              onClick={() => {
-                remote.app.setAsDefaultProtocolClient('http');
-                remote.app.setAsDefaultProtocolClient('https');
-                onUpdateIsDefaultWebBrowser(remote.app.isDefaultProtocolClient('http'));
-              }}
-            >
-              Make default
-            </Button>
-          </ListItem>
-        )}
-      </List>
-    </Paper>
-
-    <Typography variant="subtitle2" className={classes.sectionTitle}>
-      System
-    </Typography>
-    <Paper className={classes.paper}>
-      <List dense disablePadding>
-        <StatedMenu
-          id="openAtLogin"
-          buttonElement={(
-            <ListItem button>
-              <ListItemText primary="Open at login" secondary={getOpenAtLoginString(openAtLogin)} />
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.privacy.ref}>
+          Privacy &amp; Security
+        </Typography>
+        <Paper className={classes.paper}>
+          <List dense disablePadding>
+            <ListItem>
+              <ListItemText primary="Remember last page visited" />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={rememberLastPageVisited}
+                  onChange={(e) => {
+                    requestSetPreference('rememberLastPageVisited', e.target.checked);
+                    requestShowRequireRestartDialog();
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            <Divider />
+            <ListItem>
+              <ListItemText primary="Share browsing data between workspaces" />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={shareWorkspaceBrowsingData}
+                  onChange={(e) => {
+                    requestSetPreference('shareWorkspaceBrowsingData', e.target.checked);
+                    requestShowRequireRestartDialog();
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            <Divider />
+            <ListItem button onClick={requestClearBrowsingData}>
+              <ListItemText primary="Clear browsing data" secondary="Clear cookies, cache, and more" />
               <ChevronRightIcon color="action" />
             </ListItem>
-          )}
-        >
-          <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'yes')}>Yes</MenuItem>
-          <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'yes-hidden')}>Yes, but minimized</MenuItem>
-          <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'no')}>No</MenuItem>
-        </StatedMenu>
-      </List>
-    </Paper>
+            <Divider />
+            <ListItem button onClick={() => requestOpenInBrowser('https://singleboxapp.com/privacy')}>
+              <ListItemText primary="Privacy Policy" />
+            </ListItem>
+          </List>
+        </Paper>
 
-    <Typography variant="subtitle2" className={classes.sectionTitle}>
-      Advanced
-    </Typography>
-    <Paper className={classes.paper}>
-      <List dense disablePadding>
-        <ListItem>
-          <ListItemText
-            primary="Hibernate unused workspaces at app launch"
-            secondary="Hibernate all workspaces at launch, except the last active workspace."
-          />
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              checked={hibernateUnusedWorkspacesAtLaunch}
-              onChange={(e) => {
-                requestSetPreference('hibernateUnusedWorkspacesAtLaunch', e.target.checked);
-              }}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-        <Divider />
-        <ListItem button onClick={requestShowCustomUserAgentWindow}>
-          <ListItemText
-            primary="Custom User Agent"
-            secondary={customUserAgent || 'Not set'}
-            classes={{ secondary: classes.secondaryEllipsis }}
-          />
-          <ChevronRightIcon color="action" />
-        </ListItem>
-        <Divider />
-        <ListItem button onClick={() => requestShowCodeInjectionWindow('js')}>
-          <ListItemText primary="JS Code Injection" secondary={jsCodeInjection ? 'Set' : 'Not set'} />
-          <ChevronRightIcon color="action" />
-        </ListItem>
-        <Divider />
-        <ListItem button onClick={() => requestShowCodeInjectionWindow('css')}>
-          <ListItemText primary="CSS Code Injection" secondary={cssCodeInjection ? 'Set' : 'Not set'} />
-          <ChevronRightIcon color="action" />
-        </ListItem>
-        <Divider />
-        <ListItem>
-          <ListItemText
-            primary="Receive pre-release updates"
-          />
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              checked={allowPrerelease}
-              onChange={(e) => {
-                requestSetPreference('allowPrerelease', e.target.checked);
-                requestShowRequireRestartDialog();
-              }}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-      </List>
-    </Paper>
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.system.ref}>
+          System
+        </Typography>
+        <Paper className={classes.paper}>
+          <List dense disablePadding>
+            {isDefaultMailClient ? (
+              <ListItem>
+                <ListItemText secondary="Singlebox is your default email client." />
+              </ListItem>
+            ) : (
+              <ListItem>
+                <ListItemText primary="Default email client" secondary="Make Singlebox the default email client." />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  color="default"
+                  className={classes.button}
+                  onClick={() => {
+                    remote.app.setAsDefaultProtocolClient('mailto');
+                    onUpdateIsDefaultMailClient(remote.app.isDefaultProtocolClient('mailto'));
+                  }}
+                >
+                  Make default
+                </Button>
+              </ListItem>
+            )}
+            <Divider />
+            {isDefaultWebBrowser ? (
+              <ListItem>
+                <ListItemText secondary="Singlebox is your default web browser." />
+              </ListItem>
+            ) : (
+              <ListItem>
+                <ListItemText primary="Default web browser" secondary="Make Singlebox the default web browser." />
+                <Button
+                  variant="outlined"
+                  size="small"
+                  color="default"
+                  className={classes.button}
+                  onClick={() => {
+                    remote.app.setAsDefaultProtocolClient('http');
+                    remote.app.setAsDefaultProtocolClient('https');
+                    onUpdateIsDefaultWebBrowser(remote.app.isDefaultProtocolClient('http'));
+                  }}
+                >
+                  Make default
+                </Button>
+              </ListItem>
+            )}
+            <Divider />
+            <StatedMenu
+              id="openAtLogin"
+              buttonElement={(
+                <ListItem button>
+                  <ListItemText primary="Open at login" secondary={getOpenAtLoginString(openAtLogin)} />
+                  <ChevronRightIcon color="action" />
+                </ListItem>
+              )}
+            >
+              <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'yes')}>Yes</MenuItem>
+              <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'yes-hidden')}>Yes, but minimized</MenuItem>
+              <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'no')}>No</MenuItem>
+            </StatedMenu>
+          </List>
+        </Paper>
 
-    <Typography variant="subtitle2" className={classes.sectionTitle}>
-      Reset
-    </Typography>
-    <Paper className={classes.paper}>
-      <List dense disablePadding>
-        <ListItem button onClick={requestResetPreferences}>
-          <ListItemText primary="Restore preferences to their original defaults" />
-          <ChevronRightIcon color="action" />
-        </ListItem>
-      </List>
-    </Paper>
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.updates.ref}>
+          Updates
+        </Typography>
+        <Paper className={classes.paper}>
+          <List dense disablePadding>
+            <ListItem
+              button
+              onClick={() => requestCheckForUpdates(false)}
+              disabled={updaterStatus === 'checking-for-update'
+                || updaterStatus === 'download-progress'
+                || updaterStatus === 'download-progress'
+                || updaterStatus === 'update-available'}
+            >
+              <ListItemText
+                primary={updaterStatus === 'update-downloaded' ? 'Restart to Apply Updates' : 'Check for Updates'}
+                secondary={getUpdaterDesc(updaterStatus, updaterInfo)}
+              />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
+            <ListItem>
+              <ListItemText
+                primary="Receive pre-release updates"
+              />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={allowPrerelease}
+                  onChange={(e) => {
+                    requestSetPreference('allowPrerelease', e.target.checked);
+                    requestShowRequireRestartDialog();
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+          </List>
+        </Paper>
 
-    <Typography variant="subtitle2" className={classes.sectionTitle}>
-      Miscellaneous
-    </Typography>
-    <Paper className={classes.paper}>
-      <List dense disablePadding>
-        <ListItem button onClick={requestShowAboutWindow}>
-          <ListItemText primary="About" />
-          <ChevronRightIcon color="action" />
-        </ListItem>
-        <Divider />
-        <ListItem button onClick={requestShowLicenseRegistrationWindow} disabled={registered}>
-          <ListItemText primary="License Registration" secondary={registered ? 'Registered. Thank you for supporting the development of Singlebox.' : null} />
-          <ChevronRightIcon color="action" />
-        </ListItem>
-        <Divider />
-        <ListItem
-          button
-          onClick={() => requestCheckForUpdates(false)}
-          disabled={updaterStatus === 'checking-for-update'
-            || updaterStatus === 'download-progress'
-            || updaterStatus === 'download-progress'
-            || updaterStatus === 'update-available'}
-        >
-          <ListItemText
-            primary={updaterStatus === 'update-downloaded' ? 'Restart to Apply Updates' : 'Check for Updates'}
-            secondary={getUpdaterDesc(updaterStatus, updaterInfo)}
-          />
-          <ChevronRightIcon color="action" />
-        </ListItem>
-        <Divider />
-        <ListItem button onClick={requestQuit}>
-          <ListItemText primary="Quit" />
-          <ChevronRightIcon color="action" />
-        </ListItem>
-      </List>
-    </Paper>
-  </div>
-);
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.advanced.ref}>
+          Advanced
+        </Typography>
+        <Paper className={classes.paper}>
+          <List dense disablePadding>
+            <ListItem>
+              <ListItemText
+                primary="Hibernate unused workspaces at app launch"
+                secondary="Hibernate all workspaces at launch, except the last active workspace."
+              />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={hibernateUnusedWorkspacesAtLaunch}
+                  onChange={(e) => {
+                    requestSetPreference('hibernateUnusedWorkspacesAtLaunch', e.target.checked);
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            <Divider />
+            <ListItem button onClick={requestShowCustomUserAgentWindow}>
+              <ListItemText
+                primary="Custom User Agent"
+                secondary={customUserAgent || 'Not set'}
+                classes={{ secondary: classes.secondaryEllipsis }}
+              />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
+            <ListItem button onClick={() => requestShowCodeInjectionWindow('js')}>
+              <ListItemText primary="JS Code Injection" secondary={jsCodeInjection ? 'Set' : 'Not set'} />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
+            <ListItem button onClick={() => requestShowCodeInjectionWindow('css')}>
+              <ListItemText primary="CSS Code Injection" secondary={cssCodeInjection ? 'Set' : 'Not set'} />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+          </List>
+        </Paper>
+
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.reset.ref}>
+          Reset
+        </Typography>
+        <Paper className={classes.paper}>
+          <List dense disablePadding>
+            <ListItem button onClick={requestResetPreferences}>
+              <ListItemText primary="Restore preferences to their original defaults" />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+          </List>
+        </Paper>
+
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.miscs.ref}>
+          Miscellaneous
+        </Typography>
+        <Paper className={classes.paper}>
+          <List dense disablePadding>
+            <ListItem button onClick={requestShowAboutWindow}>
+              <ListItemText primary="About" />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
+            <ListItem button onClick={requestShowLicenseRegistrationWindow} disabled={registered}>
+              <ListItemText primary="License Registration" secondary={registered ? 'Registered. Thank you for supporting the development of Singlebox.' : null} />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
+            <ListItem button onClick={requestQuit}>
+              <ListItemText primary="Quit" />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+          </List>
+        </Paper>
+      </div>
+    </div>
+  );
+};
 
 Preferences.defaultProps = {
   cssCodeInjection: null,
