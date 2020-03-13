@@ -5,15 +5,15 @@ import {
 } from 'redux';
 import thunkMiddleware from 'redux-thunk';
 
-import addWorkspace from './add-workspace/reducers';
-import auth from './auth/reducers';
-import codeInjection from './code-injection/reducers';
-import customUserAgent from './custom-user-agent/reducers';
-import editWorkspace from './edit-workspace/reducers';
+import dialogAddWorkspace from './dialog-add-workspace/reducers';
+import dialogAuth from './dialog-auth/reducers';
+import dialogCodeInjection from './dialog-code-injection/reducers';
+import dialogCustomUserAgent from './dialog-custom-user-agent/reducers';
+import dialogEditWorkspace from './dialog-edit-workspace/reducers';
 import findInPage from './find-in-page/reducers';
 import general from './general/reducers';
-import goToUrl from './go-to-url/reducers';
-import licenseRegistration from './license-registration/reducers';
+import dialogGoToUrl from './dialog-go-to-url/reducers';
+import dialogLicenseRegistration from './dialog-license-registration/reducers';
 import notifications from './notifications/reducers';
 import preferences from './preferences/reducers';
 import systemPreferences from './system-preferences/reducers';
@@ -23,15 +23,15 @@ import workspaces from './workspaces/reducers';
 import loadListeners from '../listeners';
 
 const rootReducer = combineReducers({
-  addWorkspace,
-  auth,
-  codeInjection,
-  customUserAgent,
-  editWorkspace,
+  dialogAddWorkspace,
+  dialogAuth,
+  dialogCodeInjection,
+  dialogCustomUserAgent,
+  dialogEditWorkspace,
+  dialogGoToUrl,
+  dialogLicenseRegistration,
   findInPage,
   general,
-  goToUrl,
-  licenseRegistration,
   notifications,
   preferences,
   systemPreferences,
