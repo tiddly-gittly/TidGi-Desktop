@@ -120,7 +120,7 @@ class AddWorkspace extends React.Component {
       if (!isGetting && hits.length < 1) {
         return (
           <EmptyState icon={SearchIcon} title="No Matching Results">
-            <Grid container justify="center" spacing={16}>
+            <Grid container justify="center" spacing={2}>
               <Grid item xs={12}>
                 <Typography
                   variant="subtitle1"
@@ -144,7 +144,7 @@ class AddWorkspace extends React.Component {
 
       return (
         <>
-          <Grid container justify="center" spacing={16}>
+          <Grid container justify="center" spacing={2}>
             {currentQuery && (
               <Grid item xs={12}>
                 <Typography
@@ -172,7 +172,7 @@ class AddWorkspace extends React.Component {
           </Grid>
 
           {!isGetting && (
-            <Grid container justify="center" spacing={16}>
+            <Grid container justify="center" spacing={2}>
               <div
                 onKeyDown={() => requestOpenInBrowser('https://algolia.com')}
                 onClick={() => requestOpenInBrowser('https://algolia.com')}
@@ -196,7 +196,7 @@ class AddWorkspace extends React.Component {
       <div className={classes.root}>
         {mode === 'catalog' ? (
           <>
-            <Grid container spacing={16}>
+            <Grid container spacing={2}>
               <Grid item xs={12}>
                 <SearchBox />
               </Grid>
@@ -205,7 +205,7 @@ class AddWorkspace extends React.Component {
               className={classes.scrollContainer}
               ref={(container) => { this.scrollContainer = container; }}
             >
-              <Grid container className={classes.grid} spacing={16}>
+              <Grid container className={classes.grid} spacing={2}>
                 <Grid item xs={12}>
                   {renderContent()}
                 </Grid>

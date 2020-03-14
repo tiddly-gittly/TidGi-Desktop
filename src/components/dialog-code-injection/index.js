@@ -63,7 +63,7 @@ CodeInjection.propTypes = {
 };
 
 const mapStateToProps = (state) => ({
-  code: state.dialogCodeInjection.form.code,
+  code: state.dialogCodeInjection.form.code || '',
 });
 
 const actionCreators = {

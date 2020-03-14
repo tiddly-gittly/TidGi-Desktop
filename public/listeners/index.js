@@ -147,8 +147,8 @@ const loadListeners = () => {
     aboutWindow.show();
   });
 
-  ipcMain.on('request-show-preferences-window', () => {
-    preferencesWindow.show();
+  ipcMain.on('request-show-preferences-window', (e, scrollTo) => {
+    preferencesWindow.show(scrollTo);
   });
 
   ipcMain.on('request-show-edit-workspace-window', (e, id) => {

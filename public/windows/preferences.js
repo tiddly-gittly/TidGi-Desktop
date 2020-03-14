@@ -10,8 +10,10 @@ let win;
 
 const get = () => win;
 
-const create = () => {
+const create = (scrollTo) => {
   const attachToMenubar = getPreference('attachToMenubar');
+
+  global.preferencesScrollTo = scrollTo;
 
   win = new BrowserWindow({
     width: 760,
@@ -32,12 +34,16 @@ const create = () => {
 
   win.on('closed', () => {
     win = null;
+    global.preferencesScrollTo = null;
   });
 };
 
-const show = () => {
+const show = (scrollTo) => {
   if (win == null) {
-    create();
+    create(scrollTo);
+  } else if (scrollTo !== global.preferencesScrollTo) {
+    win.close();
+    create(scrollTo);
   } else {
     win.show();
   }

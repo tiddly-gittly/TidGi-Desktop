@@ -189,7 +189,7 @@ const DialogPauseNotifications = (props) => {
             <ListItemText
               primary={pauseNotificationsInfo.reason === 'scheduled' ? 'Adjust schedule...' : 'Pause notifications by schedule...'}
               onClick={() => {
-                requestShowPreferencesWindow();
+                requestShowPreferencesWindow('notifications');
                 remote.getCurrentWindow().close();
               }}
             />
@@ -224,7 +224,7 @@ const DialogPauseNotifications = (props) => {
           <ListItemText
             primary="Pause notifications by schedule..."
             onClick={() => {
-              requestShowPreferencesWindow();
+              requestShowPreferencesWindow('notifications');
               remote.getCurrentWindow().close();
             }}
           />
