@@ -23,6 +23,7 @@ import NotificationsIcon from '@material-ui/icons/Notifications';
 import RotateLeftIcon from '@material-ui/icons/RotateLeft';
 import RouterIcon from '@material-ui/icons/Router';
 import SecurityIcon from '@material-ui/icons/Security';
+import StorefrontIcon from '@material-ui/icons/Storefront';
 import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
 import WidgetsIcon from '@material-ui/icons/Widgets';
 
@@ -33,6 +34,10 @@ import connectComponent from '../../helpers/connect-component';
 import StatedMenu from '../shared/stated-menu';
 
 import { updateIsDefaultMailClient, updateIsDefaultWebBrowser } from '../../state/general/actions';
+
+import webcatalogLogo from '../../images/webcatalog-logo.svg';
+import translatiumLogo from '../../images/translatium-logo.svg';
+import singleboxLogo from '../../images/singlebox-logo.svg';
 
 import {
   requestCheckForUpdates,
@@ -86,6 +91,9 @@ const styles = (theme) => ({
     width: '100%',
     maxWidth: 500,
     float: 'right',
+  },
+  logo: {
+    height: 28,
   },
 });
 
@@ -269,6 +277,11 @@ const Preferences = ({
     reset: {
       text: 'Reset',
       Icon: RotateLeftIcon,
+      ref: useRef(),
+    },
+    atomeryApps: {
+      text: 'Atomery Apps',
+      Icon: StorefrontIcon,
       ref: useRef(),
     },
     miscs: {
@@ -870,6 +883,38 @@ const Preferences = ({
               <ListItemText primary="Restore preferences to their original defaults" />
               <ChevronRightIcon color="action" />
             </ListItem>
+          </List>
+        </Paper>
+
+        <Typography variant="subtitle2" color="textPrimary" className={classes.sectionTitle} ref={sections.atomeryApps.ref}>
+          Atomery Apps
+        </Typography>
+        <Paper className={classes.paper}>
+          <List disablePadding dense>
+            <ListItem button onClick={() => requestOpenInBrowser('https://webcatalogapp.com?utm_source=webcatalog_app')}>
+              <ListItemText
+                primary={(<img src={webcatalogLogo} alt="WebCatalog" className={classes.logo} />)}
+                secondary="Run Web Apps like Real Apps"
+              />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
+            <ListItem button onClick={() => requestOpenInBrowser('https://singleboxapp.com?utm_source=webcatalog_app')}>
+              <ListItemText
+                primary={(<img src={singleboxLogo} alt="Singlebox" className={classes.logo} />)}
+                secondary="All Your Apps in One Single Window"
+              />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
+            <ListItem button onClick={() => requestOpenInBrowser('https://translatiumapp.com?utm_source=webcatalog_app')}>
+              <ListItemText
+                primary={(<img src={translatiumLogo} alt="Translatium" className={classes.logo} />)}
+                secondary="Translate Any Languages like a Pro"
+              />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
           </List>
         </Paper>
 

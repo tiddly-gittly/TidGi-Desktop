@@ -399,7 +399,7 @@ function createMenu() {
       submenu: [
         {
           label: 'Singlebox Support',
-          click: () => shell.openExternal('https://singleboxapp.com/support'),
+          click: () => shell.openExternal('https://atomery.com/support?app=singlebox'),
         },
         {
           label: 'Report a Bug via GitHub...',

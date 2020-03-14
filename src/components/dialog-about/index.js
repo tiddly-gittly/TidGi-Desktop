@@ -74,7 +74,7 @@ const About = (props) => {
         </Button>
         <br />
         <Button
-          onClick={() => requestOpenInBrowser('https://singleboxapp.com/support')}
+          onClick={() => requestOpenInBrowser('https://atomery.com/support?app=singlebox')}
         >
           Support
         </Button>
@@ -84,13 +84,13 @@ const About = (props) => {
           <span role="img" aria-label="love">❤</span>
           <span> by </span>
           <span
-            onClick={() => requestOpenInBrowser('https://quanglam2807.com/')}
-            onKeyDown={() => requestOpenInBrowser('https://quanglam2807.com/')}
+            onClick={() => requestOpenInBrowser('https://atomery.com/')}
+            onKeyDown={() => requestOpenInBrowser('https://atomery.com/')}
             role="link"
             tabIndex="0"
             className={classes.link}
           >
-            Quang Lam
+            Atomery
           </span>
         </Typography>
       </DialogContent>
