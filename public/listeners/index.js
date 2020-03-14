@@ -61,6 +61,7 @@ const licenseRegistrationWindow = require('../windows/license-registration');
 const mainWindow = require('../windows/main');
 const notificationsWindow = require('../windows/notifications');
 const preferencesWindow = require('../windows/preferences');
+const proxyWindow = require('../windows/proxy');
 
 const loadListeners = () => {
   ipcMain.on('request-open-in-browser', (e, url) => {
@@ -164,6 +165,10 @@ const loadListeners = () => {
 
   ipcMain.on('request-show-notifications-window', () => {
     notificationsWindow.show();
+  });
+
+  ipcMain.on('request-show-proxy-window', () => {
+    proxyWindow.show();
   });
 
   ipcMain.on('request-show-require-restart-dialog', () => {

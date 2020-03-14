@@ -1,5 +1,10 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-const { app, protocol, ipcMain } = require('electron');
+const {
+  app,
+  protocol,
+  ipcMain,
+  session,
+} = require('electron');
 const { autoUpdater } = require('electron-updater');
 
 const loadListeners = require('./listeners');
@@ -10,7 +15,7 @@ const openUrlWithWindow = require('./windows/open-url-with');
 
 const createMenu = require('./libs/create-menu');
 const { addView } = require('./libs/views');
-const { getPreference, getPreferences } = require('./libs/preferences');
+const { getPreferences } = require('./libs/preferences');
 const { getWorkspaces, setWorkspace } = require('./libs/workspaces');
 const extractHostname = require('./libs/extract-hostname');
 
@@ -42,7 +47,27 @@ if (!gotTheLock) {
   loadListeners();
 
   const commonInit = () => {
-    const hibernateUnusedWorkspacesAtLaunch = getPreference('hibernateUnusedWorkspacesAtLaunch');
+    const {
+      hibernateUnusedWorkspacesAtLaunch,
+      proxyBypassRules,
+      proxyPacScript,
+      proxyRules,
+      proxyType,
+    } = getPreferences();
+
+    // configure proxy for default session
+    if (proxyType === 'rules') {
+      session.defaultSession.setProxy({
+        proxyRules,
+        proxyBypassRules,
+      });
+    } else if (proxyType === 'pacScript') {
+      session.defaultSession.setProxy({
+        proxyPacScript,
+        proxyBypassRules,
+      });
+    }
+
 
     mainWindow.createAsync()
       .then(() => {
@@ -70,6 +95,7 @@ if (!gotTheLock) {
 
   app.on('ready', () => {
     const {
+      allowPrerelease,
       attachToMenubar,
       sidebar,
       titleBar,
@@ -83,7 +109,7 @@ if (!gotTheLock) {
 
     global.MAILTO_URLS = MAILTO_URLS;
 
-    autoUpdater.allowPrerelease = getPreference('allowPrerelease');
+    autoUpdater.allowPrerelease = allowPrerelease;
 
     commonInit();
   });

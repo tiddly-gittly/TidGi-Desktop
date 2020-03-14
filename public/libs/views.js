@@ -87,14 +87,33 @@ const addView = (browserWindow, workspace) => {
     rememberLastPageVisited,
     shareWorkspaceBrowsingData,
     unreadCountBadge,
+    proxyBypassRules,
+    proxyPacScript,
+    proxyRules,
+    proxyType,
   } = getPreferences();
+
+  // configure session & proxy
+  const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
+  const ses = session.fromPartition(partitionId);
+  if (proxyType === 'rules') {
+    ses.setProxy({
+      proxyRules,
+      proxyBypassRules,
+    });
+  } else if (proxyType === 'pacScript') {
+    ses.setProxy({
+      proxyPacScript,
+      proxyBypassRules,
+    });
+  }
 
   const view = new BrowserView({
     webPreferences: {
       nativeWindowOpen: true,
       nodeIntegration: false,
       contextIsolation: true,
-      partition: shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`,
+      session: ses,
       preload: path.join(__dirname, '..', 'preload', 'view.js'),
     },
   });

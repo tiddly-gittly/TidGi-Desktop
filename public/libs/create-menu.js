@@ -16,6 +16,7 @@ const licenseRegistrationWindow = require('../windows/license-registration');
 const mainWindow = require('../windows/main');
 const notificationsWindow = require('../windows/notifications');
 const preferencesWindow = require('../windows/preferences');
+const proxyWindow = require('../windows/proxy');
 
 const { getPreference } = require('./preferences');
 const formatBytes = require('./format-bytes');
@@ -304,6 +305,19 @@ function createMenu() {
               label: 'Go To URL Window',
               click: () => {
                 const win = goToUrlWindow.get();
+                if (win != null) {
+                  if (win.webContents.isDevToolsOpened()) {
+                    win.webContents.closeDevTools();
+                  } else {
+                    win.webContents.openDevTools({ mode: 'detach' });
+                  }
+                }
+              },
+            },
+            {
+              label: 'Proxy Window',
+              click: () => {
+                const win = proxyWindow.get();
                 if (win != null) {
                   if (win.webContents.isDevToolsOpened()) {
                     win.webContents.closeDevTools();

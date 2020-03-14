@@ -10,15 +10,17 @@ import dialogAuth from './dialog-auth/reducers';
 import dialogCodeInjection from './dialog-code-injection/reducers';
 import dialogCustomUserAgent from './dialog-custom-user-agent/reducers';
 import dialogEditWorkspace from './dialog-edit-workspace/reducers';
-import findInPage from './find-in-page/reducers';
-import general from './general/reducers';
 import dialogGoToUrl from './dialog-go-to-url/reducers';
 import dialogLicenseRegistration from './dialog-license-registration/reducers';
+import dialogProxy from './dialog-proxy/reducers';
+import findInPage from './find-in-page/reducers';
+import general from './general/reducers';
 import notifications from './notifications/reducers';
 import preferences from './preferences/reducers';
 import systemPreferences from './system-preferences/reducers';
 import updater from './updater/reducers';
 import workspaces from './workspaces/reducers';
+
 
 import loadListeners from '../listeners';
 
@@ -30,6 +32,7 @@ const rootReducer = combineReducers({
   dialogEditWorkspace,
   dialogGoToUrl,
   dialogLicenseRegistration,
+  dialogProxy,
   findInPage,
   general,
   notifications,

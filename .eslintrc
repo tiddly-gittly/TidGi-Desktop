@@ -3,8 +3,7 @@
   "extends": "airbnb",
   "globals": {
     "window": true,
-    "document": true,
-    "fetch": true
+    "document": true
   },
   "rules": {
     "import/no-extraneous-dependencies": [0],

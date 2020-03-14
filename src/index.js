@@ -7,6 +7,7 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 import 'typeface-roboto/index.css';
 
 import store from './state';
+import { init as initDialogProxy } from './state/dialog-proxy/actions';
 
 import AppWrapper from './components/app-wrapper';
 
@@ -24,6 +25,7 @@ const DialogLicenseRegistration = React.lazy(() => import('./components/dialog-l
 const DialogNotifications = React.lazy(() => import('./components/dialog-notifications'));
 const DialogOpenUrlWith = React.lazy(() => import('./components/dialog-open-url-with'));
 const DialogPreferences = React.lazy(() => import('./components/dialog-preferences'));
+const DialogProxy = React.lazy(() => import('./components/dialog-proxy'));
 const Main = React.lazy(() => import('./components/main'));
 
 const App = () => {
@@ -40,6 +42,7 @@ const App = () => {
     case 'notifications': return <DialogNotifications />;
     case 'open-url-with': return <DialogOpenUrlWith />;
     case 'preferences': return <DialogPreferences />;
+    case 'proxy': return <DialogProxy />;
     default: return <Main />;
   }
 };
@@ -86,6 +89,9 @@ const runApp = () => {
         document.title = 'Edit Custom User Agent';
       } else if (window.mode === 'go-to-url') {
         document.title = 'Go to URL';
+      } else if (window.mode === 'proxy') {
+        store.dispatch(initDialogProxy());
+        document.title = 'Proxy Settings';
       } else {
         document.title = 'Singlebox';
       }
