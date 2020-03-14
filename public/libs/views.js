@@ -7,6 +7,7 @@ const {
 } = require('electron');
 const path = require('path');
 const fsExtra = require('fs-extra');
+const { ElectronBlocker } = require('@cliqz/adblocker-electron');
 
 const { getPreferences } = require('./preferences');
 const {
@@ -16,6 +17,7 @@ const {
 
 const sendToAllWindows = require('./send-to-all-windows');
 const getViewBounds = require('./get-view-bounds');
+const customizedFetch = require('./customized-fetch');
 
 const views = {};
 const badgeCounts = {};
@@ -83,6 +85,7 @@ const addView = (browserWindow, workspace) => {
   if (views[workspace.id] != null) return;
 
   const {
+    blockAds,
     customUserAgent,
     rememberLastPageVisited,
     shareWorkspaceBrowsingData,
@@ -93,9 +96,11 @@ const addView = (browserWindow, workspace) => {
     proxyType,
   } = getPreferences();
 
-  // configure session & proxy
+  // configure session, proxy & ad blocker
   const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
+  // session
   const ses = session.fromPartition(partitionId);
+  // proxy
   if (proxyType === 'rules') {
     ses.setProxy({
       proxyRules,
@@ -105,6 +110,16 @@ const addView = (browserWindow, workspace) => {
     ses.setProxy({
       proxyPacScript,
       proxyBypassRules,
+    });
+  }
+  // blocker
+  if (blockAds) {
+    ElectronBlocker.fromPrebuiltAdsAndTracking(customizedFetch, {
+      path: path.join(app.getPath('userData'), 'adblocker.bin'),
+      read: fsExtra.readFile,
+      write: fsExtra.writeFile,
+    }).then((blocker) => {
+      blocker.enableBlockingInSession(ses);
     });
   }
 

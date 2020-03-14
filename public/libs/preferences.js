@@ -87,6 +87,7 @@ const defaultPreferences = {
   allowPrerelease: false,
   askForDownloadPath: true,
   attachToMenubar: false,
+  blockAds: false,
   cssCodeInjection: null,
   customUserAgent: null,
   downloadPath: getDefaultDownloadsPath(),

@@ -1730,6 +1730,37 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
+"@cliqz/adblocker-content@^1.9.2":
+  version "1.9.2"
+  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-content/-/adblocker-content-1.9.2.tgz#64d15cb2accb2445d5256b469f6fa31c1207b00c"
+  integrity sha512-18NHuhJVAnRfBLB5X2RFXdOWcrdODl/dTE1DDTRcFioM2cCvNR7oeZlaZ7oYtp5lpqmFBySzuhGy394IEXk4YA==
+
+"@cliqz/adblocker-electron-preload@^1.9.2":
+  version "1.9.2"
+  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-electron-preload/-/adblocker-electron-preload-1.9.2.tgz#f73e901328f9ed48531e3301d7d25ece8b31e3aa"
+  integrity sha512-gi8TL6PqG8DcYTHr9uF9eoWYvOSWUWgqVrnAq5OctMyBU5+/wbl/TZkR/FApOghXf8a8IacN5P+gIdYt5z9nNg==
+  dependencies:
+    "@cliqz/adblocker-content" "^1.9.2"
+
+"@cliqz/adblocker-electron@1.9.2":
+  version "1.9.2"
+  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-electron/-/adblocker-electron-1.9.2.tgz#6c472974509bcf3caa3c43a8397e4bb5f7f66ac1"
+  integrity sha512-z+L5B985EMTwTAMXMrS96apBhmZYuWDVl3VrqPotdZ3utE8yYVMajQgF3Bsg+KEL3LiaxslShSNXhpc7eylnGQ==
+  dependencies:
+    "@cliqz/adblocker" "^1.9.2"
+    "@cliqz/adblocker-electron-preload" "^1.9.2"
+    tldts-experimental "^5.6.3"
+
+"@cliqz/adblocker@^1.9.2":
+  version "1.9.2"
+  resolved "https://registry.yarnpkg.com/@cliqz/adblocker/-/adblocker-1.9.2.tgz#7038b7d08eb610956b91f645be733b602c4d277d"
+  integrity sha512-B3JE4F6LQ8qDAgWlN3a2NW1MgBjvHCCzX1aCglm/k20iAa1Yw89Mcbu/LJL4FqgUe4jaYUwb+Siya1ZK+Z7Kfg==
+  dependencies:
+    "@remusao/smaz" "^1.7.1"
+    "@types/chrome" "^0.0.97"
+    "@types/firefox-webext-browser" "^70.0.1"
+    tldts-experimental "^5.6.3"
+
 "@cnakazawa/watch@^1.0.3":
   version "1.0.3"
   resolved "https://registry.yarnpkg.com/@cnakazawa/watch/-/watch-1.0.3.tgz#099139eaec7ebf07a27c1786a3ff64f39464d2ef"
@@ -2374,6 +2405,31 @@
   resolved "https://registry.yarnpkg.com/@nodelib/fs.stat/-/fs.stat-1.1.3.tgz#2b5a3ab3f918cca48a8c754c08168e3f03eba61b"
   integrity sha512-shAmDyaQC4H92APFoIaVDHCx5bStIocgvbwQyxPRrbUY20V1EYTbSDchWbuwlMG3V17cprZhA6+78JfB+3DTPw==
 
+"@remusao/smaz-compress@^1.8.0":
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@remusao/smaz-compress/-/smaz-compress-1.8.0.tgz#efdc3857cec1396349e52e44b89891e617448024"
+  integrity sha512-gDlnWyYmDppwdVZZkBuN8/gzpcqxFwEEev8QxyArWbOn/1rIXMfnm+bwY/N80rmakHTWaybL0yNxTMJSoVXrUw==
+  dependencies:
+    "@remusao/trie" "^1.3.0"
+
+"@remusao/smaz-decompress@^1.8.0":
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@remusao/smaz-decompress/-/smaz-decompress-1.8.0.tgz#32cea68586d6d67a4b30c561d1ccde527805e3d7"
+  integrity sha512-DDGL8wB2L1OUPbUEashqBQzuEVk1xmVOR+35lERkwl3Qg5UoiL//9GWSq38jq8XlTqUG5R+BY2dQa4XX2NDeeQ==
+
+"@remusao/smaz@^1.7.1":
+  version "1.8.0"
+  resolved "https://registry.yarnpkg.com/@remusao/smaz/-/smaz-1.8.0.tgz#6b03c39f99afaafa2113772cae900fad896061c0"
+  integrity sha512-tpyluMIHQSCOX1VHBBrn7KP+S1m/fovJg9Tizo06qR9OYopYehDqkuBJGLnUthE3uhm7tbxb1XI2IN4tUjOFhw==
+  dependencies:
+    "@remusao/smaz-compress" "^1.8.0"
+    "@remusao/smaz-decompress" "^1.8.0"
+
+"@remusao/trie@^1.3.0":
+  version "1.3.0"
+  resolved "https://registry.yarnpkg.com/@remusao/trie/-/trie-1.3.0.tgz#146b6f7f223d29db7106c19b9f4d4fab2754986a"
+  integrity sha512-IykMLl0vr8L1sJzvtGR4izkNh1Ous2njaeC4NEvAcfALCdCo7Y4VpISU0I8DaZFU2lGAFKyeh2Jz4WaM/3hbEw==
+
 "@sindresorhus/is@^0.14.0":
   version "0.14.0"
   resolved "https://registry.yarnpkg.com/@sindresorhus/is/-/is-0.14.0.tgz#9fb3a3cf3132328151f353de4632e01e52102bea"
@@ -2527,6 +2583,13 @@
   dependencies:
     "@babel/types" "^7.3.0"
 
+"@types/chrome@^0.0.97":
+  version "0.0.97"
+  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.97.tgz#aa0e5965a0662906cd57c632e34fe6d1462963f0"
+  integrity sha512-buJsiNcs2X/Pb22ZNShMOUuDgV6o5AH6U9bGpc0diTZfWYOVOzcA2LKfBL+Sbxp4K4VvT0rA3zsEcui24vQofg==
+  dependencies:
+    "@types/filesystem" "*"
+
 "@types/color-name@^1.1.1":
   version "1.1.1"
   resolved "https://registry.yarnpkg.com/@types/color-name/-/color-name-1.1.1.tgz#1c1261bbeaa10a8055bbc5d8ab84b7b2afc846a0"
@@ -2546,6 +2609,23 @@
   version "3.0.0"
   resolved "https://registry.yarnpkg.com/@types/events/-/events-3.0.0.tgz#2862f3f58a9a7f7c3e78d79f130dd4d71c25c2a7"
   integrity sha512-EaObqwIvayI5a8dCzhFrjKzVwKLxjoG9T6Ppd5CEo07LRKfQ8Yokw54r5+Wq7FaBQ+yXRvQAYPrHwya1/UFt9g==
+
+"@types/filesystem@*":
+  version "0.0.29"
+  resolved "https://registry.yarnpkg.com/@types/filesystem/-/filesystem-0.0.29.tgz#ee3748eb5be140dcf980c3bd35f11aec5f7a3748"
+  integrity sha512-85/1KfRedmfPGsbK8YzeaQUyV1FQAvMPMTuWFQ5EkLd2w7szhNO96bk3Rh/SKmOfd9co2rCLf0Voy4o7ECBOvw==
+  dependencies:
+    "@types/filewriter" "*"
+
+"@types/filewriter@*":
+  version "0.0.28"
+  resolved "https://registry.yarnpkg.com/@types/filewriter/-/filewriter-0.0.28.tgz#c054e8af4d9dd75db4e63abc76f885168714d4b3"
+  integrity sha1-wFTor02d11205jq8dviFFocU1LM=
+
+"@types/firefox-webext-browser@^70.0.1":
+  version "70.0.1"
+  resolved "https://registry.yarnpkg.com/@types/firefox-webext-browser/-/firefox-webext-browser-70.0.1.tgz#53a3915bfbe25e2c5ec439dbdbe6e303610012bb"
+  integrity sha512-hjHsTR9vKs+yikWbNS/s7TVCx15M/MEn+VYx47wtT/W/wORsIZDD75gfUfP7lkzi+IxRvKMQBB/5/wMFlfgvgQ==
 
 "@types/fs-extra@^8.1.0":
   version "8.1.0"
@@ -13783,6 +13863,18 @@ tinycolor2@^1.4.1:
   version "1.4.1"
   resolved "https://registry.yarnpkg.com/tinycolor2/-/tinycolor2-1.4.1.tgz#f4fad333447bc0b07d4dc8e9209d8f39a8ac77e8"
   integrity sha1-9PrTM0R7wLB9TcjpIJ2POaisd+g=
+
+tldts-core@^5.6.11:
+  version "5.6.11"
+  resolved "https://registry.yarnpkg.com/tldts-core/-/tldts-core-5.6.11.tgz#f31f16bbd638eceb6d13f2d79b987f1e1214c1cf"
+  integrity sha512-xacQO0vEffrtotnR83xYUone3FAxS0oOTookpHNMMf0Ms5R2YzOxIHTQoESypCtam5ZgrzzCAhiuGSdkJhClbA==
+
+tldts-experimental@^5.6.3:
+  version "5.6.11"
+  resolved "https://registry.yarnpkg.com/tldts-experimental/-/tldts-experimental-5.6.11.tgz#8af2da408c3623fafba284048a529343298170ac"
+  integrity sha512-OixQxu1tMGS0pGe4OaiY+YrvVPQrVqvkOIrNaRm5nVmvg7yvLNfXI47RigN4LbqsNRqri+ULX8GYhAfelGwXrA==
+  dependencies:
+    tldts-core "^5.6.11"
 
 tmp@0.1.0:
   version "0.1.0"
