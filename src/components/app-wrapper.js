@@ -15,8 +15,6 @@ import connectComponent from '../helpers/connect-component';
 import { updateIsDarkMode, updateIsFullScreen } from '../state/general/actions';
 import { getShouldUseDarkMode } from '../state/general/utils';
 
-const { remote } = window.require('electron');
-
 class AppWrapper extends React.Component {
   constructor(props) {
     super(props);
@@ -27,6 +25,7 @@ class AppWrapper extends React.Component {
   }
 
   componentDidMount() {
+    const { remote } = window.require('electron');
     remote.getCurrentWindow().on('enter-full-screen', this.handleEnterFullScreen);
     remote.getCurrentWindow().on('leave-full-screen', this.handleLeaveFullScreen);
 
@@ -40,6 +39,7 @@ class AppWrapper extends React.Component {
   }
 
   componentWillUnmount() {
+    const { remote } = window.require('electron');
     remote.getCurrentWindow().removeListener('enter-full-screen', this.handleEnterFullScreen);
     remote.getCurrentWindow().removeListener('leave-full-screen', this.handleLeaveFullScreen);
 
@@ -62,6 +62,7 @@ class AppWrapper extends React.Component {
 
   handleChangeTheme() {
     const { onUpdateIsDarkMode } = this.props;
+    const { remote } = window.require('electron');
     onUpdateIsDarkMode(remote.systemPreferences.isDarkMode());
   }
 

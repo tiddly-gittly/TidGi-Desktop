@@ -57,8 +57,6 @@ import {
   requestShowRequireRestartDialog,
 } from '../../senders';
 
-const { remote } = window.require('electron');
-
 const styles = (theme) => ({
   root: {
     padding: theme.spacing(2),
@@ -70,6 +68,7 @@ const styles = (theme) => ({
   paper: {
     marginTop: theme.spacing(0.5),
     marginBottom: theme.spacing(3),
+    border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
   },
   timePickerContainer: {
     marginTop: theme.spacing(1),
@@ -228,6 +227,7 @@ const Preferences = ({
   updaterInfo,
   updaterStatus,
 }) => {
+  const { remote } = window.require('electron');
   const sections = {
     general: {
       text: 'General',
@@ -326,7 +326,7 @@ const Preferences = ({
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.general.ref}>
           General
         </Typography>
-        <Paper className={classes.paper}>
+        <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             <StatedMenu
               id="theme"
@@ -486,7 +486,7 @@ const Preferences = ({
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.notifications.ref}>
           Notifications
         </Typography>
-        <Paper className={classes.paper}>
+        <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             <ListItem button onClick={requestShowNotificationsWindow}>
               <ListItemText primary="Control notifications" />
@@ -502,6 +502,8 @@ const Preferences = ({
                     label="from"
                     value={new Date(pauseNotificationsByScheduleFrom)}
                     onChange={(d) => requestSetPreference('pauseNotificationsByScheduleFrom', d.toString())}
+                    onClose={() => { window.preventClosingWindow = false; }}
+                    onOpen={() => { window.preventClosingWindow = true; }}
                     disabled={!pauseNotificationsBySchedule}
                   />
                   <TimePicker
@@ -509,6 +511,8 @@ const Preferences = ({
                     label="to"
                     value={new Date(pauseNotificationsByScheduleTo)}
                     onChange={(d) => requestSetPreference('pauseNotificationsByScheduleTo', d.toString())}
+                    onClose={() => { window.preventClosingWindow = false; }}
+                    onOpen={() => { window.preventClosingWindow = true; }}
                     disabled={!pauseNotificationsBySchedule}
                   />
                 </div>
@@ -566,7 +570,7 @@ const Preferences = ({
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.languages.ref}>
           Languages
         </Typography>
-        <Paper className={classes.paper}>
+        <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             <ListItem>
               <ListItemText primary="Spell check" />
@@ -614,7 +618,7 @@ const Preferences = ({
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.downloads.ref}>
           Downloads
         </Typography>
-        <Paper className={classes.paper}>
+        <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             <ListItem
               button
@@ -656,7 +660,7 @@ const Preferences = ({
         <Typography variant="subtitle2" color="textPrimary" className={classes.sectionTitle} ref={sections.network.ref}>
           Network
         </Typography>
-        <Paper className={classes.paper}>
+        <Paper elevation={0} className={classes.paper}>
           <List disablePadding dense>
             <ListItem button onClick={requestShowProxyWindow}>
               <ListItemText primary="Configure proxy settings (BETA)" />
@@ -668,7 +672,7 @@ const Preferences = ({
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.privacy.ref}>
           Privacy &amp; Security
         </Typography>
-        <Paper className={classes.paper}>
+        <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             <ListItem>
               <ListItemText primary="Block ads &amp; trackers" />
@@ -729,7 +733,7 @@ const Preferences = ({
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.system.ref}>
           System
         </Typography>
-        <Paper className={classes.paper}>
+        <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             {isDefaultMailClient ? (
               <ListItem>
@@ -795,7 +799,7 @@ const Preferences = ({
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.updates.ref}>
           Updates
         </Typography>
-        <Paper className={classes.paper}>
+        <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             <ListItem
               button
@@ -834,7 +838,7 @@ const Preferences = ({
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.advanced.ref}>
           Advanced
         </Typography>
-        <Paper className={classes.paper}>
+        <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             <ListItem>
               <ListItemText
@@ -877,7 +881,7 @@ const Preferences = ({
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.reset.ref}>
           Reset
         </Typography>
-        <Paper className={classes.paper}>
+        <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             <ListItem button onClick={requestResetPreferences}>
               <ListItemText primary="Restore preferences to their original defaults" />
@@ -889,7 +893,7 @@ const Preferences = ({
         <Typography variant="subtitle2" color="textPrimary" className={classes.sectionTitle} ref={sections.atomeryApps.ref}>
           Atomery Apps
         </Typography>
-        <Paper className={classes.paper}>
+        <Paper elevation={0} className={classes.paper}>
           <List disablePadding dense>
             <ListItem button onClick={() => requestOpenInBrowser('https://webcatalogapp.com?utm_source=webcatalog_app')}>
               <ListItemText
@@ -914,14 +918,13 @@ const Preferences = ({
               />
               <ChevronRightIcon color="action" />
             </ListItem>
-            <Divider />
           </List>
         </Paper>
 
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.miscs.ref}>
           Miscellaneous
         </Typography>
-        <Paper className={classes.paper}>
+        <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             <ListItem button onClick={requestShowAboutWindow}>
               <ListItemText primary="About" />

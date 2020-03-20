@@ -19,6 +19,7 @@ const styles = (theme) => ({
     display: 'flex',
     cursor: 'pointer',
     color: theme.palette.text.primary,
+    border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
     '&:hover, &:focus': {
       backgroundColor: theme.palette.action.selected,
     },
@@ -57,7 +58,7 @@ const AddCustomAppCard = (props) => {
 
   return (
     <Grid item>
-      <Paper elevation={1} className={classes.card} onClick={() => onUpdateMode('custom')}>
+      <Paper elevation={0} className={classes.card} onClick={() => onUpdateMode('custom')}>
         <div>
           <CreateIcon className={classes.paperIcon} />
         </div>

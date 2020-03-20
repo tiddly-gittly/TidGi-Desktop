@@ -8,14 +8,12 @@ import connectComponent from '../../helpers/connect-component';
 
 import { updateForm, login } from '../../state/dialog-auth/actions';
 
-const { remote } = window.require('electron');
-
 const styles = (theme) => ({
   root: {
     background: theme.palette.background.paper,
     height: '100vh',
     width: '100vw',
-    padding: theme.spacing(3),
+    padding: theme.spacing(2),
     display: 'flex',
     flexDirection: 'column',
   },
@@ -66,11 +64,11 @@ const Auth = ({
       />
     </div>
     <div>
-      <Button variant="contained" className={classes.button} onClick={() => remote.getCurrentWindow().close()}>
-        Cancel
-      </Button>
-      <Button color="primary" variant="contained" className={classes.button} onClick={onLogin}>
+      <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onLogin}>
         Sign in
+      </Button>
+      <Button variant="contained" disableElevation className={classes.button} onClick={() => window.require('electron').remote.getCurrentWindow().close()}>
+        Cancel
       </Button>
     </div>
   </div>

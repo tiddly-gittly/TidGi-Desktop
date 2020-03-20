@@ -20,9 +20,9 @@ import {
 import { updateUpdater } from '../state/updater/actions';
 import { requestFindInPage } from '../senders';
 
-const { ipcRenderer } = window.require('electron');
-
 const loadListeners = (store) => {
+  const { ipcRenderer } = window.require('electron');
+
   ipcRenderer.on('log', (e, message) => {
     if (message) console.log(message); // eslint-disable-line no-console
   });

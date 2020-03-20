@@ -2,6 +2,7 @@
 import {
   UPDATE_EDIT_WORKSPACE_DOWNLOADING_ICON,
   UPDATE_EDIT_WORKSPACE_FORM,
+  DIALOG_EDIT_WORKSPACE_INIT,
 } from '../../constants/actions';
 
 import hasErrors from '../../helpers/has-errors';
@@ -13,8 +14,6 @@ import {
   requestSetWorkspacePicture,
   requestRemoveWorkspacePicture,
 } from '../../senders';
-
-const { ipcRenderer, remote } = window.require('electron');
 
 const getValidationRules = () => ({
   name: {
@@ -28,11 +27,16 @@ const getValidationRules = () => ({
   },
 });
 
+export const init = () => ({
+  type: DIALOG_EDIT_WORKSPACE_INIT,
+});
+
 // to be replaced with invoke (electron 7+)
 // https://electronjs.org/docs/api/ipc-renderer#ipcrendererinvokechannel-args
 export const getWebsiteIconUrlAsync = (url) => new Promise((resolve, reject) => {
   try {
     const id = Date.now().toString();
+    const { ipcRenderer } = window.require('electron');
     ipcRenderer.once(id, (e, uurl) => {
       resolve(uurl);
     });
@@ -68,6 +72,7 @@ export const getIconFromInternet = (forceOverwrite) => (dispatch, getState) => {
       }
 
       if (forceOverwrite && !iconUrl) {
+        const { remote } = window.require('electron');
         remote.dialog.showMessageBox(remote.getCurrentWindow(), {
           message: 'Unable to find a suitable icon from the Internet.',
           buttons: ['OK'],
@@ -93,6 +98,7 @@ export const save = () => (dispatch, getState) => {
     return dispatch(updateForm(validatedChanges));
   }
 
+  const { remote } = window.require('electron');
   const id = remote.getGlobal('editWorkspaceId');
   const url = form.homeUrl.trim();
   const homeUrl = isUrl(url) ? url : `http://${url}`;

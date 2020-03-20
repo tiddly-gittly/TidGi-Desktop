@@ -31,10 +31,7 @@ const styles = (theme) => ({
     background: theme.palette.background.paper,
     height: '100vh',
     width: '100vw',
-    paddingTop: theme.spacing(3),
-    paddingBottom: theme.spacing(3),
-    paddingLeft: theme.spacing(2),
-    paddingRight: theme.spacing(2),
+    padding: theme.spacing(2),
     display: 'flex',
     flexDirection: 'column',
   },
@@ -43,6 +40,7 @@ const styles = (theme) => ({
   },
   button: {
     float: 'right',
+    marginLeft: theme.spacing(1),
   },
   textField: {
     marginBottom: theme.spacing(3),
@@ -76,15 +74,15 @@ const styles = (theme) => ({
     fontWeight: 500,
     textTransform: 'uppercase',
     userSelect: 'none',
-    boxShadow: theme.shadows[1],
+    border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
   },
   transparentAvatar: {
     background: 'transparent',
-    boxShadow: 'none',
+    border: 'none',
   },
   avatarPicture: {
-    height: 64,
-    width: 64,
+    height: '100%',
+    width: '100%',
     borderRadius: 4,
   },
   buttonBot: {
@@ -264,8 +262,11 @@ const EditWorkspace = ({
       </List>
     </div>
     <div>
-      <Button color="primary" variant="contained" className={classes.button} onClick={onSave}>
+      <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
         Save
+      </Button>
+      <Button variant="contained" disableElevation className={classes.button} onClick={() => window.require('electron').remote.getCurrentWindow().close()}>
+        Cancel
       </Button>
     </div>
   </div>
@@ -302,14 +303,13 @@ const mapStateToProps = (state) => ({
   disableNotifications: Boolean(state.dialogEditWorkspace.form.disableNotifications),
   downloadingIcon: state.dialogEditWorkspace.downloadingIcon,
   hibernateWhenUnused: Boolean(state.dialogEditWorkspace.form.hibernateWhenUnused),
-  homeUrl: state.dialogEditWorkspace.form.homeUrl,
+  homeUrl: state.dialogEditWorkspace.form.homeUrl || '',
   homeUrlError: state.dialogEditWorkspace.form.homeUrlError,
-  id: state.dialogEditWorkspace.form.id,
+  id: state.dialogEditWorkspace.form.id || '',
   internetIcon: state.dialogEditWorkspace.form.internetIcon,
   isMailApp: Boolean(getMailtoUrl(state.dialogEditWorkspace.form.homeUrl)),
-  name: state.dialogEditWorkspace.form.name,
+  name: state.dialogEditWorkspace.form.name || '',
   nameError: state.dialogEditWorkspace.form.nameError,
-  order: state.dialogEditWorkspace.form.order,
   picturePath: state.dialogEditWorkspace.form.picturePath,
   transparentBackground: Boolean(state.dialogEditWorkspace.form.transparentBackground),
 });

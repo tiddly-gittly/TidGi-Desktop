@@ -21,8 +21,6 @@ import { requestCreateWorkspace } from '../../senders';
 const client = algoliasearch('OQ55YRVMNP', 'fc0fb115b113c21d58ed6a4b4de1565f');
 const index = client.initIndex('apps');
 
-const { ipcRenderer, remote } = window.require('electron');
-
 export const getHits = () => (dispatch, getState) => {
   const state = getState();
 
@@ -112,6 +110,7 @@ const getValidationRules = () => ({
 export const getWebsiteIconUrlAsync = (url) => new Promise((resolve, reject) => {
   try {
     const id = Date.now().toString();
+    const { ipcRenderer } = window.require('electron');
     ipcRenderer.once(id, (e, uurl) => {
       resolve(uurl);
     });
@@ -147,6 +146,7 @@ export const getIconFromInternet = (forceOverwrite) => (dispatch, getState) => {
       }
 
       if (forceOverwrite && !iconUrl) {
+        const { remote } = window.require('electron');
         remote.dialog.showMessageBox(remote.getCurrentWindow(), {
           message: 'Unable to find a suitable icon from the Internet.',
           buttons: ['OK'],
@@ -191,6 +191,7 @@ export const save = () => (dispatch, getState) => {
     form.internetIcon || form.picturePath,
     Boolean(form.transparentBackground),
   );
+  const { remote } = window.require('electron');
   remote.getCurrentWindow().close();
   return null;
 };

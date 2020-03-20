@@ -94,7 +94,7 @@ class SearchBox extends React.Component {
     );
 
     return (
-      <Paper elevation={2} className={classes.toolbarSearchContainer}>
+      <Paper elevation={1} className={classes.toolbarSearchContainer}>
         <div className={classes.toolbarSectionSearch}>
           <Typography
             className={classes.searchBarText}

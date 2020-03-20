@@ -13,9 +13,8 @@ import getMailtoUrl from '../../helpers/get-mailto-url';
 
 import { requestLoadUrl } from '../../senders';
 
-const { remote } = window.require('electron');
-
 const OpenUrlWith = ({ workspaces }) => {
+  const { remote } = window.require('electron');
   const incomingUrl = remote.getGlobal('incomingUrl');
   const isMailtoUrl = incomingUrl.startsWith('mailto:');
 

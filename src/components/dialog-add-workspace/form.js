@@ -73,15 +73,15 @@ const styles = (theme) => ({
     fontWeight: 500,
     textTransform: 'uppercase',
     userSelect: 'none',
-    boxShadow: theme.shadows[1],
+    border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
   },
   transparentAvatar: {
     background: 'transparent',
-    boxShadow: 'none',
+    border: 'none',
   },
   avatarPicture: {
-    height: 64,
-    width: 64,
+    height: '100%',
+    width: '100%',
     borderRadius: 4,
   },
   buttonBot: {
@@ -225,7 +225,7 @@ const AddWorkspaceCustom = ({
       </div>
     </div>
     <div>
-      <Button color="primary" variant="contained" className={classes.button} onClick={onSave}>
+      <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
         Add
       </Button>
     </div>

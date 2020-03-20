@@ -13,7 +13,7 @@ const styles = (theme) => ({
     background: theme.palette.background.paper,
     height: '100vh',
     width: '100vw',
-    padding: theme.spacing(3),
+    padding: theme.spacing(2),
     display: 'flex',
     flexDirection: 'column',
   },
@@ -22,6 +22,7 @@ const styles = (theme) => ({
   },
   button: {
     float: 'right',
+    marginLeft: theme.spacing(1),
   },
 });
 
@@ -48,8 +49,11 @@ const CustomUserAgent = ({
       />
     </div>
     <div>
-      <Button color="primary" variant="contained" className={classes.button} onClick={onSave}>
+      <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
         Save
+      </Button>
+      <Button variant="contained" disableElevation className={classes.button} onClick={() => window.require('electron').remote.getCurrentWindow().close()}>
+        Cancel
       </Button>
     </div>
   </div>

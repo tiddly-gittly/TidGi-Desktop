@@ -18,8 +18,6 @@ import StatedMenu from '../shared/stated-menu';
 
 import { updateForm, updateMode } from '../../state/dialog-add-workspace/actions';
 
-const { remote } = window.require('electron');
-
 const styles = (theme) => ({
   card: {
     width: 368,
@@ -27,6 +25,7 @@ const styles = (theme) => ({
     borderRadius: 4,
     padding: theme.spacing(1),
     display: 'flex',
+    border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
   },
   appName: {
     overflow: 'hidden',
@@ -44,7 +43,7 @@ const styles = (theme) => ({
     width: 48,
     height: 48,
     borderRadius: 8,
-    boxShadow: theme.shadows[1],
+    border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
   },
   actionContainer: {
     display: 'flex',
@@ -54,7 +53,6 @@ const styles = (theme) => ({
   },
   actionButton: {
     minWidth: 'auto',
-    boxShadow: 'none',
     marginLeft: theme.spacing(1),
   },
   infoContainer: {
@@ -81,7 +79,7 @@ const AppCard = (props) => {
 
   return (
     <Grid item>
-      <Paper elevation={1} className={classes.card}>
+      <Paper elevation={0} className={classes.card}>
         <div>
           <img
             alt={name}
@@ -124,9 +122,10 @@ const AppCard = (props) => {
             color="primary"
             size="medium"
             variant="contained"
+            disableElevation
             onClick={() => {
               requestCreateWorkspace(name, url, icon128);
-              remote.getCurrentWindow().close();
+              window.require('electron').remote.getCurrentWindow().close();
             }}
           >
             Add

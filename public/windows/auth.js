@@ -18,7 +18,7 @@ const create = (id) => {
 
   wins[id] = new BrowserWindow({
     width: 400,
-    height: 250,
+    height: 220,
     resizable: false,
     maximizable: false,
     minimizable: false,

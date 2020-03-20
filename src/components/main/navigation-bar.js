@@ -153,7 +153,7 @@ const NavigationBar = ({
           ? <NotificationsPausedIcon className={classes.icon} />
           : <NotificationsIcon className={classes.icon} />}
       </IconButton>
-      <IconButton aria-label="Preferences" className={classes.iconButton} onClick={requestShowPreferencesWindow}>
+      <IconButton aria-label="Preferences" className={classes.iconButton} onClick={() => requestShowPreferencesWindow()}>
         <SettingsIcon className={classes.icon} />
       </IconButton>
     </div>

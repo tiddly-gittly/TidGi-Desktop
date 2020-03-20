@@ -18,6 +18,7 @@ const styles = (theme) => ({
     display: 'flex',
     cursor: 'pointer',
     color: theme.palette.text.primary,
+    border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
     '&:hover, &:focus': {
       backgroundColor: theme.palette.action.selected,
     },
@@ -55,7 +56,7 @@ const SubmitAppCard = (props) => {
 
   return (
     <Grid item>
-      <Paper elevation={1} className={classes.card} onClick={() => requestOpenInBrowser('https://github.com/atomery/singlebox/issues/new?template=app.md&title=app%3A+')}>
+      <Paper elevation={0} className={classes.card} onClick={() => requestOpenInBrowser('https://github.com/atomery/singlebox/issues/new?template=app.md&title=app%3A+')}>
         <div>
           <AddCircleIcon className={classes.paperIcon} />
         </div>

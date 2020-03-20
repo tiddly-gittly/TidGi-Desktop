@@ -10,6 +10,7 @@ import { getPauseNotificationsInfo } from '../../senders';
 const showDateTimePicker = (state = false, action) => {
   switch (action.type) {
     case UPDATE_SHOW_DATE_TIME_PICKER: {
+      window.preventClosingWindow = action.showDateTimePicker;
       return action.showDateTimePicker;
     }
     default:

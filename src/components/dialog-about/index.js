@@ -9,10 +9,6 @@ import connectComponent from '../../helpers/connect-component';
 
 import { requestOpenInBrowser } from '../../senders';
 
-const { remote } = window.require('electron');
-
-const appVersion = remote.app.getVersion();
-
 const styles = (theme) => ({
   icon: {
     height: 96,
@@ -64,7 +60,7 @@ const About = (props) => {
           variant="body2"
           className={classes.version}
         >
-          {`Version v${appVersion}.`}
+          {`Version v${window.require('electron').remote.app.getVersion()}.`}
         </Typography>
 
         <Button

@@ -3,9 +3,7 @@ import PropTypes from 'prop-types';
 
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
-import DialogContent from '@material-ui/core/DialogContent';
 import DialogContentText from '@material-ui/core/DialogContentText';
-import DialogActions from '@material-ui/core/DialogActions';
 
 import connectComponent from '../../helpers/connect-component';
 
@@ -17,13 +15,26 @@ import {
 import { requestOpenInBrowser } from '../../senders';
 
 const styles = (theme) => ({
-  dialogContentText: {
-    marginTop: theme.spacing(2),
+  root: {
+    background: theme.palette.background.paper,
+    height: '100vh',
+    width: '100vw',
+    padding: theme.spacing(2),
+    display: 'flex',
+    flexDirection: 'column',
   },
-  dialogActions: {
-    borderTop: `1px solid ${theme.palette.divider}`,
-    margin: 0,
-    padding: theme.spacing(1),
+  flexGrow: {
+    flex: 1,
+  },
+  dialogContentText: {
+    marginTop: theme.spacing(1),
+  },
+  actions: {
+    display: 'flex',
+  },
+  button: {
+    float: 'right',
+    marginLeft: theme.spacing(1),
   },
 });
 
@@ -37,8 +48,8 @@ const DialogLicenseRegistration = (props) => {
   } = props;
 
   return (
-    <div>
-      <DialogContent>
+    <div className={classes.root}>
+      <div className={classes.flexGrow}>
         <DialogContentText className={classes.dialogContentText}>
           You are currently running a trial version of Singlebox which only
           lets you add up to two workspaces.
@@ -58,8 +69,8 @@ const DialogLicenseRegistration = (props) => {
           variant="outlined"
           helperText={licenseKeyError || 'If you have already purchased Singlebox from our store, you should have received a license key via email to enter above.'}
         />
-      </DialogContent>
-      <DialogActions className={classes.dialogActions}>
+      </div>
+      <div className={classes.actions}>
         <div style={{ flex: 1 }}>
           <Button
             onClick={() => requestOpenInBrowser('https://webcatalog.onfastspring.com/singlebox/singleboxapp')}
@@ -67,13 +78,21 @@ const DialogLicenseRegistration = (props) => {
             Visit Store...
           </Button>
         </div>
-        <Button
-          color="primary"
-          onClick={onRegister}
-        >
-          Register
-        </Button>
-      </DialogActions>
+        <div>
+          <Button
+            color="primary"
+            variant="contained"
+            disableElevation
+            className={classes.button}
+            onClick={onRegister}
+          >
+            Register
+          </Button>
+          <Button variant="contained" disableElevation className={classes.button} onClick={() => window.require('electron').remote.getCurrentWindow().close()}>
+            Cancel
+          </Button>
+        </div>
+      </div>
     </div>
   );
 };

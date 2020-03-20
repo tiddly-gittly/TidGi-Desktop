@@ -3,8 +3,6 @@ import PropTypes from 'prop-types';
 
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
-import DialogContent from '@material-ui/core/DialogContent';
-import DialogActions from '@material-ui/core/DialogActions';
 import Divider from '@material-ui/core/Divider';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
@@ -22,13 +20,19 @@ import {
 import { requestOpenInBrowser } from '../../senders';
 
 const styles = (theme) => ({
+  root: {
+    background: theme.palette.background.paper,
+    height: '100vh',
+    width: '100vw',
+    padding: theme.spacing(2),
+    display: 'flex',
+    flexDirection: 'column',
+  },
+  flexGrow: {
+    flex: 1,
+  },
   dialogContentText: {
     marginTop: theme.spacing(2),
-  },
-  dialogActions: {
-    borderTop: `1px solid ${theme.palette.divider}`,
-    margin: 0,
-    padding: theme.spacing(1),
   },
   link: {
     cursor: 'pointer',
@@ -37,6 +41,10 @@ const styles = (theme) => ({
     '&:hover': {
       textDecoration: 'underline',
     },
+  },
+  button: {
+    float: 'right',
+    marginLeft: theme.spacing(1),
   },
   radioLabel: theme.typography.body2,
 });
@@ -55,8 +63,8 @@ const DialogProxy = (props) => {
   } = props;
 
   return (
-    <div>
-      <DialogContent>
+    <div className={classes.root}>
+      <div className={classes.flexGrow}>
         <List disablePadding dense>
           <ListItem>
             <div style={{ width: '100%' }}>
@@ -203,16 +211,21 @@ const DialogProxy = (props) => {
             </div>
           </ListItem>
         </List>
-      </DialogContent>
-      <DialogActions className={classes.dialogActions}>
+      </div>
+      <div className={classes.dialogActions}>
         <Button
           color="primary"
           variant="contained"
+          disableElevation
+          className={classes.button}
           onClick={onSave}
         >
           Save
         </Button>
-      </DialogActions>
+        <Button variant="contained" disableElevation className={classes.button} onClick={() => window.require('electron').remote.getCurrentWindow().close()}>
+          Cancel
+        </Button>
+      </div>
     </div>
   );
 };

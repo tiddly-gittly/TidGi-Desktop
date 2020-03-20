@@ -42,19 +42,19 @@ const styles = (theme) => ({
     textAlign: 'center',
     fontWeight: 500,
     textTransform: 'uppercase',
-    boxShadow: theme.shadows[1],
+    border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
   },
   transparentAvatar: {
     background: 'transparent',
-    boxShadow: 'none',
+    border: 'none',
   },
   addAvatar: {
     background: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black,
     color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black),
   },
   avatarPicture: {
-    height: 32,
-    width: 32,
+    height: '100%',
+    width: '100%',
     borderRadius: 4,
   },
   shortcutText: {

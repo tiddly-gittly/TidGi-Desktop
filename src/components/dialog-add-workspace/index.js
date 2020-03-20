@@ -215,7 +215,7 @@ class AddWorkspace extends React.Component {
           </>
         ) : <Form />}
 
-        <Paper elevation={2} className={classes.paper}>
+        <Paper elevation={1} square className={classes.paper}>
           <BottomNavigation
             showLabels
             value={mode}
