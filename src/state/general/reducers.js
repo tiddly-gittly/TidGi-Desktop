@@ -1,10 +1,11 @@
 import { combineReducers } from 'redux';
 
 import {
+  UPDATE_SHOULD_USE_DARK_COLORS,
+  UPDATE_THEME_SOURCE,
   UPDATE_CAN_GO_BACK,
   UPDATE_CAN_GO_FORWARD,
   UPDATE_DID_FAIL_LOAD,
-  UPDATE_IS_DARK_MODE,
   UPDATE_IS_DEFAULT_MAIL_CLIENT,
   UPDATE_IS_DEFAULT_WEB_BROWSER,
   UPDATE_IS_FULL_SCREEN,
@@ -12,6 +13,11 @@ import {
   UPDATE_ADDRESS_BAR_INFO,
   UPDATE_TITLE,
 } from '../../constants/actions';
+
+import {
+  getThemeSource,
+  getShouldUseDarkColors,
+} from '../../senders';
 
 const { remote } = window.require('electron');
 
@@ -71,17 +77,23 @@ const isDefaultWebBrowser = (state = remote.app.isDefaultProtocolClient('http'),
   }
 };
 
-
-const isDarkMode = (state = remote.systemPreferences.isDarkMode(), action) => {
+const isLoading = (state = true, action) => {
   switch (action.type) {
-    case UPDATE_IS_DARK_MODE: return action.isDarkMode;
+    case UPDATE_IS_LOADING: return action.isLoading;
     default: return state;
   }
 };
 
-const isLoading = (state = true, action) => {
+const shouldUseDarkColors = (state = getShouldUseDarkColors(), action) => {
   switch (action.type) {
-    case UPDATE_IS_LOADING: return action.isLoading;
+    case UPDATE_SHOULD_USE_DARK_COLORS: return action.shouldUseDarkColors;
+    default: return state;
+  }
+};
+
+const themeSource = (state = getThemeSource(), action) => {
+  switch (action.type) {
+    case UPDATE_THEME_SOURCE: return action.themeSource;
     default: return state;
   }
 };
@@ -99,10 +111,11 @@ export default combineReducers({
   canGoBack,
   canGoForward,
   didFailLoad,
-  isDarkMode,
   isDefaultMailClient,
   isDefaultWebBrowser,
   isFullScreen,
   isLoading,
+  shouldUseDarkColors,
+  themeSource,
   title,
 });

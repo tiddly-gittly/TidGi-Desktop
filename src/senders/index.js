@@ -22,6 +22,7 @@ export const requestShowLicenseRegistrationWindow = () => ipcRenderer.send('requ
 export const requestShowNotificationsWindow = () => ipcRenderer.send('request-show-notifications-window');
 export const requestShowPreferencesWindow = (scrollTo) => ipcRenderer.send('request-show-preferences-window', scrollTo);
 export const requestShowProxyWindow = () => ipcRenderer.send('request-show-proxy-window');
+export const requestShowSpellcheckLanguagesWindow = () => ipcRenderer.send('request-show-spellcheck-languages-window');
 
 // Notifications
 export const requestShowNotification = (opts) => ipcRenderer.send('request-show-notification', opts);
@@ -61,3 +62,8 @@ export const requestStopFindInPage = (close) => ipcRenderer.send('request-stop-f
 
 // Auth
 export const requestValidateAuthIdentity = (windowId, username, password) => ipcRenderer.send('request-validate-auth-identity', windowId, username, password);
+
+// Native Theme
+export const getShouldUseDarkColors = () => ipcRenderer.sendSync('get-should-use-dark-colors');
+export const getThemeSource = () => ipcRenderer.sendSync('get-theme-source');
+export const requestSetThemeSource = (val) => ipcRenderer.send('request-set-theme-source', val);

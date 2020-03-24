@@ -4,11 +4,7 @@ const {
   webFrame,
 } = require('electron');
 
-const {
-  SpellCheckHandler,
-  ContextMenuListener,
-  ContextMenuBuilder,
-} = require('electron-spellchecker');
+const ContextMenuBuilder = require('../libs/context-menu-builder');
 
 const { MenuItem } = remote;
 
@@ -38,23 +34,12 @@ window.onload = () => {
     }
   }
 
-  const spellChecker = ipcRenderer.sendSync('get-preference', 'spellChecker');
-  const spellCheckerLanguages = ipcRenderer.sendSync('get-preference', 'spellCheckerLanguages');
-
-  if (spellChecker) {
-    window.spellCheckHandler = new SpellCheckHandler();
-    setTimeout(() => window.spellCheckHandler.attachToInput(), 1000);
-    window.spellCheckHandler.switchLanguage(spellCheckerLanguages[0]);
-  }
-
   window.contextMenuBuilder = new ContextMenuBuilder(
-    spellChecker ? window.spellCheckHandler : null,
     null,
     true,
   );
 
-
-  window.contextMenuListener = new ContextMenuListener((info) => {
+  remote.getCurrentWebContents().on('context-menu', (e, info) => {
     window.contextMenuBuilder.buildMenuForElement(info)
       .then((menu) => {
         if (info.linkURL && info.linkURL.length > 0) {

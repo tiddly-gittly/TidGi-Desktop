@@ -8,7 +8,7 @@ const isUrl = require('is-url');
 const download = require('download');
 const tmp = require('tmp');
 
-const sendToAllWindows = require('../libs/send-to-all-windows');
+const sendToAllWindows = require('./send-to-all-windows');
 
 const v = '14';
 

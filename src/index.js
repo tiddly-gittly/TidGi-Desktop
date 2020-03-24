@@ -11,6 +11,7 @@ import { init as initDialogCodeInjection } from './state/dialog-code-injection/a
 import { init as initDialogCustomUserAgent } from './state/dialog-custom-user-agent/actions';
 import { init as initDialogEditWorkspace } from './state/dialog-edit-workspace/actions';
 import { init as initDialogProxy } from './state/dialog-proxy/actions';
+import { init as initDialogSpellcheckLanguages } from './state/dialog-spellcheck-languages/actions';
 
 import AppWrapper from './components/app-wrapper';
 
@@ -29,6 +30,7 @@ const DialogNotifications = React.lazy(() => import('./components/dialog-notific
 const DialogOpenUrlWith = React.lazy(() => import('./components/dialog-open-url-with'));
 const DialogPreferences = React.lazy(() => import('./components/dialog-preferences'));
 const DialogProxy = React.lazy(() => import('./components/dialog-proxy'));
+const DialogSpellcheckLanguages = React.lazy(() => import('./components/dialog-spellcheck-languages'));
 const Main = React.lazy(() => import('./components/main'));
 
 const App = () => {
@@ -46,6 +48,7 @@ const App = () => {
     case 'open-url-with': return <DialogOpenUrlWith />;
     case 'preferences': return <DialogPreferences />;
     case 'proxy': return <DialogProxy />;
+    case 'spellcheck-languages': return <DialogSpellcheckLanguages />;
     default: return <Main />;
   }
 };
@@ -55,7 +58,6 @@ const runApp = () => {
     .then(() => {
       const { webFrame, remote } = window.require('electron');
       webFrame.setVisualZoomLevelLimits(1, 1);
-      webFrame.setLayoutZoomLevelLimits(0, 0);
       if (window.mode === 'about') {
         document.title = 'About';
       } else if (window.mode === 'license-registration') {
@@ -98,6 +100,9 @@ const runApp = () => {
       } else if (window.mode === 'proxy') {
         store.dispatch(initDialogProxy());
         document.title = 'Proxy Settings';
+      } else if (window.mode === 'spellcheck-languages') {
+        store.dispatch(initDialogSpellcheckLanguages());
+        document.title = 'Preferred Spell Checking Languages';
       } else {
         document.title = 'Singlebox';
       }

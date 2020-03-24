@@ -13,6 +13,7 @@ import dialogEditWorkspace from './dialog-edit-workspace/reducers';
 import dialogGoToUrl from './dialog-go-to-url/reducers';
 import dialogLicenseRegistration from './dialog-license-registration/reducers';
 import dialogProxy from './dialog-proxy/reducers';
+import dialogSpellcheckLanguages from './dialog-spellcheck-languages/reducers';
 import findInPage from './find-in-page/reducers';
 import general from './general/reducers';
 import notifications from './notifications/reducers';
@@ -33,6 +34,7 @@ const rootReducer = combineReducers({
   dialogGoToUrl,
   dialogLicenseRegistration,
   dialogProxy,
+  dialogSpellcheckLanguages,
   findInPage,
   general,
   notifications,

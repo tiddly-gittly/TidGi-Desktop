@@ -128,7 +128,7 @@ function createMenu() {
 
             if (win != null && win.getBrowserView() != null) {
               const contents = win.getBrowserView().webContents;
-              contents.setZoomFactor(1);
+              contents.zoomFactor = 1;
             }
           },
           enabled: hasWorkspaces,
@@ -141,9 +141,7 @@ function createMenu() {
 
             if (win != null && win.getBrowserView() != null) {
               const contents = win.getBrowserView().webContents;
-              contents.getZoomFactor((zoomFactor) => {
-                contents.setZoomFactor(zoomFactor + 0.1);
-              });
+              contents.zoomFactor += 0.1;
             }
           },
           enabled: hasWorkspaces,
@@ -156,9 +154,7 @@ function createMenu() {
 
             if (win != null && win.getBrowserView() != null) {
               const contents = win.getBrowserView().webContents;
-              contents.getZoomFactor((zoomFactor) => {
-                contents.setZoomFactor(zoomFactor - 0.1);
-              });
+              contents.zoomFactor += 0.1;
             }
           },
           enabled: hasWorkspaces,

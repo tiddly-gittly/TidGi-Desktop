@@ -35,6 +35,8 @@ import StatedMenu from '../shared/stated-menu';
 
 import { updateIsDefaultMailClient, updateIsDefaultWebBrowser } from '../../state/general/actions';
 
+import hunspellLanguagesMap from '../../constants/hunspell-languages';
+
 import webcatalogLogo from '../../images/webcatalog-logo.svg';
 import translatiumLogo from '../../images/translatium-logo.svg';
 import singleboxLogo from '../../images/singlebox-logo.svg';
@@ -48,6 +50,7 @@ import {
   requestResetPreferences,
   requestSetPreference,
   requestSetSystemPreference,
+  requestSetThemeSource,
   requestShowAboutWindow,
   requestShowCodeInjectionWindow,
   requestShowCustomUserAgentWindow,
@@ -55,6 +58,7 @@ import {
   requestShowNotificationsWindow,
   requestShowProxyWindow,
   requestShowRequireRestartDialog,
+  requestShowSpellcheckLanguagesWindow,
 } from '../../senders';
 
 const styles = (theme) => ({
@@ -106,57 +110,6 @@ const getOpenAtLoginString = (openAtLogin) => {
   if (openAtLogin === 'yes-hidden') return 'Yes, but minimized';
   if (openAtLogin === 'yes') return 'Yes';
   return 'No';
-};
-
-// language code extracted from https://github.com/electron/electron/releases/download/v8.0.0-beta.3/hunspell_dictionaries.zip
-// languages name from http://www.lingoes.net/en/translator/langcode.htm & Chrome preferences
-// sorted by name
-const hunspellLanguagesMap = {
-  'af-ZA': 'Afrikaans',
-  sq: 'Albanian - shqip',
-  hy: 'Armenian - հայերեն',
-  'bg-BG': 'Bulgarian - български',
-  'ca-ES': 'Catalan - català',
-  'hr-HR': 'Croatian - hrvatski',
-  'cs-CZ': 'Czech - čeština',
-  'da-DK': 'Danish - dansk',
-  'nl-NL': 'Dutch - Nederlands',
-  'en-AU': 'English (Australia)',
-  'en-CA': 'English (Canada)',
-  'en-GB': 'English (United Kingdom)',
-  'en-US': 'English (United States)',
-  'et-EE': 'Estonian - eesti',
-  'fo-FO': 'Faroese - føroyskt',
-  'fr-FR': 'French - français',
-  'de-DE': 'German - Deutsch',
-  'el-GR': 'Greek - Ελληνικά',
-  'he-IL': 'Hebrew - ‎‫עברית‬‎',
-  'hi-IN': 'Hindi - हिन्दी',
-  'hu-HU': 'Hungarian - magyar',
-  'id-ID': 'Indonesian - Indonesia',
-  'it-IT': 'Italian - italiano',
-  ko: 'Korean - 한국어',
-  'lv-LV': 'Latvian - latviešu',
-  'lt-LT': 'Lithuanian - lietuvių',
-  'nb-NO': 'Norwegian Bokmål - norsk bokmål',
-  'fa-IR': 'Persian - ‎‫فارسی‬‎',
-  'pl-PL': 'Polish - polski',
-  'pt-BR': 'Portuguese (Brazil) - português (Brasil)',
-  'pt-PT': 'Portuguese (Portugal) - português (Portugal)',
-  'ro-RO': 'Romanian - română',
-  'ru-RU': 'Russian - русский',
-  sr: 'Serbian - српски',
-  sh: 'Serbo-Croatian - srpskohrvatski',
-  'sk-SK': 'Slovak - slovenčina',
-  'sl-SI': 'Slovenian - slovenščina',
-  'es-ES': 'Spanish - español',
-  'sv-SE': 'Swedish - svenska',
-  'tg-TG': 'Tajik - тоҷикӣ',
-  'ta-IN': 'Tamil - தமிழ்',
-  'tr-TR': 'Turkish - Türkçe',
-  'uk-UA': 'Ukrainian - українська',
-  'vi-VN': 'Vietnamese - Tiếng Việt',
-  'cy-GB': 'Welsh - Cymraeg',
 };
 
 const formatBytes = (bytes, decimals = 2) => {
@@ -218,10 +171,10 @@ const Preferences = ({
   rememberLastPageVisited,
   shareWorkspaceBrowsingData,
   sidebar,
-  spellChecker,
-  spellCheckerLanguages,
+  spellcheck,
+  spellcheckLanguages,
   swipeToNavigate,
-  theme,
+  themeSource,
   titleBar,
   unreadCountBadge,
   updaterInfo,
@@ -332,14 +285,14 @@ const Preferences = ({
               id="theme"
               buttonElement={(
                 <ListItem button>
-                  <ListItemText primary="Theme" secondary={getThemeString(theme)} />
+                  <ListItemText primary="Theme" secondary={getThemeString(themeSource)} />
                   <ChevronRightIcon color="action" />
                 </ListItem>
               )}
             >
-              <MenuItem dense onClick={() => requestSetPreference('theme', 'automatic')}>System default</MenuItem>
-              <MenuItem dense onClick={() => requestSetPreference('theme', 'light')}>Light</MenuItem>
-              <MenuItem dense onClick={() => requestSetPreference('theme', 'dark')}>Dark</MenuItem>
+              <MenuItem dense onClick={() => requestSetThemeSource('system')}>System default</MenuItem>
+              <MenuItem dense onClick={() => requestSetThemeSource('light')}>Light</MenuItem>
+              <MenuItem dense onClick={() => requestSetThemeSource('dark')}>Dark</MenuItem>
             </StatedMenu>
             <Divider />
             <ListItem>
@@ -578,40 +531,26 @@ const Preferences = ({
                 <Switch
                   edge="end"
                   color="primary"
-                  checked={spellChecker}
+                  checked={spellcheck}
                   onChange={(e) => {
-                    requestSetPreference('spellChecker', e.target.checked);
+                    requestSetPreference('spellcheck', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
               </ListItemSecondaryAction>
             </ListItem>
-            <Divider />
-            <StatedMenu
-              id="spellcheckerLanguages"
-              buttonElement={(
-                <ListItem button>
+            {window.process.platform === 'darwin' && (
+              <>
+                <Divider />
+                <ListItem button onClick={requestShowSpellcheckLanguagesWindow}>
                   <ListItemText
-                    primary="Spell checking language"
-                    secondary={spellCheckerLanguages.map((code) => hunspellLanguagesMap[code]).join(' | ')}
+                    primary="Preferred spell checking languages"
+                    secondary={spellcheckLanguages.map((code) => hunspellLanguagesMap[code]).join(' | ')}
                   />
                   <ChevronRightIcon color="action" />
                 </ListItem>
-              )}
-            >
-              {Object.keys(hunspellLanguagesMap).map((code) => (
-                <MenuItem
-                  dense
-                  key={code}
-                  onClick={() => {
-                    requestSetPreference('spellCheckerLanguages', [code]);
-                    requestShowRequireRestartDialog();
-                  }}
-                >
-                  {hunspellLanguagesMap[code]}
-                </MenuItem>
-              ))}
-            </StatedMenu>
+              </>
+            )}
           </List>
         </Paper>
 
@@ -981,10 +920,10 @@ Preferences.propTypes = {
   rememberLastPageVisited: PropTypes.bool.isRequired,
   shareWorkspaceBrowsingData: PropTypes.bool.isRequired,
   sidebar: PropTypes.bool.isRequired,
-  spellChecker: PropTypes.bool.isRequired,
-  spellCheckerLanguages: PropTypes.arrayOf(PropTypes.string).isRequired,
+  spellcheck: PropTypes.bool.isRequired,
+  spellcheckLanguages: PropTypes.arrayOf(PropTypes.string).isRequired,
   swipeToNavigate: PropTypes.bool.isRequired,
-  theme: PropTypes.string.isRequired,
+  themeSource: PropTypes.string.isRequired,
   titleBar: PropTypes.bool.isRequired,
   unreadCountBadge: PropTypes.bool.isRequired,
   updaterInfo: PropTypes.object,
@@ -1014,10 +953,9 @@ const mapStateToProps = (state) => ({
   rememberLastPageVisited: state.preferences.rememberLastPageVisited,
   shareWorkspaceBrowsingData: state.preferences.shareWorkspaceBrowsingData,
   sidebar: state.preferences.sidebar,
-  spellChecker: state.preferences.spellChecker,
-  spellCheckerLanguages: state.preferences.spellCheckerLanguages,
+  spellcheck: state.preferences.spellcheck,
+  spellcheckLanguages: state.preferences.spellcheckLanguages,
   swipeToNavigate: state.preferences.swipeToNavigate,
-  theme: state.preferences.theme,
   titleBar: state.preferences.titleBar,
   unreadCountBadge: state.preferences.unreadCountBadge,
   updaterInfo: state.updater.info,

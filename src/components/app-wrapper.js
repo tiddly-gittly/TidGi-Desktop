@@ -12,8 +12,7 @@ import DateFnsUtils from '@date-io/date-fns';
 
 import connectComponent from '../helpers/connect-component';
 
-import { updateIsDarkMode, updateIsFullScreen } from '../state/general/actions';
-import { getShouldUseDarkMode } from '../state/general/utils';
+import { updateIsFullScreen } from '../state/general/actions';
 
 class AppWrapper extends React.Component {
   constructor(props) {
@@ -21,33 +20,18 @@ class AppWrapper extends React.Component {
 
     this.handleEnterFullScreen = this.handleEnterFullScreen.bind(this);
     this.handleLeaveFullScreen = this.handleLeaveFullScreen.bind(this);
-    this.handleChangeTheme = this.handleChangeTheme.bind(this);
   }
 
   componentDidMount() {
     const { remote } = window.require('electron');
     remote.getCurrentWindow().on('enter-full-screen', this.handleEnterFullScreen);
     remote.getCurrentWindow().on('leave-full-screen', this.handleLeaveFullScreen);
-
-    if (window.process.platform === 'darwin') {
-      this.appleInterfaceThemeChangedNotificationId = remote.systemPreferences
-        .subscribeNotification(
-          'AppleInterfaceThemeChangedNotification',
-          this.handleChangeTheme,
-        );
-    }
   }
 
   componentWillUnmount() {
     const { remote } = window.require('electron');
     remote.getCurrentWindow().removeListener('enter-full-screen', this.handleEnterFullScreen);
     remote.getCurrentWindow().removeListener('leave-full-screen', this.handleLeaveFullScreen);
-
-    if (window.process.platform === 'darwin') {
-      remote.systemPreferences.unsubscribeNotification(
-        this.appleInterfaceThemeChangedNotificationId,
-      );
-    }
   }
 
   handleEnterFullScreen() {
@@ -60,21 +44,15 @@ class AppWrapper extends React.Component {
     onUpdateIsFullScreen(false);
   }
 
-  handleChangeTheme() {
-    const { onUpdateIsDarkMode } = this.props;
-    const { remote } = window.require('electron');
-    onUpdateIsDarkMode(remote.systemPreferences.isDarkMode());
-  }
-
   render() {
-    const { children, shouldUseDarkMode } = this.props;
+    const { children, shouldUseDarkColors } = this.props;
 
     const themeObj = {
       typography: {
         fontSize: 13.5,
       },
       palette: {
-        type: shouldUseDarkMode ? 'dark' : 'light',
+        type: shouldUseDarkColors ? 'dark' : 'light',
         primary: {
           light: blue[300],
           main: blue[600],
@@ -93,7 +71,7 @@ class AppWrapper extends React.Component {
       },
     };
 
-    if (!shouldUseDarkMode) {
+    if (!shouldUseDarkColors) {
       themeObj.background = {
         primary: grey[200],
       };
@@ -117,17 +95,15 @@ AppWrapper.propTypes = {
     PropTypes.element,
     PropTypes.string,
   ]).isRequired,
-  shouldUseDarkMode: PropTypes.bool.isRequired,
-  onUpdateIsDarkMode: PropTypes.func.isRequired,
+  shouldUseDarkColors: PropTypes.bool.isRequired,
   onUpdateIsFullScreen: PropTypes.func.isRequired,
 };
 
 const mapStateToProps = (state) => ({
-  shouldUseDarkMode: getShouldUseDarkMode(state),
+  shouldUseDarkColors: state.general.shouldUseDarkColors,
 });
 
 const actionCreators = {
-  updateIsDarkMode,
   updateIsFullScreen,
 };
 

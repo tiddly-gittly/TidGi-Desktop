@@ -5,7 +5,7 @@ const {
   setViewsNotificationsPref,
 } = require('./views');
 
-let pauseNotificationsInfo;
+let pauseNotificationsInfo = null;
 
 const getCurrentScheduledDateTime = () => {
   const pauseNotificationsBySchedule = getPreference('pauseNotificationsBySchedule');

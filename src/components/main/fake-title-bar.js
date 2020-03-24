@@ -42,7 +42,7 @@ const FakeTitleBar = (props) => {
     <div
       className={classnames(classes.root, window.mode === 'menubar' && classes.rootMenubar)}
     >
-      {(window.mode === 'main' || window.mode === 'menubar') && title ? title : window.require('electron').getCurrentWindow().getTitle()}
+      {(window.mode === 'main' || window.mode === 'menubar') && title ? title : window.require('electron').remote.getCurrentWindow().getTitle()}
     </div>
   );
 };

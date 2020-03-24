@@ -87,13 +87,15 @@ const addView = (browserWindow, workspace) => {
   const {
     blockAds,
     customUserAgent,
-    rememberLastPageVisited,
-    shareWorkspaceBrowsingData,
-    unreadCountBadge,
     proxyBypassRules,
     proxyPacScript,
     proxyRules,
     proxyType,
+    rememberLastPageVisited,
+    shareWorkspaceBrowsingData,
+    spellcheck,
+    spellcheckLanguages,
+    unreadCountBadge,
   } = getPreferences();
 
   // configure session, proxy & ad blocker
@@ -122,9 +124,12 @@ const addView = (browserWindow, workspace) => {
       blocker.enableBlockingInSession(ses);
     });
   }
+  // spellchecker
+  ses.setSpellCheckerLanguages(spellcheckLanguages);
 
   const view = new BrowserView({
     webPreferences: {
+      spellcheck,
       nativeWindowOpen: true,
       nodeIntegration: false,
       contextIsolation: true,
@@ -135,18 +140,18 @@ const addView = (browserWindow, workspace) => {
 
   let adjustUserAgentByUrl = () => false;
   if (customUserAgent) {
-    view.webContents.setUserAgent(customUserAgent);
+    view.webContents.userAgent = customUserAgent;
   } else {
     // Hide Electron from UA to improve compatibility
     // https://github.com/quanglam2807/webcatalog/issues/182
-    const uaStr = view.webContents.getUserAgent();
+    const uaStr = view.webContents.userAgent;
     const commonUaStr = uaStr
       // Fix WhatsApp requires Google Chrome 49+ bug
-      .replace(` ${app.getName()}/${app.getVersion()}`, '')
+      .replace(` ${app.name}/${app.getVersion()}`, '')
       // Hide Electron from UA to improve compatibility
       // https://github.com/quanglam2807/webcatalog/issues/182
       .replace(` Electron/${process.versions.electron}`, '');
-    view.webContents.setUserAgent(customUserAgent || commonUaStr);
+    view.webContents.userAgent = customUserAgent || commonUaStr;
 
     // fix Google prevents signing in because of security concerns
     // https://github.com/quanglam2807/webcatalog/issues/455
@@ -156,14 +161,14 @@ const addView = (browserWindow, workspace) => {
       if (customUserAgent) return false;
 
       const navigatedDomain = extractDomain(url);
-      const currentUaStr = view.webContents.getUserAgent();
+      const currentUaStr = view.webContents.userAgent;
       if (navigatedDomain === 'accounts.google.com') {
         if (currentUaStr !== fakedEdgeUaStr) {
-          view.webContents.setUserAgent(fakedEdgeUaStr);
+          view.webContents.userAgent = fakedEdgeUaStr;
           return true;
         }
       } else if (currentUaStr !== commonUaStr) {
-        view.webContents.setUserAgent(commonUaStr);
+        view.webContents.userAgent = commonUaStr;
         return true;
       }
       return false;
@@ -351,7 +356,8 @@ const addView = (browserWindow, workspace) => {
     if (!askForDownloadPath) {
       const finalFilePath = path.join(downloadPath, item.getFilename());
       if (!fsExtra.existsSync(finalFilePath)) {
-        item.setSavePath(finalFilePath);
+        // eslint-disable-next-line no-param-reassign
+        item.savePath = finalFilePath;
       }
     }
   });
@@ -368,7 +374,8 @@ const addView = (browserWindow, workspace) => {
     if (!askForDownloadPath) {
       const finalFilePath = path.join(downloadPath, item.getFilename());
       if (!fsExtra.existsSync(finalFilePath)) {
-        item.setSavePath(finalFilePath);
+        // eslint-disable-next-line no-param-reassign
+        item.savePath = finalFilePath;
       }
     }
   });
@@ -391,7 +398,7 @@ const addView = (browserWindow, workspace) => {
         count += c;
       });
 
-      app.setBadgeCount(count);
+      app.badgeCount = count;
 
       if (process.platform === 'win32') {
         if (count > 0) {
@@ -418,7 +425,7 @@ const addView = (browserWindow, workspace) => {
 
   // Handle audio & notification preferences
   if (shouldMuteAudio !== undefined) {
-    view.webContents.setAudioMuted(shouldMuteAudio);
+    view.webContents.audioMuted = shouldMuteAudio;
   }
   view.webContents.once('did-stop-loading', () => {
     view.webContents.send('should-pause-notifications-changed', workspace.disableNotifications || shouldPauseNotifications);
@@ -503,7 +510,7 @@ const setViewsAudioPref = (_shouldMuteAudio) => {
     const view = views[id];
     if (view != null) {
       const workspace = getWorkspace(id);
-      view.webContents.setAudioMuted(workspace.disableAudio || shouldMuteAudio);
+      view.webContents.audioMuted = workspace.disableAudio || shouldMuteAudio;
     }
   });
 };

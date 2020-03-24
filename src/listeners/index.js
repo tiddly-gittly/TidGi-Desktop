@@ -2,6 +2,8 @@ import { setPreference } from '../state/preferences/actions';
 import { setSystemPreference } from '../state/system-preferences/actions';
 import { setWorkspace } from '../state/workspaces/actions';
 import {
+  updateShouldUseDarkColors,
+  updateThemeSource,
   updateAddressBarInfo,
   updateCanGoBack,
   updateCanGoForward,
@@ -18,7 +20,11 @@ import {
   updatePauseNotificationsInfo,
 } from '../state/notifications/actions';
 import { updateUpdater } from '../state/updater/actions';
-import { requestFindInPage } from '../senders';
+import {
+  getShouldUseDarkColors,
+  getThemeSource,
+  requestFindInPage,
+} from '../senders';
 
 const loadListeners = (store) => {
   const { ipcRenderer } = window.require('electron');
@@ -89,6 +95,11 @@ const loadListeners = (store) => {
 
   ipcRenderer.on('update-updater', (e, updaterObj) => {
     store.dispatch(updateUpdater(updaterObj));
+  });
+
+  ipcRenderer.on('native-theme-updated', () => {
+    store.dispatch(updateThemeSource(getThemeSource()));
+    store.dispatch(updateShouldUseDarkColors(getShouldUseDarkColors()));
   });
 };
 

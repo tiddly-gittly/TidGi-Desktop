@@ -4,6 +4,7 @@ const {
   app,
   dialog,
   ipcMain,
+  nativeTheme,
   shell,
 } = require('electron');
 const { autoUpdater } = require('electron-updater');
@@ -62,6 +63,7 @@ const mainWindow = require('../windows/main');
 const notificationsWindow = require('../windows/notifications');
 const preferencesWindow = require('../windows/preferences');
 const proxyWindow = require('../windows/proxy');
+const spellcheckLanguagesWindow = require('../windows/spellcheck-languages');
 
 const loadListeners = () => {
   ipcMain.on('request-open-in-browser', (e, url) => {
@@ -169,6 +171,10 @@ const loadListeners = () => {
 
   ipcMain.on('request-show-proxy-window', () => {
     proxyWindow.show();
+  });
+
+  ipcMain.on('request-show-spellcheck-languages-window', () => {
+    spellcheckLanguagesWindow.show();
   });
 
   ipcMain.on('request-show-require-restart-dialog', () => {
@@ -405,6 +411,19 @@ const loadListeners = () => {
         console.log(err); // eslint-disable-line no-console
         sendToAllWindows(id, null);
       });
+  });
+
+  // Native Theme
+  ipcMain.on('get-should-use-dark-colors', (e) => {
+    e.returnValue = nativeTheme.shouldUseDarkColors;
+  });
+
+  ipcMain.on('get-theme-source', (e) => {
+    e.returnValue = nativeTheme.themeSource;
+  });
+
+  ipcMain.on('request-set-theme-source', (e, val) => {
+    nativeTheme.themeSource = val;
   });
 };
 

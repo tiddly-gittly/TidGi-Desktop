@@ -19,7 +19,6 @@ import connectComponent from '../../helpers/connect-component';
 import { requestOpenInBrowser } from '../../senders';
 
 import { getHits, updateMode } from '../../state/dialog-add-workspace/actions';
-import { getShouldUseDarkMode } from '../../state/general/utils';
 
 import AppCard from './app-card';
 import SubmitAppCard from './submit-app-card';
@@ -105,7 +104,7 @@ class AddWorkspace extends React.Component {
       mode,
       onGetHits,
       onUpdateMode,
-      shouldUseDarkMode,
+      shouldUseDarkColors,
     } = this.props;
 
     const renderContent = () => {
@@ -181,7 +180,7 @@ class AddWorkspace extends React.Component {
                 className={classes.searchByAlgoliaContainer}
               >
                 <img
-                  src={shouldUseDarkMode ? searchByAlgoliaDarkSvg : searchByAlgoliaLightSvg}
+                  src={shouldUseDarkColors ? searchByAlgoliaDarkSvg : searchByAlgoliaLightSvg}
                   alt="Search by Algolia"
                   className={classes.searchByAlgolia}
                 />
@@ -260,7 +259,7 @@ AddWorkspace.propTypes = {
   mode: PropTypes.string.isRequired,
   onGetHits: PropTypes.func.isRequired,
   onUpdateMode: PropTypes.func.isRequired,
-  shouldUseDarkMode: PropTypes.bool.isRequired,
+  shouldUseDarkColors: PropTypes.bool.isRequired,
 };
 
 const mapStateToProps = (state) => ({
@@ -269,7 +268,7 @@ const mapStateToProps = (state) => ({
   hits: state.dialogAddWorkspace.hits,
   isGetting: state.dialogAddWorkspace.isGetting,
   mode: state.dialogAddWorkspace.mode,
-  shouldUseDarkMode: getShouldUseDarkMode(state),
+  shouldUseDarkColors: state.general.shouldUseDarkColors,
 });
 
 const actionCreators = {

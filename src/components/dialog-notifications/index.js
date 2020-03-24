@@ -36,9 +36,6 @@ const styles = (theme) => ({
   hidden: {
     display: 'none',
   },
-  root: {
-    padding: 0,
-  },
   pausingHeader: {
     background: `url(${nightBackgroundPng})`,
     height: 210,
@@ -94,7 +91,15 @@ const DialogPauseNotifications = (props) => {
       calcDate: () => addHours(new Date(), 4),
     },
     {
+      name: '6 hours',
+      calcDate: () => addHours(new Date(), 6),
+    },
+    {
       name: '8 hours',
+      calcDate: () => addHours(new Date(), 8),
+    },
+    {
+      name: '10 hours',
       calcDate: () => addHours(new Date(), 8),
     },
     {
@@ -125,8 +130,8 @@ const DialogPauseNotifications = (props) => {
     if (shouldPauseNotifications) {
       return (
         <List
-          component="nav"
-          className={classes.root}
+          dense
+          disablePadding
         >
           <ListItem classes={{ root: classes.pausingHeader }}>
             <ListItemText
@@ -200,9 +205,9 @@ const DialogPauseNotifications = (props) => {
 
     return (
       <List
-        component="nav"
+        dense
+        disablePadding
         subheader={<ListSubheader component="div">Pause notifications</ListSubheader>}
-        className={classes.root}
       >
         {quickShortcuts.map((shortcut) => (
           <ListItem

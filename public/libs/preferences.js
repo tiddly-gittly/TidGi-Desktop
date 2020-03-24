@@ -2,7 +2,7 @@ const path = require('path');
 const settings = require('electron-settings');
 const { app, ipcMain } = require('electron');
 
-const sendToAllWindows = require('../libs/send-to-all-windows');
+const sendToAllWindows = require('./send-to-all-windows');
 
 // scope
 const v = '2018.2';
@@ -108,18 +108,17 @@ const defaultPreferences = {
   rememberLastPageVisited: false,
   shareWorkspaceBrowsingData: false,
   sidebar: true,
-  spellChecker: true,
-  spellCheckerLanguages: null,
+  spellcheck: true,
+  spellcheckLanguages: ['en-US'],
   swipeToNavigate: true,
-  theme: process.platform === 'darwin' ? 'automatic' : 'light',
   titleBar: false,
   unreadCountBadge: true,
 };
 
 const getPreferences = () => {
   // cannot init at launch as app.getLocale() is undefined before app.on('ready')
-  if (defaultPreferences.spellCheckerLanguages == null) {
-    defaultPreferences.spellCheckerLanguages = getDefaultSpellCheckerLanguages();
+  if (defaultPreferences.spellcheckLanguages == null) {
+    defaultPreferences.spellcheckLanguages = getDefaultSpellCheckerLanguages();
   }
   return { ...defaultPreferences, ...settings.get(`preferences.${v}`) };
 };
@@ -129,8 +128,8 @@ const getPreference = (name) => {
     return settings.get(`preferences.${v}.${name}`);
   }
   // cannot init at launch as app.getLocale() is undefined before app.on('ready')
-  if (name === 'spellCheckerLanguages' && defaultPreferences.spellCheckerLanguages == null) {
-    defaultPreferences.spellCheckerLanguages = getDefaultSpellCheckerLanguages();
+  if (name === 'spellcheckLanguages' && defaultPreferences.spellcheckLanguages == null) {
+    defaultPreferences.spellcheckLanguages = getDefaultSpellCheckerLanguages();
   }
   return defaultPreferences[name];
 };
