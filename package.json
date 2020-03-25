@@ -24,7 +24,7 @@
   "repository": "https://github.com/atomery/singlebox",
   "author": "Quang Lam <quang.lam2807@gmail.com>",
   "dependencies": {
-    "@cliqz/adblocker-electron": "1.9.2",
+    "@cliqz/adblocker-electron": "1.10.0",
     "cheerio": "1.0.0-rc.3",
     "download": "7.1.0",
     "electron-context-menu": "0.16.0",
@@ -57,7 +57,7 @@
     "concurrently": "5.1.0",
     "cross-env": "7.0.2",
     "date-fns": "2.11.0",
-    "electron": "8.1.1",
+    "electron": "8.2.0",
     "electron-builder": "22.4.1",
     "electron-notarize": "0.2.1",
     "eslint": "6.8.0",

@@ -233,6 +233,7 @@ const EditWorkspace = ({
           <ListItemText primary="Hibernate when not used" secondary="Save CPU usage, memory and battery." />
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               checked={hibernateWhenUnused}
               onChange={(e) => onUpdateForm({ hibernateWhenUnused: e.target.checked })}
@@ -243,6 +244,7 @@ const EditWorkspace = ({
           <ListItemText primary="Disable notifications" secondary="Prevent workspace from sending notifications." />
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               checked={disableNotifications}
               onChange={(e) => onUpdateForm({ disableNotifications: e.target.checked })}
@@ -253,6 +255,7 @@ const EditWorkspace = ({
           <ListItemText primary="Disable audio" secondary="Prevent workspace from playing audio." />
           <ListItemSecondaryAction>
             <Switch
+              edge="end"
               color="primary"
               checked={disableAudio}
               onChange={(e) => onUpdateForm({ disableAudio: e.target.checked })}

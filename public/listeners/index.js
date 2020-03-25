@@ -137,12 +137,14 @@ const loadListeners = () => {
       buttons: ['Reset Now', 'Cancel'],
       message: 'Are you sure? All preferences will be restored to their original defaults. Browsing data won\'t be affected. This action cannot be undone.',
       cancelId: 1,
-    }, (response) => {
-      if (response === 0) {
-        resetPreferences();
-        ipcMain.emit('request-show-require-restart-dialog');
-      }
-    });
+    })
+      .then(({ response }) => {
+        if (response === 0) {
+          resetPreferences();
+          ipcMain.emit('request-show-require-restart-dialog');
+        }
+      })
+      .catch(console.log); // eslint-disable-line
   });
 
   ipcMain.on('request-show-about-window', () => {
@@ -183,12 +185,14 @@ const loadListeners = () => {
       buttons: ['Restart Now', 'Later'],
       message: 'You need to restart the app for this change to take affect.',
       cancelId: 1,
-    }, (response) => {
-      if (response === 0) {
-        app.relaunch();
-        app.exit(0);
-      }
-    });
+    })
+      .then(({ response }) => {
+        if (response === 0) {
+          app.relaunch();
+          app.exit(0);
+        }
+      })
+      .catch(console.log); // eslint-disable-line
   });
 
   // Notifications
@@ -272,12 +276,14 @@ const loadListeners = () => {
       buttons: ['Remove Workspace', 'Cancel'],
       message: 'Are you sure? All browsing data of this workspace will be wiped. This action cannot be undone.',
       cancelId: 1,
-    }, (response) => {
-      if (response === 0) {
-        removeWorkspaceView(id);
-        createMenu();
-      }
-    });
+    })
+      .then(({ response }) => {
+        if (response === 0) {
+          removeWorkspaceView(id);
+          createMenu();
+        }
+      })
+      .catch(console.log); // eslint-disable-line
   });
 
   ipcMain.on('request-set-workspace', (e, id, opts) => {
@@ -299,11 +305,13 @@ const loadListeners = () => {
       buttons: ['Clear Now', 'Cancel'],
       message: 'Are you sure? All browsing data will be cleared. This action cannot be undone.',
       cancelId: 1,
-    }, (response) => {
-      if (response === 0) {
-        clearBrowsingData();
-      }
-    });
+    })
+      .then(({ response }) => {
+        if (response === 0) {
+          clearBrowsingData();
+        }
+      })
+      .catch(console.log); // eslint-disable-line
   });
 
   ipcMain.on('request-load-url', (e, url, id) => {
@@ -363,7 +371,7 @@ const loadListeners = () => {
       buttons: ['OK'],
       cancelId: 0,
       defaultId: 0,
-    });
+    }).catch(console.log); // eslint-disable-line
   });
 
   ipcMain.on('create-menu', () => {

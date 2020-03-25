@@ -1048,34 +1048,34 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
-"@cliqz/adblocker-content@^1.9.2":
-  version "1.9.2"
-  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-content/-/adblocker-content-1.9.2.tgz#64d15cb2accb2445d5256b469f6fa31c1207b00c"
-  integrity sha512-18NHuhJVAnRfBLB5X2RFXdOWcrdODl/dTE1DDTRcFioM2cCvNR7oeZlaZ7oYtp5lpqmFBySzuhGy394IEXk4YA==
+"@cliqz/adblocker-content@^1.10.0":
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-content/-/adblocker-content-1.10.0.tgz#7ad8ae71face5ea6990585ef3cd95cfc627e6338"
+  integrity sha512-Q4C6v+EJzbPvendokioqufZoJzgYseh3vs8yZXDhq1lHyQXtuVeBbXZOGy8omFj0fJoyH7brwN+wNqO3Eb4Xig==
 
-"@cliqz/adblocker-electron-preload@^1.9.2":
-  version "1.9.2"
-  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-electron-preload/-/adblocker-electron-preload-1.9.2.tgz#f73e901328f9ed48531e3301d7d25ece8b31e3aa"
-  integrity sha512-gi8TL6PqG8DcYTHr9uF9eoWYvOSWUWgqVrnAq5OctMyBU5+/wbl/TZkR/FApOghXf8a8IacN5P+gIdYt5z9nNg==
+"@cliqz/adblocker-electron-preload@^1.10.0":
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-electron-preload/-/adblocker-electron-preload-1.10.0.tgz#0d116f22c65f480e1b02042a00111b98eb6da82c"
+  integrity sha512-Ho/pvDWKNGiQwa2ntonsZq6POu6Iw5Axnrs0UOi0zcLCJ7HcZ4vvipoKXv6by5yaa/sUbDr1fP8FVLlz9EIb+g==
   dependencies:
-    "@cliqz/adblocker-content" "^1.9.2"
+    "@cliqz/adblocker-content" "^1.10.0"
 
-"@cliqz/adblocker-electron@1.9.2":
-  version "1.9.2"
-  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-electron/-/adblocker-electron-1.9.2.tgz#6c472974509bcf3caa3c43a8397e4bb5f7f66ac1"
-  integrity sha512-z+L5B985EMTwTAMXMrS96apBhmZYuWDVl3VrqPotdZ3utE8yYVMajQgF3Bsg+KEL3LiaxslShSNXhpc7eylnGQ==
+"@cliqz/adblocker-electron@1.10.0":
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-electron/-/adblocker-electron-1.10.0.tgz#8993a79a86a771fa4644364086b7156db59e3fb2"
+  integrity sha512-88HRU/6NKfcmd/nHNI747gO3pJueF59EFIfnaCylZRPxsz9WQZPXFIUojYolbZSMppwIbgN61k4YgDk9n/+QdQ==
   dependencies:
-    "@cliqz/adblocker" "^1.9.2"
-    "@cliqz/adblocker-electron-preload" "^1.9.2"
+    "@cliqz/adblocker" "^1.10.0"
+    "@cliqz/adblocker-electron-preload" "^1.10.0"
     tldts-experimental "^5.6.3"
 
-"@cliqz/adblocker@^1.9.2":
-  version "1.9.2"
-  resolved "https://registry.yarnpkg.com/@cliqz/adblocker/-/adblocker-1.9.2.tgz#7038b7d08eb610956b91f645be733b602c4d277d"
-  integrity sha512-B3JE4F6LQ8qDAgWlN3a2NW1MgBjvHCCzX1aCglm/k20iAa1Yw89Mcbu/LJL4FqgUe4jaYUwb+Siya1ZK+Z7Kfg==
+"@cliqz/adblocker@^1.10.0":
+  version "1.10.0"
+  resolved "https://registry.yarnpkg.com/@cliqz/adblocker/-/adblocker-1.10.0.tgz#7f1cec78c619ec457685f319f653f8f53b7063b2"
+  integrity sha512-Tp8jIw/KkJicKH3aGPxa5ucVQJiGbU/uHr4HHdNCSrL4yAuGA6TINONsdJhy9kg08aNkqDdQMgmmV2fVIkniaw==
   dependencies:
     "@remusao/smaz" "^1.7.1"
-    "@types/chrome" "^0.0.97"
+    "@types/chrome" "^0.0.102"
     "@types/firefox-webext-browser" "^70.0.1"
     tldts-experimental "^5.6.3"
 
@@ -1910,10 +1910,10 @@
   dependencies:
     "@babel/types" "^7.3.0"
 
-"@types/chrome@^0.0.97":
-  version "0.0.97"
-  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.97.tgz#aa0e5965a0662906cd57c632e34fe6d1462963f0"
-  integrity sha512-buJsiNcs2X/Pb22ZNShMOUuDgV6o5AH6U9bGpc0diTZfWYOVOzcA2LKfBL+Sbxp4K4VvT0rA3zsEcui24vQofg==
+"@types/chrome@^0.0.102":
+  version "0.0.102"
+  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.102.tgz#ea427dbe0211f239ca6c90473c1ac1aaf8c3fbba"
+  integrity sha512-nk0nB64umULB3mMbRGA1vCgi90aVtYenXqstFsm8NPJMDrFA2PSZZHMUUOrVobTXwKx6+8B1MSNyKiXfa/qmwg==
   dependencies:
     "@types/filesystem" "*"
 
@@ -5429,10 +5429,10 @@ electron-window-state@5.0.3:
     jsonfile "^4.0.0"
     mkdirp "^0.5.1"
 
-electron@8.1.1:
-  version "8.1.1"
-  resolved "https://registry.yarnpkg.com/electron/-/electron-8.1.1.tgz#737a5af03c7b4af60b49dff7bfe1203fcbd5bf89"
-  integrity sha512-t+5zzFo7VOgckJc9YpImHJkpqeWxwpmEjywWbAa4IT5MULS7h1XU52H9gMswK/y8xc5lBNwxLhJSty/15+gi1A==
+electron@8.2.0:
+  version "8.2.0"
+  resolved "https://registry.yarnpkg.com/electron/-/electron-8.2.0.tgz#f3e3de23a6178b5ad7baa70f4814d6332a3212c2"
+  integrity sha512-mnV43gKCrCUMHLmGws/DU/l8LhaxrFD53A4ofwtthdCqOZWGIdk1+eMphiVumXR5a3lC64XVvmXQ2k28i7F/zw==
   dependencies:
     "@electron/get" "^1.0.1"
     "@types/node" "^12.0.12"

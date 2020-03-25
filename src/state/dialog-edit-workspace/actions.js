@@ -73,13 +73,15 @@ export const getIconFromInternet = (forceOverwrite) => (dispatch, getState) => {
 
       if (forceOverwrite && !iconUrl) {
         const { remote } = window.require('electron');
-        remote.dialog.showMessageBox(remote.getCurrentWindow(), {
+        return remote.dialog.showMessageBox(remote.getCurrentWindow(), {
           message: 'Unable to find a suitable icon from the Internet.',
           buttons: ['OK'],
           cancelId: 0,
           defaultId: 0,
         });
       }
+
+      return null;
     }).catch(console.log); // eslint-disable-line no-console
 };
 

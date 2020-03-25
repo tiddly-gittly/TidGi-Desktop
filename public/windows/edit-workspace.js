@@ -16,7 +16,7 @@ const create = (id) => {
   global.editWorkspaceId = id;
 
   win = new BrowserWindow({
-    width: 400,
+    width: 420,
     height: 700,
     resizable: false,
     maximizable: false,
