@@ -125,7 +125,9 @@ const addView = (browserWindow, workspace) => {
     });
   }
   // spellchecker
-  ses.setSpellCheckerLanguages(spellcheckLanguages);
+  if (spellcheck && process.platform !== 'darwin') {
+    ses.setSpellCheckerLanguages(spellcheckLanguages);
+  }
 
   const view = new BrowserView({
     webPreferences: {
@@ -343,24 +345,6 @@ const addView = (browserWindow, workspace) => {
     }
   };
   view.webContents.on('new-window', handleNewWindow);
-
-  // Handle downloads
-  // https://electronjs.org/docs/api/download-item
-  view.webContents.session.on('will-download', (event, item) => {
-    const {
-      askForDownloadPath,
-      downloadPath,
-    } = getPreferences();
-
-    // Set the save path, making Electron not to prompt a save dialog.
-    if (!askForDownloadPath) {
-      const finalFilePath = path.join(downloadPath, item.getFilename());
-      if (!fsExtra.existsSync(finalFilePath)) {
-        // eslint-disable-next-line no-param-reassign
-        item.savePath = finalFilePath;
-      }
-    }
-  });
 
   // Handle downloads
   // https://electronjs.org/docs/api/download-item

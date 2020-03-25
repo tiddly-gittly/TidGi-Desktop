@@ -29,7 +29,6 @@ class StatedMenu extends React.Component {
       buttonElement,
       children,
       id,
-      hasCheckbox,
     } = this.props;
 
     const { anchorEl, open } = this.state;
@@ -47,10 +46,9 @@ class StatedMenu extends React.Component {
           open={open}
           onClose={this.handleRequestClose}
           anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-          disableAutoFocusItem={hasCheckbox}
         >
           {React.Children.map(children, (child) => child && React.cloneElement(child, {
-            onClick: hasCheckbox ? null : () => {
+            onClick: () => {
               if (child.props.onClick) child.props.onClick();
               this.handleRequestClose();
             },
@@ -61,14 +59,9 @@ class StatedMenu extends React.Component {
   }
 }
 
-StatedMenu.defaultProps = {
-  hasCheckbox: false,
-};
-
 StatedMenu.propTypes = {
   buttonElement: PropTypes.element.isRequired,
   children: PropTypes.node.isRequired,
-  hasCheckbox: PropTypes.bool,
   id: PropTypes.string.isRequired,
 };
 

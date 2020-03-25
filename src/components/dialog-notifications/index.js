@@ -79,6 +79,10 @@ const DialogPauseNotifications = (props) => {
       calcDate: () => addMinutes(new Date(), 30),
     },
     {
+      name: '45 minutes',
+      calcDate: () => addMinutes(new Date(), 45),
+    },
+    {
       name: '1 hour',
       calcDate: () => addHours(new Date(), 1),
     },
