@@ -404,7 +404,11 @@ const addView = (browserWindow, workspace) => {
 
   // Link preview
   view.webContents.on('update-target-url', (e, url) => {
-    view.webContents.send('update-target-url', url);
+    try {
+      view.webContents.send('update-target-url', url);
+    } catch (err) {
+      console.log(err); // eslint-disable-line no-console
+    }
   });
 
   // Handle audio & notification preferences
