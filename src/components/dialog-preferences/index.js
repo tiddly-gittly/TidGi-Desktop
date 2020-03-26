@@ -870,6 +870,16 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
+            <ListItem button onClick={() => requestOpenInBrowser('https://singleboxapp.com?utm_source=singlebox_app')}>
+              <ListItemText primary="Website" />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
+            <ListItem button onClick={() => requestOpenInBrowser('https://atomery.com/support?app=singlebox&utm_source=singlebox_app')}>
+              <ListItemText primary="Support" />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
             <ListItem button onClick={requestShowLicenseRegistrationWindow} disabled={registered}>
               <ListItemText primary="License Registration" secondary={registered ? 'Registered. Thank you for supporting the development of Singlebox.' : null} />
               <ChevronRightIcon color="action" />
