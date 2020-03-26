@@ -14,16 +14,16 @@ const getViewBounds = (contentSize, findInPage = false, height, width) => {
     return {
       x,
       y: y + FIND_IN_PAGE_HEIGHT,
-      height: height || contentSize[1] - y - FIND_IN_PAGE_HEIGHT,
-      width: width || contentSize[0] - x,
+      height: height != null ? height : contentSize[1] - y - FIND_IN_PAGE_HEIGHT,
+      width: width != null ? width : contentSize[0] - x,
     };
   }
 
   return {
     x,
     y,
-    height: height || contentSize[1] - y,
-    width: width || contentSize[0] - x,
+    height: height != null ? height : contentSize[1] - y,
+    width: width != null ? width : contentSize[0] - x,
   };
 };
 
