@@ -11,7 +11,7 @@ import { requestOpenInBrowser } from '../../senders';
 
 const styles = (theme) => ({
   card: {
-    width: 368,
+    width: '100%',
     boxSizing: 'border-box',
     borderRadius: 4,
     padding: theme.spacing(1.5),
@@ -55,7 +55,7 @@ const SubmitAppCard = (props) => {
   } = props;
 
   return (
-    <Grid item>
+    <Grid item xs={12}>
       <Paper elevation={0} className={classes.card} onClick={() => requestOpenInBrowser('https://github.com/atomery/singlebox/issues/new?template=app.md&title=app%3A+')}>
         <div>
           <AddCircleIcon className={classes.paperIcon} />

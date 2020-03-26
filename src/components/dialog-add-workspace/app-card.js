@@ -20,7 +20,7 @@ import { updateForm, updateMode } from '../../state/dialog-add-workspace/actions
 
 const styles = (theme) => ({
   card: {
-    width: 368,
+    width: '100%',
     boxSizing: 'border-box',
     borderRadius: 4,
     padding: theme.spacing(1),
@@ -40,8 +40,8 @@ const styles = (theme) => ({
     textOverflow: 'ellipsis',
   },
   paperIcon: {
-    width: 48,
-    height: 48,
+    width: 40,
+    height: 40,
     borderRadius: 8,
     border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
   },
@@ -78,7 +78,7 @@ const AppCard = (props) => {
   } = props;
 
   return (
-    <Grid item>
+    <Grid item xs={12}>
       <Paper elevation={0} className={classes.card}>
         <div>
           <img
@@ -99,7 +99,7 @@ const AppCard = (props) => {
           <StatedMenu
             id={`more-menu-${extractHostname(url)}`}
             buttonElement={(
-              <IconButton aria-label="Delete" className={classes.topRight}>
+              <IconButton size="small" aria-label="Delete" className={classes.topRight}>
                 <MoreVertIcon fontSize="small" />
               </IconButton>
             )}
@@ -120,7 +120,7 @@ const AppCard = (props) => {
           <Button
             className={classes.actionButton}
             color="primary"
-            size="medium"
+            size="small"
             variant="contained"
             disableElevation
             onClick={() => {

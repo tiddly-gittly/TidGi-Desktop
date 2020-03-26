@@ -663,7 +663,7 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpenInBrowser('https://singleboxapp.com/privacy')}>
+            <ListItem button onClick={() => requestOpenInBrowser('https://atomery.com/privacy?app=singlebox&utm_source=singlebox_app')}>
               <ListItemText primary="Privacy Policy" />
             </ListItem>
           </List>
@@ -834,7 +834,7 @@ const Preferences = ({
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List disablePadding dense>
-            <ListItem button onClick={() => requestOpenInBrowser('https://webcatalogapp.com?utm_source=webcatalog_app')}>
+            <ListItem button onClick={() => requestOpenInBrowser('https://webcatalogapp.com?utm_source=singlebox_app')}>
               <ListItemText
                 primary={(<img src={webcatalogLogo} alt="WebCatalog" className={classes.logo} />)}
                 secondary="Run Web Apps like Real Apps"
@@ -842,7 +842,7 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpenInBrowser('https://singleboxapp.com?utm_source=webcatalog_app')}>
+            <ListItem button onClick={() => requestOpenInBrowser('https://singleboxapp.com?utm_source=singlebox_app')}>
               <ListItemText
                 primary={(<img src={singleboxLogo} alt="Singlebox" className={classes.logo} />)}
                 secondary="All Your Apps in One Single Window"
@@ -850,7 +850,7 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpenInBrowser('https://translatiumapp.com?utm_source=webcatalog_app')}>
+            <ListItem button onClick={() => requestOpenInBrowser('https://translatiumapp.com?utm_source=singlebox_app')}>
               <ListItemText
                 primary={(<img src={translatiumLogo} alt="Translatium" className={classes.logo} />)}
                 secondary="Translate Any Languages like a Pro"

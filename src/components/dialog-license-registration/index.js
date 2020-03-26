@@ -73,7 +73,7 @@ const DialogLicenseRegistration = (props) => {
       <div className={classes.actions}>
         <div style={{ flex: 1 }}>
           <Button
-            onClick={() => requestOpenInBrowser('https://webcatalog.onfastspring.com/singlebox/singleboxapp')}
+            onClick={() => requestOpenInBrowser('https://webcatalog.onfastspring.com/singlebox/singleboxapp?utm_source=singlebox_app')}
           >
             Visit Store...
           </Button>

@@ -47,10 +47,10 @@ const styles = (theme) => ({
   },
   scrollContainer: {
     flex: 1,
-    paddingLeft: theme.spacing(2),
-    paddingRight: theme.spacing(2),
-    paddingTop: theme.spacing(3),
-    paddingBottom: theme.spacing(2),
+    paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(1),
+    paddingTop: theme.spacing(2),
+    paddingBottom: theme.spacing(1),
     overflow: 'auto',
     boxSizing: 'border-box',
   },
@@ -143,7 +143,7 @@ class AddWorkspace extends React.Component {
 
       return (
         <>
-          <Grid container justify="center" spacing={2}>
+          <Grid container justify="center" spacing={1}>
             {currentQuery && (
               <Grid item xs={12}>
                 <Typography

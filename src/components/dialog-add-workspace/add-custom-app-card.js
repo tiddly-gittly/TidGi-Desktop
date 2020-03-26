@@ -12,7 +12,7 @@ import { updateMode } from '../../state/dialog-add-workspace/actions';
 
 const styles = (theme) => ({
   card: {
-    width: 368,
+    width: '100%',
     boxSizing: 'border-box',
     borderRadius: 4,
     padding: theme.spacing(1.5),
@@ -57,7 +57,7 @@ const AddCustomAppCard = (props) => {
   } = props;
 
   return (
-    <Grid item>
+    <Grid item xs={12}>
       <Paper elevation={0} className={classes.card} onClick={() => onUpdateMode('custom')}>
         <div>
           <CreateIcon className={classes.paperIcon} />

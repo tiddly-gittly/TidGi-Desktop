@@ -25,7 +25,7 @@ const styles = (theme) => ({
     alignItems: 'center',
     display: 'flex',
     flexDirection: 'row',
-    height: 48,
+    height: 40,
     margin: '0 auto',
   },
   searchBarText: {
@@ -38,7 +38,6 @@ const styles = (theme) => ({
     textOverflow: 'ellipsis',
     transform: 'translateY(-1px)',
     fontWeight: 'normal',
-    fontSize: 18,
   },
   input: {
     font: 'inherit',
@@ -81,14 +80,14 @@ class SearchBox extends React.Component {
           aria-label="Clear"
           onClick={() => onUpdateQuery('')}
         >
-          <CloseIcon className={classes.icon} />
+          <CloseIcon fontSize="small" className={classes.icon} />
         </IconButton>
         <IconButton
           color="default"
           aria-label="Clear"
           onClick={onResetThenGetHits}
         >
-          <KeyboardReturnIcon className={classes.icon} />
+          <KeyboardReturnIcon fontSize="small" className={classes.icon} />
         </IconButton>
       </>
     );
@@ -99,7 +98,7 @@ class SearchBox extends React.Component {
           <Typography
             className={classes.searchBarText}
             color="inherit"
-            variant="h6"
+            variant="body1"
           >
             <input
               className={classes.input}
