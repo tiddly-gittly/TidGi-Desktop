@@ -74,15 +74,16 @@ const styles = (theme) => ({
     textTransform: 'uppercase',
     userSelect: 'none',
     border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
+    overflow: 'hidden',
   },
   transparentAvatar: {
     background: 'transparent',
     border: 'none',
+    borderRadius: 0,
   },
   avatarPicture: {
     height: '100%',
     width: '100%',
-    borderRadius: 4,
   },
   buttonBot: {
     marginTop: theme.spacing(1),

@@ -43,10 +43,12 @@ const styles = (theme) => ({
     fontWeight: 500,
     textTransform: 'uppercase',
     border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
+    overflow: 'hidden',
   },
   transparentAvatar: {
     background: 'transparent',
     border: 'none',
+    borderRadius: 0,
   },
   addAvatar: {
     background: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black,
@@ -55,7 +57,6 @@ const styles = (theme) => ({
   avatarPicture: {
     height: '100%',
     width: '100%',
-    borderRadius: 4,
   },
   shortcutText: {
     marginTop: 2,
