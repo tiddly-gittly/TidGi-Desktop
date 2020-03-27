@@ -2,7 +2,6 @@ import { combineReducers } from 'redux';
 
 import {
   UPDATE_SHOULD_USE_DARK_COLORS,
-  UPDATE_THEME_SOURCE,
   UPDATE_CAN_GO_BACK,
   UPDATE_CAN_GO_FORWARD,
   UPDATE_DID_FAIL_LOAD,
@@ -15,7 +14,6 @@ import {
 } from '../../constants/actions';
 
 import {
-  getThemeSource,
   getShouldUseDarkColors,
 } from '../../senders';
 
@@ -91,13 +89,6 @@ const shouldUseDarkColors = (state = getShouldUseDarkColors(), action) => {
   }
 };
 
-const themeSource = (state = getThemeSource(), action) => {
-  switch (action.type) {
-    case UPDATE_THEME_SOURCE: return action.themeSource;
-    default: return state;
-  }
-};
-
 const didFailLoad = (state = false, action) => {
   switch (action.type) {
     case UPDATE_DID_FAIL_LOAD: return action.didFailLoad;
@@ -116,6 +107,5 @@ export default combineReducers({
   isFullScreen,
   isLoading,
   shouldUseDarkColors,
-  themeSource,
   title,
 });

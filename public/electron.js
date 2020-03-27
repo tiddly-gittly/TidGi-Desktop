@@ -58,6 +58,7 @@ if (!gotTheLock) {
       proxyPacScript,
       proxyRules,
       proxyType,
+      themeSource,
     } = getPreferences();
 
     // configure proxy for default session
@@ -73,6 +74,7 @@ if (!gotTheLock) {
       });
     }
 
+    nativeTheme.themeSource = themeSource;
 
     mainWindow.createAsync()
       .then(() => {

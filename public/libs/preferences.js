@@ -1,6 +1,6 @@
 const path = require('path');
 const settings = require('electron-settings');
-const { app, ipcMain } = require('electron');
+const { app, nativeTheme, ipcMain } = require('electron');
 
 const sendToAllWindows = require('./send-to-all-windows');
 
@@ -51,6 +51,7 @@ const defaultPreferences = {
   spellcheck: true,
   spellcheckLanguages: ['en-US'],
   swipeToNavigate: true,
+  themeSource: 'system',
   titleBar: false,
   unreadCountBadge: true,
 };
@@ -74,6 +75,10 @@ const setPreference = (name, value) => {
 
   if (name.startsWith('pauseNotifications')) {
     ipcMain.emit('request-update-pause-notifications-info');
+  }
+
+  if (name === 'themeSource') {
+    nativeTheme.themeSource = value;
   }
 };
 

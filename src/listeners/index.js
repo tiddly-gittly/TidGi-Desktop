@@ -3,7 +3,6 @@ import { setSystemPreference } from '../state/system-preferences/actions';
 import { setWorkspace } from '../state/workspaces/actions';
 import {
   updateShouldUseDarkColors,
-  updateThemeSource,
   updateAddressBarInfo,
   updateCanGoBack,
   updateCanGoForward,
@@ -22,7 +21,6 @@ import {
 import { updateUpdater } from '../state/updater/actions';
 import {
   getShouldUseDarkColors,
-  getThemeSource,
   requestFindInPage,
 } from '../senders';
 
@@ -98,7 +96,6 @@ const loadListeners = (store) => {
   });
 
   ipcRenderer.on('native-theme-updated', () => {
-    store.dispatch(updateThemeSource(getThemeSource()));
     store.dispatch(updateShouldUseDarkColors(getShouldUseDarkColors()));
   });
 };

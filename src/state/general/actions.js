@@ -1,6 +1,5 @@
 import {
   UPDATE_SHOULD_USE_DARK_COLORS,
-  UPDATE_THEME_SOURCE,
   UPDATE_ADDRESS_BAR_INFO,
   UPDATE_CAN_GO_BACK,
   UPDATE_CAN_GO_FORWARD,
@@ -15,11 +14,6 @@ import {
 export const updateShouldUseDarkColors = (shouldUseDarkColors) => ({
   type: UPDATE_SHOULD_USE_DARK_COLORS,
   shouldUseDarkColors,
-});
-
-export const updateThemeSource = (themeSource) => ({
-  type: UPDATE_THEME_SOURCE,
-  themeSource,
 });
 
 export const updateCanGoBack = (canGoBack) => ({
