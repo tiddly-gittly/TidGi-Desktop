@@ -35,6 +35,20 @@ const opts = {
       '!catalog/**/*',
       '!template/**/*',
     ],
+    protocols: [
+      {
+        name: 'HTTPS Protocol',
+        schemes: ['https'],
+      },
+      {
+        name: 'HTTP Protocol',
+        schemes: ['http'],
+      },
+      {
+        name: 'Mailto Protocol',
+        schemes: ['mailto'],
+      },
+    ],
     directories: {
       buildResources: 'build-resources',
     },
