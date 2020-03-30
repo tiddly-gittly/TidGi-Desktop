@@ -161,7 +161,9 @@ const createAsync = () => {
     title: 'Singlebox',
     titleBarStyle: 'hidden',
     show: false,
-    icon: process.platform === 'linux' ? path.resolve(__dirname, '..', 'icon.png') : null,
+    // manually set dock icon for AppImage
+    // Snap icon is set correct already so no need to intervene
+    icon: process.platform === 'linux' && process.env.SNAP == null ? path.resolve(__dirname, '..', 'icon.png') : undefined,
     autoHideMenuBar: getPreference('hideMenuBar'),
     webPreferences: {
       nodeIntegration: true,

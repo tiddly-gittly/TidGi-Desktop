@@ -35,7 +35,7 @@
     "follow-redirects": "1.11.0",
     "fs-extra": "9.0.0",
     "is-url": "1.2.4",
-    "jimp": "0.9.8",
+    "jimp": "0.10.0",
     "menubar": "8.0.1",
     "node-fetch": "2.6.0",
     "proxy-agent": "3.1.1",
