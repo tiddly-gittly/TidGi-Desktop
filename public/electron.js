@@ -1,10 +1,12 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 const {
   app,
+  dialog,
   ipcMain,
   nativeTheme,
   protocol,
   session,
+  shell,
 } = require('electron');
 const { autoUpdater } = require('electron-updater');
 
@@ -122,7 +124,25 @@ if (!gotTheLock) {
 
     autoUpdater.allowPrerelease = allowPrerelease;
     if (autoUpdater.isUpdaterActive()) {
-      autoUpdater.checkForUpdates();
+      // warn user that updater is not compatible with AppImageLauncher
+      // https://github.com/atomery/webcatalog/issues/634
+      if (process.platform === 'linux' && process.env.DESKTOPINTEGRATION === 'AppImageLauncher') {
+        dialog.showMessageBox(mainWindow.get(), {
+          type: 'error',
+          message: 'The app updater is incompatible with AppImageLauncher. For the updater to work properly, please use other methods to run/install the app.',
+          buttons: ['OK', 'Learn more'],
+          cancelId: 0,
+          defaultId: 0,
+        })
+          .then(({ response }) => {
+            if (response === 1) {
+              shell.openExternal('https://github.com/atomery/webcatalog/issues/634');
+            }
+          })
+          .catch(console.log); // eslint-disable-line
+      } else {
+        autoUpdater.checkForUpdates();
+      }
     }
 
     commonInit();
