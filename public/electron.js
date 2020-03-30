@@ -103,6 +103,32 @@ if (!gotTheLock) {
         });
 
         ipcMain.emit('request-update-pause-notifications-info');
+      })
+      .then(() => {
+        // Fix webview is not resized automatically
+        // when window is maximized on Linux
+        // https://github.com/atomery/webcatalog/issues/561
+
+        // run it here not in mainWindow.createAsync()
+        // because if the `mainWindow` is maximized or minimized
+        // before the workspaces's BrowserView fully loaded
+        // error will occur
+        // see https://github.com/atomery/webcatalog/issues/637
+        if (process.platform === 'linux') {
+          const win = mainWindow.get();
+          const handleMaximize = () => {
+            // getContentSize is not updated immediately
+            // try once after 0.2s (for fast computer), another one after 1s (to be sure)
+            setTimeout(() => {
+              ipcMain.emit('request-realign-active-workspace');
+            }, 200);
+            setTimeout(() => {
+              ipcMain.emit('request-realign-active-workspace');
+            }, 1000);
+          };
+          win.on('maximize', handleMaximize);
+          win.on('unmaximize', handleMaximize);
+        }
       });
   };
 

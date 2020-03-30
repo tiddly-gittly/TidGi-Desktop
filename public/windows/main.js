@@ -208,24 +208,6 @@ const createAsync = () => {
     }
   });
 
-  // Fix webview is not resized automatically
-  // when window is maximized on Linux
-  // https://github.com/atomery/webcatalog/issues/561
-  if (process.platform === 'linux') {
-    const handleMaximize = () => {
-      // getContentSize is not updated immediately
-      // try once after 0.2s (for fast computer), another one after 1s (to be sure)
-      setTimeout(() => {
-        ipcMain.emit('request-realign-active-workspace');
-      }, 200);
-      setTimeout(() => {
-        ipcMain.emit('request-realign-active-workspace');
-      }, 1000);
-    };
-    win.on('maximize', handleMaximize);
-    win.on('unmaximize', handleMaximize);
-  }
-
   return new Promise((resolve) => {
     win.once('ready-to-show', () => {
       resolve();
