@@ -2,7 +2,7 @@
 Even though previous versions of Singlebox are no longer officially supported, you can still download them from [here](https://github.com/atomery/singlebox/releases).
 
 ##### Does Singlebox support Amazon Music, Amazon Prime Video, BBC iPlayer, Hulu, Netflix and Spotify?
-Yes, it does, but only with non-Electron browser engines. We would love to support these apps with Electron. But they rely on a technology call [WidevineDRM](https://en.wikipedia.org/wiki/Widevine) which is not available for Electron because of technical and legal constraints [\[1\]](https://electronjs.org/docs/tutorial/testing-widevine-cdm) [\[2\]](https://www.theregister.co.uk/2019/04/03/googles_widevine_drm/).
+Yes, it does, but only with non-Electron browser engines. We would love to support these apps with Electron. But they rely on a technology called [WidevineDRM](https://en.wikipedia.org/wiki/Widevine) which is not available for Electron because of technical and legal constraints [\[1\]](https://electronjs.org/docs/tutorial/testing-widevine-cdm) [\[2\]](https://www.theregister.co.uk/2019/04/03/googles_widevine_drm/).
 
 ##### Is Singlebox open source?
 Yes, you can find the source code on [GitHub](https://github.com/atomery/singlebox) under the MPL-2 license.
@@ -14,7 +14,7 @@ The trial has no time limit but only lets you install up to 2 apps (with up to 2
 Your license is valid perpetually. It has no time limit, never expires and works with all versions (including major updates).
 
 ##### Can I install Singlebox on multiple computers?
-Yes, you can as long as you're the only person who use the app on these computers.
+Yes, you can as long as you're the only person who uses the app on these computers.
 
 ##### Do you offer refunds?
 Yes, we offer a full refund within 30 days of your purchase.
