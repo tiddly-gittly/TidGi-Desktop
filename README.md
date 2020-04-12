@@ -8,10 +8,18 @@
 
 ---
 
-## Notes
-**Singlebox is open-source but not free.** You can add up to two workspaces for free. [Pay just $9.99](https://webcatalog.onfastspring.com/singlebox/singleboxapp) to add as many as you need.
+## Licensing
+### Usage
+**Singlebox is paid software.** You can add up to two workspaces for free or [pay just $9.99](https://webcatalog.onfastspring.com/singlebox/singleboxapp) to add as many as you need.
 
-Singlebox has permanent licenses, which have no time limit. In other words, the license never expires and works with all versions (including major updates). Also, your license permits you to use the app on all of the devices you own, as long as you are the only one using the app.
+The license:
+- Lets you add unlimited apps and workspaces.
+- Has no time limit and never expires.
+- Works with all versions (including major updates).
+- Permits uses on all of the devices you own (regardless of platforms or operating systems).
+
+### Source Code
+On the other hand, **the source code is freely available** for use, modification and distribution under the permissions, limitations, & conditions listed in the [Mozilla Public License 2.0](LICENSE).
 
 ---
 
