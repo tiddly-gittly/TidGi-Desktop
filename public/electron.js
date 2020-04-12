@@ -43,6 +43,16 @@ if (!gotTheLock) {
   // eslint-disable-next-line
   app.quit();
 } else {
+  // mock app.whenReady
+  const trulyReady = false;
+  const whenTrulyReady = () => {
+    if (trulyReady) return Promise.resolve();
+    return new Promise((resolve) => {
+      ipcMain.once('truly-ready', () => resolve());
+    });
+  };
+
+
   protocol.registerSchemesAsPrivileged([
     { scheme: 'http', privileges: { standard: true } },
     { scheme: 'https', privileges: { standard: true } },
@@ -127,6 +137,10 @@ if (!gotTheLock) {
           win.on('maximize', handleMaximize);
           win.on('unmaximize', handleMaximize);
         }
+      })
+      .then(() => {
+        // trigger whenTrulyReady
+        ipcMain.emit('truly-ready');
       });
   };
 
@@ -195,46 +209,46 @@ if (!gotTheLock) {
   app.on('open-url', (e, url) => {
     e.preventDefault();
 
-    const workspaces = Object.values(getWorkspaces());
+    whenTrulyReady()
+      .then(() => {
+        const workspaces = Object.values(getWorkspaces());
 
-    if (workspaces.length < 1) return;
+        if (workspaces.length < 1) return null;
 
-    // handle mailto:
-    if (url.startsWith('mailto:')) {
-      const mailtoWorkspaces = workspaces
-        .filter((workspace) => extractHostname(workspace.homeUrl) in MAILTO_URLS);
+        // handle mailto:
+        if (url.startsWith('mailto:')) {
+          const mailtoWorkspaces = workspaces
+            .filter((workspace) => extractHostname(workspace.homeUrl) in MAILTO_URLS);
 
-      // pick automically if there's only one choice
-      if (mailtoWorkspaces.length === 0) {
-        ipcMain.emit(
-          'request-show-message-box', null,
-          'None of your workspaces supports composing email messages.',
-          'error',
-        );
-        return;
-      }
+          // pick automically if there's only one choice
+          if (mailtoWorkspaces.length === 0) {
+            ipcMain.emit(
+              'request-show-message-box', null,
+              'None of your workspaces supports composing email messages.',
+              'error',
+            );
+            return null;
+          }
 
-      if (mailtoWorkspaces.length === 1) {
-        const mailtoUrl = MAILTO_URLS[extractHostname(mailtoWorkspaces[0].homeUrl)];
-        const u = mailtoUrl.replace('%s', url);
-        ipcMain.emit('request-load-url', null, u, mailtoWorkspaces[0].id);
-        return;
-      }
+          if (mailtoWorkspaces.length === 1) {
+            const mailtoUrl = MAILTO_URLS[extractHostname(mailtoWorkspaces[0].homeUrl)];
+            const u = mailtoUrl.replace('%s', url);
+            ipcMain.emit('request-load-url', null, u, mailtoWorkspaces[0].id);
+            return null;
+          }
 
-      app.whenReady()
-        .then(() => openUrlWithWindow.show(url));
-      return;
-    }
+          return openUrlWithWindow.show(url);
+        }
 
-    // handle https/http
-    // pick automically if there's only one choice
-    if (workspaces.length === 1) {
-      ipcMain.emit('request-load-url', null, url, workspaces[0].id);
-      return;
-    }
+        // handle https/http
+        // pick automically if there's only one choice
+        if (workspaces.length === 1) {
+          ipcMain.emit('request-load-url', null, url, workspaces[0].id);
+          return null;
+        }
 
-    app.whenReady()
-      .then(() => openUrlWithWindow.show(url));
+        return openUrlWithWindow.show(url);
+      });
   });
 
   app.on('login', (e, webContents, request, authInfo, callback) => {
