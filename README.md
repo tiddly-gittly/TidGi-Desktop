@@ -19,7 +19,7 @@ The license:
 - Permits uses on all of the devices you own (regardless of platforms or operating systems).
 
 ### Source Code
-On the other hand, **the source code is freely available** for use, modification and distribution under the permissions, limitations, & conditions listed in the [Mozilla Public License 2.0](LICENSE).
+On the other hand, **the source code is freely available** for use, modification and distribution under the permissions, limitations and conditions listed in the [Mozilla Public License 2.0](LICENSE).
 
 ---
 

@@ -208,16 +208,15 @@ const createAsync = () => {
     }
   });
 
-  return new Promise((resolve) => {
-    win.once('ready-to-show', () => {
-      resolve();
-      if (!wasOpenedAsHidden) {
-        win.show();
-      }
-    });
-
-    win.loadURL(REACT_PATH);
+  win.once('ready-to-show', () => {
+    if (!wasOpenedAsHidden) {
+      win.show();
+    }
   });
+
+  win.loadURL(REACT_PATH);
+
+  return Promise.resolve();
 };
 
 const show = () => {
