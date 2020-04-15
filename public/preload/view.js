@@ -45,6 +45,16 @@ window.onload = () => {
         if (info.linkURL && info.linkURL.length > 0) {
           menu.append(new MenuItem({ type: 'separator' }));
 
+          menu.append(new MenuItem({
+            label: 'Open Link in New Window',
+            click: () => {
+              ipcRenderer.send('request-set-global-force-new-window', true);
+              window.open(info.linkURL);
+            },
+          }));
+
+          menu.append(new MenuItem({ type: 'separator' }));
+
           const workspaces = ipcRenderer.sendSync('get-workspaces');
 
           const workspaceLst = Object.values(workspaces).sort((a, b) => a.order - b.order);

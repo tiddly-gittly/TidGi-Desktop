@@ -438,6 +438,12 @@ const loadListeners = () => {
   ipcMain.on('get-should-use-dark-colors', (e) => {
     e.returnValue = nativeTheme.shouldUseDarkColors;
   });
+
+  // if global.forceNewWindow = true
+  // the next external link request will be opened in new window
+  ipcMain.on('request-set-global-force-new-window', (e, val) => {
+    global.forceNewWindow = val;
+  });
 };
 
 module.exports = loadListeners;
