@@ -63,18 +63,32 @@ const defaultPreferences = {
   unreadCountBadge: true,
 };
 
-const getPreferences = () => ({ ...defaultPreferences, ...settings.get(`preferences.${v}`) });
+let cachedPreferences = null;
+
+const initCachedPreferences = () => {
+  cachedPreferences = { ...defaultPreferences, ...settings.get(`preferences.${v}`) };
+};
+
+const getPreferences = () => {
+  // store in memory to boost performance
+  if (cachedPreferences == null) {
+    initCachedPreferences();
+  }
+  return cachedPreferences;
+};
 
 const getPreference = (name) => {
-  if (settings.has(`preferences.${v}.${name}`)) {
-    return settings.get(`preferences.${v}.${name}`);
+  // store in memory to boost performance
+  if (cachedPreferences == null) {
+    initCachedPreferences();
   }
-  return defaultPreferences[name];
+  return cachedPreferences[name];
 };
 
 const setPreference = (name, value) => {
-  settings.set(`preferences.${v}.${name}`, value);
   sendToAllWindows('set-preference', name, value);
+
+  Promise.resolve().then(() => settings.set(`preferences.${v}.${name}`, value));
 
   if (name.startsWith('darkReader')) {
     ipcMain.emit('request-reload-views-dark-reader');
@@ -94,6 +108,7 @@ const setPreference = (name, value) => {
 };
 
 const resetPreferences = () => {
+  cachedPreferences = null;
   settings.deleteAll();
 
   const preferences = getPreferences();
