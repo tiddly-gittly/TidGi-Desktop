@@ -60,23 +60,26 @@ window.onload = () => {
           });
         }
 
+        const contents = remote.getCurrentWebContents();
         menu.append(new MenuItem({ type: 'separator' }));
         menu.append(new MenuItem({
           label: 'Back',
+          enabled: contents.canGoBack(),
           click: () => {
-            remote.getCurrentWindow().send('go-back');
+            contents.goBack();
           },
         }));
         menu.append(new MenuItem({
           label: 'Forward',
+          enabled: contents.canGoForward(),
           click: () => {
-            remote.getCurrentWindow().send('go-forward');
+            contents.goForward();
           },
         }));
         menu.append(new MenuItem({
           label: 'Reload',
           click: () => {
-            remote.getCurrentWindow().send('reload');
+            contents.reload();
           },
         }));
 
