@@ -41,6 +41,8 @@ const {
   wakeUpWorkspaceView,
 } = require('../libs/workspaces-views');
 
+const { reloadViewsDarkReader } = require('../libs/views');
+
 const {
   updatePauseNotificationsInfo,
   getPauseNotificationsInfo,
@@ -437,6 +439,10 @@ const loadListeners = () => {
   // Native Theme
   ipcMain.on('get-should-use-dark-colors', (e) => {
     e.returnValue = nativeTheme.shouldUseDarkColors;
+  });
+
+  ipcMain.on('request-reload-views-dark-reader', () => {
+    reloadViewsDarkReader();
   });
 
   // if global.forceNewWindow = true

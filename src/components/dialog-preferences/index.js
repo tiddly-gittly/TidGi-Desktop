@@ -4,6 +4,7 @@ import semver from 'semver';
 
 import Button from '@material-ui/core/Button';
 import Divider from '@material-ui/core/Divider';
+import Grid from '@material-ui/core/Grid';
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
@@ -11,6 +12,7 @@ import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import ListItemText from '@material-ui/core/ListItemText';
 import MenuItem from '@material-ui/core/MenuItem';
 import Paper from '@material-ui/core/Paper';
+import Slider from '@material-ui/core/Slider';
 import Switch from '@material-ui/core/Switch';
 import Typography from '@material-ui/core/Typography';
 
@@ -18,6 +20,7 @@ import BuildIcon from '@material-ui/icons/Build';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import CodeIcon from '@material-ui/icons/Code';
+import ExtensionIcon from '@material-ui/icons/Extension';
 import LanguageIcon from '@material-ui/icons/Language';
 import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 import NotificationsIcon from '@material-ui/icons/Notifications';
@@ -99,6 +102,25 @@ const styles = (theme) => ({
   logo: {
     height: 28,
   },
+  link: {
+    cursor: 'pointer',
+    fontWeight: 500,
+    outline: 'none',
+    '&:hover': {
+      textDecoration: 'underline',
+    },
+  },
+  sliderContainer: {
+    paddingLeft: theme.spacing(5),
+    paddingRight: theme.spacing(5),
+  },
+  sliderTitleContainer: {
+    paddingTop: `${theme.spacing(1.5)}px !important`,
+    width: 100,
+  },
+  sliderMarkLabel: {
+    fontSize: '0.75rem',
+  },
 });
 
 const getThemeString = (theme) => {
@@ -154,6 +176,11 @@ const Preferences = ({
   classes,
   cssCodeInjection,
   customUserAgent,
+  darkReader,
+  darkReaderBrightness,
+  darkReaderContrast,
+  darkReaderGrayscale,
+  darkReaderSepia,
   downloadPath,
   hibernateUnusedWorkspacesAtLaunch,
   hideMenuBar,
@@ -186,6 +213,11 @@ const Preferences = ({
     general: {
       text: 'General',
       Icon: WidgetsIcon,
+      ref: useRef(),
+    },
+    extensions: {
+      text: 'Extensions',
+      Icon: ExtensionIcon,
       ref: useRef(),
     },
     notifications: {
@@ -434,6 +466,203 @@ const Preferences = ({
                 </ListItem>
               </>
             )}
+          </List>
+        </Paper>
+
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.extensions.ref}>
+          Extensions
+        </Typography>
+        <Paper elevation={0} className={classes.paper}>
+          <List disablePadding dense>
+            <ListItem>
+              <ListItemText
+                primary="Block ads &amp; trackers"
+                secondary={(
+                  <>
+                    <span>Powered by </span>
+                    <span
+                      role="link"
+                      tabIndex={0}
+                      className={classes.link}
+                      onClick={() => requestOpenInBrowser('https://cliqz.com/en/whycliqz/adblocking')}
+                      onKeyDown={() => requestOpenInBrowser('https://cliqz.com/en/whycliqz/adblocking')}
+                    >
+                      Cliqz
+                    </span>
+                    <span>.</span>
+                  </>
+                )}
+              />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={blockAds}
+                  onChange={(e) => {
+                    requestSetPreference('blockAds', e.target.checked);
+                    requestShowRequireRestartDialog();
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            <Divider />
+            <ListItem>
+              <ListItemText
+                primary="Create dark themes for any websites on the fly"
+                secondary={(
+                  <>
+                    <span>Powered by </span>
+                    <span
+                      role="link"
+                      tabIndex={0}
+                      className={classes.link}
+                      onClick={() => requestOpenInBrowser('https://darkreader.org/')}
+                      onKeyDown={() => requestOpenInBrowser('https://darkreader.org/')}
+                    >
+                      Dark Reader
+                    </span>
+                    <span>.</span>
+                    <span> Invert bright colors making them high contrast </span>
+                    <span>and easy to read at night.</span>
+                  </>
+                )}
+              />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={themeSource !== 'light' && darkReader}
+                  disabled={themeSource === 'light'}
+                  onChange={(e) => {
+                    requestSetPreference('darkReader', e.target.checked);
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            <ListItem>
+              <ListItemText className={classes.sliderContainer}>
+                <Grid container spacing={2}>
+                  <Grid classes={{ item: classes.sliderTitleContainer }} item>
+                    <Typography id="brightness-slider" variant="body2" gutterBottom={false}>
+                      Brightness
+                    </Typography>
+                  </Grid>
+                  <Grid item xs>
+                    <Slider
+                      classes={{ markLabel: classes.sliderMarkLabel }}
+                      value={darkReaderBrightness - 100}
+                      disabled={themeSource === 'light' || !darkReader}
+                      aria-labelledby="brightness-slider"
+                      valueLabelDisplay="auto"
+                      step={5}
+                      valueLabelFormat={(val) => {
+                        if (val > 0) return `+${val}`;
+                        return val;
+                      }}
+                      marks={[
+                        {
+                          value: darkReaderBrightness - 100,
+                          label: `${darkReaderBrightness > 100 ? '+' : ''}${darkReaderBrightness - 100}`,
+                        },
+                      ]}
+                      min={-50}
+                      max={50}
+                      onChange={(e, value) => {
+                        requestSetPreference('darkReaderBrightness', value + 100);
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+                <Grid container spacing={2}>
+                  <Grid classes={{ item: classes.sliderTitleContainer }} item>
+                    <Typography id="contrast-slider" variant="body2" gutterBottom={false}>
+                      Contrast
+                    </Typography>
+                  </Grid>
+                  <Grid item xs>
+                    <Slider
+                      classes={{ markLabel: classes.sliderMarkLabel }}
+                      value={darkReaderContrast - 100}
+                      disabled={themeSource === 'light' || !darkReader}
+                      aria-labelledby="contrast-slider"
+                      valueLabelDisplay="auto"
+                      step={5}
+                      valueLabelFormat={(val) => {
+                        if (val > 0) return `+${val}`;
+                        return val;
+                      }}
+                      marks={[
+                        {
+                          value: darkReaderContrast - 100,
+                          label: `${darkReaderContrast > 100 ? '+' : ''}${darkReaderContrast - 100}`,
+                        },
+                      ]}
+                      min={-50}
+                      max={50}
+                      onChange={(e, value) => {
+                        requestSetPreference('darkReaderContrast', value + 100);
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+                <Grid container spacing={2}>
+                  <Grid classes={{ item: classes.sliderTitleContainer }} item>
+                    <Typography id="sepia-slider" variant="body2" gutterBottom={false}>
+                      Sepia
+                    </Typography>
+                  </Grid>
+                  <Grid item xs>
+                    <Slider
+                      classes={{ markLabel: classes.sliderMarkLabel }}
+                      value={darkReaderSepia}
+                      disabled={themeSource === 'light' || !darkReader}
+                      aria-labelledby="sepia-slider"
+                      valueLabelDisplay="auto"
+                      step={5}
+                      marks={[
+                        {
+                          value: darkReaderSepia,
+                          label: `${darkReaderSepia}`,
+                        },
+                      ]}
+                      min={0}
+                      max={100}
+                      onChange={(e, value) => {
+                        requestSetPreference('darkReaderSepia', value);
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+                <Grid container spacing={2}>
+                  <Grid classes={{ item: classes.sliderTitleContainer }} item>
+                    <Typography id="grayscale-slider" variant="body2" gutterBottom={false}>
+                      Grayscale
+                    </Typography>
+                  </Grid>
+                  <Grid item xs>
+                    <Slider
+                      classes={{ markLabel: classes.sliderMarkLabel }}
+                      value={darkReaderGrayscale}
+                      disabled={themeSource === 'light' || !darkReader}
+                      aria-labelledby="grayscale-slider"
+                      valueLabelDisplay="auto"
+                      step={5}
+                      marks={[
+                        {
+                          value: darkReaderGrayscale,
+                          label: `${darkReaderGrayscale}`,
+                        },
+                      ]}
+                      min={0}
+                      max={100}
+                      onChange={(e, value) => {
+                        requestSetPreference('darkReaderGrayscale', value);
+                      }}
+                    />
+                  </Grid>
+                </Grid>
+              </ListItemText>
+            </ListItem>
           </List>
         </Paper>
 
@@ -947,6 +1176,11 @@ Preferences.propTypes = {
   classes: PropTypes.object.isRequired,
   cssCodeInjection: PropTypes.string,
   customUserAgent: PropTypes.string,
+  darkReader: PropTypes.bool.isRequired,
+  darkReaderBrightness: PropTypes.number.isRequired,
+  darkReaderContrast: PropTypes.number.isRequired,
+  darkReaderGrayscale: PropTypes.number.isRequired,
+  darkReaderSepia: PropTypes.number.isRequired,
   downloadPath: PropTypes.string.isRequired,
   hibernateUnusedWorkspacesAtLaunch: PropTypes.bool.isRequired,
   hideMenuBar: PropTypes.bool.isRequired,
@@ -982,6 +1216,11 @@ const mapStateToProps = (state) => ({
   blockAds: state.preferences.blockAds,
   cssCodeInjection: state.preferences.cssCodeInjection,
   customUserAgent: state.preferences.customUserAgent,
+  darkReader: state.preferences.darkReader,
+  darkReaderBrightness: state.preferences.darkReaderBrightness,
+  darkReaderContrast: state.preferences.darkReaderContrast,
+  darkReaderGrayscale: state.preferences.darkReaderGrayscale,
+  darkReaderSepia: state.preferences.darkReaderSepia,
   downloadPath: state.preferences.downloadPath,
   hibernateUnusedWorkspacesAtLaunch: state.preferences.hibernateUnusedWorkspacesAtLaunch,
   hideMenuBar: state.preferences.hideMenuBar,

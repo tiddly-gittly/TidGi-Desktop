@@ -27,6 +27,7 @@
   "dependencies": {
     "@cliqz/adblocker-electron": "1.14.1",
     "cheerio": "1.0.0-rc.3",
+    "darkreader": "4.9.2",
     "download": "8.0.0",
     "electron-context-menu": "1.0.0",
     "electron-is-dev": "1.2.0",

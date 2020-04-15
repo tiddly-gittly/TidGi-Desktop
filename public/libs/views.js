@@ -541,10 +541,21 @@ const hibernateView = (id) => {
   }
 };
 
+const reloadViewsDarkReader = () => {
+  Object.keys(views).forEach((id) => {
+    const view = views[id];
+    if (view != null) {
+      view.webContents.send('reload-dark-reader');
+    }
+  });
+};
+
+
 module.exports = {
   addView,
   getView,
   hibernateView,
+  reloadViewsDarkReader,
   removeView,
   setActiveView,
   setViewsAudioPref,

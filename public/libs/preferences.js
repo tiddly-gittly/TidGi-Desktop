@@ -30,6 +30,13 @@ const defaultPreferences = {
   blockAds: false,
   cssCodeInjection: null,
   customUserAgent: null,
+  // default Dark Reader settings from its Chrome extension
+  darkReader: false,
+  darkReaderBrightness: 100,
+  darkReaderContrast: 100,
+  darkReaderGrayscale: 0,
+  darkReaderSepia: 0,
+  // default Dark Reader settings from its Chrome extension
   downloadPath: getDefaultDownloadsPath(),
   hibernateUnusedWorkspacesAtLaunch: false,
   hideMenuBar: false,
@@ -68,6 +75,10 @@ const getPreference = (name) => {
 const setPreference = (name, value) => {
   settings.set(`preferences.${v}.${name}`, value);
   sendToAllWindows('set-preference', name, value);
+
+  if (name.startsWith('darkReader')) {
+    ipcMain.emit('request-reload-views-dark-reader');
+  }
 
   if (name === 'registered') {
     ipcMain.emit('create-menu');

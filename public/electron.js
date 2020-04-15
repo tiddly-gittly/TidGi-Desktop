@@ -17,7 +17,7 @@ const openUrlWithWindow = require('./windows/open-url-with');
 const createMenu = require('./libs/create-menu');
 const extractHostname = require('./libs/extract-hostname');
 const sendToAllWindows = require('./libs/send-to-all-windows');
-const { addView } = require('./libs/views');
+const { addView, reloadViewsDarkReader } = require('./libs/views');
 const { getPreferences } = require('./libs/preferences');
 const { getWorkspaces, setWorkspace } = require('./libs/workspaces');
 
@@ -92,6 +92,7 @@ if (!gotTheLock) {
 
         nativeTheme.addListener('updated', () => {
           sendToAllWindows('native-theme-updated');
+          reloadViewsDarkReader();
         });
 
         const workspaceObjects = getWorkspaces();

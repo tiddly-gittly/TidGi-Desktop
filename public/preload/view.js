@@ -4,13 +4,44 @@ const {
   webFrame,
 } = require('electron');
 
+const {
+  enable: enableDarkMode,
+  disable: disableDarkMode,
+} = require('darkreader');
+
 const ContextMenuBuilder = require('../libs/context-menu-builder');
 
 const { MenuItem } = remote;
 
 window.global = {};
 
-window.onload = () => {
+document.addEventListener('DOMContentLoaded', () => {
+  const loadDarkReader = () => {
+    const shouldUseDarkColor = ipcRenderer.sendSync('get-should-use-dark-colors');
+    const darkReader = ipcRenderer.sendSync('get-preference', 'darkReader');
+    if (shouldUseDarkColor && darkReader) {
+      const {
+        darkReaderBrightness,
+        darkReaderContrast,
+        darkReaderGrayscale,
+        darkReaderSepia,
+      } = ipcRenderer.sendSync('get-preferences');
+      enableDarkMode({
+        brightness: darkReaderBrightness,
+        contrast: darkReaderContrast,
+        grayscale: darkReaderGrayscale,
+        sepia: darkReaderSepia,
+      });
+    } else {
+      disableDarkMode();
+    }
+  };
+
+  loadDarkReader();
+  ipcRenderer.on('reload-dark-reader', () => {
+    loadDarkReader();
+  });
+
   const jsCodeInjection = ipcRenderer.sendSync('get-preference', 'jsCodeInjection');
   const cssCodeInjection = ipcRenderer.sendSync('get-preference', 'cssCodeInjection');
 
@@ -146,7 +177,7 @@ window.onload = () => {
       }
     });
   }
-};
+});
 
 // Communicate with the frame
 // Have to use this weird trick because contextIsolation: true
