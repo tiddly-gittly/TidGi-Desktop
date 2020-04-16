@@ -139,6 +139,14 @@ const addView = (browserWindow, workspace) => {
       preload: path.join(__dirname, '..', 'preload', 'view.js'),
     },
   });
+  // background needs to explictly set
+  // if not, by default, the background of BrowserView is transparent
+  // which would break the CSS of certain websites
+  // even with dark mode, all major browsers
+  // always use #FFF as default page background
+  // https://github.com/atomery/webcatalog/issues/723
+  // https://github.com/electron/electron/issues/16212
+  view.setBackgroundColor('#FFF');
 
   let adjustUserAgentByUrl = () => false;
   if (customUserAgent) {

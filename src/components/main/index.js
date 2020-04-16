@@ -2,7 +2,6 @@ import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 
-import CircularProgress from '@material-ui/core/CircularProgress';
 import IconButton from '@material-ui/core/IconButton';
 import Typography from '@material-ui/core/Typography';
 
@@ -276,7 +275,11 @@ const Main = ({
                 </Typography>
               </div>
             )}
-            {Object.keys(workspaces).length > 0 && isLoading && <CircularProgress />}
+            {Object.keys(workspaces).length > 0 && isLoading && (
+              <Typography align="center" variant="body2">
+                Loading...
+              </Typography>
+            )}
             {Object.keys(workspaces).length < 1 && (
               <div>
                 {sidebar ? (
