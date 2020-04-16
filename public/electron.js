@@ -62,32 +62,33 @@ if (!gotTheLock) {
   loadListeners();
 
   const commonInit = () => {
-    const {
-      hibernateUnusedWorkspacesAtLaunch,
-      proxyBypassRules,
-      proxyPacScript,
-      proxyRules,
-      proxyType,
-      themeSource,
-    } = getPreferences();
-
-    // configure proxy for default session
-    if (proxyType === 'rules') {
-      session.defaultSession.setProxy({
-        proxyRules,
-        proxyBypassRules,
-      });
-    } else if (proxyType === 'pacScript') {
-      session.defaultSession.setProxy({
-        proxyPacScript,
-        proxyBypassRules,
-      });
-    }
-
-    nativeTheme.themeSource = themeSource;
-
-    mainWindow.createAsync()
+    app.whenReady()
+      .then(() => mainWindow.createAsync())
       .then(() => {
+        const {
+          hibernateUnusedWorkspacesAtLaunch,
+          proxyBypassRules,
+          proxyPacScript,
+          proxyRules,
+          proxyType,
+          themeSource,
+        } = getPreferences();
+
+        // configure proxy for default session
+        if (proxyType === 'rules') {
+          session.defaultSession.setProxy({
+            proxyRules,
+            proxyBypassRules,
+          });
+        } else if (proxyType === 'pacScript') {
+          session.defaultSession.setProxy({
+            proxyPacScript,
+            proxyBypassRules,
+          });
+        }
+
+        nativeTheme.themeSource = themeSource;
+
         createMenu();
 
         nativeTheme.addListener('updated', () => {
