@@ -87,6 +87,7 @@ const getPreference = (name) => {
 
 const setPreference = (name, value) => {
   sendToAllWindows('set-preference', name, value);
+  cachedPreferences[name] = value;
 
   Promise.resolve().then(() => settings.set(`preferences.${v}.${name}`, value));
 
