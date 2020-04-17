@@ -2,12 +2,13 @@ import { setPreference } from '../state/preferences/actions';
 import { setSystemPreference } from '../state/system-preferences/actions';
 import { setWorkspace } from '../state/workspaces/actions';
 import {
-  updateShouldUseDarkColors,
   updateAddressBarInfo,
   updateCanGoBack,
   updateCanGoForward,
   updateDidFailLoad,
+  updateIsFullScreen,
   updateIsLoading,
+  updateShouldUseDarkColors,
   updateTitle,
 } from '../state/general/actions';
 import {
@@ -97,6 +98,10 @@ const loadListeners = (store) => {
 
   ipcRenderer.on('native-theme-updated', () => {
     store.dispatch(updateShouldUseDarkColors(getShouldUseDarkColors()));
+  });
+
+  ipcRenderer.on('is-fullscreen-updated', (e, val) => {
+    store.dispatch(updateIsFullScreen(val));
   });
 };
 
