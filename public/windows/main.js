@@ -21,7 +21,7 @@ const get = () => {
   return win;
 };
 
-const createAsync = () => {
+const createAsync = () => new Promise((resolve) => {
   attachToMenubar = getPreference('attachToMenubar');
   if (attachToMenubar) {
     const menubarWindowState = windowStateKeeper({
@@ -50,96 +50,90 @@ const createAsync = () => {
       },
     });
 
-    return new Promise((resolve, reject) => {
-      try {
-        mb.on('after-create-window', () => {
-          menubarWindowState.manage(mb.window);
+    mb.on('after-create-window', () => {
+      menubarWindowState.manage(mb.window);
 
-          mb.window.on('focus', () => {
-            const view = mb.window.getBrowserView();
-            if (view && view.webContents) {
-              view.webContents.focus();
-            }
-          });
-        });
+      mb.window.on('focus', () => {
+        const view = mb.window.getBrowserView();
+        if (view && view.webContents) {
+          view.webContents.focus();
+        }
+      });
+    });
 
-        mb.on('ready', () => {
-          mb.tray.on('right-click', () => {
-            const registered = getPreference('registered');
-            const updaterEnabled = process.env.SNAP == null
-              && !process.mas && !process.windowsStore;
+    mb.on('ready', () => {
+      mb.tray.on('right-click', () => {
+        const registered = getPreference('registered');
+        const updaterEnabled = process.env.SNAP == null
+          && !process.mas && !process.windowsStore;
 
-            const updaterMenuItem = {
-              label: 'Check for Updates...',
-              click: () => ipcMain.emit('request-check-for-updates'),
-              visible: updaterEnabled,
-            };
-            if (global.updaterObj && global.updaterObj.status === 'update-downloaded') {
-              updaterMenuItem.label = 'Restart to Apply Updates...';
-            } else if (global.updaterObj && global.updaterObj.status === 'update-available') {
-              updaterMenuItem.label = 'Downloading Updates...';
-              updaterMenuItem.enabled = false;
-            } else if (global.updaterObj && global.updaterObj.status === 'download-progress') {
-              const { transferred, total, bytesPerSecond } = global.updaterObj.info;
-              updaterMenuItem.label = `Downloading Updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
-              updaterMenuItem.enabled = false;
-            } else if (global.updaterObj && global.updaterObj.status === 'checking-for-update') {
-              updaterMenuItem.label = 'Checking for Updates...';
-              updaterMenuItem.enabled = false;
-            }
+        const updaterMenuItem = {
+          label: 'Check for Updates...',
+          click: () => ipcMain.emit('request-check-for-updates'),
+          visible: updaterEnabled,
+        };
+        if (global.updaterObj && global.updaterObj.status === 'update-downloaded') {
+          updaterMenuItem.label = 'Restart to Apply Updates...';
+        } else if (global.updaterObj && global.updaterObj.status === 'update-available') {
+          updaterMenuItem.label = 'Downloading Updates...';
+          updaterMenuItem.enabled = false;
+        } else if (global.updaterObj && global.updaterObj.status === 'download-progress') {
+          const { transferred, total, bytesPerSecond } = global.updaterObj.info;
+          updaterMenuItem.label = `Downloading Updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
+          updaterMenuItem.enabled = false;
+        } else if (global.updaterObj && global.updaterObj.status === 'checking-for-update') {
+          updaterMenuItem.label = 'Checking for Updates...';
+          updaterMenuItem.enabled = false;
+        }
 
-            const contextMenu = Menu.buildFromTemplate([
-              {
-                label: 'Open Singlebox',
-                click: () => mb.showWindow(),
-              },
-              {
-                type: 'separator',
-              },
-              {
-                label: 'About Singlebox',
-                click: () => ipcMain.emit('request-show-about-window'),
-              },
-              { type: 'separator' },
-              {
-                label: registered ? 'Registered' : 'Registration...',
-                enabled: !registered,
-                click: registered ? null : () => ipcMain.emit('request-show-license-registration-window'),
-              },
-              { type: 'separator' },
-              updaterMenuItem,
-              { type: 'separator' },
-              {
-                label: 'Preferences...',
-                click: () => ipcMain.emit('request-show-preferences-window'),
-              },
-              { type: 'separator' },
-              {
-                label: 'Notifications...',
-                click: () => ipcMain.emit('request-show-notifications-window'),
-              },
-              { type: 'separator' },
-              {
-                label: 'Clear Browsing Data...',
-                click: () => ipcMain.emit('request-clear-browsing-data'),
-              },
-              { type: 'separator' },
-              {
-                role: 'quit',
-                click: () => {
-                  mb.app.quit();
-                },
-              },
-            ]);
+        const contextMenu = Menu.buildFromTemplate([
+          {
+            label: 'Open Singlebox',
+            click: () => mb.showWindow(),
+          },
+          {
+            type: 'separator',
+          },
+          {
+            label: 'About Singlebox',
+            click: () => ipcMain.emit('request-show-about-window'),
+          },
+          { type: 'separator' },
+          {
+            label: registered ? 'Registered' : 'Registration...',
+            enabled: !registered,
+            click: registered ? null : () => ipcMain.emit('request-show-license-registration-window'),
+          },
+          { type: 'separator' },
+          updaterMenuItem,
+          { type: 'separator' },
+          {
+            label: 'Preferences...',
+            click: () => ipcMain.emit('request-show-preferences-window'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Notifications...',
+            click: () => ipcMain.emit('request-show-notifications-window'),
+          },
+          { type: 'separator' },
+          {
+            label: 'Clear Browsing Data...',
+            click: () => ipcMain.emit('request-clear-browsing-data'),
+          },
+          { type: 'separator' },
+          {
+            role: 'quit',
+            click: () => {
+              mb.app.quit();
+            },
+          },
+        ]);
 
-            mb.tray.popUpContextMenu(contextMenu);
-          });
+        mb.tray.popUpContextMenu(contextMenu);
+      });
 
-          resolve();
-        });
-      } catch (e) {
-        reject(e);
-      }
+      resolve();
     });
   }
 
@@ -217,10 +211,14 @@ const createAsync = () => {
   win.on('enter-full-screen', () => win.webContents.send('is-fullscreen-updated', true));
   win.on('leave-full-screen', () => win.webContents.send('is-fullscreen-updated', false));
 
-  win.loadURL(REACT_PATH);
+  // ensure redux is loaded first
+  // if not, redux might not be able catch changes sent from ipcMain
+  win.webContents.once('did-stop-loading', () => {
+    resolve();
+  });
 
-  return Promise.resolve();
-};
+  win.loadURL(REACT_PATH);
+});
 
 const show = () => {
   if (attachToMenubar) {

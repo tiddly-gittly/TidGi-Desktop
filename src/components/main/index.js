@@ -131,6 +131,9 @@ const styles = (theme) => ({
     display: 'flex',
     flexDirection: 'column',
   },
+  loading: {
+    color: theme.palette.text.disabled,
+  },
 });
 
 const SortableItem = sortableElement(({ value }) => {
@@ -276,7 +279,7 @@ const Main = ({
               </div>
             )}
             {Object.keys(workspaces).length > 0 && isLoading && (
-              <Typography align="center" variant="body2">
+              <Typography align="center" variant="body2" className={classes.loading}>
                 Loading...
               </Typography>
             )}

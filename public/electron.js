@@ -44,11 +44,11 @@ if (!gotTheLock) {
   app.quit();
 } else {
   // mock app.whenReady
-  const trulyReady = false;
-  const whenTrulyReady = () => {
-    if (trulyReady) return Promise.resolve();
+  const fullyReady = false;
+  const whenFullyReady = () => {
+    if (fullyReady) return Promise.resolve();
     return new Promise((resolve) => {
-      ipcMain.once('truly-ready', () => resolve());
+      ipcMain.once('fully-ready', () => resolve());
     });
   };
 
@@ -141,8 +141,8 @@ if (!gotTheLock) {
         }
       })
       .then(() => {
-        // trigger whenTrulyReady
-        ipcMain.emit('truly-ready');
+        // trigger whenFullyReady
+        ipcMain.emit('fully-ready');
       });
   };
 
@@ -211,7 +211,7 @@ if (!gotTheLock) {
   app.on('open-url', (e, url) => {
     e.preventDefault();
 
-    whenTrulyReady()
+    whenFullyReady()
       .then(() => {
         const workspaces = Object.values(getWorkspaces());
 
