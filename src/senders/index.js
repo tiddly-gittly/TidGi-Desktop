@@ -65,3 +65,6 @@ export const requestValidateAuthIdentity = (windowId, username, password) => ipc
 
 // Native Theme
 export const getShouldUseDarkColors = () => ipcRenderer.sendSync('get-should-use-dark-colors');
+
+// Online Status
+export const signalOnlineStatusChanged = (online) => ipcRenderer.send('online-status-changed', online);

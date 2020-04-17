@@ -41,7 +41,10 @@ const {
   wakeUpWorkspaceView,
 } = require('../libs/workspaces-views');
 
-const { reloadViewsDarkReader } = require('../libs/views');
+const {
+  reloadViewsDarkReader,
+  reloadViewsWebContentsIfDidFailLoad,
+} = require('../libs/views');
 
 const {
   updatePauseNotificationsInfo,
@@ -449,6 +452,13 @@ const loadListeners = () => {
   // the next external link request will be opened in new window
   ipcMain.on('request-set-global-force-new-window', (e, val) => {
     global.forceNewWindow = val;
+  });
+
+  // https://www.electronjs.org/docs/tutorial/online-offline-events
+  ipcMain.on('online-status-changed', (e, online) => {
+    if (online) {
+      reloadViewsWebContentsIfDidFailLoad();
+    }
   });
 };
 

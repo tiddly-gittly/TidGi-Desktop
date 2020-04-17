@@ -559,12 +559,23 @@ const reloadViewsDarkReader = () => {
   });
 };
 
+const reloadViewsWebContentsIfDidFailLoad = () => {
+  Object.keys(didFailLoad).forEach((id) => {
+    if (!didFailLoad[id]) return;
+
+    const view = views[id];
+    if (view != null) {
+      view.webContents.reload();
+    }
+  });
+};
 
 module.exports = {
   addView,
   getView,
   hibernateView,
   reloadViewsDarkReader,
+  reloadViewsWebContentsIfDidFailLoad,
   removeView,
   setActiveView,
   setViewsAudioPref,
