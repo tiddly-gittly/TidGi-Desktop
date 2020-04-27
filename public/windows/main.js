@@ -135,6 +135,7 @@ const createAsync = () => new Promise((resolve) => {
 
       resolve();
     });
+    return;
   }
 
 
