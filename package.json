@@ -16,11 +16,7 @@
     "electron-dev": "concurrently \"cross-env BROWSER=none yarn start\" \"wait-on http://localhost:3000 && electron .\"",
     "dist": "yarn build && node dist.js",
     "dist-dev": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false yarn dist",
-    "test": "mocha ./tests",
-    "catalog:install": "cd catalog && yarn install && pip3 install --user -r requirements.txt",
-    "catalog:test": "cd catalog && yarn test",
-    "catalog:pack": "cd catalog && yarn build:pack",
-    "catalog:publish": "cd catalog && yarn build:publish"
+    "test": "mocha ./tests"
   },
   "repository": "https://github.com/atomery/singlebox",
   "author": "Quang Lam <quang.lam2807@gmail.com>",

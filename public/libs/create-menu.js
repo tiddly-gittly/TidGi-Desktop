@@ -258,7 +258,7 @@ function createMenu() {
         },
         {
           label: 'Submit New App to Catalog...',
-          click: () => shell.openExternal('https://github.com/atomery/singlebox/issues/new?template=app.md&title=app%3A+'),
+          click: () => shell.openExternal('https://github.com/atomery/catalog/issues'),
         },
         {
           label: 'Learn More...',

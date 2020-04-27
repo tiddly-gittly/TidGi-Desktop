@@ -32,7 +32,6 @@ const opts = {
     files: [
       '!tests/**/*',
       '!docs/**/*',
-      '!catalog/**/*',
       '!template/**/*',
     ],
     protocols: [

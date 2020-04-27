@@ -56,7 +56,7 @@ const SubmitAppCard = (props) => {
 
   return (
     <Grid item xs={12}>
-      <Paper elevation={0} className={classes.card} onClick={() => requestOpenInBrowser('https://github.com/atomery/singlebox/issues/new?template=app.md&title=app%3A+')}>
+      <Paper elevation={0} className={classes.card} onClick={() => requestOpenInBrowser('https://github.com/atomery/catalog/issues')}>
         <div>
           <AddCircleIcon className={classes.paperIcon} />
         </div>
