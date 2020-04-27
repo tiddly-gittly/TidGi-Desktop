@@ -292,7 +292,6 @@ const addView = (browserWindow, workspace) => {
       e.preventDefault();
       const newOptions = {
         ...options,
-        parent: browserWindow,
       };
       const popupWin = new BrowserWindow(newOptions);
       popupWin.webContents.on('new-window', handleNewWindow);
@@ -351,7 +350,6 @@ const addView = (browserWindow, workspace) => {
       const newOptions = {
         ...options,
         show: false,
-        parent: browserWindow,
       };
       const popupWin = new BrowserWindow(newOptions);
       popupWin.webContents.on('new-window', handleNewWindow);
