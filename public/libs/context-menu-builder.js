@@ -37,7 +37,7 @@ const matchesWord = (string) => {
 const contextMenuStringTable = {
   copyMail: () => 'Copy Email Address',
   copyLinkUrl: () => 'Copy Link',
-  openLinkUrl: () => 'Open Link',
+  openLinkUrl: () => 'Open Link in Browser',
   copyImageUrl: () => 'Copy Image URL',
   copyImage: () => 'Copy Image',
   addToDictionary: () => 'Add to Dictionary',

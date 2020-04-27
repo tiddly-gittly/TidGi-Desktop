@@ -6,6 +6,8 @@ const {
   protocol,
   session,
 } = require('electron');
+const fs = require('fs');
+const settings = require('electron-settings');
 const { autoUpdater } = require('electron-updater');
 
 const loadListeners = require('./listeners');
@@ -18,7 +20,7 @@ const createMenu = require('./libs/create-menu');
 const extractHostname = require('./libs/extract-hostname');
 const sendToAllWindows = require('./libs/send-to-all-windows');
 const { addView, reloadViewsDarkReader } = require('./libs/views');
-const { getPreferences } = require('./libs/preferences');
+const { getPreference, getPreferences } = require('./libs/preferences');
 const { getWorkspaces, setWorkspace } = require('./libs/workspaces');
 
 const MAILTO_URLS = require('./constants/mailto-urls');
@@ -43,6 +45,18 @@ if (!gotTheLock) {
   // eslint-disable-next-line
   app.quit();
 } else {
+  // make sure "Settings" file exists
+  // if not, ignore this chunk of code
+  // as using electron-settings before app.on('ready') and "Settings" is created
+  // would return error
+  // https://github.com/nathanbuchar/electron-settings/issues/111
+  if (fs.existsSync(settings.file())) {
+    const useHardwareAcceleration = getPreference('useHardwareAcceleration');
+    if (!useHardwareAcceleration) {
+      app.disableHardwareAcceleration();
+    }
+  }
+
   // mock app.whenReady
   const fullyReady = false;
   const whenFullyReady = () => {

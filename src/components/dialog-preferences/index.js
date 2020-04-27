@@ -207,6 +207,7 @@ const Preferences = ({
   unreadCountBadge,
   updaterInfo,
   updaterStatus,
+  useHardwareAcceleration,
 }) => {
   const { remote } = window.require('electron');
   const sections = {
@@ -511,7 +512,7 @@ const Preferences = ({
             <Divider />
             <ListItem>
               <ListItemText
-                primary="Create dark themes for any websites on the fly"
+                primary="Create dark themes for web apps on the fly"
                 secondary={(
                   <>
                     <span>Powered by </span>
@@ -1051,6 +1052,23 @@ const Preferences = ({
           <List dense disablePadding>
             <ListItem>
               <ListItemText
+                primary="Use hardware acceleration when available"
+              />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={useHardwareAcceleration}
+                  onChange={(e) => {
+                    requestSetPreference('useHardwareAcceleration', e.target.checked);
+                    requestShowRequireRestartDialog();
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            <Divider />
+            <ListItem>
+              <ListItemText
                 primary="Hibernate unused workspaces at app launch"
                 secondary="Hibernate all workspaces at launch, except the last active workspace."
               />
@@ -1213,6 +1231,7 @@ Preferences.propTypes = {
   unreadCountBadge: PropTypes.bool.isRequired,
   updaterInfo: PropTypes.object,
   updaterStatus: PropTypes.string,
+  useHardwareAcceleration: PropTypes.bool.isRequired,
 };
 
 const mapStateToProps = (state) => ({
@@ -1251,6 +1270,7 @@ const mapStateToProps = (state) => ({
   unreadCountBadge: state.preferences.unreadCountBadge,
   updaterInfo: state.updater.info,
   updaterStatus: state.updater.status,
+  useHardwareAcceleration: state.preferences.useHardwareAcceleration,
 });
 
 const actionCreators = {

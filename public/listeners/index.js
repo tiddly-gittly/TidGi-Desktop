@@ -186,7 +186,7 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-show-require-restart-dialog', () => {
-    dialog.showMessageBox({
+    dialog.showMessageBox(preferencesWindow.get() || mainWindow.get(), {
       type: 'question',
       buttons: ['Restart Now', 'Later'],
       message: 'You need to restart the app for this change to take affect.',
@@ -277,7 +277,7 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-remove-workspace', (e, id) => {
-    dialog.showMessageBox(preferencesWindow.get() || mainWindow.get(), {
+    dialog.showMessageBox(mainWindow.get(), {
       type: 'question',
       buttons: ['Remove Workspace', 'Cancel'],
       message: 'Are you sure? All browsing data of this workspace will be wiped. This action cannot be undone.',
