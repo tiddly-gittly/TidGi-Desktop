@@ -108,7 +108,10 @@ const loadURL = (url, id) => {
   }
 
   const v = mainWindow.get().getBrowserView();
-  if (v) v.webContents.loadURL(url);
+  if (v) {
+    v.webContents.focus();
+    v.webContents.loadURL(url);
+  }
 };
 
 module.exports = {

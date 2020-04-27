@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 
@@ -99,66 +99,81 @@ const NavigationBar = ({
   hasWorkspaces,
   onUpdateAddressBarInfo,
   shouldPauseNotifications,
-}) => (
-  <div className={classNames(classes.root, hasTrafficLights && classes.rootWithTrafficLights)}>
-    <div className={classes.left}>
-      <IconButton aria-label="Go back" className={classes.iconButton} disabled={!hasWorkspaces || !canGoBack} onClick={requestGoBack}>
-        <ArrowBackIcon className={classes.icon} />
-      </IconButton>
-      <IconButton aria-label="Go forward" className={classes.iconButton} disabled={!hasWorkspaces || !canGoForward} onClick={requestGoForward}>
-        <ArrowForwardIcon className={classes.icon} />
-      </IconButton>
-      <IconButton aria-label="Reload" className={classes.iconButton} onClick={requestReload} disabled={!hasWorkspaces}>
-        <RefreshIcon className={classes.icon} />
-      </IconButton>
-      <IconButton aria-label="Go home" className={classes.iconButton} onClick={requestGoHome} disabled={!hasWorkspaces}>
-        <HomeIcon className={classes.icon} />
-      </IconButton>
-    </div>
-    <div className={classes.center}>
-      <InputBase
-        classes={{ root: classes.addressBarRoot, input: classes.addressBarInput }}
-        placeholder="Search Google or type a URL"
-        type="text"
-        value={hasWorkspaces ? address : ''}
-        disabled={!hasWorkspaces}
-        endAdornment={addressEdited && address && hasWorkspaces && (
-          <IconButton
-            aria-label="Go"
-            className={classes.goButton}
-            onClick={() => {
+}) => {
+  const [addressInputClicked, setAddressInputClicked] = useState(false);
+
+  return (
+    <div className={classNames(classes.root, hasTrafficLights && classes.rootWithTrafficLights)}>
+      <div className={classes.left}>
+        <IconButton aria-label="Go back" className={classes.iconButton} disabled={!hasWorkspaces || !canGoBack} onClick={requestGoBack}>
+          <ArrowBackIcon className={classes.icon} />
+        </IconButton>
+        <IconButton aria-label="Go forward" className={classes.iconButton} disabled={!hasWorkspaces || !canGoForward} onClick={requestGoForward}>
+          <ArrowForwardIcon className={classes.icon} />
+        </IconButton>
+        <IconButton aria-label="Reload" className={classes.iconButton} onClick={requestReload} disabled={!hasWorkspaces}>
+          <RefreshIcon className={classes.icon} />
+        </IconButton>
+        <IconButton aria-label="Go home" className={classes.iconButton} onClick={requestGoHome} disabled={!hasWorkspaces}>
+          <HomeIcon className={classes.icon} />
+        </IconButton>
+      </div>
+      <div className={classes.center}>
+        <InputBase
+          classes={{ root: classes.addressBarRoot, input: classes.addressBarInput }}
+          placeholder="Search Google or type a URL"
+          type="text"
+          value={hasWorkspaces ? address : ''}
+          disabled={!hasWorkspaces}
+          endAdornment={addressEdited && address && hasWorkspaces && (
+            <IconButton
+              aria-label="Go"
+              className={classes.goButton}
+              onClick={() => {
+                const processedUrl = processUrl(address);
+                onUpdateAddressBarInfo(processedUrl, false);
+                requestLoadUrl(processedUrl);
+              }}
+            >
+              <ArrowForwardIcon fontSize="small" />
+            </IconButton>
+          )}
+          onChange={(e) => {
+            onUpdateAddressBarInfo(e.target.value, true);
+          }}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.target.blur();
               const processedUrl = processUrl(address);
               onUpdateAddressBarInfo(processedUrl, false);
               requestLoadUrl(processedUrl);
-            }}
-          >
-            <ArrowForwardIcon fontSize="small" />
-          </IconButton>
-        )}
-        onChange={(e) => {
-          onUpdateAddressBarInfo(e.target.value, true);
-        }}
-        onKeyDown={(e) => {
-          if (e.key === 'Enter') {
-            const processedUrl = processUrl(address);
-            onUpdateAddressBarInfo(processedUrl, false);
-            requestLoadUrl(processedUrl);
-          }
-        }}
-      />
+            }
+          }}
+          // https://stackoverflow.com/a/16659291
+          onClick={(e) => {
+            if (!addressInputClicked) {
+              e.target.select();
+              setAddressInputClicked(true);
+            }
+          }}
+          onBlur={() => {
+            setAddressInputClicked(false);
+          }}
+        />
+      </div>
+      <div>
+        <IconButton aria-label="Notifications" onClick={requestShowNotificationsWindow} className={classes.iconButton}>
+          {shouldPauseNotifications
+            ? <NotificationsPausedIcon className={classes.icon} />
+            : <NotificationsIcon className={classes.icon} />}
+        </IconButton>
+        <IconButton aria-label="Preferences" className={classes.iconButton} onClick={() => requestShowPreferencesWindow()}>
+          <SettingsIcon className={classes.icon} />
+        </IconButton>
+      </div>
     </div>
-    <div>
-      <IconButton aria-label="Notifications" onClick={requestShowNotificationsWindow} className={classes.iconButton}>
-        {shouldPauseNotifications
-          ? <NotificationsPausedIcon className={classes.icon} />
-          : <NotificationsIcon className={classes.icon} />}
-      </IconButton>
-      <IconButton aria-label="Preferences" className={classes.iconButton} onClick={() => requestShowPreferencesWindow()}>
-        <SettingsIcon className={classes.icon} />
-      </IconButton>
-    </div>
-  </div>
-);
+  );
+};
 
 NavigationBar.defaultProps = {
   address: '',
