@@ -160,6 +160,7 @@ const SortableItem = sortableElement(({ value }) => {
       picturePath={picturePath}
       transparentBackground={transparentBackground}
       order={index}
+      hibernated={hibernated}
       onClick={() => requestSetActiveWorkspace(id)}
       onContextMenu={(e) => {
         e.preventDefault();
