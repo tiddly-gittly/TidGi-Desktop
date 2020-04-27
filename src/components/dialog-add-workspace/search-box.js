@@ -64,62 +64,66 @@ const styles = (theme) => ({
   },
 });
 
-class SearchBox extends React.Component {
-  render() {
-    const {
-      classes,
-      onResetThenGetHits,
-      onUpdateQuery,
-      query,
-    } = this.props;
+const SearchBox = ({
+  classes,
+  onResetThenGetHits,
+  onUpdateQuery,
+  query,
+}) => {
+  const clearSearchAction = query.length > 0 && (
+    <>
+      <IconButton
+        color="default"
+        aria-label="Clear"
+        onClick={() => onUpdateQuery('')}
+      >
+        <CloseIcon fontSize="small" className={classes.icon} />
+      </IconButton>
+      <IconButton
+        color="default"
+        aria-label="Clear"
+        onClick={onResetThenGetHits}
+      >
+        <KeyboardReturnIcon fontSize="small" className={classes.icon} />
+      </IconButton>
+    </>
+  );
 
-    const clearSearchAction = query.length > 0 && (
-      <>
-        <IconButton
-          color="default"
-          aria-label="Clear"
-          onClick={() => onUpdateQuery('')}
+  return (
+    <Paper elevation={1} className={classes.toolbarSearchContainer}>
+      <div className={classes.toolbarSectionSearch}>
+        <Typography
+          className={classes.searchBarText}
+          color="inherit"
+          variant="body1"
         >
-          <CloseIcon fontSize="small" className={classes.icon} />
-        </IconButton>
-        <IconButton
-          color="default"
-          aria-label="Clear"
-          onClick={onResetThenGetHits}
-        >
-          <KeyboardReturnIcon fontSize="small" className={classes.icon} />
-        </IconButton>
-      </>
-    );
-
-    return (
-      <Paper elevation={1} className={classes.toolbarSearchContainer}>
-        <div className={classes.toolbarSectionSearch}>
-          <Typography
-            className={classes.searchBarText}
-            color="inherit"
-            variant="body1"
-          >
-            <input
-              className={classes.input}
-              onChange={(e) => onUpdateQuery(e.target.value)}
-              onInput={(e) => onUpdateQuery(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && query.length > 0) {
-                  onResetThenGetHits();
-                }
-              }}
-              placeholder="Search apps..."
-              ref={(inputBox) => { this.inputBox = inputBox; }}
-              value={query}
-            />
-          </Typography>
-          {clearSearchAction}
-        </div>
-      </Paper>
-    );
-  }
-}
+          <input
+            className={classes.input}
+            onChange={(e) => onUpdateQuery(e.target.value)}
+            onInput={(e) => onUpdateQuery(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && query.length > 0) {
+                onResetThenGetHits();
+              } else if (e.key === 'Escape') {
+                e.target.blur();
+                onUpdateQuery('');
+              }
+            }}
+            placeholder="Search apps..."
+            value={query}
+            onFocus={() => {
+              window.preventClosingWindow = true;
+            }}
+            onBlur={() => {
+              window.preventClosingWindow = false;
+            }}
+          />
+        </Typography>
+        {clearSearchAction}
+      </div>
+    </Paper>
+  );
+};
 
 SearchBox.defaultProps = {
   query: '',
