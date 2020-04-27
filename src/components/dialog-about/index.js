@@ -29,7 +29,7 @@ const styles = (theme) => ({
     marginBottom: theme.spacing(2),
   },
   versionSmall: {
-    fontSize: 13,
+    fontSize: '0.8rem',
   },
   goToTheWebsiteButton: {
     marginRight: theme.spacing(1),
@@ -51,6 +51,12 @@ const About = (props) => {
     classes,
   } = props;
 
+  const versions = [
+    { name: 'Electron Version', version: window.process.versions.electron },
+    { name: 'Node Version', version: window.process.versions.node },
+    { name: 'Chromium Version', version: window.process.versions.chrome },
+  ];
+
   return (
     <div>
       <DialogContent className={classes.dialogContent}>
@@ -62,6 +68,17 @@ const About = (props) => {
         >
           {`Version v${window.require('electron').remote.app.getVersion()}.`}
         </Typography>
+        <div className={classes.versionSmallContainer}>
+          {versions.map(({ name, version }) => (
+            <Typography key={name} variant="body2" className={classes.versionSmall}>
+              {name}
+              :
+              {' '}
+              {version}
+            </Typography>
+          ))}
+        </div>
+
 
         <Button
           onClick={() => requestOpenInBrowser('https://singleboxapp.com?utm_source=singlebox_app')}
