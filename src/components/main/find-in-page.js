@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback, useEffect, useRef } from 'react';
 import PropTypes from 'prop-types';
 
 import Button from '@material-ui/core/Button';
@@ -35,13 +35,29 @@ const FindInPage = (props) => {
   const {
     activeMatch,
     classes,
-    inputRef,
     matches,
     onCloseFindInPage,
     onUpdateFindInPageText,
     open,
     text,
   } = props;
+
+  const inputRef = useRef(null);
+  // https://stackoverflow.com/a/57556594
+  // Event handler utilizing useCallback ...
+  // ... so that reference never changes.
+  const handleOpenFindInPage = useCallback(() => {
+    inputRef.current.focus();
+    inputRef.current.select();
+  }, [inputRef]);
+  useEffect(() => {
+    const { ipcRenderer } = window.require('electron');
+    ipcRenderer.on('open-find-in-page', handleOpenFindInPage);
+    // Remove event listener on cleanup
+    return () => {
+      ipcRenderer.removeListener('open-find-in-page', handleOpenFindInPage);
+    };
+  }, [handleOpenFindInPage]);
 
   if (!open) return null;
 
@@ -96,6 +112,7 @@ const FindInPage = (props) => {
       </div>
       <Button
         size="small"
+        disabled={text.length < 1 || matches < 1}
         onClick={() => {
           if (text.length > 0) {
             requestFindInPage(text, false);
@@ -106,6 +123,7 @@ const FindInPage = (props) => {
       </Button>
       <Button
         size="small"
+        disabled={text.length < 1 || matches < 1}
         onClick={() => {
           if (text.length > 0) {
             requestFindInPage(text, true);
@@ -116,6 +134,7 @@ const FindInPage = (props) => {
       </Button>
       <Button
         size="small"
+        disabled={text.length < 1}
         onClick={() => {
           if (text.length > 0) {
             requestFindInPage(text, true);
@@ -137,14 +156,9 @@ const FindInPage = (props) => {
   );
 };
 
-FindInPage.defaultProps = {
-  inputRef: null,
-};
-
 FindInPage.propTypes = {
   activeMatch: PropTypes.number.isRequired,
   classes: PropTypes.object.isRequired,
-  inputRef: PropTypes.func,
   matches: PropTypes.number.isRequired,
   onCloseFindInPage: PropTypes.func.isRequired,
   onUpdateFindInPageText: PropTypes.func.isRequired,
