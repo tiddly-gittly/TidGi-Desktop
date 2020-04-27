@@ -20,13 +20,14 @@ const create = () => {
     maximizable: false,
     minimizable: false,
     fullscreenable: false,
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
     webPreferences: {
       nodeIntegration: true,
       preload: path.join(__dirname, '..', 'preload', 'go-to-url.js'),
     },
     parent: attachToMenubar ? null : mainWindow.get(),
   });
+  win.setMenuBarVisibility(false);
 
   win.loadURL(REACT_PATH);
 

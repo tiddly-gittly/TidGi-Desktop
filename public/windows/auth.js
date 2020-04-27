@@ -23,13 +23,14 @@ const create = (id) => {
     maximizable: false,
     minimizable: false,
     fullscreenable: false,
-    autoHideMenuBar: true,
+    autoHideMenuBar: false,
     webPreferences: {
       nodeIntegration: true,
       preload: path.join(__dirname, '..', 'preload', 'auth.js'),
     },
     parent: attachToMenubar ? null : mainWindow.get(),
   });
+  wins[id].setMenuBarVisibility(false);
 
   wins[id].loadURL(REACT_PATH);
 
