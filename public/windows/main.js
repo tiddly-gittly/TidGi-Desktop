@@ -175,9 +175,9 @@ const createAsync = () => new Promise((resolve) => {
       const view = win.getBrowserView();
       if (view) {
         if (direction === 'left') {
-          view.webContents.goBack();
-        } else if (direction === 'right') {
           view.webContents.goForward();
+        } else if (direction === 'right') {
+          view.webContents.goBack();
         }
       }
     });
