@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 const {
   BrowserView,
   BrowserWindow,
@@ -167,18 +168,18 @@ const addView = (browserWindow, workspace) => {
     // https://github.com/quanglam2807/webcatalog/issues/455
     // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
     const fakedEdgeUaStr = `${commonUaStr} Edge/18.18875`;
-    adjustUserAgentByUrl = (url) => {
+    adjustUserAgentByUrl = (contents, url) => {
       if (customUserAgent) return false;
 
       const navigatedDomain = extractDomain(url);
-      const currentUaStr = view.webContents.userAgent;
+      const currentUaStr = contents.userAgent;
       if (navigatedDomain === 'accounts.google.com') {
         if (currentUaStr !== fakedEdgeUaStr) {
-          view.webContents.userAgent = fakedEdgeUaStr;
+          contents.userAgent = fakedEdgeUaStr;
           return true;
         }
       } else if (currentUaStr !== commonUaStr) {
-        view.webContents.userAgent = commonUaStr;
+        contents.userAgent = commonUaStr;
         return true;
       }
       return false;
@@ -186,7 +187,7 @@ const addView = (browserWindow, workspace) => {
   }
 
   view.webContents.on('will-navigate', (e, url) => {
-    adjustUserAgentByUrl(url);
+    adjustUserAgentByUrl(e.sender.webContents, url);
   });
 
   view.webContents.on('did-start-loading', () => {
@@ -255,7 +256,7 @@ const addView = (browserWindow, workspace) => {
     // so user agent to needed to be double check here
     // not the best solution as page will be unexpectedly reloaded
     // but it won't happen very often
-    if (adjustUserAgentByUrl(url)) {
+    if (adjustUserAgentByUrl(e.sender.webContents, url)) {
       view.webContents.reload();
     }
 
@@ -296,6 +297,23 @@ const addView = (browserWindow, workspace) => {
       const popupWin = new BrowserWindow(newOptions);
       popupWin.setMenuBarVisibility(false);
       popupWin.webContents.on('new-window', handleNewWindow);
+
+      // fix Google prevents signing in because of security concerns
+      // https://github.com/atomery/webcatalog/issues/455
+      // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
+      // will-navigate doesn't trigger for loadURL, goBack, goForward
+      // so user agent to needed to be double check here
+      // not the best solution as page will be unexpectedly reloaded
+      // but it won't happen very often
+      popupWin.webContents.on('will-navigate', (ee, url) => {
+        adjustUserAgentByUrl(ee.sender.webContents, url);
+      });
+      popupWin.webContents.on('did-navigate', (ee, url) => {
+        if (adjustUserAgentByUrl(ee.sender.webContents, url)) {
+          ee.sender.webContents.reload();
+        }
+      });
+
       e.newGuest = popupWin;
     };
 
@@ -319,7 +337,7 @@ const addView = (browserWindow, workspace) => {
       || (disposition === 'foreground-tab' && isInternalUrl(nextUrl, [appUrl, currentUrl]))
     ) {
       e.preventDefault();
-      adjustUserAgentByUrl(nextUrl);
+      adjustUserAgentByUrl(e.sender.webContents, nextUrl);
       e.sender.loadURL(nextUrl);
       return;
     }
@@ -457,7 +475,7 @@ const addView = (browserWindow, workspace) => {
 
   const initialUrl = (rememberLastPageVisited && workspace.lastUrl)
   || workspace.homeUrl;
-  adjustUserAgentByUrl(initialUrl);
+  adjustUserAgentByUrl(view.webContents, initialUrl);
   view.webContents.loadURL(initialUrl);
 };
 
