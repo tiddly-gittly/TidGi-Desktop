@@ -10,6 +10,7 @@ const {
   removeWorkspace,
   setActiveWorkspace,
   setWorkspace,
+  setWorkspaces,
   setWorkspacePicture,
 } = require('./workspaces');
 
@@ -41,6 +42,13 @@ const setWorkspaceView = (id, opts) => {
   setViewsAudioPref();
   setViewsNotificationsPref();
 };
+
+const setWorkspaceViews = (workspaces) => {
+  setWorkspaces(workspaces);
+  setViewsAudioPref();
+  setViewsNotificationsPref();
+};
+
 
 const wakeUpWorkspaceView = (id) => {
   addView(mainWindow.get(), getWorkspace(id));
@@ -111,5 +119,6 @@ module.exports = {
   removeWorkspaceView,
   setActiveWorkspaceView,
   setWorkspaceView,
+  setWorkspaceViews,
   wakeUpWorkspaceView,
 };

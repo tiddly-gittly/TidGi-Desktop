@@ -38,6 +38,7 @@ const {
   removeWorkspaceView,
   setActiveWorkspaceView,
   setWorkspaceView,
+  setWorkspaceViews,
   wakeUpWorkspaceView,
 } = require('../libs/workspaces-views');
 
@@ -293,6 +294,11 @@ const loadListeners = () => {
 
   ipcMain.on('request-set-workspace', (e, id, opts) => {
     setWorkspaceView(id, opts);
+    createMenu();
+  });
+
+  ipcMain.on('request-set-workspaces', (e, workspaces) => {
+    setWorkspaceViews(workspaces);
     createMenu();
   });
 

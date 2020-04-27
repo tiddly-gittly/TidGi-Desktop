@@ -1,6 +1,6 @@
 import { setPreference } from '../state/preferences/actions';
 import { setSystemPreference } from '../state/system-preferences/actions';
-import { setWorkspace } from '../state/workspaces/actions';
+import { setWorkspace, setWorkspaces } from '../state/workspaces/actions';
 import {
   updateAddressBarInfo,
   updateCanGoBack,
@@ -51,6 +51,10 @@ const loadListeners = (store) => {
 
   ipcRenderer.on('set-workspace', (e, id, value) => {
     store.dispatch(setWorkspace(id, value));
+  });
+
+  ipcRenderer.on('set-workspaces', (e, id, value) => {
+    store.dispatch(setWorkspaces(id, value));
   });
 
   ipcRenderer.on('update-can-go-back', (e, value) => {

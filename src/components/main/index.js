@@ -26,7 +26,7 @@ import {
   requestHibernateWorkspace,
   requestRemoveWorkspace,
   requestSetActiveWorkspace,
-  requestSetWorkspace,
+  requestSetWorkspaces,
   requestShowAddWorkspaceWindow,
   requestShowEditWorkspaceWindow,
   requestShowLicenseRegistrationWindow,
@@ -34,6 +34,15 @@ import {
   requestShowPreferencesWindow,
   requestWakeUpWorkspace,
 } from '../../senders';
+
+// https://github.com/sindresorhus/array-move/blob/master/index.js
+const arrayMove = (array, from, to) => {
+  const newArray = array.slice();
+  const startIndex = to < 0 ? newArray.length + to : to;
+  const item = newArray.splice(from, 1)[0];
+  newArray.splice(startIndex, 0, item);
+  return newArray;
+};
 
 const styles = (theme) => ({
   outerRoot: {
@@ -217,14 +226,14 @@ const Main = ({
                 helperClass={classes.grabbing}
                 onSortEnd={({ oldIndex, newIndex }) => {
                   if (oldIndex === newIndex) return;
-                  const oldWorkspace = workspacesList[oldIndex];
-                  const newWorkspace = workspacesList[newIndex];
-                  requestSetWorkspace(oldWorkspace.id, {
-                    order: newWorkspace.order,
+
+                  const newWorkspacesList = arrayMove(workspacesList, oldIndex, newIndex);
+                  const newWorkspaces = { ...workspaces };
+                  newWorkspacesList.forEach((workspace, i) => {
+                    newWorkspaces[workspace.id].order = i;
                   });
-                  requestSetWorkspace(newWorkspace.id, {
-                    order: oldWorkspace.order,
-                  });
+
+                  requestSetWorkspaces(newWorkspaces);
                 }}
               >
                 {workspacesList.map((workspace, i) => (

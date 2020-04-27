@@ -53,6 +53,7 @@ export const requestRemoveWorkspace = (id) => ipcRenderer.send('request-remove-w
 export const requestRemoveWorkspacePicture = (id) => ipcRenderer.send('request-remove-workspace-picture', id);
 export const requestSetActiveWorkspace = (id) => ipcRenderer.send('request-set-active-workspace', id);
 export const requestSetWorkspace = (id, opts) => ipcRenderer.send('request-set-workspace', id, opts);
+export const requestSetWorkspaces = (workspaces) => ipcRenderer.send('request-set-workspaces', workspaces);
 export const requestSetWorkspacePicture = (id, picturePath) => ipcRenderer.send('request-set-workspace-picture', id, picturePath);
 export const requestWakeUpWorkspace = (id) => ipcRenderer.send('request-wake-up-workspace', id);
 
