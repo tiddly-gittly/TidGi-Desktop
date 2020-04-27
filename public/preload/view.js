@@ -11,7 +11,7 @@ const {
 
 const ContextMenuBuilder = require('../libs/context-menu-builder');
 
-const { MenuItem } = remote;
+const { MenuItem, shell } = remote;
 
 window.global = {};
 
@@ -123,6 +123,44 @@ document.addEventListener('DOMContentLoaded', () => {
             contents.reload();
           },
         }));
+
+        menu.append(new MenuItem({ type: 'separator' }));
+
+        menu.append(
+          new MenuItem({
+            label: 'More',
+            submenu: [
+              {
+                label: 'About',
+                click: () => ipcRenderer.send('request-show-about-window'),
+              },
+              { type: 'separator' },
+              {
+                label: 'Check for Updates',
+                click: () => ipcRenderer.send('request-check-for-updates'),
+              },
+              {
+                label: 'Preferences...',
+                click: () => ipcRenderer.send('request-show-preferences-window'),
+              },
+              { type: 'separator' },
+              {
+                label: 'Singlebox Support',
+                click: () => shell.openExternal('https://atomery.com/support?app=singlebox'),
+              },
+              {
+                label: 'Singlebox Website',
+                click: () => shell.openExternal('https://singleboxapp.com'),
+              },
+              { type: 'separator' },
+              {
+                label: 'Quit',
+                click: () => ipcRenderer.send('request-quit'),
+              },
+            ],
+          }),
+        );
+
 
         menu.popup(remote.getCurrentWindow());
       });
