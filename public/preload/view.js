@@ -15,7 +15,10 @@ const { MenuItem, shell } = remote;
 
 window.global = {};
 
-document.addEventListener('DOMContentLoaded', () => {
+// eslint-disable-next-line no-console
+console.log('Preload script is loading...');
+
+const handleLoaded = () => {
   const loadDarkReader = () => {
     const shouldUseDarkColor = ipcRenderer.sendSync('get-should-use-dark-colors');
     const darkReader = ipcRenderer.sendSync('get-preference', 'darkReader');
@@ -215,7 +218,18 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     });
   }
-});
+  // eslint-disable-next-line no-console
+  console.log('Preload script is loaded...');
+};
+
+// https://stackoverflow.com/a/39993724
+// https://github.com/atomery/webcatalog/issues/797
+if (document.readyState !== 'loading') {
+  // document is already ready, just execute code here
+  handleLoaded();
+} else {
+  document.addEventListener('DOMContentLoaded', handleLoaded);
+}
 
 // Communicate with the frame
 // Have to use this weird trick because contextIsolation: true
