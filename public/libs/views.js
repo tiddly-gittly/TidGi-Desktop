@@ -348,6 +348,31 @@ const addView = (browserWindow, workspace) => {
       return;
     }
 
+    // special case for Roam Research
+    // if popup window is not opened and loaded, Roam crashes (shows white page)
+    // https://github.com/atomery/webcatalog/issues/793
+    if (
+      appDomain === 'roamresearch.com'
+      && nextDomain != null
+      && (disposition === 'foreground-tab' || disposition === 'background-tab')
+    ) {
+      e.preventDefault();
+      shell.openExternal(nextUrl);
+
+      // mock window
+      // close as soon as it did-navigate
+      const newOptions = {
+        ...options,
+        show: false,
+      };
+      const popupWin = new BrowserWindow(newOptions);
+      popupWin.once('did-navigate', () => {
+        popupWin.close();
+      });
+      e.newGuest = popupWin;
+      return;
+    }
+
     // open external url in browser
     if (
       nextDomain != null
