@@ -13,7 +13,7 @@
     "lint": "eslint ./public ./src --ext js",
     "lint:fix": "eslint ./public ./src --ext js --fix",
     "start": "react-scripts start",
-    "electron-dev": "concurrently \"cross-env BROWSER=none yarn start\" \"wait-on http://localhost:3000 && electron .\"",
+    "electron-dev": "concurrently \"cross-env BROWSER=none yarn start\" \"wait-on http://localhost:3000 && electron .\" -k",
     "dist": "yarn build && node dist.js",
     "dist-dev": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false yarn dist",
     "test": "mocha ./tests"
