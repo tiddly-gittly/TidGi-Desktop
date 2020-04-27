@@ -158,13 +158,15 @@ const createAsync = () => new Promise((resolve) => {
     // manually set dock icon for AppImage
     // Snap icon is set correct already so no need to intervene
     icon: process.platform === 'linux' && process.env.SNAP == null ? path.resolve(__dirname, '..', 'icon.png') : undefined,
-    autoHideMenuBar: getPreference('hideMenuBar'),
     webPreferences: {
       nodeIntegration: true,
       webSecurity: false,
       preload: path.join(__dirname, '..', 'preload', 'main.js'),
     },
   });
+  if (getPreference('hideMenuBar')) {
+    win.setMenuBarVisibility(false);
+  }
 
   mainWindowState.manage(win);
 

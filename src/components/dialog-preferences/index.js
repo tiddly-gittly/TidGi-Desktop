@@ -396,7 +396,7 @@ const Preferences = ({
                 <ListItem>
                   <ListItemText
                     primary="Hide menu bar"
-                    secondary="Hide the menu bar unless the Alt key is pressed."
+                    secondary="Hide the menu bar unless the Alt+M is pressed."
                   />
                   <ListItemSecondaryAction>
                     <Switch

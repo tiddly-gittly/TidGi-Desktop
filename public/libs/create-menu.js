@@ -111,10 +111,23 @@ function createMenu() {
         {
           label: (!global.sidebar && !global.navigationBar) || global.titleBar ? 'Hide Title Bar' : 'Show Title Bar',
           accelerator: 'CmdOrCtrl+Alt+T',
-          enabled: global.sidebar || global.navigationBar,
+          enabled: process.platform === 'darwin' && (global.sidebar || global.navigationBar),
           visible: process.platform === 'darwin',
           click: () => {
             ipcMain.emit('request-set-preference', null, 'titleBar', !global.titleBar);
+            ipcMain.emit('request-realign-active-workspace');
+          },
+        },
+        // same behavior as BrowserWindow with autoHideMenuBar: true
+        // but with addition to readjust BrowserView so it won't cover the menu bar
+        {
+          label: 'Toggle menu bar',
+          visible: false,
+          accelerator: 'Alt+M',
+          enabled: process.platform === 'win32' && getPreference('hideMenuBar'),
+          click: () => {
+            const win = mainWindow.get();
+            win.setMenuBarVisibility(!win.isMenuBarVisible());
             ipcMain.emit('request-realign-active-workspace');
           },
         },
