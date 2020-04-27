@@ -95,7 +95,10 @@ const DialogProxy = (props) => {
                       tabIndex={0}
                       className={classes.link}
                       onClick={() => requestOpenInBrowser('https://www.npmjs.com/package/proxy-agent')}
-                      onKeyDown={() => requestOpenInBrowser('https://www.npmjs.com/package/proxy-agent')}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter') return;
+                        requestOpenInBrowser('https://www.npmjs.com/package/proxy-agent');
+                      }}
                     >
                       Learn more
                     </span>
@@ -121,7 +124,10 @@ const DialogProxy = (props) => {
                       tabIndex={0}
                       className={classes.link}
                       onClick={() => requestOpenInBrowser('https://www.electronjs.org/docs/api/session#sessetproxyconfig')}
-                      onKeyDown={() => requestOpenInBrowser('https://www.electronjs.org/docs/api/session#sessetproxyconfig')}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter') return;
+                        requestOpenInBrowser('https://www.electronjs.org/docs/api/session#sessetproxyconfig');
+                      }}
                     >
                       Learn more
                     </span>
@@ -160,7 +166,10 @@ const DialogProxy = (props) => {
                       tabIndex={0}
                       className={classes.link}
                       onClick={() => requestOpenInBrowser('https://en.wikipedia.org/wiki/Proxy_auto-config')}
-                      onKeyDown={() => requestOpenInBrowser('https://en.wikipedia.org/wiki/Proxy_auto-config')}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter') return;
+                        requestOpenInBrowser('https://en.wikipedia.org/wiki/Proxy_auto-config');
+                      }}
                     >
                       Learn more
                     </span>
@@ -186,7 +195,10 @@ const DialogProxy = (props) => {
                       tabIndex={0}
                       className={classes.link}
                       onClick={() => requestOpenInBrowser('https://www.electronjs.org/docs/api/session#sessetproxyconfig')}
-                      onKeyDown={() => requestOpenInBrowser('https://www.electronjs.org/docs/api/session#sessetproxyconfig')}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter') return;
+                        requestOpenInBrowser('https://www.electronjs.org/docs/api/session#sessetproxyconfig');
+                      }}
                     >
                       Learn more
                     </span>

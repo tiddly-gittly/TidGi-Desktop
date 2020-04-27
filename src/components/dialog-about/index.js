@@ -98,7 +98,10 @@ const About = (props) => {
           <span> by </span>
           <span
             onClick={() => requestOpenInBrowser('https://atomery.com?utm_source=singlebox_app')}
-            onKeyDown={() => requestOpenInBrowser('https://atomery.com?utm_source=singlebox_app')}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+              requestOpenInBrowser('https://atomery.com?utm_source=singlebox_app');
+            }}
             role="link"
             tabIndex="0"
             className={classes.link}

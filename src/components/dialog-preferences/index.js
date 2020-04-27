@@ -485,7 +485,10 @@ const Preferences = ({
                       tabIndex={0}
                       className={classes.link}
                       onClick={() => requestOpenInBrowser('https://cliqz.com/en/whycliqz/adblocking')}
-                      onKeyDown={() => requestOpenInBrowser('https://cliqz.com/en/whycliqz/adblocking')}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter') return;
+                        requestOpenInBrowser('https://cliqz.com/en/whycliqz/adblocking');
+                      }}
                     >
                       Cliqz
                     </span>
@@ -517,7 +520,10 @@ const Preferences = ({
                       tabIndex={0}
                       className={classes.link}
                       onClick={() => requestOpenInBrowser('https://darkreader.org/')}
-                      onKeyDown={() => requestOpenInBrowser('https://darkreader.org/')}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter') return;
+                        requestOpenInBrowser('https://darkreader.org/');
+                      }}
                     >
                       Dark Reader
                     </span>
