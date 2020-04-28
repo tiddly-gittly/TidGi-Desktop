@@ -15,10 +15,12 @@ const { MenuItem, shell } = remote;
 
 window.global = {};
 
-// eslint-disable-next-line no-console
-console.log('Preload script is loading...');
+let handled = false;
+const handleLoaded = (event) => {
+  if (handled) return;
+  // eslint-disable-next-line no-console
+  console.log(`Preload script is loading on ${event}...`);
 
-const handleLoaded = () => {
   const loadDarkReader = () => {
     const shouldUseDarkColor = ipcRenderer.sendSync('get-should-use-dark-colors');
     const darkReader = ipcRenderer.sendSync('get-preference', 'darkReader');
@@ -220,16 +222,16 @@ const handleLoaded = () => {
   }
   // eslint-disable-next-line no-console
   console.log('Preload script is loaded...');
+
+  handled = true;
 };
 
-// https://stackoverflow.com/a/39993724
+// try to load as soon as dom is loaded
+document.addEventListener('DOMContentLoaded', () => handleLoaded('document.on("DOMContentLoaded")'));
+// if user navigates between the same website
+// DOMContentLoaded might not be triggered so double check with 'onload'
 // https://github.com/atomery/webcatalog/issues/797
-if (document.readyState !== 'loading') {
-  // document is already ready, just execute code here
-  handleLoaded();
-} else {
-  document.addEventListener('DOMContentLoaded', handleLoaded);
-}
+window.addEventListener('load', () => handleLoaded('window.on("onload")'));
 
 // Communicate with the frame
 // Have to use this weird trick because contextIsolation: true

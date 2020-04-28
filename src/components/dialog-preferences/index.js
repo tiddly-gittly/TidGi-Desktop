@@ -1052,23 +1052,6 @@ const Preferences = ({
           <List dense disablePadding>
             <ListItem>
               <ListItemText
-                primary="Use hardware acceleration when available"
-              />
-              <ListItemSecondaryAction>
-                <Switch
-                  edge="end"
-                  color="primary"
-                  checked={useHardwareAcceleration}
-                  onChange={(e) => {
-                    requestSetPreference('useHardwareAcceleration', e.target.checked);
-                    requestShowRequireRestartDialog();
-                  }}
-                />
-              </ListItemSecondaryAction>
-            </ListItem>
-            <Divider />
-            <ListItem>
-              <ListItemText
                 primary="Hibernate unused workspaces at app launch"
                 secondary="Hibernate all workspaces at launch, except the last active workspace."
               />
@@ -1101,6 +1084,23 @@ const Preferences = ({
             <ListItem button onClick={() => requestShowCodeInjectionWindow('css')}>
               <ListItemText primary="CSS Code Injection" secondary={cssCodeInjection ? 'Set' : 'Not set'} />
               <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
+            <ListItem>
+              <ListItemText
+                primary="Use hardware acceleration when available"
+              />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={useHardwareAcceleration}
+                  onChange={(e) => {
+                    requestSetPreference('useHardwareAcceleration', e.target.checked);
+                    requestShowRequireRestartDialog();
+                  }}
+                />
+              </ListItemSecondaryAction>
             </ListItem>
           </List>
         </Paper>
