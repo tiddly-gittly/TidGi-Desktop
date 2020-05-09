@@ -1,6 +1,9 @@
 /* eslint-disable no-console */
 const builder = require('electron-builder');
 const { notarize } = require('electron-notarize');
+const semver = require('semver');
+
+const packageJson = require('./package.json');
 
 const { Arch, Platform } = builder;
 
@@ -67,7 +70,7 @@ const opts = {
       publish: [
         {
           provider: 'snapStore',
-          channels: ['edge'],
+          channels: [semver.prerelease(packageJson.version) ? 'edge' : 'stable'],
         },
         'github',
       ],
