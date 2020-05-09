@@ -1,7 +1,8 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
-import red from '@material-ui/core/colors/red';
+
+import Badge from '@material-ui/core/Badge';
 
 import connectComponent from '../../helpers/connect-component';
 
@@ -69,20 +70,8 @@ const styles = (theme) => ({
     fontWeight: 500,
     color: theme.palette.text.primary,
   },
-  badgeCount: {
-    position: 'absolute',
-    right: 10,
-    top: 4,
-    backgroundColor: red[600],
-    height: 16,
-    width: 16,
-    borderRadius: 8,
-    fontSize: '12px',
-    lineHeight: '16px',
-    textAlign: 'center',
-    color: theme.palette.common.white,
-    paddingLeft: 1.3,
-    fontWeight: 700,
+  badge: {
+    lineHeight: '20px',
   },
 });
 
@@ -110,22 +99,19 @@ const WorkspaceSelector = ({
     onContextMenu={onContextMenu}
     tabIndex="0"
   >
-    <div
-      className={classNames(
-        classes.avatar,
-        transparentBackground && classes.transparentAvatar,
-        id === 'add' && classes.addAvatar,
-      )}
-    >
-      {id !== 'add' ? (
-        <img alt="Icon" className={classes.avatarPicture} src={picturePath ? `file://${picturePath}` : defaultIcon} draggable={false} />
-      ) : '+'}
-    </div>
-    {badgeCount > 0 && (
-      <div className={classes.badgeCount}>
-        {badgeCount > 9 ? '*' : badgeCount}
+    <Badge color="secondary" badgeContent={badgeCount} max={99} classes={{ badge: classes.badge }}>
+      <div
+        className={classNames(
+          classes.avatar,
+          transparentBackground && classes.transparentAvatar,
+          id === 'add' && classes.addAvatar,
+        )}
+      >
+        {id !== 'add' ? (
+          <img alt="Icon" className={classes.avatarPicture} src={picturePath ? `file://${picturePath}` : defaultIcon} draggable={false} />
+        ) : '+'}
       </div>
-    )}
+    </Badge>
     {(id === 'add' || order < 9) && (
       <p className={classes.shortcutText}>{id === 'add' ? 'Add' : `${window.process.platform === 'darwin' ? '⌘' : 'Ctrl'} + ${order + 1}`}</p>
     )}
