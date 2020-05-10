@@ -2,10 +2,36 @@
 const builder = require('electron-builder');
 const { notarize } = require('electron-notarize');
 const semver = require('semver');
+const { exec } = require('child_process');
 
 const packageJson = require('./package.json');
 
 const { Arch, Platform } = builder;
+
+// sometimes, notarization works but *.app does not have a ticket stapled to it
+// this ensure the *.app has the notarization ticket
+const verifyNotarizationAsync = (filePath) => new Promise((resolve, reject) => {
+  // eslint-disable-next-line no-console
+  console.log(`xcrun stapler validate ${filePath.replace(/ /g, '\\ ')}`);
+
+  exec(`xcrun stapler validate ${filePath.replace(/ /g, '\\ ')}`, (e, stdout, stderr) => {
+    if (e instanceof Error) {
+      reject(e);
+      return;
+    }
+
+    if (stderr) {
+      reject(new Error(stderr));
+      return;
+    }
+
+    if (stdout.indexOf('The validate action worked!') > -1) {
+      resolve(stdout);
+    } else {
+      reject(new Error(stdout));
+    }
+  });
+});
 
 console.log(`Machine: ${process.platform}`);
 
@@ -84,13 +110,19 @@ const opts = {
       const { appOutDir } = context;
 
       const appName = context.packager.appInfo.productFilename;
+      const appPath = `${appOutDir}/${appName}.app`;
 
       return notarize({
         appBundleId: 'com.singlebox.app',
-        appPath: `${appOutDir}/${appName}.app`,
+        appPath,
         appleId: process.env.APPLE_ID,
         appleIdPassword: process.env.APPLE_ID_PASSWORD,
-      });
+      })
+        .then(() => verifyNotarizationAsync(appPath))
+        .then((notarizedInfo) => {
+          // eslint-disable-next-line no-console
+          console.log(notarizedInfo);
+        });
     },
   },
 };
