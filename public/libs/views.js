@@ -326,8 +326,15 @@ const addView = (browserWindow, workspace) => {
     // Conditions are listed by order of priority
 
     // if global.forceNewWindow = true
+    // or regular new-window event
+    // or if in Google Drive app, open Google Docs files internally https://github.com/atomery/webcatalog/issues/800
     // the next external link request will be opened in new window
-    if (global.forceNewWindow) {
+    if (
+      global.forceNewWindow
+      || disposition === 'new-window'
+      || disposition === 'default'
+      || (appDomain === 'drive.google.com' && nextDomain === 'docs.google.com')
+    ) {
       global.forceNewWindow = false;
       openInNewWindow();
       return;
@@ -338,9 +345,10 @@ const addView = (browserWindow, workspace) => {
     if (
       // Google: Switch account
       nextDomain === 'accounts.google.com'
-      // https://github.com/quanglam2807/webcatalog/issues/315
+      /* https://github.com/atomery/webcatalog/issues/315 START */
       || ((appDomain.includes('asana.com') || currentDomain.includes('asana.com')) && nextDomain.includes('asana.com'))
       || (disposition === 'foreground-tab' && isInternalUrl(nextUrl, [appUrl, currentUrl]))
+      /* https://github.com/atomery/webcatalog/issues/315 END */
     ) {
       e.preventDefault();
       adjustUserAgentByUrl(e.sender.webContents, nextUrl);
