@@ -209,6 +209,12 @@ const createAsync = () => new Promise((resolve) => {
     if (!wasOpenedAsHidden) {
       win.show();
     }
+
+    // calling this to redundantly setBounds BrowserView
+    // after the UI is fully loaded
+    // if not, BrowserView mouseover event won't work correctly
+    // https://github.com/atomery/webcatalog/issues/812
+    ipcMain.emit('request-realign-active-workspace');
   });
 
   win.on('enter-full-screen', () => win.webContents.send('is-fullscreen-updated', true));
