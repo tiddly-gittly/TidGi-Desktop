@@ -24,6 +24,7 @@ import ExtensionIcon from '@material-ui/icons/Extension';
 import LanguageIcon from '@material-ui/icons/Language';
 import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 import NotificationsIcon from '@material-ui/icons/Notifications';
+import PowerIcon from '@material-ui/icons/Power';
 import RotateLeftIcon from '@material-ui/icons/RotateLeft';
 import RouterIcon from '@material-ui/icons/Router';
 import SecurityIcon from '@material-ui/icons/Security';
@@ -251,14 +252,19 @@ const Preferences = ({
       Icon: BuildIcon,
       ref: useRef(),
     },
-    updates: {
-      text: 'Updates',
-      Icon: SystemUpdateAltIcon,
+    developers: {
+      text: 'Developers',
+      Icon: CodeIcon,
       ref: useRef(),
     },
     advanced: {
       text: 'Advanced',
-      Icon: CodeIcon,
+      Icon: PowerIcon,
+      ref: useRef(),
+    },
+    updates: {
+      text: 'Updates',
+      Icon: SystemUpdateAltIcon,
       ref: useRef(),
     },
     reset: {
@@ -997,41 +1003,28 @@ const Preferences = ({
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.updates.ref}>
-          Updates
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.developers.ref}>
+          Developers
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
-            <ListItem
-              button
-              onClick={() => requestCheckForUpdates(false)}
-              disabled={updaterStatus === 'checking-for-update'
-                || updaterStatus === 'download-progress'
-                || updaterStatus === 'download-progress'
-                || updaterStatus === 'update-available'}
-            >
+            <ListItem button onClick={requestShowCustomUserAgentWindow}>
               <ListItemText
-                primary={updaterStatus === 'update-downloaded' ? 'Restart to Apply Updates' : 'Check for Updates'}
-                secondary={getUpdaterDesc(updaterStatus, updaterInfo)}
+                primary="Custom User Agent"
+                secondary={customUserAgent || 'Not set'}
+                classes={{ secondary: classes.secondaryEllipsis }}
               />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem>
-              <ListItemText
-                primary="Receive pre-release updates"
-              />
-              <ListItemSecondaryAction>
-                <Switch
-                  edge="end"
-                  color="primary"
-                  checked={allowPrerelease}
-                  onChange={(e) => {
-                    requestSetPreference('allowPrerelease', e.target.checked);
-                    requestShowRequireRestartDialog();
-                  }}
-                />
-              </ListItemSecondaryAction>
+            <ListItem button onClick={() => requestShowCodeInjectionWindow('js')}>
+              <ListItemText primary="JS Code Injection" secondary={jsCodeInjection ? 'Set' : 'Not set'} />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
+            <ListItem button onClick={() => requestShowCodeInjectionWindow('css')}>
+              <ListItemText primary="CSS Code Injection" secondary={cssCodeInjection ? 'Set' : 'Not set'} />
+              <ChevronRightIcon color="action" />
             </ListItem>
           </List>
         </Paper>
@@ -1094,25 +1087,6 @@ const Preferences = ({
               </>
             )}
             <Divider />
-            <ListItem button onClick={requestShowCustomUserAgentWindow}>
-              <ListItemText
-                primary="Custom User Agent"
-                secondary={customUserAgent || 'Not set'}
-                classes={{ secondary: classes.secondaryEllipsis }}
-              />
-              <ChevronRightIcon color="action" />
-            </ListItem>
-            <Divider />
-            <ListItem button onClick={() => requestShowCodeInjectionWindow('js')}>
-              <ListItemText primary="JS Code Injection" secondary={jsCodeInjection ? 'Set' : 'Not set'} />
-              <ChevronRightIcon color="action" />
-            </ListItem>
-            <Divider />
-            <ListItem button onClick={() => requestShowCodeInjectionWindow('css')}>
-              <ListItemText primary="CSS Code Injection" secondary={cssCodeInjection ? 'Set' : 'Not set'} />
-              <ChevronRightIcon color="action" />
-            </ListItem>
-            <Divider />
             <ListItem>
               <ListItemText
                 primary="Use hardware acceleration when available"
@@ -1124,6 +1098,45 @@ const Preferences = ({
                   checked={useHardwareAcceleration}
                   onChange={(e) => {
                     requestSetPreference('useHardwareAcceleration', e.target.checked);
+                    requestShowRequireRestartDialog();
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+          </List>
+        </Paper>
+
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.updates.ref}>
+          Updates
+        </Typography>
+        <Paper elevation={0} className={classes.paper}>
+          <List dense disablePadding>
+            <ListItem
+              button
+              onClick={() => requestCheckForUpdates(false)}
+              disabled={updaterStatus === 'checking-for-update'
+                || updaterStatus === 'download-progress'
+                || updaterStatus === 'download-progress'
+                || updaterStatus === 'update-available'}
+            >
+              <ListItemText
+                primary={updaterStatus === 'update-downloaded' ? 'Restart to Apply Updates' : 'Check for Updates'}
+                secondary={getUpdaterDesc(updaterStatus, updaterInfo)}
+              />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
+            <ListItem>
+              <ListItemText
+                primary="Receive pre-release updates"
+              />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={allowPrerelease}
+                  onChange={(e) => {
+                    requestSetPreference('allowPrerelease', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
