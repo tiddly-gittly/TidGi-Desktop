@@ -191,7 +191,13 @@ const addView = (browserWindow, workspace) => {
   });
 
   view.webContents.on('did-start-loading', () => {
-    if (getWorkspace(workspace.id).active) {
+    const workspaceObj = getWorkspace(workspace.id);
+    // this event might be triggered
+    // even after the workspace obj and BrowserView
+    // are destroyed. See https://github.com/atomery/webcatalog/issues/836
+    if (!workspaceObj) return;
+
+    if (workspaceObj.active) {
       if (didFailLoad[workspace.id]) {
         didFailLoad[workspace.id] = false;
         // show browserView again when reloading after error
@@ -209,7 +215,13 @@ const addView = (browserWindow, workspace) => {
   });
 
   view.webContents.on('did-stop-loading', () => {
-    if (getWorkspace(workspace.id).active) {
+    const workspaceObj = getWorkspace(workspace.id);
+    // this event might be triggered
+    // even after the workspace obj and BrowserView
+    // are destroyed. See https://github.com/atomery/webcatalog/issues/836
+    if (!workspaceObj) return;
+
+    if (workspaceObj.active) {
       sendToAllWindows('update-is-loading', false);
       sendToAllWindows('update-address', view.webContents.getURL(), false);
     }
@@ -232,9 +244,15 @@ const addView = (browserWindow, workspace) => {
 
   // https://electronjs.org/docs/api/web-contents#event-did-fail-load
   view.webContents.on('did-fail-load', (e, errorCode, errorDesc, validateUrl, isMainFrame) => {
+    const workspaceObj = getWorkspace(workspace.id);
+    // this event might be triggered
+    // even after the workspace obj and BrowserView
+    // are destroyed. See https://github.com/atomery/webcatalog/issues/836
+    if (!workspaceObj) return;
+
     didFailLoad[workspace.id] = true;
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {
-      if (getWorkspace(workspace.id).active) {
+      if (workspaceObj.active) {
         sendToAllWindows('update-loading', false);
         if (browserWindow && !browserWindow.isDestroyed()) { // fix https://github.com/atomery/singlebox/issues/228
           const contentSize = browserWindow.getContentSize();
@@ -248,11 +266,17 @@ const addView = (browserWindow, workspace) => {
 
     // edge case to handle failed auth
     if (errorCode === -300 && view.webContents.getURL().length === 0) {
-      view.webContents.loadURL(getWorkspace(workspace.id).homeUrl);
+      view.webContents.loadURL(workspaceObj.homeUrl);
     }
   });
 
   view.webContents.on('did-navigate', (e, url) => {
+    const workspaceObj = getWorkspace(workspace.id);
+    // this event might be triggered
+    // even after the workspace obj and BrowserView
+    // are destroyed. See https://github.com/atomery/webcatalog/issues/836
+    if (!workspaceObj) return;
+
     // fix "Google Chat isn't supported on your current browser"
     // https://github.com/atomery/webcatalog/issues/820
     if (url && url.indexOf('error/browser-not-supported') > -1 && url.startsWith('https://chat.google.com')) {
@@ -271,7 +295,7 @@ const addView = (browserWindow, workspace) => {
       view.webContents.reload();
     }
 
-    if (getWorkspace(workspace.id).active) {
+    if (workspaceObj.active) {
       sendToAllWindows('update-can-go-back', view.webContents.canGoBack());
       sendToAllWindows('update-can-go-forward', view.webContents.canGoForward());
       sendToAllWindows('update-address', url, false);
@@ -279,7 +303,13 @@ const addView = (browserWindow, workspace) => {
   });
 
   view.webContents.on('did-navigate-in-page', (e, url) => {
-    if (getWorkspace(workspace.id).active) {
+    const workspaceObj = getWorkspace(workspace.id);
+    // this event might be triggered
+    // even after the workspace obj and BrowserView
+    // are destroyed. See https://github.com/atomery/webcatalog/issues/836
+    if (!workspaceObj) return;
+
+    if (workspaceObj.active) {
       sendToAllWindows('update-can-go-back', view.webContents.canGoBack());
       sendToAllWindows('update-can-go-forward', view.webContents.canGoForward());
       sendToAllWindows('update-address', url, false);
@@ -287,7 +317,13 @@ const addView = (browserWindow, workspace) => {
   });
 
   view.webContents.on('page-title-updated', (e, title) => {
-    if (getWorkspace(workspace.id).active) {
+    const workspaceObj = getWorkspace(workspace.id);
+    // this event might be triggered
+    // even after the workspace obj and BrowserView
+    // are destroyed. See https://github.com/atomery/webcatalog/issues/836
+    if (!workspaceObj) return;
+
+    if (workspaceObj.active) {
       sendToAllWindows('update-title', title);
     }
   });
