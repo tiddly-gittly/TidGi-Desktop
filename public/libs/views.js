@@ -196,8 +196,10 @@ const addView = (browserWindow, workspace) => {
         didFailLoad[workspace.id] = false;
         // show browserView again when reloading after error
         // see did-fail-load event
-        const contentSize = browserWindow.getContentSize();
-        view.setBounds(getViewBounds(contentSize));
+        if (browserWindow && !browserWindow.isDestroyed()) { // fix https://github.com/atomery/singlebox/issues/228
+          const contentSize = browserWindow.getContentSize();
+          view.setBounds(getViewBounds(contentSize));
+        }
       }
       sendToAllWindows('update-did-fail-load', false);
       sendToAllWindows('update-is-loading', true);
@@ -234,10 +236,12 @@ const addView = (browserWindow, workspace) => {
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {
       if (getWorkspace(workspace.id).active) {
         sendToAllWindows('update-loading', false);
-        const contentSize = browserWindow.getContentSize();
-        view.setBounds(
-          getViewBounds(contentSize, false, 0, 0),
-        ); // hide browserView to show error message
+        if (browserWindow && !browserWindow.isDestroyed()) { // fix https://github.com/atomery/singlebox/issues/228
+          const contentSize = browserWindow.getContentSize();
+          view.setBounds(
+            getViewBounds(contentSize, false, 0, 0),
+          ); // hide browserView to show error message
+        }
         sendToAllWindows('update-did-fail-load', true);
       }
     }
