@@ -170,6 +170,7 @@ const getUpdaterDesc = (status, info) => {
 };
 
 const Preferences = ({
+  allowNodeInJsCodeInjection,
   allowPrerelease,
   askForDownloadPath,
   attachToMenubar,
@@ -1018,7 +1019,7 @@ const Preferences = ({
             </ListItem>
             <Divider />
             <ListItem button onClick={() => requestShowCodeInjectionWindow('js')}>
-              <ListItemText primary="JS Code Injection" secondary={jsCodeInjection ? 'Set' : 'Not set'} />
+              <ListItemText primary="JS Code Injection" secondary={jsCodeInjection ? `Set ${allowNodeInJsCodeInjection ? ' (with access to Node.JS & Electron APIs)' : ''}` : 'Not set'} />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
@@ -1233,6 +1234,7 @@ Preferences.defaultProps = {
 };
 
 Preferences.propTypes = {
+  allowNodeInJsCodeInjection: PropTypes.bool.isRequired,
   allowPrerelease: PropTypes.bool.isRequired,
   askForDownloadPath: PropTypes.bool.isRequired,
   attachToMenubar: PropTypes.bool.isRequired,
@@ -1275,6 +1277,7 @@ Preferences.propTypes = {
 };
 
 const mapStateToProps = (state) => ({
+  allowNodeInJsCodeInjection: state.preferences.allowNodeInJsCodeInjection,
   allowPrerelease: state.preferences.allowPrerelease,
   askForDownloadPath: state.preferences.askForDownloadPath,
   attachToMenubar: state.preferences.attachToMenubar,

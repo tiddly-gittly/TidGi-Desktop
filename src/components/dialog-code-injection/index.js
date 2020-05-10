@@ -2,6 +2,8 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import Button from '@material-ui/core/Button';
+import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Switch from '@material-ui/core/Switch';
 
 import AceEditor from 'react-ace';
 
@@ -29,6 +31,10 @@ const styles = (theme) => ({
   actions: {
     borderTop: `1px solid ${theme.palette.divider}`,
     padding: theme.spacing(2),
+    display: 'flex',
+  },
+  actionsLeft: {
+    flex: 1,
   },
   button: {
     float: 'right',
@@ -36,44 +42,68 @@ const styles = (theme) => ({
   },
 });
 
-const getMode = () => {
-  const codeInjectionType = window.require('electron').remote.getGlobal('codeInjectionType');
+const getMode = (codeInjectionType) => {
   if (codeInjectionType === 'css') return 'css';
   if (codeInjectionType === 'js') return 'javascript';
   return '';
 };
 
 const CodeInjection = ({
+  allowNodeInJsCodeInjection,
   classes,
   code,
   onSave,
   onUpdateForm,
   shouldUseDarkColors,
-}) => (
-  <div className={classes.root}>
-    <div className={classes.flexGrow}>
-      <AceEditor
-        mode={getMode()}
-        theme={shouldUseDarkColors ? 'monokai' : 'github'}
-        height="100%"
-        width="100%"
-        name="codeEditor"
-        value={code}
-        onChange={(value) => onUpdateForm({ code: value })}
-      />
+}) => {
+  const codeInjectionType = window.require('electron').remote.getGlobal('codeInjectionType');
+  return (
+    <div className={classes.root}>
+      <div className={classes.flexGrow}>
+        <AceEditor
+          mode={getMode(codeInjectionType)}
+          theme={shouldUseDarkColors ? 'monokai' : 'github'}
+          height="100%"
+          width="100%"
+          name="codeEditor"
+          value={code}
+          onChange={(value) => onUpdateForm({ code: value })}
+        />
+      </div>
+      <div className={classes.actions}>
+        <div className={classes.actionsLeft}>
+          {codeInjectionType === 'js' && (
+            <FormControlLabel
+              control={(
+                <Switch
+                  checked={allowNodeInJsCodeInjection}
+                  onChange={(e) => onUpdateForm({ allowNodeInJsCodeInjection: e.target.checked })}
+                  color="primary"
+                />
+              )}
+              label="Allow access to Node.JS & Electron APIs"
+            />
+          )}
+        </div>
+        <div className={classes.actionsRight}>
+          <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
+            Save
+          </Button>
+          <Button variant="contained" disableElevation className={classes.button} onClick={() => window.require('electron').remote.getCurrentWindow().close()}>
+            Cancel
+          </Button>
+        </div>
+      </div>
     </div>
-    <div className={classes.actions}>
-      <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
-        Save
-      </Button>
-      <Button variant="contained" disableElevation className={classes.button} onClick={() => window.require('electron').remote.getCurrentWindow().close()}>
-        Cancel
-      </Button>
-    </div>
-  </div>
-);
+  );
+};
+
+CodeInjection.defaultProps = {
+  allowNodeInJsCodeInjection: false,
+};
 
 CodeInjection.propTypes = {
+  allowNodeInJsCodeInjection: PropTypes.bool,
   classes: PropTypes.object.isRequired,
   code: PropTypes.string.isRequired,
   onSave: PropTypes.func.isRequired,
@@ -83,6 +113,7 @@ CodeInjection.propTypes = {
 
 const mapStateToProps = (state) => ({
   code: state.dialogCodeInjection.form.code || '',
+  allowNodeInJsCodeInjection: state.dialogCodeInjection.form.allowNodeInJsCodeInjection,
   shouldUseDarkColors: state.general.shouldUseDarkColors,
 });
 

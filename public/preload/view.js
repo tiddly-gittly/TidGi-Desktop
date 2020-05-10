@@ -48,15 +48,32 @@ const handleLoaded = (event) => {
   });
 
   const jsCodeInjection = ipcRenderer.sendSync('get-preference', 'jsCodeInjection');
+  const allowNodeInJsCodeInjection = ipcRenderer.sendSync('get-preference', 'allowNodeInJsCodeInjection');
   const cssCodeInjection = ipcRenderer.sendSync('get-preference', 'cssCodeInjection');
 
   if (jsCodeInjection && jsCodeInjection.trim().length > 0) {
-    try {
-      const node = document.createElement('script');
-      node.innerHTML = jsCodeInjection;
-      document.body.appendChild(node);
-    } catch (err) {
-      console.log(err); // eslint-disable-line no-console
+    if (allowNodeInJsCodeInjection) {
+      try {
+        // eslint-disable-next-line no-new-func
+        Function(
+          'require',
+          `"use strict";${jsCodeInjection}`,
+        )(require);
+      } catch (err) {
+        /* eslint-disable no-console */
+        console.log(err);
+        /* eslint-enable no-console */
+      }
+    } else {
+      try {
+        const node = document.createElement('script');
+        node.innerHTML = jsCodeInjection;
+        document.body.appendChild(node);
+      } catch (err) {
+        /* eslint-disable no-console */
+        console.log(err);
+        /* eslint-enable no-console */
+      }
     }
   }
 

@@ -16,7 +16,11 @@ export const save = () => (dispatch, getState) => {
   const { remote } = window.require('electron');
 
   const codeInjectionType = remote.getGlobal('codeInjectionType');
+
   requestSetPreference(`${codeInjectionType}CodeInjection`, form.code);
+  if (codeInjectionType === 'js' && typeof form.allowNodeInJsCodeInjection === 'boolean') {
+    requestSetPreference('allowNodeInJsCodeInjection', form.allowNodeInJsCodeInjection);
+  }
 
   requestShowRequireRestartDialog();
 

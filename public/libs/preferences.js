@@ -25,6 +25,7 @@ const getDefaultPauseNotificationsByScheduleTo = () => {
 };
 
 const defaultPreferences = {
+  allowNodeInJsCodeInjection: false,
   allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
   askForDownloadPath: true,
   attachToMenubar: false,

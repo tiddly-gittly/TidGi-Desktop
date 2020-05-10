@@ -10,6 +10,8 @@ const form = (state = {}, action) => {
       const codeInjectionType = window.require('electron').remote.getGlobal('codeInjectionType');
       return {
         code: getPreference(`${codeInjectionType}CodeInjection`),
+        // allowNodeInJsCodeInjection is only used for js injection
+        allowNodeInJsCodeInjection: codeInjectionType === 'js' ? getPreference('allowNodeInJsCodeInjection') : false,
       };
     }
     case UPDATE_CODE_INJECTION_FORM: return { ...state, ...action.changes };
