@@ -22,7 +22,7 @@ const getWorkspaces = () => {
   const storedWorkspaces = settings.get(`workspaces.${v}`, {});
   // strip badgeCount values (accidentially saved) from workspace objects
   // https://github.com/atomery/singlebox/issues/231#issuecomment-626198821
-  Object.keys(workspaces).forEach((id) => {
+  Object.keys(storedWorkspaces).forEach((id) => {
     delete storedWorkspaces[id].badgeCount;
   });
 
