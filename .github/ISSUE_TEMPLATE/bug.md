@@ -5,11 +5,12 @@ title: 'bug: '
 ---
 
 # Bug Report
-**Current Behavior:**
-<!-- Describe how the bug manifests. -->
+**Specifications:**
+- App Version:
+- OS (macOS, Windows, Linux):
 
-**Expected Behavior:**
-<!-- Describe what the behavior would be without the bug. -->
+**Description:**
+<!-- Describe how the bug manifests and what the behavior would be without the bug. -->
 
 **Steps to Reproduce:**
 <!--  Please explain the steps required to duplicate the issue, especially if you are able to provide a sample application. -->
