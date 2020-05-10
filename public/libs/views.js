@@ -295,6 +295,8 @@ const addView = (browserWindow, workspace) => {
         ...options,
       };
       const popupWin = new BrowserWindow(newOptions);
+      // WebCatalog internal value to determine whether BrowserWindow is popup
+      popupWin.isPopup = true;
       popupWin.setMenuBarVisibility(false);
       popupWin.webContents.on('new-window', handleNewWindow);
 
@@ -366,6 +368,8 @@ const addView = (browserWindow, workspace) => {
         show: false,
       };
       const popupWin = new BrowserWindow(newOptions);
+      // WebCatalog internal value to determine whether BrowserWindow is popup
+      popupWin.isPopup = true;
       popupWin.once('did-navigate', () => {
         popupWin.close();
       });

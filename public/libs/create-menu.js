@@ -123,11 +123,18 @@ function createMenu() {
         // same behavior as BrowserWindow with autoHideMenuBar: true
         // but with addition to readjust BrowserView so it won't cover the menu bar
         {
-          label: 'Toggle menu bar',
+          label: 'Toggle Menu Bar',
           visible: false,
           accelerator: 'Alt+M',
-          enabled: process.platform === 'win32' && getPreference('hideMenuBar'),
-          click: () => {
+          enabled: process.platform === 'win32',
+          click: (menuItem, browserWindow) => {
+            // if back is called in popup window
+            // open menu bar in the popup window instead
+            if (browserWindow && browserWindow.isPopup) {
+              browserWindow.setMenuBarVisibility(!browserWindow.isMenuBarVisible());
+              return;
+            }
+
             const win = mainWindow.get();
             win.setMenuBarVisibility(!win.isMenuBarVisible());
             ipcMain.emit('request-realign-active-workspace');
@@ -206,20 +213,44 @@ function createMenu() {
         {
           label: 'Back',
           accelerator: 'CmdOrCtrl+[',
-          click: () => ipcMain.emit('request-go-back'),
+          click: (menuItem, browserWindow) => {
+            // if back is called in popup window
+            // navigate in the popup window instead
+            if (browserWindow && browserWindow.isPopup) {
+              browserWindow.webContents.goBack();
+              return;
+            }
+            ipcMain.emit('request-go-back');
+          },
           enabled: hasWorkspaces,
         },
         {
           label: 'Forward',
           accelerator: 'CmdOrCtrl+]',
-          click: () => ipcMain.emit('request-go-forward'),
+          click: (menuItem, browserWindow) => {
+            // if back is called in popup window
+            // navigate in the popup window instead
+            if (browserWindow && browserWindow.isPopup) {
+              browserWindow.webContents.goBack();
+              return;
+            }
+            ipcMain.emit('request-go-forward');
+          },
           enabled: hasWorkspaces,
         },
         { type: 'separator' },
         {
           label: 'Copy URL',
           accelerator: 'CmdOrCtrl+L',
-          click: () => {
+          click: (menuItem, browserWindow) => {
+            // if back is called in popup window
+            // copy the popup window URL instead
+            if (browserWindow && browserWindow.isPopup) {
+              const url = browserWindow.webContents.getURL();
+              clipboard.writeText(url);
+              return;
+            }
+
             const win = mainWindow.get();
 
             if (win != null && win.getBrowserView() != null) {
