@@ -451,6 +451,13 @@ const addView = (browserWindow, workspace) => {
         // eslint-disable-next-line no-param-reassign
         item.savePath = finalFilePath;
       }
+    } else {
+      // set preferred path for save dialog
+      const opts = {
+        ...item.getSaveDialogOptions(),
+        defaultPath: path.join(downloadPath, item.getFilename()),
+      };
+      item.setSaveDialogOptions(opts);
     }
   });
 
