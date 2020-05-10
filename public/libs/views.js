@@ -253,6 +253,13 @@ const addView = (browserWindow, workspace) => {
   });
 
   view.webContents.on('did-navigate', (e, url) => {
+    // fix "Google Chat isn't supported on your current browser"
+    // https://github.com/atomery/webcatalog/issues/820
+    if (url && url.indexOf('error/browser-not-supported') > -1 && url.startsWith('https://chat.google.com')) {
+      const ref = new URL(url).searchParams.get('ref') || '';
+      view.webContents.loadURL(`https://chat.google.com${ref}`);
+    }
+
     // fix Google prevents signing in because of security concerns
     // https://github.com/quanglam2807/webcatalog/issues/455
     // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
