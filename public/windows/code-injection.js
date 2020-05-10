@@ -19,8 +19,8 @@ const create = (type) => {
   global.codeInjectionType = type;
 
   win = new BrowserWindow({
-    width: 400,
-    height: 350,
+    width: 640,
+    height: 560,
     resizable: false,
     maximizable: false,
     minimizable: false,

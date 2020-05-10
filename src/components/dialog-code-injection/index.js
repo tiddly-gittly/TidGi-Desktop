@@ -2,7 +2,13 @@ import React from 'react';
 import PropTypes from 'prop-types';
 
 import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
+
+import AceEditor from 'react-ace';
+
+import 'ace-builds/src-noconflict/mode-css';
+import 'ace-builds/src-noconflict/mode-javascript';
+import 'ace-builds/src-noconflict/theme-github';
+import 'ace-builds/src-noconflict/theme-monokai';
 
 import connectComponent from '../../helpers/connect-component';
 
@@ -13,12 +19,16 @@ const styles = (theme) => ({
     background: theme.palette.background.paper,
     height: '100vh',
     width: '100vw',
-    padding: theme.spacing(2),
+    padding: 0,
     display: 'flex',
     flexDirection: 'column',
   },
   flexGrow: {
     flex: 1,
+  },
+  actions: {
+    borderTop: `1px solid ${theme.palette.divider}`,
+    padding: theme.spacing(2),
   },
   button: {
     float: 'right',
@@ -26,29 +36,33 @@ const styles = (theme) => ({
   },
 });
 
+const getMode = () => {
+  const codeInjectionType = window.require('electron').remote.getGlobal('codeInjectionType');
+  if (codeInjectionType === 'css') return 'css';
+  if (codeInjectionType === 'js') return 'javascript';
+  return '';
+};
+
 const CodeInjection = ({
-  classes, code, onUpdateForm, onSave,
+  classes,
+  code,
+  onSave,
+  onUpdateForm,
+  shouldUseDarkColors,
 }) => (
   <div className={classes.root}>
     <div className={classes.flexGrow}>
-      <TextField
-        autoFocus
-        id="outlined-full-width"
-        label="Code"
-        placeholder=""
-        fullWidth
-        margin="dense"
-        variant="outlined"
-        multiline
-        rows="12"
-        InputLabelProps={{
-          shrink: true,
-        }}
+      <AceEditor
+        mode={getMode()}
+        theme={shouldUseDarkColors ? 'monokai' : 'github'}
+        height="100%"
+        width="100%"
+        name="codeEditor"
         value={code}
-        onChange={(e) => onUpdateForm({ code: e.target.value })}
+        onChange={(value) => onUpdateForm({ code: value })}
       />
     </div>
-    <div>
+    <div className={classes.actions}>
       <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
         Save
       </Button>
@@ -62,12 +76,14 @@ const CodeInjection = ({
 CodeInjection.propTypes = {
   classes: PropTypes.object.isRequired,
   code: PropTypes.string.isRequired,
-  onUpdateForm: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
+  onUpdateForm: PropTypes.func.isRequired,
+  shouldUseDarkColors: PropTypes.bool.isRequired,
 };
 
 const mapStateToProps = (state) => ({
   code: state.dialogCodeInjection.form.code || '',
+  shouldUseDarkColors: state.general.shouldUseDarkColors,
 });
 
 const actionCreators = {

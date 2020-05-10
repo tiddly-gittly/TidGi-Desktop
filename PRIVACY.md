@@ -25,4 +25,4 @@ Our websites use:
 
 ---
 
-This privacy policy is subject to change without notice and was last updated on March 10, 2019. If you have any questions feel free to [create a GitHub issue](https://github.com/atomery/singlebox/issues) or contact us via [contact@atomery.com](mailto:contact@atomery.com).
+This privacy policy is subject to change without notice and was last updated on April 27, 2019. If you have any questions feel free to [create a GitHub issue](https://github.com/atomery/singlebox/issues) or contact us via [contact@atomery.com](mailto:contact@atomery.com).

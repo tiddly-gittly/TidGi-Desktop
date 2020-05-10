@@ -432,41 +432,6 @@ const Preferences = ({
                 />
               </ListItemSecondaryAction>
             </ListItem>
-            {window.process.platform === 'darwin' && (
-              <>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Swipe to navigate"
-                    secondary={(
-                      <>
-                        <span>Navigate between pages with 3-finger gestures.</span>
-                        <br />
-                        <span>To enable it, you also need to change </span>
-                        <b>
-                          macOS Preferences &gt; Trackpad &gt; More Gestures &gt; Swipe between page
-                        </b>
-                        <span> to </span>
-                        <b>Swipe with three fingers</b>
-                        <span> or </span>
-                        <b>Swipe with two or three fingers.</b>
-                      </>
-                    )}
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      color="primary"
-                      checked={swipeToNavigate}
-                      onChange={(e) => {
-                        requestSetPreference('swipeToNavigate', e.target.checked);
-                        requestShowRequireRestartDialog();
-                      }}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-              </>
-            )}
           </List>
         </Paper>
 
@@ -788,6 +753,32 @@ const Preferences = ({
               />
               <ChevronRightIcon color="action" />
             </ListItem>
+            <Divider />
+            <ListItem>
+              <ListItemText
+                secondary={(
+                  <>
+                    <span>WebCatalog supports notifications out of the box. </span>
+                    <span>But for some web apps, to receive notifications, </span>
+                    <span>you will need to manually configure additional </span>
+                    <span>web app settings. </span>
+                    <span
+                      role="link"
+                      tabIndex={0}
+                      className={classes.link}
+                      onClick={() => requestOpenInBrowser('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps')}
+                      onKeyDown={(e) => {
+                        if (e.key !== 'Enter') return;
+                        requestOpenInBrowser('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
+                      }}
+                    >
+                      Learn more
+                    </span>
+                    <span>.</span>
+                  </>
+                )}
+              />
+            </ListItem>
           </List>
         </Paper>
 
@@ -1066,6 +1057,42 @@ const Preferences = ({
                 />
               </ListItemSecondaryAction>
             </ListItem>
+            {window.process.platform === 'darwin' && (
+              <>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary="Swipe with three fingers to navigate"
+                    secondary={(
+                      <>
+                        <span>Navigate between pages with 3-finger gestures. </span>
+                        <span>Swipe left to go back or swipe right to go forward.</span>
+                        <br />
+                        <span>To enable it, you also need to change </span>
+                        <b>
+                          macOS Preferences &gt; Trackpad &gt; More Gestures &gt; Swipe between page
+                        </b>
+                        <span> to </span>
+                        <b>Swipe with three fingers</b>
+                        <span> or </span>
+                        <b>Swipe with two or three fingers.</b>
+                      </>
+                    )}
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      color="primary"
+                      checked={swipeToNavigate}
+                      onChange={(e) => {
+                        requestSetPreference('swipeToNavigate', e.target.checked);
+                        requestShowRequireRestartDialog();
+                      }}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </>
+            )}
             <Divider />
             <ListItem button onClick={requestShowCustomUserAgentWindow}>
               <ListItemText
