@@ -1,4 +1,5 @@
 const path = require('path');
+const semver = require('semver');
 const settings = require('electron-settings');
 const { app, nativeTheme, ipcMain } = require('electron');
 
@@ -24,7 +25,7 @@ const getDefaultPauseNotificationsByScheduleTo = () => {
 };
 
 const defaultPreferences = {
-  allowPrerelease: false,
+  allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
   askForDownloadPath: true,
   attachToMenubar: false,
   blockAds: false,
