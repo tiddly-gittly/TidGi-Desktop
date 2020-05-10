@@ -55,6 +55,12 @@ if (!gotTheLock) {
     if (!useHardwareAcceleration) {
       app.disableHardwareAcceleration();
     }
+
+    const ignoreCertificateErrors = getPreference('ignoreCertificateErrors');
+    if (ignoreCertificateErrors) {
+      // https://www.electronjs.org/docs/api/command-line-switches
+      app.commandLine.appendSwitch('ignore-certificate-errors');
+    }
   }
 
   // mock app.whenReady

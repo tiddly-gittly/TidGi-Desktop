@@ -42,6 +42,7 @@ const defaultPreferences = {
   downloadPath: getDefaultDownloadsPath(),
   hibernateUnusedWorkspacesAtLaunch: false,
   hideMenuBar: false,
+  ignoreCertificateErrors: false,
   jsCodeInjection: null,
   navigationBar: false,
   pauseNotifications: null,
