@@ -380,8 +380,8 @@ const Preferences = ({
                     <Switch
                       edge="end"
                       color="primary"
-                      checked={!attachToMenubar && !sidebar && !navigationBar ? true : titleBar}
-                      disabled={!attachToMenubar && !sidebar && !navigationBar}
+                      checked={attachToMenubar ? false : titleBar}
+                      disabled={attachToMenubar}
                       onChange={(e) => {
                         requestSetPreference('titleBar', e.target.checked);
                         requestRealignActiveWorkspace();
