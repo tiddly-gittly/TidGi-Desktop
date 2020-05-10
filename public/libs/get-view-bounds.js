@@ -1,6 +1,6 @@
 const getViewBounds = (contentSize, findInPage = false, height, width) => {
   const showSidebar = global.sidebar;
-  const showTitleBar = process.platform === 'darwin' && !global.attachToMenubar && global.titleBar;
+  const showTitleBar = process.platform === 'darwin' && global.titleBar;
   const showNavigationBar = (process.platform === 'linux'
     && global.attachToMenubar
     && !global.sidebar) || global.navigationBar;
