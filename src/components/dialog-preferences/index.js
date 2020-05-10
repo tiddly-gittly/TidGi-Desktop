@@ -710,25 +710,21 @@ const Preferences = ({
                 />
               </ListItemSecondaryAction>
             </ListItem>
-            {window.process.platform === 'darwin' && (
-              <>
-                <Divider />
-                <ListItem>
-                  <ListItemText primary="Show unread count badge" />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      color="primary"
-                      checked={unreadCountBadge}
-                      onChange={(e) => {
-                        requestSetPreference('unreadCountBadge', e.target.checked);
-                        requestShowRequireRestartDialog();
-                      }}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-              </>
-            )}
+            <Divider />
+            <ListItem>
+              <ListItemText primary="Show unread count badge" />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={unreadCountBadge}
+                  onChange={(e) => {
+                    requestSetPreference('unreadCountBadge', e.target.checked);
+                    requestShowRequireRestartDialog();
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
             <Divider />
             <ListItem
               button
