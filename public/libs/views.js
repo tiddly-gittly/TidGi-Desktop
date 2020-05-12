@@ -404,10 +404,8 @@ const addView = (browserWindow, workspace) => {
     if (
       // Google: Switch account
       nextDomain === 'accounts.google.com'
-      /* https://github.com/atomery/webcatalog/issues/315 START */
+      // https://github.com/atomery/webcatalog/issues/315
       || ((appDomain.includes('asana.com') || currentDomain.includes('asana.com')) && nextDomain.includes('asana.com'))
-      || (disposition === 'foreground-tab' && isInternalUrl(nextUrl, [appUrl, currentUrl]))
-      /* https://github.com/atomery/webcatalog/issues/315 END */
     ) {
       e.preventDefault();
       adjustUserAgentByUrl(e.sender.webContents, nextUrl);
