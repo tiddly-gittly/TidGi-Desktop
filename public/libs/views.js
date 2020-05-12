@@ -65,6 +65,12 @@ const equivalentDomain = (domain) => {
 };
 
 const isInternalUrl = (url, currentInternalUrls) => {
+  // external links sent in Google Meet meeting goes through this link first
+  // https://meet.google.com/linkredirect?authuser=1&dest=https://something.com
+  if (url.startsWith('https://meet.google.com/linkredirect')) {
+    return false;
+  }
+
   const domain = equivalentDomain(extractDomain(url));
   const matchedInternalUrl = currentInternalUrls.find((internalUrl) => {
     const internalDomain = equivalentDomain(extractDomain(internalUrl));
