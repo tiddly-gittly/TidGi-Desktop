@@ -18,6 +18,7 @@ import WorkspaceSelector from './workspace-selector';
 import FindInPage from './find-in-page';
 import NavigationBar from './navigation-bar';
 import FakeTitleBar from './fake-title-bar';
+import DraggableRegion from './draggable-region';
 
 import arrowWhite from '../../images/arrow-white.png';
 import arrowBlack from '../../images/arrow-black.png';
@@ -215,6 +216,7 @@ const Main = ({
 
   return (
     <div className={classes.outerRoot}>
+      {workspacesList.length > 0 && <DraggableRegion />}
       {showTitleBar && (<FakeTitleBar />)}
       <div className={classes.root}>
         {sidebar && (
@@ -244,7 +246,7 @@ const Main = ({
               <WorkspaceSelector
                 id="add"
                 onClick={() => {
-                  if (!registered && Object.keys(workspaces).length > 1) {
+                  if (!registered && workspacesList.length > 1) {
                     requestShowLicenseRegistrationWindow();
                     return;
                   }
