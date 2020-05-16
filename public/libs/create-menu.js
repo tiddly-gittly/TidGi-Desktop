@@ -207,9 +207,16 @@ function createMenu() {
         },
         { type: 'separator' },
         {
-          label: 'Reload This Workspace',
+          label: 'Reload This Page',
           accelerator: 'CmdOrCtrl+R',
-          click: () => {
+          click: (menuItem, browserWindow) => {
+            // if item is called in popup window
+            // open menu bar in the popup window instead
+            if (browserWindow && browserWindow.isPopup) {
+              browserWindow.webContents.reload();
+              return;
+            }
+
             const win = mainWindow.get();
 
             if (win != null && win.getBrowserView() != null) {
