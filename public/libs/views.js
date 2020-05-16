@@ -425,8 +425,17 @@ const addView = (browserWindow, workspace) => {
 
     // load in same window
     if (
-      // Google: Switch account
+      // Google: Add account
       nextDomain === 'accounts.google.com'
+      // Google: Switch account
+      || (
+        isInternalUrl(nextUrl, [appUrl, currentUrl])
+        && nextDomain.indexOf('google.com') > 0
+        && (
+          (nextUrl.indexOf('authuser=')) // https://drive.google.com/drive/u/1/priority?authuser=2 (has authuser query)
+          || (/\/u\/[0-9]+\/{0,1}$/.test(nextUrl)) // https://mail.google.com/mail/u/1/ (ends with /u/1/)
+        )
+      )
       // https://github.com/atomery/webcatalog/issues/315
       || ((appDomain.includes('asana.com') || currentDomain.includes('asana.com')) && nextDomain.includes('asana.com'))
     ) {
