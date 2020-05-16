@@ -16,7 +16,7 @@ const styles = () => ({
     width: '100vw',
     WebkitAppRegion: 'drag',
     WebkitUserSelect: 'none',
-    background: 'black',
+    background: 'transparent',
     position: 'absolute',
     top: 0,
     left: 0,
