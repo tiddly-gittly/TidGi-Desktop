@@ -65,6 +65,14 @@ const equivalentDomain = (domain) => {
 };
 
 const isInternalUrl = (url, currentInternalUrls) => {
+  // google have a lot of redirections after logging in
+  // so assume any requests made after 'accounts.google.com' are internals
+  for (let i = 0; i < currentInternalUrls.length; i += 1) {
+    if (currentInternalUrls[i].startsWith('https://accounts.google.com')) {
+      return true;
+    }
+  }
+
   // external links sent in Google Meet meeting goes through this link first
   // https://meet.google.com/linkredirect?authuser=1&dest=https://something.com
   if (url.startsWith('https://meet.google.com/linkredirect')) {
@@ -193,8 +201,17 @@ const addView = (browserWindow, workspace) => {
     };
   }
 
-  view.webContents.on('will-navigate', (e, url) => {
-    adjustUserAgentByUrl(e.sender.webContents, url);
+  view.webContents.on('will-navigate', (e, nextUrl) => {
+    // open external links in browser
+    // https://github.com/atomery/webcatalog/issues/849#issuecomment-629587264
+    const appUrl = getWorkspace(workspace.id).homeUrl;
+    const currentUrl = e.sender.getURL();
+    if (!isInternalUrl(nextUrl, [appUrl, currentUrl])) {
+      e.preventDefault();
+      shell.openExternal(nextUrl);
+    }
+
+    adjustUserAgentByUrl(e.sender.webContents, nextUrl);
   });
 
   view.webContents.on('did-start-loading', () => {
