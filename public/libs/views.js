@@ -68,7 +68,7 @@ const isInternalUrl = (url, currentInternalUrls) => {
   // google have a lot of redirections after logging in
   // so assume any requests made after 'accounts.google.com' are internals
   for (let i = 0; i < currentInternalUrls.length; i += 1) {
-    if (currentInternalUrls[i].startsWith('https://accounts.google.com')) {
+    if (currentInternalUrls[i] && currentInternalUrls[i].startsWith('https://accounts.google.com')) {
       return true;
     }
   }
@@ -429,8 +429,8 @@ const addView = (browserWindow, workspace) => {
       nextDomain === 'accounts.google.com'
       // Google: Switch account
       || (
-        isInternalUrl(nextUrl, [appUrl, currentUrl])
-        && nextDomain.indexOf('google.com') > 0
+        nextDomain && nextDomain.indexOf('google.com') > 0
+        && isInternalUrl(nextUrl, [appUrl, currentUrl])
         && (
           (nextUrl.indexOf('authuser=')) // https://drive.google.com/drive/u/1/priority?authuser=2 (has authuser query)
           || (/\/u\/[0-9]+\/{0,1}$/.test(nextUrl)) // https://mail.google.com/mail/u/1/ (ends with /u/1/)
