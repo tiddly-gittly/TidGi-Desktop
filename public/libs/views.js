@@ -204,9 +204,16 @@ const addView = (browserWindow, workspace) => {
   view.webContents.on('will-navigate', (e, nextUrl) => {
     // open external links in browser
     // https://github.com/atomery/webcatalog/issues/849#issuecomment-629587264
+    // this behavior is likely to break many apps (eg Microsoft Teams)
+    // apply this rule only to github.com for now
     const appUrl = getWorkspace(workspace.id).homeUrl;
     const currentUrl = e.sender.getURL();
-    if (!isInternalUrl(nextUrl, [appUrl, currentUrl])) {
+    const appDomain = extractDomain(appUrl);
+    const currentDomain = extractDomain(currentUrl);
+    if (
+      (appDomain.includes('github.com') || currentDomain.includes('github.com'))
+      && !isInternalUrl(nextUrl, [appUrl, currentUrl])
+    ) {
       e.preventDefault();
       shell.openExternal(nextUrl);
     }

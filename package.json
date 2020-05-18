@@ -23,7 +23,6 @@
   "dependencies": {
     "@cliqz/adblocker-electron": "1.14.4",
     "cheerio": "1.0.0-rc.3",
-    "core-js": "3.6.5",
     "darkreader": "4.9.2",
     "download": "8.0.0",
     "electron-context-menu": "2.0.1",
@@ -34,7 +33,7 @@
     "follow-redirects": "1.11.0",
     "fs-extra": "9.0.0",
     "is-url": "1.2.4",
-    "jimp": "0.11.0",
+    "jimp": "0.12.0",
     "menubar": "8.0.2",
     "node-fetch": "2.6.0",
     "proxy-agent": "3.1.1",
