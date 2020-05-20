@@ -216,6 +216,7 @@ const addView = (browserWindow, workspace) => {
     ) {
       e.preventDefault();
       shell.openExternal(nextUrl);
+      return;
     }
 
     adjustUserAgentByUrl(e.sender.webContents, nextUrl);
