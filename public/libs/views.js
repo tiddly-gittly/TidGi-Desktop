@@ -440,7 +440,7 @@ const addView = (browserWindow, workspace) => {
         nextDomain && nextDomain.indexOf('google.com') > 0
         && isInternalUrl(nextUrl, [appUrl, currentUrl])
         && (
-          (nextUrl.indexOf('authuser=')) // https://drive.google.com/drive/u/1/priority?authuser=2 (has authuser query)
+          (nextUrl.indexOf('authuser=') > -1) // https://drive.google.com/drive/u/1/priority?authuser=2 (has authuser query)
           || (/\/u\/[0-9]+\/{0,1}$/.test(nextUrl)) // https://mail.google.com/mail/u/1/ (ends with /u/1/)
         )
       )
