@@ -1,7 +1,7 @@
 {
   "name": "Singlebox",
   "description": "All Your Apps in One Single Window",
-  "version": "3.6.3",
+  "version": "3.6.4",
   "engines": {
     "node": ">=12.0.0 <13.0.0"
   },
@@ -28,12 +28,12 @@
     "electron-context-menu": "2.0.1",
     "electron-is-dev": "1.2.0",
     "electron-settings": "3.2.0",
-    "electron-updater": "4.3.1",
+    "electron-updater": "4.3.2",
     "electron-window-state": "5.0.3",
     "follow-redirects": "1.11.0",
     "fs-extra": "9.0.0",
     "is-url": "1.2.4",
-    "jimp": "0.12.0",
+    "jimp": "0.12.1",
     "menubar": "8.0.2",
     "node-fetch": "2.6.0",
     "proxy-agent": "3.1.1",
@@ -57,7 +57,7 @@
     "cross-env": "7.0.2",
     "date-fns": "2.13.0",
     "electron": "8.3.0",
-    "electron-builder": "22.6.0",
+    "electron-builder": "22.6.1",
     "electron-notarize": "0.3.0",
     "eslint": "6.8.0",
     "eslint-config-airbnb": "18.1.0",
