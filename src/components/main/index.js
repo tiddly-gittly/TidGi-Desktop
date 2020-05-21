@@ -57,6 +57,8 @@ const styles = (theme) => ({
     display: 'flex',
     flexDirection: 'row',
     flex: 1,
+    height: '100%',
+    width: '100%',
   },
   sidebarRoot: {
     height: '100%',
