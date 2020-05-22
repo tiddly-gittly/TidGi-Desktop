@@ -74,6 +74,7 @@
     "react-sortable-hoc": "1.11.0",
     "redux": "4.0.5",
     "redux-thunk": "2.3.0",
+    "simplebar": "5.2.0",
     "simplebar-react": "2.2.0",
     "typeface-roboto": "0.0.75",
     "wait-on": "5.0.0"

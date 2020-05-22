@@ -12270,7 +12270,7 @@ simplebar-react@2.2.0:
     prop-types "^15.6.1"
     simplebar "^5.2.0"
 
-simplebar@^5.2.0:
+simplebar@5.2.0, simplebar@^5.2.0:
   version "5.2.0"
   resolved "https://registry.yarnpkg.com/simplebar/-/simplebar-5.2.0.tgz#032e6e435032a0a6f26146f190bdd1095d5a9d2f"
   integrity sha512-CpVSINCQ/XAYABUdUAnVWHyjkBYoFu+s12IUrZgVNfXzILNXP0MP+5OaIBjylzjYxIE/rsuC1K50/xJldPGGpQ==
