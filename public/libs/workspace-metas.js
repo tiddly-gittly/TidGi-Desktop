@@ -5,7 +5,7 @@ const sendToAllWindows = require('./send-to-all-windows');
 // badge count, error, etc
 const workspaceMetas = {};
 
-const getWorkspaceMeta = (id) => workspaceMetas[id];
+const getWorkspaceMeta = (id) => workspaceMetas[id] || {};
 
 const getWorkspaceMetas = () => workspaceMetas;
 
