@@ -5,8 +5,6 @@ import {
   UPDATE_CAN_GO_BACK,
   UPDATE_CAN_GO_FORWARD,
   UPDATE_DID_FAIL_LOAD,
-  UPDATE_IS_DEFAULT_MAIL_CLIENT,
-  UPDATE_IS_DEFAULT_WEB_BROWSER,
   UPDATE_IS_FULL_SCREEN,
   UPDATE_IS_LOADING,
   UPDATE_ADDRESS_BAR_INFO,
@@ -61,20 +59,6 @@ const isFullScreen = (state = remote.getCurrentWindow().isFullScreen(), action) 
   }
 };
 
-const isDefaultMailClient = (state = remote.app.isDefaultProtocolClient('mailto'), action) => {
-  switch (action.type) {
-    case UPDATE_IS_DEFAULT_MAIL_CLIENT: return action.isDefaultMailClient;
-    default: return state;
-  }
-};
-
-const isDefaultWebBrowser = (state = remote.app.isDefaultProtocolClient('http'), action) => {
-  switch (action.type) {
-    case UPDATE_IS_DEFAULT_WEB_BROWSER: return action.isDefaultWebBrowser;
-    default: return state;
-  }
-};
-
 const isLoading = (state = true, action) => {
   switch (action.type) {
     case UPDATE_IS_LOADING: return action.isLoading;
@@ -102,8 +86,6 @@ export default combineReducers({
   canGoBack,
   canGoForward,
   didFailLoad,
-  isDefaultMailClient,
-  isDefaultWebBrowser,
   isFullScreen,
   isLoading,
   shouldUseDarkColors,
