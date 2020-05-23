@@ -75,6 +75,13 @@ const styles = (theme) => ({
     fontSize: '0.8rem !important',
     paddingLeft: 4,
   },
+  homeContainer: {
+    flex: 1,
+    display: 'flex',
+    flexDirection: 'column',
+    height: '100%',
+    overflow: 'hidden',
+  },
 });
 
 class AddWorkspace extends React.Component {
@@ -196,26 +203,25 @@ class AddWorkspace extends React.Component {
 
     return (
       <div className={classes.root}>
-        {mode === 'catalog' ? (
-          <>
-            <Grid container spacing={2}>
+        <div className={classes.homeContainer} style={mode !== 'catalog' ? { display: 'none' } : null}>
+          <Grid container spacing={2}>
+            <Grid item xs={12}>
+              <SearchBox />
+            </Grid>
+          </Grid>
+          <div
+            className={classes.scrollContainer}
+            ref={(container) => { this.scrollContainer = container; }}
+          >
+            <Grid container className={classes.grid} spacing={2}>
               <Grid item xs={12}>
-                <SearchBox />
+                {renderContent()}
               </Grid>
             </Grid>
-            <div
-              className={classes.scrollContainer}
-              ref={(container) => { this.scrollContainer = container; }}
-            >
-              <Grid container className={classes.grid} spacing={2}>
-                <Grid item xs={12}>
-                  {renderContent()}
-                </Grid>
-              </Grid>
-              {isGetting && (<LinearProgress />)}
-            </div>
-          </>
-        ) : <Form />}
+            {isGetting && (<LinearProgress />)}
+          </div>
+        </div>
+        {mode === 'custom' && <Form />}
 
         <Paper elevation={1} square className={classes.paper}>
           <BottomNavigation
