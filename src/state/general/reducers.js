@@ -4,9 +4,7 @@ import {
   UPDATE_SHOULD_USE_DARK_COLORS,
   UPDATE_CAN_GO_BACK,
   UPDATE_CAN_GO_FORWARD,
-  UPDATE_DID_FAIL_LOAD,
   UPDATE_IS_FULL_SCREEN,
-  UPDATE_IS_LOADING,
   UPDATE_ADDRESS_BAR_INFO,
   UPDATE_TITLE,
 } from '../../constants/actions';
@@ -59,23 +57,9 @@ const isFullScreen = (state = remote.getCurrentWindow().isFullScreen(), action) 
   }
 };
 
-const isLoading = (state = true, action) => {
-  switch (action.type) {
-    case UPDATE_IS_LOADING: return action.isLoading;
-    default: return state;
-  }
-};
-
 const shouldUseDarkColors = (state = getShouldUseDarkColors(), action) => {
   switch (action.type) {
     case UPDATE_SHOULD_USE_DARK_COLORS: return action.shouldUseDarkColors;
-    default: return state;
-  }
-};
-
-const didFailLoad = (state = false, action) => {
-  switch (action.type) {
-    case UPDATE_DID_FAIL_LOAD: return action.didFailLoad;
     default: return state;
   }
 };
@@ -85,9 +69,7 @@ export default combineReducers({
   addressEdited,
   canGoBack,
   canGoForward,
-  didFailLoad,
   isFullScreen,
-  isLoading,
   shouldUseDarkColors,
   title,
 });

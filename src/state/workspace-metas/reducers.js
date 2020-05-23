@@ -1,13 +1,13 @@
 import { SET_WORKSPACE_META, SET_WORKSPACE_METAS } from '../../constants/actions';
 
-import { getWorkspaces } from '../../senders';
+import { getWorkspaceMetas } from '../../senders';
 
-const initialState = getWorkspaces();
+const initialState = getWorkspaceMetas();
 
-const workspaces = (state = initialState, action) => {
+const workspaceMetas = (state = initialState, action) => {
   switch (action.type) {
     case SET_WORKSPACE_METAS: {
-      return action.workspaces;
+      return action.workspaceMetas;
     }
     case SET_WORKSPACE_META: {
       const newState = { ...state };
@@ -22,4 +22,4 @@ const workspaces = (state = initialState, action) => {
   }
 };
 
-export default workspaces;
+export default workspaceMetas;

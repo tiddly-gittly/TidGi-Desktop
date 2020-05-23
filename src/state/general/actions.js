@@ -3,9 +3,7 @@ import {
   UPDATE_ADDRESS_BAR_INFO,
   UPDATE_CAN_GO_BACK,
   UPDATE_CAN_GO_FORWARD,
-  UPDATE_DID_FAIL_LOAD,
   UPDATE_IS_FULL_SCREEN,
-  UPDATE_IS_LOADING,
   UPDATE_TITLE,
 } from '../../constants/actions';
 
@@ -24,19 +22,9 @@ export const updateCanGoForward = (canGoForward) => ({
   canGoForward,
 });
 
-export const updateDidFailLoad = (didFailLoad) => ({
-  type: UPDATE_DID_FAIL_LOAD,
-  didFailLoad,
-});
-
 export const updateIsFullScreen = (isFullScreen) => ({
   type: UPDATE_IS_FULL_SCREEN,
   isFullScreen,
-});
-
-export const updateIsLoading = (isLoading) => ({
-  type: UPDATE_IS_LOADING,
-  isLoading,
 });
 
 export const updateAddressBarInfo = (address, edited) => ({

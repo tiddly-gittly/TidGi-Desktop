@@ -5,6 +5,8 @@ import classNames from 'classnames';
 import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
 
+import Button from '@material-ui/core/Button';
+import CircularProgress from '@material-ui/core/CircularProgress';
 import IconButton from '@material-ui/core/IconButton';
 import Typography from '@material-ui/core/Typography';
 
@@ -37,6 +39,7 @@ import {
   requestShowNotificationsWindow,
   requestShowPreferencesWindow,
   requestWakeUpWorkspace,
+  requestReload,
 } from '../../senders';
 
 // https://github.com/sindresorhus/array-move/blob/master/index.js
@@ -147,8 +150,9 @@ const styles = (theme) => ({
     display: 'flex',
     flexDirection: 'column',
   },
-  loading: {
-    color: theme.palette.text.disabled,
+  ul: {
+    marginTop: 0,
+    marginBottom: '1.5rem',
   },
 });
 
@@ -291,26 +295,34 @@ const Main = ({
           <div className={classes.innerContentRoot}>
             {Object.keys(workspaces).length > 0 && didFailLoad && !isLoading && (
               <div>
-                <Typography align="center" variant="h6">
+                <Typography align="left" variant="h5">
                   This site can’t be reached.
                 </Typography>
-
-                <Typography align="center" variant="body2">
-                  Try:
-                  - Checking the network cables, modem, and router.
-                  - Checking the proxy and the firewall.
-                  - Reconnecting to Wi-Fi.
+                <Typography align="left" variant="body2">
+                  {didFailLoad}
                 </Typography>
 
-                <Typography align="center" variant="body2">
-                  Press ⌘ + R to reload.
+                <br />
+                <Typography align="left" variant="body2">
+                  <>
+                    Try:
+                    <ul className={classes.ul}>
+                      <li>Checking the network cables, modem, and router.</li>
+                      <li>Checking the proxy and the firewall.</li>
+                      <li>Reconnecting to Wi-Fi.</li>
+                    </ul>
+                  </>
                 </Typography>
+
+                <Button variant="outlined" onClick={requestReload}>
+                  Reload
+                </Button>
               </div>
             )}
             {Object.keys(workspaces).length > 0 && isLoading && (
-              <Typography align="center" variant="body2" className={classes.loading}>
-                Loading...
-              </Typography>
+              <CircularProgress
+                size={24}
+              />
             )}
             {Object.keys(workspaces).length < 1 && (
               <div>
@@ -343,11 +355,16 @@ const Main = ({
   );
 };
 
+Main.defaultProps = {
+  didFailLoad: null,
+  isLoading: false,
+};
+
 Main.propTypes = {
   classes: PropTypes.object.isRequired,
-  didFailLoad: PropTypes.bool.isRequired,
+  didFailLoad: PropTypes.string,
   isFullScreen: PropTypes.bool.isRequired,
-  isLoading: PropTypes.bool.isRequired,
+  isLoading: PropTypes.bool,
   navigationBar: PropTypes.bool.isRequired,
   registered: PropTypes.bool.isRequired,
   shouldPauseNotifications: PropTypes.bool.isRequired,
@@ -356,20 +373,31 @@ Main.propTypes = {
   workspaces: PropTypes.object.isRequired,
 };
 
-const mapStateToProps = (state) => ({
-  didFailLoad: state.general.didFailLoad,
-  isFullScreen: state.general.isFullScreen,
-  isLoading: state.general.isLoading,
-  navigationBar: (window.process.platform === 'linux'
-    && state.preferences.attachToMenubar
-    && !state.preferences.sidebar)
-    || state.preferences.navigationBar,
-  registered: state.preferences.registered,
-  shouldPauseNotifications: state.notifications.pauseNotificationsInfo !== null,
-  sidebar: state.preferences.sidebar,
-  titleBar: state.preferences.titleBar,
-  workspaces: state.workspaces,
-});
+const mapStateToProps = (state) => {
+  const activeWorkspace = Object.values(state.workspaces)
+    .find((workspace) => workspace.active);
+
+  console.log(state.workspaceMetas);
+
+  return {
+    didFailLoad: activeWorkspace && state.workspaceMetas[activeWorkspace.id]
+      ? state.workspaceMetas[activeWorkspace.id].didFailLoad
+      : null,
+    isFullScreen: state.general.isFullScreen,
+    isLoading: activeWorkspace && state.workspaceMetas[activeWorkspace.id]
+      ? Boolean(state.workspaceMetas[activeWorkspace.id].isLoading)
+      : false,
+    navigationBar: (window.process.platform === 'linux'
+      && state.preferences.attachToMenubar
+      && !state.preferences.sidebar)
+      || state.preferences.navigationBar,
+    registered: state.preferences.registered,
+    shouldPauseNotifications: state.notifications.pauseNotificationsInfo !== null,
+    sidebar: state.preferences.sidebar,
+    titleBar: state.preferences.titleBar,
+    workspaces: state.workspaces,
+  };
+};
 
 export default connectComponent(
   Main,

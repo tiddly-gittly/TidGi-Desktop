@@ -6,7 +6,7 @@ export const setWorkspaceMeta = (id, value) => ({
   value,
 });
 
-export const setWorkspaceMetas = (workspaces) => ({
+export const setWorkspaceMetas = (workspaceMetas) => ({
   type: SET_WORKSPACE_METAS,
-  workspaces,
+  workspaceMetas,
 });

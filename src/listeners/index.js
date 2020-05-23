@@ -7,9 +7,7 @@ import {
   updateAddressBarInfo,
   updateCanGoBack,
   updateCanGoForward,
-  updateDidFailLoad,
   updateIsFullScreen,
-  updateIsLoading,
   updateShouldUseDarkColors,
   updateTitle,
 } from '../state/general/actions';
@@ -81,14 +79,6 @@ const loadListeners = (store) => {
 
   ipcRenderer.on('update-can-go-forward', (e, value) => {
     store.dispatch(updateCanGoForward(value));
-  });
-
-  ipcRenderer.on('update-is-loading', (e, value) => {
-    store.dispatch(updateIsLoading(value));
-  });
-
-  ipcRenderer.on('update-did-fail-load', (e, value) => {
-    store.dispatch(updateDidFailLoad(value));
   });
 
   // Find In Page
