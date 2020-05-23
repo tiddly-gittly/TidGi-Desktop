@@ -26,7 +26,6 @@ const ListItemDefaultMailClient = () => {
         const userChoicePath = `HKCU\\SOFTWARE\\Microsoft\\Windows\\Shell\\Associations\\URLAssociations\\${protocolName}\\UserChoice`;
         window.require('electron').remote.require('regedit').list([userChoicePath], (err, result) => {
           try {
-            console.log(result[userChoicePath].values.ProgId.value);
             setIsDefault(!err && result[userChoicePath].values.ProgId.value === 'Singlebox');
           } catch (tryErr) {
             // eslint-disable-next-line no-console
@@ -37,7 +36,7 @@ const ListItemDefaultMailClient = () => {
         return;
       }
 
-      setIsDefault(window.require('electron').app.isDefaultProtocolClient('mailto'));
+      setIsDefault(window.require('electron').remote.app.isDefaultProtocolClient('mailto'));
     },
     [isWindows10],
   );
@@ -81,7 +80,7 @@ const ListItemDefaultMailClient = () => {
         size="small"
         color="default"
         onClick={() => {
-          window.require('electron').app.setAsDefaultProtocolClient('mailto');
+          window.require('electron').remote.app.setAsDefaultProtocolClient('mailto');
           recheckIsDefault();
         }}
       >

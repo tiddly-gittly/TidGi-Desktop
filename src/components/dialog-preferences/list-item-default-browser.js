@@ -36,7 +36,7 @@ const ListItemDefaultBrowser = () => {
         return;
       }
 
-      setIsDefault(window.require('electron').app.isDefaultProtocolClient('http'));
+      setIsDefault(window.require('electron').remote.app.isDefaultProtocolClient('http'));
     },
     [isWindows10],
   );
@@ -84,8 +84,8 @@ const ListItemDefaultBrowser = () => {
         size="small"
         color="default"
         onClick={() => {
-          window.require('electron').app.setAsDefaultProtocolClient('http');
-          window.require('electron').app.setAsDefaultProtocolClient('https');
+          window.require('electron').remote.app.setAsDefaultProtocolClient('http');
+          window.require('electron').remote.app.setAsDefaultProtocolClient('https');
           recheckIsDefault();
         }}
       >
