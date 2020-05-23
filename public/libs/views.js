@@ -15,13 +15,16 @@ const {
   getWorkspace,
   setWorkspace,
 } = require('./workspaces');
+const {
+  setWorkspaceMeta,
+  getWorkspaceMetas,
+} = require('./workspace-metas');
 
 const sendToAllWindows = require('./send-to-all-windows');
 const getViewBounds = require('./get-view-bounds');
 const customizedFetch = require('./customized-fetch');
 
 const views = {};
-const badgeCounts = {};
 const didFailLoad = {};
 let shouldMuteAudio;
 let shouldPauseNotifications;
@@ -559,14 +562,16 @@ const addView = (browserWindow, workspace) => {
 
       const incStr = match ? match[1] : '';
       const inc = parseInt(incStr, 10) || 0;
-      badgeCounts[workspace.id] = inc;
-      sendToAllWindows('set-workspace', workspace.id, {
+      setWorkspaceMeta(workspace.id, {
         badgeCount: inc,
       });
 
       let count = 0;
-      Object.values(badgeCounts).forEach((c) => {
-        count += c;
+      const metas = getWorkspaceMetas();
+      Object.values(metas).forEach((m) => {
+        if (m && m.badgeCount) {
+          count += m.badgeCount;
+        }
       });
 
       app.badgeCount = count;
