@@ -1137,36 +1137,36 @@
     lodash "^4.17.13"
     to-fast-properties "^2.0.0"
 
-"@cliqz/adblocker-content@^1.14.4":
-  version "1.14.4"
-  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-content/-/adblocker-content-1.14.4.tgz#6b8e6da307a58fe4817431cda6b4c5a7cb8298b8"
-  integrity sha512-xuQ93BoHKE2PbL8X1v2J7Eu9Ckgrh2rya9FnTgzQ1cyMn6vvtT4m/VSm/dt/JiRcKJbdMCyQA/1Z2GW0iVZz4A==
+"@cliqz/adblocker-content@^1.15.0":
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-content/-/adblocker-content-1.15.0.tgz#0b4df757319feb61b91645181bc47d02f124524f"
+  integrity sha512-ggZTM7ffzdhRdu3Y3Ge2+wVO2WDKxVDnBYtukKcswqXxIfAMSHB7i5wZWz1eYkqK8LJ82ljQLN9ENP+TNE9oYA==
 
-"@cliqz/adblocker-electron-preload@^1.14.4":
-  version "1.14.4"
-  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-electron-preload/-/adblocker-electron-preload-1.14.4.tgz#dab84c7607b4b5aad4e4dc27951acee476742321"
-  integrity sha512-zkNu3VMfc85AufEVPflynvTuOTi82zilMkPnXAvbKY7906ZyzQNvk40vsYKdHofe5yGMrapoN6uPVsg2d91zIA==
+"@cliqz/adblocker-electron-preload@^1.15.0":
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-electron-preload/-/adblocker-electron-preload-1.15.0.tgz#535ddb339b752a1e0629e7e87b315c363987af05"
+  integrity sha512-oT2XpC0hE6pU/fLYJQWygxk53uJ5ge3zQpYahHA1f6icUVSgKOxMkOzy+IVN/R5x/kzrsar4eN8JaLF1KXdGog==
   dependencies:
-    "@cliqz/adblocker-content" "^1.14.4"
+    "@cliqz/adblocker-content" "^1.15.0"
 
-"@cliqz/adblocker-electron@1.14.4":
-  version "1.14.4"
-  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-electron/-/adblocker-electron-1.14.4.tgz#08c0b47779aff7f2a6cff314e61868d9133c5ffb"
-  integrity sha512-PS92AqE8Xmu058HFVA11FHfNyOzYwISe23ajqzqANfEBzTf1JPicabNdmuFqvA7dZT993tjCuPJUCuRE6/jr1Q==
+"@cliqz/adblocker-electron@1.15.0":
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/@cliqz/adblocker-electron/-/adblocker-electron-1.15.0.tgz#dccbae3b68e0ed21a2c9b9f55ed14e97e397d44a"
+  integrity sha512-foJESjjoSRPeP7U3mB5hc6nfHYw1ahnI3A/MubxzRnrsHGMaDmYkhZbd2udh3WMxzM2s8ofCtgPOiYLz++YMXw==
   dependencies:
-    "@cliqz/adblocker" "^1.14.4"
-    "@cliqz/adblocker-electron-preload" "^1.14.4"
+    "@cliqz/adblocker" "^1.15.0"
+    "@cliqz/adblocker-electron-preload" "^1.15.0"
     tldts-experimental "^5.6.21"
 
-"@cliqz/adblocker@^1.14.4":
-  version "1.14.4"
-  resolved "https://registry.yarnpkg.com/@cliqz/adblocker/-/adblocker-1.14.4.tgz#19e7a882880b3919a0949d41fe7352622065bcf2"
-  integrity sha512-3lTnstcPzNytR/NJ1VS5wt3iztt0tgiPJqXeOhbp80G9XfXsWfj18n6IJryyillbkNyRlmi7ElS3s/DGAZ17Bw==
+"@cliqz/adblocker@^1.15.0":
+  version "1.15.0"
+  resolved "https://registry.yarnpkg.com/@cliqz/adblocker/-/adblocker-1.15.0.tgz#c156d9832a29dc6d36b729dbf3de31966d2734f6"
+  integrity sha512-ivjYEP2rCheUcqWqDkbcELnthby+/EmkbMUvCIRdMXdkHh5c6Pp3JJ5lPRBfDnzc/flqF7TPbgKRf0+y2/Ni8g==
   dependencies:
     "@remusao/guess-url-type" "^1.1.2"
     "@remusao/small" "^1.1.2"
     "@remusao/smaz" "^1.7.1"
-    "@types/chrome" "^0.0.107"
+    "@types/chrome" "^0.0.114"
     "@types/firefox-webext-browser" "^70.0.1"
     tldts-experimental "^5.6.21"
 
@@ -1738,13 +1738,13 @@
     "@babel/runtime" "^7.7.2"
     regenerator-runtime "^0.13.3"
 
-"@material-ui/core@4.9.14":
-  version "4.9.14"
-  resolved "https://registry.yarnpkg.com/@material-ui/core/-/core-4.9.14.tgz#4388f82cf94554cd3a935774fc12820f3c607a8a"
-  integrity sha512-71oYrOpInx5honJ9GzZlygPjmsFhn7Bui61/SWLJsPTkMnfvuZfU3qVqlEHjXyDsnZ+uKmLAIdsrOYnphJxxXw==
+"@material-ui/core@4.10.0":
+  version "4.10.0"
+  resolved "https://registry.yarnpkg.com/@material-ui/core/-/core-4.10.0.tgz#e214e8f7981ff7975a918404b94508418642e463"
+  integrity sha512-yVlHe4b8AaoiTHhCOZeszHZ+T2iHU5DncdMGeNcQaaaO+q/Qrq0hxP3iFzTbgjRWnWwftEVQL668GRxcPJVRaQ==
   dependencies:
     "@babel/runtime" "^7.4.4"
-    "@material-ui/styles" "^4.9.14"
+    "@material-ui/styles" "^4.10.0"
     "@material-ui/system" "^4.9.14"
     "@material-ui/types" "^5.1.0"
     "@material-ui/utils" "^4.9.12"
@@ -1775,10 +1775,10 @@
     react-transition-group "^4.0.0"
     rifm "^0.7.0"
 
-"@material-ui/styles@^4.9.14":
-  version "4.9.14"
-  resolved "https://registry.yarnpkg.com/@material-ui/styles/-/styles-4.9.14.tgz#0a9e93a2bf24e8daa0811411a6f3dabdafbe9a07"
-  integrity sha512-zecwWKgRU2VzdmutNovPB4s5LKI0TWyZKc/AHfPu9iY8tg4UoLjpa4Rn9roYrRfuTbBZHI6b0BXcQ8zkis0nzQ==
+"@material-ui/styles@^4.10.0":
+  version "4.10.0"
+  resolved "https://registry.yarnpkg.com/@material-ui/styles/-/styles-4.10.0.tgz#2406dc23aa358217aa8cc772e6237bd7f0544071"
+  integrity sha512-XPwiVTpd3rlnbfrgtEJ1eJJdFCXZkHxy8TrdieaTvwxNYj42VnnCyFzxYeNW9Lhj4V1oD8YtQ6S5Gie7bZDf7Q==
   dependencies:
     "@babel/runtime" "^7.4.4"
     "@emotion/hash" "^0.8.0"
@@ -2022,10 +2022,10 @@
   dependencies:
     "@babel/types" "^7.3.0"
 
-"@types/chrome@^0.0.107":
-  version "0.0.107"
-  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.107.tgz#0719eff4fa4424e034621a2b772545a966364526"
-  integrity sha512-7z/4YkJu4B8ROxZhbzIx5olbRJqzoDdAoMhSzcJlElsZzv2eTxsvxNkN/QFq0ClbAFNkFf07XVoTrWFHD12QyA==
+"@types/chrome@^0.0.114":
+  version "0.0.114"
+  resolved "https://registry.yarnpkg.com/@types/chrome/-/chrome-0.0.114.tgz#8ceb33fa261f4b9e307fa7344ba8182d8d410d4e"
+  integrity sha512-i7qRr74IrxHtbnrZSKUuP5Uvd5EOKwlwJq/yp7+yTPihOXnPhNQO4Z5bqb1XTnrjdbUKEJicaVVbhcgtRijmLA==
   dependencies:
     "@types/filesystem" "*"
     "@types/har-format" "*"
