@@ -377,8 +377,6 @@ const mapStateToProps = (state) => {
   const activeWorkspace = Object.values(state.workspaces)
     .find((workspace) => workspace.active);
 
-  console.log(state.workspaceMetas);
-
   return {
     didFailLoad: activeWorkspace && state.workspaceMetas[activeWorkspace.id]
       ? state.workspaceMetas[activeWorkspace.id].didFailLoad
