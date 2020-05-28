@@ -2,7 +2,6 @@ import PropTypes from 'prop-types';
 import React from 'react';
 
 import Button from '@material-ui/core/Button';
-import Grid from '@material-ui/core/Grid';
 import Typography from '@material-ui/core/Typography';
 import Paper from '@material-ui/core/Paper';
 import IconButton from '@material-ui/core/IconButton';
@@ -23,8 +22,13 @@ const styles = (theme) => ({
     width: '100%',
     boxSizing: 'border-box',
     borderRadius: 4,
-    padding: theme.spacing(1),
+    paddingLeft: theme.spacing(1),
+    paddingRight: theme.spacing(1),
     display: 'flex',
+    justifyContent: 'center',
+    alignItems: 'center',
+    height: 52,
+    marginTop: theme.spacing(1),
     border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
   },
   appName: {
@@ -78,61 +82,57 @@ const AppCard = (props) => {
   } = props;
 
   return (
-    <Grid item xs={12}>
-      <Paper elevation={0} className={classes.card}>
-        <div>
-          <img
-            alt={name}
-            className={classes.paperIcon}
-            src={icon128 || (isUrl(icon) ? icon : `file://${icon}`)}
-          />
-        </div>
-        <div className={classes.infoContainer}>
-          <Typography variant="subtitle2" className={classes.appName}>
-            {name}
-          </Typography>
-          <Typography variant="body2" color="textSecondary" className={classes.appUrl}>
-            {extractHostname(url)}
-          </Typography>
-        </div>
-        <div className={classes.actionContainer}>
-          <StatedMenu
-            id={`more-menu-${extractHostname(url)}`}
-            buttonElement={(
-              <IconButton size="small" aria-label="Delete" className={classes.topRight}>
-                <MoreVertIcon fontSize="small" />
-              </IconButton>
-            )}
-          >
-            <MenuItem
-              dense
-              onClick={() => {
-                onUpdateForm({
-                  name, homeUrl: url, picturePath: icon,
-                });
-                onUpdateMode('custom');
-              }}
-            >
-              Create Custom Workspace from&nbsp;
-              {name}
-            </MenuItem>
-          </StatedMenu>
-          <Button
-            className={classes.actionButton}
-            color="primary"
-            size="small"
-            variant="contained"
-            disableElevation
+    <Paper elevation={0} className={classes.card}>
+      <img
+        alt={name}
+        className={classes.paperIcon}
+        src={icon128 || (isUrl(icon) ? icon : `file://${icon}`)}
+      />
+      <div className={classes.infoContainer}>
+        <Typography variant="subtitle2" className={classes.appName}>
+          {name}
+        </Typography>
+        <Typography variant="body2" color="textSecondary" className={classes.appUrl}>
+          {extractHostname(url)}
+        </Typography>
+      </div>
+      <div className={classes.actionContainer}>
+        <StatedMenu
+          id={`more-menu-${extractHostname(url)}`}
+          buttonElement={(
+            <IconButton size="small" aria-label="Delete" className={classes.topRight}>
+              <MoreVertIcon fontSize="small" />
+            </IconButton>
+          )}
+        >
+          <MenuItem
+            dense
             onClick={() => {
-              requestCreateWorkspace(name, url, icon128);
-              window.require('electron').remote.getCurrentWindow().close();
+              onUpdateForm({
+                name, homeUrl: url, picturePath: icon,
+              });
+              onUpdateMode('custom');
             }}
           >
-            Add
-          </Button>
-        </div>
-      </Paper>
-    </Grid>
+            Create Custom Workspace from&nbsp;
+            {name}
+          </MenuItem>
+        </StatedMenu>
+        <Button
+          className={classes.actionButton}
+          color="primary"
+          size="small"
+          variant="contained"
+          disableElevation
+          onClick={() => {
+            requestCreateWorkspace(name, url, icon128);
+            window.require('electron').remote.getCurrentWindow().close();
+          }}
+        >
+          Add
+        </Button>
+      </div>
+    </Paper>
   );
 };
 

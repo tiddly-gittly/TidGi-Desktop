@@ -5,6 +5,7 @@ import {
   ADD_WORKSPACE_GET_REQUEST,
   ADD_WORKSPACE_GET_SUCCESS,
   ADD_WORKSPACE_RESET,
+  ADD_WORKSPACE_UPDATE_SCROLL_OFFSET,
   ADD_WORKSPACE_UPDATE_CURRENT_QUERY,
   ADD_WORKSPACE_UPDATE_DOWNLOADING_ICON,
   ADD_WORKSPACE_UPDATE_FORM,
@@ -95,6 +96,13 @@ const downloadingIcon = (state = false, action) => {
   }
 };
 
+const scrollOffset = (state = 0, action) => {
+  switch (action.type) {
+    case ADD_WORKSPACE_UPDATE_SCROLL_OFFSET: return action.scrollOffset;
+    default: return state;
+  }
+};
+
 export default combineReducers({
   currentQuery,
   downloadingIcon,
@@ -105,5 +113,6 @@ export default combineReducers({
   mode,
   page,
   query,
+  scrollOffset,
   totalPage,
 });

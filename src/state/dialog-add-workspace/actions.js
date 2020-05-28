@@ -5,6 +5,7 @@ import {
   ADD_WORKSPACE_GET_REQUEST,
   ADD_WORKSPACE_GET_SUCCESS,
   ADD_WORKSPACE_RESET,
+  ADD_WORKSPACE_UPDATE_SCROLL_OFFSET,
   ADD_WORKSPACE_UPDATE_CURRENT_QUERY,
   ADD_WORKSPACE_UPDATE_DOWNLOADING_ICON,
   ADD_WORKSPACE_UPDATE_FORM,
@@ -34,7 +35,7 @@ export const getHits = () => (dispatch, getState) => {
   if (isGetting) return;
 
   // If all pages have already been fetched, we stop
-  if (totalPage && page + 1 > totalPage) return;
+  if (totalPage && page + 1 >= totalPage) return;
 
   dispatch({
     type: ADD_WORKSPACE_GET_REQUEST,
@@ -42,7 +43,7 @@ export const getHits = () => (dispatch, getState) => {
 
   index.search(currentQuery, {
     page: page + 1,
-    hitsPerPage: 24,
+    hitsPerPage: 16,
   })
     .then((res) => dispatch({
       type: ADD_WORKSPACE_GET_SUCCESS,
@@ -201,4 +202,9 @@ export const save = () => (dispatch, getState) => {
 export const updateMode = (mode) => ({
   type: ADD_WORKSPACE_UPDATE_MODE,
   mode,
+});
+
+export const updateScrollOffset = (scrollOffset) => ({
+  type: ADD_WORKSPACE_UPDATE_SCROLL_OFFSET,
+  scrollOffset,
 });
