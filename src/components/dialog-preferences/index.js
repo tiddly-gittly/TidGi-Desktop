@@ -40,7 +40,6 @@ import StatedMenu from '../shared/stated-menu';
 import hunspellLanguagesMap from '../../constants/hunspell-languages';
 
 import webcatalogLogo from '../../images/webcatalog-logo.svg';
-import translatiumLogo from '../../images/translatium-logo.svg';
 import singleboxLogo from '../../images/singlebox-logo.svg';
 
 import ListItemDefaultMailClient from './list-item-default-mail-client';
@@ -1164,14 +1163,6 @@ const Preferences = ({
               <ListItemText
                 primary={(<img src={singleboxLogo} alt="Singlebox" className={classes.logo} />)}
                 secondary="All Your Apps in One Single Window"
-              />
-              <ChevronRightIcon color="action" />
-            </ListItem>
-            <Divider />
-            <ListItem button onClick={() => requestOpenInBrowser('https://translatiumapp.com?utm_source=singlebox_app')}>
-              <ListItemText
-                primary={(<img src={translatiumLogo} alt="Translatium" className={classes.logo} />)}
-                secondary="Translate Any Languages like a Pro"
               />
               <ChevronRightIcon color="action" />
             </ListItem>
