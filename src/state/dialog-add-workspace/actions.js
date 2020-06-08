@@ -51,9 +51,14 @@ export const getHits = () => (dispatch, getState) => {
       page: res.page,
       totalPage: res.nbPages,
     }))
-    .catch(() => dispatch({
-      type: ADD_WORKSPACE_GET_FAILED,
-    }));
+    .catch(() => {
+      if (currentQuery !== getState().dialogAddWorkspace.currentQuery) {
+        return;
+      }
+      dispatch({
+        type: ADD_WORKSPACE_GET_FAILED,
+      });
+    });
 };
 
 export const resetThenGetHits = () => (dispatch, getState) => {
@@ -70,29 +75,10 @@ export const resetThenGetHits = () => (dispatch, getState) => {
   dispatch(getHits());
 };
 
-let timeout = null;
-export const updateQuery = (query) => (dispatch, getState) => {
-  const state = getState();
-
-  const {
-    currentQuery,
-  } = state.dialogAddWorkspace;
-
-  dispatch({
-    type: ADD_WORKSPACE_UPDATE_QUERY,
-    query,
-  });
-  clearTimeout(timeout);
-  if (currentQuery !== query) {
-    if (query === '') {
-      dispatch(resetThenGetHits());
-    } else {
-      timeout = setTimeout(() => {
-        dispatch(resetThenGetHits());
-      }, 300);
-    }
-  }
-};
+export const updateQuery = (query) => ({
+  type: ADD_WORKSPACE_UPDATE_QUERY,
+  query,
+});
 
 const getValidationRules = () => ({
   name: {

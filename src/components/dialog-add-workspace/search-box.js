@@ -20,6 +20,8 @@ const styles = (theme) => ({
     zIndex: 10,
     position: 'relative',
     borderRadius: 0,
+    paddingRight: theme.spacing(1),
+    paddingLeft: theme.spacing(1),
   },
   toolbarSectionSearch: {
     alignItems: 'center',
@@ -49,7 +51,7 @@ const styles = (theme) => ({
     margin: 0,
     color: theme.palette.text.primary,
     width: '100%',
-    paddingLeft: theme.spacing(1),
+    paddingLeft: 0,
     '&:focus': {
       outline: 0,
     },
@@ -61,6 +63,9 @@ const styles = (theme) => ({
     [theme.breakpoints.up('md')]: {
       display: 'none',
     },
+  },
+  iconButton: {
+    padding: theme.spacing(0.5),
   },
 });
 
@@ -74,17 +79,22 @@ const SearchBox = ({
     <>
       <IconButton
         color="default"
+        className={classes.iconButton}
         aria-label="Clear"
-        onClick={() => onUpdateQuery('')}
+        onClick={() => {
+          onUpdateQuery('');
+          onResetThenGetHits();
+        }}
       >
-        <CloseIcon fontSize="small" className={classes.icon} />
+        <CloseIcon fontSize="small" />
       </IconButton>
       <IconButton
         color="default"
+        className={classes.iconButton}
         aria-label="Clear"
         onClick={onResetThenGetHits}
       >
-        <KeyboardReturnIcon fontSize="small" className={classes.icon} />
+        <KeyboardReturnIcon fontSize="small" />
       </IconButton>
     </>
   );
