@@ -10,7 +10,7 @@
 
 ## Licensing
 ### Usage
-**Singlebox is paid software.** You can add up to two workspaces for free or [pay just $9.99](https://webcatalog.onfastspring.com/singlebox/singleboxapp) to add as many as you need.
+**Singlebox is paid software.** You can add up to two workspaces for free or [pay just $9.99](https://webcatalog.onfastspring.com/singleboxapp) to add as many as you need.
 
 The license:
 - Lets you add unlimited apps and workspaces.
