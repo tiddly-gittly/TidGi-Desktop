@@ -36,13 +36,13 @@ jobs:
           ${{ runner.os }}-yarn-
     - name: Cache node_modules
       id: cache-node-modules
-      uses: actions/cache@v1
+      uses: actions/cache@v2
       with:
         path: node_modules
         key: ${{ runner.os }}-${{ matrix.node-version }}-nodemodules-${{ hashFiles('**/yarn.lock') }}
         restore-keys: |
           ${{ runner.os }}-${{ matrix.node-version }}-nodemodules-
-    - run: yarn
+    - run: yarn --prefer-offline
       if: |
         steps.cache-yarn-cache.outputs.cache-hit != 'true' ||
         steps.cache-node-modules.outputs.cache-hit != 'true'
