@@ -248,8 +248,10 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-set-active-workspace', (e, id) => {
-    setActiveWorkspaceView(id);
-    createMenu();
+    if (getWorkspace(id)) {
+      setActiveWorkspaceView(id);
+      createMenu();
+    }
   });
 
   ipcMain.on('request-realign-active-workspace', () => {

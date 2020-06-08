@@ -261,9 +261,16 @@ ipcRenderer.on('display-media-id-received', (e, val) => {
 });
 
 window.addEventListener('message', (e) => {
-  if (!e.data || e.data.type !== 'get-display-media-id') return;
+  if (!e.data) return;
 
-  ipcRenderer.send('request-show-display-media-window');
+  if (e.data.type === 'get-display-media-id') {
+    ipcRenderer.send('request-show-display-media-window');
+  }
+
+  // set workspace to active when its notification is clicked
+  if (e.data.type === 'focus-workspace') {
+    ipcRenderer.send('request-set-active-workspace', e.data.workspaceId);
+  }
 });
 
 // Fix Can't show file list of Google Drive
@@ -272,6 +279,8 @@ window.addEventListener('message', (e) => {
 // Fix chrome.runtime.sendMessage is undefined for FastMail
 // https://github.com/atomery/singlebox/issues/21
 const initialShouldPauseNotifications = ipcRenderer.sendSync('get-pause-notifications-info') != null;
+
+const { workspaceId } = remote.getCurrentWebContents();
 webFrame.executeJavaScript(`
 (function() {
   window.chrome = {
@@ -309,7 +318,12 @@ webFrame.executeJavaScript(`
 
   window.Notification = function() {
     if (!shouldPauseNotifications) {
-      return new oldNotification(...arguments);
+      const notif = new oldNotification(...arguments);
+      notif.addEventListener('click', () => {
+        window.postMessage({ type: 'focus-workspace', workspaceId: "${workspaceId}" });
+      });
+      console.log(notif);
+      return notif;
     }
     return null;
   }

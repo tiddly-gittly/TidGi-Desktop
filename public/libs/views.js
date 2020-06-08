@@ -158,6 +158,7 @@ const addView = (browserWindow, workspace) => {
   const view = new BrowserView({
     webPreferences: sharedWebPreferences,
   });
+  view.webContents.workspaceId = workspace.id;
   // background needs to explictly set
   // if not, by default, the background of BrowserView is transparent
   // which would break the CSS of certain websites
