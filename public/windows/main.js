@@ -32,7 +32,8 @@ const createAsync = () => new Promise((resolve) => {
 
     mb = menubar({
       index: REACT_PATH,
-      icon: path.resolve(__dirname, '..', 'menubarTemplate.png'),
+      // icon template is not supported on Windows & Linux
+      icon: path.resolve(__dirname, 'images', process.platform === 'darwin' ? 'menubarTemplate.png' : 'menubar.png'),
       preloadWindow: true,
       tooltip: 'Singlebox',
       browserWindow: {
