@@ -58,10 +58,13 @@ const opts = {
     appId: 'com.singlebox.app',
     productName: 'Singlebox',
     asar: true,
-    files: [
-      '!tests/**/*',
-      '!docs/**/*',
-      '!template/**/*',
+    files: ['!tests/**/*', '!docs/**/*', '!template/**/*'],
+    extraFiles: [
+      {
+        from: 'template/wiki',
+        to: 'wiki',
+        filter: ['**/*'],
+      },
     ],
     protocols: [
       {

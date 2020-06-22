@@ -7,7 +7,6 @@ const {
   nativeTheme,
   shell,
 } = require('electron');
-const { autoUpdater } = require('electron-updater');
 
 const {
   getPreference,
@@ -77,6 +76,9 @@ const proxyWindow = require('../windows/proxy');
 const spellcheckLanguagesWindow = require('../windows/spellcheck-languages');
 
 const loadListeners = () => {
+  ipcMain.on('start-tiddlywiki', (e) => {
+  });
+
   ipcMain.on('request-open-in-browser', (e, url) => {
     shell.openExternal(url);
   });
