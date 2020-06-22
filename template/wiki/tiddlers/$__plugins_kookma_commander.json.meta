@@ -1,0 +1,12 @@
+author: Mohammad Rahmani
+core-version: >=5.1.22
+created: 20200605095927882
+dependents: 
+description: Tiddler Commander
+list: readme history license authors
+modified: 20200605095927882
+plugin-type: plugin
+source: https://github.com/kookma/Shiraz
+title: $:/plugins/kookma/commander
+type: application/json
+version: 2.1.0

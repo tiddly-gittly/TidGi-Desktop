@@ -1,0 +1,11 @@
+author: LinOnetwo
+core-version: >=5.1.22
+created: 20200605095846065
+dependents: 
+description: Add inverse link (bi-directional link) and folder information to the bottom of tiddlers
+list: readme
+modified: 20200605095846065
+plugin-type: plugin
+title: $:/plugins/linonetwo/inverse-link-and-folder
+type: application/json
+version: 0.0.2

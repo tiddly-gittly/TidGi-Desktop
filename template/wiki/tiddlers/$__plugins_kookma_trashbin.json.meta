@@ -1,0 +1,12 @@
+author: Mohammad Rahmani
+core-version: >=5.1.22
+created: 20200605095939024
+dependents: 
+description: Trashbin
+list: readme history license
+modified: 20200605095939024
+plugin-type: plugin
+source: https://github.com/kookma/TW-Trashbin
+title: $:/plugins/kookma/trashbin
+type: application/json
+version: 1.2.2

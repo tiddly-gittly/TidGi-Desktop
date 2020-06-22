@@ -1,0 +1,13 @@
+created: 20150104141300000
+creator: Jim
+extension: .xml
+modified: 20150104141300000
+modifier: Jim
+tags: static $:/tags/Exporter
+title: RenderSitemap
+type: text/vnd.tiddlywiki
+
+\define renderContent()
+<$text text=<<sitemapentries filter:"""$(exportFilter)$""">>/>
+\end
+<<renderContent>>

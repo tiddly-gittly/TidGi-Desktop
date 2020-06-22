@@ -1,0 +1,19 @@
+{
+    "tiddlers": {
+        "$:/plugins/linonetwo/copy-on-select/copy-on-select.html": {
+            "title": "$:/plugins/linonetwo/copy-on-select/copy-on-select.html",
+            "text": "<script type=\"application/javascript\">\n  // we won't do copy on select on text editor, otherwise you can't select and override text in the editor or text input\n  function checkIfElementIsEditor(element) {\n    if (!element || !element.nodeName) return false;\n    const isEditableElement = ['INPUT', 'TEXTAREA', 'BUTTON'].includes(element.nodeName);\n    if (!isEditableElement) {\n      if (!element.className || !element.className.toLowerCase) return false;\n    }\n    const isTextEditor = element.className.toLowerCase().includes('codemirror');\n\n    return isEditableElement || isTextEditor;\n  }\n  // if we start selection on editor, we prevent the following execution of this script\n  let copyOnSelectPreventNextCopy = false;\n  document.addEventListener('mousedown', function onMouseDown() {\n    const elementsUnderMouse = document.querySelectorAll(':hover');\n\n    if (!elementsUnderMouse || Array.from(elementsUnderMouse).some(checkIfElementIsEditor)) {\n      copyOnSelectPreventNextCopy = true;\n    }\n  });\n  // Copy on select, copy document selection when mouse button is up\n  document.addEventListener('mouseup', function onMouseUp() {\n    const elementsUnderMouse = document.querySelectorAll(':hover');\n\n    if (\n      copyOnSelectPreventNextCopy ||\n      !elementsUnderMouse ||\n      Array.from(elementsUnderMouse).some(checkIfElementIsEditor)\n    ) {\n      copyOnSelectPreventNextCopy = false;\n      return;\n    }\n    document.execCommand('copy');\n  });\n</script>\n",
+            "type": "text/html",
+            "created": "20200411065413157",
+            "modified": "20200414150804034",
+            "tags": "$:/tags/RawMarkup"
+        },
+        "$:/plugins/linonetwo/copy-on-select/readme": {
+            "title": "$:/plugins/linonetwo/copy-on-select/readme",
+            "created": "20200414135748497",
+            "modified": "20200602062349232",
+            "type": "text/vnd.tiddlywiki",
+            "text": "!! 动机\n\n我已经习惯了用方便的[[Copy On Select|https://addons.mozilla.org/en-US/firefox/addon/copy-on-select]] Firefox 插件，现在到了 TiddlyWiki 里我经常还是以为选中了就复制了，然后黏贴到别的地方才发现其实并没有复制，很不习惯。\n\n所以我自己重新写了一个适配 TiddlyWiki 的选中即复制脚本。\n\n!! 用法\n\n选中编辑器、按钮等区域以外的任何文本都会直接复制。\n\n这个插件里的条件语句让它在编辑器等特殊区域内不会起作用，以免干扰「全选黏贴覆盖原有内容」等操作。\n"
+        }
+    }
+}

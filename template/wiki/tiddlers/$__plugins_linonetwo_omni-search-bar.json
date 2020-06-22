@@ -1,0 +1,275 @@
+{
+    "tiddlers": {
+        "$:/Search": {
+            "title": "$:/Search",
+            "created": "20181031180159723",
+            "creator": "Thomas Elmiger",
+            "modifier": "Thomas Elmiger",
+            "modified": "20190303205937724",
+            "icon": "$:/plugins/linonetwo/omni-search-bar/images/search-button",
+            "text": "<div class=\"tc-layer-search\">\n  <!-- Prevent scroll of body -->\n  <style>\n    body.tc-body {\n      overflow: hidden !important;\n    }\n  </style>\n  <!-- Close button on the upper-right -->\n  <div class=\"te-close-this\">\n  {{$:/plugins/linonetwo/omni-search-bar/ui/Buttons/close-search}}\n  </div>\n\n\n  <div class=\"tc-simple-search\">\n    <$set name=\"searchTiddler\" value=\"$:/temp/advancedsearch\">\n      <div class=\"tc-search\">\n        <$edit-text tiddler=<<searchTiddler>> type=\"search\" tag=\"input\" focus={{$:/config/Search/AutoFocus}} focusPopup=<<qualify \"$:/state/popup/search-dropdown\">> class=\"tc-popup-handle\"/>\n\n        <div class=\"tc-simple-search-results\">\n          <!-- Counter of results, and Dropdown button -->\n          <$button tooltip=\"show/hide filtered list\" aria-label=\"toggle results\" popup=<<qualify \"$:/state/popup/search-dropdown\">> class=\"tc-btn-invisible\">\n            {{$:/core/images/down-arrow}}\n            <$list filter=\"[<searchTiddler>minlength{$:/config/Search/MinLength}limit[1]]\" variable=\"listItem\">\n              <$set name=\"searchTerm\" value={{{ [<searchTiddler>get[text]] }}}>\n                <$set name=\"resultCount\" value=\"\"\"<$count filter=\"[!is[system]search:*<searchTerm>]\"/>\"\"\">\n                  {{$:/language/Search/Matches}}\n                </$set>\n              </$set>\n            </$list>\n          </$button>\n\n          {{$:/plugins/linonetwo/omni-search-bar/ui/Buttons/advanced-search}}\n          {{$:/plugins/linonetwo/omni-search-bar/ui/Buttons/new-tiddler}}\n          {{$:/plugins/linonetwo/omni-search-bar/ui/Buttons/options}}\n        </div>\n\n        <$reveal tag=\"div\" class=\"tc-block-dropdown-wrapper tc-simple-search-results\" state=<<searchTiddler>> type=\"nomatch\" text=\"\">\n          <$reveal tag=\"div\" class=\"tc-block-dropdown tc-search-drop-down tc-popup-handle\" state=<<qualify \"$:/state/popup/search-dropdown\">> type=\"nomatch\" text=\"\" default=\"\">\n            <$list filter=\"[<searchTiddler>minlength{$:/config/Search/MinLength}limit[1]]\" emptyMessage=\"\"\"<div class=\"tc-search-results\">{{$:/language/Search/Search/TooShort}}</div>\"\"\" variable=\"listItem\">\n            {{$:/plugins/linonetwo/omni-search-bar/results}}\n            </$list>\n          </$reveal>\n        </$reveal>\n\n      </div>\n    </$set>\n  </div>\n\n  <!-- Edit button on the left-bottom -->\n  <$reveal type=\"match\" state=\"$:/plugins/linonetwo/omni-search-bar/settings/edit\" text=\"yes\">\n    <span class=\"te-edit-this\">\n      <$button message=\"tm-edit-tiddler\" param={{!!title}} tooltip=\"edit tiddler\" aria-label={{$:/language/Buttons/Edit/Caption}} class=<<tv-config-toolbar-class>>>\n        {{$:/core/images/edit-button}}\n        <$list filter=\"[<tv-config-toolbar-text>prefix[yes]]\">\n          <span class=\"tc-btn-text\">edit</span>\n        </$list>\n      </$button>\n    </span>\n  </$reveal>\n\n</div>"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/SearchResultsList": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/SearchResultsList",
+            "created": "20190101192116785",
+            "creator": "Thomas Elmiger",
+            "tags": "$:/tags/SearchResults",
+            "modified": "20190101201812743",
+            "modifier": "Thomas Elmiger",
+            "caption": "Simple Search",
+            "text": "<div tabindex=\"0\">\n{{$:/plugins/linonetwo/omni-search-bar/SearchResultsTop}}\n{{$:/plugins/linonetwo/omni-search-bar/SearchResultsOther}}\n</div>"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/SearchResultsOther": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/SearchResultsOther",
+            "created": "20190101201254151",
+            "creator": "Thomas Elmiger",
+            "modified": "20190101202507272",
+            "modifier": "Thomas Elmiger",
+            "caption": "Simple Search Other",
+            "text": "\\define other()\n<small>//Other//</small>\n<ul class=\"te-nav-list\">\n<$wikify name=\"other-filter\" text=\"[!is[system]search:{{$:/plugins/linonetwo/omni-search-bar/filter-other}}{$(searchTiddler)$}sort[title]limit[250]]\">\n<$list filter=<<other-filter>> template=\"$:/plugins/linonetwo/omni-search-bar/ui/ListItemTemplate\"/>\n</$wikify>\n</ul>\n\\end\n<<other>>"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/SearchResultsTop": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/SearchResultsTop",
+            "created": "20190101201620497",
+            "creator": "Thomas Elmiger",
+            "modified": "20190101202403247",
+            "modifier": "Thomas Elmiger",
+            "caption": "Simple Search Top",
+            "tags": "",
+            "text": "\\define top()\n<small>//Caption/Title//</small>\n<ul class=\"te-nav-list\">\n<$list filter=\"[!is[system]search:caption,title{$(searchTiddler)$}sort[caption]limit[250]]\" template=\"$:/plugins/linonetwo/omni-search-bar/ui/ListItemTemplate\"/>\n</ul>\n\\end\n<<top>>"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/about": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/about",
+            "created": "20200528213406686",
+            "modified": "20200528213406686",
+            "tags": "",
+            "text": "A nice and simple overlay interface for searching your wiki. Designed for mobile and desktop screens. \n''Reduce to the max.'' The standard search input field in the sidebar is removed, instead there is a {{$:/plugins/linonetwo/omni-search-bar/ui/Buttons/search}} [[button|$:/plugins/linonetwo/omni-search-bar/ui/Buttons/search]].\n"
+        },
+        "$:/config/ShortcutInfo/simple-search": {
+            "title": "$:/config/ShortcutInfo/simple-search",
+            "tags": "",
+            "text": "Launch a search"
+        },
+        "$:/config/shortcuts/simple-search": {
+            "title": "$:/config/shortcuts/simple-search",
+            "created": "20181222220644632",
+            "modified": "20200528210708420",
+            "text": "cmd-p"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/filter-other": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/filter-other",
+            "created": "20181230131454911",
+            "creator": "Thomas Elmiger",
+            "tags": "",
+            "modified": "20181230131454911",
+            "modifier": "Thomas Elmiger",
+            "text": "-caption,title"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/fork": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/fork",
+            "creator": "LinOnetwo",
+            "text": "To make modification to make it looks like the search bar in the Notion.so, I fork Thomas Elmiger's plugin, and made this modification.\n\nI really appreciate the original work, thank you, Thomas Elmiger!\n"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/icon": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/icon",
+            "created": "20181104090446387",
+            "tags": "",
+            "modified": "20181104090618636",
+            "text": "{{$:/plugins/linonetwo/omni-search-bar/images/search-button}}"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/images/search-button": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/images/search-button",
+            "created": "20181031165637871",
+            "tags": "$:/tags/Image",
+            "modifier": "Thomas Elmiger",
+            "modified": "20200528205129099",
+            "creator": "Thomas Elmiger",
+            "text": "<svg class=\"tc-image-advanced-search-button tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 128 128\">\n  <path fill-rule=\"evenodd\" d=\"M74.6 88A48 48 0 1188 74.7l34.3 34.3a9.4 9.4 0 11-13.4 13.3L74.6 88zM48 80a32 32 0 100-64 32 32 0 000 64z\"/>\n</svg>"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/license": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/license",
+            "created": "20180104062422859",
+            "tags": "",
+            "modifier": "Thomas Elmiger",
+            "modified": "20181104090212451",
+            "creator": "Thomas Elmiger",
+            "text": "`Simple Search is published under the MIT License.`\n\n!!! Simple Search\nThe content of $:/plugins/linonetwo/omni-search-bar is<br>\nCopyright (c), Thomas Elmiger, https://thomas-elmiger.ch\n\n!!! The MIT License (MIT)\n\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE."
+        },
+        "$:/plugins/linonetwo/omni-search-bar/macros": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/macros",
+            "created": "20190303170108747",
+            "creator": "Thomas Elmiger",
+            "tags": "$:/tags/Macro",
+            "modifier": "Thomas Elmiger",
+            "modified": "20190303202350255",
+            "text": "\\define tempStory() $:/temp/simple-search/story\n\n\\define simple-search-openSearch()\n<$action-navigate $to=\"$:/Search\" $scroll=\"no\"/>\n<$list filter=\"[list[$:/StoryList]] +[field:title[$:/AdvancedSearch]]\">\n<<simple-search-closeAdvanced>>\n</$list>\n\\end\n\n\\define simple-search-closeSearch()\n<$action-sendmessage $message=\"tm-close-tiddler\" $param=\"$:/Search\"/>\n<<simple-search-restoreAdvanced>>\n\\end\n\n\\define simple-search-closeAdvanced()\n<$set name=\"myStory\" filter=\"[list[$:/StoryList]]\" >\n<$action-setfield $tiddler=<<tempStory>> $field=\"text\" $value=<<myStory>>/>\n</$set>\n<$action-sendmessage $message=\"tm-close-tiddler\" $param=\"$:/AdvancedSearch\"/>\n\\end\n\n\\define simple-search-restoreAdvanced()\n<$list filter=\"[<tempStory>!is[missing]]\">\n<$action-setfield $tiddler=\"$:/StoryList\" list={{{ [<tempStory>get[text]] }}}/>\n<$action-deletetiddler $tiddler=<<tempStory>>/>\n</$list>\n\\end"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/readme": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/readme",
+            "created": "20170208062643245",
+            "creator": "Thomas Elmiger",
+            "tags": "EditorCounter",
+            "modifier": "LinOnetwo",
+            "modified": "20200604150438123",
+            "text": "!! Simple Search \n\n{{$:/plugins/linonetwo/omni-search-bar/about}}\n\n!!! Keyboard accessible\n\n* Press <kbd>Cmd</kbd> + <kbd>P</kbd> to ''launch'' or ''close'' Simple Search (same as Notion, or define your own shortcut [[in the control panel|$:/core/ui/ControlPanel/KeyboardShortcuts]]). \n* Navigate with <kbd>Tab</kbd>\n** {{$:/core/ui/Buttons/advanced-search}} takes you to $:/AdvancedSearch\n** the next <kbd>Tab</kbd> jumps to the search results.\n\nDepending on your browser and settings, you can select a list item using <kbd>Tab</kbd> or <kbd>up</kbd> and <kbd>down</kbd> arrow keys, finally confirm your choice with <kbd>Enter</kbd>.\n\n\n!!! Search in fields\nPrimary results are listed for tiddlers containing the search term in the ''title'' OR the ''caption'' fields. \n\nThe secondary list finds results based on all other fields (not title nor caption). This can be adapted via settings.\n\n\n!!! Create tiddlers\n\nEmpty result list? No problem. Create missing tiddlers using the search term as title and caption. \n\n* Hit <kbd>Tab</kbd> until you reach the plus button (+).\n* Create a tiddler with <kbd>Enter</kbd>.\n\nSee template options on the ''settings tab''. – Hat tip to //Diego Mesa// for inspiring this feature.\n\n\n!!! Settings\n\nMake sure to visit the ''settings tab'' to adjust your preferences.\n\n\n!! Core overruling\n\nThis plugin overwrites $:/core/ui/SideBarSegments/search and nothing else.\n\n!! Fork\n\n{{$:/plugins/linonetwo/omni-search-bar/fork}}\n"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/results": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/results",
+            "created": "20181101220620505",
+            "creator": "Thomas Elmiger",
+            "tags": "",
+            "modified": "20190303202919126",
+            "modifier": "Thomas Elmiger",
+            "text": "\\define close-simple-search()\n<<simple-search-closeSearch>>\n<$action-navigate $to=<<navigateTo>>/>\n\\end\n<div class=\"tc-search-results\">\n<$linkcatcher actions=<<close-simple-search>>>\n<$list filter=\"[all[shadows+tiddlers]tag[$:/tags/SearchResults]!has[draft.of]butfirst[]limit[1]]\" emptyMessage=\"\"\"\n<$list filter=\"[all[shadows+tiddlers]tag[$:/tags/SearchResults]!has[draft.of]]\">\n<$transclude mode=\"block\"/>\n</$list>\n\"\"\">\n{{$:/plugins/linonetwo/omni-search-bar/SearchResultsList}}\n</$list>\n</$linkcatcher>\n</div>"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/settings/border-colour": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/settings/border-colour",
+            "created": "20181104130108875",
+            "modified": "20181104131002009",
+            "text": "transparent"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/settings/new-tags": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/settings/new-tags",
+            "created": "20190101213434925",
+            "modified": "20190101213434926",
+            "text": ""
+        },
+        "$:/plugins/linonetwo/omni-search-bar/settings/new-tpl": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/settings/new-tpl",
+            "created": "20190101213442298",
+            "creator": "Thomas Elmiger",
+            "modified": "20190303200214861",
+            "modifier": "Thomas Elmiger",
+            "text": "{{$:/temp/advancedsearch}}"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/settings": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/settings",
+            "created": "20181104092840050",
+            "creator": "Thomas Elmiger",
+            "tags": "",
+            "modified": "20200528221006833",
+            "modifier": "Thomas Elmiger",
+            "text": "\\define lingo-base() $:/language/ControlPanel/Basics/\n\n!! Settings\n\nAn options button is available on the search layer so you can always return to these settings when necessary. \n\n<$checkbox tiddler=\"$:/plugins/linonetwo/omni-search-bar/hide-options-button.css\" invertTag=\"yes\" tag=\"$:/tags/Stylesheet\"> show </$checkbox> the {{$:/plugins/linonetwo/omni-search-bar/ui/Buttons/options}} button\n\n!!! Design\n\n''Layer animation:'' Simple Search feels rather slow for values above 150, so make sure to check this TW setting. <br>\n<$link to=\"$:/config/AnimationDuration\"><<lingo AnimDuration/Prompt>></$link> <$edit-text tiddler=\"$:/config/AnimationDuration\" default=\"\" tag=\"input\"/>\n\n''Search box border:'' Adapt the colour to the design of your wiki. Use //transparent// if you don’t want a border. <br>\n[[Border colour:|$:/plugins/linonetwo/omni-search-bar/settings/border-colour]] <$edit-text tiddler=\"$:/plugins/linonetwo/omni-search-bar/settings/border-colour\" tag=\"input\"/> <$edit-text tiddler=\"$:/plugins/linonetwo/omni-search-bar/settings/border-colour\" type=\"color\" tag=\"input\"/>\n\n\n!!! Search button\n\n<$checkbox tiddler=\"$:/config/PageControlButtons/Visibility/$:/plugins/linonetwo/omni-search-bar/ui/Buttons/search\" field=\"text\" checked=\"show\" unchecked=\"hide\" default=\"show\"> show in Page Toolbar (in the sidebar)</$checkbox>\n\n<$checkbox tiddler=\"$:/plugins/linonetwo/omni-search-bar/ui/Buttons/search\" tag=\"$:/tags/TopRightBar\"> show in Top Right Bar (besides the sidebar toggle, permanently visible)</$checkbox>\n\n\n!!! Minimal search term length\n\n<label><$edit-text tiddler=\"$:/config/Search/MinLength\" size=\"3\" tag=\"input\"/> ''characters''</label>\n\n\n!!! Fields to search\n\n<label>''Field list:'' <$edit-text tiddler=\"$:/plugins/linonetwo/omni-search-bar/filter-other\" size=\"20\" tag=\"input\"/></label>\n\nThis list defines, which fields are relevant for the secondary result list (“Other”). The default value `-caption,title` leads to searches in all fields except caption and title. See [[search operator documentation|https://tiddlywiki.com/#search%20Operator]] for more info.\n\n\n!!! Create new tiddlers\n\n<$checkbox tiddler=\"$:/plugins/linonetwo/omni-search-bar/hide-new-button.css\" invertTag=\"yes\" tag=\"$:/tags/Stylesheet\"> show </$checkbox> the {{$:/plugins/linonetwo/omni-search-bar/ui/Buttons/new-tiddler}} button\n\nDefine the template for new tiddlers you can create based on search terms. The default value `{{$:/temp/advancedsearch}}` inserts your search term as title and caption.\n\n<label>''Title template:'' <$edit-text tiddler=\"$:/plugins/linonetwo/omni-search-bar/settings/new-tpl\" size=\"20\" tag=\"input\"/></label>\n\nUse the following field to add tags to tiddlers created via Simple Search. Don’t forget to add brackets to tags containing spaces, e.g. `[[My Tag]] Foo Bar`.\n\n<label>''Tag template:'' <$edit-text tiddler=\"$:/plugins/linonetwo/omni-search-bar/settings/new-tags\" size=\"20\" tag=\"input\"/></label>\n\n---\n\n!!! Search layer edit mode \n\nWould you like to edit the tiddler $:/Search? Activate edit mode here:\n\n<$checkbox tiddler=\"$:/plugins/linonetwo/omni-search-bar/settings/edit\" field=\"text\" checked=\"yes\" unchecked=\"no\"> Show edit icon in lower left corner of the screen.</$checkbox>"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/hide-new-button.css": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/hide-new-button.css",
+            "created": "20200528214941993",
+            "tags": "",
+            "modified": "20200528221159004",
+            "text": ".tc-simple-search-results .tc-image-new-button {\n   display: none;\n}"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/hide-options-button.css": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/hide-options-button.css",
+            "created": "20200528221013699",
+            "tags": "",
+            "modified": "20200528221137581",
+            "text": ".tc-simple-search-results .tc-image-options-button {\n   display: none;\n}"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/search.css": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/search.css",
+            "created": "20181016202403907",
+            "creator": "Thomas Elmiger",
+            "tags": "$:/tags/Stylesheet",
+            "modifier": "Thomas Elmiger",
+            "modified": "20190127221727503",
+            "text": "/*\n** Simple Search\n** (c) Thomas Elmiger\n** \"\"\" \n*/\n\n/* Zoomin Storyview Hack */\n\n[data-tiddler-title=\"$:/Search\"].tc-tiddler-view-frame.tc-storyview-zoomin-tiddler {\n   display: block !important;\n}\n\n\n/* Search layer */\n\n.tc-layer-search {\n   position: fixed;\n   top: 0;\n   left: 0;\n   width: 100vw;\n   height: 100vh;\n   z-index: 10001;\n   background-color: rgba(0,0,0,0.66);\n}\n\n\n/* Search box */\n\n.tc-simple-search {\n   position: fixed;\n   top: 20vh;\n   right: 3vw;\n   left: 3vw;\n   width: 94vw;\n   z-index: 102;\n   max-width: 100%;\n   background-color: rgba(0,0,0,0);\n   border-radius: 0.5rem;\n   border: 1px solid {{$:/plugins/linonetwo/omni-search-bar/settings/border-colour}};\n}\n\n.tc-simple-search .tc-search input[type=search],\n.tc-simple-search .tc-search input[type=search]:focus {\n   -webkit-appearance: none; -moz-appearance: none;\n   padding: .125rem .25rem;\n   width: calc(100% - 4rem);\n   margin-right: .25rem;\n   color: rgb(13, 13, 13);\n   border: solid 1px transparent;\n   border-radius: .25rem;\n   background-color: rgb(222, 222, 222);\n}\n\n.tc-simple-search .tc-search input[type=search]:focus {\n   background-color: rgb(242, 242, 242);\n}\n\n@media (min-width: 42rem) {\n\n   .tc-simple-search {\n      right: 4rem;\n      left: 4rem;\n      width: calc(100% - 8rem);\n   }\n\n   .tc-simple-search .tc-search input[type=search],\n   .tc-simple-search .tc-search input[type=search]:focus {\n      padding: .25rem .5rem;\n      width: calc(100% - 5rem);\n      font-size: 1.5rem;\n   }\n\n   .tc-simple-search .tc-search button {\n   }\n\n   .tc-simple-search .tc-search a svg,\n   .tc-simple-search .tc-search button svg {\n      width: 1.2rem;\n      height: 1.2rem;\n   }\n\n}\n\n@media (min-width: 77rem) {\n\n   .tc-simple-search {\n      right: 10vw;\n      left: 10vw;\n      width: 80vw;\n   }\n\n   .tc-simple-search .tc-search input[type=search],\n   .tc-simple-search .tc-search input[type=search]:focus {\n      padding: .25rem .5rem;\n      width: 100%;\n      font-size: 1.75rem;\n   }\n\n   .tc-simple-search .tc-search button {\n      margin-right: .5rem;\n   }\n\n   .tc-simple-search .tc-search a svg,\n   .tc-simple-search .tc-search button svg {\n      width: 1.33rem;\n      height: 1.33rem;\n   }\n\n}\n\n\n/* Search buttons */\n\n.tc-simple-search-results button {\n   margin: .25rem 0;\n   color: lightgray;\n}\n\n.tc-simple-search .tc-search button svg {\n   fill: lightgray;\n}\n\n.tc-simple-search .tc-search button:hover svg,\n.tc-simple-search .tc-search button:focus svg {\n   fill: rgb(150, 150, 150);\n}\n\n.tc-simple-search button.te-btn-mini svg {\n   width: 0.75rem;\n   height: 0.75rem;\n}\n\n\n/* Search results */\n\n\n.tc-simple-search .tc-block-dropdown-wrapper {\n   width: 90vw;\n   margin-left: -3vw;\n}\n\n@media (min-width: 42rem) {\n   .tc-simple-search .tc-block-dropdown-wrapper {\n      width: 100%;\n      margin-left: 0;\n   }\n}\n\n@media (min-width: 77rem) {\n   .tc-simple-search .tc-block-dropdown-wrapper {\n   }\n}\n\n.tc-simple-search p {\n   line-height: 1;\n   margin: 1.25rem 0 0.75rem 0;\n}\n\n.tc-block-dropdown .tc-search-drop-down .tc-popup-handle .tc-reveal {\n   overscroll-behavior: contain;\n}\n\n.tc-simple-search .tc-search-results ul {\n   list-style: none;\n   padding-left: 0.25rem;\n}\n\n.tc-simple-search .tc-search-drop-down .tc-search-results a.tc-tiddlylink {\n   white-space: initial;\n   padding: 0.25rem 0.5rem;\n   line-height: 1.1;\n   border: 1px solid transparent;\n}\n\n.tc-simple-search .tc-search-drop-down .tc-search-results a.tc-tiddlylink:focus {\n   border: 1px dotted lightgray;\n}\n\n.tc-simple-search .tc-search + .tc-block-dropdown-wrapper {\n   margin: 0 1rem 0 0;\n}\n\n.tc-simple-search .tc-block-dropdown.tc-search-drop-down {\n   margin: 0;\n   max-height: 50vh;\n   overflow: auto;\n}\n\n.tc-block-dropdown.tc-search-drop-down {\n   position: relative;\n   margin-right: 1rem;\n   padding-left: .5rem; padding-right: .5rem;\n   max-width: 100%;\n}\n\n@media (min-width: 42rem) {\n   .tc-simple-search .tc-block-dropdown.tc-search-drop-down {\n      max-height: 60vh;\n   }\n}\n\n@media (min-width: 77rem) {\n   .tc-simple-search .tc-block-dropdown.tc-search-drop-down {\n      max-height: 60vh;\n   }\n}\n\n\n/* Close and Edit buttons */\n\n.tc-layer-search .te-close-this {\n   width: 100%;\n   height: 100%;\n}\n\n.tc-layer-search .te-close-this button {\n   width: 100%;\n   height: 100%;\n   text-align: right;\n}\n\n.tc-layer-search .te-close-this svg {\n   display: none;\n}\n\n@media (min-width: 42rem) {\n   .tc-layer-search .te-close-this svg {\n      display: inherit;\n      fill: lightgray;\n      position: absolute;\n      top: 1rem;\n      right: 1rem;\n   }\n}\n\n.tc-layer-search .te-edit-this button {\n    z-index: 102;\n    position: absolute;\n    bottom: 1rem;\n    left: 1rem;\n    width: 1rem;\n    height: 1rem;\n    font-size: 1.2rem;\n}\n\n\n/* Hide tiddler info and frame */\n\n[data-tiddler-title=\"$:/Search\"] .tc-tiddler-title,\n[data-tiddler-title=\"$:/Search\"] .tc-subtitle,\n[data-tiddler-title=\"$:/Search\"] .tc-fold-banner,\n[data-tiddler-title=\"$:/Search\"] .tc-tags-wrapper\n{\n   display: none;\n   padding: 0;\n   margin: 0;\n}\n\n[data-tiddler-title=\"$:/Search\"].tc-tiddler-view-frame,\n[data-tiddler-title=\"$:/Search\"] .tc-tiddler-body > p {\n   height: 0;\n   width: 0;\n   padding: 0;\n   margin: 0;\n   border: none;\n}\n\n\n/* End \"\"\" */"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/support": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/support",
+            "created": "20181103150753927",
+            "tags": "",
+            "modifier": "Thomas Elmiger",
+            "modified": "20181104091650389",
+            "creator": "Thomas Elmiger",
+            "text": "!! Support the Author\n\n''Hi!'' I’m Thomas, the author of [[tid.li/tw5/plugins.html|https://tid.li/tw5/plugins.html]]. Feedback is always welcome, as well as funding for maintenance, support and new projects :)\n\n---\n\n!!! One Time Support\n\nIf using my plugins just makes you happy, consider a one time payment via ~PayPal to reward the effort:\n\nhttps://www.paypal.me/telmiger\n\n---\n\n!!! Permanent Support\n\nIf my tools make you more productive or save you time in your job or your everyday life, you can support me as a Patron: \n\nhttps://www.patreon.com/telmiger\n\n---\n\n!!! Thank You\n\nSubstantial parts of my availabe time go to the deveopment of useful plugins for [[TiddlyWiki|https://tiddlywiki.com/]]. – Many others do the same and I would like to thank them all, especially [[Jeremy Ruston|https://tiddlywiki.com/#JeremyRuston]] and all the active members of the community!\n\n//Hereby I promise to share future revenues (if any) with other developers who’s works I use or who inspired me.//\n\nIf you like my work, I would be very happy to hear from you.\n\n''Thank you very much for your support!''<br>\n//Thomas//\n\nhttps://thomas-elmiger.ch"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/ui/Buttons/advanced-search": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/ui/Buttons/advanced-search",
+            "created": "20190101210358315",
+            "creator": "Thomas Elmiger",
+            "tags": "",
+            "modifier": "Thomas Elmiger",
+            "modified": "20190303201445296",
+            "caption": "Simple to Advanced Search",
+            "text": "<$button tooltip={{$:/language/Buttons/AdvancedSearch/Hint}} aria-label={{$:/language/Buttons/AdvancedSearch/Caption}} class=\"tc-btn-invisible\">\n<<simple-search-closeSearch>>\n<$action-navigate $to=\"$:/AdvancedSearch\"/>\n{{$:/core/images/advanced-search-button}}\n</$button>"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/ui/Buttons/clear-search": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/ui/Buttons/clear-search",
+            "tags": "",
+            "modifier": "Thomas Elmiger",
+            "modified": "20190303195058522",
+            "creator": "Thomas Elmiger",
+            "created": "20190101210749466",
+            "caption": "Clear Search",
+            "text": "<$button class=\"tc-btn-invisible\" tooltip=\"clear search field\" aria-label=\"reset search\">\n<$action-setfield $tiddler=\"$:/temp/advancedsearch\" text=\"\" />\n{{$:/core/images/close-button}}\n</$button>"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/ui/Buttons/close-search": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/ui/Buttons/close-search",
+            "created": "20190303205314106",
+            "creator": "Thomas Elmiger",
+            "modifier": "Thomas Elmiger",
+            "modified": "20190303212719631",
+            "caption": "{{$:/core/images/close-button}} Close Search",
+            "text": "<$button tooltip=\"Close Search\" aria-label={{$:/language/Buttons/Close/Caption}} class=<<tv-config-toolbar-class>>>\n<<simple-search-closeSearch>>\n{{$:/core/images/close-button}}\n<$list filter=\"[<tv-config-toolbar-text>prefix[yes]]\">\n<span class=\"tc-btn-text\">close</span>\n</$list>\n</$button>"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/ui/Buttons/new-tiddler": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/ui/Buttons/new-tiddler",
+            "created": "20190101203433764",
+            "creator": "Thomas Elmiger",
+            "modifier": "Thomas Elmiger",
+            "modified": "20190303203604937",
+            "description": "{{$:/language/Buttons/NewTiddler/Hint}}",
+            "caption": "Create tiddler named with search term",
+            "text": "<$wikify name=\"id\" text=\"{{$:/plugins/linonetwo/omni-search-bar/settings/new-tpl}}\">\n  <$button tooltip={{$:/language/Buttons/NewTiddler/Hint}} aria-label={{$:/language/Buttons/NewTiddler/Caption}} class=\"tc-btn-invisible\">\n    <<simple-search-closeSearch>>\n    <$action-createtiddler $basetitle=<<id>> tags={{$:/plugins/linonetwo/omni-search-bar/settings/new-tags}} text=\"\" caption=<<id>>/>\n    <$action-navigate $to=<<id>>/>\n    <$action-sendmessage $message=\"tm-edit-tiddler\" $param=<<id>>/>\n    {{$:/core/images/new-button}}\n  </$button>\n</$wikify>"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/ui/Buttons/options": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/ui/Buttons/options",
+            "created": "20190101204729675",
+            "creator": "Thomas Elmiger",
+            "modified": "20190303201928917",
+            "caption": "Simple Search Options",
+            "modifier": "Thomas Elmiger",
+            "tags": "",
+            "text": "<$button tooltip=\"Options\" class=\"tc-btn-invisible te-btn-mini\">\n  <<simple-search-closeSearch>>\n  <$action-navigate $to=\"$:/plugins/linonetwo/omni-search-bar/settings\"/>\n  {{$:/core/images/options-button}}\n</$button>"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/ui/Buttons/search": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/ui/Buttons/search",
+            "tags": "$:/tags/PageControls",
+            "modifier": "Thomas Elmiger",
+            "modified": "20190303171930542",
+            "description": "Search",
+            "creator": "Thomas Elmiger",
+            "created": "20181031170153387",
+            "caption": "{{$:/plugins/linonetwo/omni-search-bar/images/search-button}} Search",
+            "text": "\\define search-button-label()\n<$list filter=\"[<tv-config-toolbar-icons>prefix[yes]]\">\n{{$:/plugins/linonetwo/omni-search-bar/images/search-button}}\n</$list>\n<$list filter=\"[<tv-config-toolbar-text>prefix[yes]]\">\n<span class=\"tc-btn-text\"><$text text={{$:/plugins/linonetwo/omni-search-bar/ui/Buttons/search!!description}}/></span>\n</$list>\n\\end\n\n\\define control-panel-button-on(class)\n<$button tooltip={{$:/plugins/linonetwo/omni-search-bar/ui/Buttons/search!!description}} aria-label={{$:/plugins/linonetwo/omni-search-bar/ui/Buttons/search!!description}} class=\"\"\"$(tv-config-toolbar-class)$ $class$\"\"\">\n<<simple-search-openSearch>>\n<<search-button-label>>\n</$button>\n\\end\n\n\\define control-panel-button-off(class)\n<$button tooltip=\"Close Search\" aria-label=\"Hide tiddler Search\" class=\"\"\"$(tv-config-toolbar-class)$ $class$\"\"\">\n<<simple-search-closeSearch>>\n<<search-button-label>>\n</$button>\n\\end\n\n<$list filter=\"[list[$:/StoryList]] +[field:title[$:/Search]]\" emptyMessage=<<control-panel-button-on>>>\n<<control-panel-button-off \"tc-selected\">>\n</$list>\n"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/ui/KeyboardShortcuts/search": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/ui/KeyboardShortcuts/search",
+            "tags": "$:/tags/KeyboardShortcut",
+            "modifier": "Thomas Elmiger",
+            "modified": "20190303193712461",
+            "key": "((simple-search))",
+            "creator": "Thomas Elmiger",
+            "created": "20190129170004355",
+            "text": "\\import $:/plugins/linonetwo/omni-search-bar/macros\n<$navigator story=\"$:/StoryList\" history=\"$:/HistoryList\" openLinkFromInsideRiver={{$:/config/Navigation/openLinkFromInsideRiver}} openLinkFromOutsideRiver={{$:/config/Navigation/openLinkFromOutsideRiver}} relinkOnRename={{$:/config/RelinkOnRename}}>\n<$list filter=\"[list[$:/StoryList]] +[field:title[$:/Search]]\" emptyMessage=<<simple-search-openSearch>>>\n<<simple-search-closeSearch>>\n</$list>\n</$navigator>"
+        },
+        "$:/plugins/linonetwo/omni-search-bar/ui/ListItemTemplate": {
+            "title": "$:/plugins/linonetwo/omni-search-bar/ui/ListItemTemplate",
+            "created": "20181230141935738",
+            "creator": "Thomas Elmiger",
+            "tags": "",
+            "caption": "Template for search list items",
+            "modified": "20181230142103379",
+            "modifier": "Thomas Elmiger",
+            "text": "<li class=\"tc-menu-list-item\">\n<$link to={{!!title}} tooltip=\"title: {{!!title}}\">\n<$view field=\"caption\"><$view field=\"title\"/></$view>\n</$link>\n</li>"
+        },
+        "$:/core/ui/SideBarSegments/search": {
+            "title": "$:/core/ui/SideBarSegments/search",
+            "created": "20190127221311868",
+            "creator": "Thomas Elmiger",
+            "modified": "20190127221328995",
+            "modifier": "Thomas Elmiger",
+            "text": ""
+        }
+    }
+}

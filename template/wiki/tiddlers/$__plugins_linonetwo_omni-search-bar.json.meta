@@ -1,0 +1,13 @@
+author: Thomas Elmiger
+core-version: >=5.1.18
+created: 20200605095859018
+dependents: 
+description: Omni Search Bar – based on telmiger/simple-search 1.0.24
+list: readme settings support license
+modified: 20200605095859018
+name: Omni Search Bar
+plugin-type: plugin
+source: https://tid.li/tw5/plugins.html
+title: $:/plugins/linonetwo/omni-search-bar
+type: application/json
+version: 1.0.25

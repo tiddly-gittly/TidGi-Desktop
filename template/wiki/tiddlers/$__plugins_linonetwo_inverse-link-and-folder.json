@@ -1,0 +1,37 @@
+{
+    "tiddlers": {
+        "$:/plugins/linonetwo/inverse-link-and-folder/infobar": {
+            "title": "$:/plugins/linonetwo/inverse-link-and-folder/infobar",
+            "created": "20200414150455988",
+            "creator": "LinOnetwo",
+            "tags": "$:/tags/ViewTemplate",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<$list filter=\"[all[current]backlinks[]first[]sort[title]]\">\n\t<label style=\"margin-left:auto;margin-right:auto;width:fit-content;display:block;\">链入 (other)->(this)</label>\n</$list>\n\n<<inverse-link-and-folder_list-links filter:\"[all[current]backlinks[]]\" class:\"horizontal-list-links\" >>\n\n<$list filter=\"[all[current]tagging[]first[]]\">\n\t<label style=\"margin-left:auto;margin-right:auto;width:fit-content;display:block;\">此文件夹中的文件</label>\n</$list>\n\n<<inverse-link-and-folder_list-links filter:\"[all[current]tagging[]sort[title]]\" class:\"horizontal-list-links\" >>\n\n<$list filter=\"[all[current]tags[]first[]]\">\n\t<label style=\"margin-left:auto;margin-right:auto;width:fit-content;display:block;\">此文件所在的文件夹</label>\n</$list>\n\n<<inverse-link-and-folder_list-links filter:\"[all[current]tags[]sort[title]]\" class:\"horizontal-list-links\" >>\n"
+        },
+        "$:/plugins/linonetwo/inverse-link-and-folder/list-link.css": {
+            "title": "$:/plugins/linonetwo/inverse-link-and-folder/list-link.css",
+            "text": ".horizontal-list-links {\n  display: flex;\n  flex-direction: row;\n  flex-wrap: wrap;\n  max-height: 250px;\n  overflow-y: auto;\n  padding: 0;\n}\n.horizontal-list-links li {\n  display: inline-flex;\n  -webkit-box-orient: horizontal;\n  -webkit-box-direction: normal;\n  -ms-flex-direction: row;\n  flex-direction: row;\n  -webkit-box-align: center;\n  -ms-flex-align: center;\n  align-items: center;\n  position: relative;\n  border: none;\n  border-radius: 3px;\n  -webkit-box-shadow: none;\n  box-shadow: none;\n  background-color: rgba(92, 112, 128, 0.9);\n  min-width: 20px;\n  max-width: 100%;\n  min-height: 20px;\n  line-height: 16px;\n  font-size: 12px;\n  margin: 2px;\n  padding: 2px 6px;\n}\n.horizontal-list-links li:hover {\n  opacity: 0.9;\n}\n.horizontal-list-links li a,\n.horizontal-list-links li a:hover {\n  line-height: unset;\n  background-color: unset;\n  color: #f5f8fa;\n  border: none;\n  padding: 0;\n}\n",
+            "created": "20200408152012622",
+            "creator": "LinOnetwo",
+            "modified": "20200411113543217",
+            "modifier": "LinOnetwo",
+            "tags": "$:/tags/Stylesheet",
+            "type": "text/css"
+        },
+        "$:/plugins/linonetwo/inverse-link-and-folder/list-link": {
+            "title": "$:/plugins/linonetwo/inverse-link-and-folder/list-link",
+            "created": "20200414150455988",
+            "creator": "LinOnetwo",
+            "tags": "$:/tags/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define inverse-link-and-folder_list-links(filter,type:\"ul\",subtype:\"li\",class:\"\",emptyMessage)\n\\whitespace trim\n  <$type$ class=\"$class$\">\n    <$list filter=\"$filter$\" emptyMessage=<<__emptyMessage__>>>\n      <$subtype$>\n        <$link to={{!!title}}>\n          <$transclude field=\"caption\">\n            <$view field=\"title\"/>\n          </$transclude>\n        </$link>\n      </$subtype$>\n    </$list>\n  </$type$>\n\\end\n"
+        },
+        "$:/plugins/linonetwo/inverse-link-and-folder/readme": {
+            "title": "$:/plugins/linonetwo/inverse-link-and-folder/readme",
+            "created": "20200602150455988",
+            "creator": "LinOnetwo",
+            "type": "text/vnd.tiddlywiki",
+            "text": "!! Features\n\nThis plugin provides these additional info on the bottom of every tiddler:\n\n# other tiddler linking to this tiddler\n# tiddlers in this folder (tagged with this tiddler's title, see tw-locator's document for detail about the tag-based folder structure)\n# folders containing this tiddler (since tag-based folder structure is a Graph, so there may be many)\n\nYou can change [[infobar.tid|$:/plugins/linonetwo/inverse-link-and-folder/infobar]] to add more info.\n\n[[list-link.tid|$:/plugins/linonetwo/inverse-link-and-folder/list-link]] and [[list-link.css|$:/plugins/linonetwo/inverse-link-and-folder/list-link.css]] are styles of that info bar.\n\n!! Credits\n\nThis plugin is inspired by RoamResearch. list-link macro and filter in infobar is learnt from  copy&paste-ing of Jeremy's code and tutorials.\n"
+        }
+    }
+}

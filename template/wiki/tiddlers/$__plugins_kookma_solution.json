@@ -1,0 +1,99 @@
+{
+    "tiddlers": {
+        "$:/plugins/kookma/solution/buttons/pagecontrol": {
+            "title": "$:/plugins/kookma/solution/buttons/pagecontrol",
+            "caption": "{{$:/plugins/kookma/solution/image/question-circle.svg}} {{$:/language/Buttons/Solution/Caption}}",
+            "created": "20181107195113131",
+            "description": "{{$:/language/Buttons/Solution/Hint}}",
+            "modified": "20200317220303300",
+            "tags": "$:/tags/PageControls",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define new-solution()\n<$action-sendmessage \n    $message=\"tm-new-tiddler\"\n    keywords=\"\"\n    tags=\"solution\"\n    responder=\"\"\n    url=\"\" />\n\\end\n\n\n<$button \n actions=<<new-solution>> \n tooltip={{$:/language/Buttons/Solution/Hint}} \n aria-label={{$:/language/Buttons/Solution/Caption}} \n class=<<tv-config-toolbar-class>> >\n<$list filter=\"[<tv-config-toolbar-icons>prefix[yes]]\">\n{{$:/plugins/kookma/solution/image/question-circle.svg}}\n</$list>\n<$list filter=\"[<tv-config-toolbar-text>prefix[yes]]\">\n<span class=\"tc-btn-text\"><$text text={{$:/language/Buttons/Solution/Caption}}/></span>\n</$list>\n</$button>"
+        },
+        "$:/language/Buttons/Solution/Caption": {
+            "title": "$:/language/Buttons/Solution/Caption",
+            "created": "20190816080549398",
+            "creator": "Mohammad",
+            "modified": "20200318070045923",
+            "modifier": "Mohammad",
+            "type": "text/vnd.tiddlywiki",
+            "text": "solution"
+        },
+        "$:/language/Buttons/Solution/Hint": {
+            "title": "$:/language/Buttons/Solution/Hint",
+            "created": "20190816080652314",
+            "creator": "Mohammad",
+            "modified": "20200318070106059",
+            "modifier": "Mohammad",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Create new solution"
+        },
+        "$:/plugins/kookma/solution/history": {
+            "title": "$:/plugins/kookma/solution/history",
+            "created": "20200317173938372",
+            "modified": "20200317192434399",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Full change log  https://kookma.github.io/TW-Solution/#ChangeLog\n\n* ''1.1.0'' -- 2020.03.17 -- fixed issues on empty responder field\n* ''1.0.0'' -- 2018.10.06 -- initial public release\n"
+        },
+        "$:/plugins/kookma/solution/image/question-circle.svg": {
+            "title": "$:/plugins/kookma/solution/image/question-circle.svg",
+            "created": "20181107194817157",
+            "modified": "20200317220303294",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-button\" viewBox=\"0 0 512 512\" width=\"22pt\" height=\"22pt\"><path d=\"M256 8C119.043 8 8 119.083 8 256c0 136.997 111.043 248 248 248s248-111.003 248-248C504 119.083 392.957 8 256 8zm0 448c-110.532 0-200-89.431-200-200 0-110.495 89.472-200 200-200 110.491 0 200 89.471 200 200 0 110.53-89.431 200-200 200zm107.244-255.2c0 67.052-72.421 68.084-72.421 92.863V300c0 6.627-5.373 12-12 12h-45.647c-6.627 0-12-5.373-12-12v-8.659c0-35.745 27.1-50.034 47.579-61.516 17.561-9.845 28.324-16.541 28.324-29.579 0-17.246-21.999-28.693-39.784-28.693-23.189 0-33.894 10.977-48.942 29.969-4.057 5.12-11.46 6.071-16.666 2.124l-27.824-21.098c-5.107-3.872-6.251-11.066-2.644-16.363C184.846 131.491 214.94 112 261.794 112c49.071 0 101.45 38.304 101.45 88.8zM298 368c0 23.159-18.841 42-42 42s-42-18.841-42-42 18.841-42 42-42 42 18.841 42 42z\"/></svg>\n<!--\nFont Awesome Free 5.3.1 by @fontawesome - https://fontawesome.com\nLicense - https://fontawesome.com/license/free (Icons: CC BY 4.0, Fonts: SIL OFL 1.1, Code: MIT License)\n-->"
+        },
+        "$:/plugins/kookma/solution/license": {
+            "title": "$:/plugins/kookma/solution/license",
+            "created": "20200317173938372",
+            "modified": "20200317174007692",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Distributed under an MIT license.\n\nCopyright (c) 2020 [[Mohammad Rahmani|https://github.com/kookma]]\n\n<<<\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n<<<"
+        },
+        "$:/plugins/kookma/solution/readme": {
+            "title": "$:/plugins/kookma/solution/readme",
+            "created": "20200317173938373",
+            "modified": "20200317212331136",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "; Solution plugin\nThere are many questions and answers in [[TW Google forum|https://groups.google.com/forum/#!forum/tiddlywiki]], some of them shows elegant solution to raised questions and worth to be documented in a manner to be accessible easily later on.\n\nSolution is a small plugin to create solution tiddlers. It adds a button to page controls, on click, creates a tiddler tagged with `solution`, contains `keywords`, `responder`, and `url` fields. It then uses a view template to show the `responder` (author), reference post (`url`), and the `keywords` in a semantic way.\n\nThe `keywords` field acts like tags, so, clicking on them shows a list of all tiddlers tagged with this keyword or has this keyword in its `keywords` field.\n\n; Code and demo\nFor learning plugin features, syntax, tutorial and examples see the plugin demo and code pages\n\n* Demo: https://kookma.github.io/TW-Solution/\n* Code: https://github.com/kookma/TW-Solution\n"
+        },
+        "$:/plugins/kookma/solution/stylesheet/header-segment": {
+            "title": "$:/plugins/kookma/solution/stylesheet/header-segment",
+            "created": "20181107195138316",
+            "modified": "20200317220303289",
+            "tags": "$:/tags/Stylesheet",
+            "type": "text/css",
+            "text": ".sl-header{\n  color: #383d41;\n  background-color: #e2e3e5;\n  border-color: #d6d8db;\n  padding: 0.75rem 1.25rem;\n  margin-bottom: 1rem;\n  border-radius: 0.25rem;\n}\n\n.sl-keywords {\n   display: inline-block;\n    padding: 0.16em 0.7em;\n    font-size: 0.9em;\n    font-weight: 400;\n    line-height: 1.2em;\n    color: #333333;\n    white-space: nowrap;\n    vertical-align: baseline;\n    border-radius: 1em;\n    background-color:#FFFFF0;\n}\n\n/*remove the blue border on button focus */\n.sl-keywords {\n  outline:none;\n} "
+        },
+        "$:/plugins/kookma/solution/template/keywords": {
+            "title": "$:/plugins/kookma/solution/template/keywords",
+            "created": "20181107203051789",
+            "modified": "20200317220303318",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define keywords-body(kwd)\n<$list filter=\"[tag[$kwd$]] [search:keywords[$kwd$]]\" variable=\"itemTid\">\n<$link to=<<itemTid>> ><$text text=<<itemTid>>/></$link>\n</$list>\n\\end\n<!-- keywords-body lists all tiddler tagged with kwd or have kwd in their keywords field -->\n\n<$set name=\"transclusion\" value=<<qualify \"$:/state/popup/tag\">> >\n<$button class=\"tc-btn-invisible sl-keywords\" popup=<<transclusion>> >\n<$text text=<<currentTiddler>>/>\n</$button>\n<$reveal state=<<transclusion>> type=\"popup\" position=\"below\" animate=\"yes\" class=\"tc-drop-down\">\n<$link to=<<currentTiddler>> ><$text text=<<currentTiddler>>/></$link>\n<hr>\n<$macrocall $name=\"keywords-body\" kwd=<<currentTiddler>> />\n</$reveal>\n</$set>\n"
+        },
+        "$:/plugins/kookma/solution/ui/search-in-fields": {
+            "title": "$:/plugins/kookma/solution/ui/search-in-fields",
+            "caption": "In Fields",
+            "created": "20141231095518178",
+            "list-before": "$:/core/ui/AdvancedSearch/Filter",
+            "modified": "20200317220303305",
+            "tags": "$:/tags/AdvancedSearch",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define selectedFields() title caption tags keywords responder\n\\define searchInField(field, for, ci)\n<$list filter=\"[!is[shadow]!is[system]regexp:$field$[$for$$ci$]limit[1]]\">\n<dt>$field$</dt>\n</$list>\n\n<$list filter=\"[!is[shadow]!is[system]regexp:$field$[$for$$ci$]]\">\n<dd><$link><$view field=\"title\"/></$link></dd>\n</$list>\n\\end\n\n<style>.tc-advanced-search-check input {width:auto !important;}</style>\n\nSearch in fields... &nbsp; <span class=\"tc-advanced-search-check\"><$checkbox field=\"case-insensitive\" tiddler=\"$:/temp/infieldsearch\" checked=\"(?i)\"> case insensitive</$checkbox></span>\n\n<div class=\"tc-search\">\n<$edit-text tiddler=\"$:/temp/infieldsearch\" type=\"search\" tag=\"input\" placeholder=\"search terms\" default=\"\"/> <$select field=\"field\" tiddler=\"$:/temp/infieldsearch\" default=\"*\">\n<optgroup label='Selected'>\n<$list filter=<<selectedFields>> variable=\"field\">\n<option value=<<field>>><<field>></option>\n</$list>\n</optgroup>\n<optgroup label='Other'>\n<option value=\"\">*any</option>\n<$list filter=\"[!is[shadow]!is[system]fields[]sort[]] -[enlist<selectedFields>]\" variable=\"field\">\n<option value=<<field>>><<field>></option>\n</$list>\n</optgroup>\n</$select>\n<$reveal state=\"$:/temp/infieldsearch\" type=\"nomatch\" text=\"\">\n<$button class=\"tc-btn-invisible\">\n<$action-setfield $tiddler=\"$:/temp/infieldsearch\" $field=\"text\" $value=\"\"/>\n{{$:/core/images/close-button}}\n</$button>\n</$reveal>\n</div>\n\n<$reveal state=\"$:/temp/infieldsearch\" type=\"nomatch\" text=\"\">\n<$reveal state=\"$:/temp/infieldsearch!!field\" type=\"match\" text=\"\">\n<dl>\n<$list filter=\"[!is[shadow]!is[system]fields[]]\" variable=\"field\">\n\n<$reveal type=nomatch text=text default=<<field>>>\n<$macrocall $name=\"searchInField\" field=<<field>> for={{$:/temp/infieldsearch}} ci={{$:/temp/infieldsearch!!case-insensitive}}/>\n</$reveal>\n</$list>\n</dl>\n</$reveal>\n<$reveal state=\"$:/temp/infieldsearch!!field\" type=\"nomatch\" text=\"\">\n\n<dl>\n<$macrocall $name=\"searchInField\" field={{$:/temp/infieldsearch!!field}} for={{$:/temp/infieldsearch}} ci={{$:/temp/infieldsearch!!case-insensitive}}/>\n</dl>\n</$reveal>\n</$reveal>"
+        },
+        "$:/plugins/kookma/solution/viewtemplate/header-segment": {
+            "title": "$:/plugins/kookma/solution/viewtemplate/header-segment",
+            "created": "20181107195214597",
+            "list-before": "$:/core/ui/ViewTemplate/body",
+            "modified": "20200317220303324",
+            "tags": "$:/tags/ViewTemplate",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<$list filter=\"[all[current]tag[solution]]\">\n<div class=\"sl-header\">\n<$set name=responders tiddler=<<currentTiddler>> field=\"responder\" emptyValue=\"[[Not set yet]]\">\n''Ref'': <a href={{!!url}} target=\"_blank\"><$list filter=\"[enlist<responders>join[, ]]\" variable=item><$text text=<<item>> /></$list></a><br>\n''Keywords'': <$list filter={{!!keywords}} template=\"$:/plugins/kookma/solution/template/keywords\" />\n</$set>\n</div>\n</$list>\n\n\n"
+        }
+    }
+}

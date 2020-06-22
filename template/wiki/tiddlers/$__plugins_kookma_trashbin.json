@@ -1,0 +1,271 @@
+{
+    "tiddlers": {
+        "$:/plugins/kookma/trashbin/history": {
+            "title": "$:/plugins/kookma/trashbin/history",
+            "created": "20200325121105806",
+            "modified": "20200410061128665",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Full change log  https://kookma.github.io/TW-Trashbin/#ChangeLog\n\n* ''1.2.2'' -- 2020.04.10 -- bug fix in remove draft tiddlers to trashbin\n* ''1.2.1'' -- 2020.03.30 -- bug fix and doc improvement and UI fade correction\n* ''1.1.2'' -- 2020.03.28 -- stable release with new features and bug fixes\n* ''0.1.0'' -- 2019.02.12 -- mature public release\n"
+        },
+        "$:/plugins/kookma/trashbin/images/recycle": {
+            "title": "$:/plugins/kookma/trashbin/images/recycle",
+            "created": "20190723043410550",
+            "modified": "20200325115955820",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-recycle tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 512 512\"><path d=\"M184.561 261.903c3.232 13.997-12.123 24.635-24.068 17.168l-40.736-25.455-50.867 81.402C55.606 356.273 70.96 384 96.012 384H148c6.627 0 12 5.373 12 12v40c0 6.627-5.373 12-12 12H96.115c-75.334 0-121.302-83.048-81.408-146.88l50.822-81.388-40.725-25.448c-12.081-7.547-8.966-25.961 4.879-29.158l110.237-25.45c8.611-1.988 17.201 3.381 19.189 11.99l25.452 110.237zm98.561-182.915l41.289 66.076-40.74 25.457c-12.051 7.528-9 25.953 4.879 29.158l110.237 25.45c8.672 1.999 17.215-3.438 19.189-11.99l25.45-110.237c3.197-13.844-11.99-24.719-24.068-17.168l-40.687 25.424-41.263-66.082c-37.521-60.033-125.209-60.171-162.816 0l-17.963 28.766c-3.51 5.62-1.8 13.021 3.82 16.533l33.919 21.195c5.62 3.512 13.024 1.803 16.536-3.817l17.961-28.743c12.712-20.341 41.973-19.676 54.257-.022zM497.288 301.12l-27.515-44.065c-3.511-5.623-10.916-7.334-16.538-3.821l-33.861 21.159c-5.62 3.512-7.33 10.915-3.818 16.536l27.564 44.112c13.257 21.211-2.057 48.96-27.136 48.96H320V336.02c0-14.213-17.242-21.383-27.313-11.313l-80 79.981c-6.249 6.248-6.249 16.379 0 22.627l80 79.989C302.689 517.308 320 510.3 320 495.989V448h95.88c75.274 0 121.335-82.997 81.408-146.88z\"/></svg>"
+        },
+        "$:/plugins/kookma/trashbin/images/sort-alpha-down": {
+            "title": "$:/plugins/kookma/trashbin/images/sort-alpha-down",
+            "caption": "sort-alpha-down",
+            "created": "20200327153959154",
+            "modified": "20200327185043770",
+            "tags": "$:/tags/Image",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-sort-alpha-down tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 448 512\"><path d=\"M176 352h-48V48a16 16 0 0 0-16-16H80a16 16 0 0 0-16 16v304H16c-14.19 0-21.36 17.24-11.29 27.31l80 96a16 16 0 0 0 22.62 0l80-96C197.35 369.26 190.22 352 176 352zm240-64H288a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h56l-61.26 70.45A32 32 0 0 0 272 446.37V464a16 16 0 0 0 16 16h128a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16h-56l61.26-70.45A32 32 0 0 0 432 321.63V304a16 16 0 0 0-16-16zm31.06-85.38l-59.27-160A16 16 0 0 0 372.72 32h-41.44a16 16 0 0 0-15.07 10.62l-59.27 160A16 16 0 0 0 272 224h24.83a16 16 0 0 0 15.23-11.08l4.42-12.92h71l4.41 12.92A16 16 0 0 0 407.16 224H432a16 16 0 0 0 15.06-21.38zM335.61 144L352 96l16.39 48z\"/></svg>"
+        },
+        "$:/plugins/kookma/trashbin/images/sort-alpha-up": {
+            "title": "$:/plugins/kookma/trashbin/images/sort-alpha-up",
+            "caption": "sort-alpha-up (Solid)",
+            "created": "20200327155639132",
+            "modified": "20200327162316327",
+            "tags": "$:/tags/Image",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-sort-alpha-up-alt tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 448 512\"><path d=\"M16 160h48v304a16 16 0 0 0 16 16h32a16 16 0 0 0 16-16V160h48c14.21 0 21.38-17.24 11.31-27.31l-80-96a16 16 0 0 0-22.62 0l-80 96C-5.35 142.74 1.78 160 16 160zm272 64h128a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16h-56l61.26-70.45A32 32 0 0 0 432 65.63V48a16 16 0 0 0-16-16H288a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h56l-61.26 70.45A32 32 0 0 0 272 190.37V208a16 16 0 0 0 16 16zm159.06 234.62l-59.27-160A16 16 0 0 0 372.72 288h-41.44a16 16 0 0 0-15.07 10.62l-59.27 160A16 16 0 0 0 272 480h24.83a16 16 0 0 0 15.23-11.08l4.42-12.92h71l4.41 12.92A16 16 0 0 0 407.16 480H432a16 16 0 0 0 15.06-21.38zM335.61 400L352 352l16.39 48z\"/></svg>"
+        },
+        "$:/plugins/kookma/trashbin/images/sort-numeric-down": {
+            "title": "$:/plugins/kookma/trashbin/images/sort-numeric-down",
+            "caption": "sort-numeric-down",
+            "created": "20200327153929866",
+            "modified": "20200327185052283",
+            "tags": "$:/tags/Image",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-sort-numeric-down tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 448 512\"><path d=\"M304 96h16v64h-16a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h96a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16h-16V48a16 16 0 0 0-16-16h-48a16 16 0 0 0-14.29 8.83l-16 32A16 16 0 0 0 304 96zm26.15 162.91a79 79 0 0 0-55 54.17c-14.25 51.05 21.21 97.77 68.85 102.53a84.07 84.07 0 0 1-20.85 12.91c-7.57 3.4-10.8 12.47-8.18 20.34l9.9 20c2.87 8.63 12.53 13.49 20.9 9.91 58-24.76 86.25-61.61 86.25-132V336c-.02-51.21-48.4-91.34-101.85-77.09zM352 356a20 20 0 1 1 20-20 20 20 0 0 1-20 20zm-176-4h-48V48a16 16 0 0 0-16-16H80a16 16 0 0 0-16 16v304H16c-14.19 0-21.36 17.24-11.29 27.31l80 96a16 16 0 0 0 22.62 0l80-96C197.35 369.26 190.22 352 176 352z\"/></svg>"
+        },
+        "$:/plugins/kookma/trashbin/images/sort-numeric-up": {
+            "title": "$:/plugins/kookma/trashbin/images/sort-numeric-up",
+            "caption": "sort-numeric-up (Solid)",
+            "created": "20200327155701392",
+            "modified": "20200327162214617",
+            "tags": "$:/tags/Image",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-sort-numeric-up-alt tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 448 512\"><path d=\"M107.31 36.69a16 16 0 0 0-22.62 0l-80 96C-5.35 142.74 1.78 160 16 160h48v304a16 16 0 0 0 16 16h32a16 16 0 0 0 16-16V160h48c14.21 0 21.38-17.24 11.31-27.31zM400 416h-16V304a16 16 0 0 0-16-16h-48a16 16 0 0 0-14.29 8.83l-16 32A16 16 0 0 0 304 352h16v64h-16a16 16 0 0 0-16 16v32a16 16 0 0 0 16 16h96a16 16 0 0 0 16-16v-32a16 16 0 0 0-16-16zM330.17 34.91a79 79 0 0 0-55 54.17c-14.27 51.05 21.19 97.77 68.83 102.53a84.07 84.07 0 0 1-20.85 12.91c-7.57 3.4-10.8 12.47-8.18 20.34l9.9 20c2.87 8.63 12.53 13.49 20.9 9.91 58-24.77 86.25-61.61 86.25-132V112c-.02-51.21-48.4-91.34-101.85-77.09zM352 132a20 20 0 1 1 20-20 20 20 0 0 1-20 20z\"/></svg>"
+        },
+        "$:/plugins/kookma/trashbin/images/times.svg": {
+            "title": "$:/plugins/kookma/trashbin/images/times.svg",
+            "created": "20190716033811299",
+            "modified": "20200325115955828",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-times tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 352 512\"><path d=\"M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z\"/></svg>"
+        },
+        "$:/plugins/kookma/trashbin/images/trash-alt": {
+            "title": "$:/plugins/kookma/trashbin/images/trash-alt",
+            "caption": "trash-alt",
+            "created": "20190710102513532",
+            "modified": "20200327173632794",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-trash-alt tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 448 512\"><path d=\"M268 416h24a12 12 0 0 0 12-12V188a12 12 0 0 0-12-12h-24a12 12 0 0 0-12 12v216a12 12 0 0 0 12 12zM432 80h-82.41l-34-56.7A48 48 0 0 0 274.41 0H173.59a48 48 0 0 0-41.16 23.3L98.41 80H16A16 16 0 0 0 0 96v16a16 16 0 0 0 16 16h16v336a48 48 0 0 0 48 48h288a48 48 0 0 0 48-48V128h16a16 16 0 0 0 16-16V96a16 16 0 0 0-16-16zM171.84 50.91A6 6 0 0 1 177 48h94a6 6 0 0 1 5.15 2.91L293.61 80H154.39zM368 464H80V128h288zm-212-48h24a12 12 0 0 0 12-12V188a12 12 0 0 0-12-12h-24a12 12 0 0 0-12 12v216a12 12 0 0 0 12 12z\"/></svg>"
+        },
+        "$:/language/Buttons/Trashbin/Caption/Move": {
+            "title": "$:/language/Buttons/Trashbin/Caption/Move",
+            "created": "20200325181608623",
+            "modified": "20200327192039481",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "trashbin"
+        },
+        "$:/language/Buttons/Trashbin/Caption/Recycle": {
+            "title": "$:/language/Buttons/Trashbin/Caption/Recycle",
+            "created": "20200327192303891",
+            "modified": "20200327192322259",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "recycle"
+        },
+        "$:/language/Buttons/Trashbin/Hint/Move": {
+            "title": "$:/language/Buttons/Trashbin/Hint/Move",
+            "created": "20200325181718189",
+            "modified": "20200327192226676",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Move this tiddler to Trashbin"
+        },
+        "$:/language/Buttons/Trashbin/Hint/Recycle": {
+            "title": "$:/language/Buttons/Trashbin/Hint/Recycle",
+            "created": "20200327192150450",
+            "modified": "20200327194553902",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Recycle this tiddler from Trashbin"
+        },
+        "$:/plugins/kookma/trashbin/license": {
+            "title": "$:/plugins/kookma/trashbin/license",
+            "created": "20200325121133911",
+            "modified": "20200325121209299",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Distributed under an MIT license.\n\nCopyright (c) 2019-2020 [[Mohammad Rahmani|https://github.com/kookma]]\n\n<<<\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n<<<"
+        },
+        "$:/plugins/kookma/trashbin/macros/bulk-operation": {
+            "title": "$:/plugins/kookma/trashbin/macros/bulk-operation",
+            "created": "20190723115934925",
+            "modified": "20200327170128541",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define delete-trashed-tiddlers()\n<$list filter=\"[tag[$:/tags/trashbin]search:title[$:/trashbin/]]\" variable=\"Item\">\n<$action-deletetiddler $tiddler=<<Item>> />\n</$list>\n\\end\n\n\\define trashbin-empty-bin()\n<$macrocall $name=\"trashbin-confirm-delete\"\nbtnLabel=\"Empty Trashbin\"\ncountFilter=\"[tag[$:/tags/trashbin]search:title[$:/trashbin/]]\"\nactionMacro=<<delete-trashed-tiddlers>>\nstateTiddler=\"$:/state/trashbin/emptyTrashBin\"\n/>\n\\end\n\n\\define restore-all()\n<$button tooltip=\"Restore all\" class=\"tc-btn-invisible tc-tiddlylink\"> {{$:/plugins/kookma/trashbin/images/recycle}}\n<$list filter=\"[tag[$:/tags/trashbin]search:title[$:/trashbin/]sort[]]\" variable=\"Item\">\n<$macrocall $name=\"restore\" tiddler=<<Item>> />\n</$list>\n</$button>\n\\end"
+        },
+        "$:/plugins/kookma/trashbin/macros/confirm-empty": {
+            "title": "$:/plugins/kookma/trashbin/macros/confirm-empty",
+            "created": "20190723114948285",
+            "modified": "20200327170306636",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define trashbin-confirm-delete(\nbtnLabel:\"Delete these tiddlers\", \nconfirmMessage:\"Are you sure you wish to delete\", \nstateTiddler:\"\", \ncountFilter:\"\", \nactionMacro:\"\")\n\n<$button class=\"tc-btn-invisible tc-tiddlylink\" tooltip=\"Empty Trashbin\" popup=<<qualify \"\"\"$stateTiddler$\"\"\">> > {{$:/core/images/delete-button}}\n</$button>\n\n<$reveal state=<<qualify \"\"\"$stateTiddler$\"\"\">> type=\"popup\" position=\"belowleft\" animate=\"yes\">\n<div class=\"tc-block-dropdown-wrapper\">\n<div class=\"tc-block-dropdown tc-edit-type-dropdown\">\n<div class=\"tc-dropdown-item-plain\">\n<$set name=\"resultCount\" value=\"\"\"<$count filter=<<__countFilter__>> />\"\"\">\n$confirmMessage$ <<resultCount>> tiddler(s)?\n</$set>\n</div>\n<div class=\"tc-dropdown-item-plain\">\n<$button class=\"tc-btn-invisible tc-tiddlylink\" tooltip=\"Empty archive\"\nactions=<<__actionMacro__>> > \n{{$:/core/images/delete-button}} Delete all?\n</$button>\n</div>\n</div>\n</div>\n</$reveal>\n\\end"
+        },
+        "$:/plugins/kookma/trashbin/macros/move-to-trashbin": {
+            "title": "$:/plugins/kookma/trashbin/macros/move-to-trashbin",
+            "created": "20190710071039480",
+            "modified": "20200410061108463",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define trashTidName() <<unusedtitle baseName:\"$(trashTiddler)$\">>\n\n\\define move-to-trashbin(tiddler)\n<$list filter=\"[<__tiddler__>has[title]]\" variable=ignore> <!-- ignore missing tiddlers -->\n<$vars trashTiddler={{{ [<__tiddler__>addprefix[$:/trashbin/]] }}}>\n<$wikify name=\"trashTid\" text=<<trashTidName>> >\n<$list filter=\"[<__tiddler__>fields[]]\" variable=\"fieldName\">\n<$action-setfield \n $tiddler=<<trashTid>>\n $index=<<fieldName>>\n $value={{{[<__tiddler__>get<fieldName>] }}}\n/>\n</$list>\n<$action-setfield $tiddler=<<trashTid>> tags=\"$:/tags/trashbin\"/>\n</$wikify>\n<$action-sendmessage $message=\"tm-close-tiddler\" $param=<<__tiddler__>> />\n<$list filter=\"[<__tiddler__>has[draft.of]]\" variable=ignore emptyMessage=\"\"\"<$action-deletetiddler $tiddler=<<__tiddler__>> />\"\"\">\n<$action-deletetiddler $tiddler={{{[<__tiddler__>get[draft.of]]}}} /><!--delete main tiddler-->\n<$action-deletetiddler $tiddler=<<__tiddler__>> /> <!--delete draft tiddler-->\n</$list>\n</$vars>\n</$list>\n\\end\n"
+        },
+        "$:/plugins/kookma/trashbin/macros/preview-option": {
+            "title": "$:/plugins/kookma/trashbin/macros/preview-option",
+            "created": "20200327203154169",
+            "modified": "20200327205705076",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define viewTemplateTid() $:/plugins/kookma/trashbin/viewtemplate/trash-item\n\\define styleTid()        $:/plugins/kookma/trashbin/styles/show-trashed\n\n\\define preview-option()\n<$reveal type=\"nomatch\" stateTitle=<<viewTemplateTid>> stateField=\"tags\" text=\"$:/tags/ViewTemplate\" default=\"\">\n<$button setTitle=<<viewTemplateTid>> setField=\"tags\" setTo=\"$:/tags/ViewTemplate\" class=\"tc-btn-invisible\" tooltip=\"Show trash item preview\"> \n{{$:/core/images/preview-open}}\n<$action-setfield $tiddler=<<styleTid>>  tags=\"$:/tags/Stylesheet\"/> \n</$button>\n</$reveal>\n<$reveal type=\"match\" stateTitle=<<viewTemplateTid>> stateField=\"tags\" text=\"$:/tags/ViewTemplate\" default=\"\">\n<$button setTitle=<<viewTemplateTid>> setField=\"tags\" setTo=\"\" class=\"tc-btn-invisible\" tooltip=\"Hide trash item preview\"> \n{{$:/core/images/preview-closed}}\n<$action-setfield $tiddler=<<styleTid>>  tags=\"\"/> \n</$button>\n</$reveal>\n\\end\n\n<<preview-option>>"
+        },
+        "$:/plugins/kookma/trashbin/macros/restore": {
+            "title": "$:/plugins/kookma/trashbin/macros/restore",
+            "created": "20190710105439064",
+            "modified": "20200327170445307",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define open-restoredTid-in-story-river()\n<$action-listops $tiddler=\"$:/StoryList\"    $field='list'  $subfilter=\"\"\"[[$(restoredTid)$]]+[putfirst[]]\"\"\"/>\n\\end\n\n\\define restoreTid(tiddler)\n<$list filter=\"[<__tiddler__>indexes[]] -title\" variable=\"fieldName\">\n <$action-setfield \n   $tiddler=<<restoredTid>> \n\t $field=<<fieldName>> \n\t $value={{{ [<__tiddler__>getindex<fieldName>] }}} \n />\n</$list>\n<$action-sendmessage $message=\"tm-close-tiddler\" $param=<<__tiddler__>> />\n<$action-deletetiddler $tiddler=<<__tiddler__>> />\n<$macrocall $name=\"open-restoredTid-in-story-river\" />\n\\end\n\n\n\\define restore(tiddler)\n<$vars \n  restoredTid={{{ [<__tiddler__>getindex[title]] }}} \n  isExisted= {{{ [<__tiddler__>getindex[title]has[title]] }}} \n  >\n<$reveal type=\"nomatch\" text=<<isExisted>> default=<<restoredTid>> >\n<$macrocall $name=\"restoreTid\" tiddler=<<__tiddler__>> />\n</$reveal>\n\n<$reveal type=\"match\" text=<<isExisted>> default=<<restoredTid>> >\n  <$action-sendmessage $message=\"tm-notify\" \n   $param=\"$:/plugins/kookma/trashbin/restore-notification\" \n\t restoredTiddler=<<restoredTid>>\n\t/>\n</$reveal>\n\n</$vars>\n\\end"
+        },
+        "$:/plugins/kookma/trashbin/macros/sort": {
+            "title": "$:/plugins/kookma/trashbin/macros/sort",
+            "created": "20200327141043944",
+            "modified": "20200327201042137",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define tempSortTid() $:/keepstate/trashbin/sort\n\n\\define show-icons()\n<$vars state-alpha-down=\"sortan[title]\" state-alpha-up=\"!sortan[title]\"\n       state-numeric-down=\"sort[modified]\" state-numeric-up=\"!sort[modified]\" >\n<$list filter=\"[<tempSortTid>get[text]match<state-alpha-down>]\">\n{{$:/plugins/kookma/trashbin/images/sort-alpha-down}}\n</$list>\n<$list filter=\"[<tempSortTid>get[text]match<state-alpha-up>]\">\n{{$:/plugins/kookma/trashbin/images/sort-alpha-up}}\n</$list>\n<$list filter=\"[<tempSortTid>get[text]match<state-numeric-down>]\">\n{{$:/plugins/kookma/trashbin/images/sort-numeric-down}}\n</$list>\n<$list filter=\"[<tempSortTid>get[text]match<state-numeric-up>]\">\n{{$:/plugins/kookma/trashbin/images/sort-numeric-up}}\n</$list>\n<$list filter=\"[<tempSortTid>!has[title]]\">\nClick to sort\n</$list>\n</$vars>\n\\end\n\n\n\\define trashbin-cycle(arraySet:\"\", stateTiddler:\"\", stateField:\"text\")\n<$vars array=<<__arraySet__>>  currentItem={{{[<__stateTiddler__>get<__stateField__>]}}} \n       tooltip={{{[<tempSortTid>get[text]]}}} >\n <$button tooltip=<<tooltip>> class=\"tc-btn-invisible\"> <<show-icons>>\n    <$set\n      filter='[enlist<array>after<currentItem>]'\n      name=NextItem\n      emptyValue={{{[enlist<array>first[]]}}}\n    >\n    <$action-setfield\n     $tiddler=<<__stateTiddler__>>\n     $field=<<__stateField__>>\n     $value=<<NextItem>> />\n      </$set>\n  </$button>\n</$vars>\t\n\\end\n\n\\define sort-by()\n<$macrocall $name=\"trashbin-cycle\" \n  arraySet=\"sortan[title] !sortan[title] sort[modified] !sort[modified]\" \n  stateTiddler=<<tempSortTid>> />\n\\end"
+        },
+        "$:/plugins/kookma/trashbin/readme": {
+            "title": "$:/plugins/kookma/trashbin/readme",
+            "created": "20200325121220142",
+            "modified": "20200325171839260",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "; Trashbin\nThe concept behind Trashbin plugin is to have a simple mechanism to move deleted tiddlers to Trashbin and be able to restore them later if required.\n\n; Code and demo\nFor learning plugin features, mechanism, terminology, syntax, tutorial and examples see the plugin demo and code pages\n\n* Demo: https://kookma.github.io/TW-Trashbin/\n* Code: https://github.com/kookma/TW-Trashbin\n"
+        },
+        "$:/plugins/kookma/trashbin/restore-notification": {
+            "title": "$:/plugins/kookma/trashbin/restore-notification",
+            "created": "20190711130503628",
+            "modified": "20200325115955867",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "{{$:/plugins/kookma/trashbin/images/recycle}} \n\n''Warning''<br>\nThe target tiddler <b><$text text=<<restoredTiddler>>/></b> already exists.<br>\nIt cannot be overwritten!"
+        },
+        "$:/plugins/kookma/trashbin/sidebar-tab": {
+            "title": "$:/plugins/kookma/trashbin/sidebar-tab",
+            "caption": "Trashbin",
+            "created": "20190613131234955",
+            "modified": "20200330082257793",
+            "tags": "$:/tags/SideBar",
+            "type": "text/vnd.tiddlywiki",
+            "text": "{{$:/plugins/kookma/trashbin/ui/sidebar}}"
+        },
+        "$:/plugins/kookma/trashbin/styles/main.css": {
+            "title": "$:/plugins/kookma/trashbin/styles/main.css",
+            "text": "/* trashbin main ui */\n.kk-trashbin-ui{\n\tmin-width:320px; /* controls the minimum width of whole ui */\n}\n\n.kk-trahbin-ui svg{\n    fill:#aaaaaa;\n}\n\n.kk-trahbin-ui .kk-trahbin-ui-controls svg{\n width:1.2em;\n height:1.2em;\t\n}\n\n\n/* trashbin items list ui */\n.kk-trashbin-row{\n\tdisplay: flex;\t\n\twidth: 95%;\n\tflex-wrap: wrap;\n}\n\n\n.kk-trashbin-row .kk-trashbin-delete,\n.kk-trashbin-row .kk-trashbin-restore {\n\tflex-grow:0; width:20px;\n\tmargin-left:5px;\n}\n\n.kk-trashbin-row .kk-trashbin-link{\n\tflex-grow:1; \n\twidth: calc(100% - 50px); \n\tpadding-right: 10px;\n}\n\n.kk-trashbin-row:hover { background-color: #f6f6f6; }\n\n/* UI button fade-in*/\n.kk-trahbin-ui   button:hover svg         { fill: #000000; }\n.kk-trahbin-ui  .kk-trashbin-ui-btn       { opacity:0.5; }\n.kk-trahbin-ui  .kk-trashbin-ui-btn:hover { opacity:1.0; }",
+            "created": "20190716040116074",
+            "modified": "20200330103433380",
+            "tags": "$:/tags/Stylesheet",
+            "type": "text/css"
+        },
+        "$:/plugins/kookma/trashbin/styles/show-trashed": {
+            "title": "$:/plugins/kookma/trashbin/styles/show-trashed",
+            "created": "20200327100826751",
+            "modified": "20200330123344137",
+            "tags": "$:/tags/Stylesheet",
+            "type": "text/vnd.tiddlywiki",
+            "text": "[data-tags~=\"$:/tags/trashbin\"] .tc-tiddler-body,\n[data-tags~=\"$:/tags/trashbin\"] .tc-tags-wrapper\n{\n display:none;\n}\n"
+        },
+        "$:/plugins/kookma/trashbin/styles/toolbar-buttons": {
+            "title": "$:/plugins/kookma/trashbin/styles/toolbar-buttons",
+            "text": "html body.tc-body .tc-tiddler-controls .tc-image-trash-alt {stroke: white;fill:#660000;}\nhtml body.tc-body .tc-tiddler-controls .tc-image-recycle   {stroke: white;fill:#138808;}",
+            "created": "20200329162056060",
+            "modified": "20200406191049638",
+            "type": "text/css"
+        },
+        "$:/plugins/kookma/trashbin/styles/trashed-item": {
+            "title": "$:/plugins/kookma/trashbin/styles/trashed-item",
+            "text": "/* set style for trashed tiddlers */\n[data-tags ~=\"$:/tags/trashbin\"] { border: 1px solid crimson; }",
+            "created": "20200329161931981",
+            "modified": "20200329162224824",
+            "tags": "$:/tags/Stylesheet",
+            "type": "text/css"
+        },
+        "$:/plugins/kookma/trashbin/templates/body": {
+            "title": "$:/plugins/kookma/trashbin/templates/body",
+            "created": "20200329133632160",
+            "modified": "20200329155701084",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define show-plain() \n<div class=\"tc-tiddler-body\">\n<pre><$transclude index=\"text\" mode=\"block\"/></pre>\n</div>\n\\end\n\n\\define show() \n<div class=\"tc-tiddler-body\">\n<$transclude index=\"text\" mode=\"block\"/>\n</div>\n\\end\n\n\n<!-- json tiddlers including plugins -->\n<$list filter=\"[<currentTiddler>getindex[type]match[application/json]]\" variable=ignore>\n<$list filter=\"[<currentTiddler>getindex[plugin-type]]\" variable=ignore emptyMessage=<<show-plain>> >\n<div class=\"tc-binary-warning\">\nThis tiddler contains plugin!\n</div>\n</$list>\n</$list>\n<!-- text tiddlers including: css, plain, dictionary -->\n<$list filter=\"[<currentTiddler>getindex[type]match[application/x-tiddler-dictionary]]\n[<currentTiddler>getindex[type]match[text/plain]]\n[<currentTiddler>getindex[type]match[text/css]]\" variable=ignore>\n<<show-plain>>\n</$list>\n\n\n<!-- other tiddlers like image, vnd.tiddlywiki -->\n<$list filter=\"[<currentTiddler>getindex[type]]\" variable=type emptyMessage=<<show>> >\n<$list filter=\"[<type>match[text/vnd.tiddlywiki]]\" variable=ignore>\n<$transclude index=\"text\" mode=\"block\"/>\n</$list>\n<$list filter=\"[<type>search:title[image]]\" variable=ignore>\n<div class=\"tc-binary-warning\">\nThis tiddler contains image data!\n</div>\n</$list>\n</$list>"
+        },
+        "$:/plugins/kookma/trashbin/templates/subtitle": {
+            "title": "$:/plugins/kookma/trashbin/templates/subtitle",
+            "text": "<div class=\"tc-subtitle\">\n<$link to={{##modifier}}>\n<$view index=\"modifier\"/>\n</$link> <$view index=\"modified\" format=\"date\" template={{$:/language/Tiddler/DateFormat}}/>\n</div>",
+            "created": "20200327082525694",
+            "modified": "20200327083014840",
+            "type": "text/vnd.tiddlywiki"
+        },
+        "$:/plugins/kookma/trashbin/templates/tags": {
+            "title": "$:/plugins/kookma/trashbin/templates/tags",
+            "created": "20200327084049139",
+            "modified": "20200327120921036",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<div class=\"tc-tags-wrapper\">\n<$vars tagsIndex={{{[<currentTiddler>getindex[tags]]}}}>\n<$list filter=\"[enlist<tagsIndex>]\" template=\"$:/core/ui/TagTemplate\" storyview=\"pop\"/>\n</$vars>\n</div>"
+        },
+        "$:/plugins/kookma/trashbin/templates/title": {
+            "title": "$:/plugins/kookma/trashbin/templates/title",
+            "created": "20200327085342927",
+            "modified": "20200327195225059",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define title-styles()\nfill:$(foregroundColor)$;\n\\end\n<div class=\"tc-tiddler-title\">\n<div class=\"tc-titlebar\">\n<$set name=\"tv-wikilinks\" value={{$:/config/Tiddlers/TitleLinks}}>\n<$link>\n<$set name=\"foregroundColor\" value={{##color}}>\n<span class=\"tc-tiddler-title-icon\" style=<<title-styles>>>\n<$transclude tiddler={{##icon}}>\n<$transclude tiddler={{$:/config/DefaultTiddlerIcon}}/>\n</$transclude>\n</span>\n</$set>\n<$list filter=\"[{##title}removeprefix[$:/]]\">\n<h2 class=\"tc-title\" title={{$:/language/SystemTiddler/Tooltip}}>\n<span class=\"tc-system-title-prefix\">$:/</span><$text text=<<currentTiddler>>/>\n</h2>\n</$list>\n<$list filter=\"[{##title}!prefix[$:/]]\">\n<h2 class=\"tc-title\">\n<$view field=\"title\"/>\n</h2>\n</$list>\n</$link>\n</$set>\n</div></div>"
+        },
+        "$:/plugins/kookma/trashbin/ui/sidebar": {
+            "title": "$:/plugins/kookma/trashbin/ui/sidebar",
+            "caption": "Trashbin",
+            "created": "20200330082034854",
+            "modified": "20200330123325985",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\import $:/plugins/kookma/trashbin/macros/sort\n\\import $:/plugins/kookma/trashbin/macros/restore\n\\import $:/plugins/kookma/trashbin/macros/confirm-empty\n\\import $:/plugins/kookma/trashbin/macros/bulk-operation\n\\import $:/plugins/kookma/trashbin/macros/preview-option\n\n\\define show-link()\n<$link to=<<currentTiddler>> ><$text text={{{ [<currentTiddler>removeprefix[$:/trashbin/]] }}} /> </$link>&nbsp;<span style=\"float:right;padding-right:10px;font-size:smaller;\" title=\"Date Deleted\"><$view field=\"modified\" format=\"date\" template=\"0MM/0DD/YYYY 0hh:0mm AM\"/></span>\n\\end\n\n\\define recycle-button()\n{{||$:/plugins/kookma/trashbin/ui/toolbar-button}}\n\\end\n\n\\define delete-button()\n<$button class=\"tc-btn-invisible\" tooltip=\"Delete permanently\">\n{{$:/plugins/kookma/trashbin/images/times.svg}}\n<$list filter=\"[list[$:/StoryList]] +[field:title<currentTiddler>>]\" variable=ignore>\n<$action-sendmessage $message=\"tm-close-tiddler\" $param=<<<currentTiddler>> />\n</$list>\n<$action-deletetiddler $tiddler=<<currentTiddler>> />\n</$button>\n\\end\n\n\\define trashbin-siderbar-ui()\n<div class=\"kk-trahbin-ui\">\n\n<span class=\"kk-trahbin-ui-controls kk-trashbin-ui-btn\">\n<<trashbin-empty-bin>> <<restore-all>> <<sort-by>> <<preview-option>>\n\n</span>&nbsp;\n<span style=\"font-size:smaller\">\n<$list filter='[tag[$:/tags/trashbin]prefix[$:/trashbin/]limit[1]]'  variable=null emptyMessage=\"Trash bin is empty\">\n<$count filter='[tag[$:/tags/trashbin]]'/> items in Trashbin\n</$list>\n</span>\n\n<!-- create the trash items list -->\n<$list filter=\"[tag[$:/tags/trashbin]prefix[$:/trashbin/]$(sortType)$]\">\n<div class=\"kk-trashbin-row\">\n\t<div class=\"kk-trashbin-link\"><<show-link>></div>\n\t<div class=\"kk-trashbin-recycle kk-trashbin-ui-btn\"><<recycle-button>></div>\n\t<div class=\"kk-trashbin-delete kk-trashbin-ui-btn\"><<delete-button>></div>\n</div>\n</$list>\n\n</div>\n\\end\n\n<$vars sortType={{{[<tempSortTid>get[text]] ~[[]] }}}>\n<<trashbin-siderbar-ui>>\n</$vars>"
+        },
+        "$:/plugins/kookma/trashbin/ui/toolbar-button": {
+            "title": "$:/plugins/kookma/trashbin/ui/toolbar-button",
+            "caption": "{{$:/plugins/kookma/trashbin/images/trash-alt}}&nbsp;{{$:/language/Buttons/Trashbin/Caption/Move}}",
+            "created": "20190623140751496",
+            "creator": "Mohammad",
+            "description": "<$list filter=\"[all[current]tag[$:/tags/trashbin]prefix[$:/trashbin/]]\" emptyMessage={{$:/language/Buttons/Trashbin/Hint/Move}}>{{$:/language/Buttons/Trashbin/Hint/Recycle}}</$list>",
+            "list-after": "$:/core/ui/Buttons/delete",
+            "modified": "20200328140420576",
+            "modifier": "Mohammad",
+            "tags": "$:/tags/ViewToolbar $:/tags/EditToolbar",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\import $:/plugins/kookma/trashbin/macros/move-to-trashbin\n\\import $:/plugins/kookma/trashbin/macros/restore\n\\whitespace trim\n\n<!-- move to trashbin -->\n<$list filter=\"[all[current]!tag[$:/tags/trashbin]!prefix[$:/trashbin/]]\">\n<$button \n aria-label={{$:/language/Buttons/Trashbin/Caption/Move}}\n tooltip={{$:/language/Buttons/Trashbin/Hint/Move}} class=<<tv-config-toolbar-class>> >\n  <$macrocall $name=\"move-to-trashbin\" tiddler=<<currentTiddler>> />\t\n  <$list filter=\"[<tv-config-toolbar-icons>prefix[yes]]\">\n    {{$:/plugins/kookma/trashbin/images/trash-alt}}\n  </$list>\n  <$list filter=\"[<tv-config-toolbar-text>prefix[yes]]\">\n    <span class=\"tc-btn-text\">\n\t\t  &nbsp;<$text text={{$:/language/Buttons/Trashbin/Caption/Move}}/>\n    </span>\n  </$list>\n</$button>\n</$list>\n\n<!-- recycle from trashbin -->\n<$list filter=\"[all[current]tag[$:/tags/trashbin]prefix[$:/trashbin/]]\">\n<$button\n aria-label={{$:/language/Buttons/Trashbin/Caption/Recycle}}\n tooltip={{$:/language/Buttons/Trashbin/Hint/Recycle}} class=<<tv-config-toolbar-class>> >\n  <$macrocall $name=\"restore\" tiddler=<<currentTiddler>>  />\n  <$list filter=\"[<tv-config-toolbar-icons>prefix[yes]]\">\n    {{$:/plugins/kookma/trashbin/images/recycle}}\n  </$list>\n  <$list filter=\"[<tv-config-toolbar-text>prefix[yes]]\">\n    <span class=\"tc-btn-text\">&nbsp;\n      <$text text={{$:/language/Buttons/Trashbin/Caption/Recycle}}/>\n   </span>\n  </$list>\n</$button>\n</$list>"
+        },
+        "$:/plugins/kookma/trashbin/viewtemplate/trash-item": {
+            "title": "$:/plugins/kookma/trashbin/viewtemplate/trash-item",
+            "created": "20200327081227209",
+            "modified": "20200330123344172",
+            "tags": "$:/tags/ViewTemplate",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<$list filter=\"[all[current]tag[$:/tags/trashbin]prefix[$:/trashbin/]]\">\n<div class=\"tc-tiddler-frame kk-trashbin-viewtrashitem\">\n{{||$:/plugins/kookma/trashbin/templates/title}}\n{{||$:/plugins/kookma/trashbin/templates/subtitle}}\n{{||$:/plugins/kookma/trashbin/templates/tags}}\n{{||$:/plugins/kookma/trashbin/templates/body}}\n</div>\n<div class=\"kk-trashbin-viewtrashitem\" style=\"margin-left:40px;\">\n<h2>Tiddler fields</h2>\n<$list filter=\"[<currentTiddler>indexes[]] -title -tags -text -created -modified\" variable=idx>\n<label style=\"display:inline-block;width:15ch;font-weight:bold;\"><<idx>>:</label> <$transclude index=<<idx>>/><br/>\n</$list>\n</div>\n\n<style>\n.kk-trashbin-viewtrashitem {\n  margin-top:15px;\n }\n.kk-trashbin-viewtrashitem .tc-tags-wrapper {\n  display:inline;\n}\n.kk-trashbin-viewtrashitem .tc-tiddler-body{\n  display:block;\n}\n</style>"
+        }
+    }
+}

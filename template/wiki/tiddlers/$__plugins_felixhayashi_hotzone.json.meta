@@ -1,0 +1,13 @@
+author: Felix Küppers
+core-version: >=5.1.5
+created: 20200605095828679
+dependents: 
+description: HotZone – Be notified when tiddlers are scrolled into view
+list: Configuration License Readme
+modified: 20200605095828679
+plugin-type: plugin
+released: 
+source: https://github.com/felixhayashi/TW5-HotZone
+title: $:/plugins/felixhayashi/hotzone
+type: application/json
+version: 0.0.3
