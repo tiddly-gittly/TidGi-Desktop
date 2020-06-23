@@ -54,3 +54,4 @@ _src
 /template/build
 
 snapcraft_login
+template/wiki/tiddlers/$__StoryList.tid

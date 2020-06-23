@@ -1,6 +1,6 @@
-
 const { ipcRenderer } = window.require('electron');
 
+export const requestStartTiddlyWiki = (url) => ipcRenderer.send('request-start-tiddlywiki', url);
 export const requestOpenInBrowser = (url) => ipcRenderer.send('request-open-in-browser', url);
 export const requestShowMessageBox = (message, type) => ipcRenderer.send('request-show-message-box', message, type);
 export const requestLoadUrl = (url, id) => ipcRenderer.send('request-load-url', url, id);

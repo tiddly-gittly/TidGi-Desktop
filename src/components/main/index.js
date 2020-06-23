@@ -29,6 +29,7 @@ import arrowWhite from '../../images/arrow-white.png';
 import arrowBlack from '../../images/arrow-black.png';
 
 import {
+  requestStartTiddlyWiki,
   requestHibernateWorkspace,
   requestRemoveWorkspace,
   requestSetActiveWorkspace,
@@ -271,6 +272,8 @@ const Main = ({
                     requestShowLicenseRegistrationWindow();
                     return;
                   }
+                  console.log('aaa');
+                  requestStartTiddlyWiki();
                   requestShowAddWorkspaceWindow();
                 }}
               />

@@ -8,6 +8,8 @@ const {
   shell,
 } = require('electron');
 
+const startNodeJSWiki = require('../libs/start-nodejs-wiki');
+
 const {
   getPreference,
   getPreferences,
@@ -76,7 +78,8 @@ const proxyWindow = require('../windows/proxy');
 const spellcheckLanguagesWindow = require('../windows/spellcheck-languages');
 
 const loadListeners = () => {
-  ipcMain.on('start-tiddlywiki', (e) => {
+  ipcMain.on('request-start-tiddlywiki', () => {
+    startNodeJSWiki();
   });
 
   ipcMain.on('request-open-in-browser', (e, url) => {
