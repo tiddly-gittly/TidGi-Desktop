@@ -53,16 +53,16 @@ const loadListeners = (store) => {
     store.dispatch(setWorkspace(id, value));
   });
 
-  ipcRenderer.on('set-workspaces', () => {
-    store.dispatch(setWorkspaces());
+  ipcRenderer.on('set-workspaces', (e, newWorkspaces) => {
+    store.dispatch(setWorkspaces(newWorkspaces));
   });
 
   ipcRenderer.on('set-workspace-meta', (e, id, value) => {
     store.dispatch(setWorkspaceMeta(id, value));
   });
 
-  ipcRenderer.on('set-workspace-metas', () => {
-    store.dispatch(setWorkspaceMetas());
+  ipcRenderer.on('set-workspace-metas', (newWorkspaceMetas) => {
+    store.dispatch(setWorkspaceMetas(newWorkspaceMetas));
   });
 
   ipcRenderer.on('update-can-go-back', (e, value) => {
