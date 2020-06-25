@@ -46,6 +46,12 @@ const SyncToGithubButton = styled(Button)`
 const SyncContainer = styled(Paper)`
   margin-top: 5px;
 `;
+const CloseButton = styled(Button)`
+  white-space: nowrap;
+  width: 100%;
+  position: absolute;
+  bottom: 0;
+`;
 
 function AddWorkspace({ wikiCreationMessage }) {
   const [folderLocation, folderLocationSetter] = useState('');
@@ -81,7 +87,7 @@ function AddWorkspace({ wikiCreationMessage }) {
           endIcon={<FolderIcon />}
         >
           <Typography variant="button" display="inline">
-            选择位置
+            选择放置WIKI的父文件夹
           </Typography>
         </LocationPickerButton>
         <LocationPickerInput
@@ -89,7 +95,7 @@ function AddWorkspace({ wikiCreationMessage }) {
           helperText={message}
           fullWidth
           onChange={(event) => folderLocationSetter(event.target.value)}
-          label="知识库位置"
+          label="知识库的父文件夹"
           value={folderLocation}
           disabled={succeed}
         />
@@ -111,6 +117,17 @@ function AddWorkspace({ wikiCreationMessage }) {
           登录Github账号
         </SyncToGithubButton>
       </SyncContainer>
+
+      <CloseButton
+        variant="contained"
+        color="secondary"
+        onClick={() => {
+          const { remote } = window.require('electron');
+          remote.getCurrentWindow().close();
+        }}
+      >
+        完成
+      </CloseButton>
     </Container>
   );
 }
