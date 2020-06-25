@@ -5,6 +5,11 @@ const tiddlyWikiPort = 5112;
 const userName = 'LinOnetwoTest';
 
 module.exports = function startNodeJSWiki() {
+  if ($tw.wiki) {
+    console.error('Wiki has already started');
+    return;
+  }
+
   process.env.TIDDLYWIKI_PLUGIN_PATH = `${TIDDLYWIKI_FOLDER_PATH}/plugins`;
   process.env.TIDDLYWIKI_THEME_PATH = `${TIDDLYWIKI_FOLDER_PATH}/themes`;
   // add tiddly filesystem back https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416

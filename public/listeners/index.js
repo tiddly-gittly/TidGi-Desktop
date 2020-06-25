@@ -1,7 +1,9 @@
+/* eslint-disable no-param-reassign */
 const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = require('electron');
 
 const createWiki = require('../libs/create-wiki');
 const startNodeJSWiki = require('../libs/start-nodejs-wiki');
+const { getIconPath } = require('../libs/get-constants') ;
 
 const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
 
@@ -63,6 +65,9 @@ const loadListeners = () => {
   });
   ipcMain.on('request-start-tiddlywiki', () => {
     startNodeJSWiki();
+  });
+  ipcMain.on('get-icon-path', (event) => {
+    event.returnValue = getIconPath();
   });
 
   ipcMain.on('request-open-in-browser', (e, url) => {

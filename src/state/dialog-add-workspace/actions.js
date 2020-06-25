@@ -28,6 +28,28 @@ export const wikiCreationResult = (resultMessage) => ({
   value: resultMessage,
 });
 
+export const saveCreatedWiki = () => (dispatch, getState) => {
+  const { form } = getState().dialogAddWorkspace;
+
+  const validatedChanges = validate(form, getValidationRules());
+  if (hasErrors(validatedChanges)) {
+    return dispatch(updateForm(validatedChanges));
+  }
+
+  const url = form.homeUrl.trim();
+  const homeUrl = isUrl(url) ? url : `http://${url}`;
+
+  requestCreateWorkspace(
+    form.name,
+    homeUrl,
+    form.internetIcon || form.picturePath,
+    Boolean(form.transparentBackground)
+  );
+  const { remote } = window.require('electron');
+  remote.getCurrentWindow().close();
+  return null;
+};
+
 export const getHits = () => (dispatch, getState) => {
   const state = getState();
 

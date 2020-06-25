@@ -11,8 +11,9 @@ import FolderIcon from '@material-ui/icons/Folder';
 import GithubIcon from '@material-ui/icons/GitHub';
 
 import connectComponent from '../../helpers/connect-component';
+import { updateForm, save } from '../../state/dialog-add-workspace/actions';
 
-import { requestCopyWikiTemplate } from '../../senders';
+import { requestCopyWikiTemplate, getIconPath } from '../../senders';
 
 const Container = styled.main`
   height: 100vh;
@@ -53,7 +54,7 @@ const CloseButton = styled(Button)`
   bottom: 0;
 `;
 
-function AddWorkspace({ wikiCreationMessage }) {
+function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave }) {
   const [folderLocation, folderLocationSetter] = useState('');
   const messageHasError = wikiCreationMessage.startsWith('Error: ');
   const message = wikiCreationMessage.replace('Error: ', '');
@@ -103,7 +104,10 @@ function AddWorkspace({ wikiCreationMessage }) {
           variant="contained"
           color="primary"
           disabled={folderLocation.length === 0 || succeed}
-          onClick={() => requestCopyWikiTemplate(folderLocation)}
+          onClick={() => {
+            requestCopyWikiTemplate(folderLocation);
+            onUpdateForm({ name: folderLocation, homeUrl: 'http://localhost:5112', picturePath: getIconPath() });
+          }}
         >
           创建知识库
         </CreatorButton>
@@ -118,14 +122,7 @@ function AddWorkspace({ wikiCreationMessage }) {
         </SyncToGithubButton>
       </SyncContainer>
 
-      <CloseButton
-        variant="contained"
-        color="secondary"
-        onClick={() => {
-          const { remote } = window.require('electron');
-          remote.getCurrentWindow().close();
-        }}
-      >
+      <CloseButton variant="contained" color="secondary" onClick={() => onSave()}>
         完成
       </CloseButton>
     </Container>
@@ -138,12 +135,17 @@ AddWorkspace.defaultProps = {
 
 AddWorkspace.propTypes = {
   wikiCreationMessage: PropTypes.string,
+  onUpdateForm: PropTypes.func.isRequired,
+  onSave: PropTypes.func.isRequired,
 };
 
 const mapStateToProps = (state) => ({
   wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
 });
 
-const actionCreators = {};
+const actionCreators = {
+  updateForm,
+  save,
+};
 
 export default connectComponent(AddWorkspace, mapStateToProps, actionCreators);

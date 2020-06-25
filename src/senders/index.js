@@ -58,6 +58,8 @@ export const requestSetWorkspaces = (workspaces) => ipcRenderer.send('request-se
 export const requestSetWorkspacePicture = (id, picturePath) => ipcRenderer.send('request-set-workspace-picture', id, picturePath);
 export const requestWakeUpWorkspace = (id) => ipcRenderer.send('request-wake-up-workspace', id);
 
+export const getIconPath = () => ipcRenderer.sendSync('get-icon-path');
+
 // Workspace Meta
 export const getWorkspaceMeta = (id) => ipcRenderer.sendSync('get-workspace-meta', id);
 export const getWorkspaceMetas = () => ipcRenderer.sendSync('get-workspace-metas');
