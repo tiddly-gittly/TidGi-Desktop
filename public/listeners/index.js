@@ -1,27 +1,11 @@
-const {
-  BrowserView,
-  Notification,
-  app,
-  dialog,
-  ipcMain,
-  nativeTheme,
-  shell,
-} = require('electron');
+const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = require('electron');
 
+const createWiki = require('../libs/create-wiki');
 const startNodeJSWiki = require('../libs/start-nodejs-wiki');
 
-const {
-  getPreference,
-  getPreferences,
-  resetPreferences,
-  setPreference,
-} = require('../libs/preferences');
+const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
 
-const {
-  getSystemPreference,
-  getSystemPreferences,
-  setSystemPreference,
-} = require('../libs/system-preferences');
+const { getSystemPreference, getSystemPreferences, setSystemPreference } = require('../libs/system-preferences');
 
 const {
   getActiveWorkspace,
@@ -31,10 +15,7 @@ const {
   removeWorkspacePicture,
 } = require('../libs/workspaces');
 
-const {
-  getWorkspaceMeta,
-  getWorkspaceMetas,
-} = require('../libs/workspace-metas');
+const { getWorkspaceMeta, getWorkspaceMetas } = require('../libs/workspace-metas');
 
 const {
   clearBrowsingData,
@@ -48,15 +29,9 @@ const {
   wakeUpWorkspaceView,
 } = require('../libs/workspaces-views');
 
-const {
-  reloadViewsDarkReader,
-  reloadViewsWebContentsIfDidFailLoad,
-} = require('../libs/views');
+const { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad } = require('../libs/views');
 
-const {
-  updatePauseNotificationsInfo,
-  getPauseNotificationsInfo,
-} = require('../libs/notifications');
+const { updatePauseNotificationsInfo, getPauseNotificationsInfo } = require('../libs/notifications');
 
 const sendToAllWindows = require('../libs/send-to-all-windows');
 const getWebsiteIconUrlAsync = require('../libs/get-website-icon-url-async');
@@ -78,6 +53,14 @@ const proxyWindow = require('../windows/proxy');
 const spellcheckLanguagesWindow = require('../windows/spellcheck-languages');
 
 const loadListeners = () => {
+  ipcMain.on('copy-wiki-template', async (event, newFolderPath) => {
+    try {
+      const createdWikiPath = await createWiki(newFolderPath);
+      event.reply('copy-wiki-template-result', `Wiki 已成功创建到 ${createdWikiPath}`);
+    } catch (error) {
+      event.reply('copy-wiki-template-result', String(error));
+    }
+  });
   ipcMain.on('request-start-tiddlywiki', () => {
     startNodeJSWiki();
   });
@@ -148,12 +131,14 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-reset-preferences', () => {
-    dialog.showMessageBox(preferencesWindow.get(), {
-      type: 'question',
-      buttons: ['Reset Now', 'Cancel'],
-      message: 'Are you sure? All preferences will be restored to their original defaults. Browsing data won\'t be affected. This action cannot be undone.',
-      cancelId: 1,
-    })
+    dialog
+      .showMessageBox(preferencesWindow.get(), {
+        type: 'question',
+        buttons: ['Reset Now', 'Cancel'],
+        message:
+          "Are you sure? All preferences will be restored to their original defaults. Browsing data won't be affected. This action cannot be undone.",
+        cancelId: 1,
+      })
       .then(({ response }) => {
         if (response === 0) {
           resetPreferences();
@@ -196,12 +181,13 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-show-require-restart-dialog', () => {
-    dialog.showMessageBox(preferencesWindow.get() || mainWindow.get(), {
-      type: 'question',
-      buttons: ['Restart Now', 'Later'],
-      message: 'You need to restart the app for this change to take affect.',
-      cancelId: 1,
-    })
+    dialog
+      .showMessageBox(preferencesWindow.get() || mainWindow.get(), {
+        type: 'question',
+        buttons: ['Restart Now', 'Later'],
+        message: 'You need to restart the app for this change to take affect.',
+        cancelId: 1,
+      })
       .then(({ response }) => {
         if (response === 0) {
           app.relaunch();
@@ -260,11 +246,7 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-realign-active-workspace', () => {
-    const {
-      sidebar,
-      titleBar,
-      navigationBar,
-    } = getPreferences();
+    const { sidebar, titleBar, navigationBar } = getPreferences();
 
     global.sidebar = sidebar;
     global.titleBar = titleBar;
@@ -298,12 +280,13 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-remove-workspace', (e, id) => {
-    dialog.showMessageBox(mainWindow.get(), {
-      type: 'question',
-      buttons: ['Remove Workspace', 'Cancel'],
-      message: 'Are you sure? All browsing data of this workspace will be wiped. This action cannot be undone.',
-      cancelId: 1,
-    })
+    dialog
+      .showMessageBox(mainWindow.get(), {
+        type: 'question',
+        buttons: ['Remove Workspace', 'Cancel'],
+        message: 'Are you sure? All browsing data of this workspace will be wiped. This action cannot be undone.',
+        cancelId: 1,
+      })
       .then(({ response }) => {
         if (response === 0) {
           removeWorkspaceView(id);
@@ -332,12 +315,13 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-clear-browsing-data', () => {
-    dialog.showMessageBox(preferencesWindow.get() || mainWindow.get(), {
-      type: 'question',
-      buttons: ['Clear Now', 'Cancel'],
-      message: 'Are you sure? All browsing data will be cleared. This action cannot be undone.',
-      cancelId: 1,
-    })
+    dialog
+      .showMessageBox(preferencesWindow.get() || mainWindow.get(), {
+        type: 'question',
+        buttons: ['Clear Now', 'Cancel'],
+        message: 'Are you sure? All browsing data will be cleared. This action cannot be undone.',
+        cancelId: 1,
+      })
       .then(({ response }) => {
         if (response === 0) {
           clearBrowsingData();
@@ -397,13 +381,15 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-show-message-box', (e, message, type) => {
-    dialog.showMessageBox(mainWindow.get(), {
-      type: type || 'error',
-      message,
-      buttons: ['OK'],
-      cancelId: 0,
-      defaultId: 0,
-    }).catch(console.log); // eslint-disable-line
+    dialog
+      .showMessageBox(mainWindow.get(), {
+        type: type || 'error',
+        message,
+        buttons: ['OK'],
+        cancelId: 0,
+        defaultId: 0,
+      })
+      .catch(console.log); // eslint-disable-line
   });
 
   ipcMain.on('create-menu', () => {
@@ -427,19 +413,23 @@ const loadListeners = () => {
     // https://github.com/electron-userland/electron-builder/issues/4046
     // disable updater if user is using AppImageLauncher
     if (process.platform === 'linux' && process.env.DESKTOPINTEGRATION === 'AppImageLauncher') {
-      dialog.showMessageBox(mainWindow.get(), {
-        type: 'error',
-        message: 'Updater is incompatible with AppImageLauncher. Please uninstall AppImageLauncher or download new updates manually from our website.',
-        buttons: ['Learn More', 'Go to Website', 'OK'],
-        cancelId: 2,
-        defaultId: 2,
-      }).then(({ response }) => {
-        if (response === 0) {
-          shell.openExternal('https://github.com/electron-userland/electron-builder/issues/4046');
-        } else if (response === 1) {
-          shell.openExternal('http://singleboxapp.com/');
-        }
-      }).catch(console.log); // eslint-disable-line
+      dialog
+        .showMessageBox(mainWindow.get(), {
+          type: 'error',
+          message:
+            'Updater is incompatible with AppImageLauncher. Please uninstall AppImageLauncher or download new updates manually from our website.',
+          buttons: ['Learn More', 'Go to Website', 'OK'],
+          cancelId: 2,
+          defaultId: 2,
+        })
+        .then(({ response }) => {
+          if (response === 0) {
+            shell.openExternal('https://github.com/electron-userland/electron-builder/issues/4046');
+          } else if (response === 1) {
+            shell.openExternal('http://singleboxapp.com/');
+          }
+        })
+        .catch(console.log); // eslint-disable-line
       return;
     }
 

@@ -1,6 +1,7 @@
-import React, { useEffect } from 'react';
+import React, { useState } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
+import is from 'styled-is';
 
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
@@ -11,7 +12,7 @@ import GithubIcon from '@material-ui/icons/GitHub';
 
 import connectComponent from '../../helpers/connect-component';
 
-import { getHits, updateMode, updateScrollOffset } from '../../state/dialog-add-workspace/actions';
+import { requestCopyWikiTemplate } from '../../senders';
 
 const Container = styled.main`
   height: 100vh;
@@ -30,6 +31,14 @@ const LocationPickerButton = styled(Button)`
   white-space: nowrap;
   width: 100%;
 `;
+const CreatorButton = styled(Button)`
+  white-space: nowrap;
+  width: 100%;
+  ${is('disabled')`
+    display: none;
+  `}
+  border-radius: 0;
+`;
 const SyncToGithubButton = styled(Button)`
   white-space: nowrap;
   width: 100%;
@@ -38,7 +47,11 @@ const SyncContainer = styled(Paper)`
   margin-top: 5px;
 `;
 
-const AddWorkspace = () => {
+function AddWorkspace({ wikiCreationMessage }) {
+  const [folderLocation, folderLocationSetter] = useState('');
+  const messageHasError = wikiCreationMessage.startsWith('Error: ');
+  const message = wikiCreationMessage.replace('Error: ', '');
+  const succeed = !messageHasError && wikiCreationMessage.length > 0;
   return (
     <Container>
       <Description elevation={0} square>
@@ -49,59 +62,71 @@ const AddWorkspace = () => {
         <Typography variant="subtitle1" align="center">
           创建主知识库
         </Typography>
-        <LocationPickerButton variant="contained" color="primary" disableElevation endIcon={<FolderIcon />}>
+        <LocationPickerButton
+          onClick={() => {
+            const { remote } = window.require('electron');
+            remote.dialog
+              .showOpenDialog(remote.getCurrentWindow(), {
+                properties: ['openDirectory'],
+              })
+              .then(({ canceled, filePaths }) => {
+                if (!canceled && filePaths.length > 0) {
+                  folderLocationSetter(filePaths[0]);
+                }
+              });
+          }}
+          variant="contained"
+          color={folderLocation ? 'default' : 'primary'}
+          disableElevation
+          endIcon={<FolderIcon />}
+        >
           <Typography variant="button" display="inline">
             选择位置
           </Typography>
         </LocationPickerButton>
-        <LocationPickerInput fullWidth id="standard-basic" label="知识库位置" />
+        <LocationPickerInput
+          error={messageHasError}
+          helperText={message}
+          fullWidth
+          onChange={(event) => folderLocationSetter(event.target.value)}
+          label="知识库位置"
+          value={folderLocation}
+          disabled={succeed}
+        />
+        <CreatorButton
+          variant="contained"
+          color="primary"
+          disabled={folderLocation.length === 0 || succeed}
+          onClick={() => requestCopyWikiTemplate(folderLocation)}
+        >
+          创建知识库
+        </CreatorButton>
       </CreateContainer>
+
       <SyncContainer elevation={2} square>
         <Typography variant="subtitle1" align="center">
           同步到云端
         </Typography>
-        <SyncToGithubButton color="secondary" endIcon={<GithubIcon />}>登录Github账号</SyncToGithubButton>
+        <SyncToGithubButton color="secondary" endIcon={<GithubIcon />}>
+          登录Github账号
+        </SyncToGithubButton>
       </SyncContainer>
     </Container>
   );
-};
+}
 
 AddWorkspace.defaultProps = {
-  currentQuery: '',
+  wikiCreationMessage: '',
 };
 
 AddWorkspace.propTypes = {
-  classes: PropTypes.object.isRequired,
-  currentQuery: PropTypes.string,
-  hasFailed: PropTypes.bool.isRequired,
-  hits: PropTypes.arrayOf(PropTypes.object).isRequired,
-  isGetting: PropTypes.bool.isRequired,
-  mode: PropTypes.string.isRequired,
-  onGetHits: PropTypes.func.isRequired,
-  onUpdateMode: PropTypes.func.isRequired,
-  onUpdateScrollOffset: PropTypes.func.isRequired,
-  page: PropTypes.number.isRequired,
-  scrollOffset: PropTypes.number.isRequired,
-  shouldUseDarkColors: PropTypes.bool.isRequired,
-  totalPage: PropTypes.number.isRequired,
+  wikiCreationMessage: PropTypes.string,
 };
 
 const mapStateToProps = (state) => ({
-  currentQuery: state.dialogAddWorkspace.currentQuery,
-  hasFailed: state.dialogAddWorkspace.hasFailed,
-  hits: state.dialogAddWorkspace.hits,
-  isGetting: state.dialogAddWorkspace.isGetting,
-  mode: state.dialogAddWorkspace.mode,
-  page: state.dialogAddWorkspace.page,
-  scrollOffset: state.dialogAddWorkspace.scrollOffset,
-  shouldUseDarkColors: state.general.shouldUseDarkColors,
-  totalPage: state.dialogAddWorkspace.totalPage,
+  wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
 });
 
-const actionCreators = {
-  getHits,
-  updateMode,
-  updateScrollOffset,
-};
+const actionCreators = {};
 
 export default connectComponent(AddWorkspace, mapStateToProps, actionCreators);

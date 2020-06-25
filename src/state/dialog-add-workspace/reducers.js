@@ -1,6 +1,7 @@
 import { combineReducers } from 'redux';
 
 import {
+  ADD_WORKSPACE_CREATE_WIKI_RESULT,
   ADD_WORKSPACE_GET_FAILED,
   ADD_WORKSPACE_GET_REQUEST,
   ADD_WORKSPACE_GET_SUCCESS,
@@ -12,6 +13,15 @@ import {
   ADD_WORKSPACE_UPDATE_MODE,
   ADD_WORKSPACE_UPDATE_QUERY,
 } from '../../constants/actions';
+
+const wikiCreationMessage = (state = '', action) => {
+  switch (action.type) {
+    case ADD_WORKSPACE_CREATE_WIKI_RESULT:
+      return action.value;
+    default:
+      return state;
+  }
+};
 
 const hasFailed = (state = false, action) => {
   switch (action.type) {
@@ -104,6 +114,7 @@ const scrollOffset = (state = 0, action) => {
 };
 
 export default combineReducers({
+  wikiCreationMessage,
   currentQuery,
   downloadingIcon,
   form,

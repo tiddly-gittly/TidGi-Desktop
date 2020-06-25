@@ -1,6 +1,7 @@
 import algoliasearch from 'algoliasearch';
 
 import {
+  ADD_WORKSPACE_CREATE_WIKI_RESULT,
   ADD_WORKSPACE_GET_FAILED,
   ADD_WORKSPACE_GET_REQUEST,
   ADD_WORKSPACE_GET_SUCCESS,
@@ -22,15 +23,15 @@ import { requestCreateWorkspace } from '../../senders';
 const client = algoliasearch('OQ55YRVMNP', 'fc0fb115b113c21d58ed6a4b4de1565f');
 const index = client.initIndex('apps');
 
+export const wikiCreationResult = (resultMessage) => ({
+  type: ADD_WORKSPACE_CREATE_WIKI_RESULT,
+  value: resultMessage,
+});
+
 export const getHits = () => (dispatch, getState) => {
   const state = getState();
 
-  const {
-    isGetting,
-    page,
-    currentQuery,
-    totalPage,
-  } = state.dialogAddWorkspace;
+  const { isGetting, page, currentQuery, totalPage } = state.dialogAddWorkspace;
 
   if (isGetting) return;
 
@@ -41,16 +42,19 @@ export const getHits = () => (dispatch, getState) => {
     type: ADD_WORKSPACE_GET_REQUEST,
   });
 
-  index.search(currentQuery, {
-    page: page + 1,
-    hitsPerPage: 16,
-  })
-    .then((res) => dispatch({
-      type: ADD_WORKSPACE_GET_SUCCESS,
-      hits: res.hits,
-      page: res.page,
-      totalPage: res.nbPages,
-    }))
+  index
+    .search(currentQuery, {
+      page: page + 1,
+      hitsPerPage: 16,
+    })
+    .then((res) =>
+      dispatch({
+        type: ADD_WORKSPACE_GET_SUCCESS,
+        hits: res.hits,
+        page: res.page,
+        totalPage: res.nbPages,
+      })
+    )
     .catch(() => {
       if (currentQuery !== getState().dialogAddWorkspace.currentQuery) {
         return;
@@ -94,21 +98,24 @@ const getValidationRules = () => ({
 
 // to be replaced with invoke (electron 7+)
 // https://electronjs.org/docs/api/ipc-renderer#ipcrendererinvokechannel-args
-export const getWebsiteIconUrlAsync = (url) => new Promise((resolve, reject) => {
-  try {
-    const id = Date.now().toString();
-    const { ipcRenderer } = window.require('electron');
-    ipcRenderer.once(id, (e, uurl) => {
-      resolve(uurl);
-    });
-    ipcRenderer.send('request-get-website-icon-url', id, url);
-  } catch (err) {
-    reject(err);
-  }
-});
+export const getWebsiteIconUrlAsync = (url) =>
+  new Promise((resolve, reject) => {
+    try {
+      const id = Date.now().toString();
+      const { ipcRenderer } = window.require('electron');
+      ipcRenderer.once(id, (e, uurl) => {
+        resolve(uurl);
+      });
+      ipcRenderer.send('request-get-website-icon-url', id, url);
+    } catch (err) {
+      reject(err);
+    }
+  });
 
 export const getIconFromInternet = (forceOverwrite) => (dispatch, getState) => {
-  const { form: { picturePath, homeUrl, homeUrlError } } = getState().dialogAddWorkspace;
+  const {
+    form: { picturePath, homeUrl, homeUrlError },
+  } = getState().dialogAddWorkspace;
   if ((!forceOverwrite && picturePath) || !homeUrl || homeUrlError) return;
 
   dispatch({
@@ -122,10 +129,10 @@ export const getIconFromInternet = (forceOverwrite) => (dispatch, getState) => {
       if (form.homeUrl === homeUrl) {
         const changes = { internetIcon: iconUrl || form.internetIcon };
         if (forceOverwrite) changes.picturePath = null;
-        dispatch(({
+        dispatch({
           type: ADD_WORKSPACE_UPDATE_FORM,
           changes,
-        }));
+        });
         dispatch({
           type: ADD_WORKSPACE_UPDATE_DOWNLOADING_ICON,
           downloadingIcon: false,
@@ -143,7 +150,8 @@ export const getIconFromInternet = (forceOverwrite) => (dispatch, getState) => {
       }
 
       return null;
-    }).catch(console.log); // eslint-disable-line no-console
+    })
+    .catch(console.log); // eslint-disable-line no-console
 };
 
 let timeout2;
@@ -178,7 +186,7 @@ export const save = () => (dispatch, getState) => {
     form.name,
     homeUrl,
     form.internetIcon || form.picturePath,
-    Boolean(form.transparentBackground),
+    Boolean(form.transparentBackground)
   );
   const { remote } = window.require('electron');
   remote.getCurrentWindow().close();

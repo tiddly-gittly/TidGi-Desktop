@@ -1,5 +1,6 @@
 const { ipcRenderer } = window.require('electron');
 
+export const requestCopyWikiTemplate = (newFolderPath) => ipcRenderer.send('copy-wiki-template', newFolderPath);
 export const requestStartTiddlyWiki = (url) => ipcRenderer.send('request-start-tiddlywiki', url);
 export const requestOpenInBrowser = (url) => ipcRenderer.send('request-open-in-browser', url);
 export const requestShowMessageBox = (message, type) => ipcRenderer.send('request-show-message-box', message, type);
