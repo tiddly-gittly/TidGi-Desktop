@@ -3,7 +3,7 @@ const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = 
 
 const createWiki = require('../libs/create-wiki');
 const startNodeJSWiki = require('../libs/start-nodejs-wiki');
-const { getIconPath } = require('../libs/get-constants') ;
+const { getIconPath, getDefaultTiddlywikiFolderName } = require('../libs/get-constants');
 
 const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
 
@@ -58,16 +58,19 @@ const loadListeners = () => {
   ipcMain.on('copy-wiki-template', async (event, newFolderPath) => {
     try {
       const createdWikiPath = await createWiki(newFolderPath);
-      event.reply('copy-wiki-template-result', `Wiki 已成功创建到 ${createdWikiPath}`);
+      event.reply('copy-wiki-template-result', `Wiki 已成功创建到 ${createdWikiPath}/${getDefaultTiddlywikiFolderName()}`);
     } catch (error) {
       event.reply('copy-wiki-template-result', String(error));
     }
   });
-  ipcMain.on('request-start-tiddlywiki', () => {
-    startNodeJSWiki();
+  ipcMain.on('request-start-tiddlywiki', (wikiPath) => {
+    startNodeJSWiki(wikiPath);
   });
-  ipcMain.on('get-icon-path', (event) => {
-    event.returnValue = getIconPath();
+  ipcMain.on('get-constant', (event, name) => {
+    event.returnValue = {
+      getIconPath,
+      getDefaultTiddlywikiFolderName,
+    }[name]();
   });
 
   ipcMain.on('request-open-in-browser', (e, url) => {
@@ -239,6 +242,8 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-create-workspace', (e, name, homeUrl, picture, transparentBackground) => {
+    const wikiPath = name;
+    startNodeJSWiki(wikiPath);
     createWorkspaceView(name, homeUrl, picture, transparentBackground);
     createMenu();
   });

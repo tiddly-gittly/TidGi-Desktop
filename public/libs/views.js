@@ -10,6 +10,7 @@ const path = require('path');
 const fsExtra = require('fs-extra');
 const { ElectronBlocker } = require('@cliqz/adblocker-electron');
 
+const startNodeJSWiki = require('./start-nodejs-wiki')
 const { getPreferences } = require('./preferences');
 const {
   getWorkspace,
@@ -118,6 +119,9 @@ const addView = (browserWindow, workspace) => {
 
   // configure session, proxy & ad blocker
   const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
+  // start wiki on startup
+  const wikiPath = workspace.name;
+  startNodeJSWiki(wikiPath);
   // session
   const ses = session.fromPartition(partitionId);
   // proxy

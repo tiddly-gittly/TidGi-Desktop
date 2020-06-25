@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import is from 'styled-is';
@@ -13,7 +13,7 @@ import GithubIcon from '@material-ui/icons/GitHub';
 import connectComponent from '../../helpers/connect-component';
 import { updateForm, save } from '../../state/dialog-add-workspace/actions';
 
-import { requestCopyWikiTemplate, getIconPath } from '../../senders';
+import { requestCopyWikiTemplate, getIconPath, getDefaultTiddlywikiFolderName } from '../../senders';
 
 const Container = styled.main`
   height: 100vh;
@@ -55,10 +55,15 @@ const CloseButton = styled(Button)`
 `;
 
 function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave }) {
-  const [folderLocation, folderLocationSetter] = useState('');
+  const [parentFolderLocation, parentFolderLocationSetter] = useState('');
+  const [wikiFolderLocation, wikiFolderLocationSetter] = useState('');
+  useEffect(() => {
+    wikiFolderLocationSetter(`${parentFolderLocation}/${getDefaultTiddlywikiFolderName()}`);
+  }, [parentFolderLocation]);
   const messageHasError = wikiCreationMessage.startsWith('Error: ');
   const message = wikiCreationMessage.replace('Error: ', '');
   const succeed = !messageHasError && wikiCreationMessage.length > 0;
+  const workspaceFormData = { name: wikiFolderLocation, homeUrl: 'http://localhost:5112/', picturePath: getIconPath() };
   return (
     <Container>
       <Description elevation={0} square>
@@ -78,12 +83,12 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave }) {
               })
               .then(({ canceled, filePaths }) => {
                 if (!canceled && filePaths.length > 0) {
-                  folderLocationSetter(filePaths[0]);
+                  parentFolderLocationSetter(filePaths[0]);
                 }
               });
           }}
           variant="contained"
-          color={folderLocation ? 'default' : 'primary'}
+          color={parentFolderLocation ? 'default' : 'primary'}
           disableElevation
           endIcon={<FolderIcon />}
         >
@@ -95,18 +100,28 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave }) {
           error={messageHasError}
           helperText={message}
           fullWidth
-          onChange={(event) => folderLocationSetter(event.target.value)}
+          onChange={(event) => parentFolderLocationSetter(event.target.value)}
           label="知识库的父文件夹"
-          value={folderLocation}
+          value={parentFolderLocation}
           disabled={succeed}
         />
+        {parentFolderLocation && !succeed && (
+          <div>
+            <Typography variant="body1" display="inline">
+              WIKI将被创建到
+            </Typography>
+            <Typography variant="body2" noWrap display="inline-block" align="left" style={{ direction: 'rtl' }}>
+              {wikiFolderLocation}
+            </Typography>
+          </div>
+        )}
         <CreatorButton
           variant="contained"
           color="primary"
-          disabled={folderLocation.length === 0 || succeed}
+          disabled={parentFolderLocation.length === 0 || succeed}
           onClick={() => {
-            requestCopyWikiTemplate(folderLocation);
-            onUpdateForm({ name: folderLocation, homeUrl: 'http://localhost:5112', picturePath: getIconPath() });
+            requestCopyWikiTemplate(parentFolderLocation);
+            onUpdateForm(workspaceFormData);
           }}
         >
           创建知识库
@@ -122,8 +137,15 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave }) {
         </SyncToGithubButton>
       </SyncContainer>
 
-      <CloseButton variant="contained" color="secondary" onClick={() => onSave()}>
-        完成
+      <CloseButton
+        variant="contained"
+        color="secondary"
+        onClick={() => {
+          onUpdateForm(workspaceFormData);
+          onSave();
+        }}
+      >
+        启动WIKI
       </CloseButton>
     </Container>
   );
