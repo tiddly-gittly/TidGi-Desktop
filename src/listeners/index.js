@@ -28,7 +28,7 @@ const loadListeners = (store) => {
     window.addEventListener('offline', handleOnlineOffline);
   }
 
-  ipcRenderer.on('copy-wiki-template-result', (event, message) => {
+  ipcRenderer.on('create-wiki-result', (event, message) => {
     store.dispatch(wikiCreationResult(message));
   });
 

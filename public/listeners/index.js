@@ -1,9 +1,9 @@
 /* eslint-disable no-param-reassign */
 const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = require('electron');
 
-const createWiki = require('../libs/create-wiki');
+const { createWiki, createSubWiki } = require('../libs/create-wiki');
 const startNodeJSWiki = require('../libs/start-nodejs-wiki');
-const { getIconPath, getDefaultTiddlywikiFolderName } = require('../libs/get-constants');
+const { getIconPath } = require('../libs/get-constants');
 
 const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
 
@@ -55,12 +55,21 @@ const proxyWindow = require('../windows/proxy');
 const spellcheckLanguagesWindow = require('../windows/spellcheck-languages');
 
 const loadListeners = () => {
-  ipcMain.on('copy-wiki-template', async (event, newFolderPath) => {
+  ipcMain.on('copy-wiki-template', async (event, newFolderPath, folderName) => {
     try {
-      const createdWikiPath = await createWiki(newFolderPath);
-      event.reply('copy-wiki-template-result', `Wiki 已成功创建到 ${createdWikiPath}/${getDefaultTiddlywikiFolderName()}`);
+      const createdWikiPath = await createWiki(newFolderPath, folderName);
+      // eslint-disable-next-line sonarjs/no-duplicate-string
+      event.reply('create-wiki-result', `Wiki 已成功创建到 ${createdWikiPath}/${folderName}`);
     } catch (error) {
-      event.reply('copy-wiki-template-result', String(error));
+      event.reply('create-wiki-result', String(error));
+    }
+  });
+  ipcMain.on('create-sub-wiki', async (event, newFolderPath, folderName) => {
+    try {
+      const createdWikiPath = await createSubWiki(newFolderPath, folderName);
+      event.reply('create-wiki-result', `Wiki 已成功创建到 ${createdWikiPath}/${folderName}`);
+    } catch (error) {
+      event.reply('create-wiki-result', String(error));
     }
   });
   ipcMain.on('request-start-tiddlywiki', (wikiPath) => {
@@ -69,7 +78,6 @@ const loadListeners = () => {
   ipcMain.on('get-constant', (event, name) => {
     event.returnValue = {
       getIconPath,
-      getDefaultTiddlywikiFolderName,
     }[name]();
   });
 

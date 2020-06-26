@@ -1,6 +1,7 @@
 const { ipcRenderer } = window.require('electron');
 
-export const requestCopyWikiTemplate = (newFolderPath) => ipcRenderer.send('copy-wiki-template', newFolderPath);
+export const requestCopyWikiTemplate = (newFolderPath, folderName) => ipcRenderer.send('copy-wiki-template', newFolderPath, folderName);
+export const requestCreateSubWiki = (newFolderPath, folderName) => ipcRenderer.send('create-sub-wiki', newFolderPath, folderName);
 export const requestStartTiddlyWiki = (wikiPath) => ipcRenderer.send('request-start-tiddlywiki', wikiPath);
 export const requestOpenInBrowser = (url) => ipcRenderer.send('request-open-in-browser', url);
 export const requestShowMessageBox = (message, type) => ipcRenderer.send('request-show-message-box', message, type);
@@ -62,8 +63,6 @@ export const requestSetWorkspacePicture = (id, picturePath) =>
 export const requestWakeUpWorkspace = (id) => ipcRenderer.send('request-wake-up-workspace', id);
 
 export const getIconPath = () => ipcRenderer.sendSync('get-constant', 'getIconPath');
-export const getDefaultTiddlywikiFolderName = () =>
-  ipcRenderer.sendSync('get-constant', 'getDefaultTiddlywikiFolderName');
 
 // Workspace Meta
 export const getWorkspaceMeta = (id) => ipcRenderer.sendSync('get-workspace-meta', id);
