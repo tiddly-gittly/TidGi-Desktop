@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/consistent-function-scoping */
 import algoliasearch from 'algoliasearch';
 
 import {
@@ -23,7 +24,7 @@ import { requestCreateWorkspace } from '../../senders';
 const client = algoliasearch('OQ55YRVMNP', 'fc0fb115b113c21d58ed6a4b4de1565f');
 const index = client.initIndex('apps');
 
-export const wikiCreationResult = (resultMessage) => ({
+export const wikiCreationResult = resultMessage => ({
   type: ADD_WORKSPACE_CREATE_WIKI_RESULT,
   value: resultMessage,
 });
@@ -41,9 +42,11 @@ export const saveCreatedWiki = () => (dispatch, getState) => {
 
   requestCreateWorkspace(
     form.name,
+    form.isSubWiki,
+    form.port,
     homeUrl,
     form.internetIcon || form.picturePath,
-    Boolean(form.transparentBackground)
+    Boolean(form.transparentBackground),
   );
   const { remote } = window.require('electron');
   remote.getCurrentWindow().close();
@@ -69,13 +72,13 @@ export const getHits = () => (dispatch, getState) => {
       page: page + 1,
       hitsPerPage: 16,
     })
-    .then((res) =>
+    .then(res =>
       dispatch({
         type: ADD_WORKSPACE_GET_SUCCESS,
         hits: res.hits,
         page: res.page,
         totalPage: res.nbPages,
-      })
+      }),
     )
     .catch(() => {
       if (currentQuery !== getState().dialogAddWorkspace.currentQuery) {
@@ -101,7 +104,7 @@ export const resetThenGetHits = () => (dispatch, getState) => {
   dispatch(getHits());
 };
 
-export const updateQuery = (query) => ({
+export const updateQuery = query => ({
   type: ADD_WORKSPACE_UPDATE_QUERY,
   query,
 });
@@ -120,7 +123,7 @@ const getValidationRules = () => ({
 
 // to be replaced with invoke (electron 7+)
 // https://electronjs.org/docs/api/ipc-renderer#ipcrendererinvokechannel-args
-export const getWebsiteIconUrlAsync = (url) =>
+export const getWebsiteIconUrlAsync = url =>
   new Promise((resolve, reject) => {
     try {
       const id = Date.now().toString();
@@ -134,7 +137,7 @@ export const getWebsiteIconUrlAsync = (url) =>
     }
   });
 
-export const getIconFromInternet = (forceOverwrite) => (dispatch, getState) => {
+export const getIconFromInternet = forceOverwrite => (dispatch, getState) => {
   const {
     form: { picturePath, homeUrl, homeUrlError },
   } = getState().dialogAddWorkspace;
@@ -146,7 +149,7 @@ export const getIconFromInternet = (forceOverwrite) => (dispatch, getState) => {
   });
 
   getWebsiteIconUrlAsync(homeUrl)
-    .then((iconUrl) => {
+    .then(iconUrl => {
       const { form } = getState().dialogAddWorkspace;
       if (form.homeUrl === homeUrl) {
         const changes = { internetIcon: iconUrl || form.internetIcon };
@@ -177,7 +180,7 @@ export const getIconFromInternet = (forceOverwrite) => (dispatch, getState) => {
 };
 
 let timeout2;
-export const updateForm = (changes) => (dispatch, getState) => {
+export const updateForm = changes => (dispatch, getState) => {
   const oldHomeUrl = getState().dialogAddWorkspace.form.homeUrl;
 
   dispatch({
@@ -206,21 +209,23 @@ export const save = () => (dispatch, getState) => {
 
   requestCreateWorkspace(
     form.name,
+    form.isSubWiki,
+    form.port,
     homeUrl,
     form.internetIcon || form.picturePath,
-    Boolean(form.transparentBackground)
+    Boolean(form.transparentBackground),
   );
   const { remote } = window.require('electron');
   remote.getCurrentWindow().close();
   return null;
 };
 
-export const updateMode = (mode) => ({
+export const updateMode = mode => ({
   type: ADD_WORKSPACE_UPDATE_MODE,
   mode,
 });
 
-export const updateScrollOffset = (scrollOffset) => ({
+export const updateScrollOffset = scrollOffset => ({
   type: ADD_WORKSPACE_UPDATE_SCROLL_OFFSET,
   scrollOffset,
 });

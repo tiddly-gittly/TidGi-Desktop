@@ -121,7 +121,9 @@ const addView = (browserWindow, workspace) => {
   const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
   // start wiki on startup
   const wikiPath = workspace.name;
-  startNodeJSWiki(wikiPath);
+  if (!workspace.isSubWiki) {
+    startNodeJSWiki(wikiPath, workspace.port);
+  }
   // session
   const ses = session.fromPartition(partitionId);
   // proxy

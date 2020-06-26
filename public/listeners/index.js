@@ -59,7 +59,7 @@ const loadListeners = () => {
     try {
       const createdWikiPath = await createWiki(newFolderPath, folderName);
       // eslint-disable-next-line sonarjs/no-duplicate-string
-      event.reply('create-wiki-result', `Wiki 已成功创建到 ${createdWikiPath}/${folderName}`);
+      event.reply('create-wiki-result', `Wiki 已成功创建到 ${createdWikiPath}`);
     } catch (error) {
       event.reply('create-wiki-result', String(error));
     }
@@ -67,7 +67,7 @@ const loadListeners = () => {
   ipcMain.on('create-sub-wiki', async (event, newFolderPath, folderName) => {
     try {
       const createdWikiPath = await createSubWiki(newFolderPath, folderName);
-      event.reply('create-wiki-result', `Wiki 已成功创建到 ${createdWikiPath}/${folderName}`);
+      event.reply('create-wiki-result', `Wiki 已成功创建到 ${createdWikiPath}`);
     } catch (error) {
       event.reply('create-wiki-result', String(error));
     }
@@ -249,10 +249,10 @@ const loadListeners = () => {
     e.returnValue = workspaces;
   });
 
-  ipcMain.on('request-create-workspace', (e, name, homeUrl, picture, transparentBackground) => {
+  ipcMain.on('request-create-workspace', (e, name, isSubWiki, port, homeUrl, picture, transparentBackground) => {
     const wikiPath = name;
     startNodeJSWiki(wikiPath);
-    createWorkspaceView(name, homeUrl, picture, transparentBackground);
+    createWorkspaceView(name, isSubWiki, port, homeUrl, picture, transparentBackground);
     createMenu();
   });
 

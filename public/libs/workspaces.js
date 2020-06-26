@@ -169,7 +169,7 @@ const removeWorkspace = (id) => {
   settings.delete(`workspaces.${v}.${id}`);
 };
 
-const createWorkspace = (name, homeUrl, transparentBackground) => {
+const createWorkspace = (name, isSubWiki, port, homeUrl, transparentBackground) => {
   const newId = uuidv1();
 
   // find largest order
@@ -184,6 +184,8 @@ const createWorkspace = (name, homeUrl, transparentBackground) => {
   const newWorkspace = {
     active: false,
     hibernated: false,
+    isSubWiki,
+    port,
     homeUrl,
     id: newId,
     name,

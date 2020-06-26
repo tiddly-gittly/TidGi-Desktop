@@ -48,8 +48,8 @@ export const requestSetSystemPreference = (name, value) =>
 export const getWorkspace = (id) => ipcRenderer.sendSync('get-workspace', id);
 export const getWorkspaces = () => ipcRenderer.sendSync('get-workspaces');
 export const requestClearBrowsingData = () => ipcRenderer.send('request-clear-browsing-data');
-export const requestCreateWorkspace = (name, homeUrl, picture, transparentBackground) =>
-  ipcRenderer.send('request-create-workspace', name, homeUrl, picture, transparentBackground);
+export const requestCreateWorkspace = (name, isSubWiki, port, homeUrl, picture, transparentBackground) =>
+  ipcRenderer.send('request-create-workspace', name, isSubWiki, port, homeUrl, picture, transparentBackground);
 export const requestHibernateWorkspace = (id) => ipcRenderer.send('request-hibernate-workspace', id);
 export const requestOpenUrlInWorkspace = (url, id) => ipcRenderer.send('request-open-url-in-workspace', url, id);
 export const requestRealignActiveWorkspace = () => ipcRenderer.send('request-realign-active-workspace');
