@@ -7,8 +7,8 @@
     "electron-dev": "concurrently \"cross-env BROWSER=none yarn start\" \"wait-on http://localhost:3000 && electron .\" -k",
     "dist": "yarn build && node dist.js",
     "dist-dev": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false yarn dist",
-    "build": "react-scripts build",
-    "start": "react-scripts start",
+    "build": "rescripts build",
+    "start": "rescripts start",
     "test": "mocha ./tests",
     "lint": "eslint ./public ./src --ext js",
     "lint:fix": "eslint ./public ./src --ext js --fix",
@@ -66,6 +66,7 @@
     "uuid": "8.1.0"
   },
   "devDependencies": {
+    "@rescripts/cli": "0.0.14",
     "babel-eslint": "10.1.0",
     "babel-preset-env": "1.7.0",
     "babel-preset-react": "6.24.1",
@@ -92,10 +93,14 @@
     "flow-bin": "^0.127.0",
     "flow-typed": "^3.1.0",
     "patch-package": "^6.2.2",
+    "rescript-disable-eslint": "^1.0.2",
     "wait-on": "5.0.1"
   },
   "homepage": "./",
   "private": false,
+  "rescripts": [
+    "disable-eslint"
+  ],
   "browserslist": [
     ">0.2%",
     "not dead",
