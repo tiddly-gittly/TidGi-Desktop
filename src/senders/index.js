@@ -1,7 +1,7 @@
 const { ipcRenderer } = window.require('electron');
 
-export const requestCopyWikiTemplate = (newFolderPath, folderName) => ipcRenderer.send('copy-wiki-template', newFolderPath, folderName);
-export const requestCreateSubWiki = (newFolderPath, folderName) => ipcRenderer.send('create-sub-wiki', newFolderPath, folderName);
+export const requestCopyWikiTemplate = (newFolderPath, folderName) => ipcRenderer.invoke('copy-wiki-template', newFolderPath, folderName);
+export const requestCreateSubWiki = (newFolderPath, folderName, mainWikiToLink) => ipcRenderer.invoke('create-sub-wiki', newFolderPath, folderName, mainWikiToLink);
 export const requestStartTiddlyWiki = (wikiPath) => ipcRenderer.send('request-start-tiddlywiki', wikiPath);
 export const requestOpenInBrowser = (url) => ipcRenderer.send('request-open-in-browser', url);
 export const requestShowMessageBox = (message, type) => ipcRenderer.send('request-show-message-box', message, type);
@@ -45,6 +45,7 @@ export const requestSetSystemPreference = (name, value) =>
   ipcRenderer.send('request-set-system-preference', name, value);
 
 // Workspace
+export const countWorkspace = () => ipcRenderer.sendSync('count-workspace');
 export const getWorkspace = (id) => ipcRenderer.sendSync('get-workspace', id);
 export const getWorkspaces = () => ipcRenderer.sendSync('get-workspaces');
 export const requestClearBrowsingData = () => ipcRenderer.send('request-clear-browsing-data');

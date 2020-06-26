@@ -2,7 +2,6 @@
 import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
-import is from 'styled-is';
 
 import Paper from '@material-ui/core/Paper';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
@@ -18,9 +17,15 @@ import FolderIcon from '@material-ui/icons/Folder';
 import GithubIcon from '@material-ui/icons/GitHub';
 
 import connectComponent from '../../helpers/connect-component';
-import { updateForm, save } from '../../state/dialog-add-workspace/actions';
+import { updateForm, save, wikiCreationResult } from '../../state/dialog-add-workspace/actions';
 
-import { requestCopyWikiTemplate, requestCreateSubWiki, getIconPath, getWorkspaces } from '../../senders';
+import {
+  requestCopyWikiTemplate,
+  requestCreateSubWiki,
+  getIconPath,
+  getWorkspaces,
+  countWorkspace,
+} from '../../senders';
 
 const Container = styled.main`
   height: 100vh;
@@ -39,14 +44,6 @@ const LocationPickerButton = styled(Button)`
   white-space: nowrap;
   width: 100%;
 `;
-const CreatorButton = styled(Button)`
-  white-space: nowrap;
-  width: 100%;
-  ${is('disabled')`
-    display: none;
-  `}
-  border-radius: 0;
-`;
 const SyncToGithubButton = styled(Button)`
   white-space: nowrap;
   width: 100%;
@@ -60,17 +57,15 @@ const CloseButton = styled(Button)`
   position: absolute;
   bottom: 0;
 `;
-const SoftLinkContainer = styled(Paper)`
-  margin-top: 5px;
-  padding-top: 5px;
-`;
 const SoftLinkToMainWikiSelect = styled(Select)`
   width: 100%;
 `;
-const AddSoftLinkButton = styled(CloseButton)``;
+const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
+  margin-top: 5px;
+`;
 
-function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave }) {
-  const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(true);
+function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onWikiCreationResult }) {
+  const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(countWorkspace() === 0);
   const [parentFolderLocation, parentFolderLocationSetter] = useState('');
   const [wikiFolderLocation, wikiFolderLocationSetter] = useState('');
 
@@ -84,9 +79,6 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave }) {
   useEffect(() => {
     wikiFolderLocationSetter(`${parentFolderLocation}/${wikiFolderName}`);
   }, [parentFolderLocation, wikiFolderName]);
-  const messageHasError = wikiCreationMessage.startsWith('Error: ');
-  const message = wikiCreationMessage.replace('Error: ', '');
-  const creationSucceed = !messageHasError && wikiCreationMessage.length > 0;
   const workspaceFormData = {
     name: wikiFolderLocation,
     isSubWiki: !isCreateMainWorkspace,
@@ -139,111 +131,55 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave }) {
           </Typography>
         </LocationPickerButton>
         <LocationPickerInput
-          error={messageHasError}
-          helperText={message}
+          error={wikiCreationMessage}
+          helperText={wikiCreationMessage}
           fullWidth
           onChange={event => parentFolderLocationSetter(event.target.value)}
           label="知识库的父文件夹"
           value={parentFolderLocation}
-          disabled={creationSucceed}
         />
         <LocationPickerInput
           fullWidth
           onChange={event => wikiFolderNameSetter(event.target.value)}
           label="知识库文件夹名"
           value={wikiFolderName}
-          disabled={creationSucceed}
         />
-        <CreatorButton
-          variant="contained"
-          color="primary"
-          disabled={parentFolderLocation.length === 0 || creationSucceed}
-          onClick={() => {
-            if (isCreateMainWorkspace) {
-              requestCopyWikiTemplate(parentFolderLocation, wikiFolderName);
-            } else {
-              requestCreateSubWiki(parentFolderLocation, wikiFolderName);
-            }
-            onUpdateForm(workspaceFormData);
-          }}
-        >
-          <Typography variant="body1" display="inline">
-            在
-          </Typography>
-          <Typography
-            variant="body2"
-            noWrap
-            display="inline-block"
-            align="center"
-            style={{ direction: 'rtl', textTransform: 'none' }}
-          >
-            {wikiFolderLocation}
-          </Typography>
-          <Typography variant="body1" display="inline">
-            创建WIKI
-          </Typography>
-        </CreatorButton>
+        {!isCreateMainWorkspace && (
+          <>
+            <SoftLinkToMainWikiSelectInputLabel id="main-wiki-select-label">
+              主知识库位置
+            </SoftLinkToMainWikiSelectInputLabel>
+            <SoftLinkToMainWikiSelect
+              labelId="main-wiki-select-label"
+              id="main-wiki-select"
+              value={mainWikiToLink}
+              onChange={event => mainWikiToLinkSetter(event.target.value)}
+            >
+              {Object.keys(workspaces).map(workspaceID => (
+                <MenuItem key={workspaceID} value={workspaces[workspaceID].name}>
+                  {workspaces[workspaceID].name}
+                </MenuItem>
+              ))}
+            </SoftLinkToMainWikiSelect>
+            {mainWikiToLink && (
+              <FormHelperText>
+                <Typography variant="body1" display="inline">
+                  子知识库将链接到
+                </Typography>
+                <Typography
+                  variant="body2"
+                  noWrap
+                  display="inline"
+                  align="center"
+                  style={{ direction: 'rtl', textTransform: 'none' }}
+                >
+                  {mainWikiToLink}/tiddlers/{wikiFolderName}
+                </Typography>
+              </FormHelperText>
+            )}
+          </>
+        )}
       </CreateContainer>
-
-      {!isCreateMainWorkspace && (
-        <SoftLinkContainer elevation={2} square>
-          <InputLabel id="main-wiki-select-label">主知识库位置</InputLabel>
-          <SoftLinkToMainWikiSelect
-            labelId="main-wiki-select-label"
-            id="main-wiki-select"
-            value={mainWikiToLink}
-            onChange={event => mainWikiToLinkSetter(event.target.value)}
-          >
-            {Object.keys(workspaces).map(workspaceID => (
-              <MenuItem key={workspaceID} value={workspaces[workspaceID].name}>
-                {workspaces[workspaceID].name}
-              </MenuItem>
-            ))}
-          </SoftLinkToMainWikiSelect>
-          {mainWikiToLink && (
-            <FormHelperText>
-              <Typography variant="body1" display="inline">
-                子知识库将链接到
-              </Typography>
-              <Typography
-                variant="body2"
-                noWrap
-                display="inline"
-                align="center"
-                style={{ direction: 'rtl', textTransform: 'none' }}
-              >
-                {mainWikiToLink}/tiddlers/{wikiFolderName}
-              </Typography>
-            </FormHelperText>
-          )}
-        </SoftLinkContainer>
-      )}
-
-      {isCreateMainWorkspace ? (
-        <CloseButton
-          variant="contained"
-          color="secondary"
-          disabled={!creationSucceed}
-          onClick={() => {
-            onUpdateForm(workspaceFormData);
-            onSave();
-          }}
-        >
-          启动WIKI
-        </CloseButton>
-      ) : (
-        <AddSoftLinkButton
-          variant="contained"
-          color="secondary"
-          disabled={!creationSucceed || !mainWikiToLink}
-          onClick={() => {
-            onUpdateForm(workspaceFormData);
-            onSave();
-          }}
-        >
-          链接到主知识库
-        </AddSoftLinkButton>
-      )}
 
       <SyncContainer elevation={2} square>
         <Typography variant="subtitle1" align="center">
@@ -253,6 +189,81 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave }) {
           登录Github账号
         </SyncToGithubButton>
       </SyncContainer>
+
+      {isCreateMainWorkspace ? (
+        <CloseButton
+          variant="contained"
+          color="secondary"
+          disabled={!parentFolderLocation}
+          onClick={async () => {
+            onUpdateForm(workspaceFormData);
+            const creationResult = await requestCopyWikiTemplate(parentFolderLocation, wikiFolderName);
+            if (creationResult) {
+              onSave();
+            } else {
+              onWikiCreationResult(creationResult);
+            }
+          }}
+        >
+          {parentFolderLocation && (
+            <>
+              <Typography variant="body1" display="inline">
+                在
+              </Typography>
+              <Typography
+                variant="body2"
+                noWrap
+                display="inline-block"
+                align="center"
+                style={{ direction: 'rtl', textTransform: 'none' }}
+              >
+                {wikiFolderLocation}
+              </Typography>
+            </>
+          )}
+          <Typography variant="body1" display="inline">
+            创建WIKI
+          </Typography>
+        </CloseButton>
+      ) : (
+        <CloseButton
+          variant="contained"
+          color="secondary"
+          disabled={!parentFolderLocation || !mainWikiToLink}
+          onClick={async () => {
+            onUpdateForm(workspaceFormData);
+            const creationResult = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink);
+            if (creationResult) {
+              onSave();
+            } else {
+              onWikiCreationResult(creationResult);
+            }
+          }}
+        >
+          {parentFolderLocation && (
+            <>
+              <Typography variant="body1" display="inline">
+                在
+              </Typography>
+              <Typography
+                variant="body2"
+                noWrap
+                display="inline-block"
+                align="center"
+                style={{ direction: 'rtl', textTransform: 'none' }}
+              >
+                {wikiFolderLocation}
+              </Typography>
+            </>
+          )}
+          <Typography variant="body1" display="inline">
+            创建WIKI
+          </Typography>
+          <Typography variant="body1" display="inline">
+            并链接到主知识库
+          </Typography>
+        </CloseButton>
+      )}
     </Container>
   );
 }
@@ -265,6 +276,7 @@ AddWorkspace.propTypes = {
   wikiCreationMessage: PropTypes.string,
   onUpdateForm: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
+  onWikiCreationResult: PropTypes.func.isRequired,
 };
 
 const mapStateToProps = state => ({
@@ -274,6 +286,7 @@ const mapStateToProps = state => ({
 const actionCreators = {
   updateForm,
   save,
+  wikiCreationResult,
 };
 
 export default connectComponent(AddWorkspace, mapStateToProps, actionCreators);

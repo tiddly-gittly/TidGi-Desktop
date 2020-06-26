@@ -10,6 +10,7 @@ const { getPreference, getPreferences, resetPreferences, setPreference } = requi
 const { getSystemPreference, getSystemPreferences, setSystemPreference } = require('../libs/system-preferences');
 
 const {
+  countWorkspaces,
   getActiveWorkspace,
   getWorkspace,
   getWorkspaces,
@@ -55,21 +56,21 @@ const proxyWindow = require('../windows/proxy');
 const spellcheckLanguagesWindow = require('../windows/spellcheck-languages');
 
 const loadListeners = () => {
-  ipcMain.on('copy-wiki-template', async (event, newFolderPath, folderName) => {
+  ipcMain.handle('copy-wiki-template', async (event, newFolderPath, folderName) => {
     try {
-      const createdWikiPath = await createWiki(newFolderPath, folderName);
+      await createWiki(newFolderPath, folderName);
       // eslint-disable-next-line sonarjs/no-duplicate-string
-      event.reply('create-wiki-result', `Wiki 已成功创建到 ${createdWikiPath}`);
+      return true;
     } catch (error) {
-      event.reply('create-wiki-result', String(error));
+      return String(error);
     }
   });
-  ipcMain.on('create-sub-wiki', async (event, newFolderPath, folderName) => {
+  ipcMain.handle('create-sub-wiki', async (event, newFolderPath, folderName, mainWikiToLink) => {
     try {
-      const createdWikiPath = await createSubWiki(newFolderPath, folderName);
-      event.reply('create-wiki-result', `Wiki 已成功创建到 ${createdWikiPath}`);
+      await createSubWiki(newFolderPath, folderName, mainWikiToLink);
+      return true;
     } catch (error) {
-      event.reply('create-wiki-result', String(error));
+      return String(error);
     }
   });
   ipcMain.on('request-start-tiddlywiki', (wikiPath) => {
@@ -239,6 +240,10 @@ const loadListeners = () => {
   });
 
   // Workspaces
+  ipcMain.on('count-workspace', (e) => {
+    e.returnValue = countWorkspaces();
+  });
+
   ipcMain.on('get-workspace', (e, id) => {
     const val = getWorkspace(id);
     e.returnValue = val;

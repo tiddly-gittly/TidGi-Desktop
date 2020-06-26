@@ -16,10 +16,9 @@ async function createWiki(newFolderPath, folderName) {
   }
   // Start copying wiki template to destination
   await fs.copy(TIDDLYWIKI_FOLDER_PATH, newWikiPath);
-  return newWikiPath;
 }
 
-async function createSubWiki(newFolderPath, folderName) {
+async function createSubWiki(newFolderPath, folderName, mainWikiToLink) {
   const newWikiPath = path.join(newFolderPath, folderName);
   if (!(await fs.pathExists(newFolderPath))) {
     throw new Error(`该目录不存在 "${newFolderPath}"`);
@@ -28,7 +27,6 @@ async function createSubWiki(newFolderPath, folderName) {
     throw new Error(`Wiki已经存在于该位置 "${newWikiPath}"`);
   }
   await fs.mkdirs(path.join(newFolderPath, folderName));
-  return newWikiPath;
 }
 
 module.exports = { createWiki, createSubWiki };
