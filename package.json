@@ -71,7 +71,7 @@
     "babel-preset-react": "6.24.1",
     "concurrently": "5.2.0",
     "cross-env": "7.0.2",
-    "electron": "8.3.1",
+    "electron": "8.3.4",
     "electron-builder": "22.7.0",
     "electron-notarize": "0.3.0",
     "eslint": "6.8.0",
