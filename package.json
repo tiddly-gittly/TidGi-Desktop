@@ -23,7 +23,7 @@
     "@material-ui/icons": "4.9.1",
     "@material-ui/pickers": "3.2.10",
     "ace-builds": "1.4.11",
-    "algoliasearch": "4.2.0",
+    "algoliasearch": "4.3.0",
     "blueimp-md5": "2.16.0",
     "cheerio": "1.0.0-rc.3",
     "classnames": "2.2.6",
