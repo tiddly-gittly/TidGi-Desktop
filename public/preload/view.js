@@ -334,7 +334,6 @@ webFrame.executeJavaScript(`
       notif.addEventListener('click', () => {
         window.postMessage({ type: 'focus-workspace', workspaceId: "${workspaceId}" });
       });
-      console.log(notif);
       return notif;
     }
     return null;
