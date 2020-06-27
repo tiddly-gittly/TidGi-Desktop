@@ -15,3 +15,8 @@ module.exports.startWiki = function startWiki(homePath, userName, tiddlyWikiPort
     if (code !== 0) console.error(`[${homePath}] Worker stopped with exit code ${code}`);
   });
 };
+
+module.exports.stopWiki = function stopWiki(homePath) {
+  const worker = workers[homePath];
+  return worker.terminate();
+};
