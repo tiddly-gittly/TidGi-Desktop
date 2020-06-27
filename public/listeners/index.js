@@ -1,5 +1,6 @@
 /* eslint-disable no-param-reassign */
 const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = require('electron');
+const { autoUpdater } = require('electron-updater');
 
 const { createWiki, createSubWiki } = require('../libs/create-wiki');
 const startNodeJSWiki = require('../libs/wiki/start-nodejs-wiki');
