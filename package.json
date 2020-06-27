@@ -62,7 +62,7 @@
     "tiddlywiki": "^5.1.22",
     "tmp": "0.2.1",
     "typeface-roboto": "0.0.75",
-    "uuid": "8.1.0"
+    "uuid": "8.2.0"
   },
   "devDependencies": {
     "@rescripts/cli": "0.0.14",
