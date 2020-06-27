@@ -73,7 +73,7 @@
     "cross-env": "7.0.2",
     "electron": "8.3.1",
     "electron-builder": "22.7.0",
-    "electron-notarize": "0.3.0",
+    "electron-notarize": "1.0.0",
     "eslint": "6.8.0",
     "eslint-config-airbnb": "18.1.0",
     "eslint-config-prettier": "6.11.0",
