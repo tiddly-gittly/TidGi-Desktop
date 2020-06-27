@@ -17,7 +17,7 @@
   "repository": "https://github.com/tiddly-gittly/TiddlyGit-Desktop",
   "author": "Lin Onetwo<linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
   "dependencies": {
-    "@cliqz/adblocker-electron": "1.15.1",
+    "@cliqz/adblocker-electron": "1.16.0",
     "cheerio": "1.0.0-rc.3",
     "darkreader": "4.9.10",
     "download": "8.0.0",
