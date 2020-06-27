@@ -2,12 +2,10 @@ name: macOS
 
 on:
   push:
-    branches:
-      - master
     tags:
       - "v*.*.*"
     paths-ignore:
-      - 'catalog/**'
+      - 'README.md'
       - 'docs/**'
 
 jobs:
