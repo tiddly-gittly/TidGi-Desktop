@@ -35,7 +35,7 @@
     "electron-settings": "3.2.0",
     "electron-updater": "4.3.3",
     "electron-window-state": "5.0.3",
-    "follow-redirects": "1.11.0",
+    "follow-redirects": "1.12.1",
     "fs-extra": "9.0.1",
     "is-url": "1.2.4",
     "jimp": "0.13.0",
