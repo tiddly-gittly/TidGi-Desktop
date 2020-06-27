@@ -47,6 +47,18 @@ const handleLoaded = (event) => {
     loadDarkReader();
   });
 
+  // reload page if it is not loaded yet
+  const CHECK_LOADED_INTERVAL = 1000 * 3;
+  function refresh() {
+    const serverNotStarted = !document || document.querySelector('.tc-site-title') === null;
+    if (serverNotStarted) {
+      window.location.reload(true);
+    } else {
+      setTimeout(refresh, CHECK_LOADED_INTERVAL);
+    }
+  }
+  setTimeout(refresh, CHECK_LOADED_INTERVAL);
+
   const jsCodeInjection = ipcRenderer.sendSync('get-preference', 'jsCodeInjection');
   const allowNodeInJsCodeInjection = ipcRenderer.sendSync('get-preference', 'allowNodeInJsCodeInjection');
   const cssCodeInjection = ipcRenderer.sendSync('get-preference', 'cssCodeInjection');
