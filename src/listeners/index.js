@@ -1,4 +1,4 @@
-import { wikiCreationResult } from '../state/dialog-add-workspace/actions';
+import { setWikiCreationMessage } from '../state/dialog-add-workspace/actions';
 import { setPreference } from '../state/preferences/actions';
 import { setSystemPreference } from '../state/system-preferences/actions';
 import { setWorkspace, setWorkspaces } from '../state/workspaces/actions';
@@ -29,7 +29,7 @@ const loadListeners = (store) => {
   }
 
   ipcRenderer.on('create-wiki-result', (event, message) => {
-    store.dispatch(wikiCreationResult(message));
+    store.dispatch(setWikiCreationMessage(message));
   });
 
   ipcRenderer.on('log', (e, message) => {

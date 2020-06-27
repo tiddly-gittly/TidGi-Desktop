@@ -1,7 +1,7 @@
 import { combineReducers } from 'redux';
 
 import {
-  ADD_WORKSPACE_CREATE_WIKI_RESULT,
+  ADD_WORKSPACE_CREATE_WIKI_MESSAGE,
   ADD_WORKSPACE_GET_FAILED,
   ADD_WORKSPACE_GET_REQUEST,
   ADD_WORKSPACE_GET_SUCCESS,
@@ -16,7 +16,7 @@ import {
 
 const wikiCreationMessage = (state = '', action) => {
   switch (action.type) {
-    case ADD_WORKSPACE_CREATE_WIKI_RESULT:
+    case ADD_WORKSPACE_CREATE_WIKI_MESSAGE:
       return action.value;
     default:
       return state;

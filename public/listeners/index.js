@@ -59,8 +59,6 @@ const loadListeners = () => {
   ipcMain.handle('copy-wiki-template', async (event, newFolderPath, folderName) => {
     try {
       await createWiki(newFolderPath, folderName);
-      // eslint-disable-next-line sonarjs/no-duplicate-string
-      return true;
     } catch (error) {
       return String(error);
     }
@@ -68,7 +66,6 @@ const loadListeners = () => {
   ipcMain.handle('create-sub-wiki', async (event, newFolderPath, folderName, mainWikiToLink) => {
     try {
       await createSubWiki(newFolderPath, folderName, mainWikiToLink);
-      return true;
     } catch (error) {
       return String(error);
     }

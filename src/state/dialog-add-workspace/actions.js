@@ -2,7 +2,7 @@
 import algoliasearch from 'algoliasearch';
 
 import {
-  ADD_WORKSPACE_CREATE_WIKI_RESULT,
+  ADD_WORKSPACE_CREATE_WIKI_MESSAGE,
   ADD_WORKSPACE_GET_FAILED,
   ADD_WORKSPACE_GET_REQUEST,
   ADD_WORKSPACE_GET_SUCCESS,
@@ -24,9 +24,9 @@ import { requestCreateWorkspace } from '../../senders';
 const client = algoliasearch('OQ55YRVMNP', 'fc0fb115b113c21d58ed6a4b4de1565f');
 const index = client.initIndex('apps');
 
-export const wikiCreationResult = resultMessage => ({
-  type: ADD_WORKSPACE_CREATE_WIKI_RESULT,
-  value: resultMessage,
+export const setWikiCreationMessage = message => ({
+  type: ADD_WORKSPACE_CREATE_WIKI_MESSAGE,
+  value: message,
 });
 
 export const saveCreatedWiki = () => (dispatch, getState) => {

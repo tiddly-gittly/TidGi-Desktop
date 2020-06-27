@@ -17,7 +17,7 @@ import FolderIcon from '@material-ui/icons/Folder';
 import GithubIcon from '@material-ui/icons/GitHub';
 
 import connectComponent from '../../helpers/connect-component';
-import { updateForm, save, wikiCreationResult } from '../../state/dialog-add-workspace/actions';
+import { updateForm, save, setWikiCreationMessage } from '../../state/dialog-add-workspace/actions';
 
 import {
   requestCopyWikiTemplate,
@@ -64,7 +64,7 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
   margin-top: 5px;
 `;
 
-function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onWikiCreationResult }) {
+function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCreationMessage }) {
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(countWorkspace() === 0);
   const [parentFolderLocation, parentFolderLocationSetter] = useState('');
   const [wikiFolderLocation, wikiFolderLocationSetter] = useState('');
@@ -134,13 +134,21 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onWikiCreatio
           error={wikiCreationMessage}
           helperText={wikiCreationMessage}
           fullWidth
-          onChange={event => parentFolderLocationSetter(event.target.value)}
+          onChange={event => {
+            parentFolderLocationSetter(event.target.value);
+            onSetWikiCreationMessage('');
+          }}
           label="知识库的父文件夹"
           value={parentFolderLocation}
         />
         <LocationPickerInput
+          error={wikiCreationMessage}
+          helperText={wikiCreationMessage}
           fullWidth
-          onChange={event => wikiFolderNameSetter(event.target.value)}
+          onChange={event => {
+            wikiFolderNameSetter(event.target.value);
+            onSetWikiCreationMessage('');
+          }}
           label="知识库文件夹名"
           value={wikiFolderName}
         />
@@ -197,11 +205,11 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onWikiCreatio
           disabled={!parentFolderLocation}
           onClick={async () => {
             onUpdateForm(workspaceFormData);
-            const creationResult = await requestCopyWikiTemplate(parentFolderLocation, wikiFolderName);
-            if (creationResult) {
-              onSave();
+            const creationError = await requestCopyWikiTemplate(parentFolderLocation, wikiFolderName);
+            if (creationError) {
+              onSetWikiCreationMessage(creationError);
             } else {
-              onWikiCreationResult(creationResult);
+              onSave();
             }
           }}
         >
@@ -232,11 +240,11 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onWikiCreatio
           disabled={!parentFolderLocation || !mainWikiToLink}
           onClick={async () => {
             onUpdateForm(workspaceFormData);
-            const creationResult = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink);
-            if (creationResult) {
-              onSave();
+            const creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink);
+            if (creationError) {
+              onSetWikiCreationMessage(creationError);
             } else {
-              onWikiCreationResult(creationResult);
+              onSave();
             }
           }}
         >
@@ -276,7 +284,7 @@ AddWorkspace.propTypes = {
   wikiCreationMessage: PropTypes.string,
   onUpdateForm: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
-  onWikiCreationResult: PropTypes.func.isRequired,
+  onSetWikiCreationMessage: PropTypes.func.isRequired,
 };
 
 const mapStateToProps = state => ({
@@ -286,7 +294,7 @@ const mapStateToProps = state => ({
 const actionCreators = {
   updateForm,
   save,
-  wikiCreationResult,
+  setWikiCreationMessage,
 };
 
 export default connectComponent(AddWorkspace, mapStateToProps, actionCreators);
