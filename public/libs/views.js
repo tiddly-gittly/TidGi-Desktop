@@ -10,7 +10,7 @@ const path = require('path');
 const fsExtra = require('fs-extra');
 const { ElectronBlocker } = require('@cliqz/adblocker-electron');
 
-const startNodeJSWiki = require('./start-nodejs-wiki')
+const startNodeJSWiki = require('./wiki/start-nodejs-wiki')
 const { getPreferences } = require('./preferences');
 const {
   getWorkspace,

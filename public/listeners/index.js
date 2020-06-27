@@ -2,7 +2,7 @@
 const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = require('electron');
 
 const { createWiki, createSubWiki } = require('../libs/create-wiki');
-const startNodeJSWiki = require('../libs/start-nodejs-wiki');
+const startNodeJSWiki = require('../libs/wiki/start-nodejs-wiki');
 const { getIconPath } = require('../libs/get-constants');
 
 const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
