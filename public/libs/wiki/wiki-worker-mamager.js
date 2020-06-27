@@ -4,9 +4,8 @@ const { Worker } = require('worker_threads');
 // { [name: string]: Worker }
 const workers = {};
 
-module.exports.startWiki = function startWiki(homePath, userName, tiddlyWikiPort) {
+module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName) {
   const workerData = { homePath, userName, tiddlyWikiPort };
-  console.warn(`workerData`, JSON.stringify(workerData, null, '  '));
   const worker = new Worker(require.resolve('./wiki-worker.js'), { workerData });
   workers[homePath] = worker;
   worker.on('message', message => console.log(`[${homePath}] ${message}`));

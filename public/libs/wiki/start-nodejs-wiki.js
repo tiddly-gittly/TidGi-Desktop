@@ -5,10 +5,7 @@ const { dialog } = require('electron');
 const { startWiki } = require('./wiki-worker-mamager');
 const mainWindow = require('../../windows/main');
 
-const tiddlyWikiPort = 5112;
-const userName = 'LinOnetwoTest';
-
-module.exports = function startNodeJSWiki(homePath) {
+module.exports = function startNodeJSWiki(homePath, port, userName) {
   if (!homePath || typeof homePath !== 'string' || !path.isAbsolute(homePath)) {
     const errorMessage = `需要传入正确的路径，而 ${homePath} 无法被 TiddlyWiki 识别。`;
     console.error(errorMessage);
@@ -34,5 +31,5 @@ module.exports = function startNodeJSWiki(homePath) {
     return;
   }
 
-  startWiki(homePath, userName, tiddlyWikiPort);
+  startWiki(homePath, port, userName);
 };

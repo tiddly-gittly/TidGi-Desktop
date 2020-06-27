@@ -68,6 +68,7 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCrea
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(countWorkspace() === 0);
   const [parentFolderLocation, parentFolderLocationSetter] = useState('');
   const [wikiFolderLocation, wikiFolderLocationSetter] = useState('');
+  const [wikiPort, wikiPortSetter] = useState(5212 + countWorkspace());
 
   const [workspaces, workspacesSetter] = useState({});
   useEffect(() => {
@@ -82,8 +83,8 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCrea
   const workspaceFormData = {
     name: wikiFolderLocation,
     isSubWiki: !isCreateMainWorkspace,
-    port: 5112,
-    homeUrl: 'http://localhost:5112/',
+    port: wikiPort,
+    homeUrl: `http://localhost:${wikiPort}/`,
     picturePath: getIconPath(),
   };
   return (
@@ -143,7 +144,6 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCrea
         />
         <LocationPickerInput
           error={wikiCreationMessage}
-          helperText={wikiCreationMessage}
           fullWidth
           onChange={event => {
             wikiFolderNameSetter(event.target.value);
@@ -151,6 +151,15 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCrea
           }}
           label="知识库文件夹名"
           value={wikiFolderName}
+        />
+        <LocationPickerInput
+          fullWidth
+          onChange={event => {
+            wikiPortSetter(event.target.value);
+          }}
+          label="WIKI服务器端口号"
+          helperText="出现冲突再改，一般默认即可"
+          value={wikiPort}
         />
         {!isCreateMainWorkspace && (
           <>

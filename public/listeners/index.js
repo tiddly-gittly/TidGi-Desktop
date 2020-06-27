@@ -70,8 +70,8 @@ const loadListeners = () => {
       return String(error);
     }
   });
-  ipcMain.on('request-start-tiddlywiki', (wikiPath) => {
-    startNodeJSWiki(wikiPath);
+  ipcMain.on('request-start-tiddlywiki', (wikiPath, port, userName) => {
+    startNodeJSWiki(wikiPath, port, userName);
   });
   ipcMain.on('get-constant', (event, name) => {
     event.returnValue = {
@@ -252,8 +252,6 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-create-workspace', (e, name, isSubWiki, port, homeUrl, picture, transparentBackground) => {
-    const wikiPath = name;
-    startNodeJSWiki(wikiPath);
     createWorkspaceView(name, isSubWiki, port, homeUrl, picture, transparentBackground);
     createMenu();
   });

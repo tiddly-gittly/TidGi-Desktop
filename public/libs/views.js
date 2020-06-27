@@ -11,7 +11,7 @@ const fsExtra = require('fs-extra');
 const { ElectronBlocker } = require('@cliqz/adblocker-electron');
 
 const startNodeJSWiki = require('./wiki/start-nodejs-wiki')
-const { getPreferences } = require('./preferences');
+const { getPreferences, getPreference } = require('./preferences');
 const {
   getWorkspace,
   setWorkspace,
@@ -122,7 +122,8 @@ const addView = (browserWindow, workspace) => {
   // start wiki on startup
   const wikiPath = workspace.name;
   if (!workspace.isSubWiki) {
-    startNodeJSWiki(wikiPath, workspace.port);
+    const userName = getPreference('userName') || ''
+    startNodeJSWiki(wikiPath, workspace.port, userName);
   }
   // session
   const ses = session.fromPartition(partitionId);

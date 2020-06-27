@@ -2,7 +2,7 @@ const { ipcRenderer } = window.require('electron');
 
 export const requestCopyWikiTemplate = (newFolderPath, folderName) => ipcRenderer.invoke('copy-wiki-template', newFolderPath, folderName);
 export const requestCreateSubWiki = (newFolderPath, folderName, mainWikiToLink) => ipcRenderer.invoke('create-sub-wiki', newFolderPath, folderName, mainWikiToLink);
-export const requestStartTiddlyWiki = (wikiPath) => ipcRenderer.send('request-start-tiddlywiki', wikiPath);
+export const requestStartTiddlyWiki = (wikiPath, port, userName) => ipcRenderer.send('request-start-tiddlywiki', wikiPath, port, userName);
 export const requestOpenInBrowser = (url) => ipcRenderer.send('request-open-in-browser', url);
 export const requestShowMessageBox = (message, type) => ipcRenderer.send('request-show-message-box', message, type);
 export const requestLoadUrl = (url, id) => ipcRenderer.send('request-load-url', url, id);
