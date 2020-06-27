@@ -1,0 +1,12 @@
+author: AlainD
+core-version: >=5.1.13
+created: 20200605095910858
+dependents: 
+description: Editor with some on-line completion capabilities
+list: readme usage examples
+modified: 20200605095910858
+plugin-type: plugin
+source: https://github.com/snowgoon88/TW5-extendedit
+title: $:/plugins/snowgoon88/edit-comptext
+type: application/json
+version: 0.9.0

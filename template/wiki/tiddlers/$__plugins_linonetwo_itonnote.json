@@ -1,0 +1,501 @@
+{
+    "tiddlers": {
+        "$:/config/DownloadSaver/AutoSave": {
+            "title": "$:/config/DownloadSaver/AutoSave",
+            "created": "20190601103555586",
+            "creator": "Lin Onetwo",
+            "modified": "20200410072837906",
+            "modifier": "Lin Onetwo",
+            "type": "text/vnd.tiddlywiki",
+            "text": "no"
+        },
+        "$:/config/EditorTypeMappings/text/vnd.tiddlywiki": {
+            "title": "$:/config/EditorTypeMappings/text/vnd.tiddlywiki",
+            "created": "20200530043443813",
+            "modified": "20200530043606288",
+            "type": "text/vnd.tiddlywiki",
+            "text": "comptext"
+        },
+        "$:/config/MissingLinks": {
+            "title": "$:/config/MissingLinks",
+            "created": "20190419034301891",
+            "modified": "20200409033736457",
+            "type": "text/vnd.tiddlywiki",
+            "text": "yes"
+        },
+        "$:/config/Navigation/UpdateAddressBar": {
+            "title": "$:/config/Navigation/UpdateAddressBar",
+            "created": "20190419034459572",
+            "creator": "林一二",
+            "modified": "20200409033736422",
+            "modifier": "林一二",
+            "type": "text/vnd.tiddlywiki",
+            "text": "permaview"
+        },
+        "$:/config/Navigation/UpdateHistory": {
+            "title": "$:/config/Navigation/UpdateHistory",
+            "created": "20190419034422400",
+            "modified": "20200409033736411",
+            "type": "text/vnd.tiddlywiki",
+            "text": "yes"
+        },
+        "$:/config/Navigation/openLinkFromInsideRiver": {
+            "title": "$:/config/Navigation/openLinkFromInsideRiver",
+            "created": "20200409033736445",
+            "modified": "20200409033736445",
+            "type": "text/vnd.tiddlywiki",
+            "text": "above"
+        },
+        "$:/config/Navigation/openLinkFromOutsideRiver": {
+            "title": "$:/config/Navigation/openLinkFromOutsideRiver",
+            "created": "20200409033736433",
+            "modified": "20200409033736433",
+            "type": "text/vnd.tiddlywiki",
+            "text": "top"
+        },
+        "$:/config/Plugins/Disabled/$:/plugins/sycom/g-analytics": {
+            "title": "$:/config/Plugins/Disabled/$:/plugins/sycom/g-analytics",
+            "created": "20190823032141720",
+            "creator": "Lin Onetwo - 林一二",
+            "modified": "20200409033736354",
+            "modifier": "Lin Onetwo - 林一二",
+            "type": "text/vnd.tiddlywiki",
+            "text": "no"
+        },
+        "$:/config/Plugins/Disabled/$:/plugins/tiddlywiki/codemirror-mode-x-tiddlywiki": {
+            "title": "$:/config/Plugins/Disabled/$:/plugins/tiddlywiki/codemirror-mode-x-tiddlywiki",
+            "created": "20200411033813183",
+            "modified": "20200411033814242",
+            "type": "text/vnd.tiddlywiki",
+            "text": "yes"
+        },
+        "$:/config/Plugins/Disabled/$:/plugins/tiddlywiki/codemirror": {
+            "title": "$:/config/Plugins/Disabled/$:/plugins/tiddlywiki/codemirror",
+            "created": "20200530042942722",
+            "modified": "20200530043337009",
+            "type": "text/vnd.tiddlywiki",
+            "text": "no"
+        },
+        "$:/config/Plugins/Disabled/$:/plugins/tiddlywiki/highlight": {
+            "title": "$:/config/Plugins/Disabled/$:/plugins/tiddlywiki/highlight",
+            "created": "20190419154112345",
+            "modified": "20200409033736342",
+            "type": "text/vnd.tiddlywiki",
+            "text": "no"
+        },
+        "$:/config/RelinkOnRename": {
+            "title": "$:/config/RelinkOnRename",
+            "created": "20200408113649017",
+            "creator": "Lin Onetwo - 林一二",
+            "modified": "20200410130837602",
+            "modifier": "Lin Onetwo - 林一二",
+            "type": "text/vnd.tiddlywiki",
+            "text": "yes"
+        },
+        "$:/config/Search/MinLength": {
+            "title": "$:/config/Search/MinLength",
+            "created": "20190419153747812",
+            "modified": "20200409033736319",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "1"
+        },
+        "$:/config/Toolbar/ButtonClass": {
+            "title": "$:/config/Toolbar/ButtonClass",
+            "created": "20190419034516378",
+            "modified": "20200409033736308",
+            "type": "text/vnd.tiddlywiki",
+            "text": "tc-btn-invisible"
+        },
+        "$:/config/WikiParserRules/Inline/wikilink": {
+            "title": "$:/config/WikiParserRules/Inline/wikilink",
+            "created": "20190419034308697",
+            "modified": "20200409033736296",
+            "type": "text/vnd.tiddlywiki",
+            "text": "disable"
+        },
+        "$:/config/codemirror/autoCloseTags": {
+            "title": "$:/config/codemirror/autoCloseTags",
+            "text": "true",
+            "type": "bool",
+            "created": "20200605103335671",
+            "creator": "林一二",
+            "modified": "20200605103335685",
+            "modifier": "林一二"
+        },
+        "$:/config/codemirror/keyMap": {
+            "title": "$:/config/codemirror/keyMap",
+            "text": "sublime\n",
+            "type": "string",
+            "created": "20200605103258370",
+            "creator": "林一二",
+            "modified": "20200605103258386",
+            "modifier": "林一二"
+        },
+        "$:/language": {
+            "title": "$:/language",
+            "created": "20200605100046781",
+            "creator": "林一二",
+            "modified": "20200605100046868",
+            "modifier": "林一二",
+            "type": "text/vnd.tiddlywiki",
+            "text": "$:/languages/zh-Hans"
+        },
+        "$:/theme": {
+            "title": "$:/theme",
+            "created": "20200605100014910",
+            "creator": "林一二",
+            "modified": "20200605100014964",
+            "modifier": "林一二",
+            "type": "text/vnd.tiddlywiki",
+            "text": "$:/themes/linonetwo/itonnote"
+        },
+        "$:/themes/tiddlywiki/vanilla/options/sidebarlayout": {
+            "title": "$:/themes/tiddlywiki/vanilla/options/sidebarlayout",
+            "created": "20200605100438813",
+            "creator": "林一二",
+            "modified": "20200605100438836",
+            "modifier": "林一二",
+            "type": "text/vnd.tiddlywiki",
+            "text": "fluid-fixed"
+        },
+        "$:/config/DefaultSidebarTab": {
+            "title": "$:/config/DefaultSidebarTab",
+            "creator": "LinOnetwo",
+            "type": "text/vnd.tiddlywiki",
+            "text": "$:/plugins/linonetwo/itonnote/Sidebar/FolderMenu"
+        },
+        "$:/config/DefaultMoreSidebarTab": {
+            "title": "$:/config/DefaultMoreSidebarTab",
+            "created": "20200409060942350",
+            "creator": "linonetwo",
+            "modified": "20200410073440927",
+            "modifier": "linonetwo",
+            "type": "text/vnd.tiddlywiki",
+            "text": "$:/core/ui/MoreSideBar/Orphans"
+        },
+        "$:/config/PageControlButtons/Visibility/$:/core/ui/Buttons/advanced-search": {
+            "title": "$:/config/PageControlButtons/Visibility/$:/core/ui/Buttons/advanced-search",
+            "created": "20200602124339340",
+            "modified": "20200602124339360",
+            "type": "text/vnd.tiddlywiki",
+            "text": "show"
+        },
+        "$:/config/PageControlButtons/Visibility/$:/core/ui/Buttons/control-panel": {
+            "title": "$:/config/PageControlButtons/Visibility/$:/core/ui/Buttons/control-panel",
+            "created": "20200410174523174",
+            "modified": "20200410175230294",
+            "type": "text/vnd.tiddlywiki",
+            "text": "show"
+        },
+        "$:/config/PageControlButtons/Visibility/$:/core/ui/Buttons/encryption": {
+            "title": "$:/config/PageControlButtons/Visibility/$:/core/ui/Buttons/encryption",
+            "created": "20200410174620924",
+            "modified": "20200410174809069",
+            "type": "text/vnd.tiddlywiki",
+            "text": "hide"
+        },
+        "$:/config/PageControlButtons/Visibility/$:/core/ui/Buttons/home": {
+            "title": "$:/config/PageControlButtons/Visibility/$:/core/ui/Buttons/home",
+            "created": "20200408133027695",
+            "creator": "Lin Onetwo - 林一二",
+            "modified": "20200409033736388",
+            "modifier": "Lin Onetwo - 林一二",
+            "type": "text/vnd.tiddlywiki",
+            "text": "show"
+        },
+        "$:/config/PageControlButtons/Visibility/$:/core/ui/Buttons/more-page-actions": {
+            "title": "$:/config/PageControlButtons/Visibility/$:/core/ui/Buttons/more-page-actions",
+            "created": "20200408133032024",
+            "creator": "Lin Onetwo - 林一二",
+            "modified": "20200409033736377",
+            "modifier": "Lin Onetwo - 林一二",
+            "type": "text/vnd.tiddlywiki",
+            "text": "show"
+        },
+        "$:/config/PageControlButtons/Visibility/$:/plugins/kookma/commander/buttons/pagecontrol": {
+            "title": "$:/config/PageControlButtons/Visibility/$:/plugins/kookma/commander/buttons/pagecontrol",
+            "created": "20200410174517268",
+            "modified": "20200410174518337",
+            "type": "text/vnd.tiddlywiki",
+            "text": "show"
+        },
+        "$:/config/ViewToolbarButtons/Visibility/$:/core/ui/Buttons/export-tiddler": {
+            "title": "$:/config/ViewToolbarButtons/Visibility/$:/core/ui/Buttons/export-tiddler",
+            "created": "20200410064657446",
+            "modified": "20200410064708140",
+            "type": "text/vnd.tiddlywiki",
+            "text": "hide"
+        },
+        "$:/config/ViewToolbarButtons/Visibility/$:/core/ui/Buttons/new-here": {
+            "title": "$:/config/ViewToolbarButtons/Visibility/$:/core/ui/Buttons/new-here",
+            "created": "20200409065701335",
+            "modified": "20200409065702475",
+            "type": "text/vnd.tiddlywiki",
+            "text": "show"
+        },
+        "$:/config/ViewToolbarButtons/Visibility/$:/core/ui/Buttons/new-journal-here": {
+            "title": "$:/config/ViewToolbarButtons/Visibility/$:/core/ui/Buttons/new-journal-here",
+            "created": "20200410064650269",
+            "modified": "20200410064651361",
+            "type": "text/vnd.tiddlywiki",
+            "text": "show"
+        },
+        "$:/config/ViewToolbarButtons/Visibility/$:/plugins/danielo/encryptTiddler/crypt-button": {
+            "title": "$:/config/ViewToolbarButtons/Visibility/$:/plugins/danielo/encryptTiddler/crypt-button",
+            "created": "20200410064748749",
+            "modified": "20200410175238416",
+            "type": "text/vnd.tiddlywiki",
+            "text": "show"
+        },
+        "$:/config/ViewToolbarButtons/Visibility/$:/plugins/tiddlywiki/text-slicer/ui/slice-toolbar-button": {
+            "title": "$:/config/ViewToolbarButtons/Visibility/$:/plugins/tiddlywiki/text-slicer/ui/slice-toolbar-button",
+            "created": "20200411035036487",
+            "modified": "20200411035037540",
+            "type": "text/vnd.tiddlywiki",
+            "text": "hide"
+        },
+        "$:/tags/PageControls": {
+            "title": "$:/tags/PageControls",
+            "created": "20200604080106170",
+            "creator": "LinOnetwo",
+            "list": "$:/plugins/linonetwo/omni-search-bar/ui/Buttons/search $:/core/ui/Buttons/home $:/core/ui/Buttons/close-all $:/core/ui/Buttons/fold-all $:/core/ui/Buttons/unfold-all $:/core/ui/Buttons/permaview $:/core/ui/Buttons/more-page-actions $:/core/ui/Buttons/new-tiddler $:/plugins/tiddlywiki/markdown/new-markdown-button $:/plugins/kookma/solution/buttons/pagecontrol $:/core/ui/Buttons/new-journal $:/core/ui/Buttons/new-image $:/core/ui/Buttons/import $:/core/ui/Buttons/export-page $:/core/ui/Buttons/control-panel $:/core/ui/Buttons/advanced-search $:/plugins/kookma/commander/buttons/pagecontrol $:/core/ui/Buttons/manager $:/core/ui/Buttons/tag-manager $:/core/ui/Buttons/language $:/core/ui/Buttons/palette $:/core/ui/Buttons/theme $:/core/ui/Buttons/storyview $:/core/ui/Buttons/encryption $:/core/ui/Buttons/timestamp $:/core/ui/Buttons/full-screen $:/core/ui/Buttons/print $:/core/ui/Buttons/refresh $:/plugins/kookma/utility/pagecontrol/view-fields-button $:/core/ui/Buttons/save-wiki $:/plugins/linonetwo/nodejs-webcatalog-git-sync/PageControlButton",
+            "type": "text/vnd.tiddlywiki"
+        },
+        "$:/config/plugins/menubar/MenuItems/Visibility/$:/plugins/tiddlywiki/menubar/items/contents": {
+            "title": "$:/config/plugins/menubar/MenuItems/Visibility/$:/plugins/tiddlywiki/menubar/items/contents",
+            "created": "20200415162108079",
+            "modified": "20200602041547212",
+            "type": "text/vnd.tiddlywiki",
+            "text": "hide"
+        },
+        "$:/config/plugins/menubar/MenuItems/Visibility/$:/plugins/tiddlywiki/menubar/items/hamburger": {
+            "title": "$:/config/plugins/menubar/MenuItems/Visibility/$:/plugins/tiddlywiki/menubar/items/hamburger",
+            "created": "20200415162126215",
+            "modified": "20200415162128295",
+            "type": "text/vnd.tiddlywiki",
+            "text": "show"
+        },
+        "$:/config/plugins/menubar/MenuItems/Visibility/$:/plugins/tiddlywiki/menubar/items/pagecontrols": {
+            "title": "$:/config/plugins/menubar/MenuItems/Visibility/$:/plugins/tiddlywiki/menubar/items/pagecontrols",
+            "created": "20200415162131716",
+            "modified": "20200415162330718",
+            "type": "text/vnd.tiddlywiki",
+            "text": "show"
+        },
+        "$:/config/plugins/menubar/MenuItems/Visibility/$:/plugins/tiddlywiki/menubar/items/sidebar": {
+            "title": "$:/config/plugins/menubar/MenuItems/Visibility/$:/plugins/tiddlywiki/menubar/items/sidebar",
+            "created": "20200415162109418",
+            "modified": "20200415162109442",
+            "type": "text/vnd.tiddlywiki",
+            "text": "show"
+        },
+        "$:/config/plugins/menubar/MenuItems/Visibility/$:/plugins/tiddlywiki/menubar/items/topleftbar": {
+            "title": "$:/config/plugins/menubar/MenuItems/Visibility/$:/plugins/tiddlywiki/menubar/items/topleftbar",
+            "created": "20200415162101755",
+            "modified": "20200602041539750",
+            "type": "text/vnd.tiddlywiki",
+            "text": "hide"
+        },
+        "$:/config/plugins/menubar/MenuItems/Visibility/$:/plugins/tiddlywiki/menubar/items/toprightbar": {
+            "title": "$:/config/plugins/menubar/MenuItems/Visibility/$:/plugins/tiddlywiki/menubar/items/toprightbar",
+            "created": "20200415162118824",
+            "modified": "20200415163710486",
+            "type": "text/vnd.tiddlywiki",
+            "text": "show"
+        },
+        "$:/config/shortcuts-mac/bold": {
+            "title": "$:/config/shortcuts-mac/bold",
+            "created": "20200602011151844",
+            "modified": "20200602011151860",
+            "type": "text/vnd.tiddlywiki"
+        },
+        "$:/config/shortcuts-mac/italic": {
+            "title": "$:/config/shortcuts-mac/italic",
+            "created": "20200602011428084",
+            "modified": "20200602011428114",
+            "type": "text/vnd.tiddlywiki"
+        },
+        "$:/config/shortcuts-mac/new-image": {
+            "title": "$:/config/shortcuts-mac/new-image",
+            "created": "20200602011526855",
+            "modified": "20200602011526866",
+            "type": "text/vnd.tiddlywiki"
+        },
+        "$:/config/shortcuts-mac/new-journal": {
+            "title": "$:/config/shortcuts-mac/new-journal",
+            "created": "20200602011519033",
+            "modified": "20200602011519055",
+            "type": "text/vnd.tiddlywiki"
+        },
+        "$:/config/shortcuts-mac/toggle-sidebar": {
+            "title": "$:/config/shortcuts-mac/toggle-sidebar",
+            "created": "20200602011322158",
+            "modified": "20200602011322171",
+            "type": "text/vnd.tiddlywiki",
+            "text": "cmd-B"
+        },
+        "$:/config/shortcuts-not-mac/bold": {
+            "title": "$:/config/shortcuts-not-mac/bold",
+            "created": "20200602011156768",
+            "modified": "20200602011156779",
+            "type": "text/vnd.tiddlywiki"
+        },
+        "$:/config/shortcuts-not-mac/new-image": {
+            "title": "$:/config/shortcuts-not-mac/new-image",
+            "created": "20200602011529909",
+            "modified": "20200602011529924",
+            "type": "text/vnd.tiddlywiki"
+        },
+        "$:/config/shortcuts-not-mac/new-journal": {
+            "title": "$:/config/shortcuts-not-mac/new-journal",
+            "created": "20200602011521325",
+            "modified": "20200602011521342",
+            "type": "text/vnd.tiddlywiki"
+        },
+        "$:/config/shortcuts/bold": {
+            "title": "$:/config/shortcuts/bold",
+            "created": "20200602011200184",
+            "modified": "20200602011200195",
+            "type": "text/vnd.tiddlywiki",
+            "text": "ctrl-B"
+        },
+        "$:/config/shortcuts/toggle-sidebar": {
+            "title": "$:/config/shortcuts/toggle-sidebar",
+            "created": "20200602011309990",
+            "modified": "20200602011310003",
+            "type": "text/vnd.tiddlywiki"
+        },
+        "$:/plugins/linonetwo/itonnote/Help/TW-Locator基于标签生成的文件夹目录结构使用方法": {
+            "title": "$:/plugins/linonetwo/itonnote/Help/TW-Locator基于标签生成的文件夹目录结构使用方法",
+            "created": "20200413072141568",
+            "creator": "LinOnetwo",
+            "type": "text/vnd.tiddlywiki",
+            "text": "侧边栏的「目录结构」标签页里展示了[[通过标签系统自动生成|$:/plugins/linonetwo/itonnote/Help/在 TiddlyWiki 中使用虚拟文件夹]]的文件夹。\n\n* 打了 A 标签，即相当于将文件存储在文件夹 A 中，并以 A 的内容作为文件夹的 Readme\n* 在任意Tiddler中使用「创建一个标签为此条目名称的新条目」按钮，可以创建以当前Tiddler为文件夹的文件\n* 点击 `>` 按钮（使它变成 `v`）可以展开文件夹\n* 直接点击文件夹的名字可以查看这个文件夹的 Readme\n* 分割线上方是当前目录，再往上是上级目录，点击分割线上方的上级目录名左侧的 `>` 按钮可以回到上级目录\n* 当处在 A 文件夹内时，点击分割线下方的 `+` 可以在当前文件夹里创建新文件（即创建打了 A 标签的新 Tiddler）\n* 点击 Filter by fields 可以展开分面搜索工具，点击分面搜索工具内的 `+` 可以增加筛选条件，点击 `x` 㐓减少筛选条件。"
+        },
+        "$:/plugins/linonetwo/itonnote/Help/在 TiddlyWiki 中使用虚拟文件夹": {
+            "title": "$:/plugins/linonetwo/itonnote/Help/在 TiddlyWiki 中使用虚拟文件夹",
+            "created": "20200410054027122",
+            "creator": "LinOnetwo",
+            "type": "text/vnd.tiddlywiki",
+            "text": "!! Tag\n\n可以把 Tag 结构看做是文件夹目录结构，而且这个结构还带有软连接，可以形成图状结构，因为 Tag 关系本来就是很自由的，两个笔记可以互相为 tag，在文件夹结构里也就是互相为父目录了。\n\n使用 tw-locator 可以在侧边栏上创建一个「文件目录」tab，里面展示由 tag 生成的文件夹结构。具体方法写在[[$:/plugins/bimlas/locator/README/macros]]，而本插件应该已经将其预置在[[$:/plugins/linonetwo/itonnote/Sidebar/FolderMenu]]，可立即使用，也可修改覆盖。\n\n然后可以在 `$:/ControlPanel` -> 「设置」 -> 「默认侧边栏页签」 里，设置「文件目录」tab 默认展示，这样就可以把 TiddlyWiki 当做文件夹系统来用了。而本插件应该已经将其预配置完毕。\n\n!! 斜杠\n\nTiddlyWiki 自带的文件夹创建方法是在标题中使用斜杠。\n\n通过侧边栏的「更多」->「探索」就能看到各种系统自带的文件夹。\n\n如果使用 NodeJS 版的 TIddlyWiki ，则在真实的文件系统上，这些 tiddler 也会放进相应的文件夹内。\n"
+        },
+        "$:/plugins/linonetwo/itonnote/Macros/OpenImageInGithub": {
+            "title": "$:/plugins/linonetwo/itonnote/Macros/OpenImageInGithub",
+            "created": "20200412034056887",
+            "tags": "$:/tags/Macro",
+            "caption": "点击在新标签页打开Github大图",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define view-big-image(source)\n<a href=\"https://raw.githubusercontent.com/linonetwo/wiki/master/Meme-of-LinOnetwo/tiddlers/$source$\" title=\"Click for a bigger version (opens in a separate tab)\" target=\"_blank\">\n <img src=\"https://raw.githubusercontent.com/linonetwo/wiki/master/Meme-of-LinOnetwo/tiddlers/$source$\"/>\n</a>\n\\end"
+        },
+        "$:/plugins/linonetwo/itonnote/Macros/TransclusionWithEditMe": {
+            "title": "$:/plugins/linonetwo/itonnote/Macros/TransclusionWithEditMe",
+            "created": "20200408094804792",
+            "creator": "LinOnetwo",
+            "tags": "$:/tags/Macro 自改TW",
+            "caption": "带有「编辑此块」的引用transclusion宏",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define reuse-pane(content)\n<style>\n.reuse-pane {\n\tposition: absolute;\n\tright: 10px;\n\twidth: auto;\n\tmax-width: 4px;\n\theight: 1.5em;\n\toverflow: hidden;\n\tborder: 10px solid transparent;\n\tborder-top: 0;\n\tbox-sizing: content-box;\n\ttransition: max-width 0.5s;\n}\n.reuse-pane:hover {\n  max-width: 80vw;\n}\n.reuse-pane-content {\n\tdisplay: inline-block;\n\tbackground-color: rgba(233, 233, 233, 0.9);\n\tborder-left: 4px solid rgba(0, 0, 0, 0.05);\n\tpadding: 0px 5px;\n\tpadding-bottom: 2px;\n}\n</style>\n<div class=\"reuse-pane\">\n  <small class=\"reuse-pane-content\">$content$</small>\n</div>\n\\end\n\n\\define reuse-tiddler(title)\n<$macrocall $name=\"reuse-pane\" content=\"\"\"\n查看引文：[[$title$]]\n\"\"\" />\n\n{{$title$}}\n\n\\end"
+        },
+        "$:/config/ItonNotePluginLibrary": {
+            "title": "$:/config/ItonNotePluginLibrary",
+            "caption": "ItonNote Plugin Library",
+            "tags": "$:/tags/PluginLibrary",
+            "url": "https://onetwo.ren/wiki/library/index.html",
+            "type": "text/vnd.tiddlywiki",
+            "text": "为方便大家使用我的模板，我将模板中用到的插件发布为插件库，当插件升级时，我会及时更新插件库，而装了这个插件库的 Wiki 就可以点按钮一键更新。\n\n把这个链接拖动到你的 Wiki 中来安装本插件库：  [[$:/config/ItonNotePluginLibrary]]\n"
+        },
+        "$:/config/KookmaPluginLibrary": {
+            "title": "$:/config/KookmaPluginLibrary",
+            "caption": "Kookma Plugin Library",
+            "created": "20200306121057751",
+            "modified": "20200410154132754",
+            "tags": "$:/tags/PluginLibrary",
+            "type": "text/vnd.tiddlywiki",
+            "url": "https://kookma.github.io/TW-PluginLibrary/library/index.html",
+            "text": "Kookma plugin library is a set of plugins, themes, and scripts, to extend functionality and add new features to Tiddlywiki. For detail information visit the library at [[GitHub|https://github.com/kookma]]. It is recommended to backup your data before installing any plugin, theme, or script. \n\nTo use in other wikis, drag and drop this link to those wikis: [[Kookma Plugin Library|$:/config/KookmaPluginLibrary]]"
+        },
+        "$:/config/OfficalPluginLibrary": {
+            "title": "$:/config/OfficalPluginLibrary",
+            "caption": "Offical Plugin Library",
+            "type": "text/vnd.tiddlywiki",
+            "tags": "$:/tags/PluginLibrary",
+            "url": "https://tiddlywiki.com/library/v5.1.22/index.html",
+            "text": "The official TiddlyWiki plugin library at tiddlywiki.com. Plugins, themes and language packs are maintained by the core team."
+        },
+        "$:/plugins/linonetwo/itonnote/Sidebar/FolderMenu": {
+            "title": "$:/plugins/linonetwo/itonnote/Sidebar/FolderMenu",
+            "caption": "文件目录",
+            "created": "20200408135222925",
+            "creator": "LinOnetwo",
+            "description": "文件夹系统目录结构",
+            "is-dropdown": "yes",
+            "tags": "$:/tags/SideBar $:/tags/MenuBar",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<$scrollable fallthrough=\"none\" class=\"tc-popup-keep tc-menubar-dropdown-sidebar\">\n\n<<locator-view baseTitle:\"Index\">>\n\n[[使用帮助|$:/plugins/linonetwo/itonnote/Help/TW-Locator基于标签生成的文件夹目录结构使用方法]]\n</$scrollable>"
+        },
+        "$:/plugins/linonetwo/itonnote/Sidebar/Locator Fields": {
+            "title": "$:/plugins/linonetwo/itonnote/Sidebar/Locator Fields",
+            "caption": "Fields",
+            "creator": "LinOnetwo",
+            "tags": "$:/tags/SideBar",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<$vars searchTiddler=\" \">\n  <<locator-fields>>\n</$vars>"
+        },
+        "$:/plugins/linonetwo/itonnote/Sidebar/SearchResultByFacets": {
+            "title": "$:/plugins/linonetwo/itonnote/Sidebar/SearchResultByFacets",
+            "caption": "Facets",
+            "created": "20200408140310432",
+            "creator": "LinOnetwo",
+            "tags": "$:/tags/SearchResults",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<<locator-search>>"
+        },
+        "$:/plugins/linonetwo/itonnote/Sidebar/SearchResultByFields": {
+            "title": "$:/plugins/linonetwo/itonnote/Sidebar/SearchResultByFields",
+            "caption": "Fields",
+            "created": "20200408140310432",
+            "creator": "LinOnetwo",
+            "tags": "$:/tags/SearchResults",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<<locator-fields>>"
+        },
+        "$:/plugins/linonetwo/itonnote/Snippets/LocatorAboutCurrentTiddler": {
+            "title": "$:/plugins/linonetwo/itonnote/Snippets/LocatorAboutCurrentTiddler",
+            "caption": "添加一个使用当前标题的 tw-Locator",
+            "created": "20200408133348115",
+            "creator": "LinOnetwo",
+            "tags": "[[$:/plugins/linonetwo/itonnote/Help/在 TiddlyWiki 中使用虚拟文件夹]] $:/tags/TextEditor/Snippet",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<$macrocall $name=\"locator-view\" baseTitle=<<currentTiddler>> />"
+        },
+        "$:/plugins/linonetwo/itonnote/Snippets/OpenImageInGithub": {
+            "title": "$:/plugins/linonetwo/itonnote/Snippets/OpenImageInGithub",
+            "caption": "图片：点击在新标签页打开大图",
+            "created": "20200412041713662",
+            "creator": "LinOnetwo",
+            "tags": "$:/plugins/linonetwo/itonnote/Macros/OpenImageInGithub $:/tags/TextEditor/Snippet",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<<view-big-image xxx.jpg>>"
+        },
+        "$:/plugins/linonetwo/itonnote/Snippets/TransclusionWithEditMe": {
+            "title": "$:/plugins/linonetwo/itonnote/Snippets/TransclusionWithEditMe",
+            "caption": "带「编辑此块」的引用Transclusion",
+            "created": "20200408132341855",
+            "creator": "LinOnetwo",
+            "tags": "$:/plugins/linonetwo/itonnote/Macros/TransclusionWithEditMe $:/tags/TextEditor/Snippet",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<<reuse-tiddler \"title\">>"
+        },
+        "$:/plugins/linonetwo/itonnote/description": {
+            "title": "$:/plugins/linonetwo/itonnote/description",
+            "type": "text/vnd.tiddlywiki",
+            "text": "!!! TW-Locator\n\n根据[[$:/plugins/bimlas/locator/README/macros]]创建了下列文件：\n\n* [[$:/plugins/linonetwo/itonnote/Sidebar/Locator Fields]] 侧边栏的 Fields 标签页，用于查看含有各种字段的Tiddlers\n* [[$:/plugins/linonetwo/itonnote/Sidebar/SearchResultByFacets]] 搜索结果中的 Facets 标签页，用于分面搜索\n* [[$:/plugins/linonetwo/itonnote/Sidebar/SearchResultByFields]] 搜索结果中的 Fields 标签页，用于按字段进行精准搜索\n\n!!! macros\n\n!!!! TransclusionWithEditMe\n\n[[$:/plugins/linonetwo/itonnote/Macros/TransclusionWithEditMe]] Usage:\n\n使用普通的 [[Transclusion|https://tiddlywiki.com/#Transclusion]] 时，你没法得知源文件在哪里，如果想要修改内容，还得打开编辑模式、复制被引用的 Tiddler 的标题，然后搜索打开编辑，比较麻烦。\n\n使用此宏进行引用就很方便了：\n\n```tid\n<<reuse-tiddler \"快速创建新笔记按钮\">>\n```\n\n会直接在引用的区块旁边显示一个「查看引文」的小浮窗，带有指向源文件的链接，直接点开编辑即可。\n\n!!!! OpenImageInGithub\n\n[[$:/plugins/linonetwo/itonnote/Macros/OpenImageInGithub]] Usage:\n\nIf you have `webcatalog-tiddlywiki-menu-app.jpg` in your Wiki, you normally can just `{{webcatalog-tiddlywiki-menu-app.jpg}}` to place it in your tiddler, but you can use this macro to make it clickable, and open large image in the new browser tab:\n\n```tid\n<<view-big-image webcatalog-tiddlywiki-menu-app.jpg>>\n```\n\n!!! snippets（文本片段）\n\n在编辑模式下，有一个图章按钮，点击后会列出一系列文本片段，可以一键添加预制内容，因而无需用脑记住这些复杂的文本片段了。\n\n本插件预置了一些文本片段，详见相应的 Macros 的介绍，或相应的插件的介绍：\n\n* [[$:/plugins/linonetwo/itonnote/Snippets/LocatorAboutCurrentTiddler]]\n* [[$:/plugins/linonetwo/itonnote/Snippets/OpenImageInGithub]]\n* [[$:/plugins/linonetwo/itonnote/Snippets/TransclusionWithEditMe]]\n"
+        },
+        "$:/plugins/linonetwo/itonnote/readme": {
+            "title": "$:/plugins/linonetwo/itonnote/readme",
+            "type": "text/vnd.tiddlywiki",
+            "text": "!! 功能\n\n预配置了一系列琐碎的内容，一般来自各插件的Readme和论坛讨论，但大多数人懒得看Readme，故在此直接帮忙配置好了。\n\n具体预置内容介绍可见[[Description|$:/plugins/linonetwo/itonnote/description]]。\n"
+        }
+    }
+}

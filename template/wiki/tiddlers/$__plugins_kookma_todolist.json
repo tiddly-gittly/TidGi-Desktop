@@ -1,0 +1,301 @@
+{
+    "tiddlers": {
+        "$:/plugins/kookma/todolist/history": {
+            "title": "$:/plugins/kookma/todolist/history",
+            "created": "20200331053532911",
+            "modified": "20200405054217219",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Full change log  https://kookma.github.io/TW-???/#ChangeLog\n\n* ''1.2.1'' -- 2020.04.05 -- minor issue in drag and drop fixed\n* ''1.2.0'' -- 2020.04.03 -- new features, item reording using drag and drop\n* ''1.1.0'' -- 2020.03.31 -- bugs fixed, moved to new Thirdflow development platform\n* ''1.0.0'' -- 2019.07.22 -- first stable release\n"
+        },
+        "$:/plugins/kookma/todolist/images/archive.svg": {
+            "title": "$:/plugins/kookma/todolist/images/archive.svg",
+            "created": "20190716095419117",
+            "modified": "20200331065952093",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-file-archive tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 384 512\"><path d=\"M128.3 160v32h32v-32zm64-96h-32v32h32zm-64 32v32h32V96zm64 32h-32v32h32zm177.6-30.1L286 14C277 5 264.8-.1 252.1-.1H48C21.5 0 0 21.5 0 48v416c0 26.5 21.5 48 48 48h288c26.5 0 48-21.5 48-48V131.9c0-12.7-5.1-25-14.1-34zM256 51.9l76.1 76.1H256zM336 464H48V48h79.7v16h32V48H208v104c0 13.3 10.7 24 24 24h104zM194.2 265.7c-1.1-5.6-6-9.7-11.8-9.7h-22.1v-32h-32v32l-19.7 97.1C102 385.6 126.8 416 160 416c33.1 0 57.9-30.2 51.5-62.6zm-33.9 124.4c-17.9 0-32.4-12.1-32.4-27s14.5-27 32.4-27 32.4 12.1 32.4 27-14.5 27-32.4 27zm32-198.1h-32v32h32z\"/></svg>"
+        },
+        "$:/plugins/kookma/todolist/images/bug.svg": {
+            "title": "$:/plugins/kookma/todolist/images/bug.svg",
+            "created": "20190714051837328",
+            "modified": "20200331065952099",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-bug tc-image-button\" width=\"1em\" height=\"1em\" viewBox=\"0 0 512 512\"><path d=\"M511.988 288.9c-.478 17.43-15.217 31.1-32.653 31.1H424v16c0 21.864-4.882 42.584-13.6 61.145l60.228 60.228c12.496 12.497 12.496 32.758 0 45.255-12.498 12.497-32.759 12.496-45.256 0l-54.736-54.736C345.886 467.965 314.351 480 280 480V236c0-6.627-5.373-12-12-12h-24c-6.627 0-12 5.373-12 12v244c-34.351 0-65.886-12.035-90.636-32.108l-54.736 54.736c-12.498 12.497-32.759 12.496-45.256 0-12.496-12.497-12.496-32.758 0-45.255l60.228-60.228C92.882 378.584 88 357.864 88 336v-16H32.666C15.23 320 .491 306.33.013 288.9-.484 270.816 14.028 256 32 256h56v-58.745l-46.628-46.628c-12.496-12.497-12.496-32.758 0-45.255 12.498-12.497 32.758-12.497 45.256 0L141.255 160h229.489l54.627-54.627c12.498-12.497 32.758-12.497 45.256 0 12.496 12.497 12.496 32.758 0 45.255L424 197.255V256h56c17.972 0 32.484 14.816 31.988 32.9zM257 0c-61.856 0-112 50.144-112 112h224C369 50.144 318.856 0 257 0z\"/></svg>"
+        },
+        "$:/plugins/kookma/todolist/images/bullhorn": {
+            "title": "$:/plugins/kookma/todolist/images/bullhorn",
+            "caption": "bullhorn (Solid)",
+            "created": "20190721150354198",
+            "modified": "20200331065952107",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-bullhorn tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 576 512\"><path d=\"M576 240c0-23.63-12.95-44.04-32-55.12V32.01C544 23.26 537.02 0 512 0c-7.12 0-14.19 2.38-19.98 7.02l-85.03 68.03C364.28 109.19 310.66 128 256 128H64c-35.35 0-64 28.65-64 64v96c0 35.35 28.65 64 64 64h33.7c-1.39 10.48-2.18 21.14-2.18 32 0 39.77 9.26 77.35 25.56 110.94 5.19 10.69 16.52 17.06 28.4 17.06h74.28c26.05 0 41.69-29.84 25.9-50.56-16.4-21.52-26.15-48.36-26.15-77.44 0-11.11 1.62-21.79 4.41-32H256c54.66 0 108.28 18.81 150.98 52.95l85.03 68.03a32.023 32.023 0 0 0 19.98 7.02c24.92 0 32-22.78 32-32V295.13C563.05 284.04 576 263.63 576 240zm-96 141.42l-33.05-26.44C392.95 311.78 325.12 288 256 288v-96c69.12 0 136.95-23.78 190.95-66.98L480 98.58v282.84z\"/></svg>"
+        },
+        "$:/plugins/kookma/todolist/images/lightbulb": {
+            "title": "$:/plugins/kookma/todolist/images/lightbulb",
+            "caption": "lightbulb (Regular)",
+            "created": "20190721150413950",
+            "modified": "20200331065952116",
+            "tags": "$:/tags/Image [[Font Awesome 5]] Regular",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-lightbulb tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 352 512\"><path d=\"M96.06 454.35c.01 6.29 1.87 12.45 5.36 17.69l17.09 25.69a31.99 31.99 0 0 0 26.64 14.28h61.71a31.99 31.99 0 0 0 26.64-14.28l17.09-25.69a31.989 31.989 0 0 0 5.36-17.69l.04-38.35H96.01l.05 38.35zM0 176c0 44.37 16.45 84.85 43.56 115.78 16.52 18.85 42.36 58.23 52.21 91.45.04.26.07.52.11.78h160.24c.04-.26.07-.51.11-.78 9.85-33.22 35.69-72.6 52.21-91.45C335.55 260.85 352 220.37 352 176 352 78.61 272.91-.3 175.45 0 73.44.31 0 82.97 0 176zm176-80c-44.11 0-80 35.89-80 80 0 8.84-7.16 16-16 16s-16-7.16-16-16c0-61.76 50.24-112 112-112 8.84 0 16 7.16 16 16s-7.16 16-16 16z\"/></svg>"
+        },
+        "$:/plugins/kookma/todolist/images/list-alt.svg": {
+            "title": "$:/plugins/kookma/todolist/images/list-alt.svg",
+            "created": "20190716095433587",
+            "modified": "20200331065952123",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-list-alt tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 512 512\"><path d=\"M464 32H48C21.49 32 0 53.49 0 80v352c0 26.51 21.49 48 48 48h416c26.51 0 48-21.49 48-48V80c0-26.51-21.49-48-48-48zm-6 400H54a6 6 0 0 1-6-6V86a6 6 0 0 1 6-6h404a6 6 0 0 1 6 6v340a6 6 0 0 1-6 6zm-42-92v24c0 6.627-5.373 12-12 12H204c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h200c6.627 0 12 5.373 12 12zm0-96v24c0 6.627-5.373 12-12 12H204c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h200c6.627 0 12 5.373 12 12zm0-96v24c0 6.627-5.373 12-12 12H204c-6.627 0-12-5.373-12-12v-24c0-6.627 5.373-12 12-12h200c6.627 0 12 5.373 12 12zm-252 12c0 19.882-16.118 36-36 36s-36-16.118-36-36 16.118-36 36-36 36 16.118 36 36zm0 96c0 19.882-16.118 36-36 36s-36-16.118-36-36 16.118-36 36-36 36 16.118 36 36zm0 96c0 19.882-16.118 36-36 36s-36-16.118-36-36 16.118-36 36-36 36 16.118 36 36z\"/></svg>"
+        },
+        "$:/plugins/kookma/todolist/images/share-alt": {
+            "title": "$:/plugins/kookma/todolist/images/share-alt",
+            "caption": "share-alt (Solid)",
+            "created": "20190721150321438",
+            "modified": "20200331065952131",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-share-alt tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 448 512\"><path d=\"M352 320c-22.608 0-43.387 7.819-59.79 20.895l-102.486-64.054a96.551 96.551 0 0 0 0-41.683l102.486-64.054C308.613 184.181 329.392 192 352 192c53.019 0 96-42.981 96-96S405.019 0 352 0s-96 42.981-96 96c0 7.158.79 14.13 2.276 20.841L155.79 180.895C139.387 167.819 118.608 160 96 160c-53.019 0-96 42.981-96 96s42.981 96 96 96c22.608 0 43.387-7.819 59.79-20.895l102.486 64.054A96.301 96.301 0 0 0 256 416c0 53.019 42.981 96 96 96s96-42.981 96-96-42.981-96-96-96z\"/></svg>"
+        },
+        "$:/plugins/kookma/todolist/images/times.svg": {
+            "title": "$:/plugins/kookma/todolist/images/times.svg",
+            "created": "20190716033811299",
+            "modified": "20200331065952137",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-times tc-image-button\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 352 512\"><path d=\"M242.72 256l100.07-100.07c12.28-12.28 12.28-32.19 0-44.48l-22.24-22.24c-12.28-12.28-32.19-12.28-44.48 0L176 189.28 75.93 89.21c-12.28-12.28-32.19-12.28-44.48 0L9.21 111.45c-12.28 12.28-12.28 32.19 0 44.48L109.28 256 9.21 356.07c-12.28 12.28-12.28 32.19 0 44.48l22.24 22.24c12.28 12.28 32.2 12.28 44.48 0L176 322.72l100.07 100.07c12.28 12.28 32.2 12.28 44.48 0l22.24-22.24c12.28-12.28 12.28-32.19 0-44.48L242.72 256z\"/></svg>"
+        },
+        "$:/plugins/kookma/todolist/images/wrench.svg": {
+            "title": "$:/plugins/kookma/todolist/images/wrench.svg",
+            "created": "20190714052925874",
+            "modified": "20200331065952142",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg class=\"tc-image-wrench tc-image-button\" width=\"1em\" height=\"1em\" viewBox=\"0 0 512 512\"><path d=\"M507.73 109.1c-2.24-9.03-13.54-12.09-20.12-5.51l-74.36 74.36-67.88-11.31-11.31-67.88 74.36-74.36c6.62-6.62 3.43-17.9-5.66-20.16-47.38-11.74-99.55.91-136.58 37.93-39.64 39.64-50.55 97.1-34.05 147.2L18.74 402.76c-24.99 24.99-24.99 65.51 0 90.5 24.99 24.99 65.51 24.99 90.5 0l213.21-213.21c50.12 16.71 107.47 5.68 147.37-34.22 37.07-37.07 49.7-89.32 37.91-136.73zM64 472c-13.25 0-24-10.75-24-24 0-13.26 10.75-24 24-24s24 10.74 24 24c0 13.25-10.75 24-24 24z\"/></svg>"
+        },
+        "$:/plugins/kookma/todolist/license": {
+            "title": "$:/plugins/kookma/todolist/license",
+            "created": "20200331053532912",
+            "modified": "20200331055909558",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Distributed under an MIT license.\n\nCopyright (c) 2019-2020 [[Mohammad Rahmani|https://github.com/kookma]]\n\n<<<\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n<<<"
+        },
+        "$:/plugins/kookma/todolist/macros/add-remove-list-item": {
+            "title": "$:/plugins/kookma/todolist/macros/add-remove-list-item",
+            "created": "20190718081952856",
+            "modified": "20200402154453857",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define todolist-remove-item-from-list(targetTiddler, item)\n<$action-listops $tiddler=<<__targetTiddler__>>    $field=\"list\" $subfilter=\"+[remove[$item$]]\"/>\n\\end\n\n\\define todolist-add-item-to-list(targetTiddler, item)\n<$action-listops $tiddler=<<__targetTiddler__>> $field=\"list\" $subfilter=\"[[$item$]]+[putfirst[]]\"/>\n\\end\n"
+        },
+        "$:/plugins/kookma/todolist/macros/add-task": {
+            "title": "$:/plugins/kookma/todolist/macros/add-task",
+            "created": "20190715170540482",
+            "modified": "20200402122702989",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define todolist-input-task()\n<$keyboard key=\"escape\" actions=<<todolist-cancel-action>>   >\n<$keyboard key=\"enter\"  actions=<<todolist-add-task-action>> >\n<$edit-text \n tiddler=<<stateTiddler>> \n index=\"itemtext\" \n tag=\"input\"\n class=\"kk-todolist-input-textbox\"\n placeholder=\"add new item\"\n default=\"\" minHeight=\"1em\" focus=\"yes\"\n />\n</$keyboard> \n</$keyboard> \n\\end\n \n\\define todolist-add-task()\n<$button class=\"tc-btn-invisible\" tooltip=\"Add new item\">\n\t{{$:/core/images/new-button}}\n\t<<todolist-add-task-action>>\n</$button>\n\\end\n\n\\define todolist-add-task-action()\n  <$list filter=\"[<stateTiddler>getindex[itemtext]!is[blank]]\" variable=ignor>\n\t<$set name=item value=<<now \"[UTC]YYYY0MM0DD0hh0mm0ssXXX\">> >\n\t<$action-setfield \n\t $tiddler=<<taskTiddler>>\n\t $index=<<item>>\n\t $value={{{ [<stateTiddler>getindex[itemtext]] }}}\n\t/>\n\t<$action-setfield $tiddler=<<statusTiddler>> $index=<<item>> $value=\"undone\"\t/>\n\t<$action-setfield $tiddler=<<priorityTiddler>> $index=<<item>> $value=\"none\"\t/>\n  <$macrocall $name=\"todolist-add-item-to-list\" targetTiddler=<<taskTiddler>> item=<<item>> />\n\t</$set>\n\t<$action-setfield $tiddler=<<stateTiddler>> $index=\"itemtext\" $value=\"\"/>\n\t</$list>\n\\end\n\n\\define todolist-cancel-action()\n <$action-setfield $tiddler=<<stateTiddler>> $index=\"itemtext\" $value=\"\"/>\n\\end"
+        },
+        "$:/plugins/kookma/todolist/macros/archive-operations": {
+            "title": "$:/plugins/kookma/todolist/macros/archive-operations",
+            "created": "20190719141644069",
+            "modified": "20200402120458856",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define todolist-list-archived-items(nameSpace:\"\")\n<$vars\n archiveTiddler=\"\"\"$nameSpace$/archive\"\"\"\n priorityTiddler=\"\"\"$nameSpace$/priority\"\"\"\n>\n<$list filter=\"[<archiveTiddler>indexes[]!sort[]]\" variable=\"item\">\n<div class=\"kk-todolist-row\">\n  <div class=\"kk-todolist-delete\"><<todolist-delete-item>></div>\n\t<div class=\"kk-todolist-priority\"><<todolist-show-priority-level>></div>\n  <div class=\"kk-todolist-desc\">\n\t<span class=\"kk-todolist-date\">\n\t<$view tiddler=<<item>> field=\"title\" format=\"date\" template=\"mmm 0DD, YYYY 0hh:0mm\"/></span>\n\t<$transclude tiddler=<<archiveTiddler>> index=<<item>>/>\n\t</div>\n</div>\n</$list>\n</$vars>\n\\end\n\n\\define todolist-show-priority-level()\n<$button class=\"tc-btn-invisible\" tooltip=\"Prority of archived items cannot be changed\">\n<$macrocall $name=\"disp-priority-badge\" color={{{[<priorityTiddler>getindex<item>]}}} />\n</$button>\n\\end\n\n\\define todolist-delete-item()\n<$button class=\"tc-btn-invisible\">\n{{$:/plugins/kookma/todolist/images/times.svg}}\n<$action-setfield $tiddler=<<archiveTiddler>>  $index=<<item>> />\n<$action-setfield $tiddler=<<priorityTiddler>> $index=<<item>> />\n</$button>\n\\end\n\n\\define todolist-empty-archived-tiddler(nameSpace)\n<$vars\n archiveTiddler=\"\"\"$nameSpace$/archive\"\"\"\n priorityTiddler=\"\"\"$nameSpace$/priority\"\"\"\n>\n<$button class=\"tc-btn-invisible tc-tiddlylink\" tooltip=\"Empty archive\"> {{$:/core/images/delete-button}} Delete archive\n<$list filter=\"[<archiveTiddler>indexes[]!sort[]]\" variable=\"item\">\n <$action-setfield $tiddler=<<archiveTiddler>>  $index=<<item>> />\n <$action-setfield $tiddler=<<priorityTiddler>> $index=<<item>> />\n</$list>\n</$button>\n</$vars>\n\\end\t "
+        },
+        "$:/plugins/kookma/todolist/macros/bulk-operation": {
+            "title": "$:/plugins/kookma/todolist/macros/bulk-operation",
+            "created": "20190716083959795",
+            "modified": "20200403122124607",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define todolist-all-tasks-unfinished()\n<span style=\"font-size:smaller\">\n<$list filter=\"[<taskTiddler>indexes[]limit[1]]\" emptyMessage=\"You're all done\" variable=ignore>\n<$count filter=\"[<taskTiddler>indexes[]]\"/> ITEMS\n</$list>\n</span>\n\\end\n\n\\define todolist-mark-all-button()\n<$reveal type=\"nomatch\" stateTitle=<<stateTiddler>> stateIndex=\"markall\" text=\"yes\">\n<$button class=\"tc-btn-invisible\" tooltip=\"Mark all items as done\" setTitle=<<stateTiddler>> setIndex=\"markall\" setTo=\"yes\">\n{{$:/core/images/save-button}}\n<<tdl-done-all>>\n</$button>\n</$reveal>\n<$reveal type=\"match\" stateTitle=<<stateTiddler>> stateIndex=\"markall\" text=\"yes\">\n<$button class=\"tc-btn-invisible\" tooltip=\"Mark all items as undone\" setTitle=<<stateTiddler>> setIndex=\"markall\" setTo=\"no\">\n{{$:/core/images/refresh-button}}\n<<tdl-undone-all>>\n</$button>\n</$reveal>\n\\end\n\n\\define tdl-done-all()\n<$list filter=\"[<taskTiddler>indexes[]]\" variable=\"item\">\n<$action-setfield \n$tiddler=<<doneTiddler>>\n$index=<<item>>\n$value={{{ [<taskTiddler>getindex<item>] }}}\n/>\n<$action-setfield \n$tiddler=<<statusTiddler>>\n$index=<<item>>\n$value=\"done\"\n/>\n<$macrocall $name=\"todolist-remove-item-from-list\" targetTiddler=<<taskTiddler>> item=<<item>> />\n<$action-setfield $tiddler=<<taskTiddler>> $index=<<item>> />\n</$list>\n\\end\n\n\\define tdl-undone-all()\n<$list filter=\"[<doneTiddler>indexes[]]\" variable=\"item\">\n<$action-setfield \n$tiddler=<<taskTiddler>>\n$index=<<item>>\n$value={{{ [<doneTiddler>getindex<item>] }}}\n/>\n<$action-setfield \n$tiddler=<<statusTiddler>>\n$index=<<item>>\n$value=\"undone\"\n/>\n<$macrocall $name=\"todolist-add-item-to-list\" targetTiddler=<<taskTiddler>> item=<<item>> />\n<$action-setfield $tiddler=<<doneTiddler>> $index=<<item>> />\n</$list>\n\\end\n\n\n\\define todolist-archive-completed-items()\n<$button class=\"tc-btn-invisible\" tooltip=\"Archive done items\">\n{{$:/plugins/kookma/todolist/images/archive.svg}}\n<$list filter=\"[<doneTiddler>indexes[]]\" variable=\"item\">\n<$action-setfield \n$tiddler=<<archiveTiddler>>\n$index=<<item>>\n$value={{{ [<doneTiddler>getindex<item>] }}}\n/>\n<$action-setfield $tiddler=<<statusTiddler>> $index=<<item>> />\n<$action-setfield $tiddler=<<doneTiddler>> $index=<<item>> />\n<$action-setfield $tiddler=<<stateTiddler>> $index=\"markall\" $value=\"no\"/>\n</$list>\n</$button>\n\\end\n\n\\define todolist-display-archived-items()\n<$button class=\"tc-btn-invisible\" tooltip=\"Display archived items\"> {{$:/plugins/kookma/todolist/images/list-alt.svg}}\n\n<$action-setfield  \n$tiddler=\"$:/plugins/kookma/todolist/template/archive-list\"\ntitle=<<displayArchivedTiddler>>    />  \n<$action-setfield  $tiddler=<<displayArchivedTiddler>>\n$field=\"td-namespace\" $value=<<nameSpace>>  />\n\n<$action-navigate $to=<<displayArchivedTiddler>> $scroll=\"yes\"/>\n</$button>\n\\end\t"
+        },
+        "$:/plugins/kookma/todolist/macros/category": {
+            "title": "$:/plugins/kookma/todolist/macros/category",
+            "created": "20190714040123984",
+            "modified": "20200331184650454",
+            "tags": "$:/tags/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define high(text) \n<span style=\"padding-left:3px;color:#cd5360;\">$text$</span>\n\\end\n\n\\define normal(text) \n<span style=\"color:#286da8;\">$text$</span>\n\\end\n\n\\define low(text) \n<span style=\"color:#b37d4e;\">$text$</span>\n\\end\n\n\\define fixme(text)\n<span class=\"kk-todolist-category-c1\">{{$:/plugins/kookma/todolist/images/wrench.svg}} $text$</span>\n\\end\n\n\\define bug(text)\n<span class=\"kk-todolist-category-c1\">{{$:/plugins/kookma/todolist/images/bug.svg}} $text$</span>\n\\end\n\n\\define horn(text)\n<span class=\"kk-todolist-category-c2\">{{$:/plugins/kookma/todolist/images/bullhorn}} $text$</span>\n\\end\n\n\\define tip(text)\n<span class=\"kk-todolist-category-c2\">{{$:/plugins/kookma/todolist/images/lightbulb}} $text$</span>\n\\end\n\n\\define share(text)\n<span class=\"kk-todolist-category-c2\">{{$:/plugins/kookma/todolist/images/share-alt}} $text$</span>\n\\end"
+        },
+        "$:/plugins/kookma/todolist/macros/confirm-delete": {
+            "title": "$:/plugins/kookma/todolist/macros/confirm-delete",
+            "created": "20190721041511697",
+            "modified": "20200331172725431",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define todolist-confirm-delete(\nbtnLabel:\"Delete these tiddlers\", \nconfirmMessage:\"Are you sure you wish to delete\", \nstateTiddler:\"\", \ncountFilter:\"\", \nactionMacro:\"\")\n\n<$button class=\"tc-btn-invisible tc-tiddlylink\" tooltip=\"Empty archive\" popup=<<qualify \"\"\"$stateTiddler$\"\"\">> > {{$:/core/images/delete-button}} $btnLabel$\n</$button>\n\n<$reveal state=<<qualify \"\"\"$stateTiddler$\"\"\">> type=\"popup\" position=\"belowleft\" animate=\"yes\">\n<div class=\"tc-block-dropdown-wrapper\">\n<div class=\"tc-block-dropdown tc-edit-type-dropdown\">\n<div class=\"tc-dropdown-item-plain\">\n<$set name=\"resultCount\" value=\"\"\"<$count filter=<<__countFilter__>> />\"\"\">\n$confirmMessage$ <<resultCount>> tiddler(s)?\n</$set>\n</div>\n<div class=\"tc-dropdown-item-plain\">\n<$button class=\"tc-btn-invisible tc-tiddlylink\" tooltip=\"Empty archive\"\nactions=<<__actionMacro__>> > \n{{$:/core/images/delete-button}} Delete all?\n</$button>\n</div>\n</div>\n</div>\n</$reveal>\n\\end"
+        },
+        "$:/plugins/kookma/todolist/macros/delete-task": {
+            "title": "$:/plugins/kookma/todolist/macros/delete-task",
+            "created": "20190715170610146",
+            "modified": "20200402124703285",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define todolist-delete-task(dataTiddler)\n<$button class=\"tc-btn-invisible\">\n{{$:/plugins/kookma/todolist/images/times.svg}}\n<$action-setfield $tiddler=<<__dataTiddler__>> $index=<<item>> />\n<$action-setfield $tiddler=<<statusTiddler>> $index=<<item>> />\n<$action-setfield $tiddler=<<priorityTiddler>> $index=<<item>> />\n<!-- delete item from list field of task tiddler if it is an undone task! -->\n<$reveal type=\"match\" text=<<__dataTiddler__>> default=<<taskTiddler>> >\n<$macrocall $name=\"todolist-remove-item-from-list\" targetTiddler=<<taskTiddler>> item=<<item>> />\n</$reveal>\n</$button>\n\\end\n"
+        },
+        "$:/plugins/kookma/todolist/macros/done-task": {
+            "title": "$:/plugins/kookma/todolist/macros/done-task",
+            "created": "20190715170633034",
+            "modified": "20200403094412340",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define todolist-done-task()\n<$checkbox \n tiddler=<<statusTiddler>> \n index=<<item>> \n checked=\"done\" \n unchecked=\"undone\" \n default=\"undone\"\n actions=<<tdl-done-actions>>\n>\n</$checkbox>\n\\end\n\n\\define tdl-done-actions()\n <$action-setfield \n  $tiddler=<<doneTiddler>>\n  $index=<<item>>\n  $value={{{ [<taskTiddler>getindex<item>] }}}\n  />\n<$macrocall $name=\"todolist-remove-item-from-list\" targetTiddler=<<taskTiddler>> item=<<item>> />\n<$action-setfield $tiddler=<<taskTiddler>> $index=<<item>> />\n\\end"
+        },
+        "$:/plugins/kookma/todolist/macros/draggable-list": {
+            "title": "$:/plugins/kookma/todolist/macros/draggable-list",
+            "created": "20190718070116654",
+            "modified": "20200405054450296",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define draggable-list(targetTiddler)\n\\whitespace trim\n<$vars targetTiddler=<<__targetTiddler__>> >\n<span class=\"kk-todolist-draggable-list\">\n<$list filter=\"[list<targetTiddler>]\" variable=\"item\">\n<$droppable actions=<<droppable-actions>>>\n    <div class=\"tc-droppable-placeholder kk-todolist-placeholder\"></div> \n    <$draggable tiddler=<<item>> >\n    <$transclude tiddler=\"$:/plugins/kookma/todolist/template/undone-task\" field=\"text\"/>\n    </$draggable>\n</$droppable>\n</$list>\n<<disp-empty-placeholder>>\n</span>\n</$vars>\n\\end\n\n\\define droppable-actions()\n<!-- the $list checks to prvents drag items not listed in this Todolist -->\n<$list filter=\"[<targetTiddler>contains<actionTiddler>]\" variable=ignore>\n<$action-listops $tiddler=<<targetTiddler>> $field=\"list\" $subfilter=\"+[insertbefore:item<actionTiddler>]\"/>\n</$list>\n\\end\n\n\\define xxdisp-empty-placeholder()\n<$tiddler tiddler=\"\"><!-- an empty place holder-->\n<$droppable actions=<<droppable-actions>> tag=\"div\">\n<div style=\"height:0.5em;\"/>\n<div class=\"tc-droppable-placeholder kk-todolist-placeholder\">&nbsp;</div>\n</$droppable>\n</$tiddler>\n\\end\n\n\n\\define disp-empty-placeholder()\n<$tiddler tiddler=\"\">\n<$droppable actions=<<droppable-actions>> tag=\"div\" enable=<<tv-enable-drag-and-drop>>>\n<div class=\"tc-droppable-placeholder kk-todolist-placeholder\">\n&nbsp;\n</div>\n<div style=\"height:0.5em;\"/>\n</$droppable>\n</$tiddler>\n\\end"
+        },
+        "$:/plugins/kookma/todolist/macros/explore-internalTids": {
+            "title": "$:/plugins/kookma/todolist/macros/explore-internalTids",
+            "created": "20190719143452217",
+            "modified": "20200401214333824",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define todolist-fullbaseName() $(td-basePath)$$(baseName)$\n\n\\define todolist-explore-data-tiddlers()\n\n><b>Number of internal tiddlers found: <$count filter=\"[all[tiddlers+shadows]prefix<td-basePath>]\" /></b><br>\n><$macrocall $name=\"todolist-delete-all-tids\" filter=<<dataTids>> />\n\n<h2> Todo lists</h2>\n<$list filter=\"[all[shadows+tiddlers]removeprefix<td-basePath>splitbefore[/]removesuffix[/]sort[]]\" variable=\"baseName\">\n\n<$set name=bsFilter value=\"[prefix<todolist-fullbaseName>sort[]]\">\n<h3><<todolist-delete-all-tids-baseName>> <<baseName>></h3>\n<blockquote>\n<$list filter=<<bsFilter>> variable=\"internalTid\" emptyMessage=\"//No internal data tiddlers is found!//\">\n<div class=\"kk-todolist-row\">\n<div class=\"kk-todolist-delete\"><$macrocall $name=\"todolist-delete-single-iternalTid\" /></div>\n<div class=\"kk-todolist-desc\"><$link to=<<internalTid>>><$view tiddler=<<internalTid>> field=\"title\"/></$link></div>\n</div>\n</$list>\n</blockquote>\n</$set>\n\n</$list>\n\n\\end\n\n\n\\define todolist-delete-single-iternalTid()\n<$button class=\"tc-btn-invisible tc-tiddlylink\">\n\t{{$:/plugins/kookma/todolist/images/times.svg}}\n\t<$action-deletetiddler $tiddler=<<internalTid>> />\n</$button>\n\\end\n\n\\define todolist-delete-all-tids-baseName()\n<$button class=\"tc-btn-invisible tc-tiddlylink\" tooltip=\"Delete all data tiddlers in this Todo list?\"> {{$:/core/images/delete-button}}\n <$action-deletetiddler $filter=<<bsFilter>> />\n</$button>\n\\end\n\n\\define todolist-delete-all-tids()\n<!-- uses confirm delete macro to notify user when delete all internal tiddlers -->\n<$macrocall $name=\"todolist-confirm-delete\" \nbtnLabel=\"Delete all interal tiddlers?\"\nstateTiddler=\"temp\"\ncountFilter=\"[all[tiddlers+shadows]prefix<td-basePath>]\"\nactionMacro=<<action-empty-archive>>\n/>\n\\end\n\\define action-empty-archive()\n<$action-deletetiddler $filter=\"[all[tiddlers+shadows]prefix<td-basePath>]\" />\n\\end\t \n"
+        },
+        "$:/plugins/kookma/todolist/macros/nondraggable-list": {
+            "title": "$:/plugins/kookma/todolist/macros/nondraggable-list",
+            "created": "20200403105715811",
+            "modified": "20200403105734826",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define disp-list-in-edit-mode()\n<$list filter=\"[list<taskTiddler>]\" variable=\"item\">\n <$transclude tiddler=\"$:/plugins/kookma/todolist/template/undone-task\" field=\"text\"/>\n</$list>\n\\end"
+        },
+        "$:/plugins/kookma/todolist/macros/options": {
+            "title": "$:/plugins/kookma/todolist/macros/options",
+            "created": "20190716075847899",
+            "modified": "20200403120956166",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define todolist-options-button()\n<$reveal type=\"nomatch\" stateTitle=<<stateTiddler>> stateIndex=\"option\" text=\"yes\">\n<$button class=\"tc-btn-invisible\" tooltip=\"Show options\" setTitle=<<stateTiddler>> setIndex=\"option\" setTo=\"yes\">\n{{$:/core/images/options-button}}\n</$button>\n</$reveal>\n<$reveal type=\"match\" stateTitle=<<stateTiddler>> stateIndex=\"option\" text=\"yes\">\n<$button class=\"tc-btn-invisible\" tooltip=\"Hide options\" setTitle=<<stateTiddler>> setIndex=\"option\" setTo=\"no\">\n{{$:/core/images/options-button}}\n</$button>\n</$reveal>\n\\end\n\n\\define todolist-options-content()\n<$reveal type=\"match\" stateTitle=<<stateTiddler>> stateIndex=\"option\" text=\"yes\">\n<<todolist-mark-all-button>> <<todolist-archive-completed-items>> <<todolist-display-archived-items>> <<todolist-toggle-timestamp>>&nbsp;<<todolist-all-tasks-unfinished>>\n</$reveal>\n\\end\n\n"
+        },
+        "$:/plugins/kookma/todolist/macros/priority": {
+            "title": "$:/plugins/kookma/todolist/macros/priority",
+            "created": "20190718170817837",
+            "modified": "20200402105643019",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define categoryColors()\n<$list filter=\"[[$:/plugins/kookma/todolist/settings/colors]indexes[]sortby{$:/plugins/kookma/todolist/settings/colors!!list}]\" variable=color>\n<<color>>\n</$list>\n\\end\n\n\\define todolist-set-priority()\n<$wikify name=colors text=<<categoryColors>> >\n<$macrocall $name=\"todolist-cycle-color\" arraySet=<<colors>> stateTiddler=<<priorityTiddler>> stateIndex=<<item>> />\n</$wikify>\n\\end\n\n\\define disp-priority-badge(color)\n<svg width=\"12\" height=\"12\" >\n<circle cx=\"6\" cy=\"6\" r=\"5\"  stroke=\"grey\" fill=\"$color$\" />\n</svg>\n\\end\n\n\n\\define todolist-cycle-color(arraySet:\"\", stateTiddler:\"\", stateIndex:\"txt\")\n<$vars array=<<__arraySet__>>  currentColor={{{[<__stateTiddler__>getindex<__stateIndex__>]}}} >\n<$button class=\"tc-btn-invisible\" tooltip=\"Set priority level\">\n    <$macrocall $name=\"disp-priority-badge\" color=<<currentColor>> />\n    <$set\n      filter='[enlist<array>after<currentColor>]'\n      name=NextItem\n      emptyValue={{{[enlist<array>first[]]}}}\n    >\n    <$action-setfield\n     $tiddler=<<__stateTiddler__>>\n     $index=<<__stateIndex__>>\n     $value=<<NextItem>> />\n      </$set>\n  </$button>\n</$vars>\t\n\\end"
+        },
+        "$:/plugins/kookma/todolist/macros/show-task": {
+            "title": "$:/plugins/kookma/todolist/macros/show-task",
+            "created": "20190715170652239",
+            "modified": "20200403054629783",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define todolist-show-task()\n<$keyboard key=\"enter\" actions=<<tdl-kbd-action>> >\n<$list filter=\"[<stateTiddler>getindex[editview]match[edit]]\" \n  emptyMessage=\"\"\"<$macrocall $name=\"view-task\" dataTiddler=<<taskTiddler>> />\"\"\" >\n<$edit-text \n tiddler=<<taskTiddler>>\n index=<<item>>\n tag=input\n class=\"kk-todolist-input-textbox\"\n />\n</$list>\n</$keyboard>\n\\end\n\n\\define tdl-kbd-action()\n<$action-setfield $tiddler=<<stateTiddler>> $index=\"editview\" $value=\"view\" />\n\\end\n\n\\define view-task(dataTiddler)\n<$transclude tiddler=<<__dataTiddler__>> index=<<item>>/>\n<$reveal type=\"match\" stateTitle=<<stateTiddler>> stateIndex=\"timestamp\" text=\"show\">\n<span class=\"kk-todolist-date\"> <$view tiddler=<<item>> field=\"title\" format=\"date\" template=\"mmm 0DD, YYYY 0hh:0mm\"/></span>\n</$reveal>\n\\end"
+        },
+        "$:/plugins/kookma/todolist/macros/toggle-edit-button": {
+            "title": "$:/plugins/kookma/todolist/macros/toggle-edit-button",
+            "created": "20190715171733677",
+            "modified": "20200331172725488",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define todolist-toggle-edit-button()\n<$reveal type=\"nomatch\" stateTitle=<<stateTiddler>> stateIndex=\"editview\" text=\"edit\">\n<$button class=\"tc-btn-invisible\" setTitle=<<stateTiddler>> setIndex=\"editview\" setTo=\"edit\" tooltip=\"Edit items\">\n{{$:/core/images/edit-button}}\n</$button>\n</$reveal>\n<$reveal type=\"match\" stateTitle=<<stateTiddler>> stateIndex=\"editview\"  text=\"edit\">\n<$button class=\"tc-btn-invisible\" setTitle=<<stateTiddler>> setIndex=\"editview\" setTo=\"view\" tooltip=\"Save items\">\n{{$:/core/images/done-button}}\n</$button>\n</$reveal>\n\\end"
+        },
+        "$:/plugins/kookma/todolist/macros/toggle-timestamp": {
+            "title": "$:/plugins/kookma/todolist/macros/toggle-timestamp",
+            "created": "20190722034557852",
+            "modified": "20200331172725496",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define todolist-toggle-timestamp()\n<$reveal type=\"nomatch\" stateTitle=<<stateTiddler>> stateIndex=\"timestamp\" text=\"show\">\n<$button class=\"tc-btn-invisible\" setTitle=<<stateTiddler>> setIndex=\"timestamp\" setTo=\"show\" tooltip=\"Show timestamp\">\n{{$:/core/images/timestamp-on}}\n</$button>\n</$reveal>\n<$reveal type=\"match\" stateTitle=<<stateTiddler>> stateIndex=\"timestamp\"  text=\"show\">\n<$button class=\"tc-btn-invisible\" setTitle=<<stateTiddler>> setIndex=\"timestamp\" setTo=\"hide\" tooltip=\"Hide timestamp\">\n{{$:/core/images/timestamp-off}}\n</$button>\n</$reveal>\n\\end"
+        },
+        "$:/plugins/kookma/todolist/macros/ui": {
+            "title": "$:/plugins/kookma/todolist/macros/ui",
+            "created": "20190715170739310",
+            "modified": "20200405061046677",
+            "tags": "$:/tags/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define td-basePath() $:/todolist/data/\n\n\\define todolist-ui(caption:\"A plain todolist\", width:\"100%\" base:\"base\")\n\\import [all[tiddlers+shadows]tag[$:/tags/Todolist/Macro]!has[draft.of]]\n\\whitespace trim\n\n<$vars \n nameSpace=      \"$(td-basePath)$$base$\"\n stateTiddler=   \"$(td-basePath)$$base$/state\"\n taskTiddler=    \"$(td-basePath)$$base$/tasks\"\n doneTiddler=    \"$(td-basePath)$$base$/done\"\n statusTiddler=  \"$(td-basePath)$$base$/status\"\n priorityTiddler=\"$(td-basePath)$$base$/priority\"\n archiveTiddler= \"$(td-basePath)$$base$/archive\"\t\n displayArchivedTiddler=\"Todolist - Archived Items - $base$\"\n>\t\n<div class=\"kk-todolist-ui\" style=\"max-width:$width$;\">\n\n$caption$\n\n<div class=\"kk-todolist-header-ui\">\n<div class=\"kk-todolist-header-textbox\"><<todolist-input-task>></div>\n<div><<todolist-add-task>></div>\n<div><<todolist-toggle-edit-button>></div>\n<div><<todolist-options-button>></div>\n</div>\n<<todolist-options-content>>\n<!--\n<$list filter=\"[<taskTiddler>indexes[]!sort[]]\" variable=\"item\">\n<$transclude tiddler=\"$:/plugins/kookma/todolist/template/undone-task\" field=\"text\" />\n</$list>\n-->\n\n<!-- display undone items -->\n<$list filter=\"[<stateTiddler>getindex[editview]match[edit]]\" variable=ignore \n   emptyMessage=\"\"\"<$macrocall $name=\"draggable-list\" targetTiddler=<<taskTiddler>> />\"\"\">\n\t <<disp-list-in-edit-mode>>\n</$list>\n\n<div style=\"height:0.2em\"/>\n\n<!-- display done items -->\n<$list filter=\"[<doneTiddler>indexes[]!nsort[]]\" variable=\"item\">\n<$transclude tiddler=\"$:/plugins/kookma/todolist/template/done-task\" field=\"text\" />\n</$list>\n</div>\n</$vars>\n\\end\n"
+        },
+        "$:/plugins/kookma/todolist/macros/undone-task": {
+            "title": "$:/plugins/kookma/todolist/macros/undone-task",
+            "created": "20190715190405259",
+            "modified": "20200403094425309",
+            "tags": "$:/tags/Todolist/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define todolist-undone-task()\n<$checkbox \ntiddler=<<statusTiddler>> \nindex=<<item>> \nchecked=\"done\" \nunchecked=\"undone\" \ndefault=\"undone\"\nuncheckactions=<<tdl-undone-actions>>\n>\n</$checkbox>\n\\end\n\n\\define tdl-undone-actions()\n<$action-setfield \n$tiddler=<<taskTiddler>>\n$index=<<item>>\n$value={{{ [<doneTiddler>getindex<item>] }}}\n/><\n<$macrocall $name=\"todolist-add-item-to-list\" targetTiddler=<<taskTiddler>> item=<<item>> />\n<$action-setfield $tiddler=<<doneTiddler>> $index=<<item>> />\n\\end\n"
+        },
+        "$:/plugins/kookma/todolist/readme": {
+            "title": "$:/plugins/kookma/todolist/readme",
+            "created": "20200331053532913",
+            "modified": "20200403133906816",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "; Todolist\nTodolist is a small pure wikitext plugin, contain all of the tasks that you need to complete on a given day. Todolist gives you the confidence that everything’s organized and accounted for, so you can make progress on the things that are important to you.\n\nYou can also make to-dos for major tasks like a project, a work assignment or an overall goal. Therefore, the overall purpose of creating a to-do is to remember tasks and prioritize them.\n\n\n;Code and demo\nFor learning plugin features, syntax, tutorial and examples see the plugin demo and code pages\n\n* Demo: https://kookma.github.io/TW-Todolist/\n* Code: https://github.com/kookma/TW-Todolist\n"
+        },
+        "$:/plugins/kookma/todolist/settings/colors": {
+            "title": "$:/plugins/kookma/todolist/settings/colors",
+            "text": "limegreen:50\nyellow: 70\norange: 80\nred: 100\npink: 90\nturquoise:40\ndodgerblue:30\nnone:10",
+            "type": "application/x-tiddler-dictionary",
+            "created": "20200402092725933",
+            "list": "limegreen yellow orange red pink turquoise dodgerblue none",
+            "modified": "20200403064915453",
+            "tags": ""
+        },
+        "$:/plugins/kookma/todolist/settings/internals": {
+            "title": "$:/plugins/kookma/todolist/settings/internals",
+            "caption": "Todolist",
+            "created": "20190716171918410",
+            "modified": "20200401221146952",
+            "tags": "$:/tags/ControlPanel/SettingsTab",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\import $:/plugins/kookma/todolist/macros/explore-internalTids\n\n!! Explore Todolist internal tiddlers\n<<<\nTodolist plugin uses some internal data tiddlers to create and manage todo list. Each todolist uses several data tiddlers. It is recommended after deleting a todolist, delete all data tiddlers which are not in use.\n<<<\n\n<<todolist-explore-data-tiddlers>>\n\n\n"
+        },
+        "$:/plugins/kookma/todolist/styles/drag-drop": {
+            "title": "$:/plugins/kookma/todolist/styles/drag-drop",
+            "text": "/*  drag and drop elements */\n.kk-todolist-placeholder { \n\tposition:relative; \n\theight:0; \t\n\tborder:0 !important; \n\tborder-bottom:1px dotted grey !important; \n}\n\n.kk-todolist-draggable-list .tc-draggable  { cursor: default !important; }\n",
+            "created": "20200402192425421",
+            "modified": "20200403112252654",
+            "tags": "$:/tags/Stylesheet",
+            "type": "text/css"
+        },
+        "$:/plugins/kookma/todolist/styles/main.css": {
+            "title": "$:/plugins/kookma/todolist/styles/main.css",
+            "text": "/* Todolist main ui */\n.kk-todolist-ui{\n\tmin-width:320px; /* controls the minimum width of whole ui */\n}\n\n.kk-todolist-ui svg{\n\tfill:#aaaaaa;\n}\n\n\n.kk-todolist-ui button:hover svg {\n\tfill: #888888; \n}\n\n\n/* Todolist header ui */\n\n.kk-todolist-header-ui{\n\tdisplay: flex;\n\twidth: 100%;\n}\n.kk-todolist-header-ui > div{\n\tmargin: 2px;\n\tflex-grow:0;\t\n}\n.kk-todolist-header-ui .kk-todolist-header-textbox{\n\tflex-grow:1;\t\n}\n\n/* Todolist items ui */\n.kk-todolist-row{\n\tdisplay: flex;\t\n\twidth: 100%; /* for larg screen width> 960px*/\n\tflex-wrap: wrap;\n}\n\n.kk-todolist-row .kk-todolist-done,\n.kk-todolist-row .kk-todolist-priority,\n.kk-todolist-row .kk-todolist-delete {\n\tflex-grow:0; width:15px;\n}\n\n.kk-todolist-row .kk-todolist-desc{\n\tflex-grow:1; \n\twidth: calc(100% - 50px); \n\tpadding-left: 10px;\n\tpadding-right: 10px;\n}\n.kk-todolist-row .kk-todolist-delete {\n\topacity: 0.3;\n}\n\n.kk-todolist-row .kk-todolist-priority{\n\tmargin-right:5px;\n}\n.kk-todolist-row:hover {\n\tbackground-color: #f6f6f6;\n}\n.kk-todolist-row:hover .kk-todolist-delete {\n\topacity: 1;\n}",
+            "created": "20190716040116074",
+            "modified": "20200401084920801",
+            "tags": "$:/tags/Stylesheet",
+            "type": "text/css"
+        },
+        "$:/plugins/kookma/todolist/styles/other.css": {
+            "title": "$:/plugins/kookma/todolist/styles/other.css",
+            "text": "/* completed item */\n\n.kk-todolist-item-done {\n\ttext-decoration: red line-through;\n\tfont-style: italic;\n}\n\n/* inputbox for add-task */\n.kk-todolist-input-textbox {\n\twidth:100%;\n\tpadding-left: 5px;\n\tborder: none;\n\tborder-bottom: 1px dotted grey;\n}\n\n.kk-todolist-input-textbox:focus {\n\toutline: none;\n\tborder-bottom: 1px solid #5778d8;\n\tbackground: transparent;\n}\n\n/* item timestamp */\n.kk-todolist-date {\n\tfont-size:0.8em;\n\tcolor:#c0c0c0;\n}\n\n/* Item categories */\n.kk-todolist-category-c1,\n.kk-todolist-category-c2 {\n\tpadding-right:3px;\n}\n\n.kk-todolist-category-c1 svg, \n.kk-todolist-category-c2 svg  {\n\topacity:0.70;\n\tvertical-align: middle;\n\twidth: 1em;\n\theight: 1em;\n}\n\n.kk-todolist-category-c1 svg{\n\tfill:#8B0000;\n}\n\n.kk-todolist-category-c2 svg{\n\tfill:#006400;\n}",
+            "created": "20190715171940902",
+            "modified": "20200401084923039",
+            "tags": "$:/tags/Stylesheet",
+            "type": "text/css"
+        },
+        "$:/plugins/kookma/todolist/template/archive-list": {
+            "title": "$:/plugins/kookma/todolist/template/archive-list",
+            "created": "20190716084402662",
+            "modified": "20200401214548455",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\import $:/plugins/kookma/todolist/macros/archive-operations\n\\import $:/plugins/kookma/todolist/macros/priority\n\n!! Archive of completed (done) items\n\n<$macrocall $name=\"todolist-empty-archived-tiddler\" nameSpace={{!!td-namespace}} />\n\n> <$macrocall $name=\"todolist-list-archived-items\" nameSpace={{!!td-namespace}} />\n\n"
+        },
+        "$:/plugins/kookma/todolist/template/done-task": {
+            "title": "$:/plugins/kookma/todolist/template/done-task",
+            "created": "20200402102928801",
+            "modified": "20200402103156109",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<div class=\"kk-todolist-row\">\n  <div class=\"kk-todolist-done\"><<todolist-undone-task>></div>\n  <div class=\"kk-todolist-desc\"><span class=\"kk-todolist-item-done\">\n\t<$macrocall $name=\"view-task\" dataTiddler=<<doneTiddler>> /></span></div>\n\t<div class=\"kk-todolist-priority\"><<todolist-set-priority>></div>\n  <div class=\"kk-todolist-delete\"><$macrocall $name=\"todolist-delete-task\" dataTiddler=<<doneTiddler>>/></div>\n</div>\n"
+        },
+        "$:/plugins/kookma/todolist/template/undone-task": {
+            "title": "$:/plugins/kookma/todolist/template/undone-task",
+            "created": "20200402103007259",
+            "modified": "20200402103542808",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<div class=\"kk-todolist-row\">\n\t<div class=\"kk-todolist-done\"><<todolist-done-task>></div>\n\t<div class=\"kk-todolist-desc\"><<todolist-show-task>></div>\n\t<div class=\"kk-todolist-priority\"><<todolist-set-priority>></div>\n\t<div class=\"kk-todolist-delete\"><$macrocall $name=\"todolist-delete-task\" dataTiddler=<<taskTiddler>>/></div>\n</div>"
+        }
+    }
+}

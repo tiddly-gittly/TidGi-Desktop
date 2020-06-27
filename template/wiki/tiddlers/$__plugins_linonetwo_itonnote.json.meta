@@ -1,0 +1,12 @@
+author: LinOnetwo
+core-version: >=5.1.22
+created: 20200614033700058
+dependents: 
+description: Heavy lifting for new users to set up a powerful and opinionated knowledge management system.
+list: readme description
+modified: 20200614033700058
+name: ItonNote
+plugin-type: plugin
+title: $:/plugins/linonetwo/itonnote
+type: application/json
+version: 0.2.0

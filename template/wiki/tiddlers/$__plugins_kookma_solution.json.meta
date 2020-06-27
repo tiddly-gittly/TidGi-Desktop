@@ -1,0 +1,12 @@
+author: Mohammad Rahmani
+core-version: >=5.1.21
+created: 20200605095934608
+dependents: 
+description: Solution Resource
+list: readme history license
+modified: 20200605095934608
+plugin-type: plugin
+source: https://github.com/kookma/TW-Solution
+title: $:/plugins/kookma/solution
+type: application/json
+version: 1.1.0

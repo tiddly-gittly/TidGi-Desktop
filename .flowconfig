@@ -1,0 +1,15 @@
+[ignore]
+
+[include]
+
+[libs]
+
+[lints]
+
+[options]
+module.name_mapper='^[~]\/\(.*\)$' -> '<PROJECT_ROOT>/app/src/\1'
+module.name_mapper='^constants\/\(.*\)$' -> '<PROJECT_ROOT>/app/src/constants/\1'
+module.name_mapper='^components\/\(.*\)$' -> '<PROJECT_ROOT>/app/src/components/\1'
+module.name_mapper='^libs\/\(.*\)$' -> '<PROJECT_ROOT>/app/libs/\1'
+
+[strict]

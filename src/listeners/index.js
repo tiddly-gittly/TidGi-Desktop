@@ -1,3 +1,4 @@
+import { setWikiCreationMessage } from '../state/dialog-add-workspace/actions';
 import { setPreference } from '../state/preferences/actions';
 import { setSystemPreference } from '../state/system-preferences/actions';
 import { setWorkspace, setWorkspaces } from '../state/workspaces/actions';
@@ -11,20 +12,10 @@ import {
   updateShouldUseDarkColors,
   updateTitle,
 } from '../state/general/actions';
-import {
-  closeFindInPage,
-  openFindInPage,
-  updateFindInPageMatches,
-} from '../state/find-in-page/actions';
-import {
-  updatePauseNotificationsInfo,
-} from '../state/notifications/actions';
+import { closeFindInPage, openFindInPage, updateFindInPageMatches } from '../state/find-in-page/actions';
+import { updatePauseNotificationsInfo } from '../state/notifications/actions';
 import { updateUpdater } from '../state/updater/actions';
-import {
-  getShouldUseDarkColors,
-  requestFindInPage,
-  signalOnlineStatusChanged,
-} from '../senders';
+import { getShouldUseDarkColors, requestFindInPage, signalOnlineStatusChanged } from '../senders';
 
 const loadListeners = (store) => {
   const { ipcRenderer } = window.require('electron');
@@ -36,6 +27,10 @@ const loadListeners = (store) => {
     window.addEventListener('online', handleOnlineOffline);
     window.addEventListener('offline', handleOnlineOffline);
   }
+
+  ipcRenderer.on('create-wiki-result', (event, message) => {
+    store.dispatch(setWikiCreationMessage(message));
+  });
 
   ipcRenderer.on('log', (e, message) => {
     if (message) console.log(message); // eslint-disable-line no-console

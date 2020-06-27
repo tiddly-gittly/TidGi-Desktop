@@ -1,0 +1,9 @@
+{
+    "title": "$:/plugins/dullroar/sitemap",
+    "description": "TiddlyWiki5 plugin to generate sitemap.xml.",
+    "author": "Jim Lehmer",
+    "version": "0.0.2",
+    "core-version": ">=5.0.8",
+    "source": "https://github.com/dullroar/TW5-sitemap",
+    "plugin-type": "plugin"
+}

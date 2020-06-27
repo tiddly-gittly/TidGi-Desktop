@@ -1,0 +1,15 @@
+created: 20150104144500000
+creator: Jim
+modified: 20150104144500000
+modifier: Jim
+tags: static
+title: sitemap
+type: text/vnd.tiddlywiki
+
+\define tv-wikilink-template() #$uri_encoded$
+\define tv-config-toolbar-icons() no
+\define tv-config-toolbar-text() no
+\define tv-config-toolbar-class() tc-btn-invisible
+`<?xml version="1.0" encoding="utf-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">`<$set name="exportFilter" value="[!is[system]!title[Table of Contents]!sort[modifed]]">
+{{RenderSitemap}}</$set>`</urlset>`

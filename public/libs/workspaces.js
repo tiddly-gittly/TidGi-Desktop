@@ -9,6 +9,7 @@ const download = require('download');
 const tmp = require('tmp');
 
 const sendToAllWindows = require('./send-to-all-windows');
+const { stopWiki } = require('./wiki/wiki-worker-mamager');
 
 const v = '14';
 
@@ -164,12 +165,14 @@ const removeWorkspacePicture = (id) => {
 };
 
 const removeWorkspace = (id) => {
+  const { name } = workspaces[id];
+  stopWiki(name);
   delete workspaces[id];
   sendToAllWindows('set-workspace', id, null);
   settings.delete(`workspaces.${v}.${id}`);
 };
 
-const createWorkspace = (name, homeUrl, transparentBackground) => {
+const createWorkspace = (name, isSubWiki, port, homeUrl, transparentBackground) => {
   const newId = uuidv1();
 
   // find largest order
@@ -184,6 +187,8 @@ const createWorkspace = (name, homeUrl, transparentBackground) => {
   const newWorkspace = {
     active: false,
     hibernated: false,
+    isSubWiki,
+    port,
     homeUrl,
     id: newId,
     name,

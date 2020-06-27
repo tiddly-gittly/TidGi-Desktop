@@ -1,16 +1,42 @@
 {
-  "parser": "babel-eslint",
-  "extends": "airbnb",
-  "globals": {
-    "window": true,
-    "document": true
-  },
   "rules": {
+    "unicorn/prevent-abbreviations": [
+      "error",
+      {
+        "whitelist": {
+          "getInitialProps": true,
+          "mapStateToProps": true
+        }
+      }
+    ],
     "import/no-extraneous-dependencies": [2, { "devDependencies": true }],
     "react/jsx-filename-extension": [1, { "extensions": [".js"] }],
     "react/forbid-prop-types": [0],
     "import/prefer-default-export": [0],
     "camelcase": [0],
     "linebreak-style": [0]
+  },
+  "parser": "babel-eslint",
+  "extends": [
+    "airbnb",
+    "airbnb/hooks",
+    "standard",
+    "plugin:flowtype/recommended",
+    "plugin:react/recommended",
+    "plugin:unicorn/recommended",
+    "prettier",
+    "prettier/flowtype",
+    "prettier/react",
+    "prettier/standard",
+    "prettier/unicorn",
+    "plugin:import/errors",
+    "plugin:import/warnings",
+    "plugin:promise/recommended",
+    "plugin:sonarjs/recommended"
+  ],
+  "plugins": ["flowtype", "prettier", "react", "html", "unicorn", "import", "react-hooks", "jsx-a11y", "sonarjs"],
+  "globals": {
+    "window": true,
+    "document": true
   }
 }

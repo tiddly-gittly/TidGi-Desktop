@@ -1,0 +1,292 @@
+{
+    "tiddlers": {
+        "$:/plugins/kookma/utility/author/author-tools": {
+            "title": "$:/plugins/kookma/utility/author/author-tools",
+            "created": "20190912082519234",
+            "key": "((author-tools))",
+            "modified": "20200316130508400",
+            "tags": "$:/tags/KeyboardShortcut",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<$action-sendmessage $message=\"tm-modal\" $param=\"$:/plugins/kookma/utility/author/modal\" />"
+        },
+        "$:/plugins/kookma/utility/author/exclude-items": {
+            "title": "$:/plugins/kookma/utility/author/exclude-items",
+            "caption": "Exclude items",
+            "created": "20200313124437263",
+            "modified": "20200322115519909",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define showItems(label, filter)\n<h2>$label$</h2>\n<$list filter=<<__filter__>> >\n<$checkbox tiddler=<<currentTiddler>> tag=\"excluded\"/>&nbsp;<$link to=<<currentTiddler>>><$text text=<<currentTiddler>>/></$link><br>\n</$list>\n\\end\n<!-- drag and drop -->\n<<showItems label:\"Disable drag and drop\" filter:\"[title[$:/config/DragAndDrop/Enable]]\">>\n<!-- side bar items -->\n<<showItems label:\"Sidebar tabs\" filter:\"[all[shadows+tiddlers]]+[tag[$:/tags/SideBar]]\">>\n<!-- viewtoolbar items -->\n<<showItems label:\"View toolbars\" filter:\"[all[shadows+tiddlers]prefix[$:/config/ViewToolbarButtons/Visibility]]\">>\n<!-- Page controls -->\n<<showItems label:\"Page controls\" filter:\"[all[shadows+tiddlers]prefix[$:/config/PageControlButtons/Visibility]]\">>\n<$list filter=\"\">"
+        },
+        "$:/plugins/kookma/utility/author/individual-items": {
+            "title": "$:/plugins/kookma/utility/author/individual-items",
+            "caption": "Hide individual UI element",
+            "created": "20200313141533701",
+            "modified": "20200322130601872",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Select individual items to hide in reader mode.\n\n! Site options\n<$checkbox tiddler=\"$:/core/ui/SideBarSegments/site-title\" tag=\"$:/tags/SideBarSegment\"/> Show site title<br/>\n<$checkbox tiddler=\"$:/core/ui/SideBarSegments/site-subtitle\" tag=\"$:/tags/SideBarSegment\"/> Show site subtitle<br/>\n<$checkbox tiddler=\"$:/core/ui/SideBarSegments/page-controls\" tag=\"$:/tags/SideBarSegment\"/> Show page controls<br/>\n\n! Right sidebar elements\n<$checkbox tiddler=\"$:/core/ui/TopBar/menu\" tag=\"$:/tags/TopRightBar\"/> Show right sidebar toggle button<br/>\n<$checkbox tiddler=\"$:/core/ui/SideBarSegments/search\" tag=\"$:/tags/SideBarSegment\"/> Show search bar<br/>\n<$checkbox tiddler=\"$:/core/ui/SideBarSegments/tabs\" tag=\"$:/tags/SideBarSegment\"/> Show sidebar tabs<br/>\n<!-- reserved\n<$checkbox tiddler=\"$:/config/custom-segment\" tag=\"$:/tags/SideBarSegment\"/> Show custom menu -->\n\n! Sidebar tabs\n<$checkbox tiddler=\"$:/core/ui/SideBar/Open\" tag=\"$:/tags/SideBar\"/> Show Open tab<br/>\n<$checkbox tiddler=\"$:/core/ui/SideBar/Recent\" tag=\"$:/tags/SideBar\"/> Show Recent tab<br/>\n<$checkbox tiddler=\"$:/core/ui/SideBar/Tools\" tag=\"$:/tags/SideBar\"/> Show Tools tab<br/>\n<$checkbox tiddler=\"$:/core/ui/SideBar/More\" tag=\"$:/tags/SideBar\"/> Show More tab<br/>\n\n! Tiddler options\n<$checkbox tiddler=\"$:/config/ViewToolbarButtons/Visibility/$:/core/ui/Buttons/edit\" field=text checked=show unchecked=hide default=show /> Show edit button in the tiddler toolbar<br/>\n<$checkbox tiddler=\"$:/config/ViewToolbarButtons/Visibility/$:/core/ui/Buttons/close\" field=text checked=show unchecked=hide default=show /> Show close button in the tiddler toolbar<br/>\n<$checkbox tiddler=\"$:/config/ViewToolbarButtons/Visibility/$:/core/ui/Buttons/more-tiddler-actions\" field=text checked=show unchecked=hide default=show /> Show more actions button in the tiddler toolbar\n\n! Other items\n<$checkbox tiddler=\"$:/config/DragAndDrop/Enable\" field=text checked=no unchecked=yes default=yes /> Disable page dropzone\n"
+        },
+        "$:/plugins/kookma/utility/author/modal": {
+            "title": "$:/plugins/kookma/utility/author/modal",
+            "created": "20190912073245120",
+            "modified": "20200316124818329",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<<tabs tabsList:\"$:/plugins/kookma/utility/author/tools $:/plugins/kookma/utility/author/individual-items\" default:\"$:/plugins/kookma/utility/author/tools\">>"
+        },
+        "$:/plugins/kookma/utility/author/switch-author": {
+            "title": "$:/plugins/kookma/utility/author/switch-author",
+            "created": "20200315203327216",
+            "key": "((switch-author))",
+            "modified": "20200316130423198",
+            "tags": "$:/tags/KeyboardShortcut",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\import $:/plugins/kookma/utility/author/tools\n\n<$reveal type=nomatch state=<<configTid>> text=\"\">\n<<unhide-elements>>\n</$reveal>\n<$reveal type=match state=<<configTid>> text=\"\" default=\"\">\n<<hide-elements>>\n</$reveal>"
+        },
+        "$:/plugins/kookma/utility/author/tools": {
+            "title": "$:/plugins/kookma/utility/author/tools",
+            "caption": "Hide bulk of UI elements",
+            "created": "20200313111922410",
+            "modified": "20200322160845236",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define configTid() $:/config/utility/author\n\\define add-remove-tag(msg:\"\", tag:\"\")\n<$fieldmangler><!--msg: tm-add-tag tm-remove-tag-->\n<$action-sendmessage $message=\"$msg$\" $param=\"$tag$\"/>\n</$fieldmangler>\n\\end\n\n\\define hide-elements()\n<!-- hide side bar items -->\n<$list filter=\"[all[shadows+tiddlers]tag[$:/tags/SideBar]!tag[excluded]]\">\n<$action-setfield $tiddler=<<configTid>> $index=<<currentTiddler>> $value=\"$:/tags/SideBar\"/>\n<$macrocall $name=\"add-remove-tag\" msg=\"tm-remove-tag\" tag=\"$:/tags/SideBar\"/>\n</$list>\n<!-- hide view toolbars -->\n<$list filter=\"[all[shadows+tiddlers]prefix[$:/config/ViewToolbarButtons/Visibility]!tag[excluded]]\">\n<$reveal type=match stateTitle=<<currentTiddler>> stateField=\"text\" text=\"show\">\n<$action-setfield $tiddler=<<configTid>> $index=<<currentTiddler>> $value=\"show\"/>\n<$action-setfield $tiddler=<<currentTiddler>> $field=\"text\" $value=\"hide\"/>\n</$reveal>\n</$list>\n<!-- hide page controls -->\n<$list filter=\"[all[shadows+tiddlers]prefix[$:/config/PageControlButtons/Visibility]!tag[excluded]]\">\n<$reveal type=match stateTitle=<<currentTiddler>> stateField=\"text\" text=\"show\">\n<$action-setfield $tiddler=<<configTid>> $index=<<currentTiddler>> $value=\"show\"/>\n<$action-setfield $tiddler=<<currentTiddler>> $field=\"text\" $value=\"hide\"/>\n</$reveal>\n</$list>\n<!-- disable dropzone -->\n<$list filter=\"[[$:/config/DragAndDrop/Enable]!tag[excluded]]\" variable=ignore>\n<$action-setfield $tiddler=\"$:/config/DragAndDrop/Enable\" $field=\"text\" $value=\"no\"/>\n</$list>\n\\end\n\n\\define unhide-elements()\n<!-- Revert view toolbar and page controls -->\n<$list filter=\"[<configTid>indexes[]]\">\n<$reveal type=match stateTitle=<<configTid>> stateIndex=<<currentTiddler>> text=\"show\">\n<$action-setfield $tiddler=<<currentTiddler>> $field=\"text\" $value=\"show\"/>\n</$reveal>\n</$list>\n<!-- Revert sidebar tabs -->\n<$list filter=\"[<configTid>indexes[]]\">\n<$reveal type=match stateTitle=<<configTid>> stateIndex=<<currentTiddler>> text=\"$:/tags/SideBar\">\n<$macrocall $name=\"add-remove-tag\" msg=\"tm-add-tag\" tag=\"$:/tags/SideBar\"/>\n</$reveal>\n</$list>\n<!-- delete the configTid -->\n<$action-deletetiddler $tiddler=<<configTid>>/>\n<!-- enable dropzone -->\n<$list filter=\"[[$:/config/DragAndDrop/Enable]!tag[excluded]]\" variable=ignore>\n<$action-deletetiddler $tiddler=\"$:/config/DragAndDrop/Enable\"/>\n</$list>\n\\end\n\n<$reveal type=nomatch state=<<configTid>> text=\"\">\n<$button actions=<<unhide-elements>> tooltip=\"Unhide UI elements\">Author mode</$button>\n</$reveal>\n<$reveal type=match state=<<configTid>> text=\"\" default=\"\">\n<$button actions=<<hide-elements>> tooltip=\"Hide UI elements\">Reader mode</$button>\n</$reveal>\n<small><ul>\n<li>Author mode: all UI elements are visible</li>\n<li>Redaer mode: all UI elements are hidden except those excluded</li>\n</ul></small>\n<$reveal type=match state=<<configTid>> text=\"\" default=\"\">\n<details>\n<summary>Select items to be excluded</summary>\n<div style=\"padding-left:30px\">{{$:/plugins/kookma/utility/author/exclude-items}}\n</div>\n</details>\n</$reveal>"
+        },
+        "$:/plugins/kookma/utility/config/reveal-tags": {
+            "title": "$:/plugins/kookma/utility/config/reveal-tags",
+            "created": "20200123085623608",
+            "modified": "20200123200112351",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": ""
+        },
+        "$:/config/ShortcutInfo/author-tools": {
+            "title": "$:/config/ShortcutInfo/author-tools",
+            "created": "20190912083358612",
+            "modified": "20200316123519558",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Show Author tools dialog"
+        },
+        "$:/config/ShortcutInfo/switch-author": {
+            "title": "$:/config/ShortcutInfo/switch-author",
+            "created": "20200315203528401",
+            "modified": "20200316123455880",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Toggle the author-reader mode"
+        },
+        "$:/config/shortcuts/author-tools": {
+            "title": "$:/config/shortcuts/author-tools",
+            "created": "20191121050813703",
+            "modified": "20200316123531677",
+            "type": "text/vnd.tiddlywiki",
+            "text": "ctrl-alt-A"
+        },
+        "$:/config/shortcuts/switch-author": {
+            "title": "$:/config/shortcuts/switch-author",
+            "created": "20200315203409995",
+            "modified": "20200316123545221",
+            "type": "text/vnd.tiddlywiki",
+            "text": "ctrl+alt+L"
+        },
+        "$:/plugins/kookma/utility/history": {
+            "title": "$:/plugins/kookma/utility/history",
+            "created": "20190930044127683",
+            "modified": "20200403062039433",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "* ''2.1.2'' -- 2020.04.03 -- page control button issue fixed\n* ''2.1.1'' -- 2020.03.25 -- page control button improved and minor issues in css fixed\n* ''2.1.0'' -- 2020.03.23 -- new transclusion output for fields macro and disable drag and drop globally\n* ''2.0.0'' -- 2020.03.16 -- new author-reader mode switch\n* ''1.8.0'' -- 2020.03.13 -- admin panel added\n* ''1.7.0'' -- 2020.02.23 -- show tiddler raw content including the macros on demand\n* ''1.0.0'' -- 2019.10.13 -- stable release\n* ''0.5.0'' -- 2019.10.10 -- first beta release"
+        },
+        "$:/plugins/kookma/utility/images/view-fields.svg": {
+            "title": "$:/plugins/kookma/utility/images/view-fields.svg",
+            "created": "20181010193706723",
+            "modified": "20200123200937680",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<svg xmlns=\"http://www.w3.org/2000/svg\" class=\"tc-image-button tc-image-view-fields\" width=\"22pt\" height=\"22pt\" viewBox=\"0 0 24 24\"><path d=\"M0 0h24v24H0z\" fill=\"none\"/><path d=\"M7 11H1v2h6v-2zm2.17-3.24L7.05 5.64 5.64 7.05l2.12 2.12 1.41-1.41zM13 1h-2v6h2V1zm5.36 6.05l-1.41-1.41-2.12 2.12 1.41 1.41 2.12-2.12zM17 11v2h6v-2h-6zm-5-2c-1.66 0-3 1.34-3 3s1.34 3 3 3 3-1.34 3-3-1.34-3-3-3zm2.83 7.24l2.12 2.12 1.41-1.41-2.12-2.12-1.41 1.41zm-9.19.71l1.41 1.41 2.12-2.12-1.41-1.41-2.12 2.12zM11 23h2v-6h-2v6z\"/></svg>"
+        },
+        "$:/language/Buttons/Utility/Caption": {
+            "title": "$:/language/Buttons/Utility/Caption",
+            "created": "20190930171340202",
+            "modified": "20191111154125886",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "show fields"
+        },
+        "$:/language/Buttons/Utility/Hint": {
+            "title": "$:/language/Buttons/Utility/Hint",
+            "created": "20190930171301401",
+            "modified": "20191111154125882",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Show fields"
+        },
+        "$:/plugins/kookma/utility/license": {
+            "title": "$:/plugins/kookma/utility/license",
+            "created": "20190930044127683",
+            "modified": "20200325141629992",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "Distributed under an MIT license.\n\nCopyright (c) 2019-2020 [[Mohammad Rahmani|https://github.com/kookma]]\n\n<<<\nPermission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation files (the \"Software\"), to deal in the Software without restriction, including without limitation the rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to whom the Software is furnished to do so, subject to the following conditions:\n\nThe above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.\n\nTHE SOFTWARE IS PROVIDED \"AS IS\", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.\n<<<\n"
+        },
+        "$:/plugins/kookma/utility/macro/doc-svg": {
+            "title": "$:/plugins/kookma/utility/macro/doc-svg",
+            "created": "20190722141637145",
+            "modified": "20200123200937669",
+            "tags": "$:/tags/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define doc-svg(tiddler:\"\", color:\"\")\n<span class=\"kk-doc\" style=\"fill:$color$;\"><$transclude tiddler=<<__tiddler__>> /></span>\n\\end"
+        },
+        "$:/plugins/kookma/utility/macro/find": {
+            "title": "$:/plugins/kookma/utility/macro/find",
+            "created": "20181213121411187",
+            "modified": "20200325124037811",
+            "tags": "$:/tags/Macro",
+            "type": "application/x-tiddler",
+            "text": "\\define find(text, begin, end, output:\"simple\", mode:\"all\")\n<$vars \n  fulltext=<<__text__>>\n  start=<<__begin__>>\n  stop=<<__end__>>\n  output-macro=<<__output__>>\n>\n<$list variable=\"p1\" filter=\"[<fulltext>splitbefore<start>]\">\n<$list variable=\"p2\" filter=\"[<fulltext>removeprefix<p1>]\">\n<$list variable=\"p3\" filter=\"[<p2>splitbefore<stop>removesuffix<stop>]\">\n<$macrocall $name=<<output-macro>> p=<<p3>> />\n<$reveal type=\"match\" text=\"all\" default=<<__mode__>> >\n<$macrocall $name=\"find\"\n  text={{{[<p2>removeprefix<p3>removeprefix<stop>]}}}\n  begin=<<start>>\n  end=<<stop>>\n  output=<<output-macro>>\n/>\n</$reveal>\n</$list>\n</$list>\n</$list>\n</$vars>\n\\end\n\n\\define simple(p)\n<$text text=<<__p__>> />\n\\end\n\n\\define simple-list(p)\n<li><$text text=<<__p__>>/></li>\n\\end\n\n\n!! Summary\n* `find` is a macro to search a text and find all snippets delimited between values of `begin` and `end` delimiters\n* `simple` is a macro used by `find` to show the output in a simple format\n* `simple-list` is a macro used by `find` to show the output in a simple list format. The ordered and unordered list\ncan be used if the call to `find` macro wrapped in a `div` with suitable type e.g `ol` or `ul`."
+        },
+        "$:/plugins/kookma/utility/macro/lorem": {
+            "title": "$:/plugins/kookma/utility/macro/lorem",
+            "author": "Jeremy Ruston",
+            "created": "20190316214433792",
+            "description": "creates few paragraphs of dumy text",
+            "modified": "20200123200937645",
+            "tags": "$:/tags/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define .lorem(np:1)\n<$list filter=\"[range[1,$np$]]\" variable=null>\nLorem ipsum dolor sit amet, consectetur adipisicing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.\n<$list filter=\"[<__np__>!match[1]]\"><p/></$list>\n</$list>\n\\end"
+        },
+        "$:/plugins/kookma/utility/macro/show-macro": {
+            "title": "$:/plugins/kookma/utility/macro/show-macro",
+            "created": "20190317174614898",
+            "description": "This is a customized version of `show-macro` used in TW-Yazd. This macro is used to display the macro codes in specified place.",
+            "modified": "20200123200937632",
+            "tags": "$:/tags/Macro",
+            "type": "application/x-tiddler",
+            "text": "\\define disp-macro-contents(p)\n<pre>\\define<$text text=<<__p__>> />\\end</pre>\n\\end\n\n\\define show-macro(tiddler)\n<$set name=selected-tiddler value=\"$tiddler$\" emptyValue=<<currentTiddler>> >\n<$macrocall $name='find'\n  text={{{[<selected-tiddler>get[text]]}}}\n  begin=\"\\define\"\n  end=\"\\end\"\n  output=\"disp-macro-contents\"/>\n\\end"
+        },
+        "$:/plugins/kookma/utility/macro/simple-navigation": {
+            "title": "$:/plugins/kookma/utility/macro/simple-navigation",
+            "created": "20190823062102008",
+            "description": "create a new tiddler tagged with $:/tags/Viewtemplate and call simple-navigation with desired tag",
+            "modified": "20200126151115600",
+            "tags": "$:/tags/Macro",
+            "type": "application/x-tiddler",
+            "text": "\\define simple-navigation(tag:\"demo\", class, close:\"no\")\n<$list filter=\"[all[current]tag[$tag$]]\">\n<div class=\"$class$\">\n<$list filter=\"[tag[$tag$]before<currentTiddler>]\" variable=\"prevTiddler\">\n<$button to=<<prevTiddler>> tooltip=<<prevTiddler>> class=\"tc-btn-invisible $class$\">previous\n<$list filter=\"[<__close__>match[yes]]\" variable=ignore><$action-sendmessage $message=\"tm-close-tiddler\" $param=<<currentTiddler>>/></$list>\n</$button>\n</$list>\n<$list filter=\"[tag[$tag$]after<currentTiddler>] [tag[$tag$]before<currentTiddler>] +[count[]] -1\" variable=ignore>|</$list>\n<$list filter=\"[tag[$tag$]after<currentTiddler>]\" variable=\"nextTiddler\">\n<$button to=<<nextTiddler>> tooltip=<<nextTiddler>> class=\"tc-btn-invisible $class$\">next\n<$list filter=\"[<__close__>match[yes]]\" variable=ignore><$action-sendmessage $message=\"tm-close-tiddler\" $param=<<currentTiddler>>/></$list>\n</$button>\n</$list>\n</div>\n</$list>\n\\end"
+        },
+        "$:/plugins/kookma/utility/macro/transclusion": {
+            "title": "$:/plugins/kookma/utility/macro/transclusion",
+            "created": "20190930050545887",
+            "modified": "20200324201449425",
+            "tags": "$:/tags/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define code(tiddler)\n<$set name=selected-tiddler value=\"$tiddler$\" emptyValue=<<currentTiddler>> >\n<$codeblock language={{{[<selected-tiddler>get[type]]}}} code={{{[<selected-tiddler>get[text]]}}}/>\n</$set>\n\\end\n\n\\define code-link(tiddler)\n<$set name=selected-tiddler value=\"$tiddler$\" emptyValue=<<currentTiddler>> >\n<$link to=<<selected-tiddler>>/>\n<$codeblock language={{{[<selected-tiddler>get[type]]}}} code={{{[<selected-tiddler>get[text]]}}}/>\n</$set>\n\\end\n\n\\define content(tiddler)\n<$set name=selected-tiddler value=\"$tiddler$\" emptyValue=<<currentTiddler>> >\n<$link to=<<selected-tiddler>>/>\n<$transclude tiddler=<<selected-tiddler>> mode=\"block\"/>\n</$set>\n\\end\n\n\\define fields(tiddler)\n<style>\n/*Borderless table*/\n.kk-utility-tbl-borderless, \n.kk-utility-tbl-borderless tr,\n.kk-utility-tbl-borderless td{border:0;}\n</style>\n<$set name=selected-tiddler value=\"$tiddler$\" emptyValue=<<currentTiddler>> >\n<$link to=<<selected-tiddler>>/>\n<$list filter='[<selected-tiddler>fields[]] -[enlist[text title created modified tags creator modifier]] +[limit[1]]' variable=\"ignore\"><!--check if there is any user field -->\n<table class=\"kk-utility-tbl-borderless\">\n<$list filter='[<selected-tiddler>fields[]] -[enlist[text title created modified tags creator modifier]]' variable=\"fld\">\n<tr><td style=\"text-align:right\"><<fld>>:</td><td><$text text={{{[<selected-tiddler>get<fld>]}}}/></td></tr>\n</$list>\n</table>\n</$list>\n</$set>\n\\end\n\n\\define description(tiddler)\n<$set name=selected-tiddler value=\"$tiddler$\" emptyValue=<<currentTiddler>> >\n<dl><dt><$link to=<<selected-tiddler>>/></dt><dd><$transclude tiddler=<<selected-tiddler>> field=\"description\"/></dd></dl>\n</$set>\n\\end"
+        },
+        "$:/plugins/kookma/utility/macro/unique-id": {
+            "title": "$:/plugins/kookma/utility/macro/unique-id",
+            "author": "Jeremy Ruston",
+            "created": "20200210134515855",
+            "description": "creates a unique id for permanent state tiddler",
+            "modified": "20200210134635362",
+            "tags": "$:/tags/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define create_id_from_timedata(prefix) $prefix$-<<now [UTC]YYYY0MM0DD0hh0mm0ssXXX>>\n\n\\define unique-id(prefix:id)\n<$wikify name=id text=<<create_id_from_timedata \"\"\"$prefix$\"\"\">>  >\n<$button tooltip=\"create unique id\" class=\"tc-btn-invisible\" message=\"tm-copy-to-clipboard\" param=<<id>> >{{$:/core/images/copy-clipboard}} \n</$button> <$text text=<<id>>/>\n</$wikify>\n\\end\n"
+        },
+        "$:/plugins/kookma/utility/macro/wikitext-macros": {
+            "title": "$:/plugins/kookma/utility/macro/wikitext-macros",
+            "created": "20150117184156000",
+            "modified": "20200123200937571",
+            "tags": "$:/tags/Macro",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define wikitext-example(src)\n<div class=\"doc-example\">\n\n<$macrocall $name=\"copy-to-clipboard-above-right\" src=<<__src__>>/>\n\n```\n$src$\n```\n\nThat renders as:\n\n$src$\n\n... and the underlying HTML is:\n\n$$$text/vnd.tiddlywiki>text/html\n$src$\n$$$\n</div>\n\\end\n\n\\define wikitext-example-without-html(src)\n<div class=\"doc-example\">\n\n<$macrocall $name=\"copy-to-clipboard-above-right\" src=<<__src__>>/>\n\n```\n$src$\n```\n\nThat renders as:\n\n$src$\n</div>\n\\end\n<!--\n; Credit\n:Jeremy Ruston TW 5.1.18\n\nThe wiki-text macros are set of macro for documenting TW codes.\n-->"
+        },
+        "$:/plugins/kookma/utility/pagecontrol/view-fields-button": {
+            "title": "$:/plugins/kookma/utility/pagecontrol/view-fields-button",
+            "caption": "{{$:/plugins/kookma/utility/images/view-fields.svg}} {{$:/language/Buttons/Utility/Caption}}",
+            "created": "20181010190533135",
+            "description": "Show a toggle button for view fields",
+            "modified": "20200403115112475",
+            "tags": "$:/tags/PageControls",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define viewtemplateTid() $:/plugins/kookma/utility/viewtemplate/view-fields\n\\define fldshowstateTid() $:/keepstate/utility/toggle-view-fields\n\n\\define show-fields-button()\n\\whitespace trim\n\n<$reveal type=\"nomatch\" state=<<fldshowstateTid>> text=\"show\">\n  <$button set=<<fldshowstateTid>> setTo=\"show\" \n\t         tooltip={{$:/language/Buttons/Utility/Hint}} \n\t\t\t\t\t aria-label={{$:/language/Buttons/Utility/Caption}} \n\t\t\t\t\t class=<<tv-config-toolbar-class>> >\n    <<disp-on-pagecontrols>>\n    <$action-setfield $tiddler=<<viewtemplateTid>> tags=\"$:/tags/ViewTemplate\"/>\n  </$button>\n</$reveal>\n\n<$reveal type=\"match\" state=<<fldshowstateTid>> text=\"show\">\n  <$button set=<<fldshowstateTid>> setTo=\"hide\" \n           tooltip={{$:/language/Buttons/Utility/Hint}} \n\t\t\t\t   aria-label={{$:/language/Buttons/Utility/Caption}} \n\t\t\t\t   class=\"\"\"$(tv-config-toolbar-class)$ tc-selected\"\"\">\n     <<disp-on-pagecontrols>>\n     <$action-setfield $tiddler=<<viewtemplateTid>> tags=\"\"/>\n  </$button>\n</$reveal>\n\\end\n\n\\define disp-on-pagecontrols() \n<$list filter=\"[<tv-config-toolbar-icons>prefix[yes]]\">\n{{$:/plugins/kookma/utility/images/view-fields.svg}}  \n</$list>\n<$list filter=\"[<tv-config-toolbar-text>prefix[yes]]\">\n<span class=\"tc-btn-text\"><$text text={{$:/language/Buttons/Utility/Caption}}/></span>\n</$list>\n\\end\n\n\n<<show-fields-button>>"
+        },
+        "$:/plugins/kookma/utility/readme": {
+            "title": "$:/plugins/kookma/utility/readme",
+            "created": "20190930044127683",
+            "modified": "20200322194049962",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "; Utility plugin\nThe utility plugin objective is to provide set of tools for developers and authors. These tools includes simple transclusions, show raw contents of tiddlers, author tools, wikitext macros, show fields in view mode, ...\n\n; Code and demo\nFor learning plugin features, syntax, tutorial and examples see the plugin demo and code pages\n\n* Demo: https://kookma.github.io/TW-Utility/\n* Code: https://github.com/kookma/TW-Utility\n"
+        },
+        "$:/plugins/kookma/utility/snippet/macrocall-wikitext-example": {
+            "title": "$:/plugins/kookma/utility/snippet/macrocall-wikitext-example",
+            "caption": "Wikitext-example macrocall",
+            "created": "20181023161605661",
+            "modified": "20200123200937811",
+            "tags": "$:/tags/TextEditor/Snippet",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<$macrocall $name=\"wikitext-example-without-html\" \nsrc=\"\"\"\n\"\"\"/>"
+        },
+        "$:/plugins/kookma/utility/snippet/wikitext-macro": {
+            "title": "$:/plugins/kookma/utility/snippet/wikitext-macro",
+            "caption": "Wikitext-example",
+            "created": "20181007154126921",
+            "modified": "20200123200937797",
+            "tags": "$:/tags/TextEditor/Snippet",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<<wikitext-example-without-html \nsrc:\"\"\"\n\"\"\">>"
+        },
+        "$:/plugins/kookma/utility/styles/doc-svg": {
+            "title": "$:/plugins/kookma/utility/styles/doc-svg",
+            "text": ".kk-doc svg{\nwidth: 1.2em;\nheight: 1.2em;\nvertical-align: middle;}\n\n.kk-ut-txt{\nmin-width:50%}",
+            "created": "20190722142023425",
+            "modified": "20200322091202744",
+            "tags": "$:/tags/Stylesheet",
+            "type": "text/css"
+        },
+        "$:/plugins/kookma/utility/styles/tw-version": {
+            "title": "$:/plugins/kookma/utility/styles/tw-version",
+            "text": "<pre>/* TW-version added to site title */\n.tc-site-title:before {\n  content:\"TW <<version>>\";\n  position:absolute;\n  margin-top:-1.9em;\n  color:silver;\n  font-size:13px;\n}\n</pre>",
+            "created": "20180906042308596",
+            "modified": "20200325164200123",
+            "tags": "$:/tags/Stylesheet",
+            "type": "text/vnd.tiddlywiki"
+        },
+        "$:/plugins/kookma/utility/styles/wikitext-macro": {
+            "title": "$:/plugins/kookma/utility/styles/wikitext-macro",
+            "text": ".doc-example { margin: 1em 0; padding: 0.8em 0; } .doc-example:hover { background-color: #f7f7f9; } .doc-example ul { margin-bottom: 0; padding-bottom: 0; margin-top: 0.2em; } .doc-example pre:first-child { margin-top: 0; } .doc-example-result { border-left: 5px solid #bbb; border-right: 5px solid #bbb; margin-left: 0; margin-right: 0; padding: 0 10px; } .doc-example-result ul { margin-left: 0; padding-left: 10px; } .doc-example-result ol { margin-left: 0; padding-left: 20px; }",
+            "created": "20180909042646908",
+            "modified": "20200325141241379",
+            "tags": "$:/tags/Stylesheet",
+            "type": "text/css"
+        },
+        "$:/plugins/kookma/utility/ui/ControlPanel/Settings": {
+            "title": "$:/plugins/kookma/utility/ui/ControlPanel/Settings",
+            "caption": "Utility",
+            "created": "20190930212747824",
+            "list-after": "$:/core/ui/ControlPanel/Settings/TiddlyWiki",
+            "modified": "20200322091210028",
+            "tags": "$:/tags/ControlPanel/SettingsTab $:/tags/MoreSideBar",
+            "type": "text/vnd.tiddlywiki",
+            "text": "These settings let you customise the behaviour of Utility plugin.\n\n---\n\n;Show Utility setting in more sidebar\n:<$checkbox tiddler=\"$:/plugins/kookma/utility/ui/ControlPanel/Settings\" tag=\"$:/tags/MoreSideBar\"> Show setting in more sidebar</$checkbox>\n\n;Options\n:<$checkbox tiddler=\"$:/plugins/kookma/utility/pagecontrol/view-fields-button\" tag=\"$:/tags/PageControls\"> Enable show fields</$checkbox>\n:<$checkbox tiddler=\"$:/plugins/kookma/utility/styles/tw-version\" tag=\"$:/tags/Stylesheet\"> Show the Tiddlywiki version badge</$checkbox>\n:<$checkbox tiddler=\"$:/plugins/kookma/utility/viewtemplate/display-tiddler-raw-content\" tag=\"$:/tags/ViewTemplate\"> Display the tiddler raw content</$checkbox><div style=\"padding-left:18px;\">\n<$list filter=\"[[$:/plugins/kookma/utility/viewtemplate/display-tiddler-raw-content]tags[]search[$:/tags/ViewTemplate]]\" variable=ignore>\nFilters to reveal tiddlers content &nbsp; <$edit-text tiddler=\"$:/plugins/kookma/utility/config/reveal-tags\" field=\"text\" tag=input defualt=\"\" placeholder=\"enter a filter e.g. [tag[myTag]] \" class=\"kk-ut-txt\"/>\n</$list></div>\n\n"
+        },
+        "$:/plugins/kookma/utility/viewtemplate/display-tiddler-raw-content": {
+            "title": "$:/plugins/kookma/utility/viewtemplate/display-tiddler-raw-content",
+            "created": "20181212041419278",
+            "description": "this view template displays the content of global macro tiddlers",
+            "modified": "20200126142626441",
+            "tags": "$:/tags/ViewTemplate",
+            "type": "text/vnd.tiddlywiki",
+            "text": "<$set name=\"revealFilters\" tiddler=\"$:/plugins/kookma/utility/config/reveal-tags\" field=text>\n<$list filter=\"[all[current]tag[show-content]]\n  [all[current]tag[$:/tags/EditTemplate]]\n  [all[current]tag[$:/tags/ViewTemplate]] \n  [all[current]tag[$:/tags/Macro]]\n  [all[current]subfilter<revealFilters>] +[limit[1]]\">\n<$codeblock code={{!!text}} language=\"xml\" />\n</$list>\n</$set>\n\n"
+        },
+        "$:/plugins/kookma/utility/viewtemplate/view-fields": {
+            "title": "$:/plugins/kookma/utility/viewtemplate/view-fields",
+            "created": "20181010162537613",
+            "description": "Toggle field handling in view mode",
+            "list-after": "$:/core/ui/ViewTemplate/tags",
+            "modified": "20200403082439483",
+            "tags": "",
+            "type": "text/vnd.tiddlywiki",
+            "text": "\\define lingo-base() $:/language/EditTemplate/\n\\define config-title()\n$:/config/EditTemplateFields/Visibility/$(currentField)$\n\\end\n\n\\define config-filter()\n[[hide]] -[title{$(config-title)$}]\n\\end\n\n\\define new-field()\n<$vars name={{$:/temp/newfieldname}}>\n<$reveal type=\"nomatch\" text=\"\" default=<<name>>>\n<$button>\n<$action-sendmessage $message=\"tm-add-field\"\n$name=<<name>>\n$value={{$:/temp/newfieldvalue}}/>\n<$action-deletetiddler $tiddler=\"$:/temp/newfieldname\"/>\n<$action-deletetiddler $tiddler=\"$:/temp/newfieldvalue\"/>\n<<lingo Fields/Add/Button>>\n</$button>\n</$reveal>\n<$reveal type=\"match\" text=\"\" default=<<name>>>\n<$button>\n<<lingo Fields/Add/Button>>\n</$button>\n</$reveal>\n</$vars>\n\\end\n\n<div class=\"tc-edit-fields\">\n<table class=\"tc-edit-fields\">\n<tbody>\n<$list filter=\"[all[current]fields[]] +[sort[title]]\" variable=\"currentField\">\n<$list filter=<<config-filter>> variable=\"temp\">\n<tr class=\"tc-edit-field\">\n<td class=\"tc-edit-field-name\">\n<$text text=<<currentField>>/>:</td>\n<td class=\"tc-edit-field-value\">\n<$edit-text tiddler=<<currentTiddler>> field=<<currentField>> placeholder={{$:/language/EditTemplate/Fields/Add/Value/Placeholder}}/>\n</td>\n<td class=\"tc-edit-field-remove\">\n<$button class=\"tc-btn-invisible\" tooltip={{$:/language/EditTemplate/Field/Remove/Hint}} aria-label={{$:/language/EditTemplate/Field/Remove/Caption}}>\n<$action-deletefield $field=<<currentField>>/>\n{{$:/core/images/delete-button}}\n</$button>\n</td>\n</tr>\n</$list>\n</$list>\n</tbody>\n</table>\n</div>\n\n<$fieldmangler>\n<div class=\"tc-edit-field-add\">\n<em class=\"tc-edit\">\n<<lingo Fields/Add/Prompt>>\n</em>\n<span class=\"tc-edit-field-add-name\">\n<$edit-text tiddler=\"$:/temp/newfieldname\" tag=\"input\" default=\"\" placeholder={{$:/language/EditTemplate/Fields/Add/Name/Placeholder}} focusPopup=<<qualify \"$:/state/popup/field-dropdown\">> class=\"tc-edit-texteditor tc-popup-handle\"/>\n</span>\n<$button popup=<<qualify \"$:/state/popup/field-dropdown\">> class=\"tc-btn-invisible tc-btn-dropdown\" tooltip={{$:/language/EditTemplate/Field/Dropdown/Hint}} aria-label={{$:/language/EditTemplate/Field/Dropdown/Caption}}>{{$:/core/images/down-arrow}}</$button>\n<$reveal state=<<qualify \"$:/state/popup/field-dropdown\">> type=\"nomatch\" text=\"\" default=\"\">\n<div class=\"tc-block-dropdown tc-edit-type-dropdown\">\n<$linkcatcher to=\"$:/temp/newfieldname\">\n<div class=\"tc-dropdown-item\">\n<<lingo Fields/Add/Dropdown/User>>\n</div>\n<$list filter=\"[!is[shadow]!is[system]fields[]search:title{$:/temp/newfieldname}sort[]] -created -creator -draft.of -draft.title -modified -modifier -tags -text -title -type\"  variable=\"currentField\">\n<$link to=<<currentField>>>\n<<currentField>>\n</$link>\n</$list>\n<div class=\"tc-dropdown-item\">\n<<lingo Fields/Add/Dropdown/System>>\n</div>\n<$list filter=\"[fields[]search:title{$:/temp/newfieldname}sort[]] -[!is[shadow]!is[system]fields[]]\" variable=\"currentField\">\n<$link to=<<currentField>>>\n<<currentField>>\n</$link>\n</$list>\n</$linkcatcher>\n</div>\n</$reveal>\n<span class=\"tc-edit-field-add-value\">\n<$edit-text tiddler=\"$:/temp/newfieldvalue\" tag=\"input\" default=\"\" placeholder={{$:/language/EditTemplate/Fields/Add/Value/Placeholder}} class=\"tc-edit-texteditor\"/>\n</span>\n<span class=\"tc-edit-field-add-button\">\n<$macrocall $name=\"new-field\"/>\n</span>\n</div>\n</$fieldmangler>\n"
+        }
+    }
+}

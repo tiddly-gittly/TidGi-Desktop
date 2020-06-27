@@ -1,0 +1,6 @@
+{
+  "title": "$:/plugins/linonetwo/prevent-edit",
+  "description": "Prevent \"This page is asking you to confirm that you want to leave\" in a read-only site",
+  "author": "Lin Onetwo",
+  "core-version": ">=5.0.0"
+}
