@@ -17,5 +17,6 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
 
 module.exports.stopWiki = function stopWiki(homePath) {
   const worker = workers[homePath];
-  return worker.terminate();
+  if (!worker) return; // no running worker, maybe tiddlywiki server in this workspace failed to start
+  worker.terminate();
 };
