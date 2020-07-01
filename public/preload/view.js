@@ -99,10 +99,7 @@ const handleLoaded = (event) => {
     }
   }
 
-  window.contextMenuBuilder = new ContextMenuBuilder(
-    null,
-    true,
-  );
+  window.contextMenuBuilder = new ContextMenuBuilder();
 
   remote.getCurrentWebContents().on('context-menu', (e, info) => {
     window.contextMenuBuilder.buildMenuForElement(info)

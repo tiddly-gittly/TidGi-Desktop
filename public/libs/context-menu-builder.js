@@ -47,6 +47,7 @@ const contextMenuStringTable = {
   copy: () => 'Copy',
   paste: () => 'Paste',
   inspectElement: () => 'Inspect Element',
+  developerTools: () => 'Developer Tools',
 };
 
 /**
@@ -61,12 +62,10 @@ module.exports = class ContextMenuBuilder {
    * Creates an instance of ContextMenuBuilder
    *
    * @param  {BrowserWindow|WebView} windowOrWebView  The hosting window/WebView
-   * @param  {Boolean} debugMode    If true, display the "Inspect Element" menu item.
    * @param  {function} processMenu If passed, this method will be passed the menu to change
    *                                it prior to display. Signature: (menu, info) => menu
    */
-  constructor(windowOrWebView = null, debugMode = false, processMenu = (m) => m) {
-    this.debugMode = debugMode;
+  constructor(windowOrWebView = null, processMenu = (m) => m) {
     this.processMenu = processMenu;
     this.menu = null;
     this.stringTable = { ...contextMenuStringTable };
@@ -166,6 +165,7 @@ module.exports = class ContextMenuBuilder {
     this.addCopy(menu, menuInfo);
     this.addPaste(menu, menuInfo);
     this.addInspectElement(menu, menuInfo);
+    this.addDeveloperTools(menu, menuInfo);
     this.processMenu(menu, menuInfo);
 
     return menu;
@@ -206,6 +206,7 @@ module.exports = class ContextMenuBuilder {
     }
 
     this.addInspectElement(menu, menuInfo);
+    this.addDeveloperTools(menu, menuInfo);
     this.processMenu(menu, menuInfo);
 
     return menu;
@@ -222,6 +223,7 @@ module.exports = class ContextMenuBuilder {
     this.addSearchItems(menu, menuInfo);
     this.addCopy(menu, menuInfo);
     this.addInspectElement(menu, menuInfo);
+    this.addDeveloperTools(menu, menuInfo);
     this.processMenu(menu, menuInfo);
 
     return menu;
@@ -239,6 +241,7 @@ module.exports = class ContextMenuBuilder {
       this.addImageItems(menu, menuInfo);
     }
     this.addInspectElement(menu, menuInfo);
+    this.addDeveloperTools(menu, menuInfo);
     this.processMenu(menu, menuInfo);
 
     return menu;
@@ -397,12 +400,27 @@ module.exports = class ContextMenuBuilder {
    */
   addInspectElement(menu, menuInfo, needsSeparator = true) {
     const target = this.getWebContents();
-    if (!this.debugMode) return menu;
     if (needsSeparator) this.addSeparator(menu);
 
     const inspect = new MenuItem({
       label: this.stringTable.inspectElement(),
       click: () => target.inspectElement(menuInfo.x, menuInfo.y),
+    });
+
+    menu.append(inspect);
+    return menu;
+  }
+
+  /**
+   * Adds the "Inspect Element" menu item.
+   */
+  addDeveloperTools(menu, menuInfo, needsSeparator = false) {
+    const target = this.getWebContents();
+    if (needsSeparator) this.addSeparator(menu);
+
+    const inspect = new MenuItem({
+      label: this.stringTable.developerTools(),
+      click: () => target.openDevTools(),
     });
 
     menu.append(inspect);
