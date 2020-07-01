@@ -65,6 +65,10 @@ const opts = {
         to: 'wiki',
         filter: ['**/*'],
       },
+      {
+        from: 'public/libs/wiki/wiki-worker.js',
+        to: 'wiki-worker.js',
+      },
     ],
     protocols: [
       {

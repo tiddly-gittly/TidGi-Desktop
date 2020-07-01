@@ -1,7 +1,6 @@
-delete require.cache[require.resolve('tiddlywiki/boot/boot.js')];
 const { workerData, parentPort, isMainThread } = require('worker_threads');
 const path = require('path');
-const $tw = require('tiddlywiki/boot/boot.js').TiddlyWiki();
+const $tw = require('tiddlywiki').TiddlyWiki();
 
 function startNodeJSWiki() {
   const { homePath, userName, tiddlyWikiPort = 5112 } = workerData;
