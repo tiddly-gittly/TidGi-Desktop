@@ -1,11 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-const {
-  app,
-  ipcMain,
-  nativeTheme,
-  protocol,
-  session,
-} = require('electron');
+const { app, ipcMain, nativeTheme, protocol, session } = require('electron');
 const fs = require('fs');
 const settings = require('electron-settings');
 const { autoUpdater } = require('electron-updater');
@@ -65,17 +59,18 @@ if (!gotTheLock) {
 
   // mock app.whenReady
   let trulyReady = false;
-  ipcMain.once('truly-ready', () => { trulyReady = true; });
+  ipcMain.once('truly-ready', () => {
+    trulyReady = true;
+  });
   const whenTrulyReady = () => {
     if (trulyReady) return Promise.resolve();
-    return new Promise((resolve) => {
+    return new Promise(resolve => {
       ipcMain.once('truly-ready', () => {
         trulyReady = true;
         resolve();
       });
     });
   };
-
 
   protocol.registerSchemesAsPrivileged([
     { scheme: 'http', privileges: { standard: true } },
@@ -86,7 +81,8 @@ if (!gotTheLock) {
   loadListeners();
 
   const commonInit = () => {
-    app.whenReady()
+    app
+      .whenReady()
       .then(() => mainWindow.createAsync())
       .then(() => {
         const {
@@ -122,12 +118,9 @@ if (!gotTheLock) {
 
         const workspaceObjects = getWorkspaces();
 
-        Object.keys(workspaceObjects).forEach((id) => {
+        Object.keys(workspaceObjects).forEach(id => {
           const workspace = workspaceObjects[id];
-          if (
-            (hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused)
-            && !workspace.active
-          ) {
+          if ((hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) && !workspace.active) {
             if (!workspace.hibernated) {
               setWorkspace(workspace.id, { hibernated: true });
             }
@@ -171,13 +164,7 @@ if (!gotTheLock) {
   };
 
   app.on('ready', () => {
-    const {
-      allowPrerelease,
-      attachToMenubar,
-      sidebar,
-      titleBar,
-      navigationBar,
-    } = getPreferences();
+    const { allowPrerelease, attachToMenubar, sidebar, titleBar, navigationBar } = getPreferences();
 
     global.attachToMenubar = attachToMenubar;
     global.sidebar = sidebar;
@@ -190,7 +177,8 @@ if (!gotTheLock) {
     whenTrulyReady()
       .then(() => {
         ipcMain.emit('request-check-for-updates', null, true);
-      });
+      })
+      .catch(error => console.error(error));
 
     commonInit();
   });
@@ -223,49 +211,48 @@ if (!gotTheLock) {
   app.on('open-url', (e, url) => {
     e.preventDefault();
 
-    whenTrulyReady()
-      .then(() => {
-        // focus on window
-        mainWindow.show();
+    whenTrulyReady().then(() => {
+      // focus on window
+      mainWindow.show();
 
-        const workspaces = Object.values(getWorkspaces());
+      const workspaces = Object.values(getWorkspaces());
 
-        if (workspaces.length < 1) return null;
+      if (workspaces.length < 1) return null;
 
-        // handle mailto:
-        if (url.startsWith('mailto:')) {
-          const mailtoWorkspaces = workspaces
-            .filter((workspace) => extractHostname(workspace.homeUrl) in MAILTO_URLS);
+      // handle mailto:
+      if (url.startsWith('mailto:')) {
+        const mailtoWorkspaces = workspaces.filter(workspace => extractHostname(workspace.homeUrl) in MAILTO_URLS);
 
-          // pick automically if there's only one choice
-          if (mailtoWorkspaces.length === 0) {
-            ipcMain.emit(
-              'request-show-message-box', null,
-              'None of your workspaces supports composing email messages.',
-              'error',
-            );
-            return null;
-          }
-
-          if (mailtoWorkspaces.length === 1) {
-            const mailtoUrl = MAILTO_URLS[extractHostname(mailtoWorkspaces[0].homeUrl)];
-            const u = mailtoUrl.replace('%s', url);
-            ipcMain.emit('request-load-url', null, u, mailtoWorkspaces[0].id);
-            return null;
-          }
-
-          return openUrlWithWindow.show(url);
+        // pick automically if there's only one choice
+        if (mailtoWorkspaces.length === 0) {
+          ipcMain.emit(
+            'request-show-message-box',
+            null,
+            'None of your workspaces supports composing email messages.',
+            'error',
+          );
+          return null;
         }
 
-        // handle https/http
-        // pick automically if there's only one choice
-        if (workspaces.length === 1) {
-          ipcMain.emit('request-load-url', null, url, workspaces[0].id);
+        if (mailtoWorkspaces.length === 1) {
+          const mailtoUrl = MAILTO_URLS[extractHostname(mailtoWorkspaces[0].homeUrl)];
+          const u = mailtoUrl.replace('%s', url);
+          ipcMain.emit('request-load-url', null, u, mailtoWorkspaces[0].id);
           return null;
         }
 
         return openUrlWithWindow.show(url);
-      });
+      }
+
+      // handle https/http
+      // pick automically if there's only one choice
+      if (workspaces.length === 1) {
+        ipcMain.emit('request-load-url', null, url, workspaces[0].id);
+        return null;
+      }
+
+      return openUrlWithWindow.show(url);
+    });
   });
 
   app.on('login', (e, webContents, request, authInfo, callback) => {
