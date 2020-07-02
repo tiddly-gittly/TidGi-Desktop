@@ -4,7 +4,7 @@ const { autoUpdater } = require('electron-updater');
 
 const { createWiki, createSubWiki } = require('../libs/create-wiki');
 const startNodeJSWiki = require('../libs/wiki/start-nodejs-wiki');
-const { ICON_PATH, REACT_PATH } = require('../constants/paths');
+const { ICON_PATH, REACT_PATH, DESKTOP_PATH } = require('../constants/paths');
 
 const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
 
@@ -78,6 +78,7 @@ const loadListeners = () => {
     event.returnValue = {
       ICON_PATH,
       REACT_PATH,
+      DESKTOP_PATH,
     }[name];
   });
 

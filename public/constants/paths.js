@@ -1,5 +1,6 @@
 const isDev = require('electron-is-dev');
 const path = require('path');
+const os = require('os');
 
 const REACT_PATH = isDev
   ? 'http://localhost:3000'
@@ -13,6 +14,7 @@ const ICON_PATH = isDev
   ? path.resolve(__dirname, '..', 'icon.png')
   : `file://${path.resolve(__dirname, '..', 'icon.png')}`;
 const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';
+const DESKTOP_PATH = path.join(os.homedir(), 'Desktop');
 
 module.exports = {
   REACT_PATH,
@@ -20,4 +22,5 @@ module.exports = {
   TIDDLERS_PATH,
   ICON_PATH,
   CHROME_ERROR_PATH,
+  DESKTOP_PATH,
 };

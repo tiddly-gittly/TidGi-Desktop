@@ -24,6 +24,7 @@ import {
   requestCopyWikiTemplate,
   requestCreateSubWiki,
   getIconPath,
+  getDesktopPath,
   getWorkspaces,
   countWorkspace,
 } from '../../senders';
@@ -40,10 +41,14 @@ const Description = styled(Paper)`
 const CreateContainer = styled(Paper)`
   margin-top: 5px;
 `;
+const LocationPickerContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+`;
 const LocationPickerInput = styled(TextField)``;
 const LocationPickerButton = styled(Button)`
   white-space: nowrap;
-  width: 100%;
+  width: fit-content;
 `;
 
 const SyncContainer = styled(Paper)`
@@ -64,7 +69,7 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
 
 function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCreationMessage }) {
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(countWorkspace() === 0);
-  const [parentFolderLocation, parentFolderLocationSetter] = useState('');
+  const [parentFolderLocation, parentFolderLocationSetter] = useState(getDesktopPath());
   const [wikiFolderLocation, wikiFolderLocationSetter] = useState('');
   const [wikiPort, wikiPortSetter] = useState(5212 + countWorkspace());
 
@@ -104,42 +109,58 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCrea
         </Typography>
       </Description>
 
-      <CreateContainer elevation={2} square>
-        <LocationPickerButton
-          onClick={() => {
-            const { remote } = window.require('electron');
-            // eslint-disable-next-line promise/catch-or-return
-            remote.dialog
-              .showOpenDialog(remote.getCurrentWindow(), {
-                properties: ['openDirectory'],
-              })
-              .then(({ canceled, filePaths }) => {
-                // eslint-disable-next-line promise/always-return
-                if (!canceled && filePaths.length > 0) {
-                  parentFolderLocationSetter(filePaths[0]);
-                }
-              });
-          }}
-          variant="contained"
-          color={parentFolderLocation ? 'default' : 'primary'}
-          disableElevation
-          endIcon={<FolderIcon />}
-        >
-          <Typography variant="button" display="inline">
-            选择放置WIKI的父文件夹
-          </Typography>
-        </LocationPickerButton>
-        <LocationPickerInput
-          error={!!wikiCreationMessage}
-          helperText={wikiCreationMessage}
-          fullWidth
-          onChange={event => {
-            parentFolderLocationSetter(event.target.value);
-            onSetWikiCreationMessage('');
-          }}
-          label="知识库的父文件夹"
-          value={parentFolderLocation}
+      <SyncContainer elevation={2} square>
+        <Typography variant="subtitle1" align="center">
+          同步到云端
+        </Typography>
+        <GitHubLogin
+          clientId="7b6e0fc33f4afd71a4bb"
+          clientSecret="6015d1ca4ded86b4778ed39109193ff20c630bdd"
+          redirectUri="http://localhost"
+          scope="repo"
+          onSuccess={response => console.log(response)}
+          onFailure={response => console.log(response)}
         />
+      </SyncContainer>
+
+      <CreateContainer elevation={2} square>
+        <LocationPickerContainer>
+        <LocationPickerInput
+            error={!!wikiCreationMessage}
+            helperText={wikiCreationMessage}
+            fullWidth
+            onChange={event => {
+              parentFolderLocationSetter(event.target.value);
+              onSetWikiCreationMessage('');
+            }}
+            label="知识库的父文件夹"
+            value={parentFolderLocation}
+          />
+          <LocationPickerButton
+            onClick={() => {
+              const { remote } = window.require('electron');
+              // eslint-disable-next-line promise/catch-or-return
+              remote.dialog
+                .showOpenDialog(remote.getCurrentWindow(), {
+                  properties: ['openDirectory'],
+                })
+                .then(({ canceled, filePaths }) => {
+                  // eslint-disable-next-line promise/always-return
+                  if (!canceled && filePaths.length > 0) {
+                    parentFolderLocationSetter(filePaths[0]);
+                  }
+                });
+            }}
+            variant="outlined"
+            color={parentFolderLocation ? 'default' : 'primary'}
+            disableElevation
+            endIcon={<FolderIcon />}
+          >
+            <Typography variant="button" display="inline">
+              选择
+            </Typography>
+          </LocationPickerButton>
+        </LocationPickerContainer>
         <LocationPickerInput
           error={!!wikiCreationMessage}
           fullWidth
@@ -155,8 +176,7 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCrea
           onChange={event => {
             wikiPortSetter(event.target.value);
           }}
-          label="WIKI服务器端口号"
-          helperText="出现冲突再改，一般默认即可"
+          label="WIKI服务器端口号（出现冲突再改，一般默认即可）"
           value={wikiPort}
         />
         {!isCreateMainWorkspace && (
@@ -195,20 +215,6 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCrea
           </>
         )}
       </CreateContainer>
-
-      <SyncContainer elevation={2} square>
-        <Typography variant="subtitle1" align="center">
-          同步到云端
-        </Typography>
-        <GitHubLogin
-          clientId="7b6e0fc33f4afd71a4bb"
-          clientSecret="6015d1ca4ded86b4778ed39109193ff20c630bdd"
-          redirectUri="http://localhost"
-          scope="repo"
-          onSuccess={response => console.log(response)}
-          onFailure={response => console.log(response)}
-        />
-      </SyncContainer>
 
       {isCreateMainWorkspace ? (
         <CloseButton
