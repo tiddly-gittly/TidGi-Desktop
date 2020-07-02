@@ -4,7 +4,7 @@ const { autoUpdater } = require('electron-updater');
 
 const { createWiki, createSubWiki } = require('../libs/create-wiki');
 const startNodeJSWiki = require('../libs/wiki/start-nodejs-wiki');
-const { getIconPath } = require('../libs/get-constants');
+const { ICON_PATH, REACT_PATH } = require('../constants/paths');
 
 const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
 
@@ -76,8 +76,9 @@ const loadListeners = () => {
   });
   ipcMain.on('get-constant', (event, name) => {
     event.returnValue = {
-      getIconPath,
-    }[name]();
+      ICON_PATH,
+      REACT_PATH,
+    }[name];
   });
 
   ipcMain.on('request-open-in-browser', (e, url) => {

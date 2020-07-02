@@ -8,14 +8,16 @@ const REACT_PATH = isDev
 const TIDDLYWIKI_TEMPLATE_FOLDER_PATH = isDev
   ? path.resolve(__dirname, '..', '..', 'template', 'wiki')
   : path.resolve(process.resourcesPath, '..', 'wiki');
-const TIDDLERS_PATH = 'tiddlers'
+const TIDDLERS_PATH = 'tiddlers';
 const ICON_PATH = isDev
   ? path.resolve(__dirname, '..', 'icon.png')
   : `file://${path.resolve(__dirname, '..', 'icon.png')}`;
+const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';
 
 module.exports = {
   REACT_PATH,
   TIDDLYWIKI_TEMPLATE_FOLDER_PATH,
   TIDDLERS_PATH,
   ICON_PATH,
+  CHROME_ERROR_PATH,
 };

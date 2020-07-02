@@ -14,7 +14,6 @@ import FormHelperText from '@material-ui/core/FormHelperText';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import FolderIcon from '@material-ui/icons/Folder';
-import GithubIcon from '@material-ui/icons/GitHub';
 
 import GitHubLogin from '../github-login';
 

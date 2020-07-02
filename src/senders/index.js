@@ -63,7 +63,8 @@ export const requestSetWorkspacePicture = (id, picturePath) =>
   ipcRenderer.send('request-set-workspace-picture', id, picturePath);
 export const requestWakeUpWorkspace = (id) => ipcRenderer.send('request-wake-up-workspace', id);
 
-export const getIconPath = () => ipcRenderer.sendSync('get-constant', 'getIconPath');
+export const getIconPath = () => ipcRenderer.sendSync('get-constant', 'ICON_PATH');
+export const getReactPath = () => ipcRenderer.sendSync('get-constant', 'REACT_PATH');
 
 // Workspace Meta
 export const getWorkspaceMeta = (id) => ipcRenderer.sendSync('get-workspace-meta', id);
