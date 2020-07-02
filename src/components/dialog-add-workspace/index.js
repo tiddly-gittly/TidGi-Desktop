@@ -16,6 +16,8 @@ import MenuItem from '@material-ui/core/MenuItem';
 import FolderIcon from '@material-ui/icons/Folder';
 import GithubIcon from '@material-ui/icons/GitHub';
 
+import GitHubLogin from '../github-login';
+
 import connectComponent from '../../helpers/connect-component';
 import { updateForm, save, setWikiCreationMessage } from '../../state/dialog-add-workspace/actions';
 
@@ -44,10 +46,7 @@ const LocationPickerButton = styled(Button)`
   white-space: nowrap;
   width: 100%;
 `;
-const SyncToGithubButton = styled(Button)`
-  white-space: nowrap;
-  width: 100%;
-`;
+
 const SyncContainer = styled(Paper)`
   margin-top: 5px;
 `;
@@ -132,7 +131,7 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCrea
           </Typography>
         </LocationPickerButton>
         <LocationPickerInput
-          error={wikiCreationMessage}
+          error={!!wikiCreationMessage}
           helperText={wikiCreationMessage}
           fullWidth
           onChange={event => {
@@ -143,7 +142,7 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCrea
           value={parentFolderLocation}
         />
         <LocationPickerInput
-          error={wikiCreationMessage}
+          error={!!wikiCreationMessage}
           fullWidth
           onChange={event => {
             wikiFolderNameSetter(event.target.value);
@@ -202,9 +201,14 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCrea
         <Typography variant="subtitle1" align="center">
           同步到云端
         </Typography>
-        <SyncToGithubButton color="secondary" endIcon={<GithubIcon />}>
-          登录Github账号
-        </SyncToGithubButton>
+        <GitHubLogin
+          clientId="7b6e0fc33f4afd71a4bb"
+          clientSecret="6015d1ca4ded86b4778ed39109193ff20c630bdd"
+          redirectUri="http://localhost"
+          scope="repo"
+          onSuccess={response => console.log(response)}
+          onFailure={response => console.log(response)}
+        />
       </SyncContainer>
 
       {isCreateMainWorkspace ? (

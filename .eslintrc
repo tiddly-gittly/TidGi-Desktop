@@ -9,7 +9,9 @@
         }
       }
     ],
+    "unicorn/no-reduce": [0],
     "import/no-extraneous-dependencies": [2, { "devDependencies": true }],
+    "react/static-property-placement": [0],
     "react/jsx-filename-extension": [1, { "extensions": [".js"] }],
     "react/forbid-prop-types": [0],
     "import/prefer-default-export": [0],
@@ -37,6 +39,7 @@
   "plugins": ["flowtype", "prettier", "react", "html", "unicorn", "import", "react-hooks", "jsx-a11y", "sonarjs"],
   "globals": {
     "window": true,
-    "document": true
+    "document": true,
+    "fetch": true
   }
 }
