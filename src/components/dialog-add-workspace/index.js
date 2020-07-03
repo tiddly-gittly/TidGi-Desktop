@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import styled from 'styled-components';
-import { GraphQLClient, ClientContext, useQuery } from 'graphql-hooks';
+import { GraphQLClient, ClientContext } from 'graphql-hooks';
 
 import Paper from '@material-ui/core/Paper';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
@@ -16,14 +16,9 @@ import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import FolderIcon from '@material-ui/icons/Folder';
 
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import ListItemText from '@material-ui/core/ListItemText';
-
 import { GITHUB_GRAPHQL_API } from '../../constants/auth';
 
-import GitHubLogin from '../github-login';
+import GitHubLogin from './github-login';
 import SearchRepo from './search-repo';
 
 import connectComponent from '../../helpers/connect-component';
