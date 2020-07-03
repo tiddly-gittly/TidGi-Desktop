@@ -28,13 +28,17 @@ const SEARCH_REPO_QUERY = `
     }
   }
 `;
-export default function SearchRepo() {
+
+interface Props {
+  githubUsername: string;
+}
+export default function SearchRepo({ githubUsername }: Props) {
   const [githubRepoSearchString, githubRepoSearchStringSetter] = useState('wiki');
   const loadCount = 10;
   const { loading, error, data } = useQuery(SEARCH_REPO_QUERY, {
     variables: {
       first: loadCount,
-      queryString: `user:linonetwo ${githubRepoSearchString}`,
+      queryString: `user:${githubUsername} ${githubRepoSearchString}`,
     },
   });
   const repositoryCount = data?.search?.repositoryCount;

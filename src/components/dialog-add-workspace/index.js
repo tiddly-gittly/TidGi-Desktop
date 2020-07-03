@@ -121,6 +121,8 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCrea
     homeUrl: `http://localhost:${wikiPort}/`,
     picturePath: getIconPath(),
   };
+
+  const githubUsername = getGithubUsername();
   return (
     <ClientContext.Provider value={graphqlClient}>
       <Container>
@@ -152,13 +154,19 @@ function AddWorkspace({ wikiCreationMessage, onUpdateForm, onSave, onSetWikiCrea
             scope="repo"
             onSuccess={response => {
               const accessToken = response?.userInfo?.thirdPartyIdentity?.accessToken;
+              const authData = response?.userInfo?.oauth;
               if (accessToken) {
                 setGraphqlClientHeader(accessToken);
+              }
+              if (authData) {
+                setGithubUsername(JSON.parse(authData).login);
               }
             }}
             onFailure={response => console.log(response)}
           />
-          {Object.keys(graphqlClient.headers).length > 0 && <SearchRepo />}
+          {Object.keys(graphqlClient.headers).length > 0 && githubUsername && (
+            <SearchRepo githubUsername={githubUsername} />
+          )}
         </SyncContainer>
 
         <CreateContainer elevation={2} square>
