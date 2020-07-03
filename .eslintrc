@@ -4,6 +4,7 @@
       "error",
       {
         "whitelist": {
+          "Props": true,
           "props": true,
           "getInitialProps": true,
           "mapStateToProps": true

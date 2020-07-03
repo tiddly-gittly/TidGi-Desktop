@@ -1,6 +1,6 @@
+// @flow
 /* eslint-disable promise/no-nesting */
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
 import styled from 'styled-components';
 import Button from '@material-ui/core/Button';
 import GithubIcon from '@material-ui/icons/GitHub';
@@ -13,20 +13,25 @@ const SyncToGithubButton = styled(Button)`
   width: 100%;
 `;
 
-class GitHubLogin extends Component {
-  static propTypes = {
-    onRequest: PropTypes.func,
-    onSuccess: PropTypes.func,
-    onFailure: PropTypes.func,
-  };
-
+interface Props {
+  onRequest: Function;
+  onSuccess: Function;
+  onFailure: Function;
+}
+interface State {
+  isLogin: boolean;
+}
+class GitHubLogin extends Component<Props, State> {
   static defaultProps = {
     onRequest: () => {},
     onSuccess: () => {},
     onFailure: () => {},
   };
 
-  constructor(props) {
+  auth: AuthingSSO;
+  intervalHandel: ?IntervalID
+
+  constructor(props: Props) {
     super(props);
     this.state = {
       isLogin: false,
