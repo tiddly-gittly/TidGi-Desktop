@@ -42,7 +42,7 @@ interface JsonObject {
   [x: string]: JsonValue;
 }
 interface JsonArray extends Array<JsonValue> {} // tslint:disable-line no-empty-interface
-export function getPreference<T=JsonValue>(name: string): T {
+export function getPreference<T = JsonValue>(name: string): T {
   return ipcRenderer.sendSync('get-preference', name);
 }
 export const getPreferences = () => ipcRenderer.sendSync('get-preferences');
@@ -83,6 +83,13 @@ export const getDesktopPath = () => ipcRenderer.sendSync('get-constant', 'DESKTO
 // Workspace Meta
 export const getWorkspaceMeta = id => ipcRenderer.sendSync('get-workspace-meta', id);
 export const getWorkspaceMetas = () => ipcRenderer.sendSync('get-workspace-metas');
+
+// Workspace Git
+export const initWikiGit = (
+  wikiFolderPath: string,
+  githubRepoUrl: string,
+  userInfo: Object,
+) => ipcRenderer.invoke('request-init-wiki-git', wikiFolderPath, githubRepoUrl, userInfo);
 
 // Find In Page
 export const requestFindInPage = (text, forward) => ipcRenderer.send('request-find-in-page', text, forward);

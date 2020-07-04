@@ -12,6 +12,8 @@ import Description from './description-and-mode-switch';
 import SearchRepo from './search-repo';
 import DoneButton from './done-button';
 import WikiPathForm from './wiki-path-form';
+import { getGithubUserInfo, setGithubUserInfo } from './user-info';
+import type { IUserInfo } from './user-info';
 
 import { requestSetPreference, getPreference, getDesktopPath, countWorkspace } from '../../senders';
 
@@ -57,6 +59,11 @@ export default function AddWorkspace() {
     }
   }, [accessToken]);
 
+  const [userInfo, userInfoSetter] = useState<IUserInfo | null>(getGithubUserInfo());
+  useEffect(() => {
+    setGithubUserInfo(userInfo);
+  }, [userInfo]);
+
   const [mainWikiToLink, mainWikiToLinkSetter] = useState('');
   const [githubWikiUrl, githubWikiUrlSetter] = useState('');
 
@@ -79,6 +86,8 @@ export default function AddWorkspace() {
             accessToken={accessToken}
             accessTokenSetter={accessTokenSetter}
             githubWikiUrlSetter={githubWikiUrlSetter}
+            userInfoSetter={userInfoSetter}
+            userInfo={userInfo}
           />
         </SyncContainer>
 
@@ -101,6 +110,7 @@ export default function AddWorkspace() {
           githubWikiUrl={githubWikiUrl}
           wikiFolderName={wikiFolderName}
           parentFolderLocation={parentFolderLocation}
+          userInfo={userInfo}
         />
       </Container>
     </ClientContext.Provider>

@@ -9,7 +9,8 @@ import Button from '@material-ui/core/Button';
 
 import * as actions from '../../state/dialog-add-workspace/actions';
 
-import { requestCopyWikiTemplate, requestCreateSubWiki, getIconPath } from '../../senders';
+import type { IUserInfo } from './user-info';
+import { requestCopyWikiTemplate, requestCreateSubWiki, getIconPath, initWikiGit } from '../../senders';
 
 const CloseButton = styled(Button)`
   white-space: nowrap;
@@ -25,6 +26,7 @@ interface Props {
   githubWikiUrl: string;
   wikiFolderName: string;
   parentFolderLocation: string;
+  userInfo: IUserInfo;
 }
 interface ActionProps {
   updateForm: Object => void;
@@ -42,6 +44,7 @@ function DoneButton({
   updateForm,
   setWikiCreationMessage,
   save,
+  userInfo,
 }: Props & ActionProps) {
   const wikiFolderLocation = `${parentFolderLocation}/${wikiFolderName}`;
 
@@ -50,10 +53,10 @@ function DoneButton({
     isSubWiki: !isCreateMainWorkspace,
     port: wikiPort,
     homeUrl: `http://localhost:${wikiPort}/`,
-    gitUrl: githubWikiUrl,
+    gitUrl: githubWikiUrl, // don't need .git suffix
     picturePath: getIconPath(),
+    userInfo,
   };
-
   return isCreateMainWorkspace ? (
     <CloseButton
       variant="contained"
@@ -61,7 +64,11 @@ function DoneButton({
       disabled={!parentFolderLocation}
       onClick={async () => {
         updateForm(workspaceFormData);
-        const creationError = await requestCopyWikiTemplate(parentFolderLocation, wikiFolderName);
+        let creationError = await requestCopyWikiTemplate(parentFolderLocation, wikiFolderName);
+        if (!creationError) {
+          console.log(githubWikiUrl)
+          creationError = await initWikiGit(wikiFolderLocation, githubWikiUrl, userInfo);
+        }
         if (creationError) {
           setWikiCreationMessage(creationError);
         } else {
@@ -96,7 +103,10 @@ function DoneButton({
       disabled={!parentFolderLocation || !mainWikiToLink}
       onClick={async () => {
         updateForm(workspaceFormData);
-        const creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink);
+        let creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink);
+        if (!creationError) {
+          creationError = await initWikiGit(wikiFolderLocation, githubWikiUrl, userInfo);
+        }
         if (creationError) {
           setWikiCreationMessage(creationError);
         } else {

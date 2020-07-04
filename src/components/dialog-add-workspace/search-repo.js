@@ -11,12 +11,8 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 
-import { requestSetPreference, getPreference } from '../../senders';
-
 import GitHubLogin from './github-login';
-
-const setGithubUsername = (username: string) => requestSetPreference('github-username', username);
-const getGithubUsername = () => getPreference<string | null>('github-username');
+import type { IUserInfo } from './user-info';
 
 const RepoSearchInput = styled(TextField)``;
 
@@ -41,20 +37,28 @@ interface Props {
   accessTokenSetter: (string | null) => void;
   githubWikiUrl: string;
   githubWikiUrlSetter: string => void;
+  userInfo: IUserInfo;
+  userInfoSetter: IUserInfo => void;
 }
-export default function SearchRepo({ accessToken, accessTokenSetter, githubWikiUrl, githubWikiUrlSetter }: Props) {
+export default function SearchRepo({
+  accessToken,
+  accessTokenSetter,
+  githubWikiUrl,
+  githubWikiUrlSetter,
+  userInfo,
+  userInfoSetter,
+}: Props) {
   const [githubRepoSearchString, githubRepoSearchStringSetter] = useState('wiki');
   const loadCount = 10;
-  const githubUsername = getGithubUsername() || '';
-  const { loading, error, data, refetch } = useQuery(SEARCH_REPO_QUERY, {
+  const githubUsername = userInfo?.login || '';
+  const { loading, error, data } = useQuery(SEARCH_REPO_QUERY, {
     variables: {
       first: loadCount,
       queryString: `user:${githubUsername} ${githubRepoSearchString}`,
     },
+    skipCache: true,
   });
-  useEffect(() => {
-    refetch();
-  }, [refetch, accessToken]);
+
   const repositoryCount = data?.search?.repositoryCount;
   let repoList = [];
   if (repositoryCount) {
@@ -79,12 +83,21 @@ export default function SearchRepo({ accessToken, accessTokenSetter, githubWikiU
         scope="repo"
         onSuccess={response => {
           const accessTokenToSet = response?.userInfo?.thirdPartyIdentity?.accessToken;
-          const authData = response?.userInfo?.oauth;
+          const authDataString = response?.userInfo?.oauth;
           if (accessTokenToSet) {
             accessTokenSetter(accessTokenToSet);
           }
-          if (authData) {
-            setGithubUsername(JSON.parse(authData).login);
+          // all data we need
+          if (accessTokenToSet && authDataString) {
+            const authData = JSON.parse(authDataString);
+            const nextUserInfo = {
+              ...response.userInfo,
+              ...authData,
+              ...response.userInfo.thirdPartyIdentity,
+            };
+            delete nextUserInfo.oauth;
+            delete nextUserInfo.thirdPartyIdentity;
+            userInfoSetter(nextUserInfo);
           }
         }}
         // eslint-disable-next-line unicorn/no-null

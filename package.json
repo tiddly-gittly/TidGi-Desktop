@@ -41,6 +41,7 @@
     "fs-extra": "9.0.1",
     "graphql-hooks": "4.5.0",
     "is-url": "1.2.4",
+    "isomorphic-git": "^1.7.0",
     "jimp": "0.13.0",
     "menubar": "8.0.2",
     "node-fetch": "2.6.0",

@@ -2,6 +2,7 @@
 const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
 
+const { initWikiGit } = require('../libs/git');
 const { createWiki, createSubWiki } = require('../libs/create-wiki');
 const startNodeJSWiki = require('../libs/wiki/start-nodejs-wiki');
 const { ICON_PATH, REACT_PATH, DESKTOP_PATH } = require('../constants/paths');
@@ -80,6 +81,16 @@ const loadListeners = () => {
       REACT_PATH,
       DESKTOP_PATH,
     }[name];
+  });
+  ipcMain.handle('request-init-wiki-git', async (event, wikiFolderPath, githubRepoUrl, userInfo) => {
+    try {
+      await initWikiGit(wikiFolderPath, githubRepoUrl, userInfo);
+    } catch (error) {
+      const fs = require('fs')
+      console.error(Object.keys(error));
+      fs.writeFileSync('/Users/linonetwo/Desktop/repo/TiddlyGit-Desktop/aaa.txt', JSON.stringify(error.data), 'utf-8')
+      return String(error);
+    }
   });
 
   ipcMain.on('request-open-in-browser', (e, url) => {
