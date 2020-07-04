@@ -13,7 +13,7 @@
     "lint": "eslint ./public ./src --ext js",
     "lint:fix": "eslint ./public ./src --ext js --fix",
     "flow-typed": "rimraf flow-typed/npm && flow-typed install --overwrite || true",
-    "postinstall": "npx patch-package && electron-builder install-app-deps"
+    "postinstall": "npx patch-package && electron-builder install-app-deps && npm run flow-typed"
   },
   "repository": "https://github.com/tiddly-gittly/TiddlyGit-Desktop",
   "author": "Lin Onetwo<linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
