@@ -75,6 +75,7 @@ export default function AddWorkspace() {
             同步到云端
           </Typography>
           <SearchRepo
+            githubWikiUrl={githubWikiUrl}
             accessToken={accessToken}
             accessTokenSetter={accessTokenSetter}
             githubWikiUrlSetter={githubWikiUrlSetter}

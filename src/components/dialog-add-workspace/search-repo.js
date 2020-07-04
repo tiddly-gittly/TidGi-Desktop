@@ -39,9 +39,10 @@ const SEARCH_REPO_QUERY = `
 interface Props {
   accessToken: string | null;
   accessTokenSetter: (string | null) => void;
+  githubWikiUrl: string;
   githubWikiUrlSetter: string => void;
 }
-export default function SearchRepo({ accessToken, accessTokenSetter, githubWikiUrlSetter }: Props) {
+export default function SearchRepo({ accessToken, accessTokenSetter, githubWikiUrl, githubWikiUrlSetter }: Props) {
   const [githubRepoSearchString, githubRepoSearchStringSetter] = useState('wiki');
   const loadCount = 10;
   const githubUsername = getGithubUsername() || '';
@@ -102,7 +103,7 @@ export default function SearchRepo({ accessToken, accessTokenSetter, githubWikiU
       {loading && <LinearProgress variant="query" />}
       <List component="nav" aria-label="main mailbox folders">
         {repoList.map(({ name, url }) => (
-          <ListItem button key={url} onClick={() => githubWikiUrlSetter(url)}>
+          <ListItem button key={url} onClick={() => githubWikiUrlSetter(url)} selected={githubWikiUrl === url}>
             <ListItemIcon>
               <FolderIcon />
             </ListItemIcon>
