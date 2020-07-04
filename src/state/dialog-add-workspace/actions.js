@@ -45,6 +45,7 @@ export const saveCreatedWiki = () => (dispatch, getState) => {
     form.isSubWiki,
     form.port,
     homeUrl,
+    form.gitUrl,
     form.internetIcon || form.picturePath,
     Boolean(form.transparentBackground),
   );
@@ -212,6 +213,7 @@ export const save = () => (dispatch, getState) => {
     form.isSubWiki,
     form.port,
     homeUrl,
+    form.gitUrl,
     form.internetIcon || form.picturePath,
     Boolean(form.transparentBackground),
   );

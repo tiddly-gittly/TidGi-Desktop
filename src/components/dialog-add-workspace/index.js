@@ -9,7 +9,6 @@ import Paper from '@material-ui/core/Paper';
 import { GITHUB_GRAPHQL_API } from '../../constants/auth';
 
 import Description from './description-and-mode-switch';
-import GitHubLogin from './github-login';
 import SearchRepo from './search-repo';
 import DoneButton from './done-button';
 import WikiPathForm from './wiki-path-form';
@@ -34,33 +33,35 @@ const SyncContainer = styled(Paper)`
   margin-top: 5px;
 `;
 
-const setGithubToken = (token: string) => requestSetPreference('github-token', token);
+const setGithubToken = (token: string | null) => requestSetPreference('github-token', token);
 const getGithubToken = () => getPreference<string | null>('github-token');
-const setGithubUsername = (username: string) => requestSetPreference('github-username', username);
-const getGithubUsername = () => getPreference<string | null>('github-username');
+const setHeaderToGraphqlClient = (token: string) => graphqlClient.setHeader('Authorization', `bearer ${token}`);
+const previousToken = getGithubToken();
+previousToken && setHeaderToGraphqlClient(previousToken);
 
 export default function AddWorkspace() {
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(countWorkspace() === 0);
   const [parentFolderLocation, parentFolderLocationSetter] = useState(getDesktopPath());
   const [wikiPort, wikiPortSetter] = useState(5212 + countWorkspace());
 
+  // try get token on start up
+  const [accessToken, accessTokenSetter] = useState<string | null>(previousToken);
   // try get token from local storage, and set to state for gql to use
-  const setGraphqlClientHeader = useCallback((accessToken: string) => {
-    graphqlClient.setHeader('Authorization', `bearer ${accessToken}`);
-    setGithubToken(accessToken);
-  }, []);
   useEffect(() => {
-    const accessToken = getGithubToken();
     if (accessToken) {
-      setGraphqlClientHeader(accessToken);
+      graphqlClient.setHeader('Authorization', `bearer ${accessToken}`);
+      setGithubToken(accessToken);
+    } else {
+      Object.keys(graphqlClient.headers).map(key => graphqlClient.removeHeader(key));
+      setGithubToken(accessToken);
     }
-  }, [setGraphqlClientHeader]);
+  }, [accessToken]);
 
   const [mainWikiToLink, mainWikiToLinkSetter] = useState('');
+  const [githubWikiUrl, githubWikiUrlSetter] = useState('');
 
   const [wikiFolderName, wikiFolderNameSetter] = useState('tiddlywiki');
 
-  const githubUsername = getGithubUsername();
   return (
     <ClientContext.Provider value={graphqlClient}>
       <Container>
@@ -73,26 +74,11 @@ export default function AddWorkspace() {
           <Typography variant="subtitle1" align="center">
             同步到云端
           </Typography>
-          <GitHubLogin
-            clientId="7b6e0fc33f4afd71a4bb"
-            clientSecret="6015d1ca4ded86b4778ed39109193ff20c630bdd"
-            redirectUri="http://localhost"
-            scope="repo"
-            onSuccess={response => {
-              const accessToken = response?.userInfo?.thirdPartyIdentity?.accessToken;
-              const authData = response?.userInfo?.oauth;
-              if (accessToken) {
-                setGraphqlClientHeader(accessToken);
-              }
-              if (authData) {
-                setGithubUsername(JSON.parse(authData).login);
-              }
-            }}
-            onFailure={response => console.log(response)}
+          <SearchRepo
+            accessToken={accessToken}
+            accessTokenSetter={accessTokenSetter}
+            githubWikiUrlSetter={githubWikiUrlSetter}
           />
-          {Object.keys(graphqlClient.headers).length > 0 && githubUsername && (
-            <SearchRepo githubUsername={githubUsername} />
-          )}
         </SyncContainer>
 
         <WikiPathForm
@@ -111,6 +97,7 @@ export default function AddWorkspace() {
           isCreateMainWorkspace={isCreateMainWorkspace}
           wikiPort={wikiPort}
           mainWikiToLink={mainWikiToLink}
+          githubWikiUrl={githubWikiUrl}
           wikiFolderName={wikiFolderName}
           parentFolderLocation={parentFolderLocation}
         />

@@ -254,8 +254,8 @@ const loadListeners = () => {
     e.returnValue = workspaces;
   });
 
-  ipcMain.on('request-create-workspace', (e, name, isSubWiki, port, homeUrl, picture, transparentBackground) => {
-    createWorkspaceView(name, isSubWiki, port, homeUrl, picture, transparentBackground);
+  ipcMain.on('request-create-workspace', (e, name, isSubWiki, port, homeUrl, gitUrl, picture, transparentBackground) => {
+    createWorkspaceView(name, isSubWiki, port, homeUrl, gitUrl, picture, transparentBackground);
     createMenu();
   });
 

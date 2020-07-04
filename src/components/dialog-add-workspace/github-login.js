@@ -16,6 +16,7 @@ const SyncToGithubButton = styled(Button)`
 interface Props {
   onRequest: Function;
   onSuccess: Function;
+  onLogout: Function;
   onFailure: Function;
 }
 interface State {
@@ -25,11 +26,12 @@ class GitHubLogin extends Component<Props, State> {
   static defaultProps = {
     onRequest: () => {},
     onSuccess: () => {},
+    onLogout: () => {},
     onFailure: () => {},
   };
 
   auth: AuthingSSO;
-  intervalHandel: ?IntervalID
+  intervalHandel: ?IntervalID;
 
   constructor(props: Props) {
     super(props);
@@ -65,7 +67,7 @@ class GitHubLogin extends Component<Props, State> {
   }
 
   render() {
-    const { onRequest, onFailure } = this.props;
+    const { onRequest, onLogout, onFailure } = this.props;
     const { isLogin } = this.state;
     return isLogin ? (
       <SyncToGithubButton
@@ -74,6 +76,7 @@ class GitHubLogin extends Component<Props, State> {
           if (code === 200) {
             this.setState({ isLogin: false });
             this.updateLoginState();
+            onLogout();
           } else {
             console.error(message);
           }

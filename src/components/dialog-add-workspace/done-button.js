@@ -22,6 +22,7 @@ interface Props {
   isCreateMainWorkspace: boolean;
   wikiPort: number;
   mainWikiToLink: string;
+  githubWikiUrl: string;
   wikiFolderName: string;
   parentFolderLocation: string;
 }
@@ -35,6 +36,7 @@ function DoneButton({
   isCreateMainWorkspace,
   wikiPort,
   mainWikiToLink,
+  githubWikiUrl,
   wikiFolderName,
   parentFolderLocation,
   updateForm,
@@ -48,6 +50,7 @@ function DoneButton({
     isSubWiki: !isCreateMainWorkspace,
     port: wikiPort,
     homeUrl: `http://localhost:${wikiPort}/`,
+    gitUrl: githubWikiUrl,
     picturePath: getIconPath(),
   };
 
