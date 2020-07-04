@@ -43,6 +43,7 @@ export const saveCreatedWiki = () => (dispatch, getState) => {
   requestCreateWorkspace(
     form.name,
     form.isSubWiki,
+    form.mainWikiToLink,
     form.port,
     homeUrl,
     form.gitUrl,
@@ -211,6 +212,7 @@ export const save = () => (dispatch, getState) => {
   requestCreateWorkspace(
     form.name,
     form.isSubWiki,
+    form.mainWikiToLink,
     form.port,
     homeUrl,
     form.gitUrl,

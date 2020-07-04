@@ -3,7 +3,7 @@ const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = 
 const { autoUpdater } = require('electron-updater');
 
 const { initWikiGit } = require('../libs/git');
-const { createWiki, createSubWiki } = require('../libs/create-wiki');
+const { createWiki, createSubWiki, removeWiki } = require('../libs/create-wiki');
 const startNodeJSWiki = require('../libs/wiki/start-nodejs-wiki');
 const { ICON_PATH, REACT_PATH, DESKTOP_PATH } = require('../constants/paths');
 
@@ -86,9 +86,6 @@ const loadListeners = () => {
     try {
       await initWikiGit(wikiFolderPath, githubRepoUrl, userInfo);
     } catch (error) {
-      const fs = require('fs')
-      console.error(Object.keys(error));
-      fs.writeFileSync('/Users/linonetwo/Desktop/repo/TiddlyGit-Desktop/aaa.txt', JSON.stringify(error.data), 'utf-8')
       return String(error);
     }
   });
@@ -265,8 +262,8 @@ const loadListeners = () => {
     e.returnValue = workspaces;
   });
 
-  ipcMain.on('request-create-workspace', (e, name, isSubWiki, port, homeUrl, gitUrl, picture, transparentBackground) => {
-    createWorkspaceView(name, isSubWiki, port, homeUrl, gitUrl, picture, transparentBackground);
+  ipcMain.on('request-create-workspace', (e, name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground) => {
+    createWorkspaceView(name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground);
     createMenu();
   });
 
@@ -315,8 +312,8 @@ const loadListeners = () => {
     dialog
       .showMessageBox(mainWindow.get(), {
         type: 'question',
-        buttons: ['Remove Workspace', 'Cancel'],
-        message: 'Are you sure? All browsing data of this workspace will be wiped. This action cannot be undone.',
+        buttons: ['仅移除工作区', '移除工作区并删除Wiki文件夹','取消'],
+        message: '你确定要移除这个工作区吗？移除工作区会删除本应用中的工作区，但不会删除硬盘上的文件夹。如果你选择一并删除Wiki文件夹，则所有内容都会被被删除。',
         cancelId: 1,
       })
       .then(({ response }) => {
@@ -324,8 +321,15 @@ const loadListeners = () => {
           removeWorkspaceView(id);
           createMenu();
         }
+        // eslint-disable-next-line promise/always-return
+        if (response === 1) {
+          const workspace = getWorkspace(id)
+          removeWorkspaceView(id);
+          removeWiki(workspace.name, workspace.isSubWiki && workspace.mainWikiToLink)
+          createMenu();
+        }
       })
-      .catch(console.log); // eslint-disable-line
+      .catch(console.log);
   });
 
   ipcMain.on('request-set-workspace', (e, id, opts) => {

@@ -62,8 +62,8 @@ export const countWorkspace = () => ipcRenderer.sendSync('count-workspace');
 export const getWorkspace = (id: string) => ipcRenderer.sendSync('get-workspace', id);
 export const getWorkspaces = () => ipcRenderer.sendSync('get-workspaces');
 export const requestClearBrowsingData = () => ipcRenderer.send('request-clear-browsing-data');
-export const requestCreateWorkspace = (name, isSubWiki, port, homeUrl, gitUrl, picture, transparentBackground) =>
-  ipcRenderer.send('request-create-workspace', name, isSubWiki, port, homeUrl, picture, transparentBackground);
+export const requestCreateWorkspace = (name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground) =>
+  ipcRenderer.send('request-create-workspace', name, isSubWiki, mainWikiToLink, port, homeUrl, picture, transparentBackground);
 export const requestHibernateWorkspace = id => ipcRenderer.send('request-hibernate-workspace', id);
 export const requestOpenUrlInWorkspace = (url, id) => ipcRenderer.send('request-open-url-in-workspace', url, id);
 export const requestRealignActiveWorkspace = () => ipcRenderer.send('request-realign-active-workspace');

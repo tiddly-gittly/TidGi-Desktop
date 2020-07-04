@@ -51,6 +51,7 @@ function DoneButton({
   const workspaceFormData = {
     name: wikiFolderLocation,
     isSubWiki: !isCreateMainWorkspace,
+    mainWikiToLink,
     port: wikiPort,
     homeUrl: `http://localhost:${wikiPort}/`,
     gitUrl: githubWikiUrl, // don't need .git suffix

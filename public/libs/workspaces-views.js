@@ -25,8 +25,8 @@ const {
 
 const mainWindow = require('../windows/main');
 
-const createWorkspaceView = (name, isSubWiki, port, homeUrl, gitUrl, picture, transparentBackground) => {
-  const newWorkspace = createWorkspace(name, isSubWiki, port, homeUrl, gitUrl, transparentBackground);
+const createWorkspaceView = (name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground) => {
+  const newWorkspace = createWorkspace(name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, transparentBackground);
 
   setActiveWorkspace(newWorkspace.id);
   addView(mainWindow.get(), getWorkspace(newWorkspace.id));

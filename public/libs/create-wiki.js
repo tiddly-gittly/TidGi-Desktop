@@ -42,4 +42,12 @@ async function createSubWiki(newFolderPath, folderName, mainWikiToLink) {
   }
 }
 
-module.exports = { createWiki, createSubWiki };
+async function removeWiki(wikiPath, mainWikiToUnLink) {
+  if (mainWikiToUnLink) {
+    const subWikiName = path.basename(wikiPath);
+    await fs.remove(path.join(wikiPath, TIDDLERS_PATH, subWikiName));
+  }
+  await fs.remove(wikiPath);
+}
+
+module.exports = { createWiki, createSubWiki, removeWiki };
