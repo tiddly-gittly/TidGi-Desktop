@@ -12,6 +12,7 @@
     "test": "mocha ./tests",
     "lint": "eslint ./public ./src --ext js",
     "lint:fix": "eslint ./public ./src --ext js --fix",
+    "flow-typed": "rimraf flow-typed/npm && flow-typed install --overwrite || true",
     "postinstall": "npx patch-package && electron-builder install-app-deps"
   },
   "repository": "https://github.com/tiddly-gittly/TiddlyGit-Desktop",
