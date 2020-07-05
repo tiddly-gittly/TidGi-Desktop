@@ -1,0 +1,12 @@
+{
+  "scripts": {
+    "build": "node -e \"require('./scripts/build-wiki')()\""
+  },
+  "dependencies": {
+    "tiddlywiki": "5.1.22"
+  },
+  "devDependencies": {
+    "html-minifier-terser": "5.1.1",
+    "workbox-cli": "5.1.3"
+  }
+}
