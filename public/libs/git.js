@@ -44,11 +44,17 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo) {
       dir: wikiFolderPath,
       remote: 'origin',
       ref: 'master',
+      force: true,
       onAuth,
     });
   }
 }
 
+async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
+  console.log(`Sync to cloud for ${wikiFolderPath}`);
+}
+
 module.exports = {
   initWikiGit,
+  commitAndSync,
 };

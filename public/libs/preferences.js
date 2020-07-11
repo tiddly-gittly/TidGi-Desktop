@@ -65,6 +65,7 @@ const defaultPreferences = {
   titleBar: false,
   unreadCountBadge: true,
   useHardwareAcceleration: true,
+  syncDebounceInterval: (1000 * 5) / 2,
 };
 
 let cachedPreferences = null;

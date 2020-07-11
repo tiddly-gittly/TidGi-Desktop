@@ -10,7 +10,9 @@ const path = require('path');
 const fsExtra = require('fs-extra');
 const { ElectronBlocker } = require('@cliqz/adblocker-electron');
 
-const startNodeJSWiki = require('./wiki/start-nodejs-wiki')
+const { TIDDLERS_PATH } = require('../constants/paths');
+const startNodeJSWiki = require('./wiki/start-nodejs-wiki');
+const watchWiki = require('./wiki/watch-wiki');
 const { getPreferences, getPreference } = require('./preferences');
 const {
   getWorkspace,
@@ -121,9 +123,12 @@ const addView = (browserWindow, workspace) => {
   const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
   // start wiki on startup
   const wikiPath = workspace.name;
-  if (!workspace.isSubWiki) {
-    const userName = getPreference('userName') || ''
+  if (!workspace.isSubWiki) { // if is main wiki
+    const userName = getPreference('userName') || '';
     startNodeJSWiki(wikiPath, workspace.port, userName);
+    watchWiki(wikiPath, path.join(wikiPath, TIDDLERS_PATH));
+  } else { // if is private repo wiki
+    watchWiki(wikiPath);
   }
   // session
   const ses = session.fromPartition(partitionId);

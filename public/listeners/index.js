@@ -4,7 +4,6 @@ const { autoUpdater } = require('electron-updater');
 
 const { initWikiGit } = require('../libs/git');
 const { createWiki, createSubWiki, removeWiki } = require('../libs/create-wiki');
-const startNodeJSWiki = require('../libs/wiki/start-nodejs-wiki');
 const { ICON_PATH, REACT_PATH, DESKTOP_PATH } = require('../constants/paths');
 
 const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
@@ -71,9 +70,6 @@ const loadListeners = () => {
     } catch (error) {
       return String(error);
     }
-  });
-  ipcMain.on('request-start-tiddlywiki', (wikiPath, port, userName) => {
-    startNodeJSWiki(wikiPath, port, userName);
   });
   ipcMain.on('get-constant', (event, name) => {
     event.returnValue = {
