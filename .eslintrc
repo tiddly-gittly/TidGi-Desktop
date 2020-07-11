@@ -12,6 +12,7 @@
       }
     ],
     "unicorn/no-reduce": [0],
+    "react/jsx-props-no-spreading": [0],
     "import/no-extraneous-dependencies": [2, { "devDependencies": true }],
     "react/static-property-placement": [0],
     "react/jsx-filename-extension": [1, { "extensions": [".js"] }],
