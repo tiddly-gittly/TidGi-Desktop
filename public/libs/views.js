@@ -5,6 +5,7 @@ const {
   app,
   session,
   shell,
+  dialog,
 } = require('electron');
 const path = require('path');
 const fsExtra = require('fs-extra');
@@ -122,13 +123,24 @@ const addView = (browserWindow, workspace) => {
   // configure session, proxy & ad blocker
   const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
   // start wiki on startup
-  const wikiPath = workspace.name;
-  if (!workspace.isSubWiki) { // if is main wiki
-    const userName = getPreference('userName') || '';
-    startNodeJSWiki(wikiPath, workspace.port, userName);
-    watchWiki(wikiPath, path.join(wikiPath, TIDDLERS_PATH));
+  const { name: wikiPath, gitUrl: githubUrl, port, isSubWiki } = workspace;
+
+  const userName = getPreference('userName') || '';
+  const userInfo = getPreference('github-user-info');
+  if (!userInfo) { // user not logined into Github
+    dialog.showMessageBox(browserWindow, {
+      title: 'Github UserInfo No Found',
+      message: 'Seems you haven\'t login to Github, so we disable syncing for this wiki.',
+      buttons: ['OK'],
+      cancelId: 0,
+      defaultId: 0,
+    });
+  }
+  if (!isSubWiki) { // if is main wiki
+    startNodeJSWiki(wikiPath, port, userName);
+    userInfo && watchWiki(wikiPath, githubUrl, userInfo, path.join(wikiPath, TIDDLERS_PATH));
   } else { // if is private repo wiki
-    watchWiki(wikiPath);
+    userInfo && watchWiki(wikiPath, githubUrl, userInfo);
   }
   // session
   const ses = session.fromPartition(partitionId);

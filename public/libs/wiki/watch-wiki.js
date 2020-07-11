@@ -26,7 +26,7 @@ function debounce(func, wait, immediate) {
 
 const debounceCommitAndSync = debounce(commitAndSync, getPreference('syncDebounceInterval'));
 
-function watchFolder(wikiRepoPath, wikiFolderPath) {
+function watchFolder(wikiRepoPath, wikiFolderPath, githubRepoUrl, userInfo) {
   fs.watch(
     wikiFolderPath,
     { recursive: true },
@@ -34,15 +34,14 @@ function watchFolder(wikiRepoPath, wikiFolderPath) {
       if (topLevelFoldersToIgnored.some(name => fileName.startsWith(name))) return;
       if (frequentlyChangedFileThatShouldBeIgnoredFromWatch.has(fileName)) return;
       console.log(`${fileName} change`);
-
-      debounceCommitAndSync(wikiRepoPath);
-    }, 100),
+      debounceCommitAndSync(wikiRepoPath, githubRepoUrl, userInfo);
+    }, 1000),
   );
   console.log(`wiki watch ${wikiFolderPath} now`);
 }
 
-module.exports = function watchWiki(wikiRepoPath, wikiFolderPath = wikiRepoPath) {
+module.exports = function watchWiki(wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath = wikiRepoPath) {
   if (fs.existsSync(wikiRepoPath)) {
-    watchFolder(wikiRepoPath, wikiFolderPath);
+    watchFolder(wikiRepoPath, wikiFolderPath, githubRepoUrl, userInfo);
   }
 };
