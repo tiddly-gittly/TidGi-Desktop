@@ -137,7 +137,7 @@ const addView = (browserWindow, workspace) => {
     });
   }
   if (!isSubWiki) { // if is main wiki
-    startNodeJSWiki(wikiPath, port, userName);
+    startNodeJSWiki(wikiPath, port, userName, workspace.id);
     userInfo && watchWiki(wikiPath, githubUrl, userInfo, path.join(wikiPath, TIDDLERS_PATH));
   } else { // if is private repo wiki
     userInfo && watchWiki(wikiPath, githubUrl, userInfo);
