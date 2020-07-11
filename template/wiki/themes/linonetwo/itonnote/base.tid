@@ -1,0 +1,326 @@
+title: $:/themes/linonetwo/itonnote/base
+tags: $:/tags/Stylesheet
+type: text/vnd.tiddlywiki
+
+/*
+** Start with the vanilla theme and normalize CSS reset, and then belay some of its effects
+*/
+
+{{$:/themes/tiddlywiki/vanilla/base}}
+
+/**
+  代码样式
+*/
+
+p > code, li > code {
+  box-decoration-break: clone;
+  border: none;
+  padding: .1rem .3rem .2rem;
+  border-radius: .2rem;
+
+  background: linear-gradient(19deg,#DDD,#EEE);
+  color: #333;
+}
+
+.hljs {
+  background-color: white;
+  border: none;
+  box-shadow: rgba(15, 15, 15, 0.1) 0px 0px 5px 1px, rgba(15, 15, 15, 0.1) 0px 2px 10px
+}
+
+/**
+  卡片、编辑器和背景样式
+*/
+
+/** 背景 */
+body.tc-body {
+  background-color: white;
+}
+/** 给卡片加上阴影 */
+.tc-tiddler-frame {
+  box-shadow: rgba(15, 15, 15, 0.1) 0px 0px 5px 1px, rgba(15, 15, 15, 0.1) 0px 2px 10px;
+}
+/** 顶部标题栏半透明 */
+:root {
+  --menubar-height: 29px;
+}
+
+.tc-tiddler-title {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  /** fix menubar with sticky title https://github.com/Jermolene/TiddlyWiki5/issues/4471#issuecomment-594456486*/
+  top: var(--menubar-height);
+}
+/** 编辑器工具栏 */
+.tc-editor-toolbar {
+  background: rgba(255, 255, 255, 0.5);
+  backdrop-filter: blur(10px);
+  position: sticky;
+  top: 35px;
+  z-index: 1000;
+}
+.tc-tiddler-preview {
+  overflow: unset;
+}
+.tc-block-dropdown {
+  z-index: 1001;
+}
+
+/** 下拉列表当前鼠标悬浮状态的颜色 */
+.tc-block-dropdown a {
+  transition: background-color 0.2s;
+}
+.tc-block-dropdown a:hover {
+  background-color: #EEEEEE;
+}
+/** 去掉预览除了左边框的边框 */
+.tc-tiddler-preview-preview {
+  border: none;
+  padding-left: 10px;
+  border-left: 1px solid #cccccc;
+}
+/** 去掉代码编辑器的边框 */
+.CodeMirror {
+  border: none;
+}
+/** 去掉所有其它文本编辑框的边框 */
+.tc-tiddler-frame input.tc-edit-texteditor {
+  border: none;
+  background: transparent;
+}
+/** 标题下面的 tag 栏 */
+.tc-edit-tags {
+  border: none;
+  border-bottom: 1px solid #cccccc;
+  padding: 4px 8px 4px 8px;
+}
+
+/**
+	自定义字体
+*/
+@import url(https://cdn.jsdelivr.net/gh/tonsky/FiraCode@4/distr/fira_code.css);
+
+* {
+  font-variant-ligatures: contextual;
+  font-display: swap;
+}
+
+/* Specify in CSS */
+code { font-family: 'Fira Code', monospace; }
+
+@supports (font-variation-settings: normal) {
+  code { font-family: 'Fira Code VF', monospace; }
+}
+
+/**
+  按钮样式
+*/
+
+/** 不匹配工具栏上的按钮 */
+button:not(.tc-btn-invisible) {
+  color: #333;
+  background-color: rgba(0, 0, 0, 0.03);
+  padding: 5px 10px;
+	margin: 2px;
+  border-radius: 5px;
+  border: none;
+  transition: background-color 0.2s;
+  cursor: pointer;
+}
+button:not(.tc-btn-invisible) svg {
+	fill: #666;
+}
+
+button:not(.tc-btn-invisible):hover {
+	background-color: rgba(0, 0, 0, 0.05);
+}
+
+/** Tab 上的按钮 */
+.tc-tab-buttons > button {
+	border-radius: 0px;
+}
+.tc-tab-buttons button:not(.tc-tab-selected) {
+	fill: none;
+	background-color: transparent;
+	border: none;
+}
+.tc-tab-buttons button:not(.tc-tab-selected):hover {
+	background-color: rgba(0, 0, 0, 0.05);
+}
+.tc-sidebar-lists .tc-tab-buttons button.tc-tab-selected {
+	border: none;
+	border-bottom: 2px solid silver;
+}
+.tc-tab-buttons button.tc-tab-selected {
+	border: none;
+	border-bottom: 2px solid silver;
+	background-color: #f4f4f4;
+}
+
+/** 标签 */
+button.tc-tag-label, span.tc-tag-label {
+  border-radius: 3px;
+  background-color: rgba(0, 0, 0, 0.1);
+  transition: background-color 0.2s;
+}
+button.tc-tag-label, span.tc-tag-label:hover {
+  background-color: rgba(0, 0, 0, 0.2);
+}
+
+/**
+  链接样式
+*/
+
+a.tc-tiddlylink, a.tc-tiddlylink:hover, a.tc-tiddlylink:hover {
+  padding: 2px;
+  padding-bottom: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  font-weight: 500;
+  line-height: 1.3;
+  color: #333;
+  border-bottom: 1px solid rgba(55, 53, 47, 0.16);
+  text-decoration: none;
+  transition: background 120ms ease-in 0s;
+}
+a:hover {
+  background-color: #EEE;
+}
+
+a.tc-tiddlylink-external, a.tc-tiddlylink-external:visited {
+	padding: 2px;
+	border-bottom: 1px solid #8357d7;
+	text-decoration: none;
+  box-decoration-break: clone;
+  font-weight: 700;
+  color: #666;
+}
+
+a.tc-tiddlylink-external:hover {
+  background-color: #333;
+  background-image: linear-gradient(19deg, #333 0%, #CCC 100%);
+  background-clip: border-box;
+-webkit-background-clip: text;
+-webkit-text-fill-color: transparent;
+}
+
+a.tc-tiddlylink.tc-tiddlylink-resolves.tc-plugin-info.tc-popup-handle.tc-popup-absolute:hover {
+	background-color: #999;
+}
+
+/**
+	侧边栏
+*/
+
+.tc-page-controls {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.tc-site-title {
+	font-size: 1.75em;
+}
+
+.tc-sidebar-scrollable {
+	overscroll-behavior: contain;
+	overflow: -moz-scrollbars-none;
+}
+.tc-sidebar-scrollable::-webkit-scrollbar {
+	width: 0 !important
+}
+
+.tc-topbar {
+  z-index: 100;
+}
+
+@media (min-width: 960px) {
+	.tc-sidebar-scrollable {
+	  padding: 30px 10px 0px 15px;
+	}
+}
+
+@media (max-width: 960px) {
+	.tc-sidebar-header {
+	margin-top: 20px;
+	}
+}
+
+/**
+	侧边栏搜索框
+*/
+
+.tc-search {
+	display: flex;
+	flex-direction: column;
+}
+
+.tc-search > input[type=search] {
+	flex: 1;
+  border: 1px solid #999;
+}
+/** 隐藏没用的搜索栏按钮 */
+.tc-search > span > button:nth-child(1), .tc-search > span > button:nth-child(2) {
+	display: none;
+}
+
+.tc-search ~ .tc-block-dropdown-wrapper > .tc-block-dropdown.tc-search-drop-down.tc-popup-handle {
+	width: 100%;
+	margin: 0;
+	margin-bottom: 20px;
+}
+
+/** 标题 */
+
+.tc-site-subtitle {
+  margin-top: 5px;
+}
+
+/**
+	卡片流
+*/
+
+@media (min-width: 960px) {
+	.tc-story-river {
+	  padding: 10px 0 0px 20px;
+	}
+}
+
+/**
+	宽屏时隐藏顶部 MenuBar
+*/
+
+@media (min-width: 960px) {
+	nav.tc-menubar {
+	display: none !important;
+	}
+}
+
+/**
+  去除按钮、搜索框选中时的蓝框
+*/
+
+button:focus, button:active {
+   outline: none !important;
+   box-shadow: none;
+}
+
+[placeholder]{
+  text-overflow:ellipsis;
+}
+::placeholder{
+  text-overflow:ellipsis;
+}
+input[type=search] {
+  appearance: none;
+  -webkit-appearance: none;
+}
+
+* {
+  outline: none;
+  outline-color: none;
+  -webkit-font-smoothing: antialiased;
+}
+*:focus {
+  outline: none;
+}

@@ -2,7 +2,7 @@ const path = require('path');
 const { execSync } = require('child_process');
 
 const repoFolder = path.join(path.dirname(__filename), '..');
-const folderToServe = path.join(path.dirname(__filename), 'public-out');
+const folderToServe = path.join(repoFolder, 'public-dist');
 
 // cross-env TIDDLYWIKI_PLUGIN_PATH='node_modules/tiddlywiki/plugins/published' TIDDLYWIKI_THEME_PATH='${wikiFolderName}/themes'
 process.env.TIDDLYWIKI_PLUGIN_PATH = `${repoFolder}/plugins`;
@@ -12,7 +12,7 @@ const execAndLog = (command, options) => console.log(String(execSync(command, op
 
 module.exports = function build() {
   // npm run build:prepare
-  execAndLog(`rm -rf ${repoFolder}/public`);
+  execAndLog(`rm -rf ${folderToServe}`);
   // npm run build:public
   execAndLog(`cp -r ${repoFolder}/public/ ${folderToServe}`, { cwd: repoFolder });
   // try copy some static assets, don't cause error if some of them been removed by the user
@@ -45,5 +45,5 @@ module.exports = function build() {
   // npm run build:clean
   execAndLog(`rm -r ${repoFolder}/output`, { cwd: repoFolder });
   // npm run build:pluginLibrary
-  execAndLog(`tiddlywiki ${repoFolder} --output public/library --build library`, { cwd: repoFolder });
+  execAndLog(`tiddlywiki ${repoFolder} --output ${folderToServe}/library --build library`, { cwd: repoFolder });
 };

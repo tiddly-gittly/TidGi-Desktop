@@ -1,0 +1,11 @@
+{
+	"title": "$:/themes/linonetwo/itonnote",
+	"name": "ItonNote Theme",
+	"version": "0.1.2",
+	"author": "LinOnetwo",
+	"core-version": ">=5.0.0",
+	"plugin-type": "theme",
+	"description": "Notion and VSCode inspired theme",
+	"dependents": ["$:/themes/tiddlywiki/vanilla"],
+	"plugin-priority": "1"
+}

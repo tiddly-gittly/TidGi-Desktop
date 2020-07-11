@@ -64,6 +64,22 @@
       "$:/core/templates/static.template.css",
       "static/static.css",
       "text/plain"
+    ],
+    "library": [
+      "--makelibrary",
+      "$:/UpgradeLibrary",
+      "--savelibrarytiddlers",
+      "$:/UpgradeLibrary",
+      "[prefix[$:/]] -[prefix[$:/plugins/tiddlywiki/]] -[prefix[$:/themes/tiddlywiki/]] -[prefix[$:/languages/]] -[[$:/plugins/tiddlywiki/upgrade]] -[[$:/plugins/tiddlywiki/translators]] -[tag[$:/tags/PluginLibrary]] -[prefix[$:/plugins/kookma]]",
+      "recipes/library/tiddlers/",
+      "$:/UpgradeLibrary/List",
+      "--savetiddler",
+      "$:/UpgradeLibrary/List",
+      "recipes/library/tiddlers.json",
+      "--rendertiddler",
+      "$:/plugins/tiddlywiki/pluginlibrary/library.template.html",
+      "index.html",
+      "text/plain"
     ]
   }
 }
