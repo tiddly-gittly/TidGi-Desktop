@@ -1,14 +1,8 @@
+/* eslint-disable unicorn/no-null */
 /* eslint-disable unicorn/consistent-function-scoping */
-import algoliasearch from 'algoliasearch';
-
 import {
   ADD_WORKSPACE_CREATE_WIKI_MESSAGE,
-  ADD_WORKSPACE_GET_FAILED,
-  ADD_WORKSPACE_GET_REQUEST,
-  ADD_WORKSPACE_GET_SUCCESS,
-  ADD_WORKSPACE_RESET,
   ADD_WORKSPACE_UPDATE_SCROLL_OFFSET,
-  ADD_WORKSPACE_UPDATE_CURRENT_QUERY,
   ADD_WORKSPACE_UPDATE_DOWNLOADING_ICON,
   ADD_WORKSPACE_UPDATE_FORM,
   ADD_WORKSPACE_UPDATE_MODE,
@@ -21,90 +15,10 @@ import hasErrors from '../../helpers/has-errors';
 
 import { requestCreateWorkspace } from '../../senders';
 
-const client = algoliasearch('OQ55YRVMNP', 'fc0fb115b113c21d58ed6a4b4de1565f');
-const index = client.initIndex('apps');
-
 export const setWikiCreationMessage = message => ({
   type: ADD_WORKSPACE_CREATE_WIKI_MESSAGE,
   value: message,
 });
-
-export const saveCreatedWiki = () => (dispatch, getState) => {
-  const { form } = getState().dialogAddWorkspace;
-
-  const validatedChanges = validate(form, getValidationRules());
-  if (hasErrors(validatedChanges)) {
-    return dispatch(updateForm(validatedChanges));
-  }
-
-  const url = form.homeUrl.trim();
-  const homeUrl = isUrl(url) ? url : `http://${url}`;
-
-  requestCreateWorkspace(
-    form.name,
-    form.isSubWiki,
-    form.mainWikiToLink,
-    form.port,
-    homeUrl,
-    form.gitUrl,
-    form.internetIcon || form.picturePath,
-    Boolean(form.transparentBackground),
-  );
-  const { remote } = window.require('electron');
-  remote.getCurrentWindow().close();
-  return null;
-};
-
-export const getHits = () => (dispatch, getState) => {
-  const state = getState();
-
-  const { isGetting, page, currentQuery, totalPage } = state.dialogAddWorkspace;
-
-  if (isGetting) return;
-
-  // If all pages have already been fetched, we stop
-  if (totalPage && page + 1 >= totalPage) return;
-
-  dispatch({
-    type: ADD_WORKSPACE_GET_REQUEST,
-  });
-
-  index
-    .search(currentQuery, {
-      page: page + 1,
-      hitsPerPage: 16,
-    })
-    .then(res =>
-      dispatch({
-        type: ADD_WORKSPACE_GET_SUCCESS,
-        hits: res.hits,
-        page: res.page,
-        totalPage: res.nbPages,
-      }),
-    )
-    .catch(() => {
-      if (currentQuery !== getState().dialogAddWorkspace.currentQuery) {
-        return;
-      }
-      dispatch({
-        type: ADD_WORKSPACE_GET_FAILED,
-      });
-    });
-};
-
-export const resetThenGetHits = () => (dispatch, getState) => {
-  const state = getState();
-  const { query } = state.dialogAddWorkspace;
-
-  dispatch({
-    type: ADD_WORKSPACE_RESET,
-  });
-  dispatch({
-    type: ADD_WORKSPACE_UPDATE_CURRENT_QUERY,
-    currentQuery: query,
-  });
-  dispatch(getHits());
-};
 
 export const updateQuery = query => ({
   type: ADD_WORKSPACE_UPDATE_QUERY,
@@ -130,12 +44,12 @@ export const getWebsiteIconUrlAsync = url =>
     try {
       const id = Date.now().toString();
       const { ipcRenderer } = window.require('electron');
-      ipcRenderer.once(id, (e, uurl) => {
-        resolve(uurl);
+      ipcRenderer.once(id, (event, newUrl) => {
+        resolve(newUrl);
       });
       ipcRenderer.send('request-get-website-icon-url', id, url);
-    } catch (err) {
-      reject(err);
+    } catch (error) {
+      reject(error);
     }
   });
 
