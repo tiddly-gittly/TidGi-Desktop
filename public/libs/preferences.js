@@ -71,7 +71,7 @@ const defaultPreferences = {
 let cachedPreferences = null;
 
 const initCachedPreferences = () => {
-  cachedPreferences = { ...defaultPreferences, ...settings.get(`preferences.${v}`) };
+  cachedPreferences = { ...defaultPreferences, ...settings.getSync(`preferences.${v}`) };
 };
 
 const getPreferences = () => {
@@ -94,7 +94,7 @@ const setPreference = (name, value) => {
   sendToAllWindows('set-preference', name, value);
   cachedPreferences[name] = value;
 
-  Promise.resolve().then(() => settings.set(`preferences.${v}.${name}`, value));
+  Promise.resolve().then(() => settings.setSync(`preferences.${v}.${name}`, value));
 
   if (name.startsWith('darkReader')) {
     ipcMain.emit('request-reload-views-dark-reader');
@@ -115,7 +115,7 @@ const setPreference = (name, value) => {
 
 const resetPreferences = () => {
   cachedPreferences = null;
-  settings.deleteAll();
+  settings.unset();
 
   const preferences = getPreferences();
   Object.keys(preferences).forEach((name) => {

@@ -43,7 +43,7 @@ interface Props {
   accessTokenSetter: (string | null) => void;
   githubWikiUrl: string;
   githubWikiUrlSetter: string => void;
-  userInfo: IUserInfo;
+  userInfo?: IUserInfo;
   userInfoSetter: IUserInfo => void;
 }
 export default function SearchRepo({

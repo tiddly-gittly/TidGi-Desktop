@@ -20,7 +20,7 @@ const countWorkspaces = () => Object.keys(workspaces).length;
 const getWorkspaces = () => {
   if (workspaces) return workspaces;
 
-  const storedWorkspaces = settings.get(`workspaces.${v}`, {});
+  const storedWorkspaces = settings.getSync(`workspaces.${v}`) || {};
 
   // keep workspace objects in memory
   workspaces = storedWorkspaces;
@@ -82,7 +82,7 @@ const setActiveWorkspace = (id) => {
     currentActiveWorkspace.active = false;
     workspaces[currentActiveWorkspace.id] = currentActiveWorkspace;
     sendToAllWindows('set-workspace', currentActiveWorkspace.id, currentActiveWorkspace);
-    settings.set(`workspaces.${v}.${currentActiveWorkspace.id}`, currentActiveWorkspace);
+    settings.setSync(`workspaces.${v}.${currentActiveWorkspace.id}`, currentActiveWorkspace);
   }
 
   // active new one
@@ -91,20 +91,20 @@ const setActiveWorkspace = (id) => {
   newActiveWorkspace.hibernated = false;
   workspaces[id] = newActiveWorkspace;
   sendToAllWindows('set-workspace', id, newActiveWorkspace);
-  settings.set(`workspaces.${v}.${id}`, newActiveWorkspace);
+  settings.setSync(`workspaces.${v}.${id}`, newActiveWorkspace);
 };
 
 const setWorkspace = (id, opts) => {
   const workspace = { ...workspaces[id], ...opts };
   workspaces[id] = workspace;
   sendToAllWindows('set-workspace', id, workspace);
-  settings.set(`workspaces.${v}.${id}`, workspace);
+  settings.setSync(`workspaces.${v}.${id}`, workspace);
 };
 
 const setWorkspaces = (newWorkspaces) => {
   workspaces = newWorkspaces;
   sendToAllWindows('set-workspaces', newWorkspaces);
-  settings.set(`workspaces.${v}`, newWorkspaces);
+  settings.setSync(`workspaces.${v}`, newWorkspaces);
 };
 
 const setWorkspacePicture = (id, sourcePicturePath) => {
@@ -169,7 +169,7 @@ const removeWorkspace = (id) => {
   stopWiki(name);
   delete workspaces[id];
   sendToAllWindows('set-workspace', id, null);
-  settings.delete(`workspaces.${v}.${id}`);
+  settings.unsetSync(`workspaces.${v}.${id}`);
 };
 
 const createWorkspace = (name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, transparentBackground) => {
@@ -200,7 +200,7 @@ const createWorkspace = (name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl,
 
   workspaces[newId] = newWorkspace;
   sendToAllWindows('set-workspace', newId, newWorkspace);
-  settings.set(`workspaces.${v}.${newId}`, newWorkspace);
+  settings.setSync(`workspaces.${v}.${newId}`, newWorkspace);
 
   return newWorkspace;
 };

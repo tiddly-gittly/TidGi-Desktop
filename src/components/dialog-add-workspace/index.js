@@ -86,16 +86,14 @@ export default function AddWorkspace() {
             <Typography variant="subtitle1" align="center">
               同步到云端
             </Typography>
-            {userInfo && (
-              <SearchRepo
-                githubWikiUrl={githubWikiUrl}
-                accessToken={accessToken}
-                accessTokenSetter={accessTokenSetter}
-                githubWikiUrlSetter={githubWikiUrlSetter}
-                userInfoSetter={userInfoSetter}
-                userInfo={userInfo}
-              />
-            )}
+            <SearchRepo
+              githubWikiUrl={githubWikiUrl}
+              accessToken={accessToken}
+              accessTokenSetter={accessTokenSetter}
+              githubWikiUrlSetter={githubWikiUrlSetter}
+              userInfoSetter={userInfoSetter}
+              userInfo={userInfo}
+            />
           </SyncContainer>
 
           <NewWikiPathForm
