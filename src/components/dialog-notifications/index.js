@@ -6,7 +6,9 @@ import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
 import Divider from '@material-ui/core/Divider';
+import TextField from '@material-ui/core/TextField';
 import MenuItem from '@material-ui/core/MenuItem';
+import Container from '@material-ui/core/Container';
 
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
@@ -33,6 +35,16 @@ import { updateShowDateTimePicker } from '../../state/notifications/actions';
 import nightBackgroundPng from '../../images/night-background.png';
 
 const styles = (theme) => ({
+  root: {
+    width: '100%',
+    display: 'flex',
+    flexDirection: 'column',
+    alignItems: 'center',
+    padding: 0,
+  },
+  list: {
+    width: '100%',
+  },
   hidden: {
     display: 'none',
   },
@@ -136,6 +148,7 @@ const DialogPauseNotifications = (props) => {
         <List
           dense
           disablePadding
+          className={classes.list}
         >
           <ListItem classes={{ root: classes.pausingHeader }}>
             <ListItemText
@@ -210,6 +223,7 @@ const DialogPauseNotifications = (props) => {
     return (
       <List
         dense
+        className={classes.list}
         disablePadding
         subheader={<ListSubheader component="div">Pause notifications</ListSubheader>}
       >
@@ -243,20 +257,20 @@ const DialogPauseNotifications = (props) => {
   };
 
   return (
-    <>
+    <Container className={classes.root}>
       {renderList()}
       <DateTimePicker
         value={new Date()}
+        renderInput={dateTimeProps => <TextField className={classes.hidden} {...dateTimeProps} />}
         onChange={pauseNotif}
         label="Custom"
         open={showDateTimePicker}
         onOpen={() => onUpdateShowDateTimePicker(true)}
         onClose={() => onUpdateShowDateTimePicker(false)}
-        className={classes.hidden}
         disablePast
         showTodayButton
       />
-    </>
+    </Container>
   );
 };
 

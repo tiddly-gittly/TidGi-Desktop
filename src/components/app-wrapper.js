@@ -7,8 +7,8 @@ import blue from '@material-ui/core/colors/blue';
 import grey from '@material-ui/core/colors/grey';
 import pink from '@material-ui/core/colors/pink';
 
-import { MuiPickersUtilsProvider } from '@material-ui/pickers';
-import DateFnsUtils from '@date-io/date-fns';
+import { LocalizationProvider } from '@material-ui/pickers';
+import DateFnsUtils from '@material-ui/pickers/adapter/date-fns';
 
 import connectComponent from '../helpers/connect-component';
 
@@ -47,9 +47,9 @@ const AppWrapper = ({ children, shouldUseDarkColors }) => {
 
   return (
     <MuiThemeProvider theme={theme}>
-      <MuiPickersUtilsProvider utils={DateFnsUtils}>
+      <LocalizationProvider dateAdapter={DateFnsUtils}>
         {children}
-      </MuiPickersUtilsProvider>
+      </LocalizationProvider>
     </MuiThemeProvider>
   );
 };

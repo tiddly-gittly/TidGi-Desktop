@@ -13,6 +13,7 @@ import MenuItem from '@material-ui/core/MenuItem';
 import Paper from '@material-ui/core/Paper';
 import Slider from '@material-ui/core/Slider';
 import Switch from '@material-ui/core/Switch';
+import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
 
 import BuildIcon from '@material-ui/icons/Build';
@@ -83,7 +84,7 @@ const styles = (theme) => ({
     marginTop: theme.spacing(1),
     marginBottom: theme.spacing(1),
     display: 'flex',
-    justifyContent: 'space-between',
+    justifyContent: 'space-around',
   },
   secondaryEllipsis: {
     textOverflow: 'ellipsis',
@@ -97,7 +98,7 @@ const styles = (theme) => ({
   },
   inner: {
     width: '100%',
-    maxWidth: 500,
+    maxWidth: 550,
     float: 'right',
   },
   logo: {
@@ -661,6 +662,7 @@ const Preferences = ({
                   <TimePicker
                     autoOk={false}
                     label="from"
+                    renderInput={timeProps => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleFrom)}
                     onChange={(d) => requestSetPreference('pauseNotificationsByScheduleFrom', d.toString())}
                     onClose={() => { window.preventClosingWindow = false; }}
@@ -670,6 +672,7 @@ const Preferences = ({
                   <TimePicker
                     autoOk={false}
                     label="to"
+                    renderInput={timeProps => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleTo)}
                     onChange={(d) => requestSetPreference('pauseNotificationsByScheduleTo', d.toString())}
                     onClose={() => { window.preventClosingWindow = false; }}

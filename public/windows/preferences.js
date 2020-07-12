@@ -16,7 +16,7 @@ const create = (scrollTo) => {
   global.preferencesScrollTo = scrollTo;
 
   win = new BrowserWindow({
-    width: 760,
+    width: 820,
     height: 600,
     resizable: false,
     maximizable: false,

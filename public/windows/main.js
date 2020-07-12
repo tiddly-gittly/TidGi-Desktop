@@ -38,7 +38,7 @@ const createAsync = () => new Promise((resolve) => {
     // https://github.com/atomery/translatium/issues/164
     const tray = new Tray(nativeImage.createEmpty());
     // icon template is not supported on Windows & Linux
-    const iconPath = path.resolve(__dirname, 'images', process.platform === 'darwin' ? 'menubarTemplate.png' : 'menubar.png');
+    const iconPath = path.resolve(__dirname, '..', process.platform === 'darwin' ? 'menubarTemplate.png' : 'menubar.png');
     tray.setImage(iconPath);
 
     mb = menubar({
