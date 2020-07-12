@@ -6,17 +6,16 @@ import { bindActionCreators } from 'redux';
 
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
+import { basename, dirname } from 'path';
 
 import * as actions from '../../state/dialog-add-workspace/actions';
 
 import type { IUserInfo } from './user-info';
-import { requestCopyWikiTemplate, requestCreateSubWiki, getIconPath, initWikiGit } from '../../senders';
+import { requestCreateSubWiki, getIconPath, initWikiGit } from '../../senders';
 
 const CloseButton = styled(Button)`
   white-space: nowrap;
   width: 100%;
-  position: absolute;
-  bottom: 0;
 `;
 
 interface Props {
@@ -24,8 +23,7 @@ interface Props {
   wikiPort: number;
   mainWikiToLink: string;
   githubWikiUrl: string;
-  wikiFolderName: string;
-  parentFolderLocation: string;
+  existedFolderLocation: string;
   userInfo: IUserInfo;
 }
 interface ActionProps {
@@ -39,17 +37,14 @@ function DoneButton({
   wikiPort,
   mainWikiToLink,
   githubWikiUrl,
-  wikiFolderName,
-  parentFolderLocation,
+  existedFolderLocation,
   updateForm,
   setWikiCreationMessage,
   save,
   userInfo,
 }: Props & ActionProps) {
-  const wikiFolderLocation = `${parentFolderLocation}/${wikiFolderName}`;
-
   const workspaceFormData = {
-    name: wikiFolderLocation,
+    name: existedFolderLocation,
     isSubWiki: !isCreateMainWorkspace,
     mainWikiToLink,
     port: wikiPort,
@@ -62,25 +57,16 @@ function DoneButton({
     <CloseButton
       variant="contained"
       color="secondary"
-      disabled={!parentFolderLocation}
+      disabled={!existedFolderLocation}
       onClick={async () => {
         updateForm(workspaceFormData);
-        let creationError = await requestCopyWikiTemplate(parentFolderLocation, wikiFolderName);
-        if (!creationError) {
-          console.log(githubWikiUrl)
-          creationError = await initWikiGit(wikiFolderLocation, githubWikiUrl, userInfo);
-        }
-        if (creationError) {
-          setWikiCreationMessage(creationError);
-        } else {
-          save();
-        }
+        save();
       }}
     >
-      {parentFolderLocation && (
+      {existedFolderLocation && (
         <>
           <Typography variant="body1" display="inline">
-            在
+            打开位于
           </Typography>
           <Typography
             variant="body2"
@@ -89,25 +75,24 @@ function DoneButton({
             align="center"
             style={{ direction: 'rtl', textTransform: 'none' }}
           >
-            {wikiFolderLocation}
+            {existedFolderLocation}
           </Typography>
         </>
       )}
       <Typography variant="body1" display="inline">
-        创建WIKI
+        的WIKI
       </Typography>
     </CloseButton>
   ) : (
     <CloseButton
       variant="contained"
       color="secondary"
-      disabled={!parentFolderLocation || !mainWikiToLink}
+      disabled={!existedFolderLocation || !mainWikiToLink}
       onClick={async () => {
+        const wikiFolderName = basename(existedFolderLocation);
+        const parentFolderLocation = dirname(existedFolderLocation);
         updateForm(workspaceFormData);
-        let creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink);
-        if (!creationError) {
-          creationError = await initWikiGit(wikiFolderLocation, githubWikiUrl, userInfo);
-        }
+        const creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink, true);
         if (creationError) {
           setWikiCreationMessage(creationError);
         } else {
@@ -115,10 +100,10 @@ function DoneButton({
         }
       }}
     >
-      {parentFolderLocation && (
+      {existedFolderLocation && (
         <>
           <Typography variant="body1" display="inline">
-            在
+            打开位于
           </Typography>
           <Typography
             variant="body2"
@@ -127,12 +112,12 @@ function DoneButton({
             align="center"
             style={{ direction: 'rtl', textTransform: 'none' }}
           >
-            {wikiFolderLocation}
+            {existedFolderLocation}
           </Typography>
         </>
       )}
       <Typography variant="body1" display="inline">
-        创建WIKI
+        的WIKI
       </Typography>
       <Typography variant="body1" display="inline">
         并链接到主知识库

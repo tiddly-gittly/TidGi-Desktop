@@ -21,7 +21,14 @@ async function createWiki(newFolderPath, folderName) {
   }
 }
 
-async function createSubWiki(newFolderPath, folderName, mainWikiToLink) {
+/**
+ *
+ * @param {string} newFolderPath
+ * @param {string} folderName
+ * @param {string} mainWikiToLink
+ * @param {boolean} onlyLink not creating new subwiki folder, just link existed subwiki folder to main wiki folder
+ */
+async function createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink = false) {
   const newWikiPath = path.join(newFolderPath, folderName);
   const mainWikiTiddlersFolderPath = path.join(mainWikiToLink, TIDDLERS_PATH, folderName);
   if (!(await fs.pathExists(newFolderPath))) {
@@ -30,10 +37,12 @@ async function createSubWiki(newFolderPath, folderName, mainWikiToLink) {
   if (await fs.pathExists(newWikiPath)) {
     throw new Error(`Wiki已经存在于该位置 "${newWikiPath}"`);
   }
-  try {
-    await fs.mkdirs(newWikiPath);
-  } catch {
-    throw new Error(`无法在该处创建文件夹 "${newWikiPath}"`);
+  if (!onlyLink) {
+    try {
+      await fs.mkdirs(newWikiPath);
+    } catch {
+      throw new Error(`无法在该处创建文件夹 "${newWikiPath}"`);
+    }
   }
   try {
     await fs.createSymlink(newWikiPath, mainWikiTiddlersFolderPath);

@@ -26,12 +26,12 @@ export default function Description({ isCreateMainWorkspace, isCreateMainWorkspa
             onChange={event => isCreateMainWorkspaceSetter(event.target.checked)}
           />
         }
-        label={`创建${isCreateMainWorkspace ? '主' : '子'}知识库`}
+        label={`${isCreateMainWorkspace ? '主' : '子'}知识库`}
       />
       <Typography variant="body2" display="inline">
         {isCreateMainWorkspace
-          ? '主知识库包含了TiddlyWiki的配置文件，以及发布为博客时的公开内容。'
-          : '子知识库必须依附于一个主知识库，可用于存放私有内容，同步到一个私有的Github仓库内，仅本人可读写。子知识库通过创建一个到主知识库的软链接（快捷方式）来生效，创建链接后主知识库内便可看到子知识库内的内容了。'}
+          ? '包含了TiddlyWiki的配置文件，以及发布为博客时的公开内容。'
+          : '必须依附于一个主知识库，可用于存放私有内容，同步到一个私有的Github仓库内，仅本人可读写。子知识库通过创建一个到主知识库的软链接（快捷方式）来生效，创建链接后主知识库内便可看到子知识库内的内容了。'}
       </Typography>
     </Container>
   );

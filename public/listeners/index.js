@@ -64,9 +64,9 @@ const loadListeners = () => {
       return String(error);
     }
   });
-  ipcMain.handle('create-sub-wiki', async (event, newFolderPath, folderName, mainWikiToLink) => {
+  ipcMain.handle('create-sub-wiki', async (event, newFolderPath, folderName, mainWikiToLink, onlyLink) => {
     try {
-      await createSubWiki(newFolderPath, folderName, mainWikiToLink);
+      await createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink);
     } catch (error) {
       return String(error);
     }

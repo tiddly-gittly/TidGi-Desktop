@@ -39,7 +39,6 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
 
 interface Props {
   wikiCreationMessage?: string;
-  parentFolderLocation: string;
   parentFolderLocationSetter: string => void;
   wikiFolderName: string;
   wikiFolderNameSetter: string => void;
@@ -57,7 +56,7 @@ interface StateProps {
   wikiCreationMessage: string;
 }
 
-function WikiPathForm({
+function NewWikiPathForm({
   setWikiCreationMessage,
   wikiCreationMessage = '',
   parentFolderLocation,
@@ -121,7 +120,7 @@ function WikiPathForm({
           wikiFolderNameSetter(event.target.value);
           setWikiCreationMessage('');
         }}
-        label="知识库文件夹名"
+        label="即将新建的知识库文件夹名"
         value={wikiFolderName}
       />
       <LocationPickerInput
@@ -176,4 +175,4 @@ const mapStateToProps = state => ({
   wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
 });
 
-export default connect(mapStateToProps, dispatch => bindActionCreators(actions, dispatch))(WikiPathForm);
+export default connect(mapStateToProps, dispatch => bindActionCreators(actions, dispatch))(NewWikiPathForm);
