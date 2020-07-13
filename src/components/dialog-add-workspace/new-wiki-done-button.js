@@ -1,16 +1,21 @@
 // @flow
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
 
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
+import LinearProgress from '@material-ui/core/LinearProgress';
+import Snackbar from '@material-ui/core/Snackbar';
+import Alert from '@material-ui/lab/Alert';
 
 import * as actions from '../../state/dialog-add-workspace/actions';
 
 import type { IUserInfo } from './user-info';
 import { requestCopyWikiTemplate, requestCreateSubWiki, getIconPath, initWikiGit } from '../../senders';
+
+import useWikiCreationMessage from './use-wiki-creation-message';
 
 const CloseButton = styled(Button)`
   white-space: nowrap;
@@ -31,6 +36,9 @@ interface ActionProps {
   setWikiCreationMessage: string => void;
   save: () => void;
 }
+interface StateProps {
+  wikiCreationMessage: string;
+}
 
 function NewWikiDoneButton({
   isCreateMainWorkspace,
@@ -41,9 +49,10 @@ function NewWikiDoneButton({
   parentFolderLocation,
   updateForm,
   setWikiCreationMessage,
+  wikiCreationMessage,
   save,
   userInfo,
-}: Props & ActionProps) {
+}: Props & ActionProps & StateProps) {
   const wikiFolderLocation = `${parentFolderLocation}/${wikiFolderName}`;
 
   const workspaceFormData = {
@@ -56,86 +65,98 @@ function NewWikiDoneButton({
     picturePath: getIconPath(),
     userInfo,
   };
-  return isCreateMainWorkspace ? (
-    <CloseButton
-      variant="contained"
-      color="secondary"
-      disabled={!parentFolderLocation}
-      onClick={async () => {
-        updateForm(workspaceFormData);
-        let creationError = await requestCopyWikiTemplate(parentFolderLocation, wikiFolderName);
-        if (!creationError) {
-          console.log(githubWikiUrl)
-          creationError = await initWikiGit(wikiFolderLocation, githubWikiUrl, userInfo);
-        }
-        if (creationError) {
-          setWikiCreationMessage(creationError);
-        } else {
-          save();
-        }
-      }}
-    >
-      {parentFolderLocation && (
-        <>
+
+  const [snackBarOpen, progressBarOpen, snackBarOpenSetter] = useWikiCreationMessage(wikiCreationMessage);
+
+  return (
+    <>
+      {progressBarOpen && <LinearProgress color="secondary" />}
+      <Snackbar open={snackBarOpen} autoHideDuration={5000} onClose={() => snackBarOpenSetter(false)}>
+        <Alert severity="info">{wikiCreationMessage}</Alert>
+      </Snackbar>
+
+      {isCreateMainWorkspace ? (
+        <CloseButton
+          variant="contained"
+          color="secondary"
+          disabled={!parentFolderLocation || !githubWikiUrl}
+          onClick={async () => {
+            updateForm(workspaceFormData);
+            let creationError = await requestCopyWikiTemplate(parentFolderLocation, wikiFolderName);
+            if (!creationError) {
+              console.log(githubWikiUrl);
+              creationError = await initWikiGit(wikiFolderLocation, githubWikiUrl, userInfo);
+            }
+            if (creationError) {
+              setWikiCreationMessage(creationError);
+            } else {
+              save();
+            }
+          }}
+        >
+          {parentFolderLocation && (
+            <>
+              <Typography variant="body1" display="inline">
+                在
+              </Typography>
+              <Typography
+                variant="body2"
+                noWrap
+                display="inline"
+                align="center"
+                style={{ direction: 'rtl', textTransform: 'none' }}
+              >
+                {wikiFolderLocation}
+              </Typography>
+            </>
+          )}
           <Typography variant="body1" display="inline">
-            在
+            创建WIKI
           </Typography>
-          <Typography
-            variant="body2"
-            noWrap
-            display="inline"
-            align="center"
-            style={{ direction: 'rtl', textTransform: 'none' }}
-          >
-            {wikiFolderLocation}
-          </Typography>
-        </>
-      )}
-      <Typography variant="body1" display="inline">
-        创建WIKI
-      </Typography>
-    </CloseButton>
-  ) : (
-    <CloseButton
-      variant="contained"
-      color="secondary"
-      disabled={!parentFolderLocation || !mainWikiToLink}
-      onClick={async () => {
-        updateForm(workspaceFormData);
-        let creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink);
-        if (!creationError) {
-          creationError = await initWikiGit(wikiFolderLocation, githubWikiUrl, userInfo);
-        }
-        if (creationError) {
-          setWikiCreationMessage(creationError);
-        } else {
-          save();
-        }
-      }}
-    >
-      {parentFolderLocation && (
-        <>
+        </CloseButton>
+      ) : (
+        <CloseButton
+          variant="contained"
+          color="secondary"
+          disabled={!parentFolderLocation || !mainWikiToLink || !githubWikiUrl}
+          onClick={async () => {
+            updateForm(workspaceFormData);
+            let creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink);
+            if (!creationError) {
+              creationError = await initWikiGit(wikiFolderLocation, githubWikiUrl, userInfo);
+            }
+            if (creationError) {
+              setWikiCreationMessage(creationError);
+            } else {
+              save();
+            }
+          }}
+        >
+          {parentFolderLocation && (
+            <>
+              <Typography variant="body1" display="inline">
+                在
+              </Typography>
+              <Typography
+                variant="body2"
+                noWrap
+                display="inline"
+                align="center"
+                style={{ direction: 'rtl', textTransform: 'none' }}
+              >
+                {wikiFolderLocation}
+              </Typography>
+            </>
+          )}
           <Typography variant="body1" display="inline">
-            在
+            创建WIKI
           </Typography>
-          <Typography
-            variant="body2"
-            noWrap
-            display="inline"
-            align="center"
-            style={{ direction: 'rtl', textTransform: 'none' }}
-          >
-            {wikiFolderLocation}
+          <Typography variant="body1" display="inline">
+            并链接到主知识库
           </Typography>
-        </>
+        </CloseButton>
       )}
-      <Typography variant="body1" display="inline">
-        创建WIKI
-      </Typography>
-      <Typography variant="body1" display="inline">
-        并链接到主知识库
-      </Typography>
-    </CloseButton>
+    </>
   );
 }
 

@@ -29,6 +29,7 @@ const loadListeners = (store) => {
   }
 
   ipcRenderer.on('create-wiki-result', (event, message) => {
+    console.log('message', message);
     store.dispatch(setWikiCreationMessage(message));
   });
 

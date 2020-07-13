@@ -1,6 +1,7 @@
 const git = require('isomorphic-git');
 const http = require('isomorphic-git/http/node');
 const fs = require('fs');
+const { wikiCreationProgress } = require('./wiki/progress-message');
 
 function processUserInfo(userInfo) {
   const { login: name, email, accessToken } = userInfo;
@@ -11,7 +12,7 @@ function processUserInfo(userInfo) {
   const committer = {
     name: 'tiddly-git',
     email: 'tiddlygit@gmail.com',
-  }
+  };
   const onAuth = () => ({
     username: name,
     password: accessToken,
@@ -34,16 +35,19 @@ async function commitFiles(wikiFolderPath, author, message = 'Initialize with Ti
 }
 
 async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo) {
+  wikiCreationProgress('开始初始化本地Git仓库');
   const gitUrl = `${githubRepoUrl}.git`;
   const { author, onAuth } = processUserInfo(userInfo);
   await git.init({ fs, dir: wikiFolderPath });
   await commitFiles(wikiFolderPath, author);
+  wikiCreationProgress('仓库初始化完毕，开始配置Github远端仓库');
   await git.addRemote({
     fs,
     dir: wikiFolderPath,
     remote: 'origin',
     url: gitUrl,
   });
+  wikiCreationProgress('正在将Wiki所在的本地Git备份到Github远端仓库');
   await git.push({
     fs,
     http,
@@ -53,6 +57,7 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo) {
     force: true,
     onAuth,
   });
+  wikiCreationProgress('Git仓库配置完毕');
 }
 
 async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {

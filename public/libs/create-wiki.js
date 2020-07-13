@@ -2,8 +2,10 @@ const fs = require('fs-extra');
 const path = require('path');
 
 const { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } = require('../constants/paths');
+const { wikiCreationProgress } = require('./wiki/progress-message');
 
 async function createWiki(newFolderPath, folderName) {
+  wikiCreationProgress('开始用模板创建Wiki');
   const newWikiPath = path.join(newFolderPath, folderName);
   if (!(await fs.pathExists(newFolderPath))) {
     throw new Error(`该目录不存在 "${newFolderPath}"`);
@@ -19,6 +21,7 @@ async function createWiki(newFolderPath, folderName) {
   } catch {
     throw new Error(`无法在该处创建文件夹 "${newWikiPath}"`);
   }
+  wikiCreationProgress('模板Wiki复制完毕');
 }
 
 /**
@@ -29,6 +32,7 @@ async function createWiki(newFolderPath, folderName) {
  * @param {boolean} onlyLink not creating new subwiki folder, just link existed subwiki folder to main wiki folder
  */
 async function createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink = false) {
+  wikiCreationProgress('开始创建子Wiki');
   const newWikiPath = path.join(newFolderPath, folderName);
   const mainWikiTiddlersFolderPath = path.join(mainWikiToLink, TIDDLERS_PATH, folderName);
   if (!(await fs.pathExists(newFolderPath))) {
@@ -37,6 +41,7 @@ async function createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink
   if (await fs.pathExists(newWikiPath)) {
     throw new Error(`Wiki已经存在于该位置 "${newWikiPath}"`);
   }
+  wikiCreationProgress('开始链接子Wiki到父Wiki');
   if (!onlyLink) {
     try {
       await fs.mkdirs(newWikiPath);
@@ -49,6 +54,7 @@ async function createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink
   } catch {
     throw new Error(`无法链接文件夹 "${newWikiPath}" 到 "${mainWikiTiddlersFolderPath}"`);
   }
+  wikiCreationProgress('子Wiki创建完毕');
 }
 
 async function removeWiki(wikiPath, mainWikiToUnLink) {

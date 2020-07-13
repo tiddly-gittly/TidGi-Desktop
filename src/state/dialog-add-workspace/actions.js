@@ -1,3 +1,4 @@
+/* eslint-disable consistent-return */
 /* eslint-disable unicorn/no-null */
 /* eslint-disable unicorn/consistent-function-scoping */
 import {
@@ -13,7 +14,7 @@ import validate from '../../helpers/validate';
 import isUrl from '../../helpers/is-url';
 import hasErrors from '../../helpers/has-errors';
 
-import { requestCreateWorkspace } from '../../senders';
+import { requestCreateWorkspace, requestWaitForWikiStart } from '../../senders';
 
 export const setWikiCreationMessage = message => ({
   type: ADD_WORKSPACE_CREATE_WIKI_MESSAGE,
@@ -112,9 +113,10 @@ export const updateForm = changes => (dispatch, getState) => {
   }, 300);
 };
 
-export const save = () => (dispatch, getState) => {
+export const save = () => async (dispatch, getState) => {
   const { form } = getState().dialogAddWorkspace;
 
+  dispatch(setWikiCreationMessage('正在更新工作区'));
   const validatedChanges = validate(form, getValidationRules());
   if (hasErrors(validatedChanges)) {
     return dispatch(updateForm(validatedChanges));
@@ -123,7 +125,7 @@ export const save = () => (dispatch, getState) => {
   const url = form.homeUrl.trim();
   const homeUrl = isUrl(url) ? url : `http://${url}`;
 
-  requestCreateWorkspace(
+  await requestCreateWorkspace(
     form.name,
     form.isSubWiki,
     form.mainWikiToLink,
@@ -133,9 +135,10 @@ export const save = () => (dispatch, getState) => {
     form.internetIcon || form.picturePath,
     Boolean(form.transparentBackground),
   );
+  dispatch(setWikiCreationMessage('工作区更新完毕，准备启动Wiki'));
+  await requestWaitForWikiStart(form.port, 5000);
   const { remote } = window.require('electron');
   remote.getCurrentWindow().close();
-  return null;
 };
 
 export const updateMode = mode => ({

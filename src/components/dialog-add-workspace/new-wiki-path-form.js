@@ -74,12 +74,14 @@ function NewWikiPathForm({
     workspacesSetter(getWorkspaces());
   }, []);
 
+  const hasError = wikiCreationMessage.startsWith('Error');
+
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
         <LocationPickerInput
-          error={!!wikiCreationMessage}
-          helperText={wikiCreationMessage}
+          error={hasError}
+          helperText={hasError ? wikiCreationMessage : ''}
           fullWidth
           onChange={event => {
             parentFolderLocationSetter(event.target.value);
@@ -114,7 +116,7 @@ function NewWikiPathForm({
         </LocationPickerButton>
       </LocationPickerContainer>
       <LocationPickerInput
-        error={!!wikiCreationMessage}
+        error={hasError}
         fullWidth
         onChange={event => {
           wikiFolderNameSetter(event.target.value);

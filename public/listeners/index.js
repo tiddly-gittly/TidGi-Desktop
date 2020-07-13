@@ -1,6 +1,7 @@
 /* eslint-disable no-param-reassign */
 const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
+const fetch = require('node-fetch');
 
 const { initWikiGit } = require('../libs/git');
 const { createWiki, createSubWiki, removeWiki } = require('../libs/create-wiki');
@@ -119,7 +120,7 @@ const loadListeners = () => {
     e.returnValue = val;
   });
 
-  ipcMain.on('get-system-preferences', (e) => {
+  ipcMain.on('get-system-preferences', e => {
     const preferences = getSystemPreferences();
     e.returnValue = preferences;
   });
@@ -134,7 +135,7 @@ const loadListeners = () => {
     e.returnValue = val;
   });
 
-  ipcMain.on('get-preferences', (e) => {
+  ipcMain.on('get-preferences', e => {
     const preferences = getPreferences();
     e.returnValue = preferences;
   });
@@ -226,7 +227,7 @@ const loadListeners = () => {
     }
   });
 
-  ipcMain.on('get-pause-notifications-info', (e) => {
+  ipcMain.on('get-pause-notifications-info', e => {
     e.returnValue = getPauseNotificationsInfo();
   });
 
@@ -239,12 +240,12 @@ const loadListeners = () => {
     e.returnValue = getWorkspaceMeta(id);
   });
 
-  ipcMain.on('get-workspace-metas', (e) => {
+  ipcMain.on('get-workspace-metas', e => {
     e.returnValue = getWorkspaceMetas();
   });
 
   // Workspaces
-  ipcMain.on('count-workspace', (e) => {
+  ipcMain.on('count-workspace', e => {
     e.returnValue = countWorkspaces();
   });
 
@@ -253,14 +254,30 @@ const loadListeners = () => {
     e.returnValue = val;
   });
 
-  ipcMain.on('get-workspaces', (e) => {
+  ipcMain.on('get-workspaces', e => {
     const workspaces = getWorkspaces();
     e.returnValue = workspaces;
   });
 
-  ipcMain.on('request-create-workspace', (e, name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground) => {
-    createWorkspaceView(name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground);
-    createMenu();
+  ipcMain.handle(
+    'request-create-workspace',
+    (event, name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground) => {
+      createWorkspaceView(name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground);
+      createMenu();
+    },
+  );
+  ipcMain.handle('request-wait-for-wiki-start', async (event, port, timeoutLimit) => {
+    const timeStart = Date.now();
+    while (Date.now() < timeStart + timeoutLimit) {
+      try {
+        // eslint-disable-next-line no-await-in-loop
+        await fetch(`http://127.0.0.1:${port}`);
+      } catch {
+        console.log('request-wait-for-wiki-start Still waiting for wiki to start');
+        // eslint-disable-next-line no-await-in-loop
+        await new Promise(resolve => setTimeout(resolve, 500));
+      }
+    }
   });
 
   ipcMain.on('request-set-active-workspace', (e, id) => {
@@ -308,8 +325,9 @@ const loadListeners = () => {
     dialog
       .showMessageBox(mainWindow.get(), {
         type: 'question',
-        buttons: ['仅移除工作区', '移除工作区并删除Wiki文件夹','取消'],
-        message: '你确定要移除这个工作区吗？移除工作区会删除本应用中的工作区，但不会删除硬盘上的文件夹。如果你选择一并删除Wiki文件夹，则所有内容都会被被删除。',
+        buttons: ['仅移除工作区', '移除工作区并删除Wiki文件夹', '取消'],
+        message:
+          '你确定要移除这个工作区吗？移除工作区会删除本应用中的工作区，但不会删除硬盘上的文件夹。如果你选择一并删除Wiki文件夹，则所有内容都会被被删除。',
         cancelId: 1,
       })
       .then(({ response }) => {
@@ -319,9 +337,9 @@ const loadListeners = () => {
         }
         // eslint-disable-next-line promise/always-return
         if (response === 1) {
-          const workspace = getWorkspace(id)
+          const workspace = getWorkspace(id);
           removeWorkspaceView(id);
-          removeWiki(workspace.name, workspace.isSubWiki && workspace.mainWikiToLink)
+          removeWiki(workspace.name, workspace.isSubWiki && workspace.mainWikiToLink);
           createMenu();
         }
       })
@@ -428,7 +446,7 @@ const loadListeners = () => {
     createMenu();
   });
 
-  ipcMain.on('request-show-display-media-window', (e) => {
+  ipcMain.on('request-show-display-media-window', e => {
     const viewId = BrowserView.fromWebContents(e.sender).id;
     displayMediaWindow.show(viewId);
   });
@@ -486,17 +504,17 @@ const loadListeners = () => {
   // https://electronjs.org/docs/api/ipc-renderer#ipcrendererinvokechannel-args
   ipcMain.on('request-get-website-icon-url', (e, id, url) => {
     getWebsiteIconUrlAsync(url)
-      .then((iconUrl) => {
+      .then(iconUrl => {
         sendToAllWindows(id, iconUrl);
       })
-      .catch((err) => {
+      .catch(err => {
         console.log(err); // eslint-disable-line no-console
         sendToAllWindows(id, null);
       });
   });
 
   // Native Theme
-  ipcMain.on('get-should-use-dark-colors', (e) => {
+  ipcMain.on('get-should-use-dark-colors', e => {
     e.returnValue = nativeTheme.shouldUseDarkColors;
   });
 
