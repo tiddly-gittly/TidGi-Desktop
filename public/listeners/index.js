@@ -3,8 +3,8 @@ const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = 
 const { autoUpdater } = require('electron-updater');
 const fetch = require('node-fetch');
 
-const { initWikiGit } = require('../libs/git');
-const { createWiki, createSubWiki, removeWiki } = require('../libs/create-wiki');
+const { initWikiGit, getRemoteUrl } = require('../libs/git');
+const { createWiki, createSubWiki, removeWiki, ensureWikiExist } = require('../libs/create-wiki');
 const { ICON_PATH, REACT_PATH, DESKTOP_PATH } = require('../constants/paths');
 
 const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
@@ -68,6 +68,13 @@ const loadListeners = () => {
   ipcMain.handle('create-sub-wiki', async (event, newFolderPath, folderName, mainWikiToLink, onlyLink) => {
     try {
       await createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink);
+    } catch (error) {
+      return String(error);
+    }
+  });
+  ipcMain.handle('ensure-wiki-exist', async (event, wikiPath, shouldBeMainWiki) => {
+    try {
+      await ensureWikiExist(wikiPath, shouldBeMainWiki);
     } catch (error) {
       return String(error);
     }
@@ -257,6 +264,11 @@ const loadListeners = () => {
   ipcMain.on('get-workspaces', e => {
     const workspaces = getWorkspaces();
     e.returnValue = workspaces;
+  });
+
+  ipcMain.handle('get-workspaces-remote', async (event, wikiFolderPath) => {
+    const url = await getRemoteUrl(wikiFolderPath);
+    return url;
   });
 
   ipcMain.handle(

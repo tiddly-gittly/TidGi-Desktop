@@ -14,7 +14,7 @@ import { basename, dirname } from 'path';
 import * as actions from '../../state/dialog-add-workspace/actions';
 
 import type { IUserInfo } from './user-info';
-import { requestCreateSubWiki, getIconPath, initWikiGit } from '../../senders';
+import { requestCreateSubWiki, getIconPath, ensureWikiExist } from '../../senders';
 import useWikiCreationMessage from './use-wiki-creation-message';
 
 const CloseButton = styled(Button)`
@@ -75,10 +75,15 @@ function DoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!existedFolderLocation}
+          disabled={!existedFolderLocation || !githubWikiUrl}
           onClick={async () => {
             updateForm(workspaceFormData);
-            save();
+            const creationError = await ensureWikiExist(existedFolderLocation, true);
+            if (creationError) {
+              setWikiCreationMessage(creationError);
+            } else {
+              save();
+            }
           }}
         >
           {existedFolderLocation && (
@@ -105,17 +110,15 @@ function DoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!existedFolderLocation || !mainWikiToLink}
+          disabled={!existedFolderLocation || !mainWikiToLink || !githubWikiUrl}
           onClick={async () => {
             const wikiFolderName = basename(existedFolderLocation);
             const parentFolderLocation = dirname(existedFolderLocation);
             updateForm(workspaceFormData);
-            const creationError = await requestCreateSubWiki(
-              parentFolderLocation,
-              wikiFolderName,
-              mainWikiToLink,
-              true,
-            );
+            let creationError = await ensureWikiExist(existedFolderLocation, false);
+            if (!creationError) {
+              creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink, true);
+            }
             if (creationError) {
               setWikiCreationMessage(creationError);
             } else {

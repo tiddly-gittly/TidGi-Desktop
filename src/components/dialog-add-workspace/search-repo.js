@@ -13,7 +13,6 @@ import ListItemText from '@material-ui/core/ListItemText';
 import Button from '@material-ui/core/Button';
 import CachedIcon from '@material-ui/icons/Cached';
 
-import GitHubLogin from './github-login';
 import type { IUserInfo } from './user-info';
 
 const RepoSearchInput = styled(TextField)``;
@@ -40,20 +39,11 @@ const SEARCH_REPO_QUERY = `
 
 interface Props {
   accessToken: string | null;
-  accessTokenSetter: (string | null) => void;
   githubWikiUrl: string;
   githubWikiUrlSetter: string => void;
   userInfo?: IUserInfo;
-  userInfoSetter: IUserInfo => void;
 }
-export default function SearchRepo({
-  accessToken,
-  accessTokenSetter,
-  githubWikiUrl,
-  githubWikiUrlSetter,
-  userInfo,
-  userInfoSetter,
-}: Props) {
+export default function SearchRepo({ accessToken, githubWikiUrl, githubWikiUrlSetter, userInfo }: Props) {
   const [githubRepoSearchString, githubRepoSearchStringSetter] = useState('wiki');
   const loadCount = 10;
   const githubUsername = userInfo?.login || '';
@@ -82,34 +72,6 @@ export default function SearchRepo({
 
   return (
     <>
-      <GitHubLogin
-        clientId="7b6e0fc33f4afd71a4bb"
-        clientSecret="6015d1ca4ded86b4778ed39109193ff20c630bdd"
-        redirectUri="http://localhost"
-        scope="repo"
-        onSuccess={response => {
-          const accessTokenToSet = response?.userInfo?.thirdPartyIdentity?.accessToken;
-          const authDataString = response?.userInfo?.oauth;
-          if (accessTokenToSet) {
-            accessTokenSetter(accessTokenToSet);
-          }
-          // all data we need
-          if (accessTokenToSet && authDataString) {
-            const authData = JSON.parse(authDataString);
-            const nextUserInfo = {
-              ...response.userInfo,
-              ...authData,
-              ...response.userInfo.thirdPartyIdentity,
-            };
-            delete nextUserInfo.oauth;
-            delete nextUserInfo.thirdPartyIdentity;
-            userInfoSetter(nextUserInfo);
-          }
-        }}
-        // eslint-disable-next-line unicorn/no-null
-        onLogout={response => accessTokenSetter(null)}
-        onFailure={response => console.log(response)}
-      />
       <RepoSearchInput
         fullWidth
         onChange={event => {

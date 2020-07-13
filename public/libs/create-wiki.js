@@ -65,4 +65,13 @@ async function removeWiki(wikiPath, mainWikiToUnLink) {
   await fs.remove(wikiPath);
 }
 
-module.exports = { createWiki, createSubWiki, removeWiki };
+async function ensureWikiExist(wikiPath, shouldBeMainWiki) {
+  if (!(await fs.pathExists(wikiPath))) {
+    throw new Error(`该目录不存在 "${wikiPath}"`);
+  }
+  if (shouldBeMainWiki && !(await fs.pathExists(path.join(wikiPath, TIDDLERS_PATH)))) {
+    throw new Error(`该目录不是一个Wiki文件夹 "${wikiPath}"`);
+  }
+}
+
+module.exports = { createWiki, createSubWiki, removeWiki, ensureWikiExist };

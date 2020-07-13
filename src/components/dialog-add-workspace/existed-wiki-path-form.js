@@ -100,7 +100,6 @@ function WikiPathForm({
                 properties: ['openDirectory'],
               })
               .then(({ canceled, filePaths }) => {
-                console.log(filePaths)
                 // eslint-disable-next-line promise/always-return
                 if (!canceled && filePaths.length > 0) {
                   existedFolderLocationSetter(filePaths[0]);

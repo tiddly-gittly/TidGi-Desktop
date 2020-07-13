@@ -17,8 +17,16 @@ import ExistedWikiDoneButton from './existed-wiki-done-button';
 import { getGithubUserInfo, setGithubUserInfo } from './user-info';
 import type { IUserInfo } from './user-info';
 import TabBar from './tab-bar';
+import GitHubLogin from './github-login';
 
-import { requestSetPreference, getPreference, getDesktopPath, countWorkspace } from '../../senders';
+import {
+  requestSetPreference,
+  getPreference,
+  getDesktopPath,
+  countWorkspace,
+  getWorkspaceRemote,
+  requestOpenInBrowser,
+} from '../../senders';
 
 const graphqlClient = new GraphQLClient({
   url: GITHUB_GRAPHQL_API,
@@ -34,6 +42,13 @@ const Container = styled.main`
 `;
 const SyncContainer = styled(Paper)`
   margin-top: 5px;
+`;
+const GithubRepoLink = styled(Typography)`
+  cursor: pointer;
+  opacity: 50%;
+  &:hover {
+    opacity: 100%;
+  }
 `;
 
 const setGithubToken = (token: string | null) => requestSetPreference('github-token', token);
@@ -68,9 +83,63 @@ export default function AddWorkspace() {
   }, [userInfo]);
 
   const [mainWikiToLink, mainWikiToLinkSetter] = useState('');
-  const [githubWikiUrl, githubWikiUrlSetter] = useState('');
+  const [githubWikiUrl, githubWikiUrlSetter] = useState<string>('');
+  useEffect(() => {
+    async function getWorkspaceRemoteInEffect() {
+      const url = await getWorkspaceRemote(existedFolderLocation);
+      url && githubWikiUrlSetter(url);
+    }
+    getWorkspaceRemoteInEffect();
+  }, [githubWikiUrl, existedFolderLocation]);
 
   const [wikiFolderName, wikiFolderNameSetter] = useState('tiddlywiki');
+
+  const syncContainer = (
+    <SyncContainer elevation={2} square>
+      <GitHubLogin
+        clientId="7b6e0fc33f4afd71a4bb"
+        clientSecret="6015d1ca4ded86b4778ed39109193ff20c630bdd"
+        redirectUri="http://localhost"
+        scope="repo"
+        onSuccess={response => {
+          const accessTokenToSet = response?.userInfo?.thirdPartyIdentity?.accessToken;
+          const authDataString = response?.userInfo?.oauth;
+          if (accessTokenToSet) {
+            accessTokenSetter(accessTokenToSet);
+          }
+          // all data we need
+          if (accessTokenToSet && authDataString) {
+            const authData = JSON.parse(authDataString);
+            const nextUserInfo = {
+              ...response.userInfo,
+              ...authData,
+              ...response.userInfo.thirdPartyIdentity,
+            };
+            delete nextUserInfo.oauth;
+            delete nextUserInfo.thirdPartyIdentity;
+            userInfoSetter(nextUserInfo);
+          }
+        }}
+        // eslint-disable-next-line unicorn/no-null
+        onLogout={response => accessTokenSetter(null)}
+        onFailure={response => console.log(response)}
+      />
+      <Typography variant="subtitle1" align="center">
+        同步到云端
+      </Typography>
+      {githubWikiUrl && (
+        <GithubRepoLink onClick={() => requestOpenInBrowser(githubWikiUrl)} variant="subtitle2" align="center">
+          ({githubWikiUrl})
+        </GithubRepoLink>
+      )}
+      <SearchRepo
+        githubWikiUrl={githubWikiUrl}
+        accessToken={accessToken}
+        githubWikiUrlSetter={githubWikiUrlSetter}
+        userInfo={userInfo}
+      />
+    </SyncContainer>
+  );
 
   return (
     <ClientContext.Provider value={graphqlClient}>
@@ -82,19 +151,7 @@ export default function AddWorkspace() {
             isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter}
           />
 
-          <SyncContainer elevation={2} square>
-            <Typography variant="subtitle1" align="center">
-              同步到云端
-            </Typography>
-            <SearchRepo
-              githubWikiUrl={githubWikiUrl}
-              accessToken={accessToken}
-              accessTokenSetter={accessTokenSetter}
-              githubWikiUrlSetter={githubWikiUrlSetter}
-              userInfoSetter={userInfoSetter}
-              userInfo={userInfo}
-            />
-          </SyncContainer>
+          {syncContainer}
 
           <NewWikiPathForm
             parentFolderLocation={parentFolderLocation}
@@ -124,6 +181,9 @@ export default function AddWorkspace() {
             isCreateMainWorkspace={isCreateMainWorkspace}
             isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter}
           />
+
+          {syncContainer}
+
           <ExistedWikiPathForm
             existedFolderLocationSetter={existedFolderLocationSetter}
             existedFolderLocation={existedFolderLocation}
@@ -135,6 +195,7 @@ export default function AddWorkspace() {
             wikiPortSetter={wikiPortSetter}
             isCreateMainWorkspace={isCreateMainWorkspace}
           />
+
           <ExistedWikiDoneButton
             isCreateMainWorkspace={isCreateMainWorkspace}
             wikiPort={wikiPort}

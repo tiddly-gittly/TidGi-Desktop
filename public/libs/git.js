@@ -85,7 +85,18 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
   console.log(`${wikiFolderPath} Sync completed`);
 }
 
+async function getRemoteUrl(wikiFolderPath) {
+  try {
+    const remotes = await git.listRemotes({ fs, dir: wikiFolderPath });
+    const githubRemote = remotes.find(remote => remote.remote === 'origin') || remotes[0] || { url: '' };
+    return githubRemote.url.replace('.git', '');
+  } catch {
+    return '';
+  }
+}
+
 module.exports = {
   initWikiGit,
   commitAndSync,
+  getRemoteUrl,
 };

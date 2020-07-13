@@ -1,7 +1,7 @@
 // @flow
 const { ipcRenderer } = window.require('electron');
 
-export const requestCopyWikiTemplate = (newFolderPath, folderName) =>
+export const requestCopyWikiTemplate = (newFolderPath: string, folderName: string) =>
   ipcRenderer.invoke('copy-wiki-template', newFolderPath, folderName);
 export const requestCreateSubWiki = (
   newFolderPath: string,
@@ -9,6 +9,8 @@ export const requestCreateSubWiki = (
   mainWikiToLink: string,
   onlyLink?: boolean,
 ) => ipcRenderer.invoke('create-sub-wiki', newFolderPath, folderName, mainWikiToLink, onlyLink);
+export const ensureWikiExist = (wikiPath: string, shouldBeMainWiki: boolean) =>
+  ipcRenderer.invoke('ensure-wiki-exist', wikiPath, shouldBeMainWiki);
 export const requestOpenInBrowser = url => ipcRenderer.send('request-open-in-browser', url);
 export const requestShowMessageBox = (message, type) => ipcRenderer.send('request-show-message-box', message, type);
 export const requestLoadUrl = (url, id) => ipcRenderer.send('request-load-url', url, id);
@@ -63,6 +65,8 @@ export const requestSetSystemPreference = (name: string, value: JsonValue) =>
 export const countWorkspace = () => ipcRenderer.sendSync('count-workspace');
 export const getWorkspace = (id: string) => ipcRenderer.sendSync('get-workspace', id);
 export const getWorkspaces = () => ipcRenderer.sendSync('get-workspaces');
+export const getWorkspaceRemote = (wikiFolderPath: string) =>
+  ipcRenderer.invoke('get-workspaces-remote', wikiFolderPath);
 export const requestClearBrowsingData = () => ipcRenderer.send('request-clear-browsing-data');
 export const requestCreateWorkspace = (
   name: string,
@@ -84,7 +88,8 @@ export const requestCreateWorkspace = (
     picture,
     transparentBackground,
   );
-export const requestWaitForWikiStart = (port: number, timeoutLimit: number = 5000) => ipcRenderer.invoke('request-wait-for-wiki-start', port, timeoutLimit);
+export const requestWaitForWikiStart = (port: number, timeoutLimit: number = 5000) =>
+  ipcRenderer.invoke('request-wait-for-wiki-start', port, timeoutLimit);
 export const requestHibernateWorkspace = id => ipcRenderer.send('request-hibernate-workspace', id);
 export const requestOpenUrlInWorkspace = (url, id) => ipcRenderer.send('request-open-url-in-workspace', url, id);
 export const requestRealignActiveWorkspace = () => ipcRenderer.send('request-realign-active-workspace');

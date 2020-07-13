@@ -135,7 +135,7 @@ export const save = () => async (dispatch, getState) => {
     form.internetIcon || form.picturePath,
     Boolean(form.transparentBackground),
   );
-  dispatch(setWikiCreationMessage('工作区更新完毕，准备启动Wiki'));
+  dispatch(setWikiCreationMessage('工作区更新完毕，正在启动Wiki'));
   await requestWaitForWikiStart(form.port, 5000);
   const { remote } = window.require('electron');
   remote.getCurrentWindow().close();
