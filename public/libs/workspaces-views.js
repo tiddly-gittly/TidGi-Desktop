@@ -1,4 +1,4 @@
-const { session } = require('electron');
+const { app, session } = require('electron');
 
 const {
   countWorkspaces,
@@ -79,11 +79,15 @@ const setActiveWorkspaceView = (id) => {
 };
 
 const removeWorkspaceView = (id) => {
+  // if there's only one workspace left, clear all
   if (countWorkspaces() === 1) {
-    mainWindow.get().setBrowserView(null);
-  }
-
-  if (getWorkspace(id).active && countWorkspaces() > 1) {
+    const win = mainWindow.get();
+    if (win) {
+      win.setBrowserView(null);
+      win.setTitle(app.name);
+      sendToAllWindows('update-title', '');
+    }
+  } else if (countWorkspaces() > 1 && getWorkspace(id).active) {
     setActiveWorkspaceView(getPreviousWorkspace(id).id);
   }
 

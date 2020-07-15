@@ -52,7 +52,7 @@ const FakeTitleBar = (props) => {
         }
       }}
     >
-      {(window.mode === 'main' || window.mode === 'menubar') && title ? title : window.require('electron').remote.getCurrentWindow().getTitle()}
+      {(window.mode === 'main' || window.mode === 'menubar') && title ? title : window.require('electron').remote.app.name}
     </div>
   );
 };
