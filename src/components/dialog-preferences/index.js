@@ -202,6 +202,7 @@ const Preferences = ({
   rememberLastPageVisited,
   shareWorkspaceBrowsingData,
   sidebar,
+  sidebarShortcutHints,
   spellcheck,
   spellcheckLanguages,
   swipeToNavigate,
@@ -350,6 +351,22 @@ const Preferences = ({
                   onChange={(e) => {
                     requestSetPreference('sidebar', e.target.checked);
                     requestRealignActiveWorkspace();
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            <Divider />
+            <ListItem>
+              <ListItemText
+                primary="Show keyboard shortcut hints on sidebar"
+              />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={sidebarShortcutHints}
+                  onChange={(e) => {
+                    requestSetPreference('sidebarShortcutHints', e.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -1254,6 +1271,7 @@ Preferences.propTypes = {
   rememberLastPageVisited: PropTypes.bool.isRequired,
   shareWorkspaceBrowsingData: PropTypes.bool.isRequired,
   sidebar: PropTypes.bool.isRequired,
+  sidebarShortcutHints: PropTypes.bool.isRequired,
   spellcheck: PropTypes.bool.isRequired,
   spellcheckLanguages: PropTypes.arrayOf(PropTypes.string).isRequired,
   swipeToNavigate: PropTypes.bool.isRequired,
@@ -1295,6 +1313,7 @@ const mapStateToProps = (state) => ({
   rememberLastPageVisited: state.preferences.rememberLastPageVisited,
   shareWorkspaceBrowsingData: state.preferences.shareWorkspaceBrowsingData,
   sidebar: state.preferences.sidebar,
+  sidebarShortcutHints: state.preferences.sidebarShortcutHints,
   spellcheck: state.preferences.spellcheck,
   spellcheckLanguages: state.preferences.spellcheckLanguages,
   swipeToNavigate: state.preferences.swipeToNavigate,

@@ -58,6 +58,7 @@ const defaultPreferences = {
   rememberLastPageVisited: false,
   shareWorkspaceBrowsingData: false,
   sidebar: true,
+  sidebarShortcutHints: true,
   spellcheck: true,
   spellcheckLanguages: ['en-US'],
   swipeToNavigate: true,
