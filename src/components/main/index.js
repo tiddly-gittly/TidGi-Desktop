@@ -65,6 +65,7 @@ const styles = (theme) => ({
     flex: 1,
     height: '100%',
     width: '100%',
+    overflow: 'hidden',
   },
   sidebarRoot: {
     height: '100%',
