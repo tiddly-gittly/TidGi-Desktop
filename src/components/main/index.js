@@ -234,7 +234,7 @@ const Main = ({
   workspaces,
 }) => {
   const workspacesList = getWorkspacesAsList(workspaces);
-  const showTitleBar = window.process.platform === 'darwin' && titleBar;
+  const showTitleBar = window.process.platform === 'darwin' && titleBar && !isFullScreen;
 
   return (
     <div className={classes.outerRoot}>
