@@ -201,7 +201,15 @@ const createAsync = () => new Promise((resolve) => {
   win.on('close', (e) => {
     if (process.platform === 'darwin' && !win.forceClose) {
       e.preventDefault();
-      win.hide();
+      // https://github.com/electron/electron/issues/6033#issuecomment-242023295
+      if (win.isFullScreen()) {
+        win.once('leave-full-screen', () => {
+          win.hide();
+        });
+        win.setFullScreen(false);
+      } else {
+        win.hide();
+      }
     }
   });
 
