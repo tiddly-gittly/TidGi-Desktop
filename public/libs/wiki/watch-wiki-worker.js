@@ -37,7 +37,7 @@ function watchFolder(wikiRepoPath, wikiFolderPath, githubRepoUrl, userInfo, sync
     }
     parentPort.postMessage(`${fileName} changed`);
     lock = true;
-    await debounceCommitAndSync(wikiRepoPath, githubRepoUrl, userInfo);
+    await debounceCommitAndSync(wikiRepoPath, githubRepoUrl, userInfo, parentPort.postMessage.bind(parentPort));
     lock = false;
   }, 1000);
   // simple lock to prevent running two instance of commit task
@@ -48,7 +48,7 @@ function watchFolder(wikiRepoPath, wikiFolderPath, githubRepoUrl, userInfo, sync
   try {
     gitignoreFile = fs.readFileSync(gitIgnoreFilePath, 'utf-8') || '';
   } catch (error) {
-    parentPort.postMessage(`Error: fail to load .gitignore from ${gitIgnoreFilePath} \n ${error} ${error.stack}`);
+    parentPort.postMessage(`Fail to load .gitignore from ${gitIgnoreFilePath}, this is ok if you don't need a .gitignore in the subwiki. \n ${error} ${error.stack}`);
   }
   const filesToIgnoreFromGitIgnore = compact(gitignoreFile.split('\n').filter(line => !trim(line).startsWith('#')));
   watcher = chokidar.watch(wikiFolderPath, {

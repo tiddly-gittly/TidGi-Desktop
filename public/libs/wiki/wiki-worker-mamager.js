@@ -1,8 +1,23 @@
 /* eslint-disable no-console */
 const { Worker } = require('worker_threads');
 const isDev = require('electron-is-dev');
-
 const path = require('path');
+
+const { logger } = require('../log');
+
+// worker should send payload in form of `{ message: string, handler: string }` where `handler` is the name of function to call
+const logMessage = loggerMeta => message => {
+  if (typeof message === 'string') {
+    logger.info(message, loggerMeta);
+  } else if (typeof message === 'object' && message.payload) {
+    const { type, payload } = message;
+    if (type === 'progress') {
+      logger.info(payload.message, { ...loggerMeta, handler: payload.handler });
+    } else {
+      logger.info(payload, loggerMeta);
+    }
+  }
+};
 
 // key is same to workspace name, so we can get this worker by workspace name
 // { [name: string]: Worker }
@@ -22,10 +37,15 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
   const workerData = { homePath, userName, tiddlyWikiPort };
   const worker = new Worker(WIKI_WORKER_PATH, { workerData });
   wikiWorkers[homePath] = worker;
-  worker.on('message', message => console.log(`[NodeJSWiki ${homePath}] ${message}`));
-  worker.on('error', error => console.error(`[NodeJSWiki ${homePath}] ${error}`));
+  const loggerMeta = { worker: 'NodeJSWiki', homePath };
+  worker.on('message', logMessage(loggerMeta));
+  worker.on('error', error => logger.error(error), loggerMeta);
   worker.on('exit', code => {
-    if (code !== 0) console.error(`[NodeJSWiki ${homePath}] Worker stopped with exit code ${code}`);
+    if (code !== 0)
+      logger.warn(
+        `NodeJSWiki ${homePath} Worker stopped with exit code ${code}, this also happen normally when you delete a workspace.`,
+        loggerMeta,
+      );
   });
 };
 module.exports.stopWiki = function stopWiki(homePath) {
@@ -44,10 +64,15 @@ module.exports.startWikiWatcher = function startWikiWatcher(
   const workerData = { wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath, syncDebounceInterval, isDev };
   const worker = new Worker(WIKI_WATCHER_WORKER_PATH, { workerData });
   wikiWatcherWorkers[wikiRepoPath] = worker;
-  worker.on('message', message => console.log(`[WikiWatcher ${wikiRepoPath}] ${message}`));
-  worker.on('error', error => console.error(`[WikiWatcher ${wikiRepoPath}] ${error}`));
+  const loggerMeta = { worker: 'WikiWatcher', wikiRepoPath };
+  worker.on('message', logMessage(loggerMeta));
+  worker.on('error', error => logger.error(error, loggerMeta));
   worker.on('exit', code => {
-    if (code !== 0) console.error(`[WikiWatcher ${wikiRepoPath}] Worker stopped with exit code ${code}`);
+    if (code !== 0)
+      logger.warn(
+        `WikiWatcher ${wikiRepoPath} Worker stopped with exit code ${code}, this also happen normally when you delete a workspace.`,
+        loggerMeta,
+      );
   });
 };
 

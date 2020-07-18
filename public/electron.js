@@ -81,6 +81,7 @@ if (!gotTheLock) {
   loadListeners();
 
   const commonInit = () => {
+    // eslint-disable-next-line promise/catch-or-return
     app
       .whenReady()
       .then(() => mainWindow.createAsync())
@@ -141,6 +142,7 @@ if (!gotTheLock) {
         // before the workspaces's BrowserView fully loaded
         // error will occur
         // see https://github.com/atomery/webcatalog/issues/637
+        // eslint-disable-next-line promise/always-return
         if (process.platform === 'linux') {
           const win = mainWindow.get();
           const handleMaximize = () => {
@@ -157,6 +159,7 @@ if (!gotTheLock) {
           win.on('unmaximize', handleMaximize);
         }
       })
+      // eslint-disable-next-line promise/always-return
       .then(() => {
         // trigger whenTrulyReady
         ipcMain.emit('truly-ready');
@@ -175,6 +178,7 @@ if (!gotTheLock) {
 
     autoUpdater.allowPrerelease = allowPrerelease;
     whenTrulyReady()
+      // eslint-disable-next-line promise/always-return
       .then(() => {
         ipcMain.emit('request-check-for-updates', null, true);
       })

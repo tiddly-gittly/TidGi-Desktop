@@ -282,6 +282,15 @@ window.addEventListener('message', (e) => {
   }
 });
 
+// add snackbar to notify user
+ipcRenderer.on('wiki-sync-progress', (event, message) => {
+  webFrame.executeJavaScript(`
+    $tw.wiki.addTiddler({ title: '$:/state/notification/wiki-sync-progress', text: '${message}' });
+    $tw.notifier.display('$:/state/notification/wiki-sync-progress');
+  `);
+});
+
+
 // Fix Can't show file list of Google Drive
 // https://github.com/electron/electron/issues/16587
 

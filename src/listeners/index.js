@@ -28,8 +28,7 @@ const loadListeners = (store) => {
     window.addEventListener('offline', handleOnlineOffline);
   }
 
-  ipcRenderer.on('create-wiki-result', (event, message) => {
-    console.log('message', message);
+  ipcRenderer.on('create-wiki-progress', (event, message) => {
     store.dispatch(setWikiCreationMessage(message));
   });
 

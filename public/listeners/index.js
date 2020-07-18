@@ -4,6 +4,7 @@ const { autoUpdater } = require('electron-updater');
 const fetch = require('node-fetch');
 
 const { initWikiGit, getRemoteUrl } = require('../libs/git');
+const { logger } = require('../libs/log');
 const { createWiki, createSubWiki, removeWiki, ensureWikiExist } = require('../libs/create-wiki');
 const { ICON_PATH, REACT_PATH, DESKTOP_PATH } = require('../constants/paths');
 
@@ -60,7 +61,7 @@ const spellcheckLanguagesWindow = require('../windows/spellcheck-languages');
 const loadListeners = () => {
   ipcMain.handle('copy-wiki-template', async (event, newFolderPath, folderName) => {
     try {
-      await createWiki(newFolderPath, folderName);
+      await createWiki(newFolderPath, folderName, logger);
     } catch (error) {
       return String(error);
     }
@@ -90,7 +91,7 @@ const loadListeners = () => {
   });
   ipcMain.handle('request-init-wiki-git', async (event, wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) => {
     try {
-      await initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
+      await initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki, logger);
     } catch (error) {
       console.info(error);
       removeWiki(wikiFolderPath);

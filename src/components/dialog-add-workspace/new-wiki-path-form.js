@@ -76,7 +76,6 @@ function NewWikiPathForm({
 
   const hasError = wikiCreationMessage.startsWith('Error');
 
-  console.warn(`mainWikiToLink`, JSON.stringify(mainWikiToLink, null, '  '));
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
