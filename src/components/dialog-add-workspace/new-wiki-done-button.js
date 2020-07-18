@@ -79,7 +79,7 @@ function NewWikiDoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!parentFolderLocation || !githubWikiUrl}
+          disabled={!parentFolderLocation || !githubWikiUrl || progressBarOpen}
           onClick={async () => {
             updateForm(workspaceFormData);
             let creationError = await requestCopyWikiTemplate(parentFolderLocation, wikiFolderName);
@@ -118,7 +118,7 @@ function NewWikiDoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!parentFolderLocation || !mainWikiToLink || !githubWikiUrl}
+          disabled={!parentFolderLocation || !mainWikiToLink || !githubWikiUrl || progressBarOpen}
           onClick={async () => {
             updateForm(workspaceFormData);
             let creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink);

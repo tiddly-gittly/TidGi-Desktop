@@ -43,6 +43,7 @@
     "is-url": "1.2.4",
     "isomorphic-git": "^1.7.1",
     "jimp": "0.14.0",
+    "lodash": "4.17.19",
     "menubar": "9.0.1",
     "node-fetch": "2.6.0",
     "prop-types": "15.7.2",

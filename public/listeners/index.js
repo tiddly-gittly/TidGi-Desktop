@@ -69,6 +69,7 @@ const loadListeners = () => {
     try {
       await createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink);
     } catch (error) {
+      console.info(error);
       return String(error);
     }
   });
@@ -76,6 +77,7 @@ const loadListeners = () => {
     try {
       await ensureWikiExist(wikiPath, shouldBeMainWiki);
     } catch (error) {
+      console.info(error);
       return String(error);
     }
   });
@@ -90,6 +92,8 @@ const loadListeners = () => {
     try {
       await initWikiGit(wikiFolderPath, githubRepoUrl, userInfo);
     } catch (error) {
+      console.info(error);
+      removeWiki(wikiFolderPath);
       return String(error);
     }
   });

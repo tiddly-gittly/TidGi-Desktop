@@ -75,7 +75,7 @@ function DoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!existedFolderLocation || !githubWikiUrl}
+          disabled={!existedFolderLocation || !githubWikiUrl || progressBarOpen}
           onClick={async () => {
             updateForm(workspaceFormData);
             const creationError = await ensureWikiExist(existedFolderLocation, true);
@@ -110,7 +110,7 @@ function DoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!existedFolderLocation || !mainWikiToLink || !githubWikiUrl}
+          disabled={!existedFolderLocation || !mainWikiToLink || !githubWikiUrl || progressBarOpen}
           onClick={async () => {
             const wikiFolderName = basename(existedFolderLocation);
             const parentFolderLocation = dirname(existedFolderLocation);

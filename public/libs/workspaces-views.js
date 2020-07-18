@@ -13,6 +13,7 @@ const {
   setWorkspaces,
   setWorkspacePicture,
 } = require('./workspaces');
+const sendToAllWindows = require('./send-to-all-windows');
 
 const {
   addView,
