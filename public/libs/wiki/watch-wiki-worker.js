@@ -4,8 +4,6 @@ const path = require('path');
 const chokidar = require('chokidar');
 const { trim, compact } = require('lodash');
 
-const { commitAndSync } = require('../git');
-
 const frequentlyChangedFileThatShouldBeIgnoredFromWatch = ['output', /\$__StoryList/];
 const topLevelFoldersToIgnored = ['node_modules', '.git'];
 
@@ -28,9 +26,11 @@ function debounce(func, wait, immediate) {
 }
 
 let watcher;
-function watchFolder(wikiRepoPath, wikiFolderPath, githubRepoUrl, userInfo, syncDebounceInterval) {
+function watchFolder(wikiRepoPath, wikiFolderPath, githubRepoUrl, userInfo, syncDebounceInterval, isDevelopment) {
+  // eslint-disable-next-line import/no-unresolved, global-require
+  const { commitAndSync } = isDevelopment ? require('../git') : require('./git');
   const debounceCommitAndSync = debounce(commitAndSync, syncDebounceInterval);
-  const onChange = debounce(async (fileName) => {
+  const onChange = debounce(async fileName => {
     if (lock) {
       parentPort.postMessage(`${fileName} changed, but lock is on, so skip`);
       return;
@@ -69,8 +69,8 @@ function watchFolder(wikiRepoPath, wikiFolderPath, githubRepoUrl, userInfo, sync
 }
 
 function watchWiki() {
-  const { wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath, syncDebounceInterval } = workerData;
-  watchFolder(wikiRepoPath, wikiFolderPath, githubRepoUrl, userInfo, syncDebounceInterval);
+  const { wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath, syncDebounceInterval, isDev } = workerData;
+  watchFolder(wikiRepoPath, wikiFolderPath, githubRepoUrl, userInfo, syncDebounceInterval, isDev);
 }
 
 if (!isMainThread) {

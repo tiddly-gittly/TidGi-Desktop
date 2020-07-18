@@ -9,7 +9,8 @@ const path = require('path');
 const wikiWorkers = {};
 const wikiWatcherWorkers = {};
 
-// don't forget to config option in dist.js https://github.com/electron/electron/issues/18540#issuecomment-652430001
+// don't forget to config option in `dist.js` https://github.com/electron/electron/issues/18540#issuecomment-652430001
+// to copy all worker.js and its local dependence to `process.resourcesPath`
 const WIKI_WORKER_PATH = isDev
   ? path.resolve(__dirname, './wiki-worker.js')
   : path.resolve(process.resourcesPath, '..', 'wiki-worker.js');
@@ -40,7 +41,7 @@ module.exports.startWikiWatcher = function startWikiWatcher(
   wikiFolderPath,
   syncDebounceInterval,
 ) {
-  const workerData = { wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath, syncDebounceInterval };
+  const workerData = { wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath, syncDebounceInterval, isDev };
   const worker = new Worker(WIKI_WATCHER_WORKER_PATH, { workerData });
   wikiWatcherWorkers[wikiRepoPath] = worker;
   worker.on('message', message => console.log(`[WikiWatcher ${wikiRepoPath}] ${message}`));

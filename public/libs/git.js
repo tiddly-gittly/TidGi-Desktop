@@ -3,7 +3,6 @@ const fs = require('fs-extra');
 const path = require('path');
 const { compact } = require('lodash');
 const { GitProcess } = require('dugite');
-const { wikiCreationProgress } = require('./wiki/progress-message');
 
 /**
  * Git add and commit all file
@@ -18,7 +17,7 @@ async function commitFiles(wikiFolderPath, username, email, message = 'Initializ
 }
 
 async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo) {
-  wikiCreationProgress('开始初始化本地Git仓库');
+  console.log('开始初始化本地Git仓库');
   const { login: username, email, accessToken } = userInfo;
   const gitUrl = `${githubRepoUrl}.git`.replace(
     'https://github.com/',
@@ -27,9 +26,9 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo) {
   console.info(`Using gitUrl ${gitUrl}`);
   await GitProcess.exec(['init'], wikiFolderPath);
   await commitFiles(wikiFolderPath, username, email);
-  wikiCreationProgress('仓库初始化完毕，开始配置Github远端仓库');
+  console.log('仓库初始化完毕，开始配置Github远端仓库');
   await GitProcess.exec(['remote', 'add', 'origin', gitUrl], wikiFolderPath);
-  wikiCreationProgress('正在将Wiki所在的本地Git备份到Github远端仓库');
+  console.log('正在将Wiki所在的本地Git备份到Github远端仓库');
   const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(
     ['push', 'origin', 'master', '--force'],
     wikiFolderPath,
@@ -38,7 +37,7 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo) {
     console.info('pushStdError', pushStdError);
     throw new Error('Git仓库配置失败，详见错误日志');
   } else {
-    wikiCreationProgress('Git仓库配置完毕');
+    console.log('Git仓库配置完毕');
   }
 }
 

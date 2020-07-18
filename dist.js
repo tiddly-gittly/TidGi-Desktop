@@ -73,6 +73,10 @@ const options = {
         from: 'public/libs/wiki/watch-wiki-worker.js',
         to: 'watch-wiki-worker.js',
       },
+      {
+        from: 'public/libs/git.js',
+        to: 'git.js',
+      },
     ],
     protocols: [
       {
