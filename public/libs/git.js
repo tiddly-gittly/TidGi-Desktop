@@ -16,7 +16,7 @@ async function commitFiles(wikiFolderPath, username, email, message = 'Initializ
   return GitProcess.exec(['commit', '-m', message, `--author="${username} <${email}>"`], wikiFolderPath);
 }
 
-async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo) {
+async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) {
   console.log('开始初始化本地Git仓库');
   const { login: username, email, accessToken } = userInfo;
   const gitUrl = `${githubRepoUrl}.git`.replace(
@@ -30,10 +30,10 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo) {
   await GitProcess.exec(['remote', 'add', 'origin', gitUrl], wikiFolderPath);
   console.log('正在将Wiki所在的本地Git备份到Github远端仓库');
   const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(
-    ['push', 'origin', 'master', '--force'],
+    ['push', 'origin', 'master:master', '--force'],
     wikiFolderPath,
   );
-  if (pushExitCode !== 0) {
+  if (isMainWiki && pushExitCode !== 0) {
     console.info('pushStdError', pushStdError);
     throw new Error('Git仓库配置失败，详见错误日志');
   } else {
@@ -46,7 +46,7 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo) {
  * @param {string} wikiFolderPath repo path to test
  */
 async function haveLocalChanges(wikiFolderPath) {
-  const { stdout } = await GitProcess.exec(['status', '--porcelain']);
+  const { stdout } = await GitProcess.exec(['status', '--porcelain'], wikiFolderPath);
   const matchResult = stdout.match(/^(\?\?|[ACMR] |[ ACMR][DM])*/gm);
   return matchResult.some(match => !!match);
 }
@@ -223,11 +223,12 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
       username,
       email,
       commitMessage,
-    );
-    if (commitExitCode !== 0) {
-      console.info('commit failed');
-      console.info(commitStdError);
-    }
+      );
+      if (commitExitCode !== 0) {
+        console.info('commit failed');
+        console.info(commitStdError);
+      }
+      console.log('提交完成');
   }
   console.log('正在拉取云端数据，以便比对');
   await GitProcess.exec(['fetch', 'origin', 'master'], wikiFolderPath);
