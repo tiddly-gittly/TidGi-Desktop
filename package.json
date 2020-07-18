@@ -28,6 +28,7 @@
     "ace-builds": "1.4.12",
     "blueimp-md5": "2.16.0",
     "cheerio": "1.0.0-rc.3",
+    "chokidar": "^3.4.1",
     "classnames": "2.2.6",
     "darkreader": "4.9.15",
     "date-fns": "2.14.0",
