@@ -30,6 +30,16 @@ function debounce(func, wait, immediate) {
 let watcher;
 function watchFolder(wikiRepoPath, wikiFolderPath, githubRepoUrl, userInfo, syncDebounceInterval) {
   const debounceCommitAndSync = debounce(commitAndSync, syncDebounceInterval);
+  const onChange = debounce(async (fileName) => {
+    if (lock) {
+      parentPort.postMessage(`${fileName} changed, but lock is on, so skip`);
+      return;
+    }
+    parentPort.postMessage(`${fileName} changed`);
+    lock = true;
+    await debounceCommitAndSync(wikiRepoPath, githubRepoUrl, userInfo);
+    lock = false;
+  }, 1000);
   // simple lock to prevent running two instance of commit task
   let lock = false;
   // load ignore config from .gitignore located in the wiki repo folder
@@ -48,21 +58,14 @@ function watchFolder(wikiRepoPath, wikiFolderPath, githubRepoUrl, userInfo, sync
       ...frequentlyChangedFileThatShouldBeIgnoredFromWatch,
     ],
     cwd: wikiFolderPath,
+    awaitWriteFinish: true,
+    ignoreInitial: true,
+    followSymlinks: false,
   });
-  watcher.on(
-    'all',
-    debounce(async (_, fileName) => {
-      if (lock) {
-        parentPort.postMessage(`${fileName} changed, but lock is on, so skip`);
-        return;
-      }
-      parentPort.postMessage(`${fileName} changed`);
-      lock = true;
-      await debounceCommitAndSync(wikiRepoPath, githubRepoUrl, userInfo);
-      lock = false;
-    }, 1000),
-  );
-  parentPort.postMessage(`wiki Github syncer is watching ${wikiFolderPath} now`);
+  watcher.on('add', onChange);
+  watcher.on('change', onChange);
+  watcher.on('unlink', onChange);
+  watcher.on('ready', () => parentPort.postMessage(`wiki Github syncer is watching ${wikiFolderPath} now`));
 }
 
 function watchWiki() {

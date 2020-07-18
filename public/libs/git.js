@@ -286,6 +286,7 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
     }
   }
 
+  console.log('进行同步结束前最后的检查');
   await assumeSync(wikiFolderPath);
   console.log(`${wikiFolderPath} 同步完成`);
 }
