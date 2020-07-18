@@ -111,8 +111,8 @@ export const getWorkspaceMeta = id => ipcRenderer.sendSync('get-workspace-meta',
 export const getWorkspaceMetas = () => ipcRenderer.sendSync('get-workspace-metas');
 
 // Workspace Git
-export const initWikiGit = (wikiFolderPath: string, githubRepoUrl: string, userInfo: Object) =>
-  ipcRenderer.invoke('request-init-wiki-git', wikiFolderPath, githubRepoUrl, userInfo);
+export const initWikiGit = (wikiFolderPath: string, githubRepoUrl: string, userInfo: Object, isMainWiki: boolean) =>
+  ipcRenderer.invoke('request-init-wiki-git', wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
 
 // Find In Page
 export const requestFindInPage = (text, forward) => ipcRenderer.send('request-find-in-page', text, forward);

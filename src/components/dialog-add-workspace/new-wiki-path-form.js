@@ -42,8 +42,8 @@ interface Props {
   parentFolderLocationSetter: string => void;
   wikiFolderName: string;
   wikiFolderNameSetter: string => void;
-  mainWikiToLink: string;
-  mainWikiToLinkSetter: string => void;
+  mainWikiToLink: Object;
+  mainWikiToLinkSetter: Object => void;
   parentFolderLocation: string;
   wikiPort: Number;
   wikiPortSetter: number => void;
@@ -76,6 +76,7 @@ function NewWikiPathForm({
 
   const hasError = wikiCreationMessage.startsWith('Error');
 
+  console.warn(`mainWikiToLink`, JSON.stringify(mainWikiToLink, null, '  '));
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
@@ -125,14 +126,6 @@ function NewWikiPathForm({
         label="即将新建的知识库文件夹名"
         value={wikiFolderName}
       />
-      <LocationPickerInput
-        fullWidth
-        onChange={event => {
-          wikiPortSetter(event.target.value);
-        }}
-        label="WIKI服务器端口号（出现冲突再改，一般默认即可）"
-        value={wikiPort}
-      />
       {!isCreateMainWorkspace && (
         <>
           <SoftLinkToMainWikiSelectInputLabel id="main-wiki-select-label">
@@ -145,12 +138,12 @@ function NewWikiPathForm({
             onChange={event => mainWikiToLinkSetter(event.target.value)}
           >
             {Object.keys(workspaces).map(workspaceID => (
-              <MenuItem key={workspaceID} value={workspaces[workspaceID].name}>
+              <MenuItem key={workspaceID} value={workspaces[workspaceID]}>
                 {workspaces[workspaceID].name}
               </MenuItem>
             ))}
           </SoftLinkToMainWikiSelect>
-          {mainWikiToLink && (
+          {mainWikiToLink.name && (
             <FormHelperText>
               <Typography variant="body1" display="inline" component="span">
                 子知识库将链接到
@@ -163,7 +156,7 @@ function NewWikiPathForm({
                 align="center"
                 style={{ direction: 'rtl', textTransform: 'none' }}
               >
-                {mainWikiToLink}/tiddlers/{wikiFolderName}
+                {mainWikiToLink.name}/tiddlers/{wikiFolderName}
               </Typography>
             </FormHelperText>
           )}

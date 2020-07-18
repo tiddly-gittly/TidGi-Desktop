@@ -82,7 +82,7 @@ export default function AddWorkspace() {
     setGithubUserInfo(userInfo);
   }, [userInfo]);
 
-  const [mainWikiToLink, mainWikiToLinkSetter] = useState('');
+  const [mainWikiToLink, mainWikiToLinkSetter] = useState({ name: '', port: 0 });
   const [githubWikiUrl, githubWikiUrlSetter] = useState<string>('');
   useEffect(() => {
     async function getWorkspaceRemoteInEffect() {

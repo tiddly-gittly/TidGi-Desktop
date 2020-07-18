@@ -42,8 +42,8 @@ interface Props {
   existedFolderLocationSetter: string => void;
   wikiFolderName: string;
   wikiFolderNameSetter: string => void;
-  mainWikiToLink: string;
-  mainWikiToLinkSetter: string => void;
+  mainWikiToLink: Object;
+  mainWikiToLinkSetter: Object => void;
   existedFolderLocation: string;
   wikiPort: Number;
   wikiPortSetter: number => void;
@@ -135,12 +135,12 @@ function WikiPathForm({
             onChange={event => mainWikiToLinkSetter(event.target.value)}
           >
             {Object.keys(workspaces).map(workspaceID => (
-              <MenuItem key={workspaceID} value={workspaces[workspaceID].name}>
+              <MenuItem key={workspaceID} value={workspaces[workspaceID]}>
                 {workspaces[workspaceID].name}
               </MenuItem>
             ))}
           </SoftLinkToMainWikiSelect>
-          {mainWikiToLink && (
+          {mainWikiToLink.name && (
             <FormHelperText>
               <Typography variant="body1" display="inline" component="span">
                 子知识库将链接到
@@ -153,7 +153,7 @@ function WikiPathForm({
                 align="center"
                 style={{ direction: 'rtl', textTransform: 'none' }}
               >
-                {mainWikiToLink}/tiddlers/{wikiFolderName}
+                {mainWikiToLink.name}/tiddlers/{wikiFolderName}
               </Typography>
             </FormHelperText>
           )}

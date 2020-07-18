@@ -88,9 +88,9 @@ const loadListeners = () => {
       DESKTOP_PATH,
     }[name];
   });
-  ipcMain.handle('request-init-wiki-git', async (event, wikiFolderPath, githubRepoUrl, userInfo) => {
+  ipcMain.handle('request-init-wiki-git', async (event, wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) => {
     try {
-      await initWikiGit(wikiFolderPath, githubRepoUrl, userInfo);
+      await initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
     } catch (error) {
       console.info(error);
       removeWiki(wikiFolderPath);

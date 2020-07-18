@@ -26,39 +26,49 @@ const {
 
 const mainWindow = require('../windows/main');
 
-const createWorkspaceView = (name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground) => {
+const createWorkspaceView = (
+  name,
+  isSubWiki,
+  mainWikiToLink,
+  port,
+  homeUrl,
+  gitUrl,
+  picture,
+  transparentBackground,
+) => {
   const newWorkspace = createWorkspace(name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, transparentBackground);
 
-  setActiveWorkspace(newWorkspace.id);
+  if (!isSubWiki) {
+    setActiveWorkspace(newWorkspace.id);
+    setActiveView(mainWindow.get(), newWorkspace.id);
+  }
   addView(mainWindow.get(), getWorkspace(newWorkspace.id));
-  setActiveView(mainWindow.get(), newWorkspace.id);
 
   if (picture) {
     setWorkspacePicture(newWorkspace.id, picture);
   }
 };
 
-const setWorkspaceView = (id, opts) => {
-  setWorkspace(id, opts);
+const setWorkspaceView = (id, options) => {
+  setWorkspace(id, options);
   setViewsAudioPref();
   setViewsNotificationsPref();
 };
 
-const setWorkspaceViews = (workspaces) => {
+const setWorkspaceViews = workspaces => {
   setWorkspaces(workspaces);
   setViewsAudioPref();
   setViewsNotificationsPref();
 };
 
-
-const wakeUpWorkspaceView = (id) => {
+const wakeUpWorkspaceView = id => {
   addView(mainWindow.get(), getWorkspace(id));
   setWorkspace(id, {
     hibernated: false,
   });
 };
 
-const hibernateWorkspaceView = (id) => {
+const hibernateWorkspaceView = id => {
   if (!getWorkspace(id).active) {
     hibernateView(id);
     setWorkspace(id, {
@@ -67,7 +77,7 @@ const hibernateWorkspaceView = (id) => {
   }
 };
 
-const setActiveWorkspaceView = (id) => {
+const setActiveWorkspaceView = id => {
   const oldActiveWorkspace = getActiveWorkspace();
 
   setActiveWorkspace(id);
@@ -79,7 +89,7 @@ const setActiveWorkspaceView = (id) => {
   }
 };
 
-const removeWorkspaceView = (id) => {
+const removeWorkspaceView = id => {
   // if there's only one workspace left, clear all
   if (countWorkspaces() === 1) {
     const win = mainWindow.get();
@@ -98,7 +108,7 @@ const removeWorkspaceView = (id) => {
 
 const clearBrowsingData = () => {
   const workspaces = getWorkspaces();
-  Object.keys(workspaces).forEach((id) => {
+  Object.keys(workspaces).forEach(id => {
     session.fromPartition(`persist:${id}`).clearStorageData();
   });
 

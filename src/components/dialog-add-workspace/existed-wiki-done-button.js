@@ -25,7 +25,7 @@ const CloseButton = styled(Button)`
 interface Props {
   isCreateMainWorkspace: boolean;
   wikiPort: number;
-  mainWikiToLink: string;
+  mainWikiToLink: { name: string, port: number };
   githubWikiUrl: string;
   existedFolderLocation: string;
   userInfo: IUserInfo;
@@ -51,12 +51,13 @@ function DoneButton({
   save,
   userInfo,
 }: Props & ActionProps & StateProps) {
+  const port = isCreateMainWorkspace ? wikiPort : mainWikiToLink.port;
   const workspaceFormData = {
     name: existedFolderLocation,
     isSubWiki: !isCreateMainWorkspace,
-    mainWikiToLink,
-    port: wikiPort,
-    homeUrl: `http://localhost:${wikiPort}/`,
+    mainWikiToLink: mainWikiToLink.name,
+    port,
+    homeUrl: `http://localhost:${port}/`,
     gitUrl: githubWikiUrl, // don't need .git suffix
     picturePath: getIconPath(),
     userInfo,
@@ -110,14 +111,14 @@ function DoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!existedFolderLocation || !mainWikiToLink || !githubWikiUrl || progressBarOpen}
+          disabled={!existedFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen}
           onClick={async () => {
             const wikiFolderName = basename(existedFolderLocation);
             const parentFolderLocation = dirname(existedFolderLocation);
             updateForm(workspaceFormData);
             let creationError = await ensureWikiExist(existedFolderLocation, false);
             if (!creationError) {
-              creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink, true);
+              creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name, true);
             }
             if (creationError) {
               setWikiCreationMessage(creationError);
