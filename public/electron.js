@@ -36,7 +36,7 @@ app.on('second-instance', () => {
 });
 
 if (!gotTheLock) {
-  // eslint-disable-next-line
+  console.info('Quitting dut to we only allow one instance to run.')
   app.quit();
 } else {
   // make sure "Settings" file exists
