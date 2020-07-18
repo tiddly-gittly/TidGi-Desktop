@@ -25,7 +25,7 @@ const verifyNotarizationAsync = (filePath) => new Promise((resolve, reject) => {
       return;
     }
 
-    if (stdout.indexOf('The validate action worked!') > -1) {
+    if (stdout.includes('The validate action worked!')) {
       resolve(stdout);
     } else {
       reject(new Error(stdout));
@@ -52,7 +52,7 @@ switch (process.platform) {
   }
 }
 
-const opts = {
+const options = {
   targets,
   config: {
     appId: 'com.singlebox.app',
@@ -68,6 +68,10 @@ const opts = {
       {
         from: 'public/libs/wiki/wiki-worker.js',
         to: 'wiki-worker.js',
+      },
+      {
+        from: 'public/libs/wiki/watch-wiki-worker.js',
+        to: 'watch-wiki-worker.js',
       },
     ],
     protocols: [
@@ -134,11 +138,11 @@ const opts = {
   },
 };
 
-builder.build(opts)
+builder.build(options)
   .then(() => {
     console.log('build successful');
   })
-  .catch((err) => {
-    console.log(err);
+  .catch((error) => {
+    console.log(error);
     process.exit(1);
   });

@@ -9,10 +9,15 @@ const path = require('path');
 const wikiWorkers = {};
 const wikiWatcherWorkers = {};
 
+// don't forget to config option in dist.js https://github.com/electron/electron/issues/18540#issuecomment-652430001
+const WIKI_WORKER_PATH = isDev
+  ? path.resolve(__dirname, './wiki-worker.js')
+  : path.resolve(process.resourcesPath, '..', 'wiki-worker.js');
+const WIKI_WATCHER_WORKER_PATH = isDev
+  ? path.resolve(__dirname, './watch-wiki-worker.js')
+  : path.resolve(process.resourcesPath, '..', 'watch-wiki-worker.js');
+
 module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName) {
-  const WIKI_WORKER_PATH = isDev
-    ? path.resolve(__dirname, './wiki-worker.js')
-    : path.resolve(process.resourcesPath, '..', 'wiki-worker.js');
   const workerData = { homePath, userName, tiddlyWikiPort };
   const worker = new Worker(WIKI_WORKER_PATH, { workerData });
   wikiWorkers[homePath] = worker;
@@ -28,10 +33,13 @@ module.exports.stopWiki = function stopWiki(homePath) {
   worker.terminate();
 };
 
-module.exports.startWikiWatcher = function startWikiWatcher(wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath, syncDebounceInterval) {
-  const WIKI_WATCHER_WORKER_PATH = isDev
-    ? path.resolve(__dirname, './watch-wiki-worker.js')
-    : path.resolve(process.resourcesPath, '..', 'watch-wiki-worker.js');
+module.exports.startWikiWatcher = function startWikiWatcher(
+  wikiRepoPath,
+  githubRepoUrl,
+  userInfo,
+  wikiFolderPath,
+  syncDebounceInterval,
+) {
   const workerData = { wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath, syncDebounceInterval };
   const worker = new Worker(WIKI_WATCHER_WORKER_PATH, { workerData });
   wikiWatcherWorkers[wikiRepoPath] = worker;
