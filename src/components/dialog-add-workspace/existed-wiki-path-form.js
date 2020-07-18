@@ -17,7 +17,6 @@ import FolderIcon from '@material-ui/icons/Folder';
 import * as actions from '../../state/dialog-add-workspace/actions';
 
 import { getWorkspaces } from '../../senders';
-import { log } from 'isomorphic-git';
 
 const CreateContainer = styled(Paper)`
   margin-top: 5px;
