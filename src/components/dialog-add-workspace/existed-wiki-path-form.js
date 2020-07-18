@@ -115,14 +115,16 @@ function WikiPathForm({
           </Typography>
         </LocationPickerButton>
       </LocationPickerContainer>
-      <LocationPickerInput
-        fullWidth
-        onChange={event => {
-          wikiPortSetter(event.target.value);
-        }}
-        label="WIKI服务器端口号（出现冲突再改，一般默认即可）"
-        value={wikiPort}
-      />
+      {isCreateMainWorkspace && (
+        <LocationPickerInput
+          fullWidth
+          onChange={event => {
+            wikiPortSetter(event.target.value);
+          }}
+          label="WIKI服务器端口号（出现冲突再改，一般默认即可）"
+          value={wikiPort}
+        />
+      )}
       {!isCreateMainWorkspace && (
         <>
           <SoftLinkToMainWikiSelectInputLabel id="main-wiki-select-label">
