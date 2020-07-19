@@ -412,7 +412,7 @@ module.exports = class ContextMenuBuilder {
   }
 
   /**
-   * Adds the "Inspect Element" menu item.
+   * Adds the "Developer Tools" menu item.
    */
   addDeveloperTools(menu, menuInfo, needsSeparator = false) {
     const target = this.getWebContents();
