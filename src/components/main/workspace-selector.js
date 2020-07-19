@@ -55,8 +55,8 @@ const styles = (theme) => ({
     lineHeight: '44px',
   },
   avatarPicture: {
-    height: 36,
-    width: 36,
+    height: 36 - 2,
+    width: 36 - 2,
   },
   avatarPictureLarge: {
     height: 44,
