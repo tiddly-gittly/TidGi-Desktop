@@ -47,18 +47,6 @@ const handleLoaded = (event) => {
     loadDarkReader();
   });
 
-  // reload page if it is not loaded yet
-  const CHECK_LOADED_INTERVAL = 1000 * 3;
-  function refresh() {
-    const serverNotStarted = !document || document.querySelector('.tc-site-title') === null;
-    if (serverNotStarted) {
-      window.location.reload(true);
-    } else {
-      setTimeout(refresh, CHECK_LOADED_INTERVAL);
-    }
-  }
-  setTimeout(refresh, CHECK_LOADED_INTERVAL);
-
   const jsCodeInjection = ipcRenderer.sendSync('get-preference', 'jsCodeInjection');
   const allowNodeInJsCodeInjection = ipcRenderer.sendSync('get-preference', 'allowNodeInJsCodeInjection');
   const cssCodeInjection = ipcRenderer.sendSync('get-preference', 'cssCodeInjection');
@@ -102,8 +90,10 @@ const handleLoaded = (event) => {
   window.contextMenuBuilder = new ContextMenuBuilder();
 
   remote.getCurrentWebContents().on('context-menu', (e, info) => {
+    // eslint-disable-next-line promise/catch-or-return
     window.contextMenuBuilder.buildMenuForElement(info)
       .then((menu) => {
+        // eslint-disable-next-line promise/always-return
         if (info.linkURL && info.linkURL.length > 0) {
           menu.append(new MenuItem({ type: 'separator' }));
 
@@ -209,43 +199,6 @@ const handleLoaded = (event) => {
     }
   });
 
-  // overwrite gmail email discard button
-  if (window.location.hostname.includes('mail.google.com')) {
-    const node = document.createElement('script');
-    node.innerHTML = 'window.close = () => { window.location.href = \'https://mail.google.com\' }';
-    document.body.appendChild(node);
-  }
-
-  // Fix WhatsApp requires Google Chrome 49+ bug
-  // https://github.com/meetfranz/recipe-whatsapp/blob/master/webview.js
-  if (window.location.hostname.includes('web.whatsapp.com')) {
-    setTimeout(() => {
-      const elem = document.querySelector('.landing-title.version-title');
-      if (elem && elem.innerText.toLowerCase().includes('google chrome')) {
-        window.location.reload();
-      }
-    }, 1000);
-
-    window.addEventListener('beforeunload', async () => {
-      try {
-        const webContents = remote.getCurrentWebContents();
-        const { session } = webContents;
-        session.flushStorageData();
-        session.clearStorageData({
-          storages: ['appcache', 'serviceworkers', 'cachestorage', 'websql', 'indexdb'],
-        });
-
-        const registrations = await window.navigator.serviceWorker.getRegistrations();
-
-        registrations.forEach((r) => {
-          r.unregister();
-          console.log('ServiceWorker unregistered'); // eslint-disable-line no-console
-        });
-      } catch (err) {
-        console.err(err); // eslint-disable-line no-console
-      }
-    });
-  }
   // eslint-disable-next-line no-console
   console.log('Preload script is loaded...');
 
