@@ -1,7 +1,7 @@
 {
   "name": "TiddlyGit",
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
-  "version": "0.a.1",
+  "version": "0.1.0",
   "main": "public/electron.js",
   "scripts": {
     "electron-dev": "npm run clean:dev && concurrently \"cross-env BROWSER=none npm run start\" \"wait-on http://localhost:3000 && electron .\" -k",
@@ -14,7 +14,7 @@
     "lint": "eslint ./public ./src --ext js",
     "lint:fix": "eslint ./public ./src --ext js --fix",
     "flow-typed": "rimraf flow-typed/npm && flow-typed install --overwrite || true",
-    "postinstall": "npx patch-package && electron-builder install-app-deps && npm run flow-typed"
+    "postinstall": "npx patch-package && electron-builder install-app-deps && if-env CI=true && echo \"skip flow-typed\" || npm run flow-typed"
   },
   "repository": "https://github.com/tiddly-gittly/TiddlyGit-Desktop",
   "author": "Lin Onetwo<linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
@@ -101,6 +101,7 @@
     "eslint-plugin-unicorn": "21.0.0",
     "flow-bin": "0.129.0",
     "flow-typed": "2.6.2",
+    "if-env": "^1.0.4",
     "patch-package": "6.2.2",
     "rescript-disable-eslint": "1.0.2",
     "wait-on": "5.1.0"

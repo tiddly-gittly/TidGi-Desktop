@@ -117,6 +117,7 @@ const options = {
       ],
     },
     afterSign: (context) => {
+      return null;
       const shouldNotarize = process.platform === 'darwin' && context.electronPlatformName === 'darwin' && process.env.CI_BUILD_TAG;
       if (!shouldNotarize) return null;
 
