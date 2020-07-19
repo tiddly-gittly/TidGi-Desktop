@@ -13,6 +13,7 @@ const openUrlWithWindow = require('./windows/open-url-with');
 const createMenu = require('./libs/create-menu');
 const extractHostname = require('./libs/extract-hostname');
 const sendToAllWindows = require('./libs/send-to-all-windows');
+const { stopAll } = require('./libs/wiki/wiki-worker-mamager');
 const { addView, reloadViewsDarkReader } = require('./libs/views');
 const { getPreference, getPreferences } = require('./libs/preferences');
 const { getWorkspaces, setWorkspace } = require('./libs/workspaces');
@@ -36,7 +37,7 @@ app.on('second-instance', () => {
 });
 
 if (!gotTheLock) {
-  console.info('Quitting dut to we only allow one instance to run.')
+  console.info('Quitting dut to we only allow one instance to run.');
   app.quit();
 } else {
   // make sure "Settings" file exists
@@ -259,23 +260,9 @@ if (!gotTheLock) {
     });
   });
 
-  app.on('login', (e, webContents, request, authInfo, callback) => {
-    e.preventDefault();
-    const sessId = String(Date.now());
-    authWindow.show(sessId, request.url);
-
-    const listener = (ee, id, success, username, password) => {
-      if (id !== sessId) return;
-
-      if (success) {
-        callback(username, password);
-      } else {
-        callback();
-      }
-
-      ipcMain.removeListener('continue-auth', listener);
-    };
-
-    ipcMain.on('continue-auth', listener);
+  app.on('will-quit', async () => {
+    console.log('Quitting all the worker threads.');
+    await stopAll();
+    console.log('Worker threads all terminated.');
   });
 }

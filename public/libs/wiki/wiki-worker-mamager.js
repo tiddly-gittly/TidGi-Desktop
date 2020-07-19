@@ -81,3 +81,17 @@ module.exports.stopWikiWatcher = function stopWikiWatcher(wikiRepoPath) {
   if (!worker) return; // no running worker, maybe tiddlywiki server in this workspace failed to start
   worker.terminate();
 };
+
+/**
+ * Stop all worker_thread, use and await this before app.quit()
+ */
+module.exports.stopAll = function stopAll() {
+  const tasks = [];
+  for (const wikiRepoPath of Object.keys(wikiWatcherWorkers)) {
+    tasks.push(wikiWatcherWorkers[wikiRepoPath].terminate());
+  }
+  for (const homePath of Object.keys(wikiWorkers)) {
+    tasks.push(wikiWorkers[homePath].terminate());
+  }
+  return Promise.all(tasks);
+};

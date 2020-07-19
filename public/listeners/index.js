@@ -225,7 +225,7 @@ const loadListeners = () => {
       .then(({ response }) => {
         if (response === 0) {
           app.relaunch();
-          app.exit(0);
+          app.quit();
         }
       })
       .catch(console.log); // eslint-disable-line
