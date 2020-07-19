@@ -1,7 +1,7 @@
 {
   "name": "TiddlyGit",
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
-  "version": "0.1.0",
+  "version": "0.0.9",
   "main": "public/electron.js",
   "scripts": {
     "electron-dev": "npm run clean:dev && concurrently \"cross-env BROWSER=none npm run start\" \"wait-on http://localhost:3000 && electron .\" -k",
