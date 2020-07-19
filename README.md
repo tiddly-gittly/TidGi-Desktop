@@ -6,7 +6,7 @@
 
 **TiddlyGit** - Customizable personal knowledge-base with Github as unlimited storage and blogging platform.
 
-![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TiddlyGit-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)
+[![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TiddlyGit-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)
 
 ## About TiddlyGit-Desktop
 
