@@ -1,8 +1,8 @@
 blank_issues_enabled: true
 contact_links:
   - name: App Submission
-    url: https://github.com/atomery/catalog/issues
+    url: https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues
     about: Submit new app to catalog
   - name: Email
-    url: https://atomery.com/support?app=singlebox
+    url: mailto:linonetwo012@gmail.com
     about: Contact the developer directly via email
