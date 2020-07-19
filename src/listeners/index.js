@@ -53,6 +53,7 @@ const loadListeners = (store) => {
   });
 
   ipcRenderer.on('set-workspace-meta', (e, id, value) => {
+    console.log('set-workspace-meta', Date.now());
     store.dispatch(setWorkspaceMeta(id, value));
   });
 

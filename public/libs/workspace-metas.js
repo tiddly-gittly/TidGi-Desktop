@@ -9,11 +9,11 @@ const getWorkspaceMeta = (id) => workspaceMetas[id] || {};
 
 const getWorkspaceMetas = () => workspaceMetas;
 
-const setWorkspaceMeta = (id, opts) => {
+const setWorkspaceMeta = (id, options) => {
   // init
   workspaceMetas[id] = {
     ...workspaceMetas[id],
-    ...opts,
+    ...options,
   };
   sendToAllWindows('set-workspace-meta', id, getWorkspaceMeta(id));
 };

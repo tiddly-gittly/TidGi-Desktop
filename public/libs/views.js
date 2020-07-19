@@ -281,9 +281,10 @@ const addView = (browserWindow, workspace) => {
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
     if (!workspaceObj) return;
 
-    setWorkspaceMeta(workspace.id, {
-      isLoading: false,
-    });
+    // isLoading is now controlled by wiki-worker-manager.js
+    // setWorkspaceMeta(workspace.id, {
+    //   isLoading: false,
+    // });
 
     if (workspaceObj.active) {
       sendToAllWindows('update-address', view.webContents.getURL(), false);
@@ -316,7 +317,7 @@ const addView = (browserWindow, workspace) => {
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {
       setWorkspaceMeta(workspace.id, {
         didFailLoad: errorDesc,
-        isLoading: false,
+        // isLoading: false, // isLoading is now controlled by wiki-worker-manager.js
       });
       if (workspaceObj.active) {
         if (browserWindow && !browserWindow.isDestroyed()) { // fix https://github.com/atomery/singlebox/issues/228

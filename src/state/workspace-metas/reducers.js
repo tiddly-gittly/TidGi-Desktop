@@ -14,6 +14,7 @@ const workspaceMetas = (state = initialState, action) => {
 
       if (action.value) newState[action.id] = { ...newState[action.id], ...action.value };
       else delete newState[action.id];
+      console.log('reducer', Date.now());
 
       return newState;
     }

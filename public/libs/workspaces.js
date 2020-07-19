@@ -36,6 +36,7 @@ const getWorkspacesAsList = () => {
 };
 
 const getWorkspace = (id) => workspaces[id];
+const getWorkspaceByName = (name) => getWorkspacesAsList().find(workspace => workspace.name === name);
 
 const getPreviousWorkspace = (id) => {
   const workspaceLst = getWorkspacesAsList();
@@ -216,6 +217,7 @@ module.exports = {
   getNextWorkspace,
   getPreviousWorkspace,
   getWorkspace,
+  getWorkspaceByName,
   getWorkspaces,
   getWorkspacesAsList,
   removeWorkspace,

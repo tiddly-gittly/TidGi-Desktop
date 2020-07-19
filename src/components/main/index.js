@@ -51,7 +51,7 @@ const arrayMove = (array, from, to) => {
   return newArray;
 };
 
-const styles = (theme) => ({
+const styles = theme => ({
   outerRoot: {
     display: 'flex',
     flexDirection: 'column',
@@ -118,7 +118,9 @@ const styles = (theme) => ({
     width: 32,
     background: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black,
     borderRadius: 4,
-    color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black),
+    color: theme.palette.getContrastText(
+      theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black,
+    ),
     lineHeight: '32px',
     textAlign: 'center',
     fontWeight: 500,
@@ -159,9 +161,7 @@ const styles = (theme) => ({
 
 const SortableItem = sortableElement(({ value }) => {
   const { index, workspace } = value;
-  const {
-    active, id, name, picturePath, hibernated, transparentBackground,
-  } = workspace;
+  const { active, id, name, picturePath, hibernated, transparentBackground } = workspace;
   return (
     <WorkspaceSelector
       active={active}
@@ -173,7 +173,7 @@ const SortableItem = sortableElement(({ value }) => {
       order={index}
       hibernated={hibernated}
       onClick={() => requestSetActiveWorkspace(id)}
-      onContextMenu={(e) => {
+      onContextMenu={e => {
         e.preventDefault();
 
         const template = [
@@ -235,16 +235,26 @@ const Main = ({
 }) => {
   const workspacesList = getWorkspacesAsList(workspaces);
   const showTitleBar = window.process.platform === 'darwin' && titleBar && !isFullScreen;
+  console.log('renderer', Date.now());
+  console.warn(`didFailLoad`, JSON.stringify(didFailLoad, null, '  '));
+  console.warn(`isLoading`, JSON.stringify(isLoading, null, '  '));
+  console.warn(
+    `Object.keys(workspaces).length > 0 && didFailLoad && !isLoading`,
+    JSON.stringify(Object.keys(workspaces).length > 0 && didFailLoad && !isLoading, null, '  '),
+  );
 
   return (
     <div className={classes.outerRoot}>
       {workspacesList.length > 0 && <DraggableRegion />}
-      {showTitleBar && (<FakeTitleBar />)}
+      {showTitleBar && <FakeTitleBar />}
       <div className={classes.root}>
         {sidebar && (
           <SidebarContainer className={classes.sidebarRoot}>
-            <div className={classNames(classes.sidebarTop,
-              (isFullScreen || showTitleBar || window.mode === 'menubar') && classes.sidebarTopFullScreen)}
+            <div
+              className={classNames(
+                classes.sidebarTop,
+                (isFullScreen || showTitleBar || window.mode === 'menubar') && classes.sidebarTopFullScreen,
+              )}
             >
               <SortableContainer
                 distance={10}
@@ -277,16 +287,24 @@ const Main = ({
               />
             </div>
             {!navigationBar && (
-            <div className={classes.end}>
-              <IconButton aria-label="Notifications" onClick={requestShowNotificationsWindow} className={classes.iconButton}>
-                {shouldPauseNotifications ? <NotificationsPausedIcon /> : <NotificationsIcon />}
-              </IconButton>
-              {window.mode === 'menubar' && (
-                <IconButton aria-label="Preferences" onClick={() => requestShowPreferencesWindow()} className={classes.iconButton}>
-                  <SettingsIcon />
+              <div className={classes.end}>
+                <IconButton
+                  aria-label="Notifications"
+                  onClick={requestShowNotificationsWindow}
+                  className={classes.iconButton}
+                >
+                  {shouldPauseNotifications ? <NotificationsPausedIcon /> : <NotificationsIcon />}
                 </IconButton>
-              )}
-            </div>
+                {window.mode === 'menubar' && (
+                  <IconButton
+                    aria-label="Preferences"
+                    onClick={() => requestShowPreferencesWindow()}
+                    className={classes.iconButton}
+                  >
+                    <SettingsIcon />
+                  </IconButton>
+                )}
+              </div>
             )}
           </SidebarContainer>
         )}
@@ -297,7 +315,7 @@ const Main = ({
             {Object.keys(workspaces).length > 0 && didFailLoad && !isLoading && (
               <div>
                 <Typography align="left" variant="h5">
-                  This site can’t be reached.
+                  Wiki is not started or not loaded
                 </Typography>
                 <Typography align="left" variant="body2">
                   {didFailLoad}
@@ -308,9 +326,9 @@ const Main = ({
                   <>
                     Try:
                     <ul className={classes.ul}>
-                      <li>Checking the network cables, modem, and router.</li>
-                      <li>Checking the proxy and the firewall.</li>
-                      <li>Reconnecting to Wi-Fi.</li>
+                      <li>Click <b>Reload</b> button below or press <b>CMD_or_Ctrl + R</b> to reload the page.</li>
+                      <li>Check the log to see what happened.</li>
+                      <li>Backup your file, remove workspace and recreate one.</li>
                     </ul>
                   </>
                 </Typography>
@@ -320,11 +338,7 @@ const Main = ({
                 </Button>
               </div>
             )}
-            {Object.keys(workspaces).length > 0 && isLoading && (
-              <CircularProgress
-                size={24}
-              />
-            )}
+            {Object.keys(workspaces).length > 0 && isLoading && <CircularProgress size={24} />}
             {Object.keys(workspaces).length < 1 && (
               <div>
                 {sidebar ? (
@@ -332,9 +346,7 @@ const Main = ({
                     <div alt="Arrow" className={classes.arrow} />
                     <div className={classes.tip}>
                       <span className={classes.inlineBlock}>Click</span>
-                      <div className={classes.avatar}>
-                        +
-                      </div>
+                      <div className={classes.avatar}>+</div>
                       <span className={classes.inlineBlock}>to get started!</span>
                     </div>
                   </>
@@ -374,22 +386,22 @@ Main.propTypes = {
   workspaces: PropTypes.object.isRequired,
 };
 
-const mapStateToProps = (state) => {
-  const activeWorkspace = Object.values(state.workspaces)
-    .find((workspace) => workspace.active);
+const mapStateToProps = state => {
+  const activeWorkspace = Object.values(state.workspaces).find(workspace => workspace.active);
 
   return {
-    didFailLoad: activeWorkspace && state.workspaceMetas[activeWorkspace.id]
-      ? state.workspaceMetas[activeWorkspace.id].didFailLoad
-      : null,
+    didFailLoad:
+      activeWorkspace && state.workspaceMetas[activeWorkspace.id]
+        ? state.workspaceMetas[activeWorkspace.id].didFailLoad
+        : null,
     isFullScreen: state.general.isFullScreen,
-    isLoading: activeWorkspace && state.workspaceMetas[activeWorkspace.id]
-      ? Boolean(state.workspaceMetas[activeWorkspace.id].isLoading)
-      : false,
-    navigationBar: (window.process.platform === 'linux'
-      && state.preferences.attachToMenubar
-      && !state.preferences.sidebar)
-      || state.preferences.navigationBar,
+    isLoading:
+      activeWorkspace && state.workspaceMetas[activeWorkspace.id]
+        ? Boolean(state.workspaceMetas[activeWorkspace.id].isLoading)
+        : false,
+    navigationBar:
+      (window.process.platform === 'linux' && state.preferences.attachToMenubar && !state.preferences.sidebar) ||
+      state.preferences.navigationBar,
     registered: state.preferences.registered,
     shouldPauseNotifications: state.notifications.pauseNotificationsInfo !== null,
     sidebar: state.preferences.sidebar,
@@ -398,9 +410,4 @@ const mapStateToProps = (state) => {
   };
 };
 
-export default connectComponent(
-  Main,
-  mapStateToProps,
-  null,
-  styles,
-);
+export default connectComponent(Main, mapStateToProps, null, styles);

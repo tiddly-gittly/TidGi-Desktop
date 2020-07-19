@@ -1,3 +1,4 @@
+/* eslint-disable global-require */
 /* eslint-disable no-console */
 const { Worker } = require('worker_threads');
 const isDev = require('electron-is-dev');
@@ -34,11 +35,36 @@ const WIKI_WATCHER_WORKER_PATH = isDev
   : path.resolve(process.resourcesPath, '..', 'watch-wiki-worker.js');
 
 module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName) {
+  // require here to prevent circular dependence, which will cause "TypeError: getWorkspaceByName is not a function"
+  console.log('startWiki', homePath, Date.now());
+  const { getWorkspaceByName } = require('../workspaces');
+  const { getView, reloadViewsWebContentsIfDidFailLoad } = require('../views');
+  const { setWorkspaceMeta } = require('../workspace-metas');
+  const workspace = getWorkspaceByName(homePath);
+  const workspaceID = workspace?.id;
+  const view = getView(workspaceID);
+  if (!workspace || !workspaceID) {
+    logger.error('Try to start wiki, but workspace not found', { homePath, workspace, workspaceID });
+    return;
+  }
+  console.log('setWorkspaceMeta', workspaceID, Date.now());
+  setWorkspaceMeta(workspaceID, { isLoading: true });
   const workerData = { homePath, userName, tiddlyWikiPort };
   const worker = new Worker(WIKI_WORKER_PATH, { workerData });
   wikiWorkers[homePath] = worker;
   const loggerMeta = { worker: 'NodeJSWiki', homePath };
-  worker.on('message', logMessage(loggerMeta));
+  const loggerForWorker = logMessage(loggerMeta);
+  let started = false;
+  worker.on('message', message => {
+    loggerForWorker(message);
+    if (!started) {
+      started = true;
+      setTimeout(() => {
+        reloadViewsWebContentsIfDidFailLoad();
+        setWorkspaceMeta(workspaceID, { isLoading: false });
+      }, 10);
+    }
+  });
   worker.on('error', error => logger.error(error), loggerMeta);
   worker.on('exit', code => {
     if (code !== 0)
