@@ -26,7 +26,7 @@ const ListItemDefaultMailClient = () => {
         const userChoicePath = `HKCU\\SOFTWARE\\Microsoft\\Windows\\Shell\\Associations\\URLAssociations\\${protocolName}\\UserChoice`;
         window.require('electron').remote.require('regedit').list([userChoicePath], (err, result) => {
           try {
-            setIsDefault(!err && result[userChoicePath].values.ProgId.value === 'Singlebox');
+            setIsDefault(!err && result[userChoicePath].values.ProgId.value === 'TiddlyGit');
           } catch (tryErr) {
             // eslint-disable-next-line no-console
             console.log(tryErr);
@@ -55,7 +55,7 @@ const ListItemDefaultMailClient = () => {
   if (isDefault) {
     return (
       <ListItem>
-        <ListItemText secondary="Singlebox is your default email client." />
+        <ListItemText secondary="TiddlyGit is your default email client." />
       </ListItem>
     );
   }
@@ -66,7 +66,7 @@ const ListItemDefaultMailClient = () => {
     return (
       // https://docs.microsoft.com/en-us/windows/uwp/launch-resume/launch-settings-app
       <ListItem button onClick={() => requestOpenInBrowser('ms-settings:defaultapps')}>
-        <ListItemText primary="Default email client" secondary="Make Singlebox the default email client." />
+        <ListItemText primary="Default email client" secondary="Make TiddlyGit the default email client." />
         <ChevronRightIcon color="action" />
       </ListItem>
     );
@@ -74,7 +74,7 @@ const ListItemDefaultMailClient = () => {
 
   return (
     <ListItem>
-      <ListItemText primary="Default email client" secondary="Make Singlebox the default email client." />
+      <ListItemText primary="Default email client" secondary="Make TiddlyGit the default email client." />
       <Button
         variant="outlined"
         size="small"

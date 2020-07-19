@@ -104,12 +104,12 @@ remote.getCurrentWebContents().on('context-menu', (e, info) => {
             },
             { type: 'separator' },
             {
-              label: 'Singlebox Support',
-              click: () => shell.openExternal('https://atomery.com/support?app=singlebox'),
+              label: 'TiddlyGit Support',
+              click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose'),
             },
             {
-              label: 'Singlebox Website',
-              click: () => shell.openExternal('https://singleboxapp.com'),
+              label: 'TiddlyGit Website',
+              click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop'),
             },
             { type: 'separator' },
             {

@@ -764,7 +764,7 @@ const Preferences = ({
                         <span>If notifications don&apos;t show up,</span>
                         <span> make sure you enable notifications in </span>
                         <b>
-                          <span>macOS Preferences &gt; Notifications &gt; Singlebox</span>
+                          <span>macOS Preferences &gt; Notifications &gt; TiddlyGit</span>
                         </b>
                         <span>.</span>
                       </>
@@ -780,7 +780,7 @@ const Preferences = ({
               <ListItemText
                 secondary={(
                   <>
-                    <span>WebCatalog supports notifications out of the box. </span>
+                    <span>TiddlyGit supports notifications out of the box. </span>
                     <span>But for some web apps, to receive notifications, </span>
                     <span>you will need to manually configure additional </span>
                     <span>web app settings. </span>
@@ -1208,12 +1208,12 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpenInBrowser('https://singleboxapp.com?utm_source=singlebox_app')}>
+            <ListItem button onClick={() => requestOpenInBrowser('https://tiddlygitapp.com?utm_source=tiddlygit_app')}>
               <ListItemText primary="Website" />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpenInBrowser('https://atomery.com/support?app=singlebox&utm_source=singlebox_app')}>
+            <ListItem button onClick={() => requestOpenInBrowser('https://atomery.com/support?app=tiddlygit&utm_source=tiddlygit_app')}>
               <ListItemText primary="Support" />
               <ChevronRightIcon color="action" />
             </ListItem>

@@ -55,8 +55,8 @@ switch (process.platform) {
 const options = {
   targets,
   config: {
-    appId: 'com.singlebox.app',
-    productName: 'Singlebox',
+    appId: 'com.tiddlygit.app',
+    productName: 'TiddlyGit',
     asar: true,
     files: ['!tests/**/*', '!docs/**/*', '!template/**/*'],
     extraFiles: [
@@ -128,7 +128,7 @@ const options = {
       const appPath = `${appOutDir}/${appName}.app`;
 
       return notarize({
-        appBundleId: 'com.singlebox.app',
+        appBundleId: 'com.tiddlygit.app',
         appPath,
         appleId: process.env.APPLE_ID,
         appleIdPassword: process.env.APPLE_ID_PASSWORD,

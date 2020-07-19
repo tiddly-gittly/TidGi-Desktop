@@ -37,7 +37,7 @@ export const register = () => (dispatch, getState) => {
 
   requestSetPreference('registered', true);
 
-  requestShowMessageBox('Registration Complete! Thank you for supporting the future development of Singlebox.');
+  requestShowMessageBox('Registration Complete! Thank you for supporting the future development of TiddlyGit.');
 
   const { remote } = window.require('electron');
   remote.getCurrentWindow().close();

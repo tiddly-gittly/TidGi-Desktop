@@ -45,7 +45,7 @@ const createAsync = () => new Promise((resolve) => {
       index: REACT_PATH,
       tray,
       preloadWindow: true,
-      tooltip: 'Singlebox',
+      tooltip: 'TiddlyGit',
       browserWindow: {
         x: menubarWindowState.x,
         y: menubarWindowState.y,
@@ -99,14 +99,14 @@ const createAsync = () => new Promise((resolve) => {
 
         const contextMenu = Menu.buildFromTemplate([
           {
-            label: 'Open Singlebox',
+            label: 'Open TiddlyGit',
             click: () => mb.showWindow(),
           },
           {
             type: 'separator',
           },
           {
-            label: 'About Singlebox',
+            label: 'About TiddlyGit',
             click: () => ipcMain.emit('request-show-about-window'),
           },
           { type: 'separator' },
@@ -164,7 +164,7 @@ const createAsync = () => new Promise((resolve) => {
     height: mainWindowState.height,
     minHeight: 100,
     minWidth: 350,
-    title: 'Singlebox',
+    title: 'TiddlyGit',
     titleBarStyle: 'hidden',
     show: false,
     // manually set dock icon for AppImage

@@ -2,15 +2,13 @@
 
 | macOS                                                                                                                                                                       | Linux                                                                                                                                                                       | Windows                                                                                                                                                                           |
 | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [![GitHub Actions macOS Build Status](https://github.com/atomery/singlebox/workflows/macOS/badge.svg)](https://github.com/atomery/singlebox/actions?query=workflow%3AmacOS) | [![GitHub Actions Linux Build Status](https://github.com/atomery/singlebox/workflows/Linux/badge.svg)](https://github.com/atomery/singlebox/actions?query=workflow%3ALinux) | [![GitHub Actions Windows Build Status](https://github.com/atomery/singlebox/workflows/Windows/badge.svg)](https://github.com/atomery/singlebox/actions?query=workflow%3AWindows) |
+| [![GitHub Actions macOS Build Status](https://github.com/tiddly-gittly/tiddlygit-desktop/workflows/macOS/badge.svg)](https://github.com/tiddly-gittly/tiddlygit-desktop/actions?query=workflow%3AmacOS) | [![GitHub Actions Linux Build Status](https://github.com/tiddly-gittly/tiddlygit-desktop/workflows/Linux/badge.svg)](https://github.com/tiddly-gittly/tiddlygit-desktop/actions?query=workflow%3ALinux) | [![GitHub Actions Windows Build Status](https://github.com/tiddly-gittly/tiddlygit-desktop/workflows/Windows/badge.svg)](https://github.com/tiddly-gittly/tiddlygit-desktop/actions?query=workflow%3AWindows) |
 
 **TiddlyGit** - Customizable personal knowledge-base with Github as unlimited storage and blogging platform.
 
 ## About TiddlyGit-Desktop
 
 TiddlyGit is a cross-platform desktop app that make [nodejs-TiddlyWiki](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs) easy to access.
-
-The desktop app shell is based on [https://github.com/atomery/singlebox](atomery/singlebox) and [atomery/webcatalog](https://github.com/atomery/webcatalog), they provide lots of utils around website-generated-app, much powerful than generating app from website simply using Chrome.
 
 ### Why Github?
 
@@ -61,3 +59,9 @@ npm run dist
 ```
 
 </details>
+
+## Credits
+
+The desktop app shell is based on [https://github.com/atomery/singlebox](atomery/singlebox) and [atomery/webcatalog](https://github.com/atomery/webcatalog), they provide lots of utils around website-generated-app, much powerful than generating app from website simply using Chrome. Also the independent developer @quanglam2807 behind these great tools helps me a lot when I develop TiddlyGit.
+
+Current Icon is download from [iconsdb](https://www.iconsdb.com/custom-color/github-11-icon.html) under Creative Commons Attribution-NoDerivs 3.0 , if you are a designer, please feel free to contribute your ICON if you have a better idea.

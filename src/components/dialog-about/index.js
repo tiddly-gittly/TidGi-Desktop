@@ -60,8 +60,8 @@ const About = (props) => {
   return (
     <div>
       <DialogContent className={classes.dialogContent}>
-        <img src={`file://${window.iconPath}`} alt="Singlebox" className={classes.icon} />
-        <Typography variant="h6" className={classes.title}>Singlebox</Typography>
+        <img src={`file://${window.iconPath}`} alt="TiddlyGit" className={classes.icon} />
+        <Typography variant="h6" className={classes.title}>TiddlyGit</Typography>
         <Typography
           variant="body2"
           className={classes.version}
@@ -81,13 +81,13 @@ const About = (props) => {
 
 
         <Button
-          onClick={() => requestOpenInBrowser('https://singleboxapp.com?utm_source=singlebox_app')}
+          onClick={() => requestOpenInBrowser('https://github.com/tiddly-gittly/TiddlyGit-Desktop')}
         >
           Website
         </Button>
         <br />
         <Button
-          onClick={() => requestOpenInBrowser('https://atomery.com/support?app=singlebox&utm_source=singlebox_app')}
+          onClick={() => requestOpenInBrowser('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose')}
         >
           Support
         </Button>
@@ -97,10 +97,23 @@ const About = (props) => {
           <span role="img" aria-label="love">❤</span>
           <span> by </span>
           <span
-            onClick={() => requestOpenInBrowser('https://atomery.com?utm_source=singlebox_app')}
+            onClick={() => requestOpenInBrowser('https://onetwo.ren/wiki/')}
             onKeyDown={(e) => {
               if (e.key !== 'Enter') return;
-              requestOpenInBrowser('https://atomery.com?utm_source=singlebox_app');
+              requestOpenInBrowser('https://onetwo.ren/wiki/');
+            }}
+            role="link"
+            tabIndex="0"
+            className={classes.link}
+          >
+            Lin Onetwo
+          </span>
+          <span> and </span>
+          <span
+            onClick={() => requestOpenInBrowser('https://atomery.com?utm_source=tiddlygit')}
+            onKeyDown={(e) => {
+              if (e.key !== 'Enter') return;
+              requestOpenInBrowser('https://atomery.com?utm_source=tiddlygit');
             }}
             role="link"
             tabIndex="0"

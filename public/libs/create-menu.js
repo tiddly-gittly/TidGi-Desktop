@@ -333,16 +333,16 @@ function createMenu() {
       role: 'help',
       submenu: [
         {
-          label: 'Singlebox Support',
-          click: () => shell.openExternal('https://atomery.com/support?app=singlebox'),
+          label: 'TiddlyGit Support',
+          click: () => shell.openExternal('https://atomery.com/support?app=tiddlygit'),
         },
         {
           label: 'Report a Bug via GitHub...',
-          click: () => shell.openExternal('https://github.com/atomery/singlebox/issues'),
+          click: () => shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues'),
         },
         {
           label: 'Request a New Feature via GitHub...',
-          click: () => shell.openExternal('https://github.com/atomery/singlebox/issues/new?template=feature.md&title=feature%3A+'),
+          click: () => shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues/new?template=feature.md&title=feature%3A+'),
         },
         {
           label: 'Submit New App to Catalog...',
@@ -350,7 +350,7 @@ function createMenu() {
         },
         {
           label: 'Learn More...',
-          click: () => shell.openExternal('https://singleboxapp.com'),
+          click: () => shell.openExternal('https://tiddlygitapp.com'),
         },
       ],
     },
@@ -377,10 +377,10 @@ function createMenu() {
 
   if (process.platform === 'darwin') {
     template.unshift({
-      label: 'Singlebox',
+      label: 'TiddlyGit',
       submenu: [
         {
-          label: 'About Singlebox',
+          label: 'About TiddlyGit',
           click: () => aboutWindow.show(),
         },
         { type: 'separator' },

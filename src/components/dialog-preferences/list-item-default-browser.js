@@ -26,7 +26,7 @@ const ListItemDefaultBrowser = () => {
         const userChoicePath = `HKCU\\SOFTWARE\\Microsoft\\Windows\\Shell\\Associations\\URLAssociations\\${protocolName}\\UserChoice`;
         window.require('electron').remote.require('regedit').list([userChoicePath], (err, result) => {
           try {
-            setIsDefault(!err && result[userChoicePath].values.ProgId.value === 'Singlebox');
+            setIsDefault(!err && result[userChoicePath].values.ProgId.value === 'TiddlyGit');
           } catch (tryErr) {
             // eslint-disable-next-line no-console
             console.log(tryErr);
@@ -55,13 +55,13 @@ const ListItemDefaultBrowser = () => {
   if (isDefault) {
     return (
       <ListItem>
-        <ListItemText secondary="Singlebox is your default browser." />
+        <ListItemText secondary="TiddlyGit is your default browser." />
       </ListItem>
     );
   }
 
   const sharedListItemText = (
-    <ListItemText primary="Default browser" secondary="Make Singlebox the default browser." />
+    <ListItemText primary="Default browser" secondary="Make TiddlyGit the default browser." />
   );
 
   // open ms-settings on Windows 10

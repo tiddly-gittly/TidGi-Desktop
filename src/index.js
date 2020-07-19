@@ -104,7 +104,7 @@ const runApp = () => {
         store.dispatch(initDialogSpellcheckLanguages());
         document.title = 'Preferred Spell Checking Languages';
       } else {
-        document.title = 'Singlebox';
+        document.title = 'TiddlyGit';
       }
 
       if (window.mode !== 'main' && window.mode !== 'menubar') {
