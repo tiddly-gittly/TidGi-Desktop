@@ -38,11 +38,10 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
   // require here to prevent circular dependence, which will cause "TypeError: getWorkspaceByName is not a function"
   console.log('startWiki', homePath, Date.now());
   const { getWorkspaceByName } = require('../workspaces');
-  const { getView, reloadViewsWebContentsIfDidFailLoad } = require('../views');
+  const { reloadViewsWebContentsIfDidFailLoad } = require('../views');
   const { setWorkspaceMeta } = require('../workspace-metas');
   const workspace = getWorkspaceByName(homePath);
   const workspaceID = workspace?.id;
-  const view = getView(workspaceID);
   if (!workspace || !workspaceID) {
     logger.error('Try to start wiki, but workspace not found', { homePath, workspace, workspaceID });
     return;
@@ -68,7 +67,7 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
   worker.on('error', error => logger.error(error), loggerMeta);
   worker.on('exit', code => {
     if (code !== 0)
-      logger.warn(
+      logger.warning(
         `NodeJSWiki ${homePath} Worker stopped with exit code ${code}, this also happen normally when you delete a workspace.`,
         loggerMeta,
       );
@@ -95,7 +94,7 @@ module.exports.startWikiWatcher = function startWikiWatcher(
   worker.on('error', error => logger.error(error, loggerMeta));
   worker.on('exit', code => {
     if (code !== 0)
-      logger.warn(
+      logger.warning(
         `WikiWatcher ${wikiRepoPath} Worker stopped with exit code ${code}, this also happen normally when you delete a workspace.`,
         loggerMeta,
       );
