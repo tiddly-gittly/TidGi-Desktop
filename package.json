@@ -5,9 +5,9 @@
   "main": "public/electron.js",
   "scripts": {
     "electron-dev": "npm run clean:dev && concurrently \"cross-env BROWSER=none npm run start\" \"wait-on http://localhost:3000 && electron .\" -k",
-    "dist-dev": "cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist",
+    "dist-dev": "npm run clean:dev && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist",
     "dist": "npm run build && node dist.js",
-    "clean:dev": "rm -rf ./logs ",
+    "clean:dev": "rm -rf ./logs && rm -rf ./dist && rm -rf ./build",
     "build": "rescripts build",
     "start": "rescripts start",
     "test": "mocha ./tests",

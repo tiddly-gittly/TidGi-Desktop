@@ -29,10 +29,10 @@ const wikiWatcherWorkers = {};
 // to copy all worker.js and its local dependence to `process.resourcesPath`
 const WIKI_WORKER_PATH = isDev
   ? path.resolve(__dirname, './wiki-worker.js')
-  : path.resolve(process.resourcesPath, '..', 'wiki-worker.js');
+  : path.resolve(process.resourcesPath, 'app.asar.unpacked', 'wiki-worker.js');
 const WIKI_WATCHER_WORKER_PATH = isDev
   ? path.resolve(__dirname, './watch-wiki-worker.js')
-  : path.resolve(process.resourcesPath, '..', 'watch-wiki-worker.js');
+  : path.resolve(process.resourcesPath, 'app.asar.unpacked', 'watch-wiki-worker.js');
 
 module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName) {
   // require here to prevent circular dependence, which will cause "TypeError: getWorkspaceByName is not a function"
@@ -64,7 +64,7 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
       }, 10);
     }
   });
-  worker.on('error', error => logger.error(error), loggerMeta);
+  worker.on('error', error => logger.error(error.message, { ...loggerMeta, ...error }));
   worker.on('exit', code => {
     if (code !== 0)
       logger.warning(
@@ -91,7 +91,7 @@ module.exports.startWikiWatcher = function startWikiWatcher(
   wikiWatcherWorkers[wikiRepoPath] = worker;
   const loggerMeta = { worker: 'WikiWatcher', wikiRepoPath };
   worker.on('message', logMessage(loggerMeta));
-  worker.on('error', error => logger.error(error, loggerMeta));
+  worker.on('error', error => logger.error(error.message, { ...loggerMeta, ...error }));
   worker.on('exit', code => {
     if (code !== 0)
       logger.warning(

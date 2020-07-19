@@ -10,28 +10,29 @@ const { Arch, Platform } = builder;
 
 // sometimes, notarization works but *.app does not have a ticket stapled to it
 // this ensure the *.app has the notarization ticket
-const verifyNotarizationAsync = (filePath) => new Promise((resolve, reject) => {
-  // eslint-disable-next-line no-console
-  console.log(`xcrun stapler validate ${filePath.replace(/ /g, '\\ ')}`);
+const verifyNotarizationAsync = filePath =>
+  new Promise((resolve, reject) => {
+    // eslint-disable-next-line no-console
+    console.log(`xcrun stapler validate ${filePath.replace(/ /g, '\\ ')}`);
 
-  exec(`xcrun stapler validate ${filePath.replace(/ /g, '\\ ')}`, (e, stdout, stderr) => {
-    if (e instanceof Error) {
-      reject(e);
-      return;
-    }
+    exec(`xcrun stapler validate ${filePath.replace(/ /g, '\\ ')}`, (e, stdout, stderr) => {
+      if (e instanceof Error) {
+        reject(e);
+        return;
+      }
 
-    if (stderr) {
-      reject(new Error(stderr));
-      return;
-    }
+      if (stderr) {
+        reject(new Error(stderr));
+        return;
+      }
 
-    if (stdout.includes('The validate action worked!')) {
-      resolve(stdout);
-    } else {
-      reject(new Error(stdout));
-    }
+      if (stdout.includes('The validate action worked!')) {
+        resolve(stdout);
+      } else {
+        reject(new Error(stdout));
+      }
+    });
   });
-});
 
 console.log(`Machine: ${process.platform}`);
 
@@ -65,17 +66,20 @@ const options = {
         to: 'wiki',
         filter: ['**/*'],
       },
+    ],
+    asarUnpack: ['**/node_modules/tiddlywiki/**/*', '**/node_modules/chokidar/**/*', '**/node_modules/lodash/**/*'],
+    extraResources: [
       {
         from: 'public/libs/wiki/wiki-worker.js',
-        to: 'wiki-worker.js',
+        to: 'app.asar.unpacked/wiki-worker.js',
       },
       {
         from: 'public/libs/wiki/watch-wiki-worker.js',
-        to: 'watch-wiki-worker.js',
+        to: 'app.asar.unpacked/watch-wiki-worker.js',
       },
       {
         from: 'public/libs/git.js',
-        to: 'git.js',
+        to: 'app.asar.unpacked/git.js',
       },
     ],
     protocols: [
@@ -116,9 +120,10 @@ const options = {
         'github',
       ],
     },
-    afterSign: (context) => {
+    afterSign: context => {
       return null;
-      const shouldNotarize = process.platform === 'darwin' && context.electronPlatformName === 'darwin' && process.env.CI_BUILD_TAG;
+      const shouldNotarize =
+        process.platform === 'darwin' && context.electronPlatformName === 'darwin' && process.env.CI_BUILD_TAG;
       if (!shouldNotarize) return null;
 
       console.log('Notarizing app...');
@@ -135,7 +140,7 @@ const options = {
         appleIdPassword: process.env.APPLE_ID_PASSWORD,
       })
         .then(() => verifyNotarizationAsync(appPath))
-        .then((notarizedInfo) => {
+        .then(notarizedInfo => {
           // eslint-disable-next-line no-console
           console.log(notarizedInfo);
         });
@@ -143,11 +148,12 @@ const options = {
   },
 };
 
-builder.build(options)
+builder
+  .build(options)
   .then(() => {
     console.log('build successful');
   })
-  .catch((error) => {
+  .catch(error => {
     console.log(error);
     process.exit(1);
   });
