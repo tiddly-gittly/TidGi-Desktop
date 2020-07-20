@@ -980,7 +980,7 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpenInBrowser('https://atomery.com/privacy?app=singlebox&utm_source=singlebox_app')}>
+            <ListItem button onClick={() => requestOpenInBrowser('https://github.com/tiddly-gittly/TiddlyGit-Desktop/blob/master/PrivacyPolicy.md')}>
               <ListItemText primary="Privacy Policy" />
             </ListItem>
           </List>

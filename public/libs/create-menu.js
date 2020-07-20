@@ -332,7 +332,7 @@ function createMenu() {
       submenu: [
         {
           label: 'TiddlyGit Support',
-          click: () => shell.openExternal('https://atomery.com/support?app=tiddlygit'),
+          click: () => shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues'),
         },
         {
           label: 'Report a Bug via GitHub...',
