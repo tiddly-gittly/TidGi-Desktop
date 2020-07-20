@@ -61,11 +61,11 @@ const defaultPreferences = {
   spellcheck: true,
   spellcheckLanguages: ['en-US'],
   swipeToNavigate: true,
+  syncDebounceInterval: 1000 * 60 * 30,
   themeSource: 'system',
   titleBar: false,
   unreadCountBadge: true,
   useHardwareAcceleration: true,
-  syncDebounceInterval: (1000 * 5) / 2,
 };
 
 let cachedPreferences = null;

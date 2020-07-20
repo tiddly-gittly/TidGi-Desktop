@@ -1,6 +1,8 @@
 import React, { useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import semver from 'semver';
+import getUnixTime from 'date-fns/getUnixTime';
+import fromUnixTime from 'date-fns/fromUnixTime';
 
 import Divider from '@material-ui/core/Divider';
 import Grid from '@material-ui/core/Grid';
@@ -31,6 +33,7 @@ import SecurityIcon from '@material-ui/icons/Security';
 import StorefrontIcon from '@material-ui/icons/Storefront';
 import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
 import WidgetsIcon from '@material-ui/icons/Widgets';
+import AccountTreeIcon from '@material-ui/icons/AccountTree';
 
 import { TimePicker } from '@material-ui/pickers';
 
@@ -204,6 +207,7 @@ const Preferences = ({
   spellcheck,
   spellcheckLanguages,
   swipeToNavigate,
+  syncDebounceInterval,
   themeSource,
   titleBar,
   unreadCountBadge,
@@ -213,6 +217,11 @@ const Preferences = ({
 }) => {
   const { remote } = window.require('electron');
   const sections = {
+    wiki: {
+      text: 'Wiki',
+      Icon: AccountTreeIcon,
+      ref: useRef(),
+    },
     general: {
       text: 'General',
       Icon: WidgetsIcon,
@@ -316,7 +325,37 @@ const Preferences = ({
           })}
         </List>
       </div>
+
+
       <div className={classes.inner}>
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.wiki.ref}>
+            Wiki
+        </Typography>
+        <Paper elevation={0} className={classes.paper}>
+          <List dense disablePadding>
+            <ListItem>
+              <ListItemText
+                primary="同步间隔"
+                secondary="超过这段长度的时间没有新的改动后，就会自动开始备份到 Github"
+              />
+              <div className={classes.timePickerContainer}>
+                <TimePicker
+                  autoOk={false}
+                  ampm={false}
+                  openTo="hours"
+                  views={["hours", "minutes", "seconds"]}
+                  inputFormat="HH:mm:ss"
+                  renderInput={timeProps => <TextField {...timeProps} />}
+                  value={fromUnixTime(syncDebounceInterval / 1000 + new Date().getTimezoneOffset() * 60)}
+                  onChange={(d) => requestSetPreference('syncDebounceInterval', (getUnixTime(d) - new Date().getTimezoneOffset() * 60) * 1000)}
+                  onClose={() => { window.preventClosingWindow = false; }}
+                  onOpen={() => { window.preventClosingWindow = true; }}
+                />
+              </div>
+            </ListItem>
+          </List>
+        </Paper>
+
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.general.ref}>
           General
         </Typography>
@@ -1267,6 +1306,7 @@ Preferences.propTypes = {
   spellcheck: PropTypes.bool.isRequired,
   spellcheckLanguages: PropTypes.arrayOf(PropTypes.string).isRequired,
   swipeToNavigate: PropTypes.bool.isRequired,
+  syncDebounceInterval: PropTypes.number.isRequired,
   themeSource: PropTypes.string.isRequired,
   titleBar: PropTypes.bool.isRequired,
   unreadCountBadge: PropTypes.bool.isRequired,
@@ -1308,6 +1348,7 @@ const mapStateToProps = (state) => ({
   spellcheck: state.preferences.spellcheck,
   spellcheckLanguages: state.preferences.spellcheckLanguages,
   swipeToNavigate: state.preferences.swipeToNavigate,
+  syncDebounceInterval: state.preferences.syncDebounceInterval,
   themeSource: state.preferences.themeSource,
   titleBar: state.preferences.titleBar,
   unreadCountBadge: state.preferences.unreadCountBadge,
