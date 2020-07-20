@@ -51,7 +51,6 @@ const codeInjectionWindow = require('../windows/code-injection');
 const customUserAgentWindow = require('../windows/custom-user-agent');
 const displayMediaWindow = require('../windows/display-media');
 const editWorkspaceWindow = require('../windows/edit-workspace');
-const licenseRegistrationWindow = require('../windows/license-registration');
 const mainWindow = require('../windows/main');
 const notificationsWindow = require('../windows/notifications');
 const preferencesWindow = require('../windows/preferences');
@@ -198,10 +197,6 @@ const loadListeners = () => {
     addWorkspaceWindow.show();
   });
 
-  ipcMain.on('request-show-license-registration-window', () => {
-    licenseRegistrationWindow.show();
-  });
-
   ipcMain.on('request-show-notifications-window', () => {
     notificationsWindow.show();
   });
@@ -223,12 +218,13 @@ const loadListeners = () => {
         cancelId: 1,
       })
       .then(({ response }) => {
+        // eslint-disable-next-line promise/always-return
         if (response === 0) {
           app.relaunch();
           app.quit();
         }
       })
-      .catch(console.log); // eslint-disable-line
+      .catch(console.log);
   });
 
   // Notifications

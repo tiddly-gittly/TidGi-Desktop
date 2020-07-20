@@ -59,7 +59,6 @@ import {
   requestShowAboutWindow,
   requestShowCodeInjectionWindow,
   requestShowCustomUserAgentWindow,
-  requestShowLicenseRegistrationWindow,
   requestShowNotification,
   requestShowNotificationsWindow,
   requestShowProxyWindow,
@@ -198,7 +197,6 @@ const Preferences = ({
   pauseNotificationsByScheduleFrom,
   pauseNotificationsByScheduleTo,
   pauseNotificationsMuteAudio,
-  registered,
   rememberLastPageVisited,
   shareWorkspaceBrowsingData,
   sidebar,
@@ -1218,11 +1216,6 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={requestShowLicenseRegistrationWindow} disabled={registered}>
-              <ListItemText primary="License Registration" secondary={registered ? 'Registered. Thank you for supporting the development of Singlebox.' : null} />
-              <ChevronRightIcon color="action" />
-            </ListItem>
-            <Divider />
             <ListItem button onClick={requestQuit}>
               <ListItemText primary="Quit" />
               <ChevronRightIcon color="action" />
@@ -1267,7 +1260,6 @@ Preferences.propTypes = {
   pauseNotificationsByScheduleFrom: PropTypes.string.isRequired,
   pauseNotificationsByScheduleTo: PropTypes.string.isRequired,
   pauseNotificationsMuteAudio: PropTypes.bool.isRequired,
-  registered: PropTypes.bool.isRequired,
   rememberLastPageVisited: PropTypes.bool.isRequired,
   shareWorkspaceBrowsingData: PropTypes.bool.isRequired,
   sidebar: PropTypes.bool.isRequired,
@@ -1309,7 +1301,6 @@ const mapStateToProps = (state) => ({
   pauseNotificationsByScheduleFrom: state.preferences.pauseNotificationsByScheduleFrom,
   pauseNotificationsByScheduleTo: state.preferences.pauseNotificationsByScheduleTo,
   pauseNotificationsMuteAudio: state.preferences.pauseNotificationsMuteAudio,
-  registered: state.preferences.registered,
   rememberLastPageVisited: state.preferences.rememberLastPageVisited,
   shareWorkspaceBrowsingData: state.preferences.shareWorkspaceBrowsingData,
   sidebar: state.preferences.sidebar,

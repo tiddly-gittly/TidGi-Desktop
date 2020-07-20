@@ -74,7 +74,6 @@ const createAsync = () => new Promise((resolve) => {
 
     mb.on('ready', () => {
       mb.tray.on('right-click', () => {
-        const registered = getPreference('registered');
         const updaterEnabled = process.env.SNAP == null
           && !process.mas && !process.windowsStore;
 
@@ -108,12 +107,6 @@ const createAsync = () => new Promise((resolve) => {
           {
             label: 'About TiddlyGit',
             click: () => ipcMain.emit('request-show-about-window'),
-          },
-          { type: 'separator' },
-          {
-            label: registered ? 'Registered' : 'Registration...',
-            enabled: !registered,
-            click: registered ? null : () => ipcMain.emit('request-show-license-registration-window'),
           },
           { type: 'separator' },
           updaterMenuItem,

@@ -35,7 +35,6 @@ import {
   requestSetWorkspaces,
   requestShowAddWorkspaceWindow,
   requestShowEditWorkspaceWindow,
-  requestShowLicenseRegistrationWindow,
   requestShowNotificationsWindow,
   requestShowPreferencesWindow,
   requestWakeUpWorkspace,
@@ -227,7 +226,6 @@ const Main = ({
   isFullScreen,
   isLoading,
   navigationBar,
-  registered,
   shouldPauseNotifications,
   sidebar,
   titleBar,
@@ -277,13 +275,7 @@ const Main = ({
               </SortableContainer>
               <WorkspaceSelector
                 id="add"
-                onClick={() => {
-                  if (!registered && workspacesList.length > 1) {
-                    requestShowLicenseRegistrationWindow();
-                    return;
-                  }
-                  requestShowAddWorkspaceWindow();
-                }}
+                onClick={() => requestShowAddWorkspaceWindow()}
               />
             </div>
             {!navigationBar && (
@@ -379,7 +371,6 @@ Main.propTypes = {
   isFullScreen: PropTypes.bool.isRequired,
   isLoading: PropTypes.bool,
   navigationBar: PropTypes.bool.isRequired,
-  registered: PropTypes.bool.isRequired,
   shouldPauseNotifications: PropTypes.bool.isRequired,
   sidebar: PropTypes.bool.isRequired,
   titleBar: PropTypes.bool.isRequired,
@@ -402,7 +393,6 @@ const mapStateToProps = state => {
     navigationBar:
       (window.process.platform === 'linux' && state.preferences.attachToMenubar && !state.preferences.sidebar) ||
       state.preferences.navigationBar,
-    registered: state.preferences.registered,
     shouldPauseNotifications: state.notifications.pauseNotificationsInfo !== null,
     sidebar: state.preferences.sidebar,
     titleBar: state.preferences.titleBar,

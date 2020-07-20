@@ -9,7 +9,6 @@ const aboutWindow = require('../windows/about');
 const addWorkspaceWindow = require('../windows/add-workspace');
 const editWorkspaceWindow = require('../windows/edit-workspace');
 const goToUrlWindow = require('../windows/go-to-url');
-const licenseRegistrationWindow = require('../windows/license-registration');
 const mainWindow = require('../windows/main');
 const notificationsWindow = require('../windows/notifications');
 const preferencesWindow = require('../windows/preferences');
@@ -34,7 +33,6 @@ const {
 } = require('./views');
 
 function createMenu() {
-  const registered = getPreference('registered');
   const updaterEnabled = process.env.SNAP == null && !process.mas && !process.windowsStore;
   const workspaces = getWorkspaces();
   const hasWorkspaces = Object.keys(workspaces).length > 0;
@@ -384,12 +382,6 @@ function createMenu() {
           click: () => aboutWindow.show(),
         },
         { type: 'separator' },
-        {
-          label: registered ? 'Registered' : 'Registration...',
-          enabled: !registered,
-          click: registered ? null : () => licenseRegistrationWindow.show(),
-        },
-        { type: 'separator' },
         updaterMenuItem,
         { type: 'separator' },
         {
@@ -425,12 +417,6 @@ function createMenu() {
         {
           label: 'About',
           click: () => aboutWindow.show(),
-        },
-        { type: 'separator' },
-        {
-          label: registered ? 'Registered' : 'Registration...',
-          enabled: !registered,
-          click: registered ? null : () => licenseRegistrationWindow.show(),
         },
         { type: 'separator' },
         updaterMenuItem,
