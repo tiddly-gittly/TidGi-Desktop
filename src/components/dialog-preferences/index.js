@@ -32,7 +32,8 @@ import SecurityIcon from '@material-ui/icons/Security';
 import StorefrontIcon from '@material-ui/icons/Storefront';
 import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
 import WidgetsIcon from '@material-ui/icons/Widgets';
-import AccountTreeIcon from '@material-ui/icons/AccountTree';
+import GitHubIcon from '@material-ui/icons/GitHub';
+import MenuBookIcon from '@material-ui/icons/MenuBook';
 
 import { TimePicker } from '@material-ui/pickers';
 
@@ -218,7 +219,12 @@ const Preferences = ({
   const sections = {
     wiki: {
       text: 'Wiki',
-      Icon: AccountTreeIcon,
+      Icon: MenuBookIcon,
+      ref: useRef(),
+    },
+    sync: {
+      text: 'Sync',
+      Icon: GitHubIcon,
       ref: useRef(),
     },
     general: {
@@ -328,7 +334,18 @@ const Preferences = ({
 
       <div className={classes.inner}>
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.wiki.ref}>
-            Wiki
+          Wiki
+        </Typography>
+        <Paper elevation={0} className={classes.paper}>
+          <List dense disablePadding>
+            <ListItem>
+              暂无
+            </ListItem>
+          </List>
+        </Paper>
+
+        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.sync.ref}>
+          同步
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
