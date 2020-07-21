@@ -1,7 +1,8 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useRef, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import semver from 'semver';
 import fromUnixTime from 'date-fns/fromUnixTime';
+import { debounce } from 'lodash';
 
 import Divider from '@material-ui/core/Divider';
 import Grid from '@material-ui/core/Grid';
@@ -305,6 +306,11 @@ const Preferences = ({
     sections[scrollTo].ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
+  const debouncedRequestShowRequireRestartDialog = useCallback(
+    debounce(() => requestShowRequireRestartDialog(), 2500),
+    [],
+  );
+
   return (
     <div className={classes.root}>
       <div className={classes.sidebar}>
@@ -352,7 +358,7 @@ const Preferences = ({
             <ListItem>
               <ListItemText
                 primary="同步间隔"
-                secondary="超过这段长度的时间没有新的改动后，就会自动开始备份到 Github"
+                secondary="超过这段长度的时间没有新的改动后，就会自动开始备份到 Github（重启后生效）"
               />
               <div className={classes.timePickerContainer}>
                 <TimePicker
@@ -363,12 +369,13 @@ const Preferences = ({
                   inputFormat="HH:mm:ss"
                   renderInput={timeProps => <TextField {...timeProps} />}
                   value={fromUnixTime(syncDebounceInterval / 1000 + new Date().getTimezoneOffset() * 60)}
-                  onChange={date =>
+                  onChange={date => {
                     requestSetPreference(
                       'syncDebounceInterval',
                       (date.getTime() / 1000 - new Date().getTimezoneOffset() * 60) * 1000,
-                    )
-                  }
+                    );
+                    debouncedRequestShowRequireRestartDialog();
+                  }}
                   onClose={() => {
                     window.preventClosingWindow = false;
                   }}
