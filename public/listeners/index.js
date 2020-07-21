@@ -335,6 +335,7 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-remove-workspace', (e, id) => {
+    // eslint-disable-next-line promise/catch-or-return
     dialog
       .showMessageBox(mainWindow.get(), {
         type: 'question',
@@ -344,19 +345,23 @@ const loadListeners = () => {
         cancelId: 1,
       })
       .then(({ response }) => {
-        if (response === 0) {
-          removeWorkspaceView(id);
-          createMenu();
-        }
         // eslint-disable-next-line promise/always-return
-        if (response === 1) {
-          const workspace = getWorkspace(id);
-          removeWorkspaceView(id);
-          removeWiki(workspace.name, workspace.isSubWiki && workspace.mainWikiToLink);
-          createMenu();
+        try {
+          if (response === 0) {
+            removeWorkspaceView(id);
+            createMenu();
+          }
+          // eslint-disable-next-line promise/always-return
+          if (response === 1) {
+            const workspace = getWorkspace(id);
+            removeWorkspaceView(id);
+            removeWiki(workspace.name, workspace.isSubWiki && workspace.mainWikiToLink);
+            createMenu();
+          }
+        } catch (error) {
+          logger.error(error.message, error);
         }
-      })
-      .catch(console.log);
+      });
   });
 
   ipcMain.on('request-set-workspace', (e, id, opts) => {
