@@ -17,7 +17,7 @@ const getLogInfo = loggerToMainThread => message =>
   });
 
 const getGitUrlWithCredential = (rawUrl, username, accessToken) =>
-  `${rawUrl}.git`.replace('https://github.com/', `https://${username}:${accessToken}@github.com/`);
+  trim(`${rawUrl}.git`.replace('https://github.com/', `https://${username}:${accessToken}@github.com/`));
 const getGitUrlWithOutCredential = urlWithCredential => trim(urlWithCredential.replace(/.+@/, 'https://'));
 /**
  *  Add remote with credential
@@ -29,6 +29,7 @@ async function credentialOn(wikiFolderPath, githubRepoUrl, userInfo) {
   const { login: username, accessToken } = userInfo;
   const gitUrlWithCredential = getGitUrlWithCredential(githubRepoUrl, username, accessToken);
   await GitProcess.exec(['remote', 'add', 'origin', gitUrlWithCredential], wikiFolderPath);
+  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithCredential], wikiFolderPath);
 }
 /**
  *  Add remote without credential
@@ -77,7 +78,7 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki, 
   await commitFiles(wikiFolderPath, username, email);
   logProgress('仓库初始化完毕，开始配置Github远端仓库');
   await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
-  logProgress('正在将Wiki所在的本地Git备份到Github远端仓库');
+  logProgress('正在将Wiki所在的本地Git备份到Github远端仓库，需要的时间取决于网速，请耐心等待');
   const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(
     ['push', 'origin', 'master:master', '--force'],
     wikiFolderPath,
