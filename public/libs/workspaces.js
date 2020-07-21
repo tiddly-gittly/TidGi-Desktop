@@ -29,16 +29,15 @@ const getWorkspaces = () => {
 };
 
 const getWorkspacesAsList = () => {
-  const workspaceLst = Object.values(getWorkspaces())
-    .sort((a, b) => a.order - b.order);
+  const workspaceLst = Object.values(getWorkspaces()).sort((a, b) => a.order - b.order);
 
   return workspaceLst;
 };
 
-const getWorkspace = (id) => workspaces[id];
-const getWorkspaceByName = (name) => getWorkspacesAsList().find(workspace => workspace.name === name);
+const getWorkspace = id => workspaces[id];
+const getWorkspaceByName = name => getWorkspacesAsList().find(workspace => workspace.name === name);
 
-const getPreviousWorkspace = (id) => {
+const getPreviousWorkspace = id => {
   const workspaceLst = getWorkspacesAsList();
 
   let currentWorkspaceI = 0;
@@ -55,7 +54,7 @@ const getPreviousWorkspace = (id) => {
   return workspaceLst[currentWorkspaceI - 1];
 };
 
-const getNextWorkspace = (id) => {
+const getNextWorkspace = id => {
   const workspaceLst = getWorkspacesAsList();
 
   let currentWorkspaceI = 0;
@@ -74,10 +73,10 @@ const getNextWorkspace = (id) => {
 
 const getActiveWorkspace = () => {
   if (!workspaces) return null;
-  return Object.values(workspaces).find((workspace) => workspace.active);
+  return Object.values(workspaces).find(workspace => workspace.active);
 };
 
-const setActiveWorkspace = (id) => {
+const setActiveWorkspace = id => {
   // deactive the current one
   let currentActiveWorkspace = getActiveWorkspace();
   if (currentActiveWorkspace) {
@@ -105,7 +104,7 @@ const setWorkspace = (id, opts) => {
   settings.setSync(`workspaces.${v}.${id}`, workspace);
 };
 
-const setWorkspaces = (newWorkspaces) => {
+const setWorkspaces = newWorkspaces => {
   workspaces = newWorkspaces;
   sendToAllWindows('set-workspaces', newWorkspaces);
   settings.setSync(`workspaces.${v}`, newWorkspaces);
@@ -133,13 +132,17 @@ const setWorkspacePicture = (id, sourcePicturePath) => {
 
       return sourcePicturePath;
     })
-    .then((picturePath) => Jimp.read(picturePath))
-    .then((img) => new Promise((resolve) => {
-      img.clone()
-        .resize(128, 128)
-        .quality(100)
-        .write(destPicturePath, resolve);
-    }))
+    .then(picturePath => Jimp.read(picturePath))
+    .then(
+      img =>
+        new Promise(resolve => {
+          img
+            .clone()
+            .resize(128, 128)
+            .quality(100)
+            .write(destPicturePath, resolve);
+        }),
+    )
     .then(() => {
       const currentPicturePath = getWorkspace(id).picturePath;
       setWorkspace(id, {
@@ -154,21 +157,20 @@ const setWorkspacePicture = (id, sourcePicturePath) => {
     .catch(console.log); // eslint-disable-line no-console
 };
 
-const removeWorkspacePicture = (id) => {
+const removeWorkspacePicture = id => {
   const workspace = getWorkspace(id);
   if (workspace.picturePath) {
-    return fsExtra.remove(workspace.picturePath)
-      .then(() => {
-        setWorkspace(id, {
-          pictureId: null,
-          picturePath: null,
-        });
+    return fsExtra.remove(workspace.picturePath).then(() => {
+      setWorkspace(id, {
+        pictureId: null,
+        picturePath: null,
       });
+    });
   }
   return Promise.resolve();
 };
 
-const removeWorkspace = (id) => {
+const removeWorkspace = id => {
   const { name } = workspaces[id];
   stopWiki(name);
   stopWikiWatcher(name);
