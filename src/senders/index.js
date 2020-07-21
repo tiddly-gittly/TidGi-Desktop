@@ -84,6 +84,7 @@ export const requestCreateWorkspace = (
     mainWikiToLink,
     port,
     homeUrl,
+    gitUrl,
     picture,
     transparentBackground,
   );
