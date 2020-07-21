@@ -2,28 +2,10 @@ const { workerData, parentPort, isMainThread } = require('worker_threads');
 const fs = require('fs');
 const path = require('path');
 const chokidar = require('chokidar');
-const { trim, compact } = require('lodash');
+const { trim, compact, debounce } = require('lodash');
 
 const frequentlyChangedFileThatShouldBeIgnoredFromWatch = ['output', /\$__StoryList/];
 const topLevelFoldersToIgnored = ['node_modules', '.git'];
-
-/** https://davidwalsh.name/javascript-debounce-function */
-function debounce(func, wait, immediate) {
-  let timeout;
-  return function debounced() {
-    const context = this;
-    // eslint-disable-next-line no-underscore-dangle, prefer-rest-params
-    const arguments_ = arguments;
-    const later = function later() {
-      timeout = undefined;
-      if (!immediate) func.apply(context, arguments_);
-    };
-    const callNow = immediate && !timeout;
-    clearTimeout(timeout);
-    timeout = setTimeout(later, wait);
-    if (callNow) func.apply(context, arguments_);
-  };
-}
 
 let watcher;
 function watchFolder(wikiRepoPath, wikiFolderPath, githubRepoUrl, userInfo, syncDebounceInterval, isDevelopment) {
