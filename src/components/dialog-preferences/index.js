@@ -2,6 +2,9 @@ import React, { useRef, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import semver from 'semver';
 import fromUnixTime from 'date-fns/fromUnixTime';
+import setYear from 'date-fns/setYear';
+import setMonth from 'date-fns/setMonth';
+import setDate from 'date-fns/setDate';
 import { debounce } from 'lodash';
 
 import Divider from '@material-ui/core/Divider';
@@ -370,10 +373,9 @@ const Preferences = ({
                   renderInput={timeProps => <TextField {...timeProps} />}
                   value={fromUnixTime(syncDebounceInterval / 1000 + new Date().getTimezoneOffset() * 60)}
                   onChange={date => {
-                    requestSetPreference(
-                      'syncDebounceInterval',
-                      (date.getTime() / 1000 - new Date().getTimezoneOffset() * 60) * 1000,
-                    );
+                    const timeWithoutDate = setDate(setMonth(setYear(date, 1970), 0), 1);
+                    const utcTime = (timeWithoutDate.getTime() / 1000 - new Date().getTimezoneOffset() * 60) * 1000;
+                    requestSetPreference('syncDebounceInterval', utcTime);
                     debouncedRequestShowRequireRestartDialog();
                   }}
                   onClose={() => {

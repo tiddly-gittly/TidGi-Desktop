@@ -72,7 +72,8 @@ const defaultPreferences = {
 let cachedPreferences;
 
 function sanitizePreference(preferenceToSanitize) {
-  if (preferenceToSanitize.syncDebounceInterval > 86400000) {
+  const { syncDebounceInterval } = preferenceToSanitize;
+  if (syncDebounceInterval > 86400000 || syncDebounceInterval < -86400000 || !Number.isInteger(syncDebounceInterval)) {
     preferenceToSanitize.syncDebounceInterval = defaultPreferences.syncDebounceInterval;
   }
   return preferenceToSanitize;
