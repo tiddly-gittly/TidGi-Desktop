@@ -2,6 +2,7 @@
 import React, { useState } from 'react';
 import styled from 'styled-components';
 import { useQuery } from 'graphql-hooks';
+import { trim } from 'lodash';
 
 import TextField from '@material-ui/core/TextField';
 import FolderIcon from '@material-ui/icons/Folder';
@@ -84,7 +85,12 @@ export default function SearchRepo({ accessToken, githubWikiUrl, githubWikiUrlSe
       {loading && <LinearProgress variant="query" />}
       <List component="nav" aria-label="main mailbox folders">
         {repoList.map(({ name, url }) => (
-          <ListItem button key={url} onClick={() => githubWikiUrlSetter(url)} selected={githubWikiUrl === url}>
+          <ListItem
+            button
+            key={url}
+            onClick={() => githubWikiUrlSetter(url)}
+            selected={trim(githubWikiUrl) === trim(url)}
+          >
             <ListItemIcon>
               <FolderIcon />
             </ListItemIcon>
