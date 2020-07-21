@@ -1,7 +1,6 @@
 import React, { useRef, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import semver from 'semver';
-import getUnixTime from 'date-fns/getUnixTime';
 import fromUnixTime from 'date-fns/fromUnixTime';
 
 import Divider from '@material-ui/core/Divider';
@@ -343,13 +342,22 @@ const Preferences = ({
                   autoOk={false}
                   ampm={false}
                   openTo="hours"
-                  views={["hours", "minutes", "seconds"]}
+                  views={['hours', 'minutes', 'seconds']}
                   inputFormat="HH:mm:ss"
                   renderInput={timeProps => <TextField {...timeProps} />}
                   value={fromUnixTime(syncDebounceInterval / 1000 + new Date().getTimezoneOffset() * 60)}
-                  onChange={(d) => requestSetPreference('syncDebounceInterval', (getUnixTime(d) - new Date().getTimezoneOffset() * 60) * 1000)}
-                  onClose={() => { window.preventClosingWindow = false; }}
-                  onOpen={() => { window.preventClosingWindow = true; }}
+                  onChange={date =>
+                    requestSetPreference(
+                      'syncDebounceInterval',
+                      (date.getTime() / 1000 - new Date().getTimezoneOffset() * 60) * 1000,
+                    )
+                  }
+                  onClose={() => {
+                    window.preventClosingWindow = false;
+                  }}
+                  onOpen={() => {
+                    window.preventClosingWindow = true;
+                  }}
                 />
               </div>
             </ListItem>
