@@ -1,7 +1,7 @@
 /* eslint-disable no-await-in-loop */
 const fs = require('fs-extra');
 const path = require('path');
-const { compact } = require('lodash');
+const { compact, truncate, trim } = require('lodash');
 const { GitProcess } = require('dugite');
 
 /** functions to send data to main thread */
@@ -15,6 +15,32 @@ const getLogInfo = loggerToMainThread => message =>
     type: 'info',
     payload: { message },
   });
+
+const getGitUrlWithCredential = (rawUrl, username, accessToken) =>
+  `${rawUrl}.git`.replace('https://github.com/', `https://${username}:${accessToken}@github.com/`);
+const getGitUrlWithOutCredential = urlWithCredential => trim(urlWithCredential.replace(/.+@/, 'https://'));
+/**
+ *  Add remote with credential
+ * @param {string} wikiFolderPath
+ * @param {string} githubRepoUrl
+ * @param {{ login: string, email: string, accessToken: string }} userInfo
+ */
+async function credentialOn(wikiFolderPath, githubRepoUrl, userInfo) {
+  const { login: username, accessToken } = userInfo;
+  const gitUrlWithCredential = getGitUrlWithCredential(githubRepoUrl, username, accessToken);
+  await GitProcess.exec(['remote', 'add', 'origin', gitUrlWithCredential], wikiFolderPath);
+}
+/**
+ *  Add remote without credential
+ * @param {string} wikiFolderPath
+ * @param {string} githubRepoUrl
+ * @param {{ login: string, email: string, accessToken: string }} userInfo
+ */
+async function credentialOff(wikiFolderPath) {
+  const githubRepoUrl = await getRemoteUrl(wikiFolderPath);
+  const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
+  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], wikiFolderPath);
+}
 
 /**
  * Git add and commit all file
@@ -42,20 +68,21 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki, 
 
   logProgress('开始初始化本地Git仓库');
   const { login: username, email, accessToken } = userInfo;
-  const gitUrl = `${githubRepoUrl}.git`.replace(
-    'https://github.com/',
-    `https://${username}:${accessToken}@github.com/`,
+  logInfo(
+    `Using gitUrl ${githubRepoUrl} with username ${username} and accessToken ${truncate(accessToken, {
+      length: 24,
+    })}`,
   );
-  logInfo(`Using gitUrl ${gitUrl}`);
   await GitProcess.exec(['init'], wikiFolderPath);
   await commitFiles(wikiFolderPath, username, email);
   logProgress('仓库初始化完毕，开始配置Github远端仓库');
-  await GitProcess.exec(['remote', 'add', 'origin', gitUrl], wikiFolderPath);
+  await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
   logProgress('正在将Wiki所在的本地Git备份到Github远端仓库');
   const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(
     ['push', 'origin', 'master:master', '--force'],
     wikiFolderPath,
   );
+  await credentialOff(wikiFolderPath);
   if (isMainWiki && pushExitCode !== 0) {
     logInfo(pushStdError);
     const CONFIG_FAILED_MESSAGE = 'Git仓库配置失败，详见错误日志';
@@ -235,7 +262,7 @@ async function continueRebase(wikiFolderPath, username, email, logInfo, logProgr
  *
  * @param {string} wikiFolderPath
  * @param {string} githubRepoUrl
- * @param {{ login: string, email: string }} userInfo
+ * @param {{ login: string, email: string, accessToken: string }} userInfo
  * @param {({ type: string, payload: { message: string, handler: string }}) => void} loggerToMainThread Send message to .log file or send to GUI or sent to notification based on type, see wiki-worker-manager.js for details
  */
 async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo, loggerToMainThread) {
@@ -272,6 +299,8 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo, loggerToMa
     }
     logProgress('提交完成');
   }
+  logProgress('正在配置身份信息');
+  await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
   logProgress('正在拉取云端数据，以便比对');
   await GitProcess.exec(['fetch', 'origin', 'master'], wikiFolderPath);
 
@@ -320,7 +349,6 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo, loggerToMa
         logProgress(`变基(Rebase)时发现冲突，需要解决冲突`);
       }
       await GitProcess.exec(['push', 'origin', branchMapping], wikiFolderPath);
-      await assumeSync(wikiFolderPath, logInfo, logProgress);
       break;
     }
     default: {
@@ -328,6 +356,7 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo, loggerToMa
     }
   }
 
+  await credentialOff(wikiFolderPath);
   logProgress('进行同步结束前最后的检查');
   await assumeSync(wikiFolderPath, logInfo, logProgress);
   logProgress(`${wikiFolderPath} 同步完成`);
