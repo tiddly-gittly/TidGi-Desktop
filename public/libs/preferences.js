@@ -1,3 +1,4 @@
+/* eslint-disable no-param-reassign */
 const path = require('path');
 const semver = require('semver');
 const settings = require('electron-settings');
@@ -68,23 +69,30 @@ const defaultPreferences = {
   useHardwareAcceleration: true,
 };
 
-let cachedPreferences = null;
+let cachedPreferences;
+
+function sanitizePreference(preferenceToSanitize) {
+  if (preferenceToSanitize.syncDebounceInterval > 86400000) {
+    preferenceToSanitize.syncDebounceInterval = defaultPreferences.syncDebounceInterval;
+  }
+  return preferenceToSanitize;
+}
 
 const initCachedPreferences = () => {
-  cachedPreferences = { ...defaultPreferences, ...settings.getSync(`preferences.${v}`) };
+  cachedPreferences = { ...defaultPreferences, ...sanitizePreference(settings.getSync(`preferences.${v}`)) };
 };
 
 const getPreferences = () => {
   // store in memory to boost performance
-  if (cachedPreferences == null) {
+  if (cachedPreferences === undefined) {
     initCachedPreferences();
   }
   return cachedPreferences;
 };
 
-const getPreference = (name) => {
+const getPreference = name => {
   // store in memory to boost performance
-  if (cachedPreferences == null) {
+  if (cachedPreferences === undefined) {
     initCachedPreferences();
   }
   return cachedPreferences[name];
@@ -93,8 +101,10 @@ const getPreference = (name) => {
 const setPreference = (name, value) => {
   sendToAllWindows('set-preference', name, value);
   cachedPreferences[name] = value;
+  cachedPreferences = sanitizePreference(cachedPreferences);
 
-  Promise.resolve().then(() => settings.setSync(`preferences.${v}.${name}`, value));
+  // eslint-disable-next-line promise/catch-or-return
+  Promise.resolve().then(() => settings.setSync(`preferences.${v}.${name}`, cachedPreferences[name]));
 
   if (name.startsWith('darkReader')) {
     ipcMain.emit('request-reload-views-dark-reader');
@@ -110,11 +120,11 @@ const setPreference = (name, value) => {
 };
 
 const resetPreferences = () => {
-  cachedPreferences = null;
+  cachedPreferences = undefined;
   settings.unset();
 
   const preferences = getPreferences();
-  Object.keys(preferences).forEach((name) => {
+  Object.keys(preferences).forEach(name => {
     sendToAllWindows('set-preference', name, preferences[name]);
   });
 };

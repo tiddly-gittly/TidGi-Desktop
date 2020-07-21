@@ -36,7 +36,6 @@ const WIKI_WATCHER_WORKER_PATH = isDev
 
 module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName) {
   // require here to prevent circular dependence, which will cause "TypeError: getWorkspaceByName is not a function"
-  console.log('startWiki', homePath, Date.now());
   const { getWorkspaceByName } = require('../workspaces');
   const { reloadViewsWebContentsIfDidFailLoad } = require('../views');
   const { setWorkspaceMeta } = require('../workspace-metas');
@@ -46,7 +45,6 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
     logger.error('Try to start wiki, but workspace not found', { homePath, workspace, workspaceID });
     return;
   }
-  console.log('setWorkspaceMeta', workspaceID, Date.now());
   setWorkspaceMeta(workspaceID, { isLoading: true });
   const workerData = { homePath, userName, tiddlyWikiPort };
   const worker = new Worker(WIKI_WORKER_PATH, { workerData });
