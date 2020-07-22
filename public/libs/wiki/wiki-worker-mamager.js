@@ -23,16 +23,12 @@ const logMessage = loggerMeta => message => {
 // key is same to workspace name, so we can get this worker by workspace name
 // { [name: string]: Worker }
 const wikiWorkers = {};
-const wikiWatcherWorkers = {};
 
 // don't forget to config option in `dist.js` https://github.com/electron/electron/issues/18540#issuecomment-652430001
 // to copy all worker.js and its local dependence to `process.resourcesPath`
 const WIKI_WORKER_PATH = isDev
   ? path.resolve(__dirname, './wiki-worker.js')
   : path.resolve(process.resourcesPath, 'app.asar.unpacked', 'wiki-worker.js');
-const WIKI_WATCHER_WORKER_PATH = isDev
-  ? path.resolve(__dirname, './watch-wiki-worker.js')
-  : path.resolve(process.resourcesPath, 'app.asar.unpacked', 'watch-wiki-worker.js');
 
 module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName) {
   // require here to prevent circular dependence, which will cause "TypeError: getWorkspaceByName is not a function"
@@ -71,62 +67,34 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
       );
   });
 };
-module.exports.stopWiki = async function stopWiki(homePath) {
+async function stopWiki(homePath) {
   const worker = wikiWorkers[homePath];
-  if (!worker) return Promise.resolve(); // no running worker, maybe tiddlywiki server in this workspace failed to start
+  if (!worker) {
+    logger.warning(
+      `No wiki watcher for ${homePath}. No running worker, means maybe tiddlywiki server in this workspace failed to start`,
+      { function: 'stopWiki' },
+    );
+    return Promise.resolve();
+  }
   return new Promise(resolve => {
     worker.postMessage({ type: 'command', message: 'exit' });
     worker.on('exit', () => {
       delete wikiWorkers[homePath];
+      logger.info(`Wiki-worker for ${homePath} stopped`, { function: 'stopWiki' });
       resolve();
     });
   });
-};
-
-module.exports.startWikiWatcher = function startWikiWatcher(
-  wikiRepoPath,
-  githubRepoUrl,
-  userInfo,
-  wikiFolderPath,
-  syncDebounceInterval,
-) {
-  const workerData = { wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath, syncDebounceInterval, isDev };
-  const worker = new Worker(WIKI_WATCHER_WORKER_PATH, { workerData });
-  wikiWatcherWorkers[wikiRepoPath] = worker;
-  const loggerMeta = { worker: 'WikiWatcher', wikiRepoPath };
-  worker.on('message', logMessage(loggerMeta));
-  worker.on('error', error => logger.error(error.message, { ...loggerMeta, ...error }));
-  worker.on('exit', code => {
-    if (code !== 0)
-      logger.warning(
-        `WikiWatcher ${wikiRepoPath} Worker stopped with exit code ${code}, this also happen normally when you delete a workspace.`,
-        loggerMeta,
-      );
-  });
-};
-
-module.exports.stopWikiWatcher = function stopWikiWatcher(wikiRepoPath) {
-  const worker = wikiWatcherWorkers[wikiRepoPath];
-  if (!worker) return Promise.resolve(); // no running worker, maybe tiddlywiki server in this workspace failed to start
-  return new Promise(resolve => {
-    worker.postMessage({ type: 'command', message: 'exit' });
-    worker.on('exit', () => {
-      delete wikiWatcherWorkers[wikiRepoPath];
-      resolve();
-    });
-  });
-};
+}
+module.exports.stopWiki = stopWiki;
 
 /**
  * Stop all worker_thread, use and await this before app.quit()
  */
-module.exports.stopAll = function stopAll() {
+module.exports.stopAllWiki = async function stopAllWiki() {
   const tasks = [];
-  for (const wikiRepoPath of Object.keys(wikiWatcherWorkers)) {
-    tasks.push(wikiWatcherWorkers[wikiRepoPath].terminate());
-  }
   for (const homePath of Object.keys(wikiWorkers)) {
-    tasks.push(wikiWorkers[homePath].terminate());
+    tasks.push(stopWiki(homePath));
   }
-  return Promise.all(tasks);
+  await Promise.all(tasks);
+  logger.info('All wiki-worker is stopped', { function: 'stopAllWiki' });
 };

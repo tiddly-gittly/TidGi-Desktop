@@ -1,20 +1,10 @@
+/* eslint-disable unicorn/consistent-function-scoping */
 /* eslint-disable no-await-in-loop */
 const fs = require('fs-extra');
 const path = require('path');
 const { compact, truncate, trim } = require('lodash');
 const { GitProcess } = require('dugite');
-
-/** functions to send data to main thread */
-const getLogProgress = loggerToMainThread => message =>
-  loggerToMainThread({
-    type: 'progress',
-    payload: { message, handler: 'wikiSyncProgress' },
-  });
-const getLogInfo = loggerToMainThread => message =>
-  loggerToMainThread({
-    type: 'info',
-    payload: { message },
-  });
+const { logger } = require('./log');
 
 const getGitUrlWithCredential = (rawUrl, username, accessToken) =>
   trim(`${rawUrl}.git`.replace('https://github.com/', `https://${username}:${accessToken}@github.com/`));
@@ -63,9 +53,9 @@ async function commitFiles(wikiFolderPath, username, email, message = 'Initializ
  * @param {boolean} isMainWiki
  * @param {{ info: Function, notice: Function }} logger Logger instance from winston
  */
-async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki, logger) {
-  const logProgress = message => logger.notice(message, { handler: 'createWikiProgress', from: 'initWikiGit' });
-  const logInfo = message => logger.info(message, { from: 'initWikiGit' });
+async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) {
+  const logProgress = message => logger.notice(message, { handler: 'createWikiProgress', function: 'initWikiGit' });
+  const logInfo = message => logger.info(message, { function: 'initWikiGit' });
 
   logProgress('开始初始化本地Git仓库');
   const { login: username, email, accessToken } = userInfo;
@@ -267,11 +257,13 @@ async function continueRebase(wikiFolderPath, username, email, logInfo, logProgr
  * @param {({ type: string, payload: { message: string, handler: string }}) => void} loggerToMainThread Send message to .log file or send to GUI or sent to notification based on type, see wiki-worker-manager.js for details
  */
 async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo, loggerToMainThread) {
+  /** functions to send data to main thread */
+  const logProgress = message => logger.notice(message, { handler: 'wikiSyncProgress', function: 'commitAndSync' });
+  const logInfo = message => logger.info(message, { function: 'commitAndSync' });
+
   const { login: username, email } = userInfo;
   const commitMessage = 'Wiki updated with TiddlyGit-Desktop';
   const branchMapping = 'master:master';
-  const logProgress = getLogProgress(loggerToMainThread);
-  const logInfo = getLogInfo(loggerToMainThread);
 
   // preflight check
   const repoStartingState = await getGitRepositoryState(wikiFolderPath, logInfo, logProgress);

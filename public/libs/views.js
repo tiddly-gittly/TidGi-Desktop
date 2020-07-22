@@ -13,7 +13,7 @@ const { ElectronBlocker } = require('@cliqz/adblocker-electron');
 
 const { TIDDLERS_PATH } = require('../constants/paths');
 const startNodeJSWiki = require('./wiki/start-nodejs-wiki');
-const watchWiki = require('./wiki/watch-wiki');
+const { watchWiki } = require('./wiki/watch-wiki');
 const { getPreferences, getPreference } = require('./preferences');
 const {
   getWorkspace,

@@ -6,17 +6,18 @@ const { autoUpdater } = require('electron-updater');
 
 const loadListeners = require('./listeners');
 
-const authWindow = require('./windows/auth');
 const mainWindow = require('./windows/main');
 const openUrlWithWindow = require('./windows/open-url-with');
 
 const createMenu = require('./libs/create-menu');
 const extractHostname = require('./libs/extract-hostname');
 const sendToAllWindows = require('./libs/send-to-all-windows');
-const { stopAll } = require('./libs/wiki/wiki-worker-mamager');
+const { stopWatchAllWiki } = require('./libs/wiki/watch-wiki');
+const { stopAllWiki } = require('./libs/wiki/wiki-worker-mamager');
 const { addView, reloadViewsDarkReader } = require('./libs/views');
 const { getPreference, getPreferences } = require('./libs/preferences');
 const { getWorkspaces, setWorkspace } = require('./libs/workspaces');
+const { logger } = require('./libs/log');
 
 const MAILTO_URLS = require('./constants/mailto-urls');
 
@@ -261,8 +262,8 @@ if (!gotTheLock) {
   });
 
   app.on('will-quit', async () => {
-    console.log('Quitting all the worker threads.');
-    await stopAll();
-    console.log('Worker threads all terminated.');
+    logger.info('Quitting worker threads and watcher.');
+    await Promise.all([stopAllWiki(), stopWatchAllWiki()]);
+    logger.info('Worker threads  and watchers all terminated.');
   });
 }

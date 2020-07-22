@@ -9,7 +9,8 @@ const download = require('download');
 const tmp = require('tmp');
 
 const sendToAllWindows = require('./send-to-all-windows');
-const { stopWiki, stopWikiWatcher } = require('./wiki/wiki-worker-mamager');
+const { stopWatchWiki } = require('./wiki/watch-wiki');
+const { stopWiki } = require('./wiki/wiki-worker-mamager');
 
 const v = '14';
 
@@ -173,7 +174,7 @@ const removeWorkspacePicture = id => {
 const removeWorkspace = id => {
   const { name } = workspaces[id];
   stopWiki(name);
-  stopWikiWatcher(name);
+  stopWatchWiki(name);
   delete workspaces[id];
   sendToAllWindows('set-workspace', id, null);
   settings.unsetSync(`workspaces.${v}.${id}`);
