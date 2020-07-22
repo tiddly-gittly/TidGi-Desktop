@@ -30,7 +30,9 @@ function watchFolder(wikiRepoPath, wikiFolderPath, githubRepoUrl, userInfo, sync
   try {
     gitignoreFile = fs.readFileSync(gitIgnoreFilePath, 'utf-8') || '';
   } catch (error) {
-    parentPort.postMessage(`Fail to load .gitignore from ${gitIgnoreFilePath}, this is ok if you don't need a .gitignore in the subwiki. \n ${error} ${error.stack}`);
+    parentPort.postMessage(
+      `Fail to load .gitignore from ${gitIgnoreFilePath}, this is ok if you don't need a .gitignore in the subwiki. \n ${error} ${error.stack}`,
+    );
   }
   const filesToIgnoreFromGitIgnore = compact(gitignoreFile.split('\n').filter(line => !trim(line).startsWith('#')));
   watcher = chokidar.watch(wikiFolderPath, {
@@ -57,4 +59,10 @@ function watchWiki() {
 
 if (!isMainThread) {
   watchWiki();
+  parentPort.once('message', async message => {
+    if (typeof message === 'object' && message.type === 'command' && message.message === 'exit' && watcher) {
+      await watcher.close();
+      process.exit(0);
+    }
+  });
 }

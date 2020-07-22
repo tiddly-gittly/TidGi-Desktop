@@ -71,10 +71,16 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
       );
   });
 };
-module.exports.stopWiki = function stopWiki(homePath) {
+module.exports.stopWiki = async function stopWiki(homePath) {
   const worker = wikiWorkers[homePath];
-  if (!worker) return; // no running worker, maybe tiddlywiki server in this workspace failed to start
-  worker.terminate();
+  if (!worker) return Promise.resolve(); // no running worker, maybe tiddlywiki server in this workspace failed to start
+  return new Promise(resolve => {
+    worker.postMessage({ type: 'command', message: 'exit' });
+    worker.on('exit', () => {
+      delete wikiWorkers[homePath];
+      resolve();
+    });
+  });
 };
 
 module.exports.startWikiWatcher = function startWikiWatcher(
@@ -101,8 +107,14 @@ module.exports.startWikiWatcher = function startWikiWatcher(
 
 module.exports.stopWikiWatcher = function stopWikiWatcher(wikiRepoPath) {
   const worker = wikiWatcherWorkers[wikiRepoPath];
-  if (!worker) return; // no running worker, maybe tiddlywiki server in this workspace failed to start
-  worker.terminate();
+  if (!worker) return Promise.resolve(); // no running worker, maybe tiddlywiki server in this workspace failed to start
+  return new Promise(resolve => {
+    worker.postMessage({ type: 'command', message: 'exit' });
+    worker.on('exit', () => {
+      delete wikiWatcherWorkers[wikiRepoPath];
+      resolve();
+    });
+  });
 };
 
 /**

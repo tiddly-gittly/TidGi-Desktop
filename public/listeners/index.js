@@ -4,6 +4,7 @@ const { autoUpdater } = require('electron-updater');
 const fetch = require('node-fetch');
 
 const { initWikiGit, getRemoteUrl } = require('../libs/git');
+const { stopWikiWatcher, stopWiki } = require('../libs/wiki/wiki-worker-mamager');
 const { logger } = require('../libs/log');
 const { createWiki, createSubWiki, removeWiki, ensureWikiExist } = require('../libs/create-wiki');
 const { ICON_PATH, REACT_PATH, DESKTOP_PATH } = require('../constants/paths');
@@ -344,18 +345,17 @@ const loadListeners = () => {
           '你确定要移除这个工作区吗？移除工作区会删除本应用中的工作区，但不会删除硬盘上的文件夹。如果你选择一并删除Wiki文件夹，则所有内容都会被被删除。',
         cancelId: 1,
       })
-      .then(({ response }) => {
+      .then(async ({ response }) => {
         // eslint-disable-next-line promise/always-return
         try {
-          if (response === 0) {
-            removeWorkspaceView(id);
-            createMenu();
-          }
-          // eslint-disable-next-line promise/always-return
-          if (response === 1) {
+          if (response === 0 || response === 1) {
             const workspace = getWorkspace(id);
+            await stopWikiWatcher(workspace.name);
+            await stopWiki(workspace.name);
+            if (response === 1) {
+              await removeWiki(workspace.name, workspace.isSubWiki && workspace.mainWikiToLink);
+            }
             removeWorkspaceView(id);
-            removeWiki(workspace.name, workspace.isSubWiki && workspace.mainWikiToLink);
             createMenu();
           }
         } catch (error) {
