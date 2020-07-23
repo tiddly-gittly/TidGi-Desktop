@@ -3,26 +3,40 @@ const fs = require('fs');
 const path = require('path');
 const $tw = require('tiddlywiki').TiddlyWiki();
 
-function startNodeJSWiki() {
+async function startNodeJSWiki() {
   const { homePath, userName, tiddlyWikiPort = 5112 } = workerData;
+  const bobServerConfigFolderPath = path.join(homePath, 'settings');
+  const bobServerConfigPath = path.join(bobServerConfigFolderPath, 'settings.json');
   try {
-    const bobServerConfigPath = path.join(homePath, 'settings', 'settings.json');
-    if (fs.existsSync(bobServerConfigPath)) {
-      fs.unlinkSync(bobServerConfigPath);
+    if (
+      await fs.promises
+        .access(bobServerConfigPath, fs.constants.F_OK)
+        .then(() => true)
+        .catch(() => false)
+    ) {
+      await fs.promises.unlink(bobServerConfigPath);
+      await fs.promises.unlink(bobServerConfigFolderPath);
     }
+    await fs.promises.mkdir(bobServerConfigFolderPath);
+  } catch (error) {
+    parentPort.postMessage(`Configuring TW-Bob config folder failed with error ${error.message} ${error.stack}`);
+  }
+  try {
     const bobServerConfig = {
       serverName: 'TiddlyGit-Desktop',
       persistentUsernames: 'yes',
       heartbeat: {
         interval: 200,
+        timeout: 1000,
       },
       enableBobSaver: 'no',
+      enableSaver: 'no',
       saver: {
         disable: 'yes',
       },
-      pluginsPath: `./${homePath}/plugins`,
-      themesPath: `./${homePath}/themes`,
-      editionsPath: `./${homePath}/`,
+      pluginsPath: './plugins',
+      themesPath: './themes',
+      editionsPath: './',
       wikiPathBase: homePath,
       'ws-server': {
         port: tiddlyWikiPort,
@@ -31,9 +45,9 @@ function startNodeJSWiki() {
         rootTiddler: '$:/core/save/lazy-images',
       },
     };
-    fs.writeFileSync(bobServerConfigPath, JSON.stringify(bobServerConfig, undefined, '  '));
+    await fs.promises.writeFile(bobServerConfigPath, JSON.stringify(bobServerConfig, undefined, '  '));
   } catch (error) {
-    parentPort.postMessage(`Configuring TW-Bob failed with error ${error.message} ${error.trace}`);
+    parentPort.postMessage(`Configuring TW-Bob failed with error ${error.message} ${error.stack}`);
   }
   try {
     process.env.TIDDLYWIKI_PLUGIN_PATH = path.resolve(homePath, 'plugins');
@@ -42,11 +56,11 @@ function startNodeJSWiki() {
     $tw.boot.argv = [
       '+plugins/OokTech/Bob',
       homePath,
-      '--wsserver', // port config in Meme-of-LinOnetwo/settings/settings.json
+      '--wsserver',
     ];
     $tw.boot.boot(() => parentPort.postMessage(`Tiddlywiki booted at http://localhost:${tiddlyWikiPort}`));
   } catch (error) {
-    parentPort.postMessage(`Tiddlywiki booted failed with error ${error.message} ${error.trace}`);
+    parentPort.postMessage(`Tiddlywiki booted failed with error ${error.message} ${error.stack}`);
   }
 }
 module.exports = startNodeJSWiki;

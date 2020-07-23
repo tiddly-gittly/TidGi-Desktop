@@ -57,3 +57,4 @@ snapcraft_login
 template/wiki/tiddlers/$__StoryList.tid
 template/wiki/public-dist/
 template/wiki/output/
+template/wiki/settings/settings.json
