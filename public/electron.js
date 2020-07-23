@@ -187,6 +187,10 @@ if (!gotTheLock) {
       })
       .catch(error => console.error(error));
 
+    powerMonitor.on('shutdown', () => {
+      app.quit();
+    });
+
     commonInit();
   });
 
@@ -270,9 +274,5 @@ if (!gotTheLock) {
 
   app.on('quit', async () => {
     logger.info('App quit');
-  });
-
-  powerMonitor.on('shutdown', () => {
-    app.quit();
   });
 }
