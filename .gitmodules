@@ -2,6 +2,6 @@
 	path = docs/_sass/bulma
 	url = https://github.com/jgthms/bulma.git
 	shallow = true
-[submodule "template/wiki/plugins/OokTech/TW5-Bob"]
-	path = template/wiki/plugins/OokTech/TW5-Bob
+[submodule "template/wiki/plugins/OokTech/Bob"]
+	path = template/wiki/plugins/OokTech/Bob
 	url = git@github.com:OokTech/TW5-Bob.git

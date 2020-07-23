@@ -50,6 +50,7 @@ Explanation of our code can be found in the [Wiki](https://github.com/tiddly-git
 git clone https://github.com/YOUR_ACCOUNT/TiddlyGit-Desktop.git
 cd TiddlyGit-Desktop
 # And initialize the submodule of TW-Bob
+# I have already add it via git submodule add git@github.com:OokTech/TW5-Bob.git template/wiki/plugins/OokTech/Bob
 # See https://git-scm.com/book/en/v2/Git-Tools-Submodules for meaning of following command
 git submodule update --init --recursive
 # Or maybe you are just using Github Desktop
