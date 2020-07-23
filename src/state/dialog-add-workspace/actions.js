@@ -14,7 +14,7 @@ import validate from '../../helpers/validate';
 import isUrl from '../../helpers/is-url';
 import hasErrors from '../../helpers/has-errors';
 
-import { requestCreateWorkspace, requestWaitForWikiStart } from '../../senders';
+import { requestCreateWorkspace } from '../../senders';
 
 export const setWikiCreationMessage = message => ({
   type: ADD_WORKSPACE_CREATE_WIKI_MESSAGE,
@@ -137,10 +137,7 @@ export const save = () => async (dispatch, getState) => {
   );
   if (!form.isSubWiki) {
     dispatch(setWikiCreationMessage('工作区更新完毕，正在启动Wiki'));
-    await requestWaitForWikiStart(form.port, 5000);
   }
-  const { remote } = window.require('electron');
-  remote.getCurrentWindow().close();
 };
 
 export const updateMode = mode => ({

@@ -286,19 +286,6 @@ const loadListeners = () => {
       createMenu();
     },
   );
-  ipcMain.handle('request-wait-for-wiki-start', async (event, port, timeoutLimit) => {
-    const timeStart = Date.now();
-    while (Date.now() < timeStart + timeoutLimit) {
-      try {
-        // eslint-disable-next-line no-await-in-loop
-        await fetch(`http://127.0.0.1:${port}`);
-      } catch {
-        console.log('request-wait-for-wiki-start Still waiting for wiki to start');
-        // eslint-disable-next-line no-await-in-loop
-        await new Promise(resolve => setTimeout(resolve, 500));
-      }
-    }
-  });
 
   ipcMain.on('request-set-active-workspace', (e, id) => {
     if (getWorkspace(id)) {

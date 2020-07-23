@@ -55,7 +55,12 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
       setTimeout(() => {
         reloadViewsWebContentsIfDidFailLoad();
         setWorkspaceMeta(workspaceID, { isLoading: false });
-      }, 10);
+        // close add-workspace dialog
+        const { get } = require('../../windows/add-workspace');
+        if (get()) {
+          get().close();
+        }
+      }, 100);
     }
   });
   worker.on('error', error => logger.error(error.message, { ...loggerMeta, ...error }));

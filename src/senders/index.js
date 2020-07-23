@@ -88,8 +88,7 @@ export const requestCreateWorkspace = (
     picture,
     transparentBackground,
   );
-export const requestWaitForWikiStart = (port: number, timeoutLimit: number = 5000) =>
-  ipcRenderer.invoke('request-wait-for-wiki-start', port, timeoutLimit);
+
 export const requestHibernateWorkspace = id => ipcRenderer.send('request-hibernate-workspace', id);
 export const requestOpenUrlInWorkspace = (url, id) => ipcRenderer.send('request-open-url-in-workspace', url, id);
 export const requestRealignActiveWorkspace = () => ipcRenderer.send('request-realign-active-workspace');
