@@ -49,6 +49,9 @@ Explanation of our code can be found in the [Wiki](https://github.com/tiddly-git
 # First, clone the project:
 git clone https://github.com/YOUR_ACCOUNT/TiddlyGit-Desktop.git
 cd TiddlyGit-Desktop
+# And initialize the submodule of TW-Bob
+# See https://git-scm.com/book/en/v2/Git-Tools-Submodules for meaning of following command
+git submodule update --init --recursive
 # Or maybe you are just using Github Desktop
 # or GitKraken to clone this repo,
 # and open it in your favorite code editor and terminal app

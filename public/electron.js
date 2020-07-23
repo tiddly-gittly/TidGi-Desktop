@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-const { app, ipcMain, nativeTheme, protocol, session } = require('electron');
+const { app, ipcMain, nativeTheme, protocol, session, powerMonitor } = require('electron');
 const fs = require('fs');
 const settings = require('electron-settings');
 const { autoUpdater } = require('electron-updater');
@@ -38,6 +38,7 @@ app.on('second-instance', () => {
 });
 
 if (!gotTheLock) {
+  logger.info('Quitting dut to we only allow one instance to run.');
   console.info('Quitting dut to we only allow one instance to run.');
   app.quit();
 } else {
@@ -265,5 +266,13 @@ if (!gotTheLock) {
     logger.info('Quitting worker threads and watcher.');
     await Promise.all([stopAllWiki(), stopWatchAllWiki()]);
     logger.info('Worker threads  and watchers all terminated.');
+  });
+
+  app.on('quit', async () => {
+    logger.info('App quit');
+  });
+
+  powerMonitor.on('shutdown', () => {
+    app.quit();
   });
 }
