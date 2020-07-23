@@ -11,7 +11,7 @@ export const requestCreateSubWiki = (
 ) => ipcRenderer.invoke('create-sub-wiki', newFolderPath, folderName, mainWikiToLink, onlyLink);
 export const ensureWikiExist = (wikiPath: string, shouldBeMainWiki: boolean) =>
   ipcRenderer.invoke('ensure-wiki-exist', wikiPath, shouldBeMainWiki);
-export const requestOpen = (uri: string) => ipcRenderer.send('request-open', uri);
+export const requestOpen = (uri: string, isDirectory?: boolean) => ipcRenderer.send('request-open', uri, !!isDirectory);
 export const requestShowMessageBox = (message: string, type: string) => ipcRenderer.send('request-show-message-box', message, type);
 export const requestLoadUrl = (url: string, id: string) => ipcRenderer.send('request-load-url', url, id);
 
@@ -105,6 +105,7 @@ export const requestWakeUpWorkspace = id => ipcRenderer.send('request-wake-up-wo
 export const getIconPath = () => ipcRenderer.sendSync('get-constant', 'ICON_PATH');
 export const getReactPath = () => ipcRenderer.sendSync('get-constant', 'REACT_PATH');
 export const getDesktopPath = () => ipcRenderer.sendSync('get-constant', 'DESKTOP_PATH');
+export const getLogFolderPath = () => ipcRenderer.sendSync('get-constant', 'LOG_FOLDER');
 
 // Workspace Meta
 export const getWorkspaceMeta = id => ipcRenderer.sendSync('get-workspace-meta', id);

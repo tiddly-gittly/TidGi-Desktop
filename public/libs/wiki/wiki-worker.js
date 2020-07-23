@@ -4,7 +4,7 @@ const path = require('path');
 const $tw = require('tiddlywiki').TiddlyWiki();
 
 async function startNodeJSWiki() {
-  const { homePath, userName, tiddlyWikiPort = 5112 } = workerData;
+  const { homePath, tiddlyWikiPort = 5112 } = workerData;
   const bobServerConfigFolderPath = path.join(homePath, 'settings');
   const bobServerConfigPath = path.join(bobServerConfigFolderPath, 'settings.json');
   try {
@@ -15,7 +15,7 @@ async function startNodeJSWiki() {
         .catch(() => false)
     ) {
       await fs.promises.unlink(bobServerConfigPath);
-      await fs.promises.unlink(bobServerConfigFolderPath);
+      await fs.promises.rmdir(bobServerConfigFolderPath);
     }
     await fs.promises.mkdir(bobServerConfigFolderPath);
   } catch (error) {

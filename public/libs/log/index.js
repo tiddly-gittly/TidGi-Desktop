@@ -1,13 +1,8 @@
-const isDev = require('electron-is-dev');
-const path = require('path');
-
 const winston = require('winston');
 require('winston-daily-rotate-file');
-const RendererTransport = require('./renderer-transport');
 
-const dirname = isDev
-  ? path.resolve(__dirname, '..', '..', '..', 'logs')
-  : path.resolve(process.resourcesPath, '..', 'logs');
+const { LOG_FOLDER } = require('../../constants/paths');
+const RendererTransport = require('./renderer-transport');
 
 const logger = winston.createLogger({
   levels: winston.config.syslog.levels,
@@ -18,7 +13,7 @@ const logger = winston.createLogger({
       zippedArchive: false,
       maxSize: '20mb',
       maxFiles: '14d',
-      dirname,
+      dirname: LOG_FOLDER,
     }),
     new RendererTransport(),
   ],
@@ -29,7 +24,7 @@ const logger = winston.createLogger({
       zippedArchive: false,
       maxSize: '20mb',
       maxFiles: '14d',
-      dirname,
+      dirname: LOG_FOLDER,
     }),
   ],
 });

@@ -8,7 +8,7 @@ const { stopWatchWiki } = require('../libs/wiki/watch-wiki');
 const { stopWiki } = require('../libs/wiki/wiki-worker-mamager');
 const { logger } = require('../libs/log');
 const { createWiki, createSubWiki, removeWiki, ensureWikiExist } = require('../libs/create-wiki');
-const { ICON_PATH, REACT_PATH, DESKTOP_PATH } = require('../constants/paths');
+const { ICON_PATH, REACT_PATH, DESKTOP_PATH, LOG_FOLDER } = require('../constants/paths');
 
 const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
 
@@ -88,6 +88,7 @@ const loadListeners = () => {
       ICON_PATH,
       REACT_PATH,
       DESKTOP_PATH,
+      LOG_FOLDER,
     }[name];
   });
   ipcMain.handle('request-init-wiki-git', async (event, wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) => {
@@ -100,8 +101,12 @@ const loadListeners = () => {
     }
   });
 
-  ipcMain.on('request-open', (e, uri) => {
-    shell.openExternal(uri);
+  ipcMain.on('request-open', (_, uri, isDirectory) => {
+    if (isDirectory) {
+      shell.showItemInFolder(uri);
+    } else {
+      shell.openExternal(uri);
+    }
   });
 
   // Find In Page

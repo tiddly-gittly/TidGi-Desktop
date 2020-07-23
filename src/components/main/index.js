@@ -28,6 +28,8 @@ import DraggableRegion from './draggable-region';
 import arrowWhite from '../../images/arrow-white.png';
 import arrowBlack from '../../images/arrow-black.png';
 
+import { requestOpen, getLogFolderPath } from '../../senders';
+
 import {
   requestHibernateWorkspace,
   requestRemoveWorkspace,
@@ -40,6 +42,8 @@ import {
   requestWakeUpWorkspace,
   requestReload,
 } from '../../senders';
+
+console.log(getLogFolderPath())
 
 // https://github.com/sindresorhus/array-move/blob/master/index.js
 const arrayMove = (array, from, to) => {
@@ -233,13 +237,6 @@ const Main = ({
 }) => {
   const workspacesList = getWorkspacesAsList(workspaces);
   const showTitleBar = window.process.platform === 'darwin' && titleBar && !isFullScreen;
-  console.log('renderer', Date.now());
-  console.warn(`didFailLoad`, JSON.stringify(didFailLoad, null, '  '));
-  console.warn(`isLoading`, JSON.stringify(isLoading, null, '  '));
-  console.warn(
-    `Object.keys(workspaces).length > 0 && didFailLoad && !isLoading`,
-    JSON.stringify(Object.keys(workspaces).length > 0 && didFailLoad && !isLoading, null, '  '),
-  );
 
   return (
     <div className={classes.outerRoot}>
@@ -273,10 +270,7 @@ const Main = ({
                   <SortableItem key={`item-${workspace.id}`} index={i} value={{ index: i, workspace }} />
                 ))}
               </SortableContainer>
-              <WorkspaceSelector
-                id="add"
-                onClick={() => requestShowAddWorkspaceWindow()}
-              />
+              <WorkspaceSelector id="add" onClick={() => requestShowAddWorkspaceWindow()} />
             </div>
             {!navigationBar && (
               <div className={classes.end}>
@@ -318,8 +312,32 @@ const Main = ({
                   <>
                     Try:
                     <ul className={classes.ul}>
-                      <li>Click <b>Reload</b> button below or press <b>CMD_or_Ctrl + R</b> to reload the page.</li>
-                      <li>Check the log to see what happened.</li>
+                      <li>
+                        Click{' '}
+                        <b
+                          onClick={requestReload}
+                          onKeyPress={requestReload}
+                          role="button"
+                          tabIndex="0"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          Reload
+                        </b>{' '}
+                        button below or press <b>CMD_or_Ctrl + R</b> to reload the page.
+                      </li>
+                      <li>
+                        Check the{' '}
+                        <b
+                          onClick={() => requestOpen(getLogFolderPath(), true)}
+                          onKeyPress={() => requestOpen(getLogFolderPath(), true)}
+                          role="button"
+                          tabIndex="0"
+                          style={{ cursor: 'pointer' }}
+                        >
+                          Log Folder
+                        </b>{' '}
+                        to see what happened.
+                      </li>
                       <li>Backup your file, remove workspace and recreate one.</li>
                     </ul>
                   </>
