@@ -7,7 +7,7 @@ import DialogContent from '@material-ui/core/DialogContent';
 
 import connectComponent from '../../helpers/connect-component';
 
-import { requestOpenInBrowser } from '../../senders';
+import { requestOpen } from '../../senders';
 
 const styles = (theme) => ({
   icon: {
@@ -81,13 +81,13 @@ const About = (props) => {
 
 
         <Button
-          onClick={() => requestOpenInBrowser('https://github.com/tiddly-gittly/TiddlyGit-Desktop')}
+          onClick={() => requestOpen('https://github.com/tiddly-gittly/TiddlyGit-Desktop')}
         >
           Website
         </Button>
         <br />
         <Button
-          onClick={() => requestOpenInBrowser('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose')}
+          onClick={() => requestOpen('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose')}
         >
           Support
         </Button>
@@ -97,10 +97,10 @@ const About = (props) => {
           <span role="img" aria-label="love">❤</span>
           <span> by </span>
           <span
-            onClick={() => requestOpenInBrowser('https://onetwo.ren/wiki/')}
+            onClick={() => requestOpen('https://onetwo.ren/wiki/')}
             onKeyDown={(e) => {
               if (e.key !== 'Enter') return;
-              requestOpenInBrowser('https://onetwo.ren/wiki/');
+              requestOpen('https://onetwo.ren/wiki/');
             }}
             role="link"
             tabIndex="0"
@@ -110,10 +110,10 @@ const About = (props) => {
           </span>
           <span> and </span>
           <span
-            onClick={() => requestOpenInBrowser('https://atomery.com?utm_source=tiddlygit')}
+            onClick={() => requestOpen('https://atomery.com?utm_source=tiddlygit')}
             onKeyDown={(e) => {
               if (e.key !== 'Enter') return;
-              requestOpenInBrowser('https://atomery.com?utm_source=tiddlygit');
+              requestOpen('https://atomery.com?utm_source=tiddlygit');
             }}
             role="link"
             tabIndex="0"

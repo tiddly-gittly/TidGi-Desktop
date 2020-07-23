@@ -57,7 +57,7 @@ import ListItemDefaultBrowser from './list-item-default-browser';
 import {
   requestCheckForUpdates,
   requestClearBrowsingData,
-  requestOpenInBrowser,
+  requestOpen,
   requestQuit,
   requestRealignActiveWorkspace,
   requestResetPreferences,
@@ -545,10 +545,10 @@ const Preferences = ({
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      onClick={() => requestOpenInBrowser('https://cliqz.com/en/whycliqz/adblocking')}
+                      onClick={() => requestOpen('https://cliqz.com/en/whycliqz/adblocking')}
                       onKeyDown={(e) => {
                         if (e.key !== 'Enter') return;
-                        requestOpenInBrowser('https://cliqz.com/en/whycliqz/adblocking');
+                        requestOpen('https://cliqz.com/en/whycliqz/adblocking');
                       }}
                     >
                       Cliqz
@@ -580,10 +580,10 @@ const Preferences = ({
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      onClick={() => requestOpenInBrowser('https://darkreader.org/')}
+                      onClick={() => requestOpen('https://darkreader.org/')}
                       onKeyDown={(e) => {
                         if (e.key !== 'Enter') return;
-                        requestOpenInBrowser('https://darkreader.org/');
+                        requestOpen('https://darkreader.org/');
                       }}
                     >
                       Dark Reader
@@ -859,10 +859,10 @@ const Preferences = ({
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      onClick={() => requestOpenInBrowser('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps')}
+                      onClick={() => requestOpen('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps')}
                       onKeyDown={(e) => {
                         if (e.key !== 'Enter') return;
-                        requestOpenInBrowser('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
+                        requestOpen('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
                       }}
                     >
                       Learn more
@@ -1023,10 +1023,10 @@ const Preferences = ({
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      onClick={() => requestOpenInBrowser('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ')}
+                      onClick={() => requestOpen('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ')}
                       onKeyDown={(e) => {
                         if (e.key !== 'Enter') return;
-                        requestOpenInBrowser('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ');
+                        requestOpen('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ');
                       }}
                     >
                       Learn more
@@ -1053,7 +1053,7 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpenInBrowser('https://github.com/tiddly-gittly/TiddlyGit-Desktop/blob/master/PrivacyPolicy.md')}>
+            <ListItem button onClick={() => requestOpen('https://github.com/tiddly-gittly/TiddlyGit-Desktop/blob/master/PrivacyPolicy.md')}>
               <ListItemText primary="Privacy Policy" />
             </ListItem>
           </List>
@@ -1243,7 +1243,7 @@ const Preferences = ({
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List disablePadding dense>
-            <ListItem button onClick={() => requestOpenInBrowser('https://webcatalogapp.com?utm_source=singlebox_app')}>
+            <ListItem button onClick={() => requestOpen('https://webcatalogapp.com?utm_source=singlebox_app')}>
               <ListItemText
                 primary={(<img src={webcatalogLogo} alt="WebCatalog" className={classes.logo} />)}
                 secondary="Run Web Apps like Real Apps"
@@ -1251,7 +1251,7 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpenInBrowser('https://singleboxapp.com?utm_source=singlebox_app')}>
+            <ListItem button onClick={() => requestOpen('https://singleboxapp.com?utm_source=singlebox_app')}>
               <ListItemText
                 primary={(<img src={singleboxLogo} alt="Singlebox" className={classes.logo} />)}
                 secondary="All Your Apps in One Single Window"
@@ -1259,7 +1259,7 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpenInBrowser('https://translatiumapp.com?utm_source=singlebox_app')}>
+            <ListItem button onClick={() => requestOpen('https://translatiumapp.com?utm_source=singlebox_app')}>
               <ListItemText
                 primary={(<img src={translatiumLogo} alt="Translatium" className={classes.logo} />)}
                 secondary="Translate Any Languages like a Pro"
@@ -1279,12 +1279,12 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpenInBrowser('https://tiddlygitapp.com?utm_source=tiddlygit_app')}>
+            <ListItem button onClick={() => requestOpen('https://tiddlygitapp.com?utm_source=tiddlygit_app')}>
               <ListItemText primary="Website" />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpenInBrowser('https://atomery.com/support?app=tiddlygit&utm_source=tiddlygit_app')}>
+            <ListItem button onClick={() => requestOpen('https://atomery.com/support?app=tiddlygit&utm_source=tiddlygit_app')}>
               <ListItemText primary="Support" />
               <ChevronRightIcon color="action" />
             </ListItem>

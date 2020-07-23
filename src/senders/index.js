@@ -11,9 +11,9 @@ export const requestCreateSubWiki = (
 ) => ipcRenderer.invoke('create-sub-wiki', newFolderPath, folderName, mainWikiToLink, onlyLink);
 export const ensureWikiExist = (wikiPath: string, shouldBeMainWiki: boolean) =>
   ipcRenderer.invoke('ensure-wiki-exist', wikiPath, shouldBeMainWiki);
-export const requestOpenInBrowser = url => ipcRenderer.send('request-open-in-browser', url);
-export const requestShowMessageBox = (message, type) => ipcRenderer.send('request-show-message-box', message, type);
-export const requestLoadUrl = (url, id) => ipcRenderer.send('request-load-url', url, id);
+export const requestOpen = (uri: string) => ipcRenderer.send('request-open', uri);
+export const requestShowMessageBox = (message: string, type: string) => ipcRenderer.send('request-show-message-box', message, type);
+export const requestLoadUrl = (url: string, id: string) => ipcRenderer.send('request-load-url', url, id);
 
 export const requestGoHome = () => ipcRenderer.send('request-go-home');
 export const requestGoBack = () => ipcRenderer.send('request-go-back');

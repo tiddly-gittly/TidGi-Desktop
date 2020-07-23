@@ -25,7 +25,7 @@ import {
   getDesktopPath,
   countWorkspace,
   getWorkspaceRemote,
-  requestOpenInBrowser,
+  requestOpen,
 } from '../../senders';
 
 const graphqlClient = new GraphQLClient({
@@ -128,7 +128,7 @@ export default function AddWorkspace() {
         同步到云端
       </Typography>
       {githubWikiUrl && (
-        <GithubRepoLink onClick={() => requestOpenInBrowser(githubWikiUrl)} variant="subtitle2" align="center">
+        <GithubRepoLink onClick={() => requestOpen(githubWikiUrl)} variant="subtitle2" align="center">
           ({githubWikiUrl})
         </GithubRepoLink>
       )}

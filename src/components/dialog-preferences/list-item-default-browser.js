@@ -9,7 +9,7 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 import connectComponent from '../../helpers/connect-component';
 
-import { requestOpenInBrowser } from '../../senders';
+import { requestOpen } from '../../senders';
 
 const ListItemDefaultBrowser = () => {
   const [isDefault, setIsDefault] = useState(false);
@@ -69,7 +69,7 @@ const ListItemDefaultBrowser = () => {
   if (isWindows10) {
     return (
       // https://docs.microsoft.com/en-us/windows/uwp/launch-resume/launch-settings-app
-      <ListItem button onClick={() => requestOpenInBrowser('ms-settings:defaultapps')}>
+      <ListItem button onClick={() => requestOpen('ms-settings:defaultapps')}>
         {sharedListItemText}
         <ChevronRightIcon color="action" />
       </ListItem>

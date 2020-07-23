@@ -100,8 +100,8 @@ const loadListeners = () => {
     }
   });
 
-  ipcMain.on('request-open-in-browser', (e, url) => {
-    shell.openExternal(url);
+  ipcMain.on('request-open', (e, uri) => {
+    shell.openExternal(uri);
   });
 
   // Find In Page
