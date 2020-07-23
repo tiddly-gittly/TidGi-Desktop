@@ -3,3 +3,4 @@ node_modules
 ./output
 ./public-dist
 $__StoryList.tid
+./settings/settings.json

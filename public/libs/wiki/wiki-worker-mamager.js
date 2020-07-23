@@ -60,11 +60,8 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
   });
   worker.on('error', error => logger.error(error.message, { ...loggerMeta, ...error }));
   worker.on('exit', code => {
-    if (code !== 0)
-      logger.warning(
-        `NodeJSWiki ${homePath} Worker stopped with exit code ${code}, this also happen normally when you delete a workspace.`,
-        loggerMeta,
-      );
+    if (code !== 0) delete wikiWorkers[homePath];
+    logger.warning(`NodeJSWiki ${homePath} Worker stopped with exit code ${code}.`, loggerMeta);
   });
 };
 async function stopWiki(homePath) {

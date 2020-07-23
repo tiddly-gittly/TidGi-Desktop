@@ -351,8 +351,8 @@ const loadListeners = () => {
         try {
           if (response === 0 || response === 1) {
             const workspace = getWorkspace(id);
-            await stopWatchWiki(workspace.name);
-            await stopWiki(workspace.name);
+            await stopWatchWiki(workspace.name).catch(error => logger.error(error.message, error));
+            await stopWiki(workspace.name).catch(error => logger.error(error.message, error));
             if (response === 1) {
               await removeWiki(workspace.name, workspace.isSubWiki && workspace.mainWikiToLink);
             }
