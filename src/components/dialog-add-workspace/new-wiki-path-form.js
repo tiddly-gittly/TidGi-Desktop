@@ -1,4 +1,5 @@
 // @flow
+import type { ComponentType } from 'react';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { connect } from 'react-redux';
@@ -18,7 +19,7 @@ import * as actions from '../../state/dialog-add-workspace/actions';
 
 import { getWorkspaces } from '../../senders';
 
-const CreateContainer = styled(Paper)`
+const CreateContainer: ComponentType<{}> = styled(Paper)`
   margin-top: 5px;
 `;
 const LocationPickerContainer = styled.div`
@@ -37,24 +38,24 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
   margin-top: 5px;
 `;
 
-interface Props {
-  wikiCreationMessage?: string;
-  parentFolderLocationSetter: string => void;
-  wikiFolderName: string;
-  wikiFolderNameSetter: string => void;
-  mainWikiToLink: Object;
-  mainWikiToLinkSetter: Object => void;
-  parentFolderLocation: string;
-  wikiPort: Number;
-  wikiPortSetter: number => void;
-  isCreateMainWorkspace: boolean;
-}
-interface ActionProps {
-  setWikiCreationMessage: string => void;
-}
-interface StateProps {
-  wikiCreationMessage: string;
-}
+type OwnProps = {|
+  parentFolderLocationSetter: string => void,
+  wikiFolderName: string,
+  wikiFolderNameSetter: string => void,
+  mainWikiToLink: Object,
+  mainWikiToLinkSetter: Object => void,
+  parentFolderLocation: string,
+  wikiPort: number,
+  wikiPortSetter: number => void,
+  isCreateMainWorkspace: boolean,
+|};
+type DispatchProps = {|
+  setWikiCreationMessage: string => void,
+|};
+type StateProps = {|
+  wikiCreationMessage?: string,
+|};
+type Props = { ...OwnProps, ...DispatchProps, ...StateProps };
 
 function NewWikiPathForm({
   setWikiCreationMessage,
@@ -68,7 +69,7 @@ function NewWikiPathForm({
   wikiPort,
   wikiPortSetter,
   isCreateMainWorkspace,
-}: Props & ActionProps & StateProps) {
+}: Props) {
   const [workspaces, workspacesSetter] = useState({});
   useEffect(() => {
     workspacesSetter(getWorkspaces());
@@ -175,8 +176,13 @@ function NewWikiPathForm({
   );
 }
 
-const mapStateToProps = state => ({
-  wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
-});
-
-export default connect(mapStateToProps, dispatch => bindActionCreators(actions, dispatch))(NewWikiPathForm);
+export default connect<Props, OwnProps, _, _, _, _>(
+  (state): { wikiCreationMessage?: string } => ({
+    wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
+  }),
+  dispatch =>
+    bindActionCreators(
+      actions,
+      dispatch,
+    ),
+)(NewWikiPathForm);

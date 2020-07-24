@@ -42,7 +42,6 @@ const { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad } = require('
 const { updatePauseNotificationsInfo, getPauseNotificationsInfo } = require('../libs/notifications');
 
 const sendToAllWindows = require('../libs/send-to-all-windows');
-const getWebsiteIconUrlAsync = require('../libs/get-website-icon-url-async');
 const getViewBounds = require('../libs/get-view-bounds');
 
 const createMenu = require('../libs/create-menu');
@@ -509,19 +508,6 @@ const loadListeners = () => {
     // check for updates
     global.updateSilent = Boolean(isSilent);
     autoUpdater.checkForUpdates();
-  });
-
-  // to be replaced with invoke (electron 7+)
-  // https://electronjs.org/docs/api/ipc-renderer#ipcrendererinvokechannel-args
-  ipcMain.on('request-get-website-icon-url', (e, id, url) => {
-    getWebsiteIconUrlAsync(url)
-      .then(iconUrl => {
-        sendToAllWindows(id, iconUrl);
-      })
-      .catch(err => {
-        console.log(err); // eslint-disable-line no-console
-        sendToAllWindows(id, null);
-      });
   });
 
   // Native Theme

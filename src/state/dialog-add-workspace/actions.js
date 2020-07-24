@@ -1,14 +1,9 @@
+// @flow
 /* eslint-disable consistent-return */
 /* eslint-disable unicorn/no-null */
 /* eslint-disable unicorn/consistent-function-scoping */
-import {
-  ADD_WORKSPACE_CREATE_WIKI_MESSAGE,
-  ADD_WORKSPACE_UPDATE_SCROLL_OFFSET,
-  ADD_WORKSPACE_UPDATE_DOWNLOADING_ICON,
-  ADD_WORKSPACE_UPDATE_FORM,
-  ADD_WORKSPACE_UPDATE_MODE,
-  ADD_WORKSPACE_UPDATE_QUERY,
-} from '../../constants/actions';
+import type { Dispatch } from 'redux';
+import { ADD_WORKSPACE_CREATE_WIKI_MESSAGE, ADD_WORKSPACE_UPDATE_FORM } from '../../constants/actions';
 
 import validate from '../../helpers/validate';
 import isUrl from '../../helpers/is-url';
@@ -16,14 +11,9 @@ import hasErrors from '../../helpers/has-errors';
 
 import { requestCreateWorkspace } from '../../senders';
 
-export const setWikiCreationMessage = message => ({
+export const setWikiCreationMessage = (message: string) => ({
   type: ADD_WORKSPACE_CREATE_WIKI_MESSAGE,
   value: message,
-});
-
-export const updateQuery = query => ({
-  type: ADD_WORKSPACE_UPDATE_QUERY,
-  query,
 });
 
 const getValidationRules = () => ({
@@ -38,66 +28,7 @@ const getValidationRules = () => ({
   },
 });
 
-// to be replaced with invoke (electron 7+)
-// https://electronjs.org/docs/api/ipc-renderer#ipcrendererinvokechannel-args
-export const getWebsiteIconUrlAsync = url =>
-  new Promise((resolve, reject) => {
-    try {
-      const id = Date.now().toString();
-      const { ipcRenderer } = window.require('electron');
-      ipcRenderer.once(id, (event, newUrl) => {
-        resolve(newUrl);
-      });
-      ipcRenderer.send('request-get-website-icon-url', id, url);
-    } catch (error) {
-      reject(error);
-    }
-  });
-
-export const getIconFromInternet = forceOverwrite => (dispatch, getState) => {
-  const {
-    form: { picturePath, homeUrl, homeUrlError },
-  } = getState().dialogAddWorkspace;
-  if ((!forceOverwrite && picturePath) || !homeUrl || homeUrlError) return;
-
-  dispatch({
-    type: ADD_WORKSPACE_UPDATE_DOWNLOADING_ICON,
-    downloadingIcon: true,
-  });
-
-  getWebsiteIconUrlAsync(homeUrl)
-    .then(iconUrl => {
-      const { form } = getState().dialogAddWorkspace;
-      if (form.homeUrl === homeUrl) {
-        const changes = { internetIcon: iconUrl || form.internetIcon };
-        if (forceOverwrite) changes.picturePath = null;
-        dispatch({
-          type: ADD_WORKSPACE_UPDATE_FORM,
-          changes,
-        });
-        dispatch({
-          type: ADD_WORKSPACE_UPDATE_DOWNLOADING_ICON,
-          downloadingIcon: false,
-        });
-      }
-
-      if (forceOverwrite && !iconUrl) {
-        const { remote } = window.require('electron');
-        return remote.dialog.showMessageBox(remote.getCurrentWindow(), {
-          message: 'Unable to find a suitable icon from the Internet.',
-          buttons: ['OK'],
-          cancelId: 0,
-          defaultId: 0,
-        });
-      }
-
-      return null;
-    })
-    .catch(console.log); // eslint-disable-line no-console
-};
-
-let timeout2;
-export const updateForm = changes => (dispatch, getState) => {
+export const updateForm = changes => (dispatch: Dispatch, getState) => {
   const oldHomeUrl = getState().dialogAddWorkspace.form.homeUrl;
 
   dispatch({
@@ -105,12 +36,8 @@ export const updateForm = changes => (dispatch, getState) => {
     changes: validate(changes, getValidationRules()),
   });
 
-  clearTimeout(timeout2);
   if (getState().dialogAddWorkspace.form.homeUrl === oldHomeUrl) return; // url didn't change
   if (changes.internetIcon === null) return; // user explictly want to get rid of icon
-  timeout2 = setTimeout(() => {
-    dispatch(getIconFromInternet());
-  }, 300);
 };
 
 export const save = () => async (dispatch, getState) => {
@@ -139,13 +66,3 @@ export const save = () => async (dispatch, getState) => {
     dispatch(setWikiCreationMessage('工作区更新完毕，正在启动Wiki'));
   }
 };
-
-export const updateMode = mode => ({
-  type: ADD_WORKSPACE_UPDATE_MODE,
-  mode,
-});
-
-export const updateScrollOffset = scrollOffset => ({
-  type: ADD_WORKSPACE_UPDATE_SCROLL_OFFSET,
-  scrollOffset,
-});

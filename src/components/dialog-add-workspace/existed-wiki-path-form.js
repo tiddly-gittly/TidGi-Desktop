@@ -1,4 +1,5 @@
 // @flow
+import type { ComponentType } from 'react';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { connect } from 'react-redux';
@@ -18,7 +19,7 @@ import * as actions from '../../state/dialog-add-workspace/actions';
 
 import { getWorkspaces } from '../../senders';
 
-const CreateContainer = styled(Paper)`
+const CreateContainer: ComponentType<{}> = styled(Paper)`
   margin-top: 5px;
 `;
 const LocationPickerContainer = styled.div`

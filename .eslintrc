@@ -14,6 +14,7 @@
     "unicorn/no-reduce": [0],
     "sonarjs/cognitive-complexity": ["error", 30],
     "react/jsx-props-no-spreading": [0],
+    "react/require-default-props": [1, { "ignoreFunctionalComponents": true }],
     "import/no-extraneous-dependencies": [2, { "devDependencies": true }],
     "react/static-property-placement": [0],
     "react/jsx-filename-extension": [1, { "extensions": [".js"] }],

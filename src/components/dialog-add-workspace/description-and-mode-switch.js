@@ -1,4 +1,5 @@
 // @flow
+import type { ComponentType } from 'react';
 import React from 'react';
 import styled from 'styled-components';
 
@@ -7,7 +8,7 @@ import FormControlLabel from '@material-ui/core/FormControlLabel';
 import Switch from '@material-ui/core/Switch';
 import Typography from '@material-ui/core/Typography';
 
-const Container = styled(Paper)`
+const Container: ComponentType<{}> = styled(Paper)`
   padding: 10px;
 `;
 

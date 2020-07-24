@@ -12,7 +12,8 @@ export const requestCreateSubWiki = (
 export const ensureWikiExist = (wikiPath: string, shouldBeMainWiki: boolean) =>
   ipcRenderer.invoke('ensure-wiki-exist', wikiPath, shouldBeMainWiki);
 export const requestOpen = (uri: string, isDirectory?: boolean) => ipcRenderer.send('request-open', uri, !!isDirectory);
-export const requestShowMessageBox = (message: string, type: string) => ipcRenderer.send('request-show-message-box', message, type);
+export const requestShowMessageBox = (message: string, type: string) =>
+  ipcRenderer.send('request-show-message-box', message, type);
 export const requestLoadUrl = (url: string, id: string) => ipcRenderer.send('request-load-url', url, id);
 
 export const requestGoHome = () => ipcRenderer.send('request-go-home');
@@ -21,20 +22,24 @@ export const requestGoForward = () => ipcRenderer.send('request-go-forward');
 export const requestReload = () => ipcRenderer.send('request-reload');
 
 export const requestQuit = () => ipcRenderer.send('request-quit');
-export const requestCheckForUpdates = isSilent => ipcRenderer.send('request-check-for-updates', isSilent);
+export const requestCheckForUpdates = (isSilent: boolean) => ipcRenderer.send('request-check-for-updates', isSilent);
 
 export const requestShowAboutWindow = () => ipcRenderer.send('request-show-about-window');
 export const requestShowAddWorkspaceWindow = () => ipcRenderer.send('request-show-add-workspace-window');
-export const requestShowCodeInjectionWindow = type => ipcRenderer.send('request-show-code-injection-window', type);
+export const requestShowCodeInjectionWindow = (type: string) =>
+  ipcRenderer.send('request-show-code-injection-window', type);
 export const requestShowCustomUserAgentWindow = () => ipcRenderer.send('request-show-custom-user-agent-window');
-export const requestShowEditWorkspaceWindow = id => ipcRenderer.send('request-show-edit-workspace-window', id);
+export const requestShowEditWorkspaceWindow = (id: string) =>
+  ipcRenderer.send('request-show-edit-workspace-window', id);
 export const requestShowNotificationsWindow = () => ipcRenderer.send('request-show-notifications-window');
-export const requestShowPreferencesWindow = scrollTo => ipcRenderer.send('request-show-preferences-window', scrollTo);
+export const requestShowPreferencesWindow = (scrollTo?: string) =>
+  ipcRenderer.send('request-show-preferences-window', scrollTo);
 export const requestShowProxyWindow = () => ipcRenderer.send('request-show-proxy-window');
 export const requestShowSpellcheckLanguagesWindow = () => ipcRenderer.send('request-show-spellcheck-languages-window');
 
 // Notifications
-export const requestShowNotification = opts => ipcRenderer.send('request-show-notification', opts);
+export const requestShowNotification = (options: { title: string, body: string }) =>
+  ipcRenderer.send('request-show-notification', options);
 export const requestUpdatePauseNotificationsInfo = () => ipcRenderer.send('request-update-pause-notifications-info');
 export const getPauseNotificationsInfo = () => ipcRenderer.sendSync('get-pause-notifications-info');
 
@@ -89,25 +94,27 @@ export const requestCreateWorkspace = (
     transparentBackground,
   );
 
-export const requestHibernateWorkspace = id => ipcRenderer.send('request-hibernate-workspace', id);
-export const requestOpenUrlInWorkspace = (url, id) => ipcRenderer.send('request-open-url-in-workspace', url, id);
+export const requestHibernateWorkspace = (id: string) => ipcRenderer.send('request-hibernate-workspace', id);
+export const requestOpenUrlInWorkspace = (url: string, id: string) =>
+  ipcRenderer.send('request-open-url-in-workspace', url, id);
 export const requestRealignActiveWorkspace = () => ipcRenderer.send('request-realign-active-workspace');
-export const requestRemoveWorkspace = id => ipcRenderer.send('request-remove-workspace', id);
-export const requestRemoveWorkspacePicture = id => ipcRenderer.send('request-remove-workspace-picture', id);
-export const requestSetActiveWorkspace = id => ipcRenderer.send('request-set-active-workspace', id);
-export const requestSetWorkspace = (id, opts) => ipcRenderer.send('request-set-workspace', id, opts);
+export const requestRemoveWorkspace = (id: string) => ipcRenderer.send('request-remove-workspace', id);
+export const requestRemoveWorkspacePicture = (id: string) => ipcRenderer.send('request-remove-workspace-picture', id);
+export const requestSetActiveWorkspace = (id: string) => ipcRenderer.send('request-set-active-workspace', id);
+export const requestSetWorkspace = (id: string, options) => ipcRenderer.send('request-set-workspace', id, options);
 export const requestSetWorkspaces = workspaces => ipcRenderer.send('request-set-workspaces', workspaces);
-export const requestSetWorkspacePicture = (id, picturePath) =>
+export const requestSetWorkspacePicture = (id: string, picturePath: string) =>
   ipcRenderer.send('request-set-workspace-picture', id, picturePath);
-export const requestWakeUpWorkspace = id => ipcRenderer.send('request-wake-up-workspace', id);
+export const requestWakeUpWorkspace = (id: string) => ipcRenderer.send('request-wake-up-workspace', id);
 
+// eslint-disable-next-line sonarjs/no-duplicate-string
 export const getIconPath = () => ipcRenderer.sendSync('get-constant', 'ICON_PATH');
 export const getReactPath = () => ipcRenderer.sendSync('get-constant', 'REACT_PATH');
 export const getDesktopPath = () => ipcRenderer.sendSync('get-constant', 'DESKTOP_PATH');
 export const getLogFolderPath = () => ipcRenderer.sendSync('get-constant', 'LOG_FOLDER');
 
 // Workspace Meta
-export const getWorkspaceMeta = id => ipcRenderer.sendSync('get-workspace-meta', id);
+export const getWorkspaceMeta = (id: string) => ipcRenderer.sendSync('get-workspace-meta', id);
 export const getWorkspaceMetas = () => ipcRenderer.sendSync('get-workspace-metas');
 
 // Workspace Git
@@ -115,15 +122,16 @@ export const initWikiGit = (wikiFolderPath: string, githubRepoUrl: string, userI
   ipcRenderer.invoke('request-init-wiki-git', wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
 
 // Find In Page
-export const requestFindInPage = (text, forward) => ipcRenderer.send('request-find-in-page', text, forward);
-export const requestStopFindInPage = close => ipcRenderer.send('request-stop-find-in-page', close);
+export const requestFindInPage = (text: string, forward?: boolean) =>
+  ipcRenderer.send('request-find-in-page', text, !!forward);
+export const requestStopFindInPage = (close?: boolean) => ipcRenderer.send('request-stop-find-in-page', !!close);
 
 // Auth
-export const requestValidateAuthIdentity = (windowId, username, password) =>
+export const requestValidateAuthIdentity = (windowId: string, username: string, password: string) =>
   ipcRenderer.send('request-validate-auth-identity', windowId, username, password);
 
 // Native Theme
 export const getShouldUseDarkColors = () => ipcRenderer.sendSync('get-should-use-dark-colors');
 
 // Online Status
-export const signalOnlineStatusChanged = online => ipcRenderer.send('online-status-changed', online);
+export const signalOnlineStatusChanged = (online: boolean) => ipcRenderer.send('online-status-changed', online);

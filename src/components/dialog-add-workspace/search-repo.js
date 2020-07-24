@@ -42,7 +42,7 @@ interface Props {
   accessToken: string | null;
   githubWikiUrl: string;
   githubWikiUrlSetter: string => void;
-  userInfo?: IUserInfo;
+  userInfo?: IUserInfo | null;
 }
 export default function SearchRepo({ accessToken, githubWikiUrl, githubWikiUrlSetter, userInfo }: Props) {
   const [githubRepoSearchString, githubRepoSearchStringSetter] = useState('wiki');

@@ -1,5 +1,6 @@
 // @flow
 /* eslint-disable promise/no-nesting */
+import type { ComponentType } from 'react';
 import React, { Component } from 'react';
 import styled from 'styled-components';
 import Button from '@material-ui/core/Button';
@@ -8,7 +9,7 @@ import AuthingSSO from '@authing/sso';
 
 import { APP_DOMAIN, APP_ID } from '../../constants/auth';
 
-const SyncToGithubButton = styled(Button)`
+const SyncToGithubButton: ComponentType<{}> = styled(Button)`
   white-space: nowrap;
   width: 100%;
 `;
