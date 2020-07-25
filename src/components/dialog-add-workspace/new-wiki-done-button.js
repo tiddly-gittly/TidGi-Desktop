@@ -22,23 +22,30 @@ const CloseButton = styled(Button)`
   width: 100%;
 `;
 
-interface Props {
-  isCreateMainWorkspace: boolean;
-  wikiPort: number;
-  mainWikiToLink: { name: string, port: number };
-  githubWikiUrl: string;
-  wikiFolderName: string;
-  parentFolderLocation: string;
-  userInfo: IUserInfo;
-}
-interface ActionProps {
-  updateForm: Object => void;
-  setWikiCreationMessage: string => void;
-  save: () => void;
-}
-interface StateProps {
-  wikiCreationMessage: string;
-}
+type OwnProps = {|
+  isCreateMainWorkspace: boolean,
+  wikiPort: number,
+  mainWikiToLink: { name: string, port: number },
+  githubWikiUrl: string,
+  wikiFolderName: string,
+  parentFolderLocation: string,
+  userInfo: IUserInfo | null,
+|};
+type DispatchProps = {|
+  updateForm: Object => void,
+  setWikiCreationMessage: string => void,
+  save: () => void,
+|};
+
+type StateProps = {|
+  wikiCreationMessage: string,
+|};
+
+type Props = {
+  ...OwnProps,
+  ...DispatchProps,
+  ...StateProps,
+};
 
 function NewWikiDoneButton({
   isCreateMainWorkspace,
@@ -52,7 +59,7 @@ function NewWikiDoneButton({
   wikiCreationMessage,
   save,
   userInfo,
-}: Props & ActionProps & StateProps) {
+}: Props) {
   const wikiFolderLocation = `${parentFolderLocation}/${wikiFolderName}`;
 
   const port = isCreateMainWorkspace ? wikiPort : mainWikiToLink.port;
@@ -80,7 +87,7 @@ function NewWikiDoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!parentFolderLocation || !githubWikiUrl || progressBarOpen}
+          disabled={!parentFolderLocation || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             updateForm(workspaceFormData);
             let creationError = await requestCopyWikiTemplate(parentFolderLocation, wikiFolderName);
@@ -165,4 +172,6 @@ const mapStateToProps = state => ({
   wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
 });
 
-export default connect(mapStateToProps, dispatch => bindActionCreators(actions, dispatch))(NewWikiDoneButton);
+export default connect<Props, OwnProps, _, _, _, _>(mapStateToProps, dispatch => bindActionCreators(actions, dispatch))(
+  NewWikiDoneButton,
+);

@@ -26,7 +26,8 @@ export default function TabBar({ currentTab, currentTabSetter }: IProps) {
           aria-label="切换创建新的还是打开现有的WIKI"
         >
           <Tab label="创建新WIKI" {...a11yProps(0)} />
-          <Tab label="打开现有WIKI" {...a11yProps(1)} />
+          <Tab label="打开本地WIKI" {...a11yProps(1)} />
+          <Tab label="拉取线上WIKI" {...a11yProps(2)} />
         </Tabs>
       </Paper>
     </AppBar>

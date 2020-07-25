@@ -22,22 +22,28 @@ const CloseButton = styled(Button)`
   width: 100%;
 `;
 
-interface Props {
-  isCreateMainWorkspace: boolean;
-  wikiPort: number;
-  mainWikiToLink: { name: string, port: number };
-  githubWikiUrl: string;
-  existedFolderLocation: string;
-  userInfo: IUserInfo;
-}
-interface ActionProps {
-  updateForm: Object => void;
-  setWikiCreationMessage: string => void;
-  save: () => void;
-}
-interface StateProps {
-  wikiCreationMessage: string;
-}
+type OwnProps = {|
+  isCreateMainWorkspace: boolean,
+  wikiPort: number,
+  mainWikiToLink: { name: string, port: number },
+  githubWikiUrl: string,
+  existedFolderLocation: string,
+  userInfo: IUserInfo | null,
+|};
+type DispatchProps = {|
+  updateForm: Object => void,
+  setWikiCreationMessage: string => void,
+  save: () => void,
+|};
+type StateProps = {|
+  wikiCreationMessage: string,
+|};
+
+type Props = {
+  ...OwnProps,
+  ...DispatchProps,
+  ...StateProps,
+};
 
 function DoneButton({
   isCreateMainWorkspace,
@@ -50,7 +56,7 @@ function DoneButton({
   wikiCreationMessage,
   save,
   userInfo,
-}: Props & ActionProps & StateProps) {
+}: Props) {
   const port = isCreateMainWorkspace ? wikiPort : mainWikiToLink.port;
   const workspaceFormData = {
     name: existedFolderLocation,
@@ -76,7 +82,7 @@ function DoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!existedFolderLocation || !githubWikiUrl || progressBarOpen}
+          disabled={!existedFolderLocation || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             updateForm(workspaceFormData);
             const creationError = await ensureWikiExist(existedFolderLocation, true);
@@ -118,7 +124,12 @@ function DoneButton({
             updateForm(workspaceFormData);
             let creationError = await ensureWikiExist(existedFolderLocation, false);
             if (!creationError) {
-              creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name, true);
+              creationError = await requestCreateSubWiki(
+                parentFolderLocation,
+                wikiFolderName,
+                mainWikiToLink.name,
+                true,
+              );
             }
             if (creationError) {
               setWikiCreationMessage(creationError);
@@ -159,4 +170,6 @@ const mapStateToProps = state => ({
   wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
 });
 
-export default connect(mapStateToProps, dispatch => bindActionCreators(actions, dispatch))(DoneButton);
+export default connect<Props, OwnProps, _, _, _, _>(mapStateToProps, dispatch => bindActionCreators(actions, dispatch))(
+  DoneButton,
+);

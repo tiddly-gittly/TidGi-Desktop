@@ -124,9 +124,6 @@ export default function AddWorkspace() {
         onLogout={response => accessTokenSetter(null)}
         onFailure={response => console.log(response)}
       />
-      <Typography variant="subtitle1" align="center">
-        同步到云端
-      </Typography>
       {githubWikiUrl && (
         <GithubRepoLink onClick={() => requestOpen(githubWikiUrl)} variant="subtitle2" align="center">
           ({githubWikiUrl})
@@ -144,15 +141,14 @@ export default function AddWorkspace() {
   return (
     <ClientContext.Provider value={graphqlClient}>
       <TabBar currentTab={currentTab} currentTabSetter={currentTabSetter} />
-      {currentTab === 0 ? (
+      <Description
+        isCreateMainWorkspace={isCreateMainWorkspace}
+        isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter}
+      />
+
+      {syncContainer}
+      {currentTab === 0 && (
         <Container>
-          <Description
-            isCreateMainWorkspace={isCreateMainWorkspace}
-            isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter}
-          />
-
-          {syncContainer}
-
           <NewWikiPathForm
             parentFolderLocation={parentFolderLocation}
             parentFolderLocationSetter={parentFolderLocationSetter}
@@ -175,15 +171,9 @@ export default function AddWorkspace() {
             userInfo={userInfo}
           />
         </Container>
-      ) : (
+      )}
+      {currentTab === 1 && (
         <Container>
-          <Description
-            isCreateMainWorkspace={isCreateMainWorkspace}
-            isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter}
-          />
-
-          {syncContainer}
-
           <ExistedWikiPathForm
             existedFolderLocationSetter={existedFolderLocationSetter}
             existedFolderLocation={existedFolderLocation}
@@ -202,6 +192,30 @@ export default function AddWorkspace() {
             mainWikiToLink={mainWikiToLink}
             githubWikiUrl={githubWikiUrl}
             existedFolderLocation={existedFolderLocation}
+            userInfo={userInfo}
+          />
+        </Container>
+      )}
+      {currentTab === 2 && (
+        <Container>
+          <NewWikiPathForm
+            parentFolderLocation={parentFolderLocation}
+            parentFolderLocationSetter={parentFolderLocationSetter}
+            wikiFolderName={wikiFolderName}
+            wikiFolderNameSetter={wikiFolderNameSetter}
+            mainWikiToLink={mainWikiToLink}
+            mainWikiToLinkSetter={mainWikiToLinkSetter}
+            wikiPort={wikiPort}
+            wikiPortSetter={wikiPortSetter}
+            isCreateMainWorkspace={isCreateMainWorkspace}
+          />
+          <NewWikiDoneButton
+            isCreateMainWorkspace={isCreateMainWorkspace}
+            wikiPort={wikiPort}
+            mainWikiToLink={mainWikiToLink}
+            githubWikiUrl={githubWikiUrl}
+            wikiFolderName={wikiFolderName}
+            parentFolderLocation={parentFolderLocation}
             userInfo={userInfo}
           />
         </Container>

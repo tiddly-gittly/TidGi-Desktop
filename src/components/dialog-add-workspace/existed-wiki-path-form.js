@@ -38,24 +38,30 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
   margin-top: 5px;
 `;
 
-interface Props {
-  wikiCreationMessage?: string;
-  existedFolderLocationSetter: string => void;
-  wikiFolderName: string;
-  wikiFolderNameSetter: string => void;
-  mainWikiToLink: Object;
-  mainWikiToLinkSetter: Object => void;
-  existedFolderLocation: string;
-  wikiPort: Number;
-  wikiPortSetter: number => void;
-  isCreateMainWorkspace: boolean;
-}
-interface ActionProps {
-  setWikiCreationMessage: string => void;
-}
-interface StateProps {
-  wikiCreationMessage: string;
-}
+type OwnProps = {|
+  wikiCreationMessage?: string,
+  existedFolderLocationSetter: string => void,
+  wikiFolderName: string,
+  wikiFolderNameSetter: string => void,
+  mainWikiToLink: Object,
+  mainWikiToLinkSetter: Object => void,
+  existedFolderLocation: string,
+  wikiPort: number,
+  wikiPortSetter: number => void,
+  isCreateMainWorkspace: boolean,
+|};
+type DispatchProps = {|
+  setWikiCreationMessage: string => void,
+|};
+type StateProps = {|
+  wikiCreationMessage: string,
+|};
+
+type Props = {
+  ...OwnProps,
+  ...DispatchProps,
+  ...StateProps,
+};
 
 function WikiPathForm({
   setWikiCreationMessage,
@@ -69,7 +75,7 @@ function WikiPathForm({
   wikiPort,
   wikiPortSetter,
   isCreateMainWorkspace,
-}: Props & ActionProps & StateProps) {
+}: Props) {
   const [workspaces, workspacesSetter] = useState({});
   useEffect(() => {
     workspacesSetter(getWorkspaces());
@@ -170,4 +176,6 @@ const mapStateToProps = state => ({
   wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
 });
 
-export default connect(mapStateToProps, dispatch => bindActionCreators(actions, dispatch))(WikiPathForm);
+export default connect<Props, OwnProps, _, _, _, _>(mapStateToProps, dispatch => bindActionCreators(actions, dispatch))(
+  WikiPathForm,
+);
