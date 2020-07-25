@@ -1,7 +1,7 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable no-param-reassign */
 const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
-const fetch = require('node-fetch');
 
 const { initWikiGit, getRemoteUrl } = require('../libs/git');
 const { stopWatchWiki } = require('../libs/wiki/watch-wiki');
@@ -41,7 +41,6 @@ const { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad } = require('
 
 const { updatePauseNotificationsInfo, getPauseNotificationsInfo } = require('../libs/notifications');
 
-const sendToAllWindows = require('../libs/send-to-all-windows');
 const getViewBounds = require('../libs/get-view-bounds');
 
 const createMenu = require('../libs/create-menu');
@@ -62,6 +61,7 @@ const loadListeners = () => {
   ipcMain.handle('copy-wiki-template', async (event, newFolderPath, folderName) => {
     try {
       await createWiki(newFolderPath, folderName, logger);
+      return '';
     } catch (error) {
       return String(error);
     }
@@ -69,6 +69,7 @@ const loadListeners = () => {
   ipcMain.handle('create-sub-wiki', async (event, newFolderPath, folderName, mainWikiToLink, onlyLink) => {
     try {
       await createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink);
+      return '';
     } catch (error) {
       console.info(error);
       return String(error);
@@ -77,6 +78,7 @@ const loadListeners = () => {
   ipcMain.handle('ensure-wiki-exist', async (event, wikiPath, shouldBeMainWiki) => {
     try {
       await ensureWikiExist(wikiPath, shouldBeMainWiki);
+      return '';
     } catch (error) {
       console.info(error);
       return String(error);
@@ -93,6 +95,7 @@ const loadListeners = () => {
   ipcMain.handle('request-init-wiki-git', async (event, wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) => {
     try {
       await initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
+      return '';
     } catch (error) {
       console.info(error);
       removeWiki(wikiFolderPath);
@@ -109,14 +112,14 @@ const loadListeners = () => {
   });
 
   // Find In Page
-  ipcMain.on('request-find-in-page', (e, text, forward) => {
+  ipcMain.on('request-find-in-page', (_, text, forward) => {
     const contents = mainWindow.get().getBrowserView().webContents;
     contents.findInPage(text, {
       forward,
     });
   });
 
-  ipcMain.on('request-stop-find-in-page', (e, close) => {
+  ipcMain.on('request-stop-find-in-page', (_, close) => {
     const win = mainWindow.get();
     const view = win.getBrowserView();
     const contents = view.webContents;
@@ -132,36 +135,33 @@ const loadListeners = () => {
   });
 
   // System Preferences
-  ipcMain.on('get-system-preference', (e, name) => {
-    const val = getSystemPreference(name);
-    e.returnValue = val;
+  ipcMain.on('get-system-preference', (event, name) => {
+    event.returnValue = getSystemPreference(name)
   });
 
-  ipcMain.on('get-system-preferences', e => {
+  ipcMain.on('get-system-preferences', event => {
     const preferences = getSystemPreferences();
-    e.returnValue = preferences;
+    event.returnValue = preferences;
   });
 
-  ipcMain.on('request-set-system-preference', (e, name, value) => {
+  ipcMain.on('request-set-system-preference', (_, name, value) => {
     setSystemPreference(name, value);
   });
 
   // Preferences
-  ipcMain.on('get-preference', (e, name) => {
-    const val = getPreference(name);
-    e.returnValue = val;
+  ipcMain.on('get-preference', (event, name) => {
+    event.returnValue = getPreference(name);
   });
 
-  ipcMain.on('get-preferences', e => {
-    const preferences = getPreferences();
-    e.returnValue = preferences;
+  ipcMain.on('get-preferences', event => {
+    event.returnValue = getPreferences();
   });
 
-  ipcMain.on('request-set-preference', (e, name, value) => {
+  ipcMain.on('request-set-preference', (_, name, value) => {
     setPreference(name, value);
   });
 
-  ipcMain.on('request-show-code-injection-window', (e, type) => {
+  ipcMain.on('request-show-code-injection-window', (_, type) => {
     codeInjectionWindow.show(type);
   });
 
@@ -179,23 +179,24 @@ const loadListeners = () => {
         cancelId: 1,
       })
       .then(({ response }) => {
+        // eslint-disable-next-line promise/always-return
         if (response === 0) {
           resetPreferences();
           ipcMain.emit('request-show-require-restart-dialog');
         }
       })
-      .catch(console.log); // eslint-disable-line
+      .catch(console.log);
   });
 
   ipcMain.on('request-show-about-window', () => {
     aboutWindow.show();
   });
 
-  ipcMain.on('request-show-preferences-window', (e, scrollTo) => {
+  ipcMain.on('request-show-preferences-window', (_, scrollTo) => {
     preferencesWindow.show(scrollTo);
   });
 
-  ipcMain.on('request-show-edit-workspace-window', (e, id) => {
+  ipcMain.on('request-show-edit-workspace-window', (_, id) => {
     editWorkspaceWindow.show(id);
   });
 
@@ -234,15 +235,15 @@ const loadListeners = () => {
   });
 
   // Notifications
-  ipcMain.on('request-show-notification', (e, opts) => {
+  ipcMain.on('request-show-notification', (_, options) => {
     if (Notification.isSupported()) {
-      const notif = new Notification(opts);
-      notif.show();
+      const notification = new Notification(options);
+      notification.show();
     }
   });
 
-  ipcMain.on('get-pause-notifications-info', e => {
-    e.returnValue = getPauseNotificationsInfo();
+  ipcMain.on('get-pause-notifications-info', event => {
+    event.returnValue = getPauseNotificationsInfo();
   });
 
   ipcMain.on('request-update-pause-notifications-info', () => {
@@ -250,32 +251,29 @@ const loadListeners = () => {
   });
 
   // Workspace Metas
-  ipcMain.on('get-workspace-meta', (e, id) => {
-    e.returnValue = getWorkspaceMeta(id);
+  ipcMain.on('get-workspace-meta', (event, id) => {
+    event.returnValue = getWorkspaceMeta(id);
   });
 
-  ipcMain.on('get-workspace-metas', e => {
-    e.returnValue = getWorkspaceMetas();
+  ipcMain.on('get-workspace-metas', event => {
+    event.returnValue = getWorkspaceMetas();
   });
 
   // Workspaces
-  ipcMain.on('count-workspace', e => {
-    e.returnValue = countWorkspaces();
+  ipcMain.on('count-workspace', event => {
+    event.returnValue = countWorkspaces();
   });
 
-  ipcMain.on('get-workspace', (e, id) => {
-    const val = getWorkspace(id);
-    e.returnValue = val;
+  ipcMain.on('get-workspace', (event, id) => {
+    event.returnValue = getWorkspace(id);
   });
 
-  ipcMain.on('get-workspaces', e => {
-    const workspaces = getWorkspaces();
-    e.returnValue = workspaces;
+  ipcMain.on('get-workspaces', event => {
+    event.returnValue = getWorkspaces();
   });
 
   ipcMain.handle('get-workspaces-remote', async (event, wikiFolderPath) => {
-    const url = await getRemoteUrl(wikiFolderPath);
-    return url;
+    return getRemoteUrl(wikiFolderPath);
   });
 
   ipcMain.handle(
@@ -286,7 +284,7 @@ const loadListeners = () => {
     },
   );
 
-  ipcMain.on('request-set-active-workspace', (e, id) => {
+  ipcMain.on('request-set-active-workspace', (_, id) => {
     if (getWorkspace(id)) {
       setActiveWorkspaceView(id);
       createMenu();
@@ -307,7 +305,7 @@ const loadListeners = () => {
     createMenu();
   });
 
-  ipcMain.on('request-open-url-in-workspace', (e, url, id) => {
+  ipcMain.on('request-open-url-in-workspace', (_, url, id) => {
     if (id) {
       // if id is defined, switch to that workspace
       setActiveWorkspaceView(id);
@@ -319,15 +317,15 @@ const loadListeners = () => {
     }
   });
 
-  ipcMain.on('request-wake-up-workspace', (e, id) => {
+  ipcMain.on('request-wake-up-workspace', (_, id) => {
     wakeUpWorkspaceView(id);
   });
 
-  ipcMain.on('request-hibernate-workspace', (e, id) => {
+  ipcMain.on('request-hibernate-workspace', (_, id) => {
     hibernateWorkspaceView(id);
   });
 
-  ipcMain.on('request-remove-workspace', (e, id) => {
+  ipcMain.on('request-remove-workspace', (_, id) => {
     // eslint-disable-next-line promise/catch-or-return
     dialog
       .showMessageBox(mainWindow.get(), {
@@ -356,21 +354,21 @@ const loadListeners = () => {
       });
   });
 
-  ipcMain.on('request-set-workspace', (e, id, opts) => {
-    setWorkspaceView(id, opts);
+  ipcMain.on('request-set-workspace', (_, id, options) => {
+    setWorkspaceView(id, options);
     createMenu();
   });
 
-  ipcMain.on('request-set-workspaces', (e, workspaces) => {
+  ipcMain.on('request-set-workspaces', (_, workspaces) => {
     setWorkspaceViews(workspaces);
     createMenu();
   });
 
-  ipcMain.on('request-set-workspace-picture', (e, id, picturePath) => {
+  ipcMain.on('request-set-workspace-picture', (_, id, picturePath) => {
     setWorkspacePicture(id, picturePath);
   });
 
-  ipcMain.on('request-remove-workspace-picture', (e, id) => {
+  ipcMain.on('request-remove-workspace-picture', (_, id) => {
     removeWorkspacePicture(id);
   });
 
@@ -383,21 +381,22 @@ const loadListeners = () => {
         cancelId: 1,
       })
       .then(({ response }) => {
+        // eslint-disable-next-line promise/always-return
         if (response === 0) {
           clearBrowsingData();
         }
       })
-      .catch(console.log); // eslint-disable-line
+      .catch(console.log);
   });
 
-  ipcMain.on('request-load-url', (e, url, id) => {
+  ipcMain.on('request-load-url', (_, url, id) => {
     loadURL(url, id);
   });
 
   ipcMain.on('request-go-home', () => {
     const win = mainWindow.get();
 
-    if (win != null && win.getBrowserView() != null) {
+    if (win !== undefined && win.getBrowserView() !== undefined) {
       const contents = win.getBrowserView().webContents;
       const activeWorkspace = getActiveWorkspace();
       contents.loadURL(activeWorkspace.homeUrl);
@@ -409,7 +408,7 @@ const loadListeners = () => {
   ipcMain.on('request-go-back', () => {
     const win = mainWindow.get();
 
-    if (win != null && win.getBrowserView() != null) {
+    if (win !== undefined && win.getBrowserView() !== undefined) {
       const contents = win.getBrowserView().webContents;
       if (contents.canGoBack()) {
         contents.goBack();
@@ -422,7 +421,7 @@ const loadListeners = () => {
   ipcMain.on('request-go-forward', () => {
     const win = mainWindow.get();
 
-    if (win != null && win.getBrowserView() != null) {
+    if (win !== undefined && win.getBrowserView() !== undefined) {
       const contents = win.getBrowserView().webContents;
       if (contents.canGoForward()) {
         contents.goForward();
@@ -435,12 +434,12 @@ const loadListeners = () => {
   ipcMain.on('request-reload', () => {
     const win = mainWindow.get();
 
-    if (win != null) {
+    if (win !== undefined) {
       win.getBrowserView().webContents.reload();
     }
   });
 
-  ipcMain.on('request-show-message-box', (e, message, type) => {
+  ipcMain.on('request-show-message-box', (_, message, type) => {
     dialog
       .showMessageBox(mainWindow.get(), {
         type: type || 'error',
@@ -449,7 +448,7 @@ const loadListeners = () => {
         cancelId: 0,
         defaultId: 0,
       })
-      .catch(console.log); // eslint-disable-line
+      .catch(console.log);
   });
 
   ipcMain.on('create-menu', () => {
@@ -483,13 +482,14 @@ const loadListeners = () => {
           defaultId: 2,
         })
         .then(({ response }) => {
+          // eslint-disable-next-line promise/always-return
           if (response === 0) {
             shell.openExternal('https://github.com/electron-userland/electron-builder/issues/4046');
           } else if (response === 1) {
             shell.openExternal('http://singleboxapp.com/');
           }
         })
-        .catch(console.log); // eslint-disable-line
+        .catch(console.log);
       return;
     }
 
@@ -497,7 +497,7 @@ const loadListeners = () => {
     if (global.updaterObj && global.updaterObj.status === 'update-downloaded') {
       setImmediate(() => {
         app.removeAllListeners('window-all-closed');
-        if (mainWindow.get() != null) {
+        if (mainWindow.get() !== undefined) {
           mainWindow.get().forceClose = true;
           mainWindow.get().close();
         }
@@ -511,8 +511,8 @@ const loadListeners = () => {
   });
 
   // Native Theme
-  ipcMain.on('get-should-use-dark-colors', e => {
-    e.returnValue = nativeTheme.shouldUseDarkColors;
+  ipcMain.on('get-should-use-dark-colors', event => {
+    event.returnValue = nativeTheme.shouldUseDarkColors;
   });
 
   ipcMain.on('request-reload-views-dark-reader', () => {
@@ -521,12 +521,12 @@ const loadListeners = () => {
 
   // if global.forceNewWindow = true
   // the next external link request will be opened in new window
-  ipcMain.on('request-set-global-force-new-window', (e, val) => {
-    global.forceNewWindow = val;
+  ipcMain.on('request-set-global-force-new-window', (_, value) => {
+    global.forceNewWindow = value;
   });
 
   // https://www.electronjs.org/docs/tutorial/online-offline-events
-  ipcMain.on('online-status-changed', (e, online) => {
+  ipcMain.on('online-status-changed', (_, online) => {
     if (online) {
       reloadViewsWebContentsIfDidFailLoad();
     }
