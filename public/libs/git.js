@@ -366,8 +366,36 @@ async function getRemoteUrl(wikiFolderPath) {
   return '';
 }
 
+async function clone(githubRepoUrl, repoFolderPath, userInfo) {
+  const logProgress = message => logger.notice(message, { handler: 'createWikiProgress', function: 'clone' });
+  const logInfo = message => logger.info(message, { function: 'clone' });
+  logProgress('准备克隆线上Wiki');
+  logProgress('开始初始化本地Git仓库');
+  const { login: username, accessToken } = userInfo;
+  logInfo(
+    `Using gitUrl ${githubRepoUrl} with username ${username} and accessToken ${truncate(accessToken, {
+      length: 24,
+    })}`,
+  );
+  await GitProcess.exec(['init'], repoFolderPath);
+  logProgress('仓库初始化完毕，开始配置Github远端仓库');
+  await credentialOn(repoFolderPath, githubRepoUrl, userInfo);
+  logProgress('正在拉取Github远端仓库的数据，需要的时间取决于网速和仓库大小，请耐心等待');
+  const { stderr, exitCode } = await GitProcess.exec(['pull', 'origin', 'master:master'], repoFolderPath);
+  await credentialOff(repoFolderPath);
+  if (exitCode !== 0) {
+    logInfo(stderr);
+    const CONFIG_FAILED_MESSAGE = 'Git仓库配置失败，详见错误日志';
+    logProgress(CONFIG_FAILED_MESSAGE);
+    throw new Error(CONFIG_FAILED_MESSAGE);
+  } else {
+    logProgress('Git仓库配置完毕');
+  }
+}
+
 module.exports = {
   initWikiGit,
   commitAndSync,
   getRemoteUrl,
+  clone,
 };

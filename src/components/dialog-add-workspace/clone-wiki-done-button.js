@@ -13,7 +13,7 @@ import Alert from '@material-ui/lab/Alert';
 import * as actions from '../../state/dialog-add-workspace/actions';
 
 import type { IUserInfo } from './user-info';
-import { requestCloneWiki, requestCloneSubWiki, getIconPath, initWikiGit } from '../../senders';
+import { requestCloneWiki, requestCloneSubWiki, getIconPath } from '../../senders';
 
 import useWikiCreationMessage from './use-wiki-creation-message';
 
@@ -89,7 +89,7 @@ function CloneWikiDoneButton({
           disabled={!parentFolderLocation || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             updateForm(workspaceFormData);
-            const cloneError = await requestCloneWiki(parentFolderLocation, wikiFolderName, githubWikiUrl);
+            const cloneError = await requestCloneWiki(parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo);
             if (cloneError) {
               setWikiCreationMessage(cloneError);
             } else {
@@ -121,7 +121,7 @@ function CloneWikiDoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!parentFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen}
+          disabled={!parentFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             updateForm(workspaceFormData);
             const creationError = await requestCloneSubWiki(
@@ -129,6 +129,7 @@ function CloneWikiDoneButton({
               wikiFolderName,
               mainWikiToLink.name,
               githubWikiUrl,
+              userInfo,
             );
             if (creationError) {
               setWikiCreationMessage(creationError);

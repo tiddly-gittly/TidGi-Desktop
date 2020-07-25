@@ -117,7 +117,7 @@ function DoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!existedFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen}
+          disabled={!existedFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             const wikiFolderName = basename(existedFolderLocation);
             const parentFolderLocation = dirname(existedFolderLocation);

@@ -7,7 +7,7 @@ const { initWikiGit, getRemoteUrl } = require('../libs/git');
 const { stopWatchWiki } = require('../libs/wiki/watch-wiki');
 const { stopWiki } = require('../libs/wiki/wiki-worker-mamager');
 const { logger } = require('../libs/log');
-const { createWiki, createSubWiki, removeWiki, ensureWikiExist } = require('../libs/create-wiki');
+const { createWiki, createSubWiki, removeWiki, ensureWikiExist, cloneWiki, cloneSubWiki } = require('../libs/wiki/create-wiki');
 const { ICON_PATH, REACT_PATH, DESKTOP_PATH, LOG_FOLDER } = require('../constants/paths');
 
 const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
@@ -60,7 +60,7 @@ const spellcheckLanguagesWindow = require('../windows/spellcheck-languages');
 const loadListeners = () => {
   ipcMain.handle('copy-wiki-template', async (event, newFolderPath, folderName) => {
     try {
-      await createWiki(newFolderPath, folderName, logger);
+      await createWiki(newFolderPath, folderName);
       return '';
     } catch (error) {
       return String(error);
@@ -69,6 +69,24 @@ const loadListeners = () => {
   ipcMain.handle('create-sub-wiki', async (event, newFolderPath, folderName, mainWikiToLink, onlyLink) => {
     try {
       await createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink);
+      return '';
+    } catch (error) {
+      console.info(error);
+      return String(error);
+    }
+  });
+  ipcMain.handle('clone-wiki', async (event, parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo) => {
+    try {
+      await cloneWiki(parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo);
+      return '';
+    } catch (error) {
+      console.info(error);
+      return String(error);
+    }
+  });
+  ipcMain.handle('clone-sub-wiki', async (event, parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo) => {
+    try {
+      await cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo);
       return '';
     } catch (error) {
       console.info(error);

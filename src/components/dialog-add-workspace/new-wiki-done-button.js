@@ -126,7 +126,7 @@ function NewWikiDoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!parentFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen}
+          disabled={!parentFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             updateForm(workspaceFormData);
             let creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name);

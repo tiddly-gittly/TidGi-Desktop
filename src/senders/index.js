@@ -1,5 +1,6 @@
 // @flow
 const { ipcRenderer } = window.require('electron');
+import type { IUserInfo } from '../components/dialog-add-workspace/user-info';
 
 export const requestCopyWikiTemplate = (newFolderPath: string, folderName: string) =>
   ipcRenderer.invoke('copy-wiki-template', newFolderPath, folderName);
@@ -11,6 +12,19 @@ export const requestCreateSubWiki = (
 ) => ipcRenderer.invoke('create-sub-wiki', newFolderPath, folderName, mainWikiToLink, onlyLink);
 export const ensureWikiExist = (wikiPath: string, shouldBeMainWiki: boolean) =>
   ipcRenderer.invoke('ensure-wiki-exist', wikiPath, shouldBeMainWiki);
+export const requestCloneWiki = (
+  parentFolderLocation: string,
+  wikiFolderName: string,
+  githubWikiUrl: string,
+  userInfo: IUserInfo,
+) => ipcRenderer.invoke('clone-wiki', parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo);
+export const requestCloneSubWiki = (
+  parentFolderLocation: string,
+  wikiFolderName: string,
+  mainWikiPath: string,
+  githubWikiUrl: string,
+  userInfo: IUserInfo,
+) => ipcRenderer.invoke('clone-sub-wiki', parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo);
 export const requestOpen = (uri: string, isDirectory?: boolean) => ipcRenderer.send('request-open', uri, !!isDirectory);
 export const requestShowMessageBox = (message: string, type: string) =>
   ipcRenderer.send('request-show-message-box', message, type);
