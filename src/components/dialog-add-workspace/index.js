@@ -134,6 +134,7 @@ export default function AddWorkspace() {
         accessToken={accessToken}
         githubWikiUrlSetter={githubWikiUrlSetter}
         userInfo={userInfo}
+        isCreateMainWorkspace={isCreateMainWorkspace}
       />
     </SyncContainer>
   );

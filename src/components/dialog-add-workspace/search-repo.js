@@ -1,7 +1,7 @@
 // @flow
 import React, { useState } from 'react';
 import styled from 'styled-components';
-import { useQuery } from 'graphql-hooks';
+import { useQuery, useMutation } from 'graphql-hooks';
 import { trim } from 'lodash';
 
 import TextField from '@material-ui/core/TextField';
@@ -13,6 +13,7 @@ import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 import Button from '@material-ui/core/Button';
 import CachedIcon from '@material-ui/icons/Cached';
+import CreateNewFolderIcon from '@material-ui/icons/CreateNewFolder';
 
 import type { IUserInfo } from './user-info';
 
@@ -23,7 +24,10 @@ const ReloadButton = styled(Button)`
 `;
 
 const SEARCH_REPO_QUERY = `
-  query SearchRepo($queryString: String!) {
+  query SearchRepo($queryString: String!, $login: String!) {
+    repositoryOwner(login: $login) {
+      id
+    }
     search(query: $queryString, type: REPOSITORY, first: 10) {
       repositoryCount
       edges {
@@ -37,14 +41,39 @@ const SEARCH_REPO_QUERY = `
     }
   }
 `;
+const CREATE_REPO_MUTATION = `
+  mutation CreateRepository($repoName: String!, $homepageUrl: URI, $ownerId: ID!, $visibility: RepositoryVisibility!) {
+    createRepository (input: {
+      name: $repoName,
+      description: "A non-linear Wiki created using TiddlyGit-Desktop.",
+      hasIssuesEnabled: true,
+      hasWikiEnabled: false,
+      homepageUrl: $homepageUrl,
+      ownerId: $ownerId,
+      visibility: $visibility
+    }) {
+      repository {
+        name
+        homepageUrl
+      }
+    }
+  }
+`;
 
 interface Props {
   accessToken: string | null;
   githubWikiUrl: string;
   githubWikiUrlSetter: string => void;
   userInfo?: IUserInfo | null;
+  isCreateMainWorkspace: boolean;
 }
-export default function SearchRepo({ accessToken, githubWikiUrl, githubWikiUrlSetter, userInfo }: Props) {
+export default function SearchRepo({
+  accessToken,
+  githubWikiUrl,
+  githubWikiUrlSetter,
+  userInfo,
+  isCreateMainWorkspace,
+}: Props) {
   const [githubRepoSearchString, githubRepoSearchStringSetter] = useState('wiki');
   const loadCount = 10;
   const githubUsername = userInfo?.login || '';
@@ -52,9 +81,11 @@ export default function SearchRepo({ accessToken, githubWikiUrl, githubWikiUrlSe
     variables: {
       first: loadCount,
       queryString: `user:${githubUsername} ${githubRepoSearchString}`,
+      login: githubUsername,
     },
     skipCache: true,
   });
+  const [createRepository] = useMutation(CREATE_REPO_MUTATION);
 
   const repositoryCount = data?.search?.repositoryCount;
   let repoList = [];
@@ -71,6 +102,12 @@ export default function SearchRepo({ accessToken, githubWikiUrl, githubWikiUrlSe
     helperText = `仅展示前${loadCount}个结果`;
   }
 
+  const [isCreatingRepo, isCreatingRepoSetter] = useState(false);
+  const githubUserID = data?.repositoryOwner?.id;
+  const wikiUrlToCreate = `https://github.com/${userInfo?.login || '???'}/${githubRepoSearchString}`;
+  const isCreateNewRepo = trim(githubWikiUrl) === wikiUrlToCreate;
+  const githubPagesUrl = `https://${userInfo?.login || '???'}.github.io/${githubRepoSearchString}`;
+
   return (
     <>
       <RepoSearchInput
@@ -82,7 +119,7 @@ export default function SearchRepo({ accessToken, githubWikiUrl, githubWikiUrlSe
         value={githubRepoSearchString}
         helperText={helperText}
       />
-      {loading && <LinearProgress variant="query" />}
+      {(loading || isCreatingRepo) && <LinearProgress variant="query" />}
       <List component="nav" aria-label="main mailbox folders">
         {repoList.map(({ name, url }) => (
           <ListItem
@@ -97,6 +134,39 @@ export default function SearchRepo({ accessToken, githubWikiUrl, githubWikiUrlSe
             <ListItemText primary={name} />
           </ListItem>
         ))}
+        {userInfo &&
+          !loading &&
+          !isCreatingRepo &&
+          !repoList.some(({ url }) => trim(url) === wikiUrlToCreate) &&
+          githubRepoSearchString && (
+            <ListItem
+              button
+              key={wikiUrlToCreate}
+              onClick={async () => {
+                githubWikiUrlSetter(wikiUrlToCreate);
+                isCreatingRepoSetter(true);
+                await createRepository({
+                  variables: {
+                    repoName: githubRepoSearchString,
+                    homePageUrl: isCreateMainWorkspace ? githubPagesUrl : undefined,
+                    ownerId: githubUserID,
+                    visibility: isCreateMainWorkspace ? 'PUBLIC' : 'PRIVATE',
+                  },
+                });
+                // wait for Github update their db
+                setTimeout(async () => {
+                  await refetch();
+                  isCreatingRepoSetter(false);
+                }, 1000);
+              }}
+              selected={isCreateNewRepo}
+            >
+              <ListItemIcon>
+                <CreateNewFolderIcon />
+              </ListItemIcon>
+              <ListItemText primary={`创建${isCreateMainWorkspace ? '公开' : '私有'}仓库 ${githubRepoSearchString}`} />
+            </ListItem>
+          )}
       </List>
       {repoList.length === 0 && (
         <ReloadButton color="secondary" endIcon={<CachedIcon />} onClick={() => refetch()}>
