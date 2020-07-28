@@ -201,9 +201,7 @@ const SortableItem = sortableElement(({ value }) => {
           });
         }
 
-        const menu = window.remote.menu.buildFromTemplate(template);
-        // menu.popup(window.remote.getCurrentWindow());
-        window.remote.useCurrentWindow(menu.popup.bind(menu));
+        window.remote.menu.buildFromTemplateAndPopup(template);
       }}
     />
   );

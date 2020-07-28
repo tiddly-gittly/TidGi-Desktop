@@ -19,7 +19,7 @@ contextBridge.exposeInMainWorld('remote', {
   getEnvironmentVersions: () => process.versions,
   getGlobal: key => remote.getGlobal(key),
   closeCurrentWindow: () => remote.getCurrentWindow().close(),
-  useCurrentWindow: (callback) => callback(remote.getCurrentWindow()),
+  useCurrentWindow: callback => callback(remote.getCurrentWindow()),
   getCurrentWindowID: () => remote.getCurrentWindow().id,
   desktopCapturer: {
     getSources: options => desktopCapturer.getSources(options),
@@ -42,6 +42,9 @@ contextBridge.exposeInMainWorld('remote', {
     }
   },
   menu: {
-    buildFromTemplate: template => remote.Menu.buildFromTemplate(template),
+    buildFromTemplateAndPopup: template => {
+      const menu = remote.Menu.buildFromTemplate(template);
+      menu.popup(remote.getCurrentWindow());
+    },
   },
 });
