@@ -34,7 +34,7 @@ class DisplayMedia extends React.Component {
   }
 
   componentDidMount() {
-    const { desktopCapturer } = window.require('electron');
+    const { desktopCapturer } = window.remote;
     desktopCapturer.getSources({ types: ['window', 'screen'] })
       .then((sources) => {
         this.setState({ sources });
@@ -60,7 +60,7 @@ class DisplayMedia extends React.Component {
             <ListItem
               button
               onClick={() => {
-                const { ipcRenderer } = window.require('electron');
+                const { ipcRenderer } = window.remote;
                 ipcRenderer.send('display-media-selected', source.id);
               }}
             >
@@ -73,7 +73,7 @@ class DisplayMedia extends React.Component {
             <ListItem
               button
               onClick={() => {
-                const { ipcRenderer } = window.require('electron');
+                const { ipcRenderer } = window.remote;
                 ipcRenderer.send('display-media-selected', source.id);
               }}
             >

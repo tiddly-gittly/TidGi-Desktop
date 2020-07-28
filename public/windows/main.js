@@ -54,7 +54,9 @@ const createAsync = () => new Promise((resolve) => {
         minHeight: 100,
         minWidth: 250,
         webPreferences: {
-          nodeIntegration: true,
+          nodeIntegration: false,
+      webSecurity: true,
+      contextIsolation: true,
           webSecurity: false,
           preload: path.join(__dirname, '..', 'preload', 'menubar.js'),
         },

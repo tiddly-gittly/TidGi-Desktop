@@ -56,7 +56,7 @@ const CodeInjection = ({
   onUpdateForm,
   shouldUseDarkColors,
 }) => {
-  const codeInjectionType = window.require('electron').remote.getGlobal('codeInjectionType');
+  const codeInjectionType =  window.remote.getGlobal('codeInjectionType');
   return (
     <div className={classes.root}>
       <div className={classes.flexGrow}>
@@ -89,7 +89,7 @@ const CodeInjection = ({
           <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
             Save
           </Button>
-          <Button variant="contained" disableElevation className={classes.button} onClick={() => window.require('electron').remote.getCurrentWindow().close()}>
+          <Button variant="contained" disableElevation className={classes.button} onClick={() => window.remote.closeCurrentWindow()}>
             Cancel
           </Button>
         </div>

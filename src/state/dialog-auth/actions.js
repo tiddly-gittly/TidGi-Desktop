@@ -13,6 +13,5 @@ export const login = () => (dispatch, getState) => {
 
   const { username, password } = form;
 
-  const { remote } = window.require('electron');
-  requestValidateAuthIdentity(remote.getCurrentWindow().id, username, password);
+  requestValidateAuthIdentity(window.remote.getCurrentWindowID(), username, password);
 };

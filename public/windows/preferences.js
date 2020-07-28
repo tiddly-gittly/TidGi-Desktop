@@ -24,7 +24,9 @@ const create = (scrollTo) => {
     fullscreenable: false,
     autoHideMenuBar: false,
     webPreferences: {
-      nodeIntegration: true,
+      nodeIntegration: false,
+      webSecurity: true,
+      contextIsolation: true,
       preload: path.join(__dirname, '..', 'preload', 'preferences.js'),
     },
     parent: attachToMenubar ? null : mainWindow.get(),

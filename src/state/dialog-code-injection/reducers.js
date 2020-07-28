@@ -7,7 +7,7 @@ import { getPreference } from '../../senders';
 const form = (state = {}, action) => {
   switch (action.type) {
     case DIALOG_CODE_INJECTION_INIT: {
-      const codeInjectionType = window.require('electron').remote.getGlobal('codeInjectionType');
+      const codeInjectionType =  window.remote.getGlobal('codeInjectionType');
       return {
         code: getPreference(`${codeInjectionType}CodeInjection`),
         // allowNodeInJsCodeInjection is only used for js injection

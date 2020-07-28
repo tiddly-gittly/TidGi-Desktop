@@ -4,7 +4,7 @@ let MAILTO_URLS;
 
 const getMailtoUrl = (url) => {
   if (!MAILTO_URLS) {
-    MAILTO_URLS = window.require('electron').remote.getGlobal('MAILTO_URLS');
+    MAILTO_URLS =  window.remote.getGlobal('MAILTO_URLS');
   }
 
   const extractedHostname = extractHostname(url);

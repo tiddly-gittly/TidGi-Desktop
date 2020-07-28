@@ -33,7 +33,7 @@ const DraggableRegion = ({
 }) => {
   // on macOS or menubar mode, if all bars are hidden
   // the top 22px part of BrowserView should be draggable
-  if ((window.process.platform === 'darwin' || window.mode === 'menubar') && !navigationBar && !titleBar) {
+  if ((window.remote.getPlatform() === 'darwin' || window.meta.mode === 'menubar') && !navigationBar && !titleBar) {
     return <div className={classNames(classes.root, sidebar && classes.rootWithSidebar)} />;
   }
 
@@ -48,7 +48,7 @@ DraggableRegion.propTypes = {
 };
 
 const mapStateToProps = (state) => ({
-  navigationBar: (window.process.platform === 'linux'
+  navigationBar: (window.remote.getPlatform() === 'linux'
     && state.preferences.attachToMenubar
     && !state.preferences.sidebar)
     || state.preferences.navigationBar,

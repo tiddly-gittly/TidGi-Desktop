@@ -14,7 +14,7 @@ import { requestOpen } from '../../senders';
 const ListItemDefaultBrowser = () => {
   const [isDefault, setIsDefault] = useState(false);
 
-  const isWindows10 = window.process.platform === 'win32' && semver.gt(window.require('electron').remote.require('os').release(), '10.0.0');
+  const isWindows10 = window.remote.getPlatform() === 'win32' && semver.gt(window.remote.getOSVersion(), '10.0.0');
 
   const recheckIsDefault = useCallback(
     () => {
@@ -24,19 +24,19 @@ const ListItemDefaultBrowser = () => {
         // https://stackoverflow.com/questions/32354861/how-to-find-the-default-browser-via-the-registry-on-windows-10
         const protocolName = 'http'; // https works as well
         const userChoicePath = `HKCU\\SOFTWARE\\Microsoft\\Windows\\Shell\\Associations\\URLAssociations\\${protocolName}\\UserChoice`;
-        window.require('electron').remote.require('regedit').list([userChoicePath], (err, result) => {
+        window.remote.regedit.list([userChoicePath], (error, result) => {
           try {
-            setIsDefault(!err && result[userChoicePath].values.ProgId.value === 'TiddlyGit');
-          } catch (tryErr) {
+            setIsDefault(!error && result[userChoicePath].values.ProgId.value === 'TiddlyGit');
+          } catch (tryError) {
             // eslint-disable-next-line no-console
-            console.log(tryErr);
+            console.log(tryError);
             setIsDefault(false);
           }
         });
         return;
       }
 
-      setIsDefault(window.require('electron').remote.app.isDefaultProtocolClient('http'));
+      setIsDefault(window.remote.isDefaultProtocolClient('http'));
     },
     [isWindows10],
   );
@@ -84,8 +84,8 @@ const ListItemDefaultBrowser = () => {
         size="small"
         color="default"
         onClick={() => {
-          window.require('electron').remote.app.setAsDefaultProtocolClient('http');
-          window.require('electron').remote.app.setAsDefaultProtocolClient('https');
+          window.remote.setAsDefaultProtocolClient('http');
+          window.remote.setAsDefaultProtocolClient('https');
           recheckIsDefault();
         }}
       >

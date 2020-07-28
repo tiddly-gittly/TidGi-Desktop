@@ -23,6 +23,5 @@ export const save = () => (dispatch, getState) => {
     requestShowRequireRestartDialog();
   }
 
-  const { remote } = window.require('electron');
-  remote.getCurrentWindow().close();
+  window.remote.closeCurrentWindow();
 };

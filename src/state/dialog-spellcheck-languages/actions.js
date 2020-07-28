@@ -34,11 +34,10 @@ export const removeLanguage = (code) => (dispatch, getState) => {
 
 export const save = () => (dispatch, getState) => {
   const { form } = getState().dialogSpellcheckLanguages;
-  const { remote } = window.require('electron');
 
   requestSetPreference('spellcheckLanguages', form.spellcheckLanguages);
 
   requestShowRequireRestartDialog();
 
-  remote.getCurrentWindow().close();
+  window.remote.closeCurrentWindow();
 };

@@ -13,7 +13,6 @@ import {
   getShouldUseDarkColors,
 } from '../../senders';
 
-const { remote } = window.require('electron');
 
 const canGoBack = (state = false, action) => {
   switch (action.type) {
@@ -50,7 +49,7 @@ const title = (state = '', action) => {
   }
 };
 
-const isFullScreen = (state = remote.getCurrentWindow().isFullScreen(), action) => {
+const isFullScreen = (state = window.remote.isFullScreen(), action) => {
   switch (action.type) {
     case UPDATE_IS_FULL_SCREEN: return action.isFullScreen;
     default: return state;

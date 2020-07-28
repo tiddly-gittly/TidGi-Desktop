@@ -24,7 +24,9 @@ const create = (viewId) => {
     fullscreenable: false,
     autoHideMenuBar: false,
     webPreferences: {
-      nodeIntegration: true,
+      nodeIntegration: false,
+      webSecurity: true,
+      contextIsolation: true,
       preload: path.join(__dirname, '..', 'preload', 'display-media.js'),
     },
     parent: attachToMenubar ? null : mainWindow.get(),

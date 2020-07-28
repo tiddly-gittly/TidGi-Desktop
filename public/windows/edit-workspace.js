@@ -24,8 +24,9 @@ const create = (id) => {
     fullscreenable: false,
     autoHideMenuBar: false,
     webPreferences: {
-      nodeIntegration: true,
-      webSecurity: false,
+      nodeIntegration: false,
+      webSecurity: true,
+      contextIsolation: true,
       preload: path.join(__dirname, '..', 'preload', 'edit-workspace.js'),
     },
     parent: attachToMenubar ? null : mainWindow.get(),

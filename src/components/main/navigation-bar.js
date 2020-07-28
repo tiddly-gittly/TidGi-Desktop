@@ -196,7 +196,7 @@ const mapStateToProps = (state) => ({
   addressEdited: Boolean(state.general.addressEdited),
   canGoBack: state.general.canGoBack,
   canGoForward: state.general.canGoForward,
-  hasTrafficLights: window.process.platform === 'darwin' && !state.preferences.titleBar && !state.preferences.sidebar,
+  hasTrafficLights: window.remote.getPlatform() === 'darwin' && !state.preferences.titleBar && !state.preferences.sidebar,
   hasWorkspaces: Object.keys(state.workspaces).length > 0,
   shouldPauseNotifications: state.notifications.pauseNotificationsInfo !== null,
 });

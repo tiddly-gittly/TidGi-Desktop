@@ -1,6 +1,7 @@
 // @flow
-const { ipcRenderer } = window.require('electron');
 import type { IUserInfo } from '../components/dialog-add-workspace/user-info';
+
+const { ipcRenderer } = window.remote;
 
 export const requestCopyWikiTemplate = (newFolderPath: string, folderName: string) =>
   ipcRenderer.invoke('copy-wiki-template', newFolderPath, folderName);
