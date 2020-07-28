@@ -1,8 +1,4 @@
 window.mode = 'notifications';
 
-const { remote } = require('electron');
-const contextMenu = require('electron-context-menu');
+require('./common/simple-context-menu');
 
-contextMenu({
-  window: remote.getCurrentWindow(),
-});

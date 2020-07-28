@@ -1,6 +1,9 @@
 window.mode = 'add-workspace';
 
 const { remote, ipcRenderer } = require('electron');
+
+
+
 const ContextMenuBuilder = require('../libs/context-menu-builder');
 const { CHROME_ERROR_PATH, REACT_PATH } = require('../constants/paths');
 
@@ -8,6 +11,7 @@ const { MenuItem, shell } = remote;
 window.contextMenuBuilder = new ContextMenuBuilder();
 
 // on production build, if we try to redirect to http://localhost:3000 , we will reach chrome-error://chromewebdata/ , but we can easily get back
+// this happens when we are redirected by OAuth login
 const CHECK_LOADED_INTERVAL = 500;
 function refresh() {
   if (window.location.href === CHROME_ERROR_PATH) {
