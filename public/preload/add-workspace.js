@@ -2,7 +2,7 @@ window.mode = 'add-workspace';
 
 const { remote, ipcRenderer } = require('electron');
 
-
+require('./common/i18n');
 
 const ContextMenuBuilder = require('../libs/context-menu-builder');
 const { CHROME_ERROR_PATH, REACT_PATH } = require('../constants/paths');
