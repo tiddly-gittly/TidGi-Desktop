@@ -14,6 +14,7 @@ import NewWikiDoneButton from './new-wiki-done-button';
 import NewWikiPathForm from './new-wiki-path-form';
 import ExistedWikiPathForm from './existed-wiki-path-form';
 import ExistedWikiDoneButton from './existed-wiki-done-button';
+import CloneWikiDoneButton from './clone-wiki-done-button';
 import { getGithubUserInfo, setGithubUserInfo } from './user-info';
 import type { IUserInfo } from './user-info';
 import TabBar from './tab-bar';
@@ -213,7 +214,7 @@ export default function AddWorkspace() {
             wikiPortSetter={wikiPortSetter}
             isCreateMainWorkspace={isCreateMainWorkspace}
           />
-          <NewWikiDoneButton
+          <CloneWikiDoneButton
             isCreateMainWorkspace={isCreateMainWorkspace}
             wikiPort={wikiPort}
             mainWikiToLink={mainWikiToLink}

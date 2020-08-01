@@ -1,4 +1,4 @@
-const { contextBridge } = require('electron');
+const { contextBridge, remote } = require('electron');
 
 require('./common/i18n');
 require('./common/require-nodejs');
@@ -13,7 +13,7 @@ const { CHROME_ERROR_PATH, REACT_PATH } = require('../constants/paths');
 const CHECK_LOADED_INTERVAL = 500;
 function refresh() {
   if (window.location.href === CHROME_ERROR_PATH) {
-    window.location.replace(REACT_PATH);
+    remote.getCurrentWindow().loadURL(REACT_PATH);
   } else {
     setTimeout(refresh, CHECK_LOADED_INTERVAL);
   }

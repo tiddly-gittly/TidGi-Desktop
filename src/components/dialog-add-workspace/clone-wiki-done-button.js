@@ -118,7 +118,7 @@ function CloneWikiDoneButton({
             </>
           )}
           <Typography variant="body1" display="inline">
-            创建WIKI
+            克隆WIKI
           </Typography>
         </CloseButton>
       ) : (
@@ -163,7 +163,7 @@ function CloneWikiDoneButton({
             </>
           )}
           <Typography variant="body1" display="inline">
-            创建WIKI
+            克隆WIKI
           </Typography>
           <Typography variant="body1" display="inline">
             并链接到主知识库
