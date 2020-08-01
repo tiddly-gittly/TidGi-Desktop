@@ -47,4 +47,7 @@ contextBridge.exposeInMainWorld('remote', {
       menu.popup(remote.getCurrentWindow());
     },
   },
+  clearStorageData: () => {
+    remote.session.defaultSession.clearStorageData();
+  },
 });
