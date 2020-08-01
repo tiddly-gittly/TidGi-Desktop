@@ -219,7 +219,6 @@ const Preferences = ({
   updaterStatus,
   useHardwareAcceleration,
 }) => {
-  const { remote } = window.require('electron');
   const sections = {
     wiki: {
       text: 'Wiki',
@@ -304,7 +303,7 @@ const Preferences = ({
   };
 
   useEffect(() => {
-    const scrollTo = window.require('electron').remote.getGlobal('preferencesScrollTo');
+    const scrollTo =  window.remote.getGlobal('preferencesScrollTo');
     if (!scrollTo) return;
     sections[scrollTo].ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
@@ -455,8 +454,8 @@ const Preferences = ({
                   // must show sidebar or navigation bar on Linux
                   // if not, as user can't right-click on menu bar icon
                   // they can't access preferences or notifications
-                  checked={(window.process.platform === 'linux' && attachToMenubar && !sidebar) || navigationBar}
-                  disabled={(window.process.platform === 'linux' && attachToMenubar && !sidebar)}
+                  checked={(window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar) || navigationBar}
+                  disabled={(window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar)}
                   onChange={(e) => {
                     requestSetPreference('navigationBar', e.target.checked);
                     requestRealignActiveWorkspace();
@@ -464,7 +463,7 @@ const Preferences = ({
                 />
               </ListItemSecondaryAction>
             </ListItem>
-            {window.process.platform === 'darwin' && (
+            {window.remote.getPlatform() === 'darwin' && (
               <>
                 <Divider />
                 <ListItem>
@@ -486,7 +485,7 @@ const Preferences = ({
                 </ListItem>
               </>
             )}
-            {window.process.platform !== 'darwin' && (
+            {window.remote.getPlatform() !== 'darwin' && (
               <>
                 <Divider />
                 <ListItem>
@@ -511,9 +510,9 @@ const Preferences = ({
             <Divider />
             <ListItem>
               <ListItemText
-                primary={window.process.platform === 'win32'
+                primary={window.remote.getPlatform() === 'win32'
                   ? 'Attach to taskbar' : 'Attach to menu bar'}
-                secondary={window.process.platform !== 'linux' ? 'Tip: Right-click on app icon to access context menu.' : null}
+                secondary={window.remote.getPlatform() !== 'linux' ? 'Tip: Right-click on app icon to access context menu.' : null}
               />
               <ListItemSecondaryAction>
                 <Switch
@@ -827,8 +826,8 @@ const Preferences = ({
                 secondary={(() => {
                   // only show this message on macOS Catalina 10.15 & above
                   if (
-                    window.process.platform === 'darwin'
-                    && semver.gte(remote.process.getSystemVersion(), '10.15.0')
+                    window.remote.getPlatform() === 'darwin'
+                    && semver.gte(window.remote.getOSVersion(), '10.15.0')
                   ) {
                     return (
                       <>
@@ -894,7 +893,7 @@ const Preferences = ({
                 />
               </ListItemSecondaryAction>
             </ListItem>
-            {window.process.platform !== 'darwin' && (
+            {window.remote.getPlatform() !== 'darwin' && (
               <>
                 <Divider />
                 <ListItem button onClick={requestShowSpellcheckLanguagesWindow}>
@@ -917,7 +916,7 @@ const Preferences = ({
             <ListItem
               button
               onClick={() => {
-                remote.dialog.showOpenDialog(remote.getCurrentWindow(), {
+                window.remote.dialog.showOpenDialog({
                   properties: ['openDirectory'],
                 }).then((result) => {
                   if (!result.canceled && result.filePaths) {
@@ -1131,7 +1130,7 @@ const Preferences = ({
                 />
               </ListItemSecondaryAction>
             </ListItem>
-            {window.process.platform === 'darwin' && (
+            {window.remote.getPlatform() === 'darwin' && (
               <>
                 <Divider />
                 <ListItem>
@@ -1279,12 +1278,12 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpen('https://tiddlygitapp.com?utm_source=tiddlygit_app')}>
+            <ListItem button onClick={() => requestOpen('https://github.com/tiddly-gittly/tiddlygit-desktop/')}>
               <ListItemText primary="Website" />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpen('https://atomery.com/support?app=tiddlygit&utm_source=tiddlygit_app')}>
+            <ListItem button onClick={() => requestOpen('https://github.com/tiddly-gittly/tiddlygit-desktop/issues')}>
               <ListItemText primary="Support" />
               <ChevronRightIcon color="action" />
             </ListItem>

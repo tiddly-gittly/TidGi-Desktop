@@ -36,7 +36,7 @@ export const init = () => ({
 export const getWebsiteIconUrlAsync = (url) => new Promise((resolve, reject) => {
   try {
     const id = Date.now().toString();
-    const { ipcRenderer } = window.require('electron');
+    const { ipcRenderer } = window.remote;
     ipcRenderer.once(id, (e, uurl) => {
       resolve(uurl);
     });
@@ -72,8 +72,7 @@ export const getIconFromInternet = (forceOverwrite) => (dispatch, getState) => {
       }
 
       if (forceOverwrite && !iconUrl) {
-        const { remote } = window.require('electron');
-        return remote.dialog.showMessageBox(remote.getCurrentWindow(), {
+        return window.remote.dialog.showMessageBox({
           message: 'Unable to find a suitable icon from the Internet.',
           buttons: ['OK'],
           cancelId: 0,
@@ -100,8 +99,7 @@ export const save = () => (dispatch, getState) => {
     return dispatch(updateForm(validatedChanges));
   }
 
-  const { remote } = window.require('electron');
-  const id = remote.getGlobal('editWorkspaceId');
+  const id = window.remote.getGlobal('editWorkspaceId');
   const url = form.homeUrl.trim();
   const homeUrl = isUrl(url) ? url : `http://${url}`;
 
@@ -126,6 +124,6 @@ export const save = () => (dispatch, getState) => {
     requestRemoveWorkspacePicture(id);
   }
 
-  remote.getCurrentWindow().close();
+  window.remote.closeCurrentWindow();
   return null;
 };

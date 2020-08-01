@@ -30,7 +30,6 @@ export const go = () => (dispatch, getState) => {
   const finalUrl = isUrl(url) ? url : `http://${url}`;
 
   requestLoadUrl(finalUrl);
-  const { remote } = window.require('electron');
-  remote.getCurrentWindow().close();
+  window.remote.closeCurrentWindow();
   return null;
 };

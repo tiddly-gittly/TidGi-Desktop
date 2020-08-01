@@ -107,6 +107,7 @@ const removeWorkspaceView = id => {
 };
 
 const clearBrowsingData = () => {
+  session.defaultSession.clearStorageData();
   const workspaces = getWorkspaces();
   Object.keys(workspaces).forEach(id => {
     session.fromPartition(`persist:${id}`).clearStorageData();

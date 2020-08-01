@@ -29,7 +29,7 @@ type OwnProps = {|
   githubWikiUrl: string,
   wikiFolderName: string,
   parentFolderLocation: string,
-  userInfo: IUserInfo | null,
+  userInfo?: IUserInfo,
 |};
 type DispatchProps = {|
   updateForm: Object => void,
@@ -88,6 +88,10 @@ function CloneWikiDoneButton({
           color="secondary"
           disabled={!parentFolderLocation || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
+            if (!userInfo) {
+              setWikiCreationMessage('未登录');
+              return;
+            }
             updateForm(workspaceFormData);
             const cloneError = await requestCloneWiki(parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo);
             if (cloneError) {
@@ -114,7 +118,7 @@ function CloneWikiDoneButton({
             </>
           )}
           <Typography variant="body1" display="inline">
-            创建WIKI
+            克隆WIKI
           </Typography>
         </CloseButton>
       ) : (
@@ -123,6 +127,10 @@ function CloneWikiDoneButton({
           color="secondary"
           disabled={!parentFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
+            if (!userInfo) {
+              setWikiCreationMessage('未登录');
+              return;
+            }
             updateForm(workspaceFormData);
             const creationError = await requestCloneSubWiki(
               parentFolderLocation,
@@ -155,7 +163,7 @@ function CloneWikiDoneButton({
             </>
           )}
           <Typography variant="body1" display="inline">
-            创建WIKI
+            克隆WIKI
           </Typography>
           <Typography variant="body1" display="inline">
             并链接到主知识库

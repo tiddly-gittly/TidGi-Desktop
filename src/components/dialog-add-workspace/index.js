@@ -14,6 +14,7 @@ import NewWikiDoneButton from './new-wiki-done-button';
 import NewWikiPathForm from './new-wiki-path-form';
 import ExistedWikiPathForm from './existed-wiki-path-form';
 import ExistedWikiDoneButton from './existed-wiki-done-button';
+import CloneWikiDoneButton from './clone-wiki-done-button';
 import { getGithubUserInfo, setGithubUserInfo } from './user-info';
 import type { IUserInfo } from './user-info';
 import TabBar from './tab-bar';
@@ -51,8 +52,8 @@ const GithubRepoLink = styled(Typography)`
   }
 `;
 
-const setGithubToken = (token: string | null) => requestSetPreference('github-token', token);
-const getGithubToken = () => getPreference<string | null>('github-token');
+const setGithubToken = (token: string | void) => requestSetPreference('github-token', token || null);
+const getGithubToken = () => getPreference<string | void>('github-token') || undefined;
 const setHeaderToGraphqlClient = (token: string) => graphqlClient.setHeader('Authorization', `bearer ${token}`);
 const previousToken = getGithubToken();
 previousToken && setHeaderToGraphqlClient(previousToken);
@@ -65,7 +66,7 @@ export default function AddWorkspace() {
   const [wikiPort, wikiPortSetter] = useState(5212 + countWorkspace());
 
   // try get token on start up
-  const [accessToken, accessTokenSetter] = useState<string | null>(previousToken);
+  const [accessToken, accessTokenSetter] = useState<string | void>(previousToken);
   // try get token from local storage, and set to state for gql to use
   useEffect(() => {
     if (accessToken) {
@@ -73,11 +74,11 @@ export default function AddWorkspace() {
       setGithubToken(accessToken);
     } else {
       Object.keys(graphqlClient.headers).map(key => graphqlClient.removeHeader(key));
-      setGithubToken(accessToken);
+      setGithubToken();
     }
   }, [accessToken]);
 
-  const [userInfo, userInfoSetter] = useState<IUserInfo | null>(getGithubUserInfo());
+  const [userInfo, userInfoSetter] = useState<IUserInfo | void>(getGithubUserInfo());
   useEffect(() => {
     setGithubUserInfo(userInfo);
   }, [userInfo]);
@@ -121,8 +122,11 @@ export default function AddWorkspace() {
           }
         }}
         // eslint-disable-next-line unicorn/no-null
-        onLogout={response => accessTokenSetter(null)}
-        onFailure={response => console.log(response)}
+        onLogout={response => accessTokenSetter()}
+        onFailure={response => {
+          accessTokenSetter();
+          userInfoSetter();
+        }}
       />
       {githubWikiUrl && (
         <GithubRepoLink onClick={() => requestOpen(githubWikiUrl)} variant="subtitle2" align="center">
@@ -210,7 +214,7 @@ export default function AddWorkspace() {
             wikiPortSetter={wikiPortSetter}
             isCreateMainWorkspace={isCreateMainWorkspace}
           />
-          <NewWikiDoneButton
+          <CloneWikiDoneButton
             isCreateMainWorkspace={isCreateMainWorkspace}
             wikiPort={wikiPort}
             mainWikiToLink={mainWikiToLink}

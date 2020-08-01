@@ -80,7 +80,7 @@ function sanitizePreference(preferenceToSanitize) {
 }
 
 const initCachedPreferences = () => {
-  cachedPreferences = { ...defaultPreferences, ...sanitizePreference(settings.getSync(`preferences.${v}`)) };
+  cachedPreferences = { ...defaultPreferences, ...sanitizePreference(settings.getSync(`preferences.${v}`) || {}) };
 };
 
 const getPreferences = () => {

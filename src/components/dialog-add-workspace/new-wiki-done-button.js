@@ -29,7 +29,7 @@ type OwnProps = {|
   githubWikiUrl: string,
   wikiFolderName: string,
   parentFolderLocation: string,
-  userInfo: IUserInfo | null,
+  userInfo?: IUserInfo,
 |};
 type DispatchProps = {|
   updateForm: Object => void,

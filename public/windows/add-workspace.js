@@ -22,23 +22,25 @@ const create = () => {
     fullscreenable: false,
     autoHideMenuBar: false,
     webPreferences: {
-      nodeIntegration: true,
-      webSecurity: false,
+      nodeIntegration: false,
+      webSecurity: true,
+      contextIsolation: true,
+      enableRemoteModule: true,
       preload: path.join(__dirname, '..', 'preload', 'add-workspace.js'),
     },
-    parent: attachToMenubar ? null : mainWindow.get(),
+    parent: attachToMenubar ? undefined : mainWindow.get(),
   });
   win.setMenuBarVisibility(false);
 
   win.loadURL(REACT_PATH);
 
   win.on('closed', () => {
-    win = null;
+    win = undefined;
   });
 };
 
 const show = () => {
-  if (win == null) {
+  if (win === undefined) {
     create();
   } else {
     win.show();

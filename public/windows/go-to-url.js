@@ -22,7 +22,9 @@ const create = () => {
     fullscreenable: false,
     autoHideMenuBar: false,
     webPreferences: {
-      nodeIntegration: true,
+      nodeIntegration: false,
+      webSecurity: true,
+      contextIsolation: true,
       preload: path.join(__dirname, '..', 'preload', 'go-to-url.js'),
     },
     parent: attachToMenubar ? null : mainWindow.get(),

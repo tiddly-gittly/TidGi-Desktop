@@ -348,7 +348,7 @@ function createMenu() {
         },
         {
           label: 'Learn More...',
-          click: () => shell.openExternal('https://tiddlygitapp.com'),
+          click: () => shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/'),
         },
       ],
     },

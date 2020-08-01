@@ -34,7 +34,7 @@ const DialogSpellcheckLanguages = React.lazy(() => import('./components/dialog-s
 const Main = React.lazy(() => import('./components/main'));
 
 const App = () => {
-  switch (window.mode) {
+  switch (window.meta.mode) {
     case 'about':
       return <DialogAbout />;
     case 'add-workspace':
@@ -69,21 +69,20 @@ const App = () => {
 const runApp = () => {
   Promise.resolve()
     .then(() => {
-      const { webFrame, remote } = window.require('electron');
-      webFrame.setVisualZoomLevelLimits(1, 1);
-      if (window.mode === 'about') {
+      window.remote.webFrame.setVisualZoomLevelLimits(1, 1);
+      if (window.meta.mode === 'about') {
         document.title = 'About';
-      } else if (window.mode === 'add-workspace') {
+      } else if (window.meta.mode === 'add-workspace') {
         document.title = 'Add Workspace';
-      } else if (window.mode === 'auth') {
+      } else if (window.meta.mode === 'auth') {
         document.title = 'Sign In';
-      } else if (window.mode === 'preferences') {
+      } else if (window.meta.mode === 'preferences') {
         document.title = 'Preferences';
-      } else if (window.mode === 'edit-workspace') {
+      } else if (window.meta.mode === 'edit-workspace') {
         store.dispatch(initDialogEditWorkspace());
         const { workspaces } = store.getState();
         const workspaceList = getWorkspacesAsList(workspaces);
-        const editWorkspaceId = remote.getGlobal('editWorkspaceId');
+        const editWorkspaceId = window.remote.getGlobal('editWorkspaceId');
         const workspace = workspaces[editWorkspaceId];
         workspaceList.some((item, index) => {
           if (item.id === editWorkspaceId) {
@@ -95,38 +94,38 @@ const runApp = () => {
         document.title = workspace.name
           ? `Edit Workspace ${workspace.order + 1} "${workspace.name}"`
           : `Edit Workspace ${workspace.order + 1}`;
-      } else if (window.mode === 'open-url-with') {
+      } else if (window.meta.mode === 'open-url-with') {
         document.title = 'Open Link With';
-      } else if (window.mode === 'code-injection') {
+      } else if (window.meta.mode === 'code-injection') {
         store.dispatch(initDialogCodeInjection());
         const codeInjectionType = remote.getGlobal('codeInjectionType');
         document.title = `Edit ${codeInjectionType.toUpperCase()} Code Injection`;
-      } else if (window.mode === 'notifications') {
+      } else if (window.meta.mode === 'notifications') {
         document.title = 'Notifications';
-      } else if (window.mode === 'display-media') {
+      } else if (window.meta.mode === 'display-media') {
         document.title = 'Share your Screen';
-      } else if (window.mode === 'custom-user-agent') {
+      } else if (window.meta.mode === 'custom-user-agent') {
         store.dispatch(initDialogCustomUserAgent());
         document.title = 'Edit Custom User Agent';
-      } else if (window.mode === 'go-to-url') {
+      } else if (window.meta.mode === 'go-to-url') {
         document.title = 'Go to URL';
-      } else if (window.mode === 'proxy') {
+      } else if (window.meta.mode === 'proxy') {
         store.dispatch(initDialogProxy());
         document.title = 'Proxy Settings';
-      } else if (window.mode === 'spellcheck-languages') {
+      } else if (window.meta.mode === 'spellcheck-languages') {
         store.dispatch(initDialogSpellcheckLanguages());
         document.title = 'Preferred Spell Checking Languages';
       } else {
         document.title = 'TiddlyGit';
       }
 
-      if (window.mode !== 'main' && window.mode !== 'menubar') {
+      if (window.meta.mode !== 'main' && window.meta.mode !== 'menubar') {
         document.addEventListener('keydown', event => {
           if (event.key === 'Escape') {
             if (window.preventClosingWindow) {
               return;
             }
-            remote.getCurrentWindow().close();
+            window.remote.closeCurrentWindow();
           }
         });
       }

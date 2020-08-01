@@ -94,10 +94,31 @@ async function ensureWikiExist(wikiPath, shouldBeMainWiki) {
 }
 
 async function cloneWiki(parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo) {
+  logProgress('开始克隆Wiki');
+  const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
+  if (!(await fs.pathExists(parentFolderLocation))) {
+    throw new Error(`该目录不存在 "${parentFolderLocation}"`);
+  }
+  if (await fs.pathExists(newWikiPath)) {
+    throw new Error(`Wiki已经存在于该位置 "${newWikiPath}"`);
+  }
+  try {
+    await fs.mkdir(newWikiPath);
+  } catch {
+    throw new Error(`无法在该处创建文件夹 "${newWikiPath}"`);
+  }
   await clone(githubWikiUrl, path.join(parentFolderLocation, wikiFolderName), userInfo);
 }
 
 async function cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo) {
+  logProgress('开始克隆子Wiki');
+  const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
+  if (!(await fs.pathExists(parentFolderLocation))) {
+    throw new Error(`该目录不存在 "${parentFolderLocation}"`);
+  }
+  if (await fs.pathExists(newWikiPath)) {
+    throw new Error(`Wiki已经存在于该位置 "${newWikiPath}"`);
+  }
   await clone(githubWikiUrl, path.join(parentFolderLocation, wikiFolderName), userInfo);
   await linkWiki(mainWikiPath, wikiFolderName, path.join(parentFolderLocation, wikiFolderName));
 }

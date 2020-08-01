@@ -25,7 +25,9 @@ const create = (id) => {
     fullscreenable: false,
     autoHideMenuBar: false,
     webPreferences: {
-      nodeIntegration: true,
+      nodeIntegration: false,
+      webSecurity: true,
+      contextIsolation: true,
       preload: path.join(__dirname, '..', 'preload', 'auth.js'),
     },
     parent: attachToMenubar ? null : mainWindow.get(),

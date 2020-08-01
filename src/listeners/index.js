@@ -18,9 +18,9 @@ import { updateUpdater } from '../state/updater/actions';
 import { getShouldUseDarkColors, requestFindInPage, signalOnlineStatusChanged } from '../senders';
 
 const loadListeners = (store) => {
-  const { ipcRenderer } = window.require('electron');
+  const { ipcRenderer } = window.remote;
 
-  if (window.mode === 'main') {
+  if (window.meta.mode === 'main') {
     // automatically reload page when wifi/network is connected
     // https://www.electronjs.org/docs/tutorial/online-offline-events
     const handleOnlineOffline = () => signalOnlineStatusChanged(window.navigator.onLine);

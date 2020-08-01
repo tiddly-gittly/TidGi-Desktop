@@ -1,5 +1,5 @@
-// flow-typed signature: d6e8d9a72e906ae26b83c9b33a1a6e56
-// flow-typed version: c6154227d1/react-redux_v7.x.x/flow_>=v0.104.x
+// flow-typed signature: 8da1e134b3de1d6f6bf9ba1cc7e2dc7e
+// flow-typed version: 387a235736/react-redux_v7.x.x/flow_>=v0.104.x
 
 /**
 The order of type arguments for connect() is as follows:
@@ -284,6 +284,8 @@ declare module "react-redux" {
     connectAdvancedOptions: ?(ConnectAdvancedOptions & EFO),
   ): (component: Com) => React$ComponentType<OP> & $Shape<ST>;
 
+  declare export function batch(() => void): void
+
   declare export default {
     Provider: typeof Provider,
     createProvider: typeof createProvider,
@@ -292,6 +294,7 @@ declare module "react-redux" {
     useDispatch: typeof useDispatch,
     useSelector: typeof useSelector,
     useStore: typeof useStore,
+    batch: typeof batch,
     ...
   };
 }

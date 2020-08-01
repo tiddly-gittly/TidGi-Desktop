@@ -1,5 +1,5 @@
 // @flow
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useQuery, useMutation } from 'graphql-hooks';
 import { trim } from 'lodash';
@@ -60,13 +60,13 @@ const CREATE_REPO_MUTATION = `
   }
 `;
 
-interface Props {
-  accessToken: string | null;
-  githubWikiUrl: string;
-  githubWikiUrlSetter: string => void;
-  userInfo?: IUserInfo | null;
-  isCreateMainWorkspace: boolean;
-}
+type Props = {|
+  accessToken?: string,
+  githubWikiUrl: string,
+  githubWikiUrlSetter: string => void,
+  userInfo?: IUserInfo,
+  isCreateMainWorkspace: boolean,
+|};
 export default function SearchRepo({
   accessToken,
   githubWikiUrl,
@@ -85,6 +85,26 @@ export default function SearchRepo({
     },
     skipCache: true,
   });
+  // clear list on logout, which will cause accessToken change
+  useEffect(() => {
+    const timeoutHandle = setTimeout(() => {
+      refetch();
+    }, 100);
+    return () => clearTimeout(timeoutHandle);
+  }, [refetch, githubUsername, accessToken]);
+  // try refetch on error
+  const [retryInterval, retryIntervalSetter] = useState(100);
+  useEffect(() => {
+    if (error && githubUsername && accessToken) {
+      const timeoutHandle = setTimeout(() => {
+        refetch();
+        retryIntervalSetter(retryInterval * 10);
+      }, retryInterval);
+      return () => clearTimeout(timeoutHandle);
+    }
+    return () => {};
+  }, [error, refetch, githubUsername, accessToken, retryInterval]);
+
   const [createRepository] = useMutation(CREATE_REPO_MUTATION);
 
   const repositoryCount = data?.search?.repositoryCount;
@@ -93,7 +113,8 @@ export default function SearchRepo({
     repoList = data.search.edges.map(({ node }) => node);
   }
   let helperText = '';
-  if (!githubUsername || !accessToken) {
+  const notLogin = !githubUsername || !accessToken;
+  if (notLogin) {
     helperText = '等待登录';
   } else if (error) {
     helperText = '无法加载仓库列表，网络不佳';
@@ -135,6 +156,8 @@ export default function SearchRepo({
           </ListItem>
         ))}
         {userInfo &&
+          !notLogin &&
+          !error &&
           !loading &&
           !isCreatingRepo &&
           !repoList.some(({ url }) => trim(url) === wikiUrlToCreate) &&
@@ -168,7 +191,7 @@ export default function SearchRepo({
             </ListItem>
           )}
       </List>
-      {repoList.length === 0 && (
+      {repoList.length === 0 && !notLogin && (
         <ReloadButton color="secondary" endIcon={<CachedIcon />} onClick={() => refetch()}>
           重新加载
         </ReloadButton>

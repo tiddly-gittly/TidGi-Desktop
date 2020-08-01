@@ -1,130 +1,33 @@
-window.mode = 'add-workspace';
+const { contextBridge, remote } = require('electron');
 
-const { remote, ipcRenderer } = require('electron');
+require('./common/i18n');
+require('./common/require-nodejs');
+require('./common/simple-context-menu');
 
-
-
-const ContextMenuBuilder = require('../libs/context-menu-builder');
-const { CHROME_ERROR_PATH, REACT_PATH } = require('../constants/paths');
-
-const { MenuItem, shell } = remote;
-window.contextMenuBuilder = new ContextMenuBuilder();
+contextBridge.exposeInMainWorld('meta', { mode: 'add-workspace' });
 
 // on production build, if we try to redirect to http://localhost:3000 , we will reach chrome-error://chromewebdata/ , but we can easily get back
 // this happens when we are redirected by OAuth login
+const { CHROME_ERROR_PATH, REACT_PATH } = require('../constants/paths');
+
 const CHECK_LOADED_INTERVAL = 500;
 function refresh() {
   if (window.location.href === CHROME_ERROR_PATH) {
-    window.location.replace(REACT_PATH);
+    remote.getCurrentWindow().loadURL(REACT_PATH);
   } else {
     setTimeout(refresh, CHECK_LOADED_INTERVAL);
   }
 }
 setTimeout(refresh, CHECK_LOADED_INTERVAL);
 
-remote.getCurrentWebContents().on('context-menu', (e, info) => {
-  window.contextMenuBuilder
-    .buildMenuForElement(info)
-    .then(menu => {
-      if (info.linkURL && info.linkURL.length > 0) {
-        menu.append(new MenuItem({ type: 'separator' }));
-
-        menu.append(
-          new MenuItem({
-            label: 'Open Link in New Window',
-            click: () => {
-              ipcRenderer.send('request-set-global-force-new-window', true);
-              window.open(info.linkURL);
-            },
-          }),
-        );
-
-        menu.append(new MenuItem({ type: 'separator' }));
-
-        const workspaces = ipcRenderer.sendSync('get-workspaces');
-
-        const workspaceLst = Object.values(workspaces).sort((a, b) => a.order - b.order);
-
-        workspaceLst.forEach(workspace => {
-          const workspaceName = workspace.name || `Workspace ${workspace.order + 1}`;
-          menu.append(
-            new MenuItem({
-              label: `Open Link in ${workspaceName}`,
-              click: () => {
-                ipcRenderer.send('request-open-url-in-workspace', info.linkURL, workspace.id);
-              },
-            }),
-          );
-        });
-      }
-
-      const contents = remote.getCurrentWebContents();
-      menu.append(new MenuItem({ type: 'separator' }));
-      menu.append(
-        new MenuItem({
-          label: 'Back',
-          enabled: contents.canGoBack(),
-          click: () => {
-            contents.goBack();
-          },
-        }),
-      );
-      menu.append(
-        new MenuItem({
-          label: 'Forward',
-          enabled: contents.canGoForward(),
-          click: () => {
-            contents.goForward();
-          },
-        }),
-      );
-      menu.append(
-        new MenuItem({
-          label: 'Reload',
-          click: () => {
-            contents.reload();
-          },
-        }),
-      );
-
-      menu.append(new MenuItem({ type: 'separator' }));
-
-      menu.append(
-        new MenuItem({
-          label: 'More',
-          submenu: [
-            {
-              label: 'About',
-              click: () => ipcRenderer.send('request-show-about-window'),
-            },
-            { type: 'separator' },
-            {
-              label: 'Check for Updates',
-              click: () => ipcRenderer.send('request-check-for-updates'),
-            },
-            {
-              label: 'Preferences...',
-              click: () => ipcRenderer.send('request-show-preferences-window'),
-            },
-            { type: 'separator' },
-            {
-              label: 'TiddlyGit Support',
-              click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose'),
-            },
-            {
-              label: 'TiddlyGit Website',
-              click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop'),
-            },
-            { type: 'separator' },
-            {
-              label: 'Quit',
-              click: () => ipcRenderer.send('request-quit'),
-            },
-          ],
-        }),
-      );
-
-      return menu.popup(remote.getCurrentWindow());
-    })
-    .catch(error => console.error(error));
-});
+// Only passing message that Authing needs to the window https://github.com/Authing/Guard/blob/db9df517c00a5eb51e406377ee4d7bb097054b68/src/views/login/SocialButtonsList.vue#L82-L89
+// https://stackoverflow.com/questions/55544936/communication-between-preload-and-client-given-context-isolation-in-electron
+window.addEventListener(
+  'message',
+  event => {
+    if (typeof event?.data?.code === 'number' && event?.data?.data?.token) {
+      window.postMessage(event.data, '*');
+    }
+  },
+  false,
+);

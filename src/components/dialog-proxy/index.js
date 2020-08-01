@@ -234,7 +234,7 @@ const DialogProxy = (props) => {
         >
           Save
         </Button>
-        <Button variant="contained" disableElevation className={classes.button} onClick={() => window.require('electron').remote.getCurrentWindow().close()}>
+        <Button variant="contained" disableElevation className={classes.button} onClick={() => window.remote.closeCurrentWindow()}>
           Cancel
         </Button>
       </div>

@@ -27,7 +27,9 @@ const create = (type) => {
     fullscreenable: false,
     autoHideMenuBar: false,
     webPreferences: {
-      nodeIntegration: true,
+      nodeIntegration: false,
+      webSecurity: true,
+      contextIsolation: true,
       preload: path.join(__dirname, '..', 'preload', 'code-injection.js'),
     },
     parent: attachToMenubar ? null : mainWindow.get(),

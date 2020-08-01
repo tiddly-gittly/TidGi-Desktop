@@ -176,14 +176,13 @@ const EditWorkspace = ({
             variant="outlined"
             size="small"
             onClick={() => {
-              const { remote } = window.require('electron');
-              const opts = {
+              const options = {
                 properties: ['openFile'],
                 filters: [
                   { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp', 'dib'] },
                 ],
               };
-              remote.dialog.showOpenDialog(remote.getCurrentWindow(), opts)
+              window.remote.dialog.showOpenDialog(options)
                 .then(({ canceled, filePaths }) => {
                   if (!canceled && filePaths.length > 0) {
                     onUpdateForm({ picturePath: filePaths[0] });
@@ -269,7 +268,7 @@ const EditWorkspace = ({
       <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
         Save
       </Button>
-      <Button variant="contained" disableElevation className={classes.button} onClick={() => window.require('electron').remote.getCurrentWindow().close()}>
+      <Button variant="contained" disableElevation className={classes.button} onClick={() => window.remote.closeCurrentWindow()}>
         Cancel
       </Button>
     </div>

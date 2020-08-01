@@ -52,21 +52,21 @@ const About = (props) => {
   } = props;
 
   const versions = [
-    { name: 'Electron Version', version: window.process.versions.electron },
-    { name: 'Node Version', version: window.process.versions.node },
-    { name: 'Chromium Version', version: window.process.versions.chrome },
+    { name: 'Electron Version', version: window.remote.getEnvironmentVersions().electron },
+    { name: 'Node Version', version: window.remote.getEnvironmentVersions().node },
+    { name: 'Chromium Version', version: window.remote.getEnvironmentVersions().chrome },
   ];
 
   return (
     <div>
       <DialogContent className={classes.dialogContent}>
-        <img src={`file://${window.iconPath}`} alt="TiddlyGit" className={classes.icon} />
+        <img src={`file://${window.meta.iconPath}`} alt="TiddlyGit" className={classes.icon} />
         <Typography variant="h6" className={classes.title}>TiddlyGit</Typography>
         <Typography
           variant="body2"
           className={classes.version}
         >
-          {`Version v${window.require('electron').remote.app.getVersion()}.`}
+          {`Version v${window.remote.getAppVersion()}.`}
         </Typography>
         <div className={classes.versionSmallContainer}>
           {versions.map(({ name, version }) => (

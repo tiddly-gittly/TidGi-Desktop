@@ -43,7 +43,6 @@ import {
   requestReload,
 } from '../../senders';
 
-console.log(getLogFolderPath())
 
 // https://github.com/sindresorhus/array-move/blob/master/index.js
 const arrayMove = (array, from, to) => {
@@ -87,7 +86,7 @@ const styles = theme => ({
   },
   sidebarTop: {
     flex: 1,
-    paddingTop: window.process.platform === 'darwin' ? theme.spacing(3) : 0,
+    paddingTop: window.remote.getPlatform() === 'darwin' ? theme.spacing(3) : 0,
   },
   sidebarTopFullScreen: {
     paddingTop: 0,
@@ -202,9 +201,7 @@ const SortableItem = sortableElement(({ value }) => {
           });
         }
 
-        const { remote } = window.require('electron');
-        const menu = remote.Menu.buildFromTemplate(template);
-        menu.popup(remote.getCurrentWindow());
+        window.remote.menu.buildFromTemplateAndPopup(template);
       }}
     />
   );
@@ -214,7 +211,7 @@ const SortableContainer = sortableContainer(({ children }) => <div>{children}</d
 
 const SidebarContainer = ({ className, children }) => {
   // use native scroll bar on macOS
-  if (window.process.platform === 'darwin') {
+  if (window.remote.getPlatform() === 'darwin') {
     return <div className={className}>{children}</div>;
   }
   return <SimpleBar className={className}>{children}</SimpleBar>;
@@ -236,7 +233,7 @@ const Main = ({
   workspaces,
 }) => {
   const workspacesList = getWorkspacesAsList(workspaces);
-  const showTitleBar = window.process.platform === 'darwin' && titleBar && !isFullScreen;
+  const showTitleBar = window.remote.getPlatform() === 'darwin' && titleBar && !isFullScreen;
 
   return (
     <div className={classes.outerRoot}>
@@ -248,7 +245,7 @@ const Main = ({
             <div
               className={classNames(
                 classes.sidebarTop,
-                (isFullScreen || showTitleBar || window.mode === 'menubar') && classes.sidebarTopFullScreen,
+                (isFullScreen || showTitleBar || window.meta.mode === 'menubar') && classes.sidebarTopFullScreen,
               )}
             >
               <SortableContainer
@@ -281,7 +278,7 @@ const Main = ({
                 >
                   {shouldPauseNotifications ? <NotificationsPausedIcon /> : <NotificationsIcon />}
                 </IconButton>
-                {window.mode === 'menubar' && (
+                {window.meta.mode === 'menubar' && (
                   <IconButton
                     aria-label="Preferences"
                     onClick={() => requestShowPreferencesWindow()}
@@ -409,7 +406,7 @@ const mapStateToProps = state => {
         ? Boolean(state.workspaceMetas[activeWorkspace.id].isLoading)
         : false,
     navigationBar:
-      (window.process.platform === 'linux' && state.preferences.attachToMenubar && !state.preferences.sidebar) ||
+      (window.remote.getPlatform() === 'linux' && state.preferences.attachToMenubar && !state.preferences.sidebar) ||
       state.preferences.navigationBar,
     shouldPauseNotifications: state.notifications.pauseNotificationsInfo !== null,
     sidebar: state.preferences.sidebar,

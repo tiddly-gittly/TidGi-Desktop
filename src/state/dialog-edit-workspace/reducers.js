@@ -12,7 +12,7 @@ import getWorkspacesAsList from '../../helpers/get-workspaces-as-list';
 const form = (state = {}, action) => {
   switch (action.type) {
     case DIALOG_EDIT_WORKSPACE_INIT: {
-      const editWorkspaceId = window.require('electron').remote.getGlobal('editWorkspaceId');
+      const editWorkspaceId =  window.remote.getGlobal('editWorkspaceId');
       const workspaces = getWorkspaces();
       const workspaceList = getWorkspacesAsList(workspaces);
       const workspace = workspaces[editWorkspaceId];

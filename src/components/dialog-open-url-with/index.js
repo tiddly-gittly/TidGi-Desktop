@@ -14,8 +14,7 @@ import getMailtoUrl from '../../helpers/get-mailto-url';
 import { requestLoadUrl } from '../../senders';
 
 const OpenUrlWith = ({ workspaces }) => {
-  const { remote } = window.require('electron');
-  const incomingUrl = remote.getGlobal('incomingUrl');
+  const incomingUrl = window.remote.getGlobal('incomingUrl');
   const isMailtoUrl = incomingUrl.startsWith('mailto:');
 
   const renderWorkspace = (workspace, i) => {
@@ -27,7 +26,7 @@ const OpenUrlWith = ({ workspaces }) => {
           const u = isMailtoUrl ? getMailtoUrl(workspace.homeUrl).replace('%s', incomingUrl) : incomingUrl;
 
           requestLoadUrl(u, workspace.id);
-          remote.getCurrentWindow().close();
+          window.remote.closeCurrentWindow();
         }}
       >
         <ListItemText

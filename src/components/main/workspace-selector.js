@@ -132,7 +132,7 @@ const WorkspaceSelector = ({
       </div>
     </Badge>
     {sidebarShortcutHints && (id === 'add' || order < 9) && (
-      <p className={classes.shortcutText}>{id === 'add' ? 'Add' : `${window.process.platform === 'darwin' ? '⌘' : 'Ctrl'} + ${order + 1}`}</p>
+      <p className={classes.shortcutText}>{id === 'add' ? 'Add' : `${window.remote.getPlatform() === 'darwin' ? '⌘' : 'Ctrl'} + ${order + 1}`}</p>
     )}
   </div>
 );

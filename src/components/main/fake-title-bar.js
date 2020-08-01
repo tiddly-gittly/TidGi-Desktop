@@ -36,23 +36,18 @@ const FakeTitleBar = (props) => {
     title,
   } = props;
 
-  if (window.process.platform !== 'darwin') return null;
+  if (window.remote.getPlatform() !== 'darwin') return null;
 
   return (
     <div
-      className={classnames(classes.root, window.mode === 'menubar' && classes.rootMenubar)}
+      className={classnames(classes.root, window.meta.mode === 'menubar' && classes.rootMenubar)}
       onDoubleClick={() => {
         // feature: double click on title bar to expand #656
         // https://github.com/atomery/webcatalog/issues/656
-        const win = window.require('electron').remote.getCurrentWindow();
-        if (win.isMaximized()) {
-          win.unmaximize();
-        } else {
-          win.maximize();
-        }
+        window.remote.toggleMaximize();
       }}
     >
-      {(window.mode === 'main' || window.mode === 'menubar') && title ? title : window.require('electron').remote.app.name}
+      {(window.meta.mode === 'main' || window.meta.mode === 'menubar') && title ? title : window.remote.getAppName()}
     </div>
   );
 };

@@ -93,10 +93,10 @@ function NewWikiPathForm({
         />
         <LocationPickerButton
           onClick={() => {
-            const { remote } = window.require('electron');
+            const { dialog } = window.remote;
             // eslint-disable-next-line promise/catch-or-return
-            remote.dialog
-              .showOpenDialog(remote.getCurrentWindow(), {
+            dialog
+              .showOpenDialog({
                 properties: ['openDirectory'],
               })
               .then(({ canceled, filePaths }) => {
