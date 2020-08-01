@@ -1,5 +1,5 @@
 // @flow
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useQuery, useMutation } from 'graphql-hooks';
 import { trim } from 'lodash';
@@ -85,6 +85,26 @@ export default function SearchRepo({
     },
     skipCache: true,
   });
+  // clear list on logout, which will cause accessToken change
+  useEffect(() => {
+    const timeoutHandle = setTimeout(() => {
+      refetch();
+    }, 100);
+    return () => clearTimeout(timeoutHandle);
+  }, [refetch, githubUsername, accessToken]);
+  // try refetch on error
+  const [retryInterval, retryIntervalSetter] = useState(100);
+  useEffect(() => {
+    if (error && githubUsername && accessToken) {
+      const timeoutHandle = setTimeout(() => {
+        refetch();
+        retryIntervalSetter(retryInterval * 10);
+      }, retryInterval);
+      return () => clearTimeout(timeoutHandle);
+    }
+    return () => {};
+  }, [error, refetch, githubUsername, accessToken, retryInterval]);
+
   const [createRepository] = useMutation(CREATE_REPO_MUTATION);
 
   const repositoryCount = data?.search?.repositoryCount;
