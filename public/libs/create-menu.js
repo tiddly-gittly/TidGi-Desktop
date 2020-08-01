@@ -5,6 +5,8 @@ const {
   shell,
 } = require('electron');
 
+const i18nBackend = require("i18next-electron-fs-backend");
+const whitelist = require('../../localization/whitelist');
 const aboutWindow = require('../windows/about');
 const addWorkspaceWindow = require('../windows/add-workspace');
 const editWorkspaceWindow = require('../windows/edit-workspace');
@@ -13,7 +15,6 @@ const mainWindow = require('../windows/main');
 const notificationsWindow = require('../windows/notifications');
 const preferencesWindow = require('../windows/preferences');
 
-const { getPreference } = require('./preferences');
 const formatBytes = require('./format-bytes');
 const getViewBounds = require('./get-view-bounds');
 
@@ -229,6 +230,11 @@ function createMenu() {
           submenu: [],
         },
       ],
+    },
+    // language menu
+    {
+      label: 'Language',
+      submenu: whitelist.buildSubmenu(i18nBackend.changeLanguageRequest),
     },
     {
       label: 'History',

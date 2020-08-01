@@ -3,6 +3,7 @@ const { app, ipcMain, nativeTheme, protocol, session, powerMonitor } = require('
 const fs = require('fs');
 const settings = require('electron-settings');
 const { autoUpdater } = require('electron-updater');
+const i18nextBackend = require("i18next-electron-fs-backend");
 
 const loadListeners = require('./listeners');
 
@@ -171,6 +172,7 @@ if (!gotTheLock) {
 
   app.on('ready', () => {
     const { allowPrerelease, attachToMenubar, sidebar, titleBar, navigationBar } = getPreferences();
+    const win = mainWindow.get();
 
     global.attachToMenubar = attachToMenubar;
     global.sidebar = sidebar;
@@ -180,6 +182,7 @@ if (!gotTheLock) {
     global.MAILTO_URLS = MAILTO_URLS;
 
     autoUpdater.allowPrerelease = allowPrerelease;
+    i18nextBackend.mainBindings(ipcMain, win, fs);
     whenTrulyReady()
       // eslint-disable-next-line promise/always-return
       .then(() => {
@@ -270,6 +273,9 @@ if (!gotTheLock) {
     logger.info('Quitting worker threads and watcher.');
     await Promise.all([stopAllWiki(), stopWatchAllWiki()]);
     logger.info('Worker threads  and watchers all terminated.');
+    logger.info('Quitting I18N server.');
+    i18nextBackend.clearMainBindings(ipcMain);
+    logger.info('Quitted I18N server.');
   });
 
   app.on('quit', async () => {
