@@ -19,3 +19,15 @@ function refresh() {
   }
 }
 setTimeout(refresh, CHECK_LOADED_INTERVAL);
+
+// Only passing message that Authing needs to the window https://github.com/Authing/Guard/blob/db9df517c00a5eb51e406377ee4d7bb097054b68/src/views/login/SocialButtonsList.vue#L82-L89
+// https://stackoverflow.com/questions/55544936/communication-between-preload-and-client-given-context-isolation-in-electron
+window.addEventListener(
+  'message',
+  event => {
+    if (typeof event?.data?.code === 'number' && event?.data?.data?.token) {
+      window.postMessage(event.data, '*');
+    }
+  },
+  false,
+);
