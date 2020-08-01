@@ -28,7 +28,7 @@ type OwnProps = {|
   mainWikiToLink: { name: string, port: number },
   githubWikiUrl: string,
   existedFolderLocation: string,
-  userInfo: IUserInfo | null,
+  userInfo?: IUserInfo,
 |};
 type DispatchProps = {|
   updateForm: Object => void,
