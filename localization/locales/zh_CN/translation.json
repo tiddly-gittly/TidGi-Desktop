@@ -20,7 +20,20 @@
     "OpenLocalWiki": "打开本地WIKI",
     "CloneOnlineWiki": "克隆线上WIKI",
     "MainWorkspace": "主知识库",
-    "SubWorkspace": "子知识库"
+    "SubWorkspace": "子知识库",
+    "WorkspaceFolder": "知识库所在的的文件夹",
+    "Choose": "选择",
+    "WikiServerPort": "WIKI服务器端口号（出现冲突再改，一般默认即可）",
+    "MainWorkspaceLocation": "主知识库位置",
+    "SubWorkspaceWillLinkTo": "子知识库将链接到",
+    "WorkspaceFolderNameToCreate": "即将新建的知识库文件夹名",
+    "SearchGithubRepoName": "搜索Github仓库名",
+    "CreatePublicRepository": "创建公开仓库",
+    "CreatePrivateRepository": "创建私有仓库",
+    "Reload": "重新加载",
+    "WaitForLogin": "等待登录",
+    "CanNotLoadList": "无法加载仓库列表，网络不佳",
+    "OmitMoreResult": "列表仅展示前 {{loadCount}} 个结果"
   },
   "Log": {
     "InitialGitInitialization": "开始初始化本地Git仓库",

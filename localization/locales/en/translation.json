@@ -20,7 +20,20 @@
     "OpenLocalWiki": "Open Local Wiki",
     "SwitchCreateNewOrOpenExisted": "Switch to create a new or open an existing WIKI",
     "MainWorkspace": "Main Workspace",
-    "SubWorkspace": "Sub Workspace"
+    "SubWorkspace": "Sub Workspace",
+    "WorkspaceFolder": "Parent Folder to place workspace",
+    "Choose": "Choose",
+    "MainWorkspaceLocation": "Path of main workspace",
+    "SubWorkspaceWillLinkTo": "Sub-Workspace will link to",
+    "CanNotLoadList": "Can't load repository list, network connection is not good.",
+    "CreatePrivateRepository": "Create private repository",
+    "CreatePublicRepository": "Create a public warehouse",
+    "OmitMoreResult": "The list only shows the first {{loadCount}} results",
+    "Reload": "Reload",
+    "SearchGithubRepoName": "Search Github repository name",
+    "WaitForLogin": "Wait for Login",
+    "WikiServerPort": "WIKI server port number (change if there is a conflict, generally the default is OK)",
+    "WorkspaceFolderNameToCreate": "The name of the new workspace folder"
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed! \nDo you want to remove the workspace?",

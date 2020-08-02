@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useQuery, useMutation } from 'graphql-hooks';
 import { trim } from 'lodash';
+import { useTranslation } from 'react-i18next';
 
 import TextField from '@material-ui/core/TextField';
 import FolderIcon from '@material-ui/icons/Folder';
@@ -112,15 +113,16 @@ export default function SearchRepo({
   if (repositoryCount) {
     repoList = data.search.edges.map(({ node }) => node);
   }
+  const { t } = useTranslation();
   let helperText = '';
   const notLogin = !githubUsername || !accessToken;
   if (notLogin) {
-    helperText = '等待登录';
+    helperText = t('AddWorkspace.WaitForLogin');
   } else if (error) {
-    helperText = '无法加载仓库列表，网络不佳';
+    helperText = t('AddWorkspace.CanNotLoadList');
   }
   if (repositoryCount > loadCount) {
-    helperText = `仅展示前${loadCount}个结果`;
+    helperText = t('AddWorkspace.OmitMoreResult', { loadCount });
   }
 
   const [isCreatingRepo, isCreatingRepoSetter] = useState(false);
@@ -136,7 +138,7 @@ export default function SearchRepo({
         onChange={event => {
           githubRepoSearchStringSetter(event.target.value);
         }}
-        label="搜索Github仓库名"
+        label={t('AddWorkspace.SearchGithubRepoName')}
         value={githubRepoSearchString}
         helperText={helperText}
       />
@@ -187,13 +189,19 @@ export default function SearchRepo({
               <ListItemIcon>
                 <CreateNewFolderIcon />
               </ListItemIcon>
-              <ListItemText primary={`创建${isCreateMainWorkspace ? '公开' : '私有'}仓库 ${githubRepoSearchString}`} />
+              <ListItemText
+                primary={`${
+                  isCreateMainWorkspace
+                    ? t('AddWorkspace.CreatePublicRepository')
+                    : t('AddWorkspace.CreatePrivateRepository')
+                } ${githubRepoSearchString}`}
+              />
             </ListItem>
           )}
       </List>
       {repoList.length === 0 && !notLogin && (
         <ReloadButton color="secondary" endIcon={<CachedIcon />} onClick={() => refetch()}>
-          重新加载
+          {t('AddWorkspace.Reload')}
         </ReloadButton>
       )}
     </>

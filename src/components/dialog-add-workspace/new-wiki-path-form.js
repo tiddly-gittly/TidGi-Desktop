@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
+import { useTranslation } from 'react-i18next';
 
 import Paper from '@material-ui/core/Paper';
 import Typography from '@material-ui/core/Typography';
@@ -76,7 +77,7 @@ function NewWikiPathForm({
   }, []);
 
   const hasError = wikiCreationMessage.startsWith('Error');
-
+  const { t } = useTranslation();
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
@@ -88,7 +89,7 @@ function NewWikiPathForm({
             parentFolderLocationSetter(event.target.value);
             setWikiCreationMessage('');
           }}
-          label="知识库的父文件夹"
+          label={t('AddWorkspace.WorkspaceFolder')}
           value={parentFolderLocation}
         />
         <LocationPickerButton
@@ -112,7 +113,7 @@ function NewWikiPathForm({
           endIcon={<FolderIcon />}
         >
           <Typography variant="button" display="inline">
-            选择
+            {t('AddWorkspace.Choose')}
           </Typography>
         </LocationPickerButton>
       </LocationPickerContainer>
@@ -123,7 +124,7 @@ function NewWikiPathForm({
           wikiFolderNameSetter(event.target.value);
           setWikiCreationMessage('');
         }}
-        label="即将新建的知识库文件夹名"
+        label={t('AddWorkspace.WorkspaceFolderNameToCreate')}
         value={wikiFolderName}
       />
       {isCreateMainWorkspace && (
@@ -132,14 +133,14 @@ function NewWikiPathForm({
           onChange={event => {
             wikiPortSetter(event.target.value);
           }}
-          label="WIKI服务器端口号（出现冲突再改，一般默认即可）"
+          label={t('AddWorkspace.WikiServerPort')}
           value={wikiPort}
         />
       )}
       {!isCreateMainWorkspace && (
         <>
           <SoftLinkToMainWikiSelectInputLabel id="main-wiki-select-label">
-            主知识库位置
+            {t('AddWorkspace.MainWorkspaceLocation')}
           </SoftLinkToMainWikiSelectInputLabel>
           <SoftLinkToMainWikiSelect
             labelId="main-wiki-select-label"
@@ -156,7 +157,7 @@ function NewWikiPathForm({
           {mainWikiToLink.name && (
             <FormHelperText>
               <Typography variant="body1" display="inline" component="span">
-                子知识库将链接到
+                {t('AddWorkspace.SubWorkspaceWillLinkTo')}
               </Typography>
               <Typography
                 variant="body2"
@@ -180,9 +181,5 @@ export default connect<Props, OwnProps, _, _, _, _>(
   (state): { wikiCreationMessage?: string } => ({
     wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
   }),
-  dispatch =>
-    bindActionCreators(
-      actions,
-      dispatch,
-    ),
+  dispatch => bindActionCreators(actions, dispatch),
 )(NewWikiPathForm);
