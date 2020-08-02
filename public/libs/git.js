@@ -344,7 +344,7 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo, loggerToMa
         logProgress(i18n.t('Log.RebaseSucceed'));
       } else {
         await continueRebase(wikiFolderPath, username, email, logInfo, logProgress);
-        logProgress(i18n.t('Log.RebaseConfliceNeedsResolve'));
+        logProgress(i18n.t('Log.RebaseConflictNeedsResolve'));
       }
       await GitProcess.exec(['push', 'origin', branchMapping], wikiFolderPath);
       break;

@@ -11,7 +11,7 @@ module.exports = function startNodeJSWiki(homePath, port, userName, workspaceID)
     const errorMessage = i18n.t('Dialog.NeedCorrectTiddlywikiFolderPath');
     console.error(errorMessage);
     dialog.showMessageBox(mainWindow.get(), {
-      title: i18n.t('Dialog.PathPassinCantUse'),
+      title: i18n.t('Dialog.PathPassInCantUse'),
       message: errorMessage + homePath,
       buttons: ['OK'],
       cancelId: 0,
@@ -26,7 +26,7 @@ module.exports = function startNodeJSWiki(homePath, port, userName, workspaceID)
       .showMessageBox(mainWindow.get(), {
         title: i18n.t('Dialog.WorkspaceFolderRemoved'),
         message: errorMessage + homePath,
-        buttons: [i18n.t('Dialog.RemoveWorkspace'), i18n.t('Dialog.DontCare')],
+        buttons: [i18n.t('Dialog.RemoveWorkspace'), i18n.t('Dialog.DoNotCare')],
         cancelId: 1,
         defaultId: 0,
       })

@@ -6,5 +6,52 @@
     "Add": "Add",
     "EditWorkspace": "Edit Workspace",
     "RemoveWorkspace": "Remove Workspace"
+  },
+  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1>": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1>",
+  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1><2>and link to main Workspace</2>": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1><2>and link to main wiki</2>",
+  "AddWorkspace": {
+    "LoginGithubAccount": "Login Github Account",
+    "LogoutGithubAccount": "Log out of Github account",
+    "MainWorkspaceDescription": "Contains TiddlyWiki's configuration files and public content when published as a blog.",
+    "NotLoggedIn": "Not logged in",
+    "SubWorkspaceDescription": "It must be attached to a main repository, which can be used to store private content, synchronized to a private Github repository, and can only be read and written by itself. \nThe sub-knowledge base takes effect by creating a soft link (shortcut) to the main knowledge base. After the link is created, the content in the sub-knowledge base can be seen in the main knowledge base."
+  },
+  "Dialog": {
+    "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed! \nDo you want to remove the workspace?",
+    "DoNotCare": "No, Never Mind",
+    "NeedCorrectTiddlywikiFolderPath": "The correct path needs to be passed in, and this path cannot be recognized by TiddlyWiki.",
+    "PathPassInCantUse": "The path passed in cannot be used",
+    "RemoveWorkspace": "Remove workspace",
+    "WorkspaceFolderRemoved": "Workspace folder is moved"
+  },
+  "Log": {
+    "CantSyncGitNotInitialized": "Unable to sync, this folder is not initialized as a Git repository",
+    "CantSyncInSpecialGitStateAutoFixFailed": "Unable to Sync, this folder is in special condition, thus can't Sync directly. An auto-fix has been tried, but error still remains. Please resolve all the conflict manually (For example, use VSCode to open the wiki folder), if this still don't work out, please use professional Git tools (Source Tree, GitKraken) to solve this.",
+    "CantSyncInSpecialGitStateAutoFixSucceed": "This folder is in a special state, it could not be synchronized directly, but it has been automatically repaired",
+    "CantSynchronizeAndSyncScriptIsInDeadLoop": "Unable to sync, and Sync script is in a dead loop.",
+    "FetchingData": "Pulling cloud data for comparison",
+    "GitMergeFailed": "Git merge results are not good, there may be loopholes in the merge strategy",
+    "GitPushFailed": "Git push result is bad, this usually means there is a network issue.",
+    "GitRepositoryConfigurateFailed": "Git warehouse configuration failed, see error log for details",
+    "GitRepositoryConfigurationFinished": "Git warehouse is configured",
+    "HaveThingsToCommit": "There is content that needs to be submitted (commit), and it is being submitted automatically",
+    "InitialGitInitialization": "Start initializing the local Git repository",
+    "LocalAheadStartUpload": "The local state is ahead of the cloud, and the upload starts",
+    "LocalStateBehindSync": "Local state is behind of the cloud, start merging data from the cloud.",
+    "LocalStateDivergeRebase": "The local state is divergent from the cloud and begins to rebase (Rebase)",
+    "NoNeedToSync": "No need to synchronize, the local state is consistent with the cloud",
+    "NotAGitRepository": "Not a git repository",
+    "PerformLastCheckBeforeSynchronizationFinish": "Perform the final check before synchronization ends",
+    "PrepareCloneOnlineWiki": "Preparing to clone an online wiki.",
+    "PrepareSync": "Prepare to synchronize, use the logged-in author information",
+    "PreparingUserInfo": "Configuring identity information",
+    "RebaseConflictNeedsResolve": "Found conflict when performing git Rebase, need to resolve the conflict.",
+    "RebaseSucceed": "Rebase is successful, start uploading",
+    "StartBackupToGithubRemote": "The local Git where the Wiki is located is being backed up to the Github remote repository. The time required depends on the internet speed, please be patient",
+    "StartConfiguringGithubRemoteRepository": "After the warehouse is initialized, start to configure the Github remote warehouse",
+    "StartFetchingFromGithubRemote": "Fetching data from the remote Github repository, The time required depends on the internet speed, please be patient.",
+    "SyncFailedSystemError": "Synchronization failed, there may be a problem with the synchronization system",
+    "SynchronizationFailed": "Sync failed! \nYou need to use tools such as Github Desktop to check the status of the current Git repository. \nThe failure may be caused by the network. If this is the case, you can try again after adjusting the network.",
+    "SynchronizationFinish": "Synchronization complete"
   }
 }
