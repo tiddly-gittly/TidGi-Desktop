@@ -20,4 +20,11 @@ i18next.use(Backend).init({
   fallbackLng: isDev ? false : 'en', // set to false when generating translation files locally
 });
 
+setTimeout(() => {
+  // prevent circular deps
+  // eslint-disable-next-line global-require
+  const { getPreference } = require('./preferences');
+  i18next.changeLanguage(getPreference('language'));
+}, 1);
+
 module.exports = i18next;

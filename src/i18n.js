@@ -1,7 +1,7 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import electronFsBackend from './helpers/i18next-electron-fs-backend';
-import { getIsDevelopment } from './senders';
+import { getIsDevelopment, getPreference } from './senders';
 
 const isDevelopment = getIsDevelopment();
 i18n
@@ -19,7 +19,7 @@ i18n
     saveMissing: isDevelopment,
     saveMissingTo: 'current',
     namespace: 'translation',
-    lng: 'zh_CN',
+    lng: getPreference('language'),
     fallbackLng: isDevelopment ? false : 'en', // set to false when generating translation files locally
   });
 

@@ -45,6 +45,7 @@ const defaultPreferences = {
   hideMenuBar: false,
   ignoreCertificateErrors: false,
   jsCodeInjection: null,
+  language: 'zh_CN',
   navigationBar: false,
   pauseNotifications: null,
   pauseNotificationsBySchedule: false,
