@@ -50,11 +50,13 @@ class GitHubLogin extends Component<Props, State> {
   }
 
   async isLogin() {
-    const { onSuccess } = this.props;
+    const { onSuccess, onLogout } = this.props;
     const { session, ...rest } = await this.auth.trackSession();
     const isLogin = session !== null;
     if (isLogin) {
       onSuccess(rest);
+    } else {
+      onLogout();
     }
     return isLogin;
   }

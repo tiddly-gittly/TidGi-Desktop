@@ -127,6 +127,7 @@ export const getIconPath = () => ipcRenderer.sendSync('get-constant', 'ICON_PATH
 export const getReactPath = () => ipcRenderer.sendSync('get-constant', 'REACT_PATH');
 export const getDesktopPath = () => ipcRenderer.sendSync('get-constant', 'DESKTOP_PATH');
 export const getLogFolderPath = () => ipcRenderer.sendSync('get-constant', 'LOG_FOLDER');
+export const getIsDevelopment = () => ipcRenderer.sendSync('get-constant', 'isDev');
 
 // Workspace Meta
 export const getWorkspaceMeta = (id: string) => ipcRenderer.sendSync('get-workspace-meta', id);

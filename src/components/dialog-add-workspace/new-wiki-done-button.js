@@ -81,9 +81,7 @@ function NewWikiDoneButton({
     <>
       {progressBarOpen && <LinearProgress color="secondary" />}
       <Snackbar open={snackBarOpen} autoHideDuration={5000} onClose={() => snackBarOpenSetter(false)}>
-        <Alert severity="info">
-          <Trans>{wikiCreationMessage}</Trans>
-        </Alert>
+        <Alert severity="info">{wikiCreationMessage}</Alert>
       </Snackbar>
 
       {isCreateMainWorkspace ? (

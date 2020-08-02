@@ -45,5 +45,13 @@
     "SynchronizationFinish": "同步完成",
     "PrepareCloneOnlineWiki": "准备克隆线上Wiki",
     "StartFetchingFromGithubRemote": "正在拉取Github远端仓库的数据，需要的时间取决于网速和仓库大小，请耐心等待"
+  },
+  "Dialog": {
+    "NeedCorrectTiddlywikiFolderPath": "需要传入正确的路径，而此路径无法被 TiddlyWiki 识别。",
+    "CantFindWorkspaceFolderRemoveWorkspace": "无法找到之前还在该处的工作区文件夹！本应存在于此处的文件夹可能被移走了！是否移除工作区？",
+    "WorkspaceFolderRemoved": "工作区文件夹被移走",
+    "RemoveWorkspace": "移除工作区",
+    "DontCare": "不管",
+    "PathPassinCantUse": "传入的路径无法使用"
   }
 }

@@ -4,13 +4,14 @@ const { dialog } = require('electron');
 
 const { startWiki } = require('./wiki-worker-mamager');
 const mainWindow = require('../../windows/main');
+const i18n = require('../i18n');
 
 module.exports = function startNodeJSWiki(homePath, port, userName, workspaceID) {
   if (!homePath || typeof homePath !== 'string' || !path.isAbsolute(homePath)) {
-    const errorMessage = '需要传入正确的路径，而此路径无法被 TiddlyWiki 识别。';
+    const errorMessage = i18n.t('Dialog.NeedCorrectTiddlywikiFolderPath');
     console.error(errorMessage);
     dialog.showMessageBox(mainWindow.get(), {
-      title: '传入的路径无法使用',
+      title: i18n.t('Dialog.PathPassinCantUse'),
       message: errorMessage + homePath,
       buttons: ['OK'],
       cancelId: 0,
@@ -19,13 +20,13 @@ module.exports = function startNodeJSWiki(homePath, port, userName, workspaceID)
     return;
   }
   if (!fs.pathExistsSync(homePath)) {
-    const errorMessage = '无法找到之前还在该处的工作区文件夹！本应存在于此处的文件夹可能被移走了！是否移除工作区？';
+    const errorMessage = i18n.t('Dialog.CantFindWorkspaceFolderRemoveWorkspace');
     console.error(errorMessage);
     dialog
       .showMessageBox(mainWindow.get(), {
-        title: '工作区文件夹被移走',
+        title: i18n.t('Dialog.WorkspaceFolderRemoved'),
         message: errorMessage + homePath,
-        buttons: ['移除工作区', '不管'],
+        buttons: [i18n.t('Dialog.RemoveWorkspace'), i18n.t('Dialog.DontCare')],
         cancelId: 1,
         defaultId: 0,
       })

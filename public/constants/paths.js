@@ -31,4 +31,5 @@ module.exports = {
   DESKTOP_PATH,
   LOG_FOLDER,
   LOCALIZATION_FOLDER,
+  isDev,
 };

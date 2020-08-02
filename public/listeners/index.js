@@ -8,7 +8,7 @@ const { stopWatchWiki } = require('../libs/wiki/watch-wiki');
 const { stopWiki } = require('../libs/wiki/wiki-worker-mamager');
 const { logger } = require('../libs/log');
 const { createWiki, createSubWiki, removeWiki, ensureWikiExist, cloneWiki, cloneSubWiki } = require('../libs/wiki/create-wiki');
-const { ICON_PATH, REACT_PATH, DESKTOP_PATH, LOG_FOLDER } = require('../constants/paths');
+const { ICON_PATH, REACT_PATH, DESKTOP_PATH, LOG_FOLDER, isDev } = require('../constants/paths');
 
 const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
 
@@ -110,6 +110,7 @@ const loadListeners = () => {
       REACT_PATH,
       DESKTOP_PATH,
       LOG_FOLDER,
+      isDev,
     }[name];
   });
   ipcMain.handle('request-init-wiki-git', async (event, wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) => {

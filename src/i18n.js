@@ -1,7 +1,9 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import electronFsBackend from './helpers/i18next-electron-fs-backend';
+import { getIsDevelopment } from './senders';
 
+const isDev = getIsDevelopment();
 i18n
   .use(electronFsBackend)
   .use(initReactI18next)
@@ -12,13 +14,13 @@ i18n
       ipcRenderer: window.i18n.i18nextElectronBackend,
     },
 
-    debug: true,
+    debug: isDev,
     interpolation: { escapeValue: false },
-    saveMissing: true,
+    saveMissing: isDev,
     saveMissingTo: 'current',
     namespace: 'translation',
     lng: 'zh_CN',
-    fallbackLng: false, // set to false when generating translation files locally
+    fallbackLng: isDev ? false : 'en', // set to false when generating translation files locally
   });
 
 window.i18n.i18nextElectronBackend.onLanguageChange(arguments_ => {

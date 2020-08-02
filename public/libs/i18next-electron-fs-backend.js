@@ -2,6 +2,7 @@ const fs = require('fs-extra');
 const path = require('path');
 const sendToAllWindows = require('./send-to-all-windows');
 const { LOCALIZATION_FOLDER } = require('../constants/paths');
+const i18n = require('./i18n');
 
 // Electron-specific; must match mainIpc
 const readFileRequest = 'ReadFile-Request';
@@ -88,6 +89,7 @@ function getLanguageMenu() {
         // eslint-disable-next-line global-require
         const { onEachView } = require('./views');
         onEachView(view => {
+          i18n.changeLanguage(language);
           view.webContents.send(changeLanguageRequest, {
             lng: language,
           });

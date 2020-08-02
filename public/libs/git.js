@@ -6,6 +6,7 @@ const path = require('path');
 const { compact, truncate, trim } = require('lodash');
 const { GitProcess } = require('dugite');
 const { logger } = require('./log');
+const i18n = require('./i18n');
 
 const getGitUrlWithCredential = (rawUrl, username, accessToken) =>
   trim(`${rawUrl}.git`.replace('https://github.com/', `https://${username}:${accessToken}@github.com/`));
@@ -58,7 +59,7 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) 
   const logProgress = message => logger.notice(message, { handler: 'createWikiProgress', function: 'initWikiGit' });
   const logInfo = message => logger.info(message, { function: 'initWikiGit' });
 
-  logProgress('Log.StartLocalGitInitialization');
+  logProgress(i18n.t('Log.StartLocalGitInitialization'));
   const { login: username, email, accessToken } = userInfo;
   logInfo(
     `Using gitUrl ${githubRepoUrl} with username ${username} and accessToken ${truncate(accessToken, {
@@ -67,9 +68,9 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) 
   );
   await GitProcess.exec(['init'], wikiFolderPath);
   await commitFiles(wikiFolderPath, username, email);
-  logProgress('Log.StartConfiguringGithubRemoteRepository');
+  logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
   await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
-  logProgress('Log.StartBackupToGithubRemote');
+  logProgress(i18n.t('Log.StartBackupToGithubRemote'));
   const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(
     ['push', 'origin', 'master:master', '--force'],
     wikiFolderPath,
@@ -77,11 +78,11 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) 
   await credentialOff(wikiFolderPath);
   if (isMainWiki && pushExitCode !== 0) {
     logInfo(pushStdError);
-    const CONFIG_FAILED_MESSAGE = 'Log.GitRepositoryConfigurateFailed';
+    const CONFIG_FAILED_MESSAGE = i18n.t('Log.GitRepositoryConfigurateFailed');
     logProgress(CONFIG_FAILED_MESSAGE);
     throw new Error(CONFIG_FAILED_MESSAGE);
   } else {
-    logProgress('Log.GitRepositoryConfigurationFinished');
+    logProgress(i18n.t('Log.GitRepositoryConfigurationFinished'));
   }
 }
 
@@ -117,8 +118,7 @@ async function getSyncState(wikiFolderPath, logInfo) {
 async function assumeSync(wikiFolderPath, logInfo, logProgress) {
   if ((await getSyncState(wikiFolderPath, logInfo)) === 'equal') return;
 
-  const SYNC_ERROR_MESSAGE =
-    'Log.SynchronizationFailed';
+  const SYNC_ERROR_MESSAGE = i18n.t('Log.SynchronizationFailed');
   logProgress(SYNC_ERROR_MESSAGE);
   throw new Error(SYNC_ERROR_MESSAGE);
 }
@@ -140,7 +140,7 @@ async function getGitDirectory(wikiFolderPath, logInfo, logProgress) {
       return path.resolve(`${gitPath1}/${gitPath2}`);
     }
   }
-  const CONFIG_FAILED_MESSAGE = 'Log.NotAGitRepository';
+  const CONFIG_FAILED_MESSAGE = i18n.t('Log.NotAGitRepository');
   logProgress(CONFIG_FAILED_MESSAGE);
   throw new Error(`${wikiFolderPath} ${CONFIG_FAILED_MESSAGE}`);
 }
@@ -217,7 +217,7 @@ async function continueRebase(wikiFolderPath, username, email, logInfo, logProgr
   while (hasNotCommittedConflict) {
     loopCount += 1;
     if (loopCount > 1000) {
-      const CANT_SYNC_MESSAGE = 'Log.CantSynchronizeAndSyncScriptIsInDeadLoop';
+      const CANT_SYNC_MESSAGE = i18n.t('Log.CantSynchronizeAndSyncScriptIsInDeadLoop');
       logProgress(CANT_SYNC_MESSAGE);
       throw new Error(CANT_SYNC_MESSAGE);
     }
@@ -239,7 +239,7 @@ async function continueRebase(wikiFolderPath, username, email, logInfo, logProgr
       logInfo(rebaseContinueStdError);
       logInfo(`commitStdError when ${repositoryState}`);
       logInfo(commitStdError);
-      const CANT_SYNC_MESSAGE = 'Log.CantSyncInSpecialGitStateAutoFixFailed';
+      const CANT_SYNC_MESSAGE = i18n.t('Log.CantSyncInSpecialGitStateAutoFixFailed');
       logProgress(CANT_SYNC_MESSAGE);
       throw new Error(`${repositoryState} ${CANT_SYNC_MESSAGE}`);
     }
@@ -247,7 +247,7 @@ async function continueRebase(wikiFolderPath, username, email, logInfo, logProgr
       rebaseContinueStdError.startsWith('CONFLICT') || rebaseContinueStdOut.startsWith('CONFLICT');
   }
 
-  logProgress('Log.CantSyncInSpecialGitStateAutoFixSucceed');
+  logProgress(i18n.t('Log.CantSyncInSpecialGitStateAutoFixSucceed'));
 }
 
 /**
@@ -269,11 +269,11 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo, loggerToMa
   // preflight check
   const repoStartingState = await getGitRepositoryState(wikiFolderPath, logInfo, logProgress);
   if (!repoStartingState || repoStartingState === '|DIRTY') {
-    const SYNC_MESSAGE = 'Log.PrepareSync'
+    const SYNC_MESSAGE = i18n.t('Log.PrepareSync');
     logProgress(SYNC_MESSAGE);
-    logInfo(`${SYNC_MESSAGE} ${wikiFolderPath} , ${username} <${email}>`)
+    logInfo(`${SYNC_MESSAGE} ${wikiFolderPath} , ${username} <${email}>`);
   } else if (repoStartingState === 'NOGIT') {
-    const CANT_SYNC_MESSAGE = 'Log.CantSyncGitNotInitialized';
+    const CANT_SYNC_MESSAGE = i18n.t('Log.CantSyncGitNotInitialized');
     logProgress(CANT_SYNC_MESSAGE);
     throw new Error(CANT_SYNC_MESSAGE);
   } else {
@@ -282,9 +282,9 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo, loggerToMa
   }
 
   if (await haveLocalChanges(wikiFolderPath)) {
-    const SYNC_MESSAGE = 'Log.HaveThingsToCommit'
+    const SYNC_MESSAGE = i18n.t('Log.HaveThingsToCommit');
     logProgress(SYNC_MESSAGE);
-    logInfo(`${SYNC_MESSAGE} ${commitMessage}`)
+    logInfo(`${SYNC_MESSAGE} ${commitMessage}`);
     const { exitCode: commitExitCode, stderr: commitStdError } = await commitFiles(
       wikiFolderPath,
       username,
@@ -295,69 +295,69 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo, loggerToMa
       logInfo('commit failed');
       logInfo(commitStdError);
     }
-    logProgress('Log.CommitComplete');
+    logProgress(i18n.t('Log.CommitComplete'));
   }
-  logProgress('Log.PreparingUserInfo');
+  logProgress(i18n.t('Log.PreparingUserInfo'));
   await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
-  logProgress('Log.FetchingData');
+  logProgress(i18n.t('Log.FetchingData'));
   await GitProcess.exec(['fetch', 'origin', 'master'], wikiFolderPath);
 
   //
   switch (await getSyncState(wikiFolderPath, logInfo)) {
     case 'noUpstream': {
-      logProgress('Log.CantSyncGitNotInitialized');
+      logProgress(i18n.t('Log.CantSyncGitNotInitialized'));
       return;
     }
     case 'equal': {
-      logProgress('Log.NoNeedToSync');
+      logProgress(i18n.t('Log.NoNeedToSync'));
       return;
     }
     case 'ahead': {
-      logProgress('Log.LocalAheadStartUpload');
+      logProgress(i18n.t('Log.LocalAheadStartUpload'));
       const { exitCode, stderr } = await GitProcess.exec(['push', 'origin', branchMapping], wikiFolderPath);
       if (exitCode === 0) break;
-      logProgress('Log.GitPushFailed');
+      logProgress(i18n.t('Log.GitPushFailed'));
       logInfo(`exitCode: ${exitCode}, stderr of git push:`);
       logInfo(stderr);
       break;
     }
     case 'behind': {
-      logProgress('Log.LocalStateBehindSync');
+      logProgress(i18n.t('Log.LocalStateBehindSync'));
       const { exitCode, stderr } = await GitProcess.exec(
         ['merge', '--ff', '--ff-only', 'origin/master'],
         wikiFolderPath,
       );
       if (exitCode === 0) break;
-      logProgress('Log.GitMergeFailed');
+      logProgress(i18n.t('Log.GitMergeFailed'));
       logInfo(`exitCode: ${exitCode}, stderr of git merge:`);
       logInfo(stderr);
       break;
     }
     case 'diverged': {
-      logProgress('Log.LocalStateDivergeRebase');
+      logProgress(i18n.t('Log.LocalStateDivergeRebase'));
       const { exitCode } = await GitProcess.exec(['rebase', 'origin/master'], wikiFolderPath);
       if (
         exitCode === 0 &&
         !(await getGitRepositoryState(wikiFolderPath, logInfo, logProgress)) &&
         (await getSyncState(wikiFolderPath, logInfo)) === 'ahead'
       ) {
-        logProgress('Log.RebaseSucceed');
+        logProgress(i18n.t('Log.RebaseSucceed'));
       } else {
         await continueRebase(wikiFolderPath, username, email, logInfo, logProgress);
-        logProgress('Log.RebaseConfliceNeedsResolve');
+        logProgress(i18n.t('Log.RebaseConfliceNeedsResolve'));
       }
       await GitProcess.exec(['push', 'origin', branchMapping], wikiFolderPath);
       break;
     }
     default: {
-      logProgress('Log.SyncFailedSystemError');
+      logProgress(i18n.t('Log.SyncFailedSystemError'));
     }
   }
 
   await credentialOff(wikiFolderPath);
-  logProgress('Log.PerformLastCheckBeforeSynchronizationFinish');
+  logProgress(i18n.t('Log.PerformLastCheckBeforeSynchronizationFinish'));
   await assumeSync(wikiFolderPath, logInfo, logProgress);
-  logProgress('Log.SynchronizationFinish');
+  logProgress(i18n.t('Log.SynchronizationFinish'));
 }
 
 async function getRemoteUrl(wikiFolderPath) {
@@ -374,8 +374,8 @@ async function getRemoteUrl(wikiFolderPath) {
 async function clone(githubRepoUrl, repoFolderPath, userInfo) {
   const logProgress = message => logger.notice(message, { handler: 'createWikiProgress', function: 'clone' });
   const logInfo = message => logger.info(message, { function: 'clone' });
-  logProgress('Log.PrepareCloneOnlineWiki');
-  logProgress('Log.InitialGitInitialization');
+  logProgress(i18n.t('Log.PrepareCloneOnlineWiki'));
+  logProgress(i18n.t('Log.InitialGitInitialization'));
   const { login: username, accessToken } = userInfo;
   logInfo(
     `Using gitUrl ${githubRepoUrl} with username ${username} and accessToken ${truncate(accessToken, {
@@ -383,18 +383,18 @@ async function clone(githubRepoUrl, repoFolderPath, userInfo) {
     })}`,
   );
   await GitProcess.exec(['init'], repoFolderPath);
-  logProgress('Log.StartConfiguringGithubRemoteRepository');
+  logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
   await credentialOn(repoFolderPath, githubRepoUrl, userInfo);
-  logProgress('Log.StartFetchingFromGithubRemote');
+  logProgress(i18n.t('Log.StartFetchingFromGithubRemote'));
   const { stderr, exitCode } = await GitProcess.exec(['pull', 'origin', 'master:master'], repoFolderPath);
   await credentialOff(repoFolderPath);
   if (exitCode !== 0) {
     logInfo(stderr);
-    const CONFIG_FAILED_MESSAGE = 'Log.GitRepositoryConfigurateFailed';
+    const CONFIG_FAILED_MESSAGE = i18n.t('Log.GitRepositoryConfigurateFailed');
     logProgress(CONFIG_FAILED_MESSAGE);
     throw new Error(CONFIG_FAILED_MESSAGE);
   } else {
-    logProgress('Log.GitRepositoryConfigurationFinished');
+    logProgress(i18n.t('Log.GitRepositoryConfigurationFinished'));
   }
 }
 
