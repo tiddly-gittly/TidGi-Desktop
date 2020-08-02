@@ -4,6 +4,7 @@ import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
+import { I18nextProvider } from 'react-i18next';
 
 import 'typeface-roboto/index.css';
 
@@ -13,6 +14,8 @@ import { init as initDialogCustomUserAgent } from './state/dialog-custom-user-ag
 import { init as initDialogEditWorkspace } from './state/dialog-edit-workspace/actions';
 import { init as initDialogProxy } from './state/dialog-proxy/actions';
 import { init as initDialogSpellcheckLanguages } from './state/dialog-spellcheck-languages/actions';
+
+import i18n from './i18n';
 
 import AppWrapper from './components/app-wrapper';
 
@@ -133,14 +136,16 @@ const runApp = () => {
     .catch(console.error);
 
   ReactDOM.render(
-    <Provider store={store}>
-      <AppWrapper>
-        <CssBaseline />
-        <React.Suspense fallback={<div />}>
-          <App />
-        </React.Suspense>
-      </AppWrapper>
-    </Provider>,
+    <I18nextProvider i18n={i18n}>
+      <Provider store={store}>
+        <AppWrapper>
+          <CssBaseline />
+          <React.Suspense fallback={<div />}>
+            <App />
+          </React.Suspense>
+        </AppWrapper>
+      </Provider>
+    </I18nextProvider>,
     document.querySelector('#app'),
   );
 };

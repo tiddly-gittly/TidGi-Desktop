@@ -182,7 +182,6 @@ if (!gotTheLock) {
     global.MAILTO_URLS = MAILTO_URLS;
 
     autoUpdater.allowPrerelease = allowPrerelease;
-    i18nextBackend.mainBindings(ipcMain, win, fs);
     whenTrulyReady()
       // eslint-disable-next-line promise/always-return
       .then(() => {
@@ -219,6 +218,7 @@ if (!gotTheLock) {
       commonInit();
     } else {
       mainWindow.show();
+      i18nextBackend.mainBindings(ipcMain, win, fs);
     }
   });
 
