@@ -11,6 +11,8 @@ contextBridge.exposeInMainWorld('remote', {
     invoke: (channel, ...arguments_) => ipcRenderer.invoke(channel, ...arguments_),
     send: (channel, ...arguments_) => ipcRenderer.send(channel, ...arguments_),
     sendSync: (channel, ...arguments_) => ipcRenderer.sendSync(channel, ...arguments_),
+    removeListener: (channel, ...arguments_) => ipcRenderer.removeListener(channel, ...arguments_),
+    once: (channel, ...arguments_) => ipcRenderer.once(channel, ...arguments_),
   },
   getPlatform: () => remote.process.platform,
   getAppVersion: () => remote.app.getVersion(),
