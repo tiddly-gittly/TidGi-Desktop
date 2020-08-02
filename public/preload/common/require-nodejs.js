@@ -50,6 +50,4 @@ contextBridge.exposeInMainWorld('remote', {
   clearStorageData: () => {
     remote.session.defaultSession.clearStorageData();
   },
-  setHandleOpenFindInPage: callback => ipcRenderer.on('open-find-in-page', callback),
-  unsetHandleOpenFindInPage: callback => ipcRenderer.removeListener('open-find-in-page', callback),
 });

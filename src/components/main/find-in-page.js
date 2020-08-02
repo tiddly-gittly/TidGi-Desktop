@@ -51,11 +51,11 @@ const FindInPage = (props) => {
     inputRef.current.select();
   }, [inputRef]);
   useEffect(() => {
-    const { setHandleOpenFindInPage, unsetHandleOpenFindInPage } = window.remote;
-    setHandleOpenFindInPage(handleOpenFindInPage);
+    const { ipcRenderer } = window.remote;
+    ipcRenderer.on('open-find-in-page', handleOpenFindInPage);
     // Remove event listener on cleanup
     return () => {
-      unsetHandleOpenFindInPage(handleOpenFindInPage);
+      ipcRenderer.removeListener('open-find-in-page', handleOpenFindInPage);
     };
   }, [handleOpenFindInPage]);
 
