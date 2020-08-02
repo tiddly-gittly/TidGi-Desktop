@@ -1,20 +1,26 @@
 {
   "Hello": "Hello",
-  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1>": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1>",
-  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1><2>and link to main Workspace</2>": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1><2>and link to main Workspace</2>",
+  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1>": "<0><0>Use</0><1> {{wikiFolderLocation}} </1></0><1>as Wiki folder</1>",
+  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1><2>and link to main Workspace</2>": "<0><0>Use</0><1> {{wikiFolderLocation}} </1></0><1>as Wiki folder</1><2>and link to main Workspace</2>",
+  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1>": "<0><0>Use</0><1> {{wikiFolderLocation}} </1></0><1>as cloned Wiki folder</1>",
+  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1><2>and link to main Workspace</2>": "<0><0>Use</0><1> {{wikiFolderLocation}} </1></0><1>as cloned Wiki folder</1><2>and link to main wiki</2>",
   "WorkspaceSelector": {
     "Add": "Add",
     "EditWorkspace": "Edit Workspace",
     "RemoveWorkspace": "Remove Workspace"
   },
-  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1>": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1>",
-  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1><2>and link to main Workspace</2>": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1><2>and link to main wiki</2>",
   "AddWorkspace": {
     "LoginGithubAccount": "Login Github Account",
     "LogoutGithubAccount": "Log out of Github account",
     "MainWorkspaceDescription": "Contains TiddlyWiki's configuration files and public content when published as a blog.",
     "NotLoggedIn": "Not logged in",
-    "SubWorkspaceDescription": "It must be attached to a main repository, which can be used to store private content, synchronized to a private Github repository, and can only be read and written by itself. \nThe sub-knowledge base takes effect by creating a soft link (shortcut) to the main knowledge base. After the link is created, the content in the sub-knowledge base can be seen in the main knowledge base."
+    "SubWorkspaceDescription": "It must be attached to a main repository, which can be used to store private content, synchronized to a private Github repository, and can only be read and written by itself. \nThe sub-knowledge base takes effect by creating a soft link (shortcut) to the main knowledge base. After the link is created, the content in the sub-knowledge base can be seen in the main knowledge base.",
+    "CloneOnlineWiki": "Clone Online Wiki",
+    "CreateNewWiki": "Create New Wiki",
+    "OpenLocalWiki": "Open Local Wiki",
+    "SwitchCreateNewOrOpenExisted": "Switch to create a new or open an existing WIKI",
+    "MainWorkspace": "Main Workspace",
+    "SubWorkspace": "Sub Workspace"
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed! \nDo you want to remove the workspace?",

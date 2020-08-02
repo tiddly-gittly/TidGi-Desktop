@@ -86,16 +86,16 @@ function getLanguageMenu() {
     subMenu.push({
       label: whitelistMap[language],
       click: (menuItem, browserWindow, event) => {
+        i18n.changeLanguage(language);
         // eslint-disable-next-line global-require
         const { onEachView } = require('./views');
         onEachView(view => {
-          i18n.changeLanguage(language);
           view.webContents.send(changeLanguageRequest, {
             lng: language,
           });
-          sendToAllWindows(changeLanguageRequest, {
-            lng: language,
-          });
+        });
+        sendToAllWindows(changeLanguageRequest, {
+          lng: language,
         });
       },
     });

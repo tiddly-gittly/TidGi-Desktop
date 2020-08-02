@@ -2,7 +2,7 @@
 import type { ComponentType } from 'react';
 import React from 'react';
 import styled from 'styled-components';
-import { useTranslation } from "react-i18next";
+import { useTranslation } from 'react-i18next';
 
 import Paper from '@material-ui/core/Paper';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
@@ -20,6 +20,10 @@ interface Props {
 
 export default function Description({ isCreateMainWorkspace, isCreateMainWorkspaceSetter }: Props) {
   const { t } = useTranslation();
+  const label = isCreateMainWorkspace ? t('AddWorkspace.MainWorkspace') : t('AddWorkspace.SubWorkspace');
+  const description = isCreateMainWorkspace
+    ? t('AddWorkspace.MainWorkspaceDescription')
+    : t('AddWorkspace.SubWorkspaceDescription');
   return (
     <Container elevation={0} square>
       <FormControlLabel
@@ -29,12 +33,10 @@ export default function Description({ isCreateMainWorkspace, isCreateMainWorkspa
             onChange={event => isCreateMainWorkspaceSetter(event.target.checked)}
           />
         }
-        label={`${isCreateMainWorkspace ? '主' : '子'}知识库`}
+        label={label}
       />
       <Typography variant="body2" display="inline">
-        {isCreateMainWorkspace
-          ? t('AddWorkspace.MainWorkspaceDescription')
-          : t('AddWorkspace.SubWorkspaceDescription')}
+        {description}
       </Typography>
     </Container>
   );

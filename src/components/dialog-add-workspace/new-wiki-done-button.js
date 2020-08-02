@@ -115,7 +115,7 @@ function NewWikiDoneButton({
                   align="center"
                   style={{ direction: 'rtl', textTransform: 'none' }}
                 >
-                  {wikiFolderLocation}
+                  {{ wikiFolderLocation }}
                 </Typography>
               </>
             )}
