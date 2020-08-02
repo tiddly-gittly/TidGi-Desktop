@@ -1,1 +1,8 @@
-{"Hello":"こんにちは"}
+{
+  "Hello": "こんにちは",
+  "WorkspaceSelector": {
+    "Add": "追加",
+    "EditWorkspace": "ワークスペースを編集",
+    "RemoveWorkspace": "ワークスペースを削除"
+  }
+}

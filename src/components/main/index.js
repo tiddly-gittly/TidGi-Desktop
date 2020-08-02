@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import { withTranslation } from 'react-i18next';
 
 import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
@@ -42,7 +43,6 @@ import {
   requestWakeUpWorkspace,
   requestReload,
 } from '../../senders';
-
 
 // https://github.com/sindresorhus/array-move/blob/master/index.js
 const arrayMove = (array, from, to) => {
@@ -161,51 +161,53 @@ const styles = theme => ({
   },
 });
 
-const SortableItem = sortableElement(({ value }) => {
-  const { index, workspace } = value;
-  const { active, id, name, picturePath, hibernated, transparentBackground } = workspace;
-  return (
-    <WorkspaceSelector
-      active={active}
-      id={id}
-      key={id}
-      name={name}
-      picturePath={picturePath}
-      transparentBackground={transparentBackground}
-      order={index}
-      hibernated={hibernated}
-      onClick={() => requestSetActiveWorkspace(id)}
-      onContextMenu={e => {
-        e.preventDefault();
+const SortableItem = withTranslation()(
+  sortableElement(({ value, t }) => {
+    const { index, workspace } = value;
+    const { active, id, name, picturePath, hibernated, transparentBackground } = workspace;
+    return (
+      <WorkspaceSelector
+        active={active}
+        id={id}
+        key={id}
+        name={name}
+        picturePath={picturePath}
+        transparentBackground={transparentBackground}
+        order={index}
+        hibernated={hibernated}
+        onClick={() => requestSetActiveWorkspace(id)}
+        onContextMenu={e => {
+          e.preventDefault();
 
-        const template = [
-          {
-            label: 'Edit Workspace',
-            click: () => requestShowEditWorkspaceWindow(id),
-          },
-          {
-            label: 'Remove Workspace',
-            click: () => requestRemoveWorkspace(id),
-          },
-        ];
-
-        if (!active) {
-          template.splice(1, 0, {
-            label: hibernated ? 'Wake Up Workspace' : 'Hibernate Workspace',
-            click: () => {
-              if (hibernated) {
-                return requestWakeUpWorkspace(id);
-              }
-              return requestHibernateWorkspace(id);
+          const template = [
+            {
+              label: t('WorkspaceSelector.EditWorkspace'),
+              click: () => requestShowEditWorkspaceWindow(id),
             },
-          });
-        }
+            {
+              label: t('WorkspaceSelector.RemoveWorkspace'),
+              click: () => requestRemoveWorkspace(id),
+            },
+          ];
 
-        window.remote.menu.buildFromTemplateAndPopup(template);
-      }}
-    />
-  );
-});
+          if (!active) {
+            template.splice(1, 0, {
+              label: hibernated ? 'Wake Up Workspace' : 'Hibernate Workspace',
+              click: () => {
+                if (hibernated) {
+                  return requestWakeUpWorkspace(id);
+                }
+                return requestHibernateWorkspace(id);
+              },
+            });
+          }
+
+          window.remote.menu.buildFromTemplateAndPopup(template);
+        }}
+      />
+    );
+  }),
+);
 
 const SortableContainer = sortableContainer(({ children }) => <div>{children}</div>);
 

@@ -1,1 +1,10 @@
-{"Hello":"Hello"}
+{
+  "Hello": "Hello",
+  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1>": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1>",
+  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1><2>and link to main Workspace</2>": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1><2>and link to main Workspace</2>",
+  "WorkspaceSelector": {
+    "Add": "Add",
+    "EditWorkspace": "Edit Workspace",
+    "RemoveWorkspace": "Remove Workspace"
+  }
+}

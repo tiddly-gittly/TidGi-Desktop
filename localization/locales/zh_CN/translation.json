@@ -1,5 +1,10 @@
 {
   "Hello": "你好",
   "<0><0>Use</0><1>/Users/linonetwo/Desktop/tiddlywiki</1></0><1>as Wiki folder</1>": "<0><0>在</0><1>/Users/linonetwo/Desktop/tiddlywiki</1></0><1>创建WIKI</1>",
-  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1><2>and link to main Workspace</2>": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>创建WIKI</1><2>并链接到主知识库</2>"
+  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1><2>and link to main Workspace</2>": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>创建WIKI</1><2>并链接到主知识库</2>",
+  "WorkspaceSelector": {
+    "Add": "添加",
+    "EditWorkspace": "编辑工作区",
+    "RemoveWorkspace": "移除工作区"
+  }
 }
