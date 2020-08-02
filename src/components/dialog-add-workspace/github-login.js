@@ -6,6 +6,7 @@ import styled from 'styled-components';
 import Button from '@material-ui/core/Button';
 import GithubIcon from '@material-ui/icons/GitHub';
 import AuthingSSO from '@authing/sso';
+import { withTranslation } from 'react-i18next';
 
 import { APP_DOMAIN, APP_ID } from '../../constants/auth';
 
@@ -15,6 +16,7 @@ const SyncToGithubButton: ComponentType<{}> = styled(Button)`
 `;
 
 interface Props {
+  t: (x: string) => string;
   onRequest: Function;
   onSuccess: Function;
   onLogout: Function;
@@ -68,7 +70,7 @@ class GitHubLogin extends Component<Props, State> {
   }
 
   render() {
-    const { onRequest, onLogout, onFailure } = this.props;
+    const { onRequest, onLogout, onFailure, t } = this.props;
     const { isLogin } = this.state;
     return isLogin ? (
       <SyncToGithubButton
@@ -86,7 +88,7 @@ class GitHubLogin extends Component<Props, State> {
         color="secondary"
         endIcon={<GithubIcon />}
       >
-        登出Github账号
+        {t('AddWorkspace.LogoutGithubAccount')}
       </SyncToGithubButton>
     ) : (
       <SyncToGithubButton
@@ -101,10 +103,10 @@ class GitHubLogin extends Component<Props, State> {
         color="secondary"
         endIcon={<GithubIcon />}
       >
-        登录Github账号
+        {t('AddWorkspace.LoginGithubAccount')}
       </SyncToGithubButton>
     );
   }
 }
 
-export default GitHubLogin;
+export default withTranslation()(GitHubLogin);

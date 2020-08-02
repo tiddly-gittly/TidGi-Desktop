@@ -3,6 +3,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
+import { Trans } from 'react-i18next';
 
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
@@ -75,7 +76,9 @@ function DoneButton({
     <>
       {progressBarOpen && <LinearProgress color="secondary" />}
       <Snackbar open={snackBarOpen} autoHideDuration={5000} onClose={() => snackBarOpenSetter(false)}>
-        <Alert severity="info">{wikiCreationMessage}</Alert>
+        <Alert severity="info">
+          <Trans>{wikiCreationMessage}</Trans>
+        </Alert>
       </Snackbar>
 
       {isCreateMainWorkspace ? (
@@ -93,25 +96,27 @@ function DoneButton({
             }
           }}
         >
-          {existedFolderLocation && (
-            <>
-              <Typography variant="body1" display="inline">
-                打开位于
-              </Typography>
-              <Typography
-                variant="body2"
-                noWrap
-                display="inline"
-                align="center"
-                style={{ direction: 'rtl', textTransform: 'none' }}
-              >
-                {existedFolderLocation}
-              </Typography>
-            </>
-          )}
-          <Typography variant="body1" display="inline">
-            的WIKI
-          </Typography>
+          <Trans>
+            {existedFolderLocation && (
+              <>
+                <Typography variant="body1" display="inline">
+                  Use
+                </Typography>
+                <Typography
+                  variant="body2"
+                  noWrap
+                  display="inline"
+                  align="center"
+                  style={{ direction: 'rtl', textTransform: 'none' }}
+                >
+                  {{ wikiFolderLocation: existedFolderLocation }}
+                </Typography>
+              </>
+            )}
+            <Typography variant="body1" display="inline">
+              as Wiki folder
+            </Typography>
+          </Trans>
         </CloseButton>
       ) : (
         <CloseButton
@@ -138,28 +143,30 @@ function DoneButton({
             }
           }}
         >
-          {existedFolderLocation && (
-            <>
-              <Typography variant="body1" display="inline">
-                打开位于
-              </Typography>
-              <Typography
-                variant="body2"
-                noWrap
-                display="inline"
-                align="center"
-                style={{ direction: 'rtl', textTransform: 'none' }}
-              >
-                {existedFolderLocation}
-              </Typography>
-            </>
-          )}
-          <Typography variant="body1" display="inline">
-            的WIKI
-          </Typography>
-          <Typography variant="body1" display="inline">
-            并链接到主知识库
-          </Typography>
+          <Trans>
+            {existedFolderLocation && (
+              <>
+                <Typography variant="body1" display="inline">
+                  Use
+                </Typography>
+                <Typography
+                  variant="body2"
+                  noWrap
+                  display="inline"
+                  align="center"
+                  style={{ direction: 'rtl', textTransform: 'none' }}
+                >
+                  {{ wikiFolderLocation: existedFolderLocation }}
+                </Typography>
+              </>
+            )}
+            <Typography variant="body1" display="inline">
+              as Wiki folder
+            </Typography>
+            <Typography variant="body1" display="inline">
+              and link to main Workspace
+            </Typography>
+          </Trans>
         </CloseButton>
       )}
     </>

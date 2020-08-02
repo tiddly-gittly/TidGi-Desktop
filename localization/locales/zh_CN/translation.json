@@ -1,10 +1,49 @@
 {
   "Hello": "你好",
-  "<0><0>Use</0><1>/Users/linonetwo/Desktop/tiddlywiki</1></0><1>as Wiki folder</1>": "<0><0>在</0><1>/Users/linonetwo/Desktop/tiddlywiki</1></0><1>创建WIKI</1>",
+  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1>": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>创建WIKI</1>",
   "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1><2>and link to main Workspace</2>": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>创建WIKI</1><2>并链接到主知识库</2>",
+  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1>": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>克隆Wiki</1>",
+  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1><2>and link to main Workspace</2>": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>克隆Wiki</1><2>并链接到主知识库</2>",
   "WorkspaceSelector": {
     "Add": "添加",
     "EditWorkspace": "编辑工作区",
     "RemoveWorkspace": "移除工作区"
+  },
+  "AddWorkspace": {
+    "MainWorkspaceDescription": "包含了TiddlyWiki的配置文件，以及发布为博客时的公开内容。",
+    "SubWorkspaceDescription": "必须依附于一个主知识库，可用于存放私有内容，同步到一个私有的Github仓库内，仅本人可读写。子知识库通过创建一个到主知识库的软链接（快捷方式）来生效，创建链接后主知识库内便可看到子知识库内的内容了。",
+    "NotLoggedIn": "未登录",
+    "LogoutGithubAccount": "登出Github账号",
+    "LoginGithubAccount": "登录Github账号"
+  },
+  "Log": {
+    "InitialGitInitialization": "开始初始化本地Git仓库",
+    "StartConfiguringGithubRemoteRepository": "仓库初始化完毕，开始配置Github远端仓库",
+    "StartBackupToGithubRemote": "正在将Wiki所在的本地Git备份到Github远端仓库，需要的时间取决于网速，请耐心等待",
+    "GitRepositoryConfigurateFailed": "Git仓库配置失败，详见错误日志",
+    "GitRepositoryConfigurationFinished": "Git仓库配置完毕",
+    "SynchronizationFailed": "同步失败！你需要用 Github Desktop 等工具检查当前 Git 仓库的状态。失败可能是网络原因导致的，如果的确如此，可在调整网络后重试。",
+    "NotAGitRepository": "不是一个 git 仓库`",
+    "CantSynchronizeAndSyncScriptIsInDeadLoop": "无法同步，而且同步脚本陷入死循环",
+    "CantSyncInSpecialGitStateAutoFixFailed": "无法同步，这个文件夹处在特殊状态，不能直接进行同步，已尝试自动修复，但还是出现错误，请先解决所有冲突（例如使用 VSCode 打开)，如果还不行，请用 Git 工具解决问题",
+    "CantSyncInSpecialGitStateAutoFixSucceed": "这个文件夹处在特殊状态，本来不能直接进行同步，但已自动修复",
+    "PrepareSync": "准备同步，使用登录的作者信息",
+    "CantSyncGitNotInitialized": "无法同步，这个文件夹没有初始化为 Git 仓库",
+    "HaveThingsToCommit": "有需要提交(commit)的内容，正在自动提交",
+    "PreparingUserInfo": "正在配置身份信息",
+    "FetchingData": "正在拉取云端数据，以便比对",
+    "NoNeedToSync": "无需同步，本地状态和云端一致",
+    "LocalAheadStartUpload": "本地状态超前于云端，开始上传",
+    "GitPushFailed": "Git上传的结果不佳，这通常意味着有网络问题",
+    "LocalStateBehindSync": "本地状态落后于云端，开始合并云端数据",
+    "GitMergeFailed": "Git合并的结果不佳，可能合并策略有漏洞",
+    "LocalStateDivergeRebase": "本地状态与云端有分歧，开始变基(Rebase)",
+    "RebaseSucceed": "变基(Rebase)成功，开始上传",
+    "RebaseConfliceNeedsResolve": "变基(Rebase)时发现冲突，需要解决冲突",
+    "SyncFailedSystemError": "同步失败，同步系统可能出现问题",
+    "PerformLastCheckBeforeSynchronizationFinish": "进行同步结束前最后的检查",
+    "SynchronizationFinish": "同步完成",
+    "PrepareCloneOnlineWiki": "准备克隆线上Wiki",
+    "StartFetchingFromGithubRemote": "正在拉取Github远端仓库的数据，需要的时间取决于网速和仓库大小，请耐心等待"
   }
 }

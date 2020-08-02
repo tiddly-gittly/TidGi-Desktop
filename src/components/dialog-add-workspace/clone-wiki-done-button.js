@@ -3,6 +3,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
+import { Trans, useTranslation } from 'react-i18next';
 
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
@@ -74,12 +75,14 @@ function CloneWikiDoneButton({
   };
 
   const [snackBarOpen, progressBarOpen, snackBarOpenSetter] = useWikiCreationMessage(wikiCreationMessage);
-
+  const { t } = useTranslation();
   return (
     <>
       {progressBarOpen && <LinearProgress color="secondary" />}
       <Snackbar open={snackBarOpen} autoHideDuration={5000} onClose={() => snackBarOpenSetter(false)}>
-        <Alert severity="info">{wikiCreationMessage}</Alert>
+        <Alert severity="info">
+          <Trans>{wikiCreationMessage}</Trans>
+        </Alert>
       </Snackbar>
 
       {isCreateMainWorkspace ? (
@@ -89,7 +92,7 @@ function CloneWikiDoneButton({
           disabled={!parentFolderLocation || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             if (!userInfo) {
-              setWikiCreationMessage('未登录');
+              setWikiCreationMessage(t('AddWorkspace.NotLoggedIn'));
               return;
             }
             updateForm(workspaceFormData);
@@ -101,25 +104,27 @@ function CloneWikiDoneButton({
             }
           }}
         >
-          {parentFolderLocation && (
-            <>
-              <Typography variant="body1" display="inline">
-                在
-              </Typography>
-              <Typography
-                variant="body2"
-                noWrap
-                display="inline"
-                align="center"
-                style={{ direction: 'rtl', textTransform: 'none' }}
-              >
-                {wikiFolderLocation}
-              </Typography>
-            </>
-          )}
-          <Typography variant="body1" display="inline">
-            克隆WIKI
-          </Typography>
+          <Trans>
+            {parentFolderLocation && (
+              <>
+                <Typography variant="body1" display="inline">
+                  Use
+                </Typography>
+                <Typography
+                  variant="body2"
+                  noWrap
+                  display="inline"
+                  align="center"
+                  style={{ direction: 'rtl', textTransform: 'none' }}
+                >
+                  {{ wikiFolderLocation }}
+                </Typography>
+              </>
+            )}
+            <Typography variant="body1" display="inline">
+              as cloned Wiki folder
+            </Typography>
+          </Trans>
         </CloseButton>
       ) : (
         <CloseButton
@@ -128,7 +133,7 @@ function CloneWikiDoneButton({
           disabled={!parentFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             if (!userInfo) {
-              setWikiCreationMessage('未登录');
+              setWikiCreationMessage(t('AddWorkspace.NotLoggedIn'));
               return;
             }
             updateForm(workspaceFormData);
@@ -146,28 +151,30 @@ function CloneWikiDoneButton({
             }
           }}
         >
-          {parentFolderLocation && (
-            <>
-              <Typography variant="body1" display="inline">
-                在
-              </Typography>
-              <Typography
-                variant="body2"
-                noWrap
-                display="inline"
-                align="center"
-                style={{ direction: 'rtl', textTransform: 'none' }}
-              >
-                {wikiFolderLocation}
-              </Typography>
-            </>
-          )}
-          <Typography variant="body1" display="inline">
-            克隆WIKI
-          </Typography>
-          <Typography variant="body1" display="inline">
-            并链接到主知识库
-          </Typography>
+          <Trans>
+            {parentFolderLocation && (
+              <>
+                <Typography variant="body1" display="inline">
+                  Use
+                </Typography>
+                <Typography
+                  variant="body2"
+                  noWrap
+                  display="inline"
+                  align="center"
+                  style={{ direction: 'rtl', textTransform: 'none' }}
+                >
+                  {{ wikiFolderLocation }}
+                </Typography>
+              </>
+            )}
+            <Typography variant="body1" display="inline">
+              as cloned Wiki folder
+            </Typography>
+            <Typography variant="body1" display="inline">
+              and link to main Workspace
+            </Typography>
+          </Trans>
         </CloseButton>
       )}
     </>

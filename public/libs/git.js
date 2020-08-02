@@ -1,3 +1,4 @@
+/* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable unicorn/consistent-function-scoping */
 /* eslint-disable no-await-in-loop */
 const fs = require('fs-extra');
@@ -57,7 +58,7 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) 
   const logProgress = message => logger.notice(message, { handler: 'createWikiProgress', function: 'initWikiGit' });
   const logInfo = message => logger.info(message, { function: 'initWikiGit' });
 
-  logProgress('开始初始化本地Git仓库');
+  logProgress('Log.StartLocalGitInitialization');
   const { login: username, email, accessToken } = userInfo;
   logInfo(
     `Using gitUrl ${githubRepoUrl} with username ${username} and accessToken ${truncate(accessToken, {
@@ -66,9 +67,9 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) 
   );
   await GitProcess.exec(['init'], wikiFolderPath);
   await commitFiles(wikiFolderPath, username, email);
-  logProgress('仓库初始化完毕，开始配置Github远端仓库');
+  logProgress('Log.StartConfiguringGithubRemoteRepository');
   await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
-  logProgress('正在将Wiki所在的本地Git备份到Github远端仓库，需要的时间取决于网速，请耐心等待');
+  logProgress('Log.StartBackupToGithubRemote');
   const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(
     ['push', 'origin', 'master:master', '--force'],
     wikiFolderPath,
@@ -76,11 +77,11 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) 
   await credentialOff(wikiFolderPath);
   if (isMainWiki && pushExitCode !== 0) {
     logInfo(pushStdError);
-    const CONFIG_FAILED_MESSAGE = 'Git仓库配置失败，详见错误日志';
+    const CONFIG_FAILED_MESSAGE = 'Log.GitRepositoryConfigurateFailed';
     logProgress(CONFIG_FAILED_MESSAGE);
     throw new Error(CONFIG_FAILED_MESSAGE);
   } else {
-    logProgress('Git仓库配置完毕');
+    logProgress('Log.GitRepositoryConfigurationFinished');
   }
 }
 
@@ -117,7 +118,7 @@ async function assumeSync(wikiFolderPath, logInfo, logProgress) {
   if ((await getSyncState(wikiFolderPath, logInfo)) === 'equal') return;
 
   const SYNC_ERROR_MESSAGE =
-    '同步失败！你需要用 Github Desktop 等工具检查当前 Git 仓库的状态。失败可能是网络原因导致的，如果的确如此，可在调整网络后重试。';
+    'Log.SynchronizationFailed';
   logProgress(SYNC_ERROR_MESSAGE);
   throw new Error(SYNC_ERROR_MESSAGE);
 }
@@ -139,9 +140,9 @@ async function getGitDirectory(wikiFolderPath, logInfo, logProgress) {
       return path.resolve(`${gitPath1}/${gitPath2}`);
     }
   }
-  const CONFIG_FAILED_MESSAGE = `${wikiFolderPath} 不是一个 git 仓库`;
+  const CONFIG_FAILED_MESSAGE = 'Log.NotAGitRepository';
   logProgress(CONFIG_FAILED_MESSAGE);
-  throw new Error(CONFIG_FAILED_MESSAGE);
+  throw new Error(`${wikiFolderPath} ${CONFIG_FAILED_MESSAGE}`);
 }
 
 /**
@@ -216,7 +217,7 @@ async function continueRebase(wikiFolderPath, username, email, logInfo, logProgr
   while (hasNotCommittedConflict) {
     loopCount += 1;
     if (loopCount > 1000) {
-      const CANT_SYNC_MESSAGE = '无法同步，而且同步脚本陷入死循环';
+      const CANT_SYNC_MESSAGE = 'Log.CantSynchronizeAndSyncScriptIsInDeadLoop';
       logProgress(CANT_SYNC_MESSAGE);
       throw new Error(CANT_SYNC_MESSAGE);
     }
@@ -238,15 +239,15 @@ async function continueRebase(wikiFolderPath, username, email, logInfo, logProgr
       logInfo(rebaseContinueStdError);
       logInfo(`commitStdError when ${repositoryState}`);
       logInfo(commitStdError);
-      const CANT_SYNC_MESSAGE = `无法同步，这个文件夹处在 ${repositoryState} 状态，不能直接进行同步，已尝试自动修复，但还是出现错误，请先解决所有冲突（例如使用 VSCode 打开)，如果还不行，请用 Git 工具解决问题`;
+      const CANT_SYNC_MESSAGE = 'Log.CantSyncInSpecialGitStateAutoFixFailed';
       logProgress(CANT_SYNC_MESSAGE);
-      throw new Error(CANT_SYNC_MESSAGE);
+      throw new Error(`${repositoryState} ${CANT_SYNC_MESSAGE}`);
     }
     hasNotCommittedConflict =
       rebaseContinueStdError.startsWith('CONFLICT') || rebaseContinueStdOut.startsWith('CONFLICT');
   }
 
-  logProgress(`这个文件夹处在 ${repositoryState} 状态，不能直接进行同步，但已自动修复`);
+  logProgress('Log.CantSyncInSpecialGitStateAutoFixSucceed');
 }
 
 /**
@@ -268,9 +269,11 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo, loggerToMa
   // preflight check
   const repoStartingState = await getGitRepositoryState(wikiFolderPath, logInfo, logProgress);
   if (!repoStartingState || repoStartingState === '|DIRTY') {
-    logProgress(`准备同步 ${wikiFolderPath} ，使用的作者信息为 ${username} <${email}>`);
+    const SYNC_MESSAGE = 'Log.PrepareSync'
+    logProgress(SYNC_MESSAGE);
+    logInfo(`${SYNC_MESSAGE} ${wikiFolderPath} , ${username} <${email}>`)
   } else if (repoStartingState === 'NOGIT') {
-    const CANT_SYNC_MESSAGE = '无法同步，这个文件夹没有初始化为 Git 仓库';
+    const CANT_SYNC_MESSAGE = 'Log.CantSyncGitNotInitialized';
     logProgress(CANT_SYNC_MESSAGE);
     throw new Error(CANT_SYNC_MESSAGE);
   } else {
@@ -279,7 +282,9 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo, loggerToMa
   }
 
   if (await haveLocalChanges(wikiFolderPath)) {
-    logProgress(`有需要提交(commit)的内容，正在自动提交，使用的提交信息为 「${commitMessage}」`);
+    const SYNC_MESSAGE = 'Log.HaveThingsToCommit'
+    logProgress(SYNC_MESSAGE);
+    logInfo(`${SYNC_MESSAGE} ${commitMessage}`)
     const { exitCode: commitExitCode, stderr: commitStdError } = await commitFiles(
       wikiFolderPath,
       username,
@@ -290,69 +295,69 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo, loggerToMa
       logInfo('commit failed');
       logInfo(commitStdError);
     }
-    logProgress('提交完成');
+    logProgress('Log.CommitComplete');
   }
-  logProgress('正在配置身份信息');
+  logProgress('Log.PreparingUserInfo');
   await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
-  logProgress('正在拉取云端数据，以便比对');
+  logProgress('Log.FetchingData');
   await GitProcess.exec(['fetch', 'origin', 'master'], wikiFolderPath);
 
   //
   switch (await getSyncState(wikiFolderPath, logInfo)) {
     case 'noUpstream': {
-      logProgress('同步失败，当前目录可能不是一个初始化好的 git 仓库');
+      logProgress('Log.CantSyncGitNotInitialized');
       return;
     }
     case 'equal': {
-      logProgress('无需同步，本地状态和云端一致');
+      logProgress('Log.NoNeedToSync');
       return;
     }
     case 'ahead': {
-      logProgress('本地状态超前于云端，开始上传');
+      logProgress('Log.LocalAheadStartUpload');
       const { exitCode, stderr } = await GitProcess.exec(['push', 'origin', branchMapping], wikiFolderPath);
       if (exitCode === 0) break;
-      logProgress(`git push 的返回值是 ${exitCode}，这通常意味着有网络问题`);
-      logInfo('stderr of git push:');
+      logProgress('Log.GitPushFailed');
+      logInfo(`exitCode: ${exitCode}, stderr of git push:`);
       logInfo(stderr);
       break;
     }
     case 'behind': {
-      logProgress('本地状态落后于云端，开始合并云端数据');
+      logProgress('Log.LocalStateBehindSync');
       const { exitCode, stderr } = await GitProcess.exec(
         ['merge', '--ff', '--ff-only', 'origin/master'],
         wikiFolderPath,
       );
       if (exitCode === 0) break;
-      logProgress(`git merge 的返回值是 ${exitCode}，详见错误日志`);
-      logInfo('stderr of git merge:');
+      logProgress('Log.GitMergeFailed');
+      logInfo(`exitCode: ${exitCode}, stderr of git merge:`);
       logInfo(stderr);
       break;
     }
     case 'diverged': {
-      logProgress('本地状态与云端有分歧，开始变基(Rebase)');
+      logProgress('Log.LocalStateDivergeRebase');
       const { exitCode } = await GitProcess.exec(['rebase', 'origin/master'], wikiFolderPath);
       if (
         exitCode === 0 &&
         !(await getGitRepositoryState(wikiFolderPath, logInfo, logProgress)) &&
         (await getSyncState(wikiFolderPath, logInfo)) === 'ahead'
       ) {
-        logProgress('变基(Rebase)成功，开始上传');
+        logProgress('Log.RebaseSucceed');
       } else {
         await continueRebase(wikiFolderPath, username, email, logInfo, logProgress);
-        logProgress(`变基(Rebase)时发现冲突，需要解决冲突`);
+        logProgress('Log.RebaseConfliceNeedsResolve');
       }
       await GitProcess.exec(['push', 'origin', branchMapping], wikiFolderPath);
       break;
     }
     default: {
-      logProgress('同步失败，同步系统可能出现问题');
+      logProgress('Log.SyncFailedSystemError');
     }
   }
 
   await credentialOff(wikiFolderPath);
-  logProgress('进行同步结束前最后的检查');
+  logProgress('Log.PerformLastCheckBeforeSynchronizationFinish');
   await assumeSync(wikiFolderPath, logInfo, logProgress);
-  logProgress(`${wikiFolderPath} 同步完成`);
+  logProgress('Log.SynchronizationFinish');
 }
 
 async function getRemoteUrl(wikiFolderPath) {
@@ -369,8 +374,8 @@ async function getRemoteUrl(wikiFolderPath) {
 async function clone(githubRepoUrl, repoFolderPath, userInfo) {
   const logProgress = message => logger.notice(message, { handler: 'createWikiProgress', function: 'clone' });
   const logInfo = message => logger.info(message, { function: 'clone' });
-  logProgress('准备克隆线上Wiki');
-  logProgress('开始初始化本地Git仓库');
+  logProgress('Log.PrepareCloneOnlineWiki');
+  logProgress('Log.InitialGitInitialization');
   const { login: username, accessToken } = userInfo;
   logInfo(
     `Using gitUrl ${githubRepoUrl} with username ${username} and accessToken ${truncate(accessToken, {
@@ -378,18 +383,18 @@ async function clone(githubRepoUrl, repoFolderPath, userInfo) {
     })}`,
   );
   await GitProcess.exec(['init'], repoFolderPath);
-  logProgress('仓库初始化完毕，开始配置Github远端仓库');
+  logProgress('Log.StartConfiguringGithubRemoteRepository');
   await credentialOn(repoFolderPath, githubRepoUrl, userInfo);
-  logProgress('正在拉取Github远端仓库的数据，需要的时间取决于网速和仓库大小，请耐心等待');
+  logProgress('Log.StartFetchingFromGithubRemote');
   const { stderr, exitCode } = await GitProcess.exec(['pull', 'origin', 'master:master'], repoFolderPath);
   await credentialOff(repoFolderPath);
   if (exitCode !== 0) {
     logInfo(stderr);
-    const CONFIG_FAILED_MESSAGE = 'Git仓库配置失败，详见错误日志';
+    const CONFIG_FAILED_MESSAGE = 'Log.GitRepositoryConfigurateFailed';
     logProgress(CONFIG_FAILED_MESSAGE);
     throw new Error(CONFIG_FAILED_MESSAGE);
   } else {
-    logProgress('Git仓库配置完毕');
+    logProgress('Log.GitRepositoryConfigurationFinished');
   }
 }
 
