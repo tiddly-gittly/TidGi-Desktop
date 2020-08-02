@@ -3,7 +3,6 @@ const { app, ipcMain, nativeTheme, protocol, session, powerMonitor } = require('
 const fs = require('fs');
 const settings = require('electron-settings');
 const { autoUpdater } = require('electron-updater');
-const i18nextBackend = require("i18next-electron-fs-backend");
 
 const loadListeners = require('./listeners');
 
@@ -218,7 +217,6 @@ if (!gotTheLock) {
       commonInit();
     } else {
       mainWindow.show();
-      i18nextBackend.mainBindings(ipcMain, win, fs);
     }
   });
 

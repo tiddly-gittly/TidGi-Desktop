@@ -56,8 +56,10 @@ const notificationsWindow = require('../windows/notifications');
 const preferencesWindow = require('../windows/preferences');
 const proxyWindow = require('../windows/proxy');
 const spellcheckLanguagesWindow = require('../windows/spellcheck-languages');
+const bindI18nListener = require('./i18n');
 
 const loadListeners = () => {
+  bindI18nListener();
   ipcMain.handle('copy-wiki-template', async (event, newFolderPath, folderName) => {
     try {
       await createWiki(newFolderPath, folderName);

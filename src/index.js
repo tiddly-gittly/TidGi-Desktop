@@ -136,16 +136,16 @@ const runApp = () => {
     .catch(console.error);
 
   ReactDOM.render(
-    <I18nextProvider i18n={i18n}>
-      <Provider store={store}>
-        <AppWrapper>
-          <CssBaseline />
-          <React.Suspense fallback={<div />}>
+    <Provider store={store}>
+      <AppWrapper>
+        <CssBaseline />
+        <React.Suspense fallback={<div />}>
+          <I18nextProvider i18n={i18n}>
             <App />
-          </React.Suspense>
-        </AppWrapper>
-      </Provider>
-    </I18nextProvider>,
+          </I18nextProvider>
+        </React.Suspense>
+      </AppWrapper>
+    </Provider>,
     document.querySelector('#app'),
   );
 };

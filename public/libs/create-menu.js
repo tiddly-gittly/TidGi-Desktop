@@ -5,8 +5,7 @@ const {
   shell,
 } = require('electron');
 
-const i18nBackend = require("i18next-electron-fs-backend");
-const whitelist = require('../../localization/whitelist');
+const { getLanguageMenu } = require('./i18next-electron-fs-backend');
 const aboutWindow = require('../windows/about');
 const addWorkspaceWindow = require('../windows/add-workspace');
 const editWorkspaceWindow = require('../windows/edit-workspace');
@@ -234,7 +233,7 @@ function createMenu() {
     // language menu
     {
       label: 'Language',
-      submenu: whitelist.buildSubmenu(i18nBackend.changeLanguageRequest),
+      submenu: getLanguageMenu(),
     },
     {
       label: 'History',

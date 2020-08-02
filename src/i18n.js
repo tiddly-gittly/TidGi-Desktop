@@ -1,28 +1,27 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import electronFsBackend from 'i18next-electron-fs-backend';
+import electronFsBackend from './helpers/i18next-electron-fs-backend';
 
-const ipcRenderer = window.api.i18nextElectronBackend;
-console.log(ipcRenderer)
 i18n
   .use(electronFsBackend)
   .use(initReactI18next)
   .init({
     backend: {
-      loadPath: './localization/locales/{{lng}}/{{ns}}.json',
-      addPath: './localization/locales/{{lng}}/{{ns}}.missing.json',
-      ipcRenderer,
+      loadPath: 'locales/{{lng}}/{{ns}}.json',
+      addPath: 'locales/{{lng}}/{{ns}}.missing.json',
+      ipcRenderer: window.i18n.i18nextElectronBackend,
     },
 
     debug: true,
+    interpolation: { escapeValue: false },
     saveMissing: true,
     saveMissingTo: 'current',
     namespace: 'translation',
-    lng: 'en',
+    lng: 'zh_CN',
     fallbackLng: false, // set to false when generating translation files locally
   });
 
-window.api.i18nextElectronBackend.onLanguageChange(arguments_ => {
+window.i18n.i18nextElectronBackend.onLanguageChange(arguments_ => {
   i18n.changeLanguage(arguments_.lng, (error, t) => {
     if (error) {
       console.error(error);

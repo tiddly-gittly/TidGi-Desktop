@@ -18,6 +18,9 @@ const DESKTOP_PATH = path.join(os.homedir(), 'Desktop');
 const LOG_FOLDER = isDev
   ? path.resolve(__dirname, '..', '..', 'logs')
   : path.resolve(process.resourcesPath, '..', 'logs');
+const LOCALIZATION_FOLDER = isDev
+  ? path.resolve(__dirname, '..', '..', 'localization')
+  : path.resolve(process.resourcesPath, '..', 'localization');
 
 module.exports = {
   REACT_PATH,
@@ -27,4 +30,5 @@ module.exports = {
   CHROME_ERROR_PATH,
   DESKTOP_PATH,
   LOG_FOLDER,
+  LOCALIZATION_FOLDER,
 };

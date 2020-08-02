@@ -59,11 +59,16 @@ const options = {
     appId: 'com.tiddlygit.app',
     productName: 'TiddlyGit',
     asar: true,
-    files: ['!tests/**/*', '!docs/**/*', '!template/**/*'],
+    files: ['!tests/**/*', '!docs/**/*', '!template/**/*', '!flow-typed/**/*', '!localization/**/*'],
     extraFiles: [
       {
         from: 'template/wiki',
         to: 'wiki',
+        filter: ['**/*'],
+      },
+      {
+        from: 'localization',
+        to: 'localization',
         filter: ['**/*'],
       },
     ],

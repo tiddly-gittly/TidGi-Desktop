@@ -661,6 +661,7 @@ const addView = (browserWindow, workspace) => {
 };
 
 const getView = (id) => views[id];
+const onEachView = (functionToRun) => Object.keys(views).forEach(key => functionToRun(views[key]));
 
 const setActiveView = (browserWindow, id) => {
   // stop find in page when switching workspaces
@@ -769,6 +770,7 @@ const reloadViewsWebContentsIfDidFailLoad = () => {
 module.exports = {
   addView,
   getView,
+  onEachView,
   hibernateView,
   reloadViewsDarkReader,
   reloadViewsWebContentsIfDidFailLoad,
