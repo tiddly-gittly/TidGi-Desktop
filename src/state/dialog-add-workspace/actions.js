@@ -65,5 +65,11 @@ export const save = () => async (dispatch, getState) => {
   );
   if (!form.isSubWiki) {
     dispatch(setWikiCreationMessage(i18n.t('AddWorkspace.WorkspaceUpdated')));
+    // and wiki will be closed after wiki server started, close logic is inside wiki-worker-manager.js
+  } else {
+    // close window after a while if is creating sub-wiki, wait so user can see the notification
+    setTimeout(() => {
+      window.remote.closeCurrentWindow();
+    }, 1000);
   }
 };

@@ -81,7 +81,7 @@ async function createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink
 async function removeWiki(wikiPath, mainWikiToUnLink) {
   if (mainWikiToUnLink) {
     const subWikiName = path.basename(wikiPath);
-    await fs.remove(path.join(wikiPath, TIDDLERS_PATH, subWikiName));
+    await fs.remove(path.join(mainWikiToUnLink, TIDDLERS_PATH, subWikiName));
   }
   await fs.remove(wikiPath);
 }
