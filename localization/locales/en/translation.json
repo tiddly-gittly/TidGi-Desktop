@@ -33,7 +33,20 @@
     "SearchGithubRepoName": "Search Github repository name",
     "WaitForLogin": "Wait for Login",
     "WikiServerPort": "WIKI server port number (change if there is a conflict, generally the default is OK)",
-    "WorkspaceFolderNameToCreate": "The name of the new workspace folder"
+    "WorkspaceFolderNameToCreate": "The name of the new workspace folder",
+    "CantCreateFolderHere": "Cannot create folder \"{{newWikiPath}}\" there",
+    "CreateLinkFromSubWikiToMainWikiFailed": "Cannot link folder \"{{subWikiPath}}\" to \"{{mainWikiTiddlersFolderPath}}\"",
+    "CreateLinkFromSubWikiToMainWikiSucceed": "The shortcut to the sub-wiki is successfully created in the main Wiki, and the shortcut that saves the file in the main Wiki will automatically save the file in the sub-Wiki.",
+    "PathNotExist": "The directory does not exist \"{{newFolderPath}}\"",
+    "StartCloningSubWiki": "Start cloning sub-Wiki",
+    "StartCloningWiki": "Start cloning Wiki",
+    "StartCreatingSubWiki": "Start creating sub-wiki",
+    "StartUsingTemplateToCreateWiki": "Start creating a wiki with templates",
+    "SubWikiCreationCompleted": "Sub Wiki is created",
+    "ThisPathIsNotAWikiFolder": "The directory is not a Wiki folder \"{{wikiPath}}\"",
+    "WikiExisted": "Wiki already exists at this location \"{{newWikiPath}}\"",
+    "WikiTemplateCopyCompleted": "Copied the template Wiki",
+    "WikiTemplateMissing": "Wiki template is missing \"{{TIDDLYWIKI_TEMPLATE_FOLDER_PATH}}\""
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed! \nDo you want to remove the workspace?",

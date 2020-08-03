@@ -33,7 +33,20 @@
     "Reload": "重新加载",
     "WaitForLogin": "等待登录",
     "CanNotLoadList": "无法加载仓库列表，网络不佳",
-    "OmitMoreResult": "列表仅展示前 {{loadCount}} 个结果"
+    "OmitMoreResult": "列表仅展示前 {{loadCount}} 个结果",
+    "CreateLinkFromSubWikiToMainWikiSucceed": "在主Wiki内成功创建子Wiki的快捷方式，将文件存入主Wiki内的快捷方式会自动将文件存入子Wiki。",
+    "CreateLinkFromSubWikiToMainWikiFailed": "无法链接文件夹 \"{{subWikiPath}}\" 到 \"{{mainWikiTiddlersFolderPath}}\"",
+    "StartUsingTemplateToCreateWiki": "开始用模板创建Wiki",
+    "PathNotExist": "该目录不存在 \"{{newFolderPath}}\"",
+    "WikiTemplateMissing": "Wiki模板缺失 \"{{TIDDLYWIKI_TEMPLATE_FOLDER_PATH}}\"",
+    "WikiExisted": "Wiki已经存在于该位置 \"{{newWikiPath}}\"",
+    "CantCreateFolderHere": "无法在该处创建文件夹 \"{{newWikiPath}}\"",
+    "WikiTemplateCopyCompleted": "模板Wiki复制完毕",
+    "StartCreatingSubWiki": "开始创建子Wiki",
+    "SubWikiCreationCompleted": "子Wiki创建完毕",
+    "ThisPathIsNotAWikiFolder": "该目录不是一个Wiki文件夹 \"{{wikiPath}}\"",
+    "StartCloningWiki": "开始克隆Wiki",
+    "StartCloningSubWiki": "开始克隆子Wiki"
   },
   "Log": {
     "InitialGitInitialization": "开始初始化本地Git仓库",
