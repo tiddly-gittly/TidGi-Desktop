@@ -36,6 +36,7 @@ const {
   setWorkspaceViews,
   wakeUpWorkspaceView,
 } = require('../libs/workspaces-views');
+const i18n = require('../libs/i18n');
 
 const { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad } = require('../libs/views');
 
@@ -351,9 +352,8 @@ const loadListeners = () => {
     dialog
       .showMessageBox(mainWindow.get(), {
         type: 'question',
-        buttons: ['仅移除工作区', '移除工作区并删除Wiki文件夹', '取消'],
-        message:
-          '你确定要移除这个工作区吗？移除工作区会删除本应用中的工作区，但不会删除硬盘上的文件夹。如果你选择一并删除Wiki文件夹，则所有内容都会被被删除。',
+        buttons: [i18n.t('WorkspaceSelector.RemoveWorkspace'), i18n.t('WorkspaceSelector.RemoveWorkspaceAndDelete'), i18n.t('Cancel')],
+        message: i18n.t('WorkspaceSelector.AreYouSure'),
         cancelId: 1,
       })
       .then(async ({ response }) => {

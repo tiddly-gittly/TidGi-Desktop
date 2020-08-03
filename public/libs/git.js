@@ -375,7 +375,7 @@ async function clone(githubRepoUrl, repoFolderPath, userInfo) {
   const logProgress = message => logger.notice(message, { handler: 'createWikiProgress', function: 'clone' });
   const logInfo = message => logger.info(message, { function: 'clone' });
   logProgress(i18n.t('Log.PrepareCloneOnlineWiki'));
-  logProgress(i18n.t('Log.InitialGitInitialization'));
+  logProgress(i18n.t('Log.StartGitInitialization'));
   const { login: username, accessToken } = userInfo;
   logInfo(
     `Using gitUrl ${githubRepoUrl} with username ${username} and accessToken ${truncate(accessToken, {

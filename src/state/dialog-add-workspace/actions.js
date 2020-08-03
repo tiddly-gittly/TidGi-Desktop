@@ -10,6 +10,7 @@ import isUrl from '../../helpers/is-url';
 import hasErrors from '../../helpers/has-errors';
 
 import { requestCreateWorkspace } from '../../senders';
+import i18n from '../../i18n';
 
 export const setWikiCreationMessage = (message: string) => ({
   type: ADD_WORKSPACE_CREATE_WIKI_MESSAGE,
@@ -43,7 +44,7 @@ export const updateForm = changes => (dispatch: Dispatch, getState) => {
 export const save = () => async (dispatch, getState) => {
   const { form } = getState().dialogAddWorkspace;
 
-  dispatch(setWikiCreationMessage('正在更新工作区'));
+  dispatch(setWikiCreationMessage(i18n.t('AddWorkspace.StartUpdatingWorkspace')));
   const validatedChanges = validate(form, getValidationRules());
   if (hasErrors(validatedChanges)) {
     return dispatch(updateForm(validatedChanges));
@@ -63,6 +64,6 @@ export const save = () => async (dispatch, getState) => {
     Boolean(form.transparentBackground),
   );
   if (!form.isSubWiki) {
-    dispatch(setWikiCreationMessage('工作区更新完毕，正在启动Wiki'));
+    dispatch(setWikiCreationMessage(i18n.t('AddWorkspace.WorkspaceUpdated')));
   }
 };

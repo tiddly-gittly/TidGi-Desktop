@@ -7,7 +7,9 @@
   "WorkspaceSelector": {
     "Add": "添加",
     "EditWorkspace": "编辑工作区",
-    "RemoveWorkspace": "移除工作区"
+    "RemoveWorkspace": "移除工作区",
+    "RemoveWorkspaceAndDelete": "移除工作区并删除Wiki文件夹",
+    "AreYouSure": "你确定要移除这个工作区吗？移除工作区会删除本应用中的工作区，但不会删除硬盘上的文件夹。如果你选择一并删除Wiki文件夹，则所有内容都会被被删除。"
   },
   "AddWorkspace": {
     "MainWorkspaceDescription": "包含了TiddlyWiki的配置文件，以及发布为博客时的公开内容。",
@@ -46,10 +48,13 @@
     "SubWikiCreationCompleted": "子Wiki创建完毕",
     "ThisPathIsNotAWikiFolder": "该目录不是一个Wiki文件夹 \"{{wikiPath}}\"",
     "StartCloningWiki": "开始克隆Wiki",
-    "StartCloningSubWiki": "开始克隆子Wiki"
+    "StartCloningSubWiki": "开始克隆子Wiki",
+    "StartUpdatingWorkspace": "正在更新工作区",
+    "WorkspaceUpdated": "工作区更新完毕，正在启动Wiki",
+    "StartLinkingSubWikiToMainWiki": "开始链接子Wiki到父Wiki"
   },
   "Log": {
-    "InitialGitInitialization": "开始初始化本地Git仓库",
+    "StartGitInitialization": "开始初始化本地Git仓库",
     "StartConfiguringGithubRemoteRepository": "仓库初始化完毕，开始配置Github远端仓库",
     "StartBackupToGithubRemote": "正在将Wiki所在的本地Git备份到Github远端仓库，需要的时间取决于网速，请耐心等待",
     "GitRepositoryConfigurateFailed": "Git仓库配置失败，详见错误日志",
@@ -85,5 +90,12 @@
     "RemoveWorkspace": "移除工作区",
     "DoNotCare": "不管",
     "PathPassInCantUse": "传入的路径无法使用"
+  },
+  "Cancel": "取消",
+  "Preference": {
+    "Sync": "同步",
+    "SyncInterval": "同步间隔",
+    "SyncIntervalDescription": "超过这段长度的时间没有新的改动后，就会自动开始备份到 Github（重启后生效）",
+    "General": "通用"
   }
 }

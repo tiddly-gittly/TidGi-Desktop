@@ -6,6 +6,7 @@ import setYear from 'date-fns/setYear';
 import setMonth from 'date-fns/setMonth';
 import setDate from 'date-fns/setDate';
 import { debounce } from 'lodash';
+import { useTranslation } from 'react-i18next';
 
 import Divider from '@material-ui/core/Divider';
 import Grid from '@material-ui/core/Grid';
@@ -219,6 +220,7 @@ const Preferences = ({
   updaterStatus,
   useHardwareAcceleration,
 }) => {
+
   const sections = {
     wiki: {
       text: 'Wiki',
@@ -313,6 +315,8 @@ const Preferences = ({
     [],
   );
 
+  const { t } = useTranslation();
+
   return (
     <div className={classes.root}>
       <div className={classes.sidebar}>
@@ -342,25 +346,25 @@ const Preferences = ({
 
       <div className={classes.inner}>
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.wiki.ref}>
-          Wiki
+          TiddlyWiki
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             <ListItem>
-              暂无
+              -
             </ListItem>
           </List>
         </Paper>
 
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.sync.ref}>
-          同步
+          {t('Preference.Sync')}
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             <ListItem>
               <ListItemText
-                primary="同步间隔"
-                secondary="超过这段长度的时间没有新的改动后，就会自动开始备份到 Github（重启后生效）"
+                primary={t('Preference.SyncInterval')}
+                secondary={t('Preference.SyncIntervalDescription')}
               />
               <div className={classes.timePickerContainer}>
                 <TimePicker
@@ -390,7 +394,7 @@ const Preferences = ({
         </Paper>
 
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.general.ref}>
-          General
+          {t('Preference.General')}
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
