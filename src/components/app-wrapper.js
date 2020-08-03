@@ -13,9 +13,12 @@ import DateFnsUtils from '@material-ui/pickers/adapter/date-fns';
 import connectComponent from '../helpers/connect-component';
 
 const AppWrapper = ({ children, shouldUseDarkColors }) => {
-  const themeObj = {
+  const themeObject = {
     typography: {
       fontSize: 13.5,
+      button: {
+        textTransform: 'none'
+      },
     },
     palette: {
       type: shouldUseDarkColors ? 'dark' : 'light',
@@ -38,12 +41,12 @@ const AppWrapper = ({ children, shouldUseDarkColors }) => {
   };
 
   if (!shouldUseDarkColors) {
-    themeObj.background = {
+    themeObject.background = {
       primary: grey[200],
     };
   }
 
-  const theme = createMuiTheme(themeObj);
+  const theme = createMuiTheme(themeObject);
 
   return (
     <MuiThemeProvider theme={theme}>

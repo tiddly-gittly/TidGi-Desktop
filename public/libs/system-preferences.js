@@ -1,7 +1,9 @@
 // System Preferences are not stored in storage but stored in macOS Preferences.
 // It can be retrieved and changed using Electron APIs
 
-const { app } = require('electron');
+let { app, remote } = require('electron');
+
+app = app || remote.app;
 
 const sendToAllWindows = require('./send-to-all-windows');
 

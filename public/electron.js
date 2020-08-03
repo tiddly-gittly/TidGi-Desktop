@@ -1,5 +1,5 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
-const { app, ipcMain, nativeTheme, protocol, session, powerMonitor } = require('electron');
+const { ipcMain, nativeTheme, protocol, session, powerMonitor, remote } = require('electron');
 const fs = require('fs');
 const settings = require('electron-settings');
 const { autoUpdater } = require('electron-updater');
@@ -23,6 +23,8 @@ const MAILTO_URLS = require('./constants/mailto-urls');
 
 require('./libs/updater');
 
+// eslint-disable-next-line import/order, global-require
+const app = require('electron').app || remote.app;
 // see https://github.com/electron/electron/issues/18397
 app.allowRendererProcessReuse = true;
 

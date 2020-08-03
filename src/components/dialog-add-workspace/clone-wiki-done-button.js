@@ -102,7 +102,7 @@ function CloneWikiDoneButton({
             }
           }}
         >
-          <Trans>
+          <Trans t={t} i18nKey="AddWorkspace.CloneWikiDoneButton" wikiFolderLocation={wikiFolderLocation}>
             {parentFolderLocation && (
               <>
                 <Typography variant="body1" display="inline">
@@ -149,7 +149,7 @@ function CloneWikiDoneButton({
             }
           }}
         >
-          <Trans>
+          <Trans t={t} i18nKey="AddWorkspace.CloneSubWikiDoneButton" wikiFolderLocation={wikiFolderLocation}>
             {parentFolderLocation && (
               <>
                 <Typography variant="body1" display="inline">

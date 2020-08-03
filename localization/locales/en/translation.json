@@ -1,9 +1,5 @@
 {
   "Hello": "Hello",
-  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1>": "<0><0>Use</0><1> {{wikiFolderLocation}} </1></0><1>as Wiki folder</1>",
-  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1><2>and link to main Workspace</2>": "<0><0>Use</0><1> {{wikiFolderLocation}} </1></0><1>as Wiki folder</1><2>and link to main Workspace</2>",
-  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1>": "<0><0>Use</0><1> {{wikiFolderLocation}} </1></0><1>as cloned Wiki folder</1>",
-  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1><2>and link to main Workspace</2>": "<0><0>Use</0><1> {{wikiFolderLocation}} </1></0><1>as cloned Wiki folder</1><2>and link to main wiki</2>",
   "WorkspaceSelector": {
     "Add": "Add",
     "EditWorkspace": "Edit Workspace",
@@ -12,6 +8,10 @@
     "RemoveWorkspaceAndDelete": "Remove workspace and delete Wiki folder from the disk"
   },
   "AddWorkspace": {
+    "NewWikiDoneButton": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>As new Wiki folder</1>",
+    "NewSubWikiDoneButton": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>As new Wiki folder</1><2>, and link to main Wiki</2>",
+    "CloneWikiDoneButton": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>As cloned Wiki folder</1>",
+    "CloneSubWikiDoneButton": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>As cloned Wiki folder</1><2>, and link to main Wiki</2>",
     "LoginGithubAccount": "Login Github Account",
     "LogoutGithubAccount": "Log out of Github account",
     "MainWorkspaceDescription": "Contains TiddlyWiki's configuration files and public content when published as a blog.",

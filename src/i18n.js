@@ -24,7 +24,6 @@ i18n
   });
 
 window.i18n.i18nextElectronBackend.onLanguageChange(arguments_ => {
-  console.log('i18n.changeLanguage(arguments_.lng', arguments_.lng)
   i18n.changeLanguage(arguments_.lng, (error, t) => {
     if (error) {
       console.error(error);

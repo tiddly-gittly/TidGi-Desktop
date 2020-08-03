@@ -1,9 +1,5 @@
 {
   "Hello": "你好",
-  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1>": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>创建WIKI</1>",
-  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as Wiki folder</1><2>and link to main Workspace</2>": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>创建WIKI</1><2>并链接到主知识库</2>",
-  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1>": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>克隆Wiki</1>",
-  "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>as cloned Wiki folder</1><2>and link to main Workspace</2>": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>克隆Wiki</1><2>并链接到主知识库</2>",
   "WorkspaceSelector": {
     "Add": "添加",
     "EditWorkspace": "编辑工作区",
@@ -12,6 +8,10 @@
     "AreYouSure": "你确定要移除这个工作区吗？移除工作区会删除本应用中的工作区，但不会删除硬盘上的文件夹。如果你选择一并删除Wiki文件夹，则所有内容都会被被删除。"
   },
   "AddWorkspace": {
+    "NewWikiDoneButton": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>创建WIKI</1>",
+    "NewSubWikiDoneButton": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>创建WIKI</1><2>并链接到主知识库</2>",
+    "CloneWikiDoneButton": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>克隆Wiki</1>",
+    "CloneSubWikiDoneButton": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>克隆Wiki</1><2>并链接到主知识库</2>",
     "MainWorkspaceDescription": "包含了TiddlyWiki的配置文件，以及发布为博客时的公开内容。",
     "SubWorkspaceDescription": "必须依附于一个主知识库，可用于存放私有内容，同步到一个私有的Github仓库内，仅本人可读写。子知识库通过创建一个到主知识库的软链接（快捷方式）来生效，创建链接后主知识库内便可看到子知识库内的内容了。",
     "NotLoggedIn": "未登录",

@@ -3,7 +3,7 @@ import React from 'react';
 import styled from 'styled-components';
 import { connect } from 'react-redux';
 import { bindActionCreators } from 'redux';
-import { Trans } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 import Typography from '@material-ui/core/Typography';
 import Button from '@material-ui/core/Button';
@@ -71,7 +71,7 @@ function DoneButton({
   };
 
   const [snackBarOpen, progressBarOpen, snackBarOpenSetter] = useWikiCreationMessage(wikiCreationMessage);
-
+  const { t } = useTranslation();
   return (
     <>
       {progressBarOpen && <LinearProgress color="secondary" />}
@@ -94,7 +94,7 @@ function DoneButton({
             }
           }}
         >
-          <Trans>
+          <Trans t={t} i18nKey="AddWorkspace.NewWikiDoneButton" wikiFolderLocation={existedFolderLocation}>
             {existedFolderLocation && (
               <>
                 <Typography variant="body1" display="inline">
@@ -141,7 +141,7 @@ function DoneButton({
             }
           }}
         >
-          <Trans>
+          <Trans t={t} i18nKey="AddWorkspace.NewSubWikiDoneButton" wikiFolderLocation={existedFolderLocation}>
             {existedFolderLocation && (
               <>
                 <Typography variant="body1" display="inline">
