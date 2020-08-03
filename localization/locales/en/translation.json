@@ -89,7 +89,8 @@
     "StartFetchingFromGithubRemote": "Fetching data from the remote Github repository, The time required depends on the internet speed, please be patient.",
     "SyncFailedSystemError": "Synchronization failed, there may be a problem with the synchronization system",
     "SynchronizationFailed": "Sync failed! \nYou need to use tools such as Github Desktop to check the status of the current Git repository. \nThe failure may be caused by the network. If this is the case, you can try again after adjusting the network.",
-    "SynchronizationFinish": "Synchronization complete"
+    "SynchronizationFinish": "Synchronization complete",
+    "UsingUrlAndUsername": "Using Git Url {{githubRepoUrl}} with username {{username}} and accessToken {{accessToken}}"
   },
   "Cancel": "Cancel",
   "Preference": {

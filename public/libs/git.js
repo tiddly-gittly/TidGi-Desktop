@@ -378,9 +378,13 @@ async function clone(githubRepoUrl, repoFolderPath, userInfo) {
   logProgress(i18n.t('Log.StartGitInitialization'));
   const { login: username, accessToken } = userInfo;
   logInfo(
-    `Using gitUrl ${githubRepoUrl} with username ${username} and accessToken ${truncate(accessToken, {
-      length: 24,
-    })}`,
+    i18n.t('Log.UsingUrlAndUsername', {
+      githubRepoUrl,
+      username,
+      accessToken: truncate(accessToken, {
+        length: 24,
+      }),
+    }),
   );
   await GitProcess.exec(['init'], repoFolderPath);
   logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
