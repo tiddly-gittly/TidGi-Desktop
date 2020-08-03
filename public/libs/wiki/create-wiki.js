@@ -65,8 +65,6 @@ async function createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink
   if (await fs.pathExists(newWikiPath)) {
     throw new Error(i18n.t('AddWorkspace.WikiExisted', { newWikiPath }));
   }
-  logProgress(i18n.t('AddWorkspace.StartLinkingSubWikiToMainWiki'));
-  await linkWiki(mainWikiToLink, folderName, newWikiPath);
   if (!onlyLink) {
     try {
       await fs.mkdirs(newWikiPath);
@@ -74,6 +72,8 @@ async function createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink
       throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
     }
   }
+  logProgress(i18n.t('AddWorkspace.StartLinkingSubWikiToMainWiki'));
+  await linkWiki(mainWikiToLink, folderName, newWikiPath);
 
   logProgress(i18n.t('AddWorkspace.SubWikiCreationCompleted'));
 }

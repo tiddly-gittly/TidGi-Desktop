@@ -59,7 +59,7 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) 
   const logProgress = message => logger.notice(message, { handler: 'createWikiProgress', function: 'initWikiGit' });
   const logInfo = message => logger.info(message, { function: 'initWikiGit' });
 
-  logProgress(i18n.t('Log.StartLocalGitInitialization'));
+  logProgress(i18n.t('Log.StartGitInitialization'));
   const { login: username, email, accessToken } = userInfo;
   logInfo(
     `Using gitUrl ${githubRepoUrl} with username ${username} and accessToken ${truncate(accessToken, {
