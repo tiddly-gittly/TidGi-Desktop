@@ -1,0 +1,7 @@
+tags:
+title: $:/plugins/bimlas/locator/templates/field-value-template
+type: text/vnd.tiddlywiki
+
+<$list filter="[[$:/config/bimlas/locator/fields/]addsuffix<currentField>get[text]]" emptyMessage={{$:/plugins/bimlas/locator/field-templates/text}} variable="template">
+  <$transclude tiddler=<<template>>/>
+</$list>

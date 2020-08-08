@@ -1,0 +1,48 @@
+title: $:/config/flibbles/relink/macros/
+
+csvtiddlers/filter: filter
+datauri/title: title
+# image-picker/subfilter: subfilter // Not the same as a filter
+jsontiddler/title: title
+jsontiddlers/filter: filter
+list-links/filter: filter
+list-links-draggable/tiddler: title
+list-links-draggable/itemTemplate: title
+list-tagged-draggable/tag: title
+# list-tagged-draggable/subFilter: filter // Subfilter, not the same.
+list-tagged-draggable/itemTemplate: title
+tabs/buttonTemplate: title
+tabs/default: title
+tabs/tabsList: filter
+tabs/template: title
+tag/tag: title
+tag-pill/tag: title
+timeline/subfilter: filter
+
+toc/tag: title
+#toc/sort: subfilter
+toc/itemClassFilter: filter
+
+toc-expandable/tag: title
+# toc-expandable/sort: subfilter
+toc-expandable/itemClassFilter: filter
+toc-expandable/exclude: list
+
+toc-selective-expandable/tag: title
+#toc-selective-expandable/sort: subfilter
+toc-selective-expandable/itemClassFilter: filter
+toc-selective-expandable/exclude: list
+
+toc-tabbed-external-nav/tag: title
+#toc-tabbed-external-nav/sort: subfilter
+toc-tabbed-external-nav/selectedTiddler: title
+toc-tabbed-external-nav/unselectedText: wikitext
+toc-tabbed-external-nav/missingText: wikitext
+toc-tabbed-external-nav/template: title
+
+toc-tabbed-internal-nav/tag: title
+#toc-tabbed-internal-nav/sort: subfilter
+toc-tabbed-internal-nav/selectedTiddler: title
+toc-tabbed-internal-nav/unselectedText: wikitext
+toc-tabbed-internal-nav/missingText: wikitext
+toc-tabbed-internal-nav/template: title

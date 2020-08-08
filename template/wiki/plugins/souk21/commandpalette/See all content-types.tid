@@ -1,0 +1,10 @@
+command-palette-caret: 48
+command-palette-name: See all content-type
+command-palette-type: prompt-basic
+created: 20200604201605853
+modified: 20200610112751272
+tags: $:/tags/CommandPaletteCommand
+title: $:/plugins/souk21/commandpalette/See all content-types
+type: text/vnd.tiddlywiki
+
+[all[tiddlers+shadows]each[type]get[type]search[]]

@@ -1,0 +1,21 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/globalConfig/verbosity
+caption: Verbosity
+
+\rules except wikilink
+
+<div class="tmap-flash-message tmap-plain">
+  Here you can restrict the system's talkativeness.
+</div>
+
+<table class="tmap-config-table">
+  <<tmap-row type:"input-checkbox"
+      title:"Debug output"
+      field:"config.sys.debug" 
+      descr:"Set this to true if you want debug information to be
+             displayed in the browser console.">>
+  <<tmap-row type:"input-checkbox"
+      title:"Show notifications"
+      field:"config.sys.notifications" 
+      descr:"Set this to true if you want to receive fade-out
+             notifications for important events.">>
+</table> 

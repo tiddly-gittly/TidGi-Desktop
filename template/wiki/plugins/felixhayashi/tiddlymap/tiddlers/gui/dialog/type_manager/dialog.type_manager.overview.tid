@@ -1,0 +1,34 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/MapElementTypeManager/overview
+caption: Overview
+
+\rules except wikilink
+
+\define date(f) <$view field=$f$ format="date" template="DDth mmm hh:mm:ss"/>
+
+! <$link to={{!!typeTRef}}><$view field="id" /></$link>
+
+<table class="tmap-key-value-table">
+  <tr>
+    <th align="left">Created on</th>
+    <td>
+      <<date "created">>
+    </td>
+  </tr>
+  <tr>
+    <th align="left">Modified on</th>
+    <td><<date "modified">></td>
+  </tr>
+  <tr>
+    <th align="left">Usage count</th>
+    <td>
+      <span class="tmap-edge-type-specific">
+        <$view field="temp.usageCount" />
+      </span>
+      <span class="tmap-node-type-specific">
+        <$count filter={{!!scope}}>0</$count>
+      </span>
+    </td>
+  </tr>
+</table>
+
+<$view field="description">//No description available//</$view>

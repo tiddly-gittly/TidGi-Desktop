@@ -1,0 +1,10 @@
+tags:
+title: $:/plugins/bimlas/locator/templates/context-item
+type: text/vnd.tiddlywiki
+
+<li class="toc-item">
+  {{||$:/plugins/bimlas/locator/buttons/go-down-to-context}}
+  <$list filter="[title<contextState>get[template-of-context-items]] [title<__templateOfContextItems__>] -[[]] +[first[]]" variable="template">
+    <$transclude tiddler=<<template>>/>
+  </$list>
+</li>

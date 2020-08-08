@@ -1,0 +1,10 @@
+command-palette-caret: 16
+command-palette-name: Search fields
+command-palette-type: prompt-basic
+created: 20200604023259497
+modified: 20200610112923528
+tags: $:/tags/CommandPaletteCommand
+title: $:/plugins/souk21/commandpalette/Search fields
+type: text/vnd.tiddlywiki
+
+[fields[]search[]]

@@ -1,0 +1,12 @@
+title: $:/plugins/felixhayashi/topstoryview/Configuration
+
+Please see the [[GitHub page|https://github.com/felixhayashi/TW5-TopStoryView]] for more information on the options.
+
+Save and reload the wiki to activate changes.
+
+<table>
+  <tr>
+    <th align="left">Scroll offset:</th>
+    <td><$edit-text tiddler="$:/config/topStoryView" field="scroll-offset" tag="input" default="150px" /></td>
+  </tr>
+</table>

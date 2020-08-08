@@ -1,0 +1,7 @@
+tags:
+title: $:/plugins/bimlas/locator/buttons/context-arrow
+type: text/vnd.tiddlywiki
+
+<$list filter="[title<contextState>field:invert-direction[yes]]" emptyMessage={{$:/core/images/right-arrow}}>
+  {{$:/core/images/left-arrow}}
+</$list>

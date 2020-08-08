@@ -1,0 +1,12 @@
+tags:
+title: $:/plugins/bimlas/locator/buttons/go-up-to-context
+type: text/vnd.tiddlywiki
+
+\define actions()
+  <$action-listops $tiddler=<<contextState>> $field="history" $filter="[subfilter<filter-history>allbefore<currentTiddler>] [all[current]]"/>
+  {{$:/plugins/bimlas/locator/actions/remove-filters}}
+\end
+
+<$button tooltip="Go to context, show chidlren of this tiddler" class=<<link-button-class>> actions=<<actions>>>
+  {{$:/plugins/bimlas/locator/buttons/context-arrow}}
+</$button>

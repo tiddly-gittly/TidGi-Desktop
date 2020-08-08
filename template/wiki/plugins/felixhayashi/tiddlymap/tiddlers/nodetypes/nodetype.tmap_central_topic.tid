@@ -1,0 +1,3 @@
+title: $:/plugins/felixhayashi/tiddlymap/graph/nodeTypes/tmap:central-topic
+description: The style is applied to the node that you marked as central topic in a map.
+style: {"font":{"size":22,"color":"rgba(0,0,0,1)"},"shape":"star"}

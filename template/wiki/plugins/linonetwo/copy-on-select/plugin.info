@@ -1,0 +1,9 @@
+{
+  "title": "$:/plugins/linonetwo/copy-on-select",
+  "description": "Copy what you are selecting inside the wiki into the clipboard",
+  "author": "LinOnetwo",
+  "core-version": ">=5.1.22",
+  "plugin-type": "plugin",
+  "version": "0.0.1",
+  "list": "readme"
+}

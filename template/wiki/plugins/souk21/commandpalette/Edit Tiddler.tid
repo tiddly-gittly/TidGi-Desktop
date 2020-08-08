@@ -1,0 +1,10 @@
+command-palette-name: Edit Tiddler
+command-palette-type: history
+cp-hint: Choose tiddler to edit
+created: 20200605211111710
+modified: 20200605211127693
+tags: $:/tags/CommandPaletteCommand
+title: $:/plugins/souk21/commandpalette/Edit Tiddler
+type: text/vnd.tiddlywiki
+
+tm-edit-tiddler

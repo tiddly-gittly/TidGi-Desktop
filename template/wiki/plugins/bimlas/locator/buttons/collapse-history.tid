@@ -1,0 +1,8 @@
+tags:
+title: $:/plugins/bimlas/locator/buttons/collapse-history
+type: text/vnd.tiddlywiki
+
+<$button tooltip="Collapse history" class=<<link-button-class>>>
+  <$action-listops $tiddler=<<contextState>> $field="history" $filter="[title<contextState>each:list-item[history]last[]]"/>
+  {{$:/core/images/fold-button}}
+</$button>

@@ -1,0 +1,86 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/getEdgeType
+subtitle: {{$:/plugins/felixhayashi/tiddlymap/icon}} Edge type specification
+
+\rules except wikilink
+\rules except underscore
+
+\define filter() $(allEdgeTypes)$ +[search:title[$(term)$]]
+
+\define badge(color, label, tooltip)
+<span style="background: $color$" title="$tooltip$">$label$</span>
+\end
+
+\define badges()
+<$tiddler tiddler={{!!text}}>
+<$set name="id" value=<<tmap "getETyId" "$(view)$">>>
+<$set name="isVisible" value=<<tmap "isETyVisible" "$(view)$">>>
+<div class="tmap-badges">
+  <span
+      style="background: darkslategray"
+      title="Your input translates into this id.">
+  <<id>>
+  </span>
+  <$list filter="[<isVisible>regexp[true]]">
+    <<badge "green" "visible" "Matches your view's filter">>
+  </$list>
+  <$list filter="[<isVisible>regexp[false]]">
+    <<badge "red" "not visible" "Doesn't match your view's filter">>
+  </$list>
+  <$list filter="[<id>!regexp[^tmap:unknown$]]" variable="item">
+    <$list filter="[<id>regexp[^_]]">
+      <<badge "purple" "private" "Not shown in other views per default">>
+    </$list>
+    <$list filter="[<id>regexp[.+:.+]]">
+      <<badge "orange" "namespace" "This type is prefixed with a proper namespace">>
+    </$list>
+  </$list>
+</div>
+</$set>
+</$set>
+</$tiddler>
+\end
+
+\define search()
+<p>
+  You are about to connect "<$text text="$(fromLabel)$" />"
+  with "<$text text="$(toLabel)$" />". Please specify a type.
+</p>
+<table id="tmap-search-table">
+  <tr>
+    <td><b>Type:</b></td>
+    <td>
+      <$edit-text
+          focus="true"
+          field="text"
+          type="text"
+          tag="input"
+          default=""
+          class="tmap-trigger-field
+                 tmap-triggers-ok-button-on-enter
+                 tmap-triggers-cancel-button-on-esc" />
+      <<badges>>
+    </td>
+  </tr>
+  <tr>
+    <td></td>
+    <td>
+      <$set name="term" value={{!!text}}>
+      <$set name="allEdgeTypes" value=<<tmap "option" "selector.allEdgeTypesById">>>
+      <ul class="tmap-small-list">
+        <$list filter=<<filter>>>
+        <li>
+          <$button class="tc-btn-invisible tmap-link">
+            <$view field="title" />
+            <$action-setfield $tiddler=<<output>> text={{!!title}} />
+          </$button>
+        </li>
+        </$list>
+      </ul>
+      </$set>
+      </$set>
+    </td>
+  </tr>
+</table>
+\end
+
+<$list filter="[<temp>!has[more]]" variable="item"><<search>></$list>

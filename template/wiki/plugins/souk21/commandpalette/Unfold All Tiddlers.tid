@@ -1,0 +1,9 @@
+command-palette-name: Unfold All Tiddlers
+command-palette-type: actionString
+created: 20200605205037837
+modified: 20200605205546285
+tags: $:/tags/CommandPaletteCommand
+title: $:/plugins/souk21/commandpalette/Unfold All Tiddlers
+type: text/vnd.tiddlywiki
+
+<$action-sendmessage $message="tm-unfold-all-tiddlers" foldedStatePrefix="$:/state/folded/"/>

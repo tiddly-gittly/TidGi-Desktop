@@ -1,0 +1,44 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/MapElementTypeManager/styling
+caption: Styling
+
+\rules except wikilink
+
+\define url()
+  <$set
+      filter="[<mode>prefix[manage-edge-types]]"
+      name="module"
+      value="edges"
+      emptyValue="nodes">
+    [[visjs.org|http://visjs.org/docs/network/$(module)$]]
+  </$set>
+\end
+
+<fieldset class="tmap-node-type-specific">
+  <legend>Icon Settings</legend>
+  <table class="tmap-config-table">
+    <<tmap-row type:"input-text"
+        title:"TW-icon"
+        field:"tw-icon"
+        descr:"A tiddlywiki image reference.
+               For example '$:/core/icon' for Movotun Jack.">>
+    <<tmap-row type:"input-text"
+        title:"FA-icon"
+        field:"fa-icon"
+        descr:"A Font Awesome icon code.
+               For example 'f206' for the bicycle symbol.">>
+  </table>
+</fieldset>
+
+<fieldset><legend>Visjs styles</legend>
+  <div class="tmap-flash-message tmap-info">
+     All visjs options below are documented at <<url>>.
+  </div>
+  <div class="tmap-flash-message tmap-info">
+     Only config items that you actually changed have an effect on
+     the graph. Other options are visible, yet, inactive.
+  </div>
+  <$tmap-config
+      mode=<<mode>>
+      inherited="inherited-style"
+      extension="style" />
+</fieldset>

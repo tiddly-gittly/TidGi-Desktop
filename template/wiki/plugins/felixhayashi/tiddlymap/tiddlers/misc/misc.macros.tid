@@ -1,0 +1,146 @@
+title: $:/plugins/felixhayashi/tiddlymap/misc/macros
+
+\define concat(str) $str$
+
+\define input-text(field, index, default, readonly, class, focus)
+  <$reveal type="match" text="" default="$readonly$">
+    <$edit-text
+        tiddler=<<output>>
+        field="$field$"
+        index="$index$"
+        type="text"
+        tag="input"
+        default="$default$"
+        focus="$focus$"
+        class="$class$" />
+  </$reveal>
+  <$reveal type="nomatch" text="" default="$readonly$">
+    <input type="text" value="$default$" readonly="true" disabled="true" />
+  </$reveal>
+\end
+
+\define input-button(field, index, default, default, label:"Proceed")
+  <div class="tmap-button-wrapper">
+  <$button>$label$
+    <$action-setfield $tiddler=<<output>> $field="$field$" index="$index$" $value="$default$" />
+  </$button>
+  </div>
+\end
+
+\define input-textarea(field, index, default, default, class, focus)
+  <$edit-text
+      tiddler=<<output>>
+      field="$field$"
+      index="$index$"
+      autoHeight="no"
+      type="text"
+      tag="textarea"
+      default="$default$"
+      class="$class$"
+      focus="$focus$" />
+\end
+
+\define input-checkbox(field, index, readonly, default)
+  <$reveal type="match" text="" default="$readonly$">
+    <$checkbox
+        tiddler=<<output>>
+        field="$field$"
+        index="$index$"
+        checked="true"
+        unchecked="false"
+        default="$default$" />
+  </$reveal>
+  <$reveal type="nomatch" text="" default="$readonly$">
+    <input type="checkbox" value="$default$" readonly="true" disabled="true" />
+  </$reveal>
+\end
+
+\define input-multi-checkbox(selectFilter, invert:"no", default)
+  <div class="tmap-no-stretch">
+  <$list
+      filter="$selectFilter$"
+      emptyMessage="– This list contains no items –">
+    <$checkbox
+        tiddler=<<output>>
+        tag=<<tmap "splitAndSelect" "|" "0">>>
+      <$view
+          tiddler=<<tmap "splitAndSelect" "|" "1">>
+          field="title" />
+    </$checkbox><br />
+  </$list>
+  </div>
+\end
+
+\define input-select(field, index, selectFilter, default, nochoice)
+  <$select
+      tiddler=<<output>>
+      field="$field$"
+      index="$index$"
+      default="$default$">
+    <$set name="nochoice" value="$nochoice$">
+      <$list filter="[<nochoice>regexp[.+]]">
+        <option value=""><b><<nochoice>></b></option>
+      </$list>
+    </$set>
+    <$list filter="$selectFilter$">
+      <option value=<<tmap "splitAndSelect" "|" "0">> >
+        <$view tiddler=<<tmap "splitAndSelect" "|" "1">> field="title" />
+      </option>
+    </$list>
+  </$select>
+\end
+
+\define input-radio(field, index, selectFilter, default)
+  <$list filter="$selectFilter$">
+    <$radio
+        tiddler=<<output>>
+        field="$field$"
+        index="$index$"
+        value=<<tmap "splitAndSelect" "|" "0">>>
+      <<tmap "splitAndSelect" "|" "1">>
+    </$radio><br />
+  </$list>
+\end
+
+\define tmap-row(title, field, index, type, descr, note, label, default, readonly, reset, selectFilter, nochoice, invert, class, focus)
+  <tr>
+    <td class="tmap-title">$title$:</td>
+    <td>
+        <<$type$
+          field:"$field$"
+          index:"$index$"
+          readonly:"$readonly$"
+          default:"$default$"
+          label:"$label$"
+          invert:"$invert$"
+          selectFilter:"$selectFilter$"
+          nochoice:"$nochoice$"
+          focus:"$focus$"
+          class:"$class$">>
+        <$reveal type="match" text="true" default="$reset$">
+          <$button>reset
+            <$action-setfield $tiddler=<<output>> $field="$field$" $index="$index$" $value="$default$" />
+          </$button>
+        </$reveal>
+    </td>
+    <td>
+      <span class="tmap-description">$descr$</span>
+      <$reveal type="nomatch" text="" default="$note$">
+        <div class="tmap-note">''Note:'' $note$</div>
+      </$reveal>
+    </td>
+  </tr>
+\end
+
+\define visConfiguration(inheritedList, extensionField, styleName:"style")
+  <fieldset><legend>Visjs configurations ($styleName$)</legend>
+    <div class="tmap-flash-message tmap-info">
+      Only config items that you actually changed have an effect on
+      the graph. Other options are visible, yet, inactive.
+    </div>
+    <$tmap-config
+        mode="manage-node-types"
+        inherited="$inheritedList$"
+        extension="$extensionField$" />
+  </fieldset>
+\end

@@ -1,0 +1,12 @@
+tags:
+title: $:/plugins/bimlas/locator/templates/view-toolbar
+type: text/vnd.tiddlywiki
+
+<$list filter="[title<contextState>!field:invert-direction[yes]]" variable="null">
+  <$list filter="[subfilter<filter-field-of-relationship>!regexp[^LINKS-IN-TEXT$]]">
+    {{||$:/plugins/bimlas/locator/buttons/create-new-tiddler}}
+  </$list>
+  {{$:/plugins/bimlas/locator/buttons/search-in-context}}
+</$list>
+{{$:/plugins/bimlas/locator/buttons/collapse-history}}
+{{$:/plugins/bimlas/locator/buttons/toggle-context-settings}}

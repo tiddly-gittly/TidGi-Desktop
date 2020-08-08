@@ -1,0 +1,9 @@
+created: 20200414150455988
+creator: LinOnetwo
+module-type: startup
+title: $:/plugins/linonetwo/prevent-edit/preventPopUp.js
+type: application/javascript
+
+exports.startup = function() {
+  $tw.unloadTasks = $tw.unloadTasks.filter(task => !task.toString().includes('confirmationMessage'));
+}

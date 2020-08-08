@@ -1,0 +1,8 @@
+tags:
+title: $:/config/bimlas/locator/fields/list
+type: text/vnd.tiddlywiki
+field-type: list
+hide-in-nested-fields-filter: yes
+hide-in-regular-fields-filter: yes
+
+$:/plugins/bimlas/locator/field-templates/link

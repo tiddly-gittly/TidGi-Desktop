@@ -1,0 +1,10 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/fieldChanged
+subtitle: {{$:/core/images/info-button}} The field "<<name>>" changed
+
+\rules except wikilink
+
+You changed the field "<<name>>" from "<<oldValue>>" to "<<newValue>>".
+
+It is recommended to let TiddlyMap copy all values from the former field "<<oldValue>>" to the new field "<<newValue>>" so the data stored in "<<oldValue>>" is not lost. This operation has to be done now or never.
+
+Do you want to move each tiddler's existing "<<oldValue>>" value to "<<newValue>>"? Please note that any value currently stored in "<<newValue>>" would consequently be overridden and the old field "<<oldValue>>" would be eventually removed!

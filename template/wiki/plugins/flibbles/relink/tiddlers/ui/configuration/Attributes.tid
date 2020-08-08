@@ -1,0 +1,70 @@
+caption: {{$:/plugins/flibbles/relink/language/ui/Attributes/Caption}}
+tags: $:/tags/flibbles/relink/Configuration
+title: $:/plugins/flibbles/relink/ui/configuration/Attributes
+
+\import $:/plugins/flibbles/relink/ui/components/tables
+\define prefix-attr() $:/config/flibbles/relink/attributes/
+\define lingo-base() $:/plugins/flibbles/relink/language/Buttons/
+\define element-name-tiddler() $:/state/flibbles/relink/element-name
+\define attribute-name-tiddler() $:/state/flibbles/relink/attribute-name
+
+\define row()
+<$set name="element"
+      filter="[<key>splitbefore[/]removesuffix[/]]">
+<$set name="attribute"
+      filter="[<key>removeprefix<element>removeprefix[/]]">
+<td><$text text=<<element>> /></td>
+<td><$text text=<<attribute>> /></td>
+</$set></$set>
+\end
+\define body()
+
+{{$:/plugins/flibbles/relink/language/Help/Attributes}}
+
+<em class="tc-edit">Add a new attribute:</em>
+<$edit-text
+	tiddler=<<element-name-tiddler>>
+	tag="input"
+	default=""
+	placeholder="widget/element" />
+<$edit-text
+	tiddler=<<attribute-name-tiddler>>
+	tag="input"
+	default=""
+	placeholder="attribute" />
+<$reveal type="nomatch" text="" state=<<element-name-tiddler>> >
+<$reveal type="nomatch" text="" state=<<attribute-name-tiddler>> >
+<$relinkmangler>
+<$button
+	tooltip={{$(lingo-base)$NewAttribute/Hint}}
+	aria-label={{$(lingo-base)$NewAttribute/Caption}}>
+<$action-sendmessage
+	$message="relink-add-attribute"
+	element={{$(element-name-tiddler)$}}
+	attribute={{$(attribute-name-tiddler)$}} />
+<$action-deletetiddler $tiddler=<<attribute-name-tiddler>> />
+<$action-deletetiddler $tiddler=<<element-name-tiddler>> />
+<$text text={{$(lingo-base)$NewAttribute/Caption}}/>
+</$button>
+</$relinkmangler>
+</$reveal>
+<$reveal type="match" text="" state=<<attribute-name-tiddler>> >
+<$button>
+<$text text={{$(lingo-base)$NewAttribute/Caption}}/>
+</$button>
+</$reveal>
+</$reveal>
+<$reveal type="match" text="" state=<<element-name-tiddler>> >
+<$button>
+<$text text={{$(lingo-base)$NewAttribute/Caption}}/>
+</$button>
+</$reveal>
+
+<$macrocall
+	$name=tables
+	category="attributes"
+	header-list="[[Widget/HTML Element]] Attribute Type"
+	list-row-macro="row" />
+\end
+
+<<body>>

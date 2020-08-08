@@ -1,0 +1,10 @@
+command-palette-caret: 33
+command-palette-name: Recent Tiddlers
+command-palette-type: prompt-basic
+created: 20200604001529132
+modified: 20200610112702585
+tags: $:/tags/CommandPaletteCommand
+title: $:/plugins/souk21/commandpalette/Recent Tiddlers Command
+type: text/vnd.tiddlywiki
+
+[!is[system]!sort[created]search[]]

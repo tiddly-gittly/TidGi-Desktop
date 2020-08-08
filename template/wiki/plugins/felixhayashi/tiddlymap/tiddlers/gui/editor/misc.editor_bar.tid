@@ -1,0 +1,244 @@
+title: $:/plugins/felixhayashi/tiddlymap/misc/advancedEditorBar
+
+\rules except wikilink
+\define showEdgeField() show-$(curEdgeId)$
+
+<!-- === View Switcher ========================================== -->
+
+<div class="tmap-menu-bar">
+  View:
+  <$reveal type="match" text="false" default=<<isViewBound>> >
+    <$select
+        tiddler=<<viewHolder>>
+        field="text"
+        default=<<viewLabel>> >
+      <$list filter=<<tmap "option" "selector.allViewsByLabel">> >
+        <option value={{!!title}}>
+          <$view tiddler={{!!title}} field="title" />
+        </option>
+      </$list>
+    </$select>
+  </$reveal>
+  <$reveal type="match" text="true" default=<<isViewBound>> >
+    <b><<viewLabel>></b>
+  </$reveal>
+
+<!-- === Menu =================================================== -->
+
+  <$button
+      popup=<<qualify "$:/temp/menu">>
+      class="tmap-unicode-button"
+      tooltip="Open the Menu">{{$:/core/images/menu-button}}
+  </$button>
+
+  <$reveal type="popup" position="below" state=<<qualify "$:/temp/menu">> >
+    <div class="tc-drop-down">
+      <a href="http://tiddlymap.org#Documentation" target="_blank">
+        {{$:/core/images/info-button}} Open online help
+      </a>
+      <$button class="tc-btn-invisible" message="tmap:tm-create-view">
+        {{$:/core/images/new-button}} Create new view
+      </$button>
+      <$button class="tc-btn-invisible" message="tmap:tm-generate-widget">
+        {{$:/core/images/permalink-button}} Grab widget code
+      </$button>
+      <div class="tmap-list-separator">Global configurations:</div>
+      <$button class="tc-btn-invisible" message="tmap:tm-configure-system">
+        {{$:/core/images/options-button}} Configure TiddlyMap
+      </$button>
+      <$button class="tc-btn-invisible" message="tmap:tm-manage-edge-types">
+        <span class="tmap-unicode-icon">◭</span> Manage edge-types
+      </$button>
+      <$button class="tc-btn-invisible" message="tmap:tm-manage-node-types">
+        <span class="tmap-unicode-icon">▢</span> Manage node-types
+      </$button>
+      <div class="tmap-view-actions">
+        <div class="tmap-list-separator">Actions for this view:</div>
+        <$button class="tc-btn-invisible" message="tmap:tm-edit-view">
+          {{$:/core/images/options-button}} Configure view
+        </$button>
+        <$button class="tc-btn-invisible" message="tmap:tm-rename-view">
+          {{$:/core/images/tag-button}} Rename view
+        </$button>
+        <$button class="tc-btn-invisible" message="tmap:tm-delete-view">
+          {{$:/core/images/delete-button}} Delete view
+        </$button>
+      </div>
+    </div>
+  </$reveal>
+
+<!-- === Neighbourhood menu ===================================== -->
+
+  <$reveal
+      type="match"
+      text="true"
+      default=<<tmap "option"
+                     "config.sys.editorMenuBar.showNeighScopeButton">>>
+    <$button
+        class=<<neighScopeBtnClass>>
+        tooltip="Change the neighbourhood scope"
+        popup=<<qualify "$:/temp/neighScope">>>
+      {{$:/core/images/preview-open}}
+    </$button>
+  </$reveal>
+
+  <$reveal type="popup" position="below" state=<<qualify "$:/temp/neighScope">> >
+    <div class="tc-drop-down">
+      <div class="tmap-list-separator">Neighbourhood scope</div>
+      <$button class="tc-btn-invisible">None
+        <$action-setfield
+            $tiddler=<<viewRoot>>
+            config.neighbourhood_scope="" />
+      </$button>
+      <$list filter="[[1|1 step distance]]
+                     [[2|2 step distance]]
+                     [[3|3 step distance]]
+                     [[4|4 step distance]]
+                     [[5|5 step distance]]">
+        <$button class="tc-btn-invisible">
+          <<tmap "splitAndSelect" "|" "1">>
+          <$action-setfield
+              $tiddler=<<viewRoot>>
+              config.neighbourhood_scope=<<tmap "splitAndSelect" "|" "0">> />
+        </$button>
+      </$list>
+      <$button class="tc-btn-invisible">No limit
+        <$action-setfield
+            $tiddler=<<viewRoot>>
+            config.neighbourhood_scope="100" />
+      </$button>
+
+      <div class="tmap-list-separator">Neighbourhood traversal</div>
+
+      <$radio field="config.neighbourhood_directions" value="in"> Incoming</$radio><br />
+      <$radio field="config.neighbourhood_directions" value="out"> Outgoing</$radio><br />
+      <$radio field="config.neighbourhood_directions" value=""> Both</$radio>
+
+      <div class="tmap-list-separator">Other</div>
+
+      <$checkbox field="config.show_inter_neighbour_edges"
+          checked="true" unchecked="false"> Inter-neighbour edges</$checkbox>
+
+    </div>
+  </$reveal>
+
+<!-- === Tracing ===================================== -->
+
+  <$reveal
+      type="match"
+      text="true"
+      default=<<isShowNeighbourhood>>>
+    <$button
+        class=<<tracingBtnClass>>
+        tooltip="Trace your clicks on neighbouring nodes."
+        popup=<<qualify "$:/temp/tmap-tracing">>>
+      {{$:/core/images/timestamp-on}}
+    </$button>
+  </$reveal>
+
+  <$reveal type="popup" position="below" state=<<qualify "$:/temp/tmap-tracing">> >
+    <div class="tc-drop-down">
+      <$button message="tmap:tm-neighbourhood-reset-trace">
+        {{$:/core/images/erase}} Restart
+      </$button>
+      <span
+        title="
+          Enable this option to trace your clicks on neighbouring nodes.
+          Traced neighbours are temporarily added to the map (until the map is closed)
+          as if they where regular nodes of the map"
+      >
+        <$checkbox
+          field="config.neighbourhood_trace_clicks"
+          checked="true"
+          unchecked="false"
+        >
+          Trace clicked nodes
+        </$checkbox>
+      </span>
+      <br />
+      <span title="Will focus an zoom on the latest traced node">
+        <$checkbox
+          field="config.neighbourhood_focus_newly_traced_node"
+          checked="true"
+          unchecked="false"
+        >
+          Focus traced nodes
+        </$checkbox>
+      </span>
+      <br />
+      <span title="Per default, only neighbours of nodes matching the node filter are displayed. Enable this option to also show neighbours of traced nodes.">
+        <$checkbox field="config.neighbourhood_include_traced_node_neighbours"
+            checked="true" unchecked="false"> Show neighbours of all traced nodes</$checkbox>
+      </span>
+    </div>
+  </$reveal>
+
+<!-- === Export menu ============================================ -->
+
+  <$reveal
+      type="match"
+      text="true"
+      default=<<tmap "option" "config.sys.editorMenuBar.showScreenshotButton">>>
+    <$button class="tmap-unicode-button" tooltip="Open the map-export menu" popup=<<qualify "$:/temp/mapExport">>>
+      {{$:/core/images/download-button}}
+    </$button>
+  </$reveal>
+
+  <$reveal type="popup" position="below" state=<<qualify "$:/temp/mapExport">>>
+    <div class="tc-drop-down">
+    <$button
+        class="tc-btn-invisible"
+        tooltip="Export the graph and all its elements
+                 in form of a JSON file">
+        {{$:/core/images/permalink-button}} Save as JSON file
+      <$action-sendmessage
+          $message="tmap:tm-download-graph"
+          view=<<viewLabel>> />
+    </$button>
+    <$button
+        class="tc-btn-invisible"
+        tooltip="Create a png image to download or save it
+                 as image or view-placeholder in your wiki">
+        {{$:/core/images/palette}} Save as png image
+      <$action-sendmessage $message="tmap:tm-save-canvas" />
+    </$button>
+    </div>
+  </$reveal>
+
+<!-- === Raster menu ============================================ -->
+
+  <$reveal
+      type="match"
+      text="true"
+      default=<<tmap "option" "config.sys.editorMenuBar.showRasterMenuButton">>>
+    <$button
+      tooltip="Change the raster of your map"
+      class="tmap-unicode-button"
+      popup=<<qualify "$:/temp/rasterMenu">>>
+      {{$:/core/images/line-width}}
+    </$button>
+  </$reveal>
+
+  <$reveal type="popup" position="below" state=<<qualify "$:/temp/rasterMenu">>>
+    <div class="tc-drop-down">
+    <$button class="tc-btn-invisible">Disable raster
+      <$action-setfield
+          $tiddler=<<viewRoot>>
+          config.raster="" />
+    </$button>
+    <div class="tmap-list-separator">Raster sizes</div>
+    <$list filter="[[50|50px]]
+                   [[75|75px]]
+                   [[100|100px]]
+                   [[150|150px]]">
+      <$button class="tc-btn-invisible">
+        <<tmap "splitAndSelect" "|" "1">>
+        <$action-setfield
+            $tiddler=<<viewRoot>>
+            config.raster=<<tmap "splitAndSelect" "|" "0">> />
+      </$button>
+    </$list>
+    </div>
+  </$reveal>
+
+</div>

@@ -1,0 +1,11 @@
+command-palette-mode: drafts
+command-palette-name: Save Tiddler
+command-palette-type: history
+cp-hint: Choose Draft to save
+created: 20200605221150599
+modified: 20200605221400754
+tags: $:/tags/CommandPaletteCommand
+title: $:/plugins/souk21/commandpalette/Save Tiddler
+type: text/vnd.tiddlywiki
+
+tm-save-tiddler

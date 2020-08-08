@@ -1,0 +1,6 @@
+caption: Icon
+tags: $:/tags/bimlas/locator/field-templates
+title: $:/plugins/bimlas/locator/field-templates/icon
+type: text/vnd.tiddlywiki
+
+<button class="tc-btn-invisible" disabled><$transclude><<currentTiddler>></$transclude></button> {{||$:/plugins/bimlas/locator/field-templates/link}}

@@ -1,0 +1,143 @@
+tags:
+title: $:/plugins/bimlas/locator/settings/settings
+type: text/vnd.tiddlywiki
+
+\define show-in-fields()
+  <$select field="hide-in-nested-fields-filter" default="">
+    <option value="">Show</option>
+    <option value="yes">Hide</option>
+  </$select> in nested filter (`locator-view`, `locator-search`)<br/>
+  <$select field="hide-in-regular-fields-filter" default="">
+    <option value="">Show</option>
+    <option value="yes">Hide</option>
+  </$select> in regular filter (`locator-fields` and tiddler info)
+\end
+
+\define field-type()
+  <$select field="field-type" default="">
+    <option value="">Value</option>
+    <option value="list">List</option>
+  </$select>
+\end
+
+\define field-direction()
+  <$select field="field-direction" default="">
+    <option value="">No</option>
+    <option value="to">Yes</option>
+    <!--
+    I blocked it because a tree with children on top is difficult to handle:
+
+    For example, there is a tiddler named "Father" which has "Kid" in the "children" field
+
+    If you want to filter tiddlers by field values (for example, in the fields filter),
+    "Father" will be listed among those tiddlers that have "Kid" in the "children" field.
+    In fact, we wanted to children of "Kid".
+
+    Filtering "Kid" in the "Fields" search tab will list the tiddlers that have "Kid" in
+    their "children" field (for example, "Father"). If you turn on recursive filtering,
+    it will list all tiddlers starting with "Kid" (so "Father" will not be listed).
+
+    The "Create tiddler in context" button also has to be aware of the direction of the
+    field, which also complicates the code.
+
+    If you do make this option available, remember to tell the user that when renaming a
+    tiddler, he must rewrite the field values that refer to the current tiddler. If you
+    want to rewrite it automatically, make sure it works properly with the Relink plugin
+    (does not adding the new name more than once to the field).
+    -->
+    <!-- <option value="from">From</option> -->
+  </$select>
+\end
+
+\define template()
+  <$select field="text" default="$:/plugins/bimlas/locator/field-templates/text">
+    <$list filter="[all[tiddlers+shadows]tag[$:/tags/bimlas/locator/field-templates]]">
+      <option value=<<currentTiddler>>><$transclude field="caption"><$view field="title"/></$transclude></option>
+    </$list>
+  </$select>
+  <$transclude/>
+\end
+
+\define settings(field)
+  <$importvariables filter="[all[tiddlers+shadows]prefix[$:/plugins/bimlas/locator/macros/]]">
+
+  <h3><$link to="$:/config/bimlas/locator/fields/$field$"><$text text=<<__field__>>/></$link></h3>
+
+    <div class="tc-control-panel">
+      <table>
+        <tbody>
+          <tr>
+            <td>Description</td>
+            <td>//{{$:/language/Docs/Fields/$field$}}//</td>
+          </tr>
+          <tr>
+            <td>Show in fields filter</td>
+            <td>
+              <<show-in-fields>>
+            </td>
+          </tr>
+          <tr>
+            <td>Field type</td>
+            <td>
+              <<field-type>>
+              <p>//Does the field contain a single value (for example `Franz Kafka`) or a list of values (`[[Franz Kafka]] [[Dostojevskij]]`)?//</p>
+            </td>
+          </tr>
+          <tr>
+            <td>Does the field represent a tree?</td>
+            <td>
+              <<field-direction>>
+              <p>//If the field contains the title(s) of other tiddler(s) (like "tags"), set it to "Yes".//</p>
+            </td>
+          </tr>
+          <tr>
+            <td>Template</td>
+            <td>
+              <<template>>
+              <p>//The template to display in the field filter.//</p>
+              <p>//You can create your own field template tiddlers by adding the// <<tag "$:/tags/bimlas/locator/field-templates">> //tag to them (click on this tag pill for examples).//</p>
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+
+  </$importvariables>
+\end
+
+\define option()
+  <option value=<<currentTiddler>>>
+    <$view field="title"/>
+    <$list filter="[subfilter<settingsTiddler>is[tiddler]] [subfilter<settingsTiddler>is[shadow]] +[first[]]">~</$list>
+    <$list filter="[subfilter<settingsTiddler>is[tiddler]]">*</$list>
+  </option>
+\end
+
+\define settingsTiddler() [title<currentTiddler>addprefix[$:/config/bimlas/locator/fields/]]
+
+Select field to edit its settings:
+<$select tiddler="$:/temp/bimlas/locator/settings-of-field">
+  <optgroup label="Fields of regular tiddlers">
+    <$list filter="[!is[system]fields[]sort[]]">
+      <<option>>
+    </$list>
+  </optgroup>
+  <optgroup label="Fields of system tiddlers">
+    <$list filter="[all[tiddlers+shadows]is[system]fields[]] -[!is[system]fields[]] +[sort[]]">
+      <<option>>
+    </$list>
+  </optgroup>
+</$select>
+
+* //`~`: Has custom settings//
+* //`*`: Settings modified by user//
+
+To set up a new field, first add it to at least one tiddler.
+
+<p>//You can create your own context item template tiddlers by adding the// <<tag "$:/tags/bimlas/locator/context-item-templates">> //tag to them (click on this tag pill for examples).//</p>
+
+<$list filter="[title{$:/temp/bimlas/locator/settings-of-field}] -[[]]">
+  <$list filter=<<settingsTiddler>>>
+    <$macrocall $name="settings" field={{$:/temp/bimlas/locator/settings-of-field}}/>
+  </$list>
+</$list>

@@ -1,0 +1,18 @@
+tags:
+title: $:/plugins/bimlas/locator/buttons/remove-filters-of-current-field
+type: text/vnd.tiddlywiki
+
+\define actions()
+  <$action-setfield $tiddler=<<intersectionState>> $index=<<currentField>> $value=""/>
+  <$action-setfield $tiddler=<<differenceState>> $index=<<currentField>> $value=""/>
+  <$action-listops $tiddler=<<contextState>> $field="opened-fields-filters" $subfilter="-[<currentField>]"/>
+  <$list filter="[<recursiveFilteringOfCurrentFieldAvailable>regexp[yes]]" variable="null">
+    <$action-setfield $tiddler="$:/state/bimlas/locator/search/recursive-filters/" $index=<<currentField>> $value=""/>
+  </$list>
+\end
+
+<$list filter="[title<intersectionState>] [title<differenceState>] +[locator-selected-field-values<currentField>first[]]" variable="null">
+  <$button tooltip="Remove field filters" class=<<link-button-class>> actions=<<actions>>>
+    {{$:/core/images/cancel-button}}
+  </$button>
+</$list>

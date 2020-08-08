@@ -1,0 +1,9 @@
+{
+  "title": "$:/plugins/linonetwo/watch-fs",
+  "description": "Reload changed tiddlers from disc",
+  "author": "LinOnetwo",
+  "core-version": ">=5.1.22",
+  "plugin-type": "plugin",
+  "version": "0.0.1",
+  "list": "readme"
+}

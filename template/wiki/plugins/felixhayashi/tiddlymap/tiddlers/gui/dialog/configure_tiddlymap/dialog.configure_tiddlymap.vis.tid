@@ -1,0 +1,20 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/globalConfig/vis
+classes: tmap-remove-top-space
+caption: Graph
+
+\rules except wikilink
+
+<div class="tmap-flash-message tmap-info">
+  The global vis configurations will affect all views and their
+  elements (nodes and edges) unless they are overridden on a lower
+  level. All options below are documented at
+  [[vis.js.org|http://visjs.org/docs/network]].
+</div>
+<div class="tmap-flash-message tmap-info">
+  Only config items that you actually changed have an effect on
+  the graph. Other options are visible, yet, inactive.
+</div>
+<$tmap-config
+    mode="manage-config"
+    inherited="inherited-style"
+    extension="config.vis" />

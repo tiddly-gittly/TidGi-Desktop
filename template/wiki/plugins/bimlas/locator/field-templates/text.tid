@@ -1,0 +1,6 @@
+caption: Text
+tags: $:/tags/bimlas/locator/field-templates
+title: $:/plugins/bimlas/locator/field-templates/text
+type: text/vnd.tiddlywiki
+
+<$view field="title"/>

@@ -1,0 +1,53 @@
+tags:
+title: $:/plugins/bimlas/locator/templates/context-settings
+type: text/vnd.tiddlywiki
+
+\define field-of-relationship()
+  Tree is based on field:<br/>
+  <$select tiddler=<<contextState>> field="field-of-relationship" default=<<defaultFieldOfRelationship>>>
+    <$list filter="[locator-enlist-relationship-fields[]]" variable="currentField">
+      <option value=<<currentField>>>
+        <$list filter="[subfilter<filter-unfiltered-view-context-items>count[]]" variable="count">
+          (<<count>>) <<currentField>>
+        </$list>
+      </option>
+    </$list>
+  </$select>
+\end
+
+\define template-of-context-items()
+  Template of context items:<br/>
+  <$select tiddler=<<contextState>> field="template-of-context-items" default=<<__templateOfContextItems__>>>
+    <$list filter="[all[tiddlers+shadows]tag[$:/tags/bimlas/locator/context-item-templates]]">
+      <option value=<<currentTiddler>>>
+        <$transclude field="caption"><$view field="title"/></$transclude>
+      </option>
+    </$list>
+  </$select>
+\end
+
+<$list filter="[title<contextState>field:context-settings-opened[yes]]">
+  <div class="bimlas-locator context-settings">
+    <<field-of-relationship>><br/>
+    <<template-of-context-items>><br/>
+    <$checkbox
+      tiddler=<<contextState>>
+      field="invert-direction"
+      checked="yes"
+      unchecked="no"
+      default="no"
+    >
+      Invert direction
+    </$checkbox><br/>
+    <$checkbox
+      tiddler=<<contextState>>
+      field="allow-to-open-leaves"
+      checked="yes"
+      unchecked="no"
+      default="no"
+    >
+      Allow to open leaves
+    </$checkbox><br/>
+    {{$:/plugins/bimlas/locator/buttons/open-field-settings}}
+  </div>
+</$list>

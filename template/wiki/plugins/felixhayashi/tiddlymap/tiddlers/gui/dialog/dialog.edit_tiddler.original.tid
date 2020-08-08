@@ -1,0 +1,12 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/fullscreenTiddlerEditor/original
+caption: Current Version
+
+\rules except wikilink
+
+<div class="tmap-modal-editor">
+  <$importvariables filter="[all[tiddlers+shadows]prefix[$:/core/macros/]]">
+    <$set name="currentTiddler" value=<<originalTRef>> >
+      <$transclude tiddler="$:/core/ui/ViewTemplate" field="text" mode="block" />
+    </$set>
+  </$importvariables>
+</div>

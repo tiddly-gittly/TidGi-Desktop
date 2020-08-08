@@ -1,0 +1,6 @@
+tags:
+title: $:/plugins/bimlas/locator/macros/css-classes
+type: text/vnd.tiddlywiki
+
+\define link-button-class(additionalClasses) tc-btn-invisible tc-tiddlylink bimlas-locator $additionalClasses$
+\define menu-list-item-class() tc-menu-list-item bimlas-locator

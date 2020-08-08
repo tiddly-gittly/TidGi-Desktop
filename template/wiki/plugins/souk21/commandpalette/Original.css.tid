@@ -1,0 +1,78 @@
+created: 20200603190000307
+modified: 20200623022617588
+tags: $:/tags/CommandPaletteTheme
+title: $:/plugins/souk21/commandpalette/Original.css
+type: text/vnd.tiddlywiki
+
+
+\rules only filteredtranscludeinline transcludeinline macrodef macrocallinline html
+:root {
+    --palette-radius: 5px;
+}
+.commandpalette {
+    position: fixed;
+    background:<<colour page-background>>;
+    z-index: 9999999;
+    left: 50%;
+    top: 10%;
+    transform: translate(-50%, 0%);
+    width: 500px;
+    display: none;
+    flex-direction: column;
+    font-size: 21px;
+    border-radius: var(--palette-radius);
+    box-shadow: rgba(0, 0, 0, 0.15) 0px 0px 14px;
+    border: 4px solid rgba(0, 0, 0, 0);
+}
+.commandpalette input {
+    border: 0;
+    height: 40px;
+    color: <<colour foreground>>;
+    border-radius: var(--palette-radius) var(--palette-radius) 0px 0px;
+    padding-left: 11px;
+    padding-right: 11px;
+    width: 100%;
+    outline: 0;
+}
+.commandpalettehint {
+    color:  <<colour foreground>>;
+    font-size: 13px;
+    text-align: right;
+    flex-shrink: 0;
+    padding-right: 7px;
+    opacity: 0.6;
+}
+.commandpaletteresultselected>.commandpalettehint {
+    color: <<colour background>>;
+    opacity: 1;
+}
+.commandpalettehintmain {
+}
+.commandpaletteresult {
+    background: <<colour background>>;
+    font-size: 15px;
+    color: <<colour foreground>>;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-left: 6px;
+    padding-top: 4px;
+    padding-bottom: 4px;
+    cursor: pointer;
+}
+.commandpaletteresult:not(:last-child) {
+    border-bottom: <<colour page-background>> solid 1px;
+}
+.commandpaletteresult:hover:not(.commandpaletteresultselected) {
+    background: <<colour page-background>>;
+}
+.commandpaletteresultselected {
+    background: <<colour primary>>;
+    color: <<colour page-background>>;
+}
+.cp-scroll{
+    max-height: 50vh;
+    overflow-y: auto;
+    position: relative;
+    border-radius: 0px 0px var(--palette-radius) var(--palette-radius);
+}

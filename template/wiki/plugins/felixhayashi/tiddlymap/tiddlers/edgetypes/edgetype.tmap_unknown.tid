@@ -1,0 +1,4 @@
+title: $:/plugins/felixhayashi/tiddlymap/graph/edgeTypes/tmap:unknown
+description: Automatically assigned to an edge that does not have a type assigned
+style: {"color":"gray"}
+show-label: false

@@ -1,0 +1,49 @@
+caption: {{$:/plugins/flibbles/relink/language/ui/Fields/Caption}}
+tags: $:/tags/flibbles/relink/Configuration
+title: $:/plugins/flibbles/relink/ui/configuration/Fields
+
+\import $:/plugins/flibbles/relink/ui/components/tables
+\define lingo-base() $:/plugins/flibbles/relink/language/Buttons/
+\define field-name-tiddler() $:/state/flibbles/relink/field-name
+
+\define row()
+<td><$text text=<<key>> /></td>
+\end
+\define body()
+
+{{$:/plugins/flibbles/relink/language/Help/Fields}}
+
+<em class="tc-edit">Add a new field:</em>
+<$edit-text
+	tiddler=<<field-name-tiddler>>
+	tag="input"
+	default=""
+	placeholder="field name" />
+<$reveal type="nomatch" text="" state=<<field-name-tiddler>> >
+<$relinkmangler>
+<$button
+	tooltip={{$(lingo-base)$NewField/Hint}}
+	aria-label={{$(lingo-base)$NewField/Caption}}>
+<$action-sendmessage
+	$message="relink-add-field"
+	field={{$(field-name-tiddler)$}} />
+<$action-deletetiddler $tiddler=<<field-name-tiddler>> />
+<$text text={{$(lingo-base)$NewField/Caption}}/>
+</$button>
+</$relinkmangler>
+</$reveal>
+<$reveal type="match" text="" state=<<field-name-tiddler>> >
+<$button>
+<$text text={{$(lingo-base)$NewField/Caption}}/>
+</$button>
+</$reveal>
+
+
+<$macrocall
+	$name=tables
+	category="fields"
+	header-list="[[Field Name]] [[Field Type]]"
+	list-row-macro="row" />
+\end
+
+<<body>>

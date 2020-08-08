@@ -1,0 +1,71 @@
+caption: {{$:/plugins/flibbles/relink/language/ui/Macros/Caption}}
+tags: $:/tags/flibbles/relink/Configuration
+title: $:/plugins/flibbles/relink/ui/configuration/Macros
+
+\import $:/plugins/flibbles/relink/ui/components/tables
+\define prefix-macro() $:/config/flibbles/relink/macros/
+\define lingo-base() $:/plugins/flibbles/relink/language/Buttons/
+\define macro-name-tiddler() $:/state/flibbles/relink/macro-name
+\define parameter-name-tiddler() $:/state/flibbles/relink/parameter-name
+
+\define row()
+<$set name="parameter"
+      filter="[<key>relink:splitafter[/]]">
+<$set name="macro"
+      filter="[<key>removesuffix<parameter>removesuffix[/]]">
+<td><$text text=<<macro>> /></td>
+<td><$text text=<<parameter>> /></td>
+</$set></$set>
+\end
+\define body()
+
+{{$:/plugins/flibbles/relink/language/Help/Macros}}
+
+<em class="tc-edit">Add a new macro parameter:</em>
+<$edit-text
+	tiddler=<<macro-name-tiddler>>
+	tag="input"
+	default=""
+	placeholder="macro" />
+<$edit-text
+	tiddler=<<parameter-name-tiddler>>
+	tag="input"
+	default=""
+	placeholder="parameter" />
+<$reveal type="nomatch" text="" state=<<macro-name-tiddler>> >
+<$reveal type="nomatch" text="" state=<<parameter-name-tiddler>> >
+<$relinkmangler>
+<$button
+	tooltip={{$(lingo-base)$NewParameter/Hint}}
+	aria-label={{$(lingo-base)$NewParameter/Caption}}>
+<$action-sendmessage
+	$message="relink-add-parameter"
+	macro={{$(macro-name-tiddler)$}}
+	parameter={{$(parameter-name-tiddler)$}} />
+<$action-deletetiddler $tiddler=<<parameter-name-tiddler>> />
+<$action-deletetiddler $tiddler=<<macro-name-tiddler>> />
+<$text text={{$(lingo-base)$NewParameter/Caption}}/>
+</$button>
+</$relinkmangler>
+</$reveal>
+<$reveal type="match" text="" state=<<parameter-name-tiddler>> >
+<$button>
+<$text text={{$(lingo-base)$NewParameter/Caption}}/>
+</$button>
+</$reveal>
+</$reveal>
+<$reveal type="match" text="" state=<<macro-name-tiddler>> >
+<$button>
+<$text text={{$(lingo-base)$NewParameter/Caption}}/>
+</$button>
+</$reveal>
+
+
+<$macrocall
+	$name=tables
+	category="macros"
+	header-list="Macro Parameter Type"
+	list-row-macro="row" />
+\end
+
+<<body>>

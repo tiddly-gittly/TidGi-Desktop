@@ -1,0 +1,60 @@
+title: $:/plugins/flibbles/relink/ui/components/tables
+
+\define .make-table(title, plugin, default-table-state:yes)
+
+<$list variable="render" filter="[relink:signatures<__plugin__>prefix<__category__>first[]]">
+<$set name="table-state" value=<<qualify """$:/state/flibbles/relink/tables/$title$""">>>
+<tr><th class="tc-relink-header-plugin" colspan=<<column-count>> >
+<$reveal type="nomatch" state=<<table-state>> text="yes" default="""$default-table-state$""">
+<$button class="tc-btn-invisible tc-btn-dropdown" set=<<table-state>> setTo="yes">
+{{$:/core/images/right-arrow}} ''$title$''
+</$button>
+</$reveal>
+<$reveal type="match" state=<<table-state>> text="yes" default="""$default-table-state$""">
+<$button class="tc-btn-invisible tc-btn-dropdown" set=<<table-state>> setTo="no">
+{{$:/core/images/down-arrow}} ''$title$''
+</$button>
+</$reveal>
+</th></tr>
+<$list
+	variable="signature"
+	filter="[relink:signatures<__plugin__>prefix<__category__>sort[]]">
+<$vars key={{{ [<signature>removeprefix<__category__>removeprefix[/]] }}} >
+<$tiddler tiddler={{{[<signature>relink:source[]]}}} >
+<$reveal tag="tr" type="match" state=<<table-state>> text="yes" default="""$default-table-state$""">
+<$macrocall $name=<<__list-row-macro__>> signature=<<signature>> />
+<td class="tc-relink-column-type">{{||$:/plugins/flibbles/relink/ui/components/select-fieldtype}}</td>
+<td class="tc-relink-column-delete">{{||$:/plugins/flibbles/relink/ui/components/button-delete}}</td>
+</$reveal>
+</$tiddler>
+</$vars>
+</$list>
+</$set>
+</$list>
+\end
+
+\define tables(category, list-row-macro, header-list)
+<$vars
+	column-count={{{[enlist<__header-list__>] [[DeleteColumn]] +[count[]]}}}>
+
+<table class="tc-relink-whitelist"><tbody>
+<tr>
+<$list variable="header" filter="[enlist<__header-list__>butlast[]]"><th><<header>></th></$list>
+<!-- We have the last column extend into the delete/link column, which is unlabeled. -->
+<th colspan=2><$text text={{{ [enlist<__header-list__>last[]] }}} /></th>
+</tr>
+
+<<.make-table Custom "" yes>>
+
+<$list
+	filter="[plugin-type[plugin]![$:/core]![$:/plugins/flibbles/relink]]">
+<$set name="subtitle" value={{!!description}} emptyValue={{!!title}} >
+<$macrocall $name=".make-table" title=<<subtitle>> plugin=<<currentTiddler>> />
+</$set>
+</$list>
+
+<<.make-table Core "$:/plugins/flibbles/relink">>
+
+</tbody></table>
+</$vars>
+\end

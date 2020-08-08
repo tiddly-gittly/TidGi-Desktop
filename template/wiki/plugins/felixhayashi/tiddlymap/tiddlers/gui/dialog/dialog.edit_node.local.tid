@@ -1,0 +1,41 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/editNode/local
+caption: Local node style
+classes: tmap-remove-top-space
+
+\rules except wikilink
+
+<div class="tmap-flash-message tmap-info">
+  The ''local node configuration''
+  (also referred to as //view-specific node configuration//)
+  overrides the //global individual configuration// and only affects
+  the node's appearance and behaviour in the current view.
+</div>
+<<maybeShowTidColorWarning>>
+
+<fieldset>
+  <legend>Behaviour</legend>
+  <table class="tmap-config-table">
+    <$macrocall type="input-select"
+        $name="tmap-row"
+        title="Open view"
+        field="local.open-view"
+        nochoice="Disabled"
+        selectFilter=<<tmap "option" "selector.allViewsByLabel">>
+        descr="Clicking on this node will open the specified
+               view instead of the tiddler represented by this node." />
+  </table>
+</fieldset>
+
+<$macrocall $name="sharedSettings"
+    twIconField="local.tw-icon"
+    faIconField="local.fa-icon"
+    labelField="local.label" />
+
+<$macrocall $name="visConfiguration"
+    mode="manage-node-types"
+    extensionField="local-individual-node-style"
+    styleName="node's local style"
+    inheritedList="[[inherited-global-default-style]]
+                   [[inherited-local-default-style]]
+                   [[inherited-group-styles]]
+                   [[global.tmap.style]]" />

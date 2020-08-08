@@ -1,0 +1,10 @@
+{
+  "title": "$:/plugins/linonetwo/opened-tiddlers-bar",
+  "name" : "Opened Tiddlers Bar",
+  "description": "VSCode style opened files top bar",
+  "author": "LinOnetwo",
+  "core-version": ">=5.1.22",
+  "plugin-type": "plugin",
+  "version": "0.0.1",
+  "list": "Readme LICENSE"
+}

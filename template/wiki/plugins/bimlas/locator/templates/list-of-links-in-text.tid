@@ -1,0 +1,7 @@
+tags:
+title: $:/plugins/bimlas/locator/templates/list-of-links-in-text
+type: text/vnd.tiddlywiki
+
+<$list filter="[subfilter<filterContextItems>sort[]]">
+  {{||$:/plugins/bimlas/locator/templates/context-item}}
+</$list>

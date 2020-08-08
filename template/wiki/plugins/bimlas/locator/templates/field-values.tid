@@ -1,0 +1,106 @@
+tags:
+title: $:/plugins/bimlas/locator/templates/field-values
+type: text/vnd.tiddlywiki
+
+\define remove-filtering-of-current-field()
+  <$action-setfield $tiddler=<<intersectionState>> $index=<<currentField>> $value=""/>
+  <$action-setfield $tiddler=<<differenceState>> $index=<<currentField>> $value=""/>
+  <$list filter="[<recursiveFilteringOfCurrentFieldAvailable>regexp[yes]]" variable="null">
+    <$action-setfield $tiddler="$:/state/bimlas/locator/search/recursive-filters/" $index=<<currentField>> $value=""/>
+  </$list>
+\end
+
+\define remove-from-intersection-state()
+  <$action-listops $tiddler=<<intersectionState>> $index=<<currentField>> $subfilter="-[all[current]]"/>
+\end
+
+\define remove-from-difference-state()
+  <$action-listops $tiddler=<<differenceState>> $index=<<currentField>> $subfilter="-[all[current]]"/>
+\end
+
+\define activate-actions()
+  <<__beforeActivateActions__>>
+  <$action-listops $tiddler=<<__filterState__>> $index=<<currentField>> $subfilter="[all[current]]"/>
+\end
+
+\define inactivate-actions()
+  <$action-listops $tiddler=<<__filterState__>> $index=<<currentField>> $subfilter="-[all[current]]"/>
+  <$list filter="[<recursiveFilteringOfCurrentFieldAvailable>regexp[yes]]" variable="null">
+    <$action-listops $tiddler="$:/state/bimlas/locator/search/recursive-filters/" $index=<<currentField>> $subfilter="-[all[current]]"/>
+  </$list>
+\end
+
+\define button-inactive()
+  <$button tooltip=<<__tooltip__>> class=<<link-button-class>> actions=<<activate-actions>>>
+    <<__icon__>>
+  </$button>
+\end
+
+\define button-active()
+  <$button tooltip=<<__tooltip__>> class=<<link-button-class additionalClasses:"active">> actions=<<inactivate-actions>>>
+    <<__icon__>>
+  </$button>
+\end
+
+\define toggle-button(filterState icon beforeActivateActions tooltip)
+  <$list filter="[title<__filterState__>locator-selected-field-values<currentField>is[current]]" emptyMessage=<<button-inactive>>>
+    <<button-active>>
+  </$list>
+\end
+
+\define field-values-of-context-items() [subfilter<filterContextItems>locator-enlist-field-values<currentField>search:title<searchedFieldValue>] [subfilter<filter-selected-field-values>] +[sort[]]
+
+<ol class="bimlas-locator">
+  <li class=<<menu-list-item-class>>>
+    <$tiddler tiddler="ANY-VALUE">
+      <$macrocall
+        $name="toggle-button"
+        filterState=<<intersectionState>>
+        icon={{$:/core/images/new-button}}
+        beforeActivateActions=<<remove-filtering-of-current-field>>
+        tooltip="Toggle filtering to any value"
+      />
+      <$macrocall
+        $name="toggle-button"
+        filterState=<<differenceState>>
+        icon={{$:/core/images/close-button}}
+        beforeActivateActions=<<remove-filtering-of-current-field>>
+        tooltip="Toggle filtering to any value"
+      />
+      __Any value__
+    </$tiddler>
+  </li>
+  <$list filter="[subfilter<field-values-of-context-items>regexp[^ANY-VALUE$]count[]] -[[1]]" variable="null">
+    <$list filter=<<field-values-of-context-items>>>
+      <li class=<<menu-list-item-class>>>
+        <$macrocall
+          $name="toggle-button"
+          filterState=<<intersectionState>>
+          icon={{$:/core/images/new-button}}
+          beforeActivateActions=<<remove-from-difference-state>>
+          tooltip="Toggle filtering to this value"
+        />
+        <$macrocall
+          $name="toggle-button"
+          filterState=<<differenceState>>
+          icon={{$:/core/images/close-button}}
+          beforeActivateActions=<<remove-from-intersection-state>>
+          tooltip="Toggle filtering to this value"
+        />
+        <$list filter="[<recursiveFilteringOfCurrentFieldAvailable>regexp[yes]]" variable="null">
+          <$macrocall
+            $name="toggle-button"
+            filterState="$:/state/bimlas/locator/search/recursive-filters/"
+            icon={{$:/core/images/link}}
+            tooltip="Toggle recursive filtering to this value"
+          />
+        </$list>
+        <$macrocall
+          $name="droppable-menu-list-item"
+          content={{$:/plugins/bimlas/locator/templates/field-value-template}}
+          actions={{$:/plugins/bimlas/locator/actions/add-field-value}}
+        />
+      </li>
+    </$list>
+  </$list>
+</ol>

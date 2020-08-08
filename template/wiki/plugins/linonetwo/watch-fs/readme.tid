@@ -1,0 +1,28 @@
+title: $:/plugins/linonetwo/watch-fs/readme
+creator: LinOnetwo
+type: text/vnd.tiddlywiki
+
+!! About
+
+This plugin enables TiddlyWiki to watch the change in your disk, and if you edit one of your tiddler using editor likes VSCode and save it on the disk, the change will immediately reflected in the browser.
+
+See https://github.com/Jermolene/TiddlyWiki5/issues/3060 for related discussions.
+
+!! [[FileSystemMonitor.js|$:/plugins/linonetwo/watch-fs/FileSystemMonitor.js]]
+
+This module watches the file system in the tiddlers folder and any changes to
+the files in the folder that don't come from the browser are reported to the
+browser. So if you make a new .tid file in the tiddlers folder it will appear
+in the wiki in the browser without needing to restart the server. You can also
+delete files to remove the tiddlers from the browser.
+
+!! How to decide whether a change is comes from the browser?
+
+We will compare disk file and wiki file, if there is any discrepancy,
+then the change is not made by the wiki, it is made by git or VSCode.
+
+!! How to sync changes to the browser?
+
+we can't trigger sync from the server, so we have to set a smaller sync interval in the client side.
+
+So this plugin ship with a [[$:/config/SyncPollingInterval]] whose value is 1000 (ms), this means browser will try to get change from the server every second.

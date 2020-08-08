@@ -1,0 +1,43 @@
+tags:
+title: $:/plugins/bimlas/locator/templates/field-names
+type: text/vnd.tiddlywiki
+
+\define close-actions()
+  <$action-listops $tiddler=<<contextState>> $field="opened-fields-filters" $subfilter="-[<currentField>]"/>
+\end
+
+\define open-actions()
+  <$action-listops $tiddler=<<contextState>> $field="opened-fields-filters" $subfilter="[<currentField>]"/>
+\end
+
+\define closed()
+  <$button class=<<fieldButtonClass>> actions=<<open-actions>>>
+    {{$:/core/images/down-arrow}} <<currentField>>
+  </$button>
+  {{$:/plugins/bimlas/locator/buttons/remove-filters-of-current-field}}
+\end
+
+\define opened()
+  <$button class=<<fieldButtonClass>> actions=<<close-actions>>>
+    {{$:/core/images/up-arrow}} <<currentField>>
+  </$button>
+  {{$:/plugins/bimlas/locator/buttons/remove-filters-of-current-field}}
+  {{$:/plugins/bimlas/locator/templates/field-values}}
+\end
+
+\define field-names() [title<intersectionState>] [title<differenceState>] +[locator-selected-field-names[]] [subfilter<filterContextItems>fields[]locator-enabled-fields<typeOfFieldsFilter>] +[sort[]]
+\define has-field-value-to-list() [subfilter<filterContextItems>has<currentField>search:$(currentField)$<searchedFieldValue>] [subfilter<filter-selected-field-values>] +[first[]]
+
+<ol class="bimlas-locator">
+  <$list filter=<<field-names>> variable="currentField">
+    <$list filter=<<has-field-value-to-list>> variable="null">
+      <$set name="recursiveFilteringOfCurrentFieldAvailable" filter="[<recursiveFilteringAvailable>regexp[yes]] [locator-enlist-relationship-fields<currentField>] +[count[]regexp[2]]" value="yes" emptyValue="no">
+        <$set name="fieldButtonClass" filter="[subfilter<filter-selected-field-values>first[]]" value=<<link-button-class additionalClasses:"active">> emptyValue=<<link-button-class>>>
+          <li class=<<menu-list-item-class>>>
+            <$list filter="[title<contextState>contains:opened-fields-filters<currentField>]" emptyMessage=<<closed>>><<opened>></$list>
+          </li>
+        </$set>
+      </$set>
+    </$list>
+  </$list>
+</ol>

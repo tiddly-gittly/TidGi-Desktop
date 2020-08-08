@@ -1,0 +1,29 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/globalConfig/default
+caption: Overview
+
+\rules except wikilink
+
+<div class="tmap-flash-message tmap-plain">
+  Please visit the [[online docs|http://tiddlymap.org/Documentation]]
+  for more information about the available global options.
+</div>
+<table class="tmap-key-value-table">
+  <tr>
+    <th align="left">Plugin version</th>
+    <td><<pluginVersion>></td>
+  </tr>
+<!--
+  <tr>
+    <th align="left">Datastructure version</th>
+    <td><<dataStructureVersion>></td>
+  </tr>
+-->
+  <tr>
+    <th align="left">Nodes in system</th>
+    <td><<numberOfNodes>></td>
+  </tr>
+  <tr>
+    <th align="left">Edges in system</th>
+    <td><<numberOfEdges>></td>
+  </tr>
+</table>

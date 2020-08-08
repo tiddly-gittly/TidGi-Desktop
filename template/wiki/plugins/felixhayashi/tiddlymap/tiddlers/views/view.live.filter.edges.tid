@@ -1,0 +1,5 @@
+title: $:/plugins/felixhayashi/tiddlymap/graph/views/Live View/filter/edges
+filter: [prefix[$:/plugins/felixhayashi/tiddlymap/graph/edgeTypes]]
+
+
+

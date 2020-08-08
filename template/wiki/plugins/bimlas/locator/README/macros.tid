@@ -1,0 +1,56 @@
+tags:
+title: $:/plugins/bimlas/locator/README/macros
+type: text/vnd.tiddlywiki
+
+! Usage of the macros
+
+!! `locator-view`
+
+This is ''a [[Table of Contents macro|https://tiddlywiki.com/#Table-of-Contents%20Macros%20(Examples)]] that lets you navigate the wiki'' just as you would with a file manager on the file system. The macro can be placed anywhere you want, for example put it in the sidebar.
+
+* Create a new tiddler
+* Add the [[$:/tags/SideBar]] tag
+* Add the `caption` field to change the title of the tab ("Contents" for example)
+* Call the macro by placing this text in the tiddler:
+
+```
+<<locator-view baseTitle:"TableOfContents">>
+```
+
+Optional parameters:
+
+; `fieldOfRelationship` (`tags` by default)
+: The default field which the tree is based on.
+
+; `templateOfContextItems` (`$:/plugins/bimlas/locator/field-templates/link` by default)
+: The default template to display the context items with.
+
+!! `locator-search` and `locator-fields`
+
+The `locator-search` macro can be used in the same way as standard search, but ''you can narrow the scope of the search to the context by the fields filter'', in `locator-fields` you can `search for field values`.
+
+* Create a new tiddler
+* Add the [[$:/tags/SearchResults]] tag
+* Add the `caption` field to change the title of the tab ("Locator" for example)
+* Call the macro by placing this text in the tiddler:
+
+```
+<<locator-search>>
+```
+
+Do the same with `<<locator-fields>>` macro.
+
+If you want to use `locator-fields` in the sidebar (like the sidebar -> More -> Tags tab) insted of standard search, you should also define the `searchTiddler` variable before the macro call:
+
+* Create a new tiddler
+* Add the [[$:/tags/SideBar]] tag
+* Add the `caption` field to change the title of the tab ("Fields" for example)
+* Call the macro by placing this text in the tiddler:
+
+```
+<$vars searchTiddler=" ">
+  <<locator-fields>>
+</$vars>
+```
+
+//Select the next tab to continue.//

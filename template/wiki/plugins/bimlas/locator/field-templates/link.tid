@@ -1,0 +1,8 @@
+caption: Link
+tags: $:/tags/bimlas/locator/field-templates $:/tags/bimlas/locator/context-item-templates
+title: $:/plugins/bimlas/locator/field-templates/link
+type: text/vnd.tiddlywiki
+
+<$link to=<<currentTiddler>>>
+  <$transclude field="caption"><$view field="title"/></$transclude>
+</$link>

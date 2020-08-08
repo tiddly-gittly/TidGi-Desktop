@@ -1,0 +1,21 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/globalConfig/fields
+caption: Field settings
+
+\rules except wikilink
+
+<table class="tmap-config-table">
+  <<tmap-row type:"input-text"
+      title:"Node-icon field"
+      field:"config.sys.field.nodeIcon" 
+      descr:"Local image used as node image in the graphs.">>
+  <<tmap-row type:"input-text"
+      title:"Node-label field"
+      field:"config.sys.field.nodeLabel" 
+      descr:"Alternative node label to use instead of the title.">>
+  <<tmap-row type:"input-text"
+      title:"Node-info field"
+      field:"config.sys.field.nodeInfo" 
+      descr:"Field used as tooltip when hovering over a node in a graph."
+      note:"It is prohibited to use the text field here.">>
+</table>   
+

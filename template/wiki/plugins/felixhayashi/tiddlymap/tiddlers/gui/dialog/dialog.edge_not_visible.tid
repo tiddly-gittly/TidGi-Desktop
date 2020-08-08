@@ -1,0 +1,39 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/edgeNotVisible
+subtitle: {{$:/core/images/info-button}} Edge will not be visible in view "<<view>>"
+buttons: ok_suppress
+
+\rules except wikilink
+
+You just created an edge of type
+<code><$text text=<<type>> /></code> that will not be
+visible in this view because it doesn't match your
+edge-type filter settings.
+
+The current edge-type filter of view "<<view>>" looks like this:
+
+<pre><code><$text text=<<eTyFilter>> /></code></pre>
+
+To have the newly added type displayed in your view, adjust your
+edge-type filter accordingly. 
+
+Some suggestions:
+
+<ul>
+  <li>
+    Explicitly add the type to the filter:
+    <code><$text text="[[" /><$text text=<<type>> /><$text text="]]" /></code>
+  </li>
+  <li>
+  <$set
+      filter="[<type>regexp[:]splitbefore[:]]"
+      name="prefix"
+      emptyValue=<<tmap halfOfString "$(type)$">>>
+  Add a filter rule (e.g. a prefix filter) that will match
+  your type: <code>[prefix[<<prefix>>]]</code>
+  </$set>
+  </li>
+  <li>Make your current view-filter less restrictive.</li>
+</ul>
+
+For further information, please see:
+[[Node and edge-type filters|http://tiddlymap.org#Node%20and%20edge-type%20filters]].

@@ -1,0 +1,9 @@
+command-palette-name: Print
+command-palette-type: message
+created: 20200604212424040
+modified: 20200604212427027
+tags: $:/tags/CommandPaletteCommand
+title: $:/plugins/souk21/commandpalette/Print
+type: text/vnd.tiddlywiki
+
+tm-print

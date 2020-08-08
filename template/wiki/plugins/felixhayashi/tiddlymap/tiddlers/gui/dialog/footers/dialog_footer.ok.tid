@@ -1,0 +1,10 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialogFooter/ok
+
+\rules except wikilink
+
+<$button class="tmap-dialog-button tmap-ok-button" tooltip="Confirm dialog">OK
+
+  <!-- trigger dialog callback -->
+  <$action-setfield $tiddler=<<result>> text="1" />
+                       
+</$button>

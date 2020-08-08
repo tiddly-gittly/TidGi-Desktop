@@ -1,0 +1,10 @@
+{
+  "tiddlers": [
+    {
+      "file": "layout.css", "fields": {
+        "title": "$:/plugins/felixhayashi/topstoryview/layout",
+        "type": "text/vnd.tiddlywiki",
+        "tags": [ "$:/tags/Stylesheet" ]
+    }}
+  ]
+}

@@ -1,0 +1,15 @@
+caption: Edit fields
+tags: $:/tags/bimlas/locator/context-item-templates
+title: $:/plugins/bimlas/locator/field-templates/edit-fields
+type: text/vnd.tiddlywiki
+
+\define frame-classes() tc-tiddler-frame tc-tiddler-edit-frame $(missingTiddlerClass)$ $(shadowTiddlerClass)$ $(systemTiddlerClass)$
+
+{{||$:/plugins/bimlas/locator/field-templates/link}}
+<div class=<<frame-classes>> data-tiddler-title=<<currentTiddler>>>
+  <$fieldmangler>
+    {{||$:/core/ui/EditTemplate/tags}}
+    {{||$:/core/ui/EditTemplate/fields}}
+  </$fieldmangler>
+</div>
+<hr style="border-top: double"/>

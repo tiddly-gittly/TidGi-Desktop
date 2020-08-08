@@ -1,0 +1,7 @@
+tags:
+title: $:/config/bimlas/locator/fields/tags
+type: text/vnd.tiddlywiki
+field-type: list
+field-direction: to
+
+$:/plugins/bimlas/locator/field-templates/tag

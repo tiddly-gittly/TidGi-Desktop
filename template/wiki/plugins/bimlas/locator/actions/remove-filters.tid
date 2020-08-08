@@ -1,0 +1,7 @@
+tags: $:/tags/Actions
+title: $:/plugins/bimlas/locator/actions/remove-filters
+type: text/vnd.tiddlywiki
+
+<$action-deletetiddler $tiddler=<<intersectionState>>/>
+<$action-deletetiddler $tiddler=<<differenceState>>/>
+<$action-setfield $tiddler=<<contextState>> opened-fields-filters=""/>

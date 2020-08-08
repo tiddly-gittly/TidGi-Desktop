@@ -1,0 +1,19 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/globalConfig/liveTab
+caption: Live tab
+
+\rules except wikilink
+
+<table class="tmap-config-table">
+  <<tmap-row type:"input-checkbox"
+      title:"Show Live tab"
+      field:"liveTab" 
+      descr:"Show or hide the live tab in the sidebar.">>
+  <$macrocall type="input-select"
+      $name="tmap-row"
+      title="Fallback view"
+      field="config.sys.liveTab.fallbackView" 
+      selectFilter=<<tmap "option" "selector.allViewsByLabel">>
+      descr="The view to display in the sidebar's live tab in
+             case the current tiddler did not specify a view
+             to open." />
+</table>

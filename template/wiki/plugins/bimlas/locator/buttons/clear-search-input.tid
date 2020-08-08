@@ -1,0 +1,8 @@
+tags:
+title: $:/plugins/bimlas/locator/buttons/clear-search-input
+type: text/vnd.tiddlywiki
+
+<$button tooltip="Clear search text, show all results" class=<<link-button-class>>>
+  <$action-setfield $tiddler="$:/temp/search" text="   "/>
+  {{$:/core/images/preview-open}}
+</$button>

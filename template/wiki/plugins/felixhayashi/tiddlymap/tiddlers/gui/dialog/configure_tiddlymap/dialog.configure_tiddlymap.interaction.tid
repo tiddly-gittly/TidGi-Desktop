@@ -1,0 +1,83 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/globalConfig/interaction
+caption: Interaction & behaviour
+
+\rules except wikilink
+
+<table class="tmap-config-table">
+  <$macrocall type="input-select"
+        $name="tmap-row"
+        title="Default startup view"
+        field="config.sys.defaultView"
+        nochoice="Last view used at startup"
+        selectFilter=<<tmap "option" "selector.allViewsByLabel">>
+        descr="The view to display at startup" />
+  <<tmap-row type:"input-checkbox"
+      title:"Show popups"
+      field:"config.sys.popups.enabled"
+      descr:"Set this to true if you want to see automatic
+             popups in the map.">>
+  <$list filter="[config.sys.popups.enabled[true]]">
+  <<tmap-row type:"input-text"
+      title:"Popup delay"
+      field:"config.sys.popups.delay"
+      descr:"The time in miliseconds that needs to pass after
+             a tooltip is triggered.">>
+  <<tmap-row type:"input-text"
+      title:"Popup width"
+      field:"config.sys.popups.width"
+      descr:"The default max-width of the popup."
+      note:"Make sure you added the desired unit (e.g. `px`).
+            Requires a wiki refresh.">>
+  <<tmap-row type:"input-text"
+      title:"Popup height"
+      field:"config.sys.popups.height"
+      descr:"The default max-height of the popup."
+      note:"Make sure you added desired the unit (e.g.  `px`).
+            Requires a wiki refresh.">>
+  </$list>
+  <<tmap-row type:"input-checkbox"
+      title:"Allow single click mode"
+      field:"config.sys.singleClickMode"
+      descr:"A single click on a node is sufficient to open the
+             corresponding tiddler."
+      note:"Drag and drop will still work and does not cause a
+            tiddler to be opened. Single click is never active in
+            the map editor.">>
+  <<tmap-row type:"input-select"
+      title:"Edge click behaviour"
+      field:"config.sys.edgeClickBehaviour"
+      selectFilter:"[[nothing|Nothing]]
+                    [[manager|Open edge-type manager]]"
+      descr:"What should happen when you click on an edge?">>
+  <<tmap-row type:"input-select" title:"Raster size" field:"config.sys.raster"
+      selectFilter:"[[|disabled]] [[5|5px]] [[10|10px]] [[15|15px]] [[20|20px]] [[30|30px]] [[40|40px]]"
+      descr:"Snap nodes to an invisible raster of the given size after drag'n'drop."
+      note:"Only works when the view is not in floating mode">>
+  <<tmap-row type:"input-checkbox"
+      title:"Apply node-filter to neighbours"
+      field:"config.sys.nodeFilterNeighbours"
+      descr:"If checked, neighbours displayed in the map will be filtered
+      by the view's node-filter. Otherwise the node-filter will only be used
+      to filter the original set of nodes in the map">>
+</table>
+
+!! Suppressed dialogs
+
+<div class="tmap-flash-message tmap-plain">
+  Dialogs that you decided to suppress in the past are listed here.
+  Remove the checkmark to enable dialogs again.
+</div>
+
+<table class="tmap-config-table">
+  <$list
+      filter="[<output>fields[]prefix[config.sys.suppressedDialogs]]"
+      emptyMessage="–">
+      <$set name="dialogName" value=<<tmap basename ".">>>
+      <$macrocall $name="tmap-row"
+            type="input-checkbox"
+            title="Suppress '$(dialogName)$' dialog"
+            field=<<currentTiddler>> />
+      </$set>
+    <br />
+  </$list>
+</table>

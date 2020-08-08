@@ -1,0 +1,36 @@
+tags: $:/tags/Macro
+title: $:/plugins/bimlas/locator/macros/locator-fields
+type: text/vnd.tiddlywiki
+
+\define locator-fields()
+  <!-- Hide internal macros, do not make them globally available -->
+  <$importvariables filter="[all[tiddlers+shadows]prefix[$:/plugins/bimlas/locator/macros/]]">
+    <$vars
+      contextState="$:/state/bimlas/locator/search/context/"
+      intersectionState="$:/state/bimlas/locator/search/intersection/"
+      differenceState="$:/state/bimlas/locator/search/difference/"
+      recursiveFilteringAvailable="yes"
+    >
+
+      {{$:/plugins/bimlas/locator/templates/search-toolbar}} {{$:/plugins/bimlas/locator/buttons/remove-filters}}
+
+      <p><$checkbox tiddler=<<contextState>> field="limit-to-fields-of-filtered-tiddlers" checked="yes" unchecked="no" default="yes"> Limit to fields of filtered tiddlers</$checkbox></p>
+
+      <$list filter="[subfilter<filter-selected-field-values>first[]]" emptyMessage="""<$list filter="0" variable="resultCount" template="$:/language/Search/Matches"/>""">
+        <$list filter="[subfilter<filter-search-context>count[]]" variable="resultCount" template="$:/language/Search/Matches"/>
+      </$list>
+
+      <!-- searchTiddler variable does not available in transcluded tiddlers by default -->
+      <$set name="filterContextItems" filter="[<contextState>field:limit-to-fields-of-filtered-tiddlers[no]]" value="[!is[system]]" emptyValue=<<filter-search-context>>>
+        <$vars searchedFieldValue={{$(searchTiddler)$}}>
+          {{$:/plugins/bimlas/locator/templates/field-names}}
+        </$vars>
+      </$set>
+
+      <$list filter="[subfilter<filter-selected-field-values>first[]]">
+        <$list filter="[subfilter<filter-search-context>limit[250]]" template="$:/core/ui/ListItemTemplate"/>
+      </$list>
+
+    </$vars>
+  </$importvariables>
+\end

@@ -1,0 +1,16 @@
+tags:
+title: $:/plugins/bimlas/locator/buttons/copy-filter-to-advanced-search
+type: text/vnd.tiddlywiki
+
+<!--
+Since the search term may contain characters that affect the filter, I
+do not copy the search term, I just refer to the tiddler.
+-->
+<$wikify name="filter" text="<<filter-search-context>> +[search{<<searchTiddler>>}]">
+  <$button tooltip="Continue filtering in advanced search" class=<<link-button-class>>>
+    <$action-setfield $tiddler="$:/temp/advancedsearch" text=<<filter>>/>
+    <$action-setfield $tiddler="$:/state/tab--1498284803" text="$:/core/ui/AdvancedSearch/Filter"/>
+    <$action-navigate $to="$:/AdvancedSearch"/>
+    {{$:/core/images/advanced-search-button}}
+  </$button>
+</$wikify>

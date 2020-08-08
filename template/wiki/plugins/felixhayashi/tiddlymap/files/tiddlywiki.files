@@ -1,0 +1,13 @@
+{
+  "tiddlers": [
+    {
+      "file": "layout.css",
+      "fields": {
+        "title": "$:/plugins/felixhayashi/tiddlymap/layout",
+        "type": "text/vnd.tiddlywiki",
+        "tags": [ "$:/tags/Stylesheet" ]
+      },
+      "prefix": "\\rules only filteredtranscludeinline transcludeinline macrodef macrocallinline \n\n"
+    }
+  ]
+}

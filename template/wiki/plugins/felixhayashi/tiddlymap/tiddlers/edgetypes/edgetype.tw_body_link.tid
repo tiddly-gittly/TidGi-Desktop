@@ -1,0 +1,5 @@
+title: $:/plugins/felixhayashi/tiddlymap/graph/edgeTypes/tw-body:link
+description: A link that is contained in the tiddler's body pointing to another resource.
+style: {"color":"orange", "dashes":true}
+label: links to
+

@@ -1,0 +1,9 @@
+title: $:/plugins/flibbles/relink-markdown/readme
+
+Markdown support for Relink.
+
+...or Relink support for Markdown.
+
+This supplimental plugin allows ''text/x-markdown'' files to be relinked. This means markdown linking syntax like `[Caption](#MyTiddler)` is supported. If your markdown supports wikitext markup as well, this will handle that too.
+
+This plugin is designed for `tiddlywiki/markdown`, but it will also work for `anstosa/tw5-markdown` and others.

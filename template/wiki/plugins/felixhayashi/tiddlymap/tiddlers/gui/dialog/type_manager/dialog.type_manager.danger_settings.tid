@@ -1,0 +1,31 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/MapElementTypeManager/deleteType
+caption: Removal
+
+\rules except wikilink
+
+\define manage-edge-types()
+  <$macrocall $name="tmap-row"
+      type="input-checkbox"
+      title="Delete type"
+      field="temp.deleteType"
+      default={{!id}}
+      readonly={{!!temp.idImmutable}}
+      descr="If you want to delete this type, set this to true
+             and click the save button afterwards. Predefined system
+             types cannot be deleted." note="Consequently, all edges
+             of this type will be deleted." />
+\end
+
+\define manage-node-types()
+  <$macrocall $name="tmap-row"
+      type="input-checkbox"
+      title="Delete type"
+      field="temp.deleteType"
+      default={{!id}}
+      readonly={{!!temp.idImmutable}}
+      descr="If you want to delete this type, set this to true and
+             click the save button afterwards. Predefined system
+             types cannot be deleted." />
+\end
+
+<table class="tmap-config-table"><$macrocall $name=<<mode>> /></table>

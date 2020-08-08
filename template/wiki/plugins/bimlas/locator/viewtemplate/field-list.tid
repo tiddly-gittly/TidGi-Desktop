@@ -1,0 +1,20 @@
+tags:
+title: $:/plugins/bimlas/locator/viewtemplate/field-list
+type: text/vnd.tiddlywiki
+
+<table class="tc-view-field-table">
+  <tbody>
+    <$list filter="[all[current]fields[]locator-enabled-fields[]sort[title]] -text" variable="currentField">
+      <tr class="tc-view-field">
+        <td class="tc-view-field-name">
+          <$text text=<<currentField>>/>
+        </td>
+        <td class="tc-view-field-value">
+          <$list filter="[all[current]locator-enlist-field-values<currentField>]">
+            {{||$:/plugins/bimlas/locator/templates/field-value-template}}
+          </$list>
+        </td>
+      </tr>
+    </$list>
+  </tbody>
+</table>

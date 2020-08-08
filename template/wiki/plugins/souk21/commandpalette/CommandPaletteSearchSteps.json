@@ -1,0 +1,8 @@
+{
+    "steps": [
+          {"filter": "[!is[system]search:title[]]", "hint": "in title", "caret": "25"},
+          {"filter": "[all[system+shadows]search:title[]]", "hint": "in title (system)", "caret": "33"},
+          {"filter": "[search[]]", "hint": "all", "caret": "8"},
+          {"filter": "[all[shadows]search[]]", "hint": "shadows", "caret": "20"}
+    ]
+}

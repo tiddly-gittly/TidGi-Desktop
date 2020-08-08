@@ -1,0 +1,48 @@
+caption: {{$:/plugins/flibbles/relink/language/ui/Operators/Caption}}
+tags: $:/tags/flibbles/relink/Configuration
+title: $:/plugins/flibbles/relink/ui/configuration/Operators
+
+\import $:/plugins/flibbles/relink/ui/components/tables
+\define lingo-base() $:/plugins/flibbles/relink/language/Buttons/
+\define operator-name-tiddler() $:/state/flibbles/relink/operator-name
+
+\define row()
+<td><$text text=<<key>> /></td>
+\end
+\define body()
+
+{{$:/plugins/flibbles/relink/language/Help/Operators}}
+
+<em class="tc-edit">Add a new filter operator:</em>
+<$edit-text
+	tiddler=<<operator-name-tiddler>>
+	tag="input"
+	default=""
+	placeholder="operator name" />
+<$reveal type="nomatch" text="" state=<<operator-name-tiddler>>>
+<$relinkmangler>
+<$button
+	tooltip={{$(lingo-base)$NewOperator/Hint}}
+	aria-label={{$(lingo-base)$NewOperator/Caption}}>
+<$action-sendmessage
+	$message="relink-add-operator"
+	operator={{$(operator-name-tiddler)$}} />
+<$action-deletetiddler $tiddler=<<operator-name-tiddler>> />
+<$text text={{$(lingo-base)$NewOperator/Caption}}/>
+</$button>
+</$relinkmangler>
+</$reveal>
+<$reveal type="match" text="" state=<<operator-name-tiddler>>>
+<$button>
+<$text text={{$(lingo-base)$NewOperator/Caption}}/>
+</$button>
+</$reveal>
+
+<$macrocall
+	$name=tables
+	category="operators"
+	header-list="[[Filter Operator]] [[Operand Type]]"
+	list-row-macro="row" />
+\end
+
+<<body>>

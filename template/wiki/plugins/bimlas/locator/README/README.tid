@@ -1,0 +1,38 @@
+tags:
+title: $:/plugins/bimlas/locator/README/README
+type: text/vnd.tiddlywiki
+
+! Locator
+
+Locator provides ''a universal interface for navigating between your tiddlers and searching, filtering them'' without the need to write [[filter expressions|https://tiddlywiki.com/#Filters]]. The plugin contains ''a table of contents widget and an enhanced search engine'' that contains a ''visual filter builder to filter results by tags and field values''. You can ''organize the tiddlers to any number of trees, even by custom fields or links in text''. Unlike [[classic Table of Contents|https://tiddlywiki.com/#Table-of-Contents%20Macros%20(Examples)]], [[standard search|$:/core/ui/AdvancedSearch/Standard]], [[filter search|$:/core/ui/AdvancedSearch/Filter]] and [[list of tags|$:/core/ui/MoreSideBar/Tags]], this plugin handles these functions organically.
+
+* https://bimlas.gitlab.io/tw5-locator (demo + install)
+* https://gitlab.com/bimlas/tw5-locator (main repository)
+* https://github.com/bimlas/tw5-locator (mirror, ''please star if you like the plugin'')
+
+! Benefits compared to built-in solutions
+
+* ''Shows field values''<br/>You can mark a tiddler with multiple tags and field values, but in the classic ToC you don't see them while browsing, in Locator you can apply them as filters.
+* ''Easy way to search for field values''<br/>Find tags, field values in the standard search based on part of their name or view the all fields of the search results at a glance.
+* ''Limit the scope of search''<br/>You don't have to store your recipes and family tree in a separate wiki just to make them easier to find: you can define the scope of your search with some clicks (without the need to write filters in [[$:/AdvancedSearch]]).
+* ''Reorder the hierarchy with drag-n-drop''<br />You can easily move tiddlers between topics by drag-n-dropping them.
+* ''Create mindmaps''<br />You can associate tiddlers with any field other than the tag, so you can create complex graphs that you can browse through text only user interface.
+* ''There is no need to include a table of contents in the main tiddler of each topic''<br/>Just press the "Locator sidebar" button on the tiddler's toolbar and you can browse it's children, links right away in the sidebar.
+* ''Create new tiddler in current scope''<br />The "new tiddler" button in Locator creates a new tiddler pre-filled with the currently selected field values and named by the search query (like a special "new here" button).
+* ''Phone friendlier''<br/>The width of the classic ToC is increasing and the size of the text is decrasing as we move down in the context, while Locator remains readable.
+
+! Usage
+
+See the [[demo|https://bimlas.gitlab.io/tw5-locator]] for a complete tutorial
+
+! Installation instructions
+
+''The plugin consists of separate parts'', each of them can be used on its own, so ''it is possible to use only the parts you like'', but they can be used most effectively together because ''they interact with each other''.
+
+To add the plugin to your own ~TiddlyWiki5, just drag this link to the browser window and ''create or drag the required tiddlers from the demo'':
+
+$:/plugins/bimlas/locator
+
+For other installation options see the links above.
+
+//Select the next tab to continue.//

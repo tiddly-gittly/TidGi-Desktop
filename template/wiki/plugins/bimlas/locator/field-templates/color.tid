@@ -1,0 +1,6 @@
+caption: Color
+tags: $:/tags/bimlas/locator/field-templates
+title: $:/plugins/bimlas/locator/field-templates/color
+type: text/vnd.tiddlywiki
+
+<input type="color" name="favcolor" value=<<currentTiddler>> disabled> <$view field="title"/>

@@ -1,0 +1,8 @@
+created: 20200531223354098
+key: ((open-command-palette))
+modified: 20200604175332730
+tags: $:/tags/KeyboardShortcut
+title: $:/core/ui/KeyboardShortcuts/CommandPalette
+type: text/vnd.tiddlywiki
+
+<$action-sendmessage $message="open-command-palette"/>

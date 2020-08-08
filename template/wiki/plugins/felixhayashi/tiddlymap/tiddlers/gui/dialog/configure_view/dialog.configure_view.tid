@@ -1,0 +1,11 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/configureView
+subtitle: {{$:/core/images/options-button}} View configuration -- <<view>>
+
+\rules except wikilink
+
+\define privateEdgeTypes() [[private edge-types|http://tiddlymap.org/#Private%20edge%20types]]
+
+<$macrocall $name="tabs"
+  default=<<concat "$(template)$/default">>
+  tabsList="[all[shadows]prefix<template>] -[<template>]"
+/>

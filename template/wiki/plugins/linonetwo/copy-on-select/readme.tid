@@ -1,0 +1,17 @@
+title: $:/plugins/linonetwo/copy-on-select/readme
+created: 20200414135748497
+modified: 20200602062349232
+creator: LinOnetwo
+type: text/vnd.tiddlywiki
+
+!! 动机
+
+我已经习惯了用方便的[[Copy On Select|https://addons.mozilla.org/en-US/firefox/addon/copy-on-select]] Firefox 插件，现在到了 TiddlyWiki 里我经常还是以为选中了就复制了，然后黏贴到别的地方才发现其实并没有复制，很不习惯。
+
+所以我自己重新写了一个适配 TiddlyWiki 的选中即复制脚本。
+
+!! 用法
+
+选中编辑器、按钮等区域以外的任何文本都会直接复制。
+
+这个插件里的条件语句让它在编辑器等特殊区域内不会起作用，以免干扰「全选黏贴覆盖原有内容」等操作。

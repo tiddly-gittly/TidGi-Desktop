@@ -1,0 +1,5 @@
+tags:
+title: $:/config/bimlas/locator/fields/color
+type: text/vnd.tiddlywiki
+
+$:/plugins/bimlas/locator/field-templates/color

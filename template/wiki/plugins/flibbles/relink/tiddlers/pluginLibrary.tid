@@ -1,0 +1,6 @@
+caption: {{$:/plugins/flibbles/relink/language/PluginLibrary}}
+url: https://flibbles.github.io/tw5-relink/library/index.html
+tags: $:/tags/PluginLibrary
+title: $:/config/flibbles/relink/PluginLibrary
+
+{{$:/plugins/flibbles/relink/language/PluginLibrary/Hint}}

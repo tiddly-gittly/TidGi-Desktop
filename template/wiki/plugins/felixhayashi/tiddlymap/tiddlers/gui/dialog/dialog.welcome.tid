@@ -1,0 +1,38 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/welcome
+subtitle: {{$:/core/images/info-button }} Welcome
+buttons: ok
+
+\rules except wikilink
+
+It seems that you freshly installed TiddlyMap.
+
+* In case you need any help, please consult the [[online docs|http://tiddlymap.org#Documentation]] first.
+* You are welcome to create an [[issue|https://github.com/felixhayashi/TW5-TiddlyMap/issues]] at GitHub for any bug you discover.
+* Make sure to revisit the [[demo site|http://tiddlymap.org]] to see whether your version is up-to-date.
+* If you like TiddlyMap, please give it a star at [[GitHub|https://github.com/felixhayashi/TW5-TiddlyMap]] or tell your friends about it :)
+* ''Please note:'' TiddlyMap is distributed under the [[BSD 2-Clause License|http://opensource.org/licenses/BSD-2-Clause]], which belongs to the same license family, as the license used by TiddlyWiki. By using this plugin you agree to the product's [[License Terms|https://github.com/felixhayashi/TW5-TiddlyMap/blob/master/LICENSE]].
+
+Enjoy!
+
+---
+
+TiddlyMap will configure your wiki for optimal use. Everything can be changed back later by you, via the TiddlyWiki configurations panel, so no worries. If you checked some of the options below, please save &amp; restart after closing this dialog.
+
+<table class="tmap-config-table">
+  <<tmap-row type:"input-checkbox"
+      title:"Optimize storyview"
+      field:"config.storyview"
+      descr:"Sets the storyview to 'top' for optimal scrolling.">>
+  <<tmap-row type:"input-checkbox"
+      title:"Optimize sidebar"
+      field:"config.sidebar"
+      descr:"Sets sidebar layout to 'fixed-fluid' for larger editor.">>
+  <<tmap-row type:"input-checkbox"
+      title:"Optimize navigation"
+      field:"config.navigation"
+      descr:"Sets navigation style to open tiddlers at top for better map navigation.">>
+  <<tmap-row type:"input-checkbox"
+      title:"Create demo welcome map"
+      field:"config.demo"
+      descr:"Creates a little hello world welcome map for you.">>
+</table>

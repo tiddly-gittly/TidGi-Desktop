@@ -1,0 +1,27 @@
+tags: $:/tags/Actions
+title: $:/plugins/bimlas/locator/actions/move-to-another-context
+type: text/vnd.tiddlywiki
+
+\define add-action-tiddler-to-current-tiddler()
+  <$tiddler tiddler={{{ [subfilter<filter-history>last[]] }}}>
+    {{||$:/plugins/bimlas/locator/actions/remove-field-value}}
+  </$tiddler>
+  {{||$:/plugins/bimlas/locator/actions/add-field-value}}
+\end
+
+\define add-current-tiddler-to-action-tiddler()
+  <$vars originalCurrentTiddler=<<currentTiddler>>>
+    <$tiddler tiddler=<<actionTiddler>>>
+      <$vars actionTiddler={{{ [subfilter<filter-history>last[]] }}}>
+        {{||$:/plugins/bimlas/locator/actions/remove-field-value}}
+      </$vars>
+      <$vars actionTiddler=<<originalCurrentTiddler>>>
+        {{||$:/plugins/bimlas/locator/actions/add-field-value}}
+      </$vars>
+    </$tiddler>
+  </$vars>
+\end
+
+<$list filter="[title<contextState>locator-direction-of-traverse<currentField>regexp[to]]" emptyMessage=<<add-current-tiddler-to-action-tiddler>> variable="null">
+  <<add-action-tiddler-to-current-tiddler>>
+</$list>

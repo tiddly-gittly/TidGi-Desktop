@@ -1,0 +1,36 @@
+creator: [[Jeffrey Wikinson]]
+modifier: LinOnetwo
+tags: $:/tags/Macro
+title: $:/plugins/linonetwo/opened-tiddlers-bar/ui
+type: text/vnd.tiddlywiki
+
+\define opened-tiddlers-bar()
+\whitespace trim
+<div class="tc-tab-buttons" >
+  <$list filter="[list[$:/StoryList]]" history="$:/HistoryList" variable="currentTab">
+    <$reveal type="match" state="$:/HistoryList!!current-tiddler" text=<<currentTab>>>
+      <div style="display:inline">
+        <$button to=<<currentTab>> class="tc-tab-selected tc-tab">
+          <$view tiddler=<<currentTab>> field="name">
+          <$view tiddler=<<currentTab>> field="title" /></$view>
+          <$button message="tm-close-tiddler" param=<<currentTab>> class="tc-tab-selected">
+            &times;
+          </$button>
+        </$button>
+      </div>
+    </$reveal>
+    <$reveal type="nomatch" state="$:/HistoryList!!current-tiddler" text=<<currentTab>>>
+      <div>
+        <$button to=<<currentTab>> class="tc-tab" >
+          <$view tiddler=<<currentTab>> field="name">
+            <$view tiddler=<<currentTab>> field="title" />
+          </$view>
+          <$button message="tm-close-tiddler" param=<<currentTab>>>
+            &times;
+          </$button>
+        </$button>
+      </div>
+    </$reveal>
+  </$list>
+</div>
+\end

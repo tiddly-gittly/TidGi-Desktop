@@ -1,0 +1,6 @@
+tags: $:/tags/Actions
+title: $:/plugins/bimlas/locator/actions/add-to-history
+type: text/vnd.tiddlywiki
+
+<$action-listops $tiddler=<<contextState>> $field="history" $subfilter="[all[current]]"/>
+{{$:/plugins/bimlas/locator/actions/remove-filters}}

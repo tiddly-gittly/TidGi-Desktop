@@ -1,0 +1,20 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialogFooter/ok_suppress
+
+\rules except wikilink
+
+<$set name="currentTiddler" value=<<title>> >
+
+<$checkbox field="suppress" checked="1" unchecked="0" default="0"> Do not show this dialog again</$checkbox>
+<$button class="tmap-dialog-button tmap-ok-button" tooltip="Confirm this dialog">OK
+
+  <!-- trigger dialog callback -->
+  <$action-setfield $tiddler=<<result>> text="1" />
+  
+  <!-- suppress dialog in the future -->
+  <$action-sendmessage $message="tmap:tm-suppress-dialog"
+                       dialog=<<templateId>>
+                       suppress={{!!suppress}} />
+                       
+</$button>
+
+</$set>

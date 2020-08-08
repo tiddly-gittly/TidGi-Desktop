@@ -1,0 +1,41 @@
+list-after: $:/core/ui/EditTemplate/title
+tags: $:/tags/EditTemplate
+title: $:/plugins/bimlas/locator/edit-template/locator-references
+type: text/vnd.tiddlywiki
+
+\define prompt()
+  The following references to this tiddler in //<<__field__>>// [[Locator field|$:/plugins/bimlas/locator/settings/settings]] will not be automatically updated:
+\end
+
+\define children-by-field(field)
+  <$list filter="[title{!!draft.of}locator-enlist-children:$field$[]first[]]" variable="null">
+    <$vars stateTiddler=<<qualify "$:/state/bimlas/locator/edit/references/$field$">> >
+
+      <$reveal type="nomatch" state=<<stateTiddler>> text="show">
+        <$button set=<<stateTiddler>> setTo="show" class="tc-btn-invisible">
+          {{$:/core/images/right-arrow}}
+          <<prompt>>
+        </$button>
+      </$reveal>
+      <$reveal type="match" state=<<stateTiddler>> text="show">
+        <$button set=<<stateTiddler>> setTo="hide" class="tc-btn-invisible">
+          {{$:/core/images/down-arrow}}
+          <<prompt>>
+        </$button>
+      </$reveal>
+
+      <$reveal type="match" state=<<stateTiddler>> text="show">
+        <$list filter="[title{!!draft.of}locator-enlist-children:$field$[]]" template="$:/core/ui/ListItemTemplate">
+          <$link/>
+        </$list>
+      </$reveal>
+
+    </$vars>
+  </$list>
+\end
+
+<$reveal state="!!draft.title" type="nomatch" text={{!!draft.of}} tag="div">
+  <$list filter="[locator-enlist-relationship-fields[]] -[[tags]] -[[list]] -[[LINKS-IN-TEXT]]" variable="currentField">
+    <$macrocall $name="children-by-field" field=<<currentField>>/>
+  </$list>
+</$reveal>

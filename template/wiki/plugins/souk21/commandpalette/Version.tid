@@ -1,0 +1,10 @@
+command-palette-caret: 49
+command-palette-name: Version
+command-palette-type: prompt-basic
+created: 20200604001529132
+modified: 20200610112802828
+tags: $:/tags/CommandPaletteCommand
+title: $:/plugins/souk21/commandpalette/Version
+type: text/vnd.tiddlywiki
+
+[[$:/plugins/souk21/commandpalette]get[version]]

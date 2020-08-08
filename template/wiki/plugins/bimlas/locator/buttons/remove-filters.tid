@@ -1,0 +1,9 @@
+tags:
+title: $:/plugins/bimlas/locator/buttons/remove-filters
+type: text/vnd.tiddlywiki
+
+<$list filter="[title<intersectionState>] [title<differenceState>] +[locator-selected-field-values[]first[]]" variable="null">
+  <$button tooltip="Remove field filters" class=<<link-button-class>> actions={{$:/plugins/bimlas/locator/actions/remove-filters}}>
+    {{$:/core/images/cancel-button}}
+  </$button>
+</$list>

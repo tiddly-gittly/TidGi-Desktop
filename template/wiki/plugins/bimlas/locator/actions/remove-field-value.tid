@@ -1,0 +1,15 @@
+tags: $:/tags/Actions
+title: $:/plugins/bimlas/locator/actions/remove-field-value
+type: text/vnd.tiddlywiki
+
+\define remove-value()
+  <$action-setfield $tiddler=<<actionTiddler>> $field=<<currentField>> $value=""/>
+\end
+
+\define remove-list-item()
+  <$action-listops $tiddler=<<actionTiddler>> $field=<<currentField>> $subfilter="-[all[current]]"/>
+\end
+
+<$list filter="[title<currentField>subfilter<filter-field-is-list>]" emptyMessage=<<remove-value>> variable="null">
+  <<remove-list-item>>
+</$list>

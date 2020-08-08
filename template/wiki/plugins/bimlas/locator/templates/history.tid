@@ -1,0 +1,7 @@
+tags:
+title: $:/plugins/bimlas/locator/templates/history
+type: text/vnd.tiddlywiki
+
+<$list filter=<<filter-history>>>
+  <$macrocall $name="droppable-menu-list-item" content={{$:/plugins/bimlas/locator/templates/history-item}} actions={{$:/plugins/bimlas/locator/actions/move-to-another-context}}/>
+</$list>

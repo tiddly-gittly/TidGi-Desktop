@@ -1,0 +1,39 @@
+tags: $:/tags/Macro
+title: $:/plugins/bimlas/locator/macros/locator-view
+type: text/vnd.tiddlywiki
+
+\define locator-view(baseTitle fieldOfRelationship:"tags" templateOfContextItems:"$:/plugins/bimlas/locator/field-templates/link")
+  <!-- Hide internal macros, do not make them globally available -->
+  <$importvariables filter="[all[tiddlers+shadows]prefix[$:/plugins/bimlas/locator/macros/]]">
+    <$vars
+      contextState="$:/state/bimlas/locator/view/context/$(currentTiddler)$"
+      intersectionState="$:/state/bimlas/locator/view/intersection/$(currentTiddler)$"
+      differenceState="$:/state/bimlas/locator/view/difference/$(currentTiddler)$"
+      defaultFieldOfRelationship=<<__fieldOfRelationship__>>
+    >
+      <!-- I have to create them nested because internal variables use external ones -->
+      <$vars currentField={{{ [subfilter<filter-field-of-relationship>] }}}>
+        <$vars filterContextItems=<<filter-view-context>>>
+          <div class="tc-table-of-contents">
+
+            {{$:/plugins/bimlas/locator/templates/history}}
+
+            ---
+
+            {{$:/plugins/bimlas/locator/templates/context-settings}}
+            <div class="bimlas-locator right">
+              {{||$:/plugins/bimlas/locator/templates/view-toolbar}}
+            </div>
+            {{$:/plugins/bimlas/locator/templates/fields-filter}}
+            <ol class="bimlas-locator">
+              <$list filter="[subfilter<filter-field-of-relationship>regexp[^LINKS-IN-TEXT$]]" emptyMessage={{$:/plugins/bimlas/locator/templates/list-of-context-items}}>
+                {{||$:/plugins/bimlas/locator/templates/list-of-links-in-text}}
+              </$list>
+            </ol>
+
+          </div>
+        </$vars>
+      </$vars>
+    </$vars>
+  </$importvariables>
+\end

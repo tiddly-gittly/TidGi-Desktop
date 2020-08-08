@@ -1,0 +1,25 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/MapElementTypeManager/description
+caption: Description
+
+\rules except wikilink
+
+\define manage-edge-types()
+  <<tmap-row type:"input-textarea"
+      title:"Description"
+      field:"description"
+      descr:"An optional description for this type. The
+             description will be displayed as tooltip when
+             moving the mouse over an edge of this type.">>
+\end
+
+\define manage-node-types()
+  <<tmap-row type:"input-textarea"
+      title:"Description"
+      field:"description" 
+      descr:"An optional description for this type.">>
+\end
+
+<table class="tmap-config-table">
+  <$macrocall $name=<<mode>> />
+</table>
+

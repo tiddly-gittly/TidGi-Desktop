@@ -1,0 +1,75 @@
+title: $:/plugins/mat/field-value-selector/field-value-selector
+creator: Mat von TWaddle
+type: text/vnd.tiddlywiki
+tags: $:/tags/EditTemplate
+
+\define new-field-value-dropdown()
+<$set name=newfieldname value={{{ [<newFieldNameTiddler>get[text]] }}}>
+<$set name=newfieldvalue value={{{ [<newFieldValueTiddler>get[text]] }}}>
+<$button
+    popup=<<qualify "$:/state/popup/field-value-dropdown">>
+    class="tc-btn-invisible tc-btn-dropdown nfvd-center">
+  {{$:/core/images/down-arrow}}
+</$button>
+
+<$reveal state=<<qualify "$:/state/popup/field-value-dropdown">> 
+     type="nomatch" text="" default="" class="nfvd-center">
+<div class="tc-block-dropdown tc-edit-type-dropdown">
+<$linkcatcher to=<<newFieldValueTiddler>>>
+   <div class="tc-dropdown-item">
+      <$list filter="""[<newFieldNameTiddler>!has[text]]""">
+         Enter field name to then select field value
+      </$list>
+      <$list filter="""[<newFieldNameTiddler>has[text]]""">
+         "<<newfieldname>>" values in other tiddlers:
+      </$list>
+   </div>
+
+   <$list filter="""[<newFieldNameTiddler>!text[list-before]!text[list-after]]""">
+      <$list filter="""[all[shadows+tiddlers]has<newfieldname>count[]prefix[0]]""">
+         &nbsp;[Previously unused field name]
+      </$list>
+      <$set name="valuesWithDoubles"
+         filter="""[all[shadows+tiddlers]has<newfieldname>get<newfieldname>]""">
+         <$list filter="""[enlist<valuesWithDoubles>]""">
+            <$link/>
+         </$list>
+      </$set>
+   </$list>
+
+   <$list filter="""[<newFieldNameTiddler>text[list-before]] [<newFieldNameTiddler>text[list-after]]""">
+      <<list-before/after>>
+   </$list>
+
+</$linkcatcher>
+</div>
+</$reveal>
+</$set>
+</$set>
+\end
+
+\define list-before/after()
+<div class="smaller-dropdown">
+  &nbsp;,,ViewTemplates,,
+<$list filter="""[all[shadows+tiddlers]tag[$:/tags/ViewTemplate]prefix[$:/core/ui/ViewTemplate/]]"""><$link/>
+</$list>
+  &nbsp;,,Custom ViewTemplates,,
+<$list filter="""[all[shadows+tiddlers]tag[$:/tags/ViewTemplate]!prefix[$:/core/ui/ViewTemplate/]!prefix[Draft of]]"""><$link/>
+</$list>
+  &nbsp;,,EditTemplates,,
+<$list filter="""[all[shadows+tiddlers]tag[$:/tags/EditTemplate]prefix[$:/core/ui/EditTemplate/]]"""><$link/>
+</$list>
+  &nbsp;,,Custom EditTemplates,,
+<$list filter="""[all[shadows+tiddlers]tag[$:/tags/EditTemplate]!prefix[$:/core/ui/EditTemplate/]!prefix[Draft of]]""">
+<$link/>
+</$list>
+</div>
+\end
+
+<<new-field-value-dropdown>>
+
+<style>
+.nfvd-center {margin:0 auto; display:block;}
+.nfvd-center .tc-block-dropdown {margin-left:20%;}
+.smaller-dropdown > a {padding:0; margin-left:14px}
+</style>

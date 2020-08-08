@@ -1,0 +1,8 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/getConfirmation
+subtitle: {{$:/core/images/import-button}} You must confirm in order to proceed!
+
+\rules except wikilink
+
+<<message>>
+
+''Are you really sure you want to do this?''

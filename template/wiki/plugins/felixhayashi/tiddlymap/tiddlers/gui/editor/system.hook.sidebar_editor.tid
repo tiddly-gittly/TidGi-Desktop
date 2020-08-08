@@ -1,0 +1,19 @@
+caption: Map
+tags: $:/tags/SideBar
+title: $:/plugins/felixhayashi/tiddlymap/hook/editor
+
+\define width() calc(100% - 15px)
+
+<div class="tmap-mobile-editor">
+  <div class="tmap-flash-message tmap-warning">
+    The editor is not displayed in mobile mode.
+  </div>
+</div>
+<div class="tmap-desktop-editor">
+  <$tiddlymap
+    class="tmap-sidebar-map-editor"
+    editor="advanced"
+    object-id="main_editor"
+    click-to-use="false">
+  </$tiddlymap>
+</div>

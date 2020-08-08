@@ -1,0 +1,17 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialogFooter/element_type_manager
+
+\rules except wikilink
+
+<$button
+    class="tmap-dialog-button tmap-save-button"
+    tooltip="Save the current changes">Save
+  <$action-sendmessage
+      $message="tmap:tm-save-type-form"
+      mode=<<mode>>
+      output=<<output>> />
+</$button>
+<$button
+    class="tmap-dialog-button tmap-cancel-button"
+    tooltip="Cancel the most resent changes and exit">Quit
+  <$action-setfield $tiddler=<<result>> text="1" />
+</$button>

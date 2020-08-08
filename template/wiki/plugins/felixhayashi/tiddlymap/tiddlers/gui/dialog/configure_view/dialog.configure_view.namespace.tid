@@ -1,0 +1,26 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/configureView/namespace
+caption: Namespace
+
+\rules except wikilink
+
+<table class="tmap-config-table tmap-small-input">
+  <<tmap-row type:"input-text"
+      title:"Edge-type namespace"
+      field:"config.edge_type_namespace" 
+      descr:"A namespace (like `foaf` in `foaf:knows`) that will be
+             automatically added to all edge types you create in
+             this view. The namespace is only added if the types
+             do not exist yet and do not have a namespace assigned yet.
+             Namespaces are always hidden in the graph."
+      note:"Most likely, you don't want the edges created with this
+            namespace to leak into other views, moreover, you don't
+            want edges that do not possess the namespace ever to be
+            shown here. In this case, use a private marker (`_`)
+            in front of your namespace, e.g. `_mynamespace` and use
+            an appropriate edge type filter, i.e. `+[prefix[_mynamespace]]`
+            For further information see:
+            
+            * [[Edge-type namespaces|http://tiddlymap.org/#Edge-type%20namespaces]]
+            * [[Private edge types|http://tiddlymap.org/#Private%20edge%20types]]
+            ">>
+</table>

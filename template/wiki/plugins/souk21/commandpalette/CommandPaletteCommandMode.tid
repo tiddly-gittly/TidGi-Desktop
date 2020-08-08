@@ -1,0 +1,8 @@
+created: 20200604175339522
+key: ((open-command-palette-command-mode))
+modified: 20200604175716862
+tags: $:/tags/KeyboardShortcut
+title: $:/plugins/souk21/commandpalette/CommandPaletteCommandMode
+type: text/vnd.tiddlywiki
+
+<$action-sendmessage $message="open-command-palette" $param=">"/>

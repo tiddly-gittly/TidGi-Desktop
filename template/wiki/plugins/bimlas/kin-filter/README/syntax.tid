@@ -1,0 +1,49 @@
+title: $:/plugins/bimlas/kin-filter/README/syntax
+type: text/vnd.tiddlywiki
+
+! Kin filter operator
+
+* https://gitlab.com/bimlas/tw5-kin-filter (official repository)
+* https://github.com/bimlas/tw5-kin-filter (mirror, please star if you like it)
+
+The purpose of the ''kin'' operator with examples:
+
+* Finds related tags, related tiddlers in any depth
+* Finds out where base tiddler originates and what other elements originate from it
+* Finds the ancestors and successors of a family member
+* Finds the "leaves" of the branch of the base tiddler in a tree-like structure (where the base tiddler is a leaf)
+* Finds the super- and subsets / groups of a mathematical set (where the base tiddler is a set)
+
+[img[$:/plugins/bimlas/kin-filter/README/concept.svg]]
+
+|''input''|a [[selection of titles|https://tiddlywiki.com/#Title%20Selection]]|
+|''suffix''|the ''kin'' operator uses a rich suffix, see below for details|
+|''parameter''|''B'' base tiddler title or nothing|
+|''output''|''with parameter B''<br>&raquo; those input titles which are ''kin with B'' <br>''without B''<br>&raquo; ''all'' tiddler titles which are ''kin with input titles'' (treat input titles as base tiddlers)|
+|''`!` output''|''with parameter B''<br>&raquo; those input titles which are ''//NOT// kin with B''<br>''without parameter B''<br>&raquo; ignored|
+
+The ''kin'' operator uses an extended syntax that permits multiple fields and flags to be passed:
+
+```
+[kin:<field>:<direction>:<depth>[<operand>]]
+```
+
+* ''field'': name of the [[field|https://tiddlywiki.com/#TiddlerFields]] which connecting tiddlers (assumed to be a [[title list|https://tiddlywiki.com/#Title%20List]], defaulting to `tags`)
+* ''direction'':  collect the tiddler titles in this direction relative to the base tiddler
+** ''from'': collect kins of base tiddler pointing from it (including the base tiddler title itself)
+** ''to'': collect kins of base tiddler pointing to it (including the base tiddler title itself)
+** ''with'': (the default) union of the aboves
+* ''depth'': maximum depth of the collected labels in the tree structure relative to the base tiddler (a positive number, not limited by default)
+* ''operand'': filter operand, the base tiddler
+
+''kin'' is a [[modifier|https://tiddlywiki.com/#Selection%20Constructors]], but without ''B'' parameter is a [[constructor|https://tiddlywiki.com/#Selection%20Constructors]].
+
+!! Installation instructions
+
+To add the plugin to your own ~TiddlyWiki5, just drag this link to the browser window:
+
+$:/plugins/bimlas/kin-filter
+
+For other installation options see the repositories above.
+
+//Select the next tab to continue.//

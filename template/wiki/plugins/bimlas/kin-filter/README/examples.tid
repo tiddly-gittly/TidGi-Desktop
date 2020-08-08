@@ -1,0 +1,76 @@
+title: $:/plugins/bimlas/kin-filter/README/examples
+type: text/vnd.tiddlywiki
+
+\define item-class(highlightfilter) <$list filter="[[kin-example-top]kin::to[]subfilter<__highlightfilter__>is[current]first[]]">highlighted-toc-item</$list>
+
+\define kin-example-with-toc(n,eg,ie)
+  <div class="doc-example">
+    `$eg$`
+    <dd>&rarr; $ie$</dd>
+    <$list filter="[title<.state-prefix>addsuffix{!!title}addsuffix[/]addsuffix[$n$]]" variable=".state">
+      <$reveal state=<<.state>> type="nomatch" text="show">
+        <dl>
+          <dd><$button set=<<.state>> setTo="show">Try it</$button></dd>
+        </dl>
+      </$reveal>
+      <$reveal state=<<.state>> type="match" text="show">
+        <dl>
+          <dd><$button set=<<.state>> setTo="">Hide</$button></dd>
+        </dl>
+        <blockquote class="doc-example-result">
+          <ul><$list filter="[[kin-example-top]kin::to[]subfilter<__eg__>sort[]]" emptyMessage="(empty)">
+            <li><$link><$view field="title"/></$link></li>
+          </$list></ul>
+          Results highlighted in the tree:
+
+          <<kin-toc "$eg$">>
+        </blockquote>
+      </$reveal>
+    </$list>
+  </div>
+\end
+
+\define each-level(highlightfilter)
+  <li>
+    <$wikify name="transcluded-item-class" text="""<$macrocall $name="item-class" highlightfilter=<<__highlightfilter__>>/>""">
+      <$link class=<<transcluded-item-class>> ><<currentTiddler>></$link>
+    </$wikify>
+    <ul>
+      <$list filter="[[kin-example-top]kin::to[]tag<currentTiddler>]">
+        <$macrocall $name="each-level" highlightfilter=<<__highlightfilter__>>/>
+      </$list>
+    </ul>
+  </li>
+\end
+
+\define kin-toc(highlightfilter)
+  <$tiddler tiddler="kin-example-top">
+    <ul>
+      <$macrocall $name="each-level" highlightfilter=<<__highlightfilter__>>/>
+    </ul>
+  </$tiddler>
+\end
+
+<style>
+  .highlighted-toc-item {
+    color: red !important;
+  }
+</style>
+
+Example tree (to really understand, look at the tiddlers):
+
+<<kin-toc "!is[current]">>
+
+''The tree'' below the examples only helps in understanding the filter, it ''is not part of the output''.
+
+''Feel free to edit [[this tiddler|$:/plugins/bimlas/kin-filter/README/examples]] to test your own filter expressions as well!'' If you want to undo the changes you made, just delete the tiddler, it will restore itself to its initial state.
+
+<<kin-example-with-toc 1 "[kin[C]]" "input titles which are family members of the parameter title">>
+<<kin-example-with-toc 2 "[kin[C]kin[F]]" "common family members of each of the specified titles (intersection)">>
+<<kin-example-with-toc 3 "[kin[C]!kin[F]]" "difference of families of the specified titles (complement)">>
+<<kin-example-with-toc 4 "[[C]] [[F]] +[kin[]]" "collected titles which are family members of any of the input tiddlers (union)">>
+<<kin-example-with-toc 5 "[kin::to[B]]" "successors of the given tiddler">>
+<<kin-example-with-toc 6 "[kin::from[E]kin::to[B]]" "subset of the family tree">>
+<<kin-example-with-toc 7 "[kin::from:2[E]]" "ancestors of the given tiddler until the given depth">>
+<<kin-example-with-toc 8 "[kin:tags:from[G]]" "ancestors of tiddler based on `tags` field (`tags` points to parents)">>
+<<kin-example-with-toc 9 "[kin:list:to[G]]" "ancestors of tiddler based on `list` field (`list` point to children)">>

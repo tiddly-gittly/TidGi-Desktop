@@ -1,0 +1,45 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/MapElementTypeManager/generalSettings
+caption: General
+
+\rules except wikilink
+
+\define manage-edge-types()
+  <<tmap-row type:"input-text"
+      title:"Label"
+      field:"label"
+      descr:"An optional alias used as edge-label.">>
+  <<tmap-row type:"input-checkbox"
+      title:"Show label"
+      field:"show-label"
+      default:"true"
+      descr:"If unchecked, no edge label will be displayed.">>
+\end
+\define manage-node-types()
+  <$list filter="[<currentTiddler>!regexp:id[tmap:]]">
+  <<tmap-row type:"input-textarea"
+      title:"Scope"
+      field:"scope"
+      descr:"A filter expression that defines, which nodes inherit
+             this node-type and its style.">>
+  </$list>
+  <$macrocall type="input-select"
+      $name="tmap-row"
+      title="Priority"
+      field="priority"
+      selectFilter=<<tmap "scale" "100">>
+      descr="When a type has a a higher priority than another type,
+             its style will override the other style" />
+\end
+
+<table class="tmap-config-table">
+  <$macrocall
+    $name="tmap-row"
+    title="Identifier"
+    field="temp.newId"
+    type="input-text"
+    default={{!!id}}
+    readonly={{!!temp.idImmutable}}
+    descr="A unique identifier"
+  />
+  <$macrocall $name=<<mode>> />
+</table>

@@ -1,0 +1,55 @@
+tags:
+title: $:/plugins/bimlas/locator/README/TIPS
+type: text/vnd.tiddlywiki
+
+! Tips
+
+!! Organic navigation
+
+* In `locator-fields`, look for a tag and apply it recursively; the `locator-search` only affects tiddlers associated with it at any depth
+* Click on the tag in `locator-fields` and open its tiddler, then click on the "locator sidebar" button; the `locator-view` sidebar will show it's hierarchy
+* Navigate in the hierarchy in `locator-view` sidebar then search for a term in `locator-search`; pressing the "search in context" button restricting the search to the context of `locator-view` sidebar
+* If you cannot find what you are searching for, then you may want to create a new tiddler, use the "new tiddler" button in one of the Locator macros
+
+!! Taking good habits
+
+''To get the least chance of writing the same note you wrote earlier, look for a new tiddler before creating a note. To force yourself'', hide the "new tiddler" button inside the Page Toolbar and ''use the "new tiddler" button inside the Locator search'', so if you want to create a new tiddler you must first look for it. If you are absolutely sure that there is no tiddler yet and you need to create a new tiddler, this solution is also useful because search text defines the default name of the new tiddler.
+
+!! Let the "Locator sidebar" button automatically focus to the Locator sidebar
+
+For example, the More -> Tags sidebar is currently open when we use the "Locator sidebar" toolbar button on one of the tiddlers, but we do not see the effect because the Locator sidebar is not visible, thus we need to modify to let button automatically open the corresponding sidebar.
+
+* If we don't know exactly, look for the sidebar tiddler's title (used as `text` parameter in the code below)
+** Open the Advanced Search -> Filter and look for the sidebar name in the `caption` field, for example `[caption[Locator]]` will result [[Locator view]]
+* Find the state tiddler that contains the sidebar tiddler's title (used as `$tiddler` parameter in the code below)
+** Open the Advanced Search -> Filter and look for `[text[Locator view]]` for example
+** Switch between Locator sidebar and another sidebar to see which state tiddler is changing, this is what we are looking for ([[$:/state/tab/sidebar--595412856]] for example)
+* Use the name of the state tiddler and the title of the sidebar in the code below and add this line to [[$:/plugins/bimlas/locator/viewtemplate/open-in-sidebar]] tiddler
+
+```
+<!-- Original code of the button... -->
+...
+<$button tooltip="Browse hierarchy of tag in Locator sidebar" aria-label="locator sidebar" class=<<tv-config-toolbar-class>>>
+<!-- ADD THIS LINE -->
+<$action-setfield $tiddler="$:/state/tab/sidebar--595412856" text="Locator view"/>
+```
+
+If you rename the sidebar, you must also update this change! See [[this thread on Google Groups|https://groups.google.com/d/msg/tiddlywiki/xAe_fvhzoCY/UoKZc7ZZDQAJ]] for details.
+
+!! Speed up (on phones)
+
+!!! Conditional view
+
+Because we don't look at the table of contents and search results at the same time, we can ''hide the Locator while we are using the standard search''.
+
+To achieve this, place the Locator view in the following condition:
+
+```
+<$reveal type="match" default="" text={{{ [prefix[$:/state/popup/search-dropdown]] }}}>
+  <<locator-view baseTitle:"TableOfContents">>
+</$reveal>
+```
+
+''When you open TiddlyWiki'', the search entry is in focus by default, so ''the Locator sidebar is not visible''. To fix this, change the text of [[$:/config/Search/AutoFocus]] [[hidden setting|https://tiddlywiki.com/#Hidden%20Setting%3A%20Search%20AutoFocus]] to `false`.
+
+//Select the next tab to continue.//

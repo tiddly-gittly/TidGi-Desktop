@@ -1,0 +1,19 @@
+tags:
+title: $:/plugins/bimlas/locator/buttons/toggle-context-settings
+type: text/vnd.tiddlywiki
+
+\define opened()
+  <$button tooltip="Toggle context settings" class=<<link-button-class additionalClasses:"active">>>
+    <$action-setfield $tiddler=<<contextState>> $field="context-settings-opened" $value=""/>
+    {{$:/core/images/options-button}}
+  </$button>
+\end
+
+\define closed()
+  <$button tooltip="Toggle context settings" class=<<link-button-class>>>
+    <$action-setfield $tiddler=<<contextState>> $field="context-settings-opened" $value="yes"/>
+    {{$:/core/images/options-button}}
+  </$button>
+\end
+
+<$list filter="[title<contextState>field:context-settings-opened[yes]]" emptyMessage=<<closed>>><<opened>></$list>

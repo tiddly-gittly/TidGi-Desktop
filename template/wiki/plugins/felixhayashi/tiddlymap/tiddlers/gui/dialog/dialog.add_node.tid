@@ -1,0 +1,121 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/addNodeToMap
+subtitle: {{$:/core/images/tag-button}} Add node
+classes: tmap-modal-add-node
+
+\rules except wikilink
+
+\define backButtonText() back to list
+\define outputAndTemplate() [[$(output)$]] [[$(template)$]]
+
+\define editor()
+  <$button class="tmap-go-back tc-btn-invisible">
+    {{$:/core/images/chevron-left}} <<backButtonText>>
+    <$action-deletefield $tiddler=<<temp>> more template />
+    <$action-sendmessage
+        $message="tmap:tm-clear-tiddler"
+        keep="draft.title"
+        title=<<output>> />
+  </$button>
+
+  <$list filter="[<output>get[draft.title]is[tiddler]]">
+  <div class="tmap-flash-message tmap-warning">
+   Tiddler already exists! Use another title or click
+   "<<backButtonText>>" to cancel your edit.
+  </div>
+  </$list>
+
+  <div class="tmap-modal-editor">
+    <table class="tmap-config-table">
+      <tr class="tmap-template-select">
+        <td>Template</td>
+        <td>
+          <$select
+              tiddler=<<temp>>
+              field="template">
+            <option value=""></option>
+            <$list filter=<<tmap "option" "selector.allPotentialNodes">>>
+            <option><$view field="title" /></option>
+            </$list>
+          </$select>
+          <$button>Load
+            <$action-sendmessage
+                $message="tmap:tm-clear-tiddler"
+                keep="draft.title"
+                title=<<output>> />
+            <$list filter="[<temp>get[template]]" variable="template">
+            <$action-sendmessage
+                $message="tmap:tm-merge-tiddlers"
+                tiddlers=<<outputAndTemplate>>
+                output=<<output>> />
+            <$action-deletefield $tiddler=<<output>> tmap.id tmap.edges />
+            </$list>
+          </$button>
+       </td>
+       <td>Press the "load" button to activate the template.</td>
+      </tr>
+    </table>
+    <$importvariables filter="[all[tiddlers+shadows]prefix[$:/core/macros/]]">
+      <$set name="currentTiddler" value=<<output>>>
+        <$transclude tiddler="$:/core/ui/EditTemplate" mode="block" />
+      </$set>
+    </$importvariables>
+  </div>
+\end
+
+\define search()
+<p>Add an existing tiddler to the map or create a new one.</p>
+<table id="tmap-search-table">
+  <tr>
+    <td><b>Title:</b></td>
+    <td>
+      <$edit-text
+          tiddler=<<output>>
+          field="draft.title"
+          focus="true"
+          type="text"
+          tag="input"
+          default=""
+          class="tmap-trigger-field
+                 tmap-triggers-ok-button-on-enter
+                 tmap-triggers-cancel-button-on-esc" />
+      <$list filter="[<output>get[draft.title]!is[tiddler]]">
+      <$button
+          tooltip="The tiddler does not exist yet and you may edit it
+                   before it is added to the map">
+        {{$:/core/images/edit-button}}
+        <$action-setfield $tiddler=<<temp>> more="true" />
+      </$button> <sup>[1]</sup>
+      </$list>
+    </td>
+  </tr>
+  <tr>
+    <td></td>
+    <td>
+      <$set name="term" value={{!!draft.title}}>
+      <ul class="tmap-small-list">
+        <$list filter="[search:title<term>!is[system]!has[draft.of]]">
+        <li>
+          <$button class="tc-btn-invisible tmap-link">
+            <$view field="title" />
+            <$action-setfield $tiddler=<<output>> draft.title={{!!title}} />
+          </$button>
+        </li>
+        </$list>
+      </ul>
+      </$set>
+    </td>
+  </tr>
+</table>
+
+<$list filter="[<output>get[draft.title]!is[tiddler]]">
+<hr />
+<sup>[1]</sup>
+<small>
+  The tiddler does not exist yet and you may edit it
+  before it is added to the map
+</small>
+</$list>
+\end
+
+<$list filter="[<temp>!has[more]]" variable="item"><<search>></$list>
+<$list filter="[<temp>has[more]]" variable="item"><<editor>></$list>

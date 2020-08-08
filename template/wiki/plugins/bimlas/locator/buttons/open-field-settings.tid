@@ -1,0 +1,11 @@
+tags:
+title: $:/plugins/bimlas/locator/buttons/open-field-settings
+type: text/vnd.tiddlywiki
+
+<$button
+  to="$:/plugins/bimlas/locator/settings/settings"
+  tooltip="Open field settings"
+  class=<<link-button-class>>
+>
+  {{$:/core/images/options-button}}<$list filter="[title<contextState>!regexp[^\$:/state/bimlas/locator/search/]]" variable="null"> Open field settings</$list>
+</$button>

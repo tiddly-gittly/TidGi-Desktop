@@ -1,0 +1,55 @@
+tags: $:/tags/Stylesheet
+title: $:/plugins/bimlas/locator/stylesheet
+type: text/vnd.tiddlywiki
+
+.tc-tiddler-frame.bimlas-locator-explanation {
+  max-width: 400px;
+}
+.bimlas-locator-explanation svg {
+  width: 1rem;
+  height: 1rem;
+}
+.tc-drop-down button.bimlas-locator {
+  width: auto;
+  padding: 0;
+  display: inline-block;
+  background-color: inherit;
+}
+ol.bimlas-locator {
+  list-style-type: none;
+  margin: 0;
+  padding-left: 0;
+}
+ol.bimlas-locator ol {
+  margin-left: 0.75em;
+  padding-left: 0.3em;
+  border-left: 1px dashed;
+}
+li.toc-item.bimlas-locator, .tc-menu-list-item.bimlas-locator {
+  margin-top: 3px;
+  margin-bottom: 0;
+}
+.tc-menu-list-item.bimlas-locator > .tc-droppable {
+  display: inline-block;
+}
+.tc-block-dropdown.tc-search-drop-down .bimlas-locator a {
+  padding: 0;
+}
+.tc-block-dropdown.tc-search-drop-down .bimlas-locator a:hover {
+  background-color: initial;
+}
+button.bimlas-locator svg {
+  margin: 0 0.25em;
+}
+button.bimlas-locator.active svg {
+  fill: <<colour dirty-indicator>>;
+}
+.bimlas-locator.right {
+  float: right;
+  margin-right: 1em;
+}
+.bimlas-locator.context-settings {
+  border-width: 1px;
+  border-style: dashed;
+  padding: 0.5em;
+}

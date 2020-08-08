@@ -1,0 +1,5 @@
+tags:
+title: $:/config/bimlas/locator/fields/draft.title
+type: text/vnd.tiddlywiki
+hide-in-nested-fields-filter: yes
+hide-in-regular-fields-filter: yes

@@ -1,0 +1,6 @@
+tags:
+title: $:/config/bimlas/locator/fields/LINKS-IN-TEXT
+type: text/vnd.tiddlywiki
+field-direction: from
+
+$:/plugins/bimlas/locator/field-templates/link

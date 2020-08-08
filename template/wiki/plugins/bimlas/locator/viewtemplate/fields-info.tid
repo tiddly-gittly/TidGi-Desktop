@@ -1,0 +1,9 @@
+caption: {{$:/language/TiddlerInfo/Fields/Caption}} (Locator)
+list-after: $:/core/ui/TiddlerInfo/Fields
+tags: $:/tags/TiddlerInfo
+title: $:/plugins/bimlas/locator/viewtemplate/fields-info
+type: text/vnd.tiddlywiki
+
+{{||$:/plugins/bimlas/locator/viewtemplate/field-list}}
+
+{{$:/plugins/bimlas/locator/buttons/open-field-settings}}

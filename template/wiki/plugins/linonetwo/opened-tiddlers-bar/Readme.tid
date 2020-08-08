@@ -1,0 +1,11 @@
+creator: LinOnetwo
+type: text/vnd.tiddlywiki
+title: $:/plugins/linonetwo/opened-tiddlers-bar/Readme
+
+!! Features
+
+This plugin provides VSCode style "Opened Tiddlers" top bar
+
+!! Credits
+
+This plugin is based on $:/plugins/bj/storytabs , which is in MIT license, thank you, Buggyj!

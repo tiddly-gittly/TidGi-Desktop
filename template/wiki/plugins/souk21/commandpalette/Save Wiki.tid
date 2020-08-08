@@ -1,0 +1,9 @@
+command-palette-name: Save Wiki
+command-palette-type: message
+created: 20200604212312470
+modified: 20200604212316943
+tags: $:/tags/CommandPaletteCommand
+title: $:/plugins/souk21/commandpalette/Save Wiki
+type: text/vnd.tiddlywiki
+
+tm-save-wiki

@@ -1,0 +1,25 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/editNode/default
+caption: Global node style
+classes: tmap-remove-top-space
+
+\rules except wikilink
+
+<div class="tmap-flash-message tmap-info">
+  A node's ''global configuration''
+  (also referred to as //global individual config//) defines its
+  individual appearance and behaviour in all views.
+</div>
+<<maybeShowTidColorWarning>>
+
+<$macrocall $name="sharedSettings"
+    twIconField=<<tidIconField>>
+    faIconField="global.tmap.fa-icon"
+    labelField=<<tidLabelField>> />
+
+<$macrocall $name="visConfiguration"
+    mode="manage-node-types"
+    extensionField="global.tmap.style"
+    styleName="node's global style"
+    inheritedList="[[inherited-global-default-style]]
+                   [[inherited-local-default-style]]
+                   [[inherited-group-styles]]" />

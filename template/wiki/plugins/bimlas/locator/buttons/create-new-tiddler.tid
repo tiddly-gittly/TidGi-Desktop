@@ -1,0 +1,39 @@
+tags:
+title: $:/plugins/bimlas/locator/buttons/create-new-tiddler
+type: text/vnd.tiddlywiki
+
+\define add-as-list()
+  <$action-listops $tiddler="$:/temp/bimlas/locator/new-tiddler" $field=<<field>> $subfilter=<<__valueAsFilter__>>/>
+\end
+
+\define add-as-value()
+  <$action-setfield $tiddler="$:/temp/bimlas/locator/new-tiddler" $field=<<field>> $value={{{ [subfilter<__valueAsFilter__>] }}}/>
+\end
+
+\define add-field-value(valueAsFilter)
+  <$list filter="[title<field>subfilter<filter-field-is-list>]" emptyMessage=<<add-as-value>>>
+    <<add-as-list>>
+  </$list>
+\end
+
+\define add-filters-as-field-values()
+  <$list filter="[title<intersectionState>indexes[]]" variable="field">
+    <$list filter="[title<intersectionState>locator-selected-field-values<field>first[]]">
+      <<add-field-value "[title<intersectionState>locator-selected-field-values<field>]">>
+    </$list>
+  </$list>
+\end
+
+\define add-to-current-context()
+  <$set name="field" filter=<<filter-field-of-relationship>>>
+    <<add-field-value "[subfilter<filter-history>last[]]">>
+  </$set>
+\end
+
+<$button tooltip="Create new tiddler in the current context" class=<<link-button-class>>>
+  <<add-filters-as-field-values>>
+  <<add-to-current-context>>
+  <$action-sendmessage $message="tm-new-tiddler" $param="$:/temp/bimlas/locator/new-tiddler" title={{{ [title<titleOfNewTiddler>] [title{$:/language/DefaultNewTiddlerTitle}] -[[]] +[first[]] }}}/>
+  <$action-deletetiddler $tiddler="$:/temp/bimlas/locator/new-tiddler"/>
+  {{$:/core/images/new-button}}
+</$button>

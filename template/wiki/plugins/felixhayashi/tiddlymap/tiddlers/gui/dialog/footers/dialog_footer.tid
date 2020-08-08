@@ -1,0 +1,10 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialogFooter
+
+\rules except wikilink
+
+\define footer() $:/plugins/felixhayashi/tiddlymap/dialogFooter/$(buttons)$
+
+<$transclude tiddler=<<footer>> />
+
+<!-- we need this button to be able to close a tiddler from outside programmatically -->
+<$button class="tmap-hidden-close-button" message="tm-close-tiddler" />

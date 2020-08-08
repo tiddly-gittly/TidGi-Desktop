@@ -1,0 +1,11 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog
+
+\rules except wikilink
+
+<div class=<<classes>>>
+<$importvariables
+    filter="[[$:/plugins/felixhayashi/tiddlymap/misc/macros]]
+            [[$:/core/macros/tabs]]">
+<$transclude tiddler=<<template>> mode="block" />
+</$importvariables>
+</div>

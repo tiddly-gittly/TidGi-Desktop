@@ -1,0 +1,5 @@
+title: $:/plugins/felixhayashi/tiddlymap/graph/edgeTypes/tw-list:list
+description: Contained in a list of this tiddler
+style: { "color": "red", "dashes":true}
+label: listed in
+

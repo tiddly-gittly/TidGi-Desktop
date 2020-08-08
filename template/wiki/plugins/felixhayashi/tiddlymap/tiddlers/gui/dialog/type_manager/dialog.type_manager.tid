@@ -1,0 +1,97 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/MapElementTypeManager
+subtitle: {{$:/core/images/tag-button}} <<topic>>
+buttons: element_type_manager
+classes: tmap-remove-top-space
+
+\rules except wikilink
+
+\define defaultTab()
+$:/plugins/felixhayashi/tiddlymap/dialog/MapElementTypeManager/overview
+\end
+
+\define settingsTab()
+$:/plugins/felixhayashi/tiddlymap/dialog/MapElementTypeManager/generalSettings
+\end
+
+\define tabsFilter()
+[all[shadows]prefix[$:/plugins/felixhayashi/tiddlymap/dialog/MapElementTypeManager/]]
+\end
+
+\define searchFilter()
+$(searchSelector)$
++[sort[title]nsort[priority]]
++[removeprefix<typeRootPath>removeprefix[/]]
++[search:title{$:/temp/tmap/MapElementTypeSearch}]
+\end
+
+\define managerClass() tmap-$(mode)$
+
+\define typePath() $(typeRootPath)$/$(id)$
+
+<div id="tmap-element-type-manager" class=<<managerClass>>>
+  <div>
+    <div class="tmap-searchbar">
+      <$edit-text
+          focus="true"
+          tiddler="$:/temp/tmap/MapElementTypeSearch"
+          type="text"
+          tag="input"
+          default="" />
+      <$list filter="[{$:/temp/tmap/MapElementTypeSearch}regexp[.+]]
+                     +[addprefix[/]]
+                     +[addprefix<typeRootPath>]
+                     +[!is[tiddler]!is[shadow]]">
+      <$button tooltip="Create a new type of this name">
+      {{$:/core/images/new-button}}
+        <$action-sendmessage
+            $message="tmap:tm-create-type"
+            mode=<<mode>>
+            id={{$:/temp/tmap/MapElementTypeSearch}}
+            output=<<output>> />
+        <$action-setfield $tiddler="$:/temp/tmap/MapElementTypeSearch" text="" />
+      </$button>
+      </$list>
+
+    </div>
+    <ul>
+      <$list
+          filter=<<searchFilter>>
+          emptyMessage=<<noTypeFound>>
+          variable="id">
+      <li>
+        <span class="tmap-ranking tmap-node-type-specific">
+          # <$view tiddler=<<typePath>> field="priority">1</$view>
+        </span>
+        <$button class="tc-btn-invisible tmap-link"><<id>>
+          <$action-setfield
+              $tiddler=<<qualify "$:/state/tabs/MapElementTypeManager">>
+              text=<<defaultTab>> />
+          <$action-sendmessage
+              $message="tmap:tm-load-type-form"
+              id=<<id>>
+              mode=<<mode>>
+              output=<<output>> />
+        </$button>
+      </li>
+      </$list>
+    </ul>
+  </div>
+  <div>
+    <$reveal type="nomatch" text="" default={{!!id}} >
+      <$macrocall
+          $name="tabs"
+          default=<<defaultTab>>
+          state="$:/state/tabs/MapElementTypeManager"
+          tabsList=<<tabsFilter>> />
+    </$reveal>
+    <$reveal type="match" text="" default={{!!id}} >
+      <div class="tmap-flash-message tmap-info">
+        Please select a type from the list or create a new one by
+        entering the type name in the search field on the left.
+      </div>
+      <div class="tmap-flash-message tmap-info tmap-node-type-specific">
+        The number next to the node-type label represents it's priority.
+      </div>
+    </$reveal>
+  </div>
+</div>

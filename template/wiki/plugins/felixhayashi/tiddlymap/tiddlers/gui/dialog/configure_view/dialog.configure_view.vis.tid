@@ -1,0 +1,19 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/configureView/vis
+caption: Graph
+
+\rules except wikilink
+
+<div class="tmap-flash-message tmap-info">
+   The local vis configurations will affect all
+   elements (nodes and edges) of this view, unless they are
+   overridden on a lower level. All options below are documented at
+   [[vis.js.org|http://visjs.org/docs/network]].
+</div>
+<div class="tmap-flash-message tmap-info">
+  Only config items that you actually changed have an effect on the
+  graph. Other options are visible, yet, inactive.
+</div>
+<$tmap-config
+    mode="manage-config"
+    inherited="inherited-style"
+    extension="config.vis" />

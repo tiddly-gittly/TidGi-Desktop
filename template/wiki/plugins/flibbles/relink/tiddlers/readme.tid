@@ -1,0 +1,11 @@
+title: $:/plugins/flibbles/relink/readme
+type: text/vnd.tiddlywiki
+
+When renaming a tiddler, Relink can update the fields, filters, and widgets
+of all other tiddlers. However, it works through whitelisting.
+
+It's already configured to update tiddler titles for all core widgets, filters,
+and fields, but the whitelists can be customized for each of this in the
+configuration panel.
+
+See <a href={{$:/plugins/flibbles/relink!!source}}>the tw5-relink website</a> for more details and examples.

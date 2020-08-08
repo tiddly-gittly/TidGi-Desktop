@@ -1,0 +1,8 @@
+created: 20200604175339522
+key: ((insert-command-palette-result))
+modified: 20200604175716862
+tags: $:/tags/KeyboardShortcut
+title: $:/plugins/souk21/commandpalette/InsertCommandPaletteResult
+type: text/vnd.tiddlywiki
+
+<$action-sendmessage $message="insert-command-palette-result"/>

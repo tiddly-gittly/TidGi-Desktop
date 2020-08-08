@@ -1,0 +1,26 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/createView
+subtitle: {{$:/core/images/new-button}} Creating a new view
+
+\rules except wikilink
+
+<table class="tmap-config-table">
+  <<tmap-row type:"input-text"
+      title:"View name"
+      field:"name"
+      focus:"true"
+      class:"tmap-trigger-field
+             tmap-triggers-ok-button-on-enter
+             tmap-triggers-cancel-button-on-esc"
+      descr:"The name for the new view. If no name is entered,
+             the program will invent one for you."
+      note:"You cannot override an existing view. In this case,
+            you need to delete the old view first! You must no use
+            slashes (`/`) in the name.">>
+  <<tmap-row type:"input-checkbox"
+      title:"Clone view"
+      field:"clone"
+      descr:"Use the view that is currently displayed in the
+             editor as blueprint. The view will be an __exact__
+             clone of the current one, only with a different
+             name.">>
+</table>

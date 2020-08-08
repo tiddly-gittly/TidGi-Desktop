@@ -1,0 +1,79 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/widgetCodeGenerator
+subtitle: {{$:/core/images/permalink-button}} Widget Code Generator
+buttons: close
+
+\rules except wikilink
+
+<div class="tmap-flash-message tmap-info">
+  Use the code below to embed a view in a tiddler.
+</div>
+
+<pre style="white-space: normal;">
+&lt;$tmap
+
+<$list filter="[<output>has[var.view]]">
+  view="<$view field='var.view' />"</$list>
+<$list filter="[<output>field:var.click-to-use[true]]">
+  click-to-use="true"</$list>
+<$list filter="[<output>has[var.editor]]">
+  editor="<$view field='var.editor' />"</$list>
+<$list filter="[<output>has[var.width]]">
+  width="<$view field='var.width' />"</$list>
+<$list filter="[<output>has[var.height]]">
+  height="<$view field='var.height' />"</$list>
+<$list filter="[<output>has[var.class]]">
+  class="<$view field='var.class' />"</$list>
+<$list filter="[<output>field:var.show-buttons[false]]">
+  show-buttons="false"</$list>
+<$list filter="[<output>has[var.design]]">
+  design="<$view field='var.design' />"</$list>&gt;&lt;/$tmap&gt;
+</pre>
+
+<fieldset>
+  <legend>Parameters</legend> 
+  <table class="tmap-config-table">
+      <$macrocall type="input-select"
+          $name="tmap-row"
+          title="View"
+          field="var.view"
+          nochoice=" "
+          selectFilter=<<tmap "option" "selector.allViewsByLabel">>
+          descr="The view to bind the wiedget to" />
+      <<tmap-row type:"input-select"
+          title:"Editor bar"
+          field:"var.editor"
+          selectFilter:"[[|Hidden]]
+                        [[vis|Simple]]
+                        [[advanced|Advanced]]"
+          descr:"Whether the widget should act as an editor or not.">>
+      <<tmap-row type:"input-select"
+          title:"Design"
+          field:"var.design"
+          selectFilter:"[[|Normal]]
+                        [[plain|Plain]]"
+          descr:"Usually a header is displayed and borders. Plain
+                 design will only show the mere graph.">>
+      <<tmap-row type:"input-text"
+          title:"Height"
+          field:"var.height"
+          descr:"Graph's height in css units. Defaults to '300px'.">>
+      <<tmap-row type:"input-text"
+          title:"Width"
+          field:"var.width"
+          descr:"Graph's width in css units. Defaults to '100%'.">>
+      <<tmap-row type:"input-text"
+          title:"Class"
+          field:"var.class"
+          descr:"A custom class to apply your own css.">>
+      <<tmap-row type:"input-checkbox"
+          title:"Click to use"
+          field:"var.click-to-use"
+          default:"false"
+          descr:"A click is needed to enable the graph.">>
+      <<tmap-row type:"input-checkbox"
+          title:"Show buttons"
+          field:"var.show-buttons"
+          default:"true"
+          descr:"Show or hide the graph's navigation buttons.">>
+  </table>
+</fieldset>

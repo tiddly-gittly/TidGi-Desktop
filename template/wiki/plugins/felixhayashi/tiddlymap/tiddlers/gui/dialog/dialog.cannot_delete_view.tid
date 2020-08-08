@@ -1,0 +1,19 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/cannotDeleteViewDialog
+subtitle: {{$:/core/images/locked-padlock}} You cannot delete this view!
+buttons: ok
+
+\rules except wikilink
+
+It is not possible to delete the current view as ''<<count>>'' tiddlers
+are referencing it. To delete the view you must first remove the tiddlymap
+widgets in the tiddlers listed below or change their view attributes.
+
+''References''
+
+<ul>
+<$list filter=<<refFilter>> variable="item">
+  <li><$link><<item>></$link></li>
+</$list>
+</ul>
+
+After the references are removed, you may delete the view.

@@ -1,0 +1,24 @@
+title: $:/plugins/felixhayashi/tiddlymap/hook/liveTab
+caption: Live
+
+\define width() calc(100% - 15px)
+
+<div class="tmap-mobile-editor">
+  <div class="tmap-flash-message tmap-warning">
+    The live tab is not displayed in mobile mode.
+  </div>
+</div>
+<div class="tmap-desktop-editor">
+  <$set name="view"
+      filter="[{$:/temp/tmap/currentTiddler}get[tmap.open-view]]"
+      emptyValue=<<tmap "option" "config.sys.liveTab.fallbackView">>>
+  <div>
+    <$tiddlymap
+        view=<<view>>
+        click-to-use="false"
+        refresh-triggers="$:/temp/tmap/currentTiddler"
+        object-id="live_tab">
+    </$tiddlymap>
+  </div>
+  </$set> 
+</div>

@@ -1,0 +1,9 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/fullscreenNotSupported
+subtitle: {{$:/core/images/info-button}} Your machine does not support fullscreen
+buttons: ok_suppress
+
+\rules except wikilink
+
+Please have a look [[here|http://caniuse.com/#feat=fullscreen]] to see a list of supported devices/browsers.
+
+Sorry for this :(

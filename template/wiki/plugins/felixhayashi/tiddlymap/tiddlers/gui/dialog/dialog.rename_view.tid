@@ -1,0 +1,27 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/renameView
+subtitle: {{$:/core/images/tag-button}} Please specify a view name
+
+\rules except wikilink
+
+''Name:''
+<$edit-text focus="true" tiddler=<<output>> field="text" type="text" tag="input" default=""
+            class="tmap-trigger-field tmap-triggers-ok-button-on-enter" />
+
+Note that ''<<count>>'' tiddlers are referencing this view.
+
+<$reveal type="nomatch" text="0" default=<<count>>>
+
+Renaming the view will cause the reference to be invalid.
+It is recommended to first remove the tiddlymap widgets in
+the tiddlers listed below or change their view attributes
+accordingly.
+
+''References''
+
+<ul>
+<$list filter=<<refFilter>> variable="item">
+  <li><$text text=<<item>> /></li>
+</$list>
+</ul>
+
+</$reveal>

@@ -1,0 +1,57 @@
+.tc-relink-references {
+}
+
+.tc-relink-references-table {
+	width: 100%;
+	border: none;
+}
+
+.tc-relink-references-table td {
+	border-left: none;
+}
+
+.tc-relink-references-table tr:first-child td {
+	border-top: none;
+}
+
+.tc-relink-references-title {
+	text-align: left;
+	vertical-align: top;
+}
+
+.tc-relink-references-occurrence {
+	font-style: italic;
+	text-align: left;
+	font-weight: 200;
+	padding-left: 25px;
+	vertical-align: top;
+}
+
+.tc-relink-header-plugin {
+	text-align: left;
+}
+
+.tc-relink-header-plugin button {
+	width: 100%
+}
+
+.tc-relink-column-type {
+	width: 8em;
+}
+
+.tc-relink-column-type select {
+	width: 100%;
+}
+
+.tc-relink-column-delete {
+	border-left: none;
+	text-align: left;
+}
+
+.tc-relink-column-delete button {
+	padding-left: 1em;
+}
+
+.tc-relink-impossible a.tc-tiddlylink {
+	color: red;
+}

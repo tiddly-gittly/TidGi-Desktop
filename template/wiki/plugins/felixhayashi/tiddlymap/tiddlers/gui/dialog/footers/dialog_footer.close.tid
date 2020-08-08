@@ -1,0 +1,10 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialogFooter/close
+
+\rules except wikilink
+
+<$button class="tmap-dialog-button tmap-close-button" tooltip="Close this dialog">Close
+
+  <!-- trigger dialog callback -->
+  <$action-setfield $tiddler=<<result>> text="1" />
+                       
+</$button>

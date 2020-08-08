@@ -1,0 +1,12 @@
+title: $:/plugins/felixhayashi/hotzone/Configuration
+
+Please see the [[GitHub page|https://github.com/felixhayashi/TW5-HotZone]] for more information on the options.
+
+Save and reload the wiki to activate changes.
+
+<table>
+  <tr>
+    <th align="left">Focus offset:</th>
+    <td><$edit-text tiddler="$:/config/hotzone/focusOffset" tag="input" default="71px" /></td>
+  </tr>
+</table>

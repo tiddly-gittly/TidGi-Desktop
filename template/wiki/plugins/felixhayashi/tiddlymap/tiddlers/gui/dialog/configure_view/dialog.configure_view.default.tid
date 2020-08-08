@@ -1,0 +1,23 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/configureView/default
+caption: Overview
+
+\rules except wikilink
+
+<div class="tmap-flash-message tmap-info">
+   All configurations __only__ affect this view.
+</div>
+
+<table class="tmap-key-value-table">
+  <tr>
+    <th align="left">Created on</th>
+    <td><<createdOn>></td>
+  </tr>
+  <tr>
+    <th align="left">Nodes contained in graph</th>
+    <td><<numberOfNodes>></td>
+  </tr>
+  <tr>
+    <th align="left">Edges contained in graph</th>
+    <td><<numberOfEdges>></td>
+  </tr>
+</table>

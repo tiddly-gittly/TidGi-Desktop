@@ -1,0 +1,10 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/globalConfig
+subtitle: {{$:/core/images/options-button}} Global configuration of TiddlyMap
+classes: tmap-remove-top-space
+
+\rules except wikilink
+
+<$macrocall $name="tabs"
+  default=<<concat "$(template)$/default">>
+  tabsList="[all[shadows]prefix<template>] -[<template>]"
+/>

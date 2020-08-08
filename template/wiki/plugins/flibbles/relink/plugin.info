@@ -1,0 +1,13 @@
+{
+	"name": "Relink",
+	"title": "$:/plugins/flibbles/relink",
+	"description": "Flexibility when relinking renamed tiddlers",
+	"author": "Flibbles",
+	"version": "1.10.0",
+	"core-version": ">=5.1.14",
+	"source": "https://github.com/flibbles/tw5-relink",
+	"demo": "http://flibbles.github.io/tw5-relink/",
+	"list": "readme configuration",
+	"dependents": "",
+	"plugin-type": "plugin"
+}

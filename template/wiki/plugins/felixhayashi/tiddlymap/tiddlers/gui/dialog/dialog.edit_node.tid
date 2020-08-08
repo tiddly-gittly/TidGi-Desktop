@@ -1,0 +1,53 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/editNode
+subtitle: {{$:/core/images/edit-button}} Editing style of node "<<tiddler>>"
+classes: tmap-remove-top-space
+
+\rules except wikilink
+
+\define maybeShowTidColorWarning()
+  <$list filter="[<tidColor>regexp[.+]]">
+  <div class="tmap-flash-message tmap-warning">
+    You have set the tiddler's color
+    field to "<<tidColor>>". This value will be completely ignored
+    when you change node's color properties in the vis editor below.
+  </div>
+  </$list>
+\end
+
+\define iconSettings(twIconField, faIconField)
+  <fieldset>
+    <legend>Icon Settings</legend>
+    <table class="tmap-config-table">
+      <<tmap-row type:"input-text"
+          title:"TW-icon"
+          field:"$twIconField$"
+          descr:"A tiddlywiki image reference.
+                 For example '$:/core/icon' for Movotun Jack.">>
+      <<tmap-row type:"input-text"
+          title:"FA-icon"
+          field:"$faIconField$"
+          descr:"A Font Awesome icon code.
+                 For example 'f206' for the bicycle symbol.">>
+    </table>
+  </fieldset>
+\end
+
+\define sharedSettings(twIconField, faIconField, labelField)
+  <fieldset>
+    <legend>General Settings</legend>
+    <table class="tmap-config-table">
+      <<tmap-row type:"input-text"
+          title:"Label"
+          field:"$labelField$"
+          descr:"Use this value as node label.">>
+    </table>
+  </fieldset>
+  <!-- display icon fieldset -->
+  <<iconSettings "$twIconField$" "$faIconField$">>  
+\end
+
+<$macrocall
+  $name="tabs"
+  default=<<concat "$(template)$/default">>
+  tabsList="[all[shadows]prefix<template>] -[<template>]"
+/>

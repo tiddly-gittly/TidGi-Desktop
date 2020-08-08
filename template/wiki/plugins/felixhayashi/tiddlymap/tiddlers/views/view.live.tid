@@ -1,0 +1,9 @@
+title: $:/plugins/felixhayashi/tiddlymap/graph/views/Live View
+config.refresh-triggers: $:/temp/tmap/currentTiddler
+config.physics_mode: true
+config.vis: {"physics":{"forceAtlas2Based":{"springConstant":0.09}}}
+config.neighbourhood_scope: 1
+created: 20150331114808577
+modified: 20200509212547688
+type: text/vnd.tiddlywiki
+isview: true

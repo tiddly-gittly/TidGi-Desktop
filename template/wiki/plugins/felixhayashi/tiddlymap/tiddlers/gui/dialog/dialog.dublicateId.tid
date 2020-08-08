@@ -1,0 +1,21 @@
+title: $:/plugins/felixhayashi/tiddlymap/dialog/dublicateIdInfo
+subtitle: {{$:/core/images/info-button}} Dublicate id detected
+buttons: ok_suppress
+
+\rules except wikilink
+
+TiddlyMap requires the value of the id field ("tmap.id") to be
+unique in order to correctly identify nodes and tiddlers.
+
+The id of the "<<param.changedTiddler>>" already exists for these tiddlers:
+
+<ul>
+<$list filter=<<param.filter>> variable="item">
+  <li><$link><<item>></$link></li>
+</$list>
+</ul>
+
+Therefore TiddlyMap
+
+* assigned a new id to tiddler "<<param.changedTiddler>>"
+* removed all edges from "<<param.changedTiddler>>"

@@ -1,0 +1,15 @@
+tags: $:/tags/Actions
+title: $:/plugins/bimlas/locator/actions/add-field-value
+type: text/vnd.tiddlywiki
+
+\define assign-value()
+  <$action-setfield $tiddler=<<actionTiddler>> $field=<<currentField>> $value=<<currentTiddler>>/>
+\end
+
+\define assign-list-item()
+  <$action-listops $tiddler=<<actionTiddler>> $field=<<currentField>> $subfilter="[all[current]]"/>
+\end
+
+<$list filter="[title<currentField>subfilter<filter-field-is-list>]" emptyMessage=<<assign-value>> variable="null">
+  <<assign-list-item>>
+</$list>

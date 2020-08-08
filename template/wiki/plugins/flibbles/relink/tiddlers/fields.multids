@@ -1,0 +1,8 @@
+title: $:/config/flibbles/relink/fields/
+
+caption: wikitext
+filter: filter
+list: list
+list-after: title
+list-before: title
+tags: list
