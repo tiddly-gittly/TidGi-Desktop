@@ -49,6 +49,7 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
   const loggerForWorker = logMessage(loggerMeta);
   let started = false;
   worker.on('message', message => {
+    console.log(message);
     loggerForWorker(message);
     if (!started) {
       started = true;
@@ -63,7 +64,10 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
       }, 100);
     }
   });
-  worker.on('error', error => logger.error(error.message, { ...loggerMeta, ...error }));
+  worker.on('error', error => {
+    console.log(error);
+    logger.error(error.message, { ...loggerMeta, ...error });
+  });
   worker.on('exit', code => {
     if (code !== 0) delete wikiWorkers[homePath];
     logger.warning(`NodeJSWiki ${homePath} Worker stopped with exit code ${code}.`, loggerMeta);

@@ -1,78 +1,94 @@
-var fs = require('fs');
-var path = require('path');
-var os = require('os');
+/**
+  title: $:/plugins/linonetwo/watch-fs/is.js
+  type: application/javascript
+  module-type: startup
+ * https://github.com/yuanchuan/node-watch
+ * @version 0.6.4
+ */
 
-function matchObject(item, str) {
-  return Object.prototype.toString.call(item)
-    === '[object ' + str + ']';
-}
+function isIIFE() {
+  if (typeof $tw === 'undefined' || !$tw?.node) return;
+  exports.name = 'watch-fs_is';
+  exports.after = ['load-modules'];
+  exports.platforms = ['node'];
+  exports.synchronous = true;
 
-function checkStat(name, fn) {
-  try {
-    return fn(name);
-  } catch (err) {
-    if (/^(ENOENT|EPERM|EACCES)$/.test(err.code)) {
-      if (err.code !== 'ENOENT') {
-        console.warn('Warning: Cannot access %s', name);
+  const fs = require('fs');
+  const path = require('path');
+  const os = require('os');
+
+  function matchObject(item, string) {
+    return Object.prototype.toString.call(item) === `[object ${string}]`;
+  }
+
+  function checkStat(name, fn) {
+    try {
+      return fn(name);
+    } catch (error) {
+      if (/^(ENOENT|EPERM|EACCES)$/.test(error.code)) {
+        if (error.code !== 'ENOENT') {
+          console.warn('Warning: Cannot access %s', name);
+        }
+        return false;
       }
-      return false;
+      throw error;
     }
-    throw err;
   }
+
+  const is = {
+    nil(item) {
+      return item == undefined;
+    },
+    array(item) {
+      return Array.isArray(item);
+    },
+    emptyObject(item) {
+      for (const key in item) {
+        return false;
+      }
+      return true;
+    },
+    buffer(item) {
+      return Buffer.isBuffer(item);
+    },
+    regExp(item) {
+      return matchObject(item, 'RegExp');
+    },
+    string(item) {
+      return matchObject(item, 'String');
+    },
+    func(item) {
+      return typeof item === 'function';
+    },
+    number(item) {
+      return matchObject(item, 'Number');
+    },
+    exists(name) {
+      return fs.existsSync(name);
+    },
+    file(name) {
+      return checkStat(name, function(n) {
+        return fs.statSync(n).isFile();
+      });
+    },
+    samePath(a, b) {
+      return path.resolve(a) === path.resolve(b);
+    },
+    directory(name) {
+      return checkStat(name, function(n) {
+        return fs.statSync(n).isDirectory();
+      });
+    },
+    symbolicLink(name) {
+      return checkStat(name, function(n) {
+        return fs.lstatSync(n).isSymbolicLink();
+      });
+    },
+    windows() {
+      return os.platform() === 'win32';
+    },
+  };
+
+  module.exports = is;
 }
-
-var is = {
-  nil: function(item) {
-    return item == null;
-  },
-  array: function(item) {
-    return Array.isArray(item);
-  },
-  emptyObject: function(item) {
-    for (var key in item) {
-      return false;
-    }
-    return true;
-  },
-  buffer: function(item) {
-    return Buffer.isBuffer(item);
-  },
-  regExp: function(item) {
-    return matchObject(item, 'RegExp');
-  },
-  string: function(item) {
-    return matchObject(item, 'String');
-  },
-  func: function(item) {
-    return typeof item === 'function';
-  },
-  number: function(item) {
-    return matchObject(item, 'Number');
-  },
-  exists: function(name) {
-    return fs.existsSync(name);
-  },
-  file: function(name) {
-    return checkStat(name, function(n) {
-      return fs.statSync(n).isFile()
-    });
-  },
-  samePath: function(a, b) {
-    return path.resolve(a) === path.resolve(b);
-  },
-  directory: function(name) {
-    return checkStat(name, function(n) {
-      return fs.statSync(n).isDirectory()
-    });
-  },
-  symbolicLink: function(name) {
-    return checkStat(name, function(n) {
-      return fs.lstatSync(n).isSymbolicLink();
-    });
-  },
-  windows: function() {
-    return os.platform() === 'win32';
-  }
-};
-
-module.exports = is;
+isIIFE();
