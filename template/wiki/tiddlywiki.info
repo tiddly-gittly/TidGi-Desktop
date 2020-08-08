@@ -1,7 +1,7 @@
 {
   "description": "Basic client-server edition",
   "plugins": [
-"tiddlywiki/highlight",
+    "tiddlywiki/highlight",
     "tiddlywiki/pluginlibrary",
     "tiddlywiki/codemirror",
     "tiddlywiki/codemirror-autocomplete",
@@ -41,10 +41,19 @@
     "linonetwo/prevent-edit",
     "linonetwo/watch-fs"
   ],
-  "themes": ["tiddlywiki/vanilla"],
-  "languages": ["zh-Hans"],
+  "themes": [
+    "tiddlywiki/vanilla"
+  ],
+  "languages": [
+    "zh-Hans"
+  ],
   "build": {
-    "index": ["--rendertiddler", "$:/plugins/tiddlywiki/tiddlyweb/save/offline", "index.html", "text/plain"],
+    "index": [
+      "--rendertiddler",
+      "$:/plugins/tiddlywiki/tiddlyweb/save/offline",
+      "index.html",
+      "text/plain"
+    ],
     "externalimages": [
       "--setfield",
       "[is[binary]] [type[application/msword]]",
