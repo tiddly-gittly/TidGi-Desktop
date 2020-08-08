@@ -85,7 +85,6 @@
     "electron": "9.1.2",
     "electron-builder": "22.8.0",
     "electron-notarize": "1.0.0",
-    "eslint": "7.6.0",
     "eslint-config-airbnb": "18.2.0",
     "eslint-config-prettier": "6.11.0",
     "eslint-config-standard": "14.1.1",
