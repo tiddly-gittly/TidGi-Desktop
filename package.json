@@ -1,7 +1,7 @@
 {
   "name": "TiddlyGit",
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "main": "public/electron.js",
   "scripts": {
     "electron-dev": "npm run clean:dev && concurrently \"cross-env BROWSER=none npm run start\" \"wait-on http://localhost:3000 && electron .\" -k",
@@ -33,6 +33,7 @@
     "i18next": "^19.6.3",
     "i18next-electron-fs-backend": "^1.3.4",
     "i18next-fs-backend": "^1.0.7",
+    "is-url": "1.2.4",
     "jimp": "0.14.0",
     "lodash": "4.17.19",
     "menubar": "9.0.1",
@@ -58,7 +59,6 @@
     "classnames": "2.2.6",
     "date-fns": "2.15.0",
     "graphql-hooks": "4.5.0",
-    "is-url": "1.2.4",
     "prop-types": "15.7.2",
     "react": "16.13.1",
     "react-ace": "9.1.1",
