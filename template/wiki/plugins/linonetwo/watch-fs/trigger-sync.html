@@ -1,0 +1,17 @@
+<script type="application/javascript">
+  const checkCanSyncInterval = 1000; // ms
+  // after we sync, set this to false
+  let deSync = false;
+  setInterval(async function checkCanSync() {
+    // debounced sync indicator, will be true if there is no change in the disc for several seconds
+    const canSync = (await fetch('/linonetwo/watch-fs-can-sync').then((response) => response.text())) === 'true';
+    if (!deSync && !canSync) {
+      // we have previously synced, and server have changes that is not debounced yet
+      deSync = true;
+    }
+    if (canSync && deSync) {
+      $tw.syncer.syncFromServer();
+      deSync = false;
+    }
+  }, checkCanSyncInterval);
+</script>

@@ -8,7 +8,7 @@
   This file is modified based on $:/plugins/OokTech/Bob/FileSystemMonitor.js
 \ */
 
-const isNonTiddlerFiles = filePath => filePath.endsWith('.DS_Store');
+const isNotNonTiddlerFiles = (filePath) => !filePath.endsWith('.DS_Store') && !filePath.includes('.git');
 
 function FileSystemMonitor() {
   const isDebug = false;
@@ -21,6 +21,8 @@ function FileSystemMonitor() {
 
   // this allow us to test this module in nodejs directly without "ReferenceError: $tw is not defined"
   const $tw = this.$tw || { node: true };
+  // init our namespace for communication
+  $tw.wiki.watchFs = {};
   // folder to watch
   // non-tiddler files that needs to be ignored
 
@@ -29,7 +31,9 @@ function FileSystemMonitor() {
   const fs = require('fs');
   const path = require('path');
 
-  const watchPathBase = path.resolve($tw.boot.wikiInfo?.config?.watchFolder || $tw.boot.wikiTiddlersPath || './tiddlers');
+  const watchPathBase = path.resolve(
+    $tw.boot.wikiInfo?.config?.watchFolder || $tw.boot.wikiTiddlersPath || './tiddlers'
+  );
   debugLog(`watchPathBase`, JSON.stringify(watchPathBase, undefined, '  '));
 
   /**
@@ -55,6 +59,7 @@ function FileSystemMonitor() {
    * }
    */
   const inverseFilesIndex = {};
+  $tw.wiki.watchFs.inverseFilesIndex = inverseFilesIndex;
   // initialize the inverse index
   for (const tiddlerTitle in initialLoadedFiles) {
     if ({}.hasOwnProperty.call(initialLoadedFiles, tiddlerTitle)) {
@@ -72,8 +77,8 @@ function FileSystemMonitor() {
       delete inverseFilesIndex[filePath];
     }
   };
-  const filePathExistsInIndex = filePath => !!inverseFilesIndex[filePath];
-  const getTitleByPath = filePath => {
+  const filePathExistsInIndex = (filePath) => !!inverseFilesIndex[filePath];
+  const getTitleByPath = (filePath) => {
     try {
       return inverseFilesIndex[filePath].tiddlerTitle;
     } catch {
@@ -87,7 +92,7 @@ function FileSystemMonitor() {
    * we need to get old tiddler path by its name
    * @param {string} title
    */
-  const getPathByTitle = title => {
+  const getPathByTitle = (title) => {
     try {
       for (const filePath in inverseFilesIndex) {
         if (inverseFilesIndex[filePath].title === title || inverseFilesIndex[filePath].title === `${title}.tid`) {
@@ -109,6 +114,20 @@ function FileSystemMonitor() {
    */
   const lockedFiles = new Set();
 
+  // every time a file changed, refresh the count down timer, so only when disk get stable after a while, will we sync to the browser
+  $tw.wiki.watchFs.canSync = false;
+  const debounceInterval = 4 * 1000;
+  let syncTimeoutHandler = undefined;
+  const refreshCanSyncState = () => {
+    $tw.wiki.watchFs.canSync = false;
+    debugLog(`canSync is now ${$tw.wiki.watchFs.canSync}`);
+    clearTimeout(syncTimeoutHandler);
+    syncTimeoutHandler = setTimeout(() => {
+      $tw.wiki.watchFs.canSync = true;
+      debugLog(`canSync is now ${$tw.wiki.watchFs.canSync}`);
+    }, debounceInterval);
+  };
+
   /**
    * This watches for changes to a folder and updates the wiki when anything changes in the folder.
    *
@@ -127,11 +146,6 @@ function FileSystemMonitor() {
     const fileRelativePath = path.relative(watchPathBase, filePath);
     const fileAbsolutePath = path.join(watchPathBase, fileRelativePath);
     debugLog(`${fileRelativePath} ${changeType}`);
-    // ignore some cases
-    if (isNonTiddlerFiles(fileRelativePath)) {
-      debugLog(`${fileRelativePath} ignored due to isNonTiddlerFiles`);
-      return;
-    }
     if (lockedFiles.has(fileRelativePath)) {
       debugLog(`${fileRelativePath} ignored due to mutex lock`);
       // release lock as we have already finished our job
@@ -155,15 +169,15 @@ function FileSystemMonitor() {
        *    "hasMetaFile": false
        *  }
        */
-      const [tiddlersDescriptor] = $tw.loadTiddlersFromPath(fileAbsolutePath);
+      const tiddlersDescriptor = $tw.loadTiddlersFromFile(fileAbsolutePath, { title: fileAbsolutePath });
       debugLog(`tiddlersDescriptor`, JSON.stringify(tiddlersDescriptor, undefined, '  '));
       const { tiddlers, ...fileDescriptor } = tiddlersDescriptor;
       // if user is using git or VSCode to create new file in the disk, that is not yet exist in the wiki
       // but maybe our index is not updated, or maybe user is modify a system tiddler, we need to check each case
-      if (!filePathExistsInIndex(fileRelativePath) || !fileDescriptor.tiddlerTitle) {
-        tiddlers.forEach(tiddler => {
+      if (!filePathExistsInIndex(fileRelativePath)) {
+        tiddlers.forEach((tiddler) => {
           // check whether we are rename an existed tiddler
-          debugLog('getting tiddler.title', tiddler.title);
+          debugLog('getting new tiddler.title', tiddler.title);
           const existedWikiRecord = $tw.wiki.getTiddler(tiddler.title);
           if (existedWikiRecord && deepEqual(tiddler, existedWikiRecord.fields)) {
             // because disk file and wiki tiddler is identical, so this file creation is triggered by wiki.
@@ -192,13 +206,18 @@ function FileSystemMonitor() {
         // if it already existed in the wiki, this change might 1. due to our last call to `$tw.syncadaptor.wiki.addTiddler`; 2. due to user change in git or VSCode
         // so we have to check whether tiddler in the disk is identical to the one in the wiki, if so, we ignore it in the case 1.
         tiddlers
-          .filter(tiddler => {
+          .filter((tiddler) => {
             debugLog('updating existed tiddler', tiddler.title);
             const { fields: tiddlerInWiki } = $tw.wiki.getTiddler(tiddler.title);
-            return !deepEqual(tiddler, tiddlerInWiki);
+            if (deepEqual(tiddler, tiddlerInWiki)) {
+              debugLog('Ignore update due to change from the Browser', tiddler.title);
+              return false;
+            }
+            debugLog('Saving updated', tiddler.title);
+            return true;
           })
           // then we update wiki with each newly created tiddler
-          .forEach(tiddler => {
+          .forEach((tiddler) => {
             $tw.syncadaptor.wiki.addTiddler(tiddler);
           });
       }
@@ -243,10 +262,12 @@ function FileSystemMonitor() {
         });
       }
     }
+
+    refreshCanSyncState();
   };
 
   // use node-watch
   const watch = require('./watch');
-  const watcher = watch(watchPathBase, { recursive: true, delay: 200 }, listener);
+  const watcher = watch(watchPathBase, { recursive: true, delay: 200, filter: isNotNonTiddlerFiles }, listener);
 }
 FileSystemMonitor();
