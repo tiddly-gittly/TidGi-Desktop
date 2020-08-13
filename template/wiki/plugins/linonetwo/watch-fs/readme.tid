@@ -6,7 +6,7 @@ type: text/vnd.tiddlywiki
 
 This plugin enables TiddlyWiki to watch the change in your disk, and if you edit one of your tiddler using editor likes VSCode and save it on the disk, the change will immediately reflected in the browser.
 
-See https://github.com/Jermolene/TiddlyWiki5/issues/3060 for related discussions.
+See [[https://github.com/Jermolene/TiddlyWiki5/issues/3060]] for related discussions.
 
 !! [[FileSystemMonitor.js|$:/plugins/linonetwo/watch-fs/FileSystemMonitor.js]]
 
@@ -16,13 +16,35 @@ browser. So if you make a new .tid file in the tiddlers folder it will appear
 in the wiki in the browser without needing to restart the server. You can also
 delete files to remove the tiddlers from the browser.
 
-!! How to decide whether a change is comes from the browser?
+!! Usage
+
+This plugin will cause trouble if you build wiki with it enabled,
+so you have to remove it from your `tiddlywiki.info`, and add it to your wiki start arguments:
+
+```shell
+tiddlywiki +plugins/tiddlywiki/filesystem +plugins/tiddlywiki/tiddlyweb +plugins/linonetwo/watch-fs <path-to-wiki-folder> --listen
+```
+
+(why `+plugins/tiddlywiki/filesystem +plugins/tiddlywiki/tiddlyweb` here? See [[https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-613200370]] for details)
+
+!!! Liminitation
+
+# can't handle rename in the disk, you can only rename from within the wiki (no such API to tell tw I've renamed a file)
+# I haven't tested this with [[$:/config/FileSystemPaths]] and [[Fix file info PR|https://github.com/Jermolene/TiddlyWiki5/pull/4630]] , but I use this feature every day, so I will definitely support it.
+# Can't handle if git change the tiddler while you are open its Draft tiddler (might be fixed by [[Deleting a draft tiddler should not also delete the original tiddler|https://github.com/Jermolene/TiddlyWiki5/issues/4792]] )
+
+!! Implementation Details
+
+!!! How to decide whether a change is comes from the browser?
 
 We will compare disk file and wiki file, if there is any discrepancy,
-then the change is not made by the wiki, it is made by git or VSCode.
+then we know the change is not made from the wiki, it is made by git or VSCode, in this case we read data from the disc,
+and add data to the tiddlywiki.
 
-!! How to sync changes to the browser?
+!!! How to sync changes to the browser?
 
 we can't trigger sync from the server, so we have to set a smaller sync interval in the client side.
 
-So this plugin ship with a [[$:/config/SyncPollingInterval]] whose value is 1000 (ms), this means browser will try to get change from the server every second.
+So this plugin ship with a large [[$:/config/SyncPollingInterval]] to disable the build-in sync,
+and we add a new route `/linonetwo/watch-fs-can-sync` to the simple server, it will return `true` or `false`,
+and browser will poll this route, to see if it needs to trigger a `$tw.syncer.syncFromServer()`.
