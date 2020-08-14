@@ -348,8 +348,7 @@ const Main = ({
             )}
             {Object.keys(workspaces).length > 0 && isLoading && (
               <Typography type="body1" color="textSecondary">
-                size={24}
-                Loading... />
+                Loading..
               </Typography>
             )}
             {Object.keys(workspaces).length < 1 && (
