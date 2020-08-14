@@ -7,7 +7,6 @@ import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
 
 import Button from '@material-ui/core/Button';
-import CircularProgress from '@material-ui/core/CircularProgress';
 import IconButton from '@material-ui/core/IconButton';
 import Typography from '@material-ui/core/Typography';
 
@@ -347,7 +346,12 @@ const Main = ({
                 </Button>
               </div>
             )}
-            {Object.keys(workspaces).length > 0 && isLoading && <CircularProgress size={24} />}
+            {Object.keys(workspaces).length > 0 && isLoading && (
+              <Typography type="body1" color="textSecondary">
+                size={24}
+                Loading... />
+              </Typography>
+            )}
             {Object.keys(workspaces).length < 1 && (
               <div>
                 {sidebar ? (
