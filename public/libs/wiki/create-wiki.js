@@ -22,10 +22,15 @@ const logProgress = message =>
 async function linkWiki(mainWikiPath, folderName, subWikiPath) {
   const mainWikiTiddlersFolderPath = path.join(mainWikiPath, TIDDLERS_PATH, folderName);
   try {
+    try {
+      await fs.remove(mainWikiTiddlersFolderPath);
+    } catch {}
     await fs.createSymlink(subWikiPath, mainWikiTiddlersFolderPath);
     logProgress(i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiSucceed'));
   } catch {
-    throw new Error(i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiFailed', { subWikiPath, mainWikiTiddlersFolderPath }));
+    throw new Error(
+      i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiFailed', { subWikiPath, mainWikiTiddlersFolderPath }),
+    );
   }
 }
 
@@ -120,6 +125,11 @@ async function cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, 
   }
   if (await fs.pathExists(newWikiPath)) {
     throw new Error(i18n.t('AddWorkspace.WikiExisted', { newWikiPath }));
+  }
+  try {
+    await fs.mkdir(newWikiPath);
+  } catch {
+    throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
   }
   await clone(githubWikiUrl, path.join(parentFolderLocation, wikiFolderName), userInfo);
   await linkWiki(mainWikiPath, wikiFolderName, path.join(parentFolderLocation, wikiFolderName));
