@@ -66,6 +66,7 @@
     "CantSyncInSpecialGitStateAutoFixFailed": "Unable to Sync, this folder is in special condition, thus can't Sync directly. An auto-fix has been tried, but error still remains. Please resolve all the conflict manually (For example, use VSCode to open the wiki folder), if this still don't work out, please use professional Git tools (Source Tree, GitKraken) to solve this.",
     "CantSyncInSpecialGitStateAutoFixSucceed": "This folder is in a special state, it could not be synchronized directly, but it has been automatically repaired",
     "CantSynchronizeAndSyncScriptIsInDeadLoop": "Unable to sync, and Sync script is in a dead loop.",
+    "CommitComplete": "Local commit completed",
     "FetchingData": "Pulling cloud data for comparison",
     "GitMergeFailed": "Git merge results are not good, there may be loopholes in the merge strategy",
     "GitPushFailed": "Git push result is bad, this usually means there is a network issue.",

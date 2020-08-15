@@ -65,6 +65,7 @@
     "CantSyncInSpecialGitStateAutoFixFailed": "无法同步，这个文件夹处在特殊状态，不能直接进行同步，已尝试自动修复，但还是出现错误，请先解决所有冲突（例如使用 VSCode 打开)，如果还不行，请尝试用专业 Git 工具（Source Tree, GitKraken）解决问题",
     "CantSyncInSpecialGitStateAutoFixSucceed": "这个文件夹处在特殊状态，本来不能直接进行同步，但已自动修复",
     "PrepareSync": "准备同步，使用登录的作者信息",
+    "CommitComplete": "本地提交（Commit）完成",
     "CantSyncGitNotInitialized": "无法同步，这个文件夹没有初始化为 Git 仓库",
     "HaveThingsToCommit": "有需要提交(commit)的内容，正在自动提交",
     "PreparingUserInfo": "正在配置身份信息",
