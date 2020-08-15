@@ -74,7 +74,7 @@ const options = {
     ],
     // add dependencies of tiddlywiki here
     // https://github.com/electron/electron/issues/18540#issuecomment-660679649
-    asarUnpack: ['**/node_modules/tiddlywiki/**/*'],
+    asarUnpack: ['**/node_modules/@tiddlygit/tiddlywiki/**/*'],
     extraResources: [
       {
         from: 'public/libs/wiki/wiki-worker.js',

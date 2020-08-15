@@ -1,6 +1,6 @@
 const { workerData, parentPort, isMainThread } = require('worker_threads');
 const path = require('path');
-const $tw = require('tiddlywiki').TiddlyWiki();
+const $tw = require('@tiddlygit/tiddlywiki').TiddlyWiki();
 
 function startNodeJSWiki() {
   const { homePath, tiddlyWikiPort = 5112 } = workerData;
