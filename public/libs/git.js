@@ -72,7 +72,7 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) 
   await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
   logProgress(i18n.t('Log.StartBackupToGithubRemote'));
   const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(
-    ['push', 'origin', 'master:master', '--force'],
+    ['push', 'origin', 'master:master'],
     wikiFolderPath,
   );
   await credentialOff(wikiFolderPath);
