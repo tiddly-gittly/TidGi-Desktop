@@ -18,6 +18,7 @@ const { addView, reloadViewsDarkReader } = require('./libs/views');
 const { getPreference, getPreferences } = require('./libs/preferences');
 const { getWorkspaces, setWorkspace } = require('./libs/workspaces');
 const { logger } = require('./libs/log');
+const { clearMainBindings } = require('./libs/i18next-electron-fs-backend');
 
 const MAILTO_URLS = require('./constants/mailto-urls');
 
@@ -275,7 +276,7 @@ if (!gotTheLock) {
     await Promise.all([stopAllWiki(), stopWatchAllWiki()]);
     logger.info('Worker threads  and watchers all terminated.');
     logger.info('Quitting I18N server.');
-    i18nextBackend.clearMainBindings(ipcMain);
+    clearMainBindings(ipcMain);
     logger.info('Quitted I18N server.');
   });
 
