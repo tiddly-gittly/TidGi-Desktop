@@ -5,7 +5,17 @@ const { LOG_FOLDER } = require('../../constants/paths');
 const RendererTransport = require('./renderer-transport');
 
 const logger = winston.createLogger({
-  levels: winston.config.syslog.levels,
+  levels: {
+    emerg: 0,
+    alert: 1,
+    crit: 2,
+    error: 3,
+    warning: 4,
+    warn: 5,
+    notice: 6,
+    info: 7,
+    debug: 8,
+  },
   transports: [
     new winston.transports.DailyRotateFile({
       filename: 'TiddlyGit-%DATE%.log',

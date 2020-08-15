@@ -183,6 +183,7 @@ if (!gotTheLock) {
     global.MAILTO_URLS = MAILTO_URLS;
 
     autoUpdater.allowPrerelease = allowPrerelease;
+    autoUpdater.logger = logger;
     whenTrulyReady()
       // eslint-disable-next-line promise/always-return
       .then(() => {
