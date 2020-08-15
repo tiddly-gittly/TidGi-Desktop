@@ -8,7 +8,11 @@
   This file is modified based on $:/plugins/OokTech/Bob/FileSystemMonitor.js
 \ */
 
-const isNotNonTiddlerFiles = (filePath) => !filePath.includes('$__StoryList') && !filePath.endsWith('.DS_Store') && !filePath.includes('.git');
+const isNotNonTiddlerFiles = filePath =>
+  !filePath.includes('$__StoryList') &&
+  !filePath.includes('/subwiki/') &&
+  !filePath.endsWith('.DS_Store') &&
+  !filePath.includes('.git');
 
 function FileSystemMonitor() {
   const isDebug = false;
@@ -32,7 +36,7 @@ function FileSystemMonitor() {
   const path = require('path');
 
   const watchPathBase = path.resolve(
-    $tw.boot.wikiInfo?.config?.watchFolder || $tw.boot.wikiTiddlersPath || './tiddlers'
+    $tw.boot.wikiInfo?.config?.watchFolder || $tw.boot.wikiTiddlersPath || './tiddlers',
   );
   debugLog(`watchPathBase`, JSON.stringify(watchPathBase, undefined, '  '));
 
@@ -77,8 +81,8 @@ function FileSystemMonitor() {
       delete inverseFilesIndex[filePath];
     }
   };
-  const filePathExistsInIndex = (filePath) => !!inverseFilesIndex[filePath];
-  const getTitleByPath = (filePath) => {
+  const filePathExistsInIndex = filePath => !!inverseFilesIndex[filePath];
+  const getTitleByPath = filePath => {
     try {
       return inverseFilesIndex[filePath].tiddlerTitle;
     } catch {
@@ -92,7 +96,7 @@ function FileSystemMonitor() {
    * we need to get old tiddler path by its name
    * @param {string} title
    */
-  const getPathByTitle = (title) => {
+  const getPathByTitle = title => {
     try {
       for (const filePath in inverseFilesIndex) {
         if (inverseFilesIndex[filePath].title === title || inverseFilesIndex[filePath].title === `${title}.tid`) {
@@ -175,7 +179,7 @@ function FileSystemMonitor() {
       // if user is using git or VSCode to create new file in the disk, that is not yet exist in the wiki
       // but maybe our index is not updated, or maybe user is modify a system tiddler, we need to check each case
       if (!filePathExistsInIndex(fileRelativePath)) {
-        tiddlers.forEach((tiddler) => {
+        tiddlers.forEach(tiddler => {
           // check whether we are rename an existed tiddler
           debugLog('getting new tiddler.title', tiddler.title);
           const existedWikiRecord = $tw.wiki.getTiddler(tiddler.title);
@@ -206,7 +210,7 @@ function FileSystemMonitor() {
         // if it already existed in the wiki, this change might 1. due to our last call to `$tw.syncadaptor.wiki.addTiddler`; 2. due to user change in git or VSCode
         // so we have to check whether tiddler in the disk is identical to the one in the wiki, if so, we ignore it in the case 1.
         tiddlers
-          .filter((tiddler) => {
+          .filter(tiddler => {
             debugLog('updating existed tiddler', tiddler.title);
             const { fields: tiddlerInWiki } = $tw.wiki.getTiddler(tiddler.title);
             if (deepEqual(tiddler, tiddlerInWiki)) {
@@ -217,7 +221,7 @@ function FileSystemMonitor() {
             return true;
           })
           // then we update wiki with each newly created tiddler
-          .forEach((tiddler) => {
+          .forEach(tiddler => {
             $tw.syncadaptor.wiki.addTiddler(tiddler);
           });
       }
