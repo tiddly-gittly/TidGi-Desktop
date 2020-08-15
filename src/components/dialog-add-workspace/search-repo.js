@@ -65,6 +65,7 @@ type Props = {|
   accessToken?: string,
   githubWikiUrl: string,
   githubWikiUrlSetter: string => void,
+  wikiFolderNameSetter: string => void,
   userInfo?: IUserInfo,
   isCreateMainWorkspace: boolean,
 |};
@@ -72,6 +73,7 @@ export default function SearchRepo({
   accessToken,
   githubWikiUrl,
   githubWikiUrlSetter,
+  wikiFolderNameSetter,
   userInfo,
   isCreateMainWorkspace,
 }: Props) {
@@ -148,7 +150,10 @@ export default function SearchRepo({
           <ListItem
             button
             key={url}
-            onClick={() => githubWikiUrlSetter(url)}
+            onClick={() => {
+              githubWikiUrlSetter(url);
+              wikiFolderNameSetter(name);
+            }}
             selected={trim(githubWikiUrl) === trim(url)}
           >
             <ListItemIcon>

@@ -59,7 +59,7 @@ const previousToken = getGithubToken();
 previousToken && setHeaderToGraphqlClient(previousToken);
 
 export default function AddWorkspace() {
-  const [currentTab, currentTabSetter] = useState(0);
+  const [currentTab, currentTabSetter] = useState('CloneOnlineWiki');
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(countWorkspace() === 0);
   const [parentFolderLocation, parentFolderLocationSetter] = useState(getDesktopPath());
   const [existedFolderLocation, existedFolderLocationSetter] = useState(getDesktopPath());
@@ -138,6 +138,7 @@ export default function AddWorkspace() {
         accessToken={accessToken}
         githubWikiUrlSetter={githubWikiUrlSetter}
         userInfo={userInfo}
+        wikiFolderNameSetter={wikiFolderNameSetter}
         isCreateMainWorkspace={isCreateMainWorkspace}
       />
     </SyncContainer>
@@ -152,7 +153,7 @@ export default function AddWorkspace() {
       />
 
       {syncContainer}
-      {currentTab === 0 && (
+      {currentTab === 'CreateNewWiki' && (
         <Container>
           <NewWikiPathForm
             parentFolderLocation={parentFolderLocation}
@@ -177,7 +178,7 @@ export default function AddWorkspace() {
           />
         </Container>
       )}
-      {currentTab === 1 && (
+      {currentTab === 'OpenLocalWiki' && (
         <Container>
           <ExistedWikiPathForm
             existedFolderLocationSetter={existedFolderLocationSetter}
@@ -201,7 +202,7 @@ export default function AddWorkspace() {
           />
         </Container>
       )}
-      {currentTab === 2 && (
+      {currentTab === 'CloneOnlineWiki' && (
         <Container>
           <NewWikiPathForm
             parentFolderLocation={parentFolderLocation}
