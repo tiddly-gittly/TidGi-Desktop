@@ -9,7 +9,9 @@ const { logger } = require('./log');
 const i18n = require('./i18n');
 
 const getGitUrlWithCredential = (rawUrl, username, accessToken) =>
-  trim(`${rawUrl}.git`.replace('https://github.com/', `https://${username}:${accessToken}@github.com/`));
+  trim(
+    `${rawUrl}.git`.replace(/\n/g, '').replace('https://github.com/', `https://${username}:${accessToken}@github.com/`),
+  );
 const getGitUrlWithOutCredential = urlWithCredential => trim(urlWithCredential.replace(/.+@/, 'https://'));
 /**
  *  Add remote with credential
