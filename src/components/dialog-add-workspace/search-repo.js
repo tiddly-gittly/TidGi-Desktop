@@ -64,6 +64,7 @@ const CREATE_REPO_MUTATION = `
 type Props = {|
   accessToken?: string,
   githubWikiUrl: string,
+  currentTab: string,
   githubWikiUrlSetter: string => void,
   wikiFolderNameSetter: string => void,
   userInfo?: IUserInfo,
@@ -72,6 +73,7 @@ type Props = {|
 export default function SearchRepo({
   accessToken,
   githubWikiUrl,
+  currentTab,
   githubWikiUrlSetter,
   wikiFolderNameSetter,
   userInfo,
@@ -163,6 +165,7 @@ export default function SearchRepo({
           </ListItem>
         ))}
         {userInfo &&
+          currentTab !== 'CloneOnlineWiki' &&
           !notLogin &&
           !error &&
           !loading &&

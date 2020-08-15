@@ -138,6 +138,7 @@ export default function AddWorkspace() {
         accessToken={accessToken}
         githubWikiUrlSetter={githubWikiUrlSetter}
         userInfo={userInfo}
+        currentTab={currentTab}
         wikiFolderNameSetter={wikiFolderNameSetter}
         isCreateMainWorkspace={isCreateMainWorkspace}
       />
