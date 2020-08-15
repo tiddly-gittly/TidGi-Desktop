@@ -67,7 +67,7 @@ const defaultPreferences = {
   swipeToNavigate: true,
   syncDebounceInterval: 1000 * 60 * 30,
   themeSource: 'system',
-  titleBar: false,
+  titleBar: true,
   unreadCountBadge: true,
   useHardwareAcceleration: true,
 };
