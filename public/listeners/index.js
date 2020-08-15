@@ -4,10 +4,17 @@ const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = 
 const { autoUpdater } = require('electron-updater');
 
 const { initWikiGit, getRemoteUrl } = require('../libs/git');
-const { stopWatchWiki } = require('../libs/wiki/watch-wiki');
-const { stopWiki } = require('../libs/wiki/wiki-worker-mamager');
+const { stopWatchWiki, watchWiki } = require('../libs/wiki/watch-wiki');
+const { stopWiki, startWiki } = require('../libs/wiki/wiki-worker-mamager');
 const { logger } = require('../libs/log');
-const { createWiki, createSubWiki, removeWiki, ensureWikiExist, cloneWiki, cloneSubWiki } = require('../libs/wiki/create-wiki');
+const {
+  createWiki,
+  createSubWiki,
+  removeWiki,
+  ensureWikiExist,
+  cloneWiki,
+  cloneSubWiki,
+} = require('../libs/wiki/create-wiki');
 const { ICON_PATH, REACT_PATH, DESKTOP_PATH, LOG_FOLDER, isDev } = require('../constants/paths');
 
 const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
@@ -19,6 +26,7 @@ const {
   getActiveWorkspace,
   getWorkspace,
   getWorkspaces,
+  getWorkspaceByName,
   setWorkspacePicture,
   removeWorkspacePicture,
 } = require('../libs/workspaces');
@@ -87,15 +95,25 @@ const loadListeners = () => {
       return String(error);
     }
   });
-  ipcMain.handle('clone-sub-wiki', async (event, parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo) => {
-    try {
-      await cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo);
-      return '';
-    } catch (error) {
-      console.info(error);
-      return String(error);
-    }
-  });
+  ipcMain.handle(
+    'clone-sub-wiki',
+    async (event, parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo) => {
+      try {
+        await cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo);
+        // restart the main wiki to load content from private wiki
+        const mainWorkspace = getWorkspaceByName(mainWikiPath);
+        const userName = getPreference('userName') || '';
+        await stopWatchWiki(mainWikiPath);
+        await stopWiki(mainWikiPath);
+        await watchWiki(mainWikiPath, githubWikiUrl, userInfo);
+        await startWiki(mainWikiPath, mainWorkspace.port, userName);
+        return '';
+      } catch (error) {
+        console.info(error);
+        return String(error);
+      }
+    },
+  );
   ipcMain.handle('ensure-wiki-exist', async (event, wikiPath, shouldBeMainWiki) => {
     try {
       await ensureWikiExist(wikiPath, shouldBeMainWiki);
@@ -158,7 +176,7 @@ const loadListeners = () => {
 
   // System Preferences
   ipcMain.on('get-system-preference', (event, name) => {
-    event.returnValue = getSystemPreference(name)
+    event.returnValue = getSystemPreference(name);
   });
 
   ipcMain.on('get-system-preferences', event => {
@@ -352,7 +370,11 @@ const loadListeners = () => {
     dialog
       .showMessageBox(mainWindow.get(), {
         type: 'question',
-        buttons: [i18n.t('WorkspaceSelector.RemoveWorkspace'), i18n.t('WorkspaceSelector.RemoveWorkspaceAndDelete'), i18n.t('Cancel')],
+        buttons: [
+          i18n.t('WorkspaceSelector.RemoveWorkspace'),
+          i18n.t('WorkspaceSelector.RemoveWorkspaceAndDelete'),
+          i18n.t('Cancel'),
+        ],
         message: i18n.t('WorkspaceSelector.AreYouSure'),
         cancelId: 1,
       })
