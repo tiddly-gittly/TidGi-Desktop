@@ -13,14 +13,16 @@ const logProgress = message =>
     payload: { message, handler: 'createWikiProgress' },
   });
 
+const folderToContainSymlinks = 'subwiki';
 /**
  * Link a sub wiki to a main wiki, this will create a shortcut folder from main wiki to sub wiki, so when saving files to that shortcut folder, you will actually save file to the sub wiki
+ * We place symbol-link (short-cuts) in the tiddlers/subwiki/ folder, and ignore this folder in the .gitignore, so this symlink won't be commit to the git, as it contains computer specific path.
  * @param {string} mainWikiPath folderPath of a wiki as link's destination
  * @param {string} folderName sub-wiki's folder name
  * @param {string} newWikiPath sub-wiki's folder path
  */
 async function linkWiki(mainWikiPath, folderName, subWikiPath) {
-  const mainWikiTiddlersFolderPath = path.join(mainWikiPath, TIDDLERS_PATH, folderName);
+  const mainWikiTiddlersFolderPath = path.join(mainWikiPath, TIDDLERS_PATH, folderToContainSymlinks, folderName);
   try {
     try {
       await fs.remove(mainWikiTiddlersFolderPath);
@@ -86,7 +88,7 @@ async function createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink
 async function removeWiki(wikiPath, mainWikiToUnLink) {
   if (mainWikiToUnLink) {
     const subWikiName = path.basename(wikiPath);
-    await fs.remove(path.join(mainWikiToUnLink, TIDDLERS_PATH, subWikiName));
+    await fs.remove(path.join(mainWikiToUnLink, TIDDLERS_PATH, folderToContainSymlinks, subWikiName));
   }
   await fs.remove(wikiPath);
 }
