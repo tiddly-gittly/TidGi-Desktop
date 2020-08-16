@@ -767,12 +767,23 @@ const reloadViewsWebContentsIfDidFailLoad = () => {
   });
 };
 
+const reloadViewsWebContents = () => {
+  const metas = getWorkspaceMetas();
+  Object.keys(metas).forEach((id) => {
+    const view = views[id];
+    if (view != null) {
+      view.webContents.reload();
+    }
+  });
+};
+
 module.exports = {
   addView,
   getView,
   onEachView,
   hibernateView,
   reloadViewsDarkReader,
+  reloadViewsWebContents,
   reloadViewsWebContentsIfDidFailLoad,
   removeView,
   setActiveView,

@@ -33,7 +33,7 @@ const WIKI_WORKER_PATH = isDev
 module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName) {
   // require here to prevent circular dependence, which will cause "TypeError: getWorkspaceByName is not a function"
   const { getWorkspaceByName } = require('../workspaces');
-  const { reloadViewsWebContentsIfDidFailLoad } = require('../views');
+  const { reloadViewsWebContents } = require('../views');
   const { setWorkspaceMeta } = require('../workspace-metas');
   const workspace = getWorkspaceByName(homePath);
   const workspaceID = workspace?.id;
@@ -54,7 +54,7 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
     if (!started) {
       started = true;
       setTimeout(() => {
-        reloadViewsWebContentsIfDidFailLoad();
+        reloadViewsWebContents();
         setWorkspaceMeta(workspaceID, { isLoading: false });
         // close add-workspace dialog
         const { get } = require('../../windows/add-workspace');
