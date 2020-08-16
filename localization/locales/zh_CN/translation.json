@@ -53,6 +53,20 @@
     "WorkspaceUpdated": "工作区更新完毕，正在启动Wiki",
     "StartLinkingSubWikiToMainWiki": "开始链接子Wiki到父Wiki"
   },
+  "EditWorkspace": {
+    "Path": "Wiki的位置",
+    "Save": "保存",
+    "Cancel": "取消",
+    "HibernateTitle": "开启休眠",
+    "DisableAudioTitle": "关闭声音",
+    "DisableNotificationTitle": "关闭提醒",
+    "Hibernate": "在工作区未使用时休眠以节省 CPU 和内存消耗并省电",
+    "DisableAudio": "阻止工作区中的声音播放",
+    "DisableNotification": "阻止工作区的消息提醒",
+    "SelectLocal": "选择本地图片...",
+    "ResetDefaultIcon": "还原默认图标",
+    "URL": "本地服务器地址"
+  },
   "Log": {
     "StartGitInitialization": "开始初始化本地Git仓库",
     "StartConfiguringGithubRemoteRepository": "仓库初始化完毕，开始配置Github远端仓库",

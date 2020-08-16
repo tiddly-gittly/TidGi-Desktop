@@ -1,6 +1,7 @@
 import React from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
+import { useTranslation } from 'react-i18next';
 
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
@@ -20,13 +21,9 @@ import getMailtoUrl from '../../helpers/get-mailto-url';
 
 import defaultIcon from '../../images/default-icon.png';
 
-import {
-  getIconFromInternet,
-  save,
-  updateForm,
-} from '../../state/dialog-edit-workspace/actions';
+import { getIconFromInternet, save, updateForm } from '../../state/dialog-edit-workspace/actions';
 
-const styles = (theme) => ({
+const styles = theme => ({
   root: {
     background: theme.palette.background.paper,
     height: '100vh',
@@ -121,159 +118,155 @@ const EditWorkspace = ({
   onUpdateForm,
   picturePath,
   transparentBackground,
-}) => (
-  <div className={classes.root}>
-    <div className={classes.flexGrow}>
-      <TextField
-        id="outlined-full-width"
-        label="Name"
-        error={Boolean(nameError)}
-        placeholder="Optional"
-        helperText={nameError}
-        fullWidth
-        margin="dense"
-        variant="outlined"
-        className={classes.textField}
-        InputLabelProps={{
-          shrink: true,
-        }}
-        value={name}
-        onChange={(e) => onUpdateForm({ name: e.target.value })}
-      />
-      <TextField
-        id="outlined-full-width"
-        label="Home URL"
-        error={Boolean(homeUrlError)}
-        placeholder="Optional"
-        helperText={homeUrlError || (isMailApp && 'Email app detected.')}
-        fullWidth
-        margin="dense"
-        variant="outlined"
-        className={classes.textField}
-        InputLabelProps={{
-          shrink: true,
-        }}
-        value={homeUrl}
-        onChange={(e) => onUpdateForm({ homeUrl: e.target.value })}
-      />
-      <div className={classes.avatarFlex}>
-        <div className={classes.avatarLeft}>
-          <div
-            className={classNames(
-              classes.avatar,
-              transparentBackground && classes.transparentAvatar,
-            )}
-          >
-            <img
-              alt="Icon"
-              className={classes.avatarPicture}
-              src={getValidIconPath(picturePath, internetIcon)}
-            />
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div className={classes.root}>
+      <div className={classes.flexGrow}>
+        <TextField
+          id="outlined-full-width"
+          label={t('EditWorkspace.Path')}
+          error={Boolean(nameError)}
+          placeholder="Optional"
+          helperText={nameError}
+          fullWidth
+          margin="dense"
+          variant="outlined"
+          className={classes.textField}
+          InputLabelProps={{
+            shrink: true,
+          }}
+          value={name}
+          onChange={e => onUpdateForm({ name: e.target.value })}
+        />
+        <TextField
+          id="outlined-full-width"
+          label={t('EditWorkspace.URL')}
+          error={Boolean(homeUrlError)}
+          placeholder="Optional"
+          helperText={homeUrlError || (isMailApp && 'Email app detected.')}
+          fullWidth
+          margin="dense"
+          variant="outlined"
+          className={classes.textField}
+          InputLabelProps={{
+            shrink: true,
+          }}
+          value={homeUrl}
+          onChange={e => onUpdateForm({ homeUrl: e.target.value })}
+        />
+        <div className={classes.avatarFlex}>
+          <div className={classes.avatarLeft}>
+            <div className={classNames(classes.avatar, transparentBackground && classes.transparentAvatar)}>
+              <img alt="Icon" className={classes.avatarPicture} src={getValidIconPath(picturePath, internetIcon)} />
+            </div>
           </div>
-        </div>
-        <div className={classes.avatarRight}>
-          <Button
-            variant="outlined"
-            size="small"
-            onClick={() => {
-              const options = {
-                properties: ['openFile'],
-                filters: [
-                  { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp', 'dib'] },
-                ],
-              };
-              window.remote.dialog.showOpenDialog(options)
-                .then(({ canceled, filePaths }) => {
+          <div className={classes.avatarRight}>
+            <Button
+              variant="outlined"
+              size="small"
+              onClick={() => {
+                const options = {
+                  properties: ['openFile'],
+                  filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp', 'dib'] }],
+                };
+                window.remote.dialog.showOpenDialog(options).then(({ canceled, filePaths }) => {
                   if (!canceled && filePaths.length > 0) {
                     onUpdateForm({ picturePath: filePaths[0] });
                   }
                 });
-            }}
-          >
-            Select Local Image...
-          </Button>
-          <Typography variant="caption" className={classes.caption}>
-            PNG, JPEG, GIF, TIFF or BMP.
-          </Typography>
-          <Button
-            variant="outlined"
-            size="small"
-            className={classes.buttonBot}
-            disabled={!homeUrl || homeUrlError || downloadingIcon}
-            onClick={() => onGetIconFromInternet(true)}
-          >
-            {downloadingIcon ? 'Downloading Icon...' : 'Download Icon from the Internet'}
-          </Button>
-          <br />
-          <Button
-            variant="outlined"
-            size="small"
-            className={classes.buttonBot}
-            onClick={() => onUpdateForm({ picturePath: null, internetIcon: null })}
-            disabled={!(picturePath || internetIcon)}
-          >
-            Reset to Default
-          </Button>
-          <FormGroup>
-            <FormControlLabel
-              control={(
-                <Checkbox
-                  checked={transparentBackground}
-                  onChange={(e) => onUpdateForm({ transparentBackground: e.target.checked })}
-                />
-              )}
-              label="Use transparent background"
-            />
-          </FormGroup>
+              }}
+            >
+              {t('EditWorkspace.SelectLocal')}
+            </Button>
+            <Typography variant="caption" className={classes.caption}>
+              PNG, JPEG, GIF, TIFF or BMP.
+            </Typography>
+            {/* <Button
+              variant="outlined"
+              size="small"
+              className={classes.buttonBot}
+              disabled={!homeUrl || homeUrlError || downloadingIcon}
+              onClick={() => onGetIconFromInternet(true)}
+            >
+              {downloadingIcon ? 'Downloading Icon...' : 'Download Icon from the Internet'}
+            </Button> */}
+            <br />
+            <Button
+              variant="outlined"
+              size="small"
+              className={classes.buttonBot}
+              onClick={() => onUpdateForm({ picturePath: null, internetIcon: null })}
+              disabled={!(picturePath || internetIcon)}
+            >
+              {t('EditWorkspace.ResetDefaultIcon')}
+            </Button>
+            {/* <FormGroup>
+              <FormControlLabel
+                control={
+                  <Checkbox
+                    checked={transparentBackground}
+                    onChange={e => onUpdateForm({ transparentBackground: e.target.checked })}
+                  />
+                }
+                label="Use transparent background"
+              />
+            </FormGroup> */}
+          </div>
         </div>
+        <List>
+          <Divider />
+          <ListItem disableGutters>
+            <ListItemText primary={t('EditWorkspace.HibernateTitle')} secondary={t('EditWorkspace.Hibernate')} />
+            <ListItemSecondaryAction>
+              <Switch
+                edge="end"
+                color="primary"
+                checked={hibernateWhenUnused}
+                onChange={e => onUpdateForm({ hibernateWhenUnused: e.target.checked })}
+              />
+            </ListItemSecondaryAction>
+          </ListItem>
+          <ListItem disableGutters>
+            <ListItemText primary={t('EditWorkspace.DisableNotificationTitle')} secondary={t('EditWorkspace.DisableNotification')} />
+            <ListItemSecondaryAction>
+              <Switch
+                edge="end"
+                color="primary"
+                checked={disableNotifications}
+                onChange={e => onUpdateForm({ disableNotifications: e.target.checked })}
+              />
+            </ListItemSecondaryAction>
+          </ListItem>
+          <ListItem disableGutters>
+            <ListItemText primary={t('EditWorkspace.DisableAudioTitle')} secondary={t('EditWorkspace.DisableAudio')} />
+            <ListItemSecondaryAction>
+              <Switch
+                edge="end"
+                color="primary"
+                checked={disableAudio}
+                onChange={e => onUpdateForm({ disableAudio: e.target.checked })}
+              />
+            </ListItemSecondaryAction>
+          </ListItem>
+        </List>
       </div>
-      <List>
-        <Divider />
-        <ListItem disableGutters>
-          <ListItemText primary="Hibernate when not used" secondary="Save CPU usage, memory and battery." />
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              checked={hibernateWhenUnused}
-              onChange={(e) => onUpdateForm({ hibernateWhenUnused: e.target.checked })}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-        <ListItem disableGutters>
-          <ListItemText primary="Disable notifications" secondary="Prevent workspace from sending notifications." />
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              checked={disableNotifications}
-              onChange={(e) => onUpdateForm({ disableNotifications: e.target.checked })}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-        <ListItem disableGutters>
-          <ListItemText primary="Disable audio" secondary="Prevent workspace from playing audio." />
-          <ListItemSecondaryAction>
-            <Switch
-              edge="end"
-              color="primary"
-              checked={disableAudio}
-              onChange={(e) => onUpdateForm({ disableAudio: e.target.checked })}
-            />
-          </ListItemSecondaryAction>
-        </ListItem>
-      </List>
+      <div>
+        <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
+          {t('EditWorkspace.Save')}
+        </Button>
+        <Button
+          variant="contained"
+          disableElevation
+          className={classes.button}
+          onClick={() => window.remote.closeCurrentWindow()}
+        >
+          {t('EditWorkspace.Cancel')}
+        </Button>
+      </div>
     </div>
-    <div>
-      <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
-        Save
-      </Button>
-      <Button variant="contained" disableElevation className={classes.button} onClick={() => window.remote.closeCurrentWindow()}>
-        Cancel
-      </Button>
-    </div>
-  </div>
-);
+  );
+};
 
 EditWorkspace.defaultProps = {
   homeUrlError: null,
@@ -301,7 +294,7 @@ EditWorkspace.propTypes = {
   transparentBackground: PropTypes.bool.isRequired,
 };
 
-const mapStateToProps = (state) => ({
+const mapStateToProps = state => ({
   disableAudio: Boolean(state.dialogEditWorkspace.form.disableAudio),
   disableNotifications: Boolean(state.dialogEditWorkspace.form.disableNotifications),
   downloadingIcon: state.dialogEditWorkspace.downloadingIcon,
@@ -323,9 +316,4 @@ const actionCreators = {
   save,
 };
 
-export default connectComponent(
-  EditWorkspace,
-  mapStateToProps,
-  actionCreators,
-  styles,
-);
+export default connectComponent(EditWorkspace, mapStateToProps, actionCreators, styles);

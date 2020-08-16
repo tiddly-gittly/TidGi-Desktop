@@ -53,6 +53,20 @@
     "WorkspaceUpdated": "The workspace is updated and the Wiki is being launching",
     "StartLinkingSubWikiToMainWiki": "Start linking sub-Wiki to main-Wiki"
   },
+  "EditWorkspace": {
+    "Path": "Wiki Path",
+    "Save": "Save",
+    "Cancel": "Cancel",
+    "DisableAudioTitle": "Disable audio",
+    "DisableNotificationTitle": "Disable notifications",
+    "DisableAudio": "Prevent workspace from playing audio.",
+    "DisableNotification": "Prevent workspace from sending notifications.",
+    "HibernateTitle": "Hibernate when not used",
+    "Hibernate": "Save CPU usage, memory and battery.",
+    "SelectLocal": "Select Local Image...",
+    "ResetDefaultIcon": "Reset Default Icon",
+    "URL": "Wiki URL"
+  },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed! \nDo you want to remove the workspace?",
     "DoNotCare": "No, Never Mind",
