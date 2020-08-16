@@ -1,0 +1,13 @@
+title: $:/plugins/linonetwo/private-tiddlers-in-private-repo/readme
+created: 20200414135748497
+modified: 20200602062349232
+type: text/vnd.tiddlywiki
+
+!! Usage
+
+Edit `plugins/linonetwo/private-tiddlers-in-private-repo` using VSCode to be something like:
+
+```tid
+[!is[system]kin::to[APrivateContent]addprefix[/]addprefix[private-wiki]]
+[!is[system]kin::to[Photos]addprefix[/]addprefix[private-wiki-photos]]
+```
