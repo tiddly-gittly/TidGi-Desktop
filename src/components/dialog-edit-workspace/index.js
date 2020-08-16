@@ -96,7 +96,7 @@ const styles = (theme) => ({
 
 const getValidIconPath = (iconPath, internetIcon) => {
   if (iconPath) {
-    return `file://${iconPath}`;
+    return `file:///${iconPath}`;
   }
   if (internetIcon) {
     return internetIcon;

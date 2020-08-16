@@ -1,5 +1,6 @@
 // eslint-disable-next-line import/no-extraneous-dependencies
 const { ipcMain, nativeTheme, protocol, session, powerMonitor, remote } = require('electron');
+const isDev = require('electron-is-dev');
 const fs = require('fs');
 const settings = require('electron-settings');
 const { autoUpdater } = require('electron-updater');
@@ -90,6 +91,14 @@ if (!gotTheLock) {
     // eslint-disable-next-line promise/catch-or-return
     app
       .whenReady()
+      .then(
+        () =>
+          isDev &&
+          protocol.registerFileProtocol('file', (request, callback) => {
+            const pathname = decodeURIComponent(request.url.replace('file:///', ''));
+            callback(pathname);
+          }),
+      )
       .then(() => mainWindow.createAsync())
       .then(() => {
         const {

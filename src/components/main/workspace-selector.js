@@ -125,7 +125,7 @@ function WorkspaceSelector({
             <img
               alt="Icon"
               className={classNames(classes.avatarPicture, !sidebarShortcutHints && classes.avatarPictureLarge)}
-              src={picturePath ? `file://${picturePath}` : defaultIcon}
+              src={picturePath ? `file:///${picturePath}` : defaultIcon}
               draggable={false}
             />
           ) : (

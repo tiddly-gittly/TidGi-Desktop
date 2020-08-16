@@ -10,7 +10,7 @@ const windowStateKeeper = require('electron-window-state');
 const { menubar } = require('menubar');
 const path = require('path');
 
-const { REACT_PATH } = require('../constants/paths');
+const { REACT_PATH, isDev } = require('../constants/paths');
 const { getPreference } = require('../libs/preferences');
 const formatBytes = require('../libs/format-bytes');
 
@@ -55,7 +55,7 @@ const createAsync = () => new Promise((resolve) => {
         minWidth: 250,
         webPreferences: {
           nodeIntegration: false,
-      webSecurity: true,
+      webSecurity: !isDev,
       contextIsolation: true,
           webSecurity: false,
           preload: path.join(__dirname, '..', 'preload', 'menubar.js'),
@@ -167,7 +167,7 @@ const createAsync = () => new Promise((resolve) => {
     icon: process.platform === 'linux' && process.env.SNAP == null ? path.resolve(__dirname, '..', 'icon.png') : undefined,
     webPreferences: {
       nodeIntegration: false,
-      webSecurity: true,
+      webSecurity: !isDev,
       contextIsolation: true,
       preload: path.join(__dirname, '..', 'preload', 'main.js'),
     },

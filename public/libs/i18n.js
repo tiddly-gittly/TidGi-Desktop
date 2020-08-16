@@ -1,9 +1,8 @@
-const isDev = require('electron-is-dev');
 const path = require('path');
 const i18next = require('i18next');
 const Backend = require('i18next-fs-backend');
 
-const { LOCALIZATION_FOLDER } = require('../constants/paths');
+const { LOCALIZATION_FOLDER, isDev } = require('../constants/paths');
 
 i18next.use(Backend).init({
   backend: {

@@ -1,7 +1,7 @@
 const { BrowserWindow } = require('electron');
 const path = require('path');
 
-const { REACT_PATH } = require('../constants/paths');
+const { REACT_PATH, isDev } = require('../constants/paths');
 
 const mainWindow = require('./main');
 const { getPreference } = require('../libs/preferences');
@@ -17,7 +17,7 @@ const create = (scrollTo) => {
 
   win = new BrowserWindow({
     width: 820,
-    height: 600,
+    height: 640,
     resizable: false,
     maximizable: false,
     minimizable: false,
@@ -25,7 +25,7 @@ const create = (scrollTo) => {
     autoHideMenuBar: false,
     webPreferences: {
       nodeIntegration: false,
-      webSecurity: true,
+      webSecurity: !isDev,
       contextIsolation: true,
       preload: path.join(__dirname, '..', 'preload', 'preferences.js'),
     },

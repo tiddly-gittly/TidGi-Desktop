@@ -1,7 +1,7 @@
 const { BrowserWindow } = require('electron');
 const path = require('path');
 
-const { REACT_PATH } = require('../constants/paths');
+const { REACT_PATH, isDev } = require('../constants/paths');
 const { getPreference } = require('../libs/preferences');
 
 const mainWindow = require('./main');
@@ -25,7 +25,7 @@ const create = (url) => {
     autoHideMenuBar: false,
     webPreferences: {
       nodeIntegration: false,
-      webSecurity: true,
+      webSecurity: !isDev,
       contextIsolation: true,
       preload: path.join(__dirname, '..', 'preload', 'open-url-with.js'),
     },

@@ -60,7 +60,7 @@ const About = (props) => {
   return (
     <div>
       <DialogContent className={classes.dialogContent}>
-        <img src={`file://${window.meta.iconPath}`} alt="TiddlyGit" className={classes.icon} />
+        <img src={`file:///${window.meta.iconPath}`} alt="TiddlyGit" className={classes.icon} />
         <Typography variant="h6" className={classes.title}>TiddlyGit</Typography>
         <Typography
           variant="body2"
