@@ -19,6 +19,10 @@ const getValidationRules = () => ({
     fieldName: 'Name',
     required: true,
   },
+  port: {
+    fieldName: 'Port',
+    required: true,
+  },
   homeUrl: {
     fieldName: 'Home URL',
     required: true,
@@ -53,6 +57,7 @@ export const save = () => (dispatch, getState) => {
     id,
     {
       name: form.name,
+      port: form.port,
       homeUrl,
       // prefs
       disableAudio: Boolean(form.disableAudio),

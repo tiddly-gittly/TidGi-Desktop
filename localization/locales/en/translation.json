@@ -65,7 +65,8 @@
     "Hibernate": "Save CPU usage, memory and battery.",
     "SelectLocal": "Select Local Image...",
     "ResetDefaultIcon": "Reset Default Icon",
-    "URL": "Wiki URL"
+    "URL": "Wiki URL",
+    "Port": "Local host server port"
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed! \nDo you want to remove the workspace?",

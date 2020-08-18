@@ -65,7 +65,8 @@
     "DisableNotification": "阻止工作区的消息提醒",
     "SelectLocal": "选择本地图片...",
     "ResetDefaultIcon": "还原默认图标",
-    "URL": "本地服务器地址"
+    "URL": "本地服务器地址",
+    "Port": "本地服务器端口"
   },
   "Log": {
     "StartGitInitialization": "开始初始化本地Git仓库",

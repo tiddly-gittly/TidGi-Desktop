@@ -105,6 +105,7 @@ const EditWorkspace = ({
   downloadingIcon,
   hibernateWhenUnused,
   homeUrl,
+  port,
   homeUrlError,
   internetIcon,
   isMailApp,
@@ -138,10 +139,9 @@ const EditWorkspace = ({
         />
         <TextField
           id="outlined-full-width"
-          label={t('EditWorkspace.URL')}
+          label={t('EditWorkspace.Port')}
           error={Boolean(homeUrlError)}
           placeholder="Optional"
-          helperText={homeUrlError || (isMailApp && 'Email app detected.')}
           fullWidth
           margin="dense"
           variant="outlined"
@@ -149,8 +149,8 @@ const EditWorkspace = ({
           InputLabelProps={{
             shrink: true,
           }}
-          value={homeUrl}
-          onChange={e => onUpdateForm({ homeUrl: e.target.value })}
+          value={port}
+          onChange={event => onUpdateForm({ port: event.target.value, homeUrl: `http://localhost:${event.target.value}/` })}
         />
         <div className={classes.avatarFlex}>
           <div className={classes.avatarLeft}>
@@ -225,7 +225,10 @@ const EditWorkspace = ({
             </ListItemSecondaryAction>
           </ListItem>
           <ListItem disableGutters>
-            <ListItemText primary={t('EditWorkspace.DisableNotificationTitle')} secondary={t('EditWorkspace.DisableNotification')} />
+            <ListItemText
+              primary={t('EditWorkspace.DisableNotificationTitle')}
+              secondary={t('EditWorkspace.DisableNotification')}
+            />
             <ListItemSecondaryAction>
               <Switch
                 edge="end"
@@ -279,6 +282,7 @@ EditWorkspace.propTypes = {
   downloadingIcon: PropTypes.bool.isRequired,
   hibernateWhenUnused: PropTypes.bool.isRequired,
   homeUrl: PropTypes.string.isRequired,
+  port: PropTypes.string.isRequired,
   homeUrlError: PropTypes.string,
   internetIcon: PropTypes.string,
   isMailApp: PropTypes.bool.isRequired,
@@ -297,6 +301,7 @@ const mapStateToProps = state => ({
   downloadingIcon: state.dialogEditWorkspace.downloadingIcon,
   hibernateWhenUnused: Boolean(state.dialogEditWorkspace.form.hibernateWhenUnused),
   homeUrl: state.dialogEditWorkspace.form.homeUrl || '',
+  port: state.dialogEditWorkspace.form.port || '5212',
   homeUrlError: state.dialogEditWorkspace.form.homeUrlError,
   id: state.dialogEditWorkspace.form.id || '',
   internetIcon: state.dialogEditWorkspace.form.internetIcon,
