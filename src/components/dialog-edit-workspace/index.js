@@ -12,16 +12,13 @@ import ListItemText from '@material-ui/core/ListItemText';
 import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import Switch from '@material-ui/core/Switch';
 import Typography from '@material-ui/core/Typography';
-import FormGroup from '@material-ui/core/FormGroup';
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Checkbox from '@material-ui/core/Checkbox';
 
 import connectComponent from '../../helpers/connect-component';
 import getMailtoUrl from '../../helpers/get-mailto-url';
 
 import defaultIcon from '../../images/default-icon.png';
 
-import { getIconFromInternet, save, updateForm } from '../../state/dialog-edit-workspace/actions';
+import { save, updateForm } from '../../state/dialog-edit-workspace/actions';
 
 const styles = theme => ({
   root: {
@@ -311,7 +308,6 @@ const mapStateToProps = state => ({
 });
 
 const actionCreators = {
-  getIconFromInternet,
   updateForm,
   save,
 };
