@@ -140,6 +140,7 @@ const EditWorkspace = ({
         <TextField
           id="outlined-full-width"
           label={t('EditWorkspace.Port')}
+          helperText={`${t('EditWorkspace.URL')}: ${homeUrl}`}
           error={Boolean(homeUrlError)}
           placeholder="Optional"
           fullWidth
@@ -150,7 +151,9 @@ const EditWorkspace = ({
             shrink: true,
           }}
           value={port}
-          onChange={event => onUpdateForm({ port: event.target.value, homeUrl: `http://localhost:${event.target.value}/` })}
+          onChange={event =>
+            onUpdateForm({ port: event.target.value, homeUrl: `http://localhost:${event.target.value}/` })
+          }
         />
         <div className={classes.avatarFlex}>
           <div className={classes.avatarLeft}>
@@ -188,7 +191,6 @@ const EditWorkspace = ({
             >
               {downloadingIcon ? 'Downloading Icon...' : 'Download Icon from the Internet'}
             </Button> */}
-            <br />
             <Button
               variant="outlined"
               size="small"
