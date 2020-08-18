@@ -74,7 +74,7 @@ import {
   requestShowSpellcheckLanguagesWindow,
 } from '../../senders';
 
-const styles = (theme) => ({
+const styles = theme => ({
   root: {
     padding: theme.spacing(2),
     background: theme.palette.background.default,
@@ -135,13 +135,13 @@ const styles = (theme) => ({
   },
 });
 
-const getThemeString = (theme) => {
+const getThemeString = theme => {
   if (theme === 'light') return 'Light';
   if (theme === 'dark') return 'Dark';
   return 'System default';
 };
 
-const getOpenAtLoginString = (openAtLogin) => {
+const getOpenAtLoginString = openAtLogin => {
   if (openAtLogin === 'yes-hidden') return 'Yes, but minimized';
   if (openAtLogin === 'yes') return 'Yes';
   return 'No';
@@ -163,7 +163,9 @@ const getUpdaterDesc = (status, info) => {
   if (status === 'download-progress') {
     if (info != null) {
       const { transferred, total, bytesPerSecond } = info;
-      return `Downloading updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
+      return `Downloading updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(
+        bytesPerSecond,
+      )}/s)...`;
     }
     return 'Downloading updates...';
   }
@@ -219,8 +221,8 @@ const Preferences = ({
   updaterInfo,
   updaterStatus,
   useHardwareAcceleration,
+  userName,
 }) => {
-
   const sections = {
     wiki: {
       text: 'Wiki',
@@ -305,7 +307,7 @@ const Preferences = ({
   };
 
   useEffect(() => {
-    const scrollTo =  window.remote.getGlobal('preferencesScrollTo');
+    const scrollTo = window.remote.getGlobal('preferencesScrollTo');
     if (!scrollTo) return;
     sections[scrollTo].ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
@@ -322,9 +324,7 @@ const Preferences = ({
       <div className={classes.sidebar}>
         <List dense>
           {Object.keys(sections).map((sectionKey, i) => {
-            const {
-              Icon, text, ref, hidden,
-            } = sections[sectionKey];
+            const { Icon, text, ref, hidden } = sections[sectionKey];
             if (hidden) return null;
             return (
               <React.Fragment key={sectionKey}>
@@ -333,16 +333,13 @@ const Preferences = ({
                   <ListItemIcon>
                     <Icon />
                   </ListItemIcon>
-                  <ListItemText
-                    primary={text}
-                  />
+                  <ListItemText primary={text} />
                 </ListItem>
               </React.Fragment>
             );
           })}
         </List>
       </div>
-
 
       <div className={classes.inner}>
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.wiki.ref}>
@@ -351,7 +348,15 @@ const Preferences = ({
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             <ListItem>
-              -
+              <TextField
+                helperText={t('Preference.UserNameDetail')}
+                fullWidth
+                onChange={event => {
+                  requestSetPreference('userName', event.target.value);
+                }}
+                label={t('Preference.UserName')}
+                value={userName}
+              />
             </ListItem>
           </List>
         </Paper>
@@ -400,29 +405,32 @@ const Preferences = ({
           <List dense disablePadding>
             <StatedMenu
               id="theme"
-              buttonElement={(
+              buttonElement={
                 <ListItem button>
                   <ListItemText primary="Theme" secondary={getThemeString(themeSource)} />
                   <ChevronRightIcon color="action" />
                 </ListItem>
-              )}
+              }
             >
-              <MenuItem dense onClick={() => requestSetPreference('themeSource', 'system')}>System default</MenuItem>
-              <MenuItem dense onClick={() => requestSetPreference('themeSource', 'light')}>Light</MenuItem>
-              <MenuItem dense onClick={() => requestSetPreference('themeSource', 'dark')}>Dark</MenuItem>
+              <MenuItem dense onClick={() => requestSetPreference('themeSource', 'system')}>
+                System default
+              </MenuItem>
+              <MenuItem dense onClick={() => requestSetPreference('themeSource', 'light')}>
+                Light
+              </MenuItem>
+              <MenuItem dense onClick={() => requestSetPreference('themeSource', 'dark')}>
+                Dark
+              </MenuItem>
             </StatedMenu>
             <Divider />
             <ListItem>
-              <ListItemText
-                primary="Show sidebar"
-                secondary="Sidebar lets you switch easily between workspaces."
-              />
+              <ListItemText primary="Show sidebar" secondary="Sidebar lets you switch easily between workspaces." />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
                   checked={sidebar}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('sidebar', e.target.checked);
                     requestRealignActiveWorkspace();
                   }}
@@ -431,15 +439,13 @@ const Preferences = ({
             </ListItem>
             <Divider />
             <ListItem>
-              <ListItemText
-                primary="Show keyboard shortcut hints on sidebar"
-              />
+              <ListItemText primary="Show keyboard shortcut hints on sidebar" />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
                   checked={sidebarShortcutHints}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('sidebarShortcutHints', e.target.checked);
                   }}
                 />
@@ -459,8 +465,8 @@ const Preferences = ({
                   // if not, as user can't right-click on menu bar icon
                   // they can't access preferences or notifications
                   checked={(window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar) || navigationBar}
-                  disabled={(window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar)}
-                  onChange={(e) => {
+                  disabled={window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar}
+                  onChange={e => {
                     requestSetPreference('navigationBar', e.target.checked);
                     requestRealignActiveWorkspace();
                   }}
@@ -480,7 +486,7 @@ const Preferences = ({
                       edge="end"
                       color="primary"
                       checked={titleBar}
-                      onChange={(e) => {
+                      onChange={e => {
                         requestSetPreference('titleBar', e.target.checked);
                         requestRealignActiveWorkspace();
                       }}
@@ -493,16 +499,13 @@ const Preferences = ({
               <>
                 <Divider />
                 <ListItem>
-                  <ListItemText
-                    primary="Hide menu bar"
-                    secondary="Hide the menu bar unless the Alt+M is pressed."
-                  />
+                  <ListItemText primary="Hide menu bar" secondary="Hide the menu bar unless the Alt+M is pressed." />
                   <ListItemSecondaryAction>
                     <Switch
                       edge="end"
                       color="primary"
                       checked={hideMenuBar}
-                      onChange={(e) => {
+                      onChange={e => {
                         requestSetPreference('hideMenuBar', e.target.checked);
                         requestShowRequireRestartDialog();
                       }}
@@ -514,16 +517,19 @@ const Preferences = ({
             <Divider />
             <ListItem>
               <ListItemText
-                primary={window.remote.getPlatform() === 'win32'
-                  ? 'Attach to taskbar' : 'Attach to menu bar'}
-                secondary={window.remote.getPlatform() !== 'linux' ? 'Tip: Right-click on app icon to access context menu.' : null}
+                primary={window.remote.getPlatform() === 'win32' ? 'Attach to taskbar' : 'Attach to menu bar'}
+                secondary={
+                  window.remote.getPlatform() !== 'linux'
+                    ? 'Tip: Right-click on app icon to access context menu.'
+                    : null
+                }
               />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
                   checked={attachToMenubar}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('attachToMenubar', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
@@ -541,7 +547,7 @@ const Preferences = ({
             <ListItem>
               <ListItemText
                 primary="Block ads &amp; trackers"
-                secondary={(
+                secondary={
                   <>
                     <span>Powered by </span>
                     <span
@@ -549,7 +555,7 @@ const Preferences = ({
                       tabIndex={0}
                       className={classes.link}
                       onClick={() => requestOpen('https://cliqz.com/en/whycliqz/adblocking')}
-                      onKeyDown={(e) => {
+                      onKeyDown={e => {
                         if (e.key !== 'Enter') return;
                         requestOpen('https://cliqz.com/en/whycliqz/adblocking');
                       }}
@@ -558,14 +564,14 @@ const Preferences = ({
                     </span>
                     <span>.</span>
                   </>
-                )}
+                }
               />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
                   checked={blockAds}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('blockAds', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
@@ -576,7 +582,7 @@ const Preferences = ({
             <ListItem>
               <ListItemText
                 primary="Create dark themes for web apps on the fly"
-                secondary={(
+                secondary={
                   <>
                     <span>Powered by </span>
                     <span
@@ -584,7 +590,7 @@ const Preferences = ({
                       tabIndex={0}
                       className={classes.link}
                       onClick={() => requestOpen('https://darkreader.org/')}
-                      onKeyDown={(e) => {
+                      onKeyDown={e => {
                         if (e.key !== 'Enter') return;
                         requestOpen('https://darkreader.org/');
                       }}
@@ -595,7 +601,7 @@ const Preferences = ({
                     <span> Invert bright colors making them high contrast </span>
                     <span>and easy to read at night.</span>
                   </>
-                )}
+                }
               />
               <ListItemSecondaryAction>
                 <Switch
@@ -603,7 +609,7 @@ const Preferences = ({
                   color="primary"
                   checked={themeSource !== 'light' && darkReader}
                   disabled={themeSource === 'light'}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('darkReader', e.target.checked);
                   }}
                 />
@@ -625,7 +631,7 @@ const Preferences = ({
                       aria-labelledby="brightness-slider"
                       valueLabelDisplay="auto"
                       step={5}
-                      valueLabelFormat={(val) => {
+                      valueLabelFormat={val => {
                         if (val > 0) return `+${val}`;
                         return val;
                       }}
@@ -657,7 +663,7 @@ const Preferences = ({
                       aria-labelledby="contrast-slider"
                       valueLabelDisplay="auto"
                       step={5}
-                      valueLabelFormat={(val) => {
+                      valueLabelFormat={val => {
                         if (val > 0) return `+${val}`;
                         return val;
                       }}
@@ -755,9 +761,13 @@ const Preferences = ({
                     label="from"
                     renderInput={timeProps => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleFrom)}
-                    onChange={(d) => requestSetPreference('pauseNotificationsByScheduleFrom', d.toString())}
-                    onClose={() => { window.preventClosingWindow = false; }}
-                    onOpen={() => { window.preventClosingWindow = true; }}
+                    onChange={d => requestSetPreference('pauseNotificationsByScheduleFrom', d.toString())}
+                    onClose={() => {
+                      window.preventClosingWindow = false;
+                    }}
+                    onOpen={() => {
+                      window.preventClosingWindow = true;
+                    }}
                     disabled={!pauseNotificationsBySchedule}
                   />
                   <TimePicker
@@ -765,22 +775,24 @@ const Preferences = ({
                     label="to"
                     renderInput={timeProps => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleTo)}
-                    onChange={(d) => requestSetPreference('pauseNotificationsByScheduleTo', d.toString())}
-                    onClose={() => { window.preventClosingWindow = false; }}
-                    onOpen={() => { window.preventClosingWindow = true; }}
+                    onChange={d => requestSetPreference('pauseNotificationsByScheduleTo', d.toString())}
+                    onClose={() => {
+                      window.preventClosingWindow = false;
+                    }}
+                    onOpen={() => {
+                      window.preventClosingWindow = true;
+                    }}
                     disabled={!pauseNotificationsBySchedule}
                   />
                 </div>
-                (
-                {window.Intl.DateTimeFormat().resolvedOptions().timeZone}
-                )
+                ({window.Intl.DateTimeFormat().resolvedOptions().timeZone})
               </ListItemText>
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
                   checked={pauseNotificationsBySchedule}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('pauseNotificationsBySchedule', e.target.checked);
                   }}
                 />
@@ -794,7 +806,7 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={pauseNotificationsMuteAudio}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('pauseNotificationsMuteAudio', e.target.checked);
                   }}
                 />
@@ -808,7 +820,7 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={unreadCountBadge}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('unreadCountBadge', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
@@ -829,10 +841,7 @@ const Preferences = ({
                 primary="Test notifications"
                 secondary={(() => {
                   // only show this message on macOS Catalina 10.15 & above
-                  if (
-                    window.remote.getPlatform() === 'darwin'
-                    && semver.gte(window.remote.getOSVersion(), '10.15.0')
-                  ) {
+                  if (window.remote.getPlatform() === 'darwin' && semver.gte(window.remote.getOSVersion(), '10.15.0')) {
                     return (
                       <>
                         <span>If notifications don&apos;t show up,</span>
@@ -852,7 +861,7 @@ const Preferences = ({
             <Divider />
             <ListItem>
               <ListItemText
-                secondary={(
+                secondary={
                   <>
                     <span>TiddlyGit supports notifications out of the box. </span>
                     <span>But for some web apps, to receive notifications, </span>
@@ -862,17 +871,23 @@ const Preferences = ({
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      onClick={() => requestOpen('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps')}
-                      onKeyDown={(e) => {
+                      onClick={() =>
+                        requestOpen(
+                          'https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps',
+                        )
+                      }
+                      onKeyDown={e => {
                         if (e.key !== 'Enter') return;
-                        requestOpen('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
+                        requestOpen(
+                          'https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps',
+                        );
                       }}
                     >
                       Learn more
                     </span>
                     <span>.</span>
                   </>
-                )}
+                }
               />
             </ListItem>
           </List>
@@ -890,7 +905,7 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={spellcheck}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('spellcheck', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
@@ -903,7 +918,7 @@ const Preferences = ({
                 <ListItem button onClick={requestShowSpellcheckLanguagesWindow}>
                   <ListItemText
                     primary="Preferred spell checking languages"
-                    secondary={spellcheckLanguages.map((code) => hunspellLanguagesMap[code]).join(' | ')}
+                    secondary={spellcheckLanguages.map(code => hunspellLanguagesMap[code]).join(' | ')}
                   />
                   <ChevronRightIcon color="action" />
                 </ListItem>
@@ -920,21 +935,21 @@ const Preferences = ({
             <ListItem
               button
               onClick={() => {
-                window.remote.dialog.showOpenDialog({
-                  properties: ['openDirectory'],
-                }).then((result) => {
-                  if (!result.canceled && result.filePaths) {
-                    requestSetPreference('downloadPath', result.filePaths[0]);
-                  }
-                }).catch((err) => {
-                  console.log(err); // eslint-disable-line no-console
-                });
+                window.remote.dialog
+                  .showOpenDialog({
+                    properties: ['openDirectory'],
+                  })
+                  .then(result => {
+                    if (!result.canceled && result.filePaths) {
+                      requestSetPreference('downloadPath', result.filePaths[0]);
+                    }
+                  })
+                  .catch(err => {
+                    console.log(err); // eslint-disable-line no-console
+                  });
               }}
             >
-              <ListItemText
-                primary="Download Location"
-                secondary={downloadPath}
-              />
+              <ListItemText primary="Download Location" secondary={downloadPath} />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
@@ -945,7 +960,7 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={askForDownloadPath}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('askForDownloadPath', e.target.checked);
                   }}
                 />
@@ -978,7 +993,7 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={blockAds}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('blockAds', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
@@ -993,7 +1008,7 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={rememberLastPageVisited}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('rememberLastPageVisited', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
@@ -1008,7 +1023,7 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={shareWorkspaceBrowsingData}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('shareWorkspaceBrowsingData', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
@@ -1019,31 +1034,37 @@ const Preferences = ({
             <ListItem>
               <ListItemText
                 primary="Ignore certificate errors"
-                secondary={(
+                secondary={
                   <>
                     <span>Not recommended. </span>
                     <span
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      onClick={() => requestOpen('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ')}
-                      onKeyDown={(e) => {
+                      onClick={() =>
+                        requestOpen(
+                          'https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ',
+                        )
+                      }
+                      onKeyDown={e => {
                         if (e.key !== 'Enter') return;
-                        requestOpen('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ');
+                        requestOpen(
+                          'https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ',
+                        );
                       }}
                     >
                       Learn more
                     </span>
                     .
                   </>
-                )}
+                }
               />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
                   checked={ignoreCertificateErrors}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('ignoreCertificateErrors', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
@@ -1056,7 +1077,12 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpen('https://github.com/tiddly-gittly/TiddlyGit-Desktop/blob/master/PrivacyPolicy.md')}>
+            <ListItem
+              button
+              onClick={() =>
+                requestOpen('https://github.com/tiddly-gittly/TiddlyGit-Desktop/blob/master/PrivacyPolicy.md')
+              }
+            >
               <ListItemText primary="Privacy Policy" />
             </ListItem>
           </List>
@@ -1073,16 +1099,22 @@ const Preferences = ({
             <Divider />
             <StatedMenu
               id="openAtLogin"
-              buttonElement={(
+              buttonElement={
                 <ListItem button>
                   <ListItemText primary="Open at login" secondary={getOpenAtLoginString(openAtLogin)} />
                   <ChevronRightIcon color="action" />
                 </ListItem>
-              )}
+              }
             >
-              <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'yes')}>Yes</MenuItem>
-              <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'yes-hidden')}>Yes, but minimized</MenuItem>
-              <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'no')}>No</MenuItem>
+              <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'yes')}>
+                Yes
+              </MenuItem>
+              <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'yes-hidden')}>
+                Yes, but minimized
+              </MenuItem>
+              <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'no')}>
+                No
+              </MenuItem>
             </StatedMenu>
           </List>
         </Paper>
@@ -1102,7 +1134,14 @@ const Preferences = ({
             </ListItem>
             <Divider />
             <ListItem button onClick={() => requestShowCodeInjectionWindow('js')}>
-              <ListItemText primary="JS Code Injection" secondary={jsCodeInjection ? `Set ${allowNodeInJsCodeInjection ? ' (with access to Node.JS & Electron APIs)' : ''}` : 'Not set'} />
+              <ListItemText
+                primary="JS Code Injection"
+                secondary={
+                  jsCodeInjection
+                    ? `Set ${allowNodeInJsCodeInjection ? ' (with access to Node.JS & Electron APIs)' : ''}`
+                    : 'Not set'
+                }
+              />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
@@ -1128,7 +1167,7 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={hibernateUnusedWorkspacesAtLaunch}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('hibernateUnusedWorkspacesAtLaunch', e.target.checked);
                   }}
                 />
@@ -1140,28 +1179,26 @@ const Preferences = ({
                 <ListItem>
                   <ListItemText
                     primary="Swipe with three fingers to navigate"
-                    secondary={(
+                    secondary={
                       <>
                         <span>Navigate between pages with 3-finger gestures. </span>
                         <span>Swipe left to go back or swipe right to go forward.</span>
                         <br />
                         <span>To enable it, you also need to change </span>
-                        <b>
-                          macOS Preferences &gt; Trackpad &gt; More Gestures &gt; Swipe between page
-                        </b>
+                        <b>macOS Preferences &gt; Trackpad &gt; More Gestures &gt; Swipe between page</b>
                         <span> to </span>
                         <b>Swipe with three fingers</b>
                         <span> or </span>
                         <b>Swipe with two or three fingers.</b>
                       </>
-                    )}
+                    }
                   />
                   <ListItemSecondaryAction>
                     <Switch
                       edge="end"
                       color="primary"
                       checked={swipeToNavigate}
-                      onChange={(e) => {
+                      onChange={e => {
                         requestSetPreference('swipeToNavigate', e.target.checked);
                         requestShowRequireRestartDialog();
                       }}
@@ -1172,15 +1209,13 @@ const Preferences = ({
             )}
             <Divider />
             <ListItem>
-              <ListItemText
-                primary="Use hardware acceleration when available"
-              />
+              <ListItemText primary="Use hardware acceleration when available" />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
                   checked={useHardwareAcceleration}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('useHardwareAcceleration', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
@@ -1198,10 +1233,12 @@ const Preferences = ({
             <ListItem
               button
               onClick={() => requestCheckForUpdates(false)}
-              disabled={updaterStatus === 'checking-for-update'
-                || updaterStatus === 'download-progress'
-                || updaterStatus === 'download-progress'
-                || updaterStatus === 'update-available'}
+              disabled={
+                updaterStatus === 'checking-for-update' ||
+                updaterStatus === 'download-progress' ||
+                updaterStatus === 'download-progress' ||
+                updaterStatus === 'update-available'
+              }
             >
               <ListItemText
                 primary={updaterStatus === 'update-downloaded' ? 'Restart to Apply Updates' : 'Check for Updates'}
@@ -1211,15 +1248,13 @@ const Preferences = ({
             </ListItem>
             <Divider />
             <ListItem>
-              <ListItemText
-                primary="Receive pre-release updates"
-              />
+              <ListItemText primary="Receive pre-release updates" />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
                   checked={allowPrerelease}
-                  onChange={(e) => {
+                  onChange={e => {
                     requestSetPreference('allowPrerelease', e.target.checked);
                     requestShowRequireRestartDialog();
                   }}
@@ -1241,14 +1276,19 @@ const Preferences = ({
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" color="textPrimary" className={classes.sectionTitle} ref={sections.atomeryApps.ref}>
+        <Typography
+          variant="subtitle2"
+          color="textPrimary"
+          className={classes.sectionTitle}
+          ref={sections.atomeryApps.ref}
+        >
           Atomery Apps
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List disablePadding dense>
             <ListItem button onClick={() => requestOpen('https://webcatalogapp.com?utm_source=singlebox_app')}>
               <ListItemText
-                primary={(<img src={webcatalogLogo} alt="WebCatalog" className={classes.logo} />)}
+                primary={<img src={webcatalogLogo} alt="WebCatalog" className={classes.logo} />}
                 secondary="Run Web Apps like Real Apps"
               />
               <ChevronRightIcon color="action" />
@@ -1256,7 +1296,7 @@ const Preferences = ({
             <Divider />
             <ListItem button onClick={() => requestOpen('https://singleboxapp.com?utm_source=singlebox_app')}>
               <ListItemText
-                primary={(<img src={singleboxLogo} alt="Singlebox" className={classes.logo} />)}
+                primary={<img src={singleboxLogo} alt="Singlebox" className={classes.logo} />}
                 secondary="All Your Apps in One Single Window"
               />
               <ChevronRightIcon color="action" />
@@ -1264,7 +1304,7 @@ const Preferences = ({
             <Divider />
             <ListItem button onClick={() => requestOpen('https://translatiumapp.com?utm_source=singlebox_app')}>
               <ListItemText
-                primary={(<img src={translatiumLogo} alt="Translatium" className={classes.logo} />)}
+                primary={<img src={translatiumLogo} alt="Translatium" className={classes.logo} />}
                 secondary="Translate Any Languages like a Pro"
               />
               <ChevronRightIcon color="action" />
@@ -1352,7 +1392,7 @@ Preferences.propTypes = {
   useHardwareAcceleration: PropTypes.bool.isRequired,
 };
 
-const mapStateToProps = (state) => ({
+const mapStateToProps = state => ({
   allowNodeInJsCodeInjection: state.preferences.allowNodeInJsCodeInjection,
   allowPrerelease: state.preferences.allowPrerelease,
   askForDownloadPath: state.preferences.askForDownloadPath,
@@ -1392,11 +1432,7 @@ const mapStateToProps = (state) => ({
   updaterInfo: state.updater.info,
   updaterStatus: state.updater.status,
   useHardwareAcceleration: state.preferences.useHardwareAcceleration,
+  userName: state.preferences.userName,
 });
 
-export default connectComponent(
-  Preferences,
-  mapStateToProps,
-  null,
-  styles,
-);
+export default connectComponent(Preferences, mapStateToProps, null, styles);

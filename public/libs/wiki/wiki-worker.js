@@ -3,7 +3,7 @@ const path = require('path');
 const $tw = require('@tiddlygit/tiddlywiki').TiddlyWiki();
 
 function startNodeJSWiki() {
-  const { homePath, tiddlyWikiPort = 5112 } = workerData;
+  const { homePath, tiddlyWikiPort = 5112, userName } = workerData;
   try {
     process.env.TIDDLYWIKI_PLUGIN_PATH = path.resolve(homePath, 'plugins');
     process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
@@ -13,7 +13,7 @@ function startNodeJSWiki() {
       '+plugins/tiddlywiki/tiddlyweb',
       homePath,
       '--listen',
-      // `anon-username=${userName}`,
+      `anon-username=${userName}`,
       `port=${tiddlyWikiPort}`,
       'host=0.0.0.0',
       'root-tiddler=$:/core/save/lazy-images',

@@ -111,6 +111,8 @@
   },
   "Cancel": "取消",
   "Preference": {
+    "UserNameDetail": "在 Wiki 中的编辑者名，重启后生效，将在创建或编辑 Tiddler 时填入 creator 字段",
+    "UserName": "用户名",
     "Sync": "同步",
     "SyncInterval": "同步间隔",
     "SyncIntervalDescription": "超过这段长度的时间没有新的改动后，就会自动开始备份到 Github（重启后生效）",

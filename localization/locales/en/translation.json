@@ -114,6 +114,8 @@
     "General": "General",
     "Sync": "Sync",
     "SyncInterval": "Sync Interval",
-    "SyncIntervalDescription": "After there is no new change for more than this length of time, it will automatically start backing up to Github (take effect after restart app)"
+    "SyncIntervalDescription": "After there is no new change for more than this length of time, it will automatically start backing up to Github (take effect after restart app)",
+    "UserName": "User Name",
+    "UserNameDetail": "The user name in the Wiki, this only take effect after restart, this will fill in the creator field of the newly created or edited tiddlers"
   }
 }
