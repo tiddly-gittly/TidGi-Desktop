@@ -31,46 +31,51 @@ const WIKI_WORKER_PATH = isDev
   : path.resolve(process.resourcesPath, 'app.asar.unpacked', 'wiki-worker.js');
 
 module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName) {
-  // require here to prevent circular dependence, which will cause "TypeError: getWorkspaceByName is not a function"
-  const { getWorkspaceByName } = require('../workspaces');
-  const { reloadViewsWebContents } = require('../views');
-  const { setWorkspaceMeta } = require('../workspace-metas');
-  const workspace = getWorkspaceByName(homePath);
-  const workspaceID = workspace?.id;
-  if (!workspace || !workspaceID) {
-    logger.error('Try to start wiki, but workspace not found', { homePath, workspace, workspaceID });
-    return;
-  }
-  setWorkspaceMeta(workspaceID, { isLoading: true });
-  const workerData = { homePath, userName, tiddlyWikiPort };
-  const worker = new Worker(WIKI_WORKER_PATH, { workerData });
-  wikiWorkers[homePath] = worker;
-  const loggerMeta = { worker: 'NodeJSWiki', homePath };
-  const loggerForWorker = logMessage(loggerMeta);
-  let started = false;
-  worker.on('message', message => {
-    console.log(message);
-    loggerForWorker(message);
-    if (!started) {
-      started = true;
-      setTimeout(() => {
-        reloadViewsWebContents();
-        setWorkspaceMeta(workspaceID, { isLoading: false });
-        // close add-workspace dialog
-        const { get } = require('../../windows/add-workspace');
-        if (get()) {
-          get().close();
-        }
-      }, 100);
+  return new Promise((resolve, reject) => {
+    // require here to prevent circular dependence, which will cause "TypeError: getWorkspaceByName is not a function"
+    const { getWorkspaceByName } = require('../workspaces');
+    const { reloadViewsWebContents } = require('../views');
+    const { setWorkspaceMeta } = require('../workspace-metas');
+    const workspace = getWorkspaceByName(homePath);
+    const workspaceID = workspace?.id;
+    if (!workspace || !workspaceID) {
+      logger.error('Try to start wiki, but workspace not found', { homePath, workspace, workspaceID });
+      return;
     }
-  });
-  worker.on('error', error => {
-    console.log(error);
-    logger.error(error.message, { ...loggerMeta, ...error });
-  });
-  worker.on('exit', code => {
-    if (code !== 0) delete wikiWorkers[homePath];
-    logger.warning(`NodeJSWiki ${homePath} Worker stopped with exit code ${code}.`, loggerMeta);
+    setWorkspaceMeta(workspaceID, { isLoading: true });
+    const workerData = { homePath, userName, tiddlyWikiPort };
+    const worker = new Worker(WIKI_WORKER_PATH, { workerData });
+    wikiWorkers[homePath] = worker;
+    const loggerMeta = { worker: 'NodeJSWiki', homePath };
+    const loggerForWorker = logMessage(loggerMeta);
+    let started = false;
+    worker.on('error', error => {
+      console.log(error);
+      logger.error(error.message, { ...loggerMeta, ...error });
+      reject(error);
+    });
+    worker.on('exit', code => {
+      if (code !== 0) delete wikiWorkers[homePath];
+      logger.warning(`NodeJSWiki ${homePath} Worker stopped with exit code ${code}.`, loggerMeta);
+      resolve();
+    });
+    worker.on('message', message => {
+      console.log(message);
+      loggerForWorker(message);
+      if (!started) {
+        started = true;
+        setTimeout(() => {
+          reloadViewsWebContents();
+          setWorkspaceMeta(workspaceID, { isLoading: false });
+          // close add-workspace dialog
+          const { get } = require('../../windows/add-workspace');
+          if (get()) {
+            get().close();
+          }
+          resolve();
+        }, 100);
+      }
+    });
   });
 };
 async function stopWiki(homePath) {

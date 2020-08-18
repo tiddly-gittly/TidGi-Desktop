@@ -257,12 +257,11 @@ async function continueRebase(wikiFolderPath, username, email, logInfo, logProgr
  * @param {string} wikiFolderPath
  * @param {string} githubRepoUrl
  * @param {{ login: string, email: string, accessToken: string }} userInfo
- * @param {({ type: string, payload: { message: string, handler: string }}) => void} loggerToMainThread Send message to .log file or send to GUI or sent to notification based on type, see wiki-worker-manager.js for details
  */
-async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo, loggerToMainThread) {
+async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
   /** functions to send data to main thread */
-  const logProgress = message => logger.notice(message, { handler: 'wikiSyncProgress', function: 'commitAndSync' });
-  const logInfo = message => logger.info(message, { function: 'commitAndSync' });
+  const logProgress = message => logger.notice(message, { handler: 'wikiSyncProgress', function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
+  const logInfo = message => logger.info(message, { function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
 
   const { login: username, email } = userInfo;
   const commitMessage = 'Wiki updated with TiddlyGit-Desktop';

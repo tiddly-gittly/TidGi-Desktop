@@ -38,9 +38,10 @@ function watchWiki(wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath = wikiR
   let gitignoreFile = '';
   try {
     gitignoreFile = fs.readFileSync(gitIgnoreFilePath, 'utf-8') || '';
-  } catch (error) {
+  } catch {
     logger.info(
-      `Fail to load .gitignore from ${gitIgnoreFilePath}, this is ok if you don't need a .gitignore in the subwiki. \n ${error} ${error.stack}`,
+      `Fail to load .gitignore from ${gitIgnoreFilePath}, this is ok if you don't need a .gitignore in the subwiki.`,
+      { wikiRepoPath, wikiFolderPath, githubRepoUrl },
     );
   }
   const filesToIgnoreFromGitIgnore = compact(gitignoreFile.split('\n').filter(line => !trim(line).startsWith('#')));
@@ -60,7 +61,7 @@ function watchWiki(wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath = wikiR
   watcher.on('unlink', onChange);
   return new Promise(resolve => {
     watcher.on('ready', () => {
-      logger.info(`wiki Github syncer is watching ${wikiFolderPath} now`);
+      logger.info(`wiki Github syncer is watching ${wikiFolderPath} now`, { wikiRepoPath, wikiFolderPath, githubRepoUrl });
       wikiWatchers[wikiRepoPath] = watcher;
       resolve();
     });

@@ -105,7 +105,9 @@
     "WorkspaceFolderRemoved": "工作区文件夹被移走",
     "RemoveWorkspace": "移除工作区",
     "DoNotCare": "不管",
-    "PathPassInCantUse": "传入的路径无法使用"
+    "PathPassInCantUse": "传入的路径无法使用",
+    "GithubUserInfoNoFound": "找不到 Github 用户信息",
+    "GithubUserInfoNoFoundDetail": "似乎你尚未登录 Github，因此此 Wiki 的同步暂时禁用，直到你登录以提供有可用于同步的登录信息。"
   },
   "Cancel": "取消",
   "Preference": {

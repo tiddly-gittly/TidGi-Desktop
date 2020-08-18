@@ -11,9 +11,8 @@ const path = require('path');
 const fsExtra = require('fs-extra');
 const { ElectronBlocker } = require('@cliqz/adblocker-electron');
 
-const { TIDDLERS_PATH } = require('../constants/paths');
-const startNodeJSWiki = require('./wiki/start-nodejs-wiki');
-const { watchWiki } = require('./wiki/watch-wiki');
+const i18n = require('./i18n');
+const wikiStartup = require('./wiki/wiki-startup');
 const { getPreferences, getPreference } = require('./preferences');
 const {
   getWorkspace,
@@ -122,26 +121,18 @@ const addView = (browserWindow, workspace) => {
 
   // configure session, proxy & ad blocker
   const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
-  // start wiki on startup
-  const { name: wikiPath, gitUrl: githubUrl, port, isSubWiki } = workspace;
-
-  const userName = getPreference('userName') || '';
   const userInfo = getPreference('github-user-info');
   if (!userInfo) { // user not logined into Github
     dialog.showMessageBox(browserWindow, {
-      title: 'Github UserInfo No Found',
-      message: 'Seems you haven\'t login to Github, so we disable syncing for this wiki.',
+      title: i18n.t('Dialog.GithubUserInfoNoFound'),
+      message: i18n.t('Dialog.GithubUserInfoNoFoundDetail'),
       buttons: ['OK'],
       cancelId: 0,
       defaultId: 0,
     });
   }
-  if (!isSubWiki) { // if is main wiki
-    startNodeJSWiki(wikiPath, port, userName, workspace.id);
-    userInfo && watchWiki(wikiPath, githubUrl, userInfo, path.join(wikiPath, TIDDLERS_PATH));
-  } else { // if is private repo wiki
-    userInfo && watchWiki(wikiPath, githubUrl, userInfo);
-  }
+  // start wiki on startup
+  wikiStartup(workspace)
   // session
   const ses = session.fromPartition(partitionId);
   // proxy

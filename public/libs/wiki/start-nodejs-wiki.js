@@ -17,7 +17,7 @@ module.exports = function startNodeJSWiki(homePath, port, userName, workspaceID)
       cancelId: 0,
       defaultId: 0,
     });
-    return;
+    return Promise.resolve();
   }
   if (!fs.pathExistsSync(homePath)) {
     const errorMessage = i18n.t('Dialog.CantFindWorkspaceFolderRemoveWorkspace');
@@ -42,8 +42,8 @@ module.exports = function startNodeJSWiki(homePath, port, userName, workspaceID)
         }
       })
       .catch(console.log);
-    return;
+    return Promise.resolve();
   }
 
-  startWiki(homePath, port, userName);
+  return startWiki(homePath, port, userName);
 };
