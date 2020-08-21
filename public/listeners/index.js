@@ -385,9 +385,7 @@ const loadListeners = () => {
             const workspace = getWorkspace(id);
             await stopWatchWiki(workspace.name).catch(error => logger.error(error.message, error));
             await stopWiki(workspace.name).catch(error => logger.error(error.message, error));
-            if (response === 1) {
-              await removeWiki(workspace.name, workspace.isSubWiki && workspace.mainWikiToLink);
-            }
+            await removeWiki(workspace.name, workspace.isSubWiki && workspace.mainWikiToLink, response === 0);
             removeWorkspaceView(id);
             createMenu();
           }
