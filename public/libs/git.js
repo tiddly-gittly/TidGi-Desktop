@@ -195,7 +195,8 @@ async function getGitRepositoryState(wikiFolderPath, logInfo, logProgress) {
     )
   ) {
     const { exitCode } = await GitProcess.exec(['diff', '--no-ext-diff', '--quiet', '--exit-code'], wikiFolderPath);
-    if (exitCode === 0) {
+    // 1 if there were differences and 0 means no differences.
+    if (exitCode !== 0) {
       result += '|DIRTY';
     }
   }
