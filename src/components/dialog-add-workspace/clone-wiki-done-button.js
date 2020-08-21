@@ -74,6 +74,7 @@ function CloneWikiDoneButton({
     gitUrl: githubWikiUrl, // don't need .git suffix
     picturePath: getIconPath(),
     userInfo,
+    tagName: isCreateMainWorkspace ? undefined : tagName,
   };
 
   const [snackBarOpen, progressBarOpen, snackBarOpenSetter] = useWikiCreationMessage(wikiCreationMessage);
