@@ -30,6 +30,7 @@ type OwnProps = {|
   githubWikiUrl: string,
   wikiFolderName: string,
   parentFolderLocation: string,
+  tagName?: string,
   userInfo?: IUserInfo,
 |};
 type DispatchProps = {|
@@ -57,6 +58,7 @@ function CloneWikiDoneButton({
   updateForm,
   setWikiCreationMessage,
   wikiCreationMessage,
+  tagName,
   save,
   userInfo,
 }: Props) {
@@ -141,6 +143,7 @@ function CloneWikiDoneButton({
               mainWikiToLink.name,
               githubWikiUrl,
               userInfo,
+              tagName,
             );
             if (creationError) {
               setWikiCreationMessage(creationError);

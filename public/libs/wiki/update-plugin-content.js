@@ -7,12 +7,11 @@ const getPathPart = folderToPlace => `addprefix[subwiki/${folderToPlace}/]]`;
 
 /**
  * update $:/config/FileSystemPaths programmatically to make private tiddlers goto the sub-wiki
- * @param {Object} workspace main wiki's workspace data
+ * @param {string} mainWikiPath main wiki's location path
  * @param {Object} newConfig { "tagName": Tag to indicate that a tiddler belongs to a sub-wiki, "subWikiFolderName": folder name inside the subwiki/ folder }
  * @param {Object} oldConfig if you need to replace a line, you need to pass-in what old line looks like, so here we can find and replace it
  */
-function updateSubWikiPluginContent(workspace, newConfig, oldConfig) {
-  const mainWikiPath = workspace.name;
+function updateSubWikiPluginContent(mainWikiPath, newConfig, oldConfig) {
   const pluginPath = path.join(mainWikiPath, 'plugins', 'linonetwo', 'sub-wiki');
   const FileSystemPathsTiddlerPath = path.join(pluginPath, 'FileSystemPaths.tid');
 
@@ -26,7 +25,7 @@ function updateSubWikiPluginContent(workspace, newConfig, oldConfig) {
     if (!oldConfig) {
       throw new Error(
         'Both newConfig and oldConfig are not provided in the updateSubWikiPluginContent() for',
-        JSON.stringify(workspace),
+        JSON.stringify(mainWikiPath),
       );
     }
     // find the old line, delete it

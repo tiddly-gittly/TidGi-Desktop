@@ -5,6 +5,7 @@ const path = require('path');
 const { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } = require('../../constants/paths');
 const { clone } = require('../git');
 const { logger } = require('../log');
+const { updateSubWikiPluginContent } = require('./update-plugin-content');
 const i18n = require('../i18n');
 
 const logProgress = message =>
@@ -63,16 +64,16 @@ async function createWiki(newFolderPath, folderName) {
  * @param {string} mainWikiToLink
  * @param {boolean} onlyLink not creating new subwiki folder, just link existed subwiki folder to main wiki folder
  */
-async function createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink = false) {
+async function createSubWiki(newFolderPath, folderName, mainWikiPath, tagName = '', onlyLink = false) {
   logProgress(i18n.t('AddWorkspace.StartCreatingSubWiki'));
   const newWikiPath = path.join(newFolderPath, folderName);
   if (!(await fs.pathExists(newFolderPath))) {
     throw new Error(i18n.t('AddWorkspace.PathNotExist', { newFolderPath }));
   }
-  if (await fs.pathExists(newWikiPath)) {
-    throw new Error(i18n.t('AddWorkspace.WikiExisted', { newWikiPath }));
-  }
   if (!onlyLink) {
+    if (await fs.pathExists(newWikiPath)) {
+      throw new Error(i18n.t('AddWorkspace.WikiExisted', { newWikiPath }));
+    }
     try {
       await fs.mkdirs(newWikiPath);
     } catch {
@@ -80,17 +81,23 @@ async function createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink
     }
   }
   logProgress(i18n.t('AddWorkspace.StartLinkingSubWikiToMainWiki'));
-  await linkWiki(mainWikiToLink, folderName, newWikiPath);
+  await linkWiki(mainWikiPath, folderName, newWikiPath);
+  if (tagName && typeof tagName === 'string') {
+    logProgress(i18n.t('AddWorkspace.AddFileSystemPath'));
+    updateSubWikiPluginContent(mainWikiPath, { tagName, subWikiFolderName: folderName });
+  }
 
   logProgress(i18n.t('AddWorkspace.SubWikiCreationCompleted'));
 }
 
-async function removeWiki(wikiPath, mainWikiToUnLink) {
+async function removeWiki(wikiPath, mainWikiToUnLink, onlyRemoveLink = false) {
   if (mainWikiToUnLink) {
     const subWikiName = path.basename(wikiPath);
     await fs.remove(path.join(mainWikiToUnLink, TIDDLERS_PATH, folderToContainSymlinks, subWikiName));
   }
-  await fs.remove(wikiPath);
+  if (!onlyRemoveLink) {
+    await fs.remove(wikiPath);
+  }
 }
 
 async function ensureWikiExist(wikiPath, shouldBeMainWiki) {
@@ -119,7 +126,7 @@ async function cloneWiki(parentFolderLocation, wikiFolderName, githubWikiUrl, us
   await clone(githubWikiUrl, path.join(parentFolderLocation, wikiFolderName), userInfo);
 }
 
-async function cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo) {
+async function cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo, tagName = '') {
   logProgress(i18n.t('AddWorkspace.StartCloningSubWiki'));
   const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
   if (!(await fs.pathExists(parentFolderLocation))) {
@@ -134,7 +141,12 @@ async function cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, 
     throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
   }
   await clone(githubWikiUrl, path.join(parentFolderLocation, wikiFolderName), userInfo);
+  logProgress(i18n.t('AddWorkspace.StartLinkingSubWikiToMainWiki'));
   await linkWiki(mainWikiPath, wikiFolderName, path.join(parentFolderLocation, wikiFolderName));
+  if (tagName && typeof tagName === 'string') {
+    logProgress(i18n.t('AddWorkspace.AddFileSystemPath'));
+    updateSubWikiPluginContent(mainWikiPath, { tagName, subWikiFolderName: wikiFolderName });
+  }
 }
 
 module.exports = { createWiki, createSubWiki, removeWiki, ensureWikiExist, cloneWiki, cloneSubWiki };

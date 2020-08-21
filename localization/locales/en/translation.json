@@ -51,7 +51,10 @@
     "WikiTemplateMissing": "Wiki template is missing \"{{TIDDLYWIKI_TEMPLATE_FOLDER_PATH}}\"",
     "StartUpdatingWorkspace": "Updating workspace",
     "WorkspaceUpdated": "The workspace is updated and the Wiki is being launching",
-    "StartLinkingSubWikiToMainWiki": "Start linking sub-Wiki to main-Wiki"
+    "StartLinkingSubWikiToMainWiki": "Start linking sub-Wiki to main-Wiki",
+    "AddFileSystemPath": "Adding FileSystemPaths for sub-wiki",
+    "TagName": "Tag Name",
+    "TagNameHelp": "Tiddlers with this Tag will be add to this sub-wiki (you can add or change this Tag later, by right-click workspace Icon and choose Edit Workspace)"
   },
   "EditWorkspace": {
     "Path": "Wiki Path",

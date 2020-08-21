@@ -9,8 +9,9 @@ export const requestCreateSubWiki = (
   newFolderPath: string,
   folderName: string,
   mainWikiToLink: string,
+  tagName?: string,
   onlyLink?: boolean,
-) => ipcRenderer.invoke('create-sub-wiki', newFolderPath, folderName, mainWikiToLink, onlyLink);
+) => ipcRenderer.invoke('create-sub-wiki', newFolderPath, folderName, mainWikiToLink, tagName, onlyLink);
 export const ensureWikiExist = (wikiPath: string, shouldBeMainWiki: boolean) =>
   ipcRenderer.invoke('ensure-wiki-exist', wikiPath, shouldBeMainWiki);
 export const requestCloneWiki = (
@@ -25,7 +26,17 @@ export const requestCloneSubWiki = (
   mainWikiPath: string,
   githubWikiUrl: string,
   userInfo: IUserInfo,
-) => ipcRenderer.invoke('clone-sub-wiki', parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo);
+  tagName?: string,
+) =>
+  ipcRenderer.invoke(
+    'clone-sub-wiki',
+    parentFolderLocation,
+    wikiFolderName,
+    mainWikiPath,
+    githubWikiUrl,
+    userInfo,
+    tagName,
+  );
 export const requestOpen = (uri: string, isDirectory?: boolean) => ipcRenderer.send('request-open', uri, !!isDirectory);
 export const requestShowMessageBox = (message: string, type: string) =>
   ipcRenderer.send('request-show-message-box', message, type);
@@ -60,7 +71,7 @@ export const getPauseNotificationsInfo = () => ipcRenderer.sendSync('get-pause-n
 
 // Preferences
 // eslint-disable-next-line no-use-before-define
-type JsonValue = string | number | boolean | null | JsonArray | JsonObject;
+type JsonValue = string | number | boolean | null | JsonArray | JsonObject | void;
 interface JsonObject {
   [x: string]: JsonValue;
 }

@@ -44,6 +44,8 @@ type OwnProps = {|
   existedFolderLocationSetter: string => void,
   wikiFolderName: string,
   wikiFolderNameSetter: string => void,
+  tagName: string,
+  tagNameSetter: string => void,
   mainWikiToLink: Object,
   mainWikiToLinkSetter: Object => void,
   existedFolderLocation: string,
@@ -69,6 +71,8 @@ function WikiPathForm({
   wikiCreationMessage = '',
   existedFolderLocation,
   existedFolderLocationSetter,
+  tagName,
+  tagNameSetter,
   wikiFolderName,
   wikiFolderNameSetter,
   mainWikiToLink,
@@ -135,6 +139,13 @@ function WikiPathForm({
       )}
       {!isCreateMainWorkspace && (
         <>
+          <TextField
+            fullWidth
+            onChange={event => tagNameSetter(event.target.value)}
+            label={t('AddWorkspace.TagName')}
+            helperText={t('AddWorkspace.TagNameHelp')}
+            value={tagName}
+          />
           <SoftLinkToMainWikiSelectInputLabel id="main-wiki-select-label">
             {t('AddWorkspace.MainWorkspaceLocation')}
           </SoftLinkToMainWikiSelectInputLabel>

@@ -77,9 +77,9 @@ const loadListeners = () => {
       return String(error);
     }
   });
-  ipcMain.handle('create-sub-wiki', async (event, newFolderPath, folderName, mainWikiToLink, onlyLink) => {
+  ipcMain.handle('create-sub-wiki', async (event, newFolderPath, folderName, mainWikiToLink, tagName, onlyLink) => {
     try {
-      await createSubWiki(newFolderPath, folderName, mainWikiToLink, onlyLink);
+      await createSubWiki(newFolderPath, folderName, mainWikiToLink, tagName, onlyLink);
       return '';
     } catch (error) {
       console.info(error);
@@ -97,9 +97,9 @@ const loadListeners = () => {
   });
   ipcMain.handle(
     'clone-sub-wiki',
-    async (event, parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo) => {
+    async (event, parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo, tagName) => {
       try {
-        await cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo);
+        await cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo, tagName);
         // restart the main wiki to load content from private wiki
         const mainWorkspace = getWorkspaceByName(mainWikiPath);
         const userName = getPreference('userName') || '';

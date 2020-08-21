@@ -52,7 +52,7 @@ const GithubRepoLink = styled(Typography)`
   }
 `;
 
-const setGithubToken = (token: string | void) => requestSetPreference('github-token', token || null);
+const setGithubToken = (token: string | void) => requestSetPreference('github-token', token);
 const getGithubToken = () => getPreference<string | void>('github-token') || undefined;
 const setHeaderToGraphqlClient = (token: string) => graphqlClient.setHeader('Authorization', `bearer ${token}`);
 const previousToken = getGithubToken();
@@ -85,6 +85,7 @@ export default function AddWorkspace() {
 
   const [mainWikiToLink, mainWikiToLinkSetter] = useState({ name: '', port: 0 });
   const [githubWikiUrl, githubWikiUrlSetter] = useState<string>('');
+  const [tagName, tagNameSetter] = useState<string>('');
   useEffect(() => {
     async function getWorkspaceRemoteInEffect() {
       const url = await getWorkspaceRemote(existedFolderLocation);
@@ -160,6 +161,8 @@ export default function AddWorkspace() {
             parentFolderLocation={parentFolderLocation}
             parentFolderLocationSetter={parentFolderLocationSetter}
             wikiFolderName={wikiFolderName}
+            tagName={tagName}
+            tagNameSetter={tagNameSetter}
             wikiFolderNameSetter={wikiFolderNameSetter}
             mainWikiToLink={mainWikiToLink}
             mainWikiToLinkSetter={mainWikiToLinkSetter}
@@ -174,6 +177,7 @@ export default function AddWorkspace() {
             mainWikiToLink={mainWikiToLink}
             githubWikiUrl={githubWikiUrl}
             wikiFolderName={wikiFolderName}
+            tagName={tagName}
             parentFolderLocation={parentFolderLocation}
             userInfo={userInfo}
           />
@@ -185,6 +189,8 @@ export default function AddWorkspace() {
             existedFolderLocationSetter={existedFolderLocationSetter}
             existedFolderLocation={existedFolderLocation}
             wikiFolderName={wikiFolderName}
+            tagName={tagName}
+            tagNameSetter={tagNameSetter}
             wikiFolderNameSetter={wikiFolderNameSetter}
             mainWikiToLink={mainWikiToLink}
             mainWikiToLinkSetter={mainWikiToLinkSetter}
@@ -198,6 +204,7 @@ export default function AddWorkspace() {
             wikiPort={wikiPort}
             mainWikiToLink={mainWikiToLink}
             githubWikiUrl={githubWikiUrl}
+            tagName={tagName}
             existedFolderLocation={existedFolderLocation}
             userInfo={userInfo}
           />
@@ -209,6 +216,8 @@ export default function AddWorkspace() {
             parentFolderLocation={parentFolderLocation}
             parentFolderLocationSetter={parentFolderLocationSetter}
             wikiFolderName={wikiFolderName}
+            tagName={tagName}
+            tagNameSetter={tagNameSetter}
             wikiFolderNameSetter={wikiFolderNameSetter}
             mainWikiToLink={mainWikiToLink}
             mainWikiToLinkSetter={mainWikiToLinkSetter}
@@ -222,6 +231,7 @@ export default function AddWorkspace() {
             mainWikiToLink={mainWikiToLink}
             githubWikiUrl={githubWikiUrl}
             wikiFolderName={wikiFolderName}
+            tagName={tagName}
             parentFolderLocation={parentFolderLocation}
             userInfo={userInfo}
           />

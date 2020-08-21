@@ -51,7 +51,10 @@
     "StartCloningSubWiki": "开始克隆子Wiki",
     "StartUpdatingWorkspace": "正在更新工作区",
     "WorkspaceUpdated": "工作区更新完毕，正在启动Wiki",
-    "StartLinkingSubWikiToMainWiki": "开始链接子Wiki到父Wiki"
+    "StartLinkingSubWikiToMainWiki": "开始链接子Wiki到父Wiki",
+    "AddFileSystemPath": "正在为子Wiki添加FileSystemPaths",
+    "TagName": "标签名",
+    "TagNameHelp": "加上此标签的笔记将会自动被放入这个子知识库内（可先不填，之后右键点击这个工作区的图标选择编辑工作区修改）"
   },
   "EditWorkspace": {
     "Path": "Wiki的位置",

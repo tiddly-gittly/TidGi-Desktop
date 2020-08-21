@@ -29,6 +29,7 @@ type OwnProps = {|
   mainWikiToLink: { name: string, port: number },
   githubWikiUrl: string,
   existedFolderLocation: string,
+  tagName?: string,
   userInfo?: IUserInfo,
 |};
 type DispatchProps = {|
@@ -55,6 +56,7 @@ function DoneButton({
   updateForm,
   setWikiCreationMessage,
   wikiCreationMessage,
+  tagName,
   save,
   userInfo,
 }: Props) {
@@ -131,6 +133,7 @@ function DoneButton({
                 parentFolderLocation,
                 wikiFolderName,
                 mainWikiToLink.name,
+                tagName,
                 true,
               );
             }

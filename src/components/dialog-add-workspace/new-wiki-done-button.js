@@ -30,6 +30,7 @@ type OwnProps = {|
   githubWikiUrl: string,
   wikiFolderName: string,
   parentFolderLocation: string,
+  tagName?: string,
   userInfo?: IUserInfo,
 |};
 type DispatchProps = {|
@@ -58,6 +59,7 @@ function NewWikiDoneButton({
   updateForm,
   setWikiCreationMessage,
   wikiCreationMessage,
+  tagName,
   save,
   userInfo,
 }: Props) {
@@ -131,7 +133,7 @@ function NewWikiDoneButton({
           disabled={!parentFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             updateForm(workspaceFormData);
-            let creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name);
+            let creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name, tagName);
             if (!creationError) {
               creationError = await initWikiGit(wikiFolderLocation, githubWikiUrl, userInfo, false);
             }
