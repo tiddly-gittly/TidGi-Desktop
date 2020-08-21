@@ -376,7 +376,7 @@ const loadListeners = () => {
           i18n.t('Cancel'),
         ],
         message: i18n.t('WorkspaceSelector.AreYouSure'),
-        cancelId: 1,
+        cancelId: 2,
       })
       .then(async ({ response }) => {
         // eslint-disable-next-line promise/always-return
@@ -388,6 +388,13 @@ const loadListeners = () => {
             await removeWiki(workspace.name, workspace.isSubWiki && workspace.mainWikiToLink, response === 0);
             removeWorkspaceView(id);
             createMenu();
+
+            // restart the main wiki to load content from private wiki
+            const mainWikiPath = workspace.mainWikiToLink;
+            const mainWorkspace = getWorkspaceByName(mainWikiPath);
+            const userName = getPreference('userName') || '';
+            await stopWiki(mainWikiPath);
+            await startWiki(mainWikiPath, mainWorkspace.port, userName);
           }
         } catch (error) {
           logger.error(error.message, error);
