@@ -177,6 +177,7 @@ function WikiPathForm({
           <Autocomplete
             freeSolo
             options={fileSystemPaths.map(fileSystemPath => fileSystemPath.tagName)}
+            onChange={event => tagNameSetter(fileSystemPaths[event.target.value].tagName)}
             renderInput={parameters => (
               <TextField
                 {...parameters}

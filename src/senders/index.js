@@ -109,6 +109,7 @@ export const requestCreateWorkspace = (
   gitUrl: string,
   picture: string,
   transparentBackground: boolean,
+  tagName?: string,
 ) =>
   ipcRenderer.invoke(
     'request-create-workspace',
@@ -120,6 +121,7 @@ export const requestCreateWorkspace = (
     gitUrl,
     picture,
     transparentBackground,
+    tagName,
   );
 
 export const requestHibernateWorkspace = (id: string) => ipcRenderer.send('request-hibernate-workspace', id);

@@ -27,8 +27,6 @@ export interface IProps {
 }
 export default function TabBar({ currentTab, currentTabSetter }: IProps) {
   const { t } = useTranslation();
-  // DEBUG: console
-  console.log(`currentTab`, currentTab);
   return (
     <AppBar position="static">
       <Paper square>

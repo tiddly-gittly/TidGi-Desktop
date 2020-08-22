@@ -1,11 +1,12 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable no-param-reassign */
+const path = require('path');
 const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = require('electron');
 const { autoUpdater } = require('electron-updater');
 
 const { initWikiGit, getRemoteUrl } = require('../libs/git');
-const { stopWatchWiki, watchWiki } = require('../libs/wiki/watch-wiki');
-const { getSubWikiPluginContent } = require('../libs/wiki/update-plugin-content');
+const { stopWatchWiki } = require('../libs/wiki/watch-wiki');
+const { updateSubWikiPluginContent, getSubWikiPluginContent } = require('../libs/wiki/update-plugin-content');
 const { stopWiki, startWiki } = require('../libs/wiki/wiki-worker-mamager');
 const { logger } = require('../libs/log');
 const {
@@ -78,15 +79,18 @@ const loadListeners = () => {
       return String(error);
     }
   });
-  ipcMain.handle('create-sub-wiki', async (event, newFolderPath, folderName, mainWikiToLink, tagName, onlyLink) => {
-    try {
-      await createSubWiki(newFolderPath, folderName, mainWikiToLink, tagName, onlyLink);
-      return '';
-    } catch (error) {
-      console.info(error);
-      return String(error);
-    }
-  });
+  ipcMain.handle(
+    'create-sub-wiki',
+    async (event, newFolderPath, folderName, mainWikiToLink, tagName, onlyLink) => {
+      try {
+        await createSubWiki(newFolderPath, folderName, mainWikiToLink, tagName, onlyLink);
+        return '';
+      } catch (error) {
+        console.info(error);
+        return String(error);
+      }
+    },
+  );
   ipcMain.handle('clone-wiki', async (event, parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo) => {
     try {
       await cloneWiki(parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo);
@@ -101,13 +105,6 @@ const loadListeners = () => {
     async (event, parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo, tagName) => {
       try {
         await cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo, tagName);
-        // restart the main wiki to load content from private wiki
-        const mainWorkspace = getWorkspaceByName(mainWikiPath);
-        const userName = getPreference('userName') || '';
-        await stopWatchWiki(mainWikiPath);
-        await stopWiki(mainWikiPath);
-        await watchWiki(mainWikiPath, githubWikiUrl, userInfo);
-        await startWiki(mainWikiPath, mainWorkspace.port, userName);
         return '';
       } catch (error) {
         console.info(error);
@@ -320,8 +317,18 @@ const loadListeners = () => {
 
   ipcMain.handle(
     'request-create-workspace',
-    (event, name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground) => {
-      createWorkspaceView(name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground);
+    (event, name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground, tagName) => {
+      createWorkspaceView(
+        name,
+        isSubWiki,
+        mainWikiToLink,
+        port,
+        homeUrl,
+        gitUrl,
+        picture,
+        transparentBackground,
+        tagName,
+      );
       createMenu();
     },
   );
@@ -397,6 +404,14 @@ const loadListeners = () => {
             const userName = getPreference('userName') || '';
             await stopWiki(mainWikiPath);
             await startWiki(mainWikiPath, mainWorkspace.port, userName);
+
+            // remove folderName from fileSystemPaths
+            if (workspace.isSubWiki) {
+              updateSubWikiPluginContent(mainWikiPath, undefined, {
+                tagName: workspace.tagName,
+                subWikiFolderName: path.basename(workspace.name),
+              });
+            }
           }
         } catch (error) {
           logger.error(error.message, error);

@@ -133,8 +133,14 @@ function NewWikiDoneButton({
           color="secondary"
           disabled={!parentFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
+            if (!userInfo) return;
             updateForm(workspaceFormData);
-            let creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name, tagName);
+            let creationError = await requestCreateSubWiki(
+              parentFolderLocation,
+              wikiFolderName,
+              mainWikiToLink.name,
+              githubWikiUrl,
+            );
             if (!creationError) {
               creationError = await initWikiGit(wikiFolderLocation, githubWikiUrl, userInfo, false);
             }

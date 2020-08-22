@@ -90,8 +90,6 @@ export default function AddWorkspace() {
     // eslint-disable-next-line promise/catch-or-return
     getSubWikiPluginContent(mainWikiToLink.name).then(fileSystemPathsSetter);
   }, [mainWikiToLink]);
-  // DEBUG: console
-  console.log(`fileSystemPaths`, fileSystemPaths);
   const [githubWikiUrl, githubWikiUrlSetter] = useState<string>('');
   const [tagName, tagNameSetter] = useState<string>('');
   useEffect(() => {

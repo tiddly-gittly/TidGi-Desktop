@@ -131,8 +131,8 @@ const addView = (browserWindow, workspace) => {
       defaultId: 0,
     });
   }
-  // start wiki on startup
-  wikiStartup(workspace)
+  // start wiki on startup, or on sub-wiki creation
+  wikiStartup(workspace);
   // session
   const ses = session.fromPartition(partitionId);
   // proxy

@@ -146,6 +146,7 @@ function CloneWikiDoneButton({
               userInfo,
               tagName,
             );
+            console.log(tagName, creationError)
             if (creationError) {
               setWikiCreationMessage(creationError);
             } else {

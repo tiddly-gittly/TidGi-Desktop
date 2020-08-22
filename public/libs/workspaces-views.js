@@ -35,8 +35,9 @@ const createWorkspaceView = (
   gitUrl,
   picture,
   transparentBackground,
+  tagName,
 ) => {
-  const newWorkspace = createWorkspace(name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, transparentBackground);
+  const newWorkspace = createWorkspace(name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, transparentBackground, tagName);
 
   if (!isSubWiki) {
     setActiveWorkspace(newWorkspace.id);

@@ -125,6 +125,7 @@ function DoneButton({
           color="secondary"
           disabled={!existedFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
+            if (!userInfo) return;
             const wikiFolderName = basename(existedFolderLocation);
             const parentFolderLocation = dirname(existedFolderLocation);
             updateForm(workspaceFormData);
@@ -134,7 +135,7 @@ function DoneButton({
                 parentFolderLocation,
                 wikiFolderName,
                 mainWikiToLink.name,
-                tagName,
+                githubWikiUrl,
                 true,
               );
             }
