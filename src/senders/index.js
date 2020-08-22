@@ -37,6 +37,8 @@ export const requestCloneSubWiki = (
     userInfo,
     tagName,
   );
+export const getSubWikiPluginContent = (mainWikiPath: string): Promise<{ tagName: string, folderName: string }[]> =>
+  ipcRenderer.invoke('get-sub-wiki-plugin-content', mainWikiPath);
 export const requestOpen = (uri: string, isDirectory?: boolean) => ipcRenderer.send('request-open', uri, !!isDirectory);
 export const requestShowMessageBox = (message: string, type: string) =>
   ipcRenderer.send('request-show-message-box', message, type);

@@ -5,6 +5,7 @@ const { autoUpdater } = require('electron-updater');
 
 const { initWikiGit, getRemoteUrl } = require('../libs/git');
 const { stopWatchWiki, watchWiki } = require('../libs/wiki/watch-wiki');
+const { getSubWikiPluginContent } = require('../libs/wiki/update-plugin-content');
 const { stopWiki, startWiki } = require('../libs/wiki/wiki-worker-mamager');
 const { logger } = require('../libs/log');
 const {
@@ -123,6 +124,7 @@ const loadListeners = () => {
       return String(error);
     }
   });
+  ipcMain.handle('get-sub-wiki-plugin-content', (event, mainWikiPath) => getSubWikiPluginContent(mainWikiPath));
   ipcMain.on('get-constant', (event, name) => {
     event.returnValue = {
       ICON_PATH,

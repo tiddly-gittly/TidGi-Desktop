@@ -15,6 +15,7 @@ import FormHelperText from '@material-ui/core/FormHelperText';
 import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import FolderIcon from '@material-ui/icons/Folder';
+import Autocomplete from '@material-ui/lab/Autocomplete';
 
 import * as actions from '../../state/dialog-add-workspace/actions';
 
@@ -51,6 +52,7 @@ type OwnProps = {|
   existedFolderLocation: string,
   wikiPort: number,
   wikiPortSetter: number => void,
+  fileSystemPaths: { tagName: string, folderName: string }[],
   isCreateMainWorkspace: boolean,
 |};
 type DispatchProps = {|
@@ -79,6 +81,7 @@ function WikiPathForm({
   mainWikiToLinkSetter,
   wikiPort,
   wikiPortSetter,
+  fileSystemPaths,
   isCreateMainWorkspace,
 }: Props) {
   const [workspaces, workspacesSetter] = useState({});
@@ -139,13 +142,6 @@ function WikiPathForm({
       )}
       {!isCreateMainWorkspace && (
         <>
-          <TextField
-            fullWidth
-            onChange={event => tagNameSetter(event.target.value)}
-            label={t('AddWorkspace.TagName')}
-            helperText={t('AddWorkspace.TagNameHelp')}
-            value={tagName}
-          />
           <SoftLinkToMainWikiSelectInputLabel id="main-wiki-select-label">
             {t('AddWorkspace.MainWorkspaceLocation')}
           </SoftLinkToMainWikiSelectInputLabel>
@@ -178,6 +174,20 @@ function WikiPathForm({
               </Typography>
             </FormHelperText>
           )}
+          <Autocomplete
+            freeSolo
+            options={fileSystemPaths.map(fileSystemPath => fileSystemPath.tagName)}
+            renderInput={parameters => (
+              <TextField
+                {...parameters}
+                onChange={event => tagNameSetter(event.target.value)}
+                value={tagName}
+                fullWidth
+                label={t('AddWorkspace.TagName')}
+                helperText={t('AddWorkspace.TagNameHelp')}
+              />
+            )}
+          />
         </>
       )}
     </CreateContainer>

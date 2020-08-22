@@ -1,9 +1,17 @@
 const path = require('path');
 const fs = require('fs-extra');
 const { take, drop, compact } = require('lodash');
+const { logger } = require('../log');
 
 const getMatchPart = tagToMatch => `[!is[system]kin::to[${tagToMatch}]`;
 const getPathPart = folderToPlace => `addprefix[subwiki/${folderToPlace}/]]`;
+const getTagNameFromMatchPart = matchPart => matchPart.replace('[!is[system]kin::to[', '').replace(/].*/, '');
+const getFolderNamePathPart = pathPart => pathPart.replace(/.+addprefix\[subwiki\//, '').replace('/]]', '');
+
+function getFileSystemPathsTiddlerPath(mainWikiPath) {
+  const pluginPath = path.join(mainWikiPath, 'plugins', 'linonetwo', 'sub-wiki');
+  return path.join(pluginPath, 'FileSystemPaths.tid');
+}
 
 /**
  * update $:/config/FileSystemPaths programmatically to make private tiddlers goto the sub-wiki
@@ -12,8 +20,7 @@ const getPathPart = folderToPlace => `addprefix[subwiki/${folderToPlace}/]]`;
  * @param {Object} oldConfig if you need to replace a line, you need to pass-in what old line looks like, so here we can find and replace it
  */
 function updateSubWikiPluginContent(mainWikiPath, newConfig, oldConfig) {
-  const pluginPath = path.join(mainWikiPath, 'plugins', 'linonetwo', 'sub-wiki');
-  const FileSystemPathsTiddlerPath = path.join(pluginPath, 'FileSystemPaths.tid');
+  const FileSystemPathsTiddlerPath = getFileSystemPathsTiddlerPath(mainWikiPath);
 
   const FileSystemPathsFile = fs.readFileSync(FileSystemPathsTiddlerPath, 'utf-8');
   let newFileSystemPathsFile = '';
@@ -66,6 +73,23 @@ function updateSubWikiPluginContent(mainWikiPath, newConfig, oldConfig) {
   fs.writeFileSync(FileSystemPathsTiddlerPath, newFileSystemPathsFile);
 }
 
+async function getSubWikiPluginContent(mainWikiPath) {
+  if (!mainWikiPath) return [];
+  const FileSystemPathsTiddlerPath = getFileSystemPathsTiddlerPath(mainWikiPath);
+  try {
+    const FileSystemPathsFile = await fs.readFile(FileSystemPathsTiddlerPath, 'utf-8');
+    const FileSystemPaths = compact(drop(FileSystemPathsFile.split('\n'), 3));
+    return FileSystemPaths.map(line => ({
+      tagName: getTagNameFromMatchPart(line),
+      folderName: getFolderNamePathPart(line),
+    }));
+  } catch (error) {
+    logger.error(error, { function: 'getSubWikiPluginContent' });
+    return [];
+  }
+}
+
 module.exports = {
   updateSubWikiPluginContent,
+  getSubWikiPluginContent,
 };

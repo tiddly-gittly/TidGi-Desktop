@@ -27,6 +27,7 @@ import {
   countWorkspace,
   getWorkspaceRemote,
   requestOpen,
+  getSubWikiPluginContent,
 } from '../../senders';
 
 const graphqlClient = new GraphQLClient({
@@ -84,6 +85,13 @@ export default function AddWorkspace() {
   }, [userInfo]);
 
   const [mainWikiToLink, mainWikiToLinkSetter] = useState({ name: '', port: 0 });
+  const [fileSystemPaths, fileSystemPathsSetter] = useState([]);
+  useEffect(() => {
+    // eslint-disable-next-line promise/catch-or-return
+    getSubWikiPluginContent(mainWikiToLink.name).then(fileSystemPathsSetter);
+  }, [mainWikiToLink]);
+  // DEBUG: console
+  console.log(`fileSystemPaths`, fileSystemPaths);
   const [githubWikiUrl, githubWikiUrlSetter] = useState<string>('');
   const [tagName, tagNameSetter] = useState<string>('');
   useEffect(() => {
@@ -168,6 +176,7 @@ export default function AddWorkspace() {
             mainWikiToLinkSetter={mainWikiToLinkSetter}
             wikiPort={wikiPort}
             wikiPortSetter={wikiPortSetter}
+            fileSystemPaths={fileSystemPaths}
             isCreateMainWorkspace={isCreateMainWorkspace}
           />
 
@@ -196,6 +205,7 @@ export default function AddWorkspace() {
             mainWikiToLinkSetter={mainWikiToLinkSetter}
             wikiPort={wikiPort}
             wikiPortSetter={wikiPortSetter}
+            fileSystemPaths={fileSystemPaths}
             isCreateMainWorkspace={isCreateMainWorkspace}
           />
 
@@ -223,6 +233,7 @@ export default function AddWorkspace() {
             mainWikiToLinkSetter={mainWikiToLinkSetter}
             wikiPort={wikiPort}
             wikiPortSetter={wikiPortSetter}
+            fileSystemPaths={fileSystemPaths}
             isCreateMainWorkspace={isCreateMainWorkspace}
           />
           <CloneWikiDoneButton
