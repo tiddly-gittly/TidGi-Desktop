@@ -34,7 +34,8 @@ async function credentialOn(wikiFolderPath, githubRepoUrl, userInfo) {
 async function credentialOff(wikiFolderPath) {
   const githubRepoUrl = await getRemoteUrl(wikiFolderPath);
   const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
-  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], wikiFolderPath);
+  console.log('gitUrlWithOutCredential',gitUrlWithOutCredential);
+  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], wikiFolderPath)
 }
 
 /**
@@ -308,10 +309,12 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
   switch (await getSyncState(wikiFolderPath, logInfo)) {
     case 'noUpstream': {
       logProgress(i18n.t('Log.CantSyncGitNotInitialized'));
+      await credentialOff(wikiFolderPath);
       return;
     }
     case 'equal': {
       logProgress(i18n.t('Log.NoNeedToSync'));
+      await credentialOff(wikiFolderPath);
       return;
     }
     case 'ahead': {
