@@ -181,12 +181,11 @@ function NewWikiPathForm({
           <Autocomplete
             freeSolo
             options={fileSystemPaths.map(fileSystemPath => fileSystemPath.tagName)}
-            onChange={event => tagNameSetter(fileSystemPaths[event.target.value].tagName)}
+            value={tagName}
+            onInputChange={(_, value) => tagNameSetter(value)}
             renderInput={parameters => (
               <TextField
                 {...parameters}
-                onChange={event => tagNameSetter(event.target.value)}
-                value={tagName}
                 fullWidth
                 label={t('AddWorkspace.TagName')}
                 helperText={t('AddWorkspace.TagNameHelp')}

@@ -167,14 +167,12 @@ const EditWorkspace = ({
         />
         <Autocomplete
           freeSolo
-          value={tagName}
           options={fileSystemPaths.map(fileSystemPath => fileSystemPath.tagName)}
-          onChange={event => onUpdateForm({ tagName: fileSystemPaths[event.target.value].tagName })}
+          value={tagName}
+          onInputChange={(_, value) => onUpdateForm({ tagName: value })}
           renderInput={parameters => (
             <TextField
               {...parameters}
-              onChange={event => onUpdateForm({ tagName: event.target.value })}
-              value={tagName}
               fullWidth
               margin="dense"
               variant="outlined"
