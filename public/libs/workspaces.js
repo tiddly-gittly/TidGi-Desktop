@@ -103,15 +103,8 @@ const setActiveWorkspace = id => {
 const setWorkspace = (id, options) => {
   const workspace = { ...workspaces[id], ...options };
   // set fileSystemPaths on sub-wiki setting update
-  console.log('updateSubWikiPluginContent');
   if (workspaces[id].isSubWiki && options.tagName && workspaces[id].tagName !== options.tagName) {
     const subWikiFolderName = path.basename(workspaces[id].name);
-    console.log('updateSubWikiPluginContent2');
-    console.log(
-      workspaces[id].mainWikiToLink,
-      { tagName: options.tagName, subWikiFolderName },
-      { tagName: workspaces[id].tagName, subWikiFolderName },
-    );
     updateSubWikiPluginContent(
       workspaces[id].mainWikiToLink,
       { tagName: options.tagName, subWikiFolderName },
