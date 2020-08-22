@@ -1,5 +1,6 @@
 /* eslint-disable global-require */
 const path = require('path');
+const fs = require('fs');
 
 const { logger } = require('../log');
 const { commitAndSync } = require('../git');
@@ -19,6 +20,13 @@ function setWikiStarted(wikiPath) {
 }
 
 module.exports = async function wikiStartup(workspace) {
+  // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
+  try {
+    fs.unlinkSync(path.resolve(workspace.name, 'tiddlers', '$__StoryList'));
+  } catch {
+    // do nothing
+  }
+
   const userName = getPreference('userName') || '';
   const userInfo = getPreference('github-user-info');
   const { name: wikiPath, gitUrl: githubRepoUrl, port, isSubWiki, id } = workspace;
