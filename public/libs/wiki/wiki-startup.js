@@ -1,3 +1,4 @@
+/* eslint-disable global-require */
 const path = require('path');
 
 const { logger } = require('../log');
@@ -7,7 +8,6 @@ const startNodeJSWiki = require('./start-nodejs-wiki');
 const { stopWiki, startWiki } = require('./wiki-worker-mamager');
 const { TIDDLERS_PATH } = require('../../constants/paths');
 const { getPreference } = require('../preferences');
-const { getWorkspaceByName } = require('../workspaces');
 
 // prevent private wiki try to restart wiki on start-up, where there will be several subsequent wikiStartup() call
 const justStartedWiki = {};
@@ -33,6 +33,7 @@ module.exports = async function wikiStartup(workspace) {
     // if we are creating a sub-wiki, restart the main wiki to load content from private wiki
     const mainWikiPath = workspace.mainWikiToLink;
     if (!justStartedWiki[mainWikiPath]) {
+      const { getWorkspaceByName } = require('../workspaces');
       const mainWorkspace = getWorkspaceByName(mainWikiPath);
       await stopWatchWiki(mainWikiPath);
       await stopWiki(mainWikiPath);

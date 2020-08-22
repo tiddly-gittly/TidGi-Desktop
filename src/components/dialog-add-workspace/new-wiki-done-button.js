@@ -139,7 +139,7 @@ function NewWikiDoneButton({
               parentFolderLocation,
               wikiFolderName,
               mainWikiToLink.name,
-              githubWikiUrl,
+              tagName,
             );
             if (!creationError) {
               creationError = await initWikiGit(wikiFolderLocation, githubWikiUrl, userInfo, false);

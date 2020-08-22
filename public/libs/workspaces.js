@@ -9,8 +9,10 @@ const download = require('download');
 const tmp = require('tmp');
 
 const sendToAllWindows = require('./send-to-all-windows');
+const wikiStartup = require('./wiki/wiki-startup');
 const { stopWatchWiki } = require('./wiki/watch-wiki');
 const { stopWiki } = require('./wiki/wiki-worker-mamager');
+const { updateSubWikiPluginContent } = require('./wiki/update-plugin-content');
 
 const v = '14';
 
@@ -98,8 +100,25 @@ const setActiveWorkspace = id => {
   settings.setSync(`workspaces.${v}.${id}`, newActiveWorkspace);
 };
 
-const setWorkspace = (id, opts) => {
-  const workspace = { ...workspaces[id], ...opts };
+const setWorkspace = (id, options) => {
+  const workspace = { ...workspaces[id], ...options };
+  // set fileSystemPaths on sub-wiki setting update
+  console.log('updateSubWikiPluginContent');
+  if (workspaces[id].isSubWiki && options.tagName && workspaces[id].tagName !== options.tagName) {
+    const subWikiFolderName = path.basename(workspaces[id].name);
+    console.log('updateSubWikiPluginContent2');
+    console.log(
+      workspaces[id].mainWikiToLink,
+      { tagName: options.tagName, subWikiFolderName },
+      { tagName: workspaces[id].tagName, subWikiFolderName },
+    );
+    updateSubWikiPluginContent(
+      workspaces[id].mainWikiToLink,
+      { tagName: options.tagName, subWikiFolderName },
+      { tagName: workspaces[id].tagName, subWikiFolderName },
+    );
+    wikiStartup(workspace);
+  }
   workspaces[id] = workspace;
   sendToAllWindows('set-workspace', id, workspace);
   settings.setSync(`workspaces.${v}.${id}`, workspace);
@@ -119,7 +138,7 @@ const setWorkspacePicture = (id, sourcePicturePath) => {
     return;
   }
 
-  const destPicturePath = path.join(app.getPath('userData'), 'pictures', `${pictureId}.png`);
+  const destinationPicturePath = path.join(app.getPath('userData'), 'pictures', `${pictureId}.png`);
 
   Promise.resolve()
     .then(() => {
@@ -141,14 +160,14 @@ const setWorkspacePicture = (id, sourcePicturePath) => {
             .clone()
             .resize(128, 128)
             .quality(100)
-            .write(destPicturePath, resolve);
+            .write(destinationPicturePath, resolve);
         }),
     )
     .then(() => {
       const currentPicturePath = getWorkspace(id).picturePath;
       setWorkspace(id, {
         pictureId,
-        picturePath: destPicturePath,
+        picturePath: destinationPicturePath,
       });
       if (currentPicturePath) {
         return fsExtra.remove(currentPicturePath);

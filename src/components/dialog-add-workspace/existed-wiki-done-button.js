@@ -135,7 +135,7 @@ function DoneButton({
                 parentFolderLocation,
                 wikiFolderName,
                 mainWikiToLink.name,
-                githubWikiUrl,
+                tagName,
                 true,
               );
             }

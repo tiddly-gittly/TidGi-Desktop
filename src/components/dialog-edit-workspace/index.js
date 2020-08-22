@@ -1,4 +1,5 @@
-import React from 'react';
+// @flow
+import React, { useState, useEffect } from 'react';
 import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
@@ -12,6 +13,7 @@ import ListItemText from '@material-ui/core/ListItemText';
 import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import Switch from '@material-ui/core/Switch';
 import Typography from '@material-ui/core/Typography';
+import Autocomplete from '@material-ui/lab/Autocomplete';
 
 import connectComponent from '../../helpers/connect-component';
 import getMailtoUrl from '../../helpers/get-mailto-url';
@@ -19,6 +21,7 @@ import getMailtoUrl from '../../helpers/get-mailto-url';
 import defaultIcon from '../../images/default-icon.png';
 
 import { save, updateForm } from '../../state/dialog-edit-workspace/actions';
+import { getSubWikiPluginContent } from '../../senders';
 
 const styles = theme => ({
   root: {
@@ -111,13 +114,20 @@ const EditWorkspace = ({
   isMailApp,
   name,
   nameError,
-  onGetIconFromInternet,
   onSave,
   onUpdateForm,
+  mainWikiToLink,
+  tagName,
   picturePath,
   transparentBackground,
 }) => {
   const { t } = useTranslation();
+  const [fileSystemPaths, fileSystemPathsSetter] = useState([]);
+  useEffect(() => {
+    // eslint-disable-next-line promise/catch-or-return
+    getSubWikiPluginContent(mainWikiToLink).then(fileSystemPathsSetter);
+  }, [mainWikiToLink]);
+
   return (
     <div className={classes.root}>
       <div className={classes.flexGrow}>
@@ -154,6 +164,25 @@ const EditWorkspace = ({
           onChange={event =>
             onUpdateForm({ port: event.target.value, homeUrl: `http://localhost:${event.target.value}/` })
           }
+        />
+        <Autocomplete
+          freeSolo
+          value={tagName}
+          options={fileSystemPaths.map(fileSystemPath => fileSystemPath.tagName)}
+          onChange={event => onUpdateForm({ tagName: fileSystemPaths[event.target.value].tagName })}
+          renderInput={parameters => (
+            <TextField
+              {...parameters}
+              onChange={event => onUpdateForm({ tagName: event.target.value })}
+              value={tagName}
+              fullWidth
+              margin="dense"
+              variant="outlined"
+              className={classes.textField}
+              label={t('AddWorkspace.TagName')}
+              helperText={t('AddWorkspace.TagNameHelp')}
+            />
+          )}
         />
         <div className={classes.avatarFlex}>
           <div className={classes.avatarLeft}>
@@ -279,6 +308,8 @@ EditWorkspace.defaultProps = {
 
 EditWorkspace.propTypes = {
   classes: PropTypes.object.isRequired,
+  mainWikiToLink: PropTypes.string,
+  tagName: PropTypes.string,
   disableAudio: PropTypes.bool.isRequired,
   disableNotifications: PropTypes.bool.isRequired,
   downloadingIcon: PropTypes.bool.isRequired,
@@ -290,7 +321,6 @@ EditWorkspace.propTypes = {
   isMailApp: PropTypes.bool.isRequired,
   name: PropTypes.string.isRequired,
   nameError: PropTypes.string,
-  onGetIconFromInternet: PropTypes.func.isRequired,
   onSave: PropTypes.func.isRequired,
   onUpdateForm: PropTypes.func.isRequired,
   picturePath: PropTypes.string,
@@ -305,6 +335,8 @@ const mapStateToProps = state => ({
   homeUrl: state.dialogEditWorkspace.form.homeUrl || '',
   port: state.dialogEditWorkspace.form.port || '5212',
   homeUrlError: state.dialogEditWorkspace.form.homeUrlError,
+  mainWikiToLink: state.dialogEditWorkspace.form.mainWikiToLink,
+  tagName: state.dialogEditWorkspace.form.tagName,
   id: state.dialogEditWorkspace.form.id || '',
   internetIcon: state.dialogEditWorkspace.form.internetIcon,
   isMailApp: Boolean(getMailtoUrl(state.dialogEditWorkspace.form.homeUrl)),

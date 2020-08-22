@@ -23,6 +23,8 @@ const form = (state = {}, action) => {
         }
         return false;
       });
+      // DEBUG: console
+      console.log(`workspace`, workspace);
       return workspace;
     }
     case UPDATE_EDIT_WORKSPACE_FORM: return { ...state, ...action.changes };

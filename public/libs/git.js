@@ -34,7 +34,6 @@ async function credentialOn(wikiFolderPath, githubRepoUrl, userInfo) {
 async function credentialOff(wikiFolderPath) {
   const githubRepoUrl = await getRemoteUrl(wikiFolderPath);
   const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
-  console.log('gitUrlWithOutCredential',gitUrlWithOutCredential);
   await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], wikiFolderPath)
 }
 

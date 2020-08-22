@@ -85,13 +85,13 @@ export default function AddWorkspace() {
   }, [userInfo]);
 
   const [mainWikiToLink, mainWikiToLinkSetter] = useState({ name: '', port: 0 });
+  const [tagName, tagNameSetter] = useState<string>('');
   const [fileSystemPaths, fileSystemPathsSetter] = useState([]);
   useEffect(() => {
     // eslint-disable-next-line promise/catch-or-return
     getSubWikiPluginContent(mainWikiToLink.name).then(fileSystemPathsSetter);
   }, [mainWikiToLink]);
   const [githubWikiUrl, githubWikiUrlSetter] = useState<string>('');
-  const [tagName, tagNameSetter] = useState<string>('');
   useEffect(() => {
     async function getWorkspaceRemoteInEffect() {
       const url = await getWorkspaceRemote(existedFolderLocation);
