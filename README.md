@@ -8,6 +8,27 @@
 
 [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TiddlyGit-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)
 
+<details>
+<summary>For mac users, since I haven't buy Apple developer key yet, so you have to entrust App to open it ◀</summary>
+
+Click "Cancel" ↓
+
+![step00001](https://user-images.githubusercontent.com/3746270/87882506-eb1ddd80-ca32-11ea-942f-1f530767db02.png)
+
+![step00002](https://user-images.githubusercontent.com/3746270/87882509-ece7a100-ca32-11ea-8d29-a4977201090d.png)
+
+![step00003](https://user-images.githubusercontent.com/3746270/87882510-ed803780-ca32-11ea-8996-0f3c7060131a.png)
+
+Click "Open" ↓
+
+![step00004](https://user-images.githubusercontent.com/3746270/87882512-ee18ce00-ca32-11ea-8225-045ffc0a8b86.png)
+
+Click "OK" ↓
+
+![step00005](https://user-images.githubusercontent.com/3746270/87882514-eeb16480-ca32-11ea-9afd-cae6f2bea2db.png)
+
+</details>
+
 ## About TiddlyGit-Desktop
 
 TiddlyGit is a cross-platform Note Taking & GTD & Fragment Knowledge Management desktop app powered by [nodejs-TiddlyWiki](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs) and Github, it ship with a lot of tiddlywiki plugins from the [TiddlyWiki community](https://groups.google.com/forum/#!forum/tiddlywiki).
