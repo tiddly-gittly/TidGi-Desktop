@@ -23,6 +23,7 @@ const create = () => {
     autoHideMenuBar: false,
     webPreferences: {
       nodeIntegration: false,
+      enableRemoteModule: true,
       webSecurity: !isDev,
       contextIsolation: true,
       preload: path.join(__dirname, '..', 'preload', 'go-to-url.js'),

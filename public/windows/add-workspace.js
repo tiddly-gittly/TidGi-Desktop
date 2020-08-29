@@ -23,6 +23,7 @@ const create = () => {
     autoHideMenuBar: false,
     webPreferences: {
       nodeIntegration: false,
+      enableRemoteModule: true,
       webSecurity: !isDev,
       contextIsolation: true,
       enableRemoteModule: true,

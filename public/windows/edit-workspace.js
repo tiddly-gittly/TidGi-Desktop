@@ -25,6 +25,7 @@ const create = (id) => {
     autoHideMenuBar: false,
     webPreferences: {
       nodeIntegration: false,
+      enableRemoteModule: true,
       webSecurity: !isDev,
       contextIsolation: true,
       preload: path.join(__dirname, '..', 'preload', 'edit-workspace.js'),

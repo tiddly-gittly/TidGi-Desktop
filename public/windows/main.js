@@ -55,6 +55,7 @@ const createAsync = () => new Promise((resolve) => {
         minWidth: 250,
         webPreferences: {
           nodeIntegration: false,
+      enableRemoteModule: true,
       webSecurity: !isDev,
       contextIsolation: true,
           webSecurity: false,
@@ -167,6 +168,7 @@ const createAsync = () => new Promise((resolve) => {
     icon: process.platform === 'linux' && process.env.SNAP == null ? path.resolve(__dirname, '..', 'icon.png') : undefined,
     webPreferences: {
       nodeIntegration: false,
+      enableRemoteModule: true,
       webSecurity: !isDev,
       contextIsolation: true,
       preload: path.join(__dirname, '..', 'preload', 'main.js'),
