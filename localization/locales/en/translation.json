@@ -120,6 +120,25 @@
     "SyncInterval": "Sync Interval",
     "SyncIntervalDescription": "After there is no new change for more than this length of time, it will automatically start backing up to Github (take effect after restart app)",
     "UserName": "User Name",
-    "UserNameDetail": "The user name in the Wiki, this only take effect after restart, this will fill in the creator field of the newly created or edited tiddlers"
+    "UserNameDetail": "The user name in the Wiki, this only take effect after restart, this will fill in the creator field of the newly created or edited tiddlers",
+    "ShowSideBarDetail": "Sidebar lets you switch easily between workspaces.",
+    "ShowSideBarShortcut": "Show keyboard shortcut hints on sidebar",
+    "ShowNavigationBar": "Show navigation bar",
+    "ShowNavigationBarDetail": "Navigation bar on the top lets you go back, forward, home, reload and see the URL.",
+    "ShowTitleBar": "Show title bar",
+    "ShowTitleBarDetail": "Title bar shows you the title of the current page.",
+    "HideMenuBar": "Hide menu bar",
+    "HideMenuBarDetail": "Hide the menu bar unless the Alt+M is pressed.",
+    "AttachToTaskbar": "Attach to taskbar",
+    "AttachToMenuBar": "Attach to menu bar",
+    "AttachToMenuBarTip": "Tip: Right-click on app icon to access context menu.",
+    "OpenLogFolder": "Open the Log folder",
+    "OpenLogFolderDetail": "When reporting a problem, please open the latest .log file in the folder and send its content to the developer, or paste it to pastebin.com and then paste the URL into the Github Issue",
+    "Advanced": "Advanced",
+    "SystemDefalutTheme": "System Defalut Theme",
+    "LightTheme": "Light Theme",
+    "DarkTheme": "Dark Theme",
+    "ShowSideBar": "Show SideBar",
+    "Theme": "Theme"
   }
 }

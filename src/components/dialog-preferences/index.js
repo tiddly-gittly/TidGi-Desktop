@@ -1,3 +1,4 @@
+/* eslint-disable consistent-return */
 import React, { useRef, useEffect, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import semver from 'semver';
@@ -72,6 +73,7 @@ import {
   requestShowProxyWindow,
   requestShowRequireRestartDialog,
   requestShowSpellcheckLanguagesWindow,
+  getLogFolderPath,
 } from '../../senders';
 
 const styles = theme => ({
@@ -142,6 +144,7 @@ const getThemeString = theme => {
 };
 
 const getOpenAtLoginString = openAtLogin => {
+  // eslint-disable-next-line sonarjs/no-duplicate-string
   if (openAtLogin === 'yes-hidden') return 'Yes, but minimized';
   if (openAtLogin === 'yes') return 'Yes';
   return 'No';
@@ -156,12 +159,13 @@ const formatBytes = (bytes, decimals = 2) => {
 
   const i = Math.floor(Math.log(bytes) / Math.log(k));
 
-  return `${parseFloat((bytes / k ** i).toFixed(dm))} ${sizes[i]}`;
+  return `${Number.parseFloat((bytes / k ** i).toFixed(dm))} ${sizes[i]}`;
 };
 
 const getUpdaterDesc = (status, info) => {
+  // eslint-disable-next-line sonarjs/no-duplicate-string
   if (status === 'download-progress') {
-    if (info != null) {
+    if (info !== null) {
       const { transferred, total, bytesPerSecond } = info;
       return `Downloading updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(
         bytesPerSecond,
@@ -179,7 +183,6 @@ const getUpdaterDesc = (status, info) => {
     if (info && info.version) return `A new version (${info.version}) has been downloaded.`;
     return 'A new version has been downloaded.';
   }
-  return null;
 };
 
 const Preferences = ({
@@ -223,6 +226,8 @@ const Preferences = ({
   useHardwareAcceleration,
   userName,
 }) => {
+  const { t } = useTranslation();
+
   const sections = {
     wiki: {
       text: 'Wiki',
@@ -230,12 +235,12 @@ const Preferences = ({
       ref: useRef(),
     },
     sync: {
-      text: 'Sync',
+      text: t('Preference.Sync'),
       Icon: GitHubIcon,
       ref: useRef(),
     },
     general: {
-      text: 'General',
+      text: t('Preference.General'),
       Icon: WidgetsIcon,
       ref: useRef(),
     },
@@ -280,7 +285,7 @@ const Preferences = ({
       ref: useRef(),
     },
     advanced: {
-      text: 'Advanced',
+      text: t('Preference.Advanced'),
       Icon: PowerIcon,
       ref: useRef(),
     },
@@ -317,15 +322,13 @@ const Preferences = ({
     [],
   );
 
-  const { t } = useTranslation();
-
   return (
     <div className={classes.root}>
       <div className={classes.sidebar}>
         <List dense>
           {Object.keys(sections).map((sectionKey, i) => {
             const { Icon, text, ref, hidden } = sections[sectionKey];
-            if (hidden) return null;
+            if (hidden) return;
             return (
               <React.Fragment key={sectionKey}>
                 {i > 0 && <Divider />}
@@ -407,31 +410,31 @@ const Preferences = ({
               id="theme"
               buttonElement={
                 <ListItem button>
-                  <ListItemText primary="Theme" secondary={getThemeString(themeSource)} />
+                  <ListItemText primary={t('Preference.Theme')} secondary={getThemeString(themeSource)} />
                   <ChevronRightIcon color="action" />
                 </ListItem>
               }
             >
               <MenuItem dense onClick={() => requestSetPreference('themeSource', 'system')}>
-                System default
+                {t('Preference.SystemDefalutTheme')}
               </MenuItem>
               <MenuItem dense onClick={() => requestSetPreference('themeSource', 'light')}>
-                Light
+                {t('Preference.LightTheme')}
               </MenuItem>
               <MenuItem dense onClick={() => requestSetPreference('themeSource', 'dark')}>
-                Dark
+                {t('Preference.DarkTheme')}
               </MenuItem>
             </StatedMenu>
             <Divider />
             <ListItem>
-              <ListItemText primary="Show sidebar" secondary="Sidebar lets you switch easily between workspaces." />
+              <ListItemText primary={t('Preference.ShowSideBar')} secondary={t('Preference.ShowSideBarDetail')} />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
                   checked={sidebar}
-                  onChange={e => {
-                    requestSetPreference('sidebar', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('sidebar', event.target.checked);
                     requestRealignActiveWorkspace();
                   }}
                 />
@@ -439,14 +442,14 @@ const Preferences = ({
             </ListItem>
             <Divider />
             <ListItem>
-              <ListItemText primary="Show keyboard shortcut hints on sidebar" />
+              <ListItemText primary={t('Preference.ShowSideBarShortcut')} />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
                   checked={sidebarShortcutHints}
-                  onChange={e => {
-                    requestSetPreference('sidebarShortcutHints', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('sidebarShortcutHints', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -454,8 +457,8 @@ const Preferences = ({
             <Divider />
             <ListItem>
               <ListItemText
-                primary="Show navigation bar"
-                secondary="Navigation bar lets you go back, forward, home and reload."
+                primary={t('Preference.ShowNavigationBar')}
+                secondary={t('Preference.ShowNavigationBarDetail')}
               />
               <ListItemSecondaryAction>
                 <Switch
@@ -466,8 +469,8 @@ const Preferences = ({
                   // they can't access preferences or notifications
                   checked={(window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar) || navigationBar}
                   disabled={window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar}
-                  onChange={e => {
-                    requestSetPreference('navigationBar', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('navigationBar', event.target.checked);
                     requestRealignActiveWorkspace();
                   }}
                 />
@@ -477,17 +480,14 @@ const Preferences = ({
               <>
                 <Divider />
                 <ListItem>
-                  <ListItemText
-                    primary="Show title bar"
-                    secondary="Title bar shows you the title of the current page."
-                  />
+                  <ListItemText primary={t('Preference.ShowTitleBar')} secondary={t('Preference.ShowTitleBarDetail')} />
                   <ListItemSecondaryAction>
                     <Switch
                       edge="end"
                       color="primary"
                       checked={titleBar}
-                      onChange={e => {
-                        requestSetPreference('titleBar', e.target.checked);
+                      onChange={event => {
+                        requestSetPreference('titleBar', event.target.checked);
                         requestRealignActiveWorkspace();
                       }}
                     />
@@ -499,14 +499,14 @@ const Preferences = ({
               <>
                 <Divider />
                 <ListItem>
-                  <ListItemText primary="Hide menu bar" secondary="Hide the menu bar unless the Alt+M is pressed." />
+                  <ListItemText primary={t('Preference.HideMenuBar')} secondary={t('Preference.HideMenuBarDetail')} />
                   <ListItemSecondaryAction>
                     <Switch
                       edge="end"
                       color="primary"
                       checked={hideMenuBar}
-                      onChange={e => {
-                        requestSetPreference('hideMenuBar', e.target.checked);
+                      onChange={event => {
+                        requestSetPreference('hideMenuBar', event.target.checked);
                         requestShowRequireRestartDialog();
                       }}
                     />
@@ -517,20 +517,20 @@ const Preferences = ({
             <Divider />
             <ListItem>
               <ListItemText
-                primary={window.remote.getPlatform() === 'win32' ? 'Attach to taskbar' : 'Attach to menu bar'}
-                secondary={
-                  window.remote.getPlatform() !== 'linux'
-                    ? 'Tip: Right-click on app icon to access context menu.'
-                    : null
+                primary={
+                  window.remote.getPlatform() === 'win32'
+                    ? t('Preference.AttachToTaskbar')
+                    : t('Preference.AttachToMenuBar')
                 }
+                secondary={window.remote.getPlatform() !== 'linux' ? t('Preference.AttachToMenuBarTip') : undefined}
               />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
                   color="primary"
                   checked={attachToMenubar}
-                  onChange={e => {
-                    requestSetPreference('attachToMenubar', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('attachToMenubar', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -555,8 +555,8 @@ const Preferences = ({
                       tabIndex={0}
                       className={classes.link}
                       onClick={() => requestOpen('https://cliqz.com/en/whycliqz/adblocking')}
-                      onKeyDown={e => {
-                        if (e.key !== 'Enter') return;
+                      onKeyDown={event => {
+                        if (event.key !== 'Enter') return;
                         requestOpen('https://cliqz.com/en/whycliqz/adblocking');
                       }}
                     >
@@ -571,8 +571,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={blockAds}
-                  onChange={e => {
-                    requestSetPreference('blockAds', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('blockAds', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -590,8 +590,8 @@ const Preferences = ({
                       tabIndex={0}
                       className={classes.link}
                       onClick={() => requestOpen('https://darkreader.org/')}
-                      onKeyDown={e => {
-                        if (e.key !== 'Enter') return;
+                      onKeyDown={event => {
+                        if (event.key !== 'Enter') return;
                         requestOpen('https://darkreader.org/');
                       }}
                     >
@@ -609,8 +609,8 @@ const Preferences = ({
                   color="primary"
                   checked={themeSource !== 'light' && darkReader}
                   disabled={themeSource === 'light'}
-                  onChange={e => {
-                    requestSetPreference('darkReader', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('darkReader', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -631,9 +631,9 @@ const Preferences = ({
                       aria-labelledby="brightness-slider"
                       valueLabelDisplay="auto"
                       step={5}
-                      valueLabelFormat={val => {
-                        if (val > 0) return `+${val}`;
-                        return val;
+                      valueLabelFormat={value => {
+                        if (value > 0) return `+${value}`;
+                        return value;
                       }}
                       marks={[
                         {
@@ -643,7 +643,7 @@ const Preferences = ({
                       ]}
                       min={-50}
                       max={50}
-                      onChange={(e, value) => {
+                      onChange={(_, value) => {
                         requestSetPreference('darkReaderBrightness', value + 100);
                       }}
                     />
@@ -663,9 +663,9 @@ const Preferences = ({
                       aria-labelledby="contrast-slider"
                       valueLabelDisplay="auto"
                       step={5}
-                      valueLabelFormat={val => {
-                        if (val > 0) return `+${val}`;
-                        return val;
+                      valueLabelFormat={value => {
+                        if (value > 0) return `+${value}`;
+                        return value;
                       }}
                       marks={[
                         {
@@ -675,7 +675,7 @@ const Preferences = ({
                       ]}
                       min={-50}
                       max={50}
-                      onChange={(e, value) => {
+                      onChange={(_, value) => {
                         requestSetPreference('darkReaderContrast', value + 100);
                       }}
                     />
@@ -703,7 +703,7 @@ const Preferences = ({
                       ]}
                       min={0}
                       max={100}
-                      onChange={(e, value) => {
+                      onChange={(_, value) => {
                         requestSetPreference('darkReaderSepia', value);
                       }}
                     />
@@ -731,7 +731,7 @@ const Preferences = ({
                       ]}
                       min={0}
                       max={100}
-                      onChange={(e, value) => {
+                      onChange={(_, value) => {
                         requestSetPreference('darkReaderGrayscale', value);
                       }}
                     />
@@ -792,8 +792,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={pauseNotificationsBySchedule}
-                  onChange={e => {
-                    requestSetPreference('pauseNotificationsBySchedule', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('pauseNotificationsBySchedule', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -806,8 +806,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={pauseNotificationsMuteAudio}
-                  onChange={e => {
-                    requestSetPreference('pauseNotificationsMuteAudio', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('pauseNotificationsMuteAudio', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -820,8 +820,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={unreadCountBadge}
-                  onChange={e => {
-                    requestSetPreference('unreadCountBadge', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('unreadCountBadge', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -853,7 +853,6 @@ const Preferences = ({
                       </>
                     );
                   }
-                  return null;
                 })()}
               />
               <ChevronRightIcon color="action" />
@@ -876,8 +875,8 @@ const Preferences = ({
                           'https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps',
                         )
                       }
-                      onKeyDown={e => {
-                        if (e.key !== 'Enter') return;
+                      onKeyDown={event => {
+                        if (event.key !== 'Enter') return;
                         requestOpen(
                           'https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps',
                         );
@@ -905,8 +904,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={spellcheck}
-                  onChange={e => {
-                    requestSetPreference('spellcheck', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('spellcheck', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -940,12 +939,13 @@ const Preferences = ({
                     properties: ['openDirectory'],
                   })
                   .then(result => {
+                    // eslint-disable-next-line promise/always-return
                     if (!result.canceled && result.filePaths) {
                       requestSetPreference('downloadPath', result.filePaths[0]);
                     }
                   })
-                  .catch(err => {
-                    console.log(err); // eslint-disable-line no-console
+                  .catch(error => {
+                    console.log(error); // eslint-disable-line no-console
                   });
               }}
             >
@@ -960,8 +960,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={askForDownloadPath}
-                  onChange={e => {
-                    requestSetPreference('askForDownloadPath', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('askForDownloadPath', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -993,8 +993,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={blockAds}
-                  onChange={e => {
-                    requestSetPreference('blockAds', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('blockAds', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -1008,8 +1008,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={rememberLastPageVisited}
-                  onChange={e => {
-                    requestSetPreference('rememberLastPageVisited', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('rememberLastPageVisited', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -1023,8 +1023,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={shareWorkspaceBrowsingData}
-                  onChange={e => {
-                    requestSetPreference('shareWorkspaceBrowsingData', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('shareWorkspaceBrowsingData', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -1046,8 +1046,8 @@ const Preferences = ({
                           'https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ',
                         )
                       }
-                      onKeyDown={e => {
-                        if (e.key !== 'Enter') return;
+                      onKeyDown={event => {
+                        if (event.key !== 'Enter') return;
                         requestOpen(
                           'https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ',
                         );
@@ -1064,8 +1064,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={ignoreCertificateErrors}
-                  onChange={e => {
-                    requestSetPreference('ignoreCertificateErrors', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('ignoreCertificateErrors', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -1157,6 +1157,11 @@ const Preferences = ({
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
+            <ListItem button onClick={() => requestOpen(getLogFolderPath(), true)}>
+              <ListItemText primary={t('Preference.OpenLogFolder')} secondary={t('Preference.OpenLogFolderDetail')} />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
             <ListItem>
               <ListItemText
                 primary="Hibernate unused workspaces at app launch"
@@ -1167,8 +1172,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={hibernateUnusedWorkspacesAtLaunch}
-                  onChange={e => {
-                    requestSetPreference('hibernateUnusedWorkspacesAtLaunch', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('hibernateUnusedWorkspacesAtLaunch', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -1198,8 +1203,8 @@ const Preferences = ({
                       edge="end"
                       color="primary"
                       checked={swipeToNavigate}
-                      onChange={e => {
-                        requestSetPreference('swipeToNavigate', e.target.checked);
+                      onChange={event => {
+                        requestSetPreference('swipeToNavigate', event.target.checked);
                         requestShowRequireRestartDialog();
                       }}
                     />
@@ -1215,8 +1220,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={useHardwareAcceleration}
-                  onChange={e => {
-                    requestSetPreference('useHardwareAcceleration', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('useHardwareAcceleration', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -1254,8 +1259,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={allowPrerelease}
-                  onChange={e => {
-                    requestSetPreference('allowPrerelease', e.target.checked);
+                  onChange={event => {
+                    requestSetPreference('allowPrerelease', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -1343,14 +1348,6 @@ const Preferences = ({
   );
 };
 
-Preferences.defaultProps = {
-  cssCodeInjection: null,
-  customUserAgent: null,
-  jsCodeInjection: null,
-  updaterInfo: null,
-  updaterStatus: null,
-};
-
 Preferences.propTypes = {
   allowNodeInJsCodeInjection: PropTypes.bool.isRequired,
   allowPrerelease: PropTypes.bool.isRequired,
@@ -1389,6 +1386,7 @@ Preferences.propTypes = {
   unreadCountBadge: PropTypes.bool.isRequired,
   updaterInfo: PropTypes.object,
   updaterStatus: PropTypes.string,
+  userName: PropTypes.string,
   useHardwareAcceleration: PropTypes.bool.isRequired,
 };
 
@@ -1435,4 +1433,4 @@ const mapStateToProps = state => ({
   userName: state.preferences.userName,
 });
 
-export default connectComponent(Preferences, mapStateToProps, null, styles);
+export default connectComponent(Preferences, mapStateToProps, undefined, styles);

@@ -2,6 +2,8 @@ const isDev = require('electron-is-dev');
 const path = require('path');
 const os = require('os');
 
+const isMac = process.platform === 'darwin';
+
 const REACT_PATH = isDev
   ? 'http://localhost:3000'
   : `file://${path.resolve(__dirname, '..', '..', 'build', 'index.html')}`;
@@ -17,7 +19,9 @@ const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';
 const DESKTOP_PATH = path.join(os.homedir(), 'Desktop');
 const LOG_FOLDER = isDev
   ? path.resolve(__dirname, '..', '..', 'logs')
-  : path.resolve(process.resourcesPath, '..', 'logs');
+  : isMac
+  ? path.resolve(process.resourcesPath, '..', 'logs')
+  : path.resolve(os.homedir(), '.tg-note', 'logs');
 const LOCALIZATION_FOLDER = isDev
   ? path.resolve(__dirname, '..', '..', 'localization')
   : path.resolve(process.resourcesPath, '..', 'localization');

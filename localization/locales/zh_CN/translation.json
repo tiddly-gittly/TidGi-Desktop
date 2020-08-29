@@ -120,6 +120,25 @@
     "Sync": "同步",
     "SyncInterval": "同步间隔",
     "SyncIntervalDescription": "超过这段长度的时间没有新的改动后，就会自动开始备份到 Github（重启后生效）",
-    "General": "通用"
+    "General": "通用",
+    "ShowSideBarDetail": "侧边栏让你可以在工作区之间快速切换",
+    "ShowSideBarShortcut": "展示侧边栏的快捷方式",
+    "OpenLogFolder": "打开Log文件夹",
+    "OpenLogFolderDetail": "上报问题时，请打开日期最新的一个 .log 文件，将其内容发送给开发者，或黏贴到 pastebin.com 后将 URL 黏贴到 Github Issue 里",
+    "AttachToMenuBar": "附加到菜单栏",
+    "AttachToMenuBarTip": "提示：右键单击应用程序图标以访问上下文菜单。",
+    "AttachToTaskbar": "附加到任务栏",
+    "HideMenuBar": "隐藏菜单栏",
+    "HideMenuBarDetail": "按下 Alt + M 可以显示被隐藏的菜单栏",
+    "ShowNavigationBar": "显示导航栏",
+    "ShowNavigationBarDetail": "顶部的导航栏可以前进，后退，返回首页，重新加载，以及显示当前网页所在的 URL",
+    "ShowTitleBar": "显示标题栏",
+    "ShowTitleBarDetail": "在标题栏上会显示当前页面的标题",
+    "Advanced": "高级功能",
+    "DarkTheme": "黑暗主题",
+    "LightTheme": "亮色主题",
+    "ShowSideBar": "显示侧边栏",
+    "SystemDefalutTheme": "系统默认主题色",
+    "Theme": "主题色"
   }
 }
