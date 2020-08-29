@@ -5,6 +5,7 @@ const isDev = require('electron-is-dev');
 const path = require('path');
 
 const { logger } = require('../log');
+const { wikiOutputToFile, refreshOutputFile } = require('../log/wiki-output');
 
 // worker should send payload in form of `{ message: string, handler: string }` where `handler` is the name of function to call
 const logMessage = loggerMeta => message => {
@@ -76,6 +77,11 @@ module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName
         }, 100);
       }
     });
+    // redirect stdout to file
+    const logFileName = workspace.name.replace(/[/\\]/g, '_');
+    refreshOutputFile(logFileName);
+    wikiOutputToFile(logFileName, worker.stdout);
+    wikiOutputToFile(logFileName, worker.stderr);
   });
 };
 async function stopWiki(homePath) {
