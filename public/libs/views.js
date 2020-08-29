@@ -6,6 +6,7 @@ const {
   session,
   shell,
   dialog,
+  ipcMain,
 } = require('electron');
 const path = require('path');
 const fsExtra = require('fs-extra');
@@ -285,6 +286,8 @@ const addView = (browserWindow, workspace) => {
     setWorkspace(workspace.id, {
       lastUrl: currentUrl,
     });
+    // fix https://github.com/atomery/webcatalog/issues/870
+    ipcMain.emit('request-realign-active-workspace');
   });
 
   if (workspace.active) {
