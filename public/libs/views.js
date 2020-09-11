@@ -7,7 +7,7 @@ const { ElectronBlocker } = require('@cliqz/adblocker-electron');
 const i18n = require('./i18n');
 const wikiStartup = require('./wiki/wiki-startup');
 const { getPreferences, getPreference } = require('./preferences');
-const { getWorkspace, setWorkspace } = require('./workspaces');
+const { getWorkspace, setWorkspace, getActiveWorkspace } = require('./workspaces');
 const { setWorkspaceMeta, getWorkspaceMetas, getWorkspaceMeta } = require('./workspace-metas');
 
 const sendToAllWindows = require('./send-to-all-windows');
@@ -749,6 +749,11 @@ const reloadViewsWebContents = () => {
   });
 };
 
+const getActiveBrowserView = () => {
+  const workspace = getActiveWorkspace();
+  return getView(workspace.id);
+};
+
 module.exports = {
   addView,
   getView,
@@ -761,4 +766,5 @@ module.exports = {
   setActiveView,
   setViewsAudioPref,
   setViewsNotificationsPref,
+  getActiveBrowserView,
 };

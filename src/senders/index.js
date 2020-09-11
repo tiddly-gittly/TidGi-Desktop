@@ -124,6 +124,7 @@ export const requestCreateWorkspace = (
     tagName,
   );
 
+export const requestOpenTiddlerInWiki = (tiddlerName: string) => ipcRenderer.send('request-wiki-open-tiddler', tiddlerName);
 export const requestHibernateWorkspace = (id: string) => ipcRenderer.send('request-hibernate-workspace', id);
 export const requestOpenUrlInWorkspace = (url: string, id: string) =>
   ipcRenderer.send('request-open-url-in-workspace', url, id);

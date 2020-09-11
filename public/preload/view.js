@@ -1,3 +1,4 @@
+// @flow
 const { ipcRenderer, remote, webFrame } = require('electron');
 
 const { enable: enableDarkMode, disable: disableDarkMode } = require('darkreader');
@@ -6,6 +7,8 @@ const ContextMenuBuilder = require('../libs/context-menu-builder');
 const i18next = require('../libs/i18n');
 
 const { MenuItem, shell } = remote;
+
+require('../libs/wiki/wiki-operation');
 
 window.global = {};
 
@@ -214,14 +217,6 @@ window.addEventListener('message', e => {
   if (e.data.type === 'focus-workspace') {
     ipcRenderer.send('request-set-active-workspace', e.data.workspaceId);
   }
-});
-
-// add snackbar to notify user
-ipcRenderer.on('wiki-sync-progress', (event, message) => {
-  webFrame.executeJavaScript(`
-    $tw.wiki.addTiddler({ title: '$:/state/notification/wiki-sync-progress', text: '${message}' });
-    $tw.notifier.display('$:/state/notification/wiki-sync-progress');
-  `);
 });
 
 // Fix Can't show file list of Google Drive

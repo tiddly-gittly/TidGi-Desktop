@@ -28,7 +28,7 @@ import DraggableRegion from './draggable-region';
 import arrowWhite from '../../images/arrow-white.png';
 import arrowBlack from '../../images/arrow-black.png';
 
-import { requestOpen, getLogFolderPath } from '../../senders';
+import { requestOpen, getLogFolderPath, requestOpenTiddlerInWiki } from '../../senders';
 
 import {
   requestHibernateWorkspace,
@@ -163,7 +163,7 @@ const styles = theme => ({
 const SortableItem = withTranslation()(
   sortableElement(({ value, t }) => {
     const { index, workspace } = value;
-    const { active, id, name, picturePath, hibernated, transparentBackground, isSubWiki } = workspace;
+    const { active, id, name, picturePath, hibernated, transparentBackground, isSubWiki, tagName } = workspace;
     return (
       <WorkspaceSelector
         active={active}
@@ -174,7 +174,7 @@ const SortableItem = withTranslation()(
         transparentBackground={transparentBackground}
         order={index}
         hibernated={hibernated}
-        onClick={() => !isSubWiki && requestSetActiveWorkspace(id)}
+        onClick={() => (isSubWiki ? requestOpenTiddlerInWiki(tagName) : requestSetActiveWorkspace(id))}
         onContextMenu={e => {
           e.preventDefault();
 

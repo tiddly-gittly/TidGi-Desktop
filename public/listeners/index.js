@@ -48,7 +48,7 @@ const {
 } = require('../libs/workspaces-views');
 const i18n = require('../libs/i18n');
 
-const { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad } = require('../libs/views');
+const { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad, getActiveBrowserView } = require('../libs/views');
 
 const { updatePauseNotificationsInfo, getPauseNotificationsInfo } = require('../libs/notifications');
 
@@ -79,18 +79,15 @@ const loadListeners = () => {
       return String(error);
     }
   });
-  ipcMain.handle(
-    'create-sub-wiki',
-    async (event, newFolderPath, folderName, mainWikiToLink, tagName, onlyLink) => {
-      try {
-        await createSubWiki(newFolderPath, folderName, mainWikiToLink, tagName, onlyLink);
-        return '';
-      } catch (error) {
-        console.info(error);
-        return String(error);
-      }
-    },
-  );
+  ipcMain.handle('create-sub-wiki', async (event, newFolderPath, folderName, mainWikiToLink, tagName, onlyLink) => {
+    try {
+      await createSubWiki(newFolderPath, folderName, mainWikiToLink, tagName, onlyLink);
+      return '';
+    } catch (error) {
+      console.info(error);
+      return String(error);
+    }
+  });
   ipcMain.handle('clone-wiki', async (event, parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo) => {
     try {
       await cloneWiki(parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo);
@@ -139,6 +136,12 @@ const loadListeners = () => {
       console.info(error);
       removeWiki(wikiFolderPath);
       return String(error);
+    }
+  });
+  ipcMain.on('request-wiki-open-tiddler', (event, tiddlerName) => {
+    const browserView = getActiveBrowserView();
+    if (browserView) {
+      browserView.webContents.send('wiki-open-tiddler', tiddlerName);
     }
   });
 

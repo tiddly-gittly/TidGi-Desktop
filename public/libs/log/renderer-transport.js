@@ -8,12 +8,8 @@ const handlers = {
       .webContents.send('create-wiki-progress', message);
   },
   wikiSyncProgress: message => {
-    const { getActiveWorkspace } = require('../workspaces'); // require here to prevent mysterious electron crash
-    const { getView } = require('../views');
-
-    // eslint-disable-next-line global-require
-    const workspace = getActiveWorkspace();
-    const browserView = getView(workspace.id);
+    const { getActiveBrowserView } = require('../views');
+    const browserView = getActiveBrowserView();
     if (browserView) {
       browserView.webContents.send('wiki-sync-progress', message);
     }
