@@ -60,8 +60,8 @@ const styles = theme => ({
   },
   avatar: {
     fontFamily: theme.typography.fontFamily,
-    height: 64,
-    width: 64,
+    height: 85,
+    width: 85,
     background: theme.palette.common.white,
     borderRadius: 4,
     color: theme.palette.getContrastText(theme.palette.common.white),
@@ -120,6 +120,7 @@ const EditWorkspace = ({
   tagName,
   picturePath,
   transparentBackground,
+  isSubWiki,
 }) => {
   const { t } = useTranslation();
   const [fileSystemPaths, fileSystemPathsSetter] = useState([]);
@@ -147,24 +148,26 @@ const EditWorkspace = ({
           value={name}
           onChange={e => onUpdateForm({ name: e.target.value })}
         />
-        <TextField
-          id="outlined-full-width"
-          label={t('EditWorkspace.Port')}
-          helperText={`${t('EditWorkspace.URL')}: ${homeUrl}`}
-          error={Boolean(homeUrlError)}
-          placeholder="Optional"
-          fullWidth
-          margin="dense"
-          variant="outlined"
-          className={classes.textField}
-          InputLabelProps={{
-            shrink: true,
-          }}
-          value={port}
-          onChange={event =>
-            onUpdateForm({ port: event.target.value, homeUrl: `http://localhost:${event.target.value}/` })
-          }
-        />
+        {!isSubWiki && (
+          <TextField
+            id="outlined-full-width"
+            label={t('EditWorkspace.Port')}
+            helperText={`${t('EditWorkspace.URL')}: ${homeUrl}`}
+            error={Boolean(homeUrlError)}
+            placeholder="Optional"
+            fullWidth
+            margin="dense"
+            variant="outlined"
+            className={classes.textField}
+            InputLabelProps={{
+              shrink: true,
+            }}
+            value={port}
+            onChange={event =>
+              onUpdateForm({ port: event.target.value, homeUrl: `http://localhost:${event.target.value}/` })
+            }
+          />
+        )}
         <Autocomplete
           freeSolo
           options={fileSystemPaths.map(fileSystemPath => fileSystemPath.tagName)}
@@ -240,45 +243,50 @@ const EditWorkspace = ({
             </FormGroup> */}
           </div>
         </div>
-        <List>
-          <Divider />
-          <ListItem disableGutters>
-            <ListItemText primary={t('EditWorkspace.HibernateTitle')} secondary={t('EditWorkspace.Hibernate')} />
-            <ListItemSecondaryAction>
-              <Switch
-                edge="end"
-                color="primary"
-                checked={hibernateWhenUnused}
-                onChange={e => onUpdateForm({ hibernateWhenUnused: e.target.checked })}
+        {!isSubWiki && (
+          <List>
+            <Divider />
+            <ListItem disableGutters>
+              <ListItemText primary={t('EditWorkspace.HibernateTitle')} secondary={t('EditWorkspace.Hibernate')} />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={hibernateWhenUnused}
+                  onChange={e => onUpdateForm({ hibernateWhenUnused: e.target.checked })}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary={t('EditWorkspace.DisableNotificationTitle')}
+                secondary={t('EditWorkspace.DisableNotification')}
               />
-            </ListItemSecondaryAction>
-          </ListItem>
-          <ListItem disableGutters>
-            <ListItemText
-              primary={t('EditWorkspace.DisableNotificationTitle')}
-              secondary={t('EditWorkspace.DisableNotification')}
-            />
-            <ListItemSecondaryAction>
-              <Switch
-                edge="end"
-                color="primary"
-                checked={disableNotifications}
-                onChange={e => onUpdateForm({ disableNotifications: e.target.checked })}
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={disableNotifications}
+                  onChange={e => onUpdateForm({ disableNotifications: e.target.checked })}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText
+                primary={t('EditWorkspace.DisableAudioTitle')}
+                secondary={t('EditWorkspace.DisableAudio')}
               />
-            </ListItemSecondaryAction>
-          </ListItem>
-          <ListItem disableGutters>
-            <ListItemText primary={t('EditWorkspace.DisableAudioTitle')} secondary={t('EditWorkspace.DisableAudio')} />
-            <ListItemSecondaryAction>
-              <Switch
-                edge="end"
-                color="primary"
-                checked={disableAudio}
-                onChange={e => onUpdateForm({ disableAudio: e.target.checked })}
-              />
-            </ListItemSecondaryAction>
-          </ListItem>
-        </List>
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={disableAudio}
+                  onChange={e => onUpdateForm({ disableAudio: e.target.checked })}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+          </List>
+        )}
       </div>
       <div>
         <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
@@ -323,6 +331,7 @@ EditWorkspace.propTypes = {
   onUpdateForm: PropTypes.func.isRequired,
   picturePath: PropTypes.string,
   transparentBackground: PropTypes.bool.isRequired,
+  isSubWiki: PropTypes.bool,
 };
 
 const mapStateToProps = state => ({
@@ -342,6 +351,7 @@ const mapStateToProps = state => ({
   nameError: state.dialogEditWorkspace.form.nameError,
   picturePath: state.dialogEditWorkspace.form.picturePath,
   transparentBackground: Boolean(state.dialogEditWorkspace.form.transparentBackground),
+  isSubWiki: state.workspaces?.[state.dialogEditWorkspace.form.id]?.isSubWiki || true,
 });
 
 const actionCreators = {

@@ -163,7 +163,7 @@ const styles = theme => ({
 const SortableItem = withTranslation()(
   sortableElement(({ value, t }) => {
     const { index, workspace } = value;
-    const { active, id, name, picturePath, hibernated, transparentBackground } = workspace;
+    const { active, id, name, picturePath, hibernated, transparentBackground, isSubWiki } = workspace;
     return (
       <WorkspaceSelector
         active={active}
@@ -174,7 +174,7 @@ const SortableItem = withTranslation()(
         transparentBackground={transparentBackground}
         order={index}
         hibernated={hibernated}
-        onClick={() => requestSetActiveWorkspace(id)}
+        onClick={() => !isSubWiki && requestSetActiveWorkspace(id)}
         onContextMenu={e => {
           e.preventDefault();
 
@@ -189,7 +189,7 @@ const SortableItem = withTranslation()(
             },
           ];
 
-          if (!active) {
+          if (!active && !isSubWiki) {
             template.splice(1, 0, {
               label: hibernated ? 'Wake Up Workspace' : 'Hibernate Workspace',
               click: () => {
