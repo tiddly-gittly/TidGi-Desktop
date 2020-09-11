@@ -104,7 +104,8 @@ const isInternalUrl = (url, currentInternalUrls) => {
 };
 
 const addView = (browserWindow, workspace) => {
-  if (views[workspace.id] != null) return;
+  if (views[workspace.id]) return;
+  if (workspace.isSubWiki) return;
 
   const {
     blockAds,
