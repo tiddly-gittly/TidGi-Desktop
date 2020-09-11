@@ -1,13 +1,5 @@
 /* eslint-disable no-param-reassign */
-const {
-  BrowserView,
-  BrowserWindow,
-  app,
-  session,
-  shell,
-  dialog,
-  ipcMain,
-} = require('electron');
+const { BrowserView, BrowserWindow, app, session, shell, dialog, ipcMain } = require('electron');
 const path = require('path');
 const fsExtra = require('fs-extra');
 const { ElectronBlocker } = require('@cliqz/adblocker-electron');
@@ -15,15 +7,8 @@ const { ElectronBlocker } = require('@cliqz/adblocker-electron');
 const i18n = require('./i18n');
 const wikiStartup = require('./wiki/wiki-startup');
 const { getPreferences, getPreference } = require('./preferences');
-const {
-  getWorkspace,
-  setWorkspace,
-} = require('./workspaces');
-const {
-  setWorkspaceMeta,
-  getWorkspaceMetas,
-  getWorkspaceMeta,
-} = require('./workspace-metas');
+const { getWorkspace, setWorkspace } = require('./workspaces');
+const { setWorkspaceMeta, getWorkspaceMetas, getWorkspaceMeta } = require('./workspace-metas');
 
 const sendToAllWindows = require('./send-to-all-windows');
 const getViewBounds = require('./get-view-bounds');
@@ -33,7 +18,7 @@ const views = {};
 let shouldMuteAudio;
 let shouldPauseNotifications;
 
-const extractDomain = (fullUrl) => {
+const extractDomain = fullUrl => {
   const matches = fullUrl.match(/^https?:\/\/([^/?#]+)(?:[/?#]|$)/i);
   const domain = matches && matches[1];
   // https://stackoverflow.com/a/9928725
@@ -41,12 +26,12 @@ const extractDomain = (fullUrl) => {
 };
 
 // https://stackoverflow.com/a/14645182
-const isSubdomain = (url) => {
+const isSubdomain = url => {
   const regex = new RegExp(/^([a-z]+:\/{2})?([\w-]+\.[\w-]+\.\w+)$/);
   return !!url.match(regex); // make sure it returns boolean
 };
 
-const equivalentDomain = (domain) => {
+const equivalentDomain = domain => {
   if (!domain) return null;
 
   let eDomain = domain;
@@ -59,7 +44,7 @@ const equivalentDomain = (domain) => {
   // open.spotify.com ~ spotify.com
 
   // remove one by one not to break domain
-  prefixes.forEach((prefix) => {
+  prefixes.forEach(prefix => {
     // check if subdomain, if not return the domain
     if (isSubdomain(eDomain)) {
       // https://stackoverflow.com/a/9928725
@@ -87,7 +72,7 @@ const isInternalUrl = (url, currentInternalUrls) => {
   }
 
   const domain = equivalentDomain(extractDomain(url));
-  const matchedInternalUrl = currentInternalUrls.find((internalUrl) => {
+  const matchedInternalUrl = currentInternalUrls.find(internalUrl => {
     const internalDomain = equivalentDomain(extractDomain(internalUrl));
 
     // Ex: music.yandex.ru => passport.yandex.ru?retpath=....music.yandex.ru
@@ -124,7 +109,8 @@ const addView = (browserWindow, workspace) => {
   // configure session, proxy & ad blocker
   const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
   const userInfo = getPreference('github-user-info');
-  if (!userInfo) { // user not logined into Github
+  if (!userInfo) {
+    // user not logined into Github
     dialog.showMessageBox(browserWindow, {
       title: i18n.t('Dialog.GithubUserInfoNoFound'),
       message: i18n.t('Dialog.GithubUserInfoNoFoundDetail'),
@@ -155,7 +141,7 @@ const addView = (browserWindow, workspace) => {
       path: path.join(app.getPath('userData'), 'adblocker.bin'),
       read: fsExtra.readFile,
       write: fsExtra.writeFile,
-    }).then((blocker) => {
+    }).then(blocker => {
       blocker.enableBlockingInSession(ses);
     });
   }
@@ -233,8 +219,8 @@ const addView = (browserWindow, workspace) => {
     const appDomain = extractDomain(appUrl);
     const currentDomain = extractDomain(currentUrl);
     if (
-      (appDomain.includes('github.com') || currentDomain.includes('github.com'))
-      && !isInternalUrl(nextUrl, [appUrl, currentUrl])
+      (appDomain.includes('github.com') || currentDomain.includes('github.com')) &&
+      !isInternalUrl(nextUrl, [appUrl, currentUrl])
     ) {
       e.preventDefault();
       shell.openExternal(nextUrl);
@@ -255,7 +241,8 @@ const addView = (browserWindow, workspace) => {
       if (getWorkspaceMeta(workspace.id).didFailLoad) {
         // show browserView again when reloading after error
         // see did-fail-load event
-        if (browserWindow && !browserWindow.isDestroyed()) { // fix https://github.com/atomery/singlebox/issues/228
+        if (browserWindow && !browserWindow.isDestroyed()) {
+          // fix https://github.com/atomery/singlebox/issues/228
           const contentSize = browserWindow.getContentSize();
           view.setBounds(getViewBounds(contentSize));
         }
@@ -316,11 +303,10 @@ const addView = (browserWindow, workspace) => {
         // isLoading: false, // isLoading is now controlled by wiki-worker-manager.js
       });
       if (workspaceObj.active) {
-        if (browserWindow && !browserWindow.isDestroyed()) { // fix https://github.com/atomery/singlebox/issues/228
+        if (browserWindow && !browserWindow.isDestroyed()) {
+          // fix https://github.com/atomery/singlebox/issues/228
           const contentSize = browserWindow.getContentSize();
-          view.setBounds(
-            getViewBounds(contentSize, false, 0, 0),
-          ); // hide browserView to show error message
+          view.setBounds(getViewBounds(contentSize, false, 0, 0)); // hide browserView to show error message
         }
       }
     }
@@ -405,12 +391,14 @@ const addView = (browserWindow, workspace) => {
       // options is undefined
       // https://github.com/atomery/webcatalog/issues/842
       const cmdClick = Boolean(!options);
-      const newOptions = cmdClick ? {
-        show: true,
-        width: 800,
-        height: 600,
-        webPreferences: sharedWebPreferences,
-      } : options;
+      const newOptions = cmdClick
+        ? {
+            show: true,
+            width: 1200,
+            height: 800,
+            webPreferences: sharedWebPreferences,
+          }
+        : { ...options, width: 1200, height: 800 };
       const popupWin = new BrowserWindow(newOptions);
       // WebCatalog internal value to determine whether BrowserWindow is popup
       popupWin.isPopup = true;
@@ -450,32 +438,28 @@ const addView = (browserWindow, workspace) => {
     // or if in Google Drive app, open Google Docs files internally https://github.com/atomery/webcatalog/issues/800
     // the next external link request will be opened in new window
     if (
-      global.forceNewWindow
-      || disposition === 'new-window'
-      || disposition === 'default'
-      || (appDomain === 'drive.google.com' && nextDomain === 'docs.google.com')
+      global.forceNewWindow ||
+      disposition === 'new-window' ||
+      disposition === 'default' ||
+      (appDomain === 'drive.google.com' && nextDomain === 'docs.google.com')
     ) {
       global.forceNewWindow = false;
       openInNewWindow();
       return;
     }
 
-
     // load in same window
     if (
       // Google: Add account
-      nextDomain === 'accounts.google.com'
+      nextDomain === 'accounts.google.com' ||
       // Google: Switch account
-      || (
-        nextDomain && nextDomain.indexOf('google.com') > 0
-        && isInternalUrl(nextUrl, [appUrl, currentUrl])
-        && (
-          (nextUrl.indexOf('authuser=') > -1) // https://drive.google.com/drive/u/1/priority?authuser=2 (has authuser query)
-          || (/\/u\/[0-9]+\/{0,1}$/.test(nextUrl)) // https://mail.google.com/mail/u/1/ (ends with /u/1/)
-        )
-      )
+      (nextDomain &&
+        nextDomain.indexOf('google.com') > 0 &&
+        isInternalUrl(nextUrl, [appUrl, currentUrl]) &&
+        (nextUrl.indexOf('authuser=') > -1 || // https://drive.google.com/drive/u/1/priority?authuser=2 (has authuser query)
+          /\/u\/[0-9]+\/{0,1}$/.test(nextUrl))) || // https://mail.google.com/mail/u/1/ (ends with /u/1/)
       // https://github.com/atomery/webcatalog/issues/315
-      || ((appDomain.includes('asana.com') || currentDomain.includes('asana.com')) && nextDomain.includes('asana.com'))
+      ((appDomain.includes('asana.com') || currentDomain.includes('asana.com')) && nextDomain.includes('asana.com'))
     ) {
       e.preventDefault();
       adjustUserAgentByUrl(e.sender.webContents, nextUrl);
@@ -493,9 +477,9 @@ const addView = (browserWindow, workspace) => {
     // if popup window is not opened and loaded, Roam crashes (shows white page)
     // https://github.com/atomery/webcatalog/issues/793
     if (
-      appDomain === 'roamresearch.com'
-      && nextDomain != null
-      && (disposition === 'foreground-tab' || disposition === 'background-tab')
+      appDomain === 'roamresearch.com' &&
+      nextDomain != null &&
+      (disposition === 'foreground-tab' || disposition === 'background-tab')
     ) {
       e.preventDefault();
       shell.openExternal(nextUrl);
@@ -517,10 +501,7 @@ const addView = (browserWindow, workspace) => {
     }
 
     // open external url in browser
-    if (
-      nextDomain != null
-      && (disposition === 'foreground-tab' || disposition === 'background-tab')
-    ) {
+    if (nextDomain != null && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
       e.preventDefault();
       shell.openExternal(nextUrl);
       return;
@@ -529,10 +510,7 @@ const addView = (browserWindow, workspace) => {
     // App tries to open external link using JS
     // nextURL === 'about:blank' but then window will redirect to the external URL
     // https://github.com/quanglam2807/webcatalog/issues/467#issuecomment-569857721
-    if (
-      nextDomain === null
-      && (disposition === 'foreground-tab' || disposition === 'background-tab')
-    ) {
+    if (nextDomain === null && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
       e.preventDefault();
       const newOptions = {
         ...options,
@@ -545,7 +523,8 @@ const addView = (browserWindow, workspace) => {
         // if the window is used for the current app, then use default behavior
         if (isInternalUrl(url, [appUrl, currentUrl])) {
           popupWin.show();
-        } else { // if not, open in browser
+        } else {
+          // if not, open in browser
           e.preventDefault();
           shell.openExternal(url);
           popupWin.close();
@@ -559,10 +538,7 @@ const addView = (browserWindow, workspace) => {
   // Handle downloads
   // https://electronjs.org/docs/api/download-item
   view.webContents.session.on('will-download', (event, item) => {
-    const {
-      askForDownloadPath,
-      downloadPath,
-    } = getPreferences();
+    const { askForDownloadPath, downloadPath } = getPreferences();
 
     // Set the save path, making Electron not to prompt a save dialog.
     if (!askForDownloadPath) {
@@ -595,7 +571,7 @@ const addView = (browserWindow, workspace) => {
 
       let count = 0;
       const metas = getWorkspaceMetas();
-      Object.values(metas).forEach((m) => {
+      Object.values(metas).forEach(m => {
         if (m && m.badgeCount) {
           count += m.badgeCount;
         }
@@ -635,7 +611,10 @@ const addView = (browserWindow, workspace) => {
     view.webContents.audioMuted = shouldMuteAudio;
   }
   view.webContents.once('did-stop-loading', () => {
-    view.webContents.send('should-pause-notifications-changed', workspace.disableNotifications || shouldPauseNotifications);
+    view.webContents.send(
+      'should-pause-notifications-changed',
+      workspace.disableNotifications || shouldPauseNotifications,
+    );
   });
 
   views[workspace.id] = view;
@@ -650,14 +629,13 @@ const addView = (browserWindow, workspace) => {
     });
   }
 
-  const initialUrl = (rememberLastPageVisited && workspace.lastUrl)
-  || workspace.homeUrl;
+  const initialUrl = (rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl;
   adjustUserAgentByUrl(view.webContents, initialUrl);
   view.webContents.loadURL(initialUrl);
 };
 
-const getView = (id) => views[id];
-const onEachView = (functionToRun) => Object.keys(views).forEach(key => functionToRun(views[key]));
+const getView = id => views[id];
+const onEachView = functionToRun => Object.keys(views).forEach(key => functionToRun(views[key]));
 
 const setActiveView = (browserWindow, id) => {
   // stop find in page when switching workspaces
@@ -676,9 +654,7 @@ const setActiveView = (browserWindow, id) => {
     const contentSize = browserWindow.getContentSize();
 
     if (getWorkspaceMeta(id).didFailLoad) {
-      view.setBounds(
-        getViewBounds(contentSize, false, 0, 0),
-      ); // hide browserView to show error message
+      view.setBounds(getViewBounds(contentSize, false, 0, 0)); // hide browserView to show error message
     } else {
       view.setBounds(getViewBounds(contentSize));
     }
@@ -697,7 +673,7 @@ const setActiveView = (browserWindow, id) => {
   }
 };
 
-const removeView = (id) => {
+const removeView = id => {
   const view = views[id];
   session.fromPartition(`persist:${id}`).clearStorageData();
   if (view != null) {
@@ -706,11 +682,11 @@ const removeView = (id) => {
   delete views[id];
 };
 
-const setViewsAudioPref = (_shouldMuteAudio) => {
+const setViewsAudioPref = _shouldMuteAudio => {
   if (_shouldMuteAudio !== undefined) {
     shouldMuteAudio = _shouldMuteAudio;
   }
-  Object.keys(views).forEach((id) => {
+  Object.keys(views).forEach(id => {
     const view = views[id];
     if (view != null) {
       const workspace = getWorkspace(id);
@@ -719,11 +695,11 @@ const setViewsAudioPref = (_shouldMuteAudio) => {
   });
 };
 
-const setViewsNotificationsPref = (_shouldPauseNotifications) => {
+const setViewsNotificationsPref = _shouldPauseNotifications => {
   if (_shouldPauseNotifications !== undefined) {
     shouldPauseNotifications = _shouldPauseNotifications;
   }
-  Object.keys(views).forEach((id) => {
+  Object.keys(views).forEach(id => {
     const view = views[id];
     if (view != null) {
       const workspace = getWorkspace(id);
@@ -735,7 +711,7 @@ const setViewsNotificationsPref = (_shouldPauseNotifications) => {
   });
 };
 
-const hibernateView = (id) => {
+const hibernateView = id => {
   if (views[id] != null) {
     views[id].destroy();
     views[id] = null;
@@ -743,7 +719,7 @@ const hibernateView = (id) => {
 };
 
 const reloadViewsDarkReader = () => {
-  Object.keys(views).forEach((id) => {
+  Object.keys(views).forEach(id => {
     const view = views[id];
     if (view != null) {
       view.webContents.send('reload-dark-reader');
@@ -753,7 +729,7 @@ const reloadViewsDarkReader = () => {
 
 const reloadViewsWebContentsIfDidFailLoad = () => {
   const metas = getWorkspaceMetas();
-  Object.keys(metas).forEach((id) => {
+  Object.keys(metas).forEach(id => {
     if (!metas[id].didFailLoad) return;
 
     const view = views[id];
@@ -765,7 +741,7 @@ const reloadViewsWebContentsIfDidFailLoad = () => {
 
 const reloadViewsWebContents = () => {
   const metas = getWorkspaceMetas();
-  Object.keys(metas).forEach((id) => {
+  Object.keys(metas).forEach(id => {
     const view = views[id];
     if (view != null) {
       view.webContents.reload();
