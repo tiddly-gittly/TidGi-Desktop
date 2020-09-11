@@ -3,6 +3,7 @@ const { ipcRenderer, remote, webFrame } = require('electron');
 const { enable: enableDarkMode, disable: disableDarkMode } = require('darkreader');
 
 const ContextMenuBuilder = require('../libs/context-menu-builder');
+const i18next = require('../libs/i18n');
 
 const { MenuItem, shell } = remote;
 
@@ -85,7 +86,7 @@ const handleLoaded = event => {
 
         menu.append(
           new MenuItem({
-            label: 'Open Link in New Window',
+            label: i18next.t('ContextMenu.OpenLinkInNewWindow'),
             click: () => {
               ipcRenderer.send('request-set-global-force-new-window', true);
               window.open(info.linkURL);
@@ -94,29 +95,13 @@ const handleLoaded = event => {
         );
 
         menu.append(new MenuItem({ type: 'separator' }));
-
-        const workspaces = ipcRenderer.sendSync('get-workspaces');
-
-        const workspaceLst = Object.values(workspaces).sort((a, b) => a.order - b.order);
-
-        workspaceLst.forEach(workspace => {
-          const workspaceName = workspace.name || `Workspace ${workspace.order + 1}`;
-          menu.append(
-            new MenuItem({
-              label: `Open Link in ${workspaceName}`,
-              click: () => {
-                ipcRenderer.send('request-open-url-in-workspace', info.linkURL, workspace.id);
-              },
-            }),
-          );
-        });
       }
 
       const contents = remote.getCurrentWebContents();
       menu.append(new MenuItem({ type: 'separator' }));
       menu.append(
         new MenuItem({
-          label: 'Back',
+          label: i18next.t('ContextMenu.Back'),
           enabled: contents.canGoBack(),
           click: () => {
             contents.goBack();
@@ -125,7 +110,7 @@ const handleLoaded = event => {
       );
       menu.append(
         new MenuItem({
-          label: 'Forward',
+          label: i18next.t('ContextMenu.Forward'),
           enabled: contents.canGoForward(),
           click: () => {
             contents.goForward();
@@ -134,7 +119,7 @@ const handleLoaded = event => {
       );
       menu.append(
         new MenuItem({
-          label: 'Reload',
+          label: i18next.t('ContextMenu.Reload'),
           click: () => {
             contents.reload();
           },
@@ -145,33 +130,33 @@ const handleLoaded = event => {
 
       menu.append(
         new MenuItem({
-          label: 'More',
+          label: i18next.t('ContextMenu.More'),
           submenu: [
             {
-              label: 'About',
+              label: i18next.t('ContextMenu.About'),
               click: () => ipcRenderer.send('request-show-about-window'),
             },
             { type: 'separator' },
             {
-              label: 'Check for Updates',
+              label: i18next.t('ContextMenu.CheckForUpdates'),
               click: () => ipcRenderer.send('request-check-for-updates'),
             },
             {
-              label: 'Preferences...',
+              label: i18next.t('ContextMenu.Preferences'),
               click: () => ipcRenderer.send('request-show-preferences-window'),
             },
             { type: 'separator' },
             {
-              label: 'TiddlyGit Support',
+              label: i18next.t('ContextMenu.TiddlyGitSupport'),
               click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose'),
             },
             {
-              label: 'TiddlyGit Website',
+              label: i18next.t('ContextMenu.TiddlyGitWebsite'),
               click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop'),
             },
             { type: 'separator' },
             {
-              label: 'Quit',
+              label: i18next.t('ContextMenu.Quit'),
               click: () => ipcRenderer.send('request-quit'),
             },
           ],

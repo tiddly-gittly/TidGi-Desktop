@@ -6,6 +6,7 @@
 // https://github.com/electron-userland/electron-spellchecker/blob/master/src/context-menu-builder.js
 
 const { clipboard, nativeImage, shell, remote } = require('electron');
+const i18next = require('./i18n');
 
 const { Menu, MenuItem } = remote;
 
@@ -31,19 +32,19 @@ const matchesWord = string => {
 };
 
 const contextMenuStringTable = {
-  copyMail: () => 'Copy Email Address',
-  copyLinkUrl: () => 'Copy Link',
-  openLinkUrl: () => 'Open Link in Browser',
-  copyImageUrl: () => 'Copy Image URL',
-  copyImage: () => 'Copy Image',
-  addToDictionary: () => 'Add to Dictionary',
-  lookUpDefinition: ({ word }) => `Look Up "${word}"`,
-  searchGoogle: () => 'Search with Google',
-  cut: () => 'Cut',
-  copy: () => 'Copy',
-  paste: () => 'Paste',
-  inspectElement: () => 'Inspect Element',
-  developerTools: () => 'Developer Tools',
+  copyMail: () => i18next.t('ContextMenu.CopyEmailAddress'),
+  copyLinkUrl: () => i18next.t('ContextMenu.CopyLink'),
+  openLinkUrl: () => i18next.t('ContextMenu.OpenLinkInBrowser'),
+  copyImageUrl: () => i18next.t('ContextMenu.CopyImageURL'),
+  copyImage: () => i18next.t('ContextMenu.CopyImage'),
+  addToDictionary: () => i18next.t('ContextMenu.AddToDictionary'),
+  lookUpDefinition: ({ word }) => i18next.t('ContextMenu.LookUp', { word }),
+  searchGoogle: () => i18next.t('ContextMenu.SearchWithGoogle'),
+  cut: () => i18next.t('ContextMenu.Cut'),
+  copy: () => i18next.t('ContextMenu.Copy'),
+  paste: () => i18next.t('ContextMenu.Paste'),
+  inspectElement: () => i18next.t('ContextMenu.InspectElement'),
+  developerTools: () => i18next.t('ContextMenu.DeveloperTools'),
 };
 
 /**
