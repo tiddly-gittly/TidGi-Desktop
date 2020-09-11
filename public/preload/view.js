@@ -1,13 +1,6 @@
-const {
-  ipcRenderer,
-  remote,
-  webFrame,
-} = require('electron');
+const { ipcRenderer, remote, webFrame } = require('electron');
 
-const {
-  enable: enableDarkMode,
-  disable: disableDarkMode,
-} = require('darkreader');
+const { enable: enableDarkMode, disable: disableDarkMode } = require('darkreader');
 
 const ContextMenuBuilder = require('../libs/context-menu-builder');
 
@@ -16,7 +9,7 @@ const { MenuItem, shell } = remote;
 window.global = {};
 
 let handled = false;
-const handleLoaded = (event) => {
+const handleLoaded = event => {
   if (handled) return;
   // eslint-disable-next-line no-console
   console.log(`Preload script is loading on ${event}...`);
@@ -25,12 +18,9 @@ const handleLoaded = (event) => {
     const shouldUseDarkColor = ipcRenderer.sendSync('get-should-use-dark-colors');
     const darkReader = ipcRenderer.sendSync('get-preference', 'darkReader');
     if (shouldUseDarkColor && darkReader) {
-      const {
-        darkReaderBrightness,
-        darkReaderContrast,
-        darkReaderGrayscale,
-        darkReaderSepia,
-      } = ipcRenderer.sendSync('get-preferences');
+      const { darkReaderBrightness, darkReaderContrast, darkReaderGrayscale, darkReaderSepia } = ipcRenderer.sendSync(
+        'get-preferences',
+      );
       enableDarkMode({
         brightness: darkReaderBrightness,
         contrast: darkReaderContrast,
@@ -55,10 +45,7 @@ const handleLoaded = (event) => {
     if (allowNodeInJsCodeInjection) {
       try {
         // eslint-disable-next-line no-new-func
-        Function(
-          'require',
-          `"use strict";${jsCodeInjection}`,
-        )(require);
+        Function('require', `"use strict";${jsCodeInjection}`)(require);
       } catch (err) {
         /* eslint-disable no-console */
         console.log(err);
@@ -91,105 +78,114 @@ const handleLoaded = (event) => {
 
   remote.getCurrentWebContents().on('context-menu', (e, info) => {
     // eslint-disable-next-line promise/catch-or-return
-    window.contextMenuBuilder.buildMenuForElement(info)
-      .then((menu) => {
-        // eslint-disable-next-line promise/always-return
-        if (info.linkURL && info.linkURL.length > 0) {
-          menu.append(new MenuItem({ type: 'separator' }));
+    window.contextMenuBuilder.buildMenuForElement(info).then(menu => {
+      // eslint-disable-next-line promise/always-return
+      if (info.linkURL && info.linkURL.length > 0) {
+        menu.append(new MenuItem({ type: 'separator' }));
 
-          menu.append(new MenuItem({
+        menu.append(
+          new MenuItem({
             label: 'Open Link in New Window',
             click: () => {
               ipcRenderer.send('request-set-global-force-new-window', true);
               window.open(info.linkURL);
             },
-          }));
+          }),
+        );
 
-          menu.append(new MenuItem({ type: 'separator' }));
+        menu.append(new MenuItem({ type: 'separator' }));
 
-          const workspaces = ipcRenderer.sendSync('get-workspaces');
+        const workspaces = ipcRenderer.sendSync('get-workspaces');
 
-          const workspaceLst = Object.values(workspaces).sort((a, b) => a.order - b.order);
+        const workspaceLst = Object.values(workspaces).sort((a, b) => a.order - b.order);
 
-          workspaceLst.forEach((workspace) => {
-            const workspaceName = workspace.name || `Workspace ${workspace.order + 1}`;
-            menu.append(new MenuItem({
+        workspaceLst.forEach(workspace => {
+          const workspaceName = workspace.name || `Workspace ${workspace.order + 1}`;
+          menu.append(
+            new MenuItem({
               label: `Open Link in ${workspaceName}`,
               click: () => {
                 ipcRenderer.send('request-open-url-in-workspace', info.linkURL, workspace.id);
               },
-            }));
-          });
-        }
+            }),
+          );
+        });
+      }
 
-        const contents = remote.getCurrentWebContents();
-        menu.append(new MenuItem({ type: 'separator' }));
-        menu.append(new MenuItem({
+      const contents = remote.getCurrentWebContents();
+      menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(
+        new MenuItem({
           label: 'Back',
           enabled: contents.canGoBack(),
           click: () => {
             contents.goBack();
           },
-        }));
-        menu.append(new MenuItem({
+        }),
+      );
+      menu.append(
+        new MenuItem({
           label: 'Forward',
           enabled: contents.canGoForward(),
           click: () => {
             contents.goForward();
           },
-        }));
-        menu.append(new MenuItem({
+        }),
+      );
+      menu.append(
+        new MenuItem({
           label: 'Reload',
           click: () => {
             contents.reload();
           },
-        }));
+        }),
+      );
 
-        menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(new MenuItem({ type: 'separator' }));
 
-        menu.append(
-          new MenuItem({
-            label: 'More',
-            submenu: [
-              {
-                label: 'About',
-                click: () => ipcRenderer.send('request-show-about-window'),
-              },
-              { type: 'separator' },
-              {
-                label: 'Check for Updates',
-                click: () => ipcRenderer.send('request-check-for-updates'),
-              },
-              {
-                label: 'Preferences...',
-                click: () => ipcRenderer.send('request-show-preferences-window'),
-              },
-              { type: 'separator' },
-              {
-                label: 'TiddlyGit Support',
-                click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose'),
-              },
-              {
-                label: 'TiddlyGit Website',
-                click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop'),
-              },
-              { type: 'separator' },
-              {
-                label: 'Quit',
-                click: () => ipcRenderer.send('request-quit'),
-              },
-            ],
-          }),
-        );
+      menu.append(
+        new MenuItem({
+          label: 'More',
+          submenu: [
+            {
+              label: 'About',
+              click: () => ipcRenderer.send('request-show-about-window'),
+            },
+            { type: 'separator' },
+            {
+              label: 'Check for Updates',
+              click: () => ipcRenderer.send('request-check-for-updates'),
+            },
+            {
+              label: 'Preferences...',
+              click: () => ipcRenderer.send('request-show-preferences-window'),
+            },
+            { type: 'separator' },
+            {
+              label: 'TiddlyGit Support',
+              click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose'),
+            },
+            {
+              label: 'TiddlyGit Website',
+              click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop'),
+            },
+            { type: 'separator' },
+            {
+              label: 'Quit',
+              click: () => ipcRenderer.send('request-quit'),
+            },
+          ],
+        }),
+      );
 
-
-        menu.popup(remote.getCurrentWindow());
-      });
+      menu.popup(remote.getCurrentWindow());
+    });
   });
 
   // Link preview
   const linkPreview = document.createElement('div');
-  linkPreview.style.cssText = 'max-width: 80vw;height: 22px;position: fixed;bottom: -1px;right: -1px;z-index: 1000000;background-color: rgb(245, 245, 245);border-radius: 2px;border: #9E9E9E  1px solid;font-size: 12.5px;color: rgb(0, 0, 0);padding: 0px 8px;line-height: 22px;font-family: -apple-system, system-ui, BlinkMacSystemFont, sans-serif;white-space: nowrap;text-overflow: ellipsis;overflow: hidden; pointer-events:none;';
+  linkPreview.style.cssText =
+    'max-width: 80vw;height: 22px;position: fixed;bottom: -1px;right: -1px;z-index: 1000000;background-color: rgb(245, 245, 245);border-radius: 2px;border: #9E9E9E  1px solid;font-size: 12.5px;color: rgb(0, 0, 0);padding: 0px 8px;line-height: 22px;font-family: -apple-system, system-ui, BlinkMacSystemFont, sans-serif;white-space: nowrap;text-overflow: ellipsis;overflow: hidden; pointer-events:none;';
   ipcRenderer.on('update-target-url', (e, url) => {
     if (url && document.body) {
       linkPreview.innerText = url;
@@ -222,7 +218,7 @@ ipcRenderer.on('display-media-id-received', (e, val) => {
   window.postMessage({ type: 'return-display-media-id', val });
 });
 
-window.addEventListener('message', (e) => {
+window.addEventListener('message', e => {
   if (!e.data) return;
 
   if (e.data.type === 'get-display-media-id') {
@@ -242,7 +238,6 @@ ipcRenderer.on('wiki-sync-progress', (event, message) => {
     $tw.notifier.display('$:/state/notification/wiki-sync-progress');
   `);
 });
-
 
 // Fix Can't show file list of Google Drive
 // https://github.com/electron/electron/issues/16587

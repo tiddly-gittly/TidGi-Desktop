@@ -348,10 +348,6 @@ function createMenu() {
           click: () => shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues/new?template=feature.md&title=feature%3A+'),
         },
         {
-          label: 'Submit New App to Catalog...',
-          click: () => shell.openExternal('https://github.com/atomery/catalog/issues'),
-        },
-        {
           label: 'Learn More...',
           click: () => shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/'),
         },
