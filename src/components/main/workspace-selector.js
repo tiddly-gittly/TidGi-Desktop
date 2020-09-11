@@ -1,7 +1,8 @@
+// @flow
 import React from 'react';
-import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
+import { basename } from 'path';
 
 import Badge from '@material-ui/core/Badge';
 
@@ -11,8 +12,9 @@ import defaultIcon from '../../images/default-icon.png';
 
 const styles = theme => ({
   root: {
-    height: 68,
+    height: 'fit-content',
     width: 68,
+    padding: '10px 0',
     display: 'flex',
     alignItems: 'center',
     justifyContent: 'center',
@@ -82,6 +84,8 @@ const styles = theme => ({
     padding: 0,
     fontSize: '12px',
     fontWeight: 500,
+    display: 'inline-block',
+    wordBreak: 'break-all',
     color: theme.palette.text.primary,
   },
   badge: {
@@ -89,26 +93,44 @@ const styles = theme => ({
   },
 });
 
+type Props = {
+  active: boolean,
+  badgeCount: number,
+  classes: Object,
+  hibernated: boolean,
+  id: string,
+  onClick: Function,
+  onContextMenu: Function,
+  order: number,
+  picturePath: string,
+  sidebarShortcutHints: boolean,
+  transparentBackground: boolean,
+  workspaceName?: string,
+};
+
 function WorkspaceSelector({
-  active,
-  badgeCount,
+  active = false,
+  badgeCount = 0,
   classes,
-  hibernated,
+  hibernated = false,
   id,
-  onClick,
-  onContextMenu,
-  order,
+  onClick = () => {},
+  onContextMenu = () => {},
+  order = 0,
   picturePath,
   sidebarShortcutHints,
-  transparentBackground,
-}) {
+  transparentBackground = false,
+  workspaceName,
+}: Props) {
   const { t } = useTranslation();
+
+  const shortWorkspaceName = workspaceName ? basename(workspaceName) : t('WorkspaceSelector.BadWorkspacePath');
   return (
     <div
       role="button"
       className={classNames(classes.root, hibernated && classes.rootHibernate, active && classes.rootActive)}
       onClick={onClick}
-      onKeyDown={null}
+      onKeyDown={onClick}
       onContextMenu={onContextMenu}
       tabIndex="0"
     >
@@ -134,41 +156,18 @@ function WorkspaceSelector({
         </div>
       </Badge>
       {sidebarShortcutHints && (id === 'add' || order < 9) && (
-        <p className={classes.shortcutText}>
-          {id === 'add' ? t('WorkspaceSelector.Add') : `${window.remote.getPlatform() === 'darwin' ? '⌘' : 'Ctrl'} + ${order + 1}`}
-        </p>
+          <p className={classes.shortcutText}>{id === 'add' ? t('WorkspaceSelector.Add') : shortWorkspaceName}</p>
       )}
     </div>
   );
 }
 
-WorkspaceSelector.defaultProps = {
-  active: false,
-  badgeCount: 0,
-  hibernated: false,
-  onContextMenu: null,
-  order: 0,
-  picturePath: null,
-  transparentBackground: false,
+const mapStateToProps = (state, ownProps) => {
+  return {
+    badgeCount: state.workspaceMetas[ownProps.id] ? state.workspaceMetas[ownProps.id].badgeCount : 0,
+    workspaceName: state.workspaces?.[ownProps.id]?.name,
+    sidebarShortcutHints: state.preferences.sidebarShortcutHints,
+  };
 };
 
-WorkspaceSelector.propTypes = {
-  active: PropTypes.bool,
-  badgeCount: PropTypes.number,
-  classes: PropTypes.object.isRequired,
-  hibernated: PropTypes.bool,
-  id: PropTypes.string.isRequired,
-  onClick: PropTypes.func.isRequired,
-  onContextMenu: PropTypes.func,
-  order: PropTypes.number,
-  picturePath: PropTypes.string,
-  sidebarShortcutHints: PropTypes.bool.isRequired,
-  transparentBackground: PropTypes.bool,
-};
-
-const mapStateToProps = (state, ownProps) => ({
-  badgeCount: state.workspaceMetas[ownProps.id] ? state.workspaceMetas[ownProps.id].badgeCount : 0,
-  sidebarShortcutHints: state.preferences.sidebarShortcutHints,
-});
-
-export default connectComponent(WorkspaceSelector, mapStateToProps, null, styles);
+export default connectComponent(WorkspaceSelector, mapStateToProps, undefined, styles);
