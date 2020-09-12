@@ -145,6 +145,13 @@ const loadListeners = () => {
     }
   });
 
+  ipcMain.on('request-wiki-send-action-message', (event, actionMessage) => {
+    const browserView = getActiveBrowserView();
+    if (browserView) {
+      browserView.webContents.send('wiki-send-action-message', actionMessage);
+    }
+  });
+
   ipcMain.on('request-open', (_, uri, isDirectory) => {
     if (isDirectory) {
       shell.showItemInFolder(uri);
@@ -341,6 +348,9 @@ const loadListeners = () => {
       setActiveWorkspaceView(id);
       createMenu();
     }
+  });
+  ipcMain.on('request-get-active-workspace', (event) => {
+    event.returnValue = getActiveWorkspace();
   });
 
   ipcMain.on('request-realign-active-workspace', () => {

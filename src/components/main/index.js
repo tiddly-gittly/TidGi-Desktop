@@ -28,8 +28,6 @@ import DraggableRegion from './draggable-region';
 import arrowWhite from '../../images/arrow-white.png';
 import arrowBlack from '../../images/arrow-black.png';
 
-import { requestOpen, getLogFolderPath, requestOpenTiddlerInWiki } from '../../senders';
-
 import {
   requestHibernateWorkspace,
   requestRemoveWorkspace,
@@ -41,6 +39,11 @@ import {
   requestShowPreferencesWindow,
   requestWakeUpWorkspace,
   requestReload,
+  requestOpen,
+  getLogFolderPath,
+  requestOpenTiddlerInWiki,
+  requestWikiSendActionMessage,
+  requestGetActiveWorkspace,
 } from '../../senders';
 
 // https://github.com/sindresorhus/array-move/blob/master/index.js
@@ -174,9 +177,20 @@ const SortableItem = withTranslation()(
         transparentBackground={transparentBackground}
         order={index}
         hibernated={hibernated}
-        onClick={() => (isSubWiki ? requestOpenTiddlerInWiki(tagName) : requestSetActiveWorkspace(id))}
-        onContextMenu={e => {
-          e.preventDefault();
+        onClick={() => {
+          if (isSubWiki) {
+            requestOpenTiddlerInWiki(tagName);
+          } else {
+            const activeWorkspace = requestGetActiveWorkspace();
+            if (activeWorkspace.id === id) {
+              requestWikiSendActionMessage('tm-home');
+            } else {
+              requestSetActiveWorkspace(id);
+            }
+          }
+        }}
+        onContextMenu={event => {
+          event.preventDefault();
 
           const template = [
             {
@@ -381,7 +395,6 @@ const Main = ({
 };
 
 Main.defaultProps = {
-  didFailLoad: null,
   isLoading: false,
 };
 
@@ -404,7 +417,7 @@ const mapStateToProps = state => {
     didFailLoad:
       activeWorkspace && state.workspaceMetas[activeWorkspace.id]
         ? state.workspaceMetas[activeWorkspace.id].didFailLoad
-        : null,
+        : undefined,
     isFullScreen: state.general.isFullScreen,
     isLoading:
       activeWorkspace && state.workspaceMetas[activeWorkspace.id]
@@ -420,4 +433,4 @@ const mapStateToProps = state => {
   };
 };
 
-export default connectComponent(Main, mapStateToProps, null, styles);
+export default connectComponent(Main, mapStateToProps, undefined, styles);

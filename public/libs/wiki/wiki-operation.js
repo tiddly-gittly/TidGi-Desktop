@@ -18,3 +18,10 @@ ipcRenderer.on('wiki-open-tiddler', (event, tiddlerName) => {
     window.location.href = "http://localhost:5212/#${tiddlerName}";
   `);
 });
+
+// open a tiddler
+ipcRenderer.on('wiki-send-action-message', (event, actionMessage) => {
+  webFrame.executeJavaScript(`
+    $tw.rootWidget.dispatchEvent({ type: "${actionMessage}" });
+  `);
+});

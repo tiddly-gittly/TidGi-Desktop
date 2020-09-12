@@ -125,6 +125,7 @@ export const requestCreateWorkspace = (
   );
 
 export const requestOpenTiddlerInWiki = (tiddlerName: string) => ipcRenderer.send('request-wiki-open-tiddler', tiddlerName);
+export const requestWikiSendActionMessage = (actionMessage: string) => ipcRenderer.send('request-wiki-send-action-message', actionMessage);
 export const requestHibernateWorkspace = (id: string) => ipcRenderer.send('request-hibernate-workspace', id);
 export const requestOpenUrlInWorkspace = (url: string, id: string) =>
   ipcRenderer.send('request-open-url-in-workspace', url, id);
@@ -132,6 +133,7 @@ export const requestRealignActiveWorkspace = () => ipcRenderer.send('request-rea
 export const requestRemoveWorkspace = (id: string) => ipcRenderer.send('request-remove-workspace', id);
 export const requestRemoveWorkspacePicture = (id: string) => ipcRenderer.send('request-remove-workspace-picture', id);
 export const requestSetActiveWorkspace = (id: string) => ipcRenderer.send('request-set-active-workspace', id);
+export const requestGetActiveWorkspace = () => ipcRenderer.sendSync('request-get-active-workspace');
 export const requestSetWorkspace = (id: string, options) => ipcRenderer.send('request-set-workspace', id, options);
 export const requestSetWorkspaces = workspaces => ipcRenderer.send('request-set-workspaces', workspaces);
 export const requestSetWorkspacePicture = (id: string, picturePath: string) =>
