@@ -94,6 +94,7 @@ function NewWikiDoneButton({
           disabled={!parentFolderLocation || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             updateForm(workspaceFormData);
+            setWikiCreationMessage(t('AddWorkspace.Processing'));
             let creationError = await requestCopyWikiTemplate(parentFolderLocation, wikiFolderName);
             if (!creationError) {
               creationError = await initWikiGit(wikiFolderLocation, githubWikiUrl, userInfo, true);
@@ -134,6 +135,7 @@ function NewWikiDoneButton({
           disabled={!parentFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             if (!userInfo) return;
+            setWikiCreationMessage(t('AddWorkspace.Processing'));
             updateForm(workspaceFormData);
             let creationError = await requestCreateSubWiki(
               parentFolderLocation,

@@ -60,6 +60,7 @@
     "CreatePublicRepository": "创建公开仓库",
     "CreatePrivateRepository": "创建私有仓库",
     "Reload": "重新加载",
+    "Processing": "正在处理…",
     "WaitForLogin": "等待登录",
     "CanNotLoadList": "无法加载仓库列表，网络不佳",
     "OmitMoreResult": "列表仅展示前 {{loadCount}} 个结果",

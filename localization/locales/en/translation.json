@@ -59,6 +59,7 @@
     "CreatePublicRepository": "Create a public repository",
     "OmitMoreResult": "The list only shows the first {{loadCount}} results",
     "Reload": "Reload",
+    "Processing": "Processing...",
     "SearchGithubRepoName": "Search Github repository name",
     "WaitForLogin": "Wait for Login",
     "WikiServerPort": "WIKI server port number (change if there is a conflict, generally the default is OK)",
