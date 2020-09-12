@@ -5,3 +5,6 @@ public-dist
 $__StoryList.tid
 settings/settings.json
 tiddlers/subwiki/
+
+# ignore some change from plugin that will only change "modified" field
+$__keepstate_utility_toggle-view-fields.tid
