@@ -12,6 +12,8 @@ const isNotNonTiddlerFiles = (filePath) =>
   !filePath.includes('$__StoryList') &&
   !filePath.includes('/subwiki/') &&
   !filePath.endsWith('.DS_Store') &&
+  // TODO: deal with field change in meta file
+  !filePath.endsWith('.meta') &&
   !filePath.includes('.git');
 
 function FileSystemMonitor() {
