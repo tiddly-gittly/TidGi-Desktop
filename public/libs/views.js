@@ -88,7 +88,7 @@ const isInternalUrl = (url, currentInternalUrls) => {
   return Boolean(matchedInternalUrl);
 };
 
-const addView = (browserWindow, workspace) => {
+const addView = async (browserWindow, workspace) => {
   if (views[workspace.id]) return;
   if (workspace.isSubWiki) return;
 
@@ -119,8 +119,6 @@ const addView = (browserWindow, workspace) => {
       defaultId: 0,
     });
   }
-  // start wiki on startup, or on sub-wiki creation
-  wikiStartup(workspace);
   // session
   const ses = session.fromPartition(partitionId);
   // proxy
@@ -631,6 +629,8 @@ const addView = (browserWindow, workspace) => {
 
   const initialUrl = (rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl;
   adjustUserAgentByUrl(view.webContents, initialUrl);
+  // start wiki on startup, or on sub-wiki creation
+  await wikiStartup(workspace);
   view.webContents.loadURL(initialUrl);
 };
 

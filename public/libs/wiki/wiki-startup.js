@@ -49,10 +49,4 @@ module.exports = async function wikiStartup(workspace) {
       await watchWiki(mainWikiPath, githubRepoUrl, userInfo);
     }
   }
-  try {
-    // wait for wiki's watch-fs plugin to be fully initialized
-    await commitAndSync(wikiPath, githubRepoUrl, userInfo);
-  } catch {
-    logger.warning(`Can't sync at wikiStartup()`);
-  }
 };

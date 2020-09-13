@@ -19,6 +19,7 @@ const { addView, reloadViewsDarkReader } = require('./libs/views');
 const { getPreference, getPreferences } = require('./libs/preferences');
 const { getWorkspaces, setWorkspace } = require('./libs/workspaces');
 const { logger } = require('./libs/log');
+const { commitAndSync } = require('./libs/git');
 const { clearMainBindings } = require('./libs/i18next-electron-fs-backend');
 
 const MAILTO_URLS = require('./constants/mailto-urls');
@@ -134,7 +135,7 @@ if (!gotTheLock) {
 
         const workspaceObjects = getWorkspaces();
 
-        Object.keys(workspaceObjects).forEach(id => {
+        Object.keys(workspaceObjects).forEach(async id => {
           const workspace = workspaceObjects[id];
           if ((hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) && !workspace.active) {
             if (!workspace.hibernated) {
@@ -142,7 +143,15 @@ if (!gotTheLock) {
             }
             return;
           }
-          addView(mainWindow.get(), workspace);
+          await addView(mainWindow.get(), workspace);
+          try {
+            const userInfo = getPreference('github-user-info');
+            const { name: wikiPath, gitUrl: githubRepoUrl } = workspace;
+            // wait for wiki's watch-fs plugin to be fully initialized
+            await commitAndSync(wikiPath, githubRepoUrl, userInfo);
+          } catch {
+            logger.warning(`Can't sync at wikiStartup()`);
+          }
         });
 
         ipcMain.emit('request-update-pause-notifications-info');
