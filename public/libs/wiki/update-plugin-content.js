@@ -4,9 +4,10 @@ const { take, drop, compact } = require('lodash');
 const { logger } = require('../log');
 
 const getMatchPart = tagToMatch => `[!is[system]kin::to[${tagToMatch}]`;
-const getPathPart = folderToPlace => `addprefix[subwiki/${folderToPlace}/]]`;
+const getPathPart = folderToPlace => `addprefix[${folderToPlace}]addprefix[/]addprefix[subwiki]]`;
 const getTagNameFromMatchPart = matchPart => matchPart.replace('[!is[system]kin::to[', '').replace(/].*/, '');
-const getFolderNamePathPart = pathPart => pathPart.replace(/.+addprefix\[subwiki\//, '').replace('/]]', '');
+const getFolderNamePathPart = pathPart =>
+  pathPart.replace(']addprefix[/]addprefix[subwiki]]', '').replace(/.+addprefix\[/, '');
 
 function getFileSystemPathsTiddlerPath(mainWikiPath) {
   const pluginPath = path.join(mainWikiPath, 'plugins', 'linonetwo', 'sub-wiki');
@@ -82,7 +83,7 @@ async function getSubWikiPluginContent(mainWikiPath) {
     return FileSystemPaths.map(line => ({
       tagName: getTagNameFromMatchPart(line),
       folderName: getFolderNamePathPart(line),
-    }));
+    })).filter(item => item.folderName && item.tagName);
   } catch (error) {
     logger.error(error, { function: 'getSubWikiPluginContent' });
     return [];
