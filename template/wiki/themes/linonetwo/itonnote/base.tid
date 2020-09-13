@@ -324,3 +324,15 @@ input[type=search] {
 *:focus {
   outline: none;
 }
+
+/*
+** TW-Locator and Bi-Link list
+*/
+.tc-table-of-contents {
+  max-width: 100%;
+  max-height: 200vh;
+  overflow: auto;
+}
+.tc-table-of-contents::-webkit-scrollbar {
+  display: none;
+}
