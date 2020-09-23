@@ -5,8 +5,11 @@ const fs = require('fs-extra');
 const path = require('path');
 const { compact, truncate, trim } = require('lodash');
 const { GitProcess } = require('dugite');
+const isDev = require('electron-is-dev');
 const { logger } = require('./log');
 const i18n = require('./i18n');
+
+const disableSyncOnDevelopment = true;
 
 const getGitUrlWithCredential = (rawUrl, username, accessToken) =>
   trim(
@@ -263,6 +266,7 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
   /** functions to send data to main thread */
   const logProgress = message => logger.notice(message, { handler: 'wikiSyncProgress', function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
   const logInfo = message => logger.info(message, { function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
+  if (disableSyncOnDevelopment && isDev) return;
 
   const { login: username, email } = userInfo;
   const commitMessage = 'Wiki updated with TiddlyGit-Desktop';
