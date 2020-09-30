@@ -45,6 +45,7 @@ const {
   setWorkspaceView,
   setWorkspaceViews,
   wakeUpWorkspaceView,
+  realignActiveWorkspaceView,
 } = require('../libs/workspaces-views');
 const i18n = require('../libs/i18n');
 
@@ -360,10 +361,10 @@ const loadListeners = () => {
     global.titleBar = titleBar;
     global.navigationBar = navigationBar;
 
-    const activeWorkspace = getActiveWorkspace();
-    if (activeWorkspace) {
-      setActiveWorkspaceView(activeWorkspace.id);
-    }
+    // this function only call browserView.setBounds
+    // do not attempt to recall browserView.webContents.focus()
+    // as it breaks page focus (cursor, scroll bar not visible)
+    realignActiveWorkspaceView();
     createMenu();
   });
 

@@ -22,6 +22,7 @@ const {
   setActiveView,
   setViewsAudioPref,
   setViewsNotificationsPref,
+  realignActiveView,
 } = require('./views');
 
 const mainWindow = require('../windows/main');
@@ -37,7 +38,16 @@ const createWorkspaceView = (
   transparentBackground,
   tagName,
 ) => {
-  const newWorkspace = createWorkspace(name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, transparentBackground, tagName);
+  const newWorkspace = createWorkspace(
+    name,
+    isSubWiki,
+    mainWikiToLink,
+    port,
+    homeUrl,
+    gitUrl,
+    transparentBackground,
+    tagName,
+  );
 
   if (!isSubWiki) {
     setActiveWorkspace(newWorkspace.id);
@@ -131,6 +141,14 @@ const loadURL = (url, id) => {
   }
 };
 
+const realignActiveWorkspaceView = () => {
+  const activeWorkspace = getActiveWorkspace();
+  const win = mainWindow.get();
+  if (activeWorkspace && win) {
+    realignActiveView(win, activeWorkspace.id);
+  }
+};
+
 module.exports = {
   clearBrowsingData,
   createWorkspaceView,
@@ -141,4 +159,5 @@ module.exports = {
   setWorkspaceView,
   setWorkspaceViews,
   wakeUpWorkspaceView,
+  realignActiveWorkspaceView,
 };

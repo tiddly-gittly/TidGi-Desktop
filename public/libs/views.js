@@ -277,14 +277,14 @@ const addView = async (browserWindow, workspace) => {
     ipcMain.emit('request-realign-active-workspace');
   });
 
+  // focus on initial load
+  // https://github.com/atomery/webcatalog/issues/398
   if (workspace.active) {
-    const handleFocus = () => {
-      // focus on webview
-      // https://github.com/quanglam2807/webcatalog/issues/398
-      view.webContents.focus();
-      view.webContents.removeListener('did-stop-loading', handleFocus);
-    };
-    view.webContents.on('did-stop-loading', handleFocus);
+    view.webContents.once('did-stop-loading', () => {
+      if (browserWindow.isFocused() && !view.webContents.isFocused()) {
+        view.webContents.focus();
+      }
+    });
   }
 
   // https://electronjs.org/docs/api/web-contents#event-did-fail-load
@@ -754,6 +754,18 @@ const getActiveBrowserView = () => {
   return getView(workspace.id);
 };
 
+const realignActiveView = (browserWindow, activeId) => {
+  const view = browserWindow.getBrowserView();
+  if (view && view.webContents) {
+    const contentSize = browserWindow.getContentSize();
+    if (getWorkspaceMeta(activeId).didFailLoad) {
+      view.setBounds(getViewBounds(contentSize, false, 0, 0)); // hide browserView to show error message
+    } else {
+      view.setBounds(getViewBounds(contentSize));
+    }
+  }
+};
+
 module.exports = {
   addView,
   getView,
@@ -767,4 +779,5 @@ module.exports = {
   setViewsAudioPref,
   setViewsNotificationsPref,
   getActiveBrowserView,
+  realignActiveView,
 };
