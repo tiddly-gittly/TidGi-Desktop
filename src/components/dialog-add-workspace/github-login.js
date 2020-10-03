@@ -33,7 +33,7 @@ class GitHubLogin extends Component<Props, State> {
     onFailure: () => {},
   };
 
-  auth: AuthingSSO;
+  auth: typeof AuthingSSO;
   intervalHandel: ?IntervalID;
 
   constructor(props: Props) {
@@ -95,6 +95,9 @@ class GitHubLogin extends Component<Props, State> {
     ) : (
       <SyncToGithubButton
         onClick={() => {
+          // clear token first, otherwise github login window won't give us a chance to see the form
+          // void this.auth.logout();
+          // window.remote.clearStorageData();
           try {
             onRequest();
             this.auth.login();
