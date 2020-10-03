@@ -41,6 +41,15 @@ function findFirstFilter(filters, source) {
   return null;
 }
 
+function getTwCustomMimeType(fileExtension, mimeGetType) {
+  let officialMimeType = mimeGetType(fileExtension);
+  if (officialMimeType === 'text/markdown') {
+    officialMimeType = 'text/x-markdown';
+  }
+  return officialMimeType;
+}
+
 module.exports = {
   generateTiddlerBaseFilepath,
+  getTwCustomMimeType,
 };

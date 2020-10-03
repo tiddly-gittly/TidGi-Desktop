@@ -16,6 +16,10 @@ browser. So if you make a new .tid file in the tiddlers folder it will appear
 in the wiki in the browser without needing to restart the server. You can also
 delete files to remove the tiddlers from the browser.
 
+!! Installation
+
+Some of the files are generated, but all the files are generated and ready to use in the `watch-fs` folder.
+
 !! Usage
 
 This plugin will cause trouble if you build wiki with it enabled,
@@ -32,6 +36,14 @@ tiddlywiki +plugins/tiddlywiki/filesystem +plugins/tiddlywiki/tiddlyweb +plugins
 # can't handle rename in the disk, you can only rename from within the wiki (no such API to tell tw I've renamed a file)
 # I haven't tested this with [[$:/config/FileSystemPaths]] and [[Fix file info PR|https://github.com/Jermolene/TiddlyWiki5/pull/4630]] , but I use this feature every day, so I will definitely support it.
 # Can't handle if git change the tiddler while you are open its Draft tiddler (might be fixed by [[Deleting a draft tiddler should not also delete the original tiddler|https://github.com/Jermolene/TiddlyWiki5/issues/4792]] )
+
+!!! Using on network share / NFS
+
+If the files are mounted from a remote, you will most likely use polling instead of the OS-native watcher.
+This is not done automaticly, since there is really no way for us to detect that.
+
+If your files are on a remote, you should set the environment-variable `CHOKIDAR_USEPOLLING=1`.
+You can also configure the polling interval (default 100ms) using `CHOKIDAR_INTERVAL`.
 
 !! Implementation Details
 
