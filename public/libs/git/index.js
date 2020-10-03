@@ -6,8 +6,8 @@ const path = require('path');
 const { compact, truncate, trim } = require('lodash');
 const { GitProcess } = require('dugite');
 const isDev = require('electron-is-dev');
-const { logger } = require('./log');
-const i18n = require('./i18n');
+const { logger } = require('../log');
+const i18n = require('../i18n');
 
 const disableSyncOnDevelopment = true;
 
