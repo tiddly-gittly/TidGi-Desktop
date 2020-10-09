@@ -5,5 +5,15 @@
  */
 const { contextBridge } = require('electron');
 const { getModifiedFileList } = require('./inspect');
+const { commitAndSync } = require('./sync');
+const { getWorkspacesAsList } = require('../workspaces');
+const { getPreference } = require('../preferences');
 
-contextBridge.exposeInMainWorld('git', { getModifiedFileList });
+contextBridge.exposeInMainWorld('git', {
+  getModifiedFileList,
+  commitAndSync: (wikiPath, githubRepoUrl) => {
+    const userInfo = getPreference('github-user-info');
+    return commitAndSync(wikiPath, githubRepoUrl, userInfo);
+  },
+  getWorkspacesAsList,
+});
