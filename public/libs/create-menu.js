@@ -1,9 +1,4 @@
-const {
-  Menu,
-  clipboard,
-  ipcMain,
-  shell,
-} = require('electron');
+const { Menu, clipboard, ipcMain, shell } = require('electron');
 
 const { getLanguageMenu } = require('./i18next-electron-fs-backend');
 const aboutWindow = require('../windows/about');
@@ -17,20 +12,11 @@ const preferencesWindow = require('../windows/preferences');
 const formatBytes = require('./format-bytes');
 const getViewBounds = require('./get-view-bounds');
 
-const {
-  getWorkspaces,
-  getActiveWorkspace,
-  getNextWorkspace,
-  getPreviousWorkspace,
-} = require('./workspaces');
+const { getWorkspaces, getActiveWorkspace, getNextWorkspace, getPreviousWorkspace } = require('./workspaces');
 
-const {
-  setActiveWorkspaceView,
-} = require('./workspaces-views');
+const { setActiveWorkspaceView } = require('./workspaces-views');
 
-const {
-  getView,
-} = require('./views');
+const { getView, getActiveBrowserView } = require('./views');
 
 function createMenu() {
   const updaterEnabled = process.env.SNAP == null && !process.mas && !process.windowsStore;
@@ -56,7 +42,7 @@ function createMenu() {
           accelerator: 'CmdOrCtrl+F',
           click: () => {
             const win = mainWindow.get();
-            if (win != null && win.getBrowserView() != null) {
+            if (win !== null && win.getBrowserView() !== null) {
               win.webContents.focus();
 
               win.send('open-find-in-page');
@@ -154,7 +140,7 @@ function createMenu() {
 
             const win = mainWindow.get();
 
-            if (win != null && win.getBrowserView() != null) {
+            if (win !== null && win.getBrowserView() !== null) {
               const contents = win.getBrowserView().webContents;
               contents.zoomFactor = 1;
             }
@@ -175,7 +161,7 @@ function createMenu() {
 
             const win = mainWindow.get();
 
-            if (win != null && win.getBrowserView() != null) {
+            if (win !== null && win.getBrowserView() !== null) {
               const contents = win.getBrowserView().webContents;
               contents.zoomFactor += 0.1;
             }
@@ -196,7 +182,7 @@ function createMenu() {
 
             const win = mainWindow.get();
 
-            if (win != null && win.getBrowserView() != null) {
+            if (win !== null && win.getBrowserView() !== null) {
               const contents = win.getBrowserView().webContents;
               contents.zoomFactor -= 0.1;
             }
@@ -217,7 +203,7 @@ function createMenu() {
 
             const win = mainWindow.get();
 
-            if (win != null && win.getBrowserView() != null) {
+            if (win !== null && win.getBrowserView() !== null) {
               win.getBrowserView().webContents.reload();
             }
           },
@@ -226,7 +212,14 @@ function createMenu() {
         { type: 'separator' },
         {
           label: 'Developer Tools',
-          submenu: [],
+          submenu: [
+            {
+              label: 'Open Developer Tools of Active Workspace',
+              accelerator: 'CmdOrCtrl+Option+I',
+              click: () => getActiveBrowserView().webContents.openDevTools(),
+              enabled: hasWorkspaces,
+            },
+          ],
         },
       ],
     },
@@ -287,7 +280,7 @@ function createMenu() {
 
             const win = mainWindow.get();
 
-            if (win != null && win.getBrowserView() != null) {
+            if (win !== null && win.getBrowserView() !== null) {
               const url = win.getBrowserView().webContents.getURL();
               clipboard.writeText(url);
             }
@@ -315,18 +308,20 @@ function createMenu() {
         { role: 'minimize' },
         { role: 'close' },
         // role: 'zoom' is only supported on macOS
-        process.platform === 'darwin' ? {
-          role: 'zoom',
-        } : {
-          label: 'Zoom',
-          click: () => {
-            const win = mainWindow.get();
-
-            if (win != null) {
-              win.maximize();
+        process.platform === 'darwin'
+          ? {
+              role: 'zoom',
             }
-          },
-        },
+          : {
+              label: 'Zoom',
+              click: () => {
+                const win = mainWindow.get();
+
+                if (win !== null) {
+                  win.maximize();
+                }
+              },
+            },
         { type: 'separator' },
         { role: 'front' },
         { type: 'separator' },
@@ -345,7 +340,10 @@ function createMenu() {
         },
         {
           label: 'Request a New Feature via GitHub...',
-          click: () => shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues/new?template=feature.md&title=feature%3A+'),
+          click: () =>
+            shell.openExternal(
+              'https://github.com/tiddly-gittly/tiddlygit-desktop/issues/new?template=feature.md&title=feature%3A+',
+            ),
         },
         {
           label: 'Learn More...',
@@ -367,7 +365,9 @@ function createMenu() {
     updaterMenuItem.enabled = false;
   } else if (global.updaterObj && global.updaterObj.status === 'download-progress') {
     const { transferred, total, bytesPerSecond } = global.updaterObj.info;
-    updaterMenuItem.label = `Downloading Updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
+    updaterMenuItem.label = `Downloading Updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(
+      bytesPerSecond,
+    )}/s)...`;
     updaterMenuItem.enabled = false;
   } else if (global.updaterObj && global.updaterObj.status === 'checking-for-update') {
     updaterMenuItem.label = 'Checking for Updates...';
