@@ -1,5 +1,6 @@
 // @flow
 /**
+ * Call tiddlywiki api from electron
  * This file should be required by BrowserView's preload script to work
  */
 const { ipcRenderer, webFrame } = require('electron');

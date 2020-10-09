@@ -9,6 +9,7 @@ const i18next = require('../libs/i18n');
 const { MenuItem, shell } = remote;
 
 require('../libs/wiki/wiki-operation');
+require('../libs/git/wiki-git-api');
 
 window.global = {};
 
