@@ -400,10 +400,7 @@ const Preferences = ({
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
             <ListItem>
-              <ListItemText
-                primary={t('Preference.Token')}
-                secondary={t('Preference.TokenDescription')}
-              />
+              <ListItemText primary={t('Preference.Token')} secondary={t('Preference.TokenDescription')} />
               <div className={classes.tokenContainer}>
                 <GitTokenForm
                   accessTokenSetter={accessTokenSetter}

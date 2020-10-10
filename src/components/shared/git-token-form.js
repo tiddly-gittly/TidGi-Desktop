@@ -61,8 +61,7 @@ export default function GitTokenForm(props: {
         onChange={event => {
           props.accessTokenSetter(event.target.value);
         }}
-        label={t('AddWorkspace.GitToken')}
-        value={accessToken}
+        value={accessToken || ''}
       />
       {children}
     </>

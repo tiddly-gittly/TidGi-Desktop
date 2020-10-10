@@ -78,7 +78,7 @@ class GitHubLogin extends Component<Props, State> {
       <SyncToGithubButton
         onClick={async () => {
           const { code, message } = await this.auth.logout();
-          // window.remote.clearStorageData();
+          window.remote.clearStorageData();
           if (code === 200) {
             this.setState({ isLogin: false });
             this.updateLoginState();
