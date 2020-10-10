@@ -1,5 +1,5 @@
 // @flow
-import { requestSetPreference, getPreference } from '../../senders';
+import { requestSetPreference, getPreference } from '../senders';
 
 export const setGithubUserInfo = (userInfo: Object) => requestSetPreference('github-user-info', userInfo);
 export const getGithubUserInfo = () => getPreference<IUserInfo | void>('github-user-info') || undefined;

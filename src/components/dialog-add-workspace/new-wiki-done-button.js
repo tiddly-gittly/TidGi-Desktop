@@ -13,7 +13,7 @@ import Alert from '@material-ui/lab/Alert';
 
 import * as actions from '../../state/dialog-add-workspace/actions';
 
-import type { IUserInfo } from './user-info';
+import type { IUserInfo } from '../../helpers/user-info';
 import { requestCopyWikiTemplate, requestCreateSubWiki, getIconPath, initWikiGit } from '../../senders';
 
 import useWikiCreationMessage from './use-wiki-creation-message';

@@ -1,5 +1,6 @@
+// @flow
 /* eslint-disable consistent-return */
-import React, { useRef, useEffect, useCallback } from 'react';
+import React, { useRef, useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';
 import semver from 'semver';
 import fromUnixTime from 'date-fns/fromUnixTime';
@@ -44,6 +45,7 @@ import MenuBookIcon from '@material-ui/icons/MenuBook';
 import { TimePicker } from '@material-ui/pickers';
 
 import connectComponent from '../../helpers/connect-component';
+import { getGithubUserInfo, setGithubUserInfo } from '../../helpers/user-info';
 
 import StatedMenu from '../shared/stated-menu';
 
@@ -55,6 +57,8 @@ import singleboxLogo from '../../images/singlebox-logo.svg';
 
 import ListItemDefaultMailClient from './list-item-default-mail-client';
 import ListItemDefaultBrowser from './list-item-default-browser';
+import GitTokenForm, { getGithubToken, setGithubToken } from '../shared/git-token-form';
+import type { IUserInfo } from '../../helpers/user-info';
 
 import {
   requestCheckForUpdates,
@@ -89,11 +93,22 @@ const styles = theme => ({
     marginBottom: theme.spacing(3),
     border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
   },
+  tokenContainer: {
+    marginTop: theme.spacing(1),
+    marginBottom: theme.spacing(1),
+    display: 'flex',
+    justifyContent: 'space-around',
+    flexDirection: 'column',
+    width: 200,
+    minWidth: 200,
+  },
   timePickerContainer: {
     marginTop: theme.spacing(1),
     marginBottom: theme.spacing(1),
     display: 'flex',
     justifyContent: 'space-around',
+    width: 200,
+    minWidth: 200,
   },
   secondaryEllipsis: {
     textOverflow: 'ellipsis',
@@ -322,6 +337,21 @@ const Preferences = ({
     [],
   );
 
+  const [userInfo, userInfoSetter] = useState<IUserInfo | void>(getGithubUserInfo());
+  useEffect(() => {
+    setGithubUserInfo(userInfo);
+  }, [userInfo]);
+  // try get token on start up, so Github GraphQL client can use it
+  const [accessToken, accessTokenSetter] = useState<string | void>(getGithubToken());
+  // try get token from local storage, and set to state for gql to use
+  useEffect(() => {
+    if (accessToken) {
+      setGithubToken(accessToken);
+    } else {
+      setGithubToken();
+    }
+  }, [accessToken]);
+
   return (
     <div className={classes.root}>
       <div className={classes.sidebar}>
@@ -369,6 +399,19 @@ const Preferences = ({
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
+            <ListItem>
+              <ListItemText
+                primary={t('Preference.Token')}
+                secondary={t('Preference.TokenDescription')}
+              />
+              <div className={classes.tokenContainer}>
+                <GitTokenForm
+                  accessTokenSetter={accessTokenSetter}
+                  userInfoSetter={userInfoSetter}
+                  accessToken={accessToken}
+                />
+              </div>
+            </ListItem>
             <ListItem>
               <ListItemText
                 primary={t('Preference.SyncInterval')}

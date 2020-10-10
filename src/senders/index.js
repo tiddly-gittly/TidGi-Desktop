@@ -1,5 +1,5 @@
 // @flow
-import type { IUserInfo } from '../components/dialog-add-workspace/user-info';
+import type { IUserInfo } from '../helpers/user-info';
 
 const { ipcRenderer } = window.remote;
 

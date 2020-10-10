@@ -15,18 +15,16 @@ import NewWikiPathForm from './new-wiki-path-form';
 import ExistedWikiPathForm from './existed-wiki-path-form';
 import ExistedWikiDoneButton from './existed-wiki-done-button';
 import CloneWikiDoneButton from './clone-wiki-done-button';
-import { getGithubUserInfo, setGithubUserInfo } from './user-info';
-import type { IUserInfo } from './user-info';
+import { getGithubUserInfo, setGithubUserInfo } from '../../helpers/user-info';
+import type { IUserInfo } from '../../helpers/user-info';
 import TabBar from './tab-bar';
-import GitHubLogin from './github-login';
+import GitTokenForm, { getGithubToken, setGithubToken } from '../shared/git-token-form';
 
 import {
-  requestSetPreference,
-  getPreference,
+  requestOpen,
   getDesktopPath,
   countWorkspace,
   getWorkspaceRemote,
-  requestOpen,
   getSubWikiPluginContent,
 } from '../../senders';
 
@@ -53,8 +51,6 @@ const GithubRepoLink = styled(Typography)`
   }
 `;
 
-const setGithubToken = (token: string | void) => requestSetPreference('github-token', token);
-const getGithubToken = () => getPreference<string | void>('github-token') || undefined;
 const setHeaderToGraphqlClient = (token: string) => graphqlClient.setHeader('Authorization', `bearer ${token}`);
 const previousToken = getGithubToken();
 previousToken && setHeaderToGraphqlClient(previousToken);
@@ -66,7 +62,7 @@ export default function AddWorkspace() {
   const [existedFolderLocation, existedFolderLocationSetter] = useState(getDesktopPath());
   const [wikiPort, wikiPortSetter] = useState(5212 + countWorkspace());
 
-  // try get token on start up
+  // try get token on start up, so Github GraphQL client can use it
   const [accessToken, accessTokenSetter] = useState<string | void>(previousToken);
   // try get token from local storage, and set to state for gql to use
   useEffect(() => {
@@ -102,56 +98,6 @@ export default function AddWorkspace() {
 
   const [wikiFolderName, wikiFolderNameSetter] = useState('tiddlywiki');
 
-  const syncContainer = (
-    <SyncContainer elevation={2} square>
-      <GitHubLogin
-        clientId="7b6e0fc33f4afd71a4bb"
-        clientSecret="6015d1ca4ded86b4778ed39109193ff20c630bdd"
-        redirectUri="http://localhost"
-        scope="repo"
-        onSuccess={response => {
-          const accessTokenToSet = response?.userInfo?.thirdPartyIdentity?.accessToken;
-          const authDataString = response?.userInfo?.oauth;
-          if (accessTokenToSet) {
-            accessTokenSetter(accessTokenToSet);
-          }
-          // all data we need
-          if (accessTokenToSet && authDataString) {
-            const authData = JSON.parse(authDataString);
-            const nextUserInfo = {
-              ...response.userInfo,
-              ...authData,
-              ...response.userInfo.thirdPartyIdentity,
-            };
-            delete nextUserInfo.oauth;
-            delete nextUserInfo.thirdPartyIdentity;
-            userInfoSetter(nextUserInfo);
-          }
-        }}
-        // eslint-disable-next-line unicorn/no-null
-        onLogout={response => accessTokenSetter()}
-        onFailure={response => {
-          accessTokenSetter();
-          userInfoSetter();
-        }}
-      />
-      {githubWikiUrl && (
-        <GithubRepoLink onClick={() => requestOpen(githubWikiUrl)} variant="subtitle2" align="center">
-          ({githubWikiUrl})
-        </GithubRepoLink>
-      )}
-      <SearchRepo
-        githubWikiUrl={githubWikiUrl}
-        accessToken={accessToken}
-        githubWikiUrlSetter={githubWikiUrlSetter}
-        userInfo={userInfo}
-        currentTab={currentTab}
-        wikiFolderNameSetter={wikiFolderNameSetter}
-        isCreateMainWorkspace={isCreateMainWorkspace}
-      />
-    </SyncContainer>
-  );
-
   return (
     <ClientContext.Provider value={graphqlClient}>
       <TabBar currentTab={currentTab} currentTabSetter={currentTabSetter} />
@@ -159,8 +105,30 @@ export default function AddWorkspace() {
         isCreateMainWorkspace={isCreateMainWorkspace}
         isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter}
       />
+    <SyncContainer elevation={2} square>
 
-      {syncContainer}
+      <GitTokenForm
+        accessTokenSetter={accessTokenSetter}
+        userInfoSetter={userInfoSetter}
+        accessToken={accessToken}
+      >
+        {githubWikiUrl && (
+          <GithubRepoLink onClick={() => requestOpen(githubWikiUrl)} variant="subtitle2" align="center">
+            ({githubWikiUrl})
+          </GithubRepoLink>
+        )}
+        <SearchRepo
+          githubWikiUrl={githubWikiUrl}
+          accessToken={accessToken}
+          githubWikiUrlSetter={githubWikiUrlSetter}
+          userInfo={userInfo}
+          currentTab={currentTab}
+          wikiFolderNameSetter={wikiFolderNameSetter}
+          isCreateMainWorkspace={isCreateMainWorkspace}
+        />
+      </GitTokenForm>
+    </SyncContainer>
+
       {currentTab === 'CreateNewWiki' && (
         <Container>
           <NewWikiPathForm

@@ -82,7 +82,9 @@
     "StartLinkingSubWikiToMainWiki": "Start linking sub-Wiki to main-Wiki",
     "AddFileSystemPath": "Adding FileSystemPaths for sub-wiki",
     "TagName": "Tag Name",
-    "TagNameHelp": "Tiddlers with this Tag will be add to this sub-wiki (you can add or change this Tag later, by right-click workspace Icon and choose Edit Workspace)"
+    "TagNameHelp": "Tiddlers with this Tag will be add to this sub-wiki (you can add or change this Tag later, by right-click workspace Icon and choose Edit Workspace)",
+    "GitToken": "Git Token",
+    "GitTokenDescription": "The credentials used to log in to Git. Will expire after a certain period of time"
   },
   "EditWorkspace": {
     "Path": "Wiki Path",
@@ -167,6 +169,8 @@
     "LightTheme": "Light Theme",
     "DarkTheme": "Dark Theme",
     "ShowSideBar": "Show SideBar",
-    "Theme": "Theme"
+    "Theme": "Theme",
+    "Token": "Git credentials",
+    "TokenDescription": "The credentials used to authenticate to the Git server so you can securely synchronize content. Can be obtained by logging in to Github, or manually obtained and filled in here."
   }
 }

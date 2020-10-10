@@ -14,7 +14,7 @@ import { basename, dirname } from 'path';
 
 import * as actions from '../../state/dialog-add-workspace/actions';
 
-import type { IUserInfo } from './user-info';
+import type { IUserInfo } from '../../helpers/user-info';
 import { requestCreateSubWiki, getIconPath, ensureWikiExist } from '../../senders';
 import useWikiCreationMessage from './use-wiki-creation-message';
 
