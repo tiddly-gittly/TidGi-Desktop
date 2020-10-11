@@ -1,0 +1,7 @@
+tags: $:/tags/PageControls
+title: $:/plugins/linonetwo/source-control-management/PageControlButton
+type: text/vnd.tiddlywiki
+caption: {{$:/plugins/linonetwo/source-control-management/icons/git-sync.svg}} 备份本地Git
+description: 显示本地笔记是否同步备份到Github，点击可同步
+
+<$nodejs-tiddlygit-git-sync />

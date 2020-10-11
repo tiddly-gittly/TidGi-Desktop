@@ -1,0 +1,11 @@
+title: $:/plugins/linonetwo/source-control-management/readme
+type: text/vnd.tiddlywiki
+
+!! 功能
+
+[[WebCatalog|https://webcatalogapp.com/]] 除了[[能将 TiddlyWiki 包装成桌面应用|https://onetwo.ren/%E7%94%A8tiddlywiki%E6%9B%BF%E4%BB%A3notion%E5%92%8Cevernote%E7%AE%A1%E7%90%86%E7%9F%A5%E8%AF%86/]]以外，还提供了自定义 API 并暴露给网页的功能，让我们可以在 Wiki 网页里使用一些高级功能。
+
+本插件利用暴露的自定义 API 实现：
+
+# 查看本地 NodeJS 版 TiddlyWiki 是否完全与 Github 备份云同步了
+# 一键同步本地和云端

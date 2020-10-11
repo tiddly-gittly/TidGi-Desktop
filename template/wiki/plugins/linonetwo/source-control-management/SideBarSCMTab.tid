@@ -1,0 +1,7 @@
+tags: $:/tags/SideBar
+title: $:/plugins/linonetwo/source-control-management/SideBarSCMTab
+type: text/vnd.tiddlywiki
+caption: SCM
+description: Source Control Management
+
+<$git-sync-scm-tab />
