@@ -1,8 +1,10 @@
+// @flow
 /* eslint-disable global-require */
 /* eslint-disable no-console */
 const { Worker } = require('worker_threads');
 const isDev = require('electron-is-dev');
 const path = require('path');
+const Promise = require('bluebird');
 
 const { logger } = require('../log');
 const { wikiOutputToFile, refreshOutputFile } = require('../log/wiki-output');
@@ -93,14 +95,23 @@ async function stopWiki(homePath) {
     );
     return Promise.resolve();
   }
-  return new Promise(resolve => {
-    worker.postMessage({ type: 'command', message: 'exit' });
-    worker.on('exit', () => {
-      delete wikiWorkers[homePath];
-      logger.info(`Wiki-worker for ${homePath} stopped`, { function: 'stopWiki' });
-      resolve();
-    });
-  });
+  return (
+    new Promise(resolve => {
+      worker.postMessage({ type: 'command', message: 'exit' });
+      worker.once('exit', resolve);
+      worker.once('error', resolve);
+    })
+      .timeout(100)
+      .catch(error => {
+        logger.info(`Wiki-worker have error ${error} when try to stop`, { function: 'stopWiki' });
+        return worker.terminate();
+      })
+      // eslint-disable-next-line promise/always-return
+      .then(() => {
+        // delete wikiWorkers[homePath];
+        logger.info(`Wiki-worker for ${homePath} stopped`, { function: 'stopWiki' });
+      })
+  );
 }
 module.exports.stopWiki = stopWiki;
 
@@ -113,5 +124,7 @@ module.exports.stopAllWiki = async function stopAllWiki() {
     tasks.push(stopWiki(homePath));
   }
   await Promise.all(tasks);
+  // try to prevent https://github.com/electron/electron/issues/23315, but seems not working at all
+  await Promise.delay(100);
   logger.info('All wiki-worker is stopped', { function: 'stopAllWiki' });
 };

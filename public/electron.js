@@ -217,16 +217,6 @@ if (!gotTheLock) {
     commonInit();
   });
 
-  app.on('before-quit', () => {
-    // https://github.com/atom/electron/issues/444#issuecomment-76492576
-    if (process.platform === 'darwin') {
-      const win = mainWindow.get();
-      if (win) {
-        win.forceClose = true;
-      }
-    }
-  });
-
   app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') {
       app.quit();
@@ -289,13 +279,23 @@ if (!gotTheLock) {
     });
   });
 
-  app.on('will-quit', async () => {
+  app.on('before-quit', async event => {
     logger.info('Quitting worker threads and watcher.');
     await Promise.all([stopAllWiki(), stopWatchAllWiki()]);
-    logger.info('Worker threads  and watchers all terminated.');
+    logger.info('Worker threads and watchers all terminated.');
     logger.info('Quitting I18N server.');
     clearMainBindings(ipcMain);
     logger.info('Quitted I18N server.');
+
+    // https://github.com/atom/electron/issues/444#issuecomment-76492576
+    if (process.platform === 'darwin') {
+      const win = mainWindow.get();
+      if (win) {
+        logger.info('App force quit on MacOS');
+        win.forceClose = true;
+      }
+    }
+    app.exit(0);
   });
 
   app.on('quit', async () => {
