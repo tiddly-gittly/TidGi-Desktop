@@ -38,6 +38,7 @@
     "mat/field-value-selector",
     "linonetwo/opened-tiddlers-bar",
     "linonetwo/copy-on-select",
+    "linonetwo/source-control-management",
     "linonetwo/prevent-edit"
   ],
   "themes": [
