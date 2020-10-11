@@ -1,3 +1,0 @@
-main_demo: 560x600
-prefs_demo: 760x600
-small_demo: 400x565
