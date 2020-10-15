@@ -1,4 +1,5 @@
 // @flow
+import Promise from 'bluebird';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
 import { useQuery, useMutation } from 'graphql-hooks';
@@ -176,7 +177,6 @@ export default function SearchRepo({
               button
               key={wikiUrlToCreate}
               onClick={async () => {
-                githubWikiUrlSetter(wikiUrlToCreate);
                 isCreatingRepoSetter(true);
                 await createRepository({
                   variables: {
@@ -187,10 +187,10 @@ export default function SearchRepo({
                   },
                 });
                 // wait for Github update their db
-                setTimeout(async () => {
-                  await refetch();
-                  isCreatingRepoSetter(false);
-                }, 1000);
+                await Promise.delay(1000);
+                await refetch();
+                isCreatingRepoSetter(false);
+                githubWikiUrlSetter(wikiUrlToCreate);
               }}
               selected={isCreateNewRepo}
             >
