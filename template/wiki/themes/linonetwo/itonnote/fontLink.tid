@@ -2,4 +2,4 @@ title: $:/themes/linonetwo/itonnote/fontLink.tid
 tags: [[$:/tags/RawMarkup]]
 type: text/html
 
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/tonsky/FiraCode@4/distr/fira_code.css">
+<link href="https://fonts.googleapis.com/css2?family=Fira+Code&display=swap" rel="stylesheet">
