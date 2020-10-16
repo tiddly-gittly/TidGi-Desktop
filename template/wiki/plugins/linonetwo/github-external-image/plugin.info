@@ -1,0 +1,9 @@
+{
+  "title": "$:/plugins/linonetwo/github-external-image",
+  "description": "Use github as your image storage, add _canonical_uri to all image, pointing to raw.github",
+  "author": "LinOnetwo",
+  "core-version": ">=5.1.22",
+  "plugin-type": "plugin",
+  "version": "0.0.1",
+  "list": "readme"
+}

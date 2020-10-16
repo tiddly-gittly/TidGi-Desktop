@@ -1,0 +1,30 @@
+title: $:/plugins/linonetwo/github-external-image/canonical-uri-external-image
+creator: LinOnetwo
+type: text/vnd.tiddlywiki
+
+!! Usage
+
+Please fill in [[$:/GitHub/Repo]] and [[$:/config/linonetwo/github-external-image/tiddler-folder-name]] to get started.
+
+Then, on build, all images will be replaced by place holders.
+
+Please use following build target:
+
+```json
+"externalimages": [
+  "--setfield",
+  "[is[binary]] [type[application/msword]]",
+  "_canonical_uri",
+  "$:/core/templates/canonical-uri-external-image",
+  "text/plain",
+  "--setfield",
+  "[is[binary]] [type[application/msword]]",
+  "text",
+  "$:/core/templates/canonical-uri-external-image",
+  "text/plain",
+  "--rendertiddler",
+  "$:/core/save/all",
+  "index.html",
+  "text/plain"
+],
+```
