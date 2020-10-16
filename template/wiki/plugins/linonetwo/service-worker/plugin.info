@@ -1,0 +1,9 @@
+{
+  "title": "$:/plugins/linonetwo/service-worker",
+  "description": "Use service worker to cache content, make it works even offline, and can be add to the desktop as an App.",
+  "author": "LinOnetwo",
+  "core-version": ">=5.1.22",
+  "plugin-type": "plugin",
+  "version": "0.0.1",
+  "list": "readme"
+}
