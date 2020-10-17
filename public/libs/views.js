@@ -336,7 +336,7 @@ const addView = async (browserWindow, workspace) => {
     // so user agent to needed to be double check here
     // not the best solution as page will be unexpectedly reloaded
     // but it won't happen very often
-    if (e.sender.webContents && adjustUserAgentByUrl(e.sender.webContents, url)) {
+    if (adjustUserAgentByUrl(e.sender.webContents, url)) {
       view.webContents.reload();
     }
 

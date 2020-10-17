@@ -535,7 +535,6 @@ const loadListeners = () => {
   });
 
   ipcMain.on('request-show-display-media-window', e => {
-    // FIXME: deprecated https://github.com/electron/electron/pull/23578
     const viewId = BrowserView.fromWebContents(e.sender).id;
     displayMediaWindow.show(viewId);
   });
