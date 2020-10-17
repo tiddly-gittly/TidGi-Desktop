@@ -1,4 +1,3 @@
-// @flow
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-param-reassign */
 /* global Image */
@@ -58,27 +57,17 @@ module.exports = class ContextMenuBuilder {
   /**
    * Creates an instance of ContextMenuBuilder
    *
-   * @param  {BrowserWindow|WebView} windowOrWebView  The hosting window/WebView
+   * @param  {WebContent} webContent  The hosting window/WebView's webContent
    * @param  {function} processMenu If passed, this method will be passed the menu to change
    *                                it prior to display. Signature: (menu, info) => menu
    */
 
-  constructor(windowOrWebView, processMenu = m => m) {
+  constructor(webContent = remote.getCurrentWebContents(), processMenu = m => m) {
     this.processMenu = processMenu;
     this.menu = null;
     this.stringTable = { ...contextMenuStringTable };
 
-    windowOrWebView = windowOrWebView || remote.getCurrentWebContents();
-
-    const ctorName = Object.getPrototypeOf(windowOrWebView).constructor.name;
-    if (ctorName === 'WebContents') {
-      this.getWebContents = () => windowOrWebView;
-    } else {
-      // NB: We do this because at the time a WebView is created, it doesn't
-      // have a WebContents, we need to defer the call to getWebContents
-      this.getWebContents =
-        'webContents' in windowOrWebView ? () => windowOrWebView.webContents : () => windowOrWebView.getWebContents();
-    }
+    this.getWebContents = () => webContent;
   }
 
   /**
