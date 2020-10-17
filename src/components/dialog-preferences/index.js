@@ -53,7 +53,6 @@ import hunspellLanguagesMap from '../../constants/hunspell-languages';
 
 import webcatalogLogo from '../../images/webcatalog-logo.svg';
 import translatiumLogo from '../../images/translatium-logo.svg';
-import singleboxLogo from '../../images/singlebox-logo.svg';
 
 import ListItemDefaultMailClient from './list-item-default-mail-client';
 import ListItemDefaultBrowser from './list-item-default-browser';
@@ -314,8 +313,8 @@ const Preferences = ({
       Icon: RotateLeftIcon,
       ref: useRef(),
     },
-    atomeryApps: {
-      text: 'Atomery Apps',
+    webCatalogApps: {
+      text: 'Webcatalog Apps',
       Icon: StorefrontIcon,
       ref: useRef(),
     },
@@ -1325,29 +1324,28 @@ const Preferences = ({
           variant="subtitle2"
           color="textPrimary"
           className={classes.sectionTitle}
-          ref={sections.atomeryApps.ref}
+          ref={sections.webCatalogApps.ref}
         >
-          Atomery Apps
+          WebCatalog Apps
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List disablePadding dense>
-            <ListItem button onClick={() => requestOpen('https://webcatalogapp.com?utm_source=singlebox_app')}>
+            <ListItem button onClick={() => requestOpen('https://github.com/webcatalog/webcatalog-engine')}>
+              <ListItemText
+                secondary="WebCatalog is the initial code founder of TiddlyGit, we reuse lots of important code from the open-source WebCatalog, many thanks to WebCatalog and its author Quang Lam"
+              />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
+            <ListItem button onClick={() => requestOpen('https://webcatalogapp.com?utm_source=tiddlygit_app')}>
               <ListItemText
                 primary={<img src={webcatalogLogo} alt="WebCatalog" className={classes.logo} />}
-                secondary="Run Web Apps like Real Apps"
+                secondary="Magically turn any websites into Mac apps. Work more productively and forget about switching tabs. "
               />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestOpen('https://singleboxapp.com?utm_source=singlebox_app')}>
-              <ListItemText
-                primary={<img src={singleboxLogo} alt="Singlebox" className={classes.logo} />}
-                secondary="All Your Apps in One Single Window"
-              />
-              <ChevronRightIcon color="action" />
-            </ListItem>
-            <Divider />
-            <ListItem button onClick={() => requestOpen('https://translatiumapp.com?utm_source=singlebox_app')}>
+            <ListItem button onClick={() => requestOpen('https://translatiumapp.com?utm_source=tiddlygit_app')}>
               <ListItemText
                 primary={<img src={translatiumLogo} alt="Translatium" className={classes.logo} />}
                 secondary="Translate Any Languages like a Pro"

@@ -110,16 +110,16 @@ const About = (props) => {
           </span>
           <span> and </span>
           <span
-            onClick={() => requestOpen('https://atomery.com?utm_source=tiddlygit')}
+            onClick={() => requestOpen('https://webcatalog.app/?utm_source=tiddlygit_app')}
             onKeyDown={(e) => {
               if (e.key !== 'Enter') return;
-              requestOpen('https://atomery.com?utm_source=tiddlygit');
+              requestOpen('https://webcatalog.app/?utm_source=tiddlygit_app');
             }}
             role="link"
             tabIndex="0"
             className={classes.link}
           >
-            Atomery
+            WebCatalog
           </span>
         </Typography>
       </DialogContent>

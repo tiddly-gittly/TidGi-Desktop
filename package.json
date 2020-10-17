@@ -87,6 +87,7 @@
     "flow-bin": "0.135.0",
     "flow-typed": "3.2.1",
     "graphql-hooks": "5.0.0",
+    "if-env": "^1.0.4",
     "prop-types": "15.7.2",
     "react": "16.13.1",
     "react-ace": "9.1.4",
