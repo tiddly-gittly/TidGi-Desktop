@@ -6,6 +6,7 @@ const path = require('path');
 const { compact, truncate, trim } = require('lodash');
 const { GitProcess } = require('dugite');
 const isDev = require('electron-is-dev');
+const { ipcMain } = require('electron');
 const { logger } = require('../log');
 const i18n = require('../i18n');
 
@@ -37,7 +38,7 @@ async function credentialOn(wikiFolderPath, githubRepoUrl, userInfo) {
 async function credentialOff(wikiFolderPath) {
   const githubRepoUrl = await getRemoteUrl(wikiFolderPath);
   const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
-  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], wikiFolderPath)
+  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], wikiFolderPath);
 }
 
 /**
@@ -258,19 +259,56 @@ async function continueRebase(wikiFolderPath, username, email, logInfo, logProgr
 
 /**
  *
+ * @param {string} githubRepoName similar to "linonetwo/wiki", string after "https://github.com/"
+ */
+async function updateGitInfoTiddler(githubRepoName) {
+  // TODO: prevent circle require, use lib like typedi to prevent this
+  // eslint-disable-next-line global-require
+  const { getActiveBrowserView } = require('../views');
+  const browserView = getActiveBrowserView();
+  if (browserView) {
+    const tiddlerText = await new Promise(resolve => {
+      browserView.webContents.send('wiki-get-tiddler-text', '$:/GitHub/Repo');
+      ipcMain.once('wiki-get-tiddler-text-done', (_, value) => resolve(value));
+    });
+    if (tiddlerText !== githubRepoName) {
+      return new Promise(resolve => {
+        browserView.webContents.send('wiki-add-tiddler', '$:/GitHub/Repo', githubRepoName, {
+          type: 'text/vnd.tiddlywiki',
+        });
+        ipcMain.once('wiki-add-tiddler-done', resolve);
+      });
+    }
+    return Promise.resolve();
+  }
+  return Promise.reject(new Error('no browserView in updateGitInfoTiddler'));
+}
+
+/**
+ *
  * @param {string} wikiFolderPath
  * @param {string} githubRepoUrl
  * @param {{ login: string, email: string, accessToken: string }} userInfo
  */
 async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
   /** functions to send data to main thread */
-  const logProgress = message => logger.notice(message, { handler: 'wikiSyncProgress', function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
+  const logProgress = message =>
+    logger.notice(message, { handler: 'wikiSyncProgress', function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
   const logInfo = message => logger.info(message, { function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
   if (disableSyncOnDevelopment && isDev) return;
 
   const { login: username, email } = userInfo;
   const commitMessage = 'Wiki updated with TiddlyGit-Desktop';
   const branchMapping = 'master:master';
+
+  // update git info tiddler for plugins to use, for example, linonetwo/github-external-image
+  let wikiRepoName = new URL(githubRepoUrl).pathname;
+  if (wikiRepoName.startsWith('/')) {
+    wikiRepoName = wikiRepoName.replace('/', '');
+  }
+  if (wikiRepoName) {
+    await updateGitInfoTiddler(wikiRepoName);
+  }
 
   // preflight check
   const repoStartingState = await getGitRepositoryState(wikiFolderPath, logInfo, logProgress);
