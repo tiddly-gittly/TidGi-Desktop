@@ -266,7 +266,7 @@ async function updateGitInfoTiddler(githubRepoName) {
   // eslint-disable-next-line global-require
   const { getActiveBrowserView } = require('../views');
   const browserView = getActiveBrowserView();
-  if (browserView) {
+  if (browserView && browserView?.webContents?.send) {
     const tiddlerText = await new Promise(resolve => {
       browserView.webContents.send('wiki-get-tiddler-text', '$:/GitHub/Repo');
       ipcMain.once('wiki-get-tiddler-text-done', (_, value) => resolve(value));
@@ -281,7 +281,7 @@ async function updateGitInfoTiddler(githubRepoName) {
     }
     return Promise.resolve();
   }
-  return Promise.reject(new Error('no browserView in updateGitInfoTiddler'));
+  return logger.error('no browserView in updateGitInfoTiddler');
 }
 
 /**

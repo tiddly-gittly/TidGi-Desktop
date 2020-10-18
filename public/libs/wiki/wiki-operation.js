@@ -4,6 +4,7 @@
  * This file should be required by BrowserView's preload script to work
  */
 const { ipcRenderer, webFrame } = require('electron');
+const Promise = require('bluebird');
 
 // add tiddler
 ipcRenderer.on('wiki-add-tiddler', async (event, title, text, meta) => {
@@ -11,6 +12,8 @@ ipcRenderer.on('wiki-add-tiddler', async (event, title, text, meta) => {
   await webFrame.executeJavaScript(`
     $tw.wiki.addTiddler({ title: '${title}', text: '${text}', ...${extraMeta} });
   `);
+  // wait for fs to be settle
+  await Promise.delay(1000);
   ipcRenderer.send('wiki-add-tiddler-done');
 });
 
