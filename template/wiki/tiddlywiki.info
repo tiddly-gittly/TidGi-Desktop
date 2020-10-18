@@ -37,6 +37,7 @@
     "felixhayashi/topstoryview",
     "mat/field-value-selector",
     "linonetwo/opened-tiddlers-bar",
+    "linonetwo/sub-wiki",
     "linonetwo/service-worker",
     "linonetwo/github-external-image",
     "linonetwo/copy-on-select",
