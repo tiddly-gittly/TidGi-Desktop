@@ -49,7 +49,11 @@ async function getDefaultBranchName(wikiFolderPath) {
   const { stdout } = await GitProcess.exec(['remote', 'show', 'origin'], wikiFolderPath);
   const lines = stdout.split('\n');
   const lineWithHEAD = lines.find(line => line.includes('HEAD branch: '));
-  return lineWithHEAD?.replace('HEAD branch: ', '')?.replace(/\s/g, '');
+  const branchName = lineWithHEAD?.replace('HEAD branch: ', '')?.replace(/\s/g, '');
+  if (!branchName || branchName.includes('(unknown)')) {
+    return 'master';
+  }
+  return branchName;
 }
 
 /**
