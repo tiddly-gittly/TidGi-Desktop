@@ -42,6 +42,17 @@ async function credentialOff(wikiFolderPath) {
 }
 
 /**
+ * Get "master" or "main" from git repo
+ * @param {string} wikiFolderPath
+ */
+async function getDefaultBranchName(wikiFolderPath) {
+  const { stdout } = await GitProcess.exec(['remote', 'show', 'origin'], wikiFolderPath);
+  const lines = stdout.split('\n');
+  const lineWithHEAD = lines.find(line => line.includes('HEAD branch: '));
+  return lineWithHEAD?.replace('HEAD branch: ', '')?.replace(/\s/g, '');
+}
+
+/**
  * Git add and commit all file
  * @param {string} wikiFolderPath
  * @param {string} username
@@ -77,8 +88,9 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) 
   logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
   await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
   logProgress(i18n.t('Log.StartBackupToGithubRemote'));
+  const defaultBranchName = await getDefaultBranchName(wikiFolderPath);
   const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(
-    ['push', 'origin', 'master:master'],
+    ['push', 'origin', `${defaultBranchName}:${defaultBranchName}`],
     wikiFolderPath,
   );
   await credentialOff(wikiFolderPath);
@@ -108,8 +120,9 @@ async function haveLocalChanges(wikiFolderPath) {
  * @param {string} wikiFolderPath repo path to test
  */
 async function getSyncState(wikiFolderPath, logInfo) {
+  const defaultBranchName = await getDefaultBranchName(wikiFolderPath);
   const { stdout } = await GitProcess.exec(
-    ['rev-list', '--count', '--left-right', 'origin/master...HEAD'],
+    ['rev-list', '--count', '--left-right', `origin/${defaultBranchName}...HEAD`],
     wikiFolderPath,
   );
   logInfo('Checking sync state with upstream');
@@ -299,7 +312,8 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
 
   const { login: username, email } = userInfo;
   const commitMessage = 'Wiki updated with TiddlyGit-Desktop';
-  const branchMapping = 'master:master';
+  const defaultBranchName = await getDefaultBranchName(wikiFolderPath);
+  const branchMapping = `${defaultBranchName}:${defaultBranchName}`;
 
   // update git info tiddler for plugins to use, for example, linonetwo/github-external-image
   let wikiRepoName = new URL(githubRepoUrl).pathname;
@@ -344,7 +358,7 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
   logProgress(i18n.t('Log.PreparingUserInfo'));
   await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
   logProgress(i18n.t('Log.FetchingData'));
-  await GitProcess.exec(['fetch', 'origin', 'master'], wikiFolderPath);
+  await GitProcess.exec(['fetch', 'origin', defaultBranchName], wikiFolderPath);
 
   //
   switch (await getSyncState(wikiFolderPath, logInfo)) {
@@ -370,7 +384,7 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
     case 'behind': {
       logProgress(i18n.t('Log.LocalStateBehindSync'));
       const { exitCode, stderr } = await GitProcess.exec(
-        ['merge', '--ff', '--ff-only', 'origin/master'],
+        ['merge', '--ff', '--ff-only', `origin/${defaultBranchName}`],
         wikiFolderPath,
       );
       if (exitCode === 0) break;
@@ -381,7 +395,7 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
     }
     case 'diverged': {
       logProgress(i18n.t('Log.LocalStateDivergeRebase'));
-      const { exitCode } = await GitProcess.exec(['rebase', 'origin/master'], wikiFolderPath);
+      const { exitCode } = await GitProcess.exec(['rebase', `origin/${defaultBranchName}`], wikiFolderPath);
       if (
         exitCode === 0 &&
         !(await getGitRepositoryState(wikiFolderPath, logInfo, logProgress)) &&
@@ -418,6 +432,7 @@ async function getRemoteUrl(wikiFolderPath) {
 }
 
 async function clone(githubRepoUrl, repoFolderPath, userInfo) {
+  const defaultBranchName = await getDefaultBranchName(wikiFolderPath);
   const logProgress = message => logger.notice(message, { handler: 'createWikiProgress', function: 'clone' });
   const logInfo = message => logger.info(message, { function: 'clone' });
   logProgress(i18n.t('Log.PrepareCloneOnlineWiki'));
@@ -436,7 +451,10 @@ async function clone(githubRepoUrl, repoFolderPath, userInfo) {
   logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
   await credentialOn(repoFolderPath, githubRepoUrl, userInfo);
   logProgress(i18n.t('Log.StartFetchingFromGithubRemote'));
-  const { stderr, exitCode } = await GitProcess.exec(['pull', 'origin', 'master:master'], repoFolderPath);
+  const { stderr, exitCode } = await GitProcess.exec(
+    ['pull', 'origin', `${defaultBranchName}:${defaultBranchName}`],
+    repoFolderPath,
+  );
   await credentialOff(repoFolderPath);
   if (exitCode !== 0) {
     logInfo(stderr);
