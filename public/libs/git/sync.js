@@ -432,7 +432,6 @@ async function getRemoteUrl(wikiFolderPath) {
 }
 
 async function clone(githubRepoUrl, repoFolderPath, userInfo) {
-  const defaultBranchName = await getDefaultBranchName(repoFolderPath);
   const logProgress = message => logger.notice(message, { handler: 'createWikiProgress', function: 'clone' });
   const logInfo = message => logger.info(message, { function: 'clone' });
   logProgress(i18n.t('Log.PrepareCloneOnlineWiki'));
@@ -451,6 +450,7 @@ async function clone(githubRepoUrl, repoFolderPath, userInfo) {
   logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
   await credentialOn(repoFolderPath, githubRepoUrl, userInfo);
   logProgress(i18n.t('Log.StartFetchingFromGithubRemote'));
+  const defaultBranchName = await getDefaultBranchName(repoFolderPath);
   const { stderr, exitCode } = await GitProcess.exec(
     ['pull', 'origin', `${defaultBranchName}:${defaultBranchName}`],
     repoFolderPath,
