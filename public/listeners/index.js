@@ -129,6 +129,12 @@ const loadListeners = () => {
       isDev,
     }[name];
   });
+  ipcMain.on('get-basename', (event, pathString) => {
+    event.returnValue = path.basename(pathString);
+  });
+  ipcMain.on('get-dirname', (event, pathString) => {
+    event.returnValue = path.dirname(pathString);
+  });
   ipcMain.handle('request-init-wiki-git', async (event, wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) => {
     try {
       await initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
@@ -350,7 +356,7 @@ const loadListeners = () => {
       createMenu();
     }
   });
-  ipcMain.on('request-get-active-workspace', (event) => {
+  ipcMain.on('request-get-active-workspace', event => {
     event.returnValue = getActiveWorkspace();
   });
 
