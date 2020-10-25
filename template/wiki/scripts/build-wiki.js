@@ -1,3 +1,4 @@
+const fs = require('fs');
 const path = require('path');
 const { execSync } = require('child_process');
 
@@ -30,20 +31,27 @@ module.exports = function build() {
   }
   // npm run build:nodejs2html
   execAndLog(`tiddlywiki ${repoFolder} --build externalimages`, { cwd: repoFolder });
+  execAndLog(`tiddlywiki ${repoFolder} --build externaljs`, { cwd: repoFolder });
   // npm run build:sitemap
   execAndLog(
     `tiddlywiki . --rendertiddler sitemap sitemap.xml text/plain && mv ${repoFolder}/output/sitemap.xml ${folderToServe}/sitemap.xml`,
-    { cwd: repoFolder },
+    { cwd: repoFolder }
   );
   // npm run build:minifyHTML
+  const htmlOutputPath = `${folderToServe}/index.html`;
   execAndLog(
-    `html-minifier-terser -c ./html-minifier-terser.config.json -o ${folderToServe}/index.html ${repoFolder}/output/index.html`,
-    { cwd: repoFolder },
+    `html-minifier-terser -c ./html-minifier-terser.config.json -o ${htmlOutputPath} ${repoFolder}/output/index.html`,
+    { cwd: repoFolder }
   );
+  // build dll.js and config tw to load it
+  // original filename contains invalid char, will cause static server unable to load it
+  const htmlContent = fs.readFileSync(htmlOutputPath, 'utf-8');
+  fs.writeFileSync(htmlOutputPath, htmlContent.replace('%24%3A%2Fcore%2Ftemplates%2Ftiddlywiki5.js', 'tiddlywiki5.js'));
+  execAndLog(`mv ${repoFolder}/output/tiddlywiki5.js ${folderToServe}/tiddlywiki5.js`, { cwd: repoFolder });
   // npm run build:precache
   execAndLog(`workbox injectManifest workbox-config.js`, { cwd: repoFolder });
   // npm run build:clean
-  execAndLog(`rm -r ${repoFolder}/output`, { cwd: repoFolder });
+  // execAndLog(`rm -r ${repoFolder}/output`, { cwd: repoFolder });
   // npm run build:pluginLibrary
   execAndLog(`tiddlywiki ${repoFolder} --output ${folderToServe}/library --build library`, { cwd: repoFolder });
 };

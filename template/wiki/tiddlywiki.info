@@ -73,23 +73,10 @@
       "index.html",
       "text/plain"
     ],
-    "static": [
+    "externaljs": [
       "--rendertiddler",
-      "$:/core/templates/static.template.html",
-      "static.html",
-      "text/plain",
-      "--rendertiddler",
-      "$:/core/templates/alltiddlers.template.html",
-      "alltiddlers.html",
-      "text/plain",
-      "--rendertiddlers",
-      "[!is[system]]",
-      "$:/core/templates/static.tiddler.html",
-      "static",
-      "text/plain",
-      "--rendertiddler",
-      "$:/core/templates/static.template.css",
-      "static/static.css",
+      "$:/core/templates/tiddlywiki5.js",
+      "tiddlywiki5.js",
       "text/plain"
     ],
     "library": [
