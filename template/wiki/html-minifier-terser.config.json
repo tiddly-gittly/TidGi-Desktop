@@ -19,7 +19,7 @@
   "processConditionalComments": true,
   "processScripts": ["text/html"],
   "removeAttributeQuotes": true,
-  "removeComments": true,
+  "removeComments": false,
   "removeEmptyAttributes": true,
   "removeEmptyElements": false,
   "removeOptionalTags": true,
