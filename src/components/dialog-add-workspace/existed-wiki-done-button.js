@@ -10,12 +10,11 @@ import Button from '@material-ui/core/Button';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import Snackbar from '@material-ui/core/Snackbar';
 import Alert from '@material-ui/lab/Alert';
-import { basename, dirname } from 'path';
 
 import * as actions from '../../state/dialog-add-workspace/actions';
 
 import type { IUserInfo } from '../../helpers/user-info';
-import { requestCreateSubWiki, getIconPath, ensureWikiExist } from '../../senders';
+import { requestCreateSubWiki, getIconPath, ensureWikiExist, getBaseName, getDirectoryName } from '../../senders';
 import useWikiCreationMessage from './use-wiki-creation-message';
 
 const CloseButton = styled(Button)`
@@ -126,8 +125,8 @@ function DoneButton({
           disabled={!existedFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             if (!userInfo) return;
-            const wikiFolderName = basename(existedFolderLocation);
-            const parentFolderLocation = dirname(existedFolderLocation);
+            const wikiFolderName = getBaseName(existedFolderLocation);
+            const parentFolderLocation = getDirectoryName(existedFolderLocation);
             updateForm(workspaceFormData);
             let creationError = await ensureWikiExist(existedFolderLocation, false);
             if (!creationError) {

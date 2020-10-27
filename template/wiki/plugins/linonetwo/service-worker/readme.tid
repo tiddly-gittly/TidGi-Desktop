@@ -1,0 +1,51 @@
+title: $:/plugins/linonetwo/service-worker/readme
+created: 20200414135748497
+modified: 20200602062349232
+creator: LinOnetwo
+type: text/vnd.tiddlywiki
+
+!! Usage
+
+After install, you have to publish your wiki as a HTTPS website to make it work.
+
+!!! Make sure to include all necessary step in the build process
+
+Add following files to your `/public` folder after build, you can use a script to copy them to the build folder after the wiki build process:
+
+1. Add a `manifest.webmanifest` like:
+
+```json
+{
+  "background_color": "white",
+  "theme_color": "white",
+  "description": "Meme of LinOnetwo 林一二的模因和想法 - TiddlyWiki 非线性的知识库和博客",
+  "display": "standalone",
+  "icons": [
+    {
+      "src": "/TiddlyWikiIconBlack.png",
+      "sizes": "256x256",
+      "type": "image/png"
+    },
+    {
+      "src": "/TiddlyWikiIconWhite.png",
+      "sizes": "144x144",
+      "type": "image/png"
+    }
+  ],
+  "name": "TiddlyWiki",
+  "short_name": "Wiki",
+  "lang": "zh-CN",
+  "start_url": "/",
+  "scope": "/"
+}
+```
+
+Make sure icon size is at least 144x144. And change all necessary fields.
+
+2. Add `service-worker.js`:
+
+See [[https://github.com/linonetwo/Meme-of-LinOnetwo/public/service-worker.js|https://github.com/linonetwo/Meme-of-LinOnetwo/blob/d088f72a2b95ee21b68af1b349d9993a3997bf19/Meme-of-LinOnetwo/public/service-worker.js]] for example.
+
+!!! Config router
+
+Sometimes request from this plugin to your `service-worker.js` will resulted in 404, this is basically because you are not putting `service-worker.js` just besides your `index.html`, or the router config is wrong.

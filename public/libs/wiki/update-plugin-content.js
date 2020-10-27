@@ -4,7 +4,7 @@ const { take, drop, compact } = require('lodash');
 const { logger } = require('../log');
 
 const getMatchPart = tagToMatch => `[!is[system]kin::to[${tagToMatch}]`;
-const getPathPart = folderToPlace => `addprefix[${folderToPlace}]addprefix[/]addprefix[subwiki]]`;
+const getPathPart = folderToPlace => `addprefix[/]addprefix[${folderToPlace}]addprefix[/]addprefix[subwiki]]`;
 const getTagNameFromMatchPart = matchPart => matchPart.replace('[!is[system]kin::to[', '').replace(/].*/, '');
 const getFolderNamePathPart = pathPart =>
   pathPart.replace(']addprefix[/]addprefix[subwiki]]', '').replace(/.+addprefix\[/, '');

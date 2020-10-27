@@ -28,11 +28,11 @@ async function linkWiki(mainWikiPath, folderName, subWikiPath) {
     try {
       await fs.remove(mainWikiTiddlersFolderPath);
     } catch {}
-    await fs.createSymlink(subWikiPath, mainWikiTiddlersFolderPath);
+    await fs.createSymlink(subWikiPath, mainWikiTiddlersFolderPath, 'junction');
     logProgress(i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiSucceed'));
-  } catch {
+  } catch (error) {
     throw new Error(
-      i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiFailed', { subWikiPath, mainWikiTiddlersFolderPath }),
+      i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiFailed', { subWikiPath, mainWikiTiddlersFolderPath, error }),
     );
   }
 }

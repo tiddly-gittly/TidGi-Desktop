@@ -2,11 +2,11 @@
 import React from 'react';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
-import { basename } from 'path';
 
 import Badge from '@material-ui/core/Badge';
 
 import connectComponent from '../../helpers/connect-component';
+import { getBaseName } from '../../senders';
 
 import defaultIcon from '../../images/default-icon.png';
 
@@ -124,7 +124,7 @@ function WorkspaceSelector({
 }: Props) {
   const { t } = useTranslation();
 
-  const shortWorkspaceName = workspaceName ? basename(workspaceName) : t('WorkspaceSelector.BadWorkspacePath');
+  const shortWorkspaceName = workspaceName ? getBaseName(workspaceName) : t('WorkspaceSelector.BadWorkspacePath');
   return (
     <div
       role="button"
@@ -156,7 +156,7 @@ function WorkspaceSelector({
         </div>
       </Badge>
       {sidebarShortcutHints && (id === 'add' || order < 9) && (
-          <p className={classes.shortcutText}>{id === 'add' ? t('WorkspaceSelector.Add') : shortWorkspaceName}</p>
+        <p className={classes.shortcutText}>{id === 'add' ? t('WorkspaceSelector.Add') : shortWorkspaceName}</p>
       )}
     </div>
   );

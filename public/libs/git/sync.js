@@ -6,6 +6,7 @@ const path = require('path');
 const { compact, truncate, trim } = require('lodash');
 const { GitProcess } = require('dugite');
 const isDev = require('electron-is-dev');
+const { ipcMain } = require('electron');
 const { logger } = require('../log');
 const i18n = require('../i18n');
 
@@ -37,7 +38,22 @@ async function credentialOn(wikiFolderPath, githubRepoUrl, userInfo) {
 async function credentialOff(wikiFolderPath) {
   const githubRepoUrl = await getRemoteUrl(wikiFolderPath);
   const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
-  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], wikiFolderPath)
+  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], wikiFolderPath);
+}
+
+/**
+ * Get "master" or "main" from git repo
+ * @param {string} wikiFolderPath
+ */
+async function getDefaultBranchName(wikiFolderPath) {
+  const { stdout } = await GitProcess.exec(['remote', 'show', 'origin'], wikiFolderPath);
+  const lines = stdout.split('\n');
+  const lineWithHEAD = lines.find(line => line.includes('HEAD branch: '));
+  const branchName = lineWithHEAD?.replace('HEAD branch: ', '')?.replace(/\s/g, '');
+  if (!branchName || branchName.includes('(unknown)')) {
+    return 'master';
+  }
+  return branchName;
 }
 
 /**
@@ -76,8 +92,9 @@ async function initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) 
   logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
   await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
   logProgress(i18n.t('Log.StartBackupToGithubRemote'));
+  const defaultBranchName = await getDefaultBranchName(wikiFolderPath);
   const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(
-    ['push', 'origin', 'master:master'],
+    ['push', 'origin', `${defaultBranchName}:${defaultBranchName}`],
     wikiFolderPath,
   );
   await credentialOff(wikiFolderPath);
@@ -107,8 +124,9 @@ async function haveLocalChanges(wikiFolderPath) {
  * @param {string} wikiFolderPath repo path to test
  */
 async function getSyncState(wikiFolderPath, logInfo) {
+  const defaultBranchName = await getDefaultBranchName(wikiFolderPath);
   const { stdout } = await GitProcess.exec(
-    ['rev-list', '--count', '--left-right', 'origin/master...HEAD'],
+    ['rev-list', '--count', '--left-right', `origin/${defaultBranchName}...HEAD`],
     wikiFolderPath,
   );
   logInfo('Checking sync state with upstream');
@@ -258,19 +276,57 @@ async function continueRebase(wikiFolderPath, username, email, logInfo, logProgr
 
 /**
  *
+ * @param {string} githubRepoName similar to "linonetwo/wiki", string after "https://github.com/"
+ */
+async function updateGitInfoTiddler(githubRepoName) {
+  // TODO: prevent circle require, use lib like typedi to prevent this
+  // eslint-disable-next-line global-require
+  const { getActiveBrowserView } = require('../views');
+  const browserView = getActiveBrowserView();
+  if (browserView && browserView?.webContents?.send) {
+    const tiddlerText = await new Promise(resolve => {
+      browserView.webContents.send('wiki-get-tiddler-text', '$:/GitHub/Repo');
+      ipcMain.once('wiki-get-tiddler-text-done', (_, value) => resolve(value));
+    });
+    if (tiddlerText !== githubRepoName) {
+      return new Promise(resolve => {
+        browserView.webContents.send('wiki-add-tiddler', '$:/GitHub/Repo', githubRepoName, {
+          type: 'text/vnd.tiddlywiki',
+        });
+        ipcMain.once('wiki-add-tiddler-done', resolve);
+      });
+    }
+    return Promise.resolve();
+  }
+  return logger.error('no browserView in updateGitInfoTiddler');
+}
+
+/**
+ *
  * @param {string} wikiFolderPath
  * @param {string} githubRepoUrl
  * @param {{ login: string, email: string, accessToken: string }} userInfo
  */
 async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
   /** functions to send data to main thread */
-  const logProgress = message => logger.notice(message, { handler: 'wikiSyncProgress', function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
+  const logProgress = message =>
+    logger.notice(message, { handler: 'wikiSyncProgress', function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
   const logInfo = message => logger.info(message, { function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
   if (disableSyncOnDevelopment && isDev) return;
 
   const { login: username, email } = userInfo;
   const commitMessage = 'Wiki updated with TiddlyGit-Desktop';
-  const branchMapping = 'master:master';
+  const defaultBranchName = await getDefaultBranchName(wikiFolderPath);
+  const branchMapping = `${defaultBranchName}:${defaultBranchName}`;
+
+  // update git info tiddler for plugins to use, for example, linonetwo/github-external-image
+  let wikiRepoName = new URL(githubRepoUrl).pathname;
+  if (wikiRepoName.startsWith('/')) {
+    wikiRepoName = wikiRepoName.replace('/', '');
+  }
+  if (wikiRepoName) {
+    await updateGitInfoTiddler(wikiRepoName);
+  }
 
   // preflight check
   const repoStartingState = await getGitRepositoryState(wikiFolderPath, logInfo, logProgress);
@@ -306,7 +362,7 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
   logProgress(i18n.t('Log.PreparingUserInfo'));
   await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
   logProgress(i18n.t('Log.FetchingData'));
-  await GitProcess.exec(['fetch', 'origin', 'master'], wikiFolderPath);
+  await GitProcess.exec(['fetch', 'origin', defaultBranchName], wikiFolderPath);
 
   //
   switch (await getSyncState(wikiFolderPath, logInfo)) {
@@ -332,7 +388,7 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
     case 'behind': {
       logProgress(i18n.t('Log.LocalStateBehindSync'));
       const { exitCode, stderr } = await GitProcess.exec(
-        ['merge', '--ff', '--ff-only', 'origin/master'],
+        ['merge', '--ff', '--ff-only', `origin/${defaultBranchName}`],
         wikiFolderPath,
       );
       if (exitCode === 0) break;
@@ -343,7 +399,7 @@ async function commitAndSync(wikiFolderPath, githubRepoUrl, userInfo) {
     }
     case 'diverged': {
       logProgress(i18n.t('Log.LocalStateDivergeRebase'));
-      const { exitCode } = await GitProcess.exec(['rebase', 'origin/master'], wikiFolderPath);
+      const { exitCode } = await GitProcess.exec(['rebase', `origin/${defaultBranchName}`], wikiFolderPath);
       if (
         exitCode === 0 &&
         !(await getGitRepositoryState(wikiFolderPath, logInfo, logProgress)) &&
@@ -398,7 +454,11 @@ async function clone(githubRepoUrl, repoFolderPath, userInfo) {
   logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
   await credentialOn(repoFolderPath, githubRepoUrl, userInfo);
   logProgress(i18n.t('Log.StartFetchingFromGithubRemote'));
-  const { stderr, exitCode } = await GitProcess.exec(['pull', 'origin', 'master:master'], repoFolderPath);
+  const defaultBranchName = await getDefaultBranchName(repoFolderPath);
+  const { stderr, exitCode } = await GitProcess.exec(
+    ['pull', 'origin', `${defaultBranchName}:${defaultBranchName}`],
+    repoFolderPath,
+  );
   await credentialOff(repoFolderPath);
   if (exitCode !== 0) {
     logInfo(stderr);

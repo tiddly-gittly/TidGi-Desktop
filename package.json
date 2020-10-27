@@ -13,8 +13,8 @@
     "test": "mocha ./tests",
     "lint": "eslint ./public ./src --ext js",
     "lint:fix": "eslint ./public ./src --ext js --fix",
-    "flow-typed": "rimraf flow-typed/npm && flow-typed install --overwrite || true",
-    "postinstall": "npx patch-package && electron-builder install-app-deps && if-env CI=true && echo \"skip flow-typed\" || npm run flow-typed"
+    "flow-typed": "rimraf flow-typed/npm && flow-typed install --overwrite",
+    "postinstall": "npx electron-builder install-app-deps && if-env CI=true && echo \"skip flow-typed\" || npm run flow-typed"
   },
   "repository": "https://github.com/tiddly-gittly/TiddlyGit-Desktop",
   "author": "Lin Onetwo<linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
@@ -87,6 +87,7 @@
     "flow-bin": "0.135.0",
     "flow-typed": "3.2.1",
     "graphql-hooks": "5.0.0",
+    "if-env": "^1.0.4",
     "prop-types": "15.7.2",
     "react": "16.13.1",
     "react-ace": "9.1.4",

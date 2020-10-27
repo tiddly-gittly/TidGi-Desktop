@@ -2,6 +2,7 @@
 const { ipcMain, nativeTheme, protocol, session, powerMonitor, remote } = require('electron');
 const isDev = require('electron-is-dev');
 const fs = require('fs');
+const Promise = require('bluebird');
 const settings = require('electron-settings');
 const { autoUpdater } = require('electron-updater');
 
@@ -23,6 +24,7 @@ const { commitAndSync } = require('./libs/git');
 const { clearMainBindings } = require('./libs/i18next-electron-fs-backend');
 
 const MAILTO_URLS = require('./constants/mailto-urls');
+const { is } = require('bluebird');
 
 require('./libs/updater');
 
@@ -146,9 +148,22 @@ if (!gotTheLock) {
           await addView(mainWindow.get(), workspace);
           try {
             const userInfo = getPreference('github-user-info');
-            const { name: wikiPath, gitUrl: githubRepoUrl } = workspace;
-            // wait for wiki's watch-fs plugin to be fully initialized
-            await commitAndSync(wikiPath, githubRepoUrl, userInfo);
+            const { name: wikiPath, gitUrl: githubRepoUrl, isSubWiki } = workspace;
+            // wait for main wiki's watch-fs plugin to be fully initialized
+            // and also wait for wiki BrowserView to be able to receive command
+            // eslint-disable-next-line global-require
+            const { getWorkspaceMeta } = require('./libs/workspace-metas');
+            let meta = getWorkspaceMeta(id);
+            if (!isSubWiki) {
+              while (!meta.didFailLoad && !meta.isLoading) {
+                // eslint-disable-next-line no-await-in-loop
+                await Promise.delay(500);
+                meta = getWorkspaceMeta(id);
+              }
+            }
+            if (!isSubWiki && !meta.didFailLoad) {
+              await commitAndSync(wikiPath, githubRepoUrl, userInfo);
+            }
           } catch {
             logger.warning(`Can't sync at wikiStartup()`);
           }
