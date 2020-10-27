@@ -32,6 +32,7 @@
     "standard",
     "plugin:flowtype/recommended",
     "plugin:react/recommended",
+    "plugin:react-hooks/recommended",
     "plugin:unicorn/recommended",
     "prettier",
     "prettier/flowtype",
