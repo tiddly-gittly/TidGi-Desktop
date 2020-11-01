@@ -14,6 +14,7 @@
     "TiddlyGitSupport": "TiddlyGit Support",
     "TiddlyGitWebsite": "TiddlyGit Website",
     "Quit": "Quit",
+    "Notifications": "Notifications...",
     "More": "More",
     "About": "About",
     "CheckForUpdates": "Check for Updates",
@@ -145,6 +146,7 @@
   },
   "Cancel": "Cancel",
   "Preference": {
+    "ClearBrowsingData": "Clear Browsing Data (git isn't affected)",
     "General": "General",
     "Sync": "Sync",
     "SyncInterval": "Sync Interval",

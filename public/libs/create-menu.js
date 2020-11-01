@@ -8,6 +8,7 @@ const goToUrlWindow = require('../windows/go-to-url');
 const mainWindow = require('../windows/main');
 const notificationsWindow = require('../windows/notifications');
 const preferencesWindow = require('../windows/preferences');
+const i18next = require('./i18n');
 
 const formatBytes = require('./format-bytes');
 const getViewBounds = require('./get-view-bounds');
@@ -379,26 +380,26 @@ function createMenu() {
       label: 'TiddlyGit',
       submenu: [
         {
-          label: 'About TiddlyGit',
+          label: i18next.t('ContextMenu.About'),
           click: () => aboutWindow.show(),
         },
         { type: 'separator' },
         updaterMenuItem,
         { type: 'separator' },
         {
-          label: 'Preferences...',
+          label: i18next.t('ContextMenu.Preferences'),
           click: () => preferencesWindow.show(),
           accelerator: 'CmdOrCtrl+,',
         },
         { type: 'separator' },
         {
-          label: 'Notifications...',
+          label: i18next.t('ContextMenu.Notifications'),
           click: () => notificationsWindow.show(),
           accelerator: 'CmdOrCtrl+Shift+N',
         },
         { type: 'separator' },
         {
-          label: 'Clear Browsing Data...',
+          label: i18next.t('Preference.ClearBrowsingData'),
           click: () => ipcMain.emit('request-clear-browsing-data'),
         },
         { type: 'separator' },
@@ -416,26 +417,26 @@ function createMenu() {
       label: 'File',
       submenu: [
         {
-          label: 'About',
+          label: i18next.t('ContextMenu.About'),
           click: () => aboutWindow.show(),
         },
         { type: 'separator' },
         updaterMenuItem,
         { type: 'separator' },
         {
-          label: 'Preferences...',
+          label: i18next.t('ContextMenu.Preferences'),
           accelerator: 'CmdOrCtrl+,',
           click: () => preferencesWindow.show(),
         },
         { type: 'separator' },
         {
-          label: 'Notifications...',
+          label: i18next.t('ContextMenu.Notifications'),
           click: () => notificationsWindow.show(),
           accelerator: 'CmdOrCtrl+Shift+N',
         },
         { type: 'separator' },
         {
-          label: 'Clear Browsing Data...',
+          label: i18next.t('Preference.ClearBrowsingData'),
           accelerator: 'CmdOrCtrl+Shift+Delete',
           click: () => ipcMain.emit('request-clear-browsing-data'),
         },
