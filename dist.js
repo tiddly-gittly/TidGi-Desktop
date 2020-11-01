@@ -154,10 +154,10 @@ const options = {
       // ...excludedFiles.map(pathName => `!${pathName.replace('**/', '')}`),
     ],
     extraResources: [
-      {
-        from: 'public/libs/wiki/wiki-worker.js',
-        to: 'app.asar.unpacked/wiki-worker.js',
-      },
+      // {
+      //   from: 'public/libs/wiki/wiki-worker.js',
+      //   to: 'app.asar.unpacked/wiki-worker.js',
+      // },
       // ...excludedFiles.map(pathName => ({
       //   from: pathName.replace('**/', '').replace('/**/*', ''),
       //   to: `app.asar.unpacked/${pathName.replace('**/', '').replace('/**/*', '')}`,

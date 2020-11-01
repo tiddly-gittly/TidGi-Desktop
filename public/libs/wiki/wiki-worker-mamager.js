@@ -29,9 +29,9 @@ const wikiWorkers = {};
 
 // don't forget to config option in `dist.js` https://github.com/electron/electron/issues/18540#issuecomment-652430001
 // to copy all worker.js and its local dependence to `process.resourcesPath`
-const WIKI_WORKER_PATH = isDev
-  ? path.resolve(__dirname, './wiki-worker.js')
-  : path.resolve(process.resourcesPath, 'app.asar.unpacked', 'wiki-worker.js');
+const WIKI_WORKER_PATH = /* isDev
+  ?  */ path.resolve(__dirname, './wiki-worker.js');
+// : path.resolve(process.resourcesPath, 'app.asar.unpacked', 'wiki-worker.js');
 
 module.exports.startWiki = function startWiki(homePath, tiddlyWikiPort, userName) {
   return new Promise((resolve, reject) => {
