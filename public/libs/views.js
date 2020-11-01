@@ -329,17 +329,6 @@ const addView = async (browserWindow, workspace) => {
       view.webContents.loadURL(`https://chat.google.com${ref}`);
     }
 
-    // fix Google prevents signing in because of security concerns
-    // https://github.com/quanglam2807/webcatalog/issues/455
-    // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
-    // will-navigate doesn't trigger for loadURL, goBack, goForward
-    // so user agent to needed to be double check here
-    // not the best solution as page will be unexpectedly reloaded
-    // but it won't happen very often
-    if (adjustUserAgentByUrl(e.sender.webContents, url)) {
-      view.webContents.reload();
-    }
-
     if (workspaceObj.active) {
       sendToAllWindows('update-can-go-back', view.webContents.canGoBack());
       sendToAllWindows('update-can-go-forward', view.webContents.canGoForward());
