@@ -53,13 +53,85 @@ switch (process.platform) {
   }
 }
 
+/**
+ * exclude file from asar and unpack them
+ * Should also exclude them https://github.com/electron-userland/electron-builder/issues/2290
+ */
+const excludedFiles = [
+  // add dependencies of tiddlywiki here
+  // https://github.com/electron/electron/issues/18540#issuecomment-660679649
+  // tiddlywiki in the worker_thread
+  '**/node_modules/@tiddlygit/tiddlywiki/**/*',
+  // dep of dugite, asar unpack it so we can solve https://github.com/desktop/dugite/issues/414
+  '**/node_modules/dugite/**/*',
+  '**/node_modules/rimraf/**/*',
+  '**/node_modules/progress/**/*',
+  '**/node_modules/mkdirp/**/*',
+  '**/node_modules/minimist/**/*',
+  '**/node_modules/glob/**/*',
+  '**/node_modules/checksum/**/*',
+  '**/node_modules/got/**/*',
+  '**/node_modules/tar/**/*',
+  '**/node_modules/fs.realpath/**/*',
+  '**/node_modules/inflight/**/*',
+  '**/node_modules/path-is-absolute/**/*',
+  '**/node_modules/optimist/**/*',
+  '**/node_modules/minimatch/**/*',
+  '**/node_modules/inherits/**/*',
+  '**/node_modules/@sindresorhus/is/**/*',
+  '**/node_modules/@szmarczak/http-timer/**/*',
+  '**/node_modules/decompress-response/**/*',
+  '**/node_modules/duplexer3/**/*',
+  '**/node_modules/cacheable-request/**/*',
+  '**/node_modules/get-stream/**/*',
+  '**/node_modules/lowercase-keys/**/*',
+  '**/node_modules/mimic-response/**/*',
+  '**/node_modules/p-cancelable/**/*',
+  '**/node_modules/to-readable-stream/**/*',
+  '**/node_modules/url-parse-lax/**/*',
+  '**/node_modules/fs-minipass/**/*',
+  '**/node_modules/chownr/**/*',
+  '**/node_modules/safe-buffer/**/*',
+  '**/node_modules/once/**/*',
+  '**/node_modules/minizlib/**/*',
+  '**/node_modules/wrappy/**/*',
+  '**/node_modules/wordwrap/**/*',
+  '**/node_modules/defer-to-connect/**/*',
+  '**/node_modules/minipass/**/*',
+  '**/node_modules/clone-response/**/*',
+  '**/node_modules/get-stream/**/*',
+  '**/node_modules/http-cache-semantics/**/*',
+  '**/node_modules/keyv/**/*',
+  '**/node_modules/lowercase-keys/**/*',
+  '**/node_modules/brace-expansion/**/*',
+  '**/node_modules/responselike/**/*',
+  '**/node_modules/pump/**/*',
+  '**/node_modules/normalize-url/**/*',
+  '**/node_modules/yallist/**/*',
+  '**/node_modules/json-buffer/**/*',
+  '**/node_modules/balanced-match/**/*',
+  '**/node_modules/concat-map/**/*',
+  '**/node_modules/prepend-http/**/*',
+  '**/node_modules/end-of-stream/**/*',
+  // deps of electron-settings
+  '**/node_modules/electron-settings/**/*',
+  '**/node_modules/lodash.get/**/*',
+  '**/node_modules/lodash.set/**/*',
+  '**/node_modules/write-file-atomic/**/*',
+  '**/node_modules/lodash.has/**/*',
+  '**/node_modules/lodash.unset/**/*',
+  '**/node_modules/is-typedarray/**/*',
+  '**/node_modules/signal-exit/**/*',
+  '**/node_modules/imurmurhash/**/*',
+  '**/node_modules/typedarray-to-buffer/**/*',
+];
+
 const options = {
   targets,
   config: {
     appId: 'com.tiddlygit.app',
     productName: 'TiddlyGit',
     asar: true,
-    files: ['!tests/**/*', '!docs/**/*', '!template/**/*', '!flow-typed/**/*', '!localization/**/*'],
     extraFiles: [
       {
         from: 'template/wiki',
@@ -72,14 +144,25 @@ const options = {
         filter: ['**/*'],
       },
     ],
-    // add dependencies of tiddlywiki here
-    // https://github.com/electron/electron/issues/18540#issuecomment-660679649
-    asarUnpack: ['**/node_modules/@tiddlygit/tiddlywiki/**/*'],
+    asarUnpack: excludedFiles,
+    files: [
+      '!tests/**/*',
+      '!docs/**/*',
+      '!template/**/*',
+      '!flow-typed/**/*',
+      '!localization/**/*',
+      // ...excludedFiles.map(pathName => `!${pathName.replace('**/', '')}`),
+    ],
     extraResources: [
       {
         from: 'public/libs/wiki/wiki-worker.js',
         to: 'app.asar.unpacked/wiki-worker.js',
       },
+      // ...excludedFiles.map(pathName => ({
+      //   from: pathName.replace('**/', '').replace('/**/*', ''),
+      //   to: `app.asar.unpacked/${pathName.replace('**/', '').replace('/**/*', '')}`,
+      //   filter: ['**/*'],
+      // }))
     ],
     protocols: [
       {
