@@ -8,7 +8,7 @@
 
 [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TiddlyGit-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)
 
-For windows users (I'm personally using MacOS), I'm recently lacking time to maintain the Windows build, so there are some bug on it, but I know where the issue is, if you can help please contact me via email or issue.
+For windows users (I'm personally using MacOS), I'm recently lacking time to fully test the Windows build, so there may be some bug in it, if you can help test and find some bug, please contact me github issue.
 
 <details>
 <summary>For mac users, since I haven't buy Apple developer key yet, so you have to entrust App to open it ◀</summary>
