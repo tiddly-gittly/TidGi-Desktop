@@ -20,7 +20,7 @@
   "author": "Lin Onetwo<linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
   "dependencies": {
     "@cliqz/adblocker-electron": "1.18.3",
-    "@tiddlygit/tiddlywiki": "^5.1.23-prerelease.20201011-fix-file-info",
+    "@tiddlygit/tiddlywiki": "^5.1.23-prerelease.20201107-fix-file-info",
     "bluebird": "^3.7.2",
     "chokidar": "^3.4.2",
     "darkreader": "4.9.21",
