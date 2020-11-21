@@ -87,11 +87,16 @@ function NewWikiDoneButton({
         <Alert severity="info">{wikiCreationMessage}</Alert>
       </Snackbar>
 
+      {isCreateMainWorkspace && (!githubWikiUrl || !userInfo) && (
+        <Typography variant="body1" display="inline">
+          {t('AddWorkspace.NoGitInfoAlert')}
+        </Typography>
+      )}
       {isCreateMainWorkspace ? (
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!parentFolderLocation || !githubWikiUrl || progressBarOpen || !userInfo}
+          disabled={!parentFolderLocation || progressBarOpen}
           onClick={async () => {
             updateForm(workspaceFormData);
             setWikiCreationMessage(t('AddWorkspace.Processing'));

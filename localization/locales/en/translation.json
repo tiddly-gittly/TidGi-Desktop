@@ -85,7 +85,8 @@
     "TagName": "Tag Name",
     "TagNameHelp": "Tiddlers with this Tag will be add to this sub-wiki (you can add or change this Tag later, by right-click workspace Icon and choose Edit Workspace)",
     "GitToken": "Git Token",
-    "GitTokenDescription": "The credentials used to log in to Git. Will expire after a certain period of time"
+    "GitTokenDescription": "The credentials used to log in to Git. Will expire after a certain period of time",
+    "NoGitInfoAlert": "You haven't selected an online Git repo address, or you haven't successfully logged in to your Github account. Click the Create button will create a local wiki that will not be automatically sync to Github. Please be aware."
   },
   "EditWorkspace": {
     "Path": "Wiki Path",
