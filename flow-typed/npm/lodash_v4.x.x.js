@@ -1,5 +1,5 @@
-// flow-typed signature: 1ef367da1bb1b9d6ec1962296ee3afc0
-// flow-typed version: 2f1ddf67d5/lodash_v4.x.x/flow_>=v0.104.x
+// flow-typed signature: 61f6aff2b7a4c2d2b48136a10568f722
+// flow-typed version: 173a6441ff/lodash_v4.x.x/flow_>=v0.104.x
 
 declare module "lodash" {
   declare type Path = $ReadOnlyArray<string | number> | string | number;
@@ -821,7 +821,9 @@ declare module "lodash" {
     wrap(value?: any, wrapper?: ?Function): Function;
 
     // Lang
-    castArray(value: *): Array<any>;
+    castArray(): Array<any>;
+    castArray<T: void | null | number | string | {...}>(value: T): Array<T>;
+    castArray<T: Array<any>>(value: T): T;
     clone<T>(value: T): T;
     cloneDeep<T>(value: T): T;
     cloneDeepWith<T, U>(
@@ -2414,7 +2416,9 @@ declare module "lodash/fp" {
     wrap(wrapper: Function, value: any): Function;
 
     // Lang
-    castArray(value: *): Array<any>;
+    castArray(): Array<any>;
+    castArray<T: void | null | number | string | {...}>(value: T): Array<T>;
+    castArray<T: Array<any>>(value: T): T;
     clone<T>(value: T): T;
     cloneDeep<T>(value: T): T;
     cloneDeepWith<T, U>(

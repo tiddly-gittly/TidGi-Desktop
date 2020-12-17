@@ -1,5 +1,5 @@
-// flow-typed signature: c2be98acf88fa4c9915a337a66702bb5
-// flow-typed version: c6154227d1/prop-types_v15.x.x/flow_>=v0.104.x
+// flow-typed signature: c93a723cbeb4d2f95d6a472157f6052f
+// flow-typed version: 61b795e5b6/prop-types_v15.x.x/flow_>=v0.104.x
 
 type $npm$propTypes$ReactPropsCheckType = (
   props: any,
@@ -20,6 +20,7 @@ declare module 'prop-types' {
   declare var any: React$PropType$Primitive<any>;
   declare var arrayOf: React$PropType$ArrayOf;
   declare var element: React$PropType$Primitive<any>;
+  declare var elementType: React$PropType$Primitive<any>;
   declare var instanceOf: React$PropType$InstanceOf;
   declare var node: React$PropType$Primitive<any>;
   declare var objectOf: React$PropType$ObjectOf;
