@@ -73,8 +73,8 @@ export const getPauseNotificationsInfo = () => ipcRenderer.sendSync('get-pause-n
 
 // Preferences
 // eslint-disable-next-line no-use-before-define
-type JsonValue = string | number | boolean | null | JsonArray | JsonObject | void;
-interface JsonObject {
+export type JsonValue = string | number | boolean | null | JsonArray | JsonObject | void;
+export interface JsonObject {
   [x: string]: JsonValue;
 }
 interface JsonArray extends Array<JsonValue> {} // tslint:disable-line no-empty-interface

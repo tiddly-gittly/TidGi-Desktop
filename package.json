@@ -1,23 +1,72 @@
 {
-  "name": "TiddlyGit",
+  "name": "tiddly-git",
+  "productName": "TiddlyGit",
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
   "version": "0.3.6",
-  "main": "public/electron.js",
   "scripts": {
-    "electron-dev": "npm run clean:dev && concurrently \"cross-env BROWSER=none npm run start\" \"wait-on http://localhost:3000 && electron .\" -k",
-    "dist-dev": "npm run clean:dev && cross-env CSC_IDENTITY_AUTO_DISCOVERY=false npm run dist",
-    "dist": "npm run build && node dist.js",
-    "clean:dev": "rimraf ./logs && rimraf ./dist && rimraf ./build",
-    "build": "rescripts build",
-    "start": "rescripts start",
-    "test": "mocha ./tests",
+    "start": "electron-forge start",
+    "package": "electron-forge package",
+    "make": "electron-forge make",
     "lint": "eslint ./public ./src --ext js",
     "lint:fix": "eslint ./public ./src --ext js --fix",
-    "flow-typed": "rimraf flow-typed/npm && flow-typed install --overwrite",
-    "postinstall": "npx electron-builder install-app-deps && if-env CI=true && echo \"skip flow-typed\" || npm run flow-typed"
+    "installType": "typesync",
+    "postinstall": "npx electron-builder install-app-deps && if-env CI=true && echo \"skip flow-typed\" || npm run installType"
   },
   "repository": "https://github.com/tiddly-gittly/TiddlyGit-Desktop",
   "author": "Lin Onetwo<linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
+  "main": ".webpack/main",
+  "config": {
+    "forge": {
+      "packagerConfig": {
+        "icon": "build-resources/icon.icns",
+        "asar": true,
+        "extraResource": []
+      },
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "name": "my_new_app"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {}
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {}
+        }
+      ],
+      "plugins": [
+        [
+          "@electron-forge/plugin-webpack",
+          {
+            "mainConfig": "./webpack.main.config.js",
+            "renderer": {
+              "config": "./webpack.renderer.config.js",
+              "entryPoints": [
+                {
+                  "html": "./src/index.html",
+                  "js": "./src/index.tsx",
+                  "preload": {
+                    "js": "./src/services/preload/main.ts"
+                  },
+                  "name": "main_window"
+                }
+              ]
+            }
+          }
+        ]
+      ]
+    }
+  },
   "dependencies": {
     "@cliqz/adblocker-electron": "1.18.3",
     "@tiddlygit/tiddlywiki": "^5.1.23-prerelease.20201217",
@@ -41,6 +90,7 @@
     "menubar": "9.0.1",
     "node-fetch": "2.6.1",
     "proxy-agent": "4.0.0",
+    "reflect-metadata": "^0.1.13",
     "regedit": "3.0.3",
     "semver": "7.3.2",
     "tmp": "0.2.1",
@@ -52,42 +102,76 @@
   "devDependencies": {
     "@authing/sso": "1.6.0",
     "@date-io/date-fns": "2.10.6",
+    "@electron-forge/cli": "6.0.0-beta.54",
+    "@electron-forge/maker-deb": "6.0.0-beta.54",
+    "@electron-forge/maker-rpm": "6.0.0-beta.54",
+    "@electron-forge/maker-squirrel": "6.0.0-beta.54",
+    "@electron-forge/maker-zip": "6.0.0-beta.54",
+    "@electron-forge/plugin-auto-unpack-natives": "6.0.0-beta.54",
+    "@electron-forge/plugin-webpack": "6.0.0-beta.54",
     "@material-ui/core": "4.11.0",
     "@material-ui/icons": "4.9.1",
     "@material-ui/lab": "^4.0.0-alpha.56",
     "@material-ui/pickers": "^4.0.0-alpha.12",
     "@rescripts/cli": "0.0.14",
+    "@types/bluebird": "^3.5.33",
+    "@types/classnames": "2.2.6",
+    "@types/concurrently": "5.2.1",
+    "@types/csp-html-webpack-plugin": "3.0.0",
+    "@types/download": "6.2.4",
+    "@types/electron-window-state": "2.0.34",
+    "@types/eslint": "7.2.6",
+    "@types/eslint-plugin-prettier": "3.1.0",
+    "@types/fs-extra": "9.0.1",
+    "@types/i18next-fs-backend": "^1.0.0",
+    "@types/is-url": "1.2.28",
+    "@types/lodash": "4.14.165",
+    "@types/node": "^14.14.14",
+    "@types/node-fetch": "2.5.7",
+    "@types/prettier": "^2.1.5",
+    "@types/prop-types": "15.7.2",
+    "@types/react": "17.0.0",
+    "@types/react-dom": "17.0.0",
+    "@types/react-redux": "7.1.12",
+    "@types/react-window": "1.8.2",
+    "@types/react-window-infinite-loader": "1.0.3",
+    "@types/rimraf": "^3.0.0",
+    "@types/semver": "7.3.2",
+    "@types/simplebar": "5.1.1",
+    "@types/styled-components": "5.1.7",
+    "@types/tmp": "0.2.0",
+    "@types/uuid": "8.3.0",
+    "@types/wait-on": "5.2.0",
+    "@typescript-eslint/eslint-plugin": "4.9.1",
+    "@typescript-eslint/parser": "4.9.1",
     "ace-builds": "1.4.12",
-    "babel-eslint": "10.1.0",
-    "babel-preset-env": "1.7.0",
-    "babel-preset-react": "6.24.1",
     "classnames": "2.2.6",
     "concurrently": "5.3.0",
     "cross-env": "7.0.2",
+    "csp-html-webpack-plugin": "4.0.0",
     "date-fns": "2.16.1",
     "electron": "^12.0.0-beta.10",
     "electron-builder": "22.8.1",
     "electron-notarize": "1.0.0",
-    "eslint": "^7.11.0",
-    "eslint-config-airbnb": "18.2.0",
-    "eslint-config-prettier": "6.12.0",
-    "eslint-config-standard": "14.1.1",
-    "eslint-plugin-flowtype": "5.2.0",
-    "eslint-plugin-html": "6.1.0",
+    "eslint": "7.15.0",
+    "eslint-config-prettier": "7.0.0",
+    "eslint-config-standard": "16.0.2",
+    "eslint-config-standard-with-typescript": "^19.0.1",
+    "eslint-import-resolver-alias": "^1.1.2",
+    "eslint-import-resolver-typescript": "^2.3.0",
+    "eslint-plugin-babel": "5.3.1",
+    "eslint-plugin-html": "6.1.1",
     "eslint-plugin-import": "2.22.1",
-    "eslint-plugin-jsx-a11y": "6.3.1",
     "eslint-plugin-node": "11.1.0",
-    "eslint-plugin-prettier": "3.1.4",
+    "eslint-plugin-prettier": "3.2.0",
     "eslint-plugin-promise": "4.2.1",
-    "eslint-plugin-react": "7.21.4",
-    "eslint-plugin-react-hooks": "4.1.2",
-    "eslint-plugin-sonarjs": "0.5.0",
-    "eslint-plugin-standard": "4.0.1",
-    "eslint-plugin-unicorn": "22.0.0",
-    "flow-bin": "0.135.0",
-    "flow-typed": "3.2.1",
-    "graphql-hooks": "5.0.0",
+    "eslint-plugin-react": "7.21.5",
+    "eslint-plugin-standard": "5.0.0",
+    "eslint-plugin-unicorn": "23.0.0",
+    "fork-ts-checker-webpack-plugin": "^6.0.7",
+    "graphql-hooks": "^5.0.0",
     "if-env": "^1.0.4",
+    "node-loader": "^1.0.2",
     "prop-types": "15.7.2",
     "react": "16.13.1",
     "react-ace": "9.1.4",
@@ -106,15 +190,12 @@
     "simplebar-react": "3.0.0-beta.5",
     "styled-components": "5.2.0",
     "styled-is": "1.3.0",
+    "subscriptions-transport-ws": "^0.9.18",
+    "ts-loader": "^8.0.12",
     "typeface-roboto": "1.1.13",
+    "typescript": "4.1.2",
+    "typesync": "0.8.0",
     "wait-on": "5.2.0"
   },
-  "homepage": "./",
-  "private": false,
-  "rescripts": [
-    "disable-eslint"
-  ],
-  "browserslist": [
-    "last 1 electron version"
-  ]
+  "private": false
 }
