@@ -7,8 +7,8 @@
     "start": "electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "lint": "eslint ./public ./src --ext js",
-    "lint:fix": "eslint ./public ./src --ext js --fix",
+    "lint": "eslint ./src --ext js",
+    "lint:fix": "eslint ./src --ext js --fix",
     "installType": "typesync",
     "postinstall": "npx electron-builder install-app-deps && if-env CI=true && echo \"skip flow-typed\" || npm run installType"
   },

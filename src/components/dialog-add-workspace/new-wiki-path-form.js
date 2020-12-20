@@ -40,26 +40,26 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
 `;
 
 type OwnProps = {
-  parentFolderLocationSetter: ((string)) => void,
+  parentFolderLocationSetter: (string) => void,
   wikiFolderName: string,
-  wikiFolderNameSetter: ((string)) => void,
+  wikiFolderNameSetter: (string) => void,
   tagName: string,
-  tagNameSetter: ((string)) => void,
+  tagNameSetter: (string) => void,
   mainWikiToLink: Object,
-  mainWikiToLinkSetter: ((Object)) => void,
+  mainWikiToLinkSetter: (Object) => void,
   parentFolderLocation: string,
   wikiPort: number,
-  wikiPortSetter: ((number)) => void,
+  wikiPortSetter: (number) => void,
   fileSystemPaths: { tagName: string, folderName: string }[],
   isCreateMainWorkspace: boolean,
 };
 type DispatchProps = {
-  setWikiCreationMessage: ((string)) => void,
+  setWikiCreationMessage: (string) => void,
 };
 type StateProps = {
   wikiCreationMessage: string,
 };
-type Props = { ...OwnProps, ...DispatchProps, ...StateProps };
+type Props = OwnProps & DispatchProps & StateProps;
 
 function NewWikiPathForm({
   setWikiCreationMessage,

@@ -22,7 +22,7 @@ const tabIndexMap = {
 
 export interface IProps {
   currentTab: string;
-  currentTabSetter: string => void;
+  currentTabSetter: (id: string) => void;
 }
 export default function TabBar({ currentTab, currentTabSetter }: IProps) {
   const { t } = useTranslation();

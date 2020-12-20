@@ -14,8 +14,8 @@ export const setGithubToken = (token: string | void) => requestSetPreference('gi
 export const getGithubToken = () => getPreference<string | void>('github-token') || undefined;
 
 export default function GitTokenForm(props: {
-  accessTokenSetter: (((string | void) => string | void) | string | void) => void,
-  userInfoSetter: (((IUserInfo | void) => IUserInfo | void) | IUserInfo | void) => void,
+  accessTokenSetter: (token: string | void) => void,
+  userInfoSetter: (info: IUserInfo | void) => void,
   accessToken: string,
   children: any,
 }) {

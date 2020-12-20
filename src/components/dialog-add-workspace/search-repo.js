@@ -65,8 +65,8 @@ type Props = {
   accessToken: string,
   githubWikiUrl: string,
   currentTab: string,
-  githubWikiUrlSetter: ((string)) => void,
-  wikiFolderNameSetter: ((string)) => void,
+  githubWikiUrlSetter: (string) => void,
+  wikiFolderNameSetter: (string) => void,
   userInfo: IUserInfo,
   isCreateMainWorkspace: boolean,
 };

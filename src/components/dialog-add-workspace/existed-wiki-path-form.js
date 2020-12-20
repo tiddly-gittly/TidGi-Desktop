@@ -55,17 +55,13 @@ type OwnProps = {
   isCreateMainWorkspace: boolean,
 };
 type DispatchProps = {
-  setWikiCreationMessage: ((string)) => void,
+  setWikiCreationMessage: (string) => void,
 };
 type StateProps = {
   wikiCreationMessage: string,
 };
 
-type Props = {
-  ...OwnProps,
-  ...DispatchProps,
-  ...StateProps,
-};
+type Props = OwnProps & DispatchProps & StateProps;
 
 function WikiPathForm({
   setWikiCreationMessage,

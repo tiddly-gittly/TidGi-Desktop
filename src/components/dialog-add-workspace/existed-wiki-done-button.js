@@ -31,19 +31,15 @@ type OwnProps = {
   userInfo: IUserInfo,
 };
 type DispatchProps = {
-  updateForm: ((Object)) => void,
-  setWikiCreationMessage: ((string)) => void,
+  updateForm: (Object) => void,
+  setWikiCreationMessage: (string) => void,
   save: () => void,
 };
 type StateProps = {
   wikiCreationMessage: string,
 };
 
-type Props = {
-  ...OwnProps,
-  ...DispatchProps,
-  ...StateProps,
-};
+type Props = OwnProps & DispatchProps & StateProps;
 
 function DoneButton({
   isCreateMainWorkspace,

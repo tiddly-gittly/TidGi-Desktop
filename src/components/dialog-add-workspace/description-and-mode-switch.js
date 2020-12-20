@@ -14,7 +14,7 @@ const Container: ComponentType<{}> = styled(Paper)`
 
 interface Props {
   isCreateMainWorkspace: boolean;
-  isCreateMainWorkspaceSetter: boolean => void;
+  isCreateMainWorkspaceSetter: (boolean) => void;
 }
 
 export default function Description({ isCreateMainWorkspace, isCreateMainWorkspaceSetter }: Props) {
