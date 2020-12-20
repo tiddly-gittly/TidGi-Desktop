@@ -1,10 +1,16 @@
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fs'.
 const fs = require('fs');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
 const path = require('path');
 const chokidar = require('chokidar');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'trim'.
 const { trim, compact, debounce } = require('lodash');
 
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
 const { getPreference } = require('../preferences');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
 const { logger } = require('../log');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'commitAndS... Remove this comment to see the full error message
 const { commitAndSync } = require('../git');
 
 const syncDebounceInterval = getPreference('syncDebounceInterval');
@@ -17,11 +23,12 @@ const topLevelFoldersToIgnored = ['node_modules', '.git'];
 // { [name: string]: Watcher }
 const wikiWatchers = {};
 
-function watchWiki(wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath = wikiRepoPath) {
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'watchWiki'... Remove this comment to see the full error message
+function watchWiki(wikiRepoPath: any, githubRepoUrl: any, userInfo: any, wikiFolderPath = wikiRepoPath) {
   if (!fs.existsSync(wikiRepoPath)) {
     return logger.error('Folder not exist in watchFolder()', { wikiRepoPath, wikiFolderPath, githubRepoUrl });
   }
-  const onChange = debounce(async fileName => {
+  const onChange = debounce(async (fileName: any) => {
     if (lock) {
       logger.info(`${fileName} changed, but lock is on, so skip`);
       return;
@@ -39,18 +46,15 @@ function watchWiki(wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath = wikiR
   try {
     gitignoreFile = fs.readFileSync(gitIgnoreFilePath, 'utf-8') || '';
   } catch {
-    logger.info(
-      `Fail to load .gitignore from ${gitIgnoreFilePath}, this is ok if you don't need a .gitignore in the subwiki.`,
-      { wikiRepoPath, wikiFolderPath, githubRepoUrl },
-    );
+    logger.info(`Fail to load .gitignore from ${gitIgnoreFilePath}, this is ok if you don't need a .gitignore in the subwiki.`, {
+      wikiRepoPath,
+      wikiFolderPath,
+      githubRepoUrl,
+    });
   }
-  const filesToIgnoreFromGitIgnore = compact(gitignoreFile.split('\n').filter(line => !trim(line).startsWith('#')));
+  const filesToIgnoreFromGitIgnore = compact(gitignoreFile.split('\n').filter((line) => !trim(line).startsWith('#')));
   const watcher = chokidar.watch(wikiFolderPath, {
-    ignored: [
-      ...filesToIgnoreFromGitIgnore,
-      ...topLevelFoldersToIgnored,
-      ...frequentlyChangedFileThatShouldBeIgnoredFromWatch,
-    ],
+    ignored: [...filesToIgnoreFromGitIgnore, ...topLevelFoldersToIgnored, ...frequentlyChangedFileThatShouldBeIgnoredFromWatch],
     cwd: wikiFolderPath,
     awaitWriteFinish: true,
     ignoreInitial: true,
@@ -59,16 +63,20 @@ function watchWiki(wikiRepoPath, githubRepoUrl, userInfo, wikiFolderPath = wikiR
   watcher.on('add', onChange);
   watcher.on('change', onChange);
   watcher.on('unlink', onChange);
-  return new Promise(resolve => {
+  return new Promise((resolve) => {
     watcher.on('ready', () => {
       logger.info(`wiki Github syncer is watching ${wikiFolderPath} now`, { wikiRepoPath, wikiFolderPath, githubRepoUrl });
+      // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
       wikiWatchers[wikiRepoPath] = watcher;
+      // @ts-expect-error ts-migrate(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
       resolve();
     });
   });
 }
 
-async function stopWatchWiki(wikiRepoPath) {
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'stopWatchW... Remove this comment to see the full error message
+async function stopWatchWiki(wikiRepoPath: any) {
+  // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   const watcher = wikiWatchers[wikiRepoPath];
   if (watcher) {
     await watcher.close();

@@ -1,11 +1,11 @@
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
 const { getPreference } = require('./preferences');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
 const sendToAllWindows = require('./send-to-all-windows');
-const {
-  setViewsAudioPref,
-  setViewsNotificationsPref,
-} = require('./views');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setViewsAu... Remove this comment to see the full error message
+const { setViewsAudioPref, setViewsNotificationsPref } = require('./views');
 
-let pauseNotificationsInfo = null;
+let pauseNotificationsInfo: any = null;
 
 const getCurrentScheduledDateTime = () => {
   const pauseNotificationsBySchedule = getPreference('pauseNotificationsBySchedule');
@@ -81,7 +81,7 @@ const calcPauseNotificationsInfo = () => {
   if (typeof pauseNotifications === 'string') {
     // overwrite schedule
     if (pauseNotifications.startsWith('resume:')) {
-      const overwriteTilDate = new Date(pauseNotifications.substring(7));
+      const overwriteTilDate = new Date(pauseNotifications.slice(7));
       if (overwriteTilDate >= currentDate) {
         return null;
       }
@@ -89,7 +89,7 @@ const calcPauseNotificationsInfo = () => {
 
     // normal pause (without scheduling)
     if (pauseNotifications.startsWith('pause:')) {
-      const tilDate = new Date(pauseNotifications.substring(6));
+      const tilDate = new Date(pauseNotifications.slice(6));
       if (tilDate >= currentDate) {
         return {
           reason: 'non-scheduled',
@@ -112,8 +112,9 @@ const calcPauseNotificationsInfo = () => {
   return null;
 };
 
-let timeouts = [];
+let timeouts: any = [];
 let updating = false;
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'updatePaus... Remove this comment to see the full error message
 const updatePauseNotificationsInfo = () => {
   // avoid multiple timeouts running at the same time
   if (updating) return;
@@ -133,6 +134,7 @@ const updatePauseNotificationsInfo = () => {
   const schedule = getCurrentScheduledDateTime();
 
   // clear old timeouts
+  // @ts-expect-error ts-migrate(7006) FIXME: Parameter 'timeout' implicitly has an 'any' type.
   timeouts.forEach((timeout) => {
     clearTimeout(timeout);
   });
@@ -140,7 +142,7 @@ const updatePauseNotificationsInfo = () => {
   timeouts = [];
 
   // create new update timeout
-  const addTimeout = (d) => {
+  const addTimeout = (d: any) => {
     const t = new Date(d).getTime() - new Date().getTime();
     // https://github.com/nodejs/node-v0.x-archive/issues/8656
     if (t > 0 && t < 2147483647) {
@@ -152,10 +154,10 @@ const updatePauseNotificationsInfo = () => {
   };
   if (pauseNotifications) {
     if (pauseNotifications.startsWith('resume:')) {
-      addTimeout(new Date(pauseNotifications.substring(7)));
+      addTimeout(new Date(pauseNotifications.slice(7)));
     }
     if (pauseNotifications.startsWith('pause:')) {
-      addTimeout(new Date(pauseNotifications.substring(6)));
+      addTimeout(new Date(pauseNotifications.slice(6)));
     }
   }
   if (schedule) {
@@ -166,6 +168,7 @@ const updatePauseNotificationsInfo = () => {
   updating = false;
 };
 
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPauseNo... Remove this comment to see the full error message
 const getPauseNotificationsInfo = () => pauseNotificationsInfo;
 
 module.exports = {

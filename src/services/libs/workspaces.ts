@@ -1,6 +1,10 @@
+// @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
 const { app } = require('electron');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
 const path = require('path');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fsExtra'.
 const fsExtra = require('fs-extra');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'settings'.
 const settings = require('electron-settings');
 const { v1: uuidv1 } = require('uuid');
 const Jimp = require('jimp');
@@ -8,18 +12,22 @@ const isUrl = require('is-url');
 const download = require('download');
 const tmp = require('tmp');
 
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
 const sendToAllWindows = require('./send-to-all-windows');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'wikiStartu... Remove this comment to see the full error message
 const wikiStartup = require('./wiki/wiki-startup');
 const { stopWatchWiki } = require('./wiki/watch-wiki');
 const { stopWiki } = require('./wiki/wiki-worker-mamager');
 const { updateSubWikiPluginContent } = require('./wiki/update-plugin-content');
 
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'v'.
 const v = '14';
 
-let workspaces;
+let workspaces: any;
 
 const countWorkspaces = () => Object.keys(workspaces).length;
 
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getWorkspa... Remove this comment to see the full error message
 const getWorkspaces = () => {
   if (workspaces) return workspaces;
 
@@ -31,22 +39,27 @@ const getWorkspaces = () => {
   return workspaces;
 };
 
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getWorkspa... Remove this comment to see the full error message
 const getWorkspacesAsList = () => {
+  // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
   const workspaceLst = Object.values(getWorkspaces()).sort((a, b) => a.order - b.order);
 
   return workspaceLst;
 };
 
-const getWorkspace = id => workspaces[id];
-const getWorkspaceByName = name => getWorkspacesAsList().find(workspace => workspace.name === name);
+const getWorkspace = (id: any) => workspaces[id];
+// @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
+const getWorkspaceByName = (name: any) => getWorkspacesAsList().find((workspace) => workspace.name === name);
 
-const getPreviousWorkspace = id => {
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPreviou... Remove this comment to see the full error message
+const getPreviousWorkspace = (id: any) => {
   const workspaceLst = getWorkspacesAsList();
 
   let currentWorkspaceI = 0;
-  for (let i = 0; i < workspaceLst.length; i += 1) {
-    if (workspaceLst[i].id === id) {
-      currentWorkspaceI = i;
+  // @ts-expect-error ts-migrate(2569) FIXME: Type 'IterableIterator<[number, unknown]>' is not ... Remove this comment to see the full error message
+  for (const [index, element] of workspaceLst.entries()) {
+    if (element.id === id) {
+      currentWorkspaceI = index;
       break;
     }
   }
@@ -57,13 +70,15 @@ const getPreviousWorkspace = id => {
   return workspaceLst[currentWorkspaceI - 1];
 };
 
-const getNextWorkspace = id => {
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getNextWor... Remove this comment to see the full error message
+const getNextWorkspace = (id: any) => {
   const workspaceLst = getWorkspacesAsList();
 
   let currentWorkspaceI = 0;
-  for (let i = 0; i < workspaceLst.length; i += 1) {
-    if (workspaceLst[i].id === id) {
-      currentWorkspaceI = i;
+  // @ts-expect-error ts-migrate(2569) FIXME: Type 'IterableIterator<[number, unknown]>' is not ... Remove this comment to see the full error message
+  for (const [index, element] of workspaceLst.entries()) {
+    if (element.id === id) {
+      currentWorkspaceI = index;
       break;
     }
   }
@@ -74,12 +89,15 @@ const getNextWorkspace = id => {
   return workspaceLst[currentWorkspaceI + 1];
 };
 
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getActiveW... Remove this comment to see the full error message
 const getActiveWorkspace = () => {
   if (!workspaces) return null;
-  return Object.values(workspaces).find(workspace => workspace.active);
+  // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
+  return Object.values(workspaces).find((workspace) => workspace.active);
 };
 
-const setActiveWorkspace = id => {
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setActiveW... Remove this comment to see the full error message
+const setActiveWorkspace = (id: any) => {
   // deactive the current one
   let currentActiveWorkspace = getActiveWorkspace();
   if (currentActiveWorkspace) {
@@ -100,7 +118,8 @@ const setActiveWorkspace = id => {
   settings.setSync(`workspaces.${v}.${id}`, newActiveWorkspace);
 };
 
-const setWorkspace = (id, options) => {
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setWorkspa... Remove this comment to see the full error message
+const setWorkspace = (id: any, options: any) => {
   const workspace = { ...workspaces[id], ...options };
   // set fileSystemPaths on sub-wiki setting update
   if (workspaces[id].isSubWiki && options.tagName && workspaces[id].tagName !== options.tagName) {
@@ -117,13 +136,14 @@ const setWorkspace = (id, options) => {
   settings.setSync(`workspaces.${v}.${id}`, workspace);
 };
 
-const setWorkspaces = newWorkspaces => {
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setWorkspa... Remove this comment to see the full error message
+const setWorkspaces = (newWorkspaces: any) => {
   workspaces = newWorkspaces;
   sendToAllWindows('set-workspaces', newWorkspaces);
   settings.setSync(`workspaces.${v}`, newWorkspaces);
 };
 
-const setWorkspacePicture = (id, sourcePicturePath) => {
+const setWorkspacePicture = (id: any, sourcePicturePath: any) => {
   const workspace = getWorkspace(id);
   const pictureId = uuidv1();
 
@@ -136,24 +156,20 @@ const setWorkspacePicture = (id, sourcePicturePath) => {
   Promise.resolve()
     .then(() => {
       if (isUrl(sourcePicturePath)) {
-        const tmpObj = tmp.dirSync();
-        const tmpPath = tmpObj.name;
-        return download(sourcePicturePath, tmpPath, {
+        const temporaryObject = tmp.dirSync();
+        const temporaryPath = temporaryObject.name;
+        return download(sourcePicturePath, temporaryPath, {
           filename: 'e.png',
-        }).then(() => path.join(tmpPath, 'e.png'));
+        }).then(() => path.join(temporaryPath, 'e.png'));
       }
 
       return sourcePicturePath;
     })
-    .then(picturePath => Jimp.read(picturePath))
+    .then((picturePath) => Jimp.read(picturePath))
     .then(
-      img =>
-        new Promise(resolve => {
-          img
-            .clone()
-            .resize(128, 128)
-            .quality(100)
-            .write(destinationPicturePath, resolve);
+      (img) =>
+        new Promise((resolve) => {
+          img.clone().resize(128, 128).quality(100).write(destinationPicturePath, resolve);
         }),
     )
     .then(() => {
@@ -170,7 +186,7 @@ const setWorkspacePicture = (id, sourcePicturePath) => {
     .catch(console.log); // eslint-disable-line no-console
 };
 
-const removeWorkspacePicture = id => {
+const removeWorkspacePicture = (id: any) => {
   const workspace = getWorkspace(id);
   if (workspace.picturePath) {
     return fsExtra.remove(workspace.picturePath).then(() => {
@@ -183,7 +199,8 @@ const removeWorkspacePicture = id => {
   return Promise.resolve();
 };
 
-const removeWorkspace = id => {
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'removeWork... Remove this comment to see the full error message
+const removeWorkspace = (id: any) => {
   const { name } = workspaces[id];
   stopWiki(name);
   stopWatchWiki(name);
@@ -192,15 +209,18 @@ const removeWorkspace = id => {
   settings.unsetSync(`workspaces.${v}.${id}`);
 };
 
-const createWorkspace = (name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, transparentBackground, tagName) => {
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'createWork... Remove this comment to see the full error message
+const createWorkspace = (name: any, isSubWiki: any, mainWikiToLink: any, port: any, homeUrl: any, gitUrl: any, transparentBackground: any, tagName: any) => {
   const newId = uuidv1();
 
   // find largest order
   const workspaceLst = getWorkspacesAsList();
   let max = 0;
-  for (let i = 0; i < workspaceLst.length; i += 1) {
-    if (workspaceLst[i].order > max) {
-      max = workspaceLst[i].order;
+  for (const element of workspaceLst) {
+    // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
+    if (element.order > max) {
+      // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
+      max = element.order;
     }
   }
 

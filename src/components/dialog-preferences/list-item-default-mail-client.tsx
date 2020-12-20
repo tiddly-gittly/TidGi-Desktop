@@ -16,30 +16,27 @@ const ListItemDefaultMailClient = () => {
 
   const isWindows10 = window.remote.getPlatform() === 'win32' && semver.gt(window.remote.getOSVersion(), '10.0.0');
 
-  const recheckIsDefault = useCallback(
-    () => {
-      // Electron protocol API doesn't work with Windows 10
-      // So check with regedit
-      if (isWindows10) {
-        // https://stackoverflow.com/questions/32354861/how-to-find-the-default-browser-via-the-registry-on-windows-10
-        const protocolName = 'mailto';
-        const userChoicePath = `HKCU\\SOFTWARE\\Microsoft\\Windows\\Shell\\Associations\\URLAssociations\\${protocolName}\\UserChoice`;
-        window.remote.regedit.list([userChoicePath], (err, result) => {
-          try {
-            setIsDefault(!err && result[userChoicePath].values.ProgId.value === 'TiddlyGit');
-          } catch (tryErr) {
-            // eslint-disable-next-line no-console
-            console.log(tryErr);
-            setIsDefault(false);
-          }
-        });
-        return;
-      }
+  const recheckIsDefault = useCallback(() => {
+    // Electron protocol API doesn't work with Windows 10
+    // So check with regedit
+    if (isWindows10) {
+      // https://stackoverflow.com/questions/32354861/how-to-find-the-default-browser-via-the-registry-on-windows-10
+      const protocolName = 'mailto';
+      const userChoicePath = `HKCU\\SOFTWARE\\Microsoft\\Windows\\Shell\\Associations\\URLAssociations\\${protocolName}\\UserChoice`;
+      window.remote.regedit.list([userChoicePath], (error: any, result: any) => {
+        try {
+          setIsDefault(!error && result[userChoicePath].values.ProgId.value === 'TiddlyGit');
+        } catch (error) {
+          // eslint-disable-next-line no-console
+          console.log(error);
+          setIsDefault(false);
+        }
+      });
+      return;
+    }
 
-      setIsDefault(window.remote.isDefaultProtocolClient('mailto'));
-    },
-    [isWindows10],
-  );
+    setIsDefault(window.remote.isDefaultProtocolClient('mailto'));
+  }, [isWindows10]);
 
   // recheck every 1 minutes
   useEffect(() => {
@@ -54,7 +51,9 @@ const ListItemDefaultMailClient = () => {
 
   if (isDefault) {
     return (
+      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <ListItem>
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ListItemText secondary="TiddlyGit is your default email client." />
       </ListItem>
     );
@@ -65,16 +64,22 @@ const ListItemDefaultMailClient = () => {
   if (isWindows10) {
     return (
       // https://docs.microsoft.com/en-us/windows/uwp/launch-resume/launch-settings-app
+      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <ListItem button onClick={() => requestOpen('ms-settings:defaultapps')}>
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ListItemText primary="Default email client" secondary="Make TiddlyGit the default email client." />
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ChevronRightIcon color="action" />
       </ListItem>
     );
   }
 
   return (
+    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <ListItem>
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <ListItemText primary="Default email client" secondary="Make TiddlyGit the default email client." />
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button
         variant="outlined"
         size="small"
@@ -82,17 +87,11 @@ const ListItemDefaultMailClient = () => {
         onClick={() => {
           window.remote.setAsDefaultProtocolClient('mailto');
           recheckIsDefault();
-        }}
-      >
+        }}>
         Make default
       </Button>
     </ListItem>
   );
 };
 
-export default connectComponent(
-  ListItemDefaultMailClient,
-  null,
-  null,
-  null,
-);
+export default connectComponent(ListItemDefaultMailClient, null, null, null);

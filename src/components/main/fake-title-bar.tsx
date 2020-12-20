@@ -1,12 +1,11 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 import classnames from 'classnames';
 
 import connectComponent from '../../helpers/connect-component';
 
 const titleBarHeight = 22;
 
-const styles = (theme) => ({
+const styles = (theme: any) => ({
   root: {
     background: theme.palette.type === 'dark' ? '#2a2b2c' : 'linear-gradient(top, #e4e4e4, #cecece)',
     height: titleBarHeight,
@@ -24,29 +23,36 @@ const styles = (theme) => ({
     textOverflow: 'ellipsis',
     whiteSpace: 'nowrap',
   },
+
   rootMenubar: {
     paddingLeft: theme.spacing(1),
     paddingRight: theme.spacing(1),
   },
 });
 
-const FakeTitleBar = (props) => {
-  const {
-    classes,
-    title,
-  } = props;
+interface OwnFakeTitleBarProps {
+  classes: any;
+  title?: string;
+}
+
+// @ts-expect-error ts-migrate(2456) FIXME: Type alias 'FakeTitleBarProps' circularly referenc... Remove this comment to see the full error message
+type FakeTitleBarProps = OwnFakeTitleBarProps & typeof FakeTitleBar.defaultProps;
+
+// @ts-expect-error ts-migrate(7022) FIXME: 'FakeTitleBar' implicitly has type 'any' because i... Remove this comment to see the full error message
+const FakeTitleBar = (props: FakeTitleBarProps) => {
+  const { classes, title } = props;
 
   if (window.remote.getPlatform() !== 'darwin') return null;
 
   return (
+    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div
       className={classnames(classes.root, window.meta.mode === 'menubar' && classes.rootMenubar)}
       onDoubleClick={() => {
         // feature: double click on title bar to expand #656
         // https://github.com/atomery/webcatalog/issues/656
         window.remote.toggleMaximize();
-      }}
-    >
+      }}>
       {(window.meta.mode === 'main' || window.meta.mode === 'menubar') && title ? title : window.remote.getAppName()}
     </div>
   );
@@ -56,18 +62,8 @@ FakeTitleBar.defaultProps = {
   title: '',
 };
 
-FakeTitleBar.propTypes = {
-  classes: PropTypes.object.isRequired,
-  title: PropTypes.string,
-};
-
-const mapStateToProps = (state) => ({
+const mapStateToProps = (state: any) => ({
   title: state.general.title,
 });
 
-export default connectComponent(
-  FakeTitleBar,
-  mapStateToProps,
-  null,
-  styles,
-);
+export default connectComponent(FakeTitleBar, mapStateToProps, null, styles);

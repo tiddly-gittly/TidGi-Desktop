@@ -1,6 +1,6 @@
 import { UPDATE_UPDATER } from '../../constants/actions';
 
-const updater = (state = {}, action) => {
+const updater = (state = {}, action: any) => {
   switch (action.type) {
     case UPDATE_UPDATER: {
       return action.updaterObj;

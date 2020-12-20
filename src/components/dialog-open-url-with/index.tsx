@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 
 import List from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
@@ -13,13 +12,18 @@ import getMailtoUrl from '../../helpers/get-mailto-url';
 
 import { requestLoadUrl } from '../../senders';
 
-const OpenUrlWith = ({ workspaces }) => {
+interface OpenUrlWithProps {
+  workspaces: any;
+}
+
+const OpenUrlWith = ({ workspaces }: OpenUrlWithProps) => {
   const incomingUrl = window.remote.getGlobal('incomingUrl');
   const isMailtoUrl = incomingUrl.startsWith('mailto:');
 
-  const renderWorkspace = (workspace, i) => {
+  const renderWorkspace = (workspace: any, index: any) => {
     if (isMailtoUrl && !getMailtoUrl(workspace.homeUrl)) return null;
     return (
+      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <ListItem
         button
         onClick={() => {
@@ -27,35 +31,21 @@ const OpenUrlWith = ({ workspaces }) => {
 
           requestLoadUrl(u, workspace.id);
           window.remote.closeCurrentWindow();
-        }}
-      >
-        <ListItemText
-          primary={workspace.name || `Workspace ${i + 1}`}
-          secondary={`#${i + 1}`}
-        />
+        }}>
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+        <ListItemText primary={workspace.name || `Workspace ${index + 1}`} secondary={`#${index + 1}`} />
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ChevronRightIcon color="action" />
       </ListItem>
     );
   };
 
-  return (
-    <List dense>
-      {getWorkspacesAsList(workspaces).map(renderWorkspace)}
-    </List>
-  );
+  // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+  return <List dense>{getWorkspacesAsList(workspaces).map(renderWorkspace)}</List>;
 };
 
-OpenUrlWith.propTypes = {
-  workspaces: PropTypes.object.isRequired,
-};
-
-const mapStateToProps = (state) => ({
+const mapStateToProps = (state: any) => ({
   workspaces: state.workspaces,
 });
 
-export default connectComponent(
-  OpenUrlWith,
-  mapStateToProps,
-  null,
-  null,
-);
+export default connectComponent(OpenUrlWith, mapStateToProps, null, null);

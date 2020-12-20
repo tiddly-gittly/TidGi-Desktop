@@ -9,57 +9,68 @@ import {
   UPDATE_TITLE,
 } from '../../constants/actions';
 
-import {
-  getShouldUseDarkColors,
-} from '../../senders';
+import { getShouldUseDarkColors } from '../../senders';
 
-
-const canGoBack = (state = false, action) => {
+const canGoBack = (state = false, action: any) => {
   switch (action.type) {
-    case UPDATE_CAN_GO_BACK: return action.canGoBack;
-    default: return state;
+    case UPDATE_CAN_GO_BACK:
+      return action.canGoBack;
+    default:
+      return state;
   }
 };
 
-const canGoForward = (state = false, action) => {
+const canGoForward = (state = false, action: any) => {
   switch (action.type) {
-    case UPDATE_CAN_GO_FORWARD: return action.canGoForward;
-    default: return state;
+    case UPDATE_CAN_GO_FORWARD:
+      return action.canGoForward;
+    default:
+      return state;
   }
 };
 
-const address = (state = null, action) => {
+const address = (state = null, action: any) => {
   switch (action.type) {
-    case UPDATE_ADDRESS_BAR_INFO: return action.address;
-    default: return state;
+    case UPDATE_ADDRESS_BAR_INFO:
+      return action.address;
+    default:
+      return state;
   }
 };
 
-const addressEdited = (state = false, action) => {
+const addressEdited = (state = false, action: any) => {
   switch (action.type) {
-    case UPDATE_ADDRESS_BAR_INFO: return action.edited;
-    default: return state;
+    case UPDATE_ADDRESS_BAR_INFO:
+      return action.edited;
+    default:
+      return state;
   }
 };
 
-const title = (state = '', action) => {
+const title = (state = '', action: any) => {
   switch (action.type) {
-    case UPDATE_TITLE: return action.title;
-    default: return state;
+    case UPDATE_TITLE:
+      return action.title;
+    default:
+      return state;
   }
 };
 
-const isFullScreen = (state = window.remote.isFullScreen(), action) => {
+const isFullScreen = (state = window.remote.isFullScreen(), action: any) => {
   switch (action.type) {
-    case UPDATE_IS_FULL_SCREEN: return action.isFullScreen;
-    default: return state;
+    case UPDATE_IS_FULL_SCREEN:
+      return action.isFullScreen;
+    default:
+      return state;
   }
 };
 
-const shouldUseDarkColors = (state = getShouldUseDarkColors(), action) => {
+const shouldUseDarkColors = (state = getShouldUseDarkColors(), action: any) => {
   switch (action.type) {
-    case UPDATE_SHOULD_USE_DARK_COLORS: return action.shouldUseDarkColors;
-    default: return state;
+    case UPDATE_SHOULD_USE_DARK_COLORS:
+      return action.shouldUseDarkColors;
+    default:
+      return state;
   }
 };
 

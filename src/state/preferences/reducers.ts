@@ -4,7 +4,7 @@ import { getPreferences } from '../../senders';
 
 const initialState = getPreferences();
 
-const preferences = (state = initialState, action) => {
+const preferences = (state = initialState, action: any) => {
   switch (action.type) {
     case SET_PREFERENCE: {
       const newState = { ...state };

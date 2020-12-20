@@ -1,10 +1,10 @@
 import extractHostname from './extract-hostname';
 
-let MAILTO_URLS;
+let MAILTO_URLS: any;
 
-const getMailtoUrl = (url) => {
+const getMailtoUrl = (url: any) => {
   if (!MAILTO_URLS) {
-    MAILTO_URLS =  window.remote.getGlobal('MAILTO_URLS');
+    MAILTO_URLS = window.remote.getGlobal('MAILTO_URLS');
   }
 
   const extractedHostname = extractHostname(url);

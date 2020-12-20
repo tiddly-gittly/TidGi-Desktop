@@ -1,22 +1,22 @@
 import React from 'react';
-import PropTypes from 'prop-types';
-
 import Menu from '@material-ui/core/Menu';
-
-class StatedMenu extends React.Component {
-  constructor(props) {
+interface Props {
+  buttonElement: React.ReactElement;
+  id: string;
+}
+type State = any;
+class StatedMenu extends React.Component<Props, State> {
+  constructor(props: Props) {
     super(props);
-
     this.state = {
       anchorEl: undefined,
       open: false,
     };
-
     this.handleClick = this.handleClick.bind(this);
     this.handleRequestClose = this.handleRequestClose.bind(this);
   }
 
-  handleClick(event) {
+  handleClick(event: any) {
     this.setState({ open: true, anchorEl: event.currentTarget });
   }
 
@@ -25,44 +25,35 @@ class StatedMenu extends React.Component {
   }
 
   render() {
-    const {
-      buttonElement,
-      children,
-      id,
-    } = this.props;
-
+    const { buttonElement, children, id } = this.props;
     const { anchorEl, open } = this.state;
-
     return (
+      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <>
         {React.cloneElement(buttonElement, {
           'aria-owns': id,
           'aria-haspopup': true,
           onClick: this.handleClick,
         })}
-        <Menu
-          id={id}
-          anchorEl={anchorEl}
-          open={open}
-          onClose={this.handleRequestClose}
-          anchorOrigin={{ vertical: 'top', horizontal: 'center' }}
-        >
-          {React.Children.map(children, (child) => child && React.cloneElement(child, {
-            onClick: () => {
-              if (child.props.onClick) child.props.onClick();
-              this.handleRequestClose();
-            },
-          }))}
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+        <Menu id={id} anchorEl={anchorEl} open={open} onClose={this.handleRequestClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+          {React.Children.map(
+            children,
+            (child) =>
+              child &&
+              // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.
+              React.cloneElement(child, {
+                onClick: () => {
+                  if ((child as any).props.onClick) {
+                    (child as any).props.onClick();
+                  }
+                  this.handleRequestClose();
+                },
+              }),
+          )}
         </Menu>
       </>
     );
   }
 }
-
-StatedMenu.propTypes = {
-  buttonElement: PropTypes.element.isRequired,
-  children: PropTypes.node.isRequired,
-  id: PropTypes.string.isRequired,
-};
-
 export default StatedMenu;

@@ -14,26 +14,24 @@ const Container: ComponentType<{}> = styled(Paper)`
 
 interface Props {
   isCreateMainWorkspace: boolean;
+  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
   isCreateMainWorkspaceSetter: (boolean) => void;
 }
 
 export default function Description({ isCreateMainWorkspace, isCreateMainWorkspaceSetter }: Props) {
   const { t } = useTranslation();
   const label = isCreateMainWorkspace ? t('AddWorkspace.MainWorkspace') : t('AddWorkspace.SubWorkspace');
-  const description = isCreateMainWorkspace
-    ? t('AddWorkspace.MainWorkspaceDescription')
-    : t('AddWorkspace.SubWorkspaceDescription');
+  const description = isCreateMainWorkspace ? t('AddWorkspace.MainWorkspaceDescription') : t('AddWorkspace.SubWorkspaceDescription');
   return (
+    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <Container elevation={0} square>
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <FormControlLabel
-        control={
-          <Switch
-            checked={isCreateMainWorkspace}
-            onChange={event => isCreateMainWorkspaceSetter(event.target.checked)}
-          />
-        }
+        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+        control={<Switch checked={isCreateMainWorkspace} onChange={(event) => isCreateMainWorkspaceSetter(event.target.checked)} />}
         label={label}
       />
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Typography variant="body2" display="inline">
         {description}
       </Typography>

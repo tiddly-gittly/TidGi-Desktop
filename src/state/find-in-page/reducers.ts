@@ -1,9 +1,4 @@
-import {
-  CLOSE_FIND_IN_PAGE,
-  OPEN_FIND_IN_PAGE,
-  UPDATE_FIND_IN_PAGE_TEXT,
-  UPDATE_FIND_IN_PAGE_MATCHES,
-} from '../../constants/actions';
+import { CLOSE_FIND_IN_PAGE, OPEN_FIND_IN_PAGE, UPDATE_FIND_IN_PAGE_TEXT, UPDATE_FIND_IN_PAGE_MATCHES } from '../../constants/actions';
 
 const initialState = {
   open: false,
@@ -12,7 +7,7 @@ const initialState = {
   matches: 0,
 };
 
-const findInPage = (state = initialState, action) => {
+const findInPage = (state = initialState, action: any) => {
   switch (action.type) {
     case CLOSE_FIND_IN_PAGE: {
       return { ...state, open: false };

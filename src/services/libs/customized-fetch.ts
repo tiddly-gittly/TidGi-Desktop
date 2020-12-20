@@ -1,12 +1,15 @@
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fetch'.
 const fetch = require('node-fetch');
 const ProxyAgent = require('proxy-agent');
 
 // somehow, ELECTRON_RUN_AS_NODE is set to '1' instead of 'true' as specified
 // so use generic process.env.ELECTRON_RUN_AS_NODE condition instead of
 // something like process.env.ELECTRON_RUN_AS_NODE === 'true'
-const { getPreference } = process.env.ELECTRON_RUN_AS_NODE ? {} : require('./preferences');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
+const { getPreference }: any = process.env.ELECTRON_RUN_AS_NODE ? {} : require('./preferences');
 
-const customizedFetch = (url, _opts, ...args) => {
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'customized... Remove this comment to see the full error message
+const customizedFetch = (url: any, _options: any, ...arguments_) => {
   let proxyPacScript = process.env.PROXY_PAC_SCRIPT;
   let proxyRules = process.env.PROXY_RULES;
   let proxyType = process.env.PROXY_TYPE;
@@ -16,16 +19,17 @@ const customizedFetch = (url, _opts, ...args) => {
     proxyType = getPreference('proxyType');
   }
 
-  const opts = { ..._opts };
+  const options = { ..._options };
   if (proxyType === 'rules') {
     const agent = new ProxyAgent(proxyRules);
-    opts.agent = agent;
+    options.agent = agent;
   } else if (proxyType === 'pacScript') {
     const agent = new ProxyAgent(`pac+${proxyPacScript}`);
-    opts.agent = agent;
+    options.agent = agent;
   }
 
-  return fetch(url, opts, ...args);
+  // @ts-expect-error ts-migrate(2556) FIXME: Expected 1-2 arguments, but got 3 or more.
+  return fetch(url, options, ...arguments_);
 };
 
 module.exports = customizedFetch;

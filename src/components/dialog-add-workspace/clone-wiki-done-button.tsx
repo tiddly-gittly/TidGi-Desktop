@@ -15,6 +15,7 @@ import * as actions from '../../state/dialog-add-workspace/actions';
 import type { IUserInfo } from '../../helpers/user-info';
 import { requestCloneWiki, requestCloneSubWiki, getIconPath } from '../../senders';
 
+// @ts-expect-error ts-migrate(6142) FIXME: Module './use-wiki-creation-message' was resolved ... Remove this comment to see the full error message
 import useWikiCreationMessage from './use-wiki-creation-message';
 
 const CloseButton = styled(Button)`
@@ -22,24 +23,26 @@ const CloseButton = styled(Button)`
   width: 100%;
 `;
 
-type OwnProps = {
-  isCreateMainWorkspace: boolean,
-  wikiPort: number,
-  mainWikiToLink: { name: string, port: number },
-  githubWikiUrl: string,
-  wikiFolderName: string,
-  parentFolderLocation: string,
-  tagName: string,
-  userInfo: IUserInfo,
-};
-type DispatchProps = {
-  updateForm: (Object) => void,
-  setWikiCreationMessage: (string) => void,
-  save: () => void,
-};
-type StateProps = {
-  wikiCreationMessage: string,
-};
+interface OwnProps {
+  isCreateMainWorkspace: boolean;
+  wikiPort: number;
+  mainWikiToLink: { name: string; port: number };
+  githubWikiUrl: string;
+  wikiFolderName: string;
+  parentFolderLocation: string;
+  tagName: string;
+  userInfo: IUserInfo;
+}
+interface DispatchProps {
+  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
+  updateForm: (Object) => void;
+  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
+  setWikiCreationMessage: (string) => void;
+  save: () => void;
+}
+interface StateProps {
+  wikiCreationMessage: string;
+}
 
 type Props = OwnProps & DispatchProps & StateProps;
 
@@ -75,13 +78,18 @@ function CloneWikiDoneButton({
   const [snackBarOpen, progressBarOpen, snackBarOpenSetter] = useWikiCreationMessage(wikiCreationMessage);
   const { t } = useTranslation();
   return (
+    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <>
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       {progressBarOpen && <LinearProgress color="secondary" />}
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Snackbar open={snackBarOpen} autoHideDuration={5000} onClose={() => snackBarOpenSetter(false)}>
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Alert severity="info">{wikiCreationMessage}</Alert>
       </Snackbar>
 
       {isCreateMainWorkspace ? (
+        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <CloseButton
           variant="contained"
           color="secondary"
@@ -98,31 +106,30 @@ function CloneWikiDoneButton({
             } else {
               save();
             }
-          }}
-        >
+          }}>
+          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Trans t={t} i18nKey="AddWorkspace.CloneWikiDoneButton" wikiFolderLocation={wikiFolderLocation}>
             {parentFolderLocation && (
+              // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <>
+                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <Typography variant="body1" display="inline">
                   Use
                 </Typography>
-                <Typography
-                  variant="body2"
-                  noWrap
-                  display="inline"
-                  align="center"
-                  style={{ direction: 'rtl', textTransform: 'none' }}
-                >
+                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
                   {{ wikiFolderLocation }}
                 </Typography>
               </>
             )}
+            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Typography variant="body1" display="inline">
               as cloned Wiki folder
             </Typography>
           </Trans>
         </CloseButton>
       ) : (
+        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <CloseButton
           variant="contained"
           color="secondary"
@@ -133,42 +140,34 @@ function CloneWikiDoneButton({
               return;
             }
             updateForm(workspaceFormData);
-            const creationError = await requestCloneSubWiki(
-              parentFolderLocation,
-              wikiFolderName,
-              mainWikiToLink.name,
-              githubWikiUrl,
-              userInfo,
-              tagName,
-            );
-            console.log(tagName, creationError)
+            const creationError = await requestCloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name, githubWikiUrl, userInfo, tagName);
+            console.log(tagName, creationError);
             if (creationError) {
               setWikiCreationMessage(creationError);
             } else {
               save();
             }
-          }}
-        >
+          }}>
+          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Trans t={t} i18nKey="AddWorkspace.CloneSubWikiDoneButton" wikiFolderLocation={wikiFolderLocation}>
             {parentFolderLocation && (
+              // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <>
+                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <Typography variant="body1" display="inline">
                   Use
                 </Typography>
-                <Typography
-                  variant="body2"
-                  noWrap
-                  display="inline"
-                  align="center"
-                  style={{ direction: 'rtl', textTransform: 'none' }}
-                >
+                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
                   {{ wikiFolderLocation }}
                 </Typography>
               </>
             )}
+            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Typography variant="body1" display="inline">
               as cloned Wiki folder
             </Typography>
+            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Typography variant="body1" display="inline">
               and link to main Workspace
             </Typography>
@@ -179,10 +178,9 @@ function CloneWikiDoneButton({
   );
 }
 
-const mapStateToProps = state => ({
+const mapStateToProps = (state: any) => ({
   wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
 });
 
-export default connect<Props, OwnProps, _, _, _, _>(mapStateToProps, dispatch => bindActionCreators(actions, dispatch))(
-  CloneWikiDoneButton,
-);
+// @ts-expect-error ts-migrate(2558) FIXME: Expected 5 type arguments, but got 6.
+export default connect<Props, OwnProps, _, _, _, _>(mapStateToProps, (dispatch) => bindActionCreators(actions, dispatch))(CloneWikiDoneButton);

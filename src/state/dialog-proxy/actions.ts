@@ -1,22 +1,15 @@
-
-import {
-  DIALOG_PROXY_FORM_UPDATE,
-  DIALOG_PROXY_INIT,
-} from '../../constants/actions';
+import { DIALOG_PROXY_FORM_UPDATE, DIALOG_PROXY_INIT } from '../../constants/actions';
 
 import validate from '../../helpers/validate';
 import hasErrors from '../../helpers/has-errors';
 
-import {
-  requestSetPreference,
-  requestShowRequireRestartDialog,
-} from '../../senders';
+import { requestSetPreference, requestShowRequireRestartDialog } from '../../senders';
 
 export const init = () => ({
   type: DIALOG_PROXY_INIT,
 });
 
-const getValidationRules = (proxyType) => {
+const getValidationRules = (proxyType: any) => {
   if (proxyType === 'rules') {
     return {
       proxyRules: {
@@ -36,17 +29,14 @@ const getValidationRules = (proxyType) => {
   return {};
 };
 
-export const updateForm = (changes) => (dispatch, getState) => {
+export const updateForm = (changes: any) => (dispatch: any, getState: any) => {
   const state = getState();
 
   const { form } = state.dialogProxy;
 
   // revalidate all fields if proxy type changes
   if (changes.proxyType) {
-    const validatedChanges = validate(
-      { ...form, ...changes },
-      getValidationRules(changes.proxyType),
-    );
+    const validatedChanges = validate({ ...form, ...changes }, getValidationRules(changes.proxyType));
     dispatch({
       type: DIALOG_PROXY_FORM_UPDATE,
       changes: validatedChanges,
@@ -59,7 +49,7 @@ export const updateForm = (changes) => (dispatch, getState) => {
   }
 };
 
-export const save = () => (dispatch, getState) => {
+export const save = () => (dispatch: any, getState: any) => {
   const state = getState();
 
   const { form } = state.dialogProxy;

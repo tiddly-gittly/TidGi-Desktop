@@ -15,5 +15,5 @@ export default function useWikiCreationMessage(wikiCreationMessage: string) {
       progressBarOpenSetter(false);
     }
   }, [wikiCreationMessage, hasError]);
-  return [snackBarOpen, progressBarOpen, snackBarOpenSetter]
+  return [snackBarOpen, progressBarOpen, snackBarOpenSetter];
 }

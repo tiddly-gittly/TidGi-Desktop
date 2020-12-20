@@ -1,7 +1,9 @@
 const { workerData, parentPort, isMainThread } = require('worker_threads');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
 const path = require('path');
 const $tw = require('@tiddlygit/tiddlywiki').TiddlyWiki();
 
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'startNodeJ... Remove this comment to see the full error message
 function startNodeJSWiki() {
   const { homePath, tiddlyWikiPort = 5112, userName } = workerData;
   try {
@@ -29,7 +31,7 @@ module.exports = startNodeJSWiki;
 
 if (!isMainThread) {
   startNodeJSWiki();
-  parentPort.once('message', async message => {
+  parentPort.once('message', async (message: any) => {
     if (typeof message === 'object' && message.type === 'command' && message.message === 'exit') {
       process.exit(0);
     }

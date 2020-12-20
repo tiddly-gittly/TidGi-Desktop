@@ -3,8 +3,11 @@ import windowStateKeeper from 'electron-window-state';
 import { menubar, Menubar } from 'menubar';
 import path from 'path';
 
-import { REACT_PATH, isDev } from '../constants/paths';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
+import { REACT_PATH, isDev as isDevelopment } from '../constants/paths';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { getPreference } from '../libs/preferences';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import formatBytes from '../libs/format-bytes';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
@@ -12,7 +15,7 @@ declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
 let win: BrowserWindow | undefined;
 let menuBar: Menubar;
-let attachToMenubar: boolean = false;
+let attachToMenubar = false;
 
 export const get = (): BrowserWindow | undefined => {
   if (attachToMenubar && menuBar) return menuBar.window;
@@ -53,7 +56,7 @@ export const createAsync = () =>
           webPreferences: {
             nodeIntegration: false,
             enableRemoteModule: true,
-            webSecurity: !isDev,
+            webSecurity: !isDevelopment,
             contextIsolation: true,
             preload: path.join(__dirname, '..', 'preload', 'menubar.js'),
           },
@@ -75,7 +78,7 @@ export const createAsync = () =>
 
       menuBar.on('ready', () => {
         menuBar.tray.on('right-click', () => {
-          const updaterEnabled = process.env.SNAP == null && !process.mas && !process.windowsStore;
+          const updaterEnabled = process.env.SNAP == undefined && !process.mas && !process.windowsStore;
 
           const updaterMenuItem = {
             label: 'Check for Updates...',
@@ -90,9 +93,7 @@ export const createAsync = () =>
             updaterMenuItem.enabled = false;
           } else if (global.updaterObj && global.updaterObj.status === 'download-progress') {
             const { transferred, total, bytesPerSecond } = global.updaterObj.info;
-            updaterMenuItem.label = `Downloading Updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(
-              bytesPerSecond,
-            )}/s)...`;
+            updaterMenuItem.label = `Downloading Updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
             updaterMenuItem.enabled = false;
           } else if (global.updaterObj && global.updaterObj.status === 'checking-for-update') {
             updaterMenuItem.label = 'Checking for Updates...';
@@ -164,11 +165,11 @@ export const createAsync = () =>
       show: false,
       // manually set dock icon for AppImage
       // Snap icon is set correct already so no need to intervene
-      icon: process.platform === 'linux' && process.env.SNAP == null ? path.resolve(__dirname, '..', 'icon.png') : undefined,
+      icon: process.platform === 'linux' && process.env.SNAP == undefined ? path.resolve(__dirname, '..', 'icon.png') : undefined,
       webPreferences: {
         nodeIntegration: false,
         enableRemoteModule: true,
-        webSecurity: !isDev,
+        webSecurity: !isDevelopment,
         contextIsolation: true,
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       },
@@ -256,14 +257,14 @@ export const createAsync = () =>
 
 export const show = () => {
   if (attachToMenubar) {
-    if (menuBar == null) {
+    if (menuBar == undefined) {
       createAsync();
     } else {
       menuBar.on('ready', () => {
         menuBar.showWindow();
       });
     }
-  } else if (win == null) {
+  } else if (win == undefined) {
     createAsync();
   } else {
     win.show();

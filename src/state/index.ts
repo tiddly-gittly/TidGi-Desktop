@@ -1,8 +1,4 @@
-import {
-  applyMiddleware,
-  combineReducers,
-  createStore,
-} from 'redux';
+import { applyMiddleware, combineReducers, createStore } from 'redux';
 import thunkMiddleware from 'redux-thunk';
 
 import dialogAddWorkspace from './dialog-add-workspace/reducers';
@@ -43,13 +39,10 @@ const rootReducer = combineReducers({
   workspaceMetas,
 });
 
-const configureStore = (initialState) => createStore(
-  rootReducer,
-  initialState,
-  applyMiddleware(thunkMiddleware),
-);
+const configureStore = (initialState: any) => createStore(rootReducer, initialState, applyMiddleware(thunkMiddleware));
 
 // init store
+// @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
 const store = configureStore();
 
 loadListeners(store);

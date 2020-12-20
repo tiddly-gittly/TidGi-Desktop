@@ -5,7 +5,6 @@
 // then even if you put a BrowserView on top of that region, that region is still draggable.
 
 import React from 'react';
-import PropTypes from 'prop-types';
 import classNames from 'classnames';
 
 import connectComponent from '../../helpers/connect-component';
@@ -28,37 +27,30 @@ const styles = () => ({
   },
 });
 
-const DraggableRegion = ({
-  classes, navigationBar, sidebar, titleBar,
-}) => {
+interface DraggableRegionProps {
+  classes: any;
+  navigationBar: boolean;
+  sidebar: boolean;
+  titleBar: boolean;
+}
+
+const DraggableRegion = ({ classes, navigationBar, sidebar, titleBar }: DraggableRegionProps) => {
   // on macOS or menubar mode, if all bars are hidden
   // the top 22px part of BrowserView should be draggable
   if ((window.remote.getPlatform() === 'darwin' || window.meta.mode === 'menubar') && !navigationBar && !titleBar) {
+    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     return <div className={classNames(classes.root, sidebar && classes.rootWithSidebar)} />;
   }
 
   return null;
 };
 
-DraggableRegion.propTypes = {
-  classes: PropTypes.object.isRequired,
-  navigationBar: PropTypes.bool.isRequired,
-  sidebar: PropTypes.bool.isRequired,
-  titleBar: PropTypes.bool.isRequired,
-};
+const mapStateToProps = (state: any) => ({
+  navigationBar:
+    (window.remote.getPlatform() === 'linux' && state.preferences.attachToMenubar && !state.preferences.sidebar) || state.preferences.navigationBar,
 
-const mapStateToProps = (state) => ({
-  navigationBar: (window.remote.getPlatform() === 'linux'
-    && state.preferences.attachToMenubar
-    && !state.preferences.sidebar)
-    || state.preferences.navigationBar,
   sidebar: state.preferences.sidebar,
   titleBar: state.preferences.titleBar,
 });
 
-export default connectComponent(
-  DraggableRegion,
-  mapStateToProps,
-  null,
-  styles,
-);
+export default connectComponent(DraggableRegion, mapStateToProps, null, styles);

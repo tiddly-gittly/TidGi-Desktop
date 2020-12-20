@@ -1,23 +1,22 @@
 import React from 'react';
-import PropTypes from 'prop-types';
-
 import { ThemeProvider as MuiThemeProvider, createMuiTheme } from '@material-ui/core/styles';
 import red from '@material-ui/core/colors/red';
 import blue from '@material-ui/core/colors/blue';
 import grey from '@material-ui/core/colors/grey';
 import pink from '@material-ui/core/colors/pink';
-
 import { LocalizationProvider } from '@material-ui/pickers';
 import DateFnsUtils from '@material-ui/pickers/adapter/date-fns';
-
 import connectComponent from '../helpers/connect-component';
-
-const AppWrapper = ({ children, shouldUseDarkColors }) => {
+interface AppWrapperProps {
+  children: React.ReactElement[] | React.ReactElement | string;
+  shouldUseDarkColors: boolean;
+}
+const AppWrapper = ({ children, shouldUseDarkColors }: AppWrapperProps) => {
   const themeObject = {
     typography: {
       fontSize: 13.5,
       button: {
-        textTransform: 'none'
+        textTransform: 'none',
       },
     },
     palette: {
@@ -39,40 +38,22 @@ const AppWrapper = ({ children, shouldUseDarkColors }) => {
       },
     },
   };
-
   if (!shouldUseDarkColors) {
-    themeObject.background = {
+    (themeObject as any).background = {
       primary: grey[200],
     };
   }
-
+  // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ typography: { fontSize: number... Remove this comment to see the full error message
   const theme = createMuiTheme(themeObject);
-
   return (
+    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <MuiThemeProvider theme={theme}>
-      <LocalizationProvider dateAdapter={DateFnsUtils}>
-        {children}
-      </LocalizationProvider>
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+      <LocalizationProvider dateAdapter={DateFnsUtils}>{children}</LocalizationProvider>
     </MuiThemeProvider>
   );
 };
-
-AppWrapper.propTypes = {
-  children: PropTypes.oneOfType([
-    PropTypes.arrayOf(PropTypes.element),
-    PropTypes.element,
-    PropTypes.string,
-  ]).isRequired,
-  shouldUseDarkColors: PropTypes.bool.isRequired,
-};
-
-const mapStateToProps = (state) => ({
+const mapStateToProps = (state: any) => ({
   shouldUseDarkColors: state.general.shouldUseDarkColors,
 });
-
-export default connectComponent(
-  AppWrapper,
-  mapStateToProps,
-  null,
-  null,
-);
+export default connectComponent(AppWrapper, mapStateToProps, null, null);

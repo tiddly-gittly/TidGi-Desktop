@@ -4,7 +4,7 @@ import { getWorkspaceMetas } from '../../senders';
 
 const initialState = getWorkspaceMetas();
 
-const workspaceMetas = (state = initialState, action) => {
+const workspaceMetas = (state = initialState, action: any) => {
   switch (action.type) {
     case SET_WORKSPACE_METAS: {
       return action.workspaceMetas;

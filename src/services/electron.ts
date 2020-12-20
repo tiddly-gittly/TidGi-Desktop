@@ -1,27 +1,42 @@
 import { ipcMain, nativeTheme, protocol, session, powerMonitor, remote } from 'electron';
 import isDev from 'electron-is-dev';
 import fs from 'fs';
+// @ts-expect-error ts-migrate(2529) FIXME: Duplicate identifier 'Promise'. Compiler reserves ... Remove this comment to see the full error message
 import Promise from 'bluebird';
 import settings from 'electron-settings';
 import { autoUpdater } from 'electron-updater';
 
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import loadListeners from './listeners';
 
 import * as mainWindow from './windows/main';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import openUrlWithWindow from './windows/open-url-with';
 
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import createMenu from './libs/create-menu';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import extractHostname from './libs/extract-hostname';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import sendToAllWindows from './libs/send-to-all-windows';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { stopWatchAllWiki } from './libs/wiki/watch-wiki';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { stopAllWiki } from './libs/wiki/wiki-worker-mamager';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { addView, reloadViewsDarkReader } from './libs/views';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { getPreference, getPreferences } from './libs/preferences';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { getWorkspaces, setWorkspace } from './libs/workspaces';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { logger } from './libs/log';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { commitAndSync } from './libs/git';
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { clearMainBindings } from './libs/i18next-electron-fs-backend';
 
+// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import MAILTO_URLS from './constants/mailto-urls';
 
 import './libs/updater';
@@ -49,7 +64,7 @@ declare global {
 app.on('second-instance', () => {
   // Someone tried to run a second instance, we should focus our window.
   const win = mainWindow.get();
-  if (win != null) {
+  if (win != undefined) {
     if (win.isMinimized()) win.restore();
     win.focus();
   }
@@ -115,14 +130,7 @@ if (!gotTheLock) {
       )
       .then(() => mainWindow.createAsync())
       .then(() => {
-        const {
-          hibernateUnusedWorkspacesAtLaunch,
-          proxyBypassRules,
-          proxyPacScript,
-          proxyRules,
-          proxyType,
-          themeSource,
-        } = getPreferences();
+        const { hibernateUnusedWorkspacesAtLaunch, proxyBypassRules, proxyPacScript, proxyRules, proxyType, themeSource } = getPreferences();
 
         // configure proxy for default session
         if (proxyType === 'rules') {
@@ -252,7 +260,7 @@ if (!gotTheLock) {
 
   app.on('activate', () => {
     const win = mainWindow.get();
-    if (win == null) {
+    if (win == undefined) {
       commonInit();
     } else {
       mainWindow.show();
@@ -268,7 +276,7 @@ if (!gotTheLock) {
 
       const workspaces: any[] = Object.values(getWorkspaces());
 
-      if (workspaces.length < 1) return null;
+      if (workspaces.length === 0) return null;
 
       // handle mailto:
       if (url.startsWith('mailto:')) {

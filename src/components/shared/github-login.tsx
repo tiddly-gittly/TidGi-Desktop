@@ -4,6 +4,7 @@ import React, { Component } from 'react';
 import styled from 'styled-components';
 import Button from '@material-ui/core/Button';
 import GithubIcon from '@material-ui/icons/GitHub';
+// @ts-expect-error ts-migrate(7016) FIXME: Could not find a declaration file for module '@aut... Remove this comment to see the full error message
 import AuthingSSO from '@authing/sso';
 import { withTranslation } from 'react-i18next';
 
@@ -33,6 +34,7 @@ class GitHubLogin extends Component<Props, State> {
   };
 
   auth: typeof AuthingSSO;
+  // @ts-expect-error ts-migrate(2304) FIXME: Cannot find name 'IntervalID'.
   intervalHandel: IntervalID;
 
   constructor(props: Props) {
@@ -74,7 +76,9 @@ class GitHubLogin extends Component<Props, State> {
     const { onRequest, onLogout, onFailure, t } = this.props;
     const { isLogin } = this.state;
     return isLogin ? (
+      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <SyncToGithubButton
+        // @ts-expect-error ts-migrate(2322) FIXME: Type '{ children: string; onClick: () => Promise<v... Remove this comment to see the full error message
         onClick={async () => {
           const { code, message } = await this.auth.logout();
           window.remote.clearStorageData();
@@ -87,11 +91,14 @@ class GitHubLogin extends Component<Props, State> {
           }
         }}
         color="secondary"
+        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         endIcon={<GithubIcon />}>
         {t('AddWorkspace.LogoutGithubAccount')}
       </SyncToGithubButton>
     ) : (
+      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <SyncToGithubButton
+        // @ts-expect-error ts-migrate(2322) FIXME: Type '{ children: string; onClick: () => void; col... Remove this comment to see the full error message
         onClick={() => {
           // clear token first, otherwise github login window won't give us a chance to see the form
           // void this.auth.logout();
@@ -104,6 +111,7 @@ class GitHubLogin extends Component<Props, State> {
           }
         }}
         color="secondary"
+        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         endIcon={<GithubIcon />}>
         {t('AddWorkspace.LoginGithubAccount')}
       </SyncToGithubButton>

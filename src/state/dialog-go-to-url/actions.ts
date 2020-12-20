@@ -1,4 +1,3 @@
-
 import { UPDATE_GO_TO_URL_FORM } from '../../constants/actions';
 import hasErrors from '../../helpers/has-errors';
 import isUrl from '../../helpers/is-url';
@@ -13,12 +12,13 @@ const getValidationRules = () => ({
   },
 });
 
-export const updateForm = (changes) => (dispatch) => dispatch({
-  type: UPDATE_GO_TO_URL_FORM,
-  changes: validate(changes, getValidationRules()),
-});
+export const updateForm = (changes: any) => (dispatch: any) =>
+  dispatch({
+    type: UPDATE_GO_TO_URL_FORM,
+    changes: validate(changes, getValidationRules()),
+  });
 
-export const go = () => (dispatch, getState) => {
+export const go = () => (dispatch: any, getState: any) => {
   const { form } = getState().dialogGoToUrl;
 
   const validatedChanges = validate(form, getValidationRules());
@@ -29,6 +29,7 @@ export const go = () => (dispatch, getState) => {
   const { url } = form;
   const finalUrl = isUrl(url) ? url : `http://${url}`;
 
+  // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
   requestLoadUrl(finalUrl);
   window.remote.closeCurrentWindow();
   return null;

@@ -7,10 +7,12 @@ const defaultForm = {
   password: '',
 };
 
-const form = (state = defaultForm, action) => {
+const form = (state = defaultForm, action: any) => {
   switch (action.type) {
-    case UPDATE_AUTH_FORM: return { ...state, ...action.changes };
-    default: return state;
+    case UPDATE_AUTH_FORM:
+      return { ...state, ...action.changes };
+    default:
+      return state;
   }
 };
 

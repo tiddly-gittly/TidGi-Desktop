@@ -4,7 +4,7 @@ import { getWorkspaces } from '../../senders';
 
 const initialState = getWorkspaces();
 
-const workspaces = (state = initialState, action) => {
+const workspaces = (state = initialState, action: any) => {
   switch (action.type) {
     case SET_WORKSPACES: {
       return action.workspaces;

@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import PropTypes from 'prop-types';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
-
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import Divider from '@material-ui/core/Divider';
@@ -13,16 +11,13 @@ import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import Switch from '@material-ui/core/Switch';
 import Typography from '@material-ui/core/Typography';
 import Autocomplete from '@material-ui/lab/Autocomplete';
-
 import connectComponent from '../../helpers/connect-component';
 import getMailtoUrl from '../../helpers/get-mailto-url';
-
+// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '../../images/default-icon.png'... Remove this comment to see the full error message
 import defaultIcon from '../../images/default-icon.png';
-
 import { save, updateForm } from '../../state/dialog-edit-workspace/actions';
 import { getSubWikiPluginContent } from '../../senders';
-
-const styles = theme => ({
+const styles = (theme: any) => ({
   root: {
     background: theme.palette.background.paper,
     height: '100vh',
@@ -89,8 +84,7 @@ const styles = theme => ({
     display: 'block',
   },
 });
-
-const getValidIconPath = (iconPath, internetIcon) => {
+const getValidIconPath = (iconPath: any, internetIcon: any) => {
   if (iconPath) {
     return `file:///${iconPath}`;
   }
@@ -99,7 +93,30 @@ const getValidIconPath = (iconPath, internetIcon) => {
   }
   return defaultIcon;
 };
-
+interface OwnEditWorkspaceProps {
+  classes: any;
+  mainWikiToLink?: string;
+  tagName?: string;
+  disableAudio: boolean;
+  disableNotifications: boolean;
+  downloadingIcon: boolean;
+  hibernateWhenUnused: boolean;
+  homeUrl: string;
+  port: string;
+  homeUrlError?: string;
+  internetIcon?: string;
+  isMailApp: boolean;
+  name: string;
+  nameError?: string;
+  onSave: (...arguments_: any[]) => any;
+  onUpdateForm: (...arguments_: any[]) => any;
+  picturePath?: string;
+  transparentBackground: boolean;
+  isSubWiki?: boolean;
+}
+// @ts-expect-error ts-migrate(2456) FIXME: Type alias 'EditWorkspaceProps' circularly referen... Remove this comment to see the full error message
+type EditWorkspaceProps = OwnEditWorkspaceProps & typeof EditWorkspace.defaultProps;
+// @ts-expect-error ts-migrate(7022) FIXME: 'EditWorkspace' implicitly has type 'any' because ... Remove this comment to see the full error message
 const EditWorkspace = ({
   classes,
   disableAudio,
@@ -120,17 +137,20 @@ const EditWorkspace = ({
   picturePath,
   transparentBackground,
   isSubWiki,
-}) => {
+}: EditWorkspaceProps) => {
   const { t } = useTranslation();
   const [fileSystemPaths, fileSystemPathsSetter] = useState([]);
   useEffect(() => {
+    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'Dispatch<SetStateAction<never[]>... Remove this comment to see the full error message
     // eslint-disable-next-line promise/catch-or-return
     getSubWikiPluginContent(mainWikiToLink).then(fileSystemPathsSetter);
   }, [mainWikiToLink]);
-
   return (
+    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className={classes.root}>
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className={classes.flexGrow}>
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <TextField
           id="outlined-full-width"
           label={t('EditWorkspace.Path')}
@@ -145,9 +165,10 @@ const EditWorkspace = ({
             shrink: true,
           }}
           value={name}
-          onChange={e => onUpdateForm({ name: e.target.value })}
+          onChange={(e) => onUpdateForm({ name: e.target.value })}
         />
         {!isSubWiki && (
+          // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <TextField
             id="outlined-full-width"
             label={t('EditWorkspace.Port')}
@@ -162,17 +183,17 @@ const EditWorkspace = ({
               shrink: true,
             }}
             value={port}
-            onChange={event =>
-              onUpdateForm({ port: event.target.value, homeUrl: `http://localhost:${event.target.value}/` })
-            }
+            onChange={(event) => onUpdateForm({ port: event.target.value, homeUrl: `http://localhost:${event.target.value}/` })}
           />
         )}
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Autocomplete
           freeSolo
-          options={fileSystemPaths.map(fileSystemPath => fileSystemPath.tagName)}
+          options={fileSystemPaths.map((fileSystemPath) => (fileSystemPath as any).tagName)}
           value={tagName}
           onInputChange={(_, value) => onUpdateForm({ tagName: value })}
-          renderInput={parameters => (
+          renderInput={(parameters) => (
+            // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <TextField
               {...parameters}
               fullWidth
@@ -184,13 +205,19 @@ const EditWorkspace = ({
             />
           )}
         />
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className={classes.avatarFlex}>
+          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div className={classes.avatarLeft}>
+            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <div className={classNames(classes.avatar, transparentBackground && classes.transparentAvatar)}>
+              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <img alt="Icon" className={classes.avatarPicture} src={getValidIconPath(picturePath, internetIcon)} />
             </div>
           </div>
+          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <div className={classes.avatarRight}>
+            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Button
               variant="outlined"
               size="small"
@@ -199,141 +226,89 @@ const EditWorkspace = ({
                   properties: ['openFile'],
                   filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp', 'dib'] }],
                 };
-                window.remote.dialog.showOpenDialog(options).then(({ canceled, filePaths }) => {
+                window.remote.dialog.showOpenDialog(options).then(({ canceled, filePaths }: any) => {
                   if (!canceled && filePaths.length > 0) {
                     onUpdateForm({ picturePath: filePaths[0] });
                   }
                 });
-              }}
-            >
+              }}>
               {t('EditWorkspace.SelectLocal')}
             </Button>
+            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Typography variant="caption" className={classes.caption}>
               PNG, JPEG, GIF, TIFF or BMP.
             </Typography>
-            {/* <Button
-              variant="outlined"
-              size="small"
-              className={classes.buttonBot}
-              disabled={!homeUrl || homeUrlError || downloadingIcon}
-              onClick={() => onGetIconFromInternet(true)}
-            >
-              {downloadingIcon ? 'Downloading Icon...' : 'Download Icon from the Internet'}
-            </Button> */}
+
+            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Button
               variant="outlined"
               size="small"
               className={classes.buttonBot}
               onClick={() => onUpdateForm({ picturePath: null, internetIcon: null })}
-              disabled={!(picturePath || internetIcon)}
-            >
+              disabled={!(picturePath || internetIcon)}>
               {t('EditWorkspace.ResetDefaultIcon')}
             </Button>
-            {/* <FormGroup>
-              <FormControlLabel
-                control={
-                  <Checkbox
-                    checked={transparentBackground}
-                    onChange={e => onUpdateForm({ transparentBackground: e.target.checked })}
-                  />
-                }
-                label="Use transparent background"
-              />
-            </FormGroup> */}
           </div>
         </div>
         {!isSubWiki && (
+          // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <List>
+            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Divider />
+            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <ListItem disableGutters>
+              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <ListItemText primary={t('EditWorkspace.HibernateTitle')} secondary={t('EditWorkspace.Hibernate')} />
+              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <ListItemSecondaryAction>
-                <Switch
-                  edge="end"
-                  color="primary"
-                  checked={hibernateWhenUnused}
-                  onChange={e => onUpdateForm({ hibernateWhenUnused: e.target.checked })}
-                />
+                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                <Switch edge="end" color="primary" checked={hibernateWhenUnused} onChange={(e) => onUpdateForm({ hibernateWhenUnused: e.target.checked })} />
               </ListItemSecondaryAction>
             </ListItem>
+            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <ListItem disableGutters>
-              <ListItemText
-                primary={t('EditWorkspace.DisableNotificationTitle')}
-                secondary={t('EditWorkspace.DisableNotification')}
-              />
+              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              <ListItemText primary={t('EditWorkspace.DisableNotificationTitle')} secondary={t('EditWorkspace.DisableNotification')} />
+              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <ListItemSecondaryAction>
-                <Switch
-                  edge="end"
-                  color="primary"
-                  checked={disableNotifications}
-                  onChange={e => onUpdateForm({ disableNotifications: e.target.checked })}
-                />
+                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                <Switch edge="end" color="primary" checked={disableNotifications} onChange={(e) => onUpdateForm({ disableNotifications: e.target.checked })} />
               </ListItemSecondaryAction>
             </ListItem>
+            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <ListItem disableGutters>
-              <ListItemText
-                primary={t('EditWorkspace.DisableAudioTitle')}
-                secondary={t('EditWorkspace.DisableAudio')}
-              />
+              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+              <ListItemText primary={t('EditWorkspace.DisableAudioTitle')} secondary={t('EditWorkspace.DisableAudio')} />
+              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <ListItemSecondaryAction>
-                <Switch
-                  edge="end"
-                  color="primary"
-                  checked={disableAudio}
-                  onChange={e => onUpdateForm({ disableAudio: e.target.checked })}
-                />
+                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+                <Switch edge="end" color="primary" checked={disableAudio} onChange={(e) => onUpdateForm({ disableAudio: e.target.checked })} />
               </ListItemSecondaryAction>
             </ListItem>
           </List>
         )}
       </div>
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div>
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
           {t('EditWorkspace.Save')}
         </Button>
-        <Button
-          variant="contained"
-          disableElevation
-          className={classes.button}
-          onClick={() => window.remote.closeCurrentWindow()}
-        >
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+        <Button variant="contained" disableElevation className={classes.button} onClick={() => window.remote.closeCurrentWindow()}>
           {t('EditWorkspace.Cancel')}
         </Button>
       </div>
     </div>
   );
 };
-
 EditWorkspace.defaultProps = {
   homeUrlError: null,
   internetIcon: null,
   nameError: null,
   picturePath: null,
 };
-
-EditWorkspace.propTypes = {
-  classes: PropTypes.object.isRequired,
-  mainWikiToLink: PropTypes.string,
-  tagName: PropTypes.string,
-  disableAudio: PropTypes.bool.isRequired,
-  disableNotifications: PropTypes.bool.isRequired,
-  downloadingIcon: PropTypes.bool.isRequired,
-  hibernateWhenUnused: PropTypes.bool.isRequired,
-  homeUrl: PropTypes.string.isRequired,
-  port: PropTypes.string.isRequired,
-  homeUrlError: PropTypes.string,
-  internetIcon: PropTypes.string,
-  isMailApp: PropTypes.bool.isRequired,
-  name: PropTypes.string.isRequired,
-  nameError: PropTypes.string,
-  onSave: PropTypes.func.isRequired,
-  onUpdateForm: PropTypes.func.isRequired,
-  picturePath: PropTypes.string,
-  transparentBackground: PropTypes.bool.isRequired,
-  isSubWiki: PropTypes.bool,
-};
-
-const mapStateToProps = state => ({
+const mapStateToProps = (state: any) => ({
   disableAudio: Boolean(state.dialogEditWorkspace.form.disableAudio),
   disableNotifications: Boolean(state.dialogEditWorkspace.form.disableNotifications),
   downloadingIcon: state.dialogEditWorkspace.downloadingIcon,
@@ -352,10 +327,8 @@ const mapStateToProps = state => ({
   transparentBackground: Boolean(state.dialogEditWorkspace.form.transparentBackground),
   isSubWiki: state.workspaces?.[state.dialogEditWorkspace.form.id]?.isSubWiki || true,
 });
-
 const actionCreators = {
   updateForm,
   save,
 };
-
 export default connectComponent(EditWorkspace, mapStateToProps, actionCreators, styles);

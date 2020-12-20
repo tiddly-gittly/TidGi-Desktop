@@ -2,7 +2,7 @@ import { combineReducers } from 'redux';
 
 import { ADD_WORKSPACE_CREATE_WIKI_MESSAGE, ADD_WORKSPACE_UPDATE_FORM } from '../../constants/actions';
 
-const wikiCreationMessage = (state = '', action) => {
+const wikiCreationMessage = (state = '', action: any) => {
   switch (action.type) {
     case ADD_WORKSPACE_CREATE_WIKI_MESSAGE:
       return action.value;
@@ -16,7 +16,7 @@ const defaultForm = {
   homeUrl: '',
   picturePath: null,
 };
-const form = (state = defaultForm, action) => {
+const form = (state = defaultForm, action: any) => {
   switch (action.type) {
     case ADD_WORKSPACE_UPDATE_FORM:
       return { ...state, ...action.changes };

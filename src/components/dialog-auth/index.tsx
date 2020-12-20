@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
@@ -8,7 +7,7 @@ import connectComponent from '../../helpers/connect-component';
 
 import { updateForm, login } from '../../state/dialog-auth/actions';
 
-const styles = (theme) => ({
+const styles = (theme: any) => ({
   root: {
     background: theme.palette.background.paper,
     height: '100vh',
@@ -17,23 +16,35 @@ const styles = (theme) => ({
     display: 'flex',
     flexDirection: 'column',
   },
+
   flexGrow: {
     flex: 1,
   },
+
   button: {
     float: 'right',
     marginLeft: theme.spacing(1),
   },
+
   textField: {
     marginBottom: theme.spacing(2),
   },
 });
 
-const Auth = ({
-  classes, onUpdateForm, onLogin, username, password,
-}) => (
+interface AuthProps {
+  classes: any;
+  onLogin: (...arguments_: any[]) => any;
+  onUpdateForm: (...arguments_: any[]) => any;
+  password: string;
+  username: string;
+}
+
+const Auth = ({ classes, onUpdateForm, onLogin, username, password }: AuthProps) => (
+  // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
   <div className={classes.root}>
+    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
     <div className={classes.flexGrow}>
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <TextField
         className={classes.textField}
         fullWidth
@@ -48,6 +59,7 @@ const Auth = ({
           shrink: true,
         }}
       />
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <TextField
         fullWidth
         id="outlined-full-width"
@@ -63,10 +75,13 @@ const Auth = ({
         }}
       />
     </div>
+    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
     <div>
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onLogin}>
         Sign in
       </Button>
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button variant="contained" disableElevation className={classes.button} onClick={() => window.remote.closeCurrentWindow()}>
         Cancel
       </Button>
@@ -74,15 +89,7 @@ const Auth = ({
   </div>
 );
 
-Auth.propTypes = {
-  classes: PropTypes.object.isRequired,
-  onLogin: PropTypes.func.isRequired,
-  onUpdateForm: PropTypes.func.isRequired,
-  password: PropTypes.string.isRequired,
-  username: PropTypes.string.isRequired,
-};
-
-const mapStateToProps = (state) => ({
+const mapStateToProps = (state: any) => ({
   username: state.dialogAuth.form.username,
   password: state.dialogAuth.form.password,
 });
@@ -92,9 +99,4 @@ const actionCreators = {
   login,
 };
 
-export default connectComponent(
-  Auth,
-  mapStateToProps,
-  actionCreators,
-  styles,
-);
+export default connectComponent(Auth, mapStateToProps, actionCreators, styles);

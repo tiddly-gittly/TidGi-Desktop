@@ -1,8 +1,13 @@
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fs'.
 const fs = require('fs-extra');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
 const path = require('path');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
 const sendToAllWindows = require('./send-to-all-windows');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'LOCALIZATI... Remove this comment to see the full error message
 const { LOCALIZATION_FOLDER } = require('../constants/paths');
-const i18n = require('./i18n');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'index18n'.
+const index18n = require('./i18n');
 
 // Electron-specific; must match mainIpc
 const readFileRequest = 'ReadFile-Request';
@@ -13,25 +18,26 @@ const changeLanguageRequest = 'ChangeLanguage-Request';
 
 // This is the code that will go into the preload.js file
 // in order to set up the contextBridge api
-const preloadBindings = function(ipcRenderer) {
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'preloadBin... Remove this comment to see the full error message
+const preloadBindings = function (ipcRenderer: any) {
   return {
-    send: (channel, data) => {
+    send: (channel: any, data: any) => {
       const validChannels = [readFileRequest, writeFileRequest];
       if (validChannels.includes(channel)) {
         ipcRenderer.send(channel, data);
       }
     },
-    onReceive: (channel, func) => {
+    onReceive: (channel: any, function_: any) => {
       const validChannels = [readFileResponse, writeFileResponse];
       if (validChannels.includes(channel)) {
         // Deliberately strip event as it includes "sender"
-        ipcRenderer.on(channel, (event, arguments_) => func(arguments_));
+        ipcRenderer.on(channel, (event: any, arguments_: any) => function_(arguments_));
       }
     },
-    onLanguageChange: func => {
+    onLanguageChange: (function_: any) => {
       // Deliberately strip event as it includes "sender"
-      ipcRenderer.on(changeLanguageRequest, (event, arguments_) => {
-        func(arguments_);
+      ipcRenderer.on(changeLanguageRequest, (event: any, arguments_: any) => {
+        function_(arguments_);
       });
     },
   };
@@ -39,10 +45,11 @@ const preloadBindings = function(ipcRenderer) {
 
 // This is the code that will go into the main.js file
 // in order to set up the ipc main bindings
-const mainBindings = function(ipcMain, browserWindow) {
-  ipcMain.on(readFileRequest, (IpcMainEvent, arguments_) => {
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'mainBindin... Remove this comment to see the full error message
+const mainBindings = function (ipcMain: any, browserWindow: any) {
+  ipcMain.on(readFileRequest, (IpcMainEvent: any, arguments_: any) => {
     const localeFilePath = path.join(LOCALIZATION_FOLDER, arguments_.filename);
-    fs.readFile(localeFilePath, 'utf8', (error, data) => {
+    fs.readFile(localeFilePath, 'utf8', (error: any, data: any) => {
       sendToAllWindows(readFileResponse, {
         key: arguments_.key,
         error,
@@ -51,15 +58,15 @@ const mainBindings = function(ipcMain, browserWindow) {
     });
   });
 
-  ipcMain.on(writeFileRequest, (IpcMainEvent, arguments_) => {
+  ipcMain.on(writeFileRequest, (IpcMainEvent: any, arguments_: any) => {
     const localeFilePath = path.join(LOCALIZATION_FOLDER, arguments_.filename);
     const localeFileFolderPath = path.dirname(localeFilePath);
-    fs.ensureDir(localeFileFolderPath, directoryCreationError => {
+    fs.ensureDir(localeFileFolderPath, (directoryCreationError: any) => {
       if (directoryCreationError) {
         console.error(directoryCreationError);
         return;
       }
-      fs.writeFile(localeFilePath, JSON.stringify(arguments_.data), error => {
+      fs.writeFile(localeFilePath, JSON.stringify(arguments_.data), (error: any) => {
         sendToAllWindows(writeFileResponse, {
           keys: arguments_.keys,
           error,
@@ -71,7 +78,7 @@ const mainBindings = function(ipcMain, browserWindow) {
 
 // Clears the bindings from ipcMain;
 // in case app is closed/reopened (only on macos)
-const clearMainBindings = function(ipcMain) {
+const clearMainBindings = function (ipcMain: any) {
   ipcMain.removeAllListeners(readFileRequest);
   ipcMain.removeAllListeners(writeFileRequest);
 };
@@ -80,19 +87,20 @@ const whitelistMap = JSON.parse(fs.readFileSync(path.join(LOCALIZATION_FOLDER, '
 
 const whiteListedLanguages = Object.keys(whitelistMap);
 
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getLanguag... Remove this comment to see the full error message
 function getLanguageMenu() {
   const subMenu = [];
   for (const language of whiteListedLanguages) {
     subMenu.push({
       label: whitelistMap[language],
-      click: (menuItem, browserWindow, event) => {
+      click: (menuItem: any, browserWindow: any, event: any) => {
         // eslint-disable-next-line global-require
         const { setPreference } = require('./preferences');
         setPreference('language', language);
-        i18n.changeLanguage(language);
+        index18n.changeLanguage(language);
         // eslint-disable-next-line global-require
         const { onEachView } = require('./views');
-        onEachView(view => {
+        onEachView((view: any) => {
           view.webContents.send(changeLanguageRequest, {
             lng: language,
           });

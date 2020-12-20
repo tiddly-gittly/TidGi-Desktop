@@ -1,29 +1,32 @@
+// @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
 const { Menu, clipboard, ipcMain, shell } = require('electron');
-
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getLanguag... Remove this comment to see the full error message
 const { getLanguageMenu } = require('./i18next-electron-fs-backend');
 const aboutWindow = require('../windows/about');
 const addWorkspaceWindow = require('../windows/add-workspace');
 const editWorkspaceWindow = require('../windows/edit-workspace');
 const goToUrlWindow = require('../windows/go-to-url');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'mainWindow... Remove this comment to see the full error message
 const mainWindow = require('../windows/main');
 const notificationsWindow = require('../windows/notifications');
 const preferencesWindow = require('../windows/preferences');
-const i18next = require('./i18n');
-
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'index18nex... Remove this comment to see the full error message
+const index18next = require('./i18n');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'formatByte... Remove this comment to see the full error message
 const formatBytes = require('./format-bytes');
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getViewBou... Remove this comment to see the full error message
 const getViewBounds = require('./get-view-bounds');
-
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getWorkspa... Remove this comment to see the full error message
 const { getWorkspaces, getActiveWorkspace, getNextWorkspace, getPreviousWorkspace } = require('./workspaces');
-
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setActiveW... Remove this comment to see the full error message
 const { setActiveWorkspaceView } = require('./workspaces-views');
-
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getView'.
 const { getView, getActiveBrowserView } = require('./views');
-
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'createMenu... Remove this comment to see the full error message
 function createMenu() {
-  const updaterEnabled = process.env.SNAP == null && !process.mas && !process.windowsStore;
+  const updaterEnabled = process.env.SNAP == undefined && !process.mas && !process.windowsStore;
   const workspaces = getWorkspaces();
   const hasWorkspaces = Object.keys(workspaces).length > 0;
-
   const template = [
     {
       label: 'Edit',
@@ -45,12 +48,9 @@ function createMenu() {
             const win = mainWindow.get();
             if (win !== null && win.getBrowserView() !== null) {
               win.webContents.focus();
-
               win.send('open-find-in-page');
-
               const contentSize = win.getContentSize();
               const view = win.getBrowserView();
-
               view.setBounds(getViewBounds(contentSize, true));
             }
           },
@@ -112,14 +112,13 @@ function createMenu() {
           visible: false,
           accelerator: 'Alt+M',
           enabled: process.platform === 'win32',
-          click: (menuItem, browserWindow) => {
+          click: (menuItem: any, browserWindow: any) => {
             // if back is called in popup window
             // open menu bar in the popup window instead
             if (browserWindow && browserWindow.isPopup) {
               browserWindow.setMenuBarVisibility(!browserWindow.isMenuBarVisible());
               return;
             }
-
             const win = mainWindow.get();
             win.setMenuBarVisibility(!win.isMenuBarVisible());
             ipcMain.emit('request-realign-active-workspace');
@@ -130,7 +129,7 @@ function createMenu() {
         {
           label: 'Actual Size',
           accelerator: 'CmdOrCtrl+0',
-          click: (menuItem, browserWindow) => {
+          click: (menuItem: any, browserWindow: any) => {
             // if item is called in popup window
             // open menu bar in the popup window instead
             if (browserWindow && browserWindow.isPopup) {
@@ -138,9 +137,7 @@ function createMenu() {
               contents.zoomFactor = 1;
               return;
             }
-
             const win = mainWindow.get();
-
             if (win !== null && win.getBrowserView() !== null) {
               const contents = win.getBrowserView().webContents;
               contents.zoomFactor = 1;
@@ -151,7 +148,7 @@ function createMenu() {
         {
           label: 'Zoom In',
           accelerator: 'CmdOrCtrl+=',
-          click: (menuItem, browserWindow) => {
+          click: (menuItem: any, browserWindow: any) => {
             // if item is called in popup window
             // open menu bar in the popup window instead
             if (browserWindow && browserWindow.isPopup) {
@@ -159,9 +156,7 @@ function createMenu() {
               contents.zoomFactor += 0.1;
               return;
             }
-
             const win = mainWindow.get();
-
             if (win !== null && win.getBrowserView() !== null) {
               const contents = win.getBrowserView().webContents;
               contents.zoomFactor += 0.1;
@@ -172,7 +167,7 @@ function createMenu() {
         {
           label: 'Zoom Out',
           accelerator: 'CmdOrCtrl+-',
-          click: (menuItem, browserWindow) => {
+          click: (menuItem: any, browserWindow: any) => {
             // if item is called in popup window
             // open menu bar in the popup window instead
             if (browserWindow && browserWindow.isPopup) {
@@ -180,9 +175,7 @@ function createMenu() {
               contents.zoomFactor -= 0.1;
               return;
             }
-
             const win = mainWindow.get();
-
             if (win !== null && win.getBrowserView() !== null) {
               const contents = win.getBrowserView().webContents;
               contents.zoomFactor -= 0.1;
@@ -194,16 +187,14 @@ function createMenu() {
         {
           label: 'Reload This Page',
           accelerator: 'CmdOrCtrl+R',
-          click: (menuItem, browserWindow) => {
+          click: (menuItem: any, browserWindow: any) => {
             // if item is called in popup window
             // open menu bar in the popup window instead
             if (browserWindow && browserWindow.isPopup) {
               browserWindow.webContents.reload();
               return;
             }
-
             const win = mainWindow.get();
-
             if (win !== null && win.getBrowserView() !== null) {
               win.getBrowserView().webContents.reload();
             }
@@ -241,7 +232,7 @@ function createMenu() {
         {
           label: 'Back',
           accelerator: 'CmdOrCtrl+[',
-          click: (menuItem, browserWindow) => {
+          click: (menuItem: any, browserWindow: any) => {
             // if back is called in popup window
             // navigate in the popup window instead
             if (browserWindow && browserWindow.isPopup) {
@@ -255,7 +246,7 @@ function createMenu() {
         {
           label: 'Forward',
           accelerator: 'CmdOrCtrl+]',
-          click: (menuItem, browserWindow) => {
+          click: (menuItem: any, browserWindow: any) => {
             // if back is called in popup window
             // navigate in the popup window instead
             if (browserWindow && browserWindow.isPopup) {
@@ -270,7 +261,7 @@ function createMenu() {
         {
           label: 'Copy URL',
           accelerator: 'CmdOrCtrl+L',
-          click: (menuItem, browserWindow) => {
+          click: (menuItem: any, browserWindow: any) => {
             // if back is called in popup window
             // copy the popup window URL instead
             if (browserWindow && browserWindow.isPopup) {
@@ -278,9 +269,7 @@ function createMenu() {
               clipboard.writeText(url);
               return;
             }
-
             const win = mainWindow.get();
-
             if (win !== null && win.getBrowserView() !== null) {
               const url = win.getBrowserView().webContents.getURL();
               clipboard.writeText(url);
@@ -317,7 +306,6 @@ function createMenu() {
               label: 'Zoom',
               click: () => {
                 const win = mainWindow.get();
-
                 if (win !== null) {
                   win.maximize();
                 }
@@ -341,10 +329,7 @@ function createMenu() {
         },
         {
           label: 'Request a New Feature via GitHub...',
-          click: () =>
-            shell.openExternal(
-              'https://github.com/tiddly-gittly/tiddlygit-desktop/issues/new?template=feature.md&title=feature%3A+',
-            ),
+          click: () => shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues/new?template=feature.md&title=feature%3A+'),
         },
         {
           label: 'Learn More...',
@@ -353,7 +338,6 @@ function createMenu() {
       ],
     },
   ];
-
   const updaterMenuItem = {
     label: 'Check for Updates...',
     click: () => ipcMain.emit('request-check-for-updates'),
@@ -363,43 +347,40 @@ function createMenu() {
     updaterMenuItem.label = 'Restart to Apply Updates...';
   } else if (global.updaterObj && global.updaterObj.status === 'update-available') {
     updaterMenuItem.label = 'Downloading Updates...';
-    updaterMenuItem.enabled = false;
+    (updaterMenuItem as any).enabled = false;
   } else if (global.updaterObj && global.updaterObj.status === 'download-progress') {
     const { transferred, total, bytesPerSecond } = global.updaterObj.info;
-    updaterMenuItem.label = `Downloading Updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(
-      bytesPerSecond,
-    )}/s)...`;
-    updaterMenuItem.enabled = false;
+    updaterMenuItem.label = `Downloading Updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
+    (updaterMenuItem as any).enabled = false;
   } else if (global.updaterObj && global.updaterObj.status === 'checking-for-update') {
     updaterMenuItem.label = 'Checking for Updates...';
-    updaterMenuItem.enabled = false;
+    (updaterMenuItem as any).enabled = false;
   }
-
   if (process.platform === 'darwin') {
     template.unshift({
       label: 'TiddlyGit',
       submenu: [
         {
-          label: i18next.t('ContextMenu.About'),
+          label: index18next.t('ContextMenu.About'),
           click: () => aboutWindow.show(),
         },
         { type: 'separator' },
         updaterMenuItem,
         { type: 'separator' },
         {
-          label: i18next.t('ContextMenu.Preferences'),
+          label: index18next.t('ContextMenu.Preferences'),
           click: () => preferencesWindow.show(),
           accelerator: 'CmdOrCtrl+,',
         },
         { type: 'separator' },
         {
-          label: i18next.t('ContextMenu.Notifications'),
+          label: index18next.t('ContextMenu.Notifications'),
           click: () => notificationsWindow.show(),
           accelerator: 'CmdOrCtrl+Shift+N',
         },
         { type: 'separator' },
         {
-          label: i18next.t('Preference.ClearBrowsingData'),
+          label: index18next.t('Preference.ClearBrowsingData'),
           click: () => ipcMain.emit('request-clear-browsing-data'),
         },
         { type: 'separator' },
@@ -417,26 +398,26 @@ function createMenu() {
       label: 'File',
       submenu: [
         {
-          label: i18next.t('ContextMenu.About'),
+          label: index18next.t('ContextMenu.About'),
           click: () => aboutWindow.show(),
         },
         { type: 'separator' },
         updaterMenuItem,
         { type: 'separator' },
         {
-          label: i18next.t('ContextMenu.Preferences'),
+          label: index18next.t('ContextMenu.Preferences'),
           accelerator: 'CmdOrCtrl+,',
           click: () => preferencesWindow.show(),
         },
         { type: 'separator' },
         {
-          label: i18next.t('ContextMenu.Notifications'),
+          label: index18next.t('ContextMenu.Notifications'),
           click: () => notificationsWindow.show(),
           accelerator: 'CmdOrCtrl+Shift+N',
         },
         { type: 'separator' },
         {
-          label: i18next.t('Preference.ClearBrowsingData'),
+          label: index18next.t('Preference.ClearBrowsingData'),
           accelerator: 'CmdOrCtrl+Shift+Delete',
           click: () => ipcMain.emit('request-clear-browsing-data'),
         },
@@ -445,30 +426,33 @@ function createMenu() {
       ],
     });
   }
-
   Object.values(workspaces)
+    // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
     .sort((a, b) => a.order - b.order)
-    .forEach((workspace, i) => {
+    .forEach((workspace, index) => {
       template[4].submenu.push({
-        label: workspace.name || `Workspace ${i + 1}`,
+        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
+        label: workspace.name || `Workspace ${index + 1}`,
         type: 'checkbox',
+        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
         checked: workspace.active,
         click: () => {
+          // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
           setActiveWorkspaceView(workspace.id);
           createMenu();
         },
-        accelerator: `CmdOrCtrl+${i + 1}`,
+        accelerator: `CmdOrCtrl+${index + 1}`,
       });
-
       template[2].submenu[template[2].submenu.length - 1].submenu.push({
-        label: workspace.name || `Workspace ${i + 1}`,
+        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
+        label: workspace.name || `Workspace ${index + 1}`,
         click: () => {
+          // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
           const v = getView(workspace.id);
           v.webContents.toggleDevTools();
         },
       });
     });
-
   template[4].submenu.push(
     { type: 'separator' },
     {
@@ -518,9 +502,8 @@ function createMenu() {
       },
     },
   );
-
+  // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '({ label: string; submenu: any; ... Remove this comment to see the full error message
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 }
-
 module.exports = createMenu;

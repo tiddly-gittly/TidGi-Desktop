@@ -6,10 +6,12 @@ const defaultForm = {
   url: '',
 };
 
-const form = (state = defaultForm, action) => {
+const form = (state = defaultForm, action: any) => {
   switch (action.type) {
-    case UPDATE_GO_TO_URL_FORM: return { ...state, ...action.changes };
-    default: return state;
+    case UPDATE_GO_TO_URL_FORM:
+      return { ...state, ...action.changes };
+    default:
+      return state;
   }
 };
 

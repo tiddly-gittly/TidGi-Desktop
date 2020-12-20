@@ -17,7 +17,7 @@ import { updatePauseNotificationsInfo } from '../state/notifications/actions';
 import { updateUpdater } from '../state/updater/actions';
 import { getShouldUseDarkColors, requestFindInPage, signalOnlineStatusChanged } from '../senders';
 
-const loadListeners = (store) => {
+const loadListeners = (store: any) => {
   const { ipcRenderer } = window.remote;
 
   if (window.meta.mode === 'main') {
@@ -28,51 +28,51 @@ const loadListeners = (store) => {
     window.addEventListener('offline', handleOnlineOffline);
   }
 
-  ipcRenderer.on('create-wiki-progress', (event, message) => {
+  ipcRenderer.on('create-wiki-progress', (event: any, message: any) => {
     store.dispatch(setWikiCreationMessage(message));
   });
 
-  ipcRenderer.on('log', (e, message) => {
+  ipcRenderer.on('log', (e: any, message: any) => {
     if (message) console.log(message); // eslint-disable-line no-console
   });
 
-  ipcRenderer.on('set-preference', (e, name, value) => {
+  ipcRenderer.on('set-preference', (e: any, name: any, value: any) => {
     store.dispatch(setPreference(name, value));
   });
 
-  ipcRenderer.on('set-system-preference', (e, name, value) => {
+  ipcRenderer.on('set-system-preference', (e: any, name: any, value: any) => {
     store.dispatch(setSystemPreference(name, value));
   });
 
-  ipcRenderer.on('set-workspace', (e, id, value) => {
+  ipcRenderer.on('set-workspace', (e: any, id: any, value: any) => {
     store.dispatch(setWorkspace(id, value));
   });
 
-  ipcRenderer.on('set-workspaces', (e, newWorkspaces) => {
+  ipcRenderer.on('set-workspaces', (e: any, newWorkspaces: any) => {
     store.dispatch(setWorkspaces(newWorkspaces));
   });
 
-  ipcRenderer.on('set-workspace-meta', (e, id, value) => {
+  ipcRenderer.on('set-workspace-meta', (e: any, id: any, value: any) => {
     store.dispatch(setWorkspaceMeta(id, value));
   });
 
-  ipcRenderer.on('set-workspace-metas', (newWorkspaceMetas) => {
+  ipcRenderer.on('set-workspace-metas', (newWorkspaceMetas: any) => {
     store.dispatch(setWorkspaceMetas(newWorkspaceMetas));
   });
 
-  ipcRenderer.on('update-can-go-back', (e, value) => {
+  ipcRenderer.on('update-can-go-back', (e: any, value: any) => {
     store.dispatch(updateCanGoBack(value));
   });
 
-  ipcRenderer.on('update-address', (e, address, edited) => {
+  ipcRenderer.on('update-address', (e: any, address: any, edited: any) => {
     store.dispatch(updateAddressBarInfo(address, edited));
   });
 
-  ipcRenderer.on('update-title', (e, title) => {
+  ipcRenderer.on('update-title', (e: any, title: any) => {
     store.dispatch(updateTitle(title));
   });
 
-  ipcRenderer.on('update-can-go-forward', (e, value) => {
+  ipcRenderer.on('update-can-go-forward', (e: any, value: any) => {
     store.dispatch(updateCanGoForward(value));
   });
 
@@ -85,31 +85,31 @@ const loadListeners = (store) => {
     store.dispatch(closeFindInPage());
   });
 
-  ipcRenderer.on('update-find-in-page-matches', (e, activeMatch, matches) => {
+  ipcRenderer.on('update-find-in-page-matches', (e: any, activeMatch: any, matches: any) => {
     store.dispatch(updateFindInPageMatches(activeMatch, matches));
   });
 
   // send back a request with text
-  ipcRenderer.on('request-back-find-in-page', (e, forward) => {
+  ipcRenderer.on('request-back-find-in-page', (e: any, forward: any) => {
     const { open, text } = store.getState().findInPage;
     if (!open) return;
     requestFindInPage(text, forward);
   });
 
-  ipcRenderer.on('should-pause-notifications-changed', (e, val) => {
-    store.dispatch(updatePauseNotificationsInfo(val));
+  ipcRenderer.on('should-pause-notifications-changed', (e: any, value: any) => {
+    store.dispatch(updatePauseNotificationsInfo(value));
   });
 
-  ipcRenderer.on('update-updater', (e, updaterObj) => {
-    store.dispatch(updateUpdater(updaterObj));
+  ipcRenderer.on('update-updater', (e: any, updaterObject: any) => {
+    store.dispatch(updateUpdater(updaterObject));
   });
 
   ipcRenderer.on('native-theme-updated', () => {
     store.dispatch(updateShouldUseDarkColors(getShouldUseDarkColors()));
   });
 
-  ipcRenderer.on('is-fullscreen-updated', (e, val) => {
-    store.dispatch(updateIsFullScreen(val));
+  ipcRenderer.on('is-fullscreen-updated', (e: any, value: any) => {
+    store.dispatch(updateIsFullScreen(value));
   });
 };
 

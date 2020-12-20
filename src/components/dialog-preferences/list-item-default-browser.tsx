@@ -16,30 +16,27 @@ const ListItemDefaultBrowser = () => {
 
   const isWindows10 = window.remote.getPlatform() === 'win32' && semver.gt(window.remote.getOSVersion(), '10.0.0');
 
-  const recheckIsDefault = useCallback(
-    () => {
-      // Electron protocol API doesn't work with Windows 10
-      // So check with regedit
-      if (isWindows10) {
-        // https://stackoverflow.com/questions/32354861/how-to-find-the-default-browser-via-the-registry-on-windows-10
-        const protocolName = 'http'; // https works as well
-        const userChoicePath = `HKCU\\SOFTWARE\\Microsoft\\Windows\\Shell\\Associations\\URLAssociations\\${protocolName}\\UserChoice`;
-        window.remote.regedit.list([userChoicePath], (error, result) => {
-          try {
-            setIsDefault(!error && result[userChoicePath].values.ProgId.value === 'TiddlyGit');
-          } catch (tryError) {
-            // eslint-disable-next-line no-console
-            console.log(tryError);
-            setIsDefault(false);
-          }
-        });
-        return;
-      }
+  const recheckIsDefault = useCallback(() => {
+    // Electron protocol API doesn't work with Windows 10
+    // So check with regedit
+    if (isWindows10) {
+      // https://stackoverflow.com/questions/32354861/how-to-find-the-default-browser-via-the-registry-on-windows-10
+      const protocolName = 'http'; // https works as well
+      const userChoicePath = `HKCU\\SOFTWARE\\Microsoft\\Windows\\Shell\\Associations\\URLAssociations\\${protocolName}\\UserChoice`;
+      window.remote.regedit.list([userChoicePath], (error: any, result: any) => {
+        try {
+          setIsDefault(!error && result[userChoicePath].values.ProgId.value === 'TiddlyGit');
+        } catch (tryError) {
+          // eslint-disable-next-line no-console
+          console.log(tryError);
+          setIsDefault(false);
+        }
+      });
+      return;
+    }
 
-      setIsDefault(window.remote.isDefaultProtocolClient('http'));
-    },
-    [isWindows10],
-  );
+    setIsDefault(window.remote.isDefaultProtocolClient('http'));
+  }, [isWindows10]);
 
   // recheck every 1 minutes
   useEffect(() => {
@@ -54,31 +51,36 @@ const ListItemDefaultBrowser = () => {
 
   if (isDefault) {
     return (
+      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <ListItem>
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ListItemText secondary="TiddlyGit is your default browser." />
       </ListItem>
     );
   }
 
-  const sharedListItemText = (
-    <ListItemText primary="Default browser" secondary="Make TiddlyGit the default browser." />
-  );
+  // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+  const sharedListItemText = <ListItemText primary="Default browser" secondary="Make TiddlyGit the default browser." />;
 
   // open ms-settings on Windows 10
   // as Windows 10 doesn't allow changing default app programmatically
   if (isWindows10) {
     return (
       // https://docs.microsoft.com/en-us/windows/uwp/launch-resume/launch-settings-app
+      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <ListItem button onClick={() => requestOpen('ms-settings:defaultapps')}>
         {sharedListItemText}
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ChevronRightIcon color="action" />
       </ListItem>
     );
   }
 
   return (
+    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <ListItem>
       {sharedListItemText}
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button
         variant="outlined"
         size="small"
@@ -87,17 +89,11 @@ const ListItemDefaultBrowser = () => {
           window.remote.setAsDefaultProtocolClient('http');
           window.remote.setAsDefaultProtocolClient('https');
           recheckIsDefault();
-        }}
-      >
+        }}>
         Make default
       </Button>
     </ListItem>
   );
 };
 
-export default connectComponent(
-  ListItemDefaultBrowser,
-  null,
-  null,
-  null,
-);
+export default connectComponent(ListItemDefaultBrowser, null, null, null);

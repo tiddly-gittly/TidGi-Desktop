@@ -26,14 +26,14 @@ export const init = () => ({
   type: DIALOG_EDIT_WORKSPACE_INIT,
 });
 
-export const updateForm = changes => dispatch => {
+export const updateForm = (changes: any) => (dispatch: any) => {
   dispatch({
     type: UPDATE_EDIT_WORKSPACE_FORM,
     changes: validate(changes, getValidationRules()),
   });
 };
 
-export const save = () => (dispatch, getState) => {
+export const save = () => (dispatch: any, getState: any) => {
   const { form } = getState().dialogEditWorkspace;
 
   const validatedChanges = validate(form, getValidationRules());

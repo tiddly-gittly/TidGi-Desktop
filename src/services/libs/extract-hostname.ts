@@ -1,14 +1,10 @@
 /* eslint-disable prefer-destructuring */
-const extractHostname = (url) => {
+const extractHostname = (url: any) => {
   try {
     let hostname = url.trim();
 
     // find & remove protocol (http, ftp, etc.) and get hostname
-    if (url.indexOf('://') > -1) {
-      hostname = url.split('/')[2];
-    } else {
-      hostname = url.split('/')[0];
-    }
+    hostname = url.includes('://') ? url.split('/')[2] : url.split('/')[0];
 
     // find & remove port number
     hostname = hostname.split(':')[0];
@@ -20,7 +16,7 @@ const extractHostname = (url) => {
     hostname = hostname.replace(/^(www\.)/, '');
 
     return hostname;
-  } catch (_) {
+  } catch {
     return null;
   }
 };

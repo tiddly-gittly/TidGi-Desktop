@@ -1,5 +1,4 @@
 import React from 'react';
-import PropTypes from 'prop-types';
 
 import Button from '@material-ui/core/Button';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
@@ -16,7 +15,7 @@ import connectComponent from '../../helpers/connect-component';
 
 import { updateForm, save } from '../../state/dialog-code-injection/actions';
 
-const styles = (theme) => ({
+const styles = (theme: any) => ({
   root: {
     background: theme.palette.background.paper,
     height: '100vh',
@@ -25,41 +24,54 @@ const styles = (theme) => ({
     display: 'flex',
     flexDirection: 'column',
   },
+
   flexGrow: {
     flex: 1,
   },
+
   actions: {
     borderTop: `1px solid ${theme.palette.divider}`,
     padding: theme.spacing(2),
     display: 'flex',
   },
+
   actionsLeft: {
     flex: 1,
   },
+
   button: {
     float: 'right',
     marginLeft: theme.spacing(1),
   },
 });
 
-const getMode = (codeInjectionType) => {
+const getMode = (codeInjectionType: any) => {
   if (codeInjectionType === 'css') return 'css';
   if (codeInjectionType === 'js') return 'javascript';
   return '';
 };
 
-const CodeInjection = ({
-  allowNodeInJsCodeInjection,
-  classes,
-  code,
-  onSave,
-  onUpdateForm,
-  shouldUseDarkColors,
-}) => {
-  const codeInjectionType =  window.remote.getGlobal('codeInjectionType');
+interface OwnCodeInjectionProps {
+  allowNodeInJsCodeInjection?: boolean;
+  classes: any;
+  code: string;
+  onSave: (...arguments_: any[]) => any;
+  onUpdateForm: (...arguments_: any[]) => any;
+  shouldUseDarkColors: boolean;
+}
+
+// @ts-expect-error ts-migrate(2456) FIXME: Type alias 'CodeInjectionProps' circularly referen... Remove this comment to see the full error message
+type CodeInjectionProps = OwnCodeInjectionProps & typeof CodeInjection.defaultProps;
+
+// @ts-expect-error ts-migrate(7022) FIXME: 'CodeInjection' implicitly has type 'any' because ... Remove this comment to see the full error message
+const CodeInjection = ({ allowNodeInJsCodeInjection, classes, code, onSave, onUpdateForm, shouldUseDarkColors }: CodeInjectionProps) => {
+  const codeInjectionType = window.remote.getGlobal('codeInjectionType');
   return (
+    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className={classes.root}>
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className={classes.flexGrow}>
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <AceEditor
           mode={getMode(codeInjectionType)}
           theme={shouldUseDarkColors ? 'monokai' : 'github'}
@@ -70,25 +82,28 @@ const CodeInjection = ({
           onChange={(value) => onUpdateForm({ code: value })}
         />
       </div>
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className={classes.actions}>
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className={classes.actionsLeft}>
           {codeInjectionType === 'js' && (
+            // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <FormControlLabel
-              control={(
-                <Switch
-                  checked={allowNodeInJsCodeInjection}
-                  onChange={(e) => onUpdateForm({ allowNodeInJsCodeInjection: e.target.checked })}
-                  color="primary"
-                />
-              )}
+              control={
+                // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+                <Switch checked={allowNodeInJsCodeInjection} onChange={(e) => onUpdateForm({ allowNodeInJsCodeInjection: e.target.checked })} color="primary" />
+              }
               label="Allow access to Node.JS & Electron APIs"
             />
           )}
         </div>
+        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className={classes.actionsRight}>
+          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
             Save
           </Button>
+          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Button variant="contained" disableElevation className={classes.button} onClick={() => window.remote.closeCurrentWindow()}>
             Cancel
           </Button>
@@ -102,16 +117,7 @@ CodeInjection.defaultProps = {
   allowNodeInJsCodeInjection: false,
 };
 
-CodeInjection.propTypes = {
-  allowNodeInJsCodeInjection: PropTypes.bool,
-  classes: PropTypes.object.isRequired,
-  code: PropTypes.string.isRequired,
-  onSave: PropTypes.func.isRequired,
-  onUpdateForm: PropTypes.func.isRequired,
-  shouldUseDarkColors: PropTypes.bool.isRequired,
-};
-
-const mapStateToProps = (state) => ({
+const mapStateToProps = (state: any) => ({
   code: state.dialogCodeInjection.form.code || '',
   allowNodeInJsCodeInjection: state.dialogCodeInjection.form.allowNodeInJsCodeInjection,
   shouldUseDarkColors: state.general.shouldUseDarkColors,
@@ -122,9 +128,4 @@ const actionCreators = {
   save,
 };
 
-export default connectComponent(
-  CodeInjection,
-  mapStateToProps,
-  actionCreators,
-  styles,
-);
+export default connectComponent(CodeInjection, mapStateToProps, actionCreators, styles);

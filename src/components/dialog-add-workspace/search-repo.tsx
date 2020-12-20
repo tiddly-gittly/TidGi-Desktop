@@ -1,3 +1,4 @@
+// @ts-expect-error ts-migrate(2529) FIXME: Duplicate identifier 'Promise'. Compiler reserves ... Remove this comment to see the full error message
 import Promise from 'bluebird';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
@@ -61,15 +62,17 @@ const CREATE_REPO_MUTATION = `
   }
 `;
 
-type Props = {
-  accessToken: string,
-  githubWikiUrl: string,
-  currentTab: string,
-  githubWikiUrlSetter: (string) => void,
-  wikiFolderNameSetter: (string) => void,
-  userInfo: IUserInfo,
-  isCreateMainWorkspace: boolean,
-};
+interface Props {
+  accessToken: string;
+  githubWikiUrl: string;
+  currentTab: string;
+  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
+  githubWikiUrlSetter: (string) => void;
+  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
+  wikiFolderNameSetter: (string) => void;
+  userInfo: IUserInfo;
+  isCreateMainWorkspace: boolean;
+}
 export default function SearchRepo({
   accessToken,
   githubWikiUrl,
@@ -115,7 +118,7 @@ export default function SearchRepo({
   const repositoryCount = data?.search?.repositoryCount;
   let repoList = [];
   if (repositoryCount) {
-    repoList = data.search.edges.map(({ node }) => node);
+    repoList = data.search.edges.map(({ node }: any) => node);
   }
   const { t } = useTranslation();
   let helperText = '';
@@ -136,19 +139,24 @@ export default function SearchRepo({
   const githubPagesUrl = `https://${userInfo?.login || '???'}.github.io/${githubRepoSearchString}`;
 
   return (
+    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <>
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <RepoSearchInput
         fullWidth
-        onChange={event => {
+        onChange={(event) => {
           githubRepoSearchStringSetter(event.target.value);
         }}
         label={t('AddWorkspace.SearchGithubRepoName')}
         value={githubRepoSearchString}
         helperText={helperText}
       />
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       {(loading || isCreatingRepo) && <LinearProgress variant="query" />}
+      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <List component="nav" aria-label="main mailbox folders">
-        {repoList.map(({ name, url }) => (
+        {repoList.map(({ name, url }: any) => (
+          // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <ListItem
             button
             key={url}
@@ -156,11 +164,13 @@ export default function SearchRepo({
               githubWikiUrlSetter(url);
               wikiFolderNameSetter(name);
             }}
-            selected={trim(githubWikiUrl) === trim(url)}
-          >
+            selected={trim(githubWikiUrl) === trim(url)}>
+            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <ListItemIcon>
+              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <FolderIcon />
             </ListItemIcon>
+            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <ListItemText primary={name} />
           </ListItem>
         ))}
@@ -170,8 +180,9 @@ export default function SearchRepo({
           !error &&
           !loading &&
           !isCreatingRepo &&
-          !repoList.some(({ url }) => trim(url) === wikiUrlToCreate) &&
+          !repoList.some(({ url }: any) => trim(url) === wikiUrlToCreate) &&
           githubRepoSearchString && (
+            // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <ListItem
               button
               key={wikiUrlToCreate}
@@ -191,22 +202,23 @@ export default function SearchRepo({
                 isCreatingRepoSetter(false);
                 githubWikiUrlSetter(wikiUrlToCreate);
               }}
-              selected={isCreateNewRepo}
-            >
+              selected={isCreateNewRepo}>
+              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <ListItemIcon>
+                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <CreateNewFolderIcon />
               </ListItemIcon>
+              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <ListItemText
                 primary={`${
-                  isCreateMainWorkspace
-                    ? t('AddWorkspace.CreatePublicRepository')
-                    : t('AddWorkspace.CreatePrivateRepository')
+                  isCreateMainWorkspace ? t('AddWorkspace.CreatePublicRepository') : t('AddWorkspace.CreatePrivateRepository')
                 } ${githubRepoSearchString}`}
               />
             </ListItem>
           )}
       </List>
       {repoList.length === 0 && !notLogin && (
+        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <ReloadButton color="secondary" endIcon={<CachedIcon />} onClick={() => refetch()}>
           {t('AddWorkspace.Reload')}
         </ReloadButton>

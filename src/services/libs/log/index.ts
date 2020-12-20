@@ -1,9 +1,11 @@
 const winston = require('winston');
 require('winston-daily-rotate-file');
 
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'LOG_FOLDER... Remove this comment to see the full error message
 const { LOG_FOLDER } = require('../../constants/paths');
 const RendererTransport = require('./renderer-transport');
 
+// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
 const logger = winston.createLogger({
   levels: {
     emerg: 0,
