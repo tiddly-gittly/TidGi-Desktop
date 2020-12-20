@@ -25,7 +25,10 @@ const logMessage = (loggerMeta: any) => (message: any) => {
 const wikiWorkers = {};
 // don't forget to config option in `dist.js` https://github.com/electron/electron/issues/18540#issuecomment-652430001
 // to copy all worker.js and its local dependence to `process.resourcesPath`
-const WIKI_WORKER_PATH = isDev ? path.resolve(__dirname, './wiki-worker.js') : path.resolve(process.resourcesPath, 'app.asar.unpacked', 'wiki-worker.js');
+// On dev, this file will be in .webpack/main/index.js ,so:
+const WIKI_WORKER_PATH = isDev
+  ? path.resolve(__dirname, '..', '..', 'src', 'services', 'libs', 'wiki', './wiki-worker.js')
+  : path.resolve(process.resourcesPath, 'app.asar.unpacked', 'wiki-worker.js');
 export function startWiki(homePath: any, tiddlyWikiPort: any, userName: any) {
   return new Promise((resolve, reject) => {
     // require here to prevent circular dependence, which will cause "TypeError: getWorkspaceByName is not a function"

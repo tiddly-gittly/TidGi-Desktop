@@ -9,8 +9,7 @@ import { autoUpdater } from 'electron-updater';
 import loadListeners from './listeners';
 
 import * as mainWindow from './windows/main';
-// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
-import openUrlWithWindow from './windows/open-url-with';
+import * as openUrlWithWindow from './windows/open-url-with';
 
 import createMenu from './libs/create-menu';
 import extractHostname from './libs/extract-hostname';

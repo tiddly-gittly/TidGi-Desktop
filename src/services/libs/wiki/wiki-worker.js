@@ -25,11 +25,11 @@ function startNodeJSWiki() {
     parentPort.postMessage(`Tiddlywiki booted failed with error ${error.message} ${error.stack}`);
   }
 }
-export default startNodeJSWiki;
+module.exports = startNodeJSWiki;
 
 if (!isMainThread) {
   startNodeJSWiki();
-  parentPort.once('message', async (message: any) => {
+  parentPort.once('message', async (message) => {
     if (typeof message === 'object' && message.type === 'command' && message.message === 'exit') {
       process.exit(0);
     }
