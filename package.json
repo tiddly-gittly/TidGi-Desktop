@@ -192,6 +192,7 @@
     "styled-is": "1.3.0",
     "subscriptions-transport-ws": "^0.9.18",
     "ts-loader": "^8.0.12",
+    "ts-migrate": "^0.1.12",
     "typeface-roboto": "1.1.13",
     "typescript": "4.1.2",
     "typesync": "0.8.0",
