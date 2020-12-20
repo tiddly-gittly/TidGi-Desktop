@@ -1,16 +1,11 @@
 /* eslint-disable global-require */
 /* eslint-disable no-console */
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Worker'.
 import { Worker } from 'worker_threads';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'isDev'.
 import isDev from 'electron-is-dev';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
 import path from 'path';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Promise'.
+// @ts-expect-error ts-migrate(2529) FIXME: Duplicate identifier 'Promise'. Compiler reserves ... Remove this comment to see the full error message
 import Promise from 'bluebird';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
 import { logger } from '../log';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'wikiOutput... Remove this comment to see the full error message
 import { wikiOutputToFile, refreshOutputFile } from '../log/wiki-output';
 // worker should send payload in form of `{ message: string, handler: string }` where `handler` is the name of function to call
 const logMessage = (loggerMeta: any) => (message: any) => {
@@ -45,7 +40,6 @@ export function startWiki(homePath: any, tiddlyWikiPort: any, userName: any) {
     }
     setWorkspaceMeta(workspaceID, { isLoading: true });
     const workerData = { homePath, userName, tiddlyWikiPort };
-    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ workerData: { homePath: any; u... Remove this comment to see the full error message
     const worker = new Worker(WIKI_WORKER_PATH, { workerData });
     // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     wikiWorkers[homePath] = worker;
@@ -63,7 +57,6 @@ export function startWiki(homePath: any, tiddlyWikiPort: any, userName: any) {
         delete wikiWorkers[homePath];
       }
       logger.warning(`NodeJSWiki ${homePath} Worker stopped with exit code ${code}.`, loggerMeta);
-      // @ts-expect-error ts-migrate(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
       resolve();
     });
     (worker as any).on('message', (message: any) => {
@@ -79,7 +72,6 @@ export function startWiki(homePath: any, tiddlyWikiPort: any, userName: any) {
           if (get()) {
             get().close();
           }
-          // @ts-expect-error ts-migrate(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
           resolve();
         }, 100);
       }
@@ -90,8 +82,7 @@ export function startWiki(homePath: any, tiddlyWikiPort: any, userName: any) {
     wikiOutputToFile(logFileName, (worker as any).stdout);
     wikiOutputToFile(logFileName, (worker as any).stderr);
   });
-};
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'stopWiki'.
+}
 export async function stopWiki(homePath: any) {
   // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   const worker = wikiWorkers[homePath];
@@ -131,4 +122,4 @@ export async function stopAllWiki() {
   // try to prevent https://github.com/electron/electron/issues/23315, but seems not working at all
   await (Promise as any).delay(100);
   logger.info('All wiki-worker is stopped', { function: 'stopAllWiki' });
-};
+}

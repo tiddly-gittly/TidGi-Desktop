@@ -3,11 +3,8 @@ import windowStateKeeper from 'electron-window-state';
 import { menubar, Menubar } from 'menubar';
 import path from 'path';
 
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { REACT_PATH, isDev as isDevelopment } from '../constants/paths';
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { getPreference } from '../libs/preferences';
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import formatBytes from '../libs/format-bytes';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;

@@ -29,4 +29,4 @@ export default class RendererTransport extends Transport {
 
     callback();
   }
-};
+}

@@ -3,11 +3,8 @@
 /* global Image */
 // Ported from
 // https://github.com/electron-userland/electron-spellchecker/blob/master/src/context-menu-builder.js
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'clipboard'... Remove this comment to see the full error message
 import { clipboard, nativeImage, shell, remote } from 'electron';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'index18nex... Remove this comment to see the full error message
 import index18next from './i18n';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Menu'.
 const { Menu, MenuItem } = remote;
 /**
  * Truncates a string to a max length of 25. Will split on a word boundary and
@@ -415,4 +412,4 @@ export default class ContextMenuBuilder {
     });
     img.src = url;
   }
-};
+}

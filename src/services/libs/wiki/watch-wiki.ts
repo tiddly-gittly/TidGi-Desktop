@@ -1,16 +1,10 @@
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fs'.
 import fs from 'fs';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
 import path from 'path';
 import chokidar from 'chokidar';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'trim'.
 import { trim, compact, debounce } from 'lodash';
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
 import { getPreference } from '../preferences';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
 import { logger } from '../log';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'commitAndS... Remove this comment to see the full error message
 import { commitAndSync } from '../git';
 
 const syncDebounceInterval = getPreference('syncDebounceInterval');
@@ -23,7 +17,6 @@ const topLevelFoldersToIgnored = ['node_modules', '.git'];
 // { [name: string]: Watcher }
 const wikiWatchers = {};
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'watchWiki'... Remove this comment to see the full error message
 export function watchWiki(wikiRepoPath: any, githubRepoUrl: any, userInfo: any, wikiFolderPath = wikiRepoPath) {
   if (!fs.existsSync(wikiRepoPath)) {
     return logger.error('Folder not exist in watchFolder()', { wikiRepoPath, wikiFolderPath, githubRepoUrl });
@@ -74,7 +67,6 @@ export function watchWiki(wikiRepoPath: any, githubRepoUrl: any, userInfo: any, 
   });
 }
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'stopWatchW... Remove this comment to see the full error message
 export async function stopWatchWiki(wikiRepoPath: any) {
   // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   const watcher = wikiWatchers[wikiRepoPath];

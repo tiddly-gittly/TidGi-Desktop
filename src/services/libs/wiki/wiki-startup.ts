@@ -1,22 +1,13 @@
 /* eslint-disable global-require */
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
 import path from 'path';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fs'.
 import fs from 'fs';
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
 import { logger } from '../log';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'commitAndS... Remove this comment to see the full error message
 import { commitAndSync } from '../git';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'watchWiki'... Remove this comment to see the full error message
 import { watchWiki, stopWatchWiki } from './watch-wiki';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'startNodeJ... Remove this comment to see the full error message
 import startNodeJSWiki from './start-nodejs-wiki';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'stopWiki'.
 import { stopWiki, startWiki } from './wiki-worker-mamager';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'TIDDLERS_P... Remove this comment to see the full error message
 import { TIDDLERS_PATH } from '../../constants/paths';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
 import { getPreference } from '../preferences';
 
 // prevent private wiki try to restart wiki on start-up, where there will be several subsequent wikiStartup() call
@@ -61,4 +52,4 @@ export default async function wikiStartup(workspace: any) {
       await watchWiki(mainWikiPath, githubRepoUrl, userInfo);
     }
   }
-};
+}

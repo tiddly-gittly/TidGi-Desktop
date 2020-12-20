@@ -9,6 +9,7 @@ import { autoUpdater } from 'electron-updater';
 import loadListeners from './listeners';
 
 import * as mainWindow from './windows/main';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import openUrlWithWindow from './windows/open-url-with';
 
 import createMenu from './libs/create-menu';
@@ -21,10 +22,8 @@ import { getPreference, getPreferences } from './libs/preferences';
 import { getWorkspaces, setWorkspace } from './libs/workspaces';
 import { logger } from './libs/log';
 import { commitAndSync } from './libs/git';
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { clearMainBindings } from './libs/i18next-electron-fs-backend';
 
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import MAILTO_URLS from './constants/mailto-urls';
 
 import './libs/updater';

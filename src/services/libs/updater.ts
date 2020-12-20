@@ -1,12 +1,7 @@
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'app'.
 import { app, dialog } from 'electron';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'autoUpdate... Remove this comment to see the full error message
 import { autoUpdater } from 'electron-updater';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
 import sendToAllWindows from './send-to-all-windows';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'createMenu... Remove this comment to see the full error message
 import createMenu from './create-menu';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'mainWindow... Remove this comment to see the full error message
 import * as mainWindow from '../windows/main';
 (global as any).updateSilent = true;
 global.updaterObj = {};
@@ -19,6 +14,7 @@ autoUpdater.on('checking-for-update', () => {
 });
 autoUpdater.on('update-available', (info: any) => {
   if (!(global as any).updateSilent) {
+    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BrowserWindow | undefined' is no... Remove this comment to see the full error message
     dialog.showMessageBox(mainWindow.get(), {
       title: 'An Update is Available',
       message: 'There is an available update. It is being downloaded. We will let you know when it is ready.',
@@ -38,6 +34,7 @@ autoUpdater.on('update-available', (info: any) => {
 autoUpdater.on('update-not-available', (info: any) => {
   if (!(global as any).updateSilent) {
     dialog
+      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BrowserWindow | undefined' is no... Remove this comment to see the full error message
       .showMessageBox(mainWindow.get(), {
         title: 'No Updates',
         message: 'There are currently no updates available.',
@@ -57,6 +54,7 @@ autoUpdater.on('update-not-available', (info: any) => {
 autoUpdater.on('error', (error: any) => {
   if (!(global as any).updateSilent) {
     dialog
+      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BrowserWindow | undefined' is no... Remove this comment to see the full error message
       .showMessageBox(mainWindow.get(), {
         title: 'Failed to Check for Updates',
         message: 'Failed to check for updates. Please check your Internet connection.',
@@ -104,7 +102,7 @@ autoUpdater.on('update-downloaded', (info: any) => {
     cancelId: 1,
   };
   dialog
-    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ type: string; buttons: string[... Remove this comment to see the full error message
+    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BrowserWindow | undefined' is no... Remove this comment to see the full error message
     .showMessageBox(mainWindow.get(), dialogOptions)
     .then(({ response }) => {
       if (response === 0) {
@@ -115,7 +113,7 @@ autoUpdater.on('update-downloaded', (info: any) => {
           app.removeAllListeners('window-all-closed');
           const win = mainWindow.get();
           if (win != undefined) {
-            win.forceClose = true;
+            (win as any).forceClose = true;
             win.close();
           }
           autoUpdater.quitAndInstall(false);

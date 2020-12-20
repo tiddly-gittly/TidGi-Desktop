@@ -2,7 +2,6 @@ import path from 'path';
 import i18next from 'i18next';
 import Backend from 'i18next-fs-backend';
 
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { LOCALIZATION_FOLDER, isDev as isDevelopment } from '../constants/paths';
 
 i18next.use(Backend).init({

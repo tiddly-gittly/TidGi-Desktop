@@ -1,8 +1,5 @@
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
 import { getPreference } from './preferences';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
 import sendToAllWindows from './send-to-all-windows';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setViewsAu... Remove this comment to see the full error message
 import { setViewsAudioPref, setViewsNotificationsPref } from './views';
 
 let pauseNotificationsInfo: any = null;
@@ -114,7 +111,6 @@ const calcPauseNotificationsInfo = () => {
 
 let timeouts: any = [];
 let updating = false;
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'updatePaus... Remove this comment to see the full error message
 const updatePauseNotificationsInfo = () => {
   // avoid multiple timeouts running at the same time
   if (updating) return;
@@ -134,8 +130,7 @@ const updatePauseNotificationsInfo = () => {
   const schedule = getCurrentScheduledDateTime();
 
   // clear old timeouts
-  // @ts-expect-error ts-migrate(7006) FIXME: Parameter 'timeout' implicitly has an 'any' type.
-  timeouts.forEach((timeout) => {
+  timeouts.forEach((timeout: any) => {
     clearTimeout(timeout);
   });
 
@@ -168,7 +163,6 @@ const updatePauseNotificationsInfo = () => {
   updating = false;
 };
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPauseNo... Remove this comment to see the full error message
 const getPauseNotificationsInfo = () => pauseNotificationsInfo;
 
 export { updatePauseNotificationsInfo, getPauseNotificationsInfo };

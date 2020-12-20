@@ -1,25 +1,15 @@
 /* eslint-disable no-param-reassign */
-// @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
 import { BrowserView, BrowserWindow, app, session, shell, dialog, ipcMain } from 'electron';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
 import path from 'path';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fsExtra'.
 import fsExtra from 'fs-extra';
 import { ElectronBlocker } from '@cliqz/adblocker-electron';
 import index18n from './i18n';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'wikiStartu... Remove this comment to see the full error message
 import wikiStartup from './wiki/wiki-startup';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
 import { getPreferences, getPreference } from './preferences';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setWorkspa... Remove this comment to see the full error message
 import { getWorkspace, setWorkspace, getActiveWorkspace } from './workspaces';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setWorkspa... Remove this comment to see the full error message
 import { setWorkspaceMeta, getWorkspaceMetas, getWorkspaceMeta } from './workspace-metas';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
 import sendToAllWindows from './send-to-all-windows';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getViewBou... Remove this comment to see the full error message
 import getViewBounds from './get-view-bounds';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'customized... Remove this comment to see the full error message
 import customizedFetch from './customized-fetch';
 const views = {};
 let shouldMuteAudio: any;
@@ -83,7 +73,6 @@ const isInternalUrl = (url: any, currentInternalUrls: any) => {
   });
   return Boolean(matchedInternalUrl);
 };
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'addView'.
 export const addView = async (browserWindow: any, workspace: any) => {
   // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   if (views[workspace.id]) {
@@ -135,6 +124,7 @@ export const addView = async (browserWindow: any, workspace: any) => {
   }
   // blocker
   if (blockAds) {
+    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '(url: any, _options: any, ...arg... Remove this comment to see the full error message
     ElectronBlocker.fromPrebuiltAdsAndTracking(customizedFetch, {
       path: path.join(app.getPath('userData'), 'adblocker.bin'),
       read: fsExtra.readFile,
@@ -237,6 +227,7 @@ export const addView = async (browserWindow: any, workspace: any) => {
         if (browserWindow && !browserWindow.isDestroyed()) {
           // fix https://github.com/atomery/singlebox/issues/228
           const contentSize = browserWindow.getContentSize();
+          // @ts-expect-error ts-migrate(2554) FIXME: Expected 4 arguments, but got 1.
           view.setBounds(getViewBounds(contentSize));
         }
       }
@@ -568,6 +559,7 @@ export const addView = async (browserWindow: any, workspace: any) => {
   if (workspace.active) {
     browserWindow.setBrowserView(view);
     const contentSize = browserWindow.getContentSize();
+    // @ts-expect-error ts-migrate(2554) FIXME: Expected 4 arguments, but got 1.
     view.setBounds(getViewBounds(contentSize));
     view.setAutoResize({
       width: true,
@@ -581,7 +573,9 @@ export const addView = async (browserWindow: any, workspace: any) => {
   await wikiStartup(workspace);
   view.webContents.loadURL(initialUrl);
 };
+// @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
 export const getView = (id: any) => views[id];
+// @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
 export const onEachView = (functionToRun: any) => Object.keys(views).forEach((key) => functionToRun(views[key]));
 export const setActiveView = (browserWindow: any, id: any) => {
   // stop find in page when switching workspaces
@@ -601,6 +595,7 @@ export const setActiveView = (browserWindow: any, id: any) => {
     if (getWorkspaceMeta(id).didFailLoad) {
       view.setBounds(getViewBounds(contentSize, false, 0, 0)); // hide browserView to show error message
     } else {
+      // @ts-expect-error ts-migrate(2554) FIXME: Expected 4 arguments, but got 1.
       view.setBounds(getViewBounds(contentSize));
     }
     view.setAutoResize({
@@ -672,6 +667,7 @@ export const reloadViewsDarkReader = () => {
 export const reloadViewsWebContentsIfDidFailLoad = () => {
   const metas = getWorkspaceMetas();
   Object.keys(metas).forEach((id) => {
+    // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     if (!metas[id].didFailLoad) {
       return;
     }
@@ -694,6 +690,7 @@ export const reloadViewsWebContents = () => {
 };
 export const getActiveBrowserView = () => {
   const workspace = getActiveWorkspace();
+  // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
   return getView(workspace.id);
 };
 export const realignActiveView = (browserWindow: any, activeId: any) => {
@@ -703,6 +700,7 @@ export const realignActiveView = (browserWindow: any, activeId: any) => {
     if (getWorkspaceMeta(activeId).didFailLoad) {
       view.setBounds(getViewBounds(contentSize, false, 0, 0)); // hide browserView to show error message
     } else {
+      // @ts-expect-error ts-migrate(2554) FIXME: Expected 4 arguments, but got 1.
       view.setBounds(getViewBounds(contentSize));
     }
   }

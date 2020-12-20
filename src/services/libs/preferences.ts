@@ -2,9 +2,9 @@
 import path from 'path';
 import semver from 'semver';
 import settings from 'electron-settings';
-let { app, nativeTheme, ipcMain, remote } = require('electron');
 
 import sendToAllWindows from './send-to-all-windows';
+const { app, nativeTheme, ipcMain, remote } = require('electron');
 
 // scope
 const v = '2018.2';

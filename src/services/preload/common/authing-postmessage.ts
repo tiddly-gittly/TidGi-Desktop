@@ -1,9 +1,7 @@
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'remote'.
 import { remote } from 'electron';
 
 // on production build, if we try to redirect to http://localhost:3000 , we will reach chrome-error://chromewebdata/ , but we can easily get back
 // this happens when we are redirected by OAuth login
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'CHROME_ERR... Remove this comment to see the full error message
 import { CHROME_ERROR_PATH, REACT_PATH } from '../../constants/paths';
 
 const CHECK_LOADED_INTERVAL = 500;

@@ -1,38 +1,22 @@
-// @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
 import { app, session } from 'electron';
 
 import {
   countWorkspaces,
-  // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'createWork... Remove this comment to see the full error message
   createWorkspace,
-  // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getActiveW... Remove this comment to see the full error message
   getActiveWorkspace,
-  // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPreviou... Remove this comment to see the full error message
   getPreviousWorkspace,
-
-
-    getWorkspace,
-  // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getWorkspa... Remove this comment to see the full error message
+  getWorkspace,
   getWorkspaces,
-  // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'removeWork... Remove this comment to see the full error message
   removeWorkspace,
-  // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setActiveW... Remove this comment to see the full error message
   setActiveWorkspace,
-  // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setWorkspa... Remove this comment to see the full error message
   setWorkspace,
-  // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setWorkspa... Remove this comment to see the full error message
   setWorkspaces,
- 
- 
-  setWorkspacePicture,,,
+  setWorkspacePicture,
 } from './workspaces';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
 import sendToAllWindows from './send-to-all-windows';
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'addView'.
 import { addView, hibernateView, removeView, setActiveView, setViewsAudioPref, setViewsNotificationsPref, realignActiveView } from './views';
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'mainWindow... Remove this comment to see the full error message
 import * as mainWindow from '../windows/main';
 
 const createWorkspaceView = (
@@ -87,7 +71,6 @@ const hibernateWorkspaceView = (id: any) => {
   }
 };
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setActiveW... Remove this comment to see the full error message
 const setActiveWorkspaceView = (id: any) => {
   const oldActiveWorkspace = getActiveWorkspace();
 
@@ -95,7 +78,9 @@ const setActiveWorkspaceView = (id: any) => {
   setActiveView(mainWindow.get(), id);
 
   // hibernate old view
+  // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
   if (oldActiveWorkspace.hibernateWhenUnused && oldActiveWorkspace.id !== id) {
+    // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
     hibernateWorkspaceView(oldActiveWorkspace.id);
   }
 };
@@ -110,6 +95,7 @@ const removeWorkspaceView = (id: any) => {
       sendToAllWindows('update-title', '');
     }
   } else if (countWorkspaces() > 1 && getWorkspace(id).active) {
+    // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
     setActiveWorkspaceView(getPreviousWorkspace(id).id);
   }
 
@@ -134,6 +120,7 @@ const loadURL = (url: any, id: any) => {
     setActiveView(mainWindow.get(), id);
   }
 
+  // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
   const v = mainWindow.get().getBrowserView();
   if (v) {
     v.webContents.focus();
@@ -145,6 +132,7 @@ const realignActiveWorkspaceView = () => {
   const activeWorkspace = getActiveWorkspace();
   const win = mainWindow.get();
   if (activeWorkspace && win) {
+    // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
     realignActiveView(win, activeWorkspace.id);
   }
 };

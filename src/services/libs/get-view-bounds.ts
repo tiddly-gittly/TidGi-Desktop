@@ -1,9 +1,8 @@
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'mainWindow... Remove this comment to see the full error message
 import * as mainWindow from '../windows/main';
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getViewBou... Remove this comment to see the full error message
 const getViewBounds = (contentSize: any, findInPage = false, height: any, width: any) => {
   const showSidebar = global.sidebar;
+  // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
   const isFullScreen = mainWindow.get() && mainWindow.get().isFullScreen();
   const showTitleBar = process.platform === 'darwin' && global.titleBar && !isFullScreen;
   const showNavigationBar = (process.platform === 'linux' && global.attachToMenubar && !global.sidebar) || global.navigationBar;

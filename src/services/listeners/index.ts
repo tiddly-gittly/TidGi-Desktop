@@ -1,27 +1,16 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable no-param-reassign */
-// @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
 import path from 'path';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'BrowserVie... Remove this comment to see the full error message
 import { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } from 'electron';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'autoUpdate... Remove this comment to see the full error message
 import { autoUpdater } from 'electron-updater';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'initWikiGi... Remove this comment to see the full error message
 import { initWikiGit, getRemoteUrl } from '../libs/git';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'stopWatchW... Remove this comment to see the full error message
 import { stopWatchWiki } from '../libs/wiki/watch-wiki';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'updateSubW... Remove this comment to see the full error message
 import { updateSubWikiPluginContent, getSubWikiPluginContent } from '../libs/wiki/update-plugin-content';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'stopWiki'.
 import { stopWiki, startWiki } from '../libs/wiki/wiki-worker-mamager';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
 import { logger } from '../libs/log';
 import { createWiki, createSubWiki, removeWiki, ensureWikiExist, cloneWiki, cloneSubWiki } from '../libs/wiki/create-wiki';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'ICON_PATH'... Remove this comment to see the full error message
-import { ICON_PATH, REACT_PATH, DESKTOP_PATH, LOG_FOLDER, isDev } from '../constants/paths';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
+import { ICON_PATH, REACT_PATH, DESKTOP_PATH, LOG_FOLDER, isDev as isDevelopment } from '../constants/paths';
 import { getPreference, getPreferences, resetPreferences, setPreference } from '../libs/preferences';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getSystemP... Remove this comment to see the full error message
 import { getSystemPreference, getSystemPreferences, setSystemPreference } from '../libs/system-preferences';
 import {
   countWorkspaces,
@@ -32,7 +21,6 @@ import {
   setWorkspacePicture,
   removeWorkspacePicture,
 } from '../libs/workspaces';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getWorkspa... Remove this comment to see the full error message
 import { getWorkspaceMeta, getWorkspaceMetas } from '../libs/workspace-metas';
 import {
   clearBrowsingData,
@@ -46,23 +34,31 @@ import {
   wakeUpWorkspaceView,
   realignActiveWorkspaceView,
 } from '../libs/workspaces-views';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'index18n'.
 import index18n from '../libs/i18n';
 import { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad, getActiveBrowserView } from '../libs/views';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'updatePaus... Remove this comment to see the full error message
 import { updatePauseNotificationsInfo, getPauseNotificationsInfo } from '../libs/notifications';
 import getViewBounds from '../libs/get-view-bounds';
 import createMenu from '../libs/create-menu';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import aboutWindow from '../windows/about';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import addWorkspaceWindow from '../windows/add-workspace';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import codeInjectionWindow from '../windows/code-injection';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import customUserAgentWindow from '../windows/custom-user-agent';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import displayMediaWindow from '../windows/display-media';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import editWorkspaceWindow from '../windows/edit-workspace';
 import * as mainWindow from '../windows/main';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import notificationsWindow from '../windows/notifications';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import preferencesWindow from '../windows/preferences';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import proxyWindow from '../windows/proxy';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import spellcheckLanguagesWindow from '../windows/spellcheck-languages';
 import bindI18nListener from './i18n';
 const loadListeners = () => {
@@ -119,7 +115,7 @@ const loadListeners = () => {
       REACT_PATH,
       DESKTOP_PATH,
       LOG_FOLDER,
-      isDev,
+      isDev: isDevelopment,
     }[name];
   });
   ipcMain.on('get-basename', (event, pathString) => {
@@ -134,6 +130,7 @@ const loadListeners = () => {
       return '';
     } catch (error) {
       console.info(error);
+      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
       removeWiki(wikiFolderPath);
       return String(error);
     }
@@ -159,6 +156,7 @@ const loadListeners = () => {
   });
   // Find In Page
   ipcMain.on('request-find-in-page', (_, text, forward) => {
+    // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
     const contents = mainWindow.get().getBrowserView().webContents;
     contents.findInPage(text, {
       forward,
@@ -166,13 +164,17 @@ const loadListeners = () => {
   });
   ipcMain.on('request-stop-find-in-page', (_, close) => {
     const win = mainWindow.get();
+    // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
     const view = win.getBrowserView();
+    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     const contents = view.webContents;
     contents.stopFindInPage('clearSelection');
-    win.send('update-find-in-page-matches', 0, 0);
+    (win as any).send('update-find-in-page-matches', 0, 0);
     // adjust bounds to hide the gap for find in page
     if (close) {
+      // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
       const contentSize = win.getContentSize();
+      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
       view.setBounds(getViewBounds(contentSize));
     }
   });
@@ -289,7 +291,7 @@ const loadListeners = () => {
     event.returnValue = getWorkspaces();
   });
   ipcMain.handle('get-workspaces-remote', async (event, wikiFolderPath) => {
-    return getRemoteUrl(wikiFolderPath);
+    return await getRemoteUrl(wikiFolderPath);
   });
   ipcMain.handle('request-create-workspace', (event, name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground, tagName) => {
     createWorkspaceView(name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground, tagName);
@@ -322,6 +324,7 @@ const loadListeners = () => {
       createMenu();
       // load url in the current workspace
       const activeWorkspace = getActiveWorkspace();
+      // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
       loadURL(url, activeWorkspace.id);
     }
   });
@@ -334,6 +337,7 @@ const loadListeners = () => {
   ipcMain.on('request-remove-workspace', (_, id) => {
     // eslint-disable-next-line promise/catch-or-return
     dialog
+      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BrowserWindow | undefined' is no... Remove this comment to see the full error message
       .showMessageBox(mainWindow.get(), {
         type: 'question',
         buttons: [index18n.t('WorkspaceSelector.RemoveWorkspace'), index18n.t('WorkspaceSelector.RemoveWorkspaceAndDelete'), index18n.t('Cancel')],
@@ -355,6 +359,7 @@ const loadListeners = () => {
             const mainWorkspace = getWorkspaceByName(mainWikiPath);
             const userName = getPreference('userName') || '';
             await stopWiki(mainWikiPath);
+            // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
             await startWiki(mainWikiPath, mainWorkspace.port, userName);
             // remove folderName from fileSystemPaths
             if (workspace.isSubWiki) {
@@ -405,43 +410,49 @@ const loadListeners = () => {
   ipcMain.on('request-go-home', () => {
     const win = mainWindow.get();
     if (win !== undefined && win.getBrowserView() !== undefined) {
+      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
       const contents = win.getBrowserView().webContents;
       const activeWorkspace = getActiveWorkspace();
+      // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
       contents.loadURL(activeWorkspace.homeUrl);
-      win.send('update-can-go-back', contents.canGoBack());
-      win.send('update-can-go-forward', contents.canGoForward());
+      (win as any).send('update-can-go-back', contents.canGoBack());
+      (win as any).send('update-can-go-forward', contents.canGoForward());
     }
   });
   ipcMain.on('request-go-back', () => {
     const win = mainWindow.get();
     if (win !== undefined && win.getBrowserView() !== undefined) {
+      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
       const contents = win.getBrowserView().webContents;
       if (contents.canGoBack()) {
         contents.goBack();
-        win.send('update-can-go-back', contents.canGoBack());
-        win.send('update-can-go-forward', contents.canGoForward());
+        (win as any).send('update-can-go-back', contents.canGoBack());
+        (win as any).send('update-can-go-forward', contents.canGoForward());
       }
     }
   });
   ipcMain.on('request-go-forward', () => {
     const win = mainWindow.get();
     if (win !== undefined && win.getBrowserView() !== undefined) {
+      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
       const contents = win.getBrowserView().webContents;
       if (contents.canGoForward()) {
         contents.goForward();
-        win.send('update-can-go-back', contents.canGoBack());
-        win.send('update-can-go-forward', contents.canGoForward());
+        (win as any).send('update-can-go-back', contents.canGoBack());
+        (win as any).send('update-can-go-forward', contents.canGoForward());
       }
     }
   });
   ipcMain.on('request-reload', () => {
     const win = mainWindow.get();
     if (win !== undefined) {
+      // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
       win.getBrowserView().webContents.reload();
     }
   });
   ipcMain.on('request-show-message-box', (_, message, type) => {
     dialog
+      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BrowserWindow | undefined' is no... Remove this comment to see the full error message
       .showMessageBox(mainWindow.get(), {
         type: type || 'error',
         message,
@@ -471,6 +482,7 @@ const loadListeners = () => {
     // disable updater if user is using AppImageLauncher
     if (process.platform === 'linux' && process.env.DESKTOPINTEGRATION === 'AppImageLauncher') {
       dialog
+        // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BrowserWindow | undefined' is no... Remove this comment to see the full error message
         .showMessageBox(mainWindow.get(), {
           type: 'error',
           message: 'Updater is incompatible with AppImageLauncher. Please uninstall AppImageLauncher or download new updates manually from our website.',
@@ -494,7 +506,8 @@ const loadListeners = () => {
       setImmediate(() => {
         app.removeAllListeners('window-all-closed');
         if (mainWindow.get() !== undefined) {
-          mainWindow.get().forceClose = true;
+          (mainWindow.get() as any).forceClose = true;
+          // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
           mainWindow.get().close();
         }
         autoUpdater.quitAndInstall(false);

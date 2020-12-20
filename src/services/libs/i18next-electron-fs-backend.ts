@@ -1,12 +1,7 @@
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fs'.
 import fs from 'fs-extra';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
 import path from 'path';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
 import sendToAllWindows from './send-to-all-windows';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'LOCALIZATI... Remove this comment to see the full error message
 import { LOCALIZATION_FOLDER } from '../constants/paths';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'index18n'.
 import index18n from './i18n';
 
 // Electron-specific; must match mainIpc
@@ -18,7 +13,6 @@ const changeLanguageRequest = 'ChangeLanguage-Request';
 
 // This is the code that will go into the preload.js file
 // in order to set up the contextBridge api
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'preloadBin... Remove this comment to see the full error message
 const preloadBindings = function (ipcRenderer: any) {
   return {
     send: (channel: any, data: any) => {
@@ -45,7 +39,6 @@ const preloadBindings = function (ipcRenderer: any) {
 
 // This is the code that will go into the main.js file
 // in order to set up the ipc main bindings
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'mainBindin... Remove this comment to see the full error message
 const mainBindings = function (ipcMain: any, browserWindow: any) {
   ipcMain.on(readFileRequest, (IpcMainEvent: any, arguments_: any) => {
     const localeFilePath = path.join(LOCALIZATION_FOLDER, arguments_.filename);
@@ -61,6 +54,7 @@ const mainBindings = function (ipcMain: any, browserWindow: any) {
   ipcMain.on(writeFileRequest, (IpcMainEvent: any, arguments_: any) => {
     const localeFilePath = path.join(LOCALIZATION_FOLDER, arguments_.filename);
     const localeFileFolderPath = path.dirname(localeFilePath);
+    // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.
     fs.ensureDir(localeFileFolderPath, (directoryCreationError: any) => {
       if (directoryCreationError) {
         console.error(directoryCreationError);
@@ -87,7 +81,6 @@ const whitelistMap = JSON.parse(fs.readFileSync(path.join(LOCALIZATION_FOLDER, '
 
 const whiteListedLanguages = Object.keys(whitelistMap);
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getLanguag... Remove this comment to see the full error message
 function getLanguageMenu() {
   const subMenu = [];
   for (const language of whiteListedLanguages) {

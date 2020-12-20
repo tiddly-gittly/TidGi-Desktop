@@ -1,23 +1,15 @@
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'BrowserWin... Remove this comment to see the full error message
 import { BrowserWindow } from 'electron';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
 import path from 'path';
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'REACT_PATH... Remove this comment to see the full error message
-import { REACT_PATH, isDev } from '../constants/paths';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
+import { REACT_PATH, isDev as isDevelopment } from '../constants/paths';
 import { getPreference } from '../libs/preferences';
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'mainWindow... Remove this comment to see the full error message
 import * as mainWindow from './main';
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'win'.
-let win;
+let win: any;
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'get'.
 const get = () => win;
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'create'.
 const create = () => {
   const attachToMenubar = getPreference('attachToMenubar');
 
@@ -32,10 +24,11 @@ const create = () => {
     webPreferences: {
       nodeIntegration: false,
       enableRemoteModule: true,
-      webSecurity: !isDev,
+      webSecurity: !isDevelopment,
       contextIsolation: true,
       preload: path.join(__dirname, '..', 'preload', 'custom-user-agent.js'),
     },
+    // @ts-expect-error ts-migrate(2322) FIXME: Type 'BrowserWindow | null | undefined' is not ass... Remove this comment to see the full error message
     parent: attachToMenubar ? null : mainWindow.get(),
   });
   win.setMenuBarVisibility(false);
@@ -47,10 +40,8 @@ const create = () => {
   });
 };
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'show'.
 const show = () => {
   if (win == undefined) {
-    // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
     create();
   } else {
     win.show();

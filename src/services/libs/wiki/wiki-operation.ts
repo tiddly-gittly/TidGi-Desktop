@@ -2,9 +2,8 @@
  * Call tiddlywiki api from electron
  * This file should be required by BrowserView's preload script to work
  */
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'ipcRendere... Remove this comment to see the full error message
 import { ipcRenderer, webFrame } from 'electron';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Promise'.
+// @ts-expect-error ts-migrate(2529) FIXME: Duplicate identifier 'Promise'. Compiler reserves ... Remove this comment to see the full error message
 import Promise from 'bluebird';
 // add tiddler
 ipcRenderer.on('wiki-add-tiddler', async (event, title, text, meta) => {

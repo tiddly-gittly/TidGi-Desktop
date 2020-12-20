@@ -1,5 +1,4 @@
 // https://stackoverflow.com/a/18650828
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'formatByte... Remove this comment to see the full error message
 function formatBytes(bytes: any, decimals = 2) {
   if (bytes === 0) return '0 Bytes';
 

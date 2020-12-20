@@ -1,10 +1,6 @@
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
 import path from 'path';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fs'.
 import fs from 'fs-extra';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'compact'.
 import { take, drop, compact } from 'lodash';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
 import { logger } from '../log';
 
 const getMatchPart = (tagToMatch: any) => `[!is[system]kin::to[${tagToMatch}]`;
@@ -23,7 +19,6 @@ function getFileSystemPathsTiddlerPath(mainWikiPath: any) {
  * @param {Object} newConfig { "tagName": Tag to indicate that a tiddler belongs to a sub-wiki, "subWikiFolderName": folder name inside the subwiki/ folder }
  * @param {Object} oldConfig if you need to replace a line, you need to pass-in what old line looks like, so here we can find and replace it
  */
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'updateSubW... Remove this comment to see the full error message
 function updateSubWikiPluginContent(mainWikiPath: any, newConfig: any, oldConfig: any) {
   const FileSystemPathsTiddlerPath = getFileSystemPathsTiddlerPath(mainWikiPath);
 
@@ -70,7 +65,6 @@ function updateSubWikiPluginContent(mainWikiPath: any, newConfig: any, oldConfig
   fs.writeFileSync(FileSystemPathsTiddlerPath, newFileSystemPathsFile);
 }
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getSubWiki... Remove this comment to see the full error message
 async function getSubWikiPluginContent(mainWikiPath: any) {
   if (!mainWikiPath) return [];
   const FileSystemPathsTiddlerPath = getFileSystemPathsTiddlerPath(mainWikiPath);

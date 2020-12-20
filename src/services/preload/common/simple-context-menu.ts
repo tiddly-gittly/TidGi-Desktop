@@ -1,4 +1,3 @@
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'remote'.
 import { remote } from 'electron';
 import contextMenu from 'electron-context-menu';
 

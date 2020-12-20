@@ -1,12 +1,8 @@
 /* eslint-disable sonarjs/no-duplicate-string */
-// @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
 import fs from 'fs-extra';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
 import path from 'path';
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'TIDDLYWIKI... Remove this comment to see the full error message
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '../../constants/paths';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'clone'.
 import { clone } from '../git';
 import { logger } from '../log';
 import { updateSubWikiPluginContent } from './update-plugin-content';
@@ -32,6 +28,7 @@ async function linkWiki(mainWikiPath: any, folderName: any, subWikiPath: any) {
     try {
       await fs.remove(mainWikiTiddlersFolderPath);
     } catch {}
+    // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.
     await fs.createSymlink(subWikiPath, mainWikiTiddlersFolderPath, 'junction');
     logProgress(index18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiSucceed'));
   } catch (error) {
@@ -86,6 +83,7 @@ async function createSubWiki(newFolderPath: any, folderName: any, mainWikiPath: 
   await linkWiki(mainWikiPath, folderName, newWikiPath);
   if (tagName && typeof tagName === 'string') {
     logProgress(index18n.t('AddWorkspace.AddFileSystemPath'));
+    // @ts-expect-error ts-migrate(2554) FIXME: Expected 3 arguments, but got 2.
     updateSubWikiPluginContent(mainWikiPath, { tagName, subWikiFolderName: folderName });
   }
 
@@ -147,6 +145,7 @@ async function cloneSubWiki(parentFolderLocation: any, wikiFolderName: any, main
   await linkWiki(mainWikiPath, wikiFolderName, path.join(parentFolderLocation, wikiFolderName));
   if (tagName && typeof tagName === 'string') {
     logProgress(index18n.t('AddWorkspace.AddFileSystemPath'));
+    // @ts-expect-error ts-migrate(2554) FIXME: Expected 3 arguments, but got 2.
     updateSubWikiPluginContent(mainWikiPath, { tagName, subWikiFolderName: wikiFolderName });
   }
 }

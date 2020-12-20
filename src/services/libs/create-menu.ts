@@ -1,28 +1,24 @@
-// @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
 import { Menu, clipboard, ipcMain, shell } from 'electron';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getLanguag... Remove this comment to see the full error message
 import { getLanguageMenu } from './i18next-electron-fs-backend';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import aboutWindow from '../windows/about';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import addWorkspaceWindow from '../windows/add-workspace';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import editWorkspaceWindow from '../windows/edit-workspace';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import goToUrlWindow from '../windows/go-to-url';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'mainWindow... Remove this comment to see the full error message
 import * as mainWindow from '../windows/main';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import notificationsWindow from '../windows/notifications';
+// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import preferencesWindow from '../windows/preferences';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'index18nex... Remove this comment to see the full error message
 import index18next from './i18n';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'formatByte... Remove this comment to see the full error message
 import formatBytes from './format-bytes';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getViewBou... Remove this comment to see the full error message
 import getViewBounds from './get-view-bounds';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getWorkspa... Remove this comment to see the full error message
 import { getWorkspaces, getActiveWorkspace, getNextWorkspace, getPreviousWorkspace } from './workspaces';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setActiveW... Remove this comment to see the full error message
 import { setActiveWorkspaceView } from './workspaces-views';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getView'.
 import { getView, getActiveBrowserView } from './views';
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'createMenu... Remove this comment to see the full error message
 function createMenu() {
   const updaterEnabled = process.env.SNAP == undefined && !process.mas && !process.windowsStore;
   const workspaces = getWorkspaces();
@@ -46,11 +42,16 @@ function createMenu() {
           accelerator: 'CmdOrCtrl+F',
           click: () => {
             const win = mainWindow.get();
+            // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
             if (win !== null && win.getBrowserView() !== null) {
+              // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
               win.webContents.focus();
-              win.send('open-find-in-page');
+              (win as any).send('open-find-in-page');
+              // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
               const contentSize = win.getContentSize();
+              // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
               const view = win.getBrowserView();
+              // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
               view.setBounds(getViewBounds(contentSize, true));
             }
           },
@@ -61,7 +62,7 @@ function createMenu() {
           accelerator: 'CmdOrCtrl+G',
           click: () => {
             const win = mainWindow.get();
-            win.send('request-back-find-in-page', true);
+            (win as any).send('request-back-find-in-page', true);
           },
           enabled: hasWorkspaces,
         },
@@ -70,7 +71,7 @@ function createMenu() {
           accelerator: 'Shift+CmdOrCtrl+G',
           click: () => {
             const win = mainWindow.get();
-            win.send('request-back-find-in-page', false);
+            (win as any).send('request-back-find-in-page', false);
           },
           enabled: hasWorkspaces,
         },
@@ -120,6 +121,7 @@ function createMenu() {
               return;
             }
             const win = mainWindow.get();
+            // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
             win.setMenuBarVisibility(!win.isMenuBarVisible());
             ipcMain.emit('request-realign-active-workspace');
           },
@@ -138,7 +140,9 @@ function createMenu() {
               return;
             }
             const win = mainWindow.get();
+            // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
             if (win !== null && win.getBrowserView() !== null) {
+              // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
               const contents = win.getBrowserView().webContents;
               contents.zoomFactor = 1;
             }
@@ -157,7 +161,9 @@ function createMenu() {
               return;
             }
             const win = mainWindow.get();
+            // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
             if (win !== null && win.getBrowserView() !== null) {
+              // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
               const contents = win.getBrowserView().webContents;
               contents.zoomFactor += 0.1;
             }
@@ -176,7 +182,9 @@ function createMenu() {
               return;
             }
             const win = mainWindow.get();
+            // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
             if (win !== null && win.getBrowserView() !== null) {
+              // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
               const contents = win.getBrowserView().webContents;
               contents.zoomFactor -= 0.1;
             }
@@ -195,7 +203,9 @@ function createMenu() {
               return;
             }
             const win = mainWindow.get();
+            // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
             if (win !== null && win.getBrowserView() !== null) {
+              // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
               win.getBrowserView().webContents.reload();
             }
           },
@@ -270,7 +280,9 @@ function createMenu() {
               return;
             }
             const win = mainWindow.get();
+            // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
             if (win !== null && win.getBrowserView() !== null) {
+              // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
               const url = win.getBrowserView().webContents.getURL();
               clipboard.writeText(url);
             }
@@ -307,6 +319,7 @@ function createMenu() {
               click: () => {
                 const win = mainWindow.get();
                 if (win !== null) {
+                  // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
                   win.maximize();
                 }
               },
@@ -370,12 +383,14 @@ function createMenu() {
         {
           label: index18next.t('ContextMenu.Preferences'),
           click: () => preferencesWindow.show(),
+          // @ts-expect-error ts-migrate(2322) FIXME: Type '{ label: any; click: () => any; accelerator:... Remove this comment to see the full error message
           accelerator: 'CmdOrCtrl+,',
         },
         { type: 'separator' },
         {
           label: index18next.t('ContextMenu.Notifications'),
           click: () => notificationsWindow.show(),
+          // @ts-expect-error ts-migrate(2322) FIXME: Type '{ label: any; click: () => any; accelerator:... Remove this comment to see the full error message
           accelerator: 'CmdOrCtrl+Shift+N',
         },
         { type: 'separator' },
@@ -384,6 +399,7 @@ function createMenu() {
           click: () => ipcMain.emit('request-clear-browsing-data'),
         },
         { type: 'separator' },
+        // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'undefined... Remove this comment to see the full error message
         { role: 'services', submenu: [] },
         { type: 'separator' },
         { role: 'hide' },
@@ -406,6 +422,7 @@ function createMenu() {
         { type: 'separator' },
         {
           label: index18next.t('ContextMenu.Preferences'),
+          // @ts-expect-error ts-migrate(2322) FIXME: Type '{ label: any; accelerator: string; click: ()... Remove this comment to see the full error message
           accelerator: 'CmdOrCtrl+,',
           click: () => preferencesWindow.show(),
         },
@@ -413,15 +430,18 @@ function createMenu() {
         {
           label: index18next.t('ContextMenu.Notifications'),
           click: () => notificationsWindow.show(),
+          // @ts-expect-error ts-migrate(2322) FIXME: Type '{ label: any; click: () => any; accelerator:... Remove this comment to see the full error message
           accelerator: 'CmdOrCtrl+Shift+N',
         },
         { type: 'separator' },
         {
           label: index18next.t('Preference.ClearBrowsingData'),
+          // @ts-expect-error ts-migrate(2322) FIXME: Type '{ label: any; accelerator: string; click: ()... Remove this comment to see the full error message
           accelerator: 'CmdOrCtrl+Shift+Delete',
           click: () => ipcMain.emit('request-clear-browsing-data'),
         },
         { type: 'separator' },
+        // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'undefined... Remove this comment to see the full error message
         { role: 'quit', label: 'Exit' },
       ],
     });
@@ -433,6 +453,7 @@ function createMenu() {
       template[4].submenu.push({
         // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
         label: workspace.name || `Workspace ${index + 1}`,
+        // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'undefined... Remove this comment to see the full error message
         type: 'checkbox',
         // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
         checked: workspace.active,
@@ -443,7 +464,7 @@ function createMenu() {
         },
         accelerator: `CmdOrCtrl+${index + 1}`,
       });
-      template[2].submenu[template[2].submenu.length - 1].submenu.push({
+      (template[2].submenu[template[2].submenu.length - 1] as any).submenu.push({
         // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
         label: workspace.name || `Workspace ${index + 1}`,
         click: () => {
@@ -454,12 +475,15 @@ function createMenu() {
       });
     });
   template[4].submenu.push(
+    // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'undefined... Remove this comment to see the full error message
     { type: 'separator' },
     {
       label: 'Select Next Workspace',
       click: () => {
         const currentActiveWorkspace = getActiveWorkspace();
+        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
         const nextWorkspace = getNextWorkspace(currentActiveWorkspace.id);
+        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
         setActiveWorkspaceView(nextWorkspace.id);
         createMenu();
       },
@@ -470,7 +494,9 @@ function createMenu() {
       label: 'Select Previous Workspace',
       click: () => {
         const currentActiveWorkspace = getActiveWorkspace();
+        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
         const previousWorkspace = getPreviousWorkspace(currentActiveWorkspace.id);
+        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
         setActiveWorkspaceView(previousWorkspace.id);
         createMenu();
       },
@@ -482,6 +508,7 @@ function createMenu() {
       label: 'Edit Current Workspace',
       click: () => {
         const activeWorkspace = getActiveWorkspace();
+        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
         editWorkspaceWindow.show(activeWorkspace.id);
       },
       enabled: hasWorkspaces,
@@ -490,6 +517,7 @@ function createMenu() {
       label: 'Remove Current Workspace',
       click: () => {
         const activeWorkspace = getActiveWorkspace();
+        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
         ipcMain.emit('request-remove-workspace', null, activeWorkspace.id);
       },
       enabled: hasWorkspaces,
@@ -502,7 +530,7 @@ function createMenu() {
       },
     },
   );
-  // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '({ label: string; submenu: any; ... Remove this comment to see the full error message
+  // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '({ label: string; submenu: ({ la... Remove this comment to see the full error message
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 }

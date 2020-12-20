@@ -1,11 +1,7 @@
 import winston from 'winston';
-require('winston-daily-rotate-file');
-
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'LOG_FOLDER... Remove this comment to see the full error message
 import { LOG_FOLDER } from '../../constants/paths';
 import RendererTransport from './renderer-transport';
-
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
+require('winston-daily-rotate-file');
 const logger = winston.createLogger({
   levels: {
     emerg: 0,
@@ -19,7 +15,7 @@ const logger = winston.createLogger({
     debug: 8,
   },
   transports: [
-    new winston.transports.DailyRotateFile({
+    new (winston.transports as any).DailyRotateFile({
       filename: 'TiddlyGit-%DATE%.log',
       datePattern: 'YYYY-MM-DD',
       zippedArchive: false,
@@ -30,7 +26,7 @@ const logger = winston.createLogger({
     new RendererTransport(),
   ],
   exceptionHandlers: [
-    new winston.transports.DailyRotateFile({
+    new (winston.transports as any).DailyRotateFile({
       filename: 'TiddlyGit-Exception-%DATE%.log',
       datePattern: 'YYYY-MM-DD',
       zippedArchive: false,
