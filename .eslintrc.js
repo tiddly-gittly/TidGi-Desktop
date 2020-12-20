@@ -64,6 +64,7 @@ module.exports = {
     ],
     'unicorn/consistent-function-scoping': [0],
     'no-void': [0],
+    'semi': [0],
     'no-use-before-define': [0],
     '@typescript-eslint/no-use-before-define': [1],
   },
@@ -85,7 +86,7 @@ module.exports = {
     'plugin:import/warnings',
     'plugin:import/typescript',
   ],
-  plugins: ['@typescript-eslint/eslint-plugin', 'prettier', 'react', 'html', 'babel', 'react', 'unicorn', 'import'],
+  plugins: ['@typescript-eslint/eslint-plugin', 'prettier', 'react', 'html', 'react', 'unicorn', 'import'],
   env: {
     browser: true,
     es6: true,
