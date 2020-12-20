@@ -1,4 +1,3 @@
-// @flow
 import React from 'react';
 import { invert } from 'lodash';
 import { useTranslation } from 'react-i18next';

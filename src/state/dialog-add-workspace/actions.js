@@ -1,4 +1,3 @@
-// @flow
 /* eslint-disable consistent-return */
 /* eslint-disable unicorn/no-null */
 /* eslint-disable unicorn/consistent-function-scoping */

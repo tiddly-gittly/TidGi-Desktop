@@ -1,4 +1,3 @@
-// @flow
 import Promise from 'bluebird';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
@@ -62,15 +61,15 @@ const CREATE_REPO_MUTATION = `
   }
 `;
 
-type Props = {|
-  accessToken?: string,
+type Props = {
+  accessToken: string,
   githubWikiUrl: string,
   currentTab: string,
-  githubWikiUrlSetter: string => void,
-  wikiFolderNameSetter: string => void,
-  userInfo?: IUserInfo,
+  githubWikiUrlSetter: ((string)) => void,
+  wikiFolderNameSetter: ((string)) => void,
+  userInfo: IUserInfo,
   isCreateMainWorkspace: boolean,
-|};
+};
 export default function SearchRepo({
   accessToken,
   githubWikiUrl,

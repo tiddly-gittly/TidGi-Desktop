@@ -1,4 +1,3 @@
-// @flow
 const { ipcRenderer, remote, webFrame } = require('electron');
 
 const { enable: enableDarkMode, disable: disableDarkMode } = require('darkreader');

@@ -1,4 +1,3 @@
-// @flow
 /* eslint-disable promise/no-nesting */
 import type { ComponentType } from 'react';
 import React, { Component } from 'react';
@@ -34,7 +33,7 @@ class GitHubLogin extends Component<Props, State> {
   };
 
   auth: typeof AuthingSSO;
-  intervalHandel: ?IntervalID;
+  intervalHandel: IntervalID;
 
   constructor(props: Props) {
     super(props);
@@ -64,7 +63,7 @@ class GitHubLogin extends Component<Props, State> {
   updateLoginState() {
     this.intervalHandel = setInterval(() => {
       // eslint-disable-next-line promise/catch-or-return, promise/always-return
-      this.isLogin().then(isLogin => {
+      this.isLogin().then((isLogin) => {
         this.setState({ isLogin });
         clearInterval(this.intervalHandel);
       });
@@ -88,8 +87,7 @@ class GitHubLogin extends Component<Props, State> {
           }
         }}
         color="secondary"
-        endIcon={<GithubIcon />}
-      >
+        endIcon={<GithubIcon />}>
         {t('AddWorkspace.LogoutGithubAccount')}
       </SyncToGithubButton>
     ) : (
@@ -106,8 +104,7 @@ class GitHubLogin extends Component<Props, State> {
           }
         }}
         color="secondary"
-        endIcon={<GithubIcon />}
-      >
+        endIcon={<GithubIcon />}>
         {t('AddWorkspace.LoginGithubAccount')}
       </SyncToGithubButton>
     );

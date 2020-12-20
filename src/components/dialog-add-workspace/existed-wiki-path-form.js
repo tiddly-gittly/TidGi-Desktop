@@ -1,4 +1,3 @@
-// @flow
 import type { ComponentType } from 'react';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
@@ -40,27 +39,27 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
   margin-top: 5px;
 `;
 
-type OwnProps = {|
-  wikiCreationMessage?: string,
-  existedFolderLocationSetter: string => void,
+type OwnProps = {
+  wikiCreationMessage: string,
+  existedFolderLocationSetter: (string) => void,
   wikiFolderName: string,
-  wikiFolderNameSetter: string => void,
+  wikiFolderNameSetter: (string) => void,
   tagName: string,
-  tagNameSetter: string => void,
+  tagNameSetter: (string) => void,
   mainWikiToLink: Object,
-  mainWikiToLinkSetter: Object => void,
+  mainWikiToLinkSetter: (Object) => void,
   existedFolderLocation: string,
   wikiPort: number,
-  wikiPortSetter: number => void,
+  wikiPortSetter: (number) => void,
   fileSystemPaths: { tagName: string, folderName: string }[],
   isCreateMainWorkspace: boolean,
-|};
-type DispatchProps = {|
-  setWikiCreationMessage: string => void,
-|};
-type StateProps = {|
+};
+type DispatchProps = {
+  setWikiCreationMessage: ((string)) => void,
+};
+type StateProps = {
   wikiCreationMessage: string,
-|};
+};
 
 type Props = {
   ...OwnProps,

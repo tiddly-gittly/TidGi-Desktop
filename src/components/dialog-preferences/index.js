@@ -1,4 +1,3 @@
-// @flow
 /* eslint-disable consistent-return */
 import React, { useRef, useEffect, useState, useCallback } from 'react';
 import PropTypes from 'prop-types';

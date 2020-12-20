@@ -1,4 +1,3 @@
-// @flow
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-param-reassign */
 /* global Image */

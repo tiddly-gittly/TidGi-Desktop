@@ -1,4 +1,3 @@
-// @flow
 import { requestSetPreference, getPreference } from '../senders';
 
 export const setGithubUserInfo = (userInfo: Object) => requestSetPreference('github-user-info', userInfo);

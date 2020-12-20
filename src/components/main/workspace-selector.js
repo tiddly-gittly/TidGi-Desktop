@@ -1,4 +1,3 @@
-// @flow
 import React from 'react';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
@@ -105,7 +104,7 @@ type Props = {
   picturePath: string,
   sidebarShortcutHints: boolean,
   transparentBackground: boolean,
-  workspaceName?: string,
+  workspaceName: string,
 };
 
 function WorkspaceSelector({

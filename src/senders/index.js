@@ -1,17 +1,11 @@
-// @flow
 import type { IUserInfo } from '../helpers/user-info';
 
 const { ipcRenderer } = window.remote;
 
 export const requestCopyWikiTemplate = (newFolderPath: string, folderName: string) =>
   ipcRenderer.invoke('copy-wiki-template', newFolderPath, folderName);
-export const requestCreateSubWiki = (
-  newFolderPath: string,
-  folderName: string,
-  mainWikiToLink: string,
-  tagName?: string,
-  onlyLink?: boolean,
-) => ipcRenderer.invoke('create-sub-wiki', newFolderPath, folderName, mainWikiToLink, tagName, onlyLink);
+export const requestCreateSubWiki = (newFolderPath: string, folderName: string, mainWikiToLink: string, tagName: string, onlyLink: boolean) =>
+  ipcRenderer.invoke('create-sub-wiki', newFolderPath, folderName, mainWikiToLink, tagName, onlyLink);
 export const ensureWikiExist = (wikiPath: string, shouldBeMainWiki: boolean) =>
   ipcRenderer.invoke('ensure-wiki-exist', wikiPath, shouldBeMainWiki);
 export const requestCloneWiki = (
@@ -26,20 +20,11 @@ export const requestCloneSubWiki = (
   mainWikiPath: string,
   githubWikiUrl: string,
   userInfo: IUserInfo,
-  tagName?: string,
-) =>
-  ipcRenderer.invoke(
-    'clone-sub-wiki',
-    parentFolderLocation,
-    wikiFolderName,
-    mainWikiPath,
-    githubWikiUrl,
-    userInfo,
-    tagName,
-  );
+  tagName: string,
+) => ipcRenderer.invoke('clone-sub-wiki', parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo, tagName);
 export const getSubWikiPluginContent = (mainWikiPath: string): Promise<{ tagName: string, folderName: string }[]> =>
   ipcRenderer.invoke('get-sub-wiki-plugin-content', mainWikiPath);
-export const requestOpen = (uri: string, isDirectory?: boolean) => ipcRenderer.send('request-open', uri, !!isDirectory);
+export const requestOpen = (uri: string, isDirectory: boolean) => ipcRenderer.send('request-open', uri, !!isDirectory);
 export const requestShowMessageBox = (message: string, type: string) =>
   ipcRenderer.send('request-show-message-box', message, type);
 export const requestLoadUrl = (url: string, id: string) => ipcRenderer.send('request-load-url', url, id);
@@ -60,8 +45,7 @@ export const requestShowCustomUserAgentWindow = () => ipcRenderer.send('request-
 export const requestShowEditWorkspaceWindow = (id: string) =>
   ipcRenderer.send('request-show-edit-workspace-window', id);
 export const requestShowNotificationsWindow = () => ipcRenderer.send('request-show-notifications-window');
-export const requestShowPreferencesWindow = (scrollTo?: string) =>
-  ipcRenderer.send('request-show-preferences-window', scrollTo);
+export const requestShowPreferencesWindow = (scrollTo: string) => ipcRenderer.send('request-show-preferences-window', scrollTo);
 export const requestShowProxyWindow = () => ipcRenderer.send('request-show-proxy-window');
 export const requestShowSpellcheckLanguagesWindow = () => ipcRenderer.send('request-show-spellcheck-languages-window');
 
@@ -109,20 +93,8 @@ export const requestCreateWorkspace = (
   gitUrl: string,
   picture: string,
   transparentBackground: boolean,
-  tagName?: string,
-) =>
-  ipcRenderer.invoke(
-    'request-create-workspace',
-    name,
-    isSubWiki,
-    mainWikiToLink,
-    port,
-    homeUrl,
-    gitUrl,
-    picture,
-    transparentBackground,
-    tagName,
-  );
+  tagName: string,
+) => ipcRenderer.invoke('request-create-workspace', name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground, tagName);
 
 export const requestOpenTiddlerInWiki = (tiddlerName: string) => ipcRenderer.send('request-wiki-open-tiddler', tiddlerName);
 export const requestWikiSendActionMessage = (actionMessage: string) => ipcRenderer.send('request-wiki-send-action-message', actionMessage);
@@ -160,9 +132,8 @@ export const initWikiGit = (wikiFolderPath: string, githubRepoUrl: string, userI
   ipcRenderer.invoke('request-init-wiki-git', wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
 
 // Find In Page
-export const requestFindInPage = (text: string, forward?: boolean) =>
-  ipcRenderer.send('request-find-in-page', text, !!forward);
-export const requestStopFindInPage = (close?: boolean) => ipcRenderer.send('request-stop-find-in-page', !!close);
+export const requestFindInPage = (text: string, forward: boolean) => ipcRenderer.send('request-find-in-page', text, !!forward);
+export const requestStopFindInPage = (close: boolean) => ipcRenderer.send('request-stop-find-in-page', !!close);
 
 // Auth
 export const requestValidateAuthIdentity = (windowId: string, username: string, password: string) =>

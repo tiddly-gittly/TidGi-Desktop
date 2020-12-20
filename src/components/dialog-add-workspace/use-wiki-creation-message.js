@@ -1,4 +1,3 @@
-// @flow
 import { useState, useEffect } from 'react';
 
 export default function useWikiCreationMessage(wikiCreationMessage: string) {

@@ -1,4 +1,3 @@
-// @flow
 import React from 'react';
 import styled from 'styled-components';
 import { connect } from 'react-redux';
@@ -22,23 +21,23 @@ const CloseButton = styled(Button)`
   width: 100%;
 `;
 
-type OwnProps = {|
+type OwnProps = {
   isCreateMainWorkspace: boolean,
   wikiPort: number,
   mainWikiToLink: { name: string, port: number },
   githubWikiUrl: string,
   existedFolderLocation: string,
-  tagName?: string,
-  userInfo?: IUserInfo,
-|};
-type DispatchProps = {|
-  updateForm: Object => void,
-  setWikiCreationMessage: string => void,
+  tagName: string,
+  userInfo: IUserInfo,
+};
+type DispatchProps = {
+  updateForm: ((Object)) => void,
+  setWikiCreationMessage: ((string)) => void,
   save: () => void,
-|};
-type StateProps = {|
+};
+type StateProps = {
   wikiCreationMessage: string,
-|};
+};
 
 type Props = {
   ...OwnProps,

@@ -1,4 +1,3 @@
-// @flow
 import type { ComponentType } from 'react';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
@@ -40,26 +39,26 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
   margin-top: 5px;
 `;
 
-type OwnProps = {|
-  parentFolderLocationSetter: string => void,
+type OwnProps = {
+  parentFolderLocationSetter: ((string)) => void,
   wikiFolderName: string,
-  wikiFolderNameSetter: string => void,
+  wikiFolderNameSetter: ((string)) => void,
   tagName: string,
-  tagNameSetter: string => void,
+  tagNameSetter: ((string)) => void,
   mainWikiToLink: Object,
-  mainWikiToLinkSetter: Object => void,
+  mainWikiToLinkSetter: ((Object)) => void,
   parentFolderLocation: string,
   wikiPort: number,
-  wikiPortSetter: number => void,
+  wikiPortSetter: ((number)) => void,
   fileSystemPaths: { tagName: string, folderName: string }[],
   isCreateMainWorkspace: boolean,
-|};
-type DispatchProps = {|
-  setWikiCreationMessage: string => void,
-|};
-type StateProps = {|
-  wikiCreationMessage?: string,
-|};
+};
+type DispatchProps = {
+  setWikiCreationMessage: ((string)) => void,
+};
+type StateProps = {
+  wikiCreationMessage: string,
+};
 type Props = { ...OwnProps, ...DispatchProps, ...StateProps };
 
 function NewWikiPathForm({
@@ -199,8 +198,8 @@ function NewWikiPathForm({
 }
 
 export default connect<Props, OwnProps, _, _, _, _>(
-  (state): { wikiCreationMessage?: string } => ({
+  (state): { wikiCreationMessage: string } => ({
     wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
   }),
-  dispatch => bindActionCreators(actions, dispatch),
+  (dispatch) => bindActionCreators(actions, dispatch),
 )(NewWikiPathForm);

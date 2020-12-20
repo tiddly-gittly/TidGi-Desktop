@@ -1,4 +1,3 @@
-// @flow
 /* eslint-disable global-require */
 /* eslint-disable no-console */
 const { Worker } = require('worker_threads');
