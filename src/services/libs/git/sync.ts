@@ -2,21 +2,21 @@
 /* eslint-disable unicorn/consistent-function-scoping */
 /* eslint-disable no-await-in-loop */
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fs'.
-const fs = require('fs-extra');
+import fs from 'fs-extra';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
-const path = require('path');
+import path from 'path';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'compact'.
-const { compact, truncate, trim } = require('lodash');
+import { compact, truncate, trim } from 'lodash';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'GitProcess... Remove this comment to see the full error message
-const { GitProcess } = require('dugite');
+import { GitProcess } from 'dugite';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'isDev'.
-const isDev = require('electron-is-dev');
+import isDev from 'electron-is-dev';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'ipcMain'.
-const { ipcMain } = require('electron');
+import { ipcMain } from 'electron';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
-const { logger } = require('../log');
+import { logger } from '../log';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'index18n'.
-const index18n = require('../i18n');
+import index18n from '../i18n';
 
 const disableSyncOnDevelopment = true;
 
@@ -441,7 +441,7 @@ async function clone(githubRepoUrl: any, repoFolderPath: any, userInfo: any) {
   }
 }
 
-module.exports = {
+export {
   initWikiGit,
   commitAndSync,
   getRemoteUrl,

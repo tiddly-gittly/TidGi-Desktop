@@ -1,13 +1,13 @@
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'ipcRendere... Remove this comment to see the full error message
-const { ipcRenderer, remote, webFrame } = require('electron');
-const { enable: enableDarkMode, disable: disableDarkMode } = require('darkreader');
-const ContextMenuBuilder = require('../libs/context-menu-builder');
+import { ipcRenderer, remote, webFrame } from 'electron';
+import { enable as enableDarkMode, disable as disableDarkMode } from 'darkreader';
+import ContextMenuBuilder from '../libs/context-menu-builder';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'index18nex... Remove this comment to see the full error message
-const index18next = require('../libs/i18n');
+import index18next from '../libs/i18n';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'MenuItem'.
 const { MenuItem, shell } = remote;
-require('../libs/wiki/wiki-operation');
-require('../libs/git/wiki-git-api');
+import '../libs/wiki/wiki-operation';
+import '../libs/git/wiki-git-api';
 // @ts-expect-error ts-migrate(2322) FIXME: Type '{}' is not assignable to type 'Global & type... Remove this comment to see the full error message
 window.global = {};
 let handled = false;

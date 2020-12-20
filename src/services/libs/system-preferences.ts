@@ -2,12 +2,10 @@
 // It can be retrieved and changed using Electron APIs
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'app'.
-let { app, remote } = require('electron');
-
-app = app || remote.app;
+import { app, remote } from 'electron';
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
-const sendToAllWindows = require('./send-to-all-windows');
+import sendToAllWindows from './send-to-all-windows';
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getSystemP... Remove this comment to see the full error message
 const getSystemPreference = (name: any) => {
@@ -48,8 +46,4 @@ const setSystemPreference = (name: any, value: any) => {
   sendToAllWindows('set-system-preference', name, value);
 };
 
-module.exports = {
-  getSystemPreference,
-  getSystemPreferences,
-  setSystemPreference,
-};
+export { getSystemPreference, getSystemPreferences, setSystemPreference };

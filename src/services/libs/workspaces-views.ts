@@ -1,7 +1,7 @@
 // @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
-const { app, session } = require('electron');
+import { app, session } from 'electron';
 
-const {
+import {
   countWorkspaces,
   // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'createWork... Remove this comment to see the full error message
   createWorkspace,
@@ -9,7 +9,9 @@ const {
   getActiveWorkspace,
   // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPreviou... Remove this comment to see the full error message
   getPreviousWorkspace,
-  getWorkspace,
+
+
+    getWorkspace,
   // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getWorkspa... Remove this comment to see the full error message
   getWorkspaces,
   // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'removeWork... Remove this comment to see the full error message
@@ -20,16 +22,18 @@ const {
   setWorkspace,
   // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setWorkspa... Remove this comment to see the full error message
   setWorkspaces,
-  setWorkspacePicture,
-} = require('./workspaces');
+ 
+ 
+  setWorkspacePicture,,,
+} from './workspaces';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
-const sendToAllWindows = require('./send-to-all-windows');
+import sendToAllWindows from './send-to-all-windows';
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'addView'.
-const { addView, hibernateView, removeView, setActiveView, setViewsAudioPref, setViewsNotificationsPref, realignActiveView } = require('./views');
+import { addView, hibernateView, removeView, setActiveView, setViewsAudioPref, setViewsNotificationsPref, realignActiveView } from './views';
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'mainWindow... Remove this comment to see the full error message
-const mainWindow = require('../windows/main');
+import * as mainWindow from '../windows/main';
 
 const createWorkspaceView = (
   name: any,
@@ -145,7 +149,7 @@ const realignActiveWorkspaceView = () => {
   }
 };
 
-module.exports = {
+export {
   clearBrowsingData,
   createWorkspaceView,
   hibernateWorkspaceView,

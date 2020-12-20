@@ -1,17 +1,17 @@
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fs'.
-const fs = require('fs');
+import fs from 'fs';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
-const path = require('path');
-const chokidar = require('chokidar');
+import path from 'path';
+import chokidar from 'chokidar';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'trim'.
-const { trim, compact, debounce } = require('lodash');
+import { trim, compact, debounce } from 'lodash';
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
-const { getPreference } = require('../preferences');
+import { getPreference } from '../preferences';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
-const { logger } = require('../log');
+import { logger } from '../log';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'commitAndS... Remove this comment to see the full error message
-const { commitAndSync } = require('../git');
+import { commitAndSync } from '../git';
 
 const syncDebounceInterval = getPreference('syncDebounceInterval');
 const debounceCommitAndSync = debounce(commitAndSync, syncDebounceInterval);
@@ -24,7 +24,7 @@ const topLevelFoldersToIgnored = ['node_modules', '.git'];
 const wikiWatchers = {};
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'watchWiki'... Remove this comment to see the full error message
-function watchWiki(wikiRepoPath: any, githubRepoUrl: any, userInfo: any, wikiFolderPath = wikiRepoPath) {
+export function watchWiki(wikiRepoPath: any, githubRepoUrl: any, userInfo: any, wikiFolderPath = wikiRepoPath) {
   if (!fs.existsSync(wikiRepoPath)) {
     return logger.error('Folder not exist in watchFolder()', { wikiRepoPath, wikiFolderPath, githubRepoUrl });
   }
@@ -75,7 +75,7 @@ function watchWiki(wikiRepoPath: any, githubRepoUrl: any, userInfo: any, wikiFol
 }
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'stopWatchW... Remove this comment to see the full error message
-async function stopWatchWiki(wikiRepoPath: any) {
+export async function stopWatchWiki(wikiRepoPath: any) {
   // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   const watcher = wikiWatchers[wikiRepoPath];
   if (watcher) {
@@ -86,7 +86,7 @@ async function stopWatchWiki(wikiRepoPath: any) {
   }
 }
 
-async function stopWatchAllWiki() {
+export async function stopWatchAllWiki() {
   const tasks = [];
   for (const homePath of Object.keys(wikiWatchers)) {
     tasks.push(stopWatchWiki(homePath));
@@ -94,9 +94,3 @@ async function stopWatchAllWiki() {
   await Promise.all(tasks);
   logger.info('All wiki watcher is stopped', { function: 'stopWatchAllWiki' });
 }
-
-module.exports = {
-  watchWiki,
-  stopWatchWiki,
-  stopWatchAllWiki,
-};

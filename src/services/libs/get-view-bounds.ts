@@ -1,5 +1,5 @@
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'mainWindow... Remove this comment to see the full error message
-const mainWindow = require('../windows/main');
+import * as mainWindow from '../windows/main';
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getViewBou... Remove this comment to see the full error message
 const getViewBounds = (contentSize: any, findInPage = false, height: any, width: any) => {
@@ -30,4 +30,4 @@ const getViewBounds = (contentSize: any, findInPage = false, height: any, width:
   };
 };
 
-module.exports = getViewBounds;
+export default getViewBounds;

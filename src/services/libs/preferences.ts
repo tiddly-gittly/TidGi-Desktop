@@ -1,19 +1,12 @@
 /* eslint-disable no-param-reassign */
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
-const path = require('path');
-const semver = require('semver');
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'settings'.
-const settings = require('electron-settings');
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'app'.
+import path from 'path';
+import semver from 'semver';
+import settings from 'electron-settings';
 let { app, nativeTheme, ipcMain, remote } = require('electron');
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
-const sendToAllWindows = require('./send-to-all-windows');
-
-app = app || remote.app;
+import sendToAllWindows from './send-to-all-windows';
 
 // scope
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'v'.
 const v = '2018.2';
 
 const getDefaultDownloadsPath = () => path.join(app.getPath('home'), 'Downloads');
@@ -91,8 +84,7 @@ const initCachedPreferences = () => {
   cachedPreferences = { ...defaultPreferences, ...sanitizePreference(settings.getSync(`preferences.${v}`) || {}) };
 };
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
-const getPreferences = () => {
+export const getPreferences = () => {
   // store in memory to boost performance
   if (cachedPreferences === undefined) {
     initCachedPreferences();
@@ -100,8 +92,7 @@ const getPreferences = () => {
   return cachedPreferences;
 };
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
-const getPreference = (name: any) => {
+export const getPreference = (name: any) => {
   // store in memory to boost performance
   if (cachedPreferences === undefined) {
     initCachedPreferences();
@@ -109,8 +100,7 @@ const getPreference = (name: any) => {
   return cachedPreferences[name];
 };
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setPrefere... Remove this comment to see the full error message
-const setPreference = (name: any, value: any) => {
+export const setPreference = (name: any, value: any) => {
   sendToAllWindows('set-preference', name, value);
   cachedPreferences[name] = value;
   cachedPreferences = sanitizePreference(cachedPreferences);
@@ -131,8 +121,7 @@ const setPreference = (name: any, value: any) => {
   }
 };
 
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'resetPrefe... Remove this comment to see the full error message
-const resetPreferences = () => {
+export const resetPreferences = () => {
   cachedPreferences = undefined;
   settings.unset();
 
@@ -140,11 +129,4 @@ const resetPreferences = () => {
   Object.keys(preferences).forEach((name) => {
     sendToAllWindows('set-preference', name, preferences[name]);
   });
-};
-
-module.exports = {
-  getPreference,
-  getPreferences,
-  resetPreferences,
-  setPreference,
 };

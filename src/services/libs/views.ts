@@ -1,26 +1,26 @@
 /* eslint-disable no-param-reassign */
 // @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
-const { BrowserView, BrowserWindow, app, session, shell, dialog, ipcMain } = require('electron');
+import { BrowserView, BrowserWindow, app, session, shell, dialog, ipcMain } from 'electron';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
-const path = require('path');
+import path from 'path';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fsExtra'.
-const fsExtra = require('fs-extra');
-const { ElectronBlocker } = require('@cliqz/adblocker-electron');
-const index18n = require('./i18n');
+import fsExtra from 'fs-extra';
+import { ElectronBlocker } from '@cliqz/adblocker-electron';
+import index18n from './i18n';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'wikiStartu... Remove this comment to see the full error message
-const wikiStartup = require('./wiki/wiki-startup');
+import wikiStartup from './wiki/wiki-startup';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
-const { getPreferences, getPreference } = require('./preferences');
+import { getPreferences, getPreference } from './preferences';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setWorkspa... Remove this comment to see the full error message
-const { getWorkspace, setWorkspace, getActiveWorkspace } = require('./workspaces');
+import { getWorkspace, setWorkspace, getActiveWorkspace } from './workspaces';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setWorkspa... Remove this comment to see the full error message
-const { setWorkspaceMeta, getWorkspaceMetas, getWorkspaceMeta } = require('./workspace-metas');
+import { setWorkspaceMeta, getWorkspaceMetas, getWorkspaceMeta } from './workspace-metas';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
-const sendToAllWindows = require('./send-to-all-windows');
+import sendToAllWindows from './send-to-all-windows';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getViewBou... Remove this comment to see the full error message
-const getViewBounds = require('./get-view-bounds');
+import getViewBounds from './get-view-bounds';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'customized... Remove this comment to see the full error message
-const customizedFetch = require('./customized-fetch');
+import customizedFetch from './customized-fetch';
 const views = {};
 let shouldMuteAudio: any;
 let shouldPauseNotifications: any;
@@ -84,7 +84,7 @@ const isInternalUrl = (url: any, currentInternalUrls: any) => {
   return Boolean(matchedInternalUrl);
 };
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'addView'.
-const addView = async (browserWindow: any, workspace: any) => {
+export const addView = async (browserWindow: any, workspace: any) => {
   // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   if (views[workspace.id]) {
     return;
@@ -581,12 +581,9 @@ const addView = async (browserWindow: any, workspace: any) => {
   await wikiStartup(workspace);
   view.webContents.loadURL(initialUrl);
 };
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getView'.
-const getView = (id: any) => views[id];
-// @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-const onEachView = (functionToRun: any) => Object.keys(views).forEach((key) => functionToRun(views[key]));
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setActiveV... Remove this comment to see the full error message
-const setActiveView = (browserWindow: any, id: any) => {
+export const getView = (id: any) => views[id];
+export const onEachView = (functionToRun: any) => Object.keys(views).forEach((key) => functionToRun(views[key]));
+export const setActiveView = (browserWindow: any, id: any) => {
   // stop find in page when switching workspaces
   const currentView = browserWindow.getBrowserView();
   if (currentView) {
@@ -618,8 +615,7 @@ const setActiveView = (browserWindow: any, id: any) => {
     browserWindow.setTitle(view.webContents.getTitle());
   }
 };
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'removeView... Remove this comment to see the full error message
-const removeView = (id: any) => {
+export const removeView = (id: any) => {
   // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   const view = views[id];
   session.fromPartition(`persist:${id}`).clearStorageData();
@@ -629,8 +625,7 @@ const removeView = (id: any) => {
   // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   delete views[id];
 };
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setViewsAu... Remove this comment to see the full error message
-const setViewsAudioPref = (_shouldMuteAudio: any) => {
+export const setViewsAudioPref = (_shouldMuteAudio?: boolean) => {
   if (_shouldMuteAudio !== undefined) {
     shouldMuteAudio = _shouldMuteAudio;
   }
@@ -643,8 +638,7 @@ const setViewsAudioPref = (_shouldMuteAudio: any) => {
     }
   });
 };
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setViewsNo... Remove this comment to see the full error message
-const setViewsNotificationsPref = (_shouldPauseNotifications: any) => {
+export const setViewsNotificationsPref = (_shouldPauseNotifications?: boolean) => {
   if (_shouldPauseNotifications !== undefined) {
     shouldPauseNotifications = _shouldPauseNotifications;
   }
@@ -657,8 +651,7 @@ const setViewsNotificationsPref = (_shouldPauseNotifications: any) => {
     }
   });
 };
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'hibernateV... Remove this comment to see the full error message
-const hibernateView = (id: any) => {
+export const hibernateView = (id: any) => {
   // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   if (views[id] != undefined) {
     // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
@@ -667,7 +660,7 @@ const hibernateView = (id: any) => {
     views[id] = null;
   }
 };
-const reloadViewsDarkReader = () => {
+export const reloadViewsDarkReader = () => {
   Object.keys(views).forEach((id) => {
     // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     const view = views[id];
@@ -676,7 +669,7 @@ const reloadViewsDarkReader = () => {
     }
   });
 };
-const reloadViewsWebContentsIfDidFailLoad = () => {
+export const reloadViewsWebContentsIfDidFailLoad = () => {
   const metas = getWorkspaceMetas();
   Object.keys(metas).forEach((id) => {
     if (!metas[id].didFailLoad) {
@@ -689,7 +682,7 @@ const reloadViewsWebContentsIfDidFailLoad = () => {
     }
   });
 };
-const reloadViewsWebContents = () => {
+export const reloadViewsWebContents = () => {
   const metas = getWorkspaceMetas();
   Object.keys(metas).forEach((id) => {
     // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
@@ -699,13 +692,11 @@ const reloadViewsWebContents = () => {
     }
   });
 };
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getActiveB... Remove this comment to see the full error message
-const getActiveBrowserView = () => {
+export const getActiveBrowserView = () => {
   const workspace = getActiveWorkspace();
   return getView(workspace.id);
 };
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'realignAct... Remove this comment to see the full error message
-const realignActiveView = (browserWindow: any, activeId: any) => {
+export const realignActiveView = (browserWindow: any, activeId: any) => {
   const view = browserWindow.getBrowserView();
   if (view && view.webContents) {
     const contentSize = browserWindow.getContentSize();
@@ -715,19 +706,4 @@ const realignActiveView = (browserWindow: any, activeId: any) => {
       view.setBounds(getViewBounds(contentSize));
     }
   }
-};
-module.exports = {
-  addView,
-  getView,
-  onEachView,
-  hibernateView,
-  reloadViewsDarkReader,
-  reloadViewsWebContents,
-  reloadViewsWebContentsIfDidFailLoad,
-  removeView,
-  setActiveView,
-  setViewsAudioPref,
-  setViewsNotificationsPref,
-  getActiveBrowserView,
-  realignActiveView,
 };

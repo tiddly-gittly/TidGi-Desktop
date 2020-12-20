@@ -1,6 +1,6 @@
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fetch'.
-const fetch = require('node-fetch');
-const ProxyAgent = require('proxy-agent');
+import fetch from 'node-fetch';
+import ProxyAgent from 'proxy-agent';
 
 // somehow, ELECTRON_RUN_AS_NODE is set to '1' instead of 'true' as specified
 // so use generic process.env.ELECTRON_RUN_AS_NODE condition instead of
@@ -32,4 +32,4 @@ const customizedFetch = (url: any, _options: any, ...arguments_) => {
   return fetch(url, options, ...arguments_);
 };
 
-module.exports = customizedFetch;
+export default customizedFetch;

@@ -1,9 +1,9 @@
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
-const path = require('path');
+import path from 'path';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'compact'.
-const { compact } = require('lodash');
+import { compact } from 'lodash';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'GitProcess... Remove this comment to see the full error message
-const { GitProcess } = require('dugite');
+import { GitProcess } from 'dugite';
 // const { logger } = require('../log');
 // const i18n = require('../i18n');
 
@@ -27,6 +27,4 @@ async function getModifiedFileList(wikiFolderPath: any) {
   );
 }
 
-module.exports = {
-  getModifiedFileList,
-};
+export { getModifiedFileList };

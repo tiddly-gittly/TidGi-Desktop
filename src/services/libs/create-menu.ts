@@ -1,27 +1,27 @@
 // @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
-const { Menu, clipboard, ipcMain, shell } = require('electron');
+import { Menu, clipboard, ipcMain, shell } from 'electron';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getLanguag... Remove this comment to see the full error message
-const { getLanguageMenu } = require('./i18next-electron-fs-backend');
-const aboutWindow = require('../windows/about');
-const addWorkspaceWindow = require('../windows/add-workspace');
-const editWorkspaceWindow = require('../windows/edit-workspace');
-const goToUrlWindow = require('../windows/go-to-url');
+import { getLanguageMenu } from './i18next-electron-fs-backend';
+import aboutWindow from '../windows/about';
+import addWorkspaceWindow from '../windows/add-workspace';
+import editWorkspaceWindow from '../windows/edit-workspace';
+import goToUrlWindow from '../windows/go-to-url';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'mainWindow... Remove this comment to see the full error message
-const mainWindow = require('../windows/main');
-const notificationsWindow = require('../windows/notifications');
-const preferencesWindow = require('../windows/preferences');
+import * as mainWindow from '../windows/main';
+import notificationsWindow from '../windows/notifications';
+import preferencesWindow from '../windows/preferences';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'index18nex... Remove this comment to see the full error message
-const index18next = require('./i18n');
+import index18next from './i18n';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'formatByte... Remove this comment to see the full error message
-const formatBytes = require('./format-bytes');
+import formatBytes from './format-bytes';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getViewBou... Remove this comment to see the full error message
-const getViewBounds = require('./get-view-bounds');
+import getViewBounds from './get-view-bounds';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getWorkspa... Remove this comment to see the full error message
-const { getWorkspaces, getActiveWorkspace, getNextWorkspace, getPreviousWorkspace } = require('./workspaces');
+import { getWorkspaces, getActiveWorkspace, getNextWorkspace, getPreviousWorkspace } from './workspaces';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setActiveW... Remove this comment to see the full error message
-const { setActiveWorkspaceView } = require('./workspaces-views');
+import { setActiveWorkspaceView } from './workspaces-views';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getView'.
-const { getView, getActiveBrowserView } = require('./views');
+import { getView, getActiveBrowserView } from './views';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'createMenu... Remove this comment to see the full error message
 function createMenu() {
   const updaterEnabled = process.env.SNAP == undefined && !process.mas && !process.windowsStore;
@@ -506,4 +506,4 @@ function createMenu() {
   const menu = Menu.buildFromTemplate(template);
   Menu.setApplicationMenu(menu);
 }
-module.exports = createMenu;
+export default createMenu;

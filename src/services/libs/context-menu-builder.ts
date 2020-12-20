@@ -4,9 +4,9 @@
 // Ported from
 // https://github.com/electron-userland/electron-spellchecker/blob/master/src/context-menu-builder.js
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'clipboard'... Remove this comment to see the full error message
-const { clipboard, nativeImage, shell, remote } = require('electron');
+import { clipboard, nativeImage, shell, remote } from 'electron';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'index18nex... Remove this comment to see the full error message
-const index18next = require('./i18n');
+import index18next from './i18n';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Menu'.
 const { Menu, MenuItem } = remote;
 /**
@@ -51,7 +51,7 @@ const contextMenuStringTable = {
  * which we use to generate the menu. We also use the spell-check information to
  * generate suggestions.
  */
-module.exports = class ContextMenuBuilder {
+export default class ContextMenuBuilder {
   getWebContents: any;
   menu: any;
   processMenu: any;

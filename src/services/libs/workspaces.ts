@@ -1,24 +1,24 @@
 // @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
-const { app } = require('electron');
+import { app } from 'electron';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
-const path = require('path');
+import path from 'path';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fsExtra'.
-const fsExtra = require('fs-extra');
+import fsExtra from 'fs-extra';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'settings'.
-const settings = require('electron-settings');
-const { v1: uuidv1 } = require('uuid');
-const Jimp = require('jimp');
-const isUrl = require('is-url');
-const download = require('download');
-const tmp = require('tmp');
+import settings from 'electron-settings';
+import { v1 as uuidv1 } from 'uuid';
+import Jimp from 'jimp';
+import isUrl from 'is-url';
+import download from 'download';
+import tmp from 'tmp';
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
-const sendToAllWindows = require('./send-to-all-windows');
+import sendToAllWindows from './send-to-all-windows';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'wikiStartu... Remove this comment to see the full error message
-const wikiStartup = require('./wiki/wiki-startup');
-const { stopWatchWiki } = require('./wiki/watch-wiki');
-const { stopWiki } = require('./wiki/wiki-worker-mamager');
-const { updateSubWikiPluginContent } = require('./wiki/update-plugin-content');
+import wikiStartup from './wiki/wiki-startup';
+import { stopWatchWiki } from './wiki/watch-wiki';
+import { stopWiki } from './wiki/wiki-worker-mamager';
+import { updateSubWikiPluginContent } from './wiki/update-plugin-content';
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'v'.
 const v = '14';
@@ -246,7 +246,7 @@ const createWorkspace = (name: any, isSubWiki: any, mainWikiToLink: any, port: a
   return newWorkspace;
 };
 
-module.exports = {
+export {
   countWorkspaces,
   createWorkspace,
   getActiveWorkspace,

@@ -1,17 +1,17 @@
 /* eslint-disable global-require */
 /* eslint-disable no-console */
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Worker'.
-const { Worker } = require('worker_threads');
+import { Worker } from 'worker_threads';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'isDev'.
-const isDev = require('electron-is-dev');
+import isDev from 'electron-is-dev';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
-const path = require('path');
+import path from 'path';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Promise'.
-const Promise = require('bluebird');
+import Promise from 'bluebird';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
-const { logger } = require('../log');
+import { logger } from '../log';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'wikiOutput... Remove this comment to see the full error message
-const { wikiOutputToFile, refreshOutputFile } = require('../log/wiki-output');
+import { wikiOutputToFile, refreshOutputFile } from '../log/wiki-output';
 // worker should send payload in form of `{ message: string, handler: string }` where `handler` is the name of function to call
 const logMessage = (loggerMeta: any) => (message: any) => {
   if (typeof message === 'string') {
@@ -31,7 +31,7 @@ const wikiWorkers = {};
 // don't forget to config option in `dist.js` https://github.com/electron/electron/issues/18540#issuecomment-652430001
 // to copy all worker.js and its local dependence to `process.resourcesPath`
 const WIKI_WORKER_PATH = isDev ? path.resolve(__dirname, './wiki-worker.js') : path.resolve(process.resourcesPath, 'app.asar.unpacked', 'wiki-worker.js');
-module.exports.startWiki = function startWiki(homePath: any, tiddlyWikiPort: any, userName: any) {
+export function startWiki(homePath: any, tiddlyWikiPort: any, userName: any) {
   return new Promise((resolve, reject) => {
     // require here to prevent circular dependence, which will cause "TypeError: getWorkspaceByName is not a function"
     const { getWorkspaceByName } = require('../workspaces');
@@ -92,7 +92,7 @@ module.exports.startWiki = function startWiki(homePath: any, tiddlyWikiPort: any
   });
 };
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'stopWiki'.
-async function stopWiki(homePath: any) {
+export async function stopWiki(homePath: any) {
   // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
   const worker = wikiWorkers[homePath];
   if (!worker) {
@@ -119,11 +119,10 @@ async function stopWiki(homePath: any) {
       })
   );
 }
-module.exports.stopWiki = stopWiki;
 /**
  * Stop all worker_thread, use and await this before app.quit()
  */
-module.exports.stopAllWiki = async function stopAllWiki() {
+export async function stopAllWiki() {
   const tasks = [];
   for (const homePath of Object.keys(wikiWorkers)) {
     tasks.push(stopWiki(homePath));

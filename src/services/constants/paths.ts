@@ -1,8 +1,8 @@
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'isDev'.
-const isDev = require('electron-is-dev');
+import isDev from 'electron-is-dev';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
-const path = require('path');
-const os = require('os');
+import path from 'path';
+import os from 'os';
 
 const isMac = process.platform === 'darwin';
 
@@ -28,14 +28,4 @@ const LOG_FOLDER = isDev
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'LOCALIZATI... Remove this comment to see the full error message
 const LOCALIZATION_FOLDER = isDev ? path.resolve(__dirname, '..', '..', 'localization') : path.resolve(process.resourcesPath, '..', 'localization');
 
-module.exports = {
-  REACT_PATH,
-  TIDDLYWIKI_TEMPLATE_FOLDER_PATH,
-  TIDDLERS_PATH,
-  ICON_PATH,
-  CHROME_ERROR_PATH,
-  DESKTOP_PATH,
-  LOG_FOLDER,
-  LOCALIZATION_FOLDER,
-  isDev,
-};
+export { REACT_PATH, TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH, ICON_PATH, CHROME_ERROR_PATH, DESKTOP_PATH, LOG_FOLDER, LOCALIZATION_FOLDER, isDev };

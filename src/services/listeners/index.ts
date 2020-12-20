@@ -1,29 +1,29 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable no-param-reassign */
 // @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
-const path = require('path');
+import path from 'path';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'BrowserVie... Remove this comment to see the full error message
-const { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } = require('electron');
+import { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } from 'electron';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'autoUpdate... Remove this comment to see the full error message
-const { autoUpdater } = require('electron-updater');
+import { autoUpdater } from 'electron-updater';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'initWikiGi... Remove this comment to see the full error message
-const { initWikiGit, getRemoteUrl } = require('../libs/git');
+import { initWikiGit, getRemoteUrl } from '../libs/git';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'stopWatchW... Remove this comment to see the full error message
-const { stopWatchWiki } = require('../libs/wiki/watch-wiki');
+import { stopWatchWiki } from '../libs/wiki/watch-wiki';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'updateSubW... Remove this comment to see the full error message
-const { updateSubWikiPluginContent, getSubWikiPluginContent } = require('../libs/wiki/update-plugin-content');
+import { updateSubWikiPluginContent, getSubWikiPluginContent } from '../libs/wiki/update-plugin-content';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'stopWiki'.
-const { stopWiki, startWiki } = require('../libs/wiki/wiki-worker-mamager');
+import { stopWiki, startWiki } from '../libs/wiki/wiki-worker-mamager';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
-const { logger } = require('../libs/log');
-const { createWiki, createSubWiki, removeWiki, ensureWikiExist, cloneWiki, cloneSubWiki } = require('../libs/wiki/create-wiki');
+import { logger } from '../libs/log';
+import { createWiki, createSubWiki, removeWiki, ensureWikiExist, cloneWiki, cloneSubWiki } from '../libs/wiki/create-wiki';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'ICON_PATH'... Remove this comment to see the full error message
-const { ICON_PATH, REACT_PATH, DESKTOP_PATH, LOG_FOLDER, isDev } = require('../constants/paths');
+import { ICON_PATH, REACT_PATH, DESKTOP_PATH, LOG_FOLDER, isDev } from '../constants/paths';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
-const { getPreference, getPreferences, resetPreferences, setPreference } = require('../libs/preferences');
+import { getPreference, getPreferences, resetPreferences, setPreference } from '../libs/preferences';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getSystemP... Remove this comment to see the full error message
-const { getSystemPreference, getSystemPreferences, setSystemPreference } = require('../libs/system-preferences');
-const {
+import { getSystemPreference, getSystemPreferences, setSystemPreference } from '../libs/system-preferences';
+import {
   countWorkspaces,
   getActiveWorkspace,
   getWorkspace,
@@ -31,10 +31,10 @@ const {
   getWorkspaceByName,
   setWorkspacePicture,
   removeWorkspacePicture,
-} = require('../libs/workspaces');
+} from '../libs/workspaces';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getWorkspa... Remove this comment to see the full error message
-const { getWorkspaceMeta, getWorkspaceMetas } = require('../libs/workspace-metas');
-const {
+import { getWorkspaceMeta, getWorkspaceMetas } from '../libs/workspace-metas';
+import {
   clearBrowsingData,
   createWorkspaceView,
   hibernateWorkspaceView,
@@ -45,26 +45,26 @@ const {
   setWorkspaceViews,
   wakeUpWorkspaceView,
   realignActiveWorkspaceView,
-} = require('../libs/workspaces-views');
+} from '../libs/workspaces-views';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'index18n'.
-const index18n = require('../libs/i18n');
-const { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad, getActiveBrowserView } = require('../libs/views');
+import index18n from '../libs/i18n';
+import { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad, getActiveBrowserView } from '../libs/views';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'updatePaus... Remove this comment to see the full error message
-const { updatePauseNotificationsInfo, getPauseNotificationsInfo } = require('../libs/notifications');
-const getViewBounds = require('../libs/get-view-bounds');
-const createMenu = require('../libs/create-menu');
-const aboutWindow = require('../windows/about');
-const addWorkspaceWindow = require('../windows/add-workspace');
-const codeInjectionWindow = require('../windows/code-injection');
-const customUserAgentWindow = require('../windows/custom-user-agent');
-const displayMediaWindow = require('../windows/display-media');
-const editWorkspaceWindow = require('../windows/edit-workspace');
-const mainWindow = require('../windows/main');
-const notificationsWindow = require('../windows/notifications');
-const preferencesWindow = require('../windows/preferences');
-const proxyWindow = require('../windows/proxy');
-const spellcheckLanguagesWindow = require('../windows/spellcheck-languages');
-const bindI18nListener = require('./i18n');
+import { updatePauseNotificationsInfo, getPauseNotificationsInfo } from '../libs/notifications';
+import getViewBounds from '../libs/get-view-bounds';
+import createMenu from '../libs/create-menu';
+import aboutWindow from '../windows/about';
+import addWorkspaceWindow from '../windows/add-workspace';
+import codeInjectionWindow from '../windows/code-injection';
+import customUserAgentWindow from '../windows/custom-user-agent';
+import displayMediaWindow from '../windows/display-media';
+import editWorkspaceWindow from '../windows/edit-workspace';
+import * as mainWindow from '../windows/main';
+import notificationsWindow from '../windows/notifications';
+import preferencesWindow from '../windows/preferences';
+import proxyWindow from '../windows/proxy';
+import spellcheckLanguagesWindow from '../windows/spellcheck-languages';
+import bindI18nListener from './i18n';
 const loadListeners = () => {
   bindI18nListener();
   ipcMain.handle('copy-wiki-template', async (event, newFolderPath, folderName) => {
@@ -523,4 +523,4 @@ const loadListeners = () => {
     }
   });
 };
-module.exports = loadListeners;
+export default loadListeners;

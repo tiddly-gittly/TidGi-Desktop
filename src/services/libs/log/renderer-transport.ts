@@ -1,5 +1,5 @@
 /* eslint-disable global-require */
-const Transport = require('winston-transport');
+import Transport from 'winston-transport';
 
 const handlers = {
   createWikiProgress: (message: any) => {
@@ -16,7 +16,7 @@ const handlers = {
   },
 };
 
-module.exports = class RendererTransport extends Transport {
+export default class RendererTransport extends Transport {
   log(info: any, callback: any) {
     setImmediate(() => {
       this.emit('logged', info);

@@ -1,13 +1,13 @@
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fs'.
-const fs = require('fs-extra');
+import fs from 'fs-extra';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
-const path = require('path');
+import path from 'path';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
-const sendToAllWindows = require('./send-to-all-windows');
+import sendToAllWindows from './send-to-all-windows';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'LOCALIZATI... Remove this comment to see the full error message
-const { LOCALIZATION_FOLDER } = require('../constants/paths');
+import { LOCALIZATION_FOLDER } from '../constants/paths';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'index18n'.
-const index18n = require('./i18n');
+import index18n from './i18n';
 
 // Electron-specific; must match mainIpc
 const readFileRequest = 'ReadFile-Request';
@@ -115,7 +115,7 @@ function getLanguageMenu() {
   return subMenu;
 }
 
-module.exports = {
+export {
   getLanguageMenu,
   readFileRequest,
   writeFileRequest,

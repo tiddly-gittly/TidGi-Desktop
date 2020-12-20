@@ -1,13 +1,13 @@
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'app'.
-const { app, dialog } = require('electron');
+import { app, dialog } from 'electron';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'autoUpdate... Remove this comment to see the full error message
-const { autoUpdater } = require('electron-updater');
+import { autoUpdater } from 'electron-updater';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
-const sendToAllWindows = require('./send-to-all-windows');
+import sendToAllWindows from './send-to-all-windows';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'createMenu... Remove this comment to see the full error message
-const createMenu = require('./create-menu');
+import createMenu from './create-menu';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'mainWindow... Remove this comment to see the full error message
-const mainWindow = require('../windows/main');
+import * as mainWindow from '../windows/main';
 (global as any).updateSilent = true;
 global.updaterObj = {};
 autoUpdater.on('checking-for-update', () => {

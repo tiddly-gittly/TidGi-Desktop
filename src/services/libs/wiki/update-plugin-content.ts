@@ -1,11 +1,11 @@
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
-const path = require('path');
+import path from 'path';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fs'.
-const fs = require('fs-extra');
+import fs from 'fs-extra';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'compact'.
-const { take, drop, compact } = require('lodash');
+import { take, drop, compact } from 'lodash';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
-const { logger } = require('../log');
+import { logger } from '../log';
 
 const getMatchPart = (tagToMatch: any) => `[!is[system]kin::to[${tagToMatch}]`;
 const getPathPart = (folderToPlace: any) => `addprefix[/]addprefix[${folderToPlace}]addprefix[/]addprefix[subwiki]]`;
@@ -87,7 +87,4 @@ async function getSubWikiPluginContent(mainWikiPath: any) {
   }
 }
 
-module.exports = {
-  updateSubWikiPluginContent,
-  getSubWikiPluginContent,
-};
+export { updateSubWikiPluginContent, getSubWikiPluginContent };

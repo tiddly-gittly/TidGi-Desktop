@@ -1,16 +1,16 @@
 /* eslint-disable sonarjs/no-duplicate-string */
 // @ts-expect-error ts-migrate(6200) FIXME: Definitions of the following identifiers conflict ... Remove this comment to see the full error message
-const fs = require('fs-extra');
+import fs from 'fs-extra';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
-const path = require('path');
+import path from 'path';
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'TIDDLYWIKI... Remove this comment to see the full error message
-const { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } = require('../../constants/paths');
+import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '../../constants/paths';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'clone'.
-const { clone } = require('../git');
-const { logger } = require('../log');
-const { updateSubWikiPluginContent } = require('./update-plugin-content');
-const index18n = require('../i18n');
+import { clone } from '../git';
+import { logger } from '../log';
+import { updateSubWikiPluginContent } from './update-plugin-content';
+import index18n from '../i18n';
 
 const logProgress = (message: any) =>
   logger.notice({
@@ -151,4 +151,4 @@ async function cloneSubWiki(parentFolderLocation: any, wikiFolderName: any, main
   }
 }
 
-module.exports = { createWiki, createSubWiki, removeWiki, ensureWikiExist, cloneWiki, cloneSubWiki };
+export { createWiki, createSubWiki, removeWiki, ensureWikiExist, cloneWiki, cloneSubWiki };

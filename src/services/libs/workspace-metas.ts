@@ -1,5 +1,5 @@
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
-const sendToAllWindows = require('./send-to-all-windows');
+import sendToAllWindows from './send-to-all-windows';
 
 // to keep workspace variables (meta) that
 // are not saved to disk
@@ -24,8 +24,4 @@ const setWorkspaceMeta = (id: any, options: any) => {
   sendToAllWindows('set-workspace-meta', id, getWorkspaceMeta(id));
 };
 
-module.exports = {
-  getWorkspaceMeta,
-  getWorkspaceMetas,
-  setWorkspaceMeta,
-};
+export { getWorkspaceMeta, getWorkspaceMetas, setWorkspaceMeta };

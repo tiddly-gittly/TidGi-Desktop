@@ -36,4 +36,4 @@ rawMailtoUrls.forEach((item) => {
   });
 });
 
-module.exports = MAILTO_URLS;
+export default MAILTO_URLS;

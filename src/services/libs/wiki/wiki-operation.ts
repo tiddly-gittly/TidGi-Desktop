@@ -3,9 +3,9 @@
  * This file should be required by BrowserView's preload script to work
  */
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'ipcRendere... Remove this comment to see the full error message
-const { ipcRenderer, webFrame } = require('electron');
+import { ipcRenderer, webFrame } from 'electron';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'Promise'.
-const Promise = require('bluebird');
+import Promise from 'bluebird';
 // add tiddler
 ipcRenderer.on('wiki-add-tiddler', async (event, title, text, meta) => {
   const extraMeta = typeof meta === 'object' ? JSON.stringify(meta) : '{}';

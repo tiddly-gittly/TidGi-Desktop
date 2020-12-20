@@ -197,7 +197,7 @@ class Backend {
             `${
               // @ts-expect-error ts-migrate(2683) FIXME: 'this' implicitly has type 'any' because it does n... Remove this comment to see the full error message
               this.rendererLog
-            } encountered error when trying to read file '${filename}' before writing missing translation ('${key}'/'${fallbackValue}') to file. Please resolve this error so missing translation values can be written to file. Error: '${error}'.`,
+            } encountered error when trying to read file '{filename}' before writing missing translation ('{key}'/'{fallbackValue}') to file. Please resolve this error so missing translation values can be written to file. Error: '${error}'.`,
           );
           return;
         }

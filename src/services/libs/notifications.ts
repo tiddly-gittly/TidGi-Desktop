@@ -1,9 +1,9 @@
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
-const { getPreference } = require('./preferences');
+import { getPreference } from './preferences';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'sendToAllW... Remove this comment to see the full error message
-const sendToAllWindows = require('./send-to-all-windows');
+import sendToAllWindows from './send-to-all-windows';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'setViewsAu... Remove this comment to see the full error message
-const { setViewsAudioPref, setViewsNotificationsPref } = require('./views');
+import { setViewsAudioPref, setViewsNotificationsPref } from './views';
 
 let pauseNotificationsInfo: any = null;
 
@@ -171,7 +171,4 @@ const updatePauseNotificationsInfo = () => {
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPauseNo... Remove this comment to see the full error message
 const getPauseNotificationsInfo = () => pauseNotificationsInfo;
 
-module.exports = {
-  updatePauseNotificationsInfo,
-  getPauseNotificationsInfo,
-};
+export { updatePauseNotificationsInfo, getPauseNotificationsInfo };

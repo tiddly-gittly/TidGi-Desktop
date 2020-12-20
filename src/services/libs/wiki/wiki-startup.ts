@@ -1,23 +1,23 @@
 /* eslint-disable global-require */
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
-const path = require('path');
+import path from 'path';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'fs'.
-const fs = require('fs');
+import fs from 'fs';
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'logger'.
-const { logger } = require('../log');
+import { logger } from '../log';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'commitAndS... Remove this comment to see the full error message
-const { commitAndSync } = require('../git');
+import { commitAndSync } from '../git';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'watchWiki'... Remove this comment to see the full error message
-const { watchWiki, stopWatchWiki } = require('./watch-wiki');
+import { watchWiki, stopWatchWiki } from './watch-wiki';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'startNodeJ... Remove this comment to see the full error message
-const startNodeJSWiki = require('./start-nodejs-wiki');
+import startNodeJSWiki from './start-nodejs-wiki';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'stopWiki'.
-const { stopWiki, startWiki } = require('./wiki-worker-mamager');
+import { stopWiki, startWiki } from './wiki-worker-mamager';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'TIDDLERS_P... Remove this comment to see the full error message
-const { TIDDLERS_PATH } = require('../../constants/paths');
+import { TIDDLERS_PATH } from '../../constants/paths';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
-const { getPreference } = require('../preferences');
+import { getPreference } from '../preferences';
 
 // prevent private wiki try to restart wiki on start-up, where there will be several subsequent wikiStartup() call
 const justStartedWiki = {};
@@ -30,7 +30,7 @@ function setWikiStarted(wikiPath: any) {
   }, 5000);
 }
 
-module.exports = async function wikiStartup(workspace: any) {
+export default async function wikiStartup(workspace: any) {
   // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
   try {
     fs.unlinkSync(path.resolve(workspace.name, 'tiddlers', '$__StoryList'));

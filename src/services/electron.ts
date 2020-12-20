@@ -6,32 +6,20 @@ import Promise from 'bluebird';
 import settings from 'electron-settings';
 import { autoUpdater } from 'electron-updater';
 
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import loadListeners from './listeners';
 
 import * as mainWindow from './windows/main';
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import openUrlWithWindow from './windows/open-url-with';
 
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import createMenu from './libs/create-menu';
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import extractHostname from './libs/extract-hostname';
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import sendToAllWindows from './libs/send-to-all-windows';
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { stopWatchAllWiki } from './libs/wiki/watch-wiki';
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { stopAllWiki } from './libs/wiki/wiki-worker-mamager';
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { addView, reloadViewsDarkReader } from './libs/views';
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { getPreference, getPreferences } from './libs/preferences';
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { getWorkspaces, setWorkspace } from './libs/workspaces';
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { logger } from './libs/log';
-// @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { commitAndSync } from './libs/git';
 // @ts-expect-error ts-migrate(2306) FIXME: File '/Users/linonetwo/Desktop/repo/TiddlyGit-Desk... Remove this comment to see the full error message
 import { clearMainBindings } from './libs/i18next-electron-fs-backend';

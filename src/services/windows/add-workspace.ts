@@ -1,15 +1,15 @@
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'BrowserWin... Remove this comment to see the full error message
-const { BrowserWindow } = require('electron');
+import { BrowserWindow } from 'electron';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
-const path = require('path');
+import path from 'path';
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'REACT_PATH... Remove this comment to see the full error message
-const { REACT_PATH, isDev } = require('../constants/paths');
+import { REACT_PATH, isDev } from '../constants/paths';
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'getPrefere... Remove this comment to see the full error message
-const { getPreference } = require('../libs/preferences');
+import { getPreference } from '../libs/preferences';
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'mainWindow... Remove this comment to see the full error message
-const mainWindow = require('./main');
+import * as mainWindow from './main';
 
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'win'.
 let win;
@@ -59,8 +59,4 @@ const show = () => {
   }
 };
 
-module.exports = {
-  get,
-  create,
-  show,
-};
+export { get, create, show };
