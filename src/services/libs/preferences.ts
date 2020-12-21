@@ -4,12 +4,12 @@ import semver from 'semver';
 import settings from 'electron-settings';
 
 import sendToAllWindows from './send-to-all-windows';
-const { app, nativeTheme, ipcMain, remote } = require('electron');
+import { app, nativeTheme, ipcMain, remote } from 'electron';
 
 // scope
 const v = '2018.2';
 
-const getDefaultDownloadsPath = () => path.join(app.getPath('home'), 'Downloads');
+const getDefaultDownloadsPath = () => path.join((app || remote.app).getPath('home'), 'Downloads');
 
 const getDefaultPauseNotificationsByScheduleFrom = () => {
   const d = new Date();
@@ -27,7 +27,7 @@ const getDefaultPauseNotificationsByScheduleTo = () => {
 
 const defaultPreferences = {
   allowNodeInJsCodeInjection: false,
-  allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
+  allowPrerelease: Boolean(semver.prerelease((app || remote.app).getVersion())),
   askForDownloadPath: true,
   attachToMenubar: false,
   blockAds: false,

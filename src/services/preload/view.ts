@@ -8,7 +8,7 @@ const { MenuItem, shell } = remote;
 // @ts-expect-error ts-migrate(2322) FIXME: Type '{}' is not assignable to type 'Global & type... Remove this comment to see the full error message
 window.global = {};
 let handled = false;
-const handleLoaded = (event: any) => {
+const handleLoaded = (event: string) => {
   if (handled) {
     return;
   }

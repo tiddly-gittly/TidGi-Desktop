@@ -2,7 +2,6 @@
 import { BrowserView, BrowserWindow, app, session, shell, dialog, ipcMain } from 'electron';
 import path from 'path';
 import fsExtra from 'fs-extra';
-import { ElectronBlocker } from '@cliqz/adblocker-electron';
 import index18n from './i18n';
 import wikiStartup from './wiki/wiki-startup';
 import { getPreferences, getPreference } from './preferences';
@@ -10,7 +9,10 @@ import { getWorkspace, setWorkspace, getActiveWorkspace } from './workspaces';
 import { setWorkspaceMeta, getWorkspaceMetas, getWorkspaceMeta } from './workspace-metas';
 import sendToAllWindows from './send-to-all-windows';
 import getViewBounds from './get-view-bounds';
-import customizedFetch from './customized-fetch';
+
+declare const WEB_VIEW_WEBPACK_ENTRY: string;
+declare const WEB_VIEW_PRELOAD_WEBPACK_ENTRY: string;
+
 const views = {};
 let shouldMuteAudio: any;
 let shouldPauseNotifications: any;
@@ -82,7 +84,6 @@ export const addView = async (browserWindow: any, workspace: any) => {
     return;
   }
   const {
-    blockAds,
     customUserAgent,
     proxyBypassRules,
     proxyPacScript,
@@ -122,17 +123,6 @@ export const addView = async (browserWindow: any, workspace: any) => {
       proxyBypassRules,
     });
   }
-  // blocker
-  if (blockAds) {
-    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '(url: any, _options: any, ...arg... Remove this comment to see the full error message
-    ElectronBlocker.fromPrebuiltAdsAndTracking(customizedFetch, {
-      path: path.join(app.getPath('userData'), 'adblocker.bin'),
-      read: fsExtra.readFile,
-      write: fsExtra.writeFile,
-    }).then((blocker: any) => {
-      blocker.enableBlockingInSession(ses);
-    });
-  }
   // spellchecker
   if (spellcheck && process.platform !== 'darwin') {
     ses.setSpellCheckerLanguages(spellcheckLanguages);
@@ -144,7 +134,7 @@ export const addView = async (browserWindow: any, workspace: any) => {
     contextIsolation: true,
     enableRemoteModule: true,
     session: ses,
-    preload: path.join(__dirname, '..', 'preload', 'view.js'),
+    preload: WEB_VIEW_PRELOAD_WEBPACK_ENTRY,
   };
   const view = new BrowserView({
     webPreferences: sharedWebPreferences,

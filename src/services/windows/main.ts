@@ -19,8 +19,8 @@ export const get = (): BrowserWindow | undefined => {
   return win;
 };
 
-export const createAsync = () =>
-  new Promise<void>((resolve) => {
+export const createAsync = async (): Promise<void> =>
+  await new Promise<void>((resolve) => {
     attachToMenubar = getPreference('attachToMenubar');
     if (attachToMenubar) {
       const menubarWindowState = windowStateKeeper({
@@ -249,7 +249,7 @@ export const createAsync = () =>
       resolve();
     });
 
-    win.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+    void win.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
   });
 
 export const show = () => {

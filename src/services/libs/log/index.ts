@@ -1,7 +1,8 @@
 import winston from 'winston';
 import { LOG_FOLDER } from '../../constants/paths';
 import RendererTransport from './renderer-transport';
-require('winston-daily-rotate-file');
+import 'winston-daily-rotate-file';
+
 const logger = winston.createLogger({
   levels: {
     emerg: 0,

@@ -14,4 +14,8 @@ module.exports = {
     alias: webpackAlias,
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.json'],
   },
+  node: {
+    __filename: true,
+    __dirname: true,
+  },
 };

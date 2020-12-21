@@ -1,4 +1,4 @@
-import { ipcMain, nativeTheme, protocol, session, powerMonitor, remote } from 'electron';
+import { ipcMain, nativeTheme, protocol, session, powerMonitor, app } from 'electron';
 import isDev from 'electron-is-dev';
 import fs from 'fs';
 // @ts-expect-error ts-migrate(2529) FIXME: Duplicate identifier 'Promise'. Compiler reserves ... Remove this comment to see the full error message
@@ -27,11 +27,6 @@ import MAILTO_URLS from './constants/mailto-urls';
 
 import './libs/updater';
 
-// eslint-disable-next-line import/order, global-require
-const app = require('electron').app || remote.app;
-// see https://github.com/electron/electron/issues/18397
-app.allowRendererProcessReuse = true;
-
 const gotTheLock = app.requestSingleInstanceLock();
 
 declare global {
@@ -50,7 +45,7 @@ declare global {
 app.on('second-instance', () => {
   // Someone tried to run a second instance, we should focus our window.
   const win = mainWindow.get();
-  if (win != undefined) {
+  if (win !== undefined) {
     if (win.isMinimized()) win.restore();
     win.focus();
   }
@@ -102,9 +97,9 @@ if (!gotTheLock) {
 
   loadListeners();
 
-  const commonInit = () => {
+  const commonInit = async (): Promise<void> => {
     // eslint-disable-next-line promise/catch-or-return
-    app
+    return await app
       .whenReady()
       .then(
         () =>
@@ -114,7 +109,7 @@ if (!gotTheLock) {
             callback(pathname);
           }),
       )
-      .then(() => mainWindow.createAsync())
+      .then(async () => await mainWindow.createAsync())
       .then(() => {
         const { hibernateUnusedWorkspacesAtLaunch, proxyBypassRules, proxyPacScript, proxyRules, proxyType, themeSource } = getPreferences();
 

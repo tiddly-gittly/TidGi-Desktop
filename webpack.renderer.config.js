@@ -11,6 +11,6 @@ module.exports = {
   plugins: plugins,
   resolve: {
     alias: webpackAlias,
-    extensions: ['.js', '.ts', '.jsx', '.tsx'],
+    extensions: ['.js', '.ts', '.jsx', '.tsx', '.css'],
   },
 };
