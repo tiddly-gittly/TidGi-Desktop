@@ -62,7 +62,7 @@
                 },
                 {
                   "html": "./src/index.html",
-                  "js": "./src/index.tsx",
+                  "js": "./src/constants/hunspell-languages.ts",
                   "preload": {
                     "js": "./src/services/preload/view.ts"
                   },
@@ -91,6 +91,7 @@
     "i18next": "^19.8.2",
     "i18next-electron-fs-backend": "^1.3.5",
     "i18next-fs-backend": "^1.0.7",
+    "inversify": "^5.0.5",
     "is-url": "1.2.4",
     "jimp": "0.16.1",
     "lodash": "4.17.20",
