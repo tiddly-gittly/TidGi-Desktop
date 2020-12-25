@@ -54,7 +54,7 @@ const Main = React.lazy(() => import('./components/main'));
 declare global {
   interface Window {
     meta: {
-      mode: string;
+      windowName: string;
     };
     remote: any;
     preventClosingWindow: boolean;
@@ -62,7 +62,7 @@ declare global {
 }
 
 const App = () => {
-  switch (window.meta.mode) {
+  switch (window.meta.windowName) {
     case 'about':
       // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogAbout />;
@@ -112,15 +112,15 @@ const runApp = () => {
   Promise.resolve()
     .then(() => {
       window.remote.webFrame.setVisualZoomLevelLimits(1, 1);
-      if (window.meta.mode === 'about') {
+      if (window.meta.windowName === 'about') {
         document.title = 'About';
-      } else if (window.meta.mode === 'add-workspace') {
+      } else if (window.meta.windowName === 'add-workspace') {
         document.title = 'Add Workspace';
-      } else if (window.meta.mode === 'auth') {
+      } else if (window.meta.windowName === 'auth') {
         document.title = 'Sign In';
-      } else if (window.meta.mode === 'preferences') {
+      } else if (window.meta.windowName === 'preferences') {
         document.title = 'Preferences';
-      } else if (window.meta.mode === 'edit-workspace') {
+      } else if (window.meta.windowName === 'edit-workspace') {
         store.dispatch(initDialogEditWorkspace());
         const { workspaces } = store.getState();
         const workspaceList = getWorkspacesAsList(workspaces);
@@ -135,32 +135,32 @@ const runApp = () => {
           return false;
         });
         document.title = workspace.name ? `Edit Workspace ${workspace.order + 1} "${workspace.name}"` : `Edit Workspace ${workspace.order + 1}`;
-      } else if (window.meta.mode === 'open-url-with') {
+      } else if (window.meta.windowName === 'open-url-with') {
         document.title = 'Open Link With';
-      } else if (window.meta.mode === 'code-injection') {
+      } else if (window.meta.windowName === 'code-injection') {
         store.dispatch(initDialogCodeInjection());
         const codeInjectionType = window.remote.getGlobal('codeInjectionType');
         document.title = `Edit ${codeInjectionType.toUpperCase()} Code Injection`;
-      } else if (window.meta.mode === 'notifications') {
+      } else if (window.meta.windowName === 'notifications') {
         document.title = 'Notifications';
-      } else if (window.meta.mode === 'display-media') {
+      } else if (window.meta.windowName === 'display-media') {
         document.title = 'Share your Screen';
-      } else if (window.meta.mode === 'custom-user-agent') {
+      } else if (window.meta.windowName === 'custom-user-agent') {
         store.dispatch(initDialogCustomUserAgent());
         document.title = 'Edit Custom User Agent';
-      } else if (window.meta.mode === 'go-to-url') {
+      } else if (window.meta.windowName === 'go-to-url') {
         document.title = 'Go to URL';
-      } else if (window.meta.mode === 'proxy') {
+      } else if (window.meta.windowName === 'proxy') {
         store.dispatch(initDialogProxy());
         document.title = 'Proxy Settings';
-      } else if (window.meta.mode === 'spellcheck-languages') {
+      } else if (window.meta.windowName === 'spellcheck-languages') {
         store.dispatch(initDialogSpellcheckLanguages());
         document.title = 'Preferred Spell Checking Languages';
       } else {
         document.title = 'TiddlyGit';
       }
 
-      if (window.meta.mode !== 'main' && window.meta.mode !== 'menubar') {
+      if (window.meta.windowName !== 'main' && window.meta.windowName !== 'menubar') {
         document.addEventListener('keydown', (event) => {
           if (event.key === 'Escape') {
             if (window.preventClosingWindow) {

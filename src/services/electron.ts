@@ -30,6 +30,7 @@ import './libs/updater';
 const gotTheLock = app.requestSingleInstanceLock();
 
 declare global {
+  // eslint-disable-next-line @typescript-eslint/no-namespace
   namespace NodeJS {
     interface Global {
       attachToMenubar: any;

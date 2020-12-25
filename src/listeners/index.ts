@@ -20,7 +20,7 @@ import { getShouldUseDarkColors, requestFindInPage, signalOnlineStatusChanged } 
 const loadListeners = (store: any) => {
   const { ipcRenderer } = window.remote;
 
-  if (window.meta.mode === 'main') {
+  if (window.meta.windowName === 'main') {
     // automatically reload page when wifi/network is connected
     // https://www.electronjs.org/docs/tutorial/online-offline-events
     const handleOnlineOffline = () => signalOnlineStatusChanged(window.navigator.onLine);

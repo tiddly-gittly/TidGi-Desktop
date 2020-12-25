@@ -47,13 +47,13 @@ const FakeTitleBar = (props: FakeTitleBarProps) => {
   return (
     // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div
-      className={classnames(classes.root, window.meta.mode === 'menubar' && classes.rootMenubar)}
+      className={classnames(classes.root, window.meta.windowName === 'menubar' && classes.rootMenubar)}
       onDoubleClick={() => {
         // feature: double click on title bar to expand #656
         // https://github.com/atomery/webcatalog/issues/656
         window.remote.toggleMaximize();
       }}>
-      {(window.meta.mode === 'main' || window.meta.mode === 'menubar') && title ? title : window.remote.getAppName()}
+      {(window.meta.windowName === 'main' || window.meta.windowName === 'menubar') && title ? title : window.remote.getAppName()}
     </div>
   );
 };

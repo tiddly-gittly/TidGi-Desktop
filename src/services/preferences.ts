@@ -5,7 +5,7 @@ import semver from 'semver';
 import settings from 'electron-settings';
 
 import serviceIdentifiers from '@services/serviceIdentifier';
-import { Window } from '@services/window';
+import { Window } from '@/services/window';
 import { PreferenceChannel } from '@/services/channels';
 
 /** get path, note that if use this from the preload script, app will be undefined, so have to use remote.app here */

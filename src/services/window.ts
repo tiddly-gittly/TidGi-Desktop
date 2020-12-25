@@ -47,6 +47,7 @@ export class Window {
         webSecurity: !isDevelopment,
         contextIsolation: true,
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+        additionalArguments: [name],
       },
       parent: attachToMenubar ? undefined : this.get(WindowNames.main),
     });
