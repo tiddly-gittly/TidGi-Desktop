@@ -1,21 +1,27 @@
-import { injectable } from 'inversify';
+import { injectable, inject } from 'inversify';
+import { app, App, nativeTheme, ipcMain, remote } from 'electron';
 import path from 'path';
 import semver from 'semver';
 import settings from 'electron-settings';
 
-import sendToAllWindows from './send-to-all-windows';
-import { app, nativeTheme, ipcMain, remote } from 'electron';
+import serviceIdentifiers from '@services/serviceIdentifier';
+import { Window } from '@services/window';
+import { PreferenceChannel } from '@/services/channels';
 
-const getDefaultDownloadsPath = () => path.join((app || remote.app).getPath('home'), 'Downloads');
+/** get path, note that if use this from the preload script, app will be undefined, so have to use remote.app here */
+const getDefaultDownloadsPath = (): string => {
+  const availableApp = (app as App | undefined) === undefined ? remote.app : app;
+  return path.join(availableApp.getPath('home'), 'Downloads');
+};
 
-const getDefaultPauseNotificationsByScheduleFrom = () => {
+const getDefaultPauseNotificationsByScheduleFrom = (): string => {
   const d = new Date();
   d.setHours(23);
   d.setMinutes(0);
   return d.toString();
 };
 
-const getDefaultPauseNotificationsByScheduleTo = () => {
+const getDefaultPauseNotificationsByScheduleTo = (): string => {
   const d = new Date();
   d.setHours(7);
   d.setMinutes(0);
@@ -28,8 +34,8 @@ const defaultPreferences = {
   askForDownloadPath: true,
   attachToMenubar: false,
   blockAds: false,
-  cssCodeInjection: undefined,
-  customUserAgent: undefined,
+  cssCodeInjection: '',
+  customUserAgent: '',
   // default Dark Reader settings from its Chrome extension
   darkReader: false,
   darkReaderBrightness: 100,
@@ -41,10 +47,10 @@ const defaultPreferences = {
   hibernateUnusedWorkspacesAtLaunch: false,
   hideMenuBar: false,
   ignoreCertificateErrors: false,
-  jsCodeInjection: undefined,
+  jsCodeInjection: '',
   language: 'zh_CN',
   navigationBar: false,
-  pauseNotifications: undefined,
+  pauseNotifications: '',
   pauseNotificationsBySchedule: false,
   pauseNotificationsByScheduleFrom: getDefaultPauseNotificationsByScheduleFrom(),
   pauseNotificationsByScheduleTo: getDefaultPauseNotificationsByScheduleTo(),
@@ -68,44 +74,32 @@ const defaultPreferences = {
 };
 export type IPreferences = typeof defaultPreferences;
 
-const initCachedPreferences = () => {
-  cachedPreferences = { ...defaultPreferences, ...sanitizePreference(settings.getSync(`preferences.${v}`) || {}) };
-};
-
-export const getPreferences = () => {
-  // store in memory to boost performance
-  if (cachedPreferences === undefined) {
-    initCachedPreferences();
-  }
-  return cachedPreferences;
-};
-
-export const getPreference = (name: any) => {
-  // store in memory to boost performance
-  if (cachedPreferences === undefined) {
-    initCachedPreferences();
-  }
-  return cachedPreferences[name];
-};
-
-
 @injectable()
 export class Preference {
+  windowService: Window;
+
   cachedPreferences: IPreferences;
   readonly version = '2018.2';
 
-  constructor() {
-    // load preferences, and ensure it is an Object
-    let preferencesFromDisk = settings.getSync(`preferences.${this.version}`) ?? {};
-    preferencesFromDisk = typeof preferencesFromDisk === 'object' && !Array.isArray(preferencesFromDisk) ? preferencesFromDisk : {};
-    this.cachedPreferences = { ...defaultPreferences, ...this.sanitizePreference(preferencesFromDisk) };
+  constructor(@inject(serviceIdentifiers.Window) windowService: Window) {
+    this.windowService = windowService;
+    this.cachedPreferences = this.getInitPreferencesForCache();
   }
 
   /**
-   * Make sure loaded or input preference are good, reset some bad values in preference
+   * load preferences in sync, and ensure it is an Object
+   */
+  getInitPreferencesForCache = (): IPreferences => {
+    let preferencesFromDisk = settings.getSync(`preferences.${this.version}`) ?? {};
+    preferencesFromDisk = typeof preferencesFromDisk === 'object' && !Array.isArray(preferencesFromDisk) ? preferencesFromDisk : {};
+    return { ...defaultPreferences, ...this.sanitizePreference(preferencesFromDisk) };
+  };
+
+  /**
+   * Pure function that make sure loaded or input preference are good, reset some bad values in preference
    * @param preferenceToSanitize User input preference or loaded preference, that may contains bad values
    */
-  sanitizePreference(preferenceToSanitize: Partial<IPreferences>): Partial<IPreferences> {
+  private sanitizePreference(preferenceToSanitize: Partial<IPreferences>): Partial<IPreferences> {
     const { syncDebounceInterval } = preferenceToSanitize;
     if (
       typeof syncDebounceInterval !== 'number' ||
@@ -118,34 +112,55 @@ export class Preference {
     return preferenceToSanitize;
   }
 
-  set(key: string, value: string): Promise<void> {
-    sendToAllWindows('set-preference', key, value);
+  public async set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void> {
+    this.windowService.sendToAllWindows(PreferenceChannel.update, key, value);
     this.cachedPreferences[key] = value;
-    this.cachedPreferences = sanitizePreference(this.cachedPreferences);
-  
+    this.cachedPreferences = { ...this.cachedPreferences, ...this.sanitizePreference(this.cachedPreferences) };
+
     // eslint-disable-next-line promise/catch-or-return
-    Promise.resolve().then(() => settings.setSync(`preferences.${v}.${key}`, this.cachedPreferences[key]));
-  
-    if (key.startsWith('darkReader')) {
-      ipcMain.emit('request-reload-views-dark-reader');
-    }
-  
-    if (key.startsWith('pauseNotifications')) {
-      ipcMain.emit('request-update-pause-notifications-info');
-    }
-  
-    if (key === 'themeSource') {
-      nativeTheme.themeSource = value;
-    }
+    await settings.set(`preferences.${this.version}.${key}`, this.cachedPreferences[key]);
+
+    // TODO: call ThemeService and NotificationService
+    // if (key.startsWith('darkReader')) {
+    //   ipcMain.emit('request-reload-views-dark-reader');
+    // }
+
+    // if (key.startsWith('pauseNotifications')) {
+    //   ipcMain.emit('request-update-pause-notifications-info');
+    // }
+
+    // if (key === 'themeSource') {
+    //   nativeTheme.themeSource = value;
+    // }
   }
 
-  public async reset() {
-    cachedPreferences = undefined;
-    await settings.unset();
+  /**
+   * get preferences, may return cached version
+   */
+  public getPreferences = (): IPreferences => {
+    // store in memory to boost performance
+    if (this.cachedPreferences === undefined) {
+      return this.getInitPreferencesForCache();
+    }
+    return this.cachedPreferences;
+  };
 
-    const preferences = getPreferences();
-    Object.keys(preferences).forEach((name) => {
-      sendToAllWindows('set-preference', name, preferences[name]);
+  public get<K extends keyof IPreferences>(key: K): IPreferences[K] {
+    return this.cachedPreferences[key];
+  }
+
+  private async setPreferences(newPreferences: IPreferences): Promise<void> {
+    await settings.set(`preferences.${this.version}`, newPreferences);
+  }
+
+  public async reset(): Promise<void> {
+    await settings.unset();
+    const preferences = this.getPreferences();
+    this.cachedPreferences = preferences;
+    await this.setPreferences(preferences);
+    Object.keys(preferences).forEach((key) => {
+      const value = preferences[key as keyof IPreferences];
+      this.windowService.sendToAllWindows(PreferenceChannel.update, key, value);
     });
   }
 }
