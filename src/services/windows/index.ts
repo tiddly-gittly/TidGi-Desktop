@@ -5,28 +5,18 @@ import { injectable, inject } from 'inversify';
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Preference } from '@services/preferences';
 import { Channels } from '@/services/channels';
-
-export enum WindowNames {
-  main = 'main',
-  view = 'view',
-  addWorkspace = 'addWorkspace',
-}
-
+import { WindowNames, windowDimension } from '@/services/windows/WindowProperties';
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
 @injectable()
 export class Window {
-  preferenceService: Preference;
-
   // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   private windows = {} as Record<WindowNames, BrowserWindow | undefined>;
 
-  constructor(@inject(serviceIdentifiers.Preference) preferenceService: Preference) {
-    this.preferenceService = preferenceService;
-  }
+  constructor(@inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference) {}
 
-  private get(name: WindowNames): BrowserWindow | undefined {
+  public get(name: WindowNames): BrowserWindow | undefined {
     return this.windows[name];
   }
 
@@ -34,8 +24,7 @@ export class Window {
     const attachToMenubar: boolean = this.preferenceService.get('attachToMenubar');
 
     const newWindow = new BrowserWindow({
-      width: 600,
-      height: 800,
+      ...windowDimension[name],
       resizable: false,
       maximizable: false,
       minimizable: false,

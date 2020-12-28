@@ -1,12 +1,16 @@
 import { injectable, inject } from 'inversify';
-import { app, App, nativeTheme, ipcMain, remote } from 'electron';
+import getDecorators from 'inversify-inject-decorators';
+import { app, App, remote } from 'electron';
 import path from 'path';
 import semver from 'semver';
 import settings from 'electron-settings';
 
 import serviceIdentifiers from '@services/serviceIdentifier';
-import { Window } from '@/services/window';
+import { Window } from '@/services/windows';
 import { PreferenceChannel } from '@/services/channels';
+import { container } from '@/services/container';
+
+const { lazyInject } = getDecorators(container);
 
 /** get path, note that if use this from the preload script, app will be undefined, so have to use remote.app here */
 const getDefaultDownloadsPath = (): string => {
@@ -67,7 +71,7 @@ const defaultPreferences = {
   spellcheckLanguages: ['en-US'],
   swipeToNavigate: true,
   syncDebounceInterval: 1000 * 60 * 30,
-  themeSource: 'system',
+  themeSource: 'system' as 'system' | 'light' | 'dark',
   titleBar: true,
   unreadCountBadge: true,
   useHardwareAcceleration: true,
@@ -76,13 +80,12 @@ export type IPreferences = typeof defaultPreferences;
 
 @injectable()
 export class Preference {
-  windowService: Window;
+  @lazyInject(serviceIdentifiers.Window) private readonly windowService!: Window;
 
   cachedPreferences: IPreferences;
   readonly version = '2018.2';
 
-  constructor(@inject(serviceIdentifiers.Window) windowService: Window) {
-    this.windowService = windowService;
+  constructor() {
     this.cachedPreferences = this.getInitPreferencesForCache();
   }
 

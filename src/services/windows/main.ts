@@ -7,8 +7,6 @@ import { REACT_PATH, isDev as isDevelopment } from '../constants/paths';
 import { getPreference } from '../libs/preferences';
 import formatBytes from '../libs/format-bytes';
 
-declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
-declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
 let win: BrowserWindow | undefined;
 let menuBar: Menubar;

@@ -28,10 +28,9 @@ const rawMailtoUrls = [
   },
 ];
 
-const MAILTO_URLS = {};
+const MAILTO_URLS: Record<string, string> = {};
 rawMailtoUrls.forEach((item) => {
   item.hostnames.forEach((hostname) => {
-    // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     MAILTO_URLS[hostname] = item.mailtoUrl;
   });
 });

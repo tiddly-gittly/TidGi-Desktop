@@ -1,5 +1,4 @@
-/* eslint-disable prefer-destructuring */
-const extractHostname = (url: any) => {
+const extractHostname = (url: string): string | undefined => {
   try {
     let hostname = url.trim();
 
@@ -17,7 +16,7 @@ const extractHostname = (url: any) => {
 
     return hostname;
   } catch {
-    return null;
+    // return undefined;
   }
 };
 

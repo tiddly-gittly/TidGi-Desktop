@@ -10,8 +10,7 @@ import { setWorkspaceMeta, getWorkspaceMetas, getWorkspaceMeta } from './workspa
 import sendToAllWindows from './send-to-all-windows';
 import getViewBounds from './get-view-bounds';
 
-declare const WEB_VIEW_WEBPACK_ENTRY: string;
-declare const WEB_VIEW_PRELOAD_WEBPACK_ENTRY: string;
+declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
 const views = {};
 let shouldMuteAudio: any;
@@ -134,7 +133,7 @@ export const addView = async (browserWindow: any, workspace: any) => {
     contextIsolation: true,
     enableRemoteModule: true,
     session: ses,
-    preload: WEB_VIEW_PRELOAD_WEBPACK_ENTRY,
+    preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
   };
   const view = new BrowserView({
     webPreferences: sharedWebPreferences,
