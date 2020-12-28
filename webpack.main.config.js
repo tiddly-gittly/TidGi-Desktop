@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { webpackAlias } = require('./webpack.alias');
+const CopyPlugin = require('copy-webpack-plugin');
 
 module.exports = {
   /**
@@ -11,6 +12,12 @@ module.exports = {
   module: {
     rules: require('./webpack.rules'),
   },
+  plugins: [
+    new CopyPlugin({
+      // to is relative to ./.webpack/main/
+      patterns: [{ from: 'src/services/libs/wiki/wiki-worker.js', to: 'wiki-worker.js' }],
+    }),
+  ],
   resolve: {
     alias: webpackAlias,
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.json'],

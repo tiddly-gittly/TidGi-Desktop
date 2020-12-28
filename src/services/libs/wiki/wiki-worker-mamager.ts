@@ -3,8 +3,7 @@
 import { Worker } from 'worker_threads';
 import isDev from 'electron-is-dev';
 import path from 'path';
-// @ts-expect-error ts-migrate(2529) FIXME: Duplicate identifier 'Promise'. Compiler reserves ... Remove this comment to see the full error message
-import Promise from 'bluebird';
+import { delay } from 'bluebird';
 import { logger } from '../log';
 import { wikiOutputToFile, refreshOutputFile } from '../log/wiki-output';
 // worker should send payload in form of `{ message: string, handler: string }` where `handler` is the name of function to call
@@ -26,9 +25,9 @@ const wikiWorkers = {};
 // don't forget to config option in `dist.js` https://github.com/electron/electron/issues/18540#issuecomment-652430001
 // to copy all worker.js and its local dependence to `process.resourcesPath`
 // On dev, this file will be in .webpack/main/index.js ,so:
-const WIKI_WORKER_PATH = isDev ? path.resolve(__dirname, './wiki-worker.js') : path.resolve(process.resourcesPath, 'app.asar.unpacked', 'wiki-worker.js');
-export function startWiki(homePath: any, tiddlyWikiPort: any, userName: any) {
-  return new Promise((resolve, reject) => {
+const WIKI_WORKER_PATH = isDev ? path.resolve('./.webpack/main/wiki-worker.js') : path.resolve(process.resourcesPath, 'app.asar.unpacked', 'wiki-worker.js');
+export async function startWiki(homePath: any, tiddlyWikiPort: any, userName: any): Promise<void> {
+  await new Promise((resolve, reject) => {
     // require here to prevent circular dependence, which will cause "TypeError: getWorkspaceByName is not a function"
     const { getWorkspaceByName } = require('../workspaces');
     const { reloadViewsWebContents } = require('../views');
@@ -114,13 +113,13 @@ export async function stopWiki(homePath: any) {
 /**
  * Stop all worker_thread, use and await this before app.quit()
  */
-export async function stopAllWiki() {
+export async function stopAllWiki(): Promise<void> {
   const tasks = [];
   for (const homePath of Object.keys(wikiWorkers)) {
     tasks.push(stopWiki(homePath));
   }
   await Promise.all(tasks);
   // try to prevent https://github.com/electron/electron/issues/23315, but seems not working at all
-  await (Promise as any).delay(100);
+  await delay(100);
   logger.info('All wiki-worker is stopped', { function: 'stopAllWiki' });
 }
