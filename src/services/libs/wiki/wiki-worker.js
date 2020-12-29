@@ -30,7 +30,7 @@ module.exports = startNodeJSWiki;
 
 if (!isMainThread) {
   startNodeJSWiki();
-  parentPort.once('message', async (message: any) => {
+  parentPort.once('message', async (message) => {
     if (typeof message === 'object' && message.type === 'command' && message.message === 'exit') {
       process.exit(0);
     }
