@@ -35,11 +35,8 @@ interface CustomUserAgentProps {
 }
 
 const CustomUserAgent = ({ classes, code, onUpdateForm, onSave }: CustomUserAgentProps) => (
-  // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
   <div className={classes.root}>
-    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
     <div className={classes.flexGrow}>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <TextField
         autoFocus
         id="outlined-full-width"
@@ -57,13 +54,10 @@ const CustomUserAgent = ({ classes, code, onUpdateForm, onSave }: CustomUserAgen
         onChange={(e) => onUpdateForm({ code: e.target.value })}
       />
     </div>
-    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
     <div>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
         Save
       </Button>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button variant="contained" disableElevation className={classes.button} onClick={() => window.remote.closeCurrentWindow()}>
         Cancel
       </Button>

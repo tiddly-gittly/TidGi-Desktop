@@ -7,25 +7,16 @@ import Paper from '@material-ui/core/Paper';
 
 import { GITHUB_GRAPHQL_API } from '../../constants/auth';
 
-// @ts-expect-error ts-migrate(6142) FIXME: Module './description-and-mode-switch' was resolve... Remove this comment to see the full error message
 import Description from './description-and-mode-switch';
-// @ts-expect-error ts-migrate(6142) FIXME: Module './search-repo' was resolved to '/Users/lin... Remove this comment to see the full error message
 import SearchRepo from './search-repo';
-// @ts-expect-error ts-migrate(6142) FIXME: Module './new-wiki-done-button' was resolved to '/... Remove this comment to see the full error message
 import NewWikiDoneButton from './new-wiki-done-button';
-// @ts-expect-error ts-migrate(6142) FIXME: Module './new-wiki-path-form' was resolved to '/Us... Remove this comment to see the full error message
 import NewWikiPathForm from './new-wiki-path-form';
-// @ts-expect-error ts-migrate(6142) FIXME: Module './existed-wiki-path-form' was resolved to ... Remove this comment to see the full error message
 import ExistedWikiPathForm from './existed-wiki-path-form';
-// @ts-expect-error ts-migrate(6142) FIXME: Module './existed-wiki-done-button' was resolved t... Remove this comment to see the full error message
 import ExistedWikiDoneButton from './existed-wiki-done-button';
-// @ts-expect-error ts-migrate(6142) FIXME: Module './clone-wiki-done-button' was resolved to ... Remove this comment to see the full error message
 import CloneWikiDoneButton from './clone-wiki-done-button';
 import { getGithubUserInfo, setGithubUserInfo } from '../../helpers/user-info';
 import type { IUserInfo } from '../../helpers/user-info';
-// @ts-expect-error ts-migrate(6142) FIXME: Module './tab-bar' was resolved to '/Users/linonet... Remove this comment to see the full error message
 import TabBar from './tab-bar';
-// @ts-expect-error ts-migrate(6142) FIXME: Module '../shared/git-token-form' was resolved to ... Remove this comment to see the full error message
 import GitTokenForm, { getGithubToken, setGithubToken } from '../shared/git-token-form';
 
 import { requestOpen, getDesktopPath, countWorkspace, getWorkspaceRemote, getSubWikiPluginContent } from '../../senders';
@@ -103,27 +94,24 @@ export default function AddWorkspace() {
   const [wikiFolderName, wikiFolderNameSetter] = useState('tiddlywiki');
 
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <ClientContext.Provider value={graphqlClient}>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <TabBar currentTab={currentTab} currentTabSetter={currentTabSetter} />
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Description isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <SyncContainer elevation={2} square>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+        {/* @ts-expect-error ts-migrate(2322) FIXME: Type 'string | void' is not assignable to type 'st... Remove this comment to see the full error message */}
         <GitTokenForm accessTokenSetter={accessTokenSetter} userInfoSetter={userInfoSetter} accessToken={accessToken}>
           {githubWikiUrl && (
-            // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+            // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
             <GithubRepoLink onClick={() => requestOpen(githubWikiUrl)} variant="subtitle2" align="center">
               ({githubWikiUrl})
             </GithubRepoLink>
           )}
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <SearchRepo
             githubWikiUrl={githubWikiUrl}
+            // @ts-expect-error ts-migrate(2322) FIXME: Type 'string | void' is not assignable to type 'st... Remove this comment to see the full error message
             accessToken={accessToken}
             githubWikiUrlSetter={githubWikiUrlSetter}
+            // @ts-expect-error ts-migrate(2322) FIXME: Type 'void | IUserInfo' is not assignable to type ... Remove this comment to see the full error message
             userInfo={userInfo}
             currentTab={currentTab}
             wikiFolderNameSetter={wikiFolderNameSetter}
@@ -133,9 +121,7 @@ export default function AddWorkspace() {
       </SyncContainer>
 
       {currentTab === 'CreateNewWiki' && (
-        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <Container>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <NewWikiPathForm
             parentFolderLocation={parentFolderLocation}
             parentFolderLocationSetter={parentFolderLocationSetter}
@@ -151,7 +137,6 @@ export default function AddWorkspace() {
             isCreateMainWorkspace={isCreateMainWorkspace}
           />
 
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <NewWikiDoneButton
             isCreateMainWorkspace={isCreateMainWorkspace}
             wikiPort={wikiPort}
@@ -165,9 +150,7 @@ export default function AddWorkspace() {
         </Container>
       )}
       {currentTab === 'OpenLocalWiki' && (
-        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <Container>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <ExistedWikiPathForm
             existedFolderLocationSetter={existedFolderLocationSetter}
             existedFolderLocation={existedFolderLocation}
@@ -183,7 +166,6 @@ export default function AddWorkspace() {
             isCreateMainWorkspace={isCreateMainWorkspace}
           />
 
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <ExistedWikiDoneButton
             isCreateMainWorkspace={isCreateMainWorkspace}
             wikiPort={wikiPort}
@@ -196,9 +178,7 @@ export default function AddWorkspace() {
         </Container>
       )}
       {currentTab === 'CloneOnlineWiki' && (
-        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <Container>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <NewWikiPathForm
             parentFolderLocation={parentFolderLocation}
             parentFolderLocationSetter={parentFolderLocationSetter}
@@ -213,7 +193,6 @@ export default function AddWorkspace() {
             fileSystemPaths={fileSystemPaths}
             isCreateMainWorkspace={isCreateMainWorkspace}
           />
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <CloneWikiDoneButton
             isCreateMainWorkspace={isCreateMainWorkspace}
             wikiPort={wikiPort}

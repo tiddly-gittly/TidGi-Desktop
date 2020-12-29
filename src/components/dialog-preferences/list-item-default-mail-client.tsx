@@ -51,9 +51,7 @@ const ListItemDefaultMailClient = () => {
 
   if (isDefault) {
     return (
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <ListItem>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ListItemText secondary="TiddlyGit is your default email client." />
       </ListItem>
     );
@@ -64,22 +62,17 @@ const ListItemDefaultMailClient = () => {
   if (isWindows10) {
     return (
       // https://docs.microsoft.com/en-us/windows/uwp/launch-resume/launch-settings-app
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
       <ListItem button onClick={() => requestOpen('ms-settings:defaultapps')}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ListItemText primary="Default email client" secondary="Make TiddlyGit the default email client." />
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ChevronRightIcon color="action" />
       </ListItem>
     );
   }
 
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <ListItem>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <ListItemText primary="Default email client" secondary="Make TiddlyGit the default email client." />
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button
         variant="outlined"
         size="small"

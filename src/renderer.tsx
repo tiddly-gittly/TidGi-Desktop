@@ -98,6 +98,7 @@ const runApp = (): void => {
         const editWorkspaceId = window.remote.getGlobal('editWorkspaceId');
         const workspace = workspaces[editWorkspaceId];
         workspaceList.some((item, index) => {
+          // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
           if (item.id === editWorkspaceId) {
             workspace.order = index;
             return true;

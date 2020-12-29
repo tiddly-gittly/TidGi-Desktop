@@ -108,34 +108,22 @@ const NavigationBar = ({
 }: NavigationBarProps) => {
   const [addressInputClicked, setAddressInputClicked] = useState(false);
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className={classNames(classes.root, hasTrafficLights && classes.rootWithTrafficLights)}>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className={classes.left}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <IconButton aria-label="Go back" className={classes.iconButton} disabled={!hasWorkspaces || !canGoBack} onClick={requestGoBack}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <ArrowBackIcon className={classes.icon} />
         </IconButton>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <IconButton aria-label="Go forward" className={classes.iconButton} disabled={!hasWorkspaces || !canGoForward} onClick={requestGoForward}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <ArrowForwardIcon className={classes.icon} />
         </IconButton>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <IconButton aria-label="Reload" className={classes.iconButton} onClick={requestReload} disabled={!hasWorkspaces}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <RefreshIcon className={classes.icon} />
         </IconButton>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <IconButton aria-label="Go home" className={classes.iconButton} onClick={requestGoHome} disabled={!hasWorkspaces}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <HomeIcon className={classes.icon} />
         </IconButton>
       </div>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className={classes.center}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <InputBase
           classes={{ root: classes.addressBarRoot, input: classes.addressBarInput }}
           placeholder="Search Google or type a URL"
@@ -146,7 +134,6 @@ const NavigationBar = ({
             addressEdited &&
             address &&
             hasWorkspaces && (
-              // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <IconButton
                 aria-label="Go"
                 className={classes.goButton}
@@ -156,7 +143,6 @@ const NavigationBar = ({
                   // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
                   requestLoadUrl(processedUrl);
                 }}>
-                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <ArrowForwardIcon fontSize="small" />
               </IconButton>
             )
@@ -185,16 +171,12 @@ const NavigationBar = ({
           }}
         />
       </div>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <IconButton aria-label="Notifications" onClick={requestShowNotificationsWindow} className={classes.iconButton}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           {shouldPauseNotifications ? <NotificationsPausedIcon className={classes.icon} /> : <NotificationsIcon className={classes.icon} />}
         </IconButton>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+        {/* @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0. */}
         <IconButton aria-label="Preferences" className={classes.iconButton} onClick={() => requestShowPreferencesWindow()}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <SettingsIcon className={classes.icon} />
         </IconButton>
       </div>

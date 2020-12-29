@@ -115,7 +115,6 @@ function WorkspaceSelector({
   const { t } = useTranslation();
   const shortWorkspaceName = workspaceName ? getBaseName(workspaceName) : t('WorkspaceSelector.BadWorkspacePath');
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div
       role="button"
       className={classNames((classes as any).root, hibernated && (classes as any).rootHibernate, active && (classes as any).rootActive)}
@@ -127,9 +126,7 @@ function WorkspaceSelector({
       onContextMenu={onContextMenu}
       // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'number | ... Remove this comment to see the full error message
       tabIndex="0">
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Badge color="secondary" badgeContent={badgeCount} max={99} classes={{ badge: (classes as any).badge }}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div
           className={classNames(
             (classes as any).avatar,
@@ -138,7 +135,6 @@ function WorkspaceSelector({
             id === 'add' && (classes as any).addAvatar,
           )}>
           {id !== 'add' ? (
-            // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <img
               alt="Icon"
               className={classNames((classes as any).avatarPicture, !sidebarShortcutHints && (classes as any).avatarPictureLarge)}
@@ -151,7 +147,6 @@ function WorkspaceSelector({
         </div>
       </Badge>
       {sidebarShortcutHints && (id === 'add' || order < 9) && (
-        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <p className={(classes as any).shortcutText}>{id === 'add' ? t('WorkspaceSelector.Add') : shortWorkspaceName}</p>
       )}
     </div>

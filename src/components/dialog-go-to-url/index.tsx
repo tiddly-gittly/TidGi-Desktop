@@ -31,11 +31,8 @@ interface OwnGoToUrlProps {
 type GoToUrlProps = OwnGoToUrlProps & typeof GoToUrl.defaultProps;
 // @ts-expect-error ts-migrate(7022) FIXME: 'GoToUrl' implicitly has type 'any' because it doe... Remove this comment to see the full error message
 const GoToUrl = ({ classes, url, urlError, onUpdateForm, onGo }: GoToUrlProps) => (
-  // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
   <div className={classes.root}>
-    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
     <div className={classes.flexGrow}>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <TextField
         autoFocus
         id="outlined-full-width"
@@ -60,13 +57,10 @@ const GoToUrl = ({ classes, url, urlError, onUpdateForm, onGo }: GoToUrlProps) =
         }}
       />
     </div>
-    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
     <div>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onGo}>
         Go
       </Button>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button variant="contained" disableElevation className={classes.button} onClick={() => window.remote.closeCurrentWindow()}>
         Cancel
       </Button>

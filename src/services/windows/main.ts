@@ -7,7 +7,6 @@ import { REACT_PATH, isDev as isDevelopment } from '../constants/paths';
 import { getPreference } from '../libs/preferences';
 import formatBytes from '../libs/format-bytes';
 
-
 let win: BrowserWindow | undefined;
 let menuBar: Menubar;
 let attachToMenubar = false;
@@ -166,6 +165,7 @@ export const createAsync = async (): Promise<void> =>
         enableRemoteModule: true,
         webSecurity: !isDevelopment,
         contextIsolation: true,
+        // @ts-expect-error ts-migrate(2304) FIXME: Cannot find name 'MAIN_WINDOW_PRELOAD_WEBPACK_ENTR... Remove this comment to see the full error message
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       },
     });
@@ -247,6 +247,7 @@ export const createAsync = async (): Promise<void> =>
       resolve();
     });
 
+    // @ts-expect-error ts-migrate(2304) FIXME: Cannot find name 'MAIN_WINDOW_WEBPACK_ENTRY'.
     void win.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
   });
 

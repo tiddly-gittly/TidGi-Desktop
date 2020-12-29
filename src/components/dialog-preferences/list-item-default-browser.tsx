@@ -51,15 +51,12 @@ const ListItemDefaultBrowser = () => {
 
   if (isDefault) {
     return (
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <ListItem>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ListItemText secondary="TiddlyGit is your default browser." />
       </ListItem>
     );
   }
 
-  // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
   const sharedListItemText = <ListItemText primary="Default browser" secondary="Make TiddlyGit the default browser." />;
 
   // open ms-settings on Windows 10
@@ -67,20 +64,17 @@ const ListItemDefaultBrowser = () => {
   if (isWindows10) {
     return (
       // https://docs.microsoft.com/en-us/windows/uwp/launch-resume/launch-settings-app
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
       <ListItem button onClick={() => requestOpen('ms-settings:defaultapps')}>
         {sharedListItemText}
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ChevronRightIcon color="action" />
       </ListItem>
     );
   }
 
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <ListItem>
       {sharedListItemText}
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button
         variant="outlined"
         size="small"

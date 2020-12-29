@@ -3,7 +3,6 @@
  * This file should be required by BrowserView's preload script to work
  */
 import { ipcRenderer, webFrame } from 'electron';
-// @ts-expect-error ts-migrate(2529) FIXME: Duplicate identifier 'Promise'. Compiler reserves ... Remove this comment to see the full error message
 import Promise from 'bluebird';
 // add tiddler
 ipcRenderer.on('wiki-add-tiddler', async (event, title, text, meta) => {

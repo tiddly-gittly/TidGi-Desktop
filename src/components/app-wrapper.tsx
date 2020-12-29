@@ -46,9 +46,7 @@ const AppWrapper = ({ children, shouldUseDarkColors }: AppWrapperProps) => {
   // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ typography: { fontSize: number... Remove this comment to see the full error message
   const theme = createMuiTheme(themeObject);
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <MuiThemeProvider theme={theme}>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <LocalizationProvider dateAdapter={DateFnsUtils}>{children}</LocalizationProvider>
     </MuiThemeProvider>
   );

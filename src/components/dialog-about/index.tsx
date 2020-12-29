@@ -51,48 +51,35 @@ const About = (props: AboutProps) => {
     { name: 'Chromium Version', version: window.remote.getEnvironmentVersions().chrome },
   ];
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <DialogContent className={classes.dialogContent}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <img src={`file:///${(window.meta as any).iconPath}`} alt="TiddlyGit" className={classes.icon} />
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Typography variant="h6" className={classes.title}>
           TiddlyGit
         </Typography>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Typography variant="body2" className={classes.version}>
           {`Version v${window.remote.getAppVersion()}.`}
         </Typography>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className={classes.versionSmallContainer}>
           {versions.map(({ name, version }) => (
-            // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <Typography key={name} variant="body2" className={classes.versionSmall}>
               {name}: {version}
             </Typography>
           ))}
         </div>
 
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+        {/* @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1. */}
         <Button onClick={() => requestOpen('https://github.com/tiddly-gittly/TiddlyGit-Desktop')}>Website</Button>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <br />
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+        {/* @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1. */}
         <Button onClick={() => requestOpen('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose')}>Support</Button>
 
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Typography variant="body2" className={classes.madeBy}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <span>Made with </span>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <span role="img" aria-label="love">
             ❤
           </span>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <span> by </span>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <span
             // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
             onClick={() => requestOpen('https://onetwo.ren/wiki/')}
@@ -109,9 +96,7 @@ const About = (props: AboutProps) => {
             className={classes.link}>
             Lin Onetwo
           </span>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <span> and </span>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <span
             // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
             onClick={() => requestOpen('https://webcatalog.app/?utm_source=tiddlygit_app')}

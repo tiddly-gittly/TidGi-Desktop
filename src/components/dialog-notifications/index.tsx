@@ -19,7 +19,6 @@ import connectComponent from '../../helpers/connect-component';
 
 import { requestSetPreference, requestShowPreferencesWindow, requestShowNotification } from '../../senders';
 
-// @ts-expect-error ts-migrate(6142) FIXME: Module '../shared/stated-menu' was resolved to '/U... Remove this comment to see the full error message
 import StatedMenu from '../shared/stated-menu';
 
 import { updateShowDateTimePicker } from '../../state/notifications/actions';
@@ -146,19 +145,14 @@ const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
   const renderList = () => {
     if (shouldPauseNotifications) {
       return (
-        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <List dense disablePadding className={classes.list}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <ListItem classes={{ root: classes.pausingHeader }}>
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <ListItemText
               primary={`Notifications paused until ${formatDate(new Date(pauseNotificationsInfo.tilDate))}.`}
               classes={{ primary: classes.pausingHeaderText }}
             />
           </ListItem>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <ListItem button>
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <ListItemText
               primary="Resume notifications"
               onClick={() => {
@@ -178,40 +172,29 @@ const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
             />
           </ListItem>
           {pauseNotificationsInfo.reason !== 'scheduled' && (
-            // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <>
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <Divider />
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <StatedMenu
                 id="adjustTime"
                 buttonElement={
-                  // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                   <ListItem button>
-                    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <ListItemText primary="Adjust time" />
-                    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <ChevronRightIcon color="action" />
                   </ListItem>
                 }>
                 {quickShortcuts.map((shortcut) => (
-                  // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                   <MenuItem dense key={shortcut.name} onClick={() => pauseNotif(shortcut.calcDate())}>
                     {shortcut.name}
                   </MenuItem>
                 ))}
-                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <MenuItem dense onClick={() => onUpdateShowDateTimePicker(true)}>
                   Custom...
                 </MenuItem>
               </StatedMenu>
             </>
           )}
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Divider />
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <ListItem button>
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <ListItemText
               primary={pauseNotificationsInfo.reason === 'scheduled' ? 'Adjust schedule...' : 'Pause notifications by schedule...'}
               onClick={() => {
@@ -225,25 +208,17 @@ const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
     }
 
     return (
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <List dense className={classes.list} disablePadding subheader={<ListSubheader component="div">Pause notifications</ListSubheader>}>
         {quickShortcuts.map((shortcut) => (
-          // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <ListItem button key={shortcut.name} onClick={() => pauseNotif(shortcut.calcDate())}>
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <ListItemText primary={shortcut.name} />
           </ListItem>
         ))}
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ListItem button onClick={() => onUpdateShowDateTimePicker(true)}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <ListItemText primary="Custom..." />
         </ListItem>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Divider />
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ListItem button>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <ListItemText
             primary="Pause notifications by schedule..."
             onClick={() => {
@@ -257,13 +232,10 @@ const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
   };
 
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <Container className={classes.root}>
       {renderList()}
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <DateTimePicker
         value={new Date()}
-        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         renderInput={(dateTimeProps) => <TextField className={classes.hidden} {...dateTimeProps} />}
         onChange={pauseNotif}
         label="Custom"

@@ -54,25 +54,16 @@ const FindInPage = (props: FindInPageProps) => {
     return null;
   }
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className={classes.root}>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className={classes.infoContainer}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Typography variant="body2">
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <strong>{activeMatch}</strong>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <span> / </span>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <strong>{matches}</strong>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <span> matches</span>
         </Typography>
       </div>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <TextField
           autoFocus
           inputRef={inputReference}
@@ -115,7 +106,6 @@ const FindInPage = (props: FindInPageProps) => {
           }}
         />
       </div>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button
         size="small"
         disabled={text.length < 1 || matches < 1}
@@ -126,7 +116,6 @@ const FindInPage = (props: FindInPageProps) => {
         }}>
         Previous
       </Button>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button
         size="small"
         disabled={text.length < 1 || matches < 1}
@@ -137,7 +126,6 @@ const FindInPage = (props: FindInPageProps) => {
         }}>
         Next
       </Button>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button
         size="small"
         disabled={text.length < 1}
@@ -148,7 +136,6 @@ const FindInPage = (props: FindInPageProps) => {
         }}>
         Find
       </Button>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <Button
         size="small"
         onClick={() => {

@@ -56,39 +56,30 @@ class DisplayMedia extends React.Component<DisplayMediaProps, DisplayMediaState>
     windowSources.shift();
 
     return (
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <div className={classes.root}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Typography variant="body2" className={classes.text}>
           The app wants to use the contents of your screen. Choose what you’d like to share.
         </Typography>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <List>
           {screenSources.map((source: any) => (
-            // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <ListItem
               button
               onClick={() => {
                 const { ipcRenderer } = window.remote;
                 ipcRenderer.send('display-media-selected', source.id);
               }}>
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <ListItemText primary={source.name} />
             </ListItem>
           ))}
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Divider />
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <ListSubheader disableSticky>Windows</ListSubheader>
           {windowSources.map((source: any) => (
-            // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <ListItem
               button
               onClick={() => {
                 const { ipcRenderer } = window.remote;
                 ipcRenderer.send('display-media-selected', source.id);
               }}>
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <ListItemText primary={source.name} />
             </ListItem>
           ))}

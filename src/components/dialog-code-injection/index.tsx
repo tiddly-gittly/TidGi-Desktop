@@ -67,11 +67,8 @@ type CodeInjectionProps = OwnCodeInjectionProps & typeof CodeInjection.defaultPr
 const CodeInjection = ({ allowNodeInJsCodeInjection, classes, code, onSave, onUpdateForm, shouldUseDarkColors }: CodeInjectionProps) => {
   const codeInjectionType = window.remote.getGlobal('codeInjectionType');
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className={classes.root}>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className={classes.flexGrow}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <AceEditor
           mode={getMode(codeInjectionType)}
           theme={shouldUseDarkColors ? 'monokai' : 'github'}
@@ -82,28 +79,21 @@ const CodeInjection = ({ allowNodeInJsCodeInjection, classes, code, onSave, onUp
           onChange={(value) => onUpdateForm({ code: value })}
         />
       </div>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className={classes.actions}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className={classes.actionsLeft}>
           {codeInjectionType === 'js' && (
-            // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <FormControlLabel
               control={
-                // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                 <Switch checked={allowNodeInJsCodeInjection} onChange={(e) => onUpdateForm({ allowNodeInJsCodeInjection: e.target.checked })} color="primary" />
               }
               label="Allow access to Node.JS & Electron APIs"
             />
           )}
         </div>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <div className={classes.actionsRight}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
             Save
           </Button>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Button variant="contained" disableElevation className={classes.button} onClick={() => window.remote.closeCurrentWindow()}>
             Cancel
           </Button>

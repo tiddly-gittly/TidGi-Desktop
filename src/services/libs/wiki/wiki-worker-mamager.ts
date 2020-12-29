@@ -57,6 +57,7 @@ export async function startWiki(homePath: any, tiddlyWikiPort: any, userName: an
         delete wikiWorkers[homePath];
       }
       logger.warning(`NodeJSWiki ${homePath} Worker stopped with exit code ${code}.`, loggerMeta);
+      // @ts-expect-error ts-migrate(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
       resolve();
     });
     (worker as any).on('message', (message: any) => {
@@ -72,6 +73,7 @@ export async function startWiki(homePath: any, tiddlyWikiPort: any, userName: an
           if (get()) {
             get().close();
           }
+          // @ts-expect-error ts-migrate(2794) FIXME: Expected 1 arguments, but got 0. Did you forget to... Remove this comment to see the full error message
           resolve();
         }, 100);
       }

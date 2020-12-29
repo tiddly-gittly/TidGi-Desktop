@@ -14,7 +14,6 @@ import * as actions from '../../state/dialog-add-workspace/actions';
 
 import type { IUserInfo } from '../../helpers/user-info';
 import { requestCreateSubWiki, getIconPath, ensureWikiExist, getBaseName, getDirectoryName } from '../../senders';
-// @ts-expect-error ts-migrate(6142) FIXME: Module './use-wiki-creation-message' was resolved ... Remove this comment to see the full error message
 import useWikiCreationMessage from './use-wiki-creation-message';
 
 const CloseButton = styled(Button)`
@@ -73,21 +72,18 @@ function DoneButton({
   const [snackBarOpen, progressBarOpen, snackBarOpenSetter] = useWikiCreationMessage(wikiCreationMessage);
   const { t } = useTranslation();
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       {progressBarOpen && <LinearProgress color="secondary" />}
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+      {/* @ts-expect-error ts-migrate(2322) FIXME: Type 'boolean | Dispatch<SetStateAction<boolean>>'... Remove this comment to see the full error message */}
       <Snackbar open={snackBarOpen} autoHideDuration={5000} onClose={() => snackBarOpenSetter(false)}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Alert severity="info">{wikiCreationMessage}</Alert>
       </Snackbar>
 
       {isCreateMainWorkspace ? (
-        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <CloseButton
           variant="contained"
           color="secondary"
+          // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.
           disabled={!existedFolderLocation || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             updateForm(workspaceFormData);
@@ -98,32 +94,28 @@ function DoneButton({
               save();
             }
           }}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+          {/* @ts-expect-error ts-migrate(2322) FIXME: Type '{ children: ("" | Element)[]; t: TFunction<s... Remove this comment to see the full error message */}
           <Trans t={t} i18nKey="AddWorkspace.NewWikiDoneButton" wikiFolderLocation={existedFolderLocation}>
             {existedFolderLocation && (
-              // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <>
-                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <Typography variant="body1" display="inline">
                   Use
                 </Typography>
-                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
                   {{ wikiFolderLocation: existedFolderLocation }}
                 </Typography>
               </>
             )}
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Typography variant="body1" display="inline">
               as Wiki folder
             </Typography>
           </Trans>
         </CloseButton>
       ) : (
-        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <CloseButton
           variant="contained"
           color="secondary"
+          // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.
           disabled={!existedFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             if (!userInfo) return;
@@ -140,26 +132,21 @@ function DoneButton({
               save();
             }
           }}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+          {/* @ts-expect-error ts-migrate(2322) FIXME: Type '{ children: ("" | Element)[]; t: TFunction<s... Remove this comment to see the full error message */}
           <Trans t={t} i18nKey="AddWorkspace.NewSubWikiDoneButton" wikiFolderLocation={existedFolderLocation}>
             {existedFolderLocation && (
-              // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
               <>
-                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <Typography variant="body1" display="inline">
                   Use
                 </Typography>
-                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
                   {{ wikiFolderLocation: existedFolderLocation }}
                 </Typography>
               </>
             )}
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Typography variant="body1" display="inline">
               as Wiki folder
             </Typography>
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <Typography variant="body1" display="inline">
               and link to main Workspace
             </Typography>

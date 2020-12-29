@@ -76,7 +76,6 @@ class GitHubLogin extends Component<Props, State> {
     const { onRequest, onLogout, onFailure, t } = this.props;
     const { isLogin } = this.state;
     return isLogin ? (
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <SyncToGithubButton
         // @ts-expect-error ts-migrate(2322) FIXME: Type '{ children: string; onClick: () => Promise<v... Remove this comment to see the full error message
         onClick={async () => {
@@ -91,12 +90,10 @@ class GitHubLogin extends Component<Props, State> {
           }
         }}
         color="secondary"
-        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         endIcon={<GithubIcon />}>
         {t('AddWorkspace.LogoutGithubAccount')}
       </SyncToGithubButton>
     ) : (
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <SyncToGithubButton
         // @ts-expect-error ts-migrate(2322) FIXME: Type '{ children: string; onClick: () => void; col... Remove this comment to see the full error message
         onClick={() => {
@@ -111,7 +108,6 @@ class GitHubLogin extends Component<Props, State> {
           }
         }}
         color="secondary"
-        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         endIcon={<GithubIcon />}>
         {t('AddWorkspace.LoginGithubAccount')}
       </SyncToGithubButton>

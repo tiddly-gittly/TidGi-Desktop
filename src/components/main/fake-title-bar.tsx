@@ -45,7 +45,6 @@ const FakeTitleBar = (props: FakeTitleBarProps) => {
   if (window.remote.getPlatform() !== 'darwin') return null;
 
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div
       className={classnames(classes.root, window.meta.windowName === 'menubar' && classes.rootMenubar)}
       onDoubleClick={() => {

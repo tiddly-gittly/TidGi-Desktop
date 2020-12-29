@@ -46,8 +46,8 @@ const getPreviousWorkspace = (id: any) => {
   const workspaceLst = getWorkspacesAsList();
 
   let currentWorkspaceI = 0;
-  // @ts-expect-error ts-migrate(2569) FIXME: Type 'IterableIterator<[number, unknown]>' is not ... Remove this comment to see the full error message
   for (const [index, element] of workspaceLst.entries()) {
+    // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
     if (element.id === id) {
       currentWorkspaceI = index;
       break;
@@ -64,8 +64,8 @@ const getNextWorkspace = (id: any) => {
   const workspaceLst = getWorkspacesAsList();
 
   let currentWorkspaceI = 0;
-  // @ts-expect-error ts-migrate(2569) FIXME: Type 'IterableIterator<[number, unknown]>' is not ... Remove this comment to see the full error message
   for (const [index, element] of workspaceLst.entries()) {
+    // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
     if (element.id === id) {
       currentWorkspaceI = index;
       break;

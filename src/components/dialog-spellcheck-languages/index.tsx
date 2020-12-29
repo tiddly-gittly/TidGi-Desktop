@@ -55,12 +55,9 @@ const DialogSpellcheckLanguages = (props: DialogSpellcheckLanguagesProps) => {
   const { classes, spellcheckLanguages, onSave, onAddLanguage, onRemoveLanguage } = props;
 
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className={classes.root}>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <List disablePadding dense className={classes.top}>
         {Object.keys(hunspellLanguagesMap).map((code) => (
-          // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <ListItem
             dense
             key={code}
@@ -72,27 +69,22 @@ const DialogSpellcheckLanguages = (props: DialogSpellcheckLanguagesProps) => {
                 onAddLanguage(code);
               }
             }}>
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <ListItemIcon>
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <Checkbox
                 edge="start"
                 checked={spellcheckLanguages.includes(code)}
                 disabled={spellcheckLanguages.length < 2 && spellcheckLanguages.includes(code)}
               />
             </ListItemIcon>
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
+            {/* @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message */}
             <ListItemText primary={hunspellLanguagesMap[code]} />
           </ListItem>
         ))}
       </List>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className={classes.bottom}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
           Save
         </Button>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Button variant="contained" disableElevation className={classes.button} onClick={() => window.remote.closeCurrentWindow()}>
           Cancel
         </Button>

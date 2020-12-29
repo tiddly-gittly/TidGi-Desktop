@@ -38,7 +38,6 @@ const DraggableRegion = ({ classes, navigationBar, sidebar, titleBar }: Draggabl
   // on macOS or menubar mode, if all bars are hidden
   // the top 22px part of BrowserView should be draggable
   if ((window.remote.getPlatform() === 'darwin' || window.meta.windowName === 'menubar') && !navigationBar && !titleBar) {
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     return <div className={classNames(classes.root, sidebar && classes.rootWithSidebar)} />;
   }
 

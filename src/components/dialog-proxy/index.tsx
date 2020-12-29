@@ -56,22 +56,14 @@ type DialogProxyProps = OwnDialogProxyProps & typeof DialogProxy.defaultProps;
 const DialogProxy = (props: DialogProxyProps) => {
   const { classes, onUpdateForm, onSave, proxyBypassRules, proxyPacScript, proxyPacScriptError, proxyRules, proxyRulesError, proxyType } = props;
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <div className={classes.root}>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className={classes.flexGrow}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <List disablePadding dense>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <ListItem>
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <div style={{ width: '100%' }}>
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <ListItemText primary="" />
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <FormControlLabel
                 classes={{ label: classes.radioLabel }}
-                // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                 control={<Radio color="primary" size="small" />}
                 label="Use proxy server"
                 labelPlacement="end"
@@ -79,7 +71,6 @@ const DialogProxy = (props: DialogProxyProps) => {
                 value="rules"
                 onChange={(e) => onUpdateForm({ proxyType: (e.target as any).value })}
               />
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <TextField
                 margin="dense"
                 fullWidth
@@ -91,11 +82,8 @@ const DialogProxy = (props: DialogProxyProps) => {
                 error={Boolean(proxyRulesError)}
                 helperText={
                   proxyRulesError || (
-                    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                     <>
-                      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                       <span>Example: socks5://bar.com. </span>
-                      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                       <span
                         role="link"
                         tabIndex={0}
@@ -116,7 +104,6 @@ const DialogProxy = (props: DialogProxyProps) => {
                   )
                 }
               />
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <TextField
                 margin="dense"
                 fullWidth
@@ -126,17 +113,11 @@ const DialogProxy = (props: DialogProxyProps) => {
                 value={proxyBypassRules}
                 onChange={(e) => onUpdateForm({ proxyBypassRules: e.target.value })}
                 helperText={
-                  // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                   <>
-                    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <span>Rules indicating which URLs should bypass the proxy settings. </span>
-                    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <span>Set to </span>
-                    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <strong>&lt;local&gt;</strong>
-                    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <span> to bypass proxy server for local addresses. </span>
-                    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <span
                       role="link"
                       tabIndex={0}
@@ -158,18 +139,12 @@ const DialogProxy = (props: DialogProxyProps) => {
               />
             </div>
           </ListItem>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Divider />
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <ListItem>
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <div style={{ width: '100%' }}>
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <ListItemText primary="" />
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <FormControlLabel
                 classes={{ label: classes.radioLabel }}
-                // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                 control={<Radio color="primary" size="small" />}
                 label="Use automatic proxy configuration script (PAC)"
                 labelPlacement="end"
@@ -177,7 +152,6 @@ const DialogProxy = (props: DialogProxyProps) => {
                 value="pacScript"
                 onChange={(e) => onUpdateForm({ proxyType: (e.target as any).value })}
               />
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <TextField
                 margin="dense"
                 fullWidth
@@ -189,11 +163,8 @@ const DialogProxy = (props: DialogProxyProps) => {
                 error={Boolean(proxyPacScriptError)}
                 helperText={
                   proxyPacScriptError || (
-                    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                     <>
-                      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                       <span>Example: http://example.com/proxy.pac. </span>
-                      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                       <span
                         role="link"
                         tabIndex={0}
@@ -214,7 +185,6 @@ const DialogProxy = (props: DialogProxyProps) => {
                   )
                 }
               />
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <TextField
                 margin="dense"
                 fullWidth
@@ -224,17 +194,11 @@ const DialogProxy = (props: DialogProxyProps) => {
                 onChange={(e) => onUpdateForm({ proxyBypassRules: e.target.value })}
                 value={proxyBypassRules}
                 helperText={
-                  // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                   <>
-                    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <span>Rules indicating which URLs should bypass the proxy settings. </span>
-                    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <span>Set to </span>
-                    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <strong>&lt;local&gt;</strong>
-                    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <span> to bypass proxy server for local addresses. </span>
-                    {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                     <span
                       role="link"
                       tabIndex={0}
@@ -256,18 +220,12 @@ const DialogProxy = (props: DialogProxyProps) => {
               />
             </div>
           </ListItem>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Divider />
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <ListItem>
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <div style={{ width: '100%' }}>
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <ListItemText primary="" />
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <FormControlLabel
                 classes={{ label: classes.radioLabel }}
-                // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
                 control={<Radio color="primary" size="small" />}
                 label="Do not use proxy (default)"
                 labelPlacement="end"
@@ -279,13 +237,10 @@ const DialogProxy = (props: DialogProxyProps) => {
           </ListItem>
         </List>
       </div>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <div className={classes.dialogActions}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Button color="primary" variant="contained" disableElevation className={classes.button} onClick={onSave}>
           Save
         </Button>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Button variant="contained" disableElevation className={classes.button} onClick={() => window.remote.closeCurrentWindow()}>
           Cancel
         </Button>

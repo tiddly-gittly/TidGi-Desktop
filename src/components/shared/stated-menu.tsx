@@ -28,14 +28,12 @@ class StatedMenu extends React.Component<Props, State> {
     const { buttonElement, children, id } = this.props;
     const { anchorEl, open } = this.state;
     return (
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <>
         {React.cloneElement(buttonElement, {
           'aria-owns': id,
           'aria-haspopup': true,
           onClick: this.handleClick,
         })}
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <Menu id={id} anchorEl={anchorEl} open={open} onClose={this.handleRequestClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
           {React.Children.map(
             children,

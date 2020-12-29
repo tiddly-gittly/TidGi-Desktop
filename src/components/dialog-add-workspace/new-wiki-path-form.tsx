@@ -87,11 +87,9 @@ function NewWikiPathForm({
   const hasError = wikiCreationMessage.startsWith('Error');
   const { t } = useTranslation();
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+    // @ts-expect-error ts-migrate(2322) FIXME: Type '{ children: (false | Element)[]; elevation: ... Remove this comment to see the full error message
     <CreateContainer elevation={2} square>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <LocationPickerContainer>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <LocationPickerInput
           error={hasError}
           helperText={hasError ? wikiCreationMessage : ''}
@@ -103,7 +101,6 @@ function NewWikiPathForm({
           label={t('AddWorkspace.WorkspaceFolder')}
           value={parentFolderLocation}
         />
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <LocationPickerButton
           onClick={() => {
             const { dialog } = window.remote;
@@ -122,15 +119,12 @@ function NewWikiPathForm({
           variant="outlined"
           color={parentFolderLocation ? 'default' : 'primary'}
           disableElevation
-          // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           endIcon={<FolderIcon />}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Typography variant="button" display="inline">
             {t('AddWorkspace.Choose')}
           </Typography>
         </LocationPickerButton>
       </LocationPickerContainer>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <LocationPickerInput
         error={hasError}
         fullWidth
@@ -142,7 +136,6 @@ function NewWikiPathForm({
         value={wikiFolderName}
       />
       {isCreateMainWorkspace && (
-        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <LocationPickerInput
           fullWidth
           onChange={(event) => {
@@ -153,18 +146,15 @@ function NewWikiPathForm({
         />
       )}
       {!isCreateMainWorkspace && (
-        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <SoftLinkToMainWikiSelectInputLabel id="main-wiki-select-label">{t('AddWorkspace.MainWorkspaceLocation')}</SoftLinkToMainWikiSelectInputLabel>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <SoftLinkToMainWikiSelect
             labelId="main-wiki-select-label"
             id="main-wiki-select"
             value={mainWikiToLink}
             onChange={(event) => mainWikiToLinkSetter(event.target.value)}>
             {Object.keys(workspaces).map((workspaceID) => (
-              // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
+              // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
               <MenuItem key={workspaceID} value={workspaces[workspaceID]}>
                 {/* @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message */}
                 {workspaces[workspaceID].name}
@@ -172,25 +162,20 @@ function NewWikiPathForm({
             ))}
           </SoftLinkToMainWikiSelect>
           {(mainWikiToLink as any).name && (
-            // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <FormHelperText>
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <Typography variant="body1" display="inline" component="span">
                 {t('AddWorkspace.SubWorkspaceWillLinkTo')}
               </Typography>
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <Typography variant="body2" component="span" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
                 {(mainWikiToLink as any).name}/tiddlers/{wikiFolderName}
               </Typography>
             </FormHelperText>
           )}
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <Autocomplete
             freeSolo
             options={fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
             value={tagName}
             onInputChange={(_, value) => tagNameSetter(value)}
-            // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             renderInput={(parameters) => <TextField {...parameters} fullWidth label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
           />
         </>

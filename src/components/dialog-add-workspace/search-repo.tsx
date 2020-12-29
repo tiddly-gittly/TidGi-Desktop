@@ -1,4 +1,3 @@
-// @ts-expect-error ts-migrate(2529) FIXME: Duplicate identifier 'Promise'. Compiler reserves ... Remove this comment to see the full error message
 import Promise from 'bluebird';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
@@ -139,9 +138,7 @@ export default function SearchRepo({
   const githubPagesUrl = `https://${userInfo?.login || '???'}.github.io/${githubRepoSearchString}`;
 
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <RepoSearchInput
         fullWidth
         onChange={(event) => {
@@ -151,12 +148,9 @@ export default function SearchRepo({
         value={githubRepoSearchString}
         helperText={helperText}
       />
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       {(loading || isCreatingRepo) && <LinearProgress variant="query" />}
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <List component="nav" aria-label="main mailbox folders">
         {repoList.map(({ name, url }: any) => (
-          // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
           <ListItem
             button
             key={url}
@@ -165,12 +159,9 @@ export default function SearchRepo({
               wikiFolderNameSetter(name);
             }}
             selected={trim(githubWikiUrl) === trim(url)}>
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <ListItemIcon>
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <FolderIcon />
             </ListItemIcon>
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <ListItemText primary={name} />
           </ListItem>
         ))}
@@ -182,7 +173,6 @@ export default function SearchRepo({
           !isCreatingRepo &&
           !repoList.some(({ url }: any) => trim(url) === wikiUrlToCreate) &&
           githubRepoSearchString && (
-            // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
             <ListItem
               button
               key={wikiUrlToCreate}
@@ -203,12 +193,9 @@ export default function SearchRepo({
                 githubWikiUrlSetter(wikiUrlToCreate);
               }}
               selected={isCreateNewRepo}>
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <ListItemIcon>
-                {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
                 <CreateNewFolderIcon />
               </ListItemIcon>
-              {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
               <ListItemText
                 primary={`${
                   isCreateMainWorkspace ? t('AddWorkspace.CreatePublicRepository') : t('AddWorkspace.CreatePrivateRepository')
@@ -218,7 +205,6 @@ export default function SearchRepo({
           )}
       </List>
       {repoList.length === 0 && !notLogin && (
-        // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
         <ReloadButton color="secondary" endIcon={<CachedIcon />} onClick={() => refetch()}>
           {t('AddWorkspace.Reload')}
         </ReloadButton>

@@ -23,7 +23,6 @@ const OpenUrlWith = ({ workspaces }: OpenUrlWithProps) => {
   const renderWorkspace = (workspace: any, index: any) => {
     if (isMailtoUrl && !getMailtoUrl(workspace.homeUrl)) return null;
     return (
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       <ListItem
         button
         onClick={() => {
@@ -32,15 +31,12 @@ const OpenUrlWith = ({ workspaces }: OpenUrlWithProps) => {
           requestLoadUrl(u, workspace.id);
           window.remote.closeCurrentWindow();
         }}>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ListItemText primary={workspace.name || `Workspace ${index + 1}`} secondary={`#${index + 1}`} />
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <ChevronRightIcon color="action" />
       </ListItem>
     );
   };
 
-  // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
   return <List dense>{getWorkspacesAsList(workspaces).map(renderWorkspace)}</List>;
 };
 

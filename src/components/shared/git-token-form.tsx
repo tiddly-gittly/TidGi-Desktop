@@ -4,7 +4,6 @@ import { useTranslation } from 'react-i18next';
 
 import TextField from '@material-ui/core/TextField';
 
-// @ts-expect-error ts-migrate(6142) FIXME: Module './github-login' was resolved to '/Users/li... Remove this comment to see the full error message
 import GitHubLogin from './github-login';
 import { requestSetPreference, getPreference } from '../../senders';
 import type { IUserInfo } from '../../helpers/user-info';
@@ -23,10 +22,9 @@ export default function GitTokenForm(props: {
   const { accessToken, children } = props;
   const { t } = useTranslation();
   return (
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <GitHubLogin
+        // @ts-expect-error ts-migrate(2322) FIXME: Type '{ clientId: string; clientSecret: string; re... Remove this comment to see the full error message
         clientId="7b6e0fc33f4afd71a4bb"
         clientSecret="6015d1ca4ded86b4778ed39109193ff20c630bdd"
         redirectUri="http://localhost"
@@ -57,7 +55,6 @@ export default function GitTokenForm(props: {
           props.userInfoSetter();
         }}
       />
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <GitTokenInput
         helperText={t('AddWorkspace.GitTokenDescription')}
         fullWidth
