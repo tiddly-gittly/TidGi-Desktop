@@ -17,39 +17,24 @@ import { init as initDialogSpellcheckLanguages } from './state/dialog-spellcheck
 
 import index18n from './i18n';
 
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/app-wrapper' was resolved to ... Remove this comment to see the full error message
 import AppWrapper from './components/app-wrapper';
 
 import getWorkspacesAsList from './helpers/get-workspaces-as-list';
 
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/dialog-about' was resolved to... Remove this comment to see the full error message
-const DialogAbout = React.lazy(() => import('./components/dialog-about'));
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/dialog-add-workspace' was res... Remove this comment to see the full error message
-const DialogAddWorkspace = React.lazy(() => import('./components/dialog-add-workspace'));
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/dialog-auth' was resolved to ... Remove this comment to see the full error message
-const DialogAuth = React.lazy(() => import('./components/dialog-auth'));
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/dialog-code-injection' was re... Remove this comment to see the full error message
-const DialogCodeInjection = React.lazy(() => import('./components/dialog-code-injection'));
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/dialog-custom-user-agent' was... Remove this comment to see the full error message
-const DialogCustomUserAgent = React.lazy(() => import('./components/dialog-custom-user-agent'));
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/dialog-display-media' was res... Remove this comment to see the full error message
-const DialogDisplayMedia = React.lazy(() => import('./components/dialog-display-media'));
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/dialog-edit-workspace' was re... Remove this comment to see the full error message
-const DialogEditWorkspace = React.lazy(() => import('./components/dialog-edit-workspace'));
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/dialog-go-to-url' was resolve... Remove this comment to see the full error message
-const DialogGoToUrl = React.lazy(() => import('./components/dialog-go-to-url'));
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/dialog-notifications' was res... Remove this comment to see the full error message
-const DialogNotifications = React.lazy(() => import('./components/dialog-notifications'));
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/dialog-open-url-with' was res... Remove this comment to see the full error message
-const DialogOpenUrlWith = React.lazy(() => import('./components/dialog-open-url-with'));
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/dialog-preferences' was resol... Remove this comment to see the full error message
-const DialogPreferences = React.lazy(() => import('./components/dialog-preferences'));
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/dialog-proxy' was resolved to... Remove this comment to see the full error message
-const DialogProxy = React.lazy(() => import('./components/dialog-proxy'));
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/dialog-spellcheck-languages' ... Remove this comment to see the full error message
-const DialogSpellcheckLanguages = React.lazy(() => import('./components/dialog-spellcheck-languages'));
-// @ts-expect-error ts-migrate(6142) FIXME: Module './components/main' was resolved to '/Users... Remove this comment to see the full error message
-const Main = React.lazy(() => import('./components/main'));
+const DialogAbout = React.lazy(async () => await import('./components/dialog-about'));
+const DialogAddWorkspace = React.lazy(async () => await import('./components/dialog-add-workspace'));
+const DialogAuth = React.lazy(async () => await import('./components/dialog-auth'));
+const DialogCodeInjection = React.lazy(async () => await import('./components/dialog-code-injection'));
+const DialogCustomUserAgent = React.lazy(async () => await import('./components/dialog-custom-user-agent'));
+const DialogDisplayMedia = React.lazy(async () => await import('./components/dialog-display-media'));
+const DialogEditWorkspace = React.lazy(async () => await import('./components/dialog-edit-workspace'));
+const DialogGoToUrl = React.lazy(async () => await import('./components/dialog-go-to-url'));
+const DialogNotifications = React.lazy(async () => await import('./components/dialog-notifications'));
+const DialogOpenUrlWith = React.lazy(async () => await import('./components/dialog-open-url-with'));
+const DialogPreferences = React.lazy(async () => await import('./components/dialog-preferences'));
+const DialogProxy = React.lazy(async () => await import('./components/dialog-proxy'));
+const DialogSpellcheckLanguages = React.lazy(async () => await import('./components/dialog-spellcheck-languages'));
+const Main = React.lazy(async () => await import('./components/main'));
 
 declare global {
   interface Window {
@@ -61,54 +46,40 @@ declare global {
   }
 }
 
-const App = () => {
+const App = (): JSX.Element => {
   switch (window.meta.windowName) {
     case 'about':
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogAbout />;
     case 'add-workspace':
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogAddWorkspace />;
     case 'auth':
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogAuth />;
     case 'code-injection':
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogCodeInjection />;
     case 'custom-user-agent':
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogCustomUserAgent />;
     case 'display-media':
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogDisplayMedia />;
     case 'edit-workspace':
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogEditWorkspace />;
     case 'go-to-url':
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogGoToUrl />;
     case 'notifications':
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogNotifications />;
     case 'open-url-with':
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogOpenUrlWith />;
     case 'preferences':
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogPreferences />;
     case 'proxy':
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogProxy />;
     case 'spellcheck-languages':
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <DialogSpellcheckLanguages />;
     default:
-      // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
       return <Main />;
   }
 };
 
-const runApp = () => {
+const runApp = (): void => {
   Promise.resolve()
     .then(() => {
       window.remote.webFrame.setVisualZoomLevelLimits(1, 1);
@@ -127,7 +98,6 @@ const runApp = () => {
         const editWorkspaceId = window.remote.getGlobal('editWorkspaceId');
         const workspace = workspaces[editWorkspaceId];
         workspaceList.some((item, index) => {
-          // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
           if (item.id === editWorkspaceId) {
             workspace.order = index;
             return true;
@@ -174,17 +144,11 @@ const runApp = () => {
     .catch(console.error);
 
   ReactDOM.render(
-    // @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message
     <Provider store={store}>
-      {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
       <AppWrapper>
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <CssBaseline />
-        {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
         <React.Suspense fallback={<div />}>
-          {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
           <I18nextProvider i18n={index18n}>
-            {/* @ts-expect-error ts-migrate(17004) FIXME: Cannot use JSX unless the '--jsx' flag is provided... Remove this comment to see the full error message */}
             <App />
           </I18nextProvider>
         </React.Suspense>
