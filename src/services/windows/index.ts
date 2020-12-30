@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain, dialog, app, App, remote } from 'electron';
 import isDevelopment from 'electron-is-dev';
 import { injectable, inject } from 'inversify';
 
@@ -6,6 +6,8 @@ import serviceIdentifiers from '@services/serviceIdentifier';
 import { Preference } from '@services/preferences';
 import { Channels, WindowChannel } from '@/services/channels';
 import { WindowNames, windowDimension } from '@/services/windows/WindowProperties';
+import i18n from '@/services/libs/i18n';
+
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
@@ -19,6 +21,27 @@ export class Window {
   }
 
   init(): void {
+    ipcMain.on(WindowChannel.requestShowRequireRestartDialog, () => {
+      const availableWindowToShowDialog = this.get(WindowNames.preferences) ?? this.get(WindowNames.main);
+      if (availableWindowToShowDialog !== undefined) {
+        dialog
+          .showMessageBox(availableWindowToShowDialog, {
+            type: 'question',
+            buttons: [i18n.t('Dialog.RestartNow'), i18n.t('Dialog.Later')],
+            message: i18n.t('Dialog.RestartMessage'),
+            cancelId: 1,
+          })
+          .then(({ response }) => {
+            if (response === 0) {
+              const availableApp = (app as App | undefined) === undefined ? remote.app : app;
+              availableApp.relaunch();
+              availableApp.quit();
+            }
+          })
+          .catch(console.error);
+      }
+    });
+
     ipcMain.on(WindowChannel.requestShowCodeInjectionWindow, (_, codeInjectionType: string) => {
       // FIXME: make codeInjectionType enum, and find places use this codeInjectionType
       void this.open(WindowNames.codeInjection, { codeInjectionType });

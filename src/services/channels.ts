@@ -5,9 +5,11 @@ export enum PreferenceChannel {
   getPreference = 'get-preference',
   getPreferences = 'get-preferences',
   requestSetPreference = 'request-set-preference',
+  requestClearBrowsingData = 'request-clear-browsing-data',
 }
 
 export enum WindowChannel {
+  requestShowRequireRestartDialog = 'request-show-require-restart-dialog',
   requestShowPreferencesWindow = 'request-show-preferences-window',
   requestShowAboutWindow = 'request-show-about-window',
   requestShowCustomUserAgentWindow = 'request-show-custom-user-agent-window',

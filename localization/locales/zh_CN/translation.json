@@ -143,7 +143,10 @@
     "DoNotCare": "不管",
     "PathPassInCantUse": "传入的路径无法使用",
     "GithubUserInfoNoFound": "找不到 Github 用户信息",
-    "GithubUserInfoNoFoundDetail": "似乎你尚未登录 Github，因此此 Wiki 的同步暂时禁用，直到你登录以提供有可用于同步的登录信息。"
+    "GithubUserInfoNoFoundDetail": "似乎你尚未登录 Github，因此此 Wiki 的同步暂时禁用，直到你登录以提供有可用于同步的登录信息。",
+    "Later": "稍后",
+    "RestartMessage": "您需要重新启动本程序才能使此更改生效。",
+    "RestartNow": "现在重启"
   },
   "Cancel": "取消",
   "Preference": {
@@ -176,6 +179,7 @@
     "SystemDefalutTheme": "系统默认主题色",
     "Theme": "主题色",
     "Reset": "你确定吗？所有首选项都将恢复为其原始默认值。浏览数据不会受到影响。此操作无法撤消。",
-    "ResetNow": "立即重置"
+    "ResetNow": "立即重置",
+    "ClearBrowsingDataMessage": "你确定吗？所有浏览数据将被清除。此操作无法撤消。"
   }
 }

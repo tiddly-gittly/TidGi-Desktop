@@ -1,4 +1,3 @@
-/* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable no-param-reassign */
 import path from 'path';
 import { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } from 'electron';
@@ -23,7 +22,6 @@ import {
 } from '../libs/workspaces';
 import { getWorkspaceMeta, getWorkspaceMetas } from '../libs/workspace-metas';
 import {
-  clearBrowsingData,
   createWorkspaceView,
   hibernateWorkspaceView,
   loadURL,
@@ -39,27 +37,10 @@ import { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad, getActiveBr
 import { updatePauseNotificationsInfo, getPauseNotificationsInfo } from '../libs/notifications';
 import getViewBounds from '../libs/get-view-bounds';
 import createMenu from '../libs/create-menu';
-// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
-import aboutWindow from '../windows/about';
-// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
-import addWorkspaceWindow from '../windows/add-workspace';
-// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
-import codeInjectionWindow from '../windows/code-injection';
-// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
-import customUserAgentWindow from '../windows/custom-user-agent';
+
 // @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import displayMediaWindow from '../windows/display-media';
-// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
-import editWorkspaceWindow from '../windows/edit-workspace';
-import * as mainWindow from '../windows/main';
-// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
-import notificationsWindow from '../windows/notifications';
-// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
-import preferencesWindow from '../windows/preferences';
-// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
-import proxyWindow from '../windows/proxy';
-// @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
-import spellcheckLanguagesWindow from '../windows/spellcheck-languages';
+
 import bindI18nListener from './i18n';
 const loadListeners = () => {
   bindI18nListener();
@@ -190,23 +171,6 @@ const loadListeners = () => {
     setSystemPreference(name, value);
   });
 
-  ipcMain.on('request-show-require-restart-dialog', () => {
-    dialog
-      .showMessageBox(preferencesWindow.get() || mainWindow.get(), {
-        type: 'question',
-        buttons: ['Restart Now', 'Later'],
-        message: 'You need to restart the app for this change to take affect.',
-        cancelId: 1,
-      })
-      .then(({ response }) => {
-        // eslint-disable-next-line promise/always-return
-        if (response === 0) {
-          app.relaunch();
-          app.quit();
-        }
-      })
-      .catch(console.log);
-  });
   // Notifications
   ipcMain.on('request-show-notification', (_, options) => {
     if ((Notification as any).isSupported()) {
@@ -335,22 +299,7 @@ const loadListeners = () => {
   ipcMain.on('request-remove-workspace-picture', (_, id) => {
     removeWorkspacePicture(id);
   });
-  ipcMain.on('request-clear-browsing-data', () => {
-    dialog
-      .showMessageBox(preferencesWindow.get() || mainWindow.get(), {
-        type: 'question',
-        buttons: ['Clear Now', 'Cancel'],
-        message: 'Are you sure? All browsing data will be cleared. This action cannot be undone.',
-        cancelId: 1,
-      })
-      .then(({ response }) => {
-        // eslint-disable-next-line promise/always-return
-        if (response === 0) {
-          clearBrowsingData();
-        }
-      })
-      .catch(console.log);
-  });
+
   ipcMain.on('request-load-url', (_, url, id) => {
     loadURL(url, id);
   });

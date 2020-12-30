@@ -109,9 +109,28 @@ export class Preference {
               ipcMain.emit(PreferenceChannel.requestShowRequireRestartDialog);
             }
           })
-          .catch(console.log);
+          .catch(console.error);
       }
     });
+    ipcMain.on(PreferenceChannel.requestClearBrowsingData, () => {
+      const availableWindowToShowDialog = this.windowService.get(WindowNames.preferences) ?? this.windowService.get(WindowNames.main);
+      if (availableWindowToShowDialog !== undefined) {
+        dialog
+          .showMessageBox(availableWindowToShowDialog, {
+            type: 'question',
+            buttons: [i18n.t('Preference.ResetNow'), i18n.t('Cancel')],
+            message: i18n.t('Preference.ClearBrowsingDataMessage'),
+            cancelId: 1,
+          })
+          .then(({ response }) => {
+            if (response === 0) {
+              // TODO: call clearBrowsingData from workspace view service  clearBrowsingData();
+            }
+          })
+          .catch(console.error);
+      }
+    });
+
     ipcMain.on(PreferenceChannel.getPreference, (event, name: keyof IPreferences) => {
       event.returnValue = this.get(name);
     });

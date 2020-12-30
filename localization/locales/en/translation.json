@@ -111,7 +111,10 @@
     "RemoveWorkspace": "Remove workspace",
     "WorkspaceFolderRemoved": "Workspace folder is moved",
     "GithubUserInfoNoFound": "Github UserInfo No Found",
-    "GithubUserInfoNoFoundDetail": "Seems you haven't login to Github, so we disable syncing for this wiki."
+    "GithubUserInfoNoFoundDetail": "Seems you haven't login to Github, so we disable syncing for this wiki.",
+    "RestartMessage": "You need to restart the app for this change to take affect.",
+    "Later": "Later",
+    "RestartNow": "Restart Now"
   },
   "Log": {
     "CantSyncGitNotInitialized": "Unable to sync, this folder is not initialized as a Git repository",
@@ -176,6 +179,7 @@
     "Token": "Git credentials",
     "TokenDescription": "The credentials used to authenticate to the Git server so you can securely synchronize content. Can be obtained by logging in to Github, or manually obtained and filled in here.",
     "Reset": "Are you sure? All preferences will be restored to their original defaults. Browsing data won't be affected. This action cannot be undone.",
-    "ResetNow": "Reset Now"
+    "ResetNow": "Reset Now",
+    "ClearBrowsingDataMessage": "Are you sure? All browsing data will be cleared. This action cannot be undone."
   }
 }
