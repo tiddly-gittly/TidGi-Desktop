@@ -166,4 +166,6 @@ export class Preference {
       this.windowService.sendToAllWindows(PreferenceChannel.update, key, value);
     });
   }
+
+  // TODO: handle preferencesScrollTo
 }

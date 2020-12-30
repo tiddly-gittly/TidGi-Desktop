@@ -2,6 +2,7 @@ export enum WindowNames {
   main = 'main',
   view = 'view',
   addWorkspace = 'addWorkspace',
+  preferences = 'preferences',
 }
 
 /**
@@ -19,5 +20,9 @@ export const windowDimension: Record<WindowNames, { width?: number; height?: num
   [WindowNames.addWorkspace]: {
     width: 600,
     height: 800,
+  },
+  [WindowNames.preferences]: {
+    width: 820,
+    height: 640,
   },
 };

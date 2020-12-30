@@ -226,6 +226,7 @@ const loadListeners = () => {
     aboutWindow.show();
   });
   ipcMain.on('request-show-preferences-window', (_, scrollTo) => {
+    // FIXME: change to windowService.sentToWindow('preferences', { scrollTo })
     preferencesWindow.show(scrollTo);
   });
   ipcMain.on('request-show-edit-workspace-window', (_, id) => {

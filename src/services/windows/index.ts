@@ -38,7 +38,7 @@ export class Window {
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
         additionalArguments: [name],
       },
-      parent: attachToMenubar ? undefined : this.get(WindowNames.main),
+      parent: name === WindowNames.main || attachToMenubar ? undefined : this.get(WindowNames.main),
     });
     newWindow.setMenuBarVisibility(false);
 

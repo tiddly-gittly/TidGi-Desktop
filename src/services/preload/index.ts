@@ -6,10 +6,7 @@ import './common/simple-context-menu';
 import './common/authing-postmessage';
 import { WindowNames } from '@/services/windows/WindowProperties';
 
-const windowName = process.argv[0] as WindowNames;
-
-// DEBUG: console
-console.log(`windowName`, windowName);
+const windowName = process.argv.pop() as WindowNames;
 
 contextBridge.exposeInMainWorld('meta', { windowName });
 
