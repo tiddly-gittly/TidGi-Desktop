@@ -10,7 +10,7 @@ import { stopWiki, startWiki } from '../libs/wiki/wiki-worker-mamager';
 import { logger } from '../libs/log';
 import { createWiki, createSubWiki, removeWiki, ensureWikiExist, cloneWiki, cloneSubWiki } from '../libs/wiki/create-wiki';
 import { ICON_PATH, REACT_PATH, DESKTOP_PATH, LOG_FOLDER, isDev as isDevelopment } from '../constants/paths';
-import { getPreference, getPreferences, resetPreferences, setPreference } from '../libs/preferences';
+import { getPreference, getPreferences } from '../libs/preferences';
 import { getSystemPreference, getSystemPreferences, setSystemPreference } from '../libs/system-preferences';
 import {
   countWorkspaces,
@@ -189,61 +189,7 @@ const loadListeners = () => {
   ipcMain.on('request-set-system-preference', (_, name, value) => {
     setSystemPreference(name, value);
   });
-  // Preferences
-  ipcMain.on('get-preference', (event, name) => {
-    event.returnValue = getPreference(name);
-  });
-  ipcMain.on('get-preferences', (event) => {
-    event.returnValue = getPreferences();
-  });
-  ipcMain.on('request-set-preference', (_, name, value) => {
-    setPreference(name, value);
-  });
-  ipcMain.on('request-show-code-injection-window', (_, type) => {
-    codeInjectionWindow.show(type);
-  });
-  ipcMain.on('request-show-custom-user-agent-window', () => {
-    customUserAgentWindow.show();
-  });
-  ipcMain.on('request-reset-preferences', () => {
-    dialog
-      .showMessageBox(preferencesWindow.get(), {
-        type: 'question',
-        buttons: ['Reset Now', 'Cancel'],
-        message: "Are you sure? All preferences will be restored to their original defaults. Browsing data won't be affected. This action cannot be undone.",
-        cancelId: 1,
-      })
-      .then(({ response }) => {
-        // eslint-disable-next-line promise/always-return
-        if (response === 0) {
-          resetPreferences();
-          ipcMain.emit('request-show-require-restart-dialog');
-        }
-      })
-      .catch(console.log);
-  });
-  ipcMain.on('request-show-about-window', () => {
-    aboutWindow.show();
-  });
-  ipcMain.on('request-show-preferences-window', (_, scrollTo) => {
-    // FIXME: change to windowService.sentToWindow('preferences', { scrollTo })
-    preferencesWindow.show(scrollTo);
-  });
-  ipcMain.on('request-show-edit-workspace-window', (_, id) => {
-    editWorkspaceWindow.show(id);
-  });
-  ipcMain.on('request-show-add-workspace-window', () => {
-    addWorkspaceWindow.show();
-  });
-  ipcMain.on('request-show-notifications-window', () => {
-    notificationsWindow.show();
-  });
-  ipcMain.on('request-show-proxy-window', () => {
-    proxyWindow.show();
-  });
-  ipcMain.on('request-show-spellcheck-languages-window', () => {
-    spellcheckLanguagesWindow.show();
-  });
+
   ipcMain.on('request-show-require-restart-dialog', () => {
     dialog
       .showMessageBox(preferencesWindow.get() || mainWindow.get(), {

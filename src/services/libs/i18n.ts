@@ -4,7 +4,8 @@ import Backend from 'i18next-fs-backend';
 
 import { LOCALIZATION_FOLDER, isDev as isDevelopment } from '../constants/paths';
 
-i18next.use(Backend).init({
+// init i18n is async, but our usage is basically await the electron app to start, so this is basically ok
+void i18next.use(Backend).init({
   backend: {
     loadPath: path.join(LOCALIZATION_FOLDER, 'locales/{{lng}}/{{ns}}.json'),
     addPath: path.join(LOCALIZATION_FOLDER, 'locales/{{lng}}/{{ns}}.missing.json'),

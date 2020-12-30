@@ -1,14 +1,16 @@
-import { injectable, inject } from 'inversify';
+import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
-import { app, App, remote } from 'electron';
+import { app, App, remote, ipcMain, dialog } from 'electron';
 import path from 'path';
 import semver from 'semver';
 import settings from 'electron-settings';
 
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Window } from '@/services/windows';
+import { WindowNames } from '@/services/windows/WindowProperties';
 import { PreferenceChannel } from '@/services/channels';
 import { container } from '@/services/container';
+import i18n from '@/services/libs/i18n';
 
 const { lazyInject } = getDecorators(container);
 
@@ -87,6 +89,38 @@ export class Preference {
 
   constructor() {
     this.cachedPreferences = this.getInitPreferencesForCache();
+    this.init();
+  }
+
+  init(): void {
+    ipcMain.on(PreferenceChannel.requestResetPreferences, () => {
+      const preferenceWindow = this.windowService.get(WindowNames.preferences);
+      if (preferenceWindow !== undefined) {
+        dialog
+          .showMessageBox(preferenceWindow, {
+            type: 'question',
+            buttons: [i18n.t('Preference.ResetNow'), i18n.t('Cancel')],
+            message: i18n.t('Preference.Reset'),
+            cancelId: 1,
+          })
+          .then(async ({ response }) => {
+            if (response === 0) {
+              await this.reset();
+              ipcMain.emit(PreferenceChannel.requestShowRequireRestartDialog);
+            }
+          })
+          .catch(console.log);
+      }
+    });
+    ipcMain.on(PreferenceChannel.getPreference, (event, name: keyof IPreferences) => {
+      event.returnValue = this.get(name);
+    });
+    ipcMain.on(PreferenceChannel.getPreferences, (event) => {
+      event.returnValue = this.cachedPreferences;
+    });
+    ipcMain.on(PreferenceChannel.requestSetPreference, <K extends keyof IPreferences>(_: unknown, key: K, value: IPreferences[K]): void => {
+      void this.set(key, value);
+    });
   }
 
   /**

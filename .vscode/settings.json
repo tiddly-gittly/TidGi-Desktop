@@ -1,8 +1,11 @@
 {
   "cSpell.words": [
+    "fullscreenable",
+    "maximizable",
+    "minimizable",
     "subwiki"
   ],
-  "i18n-ally.sourceLanguage": "zh",
+  "i18n-ally.sourceLanguage": "en",
   "i18n-ally.localesPaths": "localization/locales",
   "i18n-ally.namespace": false,
   "i18n-ally.review.user.name": "{locale}/{namespaces}.json",

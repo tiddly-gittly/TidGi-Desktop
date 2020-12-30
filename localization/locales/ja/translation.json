@@ -4,5 +4,12 @@
     "Add": "追加",
     "EditWorkspace": "ワークスペースを編集",
     "RemoveWorkspace": "ワークスペースを削除"
+  },
+  "Preference": {
+    "Reset": "本気ですか？すべての設定が元のデフォルトに復元されます。閲覧データは影響を受けません。このアクションは元に戻せません。",
+    "ResetNow": "今すぐリセット"
+  },
+  "AddWorkspace": {
+    "AddFileSystemPath": "サブウィキのFileSystemPathsを追加する"
   }
 }

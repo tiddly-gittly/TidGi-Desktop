@@ -2,7 +2,19 @@ export enum WindowNames {
   main = 'main',
   view = 'view',
   addWorkspace = 'addWorkspace',
+  editWorkspace = 'editWorkspace',
   preferences = 'preferences',
+  about = 'about',
+  userAgent = 'userAgent',
+  codeInjection = 'codeInjection',
+  notification = 'notification',
+  proxy = 'proxy',
+  spellcheck = 'spellcheck',
+  auth = 'auth',
+  displayMedia = 'displayMedia',
+  goToUrl = 'goToUrl',
+  openUrlWith = 'openUrlWith',
+  notifications = 'notifications',
 }
 
 /**

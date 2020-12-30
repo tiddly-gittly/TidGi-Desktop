@@ -5,6 +5,7 @@ import { Provider } from 'react-redux';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
 import { I18nextProvider } from 'react-i18next';
+import { WindowNames } from '@/services/windows/WindowProperties';
 
 import 'typeface-roboto/index.css';
 
@@ -48,33 +49,43 @@ declare global {
 
 const App = (): JSX.Element => {
   switch (window.meta.windowName) {
-    case 'about':
+    case WindowNames.about:
+      document.title = 'About';
       return <DialogAbout />;
-    case 'add-workspace':
+      document.title = 'Add Workspace';
+    case WindowNames.addWorkspace:
+      document.title = 'Add Workspace';
       return <DialogAddWorkspace />;
-    case 'auth':
+    case WindowNames.auth:
+      document.title = 'Sign In';
       return <DialogAuth />;
-    case 'code-injection':
+    case WindowNames.codeInjection:
       return <DialogCodeInjection />;
-    case 'custom-user-agent':
+    case WindowNames.userAgent:
       return <DialogCustomUserAgent />;
-    case 'display-media':
+    case WindowNames.displayMedia:
+      document.title = 'Share your Screen';
       return <DialogDisplayMedia />;
-    case 'edit-workspace':
+    case WindowNames.editWorkspace:
       return <DialogEditWorkspace />;
-    case 'go-to-url':
+    case WindowNames.goToUrl:
+      document.title = 'Go to URL';
       return <DialogGoToUrl />;
-    case 'notifications':
+    case WindowNames.notifications:
+      document.title = 'Notifications';
       return <DialogNotifications />;
-    case 'open-url-with':
+    case WindowNames.openUrlWith:
+      document.title = 'Open Link With';
       return <DialogOpenUrlWith />;
-    case 'preferences':
+    case WindowNames.preferences:
+      document.title = 'Preferences';
       return <DialogPreferences />;
-    case 'proxy':
+    case WindowNames.proxy:
       return <DialogProxy />;
-    case 'spellcheck-languages':
+    case WindowNames.spellcheck:
       return <DialogSpellcheckLanguages />;
     default:
+      document.title = 'TiddlyGit';
       return <Main />;
   }
 };
@@ -83,15 +94,7 @@ const runApp = (): void => {
   Promise.resolve()
     .then(() => {
       window.remote.webFrame.setVisualZoomLevelLimits(1, 1);
-      if (window.meta.windowName === 'about') {
-        document.title = 'About';
-      } else if (window.meta.windowName === 'add-workspace') {
-        document.title = 'Add Workspace';
-      } else if (window.meta.windowName === 'auth') {
-        document.title = 'Sign In';
-      } else if (window.meta.windowName === 'preferences') {
-        document.title = 'Preferences';
-      } else if (window.meta.windowName === 'edit-workspace') {
+      if (window.meta.windowName === WindowNames.editWorkspace) {
         store.dispatch(initDialogEditWorkspace());
         const { workspaces } = store.getState();
         const workspaceList = getWorkspacesAsList(workspaces);
@@ -106,29 +109,19 @@ const runApp = (): void => {
           return false;
         });
         document.title = workspace.name ? `Edit Workspace ${workspace.order + 1} "${workspace.name}"` : `Edit Workspace ${workspace.order + 1}`;
-      } else if (window.meta.windowName === 'open-url-with') {
-        document.title = 'Open Link With';
       } else if (window.meta.windowName === 'code-injection') {
         store.dispatch(initDialogCodeInjection());
         const codeInjectionType = window.remote.getGlobal('codeInjectionType');
         document.title = `Edit ${codeInjectionType.toUpperCase()} Code Injection`;
-      } else if (window.meta.windowName === 'notifications') {
-        document.title = 'Notifications';
-      } else if (window.meta.windowName === 'display-media') {
-        document.title = 'Share your Screen';
       } else if (window.meta.windowName === 'custom-user-agent') {
         store.dispatch(initDialogCustomUserAgent());
         document.title = 'Edit Custom User Agent';
-      } else if (window.meta.windowName === 'go-to-url') {
-        document.title = 'Go to URL';
       } else if (window.meta.windowName === 'proxy') {
         store.dispatch(initDialogProxy());
         document.title = 'Proxy Settings';
       } else if (window.meta.windowName === 'spellcheck-languages') {
         store.dispatch(initDialogSpellcheckLanguages());
         document.title = 'Preferred Spell Checking Languages';
-      } else {
-        document.title = 'TiddlyGit';
       }
 
       if (window.meta.windowName !== 'main' && window.meta.windowName !== 'menubar') {
