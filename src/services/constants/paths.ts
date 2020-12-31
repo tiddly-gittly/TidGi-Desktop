@@ -5,13 +5,14 @@ import os from 'os';
 const isMac = process.platform === 'darwin';
 
 const sourcePath = path.resolve(__dirname, '..', '..');
+export const buildResourcePath = path.resolve(sourcePath, '..', 'build-resources');
 
 // FIXME: change to electron forge path
 const REACT_PATH = isDev ? 'http://localhost:3000' : `file://${path.resolve(__dirname, '..', '..', 'build', 'index.html')}`;
 // .app/Contents/Resources/wiki/
 const TIDDLYWIKI_TEMPLATE_FOLDER_PATH = isDev ? path.resolve(sourcePath, '..', 'template', 'wiki') : path.resolve(process.resourcesPath, '..', 'wiki');
 const TIDDLERS_PATH = 'tiddlers';
-const ICON_PATH = isDev ? path.resolve(sourcePath, 'icon.png') : `file://${path.resolve(__dirname, '..', 'icon.png')}`;
+const ICON_PATH = isDev ? path.resolve(buildResourcePath, 'icon.png') : `file://${path.resolve(__dirname, '..', 'icon.png')}`;
 const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';
 const DESKTOP_PATH = path.join(os.homedir(), 'Desktop');
 const LOG_FOLDER = isDev

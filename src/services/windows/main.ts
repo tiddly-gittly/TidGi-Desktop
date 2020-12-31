@@ -3,7 +3,7 @@ import windowStateKeeper from 'electron-window-state';
 import { menubar, Menubar } from 'menubar';
 import path from 'path';
 
-import { REACT_PATH, isDev as isDevelopment } from '../constants/paths';
+import { REACT_PATH, isDev as isDevelopment, buildResourcePath } from '@/services/constants/paths';
 import { getPreference } from '../libs/preferences';
 import formatBytes from '../libs/format-bytes';
 
@@ -32,7 +32,7 @@ export const createAsync = async (): Promise<void> =>
       // https://github.com/atomery/translatium/issues/164
       const tray = new Tray(nativeImage.createEmpty());
       // icon template is not supported on Windows & Linux
-      const iconPath = path.resolve(__dirname, '..', process.platform === 'darwin' ? 'menubarTemplate.png' : 'menubar.png');
+      const iconPath = path.resolve(buildResourcePath, process.platform === 'darwin' ? 'menubarTemplate.png' : 'menubar.png');
       tray.setImage(iconPath);
 
       menuBar = menubar({
@@ -159,7 +159,7 @@ export const createAsync = async (): Promise<void> =>
       show: false,
       // manually set dock icon for AppImage
       // Snap icon is set correct already so no need to intervene
-      icon: process.platform === 'linux' && process.env.SNAP == undefined ? path.resolve(__dirname, '..', 'icon.png') : undefined,
+      icon: process.platform === 'linux' && process.env.SNAP == undefined ? path.resolve(buildResourcePath, 'icon.png') : undefined,
       webPreferences: {
         nodeIntegration: false,
         enableRemoteModule: true,

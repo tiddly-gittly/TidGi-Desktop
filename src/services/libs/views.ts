@@ -2,6 +2,7 @@
 import { BrowserView, BrowserWindow, app, session, shell, dialog, ipcMain } from 'electron';
 import path from 'path';
 import fsExtra from 'fs-extra';
+import { buildResourcePath } from '@/services/constants/paths';
 import index18n from './i18n';
 import wikiStartup from './wiki/wiki-startup';
 import { getPreferences, getPreference } from './preferences';
@@ -517,7 +518,7 @@ export const addView = async (browserWindow: any, workspace: any) => {
       app.badgeCount = count;
       if (process.platform === 'win32') {
         if (count > 0) {
-          browserWindow.setOverlayIcon(path.resolve(__dirname, '..', 'overlay-icon.png'), `You have ${count} new messages.`);
+          browserWindow.setOverlayIcon(path.resolve(buildResourcePath, 'overlay-icon.png'), `You have ${count} new messages.`);
         } else {
           browserWindow.setOverlayIcon(null, '');
         }
