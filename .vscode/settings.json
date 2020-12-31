@@ -3,7 +3,9 @@
     "fullscreenable",
     "maximizable",
     "minimizable",
-    "subwiki"
+    "subwiki",
+    "subwiki's",
+    "tiddlywiki's"
   ],
   "i18n-ally.sourceLanguage": "en",
   "i18n-ally.localesPaths": "localization/locales",

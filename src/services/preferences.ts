@@ -191,6 +191,13 @@ export class Preference {
   }
 
   /**
+   * Batch update all preferences
+   */
+  private async setPreferences(newPreferences: IPreferences): Promise<void> {
+    await settings.set(`preferences.${this.version}`, newPreferences);
+  }
+
+  /**
    * get preferences, may return cached version
    */
   public getPreferences = (): IPreferences => {
@@ -203,10 +210,6 @@ export class Preference {
 
   public get<K extends keyof IPreferences>(key: K): IPreferences[K] {
     return this.cachedPreferences[key];
-  }
-
-  private async setPreferences(newPreferences: IPreferences): Promise<void> {
-    await settings.set(`preferences.${this.version}`, newPreferences);
   }
 
   public async reset(): Promise<void> {
