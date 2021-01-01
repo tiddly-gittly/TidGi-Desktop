@@ -34,7 +34,7 @@ import {
 } from '../libs/workspaces-views';
 import index18n from '../libs/i18n';
 import { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad, getActiveBrowserView } from '../libs/views';
-import { updatePauseNotificationsInfo, getPauseNotificationsInfo } from '../libs/notifications';
+import { updatePauseNotificationsInfo, getPauseNotificationsInfo } from '../notifications';
 import getViewBounds from '../libs/get-view-bounds';
 import createMenu from '../libs/create-menu';
 
@@ -180,9 +180,6 @@ const loadListeners = () => {
   });
   ipcMain.on('get-pause-notifications-info', (event) => {
     event.returnValue = getPauseNotificationsInfo();
-  });
-  ipcMain.on('request-update-pause-notifications-info', () => {
-    updatePauseNotificationsInfo();
   });
   // Workspace Metas
   ipcMain.on('get-workspace-meta', (event, id) => {

@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/no-null */
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
-import { app, App, remote, ipcMain, dialog } from 'electron';
+import { app } from 'electron';
 import settings from 'electron-settings';
 import { pickBy, mapValues } from 'lodash';
 import { v4 as uuid } from 'uuid';
@@ -30,6 +30,7 @@ export class Workspace {
    */
   workspaces: Record<string, IWorkspace> = {};
 
+  // FIXME: be wikiService here
   @lazyInject(serviceIdentifiers.Window) private readonly windowService!: Window;
 
   constructor() {

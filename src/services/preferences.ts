@@ -7,6 +7,7 @@ import settings from 'electron-settings';
 
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Window } from '@/services/windows';
+import { Notification } from '@/services/notifications';
 import { WindowNames } from '@/services/windows/WindowProperties';
 import { PreferenceChannel } from '@/services/channels';
 import { container } from '@/services/container';
@@ -83,6 +84,7 @@ export type IPreferences = typeof defaultPreferences;
 @injectable()
 export class Preference {
   @lazyInject(serviceIdentifiers.Window) private readonly windowService!: Window;
+  @lazyInject(serviceIdentifiers.Notification) private readonly notificationService!: Notification;
 
   cachedPreferences: IPreferences;
   readonly version = '2018.2';
@@ -176,15 +178,22 @@ export class Preference {
     // eslint-disable-next-line promise/catch-or-return
     await settings.set(`preferences.${this.version}.${key}`, this.cachedPreferences[key]);
 
-    // TODO: call ThemeService and NotificationService
+    this.reactWhenPreferencesChanged(key, value);
+  }
+
+  /**
+   * Do some side effect when config change, update other services or filesystem
+   * @param preference new preference settings
+   */
+  private reactWhenPreferencesChanged<K extends keyof IPreferences>(key: K, value: IPreferences[K]): void {
+    // TODO: call ThemeService
     // if (key.startsWith('darkReader')) {
     //   ipcMain.emit('request-reload-views-dark-reader');
     // }
-
-    // if (key.startsWith('pauseNotifications')) {
-    //   ipcMain.emit('request-update-pause-notifications-info');
-    // }
-
+    // maybe pauseNotificationsBySchedule or pauseNotifications or ...
+    if (key.startsWith('pauseNotifications')) {
+      this.notificationService.updatePauseNotificationsInfo();
+    }
     // if (key === 'themeSource') {
     //   nativeTheme.themeSource = value;
     // }
