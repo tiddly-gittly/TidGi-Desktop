@@ -51,3 +51,15 @@ export interface IWorkspace {
    */
   picturePath: string | null;
 }
+
+export interface IWorkspaceMetaData {
+  /**
+   * Error message if this workspace fails loading
+   */
+  didFailLoadErrorMessage: string | undefined;
+  /**
+   * indicating server or webpage is still loading
+   */
+  isLoading: boolean;
+  badgeCount: number;
+}

@@ -15,7 +15,7 @@ import tmp from 'tmp';
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { container } from '@/services/container';
 import { Window } from '@/services/windows';
-import { IWorkspace } from '@/services/types';
+import { IWorkspace, IWorkspaceMetaData } from '@/services/types';
 
 const { lazyInject } = getDecorators(container);
 
@@ -57,7 +57,7 @@ export class Workspace {
     return this.workspaces;
   }
 
-  public get countWorkspaces(): number {
+  public countWorkspaces(): number {
     return Object.keys(this.workspaces).length;
   }
 
@@ -267,4 +267,21 @@ export class Workspace {
 
     return newWorkspace;
   }
+
+  /** to keep workspace variables (meta) that
+   * are not saved to disk
+   * badge count, error, etc
+   */
+  private metaData: Record<string, Partial<IWorkspaceMetaData>> = {};
+
+  public getMetaData = (id: string): Partial<IWorkspaceMetaData> => this.metaData[id] ?? {};
+
+  public getAllMetaData = (): Record<string, Partial<IWorkspaceMetaData>> => this.metaData;
+
+  public updateMetaData = (id: string, options: Partial<IWorkspaceMetaData>): void => {
+    this.metaData[id] = {
+      ...this.metaData[id],
+      ...options,
+    };
+  };
 }
