@@ -7,6 +7,7 @@ import settings from 'electron-settings';
 
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Window } from '@/services/windows';
+import { WorkspaceView } from '@/services/workspacesView';
 import { Notification } from '@/services/notifications';
 import { WindowNames } from '@/services/windows/WindowProperties';
 import { PreferenceChannel } from '@/services/channels';
@@ -85,6 +86,7 @@ export type IPreferences = typeof defaultPreferences;
 export class Preference {
   @lazyInject(serviceIdentifiers.Window) private readonly windowService!: Window;
   @lazyInject(serviceIdentifiers.Notification) private readonly notificationService!: Notification;
+  @lazyInject(serviceIdentifiers.WorkspaceView) private readonly workspaceViewService!: WorkspaceView;
 
   cachedPreferences: IPreferences;
   readonly version = '2018.2';
@@ -126,7 +128,7 @@ export class Preference {
           })
           .then(({ response }) => {
             if (response === 0) {
-              // TODO: call clearBrowsingData from workspace view service  clearBrowsingData();
+              return this.workspaceViewService.clearBrowsingData();
             }
           })
           .catch(console.error);

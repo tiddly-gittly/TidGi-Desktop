@@ -17,7 +17,7 @@ import index18next from './i18n';
 import formatBytes from './format-bytes';
 import getViewBounds from './get-view-bounds';
 import { getWorkspaces, getActiveWorkspace, getNextWorkspace, getPreviousWorkspace } from './workspaces';
-import { setActiveWorkspaceView } from './workspaces-views';
+import { setActiveWorkspaceView } from '../workspacesView';
 import { getView, getActiveBrowserView } from '../view';
 function createMenu() {
   const updaterEnabled = process.env.SNAP == undefined && !process.mas && !process.windowsStore;

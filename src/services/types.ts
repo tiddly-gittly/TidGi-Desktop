@@ -56,6 +56,7 @@ export interface IWorkspace {
   picturePath: string | null;
   disableNotifications: boolean;
   disableAudio: boolean;
+  hibernateWhenUnused: boolean;
 }
 
 export interface IWorkspaceMetaData {

@@ -31,7 +31,7 @@ import {
   setWorkspaceViews,
   wakeUpWorkspaceView,
   realignActiveWorkspaceView,
-} from '../libs/workspaces-views';
+} from '../workspacesView';
 import index18n from '../libs/i18n';
 import { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad, getActiveBrowserView } from '../view';
 import { updatePauseNotificationsInfo, getPauseNotificationsInfo } from '../notifications';

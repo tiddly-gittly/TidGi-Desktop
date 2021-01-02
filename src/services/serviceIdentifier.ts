@@ -4,4 +4,5 @@ export default {
   Notification: Symbol.for('Notification'),
   Workspace: Symbol.for('Workspace'),
   View: Symbol.for('View'),
+  WorkspaceView: Symbol.for('WorkspaceView'),
 };
