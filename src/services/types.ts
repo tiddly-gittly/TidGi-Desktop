@@ -20,6 +20,10 @@ export interface IWorkspace {
    */
   mainWikiToLink: string;
   /**
+   * Last visited url, used for rememberLastPageVisited in preferences
+   */
+  lastUrl: string | null;
+  /**
    * Localhost tiddlywiki server port
    */
   port: number;
@@ -50,13 +54,15 @@ export interface IWorkspace {
    * workspace icon's path in file system
    */
   picturePath: string | null;
+  disableNotifications: boolean;
+  disableAudio: boolean;
 }
 
 export interface IWorkspaceMetaData {
   /**
    * Error message if this workspace fails loading
    */
-  didFailLoadErrorMessage: string | undefined;
+  didFailLoadErrorMessage: string | null | undefined;
   /**
    * indicating server or webpage is still loading
    */

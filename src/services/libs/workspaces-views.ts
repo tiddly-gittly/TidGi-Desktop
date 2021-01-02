@@ -15,7 +15,7 @@ import {
 } from './workspaces';
 import sendToAllWindows from './send-to-all-windows';
 
-import { addView, hibernateView, removeView, setActiveView, setViewsAudioPref, setViewsNotificationsPref, realignActiveView } from './views';
+import { addView, hibernateView, removeView, setActiveView, setViewsAudioPref, setViewsNotificationsPref, realignActiveView } from '../view';
 
 import * as mainWindow from '../windows/main';
 

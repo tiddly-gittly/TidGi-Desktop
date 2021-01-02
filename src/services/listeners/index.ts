@@ -33,7 +33,7 @@ import {
   realignActiveWorkspaceView,
 } from '../libs/workspaces-views';
 import index18n from '../libs/i18n';
-import { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad, getActiveBrowserView } from '../libs/views';
+import { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad, getActiveBrowserView } from '../view';
 import { updatePauseNotificationsInfo, getPauseNotificationsInfo } from '../notifications';
 import getViewBounds from '../libs/get-view-bounds';
 import createMenu from '../libs/create-menu';

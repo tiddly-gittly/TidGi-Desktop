@@ -13,7 +13,7 @@ import extractHostname from './services/libs/extract-hostname';
 import sendToAllWindows from './services/libs/send-to-all-windows';
 import { stopWatchAllWiki } from './services/libs/wiki/watch-wiki';
 import { stopAllWiki } from './services/libs/wiki/wiki-worker-mamager';
-import { addView, reloadViewsDarkReader } from './services/libs/views';
+import { addView, reloadViewsDarkReader } from './services/view';
 import { getWorkspaces, setWorkspace } from './services/libs/workspaces';
 import { logger } from './services/libs/log';
 import { commitAndSync } from './services/libs/git';

@@ -1,6 +1,7 @@
 import { injectable, inject } from 'inversify';
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Preference } from '@services/preferences';
+import { View } from '@services/view';
 
 export interface IPauseNotificationsInfo {
   reason: string;
@@ -10,7 +11,10 @@ export interface IPauseNotificationsInfo {
 
 @injectable()
 export class Notification {
-  constructor(@inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference) {}
+  constructor(
+    @inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference,
+    @inject(serviceIdentifiers.View) private readonly viewService: View,
+  ) {}
 
   private pauseNotificationsInfo?: IPauseNotificationsInfo;
 
@@ -127,11 +131,11 @@ export class Notification {
     this.pauseNotificationsInfo = this.calcPauseNotificationsInfo();
 
     // Send update to webview
-    // TODO: call view service here
-    // const shouldPauseNotifications = this.pauseNotificationsInfo !== null;
-    // const shouldMuteAudio = shouldPauseNotifications && this.preferenceService.get('pauseNotificationsMuteAudio');
-    // setViewsAudioPref(shouldMuteAudio);
-    // setViewsNotificationsPref(shouldPauseNotifications);
+    const shouldPauseNotifications = this.pauseNotificationsInfo !== null;
+    const shouldMuteAudio = shouldPauseNotifications && this.preferenceService.get('pauseNotificationsMuteAudio');
+    this.viewService.setViewsAudioPref(shouldMuteAudio);
+    this.viewService.setViewsNotificationsPref(shouldPauseNotifications);
+    // FIXME: sync state to the UI
     // sendToAllWindows('should-pause-notifications-changed', this.pauseNotificationsInfo);
 
     // set schedule for reupdating
