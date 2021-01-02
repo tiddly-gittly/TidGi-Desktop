@@ -10,7 +10,6 @@ import { logger } from '../libs/log';
 import { createWiki, createSubWiki, removeWiki, ensureWikiExist, cloneWiki, cloneSubWiki } from '../libs/wiki/create-wiki';
 import { ICON_PATH, REACT_PATH, DESKTOP_PATH, LOG_FOLDER, isDev as isDevelopment } from '../constants/paths';
 import { getPreference, getPreferences } from '../libs/preferences';
-import { getSystemPreference, getSystemPreferences, setSystemPreference } from '../libs/system-preferences';
 import {
   countWorkspaces,
   getActiveWorkspace,
@@ -158,17 +157,6 @@ const loadListeners = () => {
       // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
       view.setBounds(getViewBounds(contentSize));
     }
-  });
-  // System Preferences
-  ipcMain.on('get-system-preference', (event, name) => {
-    event.returnValue = getSystemPreference(name);
-  });
-  ipcMain.on('get-system-preferences', (event) => {
-    const preferences = getSystemPreferences();
-    event.returnValue = preferences;
-  });
-  ipcMain.on('request-set-system-preference', (_, name, value) => {
-    setSystemPreference(name, value);
   });
 
   // Notifications
