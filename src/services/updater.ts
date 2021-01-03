@@ -8,6 +8,7 @@ import serviceIdentifiers from '@services/serviceIdentifier';
 import { Window } from '@services/windows';
 import { WindowNames } from '@services/windows/WindowProperties';
 
+// FIXME: use electron-forge 's auto update solution， maybe see https://headspring.com/2020/09/24/building-signing-and-publishing-electron-forge-applications-for-windows/
 @injectable()
 export class Updater {
   constructor(@inject(serviceIdentifiers.Window) private readonly windowService: Window) {}
