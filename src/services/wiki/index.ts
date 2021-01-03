@@ -10,6 +10,7 @@ import chokidar from 'chokidar';
 import { trim, compact, debounce } from 'lodash';
 
 import serviceIdentifiers from '@services/serviceIdentifier';
+import { Authentication } from '@services/auth';
 import { Window } from '@services/windows';
 import { Preference } from '@services/preferences';
 import { View } from '@services/view';
@@ -28,6 +29,7 @@ import { updateSubWikiPluginContent } from './update-plugin-content';
 @injectable()
 export class Wiki {
   constructor(
+    @inject(serviceIdentifiers.Authentication) private readonly authService: Authentication,
     @inject(serviceIdentifiers.Window) private readonly windowService: Window,
     @inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference,
     @inject(serviceIdentifiers.Workspace) private readonly workspaceService: Workspace,
@@ -325,17 +327,21 @@ export class Wiki {
       // do nothing
     }
 
-    const userName = this.preferenceService.get('userName');
-    const userInfo = this.preferenceService.get('github-user-info');
+    const userName = this.authService.get('userName') ?? '';
+    const userInfo = this.authService.get('authing');
     const { name: wikiPath, gitUrl: githubRepoUrl, port, isSubWiki, id } = workspace;
     // if is main wiki
     if (!isSubWiki) {
       this.setWikiStarted(wikiPath);
       await this.startNodeJSWiki(wikiPath, port, userName, id);
-      userInfo && watchWiki(wikiPath, githubRepoUrl, userInfo, path.join(wikiPath, TIDDLERS_PATH));
+      if (userInfo !== undefined) {
+        await this.watchWiki(wikiPath, githubRepoUrl, userInfo, path.join(wikiPath, TIDDLERS_PATH));
+      }
     } else {
       // if is private repo wiki
-      userInfo && watchWiki(wikiPath, githubRepoUrl, userInfo);
+      if (userInfo !== undefined) {
+        await this.watchWiki(wikiPath, githubRepoUrl, userInfo);
+      }
       // if we are creating a sub-wiki, restart the main wiki to load content from private wiki
       const mainWikiPath = workspace.mainWikiToLink;
       if (!this.justStartedWiki[mainWikiPath]) {
