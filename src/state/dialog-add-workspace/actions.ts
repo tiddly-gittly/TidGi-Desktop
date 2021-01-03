@@ -9,7 +9,7 @@ import isUrl from '../../helpers/is-url';
 import hasErrors from '../../helpers/has-errors';
 
 import { requestCreateWorkspace } from '../../senders';
-import index18n from '../../i18n';
+import i18n from '../../i18n';
 
 export const setWikiCreationMessage = (message: string) => ({
   type: ADD_WORKSPACE_CREATE_WIKI_MESSAGE,
@@ -43,7 +43,7 @@ export const updateForm = (changes: any) => (dispatch: Dispatch, getState: any) 
 export const save = () => async (dispatch: any, getState: any) => {
   const { form } = getState().dialogAddWorkspace;
 
-  dispatch(setWikiCreationMessage(index18n.t('AddWorkspace.StartUpdatingWorkspace')));
+  dispatch(setWikiCreationMessage(i18n.t('AddWorkspace.StartUpdatingWorkspace')));
   const validatedChanges = validate(form, getValidationRules());
   if (hasErrors(validatedChanges)) {
     return dispatch(updateForm(validatedChanges));
@@ -64,7 +64,7 @@ export const save = () => async (dispatch: any, getState: any) => {
     form.tagName,
   );
   if (!form.isSubWiki) {
-    dispatch(setWikiCreationMessage(index18n.t('AddWorkspace.WorkspaceUpdated')));
+    dispatch(setWikiCreationMessage(i18n.t('AddWorkspace.WorkspaceUpdated')));
     // and wiki will be closed after wiki server started, close logic is inside wiki-worker-manager.js
   } else {
     window.remote.closeCurrentWindow();

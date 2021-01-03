@@ -81,8 +81,8 @@ class Backend {
   writeQueue: any;
   writeQueueOverflow: any;
   writeTimeout: any;
-  constructor(services: any, backendOptions = {}, index18nextOptions = {}) {
-    this.init(services, backendOptions, index18nextOptions);
+  constructor(services: any, backendOptions = {}, i18nextOptions = {}) {
+    this.init(services, backendOptions, i18nextOptions);
     this.readCallbacks = {}; // Callbacks after reading a translation
     this.writeCallbacks = {}; // Callbacks after writing a missing translation
     this.writeTimeout; // A timer that will initate writing missing translations to files
@@ -91,7 +91,7 @@ class Backend {
     this.useOverflow = false; // If true, we should insert missing translations into the writeQueueOverflow
   }
 
-  init(services: any, backendOptions: any, index18nextOptions: any) {
+  init(services: any, backendOptions: any, i18nextOptions: any) {
     if (typeof window !== 'undefined' && typeof (window as any).i18n.i18nextElectronBackend === 'undefined') {
       throw new TypeError("'window.i18n.i18nextElectronBackend' is not defined! Be sure you are setting up your BrowserWindow's preload script properly!");
     }
@@ -101,7 +101,7 @@ class Backend {
       ...backendOptions,
       i18nextElectronBackend: typeof window !== 'undefined' ? (window as any).i18n.i18nextElectronBackend : undefined,
     };
-    this.i18nextOptions = index18nextOptions;
+    this.i18nextOptions = i18nextOptions;
     // log-related
     const logPrepend = '[i18next-electron-fs-backend:';
     this.mainLog = `${logPrepend}main]=>`;

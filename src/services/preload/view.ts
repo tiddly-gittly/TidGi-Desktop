@@ -1,7 +1,7 @@
 import { ipcRenderer, remote, webFrame } from 'electron';
 import { enable as enableDarkMode, disable as disableDarkMode } from 'darkreader';
 import ContextMenuBuilder from '../libs/context-menu-builder';
-import index18next from '../libs/i18n';
+import i18next from '../libs/i18n';
 import './wiki-operation';
 import './wiki-git-api';
 
@@ -78,7 +78,7 @@ const handleLoaded = (event: string) => {
         menu.append(new MenuItem({ type: 'separator' }));
         menu.append(
           new MenuItem({
-            label: index18next.t('ContextMenu.OpenLinkInNewWindow'),
+            label: i18next.t('ContextMenu.OpenLinkInNewWindow'),
             click: () => {
               ipcRenderer.send('request-set-global-force-new-window', true);
               window.open(info.linkURL);
@@ -91,7 +91,7 @@ const handleLoaded = (event: string) => {
       menu.append(new MenuItem({ type: 'separator' }));
       menu.append(
         new MenuItem({
-          label: index18next.t('ContextMenu.Back'),
+          label: i18next.t('ContextMenu.Back'),
           enabled: contents.canGoBack(),
           click: () => {
             contents.goBack();
@@ -100,7 +100,7 @@ const handleLoaded = (event: string) => {
       );
       menu.append(
         new MenuItem({
-          label: index18next.t('ContextMenu.Forward'),
+          label: i18next.t('ContextMenu.Forward'),
           enabled: contents.canGoForward(),
           click: () => {
             contents.goForward();
@@ -109,7 +109,7 @@ const handleLoaded = (event: string) => {
       );
       menu.append(
         new MenuItem({
-          label: index18next.t('ContextMenu.Reload'),
+          label: i18next.t('ContextMenu.Reload'),
           click: () => {
             contents.reload();
           },
@@ -118,33 +118,33 @@ const handleLoaded = (event: string) => {
       menu.append(new MenuItem({ type: 'separator' }));
       menu.append(
         new MenuItem({
-          label: index18next.t('ContextMenu.More'),
+          label: i18next.t('ContextMenu.More'),
           submenu: [
             {
-              label: index18next.t('ContextMenu.About'),
+              label: i18next.t('ContextMenu.About'),
               click: () => ipcRenderer.send('request-show-about-window'),
             },
             { type: 'separator' },
             {
-              label: index18next.t('ContextMenu.CheckForUpdates'),
+              label: i18next.t('ContextMenu.CheckForUpdates'),
               click: () => ipcRenderer.send('request-check-for-updates'),
             },
             {
-              label: index18next.t('ContextMenu.Preferences'),
+              label: i18next.t('ContextMenu.Preferences'),
               click: () => ipcRenderer.send('request-show-preferences-window'),
             },
             { type: 'separator' },
             {
-              label: index18next.t('ContextMenu.TiddlyGitSupport'),
+              label: i18next.t('ContextMenu.TiddlyGitSupport'),
               click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose'),
             },
             {
-              label: index18next.t('ContextMenu.TiddlyGitWebsite'),
+              label: i18next.t('ContextMenu.TiddlyGitWebsite'),
               click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop'),
             },
             { type: 'separator' },
             {
-              label: index18next.t('ContextMenu.Quit'),
+              label: i18next.t('ContextMenu.Quit'),
               click: () => ipcRenderer.send('request-quit'),
             },
           ],

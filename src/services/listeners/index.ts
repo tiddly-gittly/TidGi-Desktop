@@ -31,7 +31,7 @@ import {
   wakeUpWorkspaceView,
   realignActiveWorkspaceView,
 } from '../workspacesView';
-import index18n from '../libs/i18n';
+import i18n from '../libs/i18n';
 import { reloadViewsDarkReader, reloadViewsWebContentsIfDidFailLoad, getActiveBrowserView } from '../view';
 import { updatePauseNotificationsInfo, getPauseNotificationsInfo } from '../notifications';
 import getViewBounds from '../libs/get-view-bounds';
@@ -40,9 +40,7 @@ import createMenu from '../libs/create-menu';
 // @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import displayMediaWindow from '../windows/display-media';
 
-import bindI18nListener from './i18n';
 const loadListeners = () => {
-  bindI18nListener();
   ipcMain.handle('copy-wiki-template', async (event, newFolderPath, folderName) => {
     try {
       await createWiki(newFolderPath, folderName);
@@ -236,8 +234,8 @@ const loadListeners = () => {
       // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BrowserWindow | undefined' is no... Remove this comment to see the full error message
       .showMessageBox(mainWindow.get(), {
         type: 'question',
-        buttons: [index18n.t('WorkspaceSelector.RemoveWorkspace'), index18n.t('WorkspaceSelector.RemoveWorkspaceAndDelete'), index18n.t('Cancel')],
-        message: index18n.t('WorkspaceSelector.AreYouSure'),
+        buttons: [i18n.t('WorkspaceSelector.RemoveWorkspace'), i18n.t('WorkspaceSelector.RemoveWorkspaceAndDelete'), i18n.t('Cancel')],
+        message: i18n.t('WorkspaceSelector.AreYouSure'),
         cancelId: 2,
       })
       .then(async ({ response }) => {

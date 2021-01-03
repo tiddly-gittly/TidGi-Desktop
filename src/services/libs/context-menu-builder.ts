@@ -4,7 +4,7 @@
 // Ported from
 // https://github.com/electron-userland/electron-spellchecker/blob/master/src/context-menu-builder.js
 import { clipboard, nativeImage, shell, remote } from 'electron';
-import index18next from './i18n';
+import i18next from './i18n';
 const { Menu, MenuItem } = remote;
 /**
  * Truncates a string to a max length of 25. Will split on a word boundary and
@@ -27,19 +27,19 @@ const matchesWord = (string: any) => {
   return string.match(regex);
 };
 const contextMenuStringTable = {
-  copyMail: () => index18next.t('ContextMenu.CopyEmailAddress'),
-  copyLinkUrl: () => index18next.t('ContextMenu.CopyLink'),
-  openLinkUrl: () => index18next.t('ContextMenu.OpenLinkInBrowser'),
-  copyImageUrl: () => index18next.t('ContextMenu.CopyImageURL'),
-  copyImage: () => index18next.t('ContextMenu.CopyImage'),
-  addToDictionary: () => index18next.t('ContextMenu.AddToDictionary'),
-  lookUpDefinition: ({ word }: any) => index18next.t('ContextMenu.LookUp', { word }),
-  searchGoogle: () => index18next.t('ContextMenu.SearchWithGoogle'),
-  cut: () => index18next.t('ContextMenu.Cut'),
-  copy: () => index18next.t('ContextMenu.Copy'),
-  paste: () => index18next.t('ContextMenu.Paste'),
-  inspectElement: () => index18next.t('ContextMenu.InspectElement'),
-  developerTools: () => index18next.t('ContextMenu.DeveloperTools'),
+  copyMail: () => i18next.t('ContextMenu.CopyEmailAddress'),
+  copyLinkUrl: () => i18next.t('ContextMenu.CopyLink'),
+  openLinkUrl: () => i18next.t('ContextMenu.OpenLinkInBrowser'),
+  copyImageUrl: () => i18next.t('ContextMenu.CopyImageURL'),
+  copyImage: () => i18next.t('ContextMenu.CopyImage'),
+  addToDictionary: () => i18next.t('ContextMenu.AddToDictionary'),
+  lookUpDefinition: ({ word }: any) => i18next.t('ContextMenu.LookUp', { word }),
+  searchGoogle: () => i18next.t('ContextMenu.SearchWithGoogle'),
+  cut: () => i18next.t('ContextMenu.Cut'),
+  copy: () => i18next.t('ContextMenu.Copy'),
+  paste: () => i18next.t('ContextMenu.Paste'),
+  inspectElement: () => i18next.t('ContextMenu.InspectElement'),
+  developerTools: () => i18next.t('ContextMenu.DeveloperTools'),
 };
 /**
  * ContextMenuBuilder creates context menus based on the content clicked - this

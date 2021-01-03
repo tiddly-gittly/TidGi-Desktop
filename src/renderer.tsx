@@ -16,7 +16,7 @@ import { init as initDialogEditWorkspace } from './state/dialog-edit-workspace/a
 import { init as initDialogProxy } from './state/dialog-proxy/actions';
 import { init as initDialogSpellcheckLanguages } from './state/dialog-spellcheck-languages/actions';
 
-import index18n from './i18n';
+import i18n from './i18n';
 
 import AppWrapper from './components/app-wrapper';
 
@@ -142,7 +142,7 @@ const runApp = (): void => {
       <AppWrapper>
         <CssBaseline />
         <React.Suspense fallback={<div />}>
-          <I18nextProvider i18n={index18n}>
+          <I18nextProvider i18n={i18n}>
             <App />
           </I18nextProvider>
         </React.Suspense>

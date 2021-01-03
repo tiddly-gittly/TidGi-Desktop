@@ -1,8 +1,8 @@
 import fs from 'fs-extra';
 import path from 'path';
-import sendToAllWindows from './send-to-all-windows';
-import { LOCALIZATION_FOLDER } from '../constants/paths';
-import index18n from './i18n';
+import sendToAllWindows from '../send-to-all-windows';
+import { LOCALIZATION_FOLDER } from '../../constants/paths';
+import i18n from '.';
 
 // Electron-specific; must match mainIpc
 const readFileRequest = 'ReadFile-Request';
@@ -90,7 +90,7 @@ function getLanguageMenu() {
         // eslint-disable-next-line global-require
         const { setPreference } = require('./preferences');
         setPreference('language', language);
-        index18n.changeLanguage(language);
+        i18n.changeLanguage(language);
         // eslint-disable-next-line global-require
         const { onEachView } = require('./views');
         onEachView((view: any) => {

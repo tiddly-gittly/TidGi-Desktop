@@ -2,7 +2,9 @@ import path from 'path';
 import i18next from 'i18next';
 import Backend from 'i18next-fs-backend';
 
-import { LOCALIZATION_FOLDER, isDev as isDevelopment } from '../constants/paths';
+import { LOCALIZATION_FOLDER, isDev } from '@/services/constants/paths';
+import bindI18nListener from './bindI18nListener';
+import useDefaultLanguage from './useDefaultLanguage';
 
 // init i18n is async, but our usage is basically await the electron app to start, so this is basically ok
 void i18next.use(Backend).init({
@@ -13,18 +15,16 @@ void i18next.use(Backend).init({
 
   debug: false,
   interpolation: { escapeValue: false },
-  saveMissing: isDevelopment,
+  saveMissing: isDev,
   saveMissingTo: 'current',
   // namespace: 'translation',
   lng: 'zh_CN',
-  fallbackLng: isDevelopment ? false : 'en', // set to false when generating translation files locally
+  fallbackLng: isDev ? false : 'en', // set to false when generating translation files locally
 });
 
 setTimeout(() => {
-  // prevent circular deps
-  // eslint-disable-next-line global-require
-  const { getPreference } = require('./preferences');
-  i18next.changeLanguage(getPreference('language'));
+  bindI18nListener();
+  void useDefaultLanguage(i18next);
 }, 1);
 
 export default i18next;

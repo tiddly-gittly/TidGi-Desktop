@@ -18,7 +18,7 @@ import serviceIdentifiers from '@services/serviceIdentifier';
 import { Preference } from '@services/preferences';
 import { Workspace } from '@services/workspaces';
 import { buildResourcePath } from '@/services/constants/paths';
-import index18n from './libs/i18n';
+import i18n from './libs/i18n';
 import wikiStartup from './libs/wiki/wiki-startup';
 import sendToAllWindows from './libs/send-to-all-windows';
 import getViewBounds from './libs/get-view-bounds';
@@ -64,8 +64,8 @@ export class View {
     if (userInfo !== undefined) {
       // user not logined into Github
       void dialog.showMessageBox(browserWindow, {
-        title: index18n.t('Dialog.GithubUserInfoNoFound'),
-        message: index18n.t('Dialog.GithubUserInfoNoFoundDetail'),
+        title: i18n.t('Dialog.GithubUserInfoNoFound'),
+        message: i18n.t('Dialog.GithubUserInfoNoFoundDetail'),
         buttons: ['OK'],
         cancelId: 0,
         defaultId: 0,

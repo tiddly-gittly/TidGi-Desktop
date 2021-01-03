@@ -1,5 +1,5 @@
 import { Menu, clipboard, ipcMain, shell } from 'electron';
-import { getLanguageMenu } from './i18next-electron-fs-backend';
+import { getLanguageMenu } from './i18n/i18next-electron-fs-backend';
 // @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import aboutWindow from '../windows/about';
 // @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
@@ -13,7 +13,7 @@ import * as mainWindow from '../windows/main';
 import notificationsWindow from '../windows/notifications';
 // @ts-expect-error ts-migrate(1192) FIXME: Module '"/Users/linonetwo/Desktop/repo/TiddlyGit-D... Remove this comment to see the full error message
 import preferencesWindow from '../windows/preferences';
-import index18next from './i18n';
+import i18next from './i18n';
 import formatBytes from './format-bytes';
 import getViewBounds from './get-view-bounds';
 import { getWorkspaces, getActiveWorkspace, getNextWorkspace, getPreviousWorkspace } from './workspaces';
@@ -374,28 +374,28 @@ function createMenu() {
       label: 'TiddlyGit',
       submenu: [
         {
-          label: index18next.t('ContextMenu.About'),
+          label: i18next.t('ContextMenu.About'),
           click: () => aboutWindow.show(),
         },
         { type: 'separator' },
         updaterMenuItem,
         { type: 'separator' },
         {
-          label: index18next.t('ContextMenu.Preferences'),
+          label: i18next.t('ContextMenu.Preferences'),
           click: () => preferencesWindow.show(),
           // @ts-expect-error ts-migrate(2322) FIXME: Type '{ label: any; click: () => any; accelerator:... Remove this comment to see the full error message
           accelerator: 'CmdOrCtrl+,',
         },
         { type: 'separator' },
         {
-          label: index18next.t('ContextMenu.Notifications'),
+          label: i18next.t('ContextMenu.Notifications'),
           click: () => notificationsWindow.show(),
           // @ts-expect-error ts-migrate(2322) FIXME: Type '{ label: any; click: () => any; accelerator:... Remove this comment to see the full error message
           accelerator: 'CmdOrCtrl+Shift+N',
         },
         { type: 'separator' },
         {
-          label: index18next.t('Preference.ClearBrowsingData'),
+          label: i18next.t('Preference.ClearBrowsingData'),
           click: () => ipcMain.emit('request-clear-browsing-data'),
         },
         { type: 'separator' },
@@ -414,28 +414,28 @@ function createMenu() {
       label: 'File',
       submenu: [
         {
-          label: index18next.t('ContextMenu.About'),
+          label: i18next.t('ContextMenu.About'),
           click: () => aboutWindow.show(),
         },
         { type: 'separator' },
         updaterMenuItem,
         { type: 'separator' },
         {
-          label: index18next.t('ContextMenu.Preferences'),
+          label: i18next.t('ContextMenu.Preferences'),
           // @ts-expect-error ts-migrate(2322) FIXME: Type '{ label: any; accelerator: string; click: ()... Remove this comment to see the full error message
           accelerator: 'CmdOrCtrl+,',
           click: () => preferencesWindow.show(),
         },
         { type: 'separator' },
         {
-          label: index18next.t('ContextMenu.Notifications'),
+          label: i18next.t('ContextMenu.Notifications'),
           click: () => notificationsWindow.show(),
           // @ts-expect-error ts-migrate(2322) FIXME: Type '{ label: any; click: () => any; accelerator:... Remove this comment to see the full error message
           accelerator: 'CmdOrCtrl+Shift+N',
         },
         { type: 'separator' },
         {
-          label: index18next.t('Preference.ClearBrowsingData'),
+          label: i18next.t('Preference.ClearBrowsingData'),
           // @ts-expect-error ts-migrate(2322) FIXME: Type '{ label: any; accelerator: string; click: ()... Remove this comment to see the full error message
           accelerator: 'CmdOrCtrl+Shift+Delete',
           click: () => ipcMain.emit('request-clear-browsing-data'),

@@ -38,6 +38,7 @@ module.exports = {
           props: true,
           Props: true,
           i18n: true,
+          i18next: true,
         },
       },
     ],
