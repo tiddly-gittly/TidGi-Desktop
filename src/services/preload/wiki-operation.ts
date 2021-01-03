@@ -4,6 +4,7 @@
  */
 import { ipcRenderer, webFrame } from 'electron';
 import Promise from 'bluebird';
+
 // add tiddler
 ipcRenderer.on('wiki-add-tiddler', async (event, title, text, meta) => {
   const extraMeta = typeof meta === 'object' ? JSON.stringify(meta) : '{}';

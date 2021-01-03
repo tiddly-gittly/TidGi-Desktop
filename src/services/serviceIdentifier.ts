@@ -5,4 +5,5 @@ export default {
   Workspace: Symbol.for('Workspace'),
   View: Symbol.for('View'),
   WorkspaceView: Symbol.for('WorkspaceView'),
+  Wiki: Symbol.for('Wiki'),
 };

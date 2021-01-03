@@ -14,7 +14,7 @@ import tmp from 'tmp';
 
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { container } from '@/services/container';
-import { Window } from '@/services/windows';
+import { Wiki } from '@/services/wiki';
 import { IWorkspace, IWorkspaceMetaData } from '@/services/types';
 
 const { lazyInject } = getDecorators(container);
@@ -30,8 +30,7 @@ export class Workspace {
    */
   workspaces: Record<string, IWorkspace> = {};
 
-  // FIXME: be wikiService here
-  @lazyInject(serviceIdentifiers.Window) private readonly windowService!: Window;
+  @lazyInject(serviceIdentifiers.Wiki) private readonly wikiService!: Wiki;
 
   constructor() {
     this.init();
@@ -70,9 +69,9 @@ export class Workspace {
   }
 
   async set(id: string, workspace: IWorkspace): Promise<void> {
-    this.workspaces[id] = workspace;
+    this.workspaces[id] = this.sanitizeWorkspace(workspace);
+    await this.reactBeforeWorkspaceChanged(workspace);
     await settings.set(`workspaces.${this.version}.${id}`, { ...workspace });
-    await this.reactWhenWorkspaceChanged(workspace);
   }
 
   async update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void> {
@@ -94,25 +93,24 @@ export class Workspace {
    * @param workspaceToSanitize User input workspace or loaded workspace, that may contains bad values
    */
   private sanitizeWorkspace(workspaceToSanitize: IWorkspace): IWorkspace {
-    return workspaceToSanitize;
+    const subWikiFolderName = path.basename(workspaceToSanitize.name);
+    return { ...workspaceToSanitize, subWikiFolderName };
   }
 
   /**
-   * Do some side effect when config change, update other services or filesystem
-   * @param workspace new workspace settings
+   * Do some side effect before config change, update other services or filesystem, with new and old values
+   * This happened after values sanitized
+   * @param newWorkspaceConfig new workspace settings
    */
-  private async reactWhenWorkspaceChanged(workspace: IWorkspace): Promise<void> {
-    // TODO: call wiki service, update fileSystemPaths on sub-wiki setting update
-    // const { id, tagName } = workspaceToSanitize;
-    // if (this.workspaces[id].isSubWiki && typeof tagName === 'string' && tagName.length > 0 && this.workspaces[id].tagName !== tagName) {
-    //   const subWikiFolderName = path.basename(workspaces[id].name);
-    //   updateSubWikiPluginContent(
-    //     workspaces[id].mainWikiToLink,
-    //     { tagName: options.tagName, subWikiFolderName },
-    //     { tagName: workspaces[id].tagName, subWikiFolderName },
-    //   );
-    //   wikiStartup(workspace);
-    // }
+  private async reactBeforeWorkspaceChanged(newWorkspaceConfig: IWorkspace): Promise<void> {
+    const { id, tagName } = newWorkspaceConfig;
+    if (this.workspaces[id].isSubWiki && typeof tagName === 'string' && tagName.length > 0 && this.workspaces[id].tagName !== tagName) {
+      this.wikiService.updateSubWikiPluginContent(this.workspaces[id].mainWikiToLink, newWorkspaceConfig, {
+        ...newWorkspaceConfig,
+        tagName: this.workspaces[id].tagName,
+      });
+      await this.wikiService.wikiStartup(newWorkspaceConfig);
+    }
   }
 
   getByName(name: string): IWorkspace | undefined {

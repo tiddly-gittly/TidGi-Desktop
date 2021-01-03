@@ -6,7 +6,7 @@ import TextField from '@material-ui/core/TextField';
 
 import GitHubLogin from './github-login';
 import { requestSetPreference, getPreference } from '../../senders';
-import type { IUserInfo } from '../../helpers/user-info';
+import type { IUserInfo } from '@/services/types';
 
 const GitTokenInput = styled(TextField)``;
 

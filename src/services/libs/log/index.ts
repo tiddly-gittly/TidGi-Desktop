@@ -3,6 +3,8 @@ import { LOG_FOLDER } from '../../constants/paths';
 import RendererTransport from './renderer-transport';
 import 'winston-daily-rotate-file';
 
+export * from './wiki-output';
+
 const logger = winston.createLogger({
   levels: {
     emerg: 0,
@@ -16,7 +18,7 @@ const logger = winston.createLogger({
     debug: 8,
   },
   transports: [
-    new (winston.transports as any).DailyRotateFile({
+    new winston.transports.DailyRotateFile({
       filename: 'TiddlyGit-%DATE%.log',
       datePattern: 'YYYY-MM-DD',
       zippedArchive: false,
@@ -27,7 +29,7 @@ const logger = winston.createLogger({
     new RendererTransport(),
   ],
   exceptionHandlers: [
-    new (winston.transports as any).DailyRotateFile({
+    new winston.transports.DailyRotateFile({
       filename: 'TiddlyGit-Exception-%DATE%.log',
       datePattern: 'YYYY-MM-DD',
       zippedArchive: false,

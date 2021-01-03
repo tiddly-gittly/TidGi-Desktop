@@ -3,8 +3,8 @@
  * This file should be required by BrowserView's preload script to work
  */
 import { contextBridge } from 'electron';
-import { getModifiedFileList } from './inspect';
-import { commitAndSync } from './sync';
+import { getModifiedFileList } from '../libs/git/inspect';
+import { commitAndSync } from '../libs/git/sync';
 import { getWorkspacesAsList } from '../workspaces';
 import { getPreference } from '../preferences';
 

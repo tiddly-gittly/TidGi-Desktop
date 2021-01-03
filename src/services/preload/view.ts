@@ -2,8 +2,9 @@ import { ipcRenderer, remote, webFrame } from 'electron';
 import { enable as enableDarkMode, disable as disableDarkMode } from 'darkreader';
 import ContextMenuBuilder from '../libs/context-menu-builder';
 import index18next from '../libs/i18n';
-import '../libs/wiki/wiki-operation';
-import '../libs/git/wiki-git-api';
+import './wiki-operation';
+import './wiki-git-api';
+
 const { MenuItem, shell } = remote;
 // @ts-expect-error ts-migrate(2322) FIXME: Type '{}' is not assignable to type 'Global & type... Remove this comment to see the full error message
 window.global = {};
