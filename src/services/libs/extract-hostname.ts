@@ -1,4 +1,4 @@
-const extractHostname = (url: string): string | undefined => {
+export default function extractHostname(url: string): string | undefined {
   try {
     let hostname = url.trim();
 
@@ -18,6 +18,4 @@ const extractHostname = (url: string): string | undefined => {
   } catch {
     // return undefined;
   }
-};
-
-export default extractHostname;
+}

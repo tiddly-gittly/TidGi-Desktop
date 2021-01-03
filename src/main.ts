@@ -19,7 +19,7 @@ import { logger } from './services/libs/log';
 import { commitAndSync } from './services/libs/git';
 import { clearMainBindings } from './services/libs/i18next-electron-fs-backend';
 import MAILTO_URLS from './services/constants/mailto-urls';
-import './services/libs/updater';
+import './services/updater';
 import serviceIdentifier from '@/services/serviceIdentifier';
 import { Window } from '@/services/windows';
 import { WindowNames } from '@/services/windows/WindowProperties';

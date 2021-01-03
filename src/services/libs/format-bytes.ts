@@ -1,5 +1,7 @@
-// https://stackoverflow.com/a/18650828
-function formatBytes(bytes: any, decimals = 2) {
+/**
+ * https://stackoverflow.com/a/18650828
+ */
+export default function formatBytes(bytes: number, decimals = 2): string {
   if (bytes === 0) return '0 Bytes';
 
   const k = 1024;
@@ -10,5 +12,3 @@ function formatBytes(bytes: any, decimals = 2) {
 
   return `${Number.parseFloat((bytes / k ** index).toFixed(dm))} ${sizes[index]}`;
 }
-
-export default formatBytes;
