@@ -1,6 +1,6 @@
 import { ipcMain } from 'electron';
 import { injectable, inject } from 'inversify';
-import { truncate } from 'lodash';
+import { truncate, debounce } from 'lodash';
 import { GitProcess } from 'dugite';
 import isDev from 'electron-is-dev';
 
@@ -21,10 +21,15 @@ export class Git {
   disableSyncOnDevelopment = true;
 
   constructor(@inject(serviceIdentifiers.View) private readonly viewService: View) {
+    const syncDebounceInterval = this.preferenceService.get('syncDebounceInterval');
+    this.debounceCommitAndSync = debounce(commitAndSync, syncDebounceInterval);
     this.init();
   }
 
-  init(): void {}
+  public debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo) => Promise<void>;
+
+  init(): void {
+  }
 
   /**
    *

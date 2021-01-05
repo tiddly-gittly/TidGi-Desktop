@@ -5,23 +5,23 @@ import fs from 'fs-extra';
 import path from 'path';
 import { Worker } from 'worker_threads';
 import isDev from 'electron-is-dev';
-import { dialog } from 'electron';
+import { dialog, ipcMain } from 'electron';
 import chokidar from 'chokidar';
 import { trim, compact, debounce } from 'lodash';
 
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Authentication } from '@services/auth';
 import { Window } from '@services/windows';
-import { Preference } from '@services/preferences';
 import { View } from '@services/view';
 import { Workspace } from '@services/workspaces';
+import { Git } from '@services/git';
 import { WorkspaceView } from '@services/workspacesView';
 import { IWorkspace, IUserInfo } from '@services/types';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { logger, wikiOutputToFile, refreshOutputFile } from '@/services/libs/log';
-import i18n from '@/services/libs/i18n';
+import i18n from '@services/libs/i18n';
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@/services/constants/paths';
-import { updateSubWikiPluginContent } from './update-plugin-content';
+import { updateSubWikiPluginContent, getSubWikiPluginContent } from './update-plugin-content';
 
 /**
  * Handle wiki worker startup and restart
@@ -31,11 +31,61 @@ export class Wiki {
   constructor(
     @inject(serviceIdentifiers.Authentication) private readonly authService: Authentication,
     @inject(serviceIdentifiers.Window) private readonly windowService: Window,
-    @inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference,
+    @inject(serviceIdentifiers.Git) private readonly gitService: Git,
     @inject(serviceIdentifiers.Workspace) private readonly workspaceService: Workspace,
     @inject(serviceIdentifiers.View) private readonly viewService: View,
     @inject(serviceIdentifiers.WorkspaceView) private readonly workspaceViewService: WorkspaceView,
-  ) {}
+  ) {
+    this.init();
+  }
+
+  private init(): void {
+    ipcMain.handle('copy-wiki-template', async (_event, newFolderPath, folderName) => {
+      try {
+        await this.createWiki(newFolderPath, folderName);
+        return '';
+      } catch (error) {
+        return String(error);
+      }
+    });
+    ipcMain.handle('create-sub-wiki', async (_event, newFolderPath, folderName, mainWikiToLink, tagName, onlyLink) => {
+      try {
+        await this.createSubWiki(newFolderPath, folderName, mainWikiToLink, tagName, onlyLink);
+        return '';
+      } catch (error) {
+        console.info(error);
+        return String(error);
+      }
+    });
+    ipcMain.handle('clone-wiki', async (_event, parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo) => {
+      try {
+        await this.cloneWiki(parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo);
+        return '';
+      } catch (error) {
+        console.info(error);
+        return String(error);
+      }
+    });
+    ipcMain.handle('clone-sub-wiki', async (_event, parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo, tagName) => {
+      try {
+        await this.cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo, tagName);
+        return '';
+      } catch (error) {
+        console.info(error);
+        return String(error);
+      }
+    });
+    ipcMain.handle('ensure-wiki-exist', async (_event, wikiPath, shouldBeMainWiki) => {
+      try {
+        await this.ensureWikiExist(wikiPath, shouldBeMainWiki);
+        return '';
+      } catch (error) {
+        console.info(error);
+        return String(error);
+      }
+    });
+    ipcMain.handle('get-sub-wiki-plugin-content', async (_event, mainWikiPath) => await getSubWikiPluginContent(mainWikiPath));
+  }
 
   // wiki-worker-manager.ts
 
@@ -259,7 +309,7 @@ export class Wiki {
     }
   }
 
-  public async cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: any, userInfo: any): Promise<void> {
+  public async cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: any, userInfo: IUserInfo): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCloningWiki'));
     const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
     if (!(await fs.pathExists(parentFolderLocation))) {
@@ -353,7 +403,9 @@ export class Wiki {
         await this.stopWatchWiki(mainWikiPath);
         await this.stopWiki(mainWikiPath);
         await this.startWiki(mainWikiPath, mainWorkspace.port, userName);
-        await this.watchWiki(mainWikiPath, githubRepoUrl, userInfo);
+        if (userInfo !== undefined) {
+          await this.watchWiki(mainWikiPath, githubRepoUrl, userInfo);
+        }
       }
     }
   }
@@ -401,9 +453,6 @@ export class Wiki {
   }
 
   // watch-wiki.ts
-  private readonly syncDebounceInterval = getPreference('syncDebounceInterval');
-  private readonly debounceCommitAndSync = debounce(commitAndSync, syncDebounceInterval);
-
   private readonly frequentlyChangedFileThatShouldBeIgnoredFromWatch = ['output', /\$__StoryList/];
   private readonly topLevelFoldersToIgnored = ['node_modules', '.git'];
 
@@ -411,7 +460,7 @@ export class Wiki {
   // { [name: string]: Watcher }
   private readonly wikiWatchers: Record<string, chokidar.FSWatcher> = {};
 
-  public async watchWiki(wikiRepoPath: string, githubRepoUrl: string, userInfo: any, wikiFolderPath = wikiRepoPath): Promise<void> {
+  public async watchWiki(wikiRepoPath: string, githubRepoUrl: string, userInfo: IUserInfo, wikiFolderPath = wikiRepoPath): Promise<void> {
     if (!fs.existsSync(wikiRepoPath)) {
       logger.error('Folder not exist in watchFolder()', { wikiRepoPath, wikiFolderPath, githubRepoUrl });
       return;
@@ -423,8 +472,8 @@ export class Wiki {
       }
       logger.info(`${fileName} changed`);
       lock = true;
-      // TODO: move debounceCommitAndSync() to git service
-      debounceCommitAndSync(wikiRepoPath, githubRepoUrl, userInfo).then(() => {
+      // TODO: handle this promise
+      void this.gitService.debounceCommitAndSync(wikiRepoPath, githubRepoUrl, userInfo).then(() => {
         lock = false;
       });
     }, 1000);

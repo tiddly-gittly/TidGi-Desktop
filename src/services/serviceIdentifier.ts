@@ -7,4 +7,5 @@ export default {
   View: Symbol.for('View'),
   WorkspaceView: Symbol.for('WorkspaceView'),
   Wiki: Symbol.for('Wiki'),
+  Git: Symbol.for('Git'),
 };

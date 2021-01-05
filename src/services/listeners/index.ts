@@ -2,7 +2,7 @@
 import path from 'path';
 import { BrowserView, Notification, app, dialog, ipcMain, nativeTheme, shell } from 'electron';
 import { autoUpdater } from 'electron-updater';
-import { initWikiGit, getRemoteUrl } from '../libs/git';
+import { initWikiGit, getRemoteUrl } from '../git';
 import { stopWatchWiki } from '../libs/wiki/watch-wiki';
 import { updateSubWikiPluginContent, getSubWikiPluginContent } from '../libs/wiki/update-plugin-content';
 import { stopWiki, startWiki } from '../libs/wiki/wiki-worker-mamager';
@@ -41,51 +41,7 @@ import createMenu from '../libs/create-menu';
 import displayMediaWindow from '../windows/display-media';
 
 const loadListeners = () => {
-  ipcMain.handle('copy-wiki-template', async (event, newFolderPath, folderName) => {
-    try {
-      await createWiki(newFolderPath, folderName);
-      return '';
-    } catch (error) {
-      return String(error);
-    }
-  });
-  ipcMain.handle('create-sub-wiki', async (event, newFolderPath, folderName, mainWikiToLink, tagName, onlyLink) => {
-    try {
-      await createSubWiki(newFolderPath, folderName, mainWikiToLink, tagName, onlyLink);
-      return '';
-    } catch (error) {
-      console.info(error);
-      return String(error);
-    }
-  });
-  ipcMain.handle('clone-wiki', async (event, parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo) => {
-    try {
-      await cloneWiki(parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo);
-      return '';
-    } catch (error) {
-      console.info(error);
-      return String(error);
-    }
-  });
-  ipcMain.handle('clone-sub-wiki', async (event, parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo, tagName) => {
-    try {
-      await cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo, tagName);
-      return '';
-    } catch (error) {
-      console.info(error);
-      return String(error);
-    }
-  });
-  ipcMain.handle('ensure-wiki-exist', async (event, wikiPath, shouldBeMainWiki) => {
-    try {
-      await ensureWikiExist(wikiPath, shouldBeMainWiki);
-      return '';
-    } catch (error) {
-      console.info(error);
-      return String(error);
-    }
-  });
-  ipcMain.handle('get-sub-wiki-plugin-content', (event, mainWikiPath) => getSubWikiPluginContent(mainWikiPath));
+  
   ipcMain.on('get-constant', (event, name) => {
     // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     event.returnValue = {

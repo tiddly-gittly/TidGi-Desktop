@@ -17,7 +17,7 @@ import { stopAllWiki } from '@/services/libs/wiki/wiki-worker-mamager';
 import { addView, reloadViewsDarkReader } from '@/services/view';
 import { getWorkspaces, setWorkspace } from '@/services/libs/workspaces';
 import { logger } from '@/services/libs/log';
-import { commitAndSync } from '@/services/libs/git';
+import { commitAndSync } from '@/services/git';
 import { clearMainBindings } from '@/services/libs/i18n/i18next-electron-fs-backend';
 import MAILTO_URLS from '@/services/constants/mailto-urls';
 import '@/services/updater';
