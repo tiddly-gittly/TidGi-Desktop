@@ -1,7 +1,7 @@
-import { container } from '@/services/container';
-import { Window } from '@/services/windows';
-import { Preference } from '@/services/preferences';
-import { WindowNames } from '@/services/windows/WindowProperties';
+import { container } from '@services/container';
+import { Window } from '@services/windows';
+import { Preference } from '@services/preferences';
+import { WindowNames } from '@services/windows/WindowProperties';
 
 export default function getViewBounds(
   contentSize: [number, number],

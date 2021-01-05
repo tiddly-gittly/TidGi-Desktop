@@ -2,7 +2,7 @@ import path from 'path';
 import i18next from 'i18next';
 import Backend from 'i18next-fs-backend';
 
-import { LOCALIZATION_FOLDER, isDev } from '@/services/constants/paths';
+import { LOCALIZATION_FOLDER, isDev } from '@services/constants/paths';
 import bindI18nListener from './bindI18nListener';
 import useDefaultLanguage from './useDefaultLanguage';
 

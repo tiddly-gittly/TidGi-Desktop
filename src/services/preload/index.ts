@@ -4,7 +4,7 @@ import './common/i18n';
 import './common/require-nodejs';
 import './common/simple-context-menu';
 import './common/authing-postmessage';
-import { WindowNames } from '@/services/windows/WindowProperties';
+import { WindowNames } from '@services/windows/WindowProperties';
 
 const extraMetaJSONString = process.argv.pop() as string;
 const extraMeta = JSON.parse(extraMetaJSONString) as Record<string, string>;

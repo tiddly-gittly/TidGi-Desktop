@@ -16,7 +16,7 @@ import Button from '@material-ui/core/Button';
 import CachedIcon from '@material-ui/icons/Cached';
 import CreateNewFolderIcon from '@material-ui/icons/CreateNewFolder';
 
-import type { IUserInfo } from '@/services/types';
+import type { IUserInfo } from '@services/types';
 
 const RepoSearchInput = styled(TextField)``;
 const ReloadButton = styled(Button)`

@@ -3,7 +3,7 @@ import windowStateKeeper from 'electron-window-state';
 import { menubar, Menubar } from 'menubar';
 import path from 'path';
 
-import { REACT_PATH, isDev as isDevelopment, buildResourcePath } from '@/services/constants/paths';
+import { REACT_PATH, isDev as isDevelopment, buildResourcePath } from '@services/constants/paths';
 import { getPreference } from '../libs/preferences';
 import formatBytes from '../libs/format-bytes';
 

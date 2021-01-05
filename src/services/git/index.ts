@@ -8,9 +8,9 @@ import * as gitSync from './sync';
 import * as github from './github';
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { View } from '@services/view';
-import { logger } from '@/services/libs/log';
-import i18n from '@/services/libs/i18n';
-import { IUserInfo } from '@/services/types';
+import { logger } from '@services/libs/log';
+import i18n from '@services/libs/i18n';
+import { IUserInfo } from '@services/types';
 
 /**
  * System Preferences are not stored in storage but stored in macOS Preferences.

@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs-extra';
 import { take, drop, compact } from 'lodash';
-import { logger } from '@/services/libs/log';
+import { logger } from '@services/libs/log';
 import { IWorkspace } from '@services/types';
 
 const getMatchPart = (tagToMatch: string): string => `[!is[system]kin::to[${tagToMatch}]`;

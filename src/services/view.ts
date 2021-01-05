@@ -17,13 +17,13 @@ import fsExtra from 'fs-extra';
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Preference } from '@services/preferences';
 import { Workspace } from '@services/workspaces';
-import { buildResourcePath } from '@/services/constants/paths';
+import { buildResourcePath } from '@services/constants/paths';
 import i18n from './libs/i18n';
 import wikiStartup from './libs/wiki/wiki-startup';
 import sendToAllWindows from './libs/send-to-all-windows';
 import getViewBounds from './libs/get-view-bounds';
-import { extractDomain, isInternalUrl } from '@/services/libs/url';
-import { IWorkspace } from '@/services/types';
+import { extractDomain, isInternalUrl } from '@services/libs/url';
+import { IWorkspace } from '@services/types';
 
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 

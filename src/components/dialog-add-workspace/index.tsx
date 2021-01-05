@@ -14,8 +14,8 @@ import NewWikiPathForm from './new-wiki-path-form';
 import ExistedWikiPathForm from './existed-wiki-path-form';
 import ExistedWikiDoneButton from './existed-wiki-done-button';
 import CloneWikiDoneButton from './clone-wiki-done-button';
-import { getGithubUserInfo, setGithubUserInfo } from '@/services/types';
-import type { IUserInfo } from '@/services/types';
+import { getGithubUserInfo, setGithubUserInfo } from '@services/types';
+import type { IUserInfo } from '@services/types';
 import TabBar from './tab-bar';
 import GitTokenForm, { getGithubToken, setGithubToken } from '../shared/git-token-form';
 

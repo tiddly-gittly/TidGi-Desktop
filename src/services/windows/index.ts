@@ -4,9 +4,9 @@ import { injectable, inject } from 'inversify';
 
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Preference } from '@services/preferences';
-import { Channels, WindowChannel } from '@/services/channels';
-import { WindowNames, windowDimension } from '@/services/windows/WindowProperties';
-import i18n from '@/services/libs/i18n';
+import { Channels, WindowChannel } from '@services/channels';
+import { WindowNames, windowDimension } from '@services/windows/WindowProperties';
+import i18n from '@services/libs/i18n';
 
 declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
 declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;

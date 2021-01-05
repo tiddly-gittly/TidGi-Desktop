@@ -18,9 +18,9 @@ import { Git } from '@services/git';
 import { WorkspaceView } from '@services/workspacesView';
 import { IWorkspace, IUserInfo } from '@services/types';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { logger, wikiOutputToFile, refreshOutputFile } from '@/services/libs/log';
+import { logger, wikiOutputToFile, refreshOutputFile } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
-import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@/services/constants/paths';
+import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@services/constants/paths';
 import { updateSubWikiPluginContent, getSubWikiPluginContent } from './update-plugin-content';
 
 /**

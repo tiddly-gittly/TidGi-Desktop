@@ -4,7 +4,7 @@
  */
 import { contextBridge } from 'electron';
 
-import { container } from '@/services/container';
+import { container } from '@services/container';
 import { getModifiedFileList } from '@services/git/inspect';
 import { Git } from '@services/git';
 import { Workspace } from '@services/workspaces';

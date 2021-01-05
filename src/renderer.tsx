@@ -5,7 +5,7 @@ import { Provider } from 'react-redux';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
 import { I18nextProvider } from 'react-i18next';
-import { WindowNames } from '@/services/windows/WindowProperties';
+import { WindowNames } from '@services/windows/WindowProperties';
 
 import 'typeface-roboto/index.css';
 

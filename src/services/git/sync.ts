@@ -5,7 +5,7 @@ import path from 'path';
 import { compact } from 'lodash';
 import { GitProcess, IGitResult } from 'dugite';
 
-import i18n from '@/services/libs/i18n';
+import i18n from '@services/libs/i18n';
 
 /**
  * Get "master" or "main" from git repo

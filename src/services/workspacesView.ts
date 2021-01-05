@@ -6,8 +6,8 @@ import { View } from '@services/view';
 import { Workspace } from '@services/workspaces';
 import { Window } from '@services/windows';
 import sendToAllWindows from './libs/send-to-all-windows';
-import { IWorkspace } from '@/services/types';
-import { WindowNames } from '@/services/windows/WindowProperties';
+import { IWorkspace } from '@services/types';
+import { WindowNames } from '@services/windows/WindowProperties';
 
 /**
  * Deal with operations that needs to create a workspace and a browserView at once

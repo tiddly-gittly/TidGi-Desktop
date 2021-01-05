@@ -1,7 +1,7 @@
 import { compact, trim } from 'lodash';
 import { GitProcess } from 'dugite';
 
-import { IUserInfo } from '@/services/types';
+import { IUserInfo } from '@services/types';
 
 const getGitUrlWithCredential = (rawUrl: string, username: string, accessToken: string): string =>
   trim(`${rawUrl}.git`.replace(/\n/g, '').replace('https://github.com/', `https://${username}:${accessToken}@github.com/`));

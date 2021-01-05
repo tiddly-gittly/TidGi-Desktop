@@ -43,7 +43,7 @@ import MenuBookIcon from '@material-ui/icons/MenuBook';
 import { TimePicker } from '@material-ui/pickers';
 
 import connectComponent from '../../helpers/connect-component';
-import { getGithubUserInfo, setGithubUserInfo } from '@/services/types';
+import { getGithubUserInfo, setGithubUserInfo } from '@services/types';
 
 import StatedMenu from '../shared/stated-menu';
 
@@ -57,7 +57,7 @@ import translatiumLogo from '../../images/translatium-logo.svg';
 import ListItemDefaultMailClient from './list-item-default-mail-client';
 import ListItemDefaultBrowser from './list-item-default-browser';
 import GitTokenForm, { getGithubToken, setGithubToken } from '../shared/git-token-form';
-import type { IUserInfo } from '@/services/types';
+import type { IUserInfo } from '@services/types';
 
 import {
   requestCheckForUpdates,

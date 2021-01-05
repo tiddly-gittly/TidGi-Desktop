@@ -13,9 +13,9 @@ import download from 'download';
 import tmp from 'tmp';
 
 import serviceIdentifiers from '@services/serviceIdentifier';
-import { container } from '@/services/container';
-import { Wiki } from '@/services/wiki';
-import { IWorkspace, IWorkspaceMetaData } from '@/services/types';
+import { container } from '@services/container';
+import { Wiki } from '@services/wiki';
+import { IWorkspace, IWorkspaceMetaData } from '@services/types';
 
 const { lazyInject } = getDecorators(container);
 
