@@ -18,7 +18,7 @@ import i18n from '@services/libs/i18n';
  * Deal with operations that needs to create a wiki and a git repo at once in a workspace
  */
 @injectable()
-export class WikiGit {
+export class WikiGitWorkspace {
   constructor(
     @inject(serviceIdentifiers.Wiki) private readonly wikiService: Wiki,
     @inject(serviceIdentifiers.Git) private readonly gitService: Git,
