@@ -2,6 +2,8 @@ import isDev from 'electron-is-dev';
 import path from 'path';
 import os from 'os';
 
+import './listeners';
+
 const isMac = process.platform === 'darwin';
 
 const sourcePath = path.resolve(__dirname, '..', '..');

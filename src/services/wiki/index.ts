@@ -119,7 +119,6 @@ export class Wiki {
   public async startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void> {
     // use Promise to handle worker callbacks
     await new Promise<void>((resolve, reject) => {
-      // require here to prevent circular dependence, which will cause "TypeError: getWorkspaceByName is not a function"
       const workspace = this.workspaceService.getByName(homePath);
       const workspaceID = workspace?.id;
       if (workspace === undefined || workspaceID === undefined) {
@@ -473,7 +472,7 @@ export class Wiki {
       logger.info(`${fileName} changed`);
       lock = true;
       // TODO: handle this promise
-      void this.gitService.debounceCommitAndSync(wikiRepoPath, githubRepoUrl, userInfo).then(() => {
+      void this.gitService.debounceCommitAndSync(wikiRepoPath, githubRepoUrl, userInfo)!.then(() => {
         lock = false;
       });
     }, 1000);

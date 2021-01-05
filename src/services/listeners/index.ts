@@ -42,33 +42,8 @@ import displayMediaWindow from '../windows/display-media';
 
 const loadListeners = () => {
   
-  ipcMain.on('get-constant', (event, name) => {
-    // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
-    event.returnValue = {
-      ICON_PATH,
-      REACT_PATH,
-      DESKTOP_PATH,
-      LOG_FOLDER,
-      isDev: isDevelopment,
-    }[name];
-  });
-  ipcMain.on('get-basename', (event, pathString) => {
-    event.returnValue = path.basename(pathString);
-  });
-  ipcMain.on('get-dirname', (event, pathString) => {
-    event.returnValue = path.dirname(pathString);
-  });
-  ipcMain.handle('request-init-wiki-git', async (event, wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) => {
-    try {
-      await initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
-      return '';
-    } catch (error) {
-      console.info(error);
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
-      removeWiki(wikiFolderPath);
-      return String(error);
-    }
-  });
+
+
   ipcMain.on('request-wiki-open-tiddler', (event, tiddlerName) => {
     const browserView = getActiveBrowserView();
     if (browserView) {
@@ -184,46 +159,7 @@ const loadListeners = () => {
   ipcMain.on('request-hibernate-workspace', (_, id) => {
     hibernateWorkspaceView(id);
   });
-  ipcMain.on('request-remove-workspace', (_, id) => {
-    // eslint-disable-next-line promise/catch-or-return
-    dialog
-      // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BrowserWindow | undefined' is no... Remove this comment to see the full error message
-      .showMessageBox(mainWindow.get(), {
-        type: 'question',
-        buttons: [i18n.t('WorkspaceSelector.RemoveWorkspace'), i18n.t('WorkspaceSelector.RemoveWorkspaceAndDelete'), i18n.t('Cancel')],
-        message: i18n.t('WorkspaceSelector.AreYouSure'),
-        cancelId: 2,
-      })
-      .then(async ({ response }) => {
-        // eslint-disable-next-line promise/always-return
-        try {
-          if (response === 0 || response === 1) {
-            const workspace = getWorkspace(id);
-            await stopWatchWiki(workspace.name).catch((error: any) => logger.error(error.message, error));
-            await stopWiki(workspace.name).catch((error: any) => logger.error(error.message, error));
-            await removeWiki(workspace.name, workspace.isSubWiki && workspace.mainWikiToLink, response === 0);
-            removeWorkspaceView(id);
-            createMenu();
-            // restart the main wiki to load content from private wiki
-            const mainWikiPath = workspace.mainWikiToLink;
-            const mainWorkspace = getWorkspaceByName(mainWikiPath);
-            const userName = getPreference('userName') || '';
-            await stopWiki(mainWikiPath);
-            // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-            await startWiki(mainWikiPath, mainWorkspace.port, userName);
-            // remove folderName from fileSystemPaths
-            if (workspace.isSubWiki) {
-              updateSubWikiPluginContent(mainWikiPath, undefined, {
-                tagName: workspace.tagName,
-                subWikiFolderName: path.basename(workspace.name),
-              });
-            }
-          }
-        } catch (error) {
-          logger.error(error.message, error);
-        }
-      });
-  });
+  
   ipcMain.on('request-set-workspace', (_, id, options) => {
     setWorkspaceView(id, options);
     createMenu();

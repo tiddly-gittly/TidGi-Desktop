@@ -8,6 +8,7 @@ import * as gitSync from './sync';
 import * as github from './github';
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { View } from '@services/view';
+import { Preference } from '@services/preferences';
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { IUserInfo } from '@services/types';
@@ -20,15 +21,28 @@ import { IUserInfo } from '@services/types';
 export class Git {
   disableSyncOnDevelopment = true;
 
-  constructor(@inject(serviceIdentifiers.View) private readonly viewService: View) {
+  constructor(
+    @inject(serviceIdentifiers.View) private readonly viewService: View,
+    @inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference,
+  ) {
     const syncDebounceInterval = this.preferenceService.get('syncDebounceInterval');
-    this.debounceCommitAndSync = debounce(commitAndSync, syncDebounceInterval);
+    this.debounceCommitAndSync = debounce(this.commitAndSync.bind(this), syncDebounceInterval);
     this.init();
   }
 
-  public debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo) => Promise<void>;
+  public debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo) => Promise<void> | undefined;
 
   init(): void {
+    ipcMain.handle('request-init-wiki-git', async (event, wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) => {
+      try {
+        await this.initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
+        return '';
+      } catch (error) {
+        console.info(error);
+        this.removeWiki(wikiFolderPath);
+        return String(error);
+      }
+    });
   }
 
   /**
