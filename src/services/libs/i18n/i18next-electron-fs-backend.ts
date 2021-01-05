@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prevent-abbreviations */
 import fs from 'fs-extra';
 import path from 'path';
 import sendToAllWindows from '../send-to-all-windows';

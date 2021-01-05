@@ -1,139 +1,76 @@
-/* eslint-disable sonarjs/no-duplicate-string */
 /* eslint-disable unicorn/consistent-function-scoping */
 /* eslint-disable no-await-in-loop */
 import fs from 'fs-extra';
 import path from 'path';
-import { compact, truncate, trim } from 'lodash';
-import { GitProcess } from 'dugite';
-import isDev from 'electron-is-dev';
-import { ipcMain } from 'electron';
-import { logger } from '../log';
-import i18n from '../i18n';
-const disableSyncOnDevelopment = true;
-const getGitUrlWithCredential = (rawUrl: any, username: any, accessToken: any) =>
-  trim(`${rawUrl}.git`.replace(/\n/g, '').replace('https://github.com/', `https://${username}:${accessToken}@github.com/`));
-const getGitUrlWithOutCredential = (urlWithCredential: any) => trim(urlWithCredential.replace(/.+@/, 'https://'));
-/**
- *  Add remote with credential
- * @param {string} wikiFolderPath
- * @param {string} githubRepoUrl
- * @param {{ login: string, email: string, accessToken: string }} userInfo
- */
-async function credentialOn(wikiFolderPath: any, githubRepoUrl: any, userInfo: any) {
-  const { login: username, accessToken } = userInfo;
-  const gitUrlWithCredential = getGitUrlWithCredential(githubRepoUrl, username, accessToken);
-  await GitProcess.exec(['remote', 'add', 'origin', gitUrlWithCredential], wikiFolderPath);
-  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithCredential], wikiFolderPath);
-}
-/**
- *  Add remote without credential
- * @param {string} wikiFolderPath
- * @param {string} githubRepoUrl
- * @param {{ login: string, email: string, accessToken: string }} userInfo
- */
-async function credentialOff(wikiFolderPath: any) {
-  const githubRepoUrl = await getRemoteUrl(wikiFolderPath);
-  const gitUrlWithOutCredential = getGitUrlWithOutCredential(githubRepoUrl);
-  await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithOutCredential], wikiFolderPath);
-}
+import { compact } from 'lodash';
+import { GitProcess, IGitResult } from 'dugite';
+
+import i18n from '@/services/libs/i18n';
+
 /**
  * Get "master" or "main" from git repo
- * @param {string} wikiFolderPath
+ * @param wikiFolderPath
  */
-async function getDefaultBranchName(wikiFolderPath: any) {
+export async function getDefaultBranchName(wikiFolderPath: string): Promise<string> {
   const { stdout } = await GitProcess.exec(['remote', 'show', 'origin'], wikiFolderPath);
   const lines = stdout.split('\n');
-  const lineWithHEAD = lines.find((line: any) => line.includes('HEAD branch: '));
+  const lineWithHEAD = lines.find((line) => line.includes('HEAD branch: '));
   const branchName = lineWithHEAD?.replace('HEAD branch: ', '')?.replace(/\s/g, '');
-  if (!branchName || branchName.includes('(unknown)')) {
+  if (branchName === undefined || branchName.includes('(unknown)')) {
     return 'master';
   }
   return branchName;
 }
 /**
  * Git add and commit all file
- * @param {string} wikiFolderPath
- * @param {string} username
- * @param {string} email
- * @param {?string} message
+ * @param wikiFolderPath
+ * @param username
+ * @param email
+ * @param message
  */
-async function commitFiles(wikiFolderPath: any, username: any, email: any, message = 'Initialize with TiddlyGit-Desktop') {
+export async function commitFiles(wikiFolderPath: string, username: string, email: string, message = 'Initialize with TiddlyGit-Desktop'): Promise<IGitResult> {
   await GitProcess.exec(['add', '.'], wikiFolderPath);
   return await GitProcess.exec(['commit', '-m', message, `--author="${username} <${email}>"`], wikiFolderPath);
 }
-/**
- *
- * @param {string} wikiFolderPath
- * @param {string} githubRepoUrl
- * @param {{ login: string, email: string, accessToken: string }} userInfo
- * @param {boolean} isMainWiki
- * @param {{ info: Function, notice: Function }} logger Logger instance from winston
- */
-async function initWikiGit(wikiFolderPath: any, githubRepoUrl: any, userInfo: any, isMainWiki: any) {
-  const logProgress = (message: any) => logger.notice(message, { handler: 'createWikiProgress', function: 'initWikiGit' });
-  const logInfo = (message: any) => logger.info(message, { function: 'initWikiGit' });
-  logProgress(i18n.t('Log.StartGitInitialization'));
-  const { login: username, email, accessToken } = userInfo;
-  logInfo(
-    `Using gitUrl ${githubRepoUrl} with username ${username} and accessToken ${truncate(accessToken, {
-      length: 24,
-    })}`,
-  );
-  await GitProcess.exec(['init'], wikiFolderPath);
-  await commitFiles(wikiFolderPath, username, email);
-  logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
-  await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
-  logProgress(i18n.t('Log.StartBackupToGithubRemote'));
-  const defaultBranchName = await getDefaultBranchName(wikiFolderPath);
-  const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(
-    ['push', 'origin', `${defaultBranchName}:${defaultBranchName}`],
-    wikiFolderPath,
-  );
-  await credentialOff(wikiFolderPath);
-  if (isMainWiki && pushExitCode !== 0) {
-    logInfo(pushStdError);
-    const CONFIG_FAILED_MESSAGE = i18n.t('Log.GitRepositoryConfigurateFailed');
-    logProgress(CONFIG_FAILED_MESSAGE);
-    throw new Error(CONFIG_FAILED_MESSAGE);
-  } else {
-    logProgress(i18n.t('Log.GitRepositoryConfigurationFinished'));
-  }
-}
+
 /**
  * See if there is any file not being committed
  * @param {string} wikiFolderPath repo path to test
  */
-async function haveLocalChanges(wikiFolderPath: any) {
+export async function haveLocalChanges(wikiFolderPath: string): Promise<boolean> {
   const { stdout } = await GitProcess.exec(['status', '--porcelain'], wikiFolderPath);
   const matchResult = stdout.match(/^(\?\?|[ACMR] |[ ACMR][DM])*/gm);
-  // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-  return matchResult.some((match: any) => !!match);
+  // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+  return !!matchResult?.some((match) => Boolean(match));
 }
+
+export type SyncState = 'noUpstream' | 'equal' | 'ahead' | 'behind' | 'diverged';
 /**
  * determine sync state of repository, i.e. how the remote relates to our HEAD
  * 'ahead' means our local state is ahead of remote, 'behind' means local state is behind of the remote
- * @param {string} wikiFolderPath repo path to test
+ * @param wikiFolderPath repo path to test
  */
-async function getSyncState(wikiFolderPath: any, logInfo: any) {
+export async function getSyncState(wikiFolderPath: string, logInfo: (message: string) => unknown): Promise<SyncState> {
   const defaultBranchName = await getDefaultBranchName(wikiFolderPath);
   const { stdout } = await GitProcess.exec(['rev-list', '--count', '--left-right', `origin/${defaultBranchName}...HEAD`], wikiFolderPath);
   logInfo('Checking sync state with upstream');
-  logInfo('stdout:', stdout, '(stdout end)');
+  logInfo(`stdout:\n${stdout}\n(stdout end)`);
   if (stdout === '') {
     return 'noUpstream';
   }
-  if (stdout.match(/0\t0/)) {
+  if (/0\t0/.exec(stdout) !== null) {
     return 'equal';
   }
-  if (stdout.match(/0\t\d+/)) {
+  if (/0\t\d+/.exec(stdout) !== null) {
     return 'ahead';
   }
-  if (stdout.match(/\d+\t0/)) {
+  if (/\d+\t0/.exec(stdout) !== null) {
     return 'behind';
   }
   return 'diverged';
 }
-async function assumeSync(wikiFolderPath: any, logInfo: any, logProgress: any) {
+
+export async function assumeSync(wikiFolderPath: string, logInfo: (message: string) => unknown, logProgress: (message: string) => unknown): Promise<void> {
   if ((await getSyncState(wikiFolderPath, logInfo)) === 'equal') {
     return;
   }
@@ -141,19 +78,20 @@ async function assumeSync(wikiFolderPath: any, logInfo: any, logProgress: any) {
   logProgress(SYNC_ERROR_MESSAGE);
   throw new Error(SYNC_ERROR_MESSAGE);
 }
+
 /**
  * echo the git dir
- * @param {string} wikiFolderPath repo path
+ * @param wikiFolderPath repo path
  */
-async function getGitDirectory(wikiFolderPath: any, logInfo: any, logProgress: any) {
+async function getGitDirectory(wikiFolderPath: string, logInfo: (message: string) => unknown, logProgress: (message: string) => unknown): Promise<string> {
   const { stdout, stderr } = await GitProcess.exec(['rev-parse', '--is-inside-work-tree', wikiFolderPath], wikiFolderPath);
-  if (stderr) {
+  if (typeof stderr === 'string' && stderr.length > 0) {
     logInfo(stderr);
   }
   if (stdout.startsWith('true')) {
     const { stdout: stdout2 } = await GitProcess.exec(['rev-parse', '--git-dir', wikiFolderPath], wikiFolderPath);
     const [gitPath2, gitPath1] = compact(stdout2.split('\n'));
-    if (gitPath1 && gitPath2) {
+    if (gitPath1.length > 0 && gitPath2.length > 0) {
       return path.resolve(`${gitPath1}/${gitPath2}`);
     }
   }
@@ -161,32 +99,38 @@ async function getGitDirectory(wikiFolderPath: any, logInfo: any, logProgress: a
   logProgress(CONFIG_FAILED_MESSAGE);
   throw new Error(`${wikiFolderPath} ${CONFIG_FAILED_MESSAGE}`);
 }
+
 /**
  * get various repo state in string format
- * @param {string} wikiFolderPath repo path to check
- * @returns {string} gitState
+ * @param wikiFolderPath repo path to check
+ * @returns gitState
+ * // TODO: use template literal type to get exact type of git state
  */
-async function getGitRepositoryState(wikiFolderPath: any, logInfo: any, logProgress: any) {
+export async function getGitRepositoryState(
+  wikiFolderPath: string,
+  logInfo: (message: string) => unknown,
+  logProgress: (message: string) => unknown,
+): Promise<string> {
   const gitDirectory = await getGitDirectory(wikiFolderPath, logInfo, logProgress);
-  if (!gitDirectory) {
+  if (typeof gitDirectory !== 'string' || gitDirectory.length === 0) {
     return 'NOGIT';
   }
   let result = '';
-  if (((await fs.lstat(path.join(gitDirectory, 'rebase-merge', 'interactive')).catch(() => {})) as any)?.isFile()) {
+  if (((await fs.lstat(path.join(gitDirectory, 'rebase-merge', 'interactive')).catch(() => ({}))) as fs.Stats)?.isFile()) {
     result += 'REBASE-i';
-  } else if (((await fs.lstat(path.join(gitDirectory, 'rebase-merge')).catch(() => {})) as any)?.isDirectory()) {
+  } else if (((await fs.lstat(path.join(gitDirectory, 'rebase-merge')).catch(() => ({}))) as fs.Stats)?.isDirectory()) {
     result += 'REBASE-m';
   } else {
-    if (((await fs.lstat(path.join(gitDirectory, 'rebase-apply')).catch(() => {})) as any)?.isDirectory()) {
+    if (((await fs.lstat(path.join(gitDirectory, 'rebase-apply')).catch(() => ({}))) as fs.Stats)?.isDirectory()) {
       result += 'AM/REBASE';
     }
-    if (((await fs.lstat(path.join(gitDirectory, 'MERGE_HEAD')).catch(() => {})) as any)?.isFile()) {
+    if (((await fs.lstat(path.join(gitDirectory, 'MERGE_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile()) {
       result += 'MERGING';
     }
-    if (((await fs.lstat(path.join(gitDirectory, 'CHERRY_PICK_HEAD')).catch(() => {})) as any)?.isFile()) {
+    if (((await fs.lstat(path.join(gitDirectory, 'CHERRY_PICK_HEAD')).catch(() => ({}))) as fs.Stats)?.isFile()) {
       result += 'CHERRY-PICKING';
     }
-    if (((await fs.lstat(path.join(gitDirectory, 'BISECT_LOG')).catch(() => {})) as any)?.isFile()) {
+    if (((await fs.lstat(path.join(gitDirectory, 'BISECT_LOG')).catch(() => ({}))) as fs.Stats)?.isFile()) {
       result += 'BISECTING';
     }
   }
@@ -203,11 +147,17 @@ async function getGitRepositoryState(wikiFolderPath: any, logInfo: any, logProgr
 }
 /**
  * try to continue rebase, simply adding and committing all things, leave them to user to resolve in the TiddlyWiki later.
- * @param {*} wikiFolderPath
- * @param {string} username
- * @param {string} email
+ * @param wikiFolderPath
+ * @param username
+ * @param email
  */
-async function continueRebase(wikiFolderPath: any, username: any, email: any, logInfo: any, logProgress: any) {
+export async function continueRebase(
+  wikiFolderPath: string,
+  username: string,
+  email: string,
+  logInfo: (message: string) => unknown,
+  logProgress: (message: string) => unknown,
+): Promise<void> {
   let hasNotCommittedConflict = true;
   let rebaseContinueExitCode = 0;
   let rebaseContinueStdError = '';
@@ -247,180 +197,3 @@ async function continueRebase(wikiFolderPath: any, username: any, email: any, lo
   }
   logProgress(i18n.t('Log.CantSyncInSpecialGitStateAutoFixSucceed'));
 }
-/**
- *
- * @param {string} githubRepoName similar to "linonetwo/wiki", string after "https://github.com/"
- */
-async function updateGitInfoTiddler(githubRepoName: any) {
-  // TODO: prevent circle require, use lib like typedi to prevent this
-  // eslint-disable-next-line global-require
-  const { getActiveBrowserView } = require('../views');
-  const browserView = getActiveBrowserView();
-  if (browserView && browserView?.webContents?.send) {
-    const tiddlerText = await new Promise((resolve) => {
-      browserView.webContents.send('wiki-get-tiddler-text', '$:/GitHub/Repo');
-      ipcMain.once('wiki-get-tiddler-text-done', (_, value) => resolve(value));
-    });
-    if (tiddlerText !== githubRepoName) {
-      return new Promise((resolve) => {
-        browserView.webContents.send('wiki-add-tiddler', '$:/GitHub/Repo', githubRepoName, {
-          type: 'text/vnd.tiddlywiki',
-        });
-        ipcMain.once('wiki-add-tiddler-done', resolve);
-      });
-    }
-    return Promise.resolve();
-  }
-  return logger.error('no browserView in updateGitInfoTiddler');
-}
-/**
- *
- * @param {string} wikiFolderPath
- * @param {string} githubRepoUrl
- * @param {{ login: string, email: string, accessToken: string }} userInfo
- */
-async function commitAndSync(wikiFolderPath: any, githubRepoUrl: any, userInfo: any) {
-  /** functions to send data to main thread */
-  const logProgress = (message: any) => logger.notice(message, { handler: 'wikiSyncProgress', function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
-  const logInfo = (message: any) => logger.info(message, { function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
-  if (disableSyncOnDevelopment && isDev) {
-    return;
-  }
-  const { login: username, email } = userInfo;
-  const commitMessage = 'Wiki updated with TiddlyGit-Desktop';
-  const defaultBranchName = await getDefaultBranchName(wikiFolderPath);
-  const branchMapping = `${defaultBranchName}:${defaultBranchName}`;
-  // update git info tiddler for plugins to use, for example, linonetwo/github-external-image
-  let wikiRepoName = new URL(githubRepoUrl).pathname;
-  if (wikiRepoName.startsWith('/')) {
-    wikiRepoName = wikiRepoName.replace('/', '');
-  }
-  if (wikiRepoName) {
-    await updateGitInfoTiddler(wikiRepoName);
-  }
-  // preflight check
-  const repoStartingState = await getGitRepositoryState(wikiFolderPath, logInfo, logProgress);
-  if (!repoStartingState || repoStartingState === '|DIRTY') {
-    const SYNC_MESSAGE = i18n.t('Log.PrepareSync');
-    logProgress(SYNC_MESSAGE);
-    logInfo(`${SYNC_MESSAGE} ${wikiFolderPath} , ${username} <${email}>`);
-  } else if (repoStartingState === 'NOGIT') {
-    const CANT_SYNC_MESSAGE = i18n.t('Log.CantSyncGitNotInitialized');
-    logProgress(CANT_SYNC_MESSAGE);
-    throw new Error(CANT_SYNC_MESSAGE);
-  } else {
-    // we may be in middle of a rebase, try fix that
-    await continueRebase(wikiFolderPath, username, email, logInfo, logProgress);
-  }
-  if (await haveLocalChanges(wikiFolderPath)) {
-    const SYNC_MESSAGE = i18n.t('Log.HaveThingsToCommit');
-    logProgress(SYNC_MESSAGE);
-    logInfo(`${SYNC_MESSAGE} ${commitMessage}`);
-    const { exitCode: commitExitCode, stderr: commitStdError } = await commitFiles(wikiFolderPath, username, email, commitMessage);
-    if (commitExitCode !== 0) {
-      logInfo('commit failed');
-      logInfo(commitStdError);
-    }
-    logProgress(i18n.t('Log.CommitComplete'));
-  }
-  logProgress(i18n.t('Log.PreparingUserInfo'));
-  await credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
-  logProgress(i18n.t('Log.FetchingData'));
-  await GitProcess.exec(['fetch', 'origin', defaultBranchName], wikiFolderPath);
-  //
-  switch (await getSyncState(wikiFolderPath, logInfo)) {
-    case 'noUpstream': {
-      logProgress(i18n.t('Log.CantSyncGitNotInitialized'));
-      await credentialOff(wikiFolderPath);
-      return;
-    }
-    case 'equal': {
-      logProgress(i18n.t('Log.NoNeedToSync'));
-      await credentialOff(wikiFolderPath);
-      return;
-    }
-    case 'ahead': {
-      logProgress(i18n.t('Log.LocalAheadStartUpload'));
-      const { exitCode, stderr } = await GitProcess.exec(['push', 'origin', branchMapping], wikiFolderPath);
-      if (exitCode === 0) {
-        break;
-      }
-      logProgress(i18n.t('Log.GitPushFailed'));
-      logInfo(`exitCode: ${exitCode}, stderr of git push:`);
-      logInfo(stderr);
-      break;
-    }
-    case 'behind': {
-      logProgress(i18n.t('Log.LocalStateBehindSync'));
-      const { exitCode, stderr } = await GitProcess.exec(['merge', '--ff', '--ff-only', `origin/${defaultBranchName}`], wikiFolderPath);
-      if (exitCode === 0) {
-        break;
-      }
-      logProgress(i18n.t('Log.GitMergeFailed'));
-      logInfo(`exitCode: ${exitCode}, stderr of git merge:`);
-      logInfo(stderr);
-      break;
-    }
-    case 'diverged': {
-      logProgress(i18n.t('Log.LocalStateDivergeRebase'));
-      const { exitCode } = await GitProcess.exec(['rebase', `origin/${defaultBranchName}`], wikiFolderPath);
-      if (exitCode === 0 && !(await getGitRepositoryState(wikiFolderPath, logInfo, logProgress)) && (await getSyncState(wikiFolderPath, logInfo)) === 'ahead') {
-        logProgress(i18n.t('Log.RebaseSucceed'));
-      } else {
-        await continueRebase(wikiFolderPath, username, email, logInfo, logProgress);
-        logProgress(i18n.t('Log.RebaseConflictNeedsResolve'));
-      }
-      await GitProcess.exec(['push', 'origin', branchMapping], wikiFolderPath);
-      break;
-    }
-    default: {
-      logProgress(i18n.t('Log.SyncFailedSystemError'));
-    }
-  }
-  await credentialOff(wikiFolderPath);
-  logProgress(i18n.t('Log.PerformLastCheckBeforeSynchronizationFinish'));
-  await assumeSync(wikiFolderPath, logInfo, logProgress);
-  logProgress(i18n.t('Log.SynchronizationFinish'));
-}
-async function getRemoteUrl(wikiFolderPath: any) {
-  const { stdout: remoteStdout } = await GitProcess.exec(['remote'], wikiFolderPath);
-  const remotes = compact(remoteStdout.split('\n'));
-  const githubRemote = remotes.find((remote: any) => remote === 'origin') || remotes[0] || '';
-  if (githubRemote) {
-    const { stdout: remoteUrlStdout } = await GitProcess.exec(['remote', 'get-url', githubRemote], wikiFolderPath);
-    return remoteUrlStdout.replace('.git', '');
-  }
-  return '';
-}
-async function clone(githubRepoUrl: any, repoFolderPath: any, userInfo: any) {
-  const logProgress = (message: any) => logger.notice(message, { handler: 'createWikiProgress', function: 'clone' });
-  const logInfo = (message: any) => logger.info(message, { function: 'clone' });
-  logProgress(i18n.t('Log.PrepareCloneOnlineWiki'));
-  logProgress(i18n.t('Log.StartGitInitialization'));
-  const { login: username, accessToken } = userInfo;
-  logInfo(
-    i18n.t('Log.UsingUrlAndUsername', {
-      githubRepoUrl,
-      username,
-      accessToken: truncate(accessToken, {
-        length: 24,
-      }),
-    }),
-  );
-  await GitProcess.exec(['init'], repoFolderPath);
-  logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
-  await credentialOn(repoFolderPath, githubRepoUrl, userInfo);
-  logProgress(i18n.t('Log.StartFetchingFromGithubRemote'));
-  const defaultBranchName = await getDefaultBranchName(repoFolderPath);
-  const { stderr, exitCode } = await GitProcess.exec(['pull', 'origin', `${defaultBranchName}:${defaultBranchName}`], repoFolderPath);
-  await credentialOff(repoFolderPath);
-  if (exitCode !== 0) {
-    logInfo(stderr);
-    const CONFIG_FAILED_MESSAGE = i18n.t('Log.GitRepositoryConfigurateFailed');
-    logProgress(CONFIG_FAILED_MESSAGE);
-    throw new Error(CONFIG_FAILED_MESSAGE);
-  } else {
-    logProgress(i18n.t('Log.GitRepositoryConfigurationFinished'));
-  }
-}
-export { initWikiGit, commitAndSync, getRemoteUrl, clone };
