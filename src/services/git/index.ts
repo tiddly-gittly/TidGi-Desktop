@@ -33,15 +33,8 @@ export class Git {
   public debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo) => Promise<void> | undefined;
 
   init(): void {
-    ipcMain.handle('request-init-wiki-git', async (event, wikiFolderPath, githubRepoUrl, userInfo, isMainWiki) => {
-      try {
-        await this.initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
-        return '';
-      } catch (error) {
-        console.info(error);
-        this.removeWiki(wikiFolderPath);
-        return String(error);
-      }
+    ipcMain.handle('get-workspaces-remote', async (_event, wikiFolderPath) => {
+      return await github.getRemoteUrl(wikiFolderPath);
     });
   }
 

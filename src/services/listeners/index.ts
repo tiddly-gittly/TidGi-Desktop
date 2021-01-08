@@ -88,36 +88,7 @@ const loadListeners = () => {
     }
   });
 
-  // Notifications
-  ipcMain.on('request-show-notification', (_, options) => {
-    if ((Notification as any).isSupported()) {
-      const notification = new Notification(options);
-      (notification as any).show();
-    }
-  });
-  ipcMain.on('get-pause-notifications-info', (event) => {
-    event.returnValue = getPauseNotificationsInfo();
-  });
-  // Workspace Metas
-  ipcMain.on('get-workspace-meta', (event, id) => {
-    event.returnValue = getWorkspaceMeta(id);
-  });
-  ipcMain.on('get-workspace-metas', (event) => {
-    event.returnValue = getWorkspaceMetas();
-  });
-  // Workspaces
-  ipcMain.on('count-workspace', (event) => {
-    event.returnValue = countWorkspaces();
-  });
-  ipcMain.on('get-workspace', (event, id) => {
-    event.returnValue = getWorkspace(id);
-  });
-  ipcMain.on('get-workspaces', (event) => {
-    event.returnValue = getWorkspaces();
-  });
-  ipcMain.handle('get-workspaces-remote', async (event, wikiFolderPath) => {
-    return await getRemoteUrl(wikiFolderPath);
-  });
+  
   ipcMain.handle('request-create-workspace', (event, name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground, tagName) => {
     createWorkspaceView(name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground, tagName);
     createMenu();

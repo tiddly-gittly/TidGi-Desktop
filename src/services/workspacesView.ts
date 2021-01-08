@@ -1,13 +1,15 @@
-import { app, session } from 'electron';
+import { app, ipcMain, session } from 'electron';
 import { injectable, inject } from 'inversify';
 
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { View } from '@services/view';
 import { Workspace } from '@services/workspaces';
 import { Window } from '@services/windows';
-import sendToAllWindows from './libs/send-to-all-windows';
+import sendToAllWindows from '@services/libs/send-to-all-windows';
 import { IWorkspace } from '@services/types';
 import { WindowNames } from '@services/windows/WindowProperties';
+import { Preference } from '@services/preferences';
+import createMenu from '@services/libs/create-menu';
 
 /**
  * Deal with operations that needs to create a workspace and a browserView at once
@@ -18,7 +20,65 @@ export class WorkspaceView {
     @inject(serviceIdentifiers.View) private readonly viewService: View,
     @inject(serviceIdentifiers.Workspace) private readonly workspaceService: Workspace,
     @inject(serviceIdentifiers.Window) private readonly windowService: Window,
-  ) {}
+    @inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference,
+  ) {
+    this.init();
+  }
+
+  private init(): void {
+    ipcMain.handle('request-create-workspace', async (_event, workspaceOptions: IWorkspace) => {
+      await this.createWorkspaceView(workspaceOptions);
+      createMenu();
+    });
+    ipcMain.handle('request-set-active-workspace', async (_event, id) => {
+      if (this.workspaceService.get(id) !== undefined) {
+        await this.setActiveWorkspaceView(id);
+        createMenu();
+      }
+    });
+    ipcMain.handle('request-get-active-workspace', (event) => {
+      return this.workspaceService.getActiveWorkspace();
+    });
+    ipcMain.handle('request-realign-active-workspace', () => {
+      const { sidebar, titleBar, navigationBar } = this.preferenceService.getPreferences();
+      // FIXME: global usage
+      global.sidebar = sidebar;
+      global.titleBar = titleBar;
+      global.navigationBar = navigationBar;
+      // this function only call browserView.setBounds
+      // do not attempt to recall browserView.webContents.focus()
+      // as it breaks page focus (cursor, scroll bar not visible)
+      this.realignActiveWorkspaceView();
+      createMenu();
+    });
+    ipcMain.handle('request-open-url-in-workspace', async (_, url: string, id: string) => {
+      if (typeof id === 'string' && id.length > 0) {
+        // if id is defined, switch to that workspace
+        await this.setActiveWorkspaceView(id);
+        createMenu();
+        // load url in the current workspace
+        const activeWorkspace = this.workspaceService.getActiveWorkspace();
+        if (activeWorkspace !== undefined) {
+          await this.loadURL(url, activeWorkspace.id);
+        }
+      }
+    });
+    ipcMain.handle('request-wake-up-workspace', async (_, id: string) => {
+      await this.wakeUpWorkspaceView(id);
+    });
+    ipcMain.handle('request-hibernate-workspace', async (_, id: string) => {
+      await this.hibernateWorkspaceView(id);
+    });
+
+    ipcMain.handle('request-set-workspace', async (_, id, options) => {
+      await this.setWorkspaceView(id, options);
+      createMenu();
+    });
+    ipcMain.handle('request-set-workspaces', async (_, workspaces) => {
+      await this.setWorkspaceViews(workspaces);
+      createMenu();
+    });
+  }
 
   public async createWorkspaceView(workspaceOptions: IWorkspace): Promise<void> {
     const newWorkspace = await this.workspaceService.create(workspaceOptions);

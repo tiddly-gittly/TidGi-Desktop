@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/no-null */
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
-import { app } from 'electron';
+import { app, ipcMain } from 'electron';
 import settings from 'electron-settings';
 import { pickBy, mapValues } from 'lodash';
 import { v4 as uuid } from 'uuid';
@@ -33,11 +33,28 @@ export class Workspace {
   @lazyInject(serviceIdentifiers.Wiki) private readonly wikiService!: Wiki;
 
   constructor() {
+    this.workspaces = this.getInitWorkspacesForCache();
     this.init();
   }
 
   init(): void {
-    this.workspaces = this.getInitWorkspacesForCache();
+    // Workspace Metas
+    ipcMain.on('get-workspace-meta', (event, id) => {
+      event.returnValue = this.getMetaData(id);
+    });
+    ipcMain.on('get-workspace-metas', (event) => {
+      event.returnValue = this.getAllMetaData();
+    });
+    // Workspaces
+    ipcMain.on('count-workspace', (event) => {
+      event.returnValue = this.countWorkspaces();
+    });
+    ipcMain.on('get-workspace', (event, id) => {
+      event.returnValue = this.get(id);
+    });
+    ipcMain.on('get-workspaces', (event) => {
+      event.returnValue = this.getWorkspaces();
+    });
   }
 
   /**
