@@ -7,7 +7,7 @@ import serviceIdentifiers from '@services/serviceIdentifier';
 import { Preference } from '@services/preferences';
 import { Workspace } from '@services/workspaces';
 import { Channels, WindowChannel } from '@services/channels';
-import { WindowNames, windowDimension, WindowMeta } from '@services/windows/WindowProperties';
+import { WindowNames, windowDimension, WindowMeta, CodeInjectionType } from '@services/windows/WindowProperties';
 import i18n from '@services/libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
 
@@ -95,9 +95,10 @@ export class Window {
       }
     });
 
-    ipcMain.handle(WindowChannel.requestShowCodeInjectionWindow, (_event, codeInjectionType: string) => {
-      // FIXME: make codeInjectionType enum, and find places use this codeInjectionType
-      void this.open(WindowNames.codeInjection, { codeInjectionType });
+    ipcMain.handle(WindowChannel.requestShowCodeInjectionWindow, (_event, codeInjectionType: CodeInjectionType) => {
+      void this.open(WindowNames.codeInjection, { codeInjectionType }, (windowMeta: WindowMeta[WindowNames.codeInjection]) => {
+        return codeInjectionType !== windowMeta.codeInjectionType;
+      });
     });
     ipcMain.handle(WindowChannel.requestShowCustomUserAgentWindow, () => {
       void this.open(WindowNames.userAgent);
@@ -111,13 +112,15 @@ export class Window {
       void this.open(WindowNames.preferences, { scrollTo });
     });
     ipcMain.handle(WindowChannel.requestShowEditWorkspaceWindow, (_event, workspaceID: string) => {
-      void this.open(WindowNames.editWorkspace, { workspaceID });
+      void this.open(WindowNames.editWorkspace, { workspaceID }, (windowMeta: WindowMeta[WindowNames.editWorkspace]) => {
+        return workspaceID !== windowMeta.workspaceID;
+      });
     });
     ipcMain.handle(WindowChannel.requestShowAddWorkspaceWindow, () => {
       void this.open(WindowNames.addWorkspace);
     });
     ipcMain.handle(WindowChannel.requestShowNotificationsWindow, () => {
-      void this.open(WindowNames.notification);
+      void this.open(WindowNames.notifications);
     });
     ipcMain.handle(WindowChannel.requestShowProxyWindow, () => {
       void this.open(WindowNames.proxy);
