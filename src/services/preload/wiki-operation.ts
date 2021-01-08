@@ -13,14 +13,14 @@ ipcRenderer.on('wiki-add-tiddler', async (event, title, text, meta) => {
   `);
   // wait for fs to be settle
   await (Promise as any).delay(1000);
-  ipcRenderer.send('wiki-add-tiddler-done');
+  ipcRenderer.invoke('wiki-add-tiddler-done');
 });
 // get tiddler text
 ipcRenderer.on('wiki-get-tiddler-text', async (event, title) => {
   const tiddlerText = await webFrame.executeJavaScript(`
     $tw.wiki.getTiddlerText('${title}');
   `);
-  ipcRenderer.send('wiki-get-tiddler-text-done', tiddlerText);
+  ipcRenderer.invoke('wiki-get-tiddler-text-done', tiddlerText);
 });
 // add snackbar to notify user
 ipcRenderer.on('wiki-sync-progress', (event, message) => {

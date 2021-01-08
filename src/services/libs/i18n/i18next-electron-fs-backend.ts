@@ -19,7 +19,7 @@ const preloadBindings = function (ipcRenderer: any) {
     send: (channel: any, data: any) => {
       const validChannels = [readFileRequest, writeFileRequest];
       if (validChannels.includes(channel)) {
-        ipcRenderer.send(channel, data);
+        ipcRenderer.invoke(channel, data);
       }
     },
     onReceive: (channel: any, function_: any) => {
@@ -41,7 +41,7 @@ const preloadBindings = function (ipcRenderer: any) {
 // This is the code that will go into the main.js file
 // in order to set up the ipc main bindings
 const mainBindings = function (ipcMain: any, browserWindow: any) {
-  ipcMain.on(readFileRequest, (IpcMainEvent: any, arguments_: any) => {
+  ipcMain.handle(readFileRequest, (IpcMainEvent: any, arguments_: any) => {
     const localeFilePath = path.join(LOCALIZATION_FOLDER, arguments_.filename);
     fs.readFile(localeFilePath, 'utf8', (error: any, data: any) => {
       sendToAllWindows(readFileResponse, {
@@ -52,7 +52,7 @@ const mainBindings = function (ipcMain: any, browserWindow: any) {
     });
   });
 
-  ipcMain.on(writeFileRequest, (IpcMainEvent: any, arguments_: any) => {
+  ipcMain.handle(writeFileRequest, (IpcMainEvent: any, arguments_: any) => {
     const localeFilePath = path.join(LOCALIZATION_FOLDER, arguments_.filename);
     const localeFileFolderPath = path.dirname(localeFilePath);
     // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.

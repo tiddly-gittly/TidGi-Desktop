@@ -97,7 +97,7 @@ export class Preference {
   }
 
   init(): void {
-    ipcMain.on(PreferenceChannel.requestResetPreferences, () => {
+    ipcMain.handle(PreferenceChannel.requestResetPreferences, () => {
       const preferenceWindow = this.windowService.get(WindowNames.preferences);
       if (preferenceWindow !== undefined) {
         dialog
@@ -116,7 +116,7 @@ export class Preference {
           .catch(console.error);
       }
     });
-    ipcMain.on(PreferenceChannel.requestClearBrowsingData, () => {
+    ipcMain.handle(PreferenceChannel.requestClearBrowsingData, () => {
       const availableWindowToShowDialog = this.windowService.get(WindowNames.preferences) ?? this.windowService.get(WindowNames.main);
       if (availableWindowToShowDialog !== undefined) {
         dialog
@@ -135,13 +135,13 @@ export class Preference {
       }
     });
 
-    ipcMain.on(PreferenceChannel.getPreference, (event, name: keyof IPreferences) => {
+    ipcMain.handle(PreferenceChannel.getPreference, (event, name: keyof IPreferences) => {
       event.returnValue = this.get(name);
     });
-    ipcMain.on(PreferenceChannel.getPreferences, (event) => {
+    ipcMain.handle(PreferenceChannel.getPreferences, (event) => {
       event.returnValue = this.cachedPreferences;
     });
-    ipcMain.on(PreferenceChannel.requestSetPreference, <K extends keyof IPreferences>(_: unknown, key: K, value: IPreferences[K]): void => {
+    ipcMain.handle(PreferenceChannel.requestSetPreference, <K extends keyof IPreferences>(_: unknown, key: K, value: IPreferences[K]): void => {
       void this.set(key, value);
     });
   }

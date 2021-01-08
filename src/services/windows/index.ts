@@ -21,7 +21,7 @@ export class Window {
   }
 
   init(): void {
-    ipcMain.on(WindowChannel.requestShowRequireRestartDialog, () => {
+    ipcMain.handle(WindowChannel.requestShowRequireRestartDialog, () => {
       const availableWindowToShowDialog = this.get(WindowNames.preferences) ?? this.get(WindowNames.main);
       if (availableWindowToShowDialog !== undefined) {
         dialog
@@ -42,34 +42,34 @@ export class Window {
       }
     });
 
-    ipcMain.on(WindowChannel.requestShowCodeInjectionWindow, (_, codeInjectionType: string) => {
+    ipcMain.handle(WindowChannel.requestShowCodeInjectionWindow, (_, codeInjectionType: string) => {
       // FIXME: make codeInjectionType enum, and find places use this codeInjectionType
       void this.open(WindowNames.codeInjection, { codeInjectionType });
     });
-    ipcMain.on(WindowChannel.requestShowCustomUserAgentWindow, () => {
+    ipcMain.handle(WindowChannel.requestShowCustomUserAgentWindow, () => {
       void this.open(WindowNames.userAgent);
     });
 
-    ipcMain.on(WindowChannel.requestShowAboutWindow, () => {
+    ipcMain.handle(WindowChannel.requestShowAboutWindow, () => {
       void this.open(WindowNames.about);
     });
-    ipcMain.on(WindowChannel.requestShowPreferencesWindow, (_, scrollTo: string) => {
+    ipcMain.handle(WindowChannel.requestShowPreferencesWindow, (_, scrollTo: string) => {
       // FIXME: make scrollTo enum, and find places use this scrollTo
       void this.open(WindowNames.preferences, { scrollTo });
     });
-    ipcMain.on(WindowChannel.requestShowEditWorkspaceWindow, (_, workspaceID: string) => {
+    ipcMain.handle(WindowChannel.requestShowEditWorkspaceWindow, (_, workspaceID: string) => {
       void this.open(WindowNames.editWorkspace, { workspaceID });
     });
-    ipcMain.on(WindowChannel.requestShowAddWorkspaceWindow, () => {
+    ipcMain.handle(WindowChannel.requestShowAddWorkspaceWindow, () => {
       void this.open(WindowNames.addWorkspace);
     });
-    ipcMain.on(WindowChannel.requestShowNotificationsWindow, () => {
+    ipcMain.handle(WindowChannel.requestShowNotificationsWindow, () => {
       void this.open(WindowNames.notification);
     });
-    ipcMain.on(WindowChannel.requestShowProxyWindow, () => {
+    ipcMain.handle(WindowChannel.requestShowProxyWindow, () => {
       void this.open(WindowNames.proxy);
     });
-    ipcMain.on(WindowChannel.requestShowSpellcheckLanguagesWindow, () => {
+    ipcMain.handle(WindowChannel.requestShowSpellcheckLanguagesWindow, () => {
       void this.open(WindowNames.spellcheck);
     });
   }

@@ -10,9 +10,9 @@ contextBridge.exposeInMainWorld('remote', {
     // @ts-expect-error ts-migrate(7019) FIXME: Rest parameter 'arguments_' implicitly has an 'any... Remove this comment to see the full error message
     invoke: (channel: any, ...arguments_) => ipcRenderer.invoke(channel, ...arguments_),
     // @ts-expect-error ts-migrate(7019) FIXME: Rest parameter 'arguments_' implicitly has an 'any... Remove this comment to see the full error message
-    send: (channel: any, ...arguments_) => ipcRenderer.send(channel, ...arguments_),
+    send: (channel: any, ...arguments_) => ipcRenderer.invoke(channel, ...arguments_),
     // @ts-expect-error ts-migrate(7019) FIXME: Rest parameter 'arguments_' implicitly has an 'any... Remove this comment to see the full error message
-    sendSync: (channel: any, ...arguments_) => ipcRenderer.sendSync(channel, ...arguments_),
+    sendSync: (channel: any, ...arguments_) => ipcRenderer.invokeSync(channel, ...arguments_),
     // @ts-expect-error ts-migrate(7019) FIXME: Rest parameter 'arguments_' implicitly has an 'any... Remove this comment to see the full error message
     removeListener: (channel: any, ...arguments_) => ipcRenderer.removeListener(channel, ...arguments_),
     // @ts-expect-error ts-migrate(7019) FIXME: Rest parameter 'arguments_' implicitly has an 'any... Remove this comment to see the full error message

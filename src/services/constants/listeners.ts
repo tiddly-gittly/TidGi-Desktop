@@ -9,9 +9,9 @@ ipcMain.handle(
     return pathConstants[key];
   },
 );
-ipcMain.on('get-basename', (event, pathString: string) => {
+ipcMain.handle('get-basename', (event, pathString: string) => {
   event.returnValue = path.basename(pathString);
 });
-ipcMain.on('get-dirname', (event, pathString: string) => {
+ipcMain.handle('get-dirname', (event, pathString: string) => {
   event.returnValue = path.dirname(pathString);
 });

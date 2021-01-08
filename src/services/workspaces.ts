@@ -39,20 +39,20 @@ export class Workspace {
 
   init(): void {
     // Workspace Metas
-    ipcMain.on('get-workspace-meta', (event, id) => {
+    ipcMain.handle('get-workspace-meta', (event, id) => {
       event.returnValue = this.getMetaData(id);
     });
-    ipcMain.on('get-workspace-metas', (event) => {
+    ipcMain.handle('get-workspace-metas', (event) => {
       event.returnValue = this.getAllMetaData();
     });
     // Workspaces
-    ipcMain.on('count-workspace', (event) => {
+    ipcMain.handle('count-workspace', (event) => {
       event.returnValue = this.countWorkspaces();
     });
-    ipcMain.on('get-workspace', (event, id) => {
+    ipcMain.handle('get-workspace', (event, id) => {
       event.returnValue = this.get(id);
     });
-    ipcMain.on('get-workspaces', (event) => {
+    ipcMain.handle('get-workspaces', (event) => {
       event.returnValue = this.getWorkspaces();
     });
   }

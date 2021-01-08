@@ -16,10 +16,10 @@ const handleLoaded = (event: string) => {
   // eslint-disable-next-line no-console
   console.log(`Preload script is loading on ${event}...`);
   const loadDarkReader = () => {
-    const shouldUseDarkColor = ipcRenderer.sendSync('get-should-use-dark-colors');
-    const darkReader = ipcRenderer.sendSync('get-preference', 'darkReader');
+    const shouldUseDarkColor = ipcRenderer.invokeSync('get-should-use-dark-colors');
+    const darkReader = ipcRenderer.invokeSync('get-preference', 'darkReader');
     if (shouldUseDarkColor && darkReader) {
-      const { darkReaderBrightness, darkReaderContrast, darkReaderGrayscale, darkReaderSepia } = ipcRenderer.sendSync('get-preferences');
+      const { darkReaderBrightness, darkReaderContrast, darkReaderGrayscale, darkReaderSepia } = ipcRenderer.invokeSync('get-preferences');
       enableDarkMode({
         brightness: darkReaderBrightness,
         contrast: darkReaderContrast,
@@ -34,9 +34,9 @@ const handleLoaded = (event: string) => {
   ipcRenderer.on('reload-dark-reader', () => {
     loadDarkReader();
   });
-  const jsCodeInjection = ipcRenderer.sendSync('get-preference', 'jsCodeInjection');
-  const allowNodeInJsCodeInjection = ipcRenderer.sendSync('get-preference', 'allowNodeInJsCodeInjection');
-  const cssCodeInjection = ipcRenderer.sendSync('get-preference', 'cssCodeInjection');
+  const jsCodeInjection = ipcRenderer.invokeSync('get-preference', 'jsCodeInjection');
+  const allowNodeInJsCodeInjection = ipcRenderer.invokeSync('get-preference', 'allowNodeInJsCodeInjection');
+  const cssCodeInjection = ipcRenderer.invokeSync('get-preference', 'cssCodeInjection');
   if (jsCodeInjection && jsCodeInjection.trim().length > 0) {
     if (allowNodeInJsCodeInjection) {
       try {
@@ -80,7 +80,7 @@ const handleLoaded = (event: string) => {
           new MenuItem({
             label: i18next.t('ContextMenu.OpenLinkInNewWindow'),
             click: () => {
-              ipcRenderer.send('request-set-global-force-new-window', true);
+              ipcRenderer.invoke('request-set-global-force-new-window', true);
               window.open(info.linkURL);
             },
           }),
@@ -122,16 +122,16 @@ const handleLoaded = (event: string) => {
           submenu: [
             {
               label: i18next.t('ContextMenu.About'),
-              click: () => ipcRenderer.send('request-show-about-window'),
+              click: () => ipcRenderer.invoke('request-show-about-window'),
             },
             { type: 'separator' },
             {
               label: i18next.t('ContextMenu.CheckForUpdates'),
-              click: () => ipcRenderer.send('request-check-for-updates'),
+              click: () => ipcRenderer.invoke('request-check-for-updates'),
             },
             {
               label: i18next.t('ContextMenu.Preferences'),
-              click: () => ipcRenderer.send('request-show-preferences-window'),
+              click: () => ipcRenderer.invoke('request-show-preferences-window'),
             },
             { type: 'separator' },
             {
@@ -145,7 +145,7 @@ const handleLoaded = (event: string) => {
             { type: 'separator' },
             {
               label: i18next.t('ContextMenu.Quit'),
-              click: () => ipcRenderer.send('request-quit'),
+              click: () => ipcRenderer.invoke('request-quit'),
             },
           ],
         }),
@@ -190,18 +190,18 @@ window.addEventListener('message', (e) => {
     return;
   }
   if (e.data.type === 'get-display-media-id') {
-    ipcRenderer.send('request-show-display-media-window');
+    ipcRenderer.invoke('request-show-display-media-window');
   }
   // set workspace to active when its notification is clicked
   if (e.data.type === 'focus-workspace') {
-    ipcRenderer.send('request-set-active-workspace', e.data.workspaceId);
+    ipcRenderer.invoke('request-set-active-workspace', e.data.workspaceId);
   }
 });
 // Fix Can't show file list of Google Drive
 // https://github.com/electron/electron/issues/16587
 // Fix chrome.runtime.sendMessage is undefined for FastMail
 // https://github.com/atomery/singlebox/issues/21
-const initialShouldPauseNotifications = ipcRenderer.sendSync('get-pause-notifications-info') != undefined;
+const initialShouldPauseNotifications = ipcRenderer.invokeSync('get-pause-notifications-info') != undefined;
 // @ts-expect-error ts-migrate(2339) FIXME: Property 'workspaceId' does not exist on type 'Web... Remove this comment to see the full error message
 const { workspaceId } = remote.getCurrentWebContents();
 webFrame.executeJavaScript(`

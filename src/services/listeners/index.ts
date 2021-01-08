@@ -44,19 +44,19 @@ const loadListeners = () => {
   
 
 
-  ipcMain.on('request-wiki-open-tiddler', (event, tiddlerName) => {
+  ipcMain.handle('request-wiki-open-tiddler', (event, tiddlerName) => {
     const browserView = getActiveBrowserView();
     if (browserView) {
       browserView.webContents.send('wiki-open-tiddler', tiddlerName);
     }
   });
-  ipcMain.on('request-wiki-send-action-message', (event, actionMessage) => {
+  ipcMain.handle('request-wiki-send-action-message', (event, actionMessage) => {
     const browserView = getActiveBrowserView();
     if (browserView) {
       browserView.webContents.send('wiki-send-action-message', actionMessage);
     }
   });
-  ipcMain.on('request-open', (_, uri, isDirectory) => {
+  ipcMain.handle('request-open', (_, uri, isDirectory) => {
     if (isDirectory) {
       shell.showItemInFolder(uri);
     } else {
@@ -64,14 +64,14 @@ const loadListeners = () => {
     }
   });
   // Find In Page
-  ipcMain.on('request-find-in-page', (_, text, forward) => {
+  ipcMain.handle('request-find-in-page', (_, text, forward) => {
     // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
     const contents = mainWindow.get().getBrowserView().webContents;
     contents.findInPage(text, {
       forward,
     });
   });
-  ipcMain.on('request-stop-find-in-page', (_, close) => {
+  ipcMain.handle('request-stop-find-in-page', (_, close) => {
     const win = mainWindow.get();
     // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
     const view = win.getBrowserView();
@@ -93,16 +93,16 @@ const loadListeners = () => {
     createWorkspaceView(name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground, tagName);
     createMenu();
   });
-  ipcMain.on('request-set-active-workspace', (_, id) => {
+  ipcMain.handle('request-set-active-workspace', (_, id) => {
     if (getWorkspace(id)) {
       setActiveWorkspaceView(id);
       createMenu();
     }
   });
-  ipcMain.on('request-get-active-workspace', (event) => {
+  ipcMain.handle('request-get-active-workspace', (event) => {
     event.returnValue = getActiveWorkspace();
   });
-  ipcMain.on('request-realign-active-workspace', () => {
+  ipcMain.handle('request-realign-active-workspace', () => {
     const { sidebar, titleBar, navigationBar } = getPreferences();
     global.sidebar = sidebar;
     global.titleBar = titleBar;
@@ -113,7 +113,7 @@ const loadListeners = () => {
     realignActiveWorkspaceView();
     createMenu();
   });
-  ipcMain.on('request-open-url-in-workspace', (_, url, id) => {
+  ipcMain.handle('request-open-url-in-workspace', (_, url, id) => {
     if (id) {
       // if id is defined, switch to that workspace
       setActiveWorkspaceView(id);
@@ -124,32 +124,32 @@ const loadListeners = () => {
       loadURL(url, activeWorkspace.id);
     }
   });
-  ipcMain.on('request-wake-up-workspace', (_, id) => {
+  ipcMain.handle('request-wake-up-workspace', (_, id) => {
     wakeUpWorkspaceView(id);
   });
-  ipcMain.on('request-hibernate-workspace', (_, id) => {
+  ipcMain.handle('request-hibernate-workspace', (_, id) => {
     hibernateWorkspaceView(id);
   });
   
-  ipcMain.on('request-set-workspace', (_, id, options) => {
+  ipcMain.handle('request-set-workspace', (_, id, options) => {
     setWorkspaceView(id, options);
     createMenu();
   });
-  ipcMain.on('request-set-workspaces', (_, workspaces) => {
+  ipcMain.handle('request-set-workspaces', (_, workspaces) => {
     setWorkspaceViews(workspaces);
     createMenu();
   });
-  ipcMain.on('request-set-workspace-picture', (_, id, picturePath) => {
+  ipcMain.handle('request-set-workspace-picture', (_, id, picturePath) => {
     setWorkspacePicture(id, picturePath);
   });
-  ipcMain.on('request-remove-workspace-picture', (_, id) => {
+  ipcMain.handle('request-remove-workspace-picture', (_, id) => {
     removeWorkspacePicture(id);
   });
 
-  ipcMain.on('request-load-url', (_, url, id) => {
+  ipcMain.handle('request-load-url', (_, url, id) => {
     loadURL(url, id);
   });
-  ipcMain.on('request-go-home', () => {
+  ipcMain.handle('request-go-home', () => {
     const win = mainWindow.get();
     if (win !== undefined && win.getBrowserView() !== undefined) {
       // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
@@ -161,7 +161,7 @@ const loadListeners = () => {
       (win as any).send('update-can-go-forward', contents.canGoForward());
     }
   });
-  ipcMain.on('request-go-back', () => {
+  ipcMain.handle('request-go-back', () => {
     const win = mainWindow.get();
     if (win !== undefined && win.getBrowserView() !== undefined) {
       // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
@@ -173,7 +173,7 @@ const loadListeners = () => {
       }
     }
   });
-  ipcMain.on('request-go-forward', () => {
+  ipcMain.handle('request-go-forward', () => {
     const win = mainWindow.get();
     if (win !== undefined && win.getBrowserView() !== undefined) {
       // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
@@ -185,14 +185,14 @@ const loadListeners = () => {
       }
     }
   });
-  ipcMain.on('request-reload', () => {
+  ipcMain.handle('request-reload', () => {
     const win = mainWindow.get();
     if (win !== undefined) {
       // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
       win.getBrowserView().webContents.reload();
     }
   });
-  ipcMain.on('request-show-message-box', (_, message, type) => {
+  ipcMain.handle('request-show-message-box', (_, message, type) => {
     dialog
       // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BrowserWindow | undefined' is no... Remove this comment to see the full error message
       .showMessageBox(mainWindow.get(), {
@@ -204,17 +204,17 @@ const loadListeners = () => {
       })
       .catch(console.log);
   });
-  ipcMain.on('create-menu', () => {
+  ipcMain.handle('create-menu', () => {
     createMenu();
   });
-  ipcMain.on('request-show-display-media-window', (e) => {
+  ipcMain.handle('request-show-display-media-window', (e) => {
     const viewId = (BrowserView as any).fromWebContents(e.sender).id;
     displayMediaWindow.show(viewId);
   });
-  ipcMain.on('request-quit', () => {
+  ipcMain.handle('request-quit', () => {
     app.quit();
   });
-  ipcMain.on('request-check-for-updates', (e, isSilent) => {
+  ipcMain.handle('request-check-for-updates', (e, isSilent) => {
     // https://github.com/electron-userland/electron-builder/issues/4028
     if (!autoUpdater.isUpdaterActive()) {
       return;
@@ -260,19 +260,19 @@ const loadListeners = () => {
     autoUpdater.checkForUpdates();
   });
   // Native Theme
-  ipcMain.on('get-should-use-dark-colors', (event) => {
+  ipcMain.handle('get-should-use-dark-colors', (event) => {
     event.returnValue = nativeTheme.shouldUseDarkColors;
   });
-  ipcMain.on('request-reload-views-dark-reader', () => {
+  ipcMain.handle('request-reload-views-dark-reader', () => {
     reloadViewsDarkReader();
   });
   // if global.forceNewWindow = true
   // the next external link request will be opened in new window
-  ipcMain.on('request-set-global-force-new-window', (_, value) => {
+  ipcMain.handle('request-set-global-force-new-window', (_, value) => {
     (global as any).forceNewWindow = value;
   });
   // https://www.electronjs.org/docs/tutorial/online-offline-events
-  ipcMain.on('online-status-changed', (_, online) => {
+  ipcMain.handle('online-status-changed', (_, online) => {
     if (online) {
       reloadViewsWebContentsIfDidFailLoad();
     }

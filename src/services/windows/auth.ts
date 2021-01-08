@@ -70,7 +70,7 @@ const create = (id: any) => {
     ipcMain.removeListener('request-validate-auth-identity', identityValidationListener);
   });
 
-  ipcMain.on('request-validate-auth-identity', identityValidationListener);
+  ipcMain.handle('request-validate-auth-identity', identityValidationListener);
 };
 
 const show = (id: any) => {

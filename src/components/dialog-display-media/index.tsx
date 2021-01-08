@@ -66,7 +66,7 @@ class DisplayMedia extends React.Component<DisplayMediaProps, DisplayMediaState>
               button
               onClick={() => {
                 const { ipcRenderer } = window.remote;
-                ipcRenderer.send('display-media-selected', source.id);
+                ipcRenderer.invoke('display-media-selected', source.id);
               }}>
               <ListItemText primary={source.name} />
             </ListItem>
@@ -78,7 +78,7 @@ class DisplayMedia extends React.Component<DisplayMediaProps, DisplayMediaState>
               button
               onClick={() => {
                 const { ipcRenderer } = window.remote;
-                ipcRenderer.send('display-media-selected', source.id);
+                ipcRenderer.invoke('display-media-selected', source.id);
               }}>
               <ListItemText primary={source.name} />
             </ListItem>
