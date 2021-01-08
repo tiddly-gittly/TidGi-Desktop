@@ -135,11 +135,11 @@ export class Preference {
       }
     });
 
-    ipcMain.handle(PreferenceChannel.getPreference, (event, name: keyof IPreferences) => {
-      event.returnValue = this.get(name);
+    ipcMain.handle(PreferenceChannel.getPreference, (_event, name: keyof IPreferences) => {
+      return this.get(name);
     });
-    ipcMain.handle(PreferenceChannel.getPreferences, (event) => {
-      event.returnValue = this.cachedPreferences;
+    ipcMain.handle(PreferenceChannel.getPreferences, (_event) => {
+      return this.cachedPreferences;
     });
     ipcMain.handle(PreferenceChannel.requestSetPreference, <K extends keyof IPreferences>(_: unknown, key: K, value: IPreferences[K]): void => {
       void this.set(key, value);

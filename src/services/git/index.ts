@@ -47,7 +47,7 @@ export class Git {
     if (browserView !== undefined) {
       const tiddlerText = await new Promise((resolve) => {
         browserView.webContents.send('wiki-get-tiddler-text', '$:/GitHub/Repo');
-        ipcMain.once('wiki-get-tiddler-text-done', (_, value) => resolve(value));
+        ipcMain.once('wiki-get-tiddler-text-done', (_event, value) => resolve(value));
       });
       if (tiddlerText !== githubRepoName) {
         await new Promise<void>((resolve) => {

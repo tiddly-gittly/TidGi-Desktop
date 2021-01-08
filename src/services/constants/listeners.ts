@@ -10,8 +10,8 @@ ipcMain.handle(
   },
 );
 ipcMain.handle('get-basename', (event, pathString: string) => {
-  event.returnValue = path.basename(pathString);
+  return path.basename(pathString);
 });
 ipcMain.handle('get-dirname', (event, pathString: string) => {
-  event.returnValue = path.dirname(pathString);
+  return path.dirname(pathString);
 });

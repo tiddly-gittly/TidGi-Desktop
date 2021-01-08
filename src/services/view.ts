@@ -17,11 +17,12 @@ import fsExtra from 'fs-extra';
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Preference } from '@services/preferences';
 import { Workspace } from '@services/workspaces';
+import { Wiki } from '@services/wiki';
+import { Authentication } from '@services/auth';
 import { buildResourcePath } from '@services/constants/paths';
 import i18n from './libs/i18n';
-import wikiStartup from './libs/wiki/wiki-startup';
 import sendToAllWindows from './libs/send-to-all-windows';
-import getViewBounds from './libs/get-view-bounds';
+import getViewBounds from '@services/libs/get-view-bounds';
 import { extractDomain, isInternalUrl } from '@services/libs/url';
 import { IWorkspace } from '@services/types';
 
@@ -31,8 +32,24 @@ declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 export class View {
   constructor(
     @inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference,
+    @inject(serviceIdentifiers.Wiki) private readonly wikiService: Wiki,
     @inject(serviceIdentifiers.Workspace) private readonly workspaceService: Workspace,
-  ) {}
+    @inject(serviceIdentifiers.Authentication) private readonly authService: Authentication,
+  ) {
+    this.init();
+  }
+
+  private init(): void {
+    // https://www.electronjs.org/docs/tutorial/online-offline-events
+    ipcMain.handle('online-status-changed', (_event, online: boolean) => {
+      if (online) {
+        this.reloadViewsWebContentsIfDidFailLoad();
+      }
+    });
+    ipcMain.handle('request-reload-views-dark-reader', () => {
+      this.reloadViewsDarkReader();
+    });
+  }
 
   private views: Record<string, BrowserView> = {};
   private shouldMuteAudio = false;
@@ -59,8 +76,7 @@ export class View {
     } = this.preferenceService.getPreferences();
     // configure session, proxy & ad blocker
     const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
-    // FIXME: call auth service instead
-    const userInfo = this.preferenceService.get('github-user-info');
+    const userInfo = this.authService.get('authing');
     if (userInfo !== undefined) {
       // user not logined into Github
       void dialog.showMessageBox(browserWindow, {
@@ -452,7 +468,7 @@ export class View {
         const popupWin = new BrowserWindow(newOptions);
         popupWin.setMenuBarVisibility(false);
         popupWin.webContents.on('new-window', handleNewWindow);
-        popupWin.webContents.once('will-navigate', (_, url) => {
+        popupWin.webContents.once('will-navigate', (_event, url) => {
           // if the window is used for the current app, then use default behavior
           if (isInternalUrl(url, [appUrl, currentUrl])) {
             popupWin.show();
@@ -554,7 +570,7 @@ export class View {
     const initialUrl = (rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl;
     adjustUserAgentByUrl(view.webContents, initialUrl);
     // start wiki on startup, or on sub-wiki creation
-    await wikiStartup(workspace);
+    await this.wikiService.wikiStartup(workspace);
     void view.webContents.loadURL(initialUrl);
   }
 

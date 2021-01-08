@@ -85,6 +85,19 @@ export class Wiki {
       }
     });
     ipcMain.handle('get-sub-wiki-plugin-content', async (_event, mainWikiPath) => await getSubWikiPluginContent(mainWikiPath));
+
+    ipcMain.handle('request-wiki-open-tiddler', (event, tiddlerName) => {
+      const browserView = this.viewService.getActiveBrowserView();
+      if (browserView !== undefined) {
+        browserView.webContents.send('wiki-open-tiddler', tiddlerName);
+      }
+    });
+    ipcMain.handle('request-wiki-send-action-message', (event, actionMessage) => {
+      const browserView = this.viewService.getActiveBrowserView();
+      if (browserView !== undefined) {
+        browserView.webContents.send('wiki-send-action-message', actionMessage);
+      }
+    });
   }
 
   // wiki-worker-manager.ts

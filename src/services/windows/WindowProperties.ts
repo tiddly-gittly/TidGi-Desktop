@@ -38,3 +38,11 @@ export const windowDimension: Record<WindowNames, { width?: number; height?: num
     height: 640,
   },
 };
+
+/**
+ * metadata that send to window when create them.
+ * Please make all property partial (?:), so wo can always assign {} as default metadata without type warning
+ */
+export interface WindowMeta extends Record<WindowNames, Record<string, unknown> | undefined> {
+  [WindowNames.displayMedia]: { displayMediaRequestedViewID?: number };
+}

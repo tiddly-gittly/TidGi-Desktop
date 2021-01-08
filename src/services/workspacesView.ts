@@ -36,7 +36,7 @@ export class WorkspaceView {
         createMenu();
       }
     });
-    ipcMain.handle('request-get-active-workspace', (event) => {
+    ipcMain.handle('request-get-active-workspace', (_event) => {
       return this.workspaceService.getActiveWorkspace();
     });
     ipcMain.handle('request-realign-active-workspace', () => {
@@ -51,7 +51,7 @@ export class WorkspaceView {
       this.realignActiveWorkspaceView();
       createMenu();
     });
-    ipcMain.handle('request-open-url-in-workspace', async (_, url: string, id: string) => {
+    ipcMain.handle('request-open-url-in-workspace', async (_event, url: string, id: string) => {
       if (typeof id === 'string' && id.length > 0) {
         // if id is defined, switch to that workspace
         await this.setActiveWorkspaceView(id);
@@ -63,20 +63,23 @@ export class WorkspaceView {
         }
       }
     });
-    ipcMain.handle('request-wake-up-workspace', async (_, id: string) => {
+    ipcMain.handle('request-wake-up-workspace', async (_event, id: string) => {
       await this.wakeUpWorkspaceView(id);
     });
-    ipcMain.handle('request-hibernate-workspace', async (_, id: string) => {
+    ipcMain.handle('request-hibernate-workspace', async (_event, id: string) => {
       await this.hibernateWorkspaceView(id);
     });
 
-    ipcMain.handle('request-set-workspace', async (_, id, options) => {
+    ipcMain.handle('request-set-workspace', async (_event, id, options) => {
       await this.setWorkspaceView(id, options);
       createMenu();
     });
-    ipcMain.handle('request-set-workspaces', async (_, workspaces) => {
+    ipcMain.handle('request-set-workspaces', async (_event, workspaces) => {
       await this.setWorkspaceViews(workspaces);
       createMenu();
+    });
+    ipcMain.handle('request-load-url', async (_event, url, id) => {
+      await this.loadURL(url, id);
     });
   }
 

@@ -38,22 +38,26 @@ export class Workspace {
   }
 
   init(): void {
-    // Workspace Metas
-    ipcMain.handle('get-workspace-meta', (event, id) => {
-      event.returnValue = this.getMetaData(id);
+    ipcMain.handle('get-workspace-meta', (_event, id) => {
+      return this.getMetaData(id);
     });
-    ipcMain.handle('get-workspace-metas', (event) => {
-      event.returnValue = this.getAllMetaData();
+    ipcMain.handle('get-workspace-metas', (_event) => {
+      return this.getAllMetaData();
     });
-    // Workspaces
-    ipcMain.handle('count-workspace', (event) => {
-      event.returnValue = this.countWorkspaces();
+    ipcMain.handle('count-workspace', (_event) => {
+      return this.countWorkspaces();
     });
-    ipcMain.handle('get-workspace', (event, id) => {
-      event.returnValue = this.get(id);
+    ipcMain.handle('get-workspace', (_event, id) => {
+      return this.get(id);
     });
-    ipcMain.handle('get-workspaces', (event) => {
-      event.returnValue = this.getWorkspaces();
+    ipcMain.handle('get-workspaces', (_event) => {
+      return this.getWorkspaces();
+    });
+    ipcMain.handle('request-set-workspace-picture', async (_event, id, picturePath) => {
+      await this.setWorkspacePicture(id, picturePath);
+    });
+    ipcMain.handle('request-remove-workspace-picture', async (_event, id) => {
+      await this.removeWorkspacePicture(id);
     });
   }
 

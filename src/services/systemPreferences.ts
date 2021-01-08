@@ -17,11 +17,11 @@ export class SystemPreference {
 
   init(): void {
     ipcMain.handle('get-system-preference', (event, key: keyof IUsedElectionSettings) => {
-      event.returnValue = this.get(key);
+      return this.get(key);
     });
     ipcMain.handle('get-system-preferences', (event) => {
       const preferences = this.getSystemPreferences();
-      event.returnValue = preferences;
+      return preferences;
     });
     ipcMain.handle('request-set-system-preference', <K extends keyof IUsedElectionSettings>(_: unknown, key: K, value: IUsedElectionSettings[K]) => {
       this.setSystemPreference(key, value);
