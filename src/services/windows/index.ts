@@ -217,7 +217,7 @@ export class Window {
   }
 
   /**
-   * BroadCast message to all opened windows
+   * BroadCast message to all opened windows, so we can sync state to redux and make them take effect immediately
    * @param channel ipc channel to send
    * @param arguments_ any messages
    */
