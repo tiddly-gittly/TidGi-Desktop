@@ -1,4 +1,4 @@
-import { app, BrowserView, ipcMain, WebContents, shell, Event as ElectronEvent, BrowserWindowConstructorOptions, BrowserWindow } from 'electron';
+import { app, BrowserView, ipcMain, WebContents, shell, NativeImage, BrowserWindowConstructorOptions, BrowserWindow } from 'electron';
 import path from 'path';
 import fsExtra from 'fs-extra';
 
@@ -10,16 +10,16 @@ import { buildResourcePath } from '@services/constants/paths';
 import { Preference } from '@services/preferences';
 import { Workspace } from '@services/workspaces';
 import { Window } from '@services/windows';
-import { Wiki } from '@services/wiki';
-import { Authentication } from '@services/auth';
+import { WindowNames } from '@services/windows/WindowProperties';
 import { container } from '@services/container';
 
 export interface IViewContext {
   workspace: IWorkspace;
   shouldPauseNotifications: boolean;
+  sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
 }
 export interface IViewModifier {
-  adjustUserAgentByUrl: (_contents: WebContents, _url: string) => boolean;
+  adjustUserAgentByUrl: (_contents: WebContents, nextUrl: string) => boolean;
 }
 
 /**
@@ -28,7 +28,7 @@ export interface IViewModifier {
 export default function setupViewEventHandlers(
   view: BrowserView,
   browserWindow: BrowserWindow,
-  { workspace, shouldPauseNotifications }: IViewContext,
+  { workspace, shouldPauseNotifications, sharedWebPreferences }: IViewContext,
   { adjustUserAgentByUrl }: IViewModifier,
 ): void {
   const workspaceService = container.resolve(Workspace);
@@ -75,8 +75,7 @@ export default function setupViewEventHandlers(
         if (browserWindow !== undefined && !browserWindow.isDestroyed()) {
           // fix https://github.com/atomery/singlebox/issues/228
           const contentSize = browserWindow.getContentSize();
-          // @ts-expect-error ts-migrate(2554) FIXME: Expected 4 arguments, but got 1.
-          view.setBounds(getViewBounds(contentSize));
+          view.setBounds(getViewBounds(contentSize as [number, number]));
         }
       }
     }
@@ -191,7 +190,32 @@ export default function setupViewEventHandlers(
     }
   });
 
-  view.webContents.on('new-window', handleNewWindow);
+  // TODO: refactor to setWindowOpenHandler
+  //   view.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) => {
+  //     action: "deny";
+  // } | {
+  //     action: "allow";
+  //     overrideBrowserWindowOptions?: BrowserWindowConstructorOptions | undefined;
+  // })
+  view.webContents.on(
+    'new-window',
+    (
+      _event: Electron.NewWindowWebContentsEvent,
+      nextUrl: string,
+      _frameName: string,
+      disposition: 'default' | 'new-window' | 'foreground-tab' | 'background-tab' | 'save-to-disk' | 'other',
+      options: BrowserWindowConstructorOptions,
+      _additionalFeatures: string[],
+      _referrer: Electron.Referrer,
+      _postBody: Electron.PostBody,
+    ) =>
+      handleNewWindow(_event, nextUrl, _frameName, disposition, options, _additionalFeatures, _referrer, _postBody, {
+        workspace,
+        sharedWebPreferences,
+        view,
+        adjustUserAgentByUrl,
+      }),
+  );
   // Handle downloads
   // https://electronjs.org/docs/api/download-item
   view.webContents.session.on('will-download', (_event, item) => {
@@ -233,9 +257,8 @@ export default function setupViewEventHandlers(
       app.badgeCount = count;
       if (process.platform === 'win32') {
         if (count > 0) {
-          // TODO: seems this is not good?
-          // @ts-expect-error should be Electron.NativeImage here
-          browserWindow.setOverlayIcon(path.resolve(buildResourcePath, 'overlay-icon.png'), `You have ${count} new messages.`);
+          const icon = NativeImage.createFromPath(path.resolve(buildResourcePath, 'overlay-icon.png'));
+          browserWindow.setOverlayIcon(icon, `You have ${count} new messages.`);
         } else {
           // eslint-disable-next-line unicorn/no-null
           browserWindow.setOverlayIcon(null, '');
@@ -257,18 +280,26 @@ export default function setupViewEventHandlers(
   });
 }
 
+export interface INewWindowContext {
+  view: BrowserView;
+  workspace: IWorkspace;
+  sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
+  adjustUserAgentByUrl: (_contents: WebContents, nextUrl: string) => boolean;
+}
+
 function handleNewWindow(
-  event: ElectronEvent,
-  view: BrowserView,
+  event: Electron.NewWindowWebContentsEvent,
   nextUrl: string,
   _frameName: string,
-  disposition: string,
-  workspace: IWorkspace,
-  sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'],
-  options?: BrowserWindowConstructorOptions,
+  disposition: 'default' | 'new-window' | 'foreground-tab' | 'background-tab' | 'save-to-disk' | 'other',
+  options: BrowserWindowConstructorOptions,
+  _additionalFeatures: string[],
+  _referrer: Electron.Referrer,
+  _postBody: Electron.PostBody,
+  newWindowContext: INewWindowContext,
 ): void {
   const workspaceService = container.resolve(Workspace);
-  const preferenceService = container.resolve(Preference);
+  const { view, workspace, sharedWebPreferences, adjustUserAgentByUrl } = newWindowContext;
 
   const appUrl = workspaceService.get(workspace.id)?.homeUrl;
   if (appUrl === undefined) {
@@ -285,20 +316,33 @@ function handleNewWindow(
     // options is undefined
     // https://github.com/atomery/webcatalog/issues/842
     const cmdClick = options === undefined;
-    const newOptions = cmdClick
+    const metadataConfig = {
+      additionalArguments: [WindowNames.newWindow, JSON.stringify({ isPopup: true, ...JSON.parse(sharedWebPreferences?.additionalArguments?.[1] ?? '{}') })],
+      preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+    };
+    const newOptions: BrowserWindowConstructorOptions = cmdClick
       ? {
           show: true,
           width: 1200,
           height: 800,
-          webPreferences: sharedWebPreferences,
+          webPreferences: { ...sharedWebPreferences, ...metadataConfig },
         }
-      : { ...options, width: 1200, height: 800 };
+      : { ...options, width: 1200, height: 800, webPreferences: metadataConfig };
     const popupWin = new BrowserWindow(newOptions);
-    // FIXME: WebCatalog internal value to determine whether BrowserWindow is popup
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    popupWin.isPopup = true;
     popupWin.setMenuBarVisibility(false);
-    popupWin.webContents.on('new-window', this.handleNewWindow);
+    popupWin.webContents.on(
+      'new-window',
+      (
+        _event: Electron.NewWindowWebContentsEvent,
+        nextUrl: string,
+        _frameName: string,
+        disposition: 'default' | 'new-window' | 'foreground-tab' | 'background-tab' | 'save-to-disk' | 'other',
+        options: BrowserWindowConstructorOptions,
+        _additionalFeatures: string[],
+        _referrer: Electron.Referrer,
+        _postBody: Electron.PostBody,
+      ) => handleNewWindow(_event, nextUrl, _frameName, disposition, options, _additionalFeatures, _referrer, _postBody, newWindowContext),
+    );
     // fix Google prevents signing in because of security concerns
     // https://github.com/atomery/webcatalog/issues/455
     // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
@@ -320,8 +364,6 @@ function handleNewWindow(
     if (cmdClick) {
       void popupWin.loadURL(nextUrl);
     }
-    // FIXME: type definition of event
-    // @ts-expect-error Property 'newGuest' does not exist on type 'Event'.ts(2339)
     event.newGuest = popupWin;
   };
   // Conditions are listed by order of priority
@@ -329,18 +371,18 @@ function handleNewWindow(
   // or regular new-window event
   // or if in Google Drive app, open Google Docs files internally https://github.com/atomery/webcatalog/issues/800
   // the next external link request will be opened in new window
-  if (
-    // FIXME: WebCatalog internal value to determine whether BrowserWindow is popup
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    global.forceNewWindow === true ||
-    disposition === 'new-window' ||
-    disposition === 'default' ||
-    (appDomain === 'drive.google.com' && nextDomain === 'docs.google.com')
-  ) {
-    global.forceNewWindow = false;
-    openInNewWindow();
-    return;
-  }
+  // if (
+  //   // FIXME: WebCatalog internal value to determine whether BrowserWindow is popup
+  //   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
+  //   global.forceNewWindow === true ||
+  //   disposition === 'new-window' ||
+  //   disposition === 'default' ||
+  //   (appDomain === 'drive.google.com' && nextDomain === 'docs.google.com')
+  // ) {
+  //   global.forceNewWindow = false;
+  //   openInNewWindow();
+  //   return;
+  // }
   // load in same window
   if (
     // Google: Add account
@@ -365,32 +407,6 @@ function handleNewWindow(
     openInNewWindow();
     return;
   }
-  // special case for Roam Research
-  // if popup window is not opened and loaded, Roam crashes (shows white page)
-  // https://github.com/atomery/webcatalog/issues/793
-  if (appDomain === 'roamresearch.com' && nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
-    event.preventDefault();
-    void shell.openExternal(nextUrl);
-    // mock window
-    // close as soon as it did-navigate
-    const newOptions: BrowserWindowConstructorOptions = {
-      ...options,
-      show: false,
-    };
-    const popupWin = new BrowserWindow(newOptions);
-    // WebCatalog internal value to determine whether BrowserWindow is popup
-    // FIXME: WebCatalog internal value to determine whether BrowserWindow is popup
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-    popupWin.isPopup = true;
-    // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.
-    popupWin.once('did-navigate', () => {
-      popupWin.close();
-    });
-    // FIXME: type definition of event
-    // @ts-expect-error Property 'newGuest' does not exist on type 'Event'.ts(2339)
-    event.newGuest = popupWin;
-    return;
-  }
   // open external url in browser
   if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
     event.preventDefault();
@@ -408,7 +424,19 @@ function handleNewWindow(
     };
     const popupWin = new BrowserWindow(newOptions);
     popupWin.setMenuBarVisibility(false);
-    popupWin.webContents.on('new-window', handleNewWindow);
+    popupWin.webContents.on(
+      'new-window',
+      (
+        _event: Electron.NewWindowWebContentsEvent,
+        nextUrl: string,
+        _frameName: string,
+        disposition: 'default' | 'new-window' | 'foreground-tab' | 'background-tab' | 'save-to-disk' | 'other',
+        options: BrowserWindowConstructorOptions,
+        _additionalFeatures: string[],
+        _referrer: Electron.Referrer,
+        _postBody: Electron.PostBody,
+      ) => handleNewWindow(_event, nextUrl, _frameName, disposition, options, _additionalFeatures, _referrer, _postBody, newWindowContext),
+    );
     popupWin.webContents.once('will-navigate', (_event, url) => {
       // if the window is used for the current app, then use default behavior
       if (isInternalUrl(url, [appUrl, currentUrl])) {
@@ -421,7 +449,6 @@ function handleNewWindow(
       }
     });
     // FIXME: type definition of event
-    // @ts-expect-error Property 'newGuest' does not exist on type 'Event'.ts(2339)
     event.newGuest = popupWin;
   }
 }

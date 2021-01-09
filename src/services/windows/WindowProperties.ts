@@ -1,4 +1,5 @@
 export enum WindowNames {
+  newWindow = 'newWindow',
   main = 'main',
   view = 'view',
   addWorkspace = 'addWorkspace',

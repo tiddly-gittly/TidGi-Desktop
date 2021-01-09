@@ -7,13 +7,12 @@ import { Workspace } from '@services/workspaces';
 import { Wiki } from '@services/wiki';
 import { Authentication } from '@services/auth';
 import { Window } from '@services/windows';
+import { WindowNames } from '@services/windows/WindowProperties';
 import i18n from '../libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
 import { extractDomain } from '@services/libs/url';
 import { IWorkspace } from '@services/types';
 import setupViewEventHandlers from './setupViewEventHandlers';
-
-declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
 @injectable()
 export class View {
@@ -101,12 +100,11 @@ export class View {
       enableRemoteModule: true,
       session: sessionOfView,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+      additionalArguments: [WindowNames.view, JSON.stringify({ workspaceID: workspace.id })],
     };
     const view = new BrowserView({
       webPreferences: sharedWebPreferences,
     });
-    // FIXME: put this into meta when creating window
-    (view.webContents as any).workspaceId = workspace.id;
     // background needs to explicitly set
     // if not, by default, the background of BrowserView is transparent
     // which would break the CSS of certain websites
@@ -174,7 +172,12 @@ export class View {
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const initialUrl = (rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl;
     adjustUserAgentByUrl(view.webContents, initialUrl);
-    setupViewEventHandlers(view, browserWindow, { shouldPauseNotifications: this.shouldPauseNotifications, workspace }, { adjustUserAgentByUrl });
+    setupViewEventHandlers(
+      view,
+      browserWindow,
+      { shouldPauseNotifications: this.shouldPauseNotifications, workspace, sharedWebPreferences },
+      { adjustUserAgentByUrl },
+    );
     // start wiki on startup, or on sub-wiki creation
     await this.wikiService.wikiStartup(workspace);
     void view.webContents.loadURL(initialUrl);

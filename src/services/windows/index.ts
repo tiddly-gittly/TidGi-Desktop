@@ -11,9 +11,6 @@ import { WindowNames, windowDimension, WindowMeta, CodeInjectionType } from '@se
 import i18n from '@services/libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
 
-declare const MAIN_WINDOW_WEBPACK_ENTRY: string;
-declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
-
 @injectable()
 export class Window {
   private windows = {} as Record<WindowNames, BrowserWindow | undefined>;
