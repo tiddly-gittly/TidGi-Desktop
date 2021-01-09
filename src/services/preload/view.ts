@@ -9,17 +9,17 @@ const { MenuItem, shell } = remote;
 // @ts-expect-error ts-migrate(2322) FIXME: Type '{}' is not assignable to type 'Global & type... Remove this comment to see the full error message
 window.global = {};
 let handled = false;
-const handleLoaded = (event: string) => {
+const handleLoaded = (event: string): void => {
   if (handled) {
     return;
   }
   // eslint-disable-next-line no-console
   console.log(`Preload script is loading on ${event}...`);
-  const loadDarkReader = () => {
-    const shouldUseDarkColor = ipcRenderer.invokeSync('get-should-use-dark-colors');
-    const darkReader = ipcRenderer.invokeSync('get-preference', 'darkReader');
+  const loadDarkReader = async (): Promise<void> => {
+    const shouldUseDarkColor = (await ipcRenderer.invoke('get-should-use-dark-colors')) as boolean;
+    const darkReader = (await ipcRenderer.invoke('get-preference', 'darkReader')) as boolean;
     if (shouldUseDarkColor && darkReader) {
-      const { darkReaderBrightness, darkReaderContrast, darkReaderGrayscale, darkReaderSepia } = ipcRenderer.invokeSync('get-preferences');
+      const { darkReaderBrightness, darkReaderContrast, darkReaderGrayscale, darkReaderSepia } = ipcRenderer.invoke('get-preferences');
       enableDarkMode({
         brightness: darkReaderBrightness,
         contrast: darkReaderContrast,
@@ -34,9 +34,9 @@ const handleLoaded = (event: string) => {
   ipcRenderer.on('reload-dark-reader', () => {
     loadDarkReader();
   });
-  const jsCodeInjection = ipcRenderer.invokeSync('get-preference', 'jsCodeInjection');
-  const allowNodeInJsCodeInjection = ipcRenderer.invokeSync('get-preference', 'allowNodeInJsCodeInjection');
-  const cssCodeInjection = ipcRenderer.invokeSync('get-preference', 'cssCodeInjection');
+  const jsCodeInjection = ipcRenderer.invoke('get-preference', 'jsCodeInjection');
+  const allowNodeInJsCodeInjection = ipcRenderer.invoke('get-preference', 'allowNodeInJsCodeInjection');
+  const cssCodeInjection = ipcRenderer.invoke('get-preference', 'cssCodeInjection');
   if (jsCodeInjection && jsCodeInjection.trim().length > 0) {
     if (allowNodeInJsCodeInjection) {
       try {
@@ -169,6 +169,7 @@ const handleLoaded = (event: string) => {
   console.log('Preload script is loaded...');
   handled = true;
 };
+
 // try to load as soon as dom is loaded
 document.addEventListener('DOMContentLoaded', () => handleLoaded('document.on("DOMContentLoaded")'));
 // if user navigates between the same website
@@ -201,7 +202,7 @@ window.addEventListener('message', (e) => {
 // https://github.com/electron/electron/issues/16587
 // Fix chrome.runtime.sendMessage is undefined for FastMail
 // https://github.com/atomery/singlebox/issues/21
-const initialShouldPauseNotifications = ipcRenderer.invokeSync('get-pause-notifications-info') != undefined;
+const initialShouldPauseNotifications = ipcRenderer.invoke('get-pause-notifications-info') != undefined;
 // @ts-expect-error ts-migrate(2339) FIXME: Property 'workspaceId' does not exist on type 'Web... Remove this comment to see the full error message
 const { workspaceId } = remote.getCurrentWebContents();
 webFrame.executeJavaScript(`
