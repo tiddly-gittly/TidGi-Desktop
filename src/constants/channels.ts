@@ -21,4 +21,8 @@ export enum WindowChannel {
   requestShowSpellcheckLanguagesWindow = 'request-show-spellcheck-languages-window',
 }
 
-export type Channels = PreferenceChannel;
+export enum ThemeChannel {
+  nativeThemeUpdated = 'native-theme-updated',
+}
+
+export type Channels = PreferenceChannel | WindowChannel | ThemeChannel;

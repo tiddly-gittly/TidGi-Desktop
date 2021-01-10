@@ -6,7 +6,7 @@ import { injectable, inject } from 'inversify';
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Preference } from '@services/preferences';
 import { Workspace } from '@services/workspaces';
-import { Channels, WindowChannel } from '@services/channels';
+import { Channels, WindowChannel } from '@/constants/channels';
 import { WindowNames, windowDimension, WindowMeta, CodeInjectionType } from '@services/windows/WindowProperties';
 import i18n from '@services/libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
@@ -207,6 +207,10 @@ export class Window {
 
   public setWindowMeta<N extends WindowNames>(windowName: N, meta: WindowMeta[N]): void {
     this.windowMeta[windowName] = meta;
+  }
+
+  public updateWindowMeta<N extends WindowNames>(windowName: N, meta: WindowMeta[N]): void {
+    this.windowMeta[windowName] = { ...this.windowMeta[windowName], ...meta };
   }
 
   public getWindowMeta<N extends WindowNames>(windowName: N): WindowMeta[N] {

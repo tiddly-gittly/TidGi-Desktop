@@ -37,6 +37,10 @@ export const windowDimension: Record<WindowNames, { width?: number; height?: num
     width: undefined,
     height: undefined,
   },
+  [WindowNames.newWindow]: {
+    width: undefined,
+    height: undefined,
+  },
   [WindowNames.addWorkspace]: {
     width: 600,
     height: 800,
@@ -97,4 +101,5 @@ export interface WindowMeta extends Record<WindowNames, Record<string, unknown> 
   [WindowNames.displayMedia]: { displayMediaRequestedViewID?: number };
   [WindowNames.codeInjection]: { codeInjectionType?: CodeInjectionType };
   [WindowNames.editWorkspace]: { workspaceID?: string };
+  [WindowNames.openUrlWith]: { incomingUrl?: string };
 }

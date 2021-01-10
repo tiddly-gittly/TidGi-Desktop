@@ -1,4 +1,4 @@
-import { app, dialog } from 'electron';
+import { app, dialog, ipcMain, shell } from 'electron';
 import { injectable, inject } from 'inversify';
 
 import { autoUpdater, UpdateInfo } from 'electron-updater';
@@ -17,6 +17,56 @@ export class Updater {
     (global as any).updateSilent = true;
     global.updaterObj = {};
     this.configAutoUpdater();
+    this.initIPC();
+  }
+
+  initIPC(): void {
+    ipcMain.handle('request-check-for-updates', async (_event, isSilent) => {
+      // https://github.com/electron-userland/electron-builder/issues/4028
+      if (!autoUpdater.isUpdaterActive()) {
+        return;
+      }
+      // https://github.com/atomery/webcatalog/issues/634
+      // https://github.com/electron-userland/electron-builder/issues/4046
+      // disable updater if user is using AppImageLauncher
+      if (process.platform === 'linux' && process.env.DESKTOPINTEGRATION === 'AppImageLauncher') {
+        const mainWindow = this.windowService.get(WindowNames.main);
+        if (mainWindow === undefined) return;
+        const { response } = await dialog.showMessageBox(mainWindow, {
+          type: 'error',
+          message: 'Updater is incompatible with AppImageLauncher. Please uninstall AppImageLauncher or download new updates manually from our website.',
+          buttons: ['Learn More', 'Go to Website', 'OK'],
+          cancelId: 2,
+          defaultId: 2,
+        });
+
+        // eslint-disable-next-line promise/always-return
+        if (response === 0) {
+          await shell.openExternal('https://github.com/electron-userland/electron-builder/issues/4046');
+        } else if (response === 1) {
+          await shell.openExternal('http://singleboxapp.com/');
+        }
+
+        // eslint-disable-next-line no-useless-return
+        return;
+      }
+      // TODO: enable updater later, if I have time remove all untyped global.xxx
+      // restart & apply updates
+      // if (global.updaterObj && global.updaterObj.status === 'update-downloaded') {
+      //   setImmediate(() => {
+      //     app.removeAllListeners('window-all-closed');
+      //     if (mainWindow.get() !== undefined) {
+      //       (mainWindow.get() as any).forceClose = true;
+      //       // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
+      //       mainWindow.get().close();
+      //     }
+      //     autoUpdater.quitAndInstall(false);
+      //   });
+      // }
+      // // check for updates
+      // (global as any).updateSilent = Boolean(isSilent);
+      // autoUpdater.checkForUpdates();
+    });
   }
 
   configAutoUpdater(): void {

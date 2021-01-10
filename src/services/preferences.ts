@@ -10,7 +10,7 @@ import { Window } from '@services/windows';
 import { WorkspaceView } from '@services/workspacesView';
 import { Notification } from '@services/notifications';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { PreferenceChannel } from '@services/channels';
+import { PreferenceChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import i18n from '@services/libs/i18n';
 

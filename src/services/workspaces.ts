@@ -169,7 +169,11 @@ export class Workspace {
   };
 
   getActiveWorkspace = (): IWorkspace | undefined => {
-    return Object.values(this.getWorkspaces()).find((workspace) => workspace.active);
+    return this.getWorkspacesAsList().find((workspace) => workspace.active);
+  };
+
+  getFirstWorkspace = (): IWorkspace | undefined => {
+    return this.getWorkspacesAsList()[0];
   };
 
   async setActiveWorkspace(id: string): Promise<void> {

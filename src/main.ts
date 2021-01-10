@@ -1,51 +1,60 @@
 import 'reflect-metadata';
-import { ipcMain, nativeTheme, protocol, session, powerMonitor, app } from 'electron';
-import isDev from 'electron-is-dev';
 import fs from 'fs';
 import { delay } from 'bluebird';
+import { ipcMain, nativeTheme, protocol, session, powerMonitor, app } from 'electron';
+import isDev from 'electron-is-dev';
 import settings from 'electron-settings';
 import { autoUpdater } from 'electron-updater';
 
-import loadListeners from '@services/listeners';
+import { clearMainBindings } from '@services/libs/i18n/i18next-electron-fs-backend';
+import { ThemeChannel } from '@/constants/channels';
 import { container } from '@services/container';
-import * as openUrlWithWindow from '@services/windows/open-url-with';
+import { logger } from '@services/libs/log';
 import createMenu from '@services/libs/create-menu';
 import extractHostname from '@services/libs/extract-hostname';
-import sendToAllWindows from '@services/libs/send-to-all-windows';
-import { stopWatchAllWiki } from '@services/libs/wiki/watch-wiki';
-import { stopAllWiki } from '@services/libs/wiki/wiki-worker-mamager';
-import { addView, reloadViewsDarkReader } from '@services/view';
-import { getWorkspaces, setWorkspace } from '@services/libs/workspaces';
-import { logger } from '@services/libs/log';
-import { commitAndSync } from '@services/git';
-import { clearMainBindings } from '@services/libs/i18n/i18next-electron-fs-backend';
+import loadListeners from '@services/listeners';
 import MAILTO_URLS from '@services/constants/mailto-urls';
-import '@services/updater';
+
 import serviceIdentifier from '@services/serviceIdentifier';
+import { Authentication } from '@services/auth';
+import { Git } from '@services/git';
+import { Notification } from '@services/notifications';
+import { Preference } from '@services/preferences';
+import { SystemPreference } from '@services/systemPreferences';
+import { Updater } from '@services/updater';
+import { View } from '@services/view';
+import { Wiki } from '@services/wiki';
+import { WikiGitWorkspace } from '@services/wikiGitWorkspace';
 import { Window } from '@services/windows';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { Preference } from '@services/preferences';
+import { Workspace } from '@services/workspaces';
+import { WorkspaceView } from '@services/workspacesView';
+
 const gotTheLock = app.requestSingleInstanceLock();
-declare global {
-  // eslint-disable-next-line @typescript-eslint/no-namespace
-  namespace NodeJS {
-    interface Global {
-      attachToMenubar: any;
-      sidebar: any;
-      titleBar: any;
-      navigationBar: any;
-      updaterObj: any;
-      MAILTO_URLS: any;
-    }
-  }
-}
-container.bind<Window>(serviceIdentifier.Window).to(Window);
+
+container.bind<Authentication>(serviceIdentifier.Authentication).to(Authentication);
+container.bind<Git>(serviceIdentifier.Git).to(Git);
+container.bind<Notification>(serviceIdentifier.Notification).to(Notification);
 container.bind<Preference>(serviceIdentifier.Preference).to(Preference);
-const windows = container.resolve(Window);
-const preferences = container.resolve(Preference);
+container.bind<SystemPreference>(serviceIdentifier.SystemPreference).to(SystemPreference);
+container.bind<Updater>(serviceIdentifier.Updater).to(Updater);
+container.bind<View>(serviceIdentifier.View).to(View);
+container.bind<Wiki>(serviceIdentifier.Wiki).to(Wiki);
+container.bind<WikiGitWorkspace>(serviceIdentifier.WikiGitWorkspace).to(WikiGitWorkspace);
+container.bind<Window>(serviceIdentifier.Window).to(Window);
+container.bind<Workspace>(serviceIdentifier.Workspace).to(Workspace);
+container.bind<WorkspaceView>(serviceIdentifier.WorkspaceView).to(WorkspaceView);
+const authService = container.resolve(Authentication);
+const gitService = container.resolve(Git);
+const preferenceService = container.resolve(Preference);
+const viewService = container.resolve(View);
+const wikiService = container.resolve(Wiki);
+const windowService = container.resolve(Window);
+const workspaceService = container.resolve(Workspace);
+
 app.on('second-instance', () => {
   // Someone tried to run a second instance, we should focus our window.
-  const mainWindow = windows.get(WindowNames.main);
+  const mainWindow = windowService.get(WindowNames.main);
   if (mainWindow !== undefined) {
     if (mainWindow.isMinimized()) {
       mainWindow.restore();
@@ -64,11 +73,11 @@ if (!gotTheLock) {
   // would return error
   // https://github.com/nathanbuchar/electron-settings/issues/111
   if (fs.existsSync(settings.file())) {
-    const useHardwareAcceleration = preferences.get('useHardwareAcceleration');
+    const useHardwareAcceleration = preferenceService.get('useHardwareAcceleration');
     if (!useHardwareAcceleration) {
       app.disableHardwareAcceleration();
     }
-    const ignoreCertificateErrors = preferences.get('ignoreCertificateErrors');
+    const ignoreCertificateErrors = preferenceService.get('ignoreCertificateErrors');
     if (ignoreCertificateErrors) {
       // https://www.electronjs.org/docs/api/command-line-switches
       app.commandLine.appendSwitch('ignore-certificate-errors');
@@ -113,9 +122,9 @@ if (!gotTheLock) {
             callback(pathname);
           }),
       )
-      .then(async () => await windows.open(WindowNames.main))
+      .then(async () => await windowService.open(WindowNames.main))
       .then(async () => {
-        const { hibernateUnusedWorkspacesAtLaunch, proxyBypassRules, proxyPacScript, proxyRules, proxyType, themeSource } = preferences.getPreferences();
+        const { hibernateUnusedWorkspacesAtLaunch, proxyBypassRules, proxyPacScript, proxyRules, proxyType, themeSource } = preferenceService.getPreferences();
         // configure proxy for default session
         if (proxyType === 'rules') {
           await session.defaultSession.setProxy({
@@ -124,53 +133,52 @@ if (!gotTheLock) {
           });
         } else if (proxyType === 'pacScript') {
           await session.defaultSession.setProxy({
-            // FIXME: 'proxyPacScript' does not exist in type 'Config'
-            // proxyPacScript,
+            pacScript: proxyPacScript,
             proxyBypassRules,
           });
         }
         nativeTheme.themeSource = themeSource;
         createMenu();
         nativeTheme.addListener('updated', () => {
-          sendToAllWindows('native-theme-updated');
-          reloadViewsDarkReader();
+          windowService.sendToAllWindows(ThemeChannel.nativeThemeUpdated);
+          viewService.reloadViewsDarkReader();
         });
-        const workspaceObjects = getWorkspaces();
-        Object.keys(workspaceObjects).forEach(
-          async (id: string): Promise<void> => {
-            const workspace = workspaceObjects[id];
-            if ((hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) && !workspace.active) {
-              if (!workspace.hibernated) {
-                setWorkspace(workspace.id, { hibernated: true });
-              }
-              return;
+        const workspaces = workspaceService.getWorkspaces();
+        for (const workspaceID in workspaces) {
+          const workspace = workspaces[workspaceID];
+          // TODO: move this logic to service
+          if ((hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) && !workspace.active) {
+            if (!workspace.hibernated) {
+              await workspaceService.update(workspaceID, { hibernated: true });
             }
-            const mainWindow = windows.get(WindowNames.main);
-            await addView(mainWindow, workspace);
-            try {
-              // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '"github-user-info"' is not assig... Remove this comment to see the full error message
-              const userInfo = preferences.get('github-user-info');
-              const { name: wikiPath, gitUrl: githubRepoUrl, isSubWiki } = workspace;
-              // wait for main wiki's watch-fs plugin to be fully initialized
-              // and also wait for wiki BrowserView to be able to receive command
-              // eslint-disable-next-line global-require
-              const { getWorkspaceMeta } = require('./libs/workspace-metas');
-              let meta = getWorkspaceMeta(id);
-              if (!isSubWiki) {
-                while (!meta.didFailLoad && !meta.isLoading) {
-                  // eslint-disable-next-line no-await-in-loop
-                  await delay(500);
-                  meta = getWorkspaceMeta(id);
-                }
+            return;
+          }
+          const mainWindow = windowService.get(WindowNames.main);
+          if (mainWindow === undefined) return;
+          await viewService.addView(mainWindow, workspace);
+          try {
+            const userInfo = authService.get('authing');
+            const { name: wikiPath, gitUrl: githubRepoUrl, isSubWiki } = workspace;
+            // wait for main wiki's watch-fs plugin to be fully initialized
+            // and also wait for wiki BrowserView to be able to receive command
+            // eslint-disable-next-line global-require
+            let workspaceMetadata = workspaceService.getMetaData(workspaceID);
+            if (!isSubWiki) {
+              // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+              while (!workspaceMetadata.didFailLoadErrorMessage && !workspaceMetadata.isLoading) {
+                // eslint-disable-next-line no-await-in-loop
+                await delay(500);
+                workspaceMetadata = workspaceService.getMetaData(workspaceID);
               }
-              if (!isSubWiki && !meta.didFailLoad) {
-                await commitAndSync(wikiPath, githubRepoUrl, userInfo);
-              }
-            } catch {
-              logger.warning(`Can't sync at wikiStartup()`);
             }
-          },
-        );
+            // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+            if (!isSubWiki && !workspaceMetadata.didFailLoadErrorMessage?.length && userInfo) {
+              await gitService.commitAndSync(wikiPath, githubRepoUrl, userInfo);
+            }
+          } catch {
+            logger.warning(`Can't sync at wikiStartup()`);
+          }
+        }
         ipcMain.emit('request-update-pause-notifications-info');
       })
       .then(() => {
@@ -184,7 +192,7 @@ if (!gotTheLock) {
         // see https://github.com/atomery/webcatalog/issues/637
         // eslint-disable-next-line promise/always-return
         if (process.platform === 'linux') {
-          const mainWindow = windows.get(WindowNames.main);
+          const mainWindow = windowService.get(WindowNames.main);
           if (mainWindow !== undefined) {
             const handleMaximize = (): void => {
               // getContentSize is not updated immediately
@@ -208,14 +216,7 @@ if (!gotTheLock) {
       });
   };
   app.on('ready', () => {
-    const { allowPrerelease, attachToMenubar, sidebar, titleBar, navigationBar } = preferences.getPreferences();
-    // TODO: use IPC to get these config
-    global.attachToMenubar = attachToMenubar;
-    global.sidebar = sidebar;
-    global.titleBar = titleBar;
-    global.navigationBar = navigationBar;
-    global.MAILTO_URLS = MAILTO_URLS;
-    autoUpdater.allowPrerelease = allowPrerelease;
+    autoUpdater.allowPrerelease = preferenceService.get('allowPrerelease');
     autoUpdater.logger = logger;
     whenCommonInitFinished()
       // eslint-disable-next-line promise/always-return
@@ -234,7 +235,7 @@ if (!gotTheLock) {
     }
   });
   app.on('activate', () => {
-    const mainWindow = windows.get(WindowNames.main);
+    const mainWindow = windowService.get(WindowNames.main);
     if (mainWindow === undefined) {
       void commonInit();
     } else {
@@ -248,19 +249,18 @@ if (!gotTheLock) {
       event.preventDefault();
       await whenCommonInitFinished();
       // focus on window
-      const mainWindow = windows.get(WindowNames.main);
+      const mainWindow = windowService.get(WindowNames.main);
       if (mainWindow === undefined) {
         await commonInit();
       } else {
         mainWindow.show();
       }
-      const workspaces: any[] = Object.values(getWorkspaces());
-      if (workspaces.length === 0) {
+      if (workspaceService.countWorkspaces() === 0) {
         return;
       }
       // handle mailto:
       if (url.startsWith('mailto:')) {
-        const mailtoWorkspaces: any[] = workspaces.filter((workspace: any) => {
+        const mailtoWorkspaces = workspaceService.getWorkspacesAsList().filter((workspace) => {
           const hostName = extractHostname(workspace.homeUrl);
           return hostName !== undefined && hostName in MAILTO_URLS;
         });
@@ -278,15 +278,15 @@ if (!gotTheLock) {
           }
           return;
         }
-        return openUrlWithWindow.show(url);
+        return windowService.open(WindowNames.openUrlWith, { incomingUrl: url });
       }
       // handle https/http
-      // pick automically if there's only one choice
-      if (workspaces.length === 1) {
-        ipcMain.emit('request-load-url', undefined, url, workspaces[0].id);
+      // pick automatically if there's only one choice
+      if (workspaceService.countWorkspaces() === 1) {
+        ipcMain.emit('request-load-url', undefined, url, workspaceService.getFirstWorkspace()!.id);
         return;
       }
-      return openUrlWithWindow.show(url);
+      return windowService.open(WindowNames.openUrlWith, { incomingUrl: url });
     },
   );
   app.on(
@@ -294,18 +294,17 @@ if (!gotTheLock) {
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     async (): Promise<void> => {
       logger.info('Quitting worker threads and watcher.');
-      await Promise.all([stopAllWiki(), stopWatchAllWiki()]);
+      await Promise.all([wikiService.stopAllWiki(), wikiService.stopWatchAllWiki()]);
       logger.info('Worker threads and watchers all terminated.');
       logger.info('Quitting I18N server.');
       clearMainBindings(ipcMain);
       logger.info('Quitted I18N server.');
       // https://github.com/atom/electron/issues/444#issuecomment-76492576
       if (process.platform === 'darwin') {
-        const mainWindow = windows.get(WindowNames.main);
+        const mainWindow = windowService.get(WindowNames.main);
         if (mainWindow !== undefined) {
           logger.info('App force quit on MacOS');
-          // FIXME: set custom property
-          (mainWindow as any).forceClose = true;
+          windowService.updateWindowMeta(WindowNames.main, { forceClose: true });
         }
       }
       app.exit(0);
