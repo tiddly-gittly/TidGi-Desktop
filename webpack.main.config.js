@@ -16,7 +16,7 @@ module.exports = {
   plugins: [
     new CopyPlugin({
       // to is relative to ./.webpack/main/
-      patterns: [{ from: 'src/services/libs/wiki/wiki-worker.js', to: 'wiki-worker.js' }],
+      patterns: [{ from: 'src/services/wiki/wiki-worker.js', to: 'wiki-worker.js' }],
     }),
   ],
   resolve: {
