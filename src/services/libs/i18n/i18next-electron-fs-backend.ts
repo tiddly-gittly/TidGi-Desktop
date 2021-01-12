@@ -1,69 +1,90 @@
 /* eslint-disable unicorn/prevent-abbreviations */
 import fs from 'fs-extra';
 import path from 'path';
-import sendToAllWindows from '../send-to-all-windows';
-import { LOCALIZATION_FOLDER } from '../../constants/paths';
+import { IpcRenderer, IpcMain, BrowserWindow, IpcMainInvokeEvent, IpcRendererEvent, MenuItemConstructorOptions } from 'electron';
+
+import { Window } from '@services/windows';
+import { Preference } from '@services/preferences';
+import { View } from '@services/view';
+import { container } from '@services/container';
+import { LOCALIZATION_FOLDER } from '@services/constants/paths';
+import { I18NChannels } from '@/constants/channels';
 import i18n from '.';
 
-// Electron-specific; must match mainIpc
-const readFileRequest = 'ReadFile-Request';
-const writeFileRequest = 'WriteFile-Request';
-const readFileResponse = 'ReadFile-Response';
-const writeFileResponse = 'WriteFile-Response';
-const changeLanguageRequest = 'ChangeLanguage-Request';
+export interface IReadFileRequest {
+  filename: string;
+  key: string;
+}
+export interface IWriteFileRequest {
+  filename: string;
+  data: string;
+  keys: string[];
+}
+export interface IReadWriteFileRequest extends IReadFileRequest, IWriteFileRequest {}
 
-// This is the code that will go into the preload.js file
-// in order to set up the contextBridge api
-const preloadBindings = function (ipcRenderer: any) {
+/** This is the code that will go into the preload.js file
+ *  in order to set up the contextBridge api
+ */
+export const preloadBindings = function (
+  ipcRenderer: IpcRenderer,
+): {
+  send: (channel: I18NChannels, readWriteFileArgs: IReadWriteFileRequest) => Promise<void>;
+  onReceive: (channel: I18NChannels, callback: (readWriteFileArgs: IReadWriteFileRequest) => void) => void;
+  onLanguageChange: (callback: (language: string) => void) => void;
+} {
   return {
-    send: (channel: any, data: any) => {
-      const validChannels = [readFileRequest, writeFileRequest];
+    send: async (channel: I18NChannels, readWriteFileArgs: IReadWriteFileRequest): Promise<void> => {
+      const validChannels = [I18NChannels.readFileRequest, I18NChannels.writeFileRequest];
       if (validChannels.includes(channel)) {
-        ipcRenderer.invoke(channel, data);
+        await ipcRenderer.invoke(channel, readWriteFileArgs);
       }
     },
-    onReceive: (channel: any, function_: any) => {
-      const validChannels = [readFileResponse, writeFileResponse];
+    onReceive: (channel: I18NChannels, callback: (readWriteFileArgs: IReadWriteFileRequest) => void) => {
+      const validChannels = [I18NChannels.readFileResponse, I18NChannels.writeFileResponse];
       if (validChannels.includes(channel)) {
         // Deliberately strip event as it includes "sender"
-        ipcRenderer.on(channel, (event: any, arguments_: any) => function_(arguments_));
+        ipcRenderer.on(channel, (_event: IpcRendererEvent, arguments_: IReadWriteFileRequest) => callback(arguments_));
       }
     },
-    onLanguageChange: (function_: any) => {
+    onLanguageChange: (callback: (language: string) => void) => {
       // Deliberately strip event as it includes "sender"
-      ipcRenderer.on(changeLanguageRequest, (event: any, arguments_: any) => {
-        function_(arguments_);
+      ipcRenderer.on(I18NChannels.changeLanguageRequest, (_event: IpcRendererEvent, language: string) => {
+        callback(language);
       });
     },
   };
 };
 
-// This is the code that will go into the main.js file
-// in order to set up the ipc main bindings
-const mainBindings = function (ipcMain: any, browserWindow: any) {
-  ipcMain.handle(readFileRequest, (IpcMainEvent: any, arguments_: any) => {
-    const localeFilePath = path.join(LOCALIZATION_FOLDER, arguments_.filename);
-    fs.readFile(localeFilePath, 'utf8', (error: any, data: any) => {
-      sendToAllWindows(readFileResponse, {
-        key: arguments_.key,
+/**
+ * This is the code that will go into the main.js file
+ * in order to set up the ipc main bindings
+ */
+export const mainBindings = function (ipcMain: IpcMain, browserWindow: BrowserWindow): void {
+  ipcMain.handle(I18NChannels.readFileRequest, (_event: IpcMainInvokeEvent, readFileArgs: IReadFileRequest) => {
+    const localeFilePath = path.join(LOCALIZATION_FOLDER, readFileArgs.filename);
+    const windowService = container.resolve(Window);
+    fs.readFile(localeFilePath, 'utf8', (error, data) => {
+      windowService.sendToAllWindows(I18NChannels.readFileResponse, {
+        key: readFileArgs.key,
         error,
         data: typeof data !== 'undefined' && data !== null ? data.toString() : '',
       });
     });
   });
 
-  ipcMain.handle(writeFileRequest, (IpcMainEvent: any, arguments_: any) => {
-    const localeFilePath = path.join(LOCALIZATION_FOLDER, arguments_.filename);
+  ipcMain.handle(I18NChannels.writeFileRequest, (_event: IpcMainInvokeEvent, writeFileArgs: IWriteFileRequest) => {
+    const localeFilePath = path.join(LOCALIZATION_FOLDER, writeFileArgs.filename);
     const localeFileFolderPath = path.dirname(localeFilePath);
-    // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.
-    fs.ensureDir(localeFileFolderPath, (directoryCreationError: any) => {
+    const windowService = container.resolve(Window);
+    fs.ensureDir(localeFileFolderPath, (directoryCreationError?: Error) => {
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (directoryCreationError) {
         console.error(directoryCreationError);
         return;
       }
-      fs.writeFile(localeFilePath, JSON.stringify(arguments_.data), (error: any) => {
-        sendToAllWindows(writeFileResponse, {
-          keys: arguments_.keys,
+      fs.writeFile(localeFilePath, JSON.stringify(writeFileArgs.data), (error: Error) => {
+        windowService.sendToAllWindows(I18NChannels.writeFileResponse, {
+          keys: writeFileArgs.keys,
           error,
         });
       });
@@ -71,35 +92,35 @@ const mainBindings = function (ipcMain: any, browserWindow: any) {
   });
 };
 
-// Clears the bindings from ipcMain;
-// in case app is closed/reopened (only on macos)
-const clearMainBindings = function (ipcMain: any) {
-  ipcMain.removeAllListeners(readFileRequest);
-  ipcMain.removeAllListeners(writeFileRequest);
+/**
+ *  Clears the bindings from ipcMain;
+ *  in case app is closed/reopened (only on macos)
+ */
+export const clearMainBindings = function (ipcMain: IpcMain): void {
+  ipcMain.removeAllListeners(I18NChannels.readFileRequest);
+  ipcMain.removeAllListeners(I18NChannels.writeFileRequest);
 };
 
-const whitelistMap = JSON.parse(fs.readFileSync(path.join(LOCALIZATION_FOLDER, 'whitelist.json'), 'utf-8'));
+const whitelistMap = JSON.parse(fs.readFileSync(path.join(LOCALIZATION_FOLDER, 'whitelist.json'), 'utf-8')) as Record<string, string>;
 
 const whiteListedLanguages = Object.keys(whitelistMap);
 
-function getLanguageMenu() {
-  const subMenu = [];
+export function getLanguageMenu(): MenuItemConstructorOptions[] {
+  const preferenceService = container.resolve(Preference);
+  const windowService = container.resolve(Window);
+  const viewService = container.resolve(View);
+  const subMenu: MenuItemConstructorOptions[] = [];
   for (const language of whiteListedLanguages) {
     subMenu.push({
       label: whitelistMap[language],
-      click: (menuItem: any, browserWindow: any, event: any) => {
-        // eslint-disable-next-line global-require
-        const { setPreference } = require('./preferences');
-        setPreference('language', language);
-        i18n.changeLanguage(language);
-        // eslint-disable-next-line global-require
-        const { onEachView } = require('./views');
-        onEachView((view: any) => {
-          view.webContents.send(changeLanguageRequest, {
+      click: async () => {
+        await Promise.all([preferenceService.set('language', language), i18n.changeLanguage(language)]);
+        viewService.forEachView((view) => {
+          view.webContents.send(I18NChannels.changeLanguageRequest, {
             lng: language,
           });
         });
-        sendToAllWindows(changeLanguageRequest, {
+        windowService.sendToAllWindows(I18NChannels.changeLanguageRequest, {
           lng: language,
         });
       },
@@ -108,15 +129,3 @@ function getLanguageMenu() {
 
   return subMenu;
 }
-
-export {
-  getLanguageMenu,
-  readFileRequest,
-  writeFileRequest,
-  readFileResponse,
-  writeFileResponse,
-  changeLanguageRequest,
-  preloadBindings,
-  mainBindings,
-  clearMainBindings,
-};

@@ -25,4 +25,12 @@ export enum ThemeChannel {
   nativeThemeUpdated = 'native-theme-updated',
 }
 
-export type Channels = PreferenceChannel | WindowChannel | ThemeChannel;
+export enum I18NChannels {
+  readFileRequest = 'ReadFile-Request',
+  writeFileRequest = 'WriteFile-Request',
+  readFileResponse = 'ReadFile-Response',
+  writeFileResponse = 'WriteFile-Response',
+  changeLanguageRequest = 'ChangeLanguage-Request',
+}
+
+export type Channels = PreferenceChannel | WindowChannel | ThemeChannel | I18NChannels;
