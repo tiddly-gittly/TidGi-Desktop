@@ -103,3 +103,11 @@ export interface WindowMeta extends Record<WindowNames, Record<string, unknown> 
   [WindowNames.editWorkspace]: { workspaceID?: string };
   [WindowNames.openUrlWith]: { incomingUrl?: string };
 }
+
+/**
+ * Similar to WindowMeta, but is for BrowserView (workspace web content) and popup window from the BrowserView
+ */
+export interface IBrowserViewMetaData {
+  isPopup?: boolean;
+  workspaceID?: string;
+}

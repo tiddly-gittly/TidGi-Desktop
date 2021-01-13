@@ -10,7 +10,7 @@ import { buildResourcePath } from '@services/constants/paths';
 import { Preference } from '@services/preferences';
 import { Workspace } from '@services/workspaces';
 import { Window } from '@services/windows';
-import { WindowNames } from '@services/windows/WindowProperties';
+import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
 import { container } from '@services/container';
 
 export interface IViewContext {
@@ -68,16 +68,15 @@ export default function setupViewEventHandlers(
     if (workspaceObject === undefined) {
       return;
     }
-    if (workspaceObject.active) {
-      if (typeof workspaceService.getMetaData(workspace.id).didFailLoadErrorMessage === 'string') {
-        // show browserView again when reloading after error
-        // see did-fail-load event
-        if (browserWindow !== undefined && !browserWindow.isDestroyed()) {
-          // fix https://github.com/atomery/singlebox/issues/228
-          const contentSize = browserWindow.getContentSize();
-          view.setBounds(getViewBounds(contentSize as [number, number]));
-        }
-      }
+    if (
+      workspaceObject.active &&
+      typeof workspaceService.getMetaData(workspace.id).didFailLoadErrorMessage === 'string' &&
+      browserWindow !== undefined &&
+      !browserWindow.isDestroyed()
+    ) {
+      // fix https://github.com/atomery/singlebox/issues/228
+      const contentSize = browserWindow.getContentSize();
+      view.setBounds(getViewBounds(contentSize as [number, number]));
     }
     workspaceService.updateMetaData(workspace.id, {
       // eslint-disable-next-line unicorn/no-null
@@ -129,12 +128,10 @@ export default function setupViewEventHandlers(
       workspaceService.updateMetaData(workspace.id, {
         didFailLoadErrorMessage: errorDesc,
       });
-      if (workspaceObject.active) {
-        if (browserWindow !== undefined && !browserWindow.isDestroyed()) {
-          // fix https://github.com/atomery/singlebox/issues/228
-          const contentSize = browserWindow.getContentSize();
-          view.setBounds(getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
-        }
+      if (workspaceObject.active && browserWindow !== undefined && !browserWindow.isDestroyed()) {
+        // fix https://github.com/atomery/singlebox/issues/228
+        const contentSize = browserWindow.getContentSize();
+        view.setBounds(getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       }
     }
     // edge case to handle failed auth
@@ -316,8 +313,12 @@ function handleNewWindow(
     // options is undefined
     // https://github.com/atomery/webcatalog/issues/842
     const cmdClick = options === undefined;
+    const browserViewMetaData: IBrowserViewMetaData = {
+      isPopup: true,
+      ...(JSON.parse(sharedWebPreferences?.additionalArguments?.[1] ?? '{}') as IBrowserViewMetaData),
+    };
     const metadataConfig = {
-      additionalArguments: [WindowNames.newWindow, JSON.stringify({ isPopup: true, ...JSON.parse(sharedWebPreferences?.additionalArguments?.[1] ?? '{}') })],
+      additionalArguments: [WindowNames.newWindow, JSON.stringify(browserViewMetaData)],
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     };
     const newOptions: BrowserWindowConstructorOptions = cmdClick

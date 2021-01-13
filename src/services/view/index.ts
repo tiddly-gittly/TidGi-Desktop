@@ -7,7 +7,7 @@ import { Workspace } from '@services/workspaces';
 import { Wiki } from '@services/wiki';
 import { Authentication } from '@services/auth';
 import { Window } from '@services/windows';
-import { WindowNames } from '@services/windows/WindowProperties';
+import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
 import i18n from '../libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
 import { extractDomain } from '@services/libs/url';
@@ -92,6 +92,7 @@ export class View {
     if (spellcheck && process.platform !== 'darwin') {
       sessionOfView.setSpellCheckerLanguages(spellcheckLanguages);
     }
+    const browserViewMetaData: IBrowserViewMetaData = { workspaceID: workspace.id };
     const sharedWebPreferences = {
       spellcheck,
       nativeWindowOpen: true,
@@ -100,7 +101,7 @@ export class View {
       enableRemoteModule: true,
       session: sessionOfView,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-      additionalArguments: [WindowNames.view, JSON.stringify({ workspaceID: workspace.id })],
+      additionalArguments: [WindowNames.view, JSON.stringify(browserViewMetaData)],
     };
     const view = new BrowserView({
       webPreferences: sharedWebPreferences,

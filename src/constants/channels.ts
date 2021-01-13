@@ -33,4 +33,8 @@ export enum I18NChannels {
   changeLanguageRequest = 'ChangeLanguage-Request',
 }
 
-export type Channels = PreferenceChannel | WindowChannel | ThemeChannel | I18NChannels;
+export enum MetaDataChannel {
+  getViewMetaData = 'getViewMetaData',
+}
+
+export type Channels = PreferenceChannel | WindowChannel | ThemeChannel | I18NChannels | MetaDataChannel;

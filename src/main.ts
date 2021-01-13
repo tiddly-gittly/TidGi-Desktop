@@ -10,7 +10,6 @@ import { clearMainBindings } from '@services/libs/i18n/i18next-electron-fs-backe
 import { ThemeChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
-import createMenu from '@services/libs/create-menu';
 import extractHostname from '@services/libs/extract-hostname';
 import loadListeners from '@services/listeners';
 import MAILTO_URLS from '@services/constants/mailto-urls';
@@ -18,6 +17,7 @@ import MAILTO_URLS from '@services/constants/mailto-urls';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { Authentication } from '@services/auth';
 import { Git } from '@services/git';
+import { MenuService } from '@services/menu';
 import { Notification } from '@services/notifications';
 import { Preference } from '@services/preferences';
 import { SystemPreference } from '@services/systemPreferences';
@@ -34,6 +34,7 @@ const gotTheLock = app.requestSingleInstanceLock();
 
 container.bind<Authentication>(serviceIdentifier.Authentication).to(Authentication);
 container.bind<Git>(serviceIdentifier.Git).to(Git);
+container.bind<MenuService>(serviceIdentifier.View).to(MenuService);
 container.bind<Notification>(serviceIdentifier.Notification).to(Notification);
 container.bind<Preference>(serviceIdentifier.Preference).to(Preference);
 container.bind<SystemPreference>(serviceIdentifier.SystemPreference).to(SystemPreference);
@@ -46,6 +47,7 @@ container.bind<Workspace>(serviceIdentifier.Workspace).to(Workspace);
 container.bind<WorkspaceView>(serviceIdentifier.WorkspaceView).to(WorkspaceView);
 const authService = container.resolve(Authentication);
 const gitService = container.resolve(Git);
+const menuService = container.resolve(MenuService);
 const preferenceService = container.resolve(Preference);
 const viewService = container.resolve(View);
 const wikiService = container.resolve(Wiki);
@@ -138,7 +140,7 @@ if (!gotTheLock) {
           });
         }
         nativeTheme.themeSource = themeSource;
-        createMenu();
+        menuService.buildMenu();
         nativeTheme.addListener('updated', () => {
           windowService.sendToAllWindows(ThemeChannel.nativeThemeUpdated);
           viewService.reloadViewsDarkReader();

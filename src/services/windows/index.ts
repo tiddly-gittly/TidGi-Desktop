@@ -1,15 +1,18 @@
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
-import { BrowserWindow, ipcMain, dialog, app, App, remote } from 'electron';
+import { BrowserWindow, ipcMain, dialog, app, App, remote, clipboard } from 'electron';
 import isDevelopment from 'electron-is-dev';
 import { injectable, inject } from 'inversify';
 
+import { IBrowserViewMetaData } from '@services/windows/WindowProperties';
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Preference } from '@services/preferences';
 import { Workspace } from '@services/workspaces';
-import { Channels, WindowChannel } from '@/constants/channels';
+import { MenuService } from '@services/menu';
+import { Channels, WindowChannel, MetaDataChannel } from '@/constants/channels';
 import { WindowNames, windowDimension, WindowMeta, CodeInjectionType } from '@services/windows/WindowProperties';
 import i18n from '@services/libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
+import getFromRenderer from '@services/libs/getFromRenderer';
 
 @injectable()
 export class Window {
@@ -19,12 +22,14 @@ export class Window {
   constructor(
     @inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference,
     @inject(serviceIdentifiers.Workspace) private readonly workspaceService: Workspace,
+    @inject(serviceIdentifiers.MenuService) private readonly menuService: MenuService,
   ) {
-    this.init();
+    this.initIPCHandlers();
+    this.registerMenu();
   }
 
-  init(): void {
-    ipcMain.handle('request-go-home', async (_event: Electron.IpcMainInvokeEvent, windowName: WindowNames) => {
+  initIPCHandlers(): void {
+    ipcMain.handle('request-go-home', async (_event: Electron.IpcMainInvokeEvent, windowName: WindowNames = WindowNames.main) => {
       const win = this.get(windowName);
       const contents = win?.getBrowserView()?.webContents;
       const activeWorkspace = this.workspaceService.getActiveWorkspace();
@@ -34,7 +39,7 @@ export class Window {
         contents.send('update-can-go-forward', contents.canGoForward());
       }
     });
-    ipcMain.handle('request-go-back', (_event: Electron.IpcMainInvokeEvent, windowName: WindowNames) => {
+    ipcMain.handle('request-go-back', (_event: Electron.IpcMainInvokeEvent, windowName: WindowNames = WindowNames.main) => {
       const win = this.get(windowName);
       const contents = win?.getBrowserView()?.webContents;
       if (contents?.canGoBack() === true) {
@@ -43,7 +48,7 @@ export class Window {
         contents.send('update-can-go-forward', contents.canGoForward());
       }
     });
-    ipcMain.handle('request-go-forward', (_event: Electron.IpcMainInvokeEvent, windowName: WindowNames) => {
+    ipcMain.handle('request-go-forward', (_event: Electron.IpcMainInvokeEvent, windowName: WindowNames = WindowNames.main) => {
       const win = this.get(windowName);
       const contents = win?.getBrowserView()?.webContents;
       if (contents?.canGoForward() === true) {
@@ -52,7 +57,7 @@ export class Window {
         contents.send('update-can-go-forward', contents.canGoForward());
       }
     });
-    ipcMain.handle('request-reload', (_event: Electron.IpcMainInvokeEvent, windowName: WindowNames) => {
+    ipcMain.handle('request-reload', (_event: Electron.IpcMainInvokeEvent, windowName: WindowNames = WindowNames.main) => {
       const win = this.get(windowName);
       win?.getBrowserView()?.webContents?.reload();
     });
@@ -126,8 +131,8 @@ export class Window {
       void this.open(WindowNames.spellcheck);
     });
 
-    ipcMain.handle('request-find-in-page', (_event, text: string, forward?: boolean) => {
-      const mainWindow = this.get(WindowNames.main);
+    ipcMain.handle('request-find-in-page', (_event, text: string, forward?: boolean, windowName: WindowNames = WindowNames.main) => {
+      const mainWindow = this.get(windowName);
       const contents = mainWindow?.getBrowserView()?.webContents;
       if (contents !== undefined) {
         contents.findInPage(text, {
@@ -135,8 +140,8 @@ export class Window {
         });
       }
     });
-    ipcMain.handle('request-stop-find-in-page', (_event, close?: boolean) => {
-      const mainWindow = this.get(WindowNames.main);
+    ipcMain.handle('request-stop-find-in-page', (_event, close?: boolean, windowName: WindowNames = WindowNames.main) => {
+      const mainWindow = this.get(windowName);
       const view = mainWindow?.getBrowserView();
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (view) {
@@ -163,13 +168,17 @@ export class Window {
     });
   }
 
-  public get(name: WindowNames): BrowserWindow | undefined {
-    return this.windows[name];
+  public get(windowName: WindowNames = WindowNames.main): BrowserWindow | undefined {
+    return this.windows[windowName];
   }
 
-  public async open<N extends WindowNames>(name: N, meta: WindowMeta[N] = {}, recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean)): Promise<void> {
-    const existedWindow = this.windows[name];
-    const existedWindowMeta = this.windowMeta[name];
+  public async open<N extends WindowNames>(
+    windowName: N,
+    meta: WindowMeta[N] = {},
+    recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean),
+  ): Promise<void> {
+    const existedWindow = this.windows[windowName];
+    const existedWindowMeta = this.windowMeta[windowName];
     if (existedWindow !== undefined) {
       if (recreate === true || (typeof recreate === 'function' && existedWindowMeta !== undefined && recreate(existedWindowMeta))) {
         existedWindow.close();
@@ -180,7 +189,7 @@ export class Window {
     const attachToMenubar: boolean = this.preferenceService.get('attachToMenubar');
 
     const newWindow = new BrowserWindow({
-      ...windowDimension[name],
+      ...windowDimension[windowName],
       resizable: false,
       maximizable: false,
       minimizable: false,
@@ -192,16 +201,16 @@ export class Window {
         webSecurity: !isDevelopment,
         contextIsolation: true,
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-        additionalArguments: [name, JSON.stringify(meta)],
+        additionalArguments: [windowName, JSON.stringify(meta)],
       },
-      parent: name === WindowNames.main || attachToMenubar ? undefined : this.get(WindowNames.main),
+      parent: windowName === WindowNames.main || attachToMenubar ? undefined : this.get(WindowNames.main),
     });
     newWindow.setMenuBarVisibility(false);
 
     newWindow.on('closed', () => {
-      this.windows[name] = undefined;
+      this.windows[windowName] = undefined;
     });
-    this.windows[name] = newWindow;
+    this.windows[windowName] = newWindow;
     return newWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
   }
 
@@ -228,4 +237,95 @@ export class Window {
       win.webContents.send(channel, ...arguments_);
     });
   };
+
+  private registerMenu(): void {
+    this.menuService.insertMenu(
+      'window',
+      [
+        // `role: 'zoom'` is only supported on macOS
+        process.platform === 'darwin'
+          ? {
+              role: 'zoom',
+            }
+          : {
+              label: 'Zoom',
+              click: () => {
+                const mainWindow = this.get(WindowNames.main);
+                if (mainWindow !== undefined) {
+                  mainWindow.maximize();
+                }
+              },
+            },
+      ],
+      'close',
+    );
+
+    const hasWorkspaces = this.workspaceService.countWorkspaces() > 0;
+    this.menuService.insertMenu('History', [
+      {
+        label: 'Home',
+        accelerator: 'Shift+CmdOrCtrl+H',
+        click: () => ipcMain.emit('request-go-home'),
+        enabled: hasWorkspaces,
+      },
+      {
+        label: 'Back',
+        accelerator: 'CmdOrCtrl+[',
+        click: async (_menuItem, browserWindow) => {
+          // if back is called in popup window
+          // navigate in the popup window instead
+          if (browserWindow !== undefined) {
+            // TODO: test if we really can get this isPopup value
+            const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
+            if (isPopup === true) {
+              browserWindow.webContents.goBack();
+              return;
+            }
+          }
+          ipcMain.emit('request-go-back');
+        },
+        enabled: hasWorkspaces,
+      },
+      {
+        label: 'Forward',
+        accelerator: 'CmdOrCtrl+]',
+        click: async (_menuItem, browserWindow) => {
+          // if back is called in popup window
+          // navigate in the popup window instead
+          if (browserWindow !== undefined) {
+            const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
+            if (isPopup === true) {
+              browserWindow.webContents.goBack();
+              return;
+            }
+          }
+          ipcMain.emit('request-go-forward');
+        },
+        enabled: hasWorkspaces,
+      },
+      { type: 'separator' },
+      {
+        label: 'Copy URL',
+        accelerator: 'CmdOrCtrl+L',
+        click: async (_menuItem, browserWindow) => {
+          // if back is called in popup window
+          // copy the popup window URL instead
+          if (browserWindow !== undefined) {
+            const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
+            if (isPopup === true) {
+              const url = browserWindow.webContents.getURL();
+              clipboard.writeText(url);
+              return;
+            }
+          }
+          const mainWindow = this.get(WindowNames.main);
+          const url = mainWindow?.getBrowserView()?.webContents?.getURL();
+          if (typeof url === 'string') {
+            clipboard.writeText(url);
+          }
+        },
+        enabled: hasWorkspaces,
+      },
+    ]);
+  }
 }
