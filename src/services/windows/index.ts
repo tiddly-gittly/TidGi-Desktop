@@ -1,18 +1,21 @@
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
-import { BrowserWindow, ipcMain, dialog, app, App, remote, clipboard } from 'electron';
+import { BrowserWindow, ipcMain, dialog, app, App, remote, clipboard, BrowserWindowConstructorOptions } from 'electron';
 import isDevelopment from 'electron-is-dev';
 import { injectable, inject } from 'inversify';
+import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
 
 import { IBrowserViewMetaData, WindowNames, windowDimension, WindowMeta, CodeInjectionType } from '@services/windows/WindowProperties';
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Preference } from '@services/preferences';
 import { Workspace } from '@services/workspaces';
+import { WorkspaceView } from '@services/workspacesView';
 import { MenuService } from '@services/menu';
 import { Channels, WindowChannel, MetaDataChannel } from '@/constants/channels';
 
 import i18n from '@services/libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
 import getFromRenderer from '@services/libs/getFromRenderer';
+import handleAttachToMenuBar from './handleAttachToMenuBar';
 
 @injectable()
 export class Window {
@@ -22,6 +25,7 @@ export class Window {
   constructor(
     @inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference,
     @inject(serviceIdentifiers.Workspace) private readonly workspaceService: Workspace,
+    @inject(serviceIdentifiers.WorkspaceView) private readonly workspaceViewService: WorkspaceView,
     @inject(serviceIdentifiers.MenuService) private readonly menuService: MenuService,
   ) {
     this.initIPCHandlers();
@@ -29,53 +33,6 @@ export class Window {
   }
 
   initIPCHandlers(): void {
-    ipcMain.handle('request-go-home', async (_event: Electron.IpcMainInvokeEvent, windowName: WindowNames = WindowNames.main) => {
-      const win = this.get(windowName);
-      const contents = win?.getBrowserView()?.webContents;
-      const activeWorkspace = this.workspaceService.getActiveWorkspace();
-      if (contents !== undefined && activeWorkspace !== undefined && win !== undefined) {
-        await contents.loadURL(activeWorkspace.homeUrl);
-        contents.send('update-can-go-back', contents.canGoBack());
-        contents.send('update-can-go-forward', contents.canGoForward());
-      }
-    });
-    ipcMain.handle('request-go-back', (_event: Electron.IpcMainInvokeEvent, windowName: WindowNames = WindowNames.main) => {
-      const win = this.get(windowName);
-      const contents = win?.getBrowserView()?.webContents;
-      if (contents?.canGoBack() === true) {
-        contents.goBack();
-        contents.send('update-can-go-back', contents.canGoBack());
-        contents.send('update-can-go-forward', contents.canGoForward());
-      }
-    });
-    ipcMain.handle('request-go-forward', (_event: Electron.IpcMainInvokeEvent, windowName: WindowNames = WindowNames.main) => {
-      const win = this.get(windowName);
-      const contents = win?.getBrowserView()?.webContents;
-      if (contents?.canGoForward() === true) {
-        contents.goForward();
-        contents.send('update-can-go-back', contents.canGoBack());
-        contents.send('update-can-go-forward', contents.canGoForward());
-      }
-    });
-    ipcMain.handle('request-reload', (_event: Electron.IpcMainInvokeEvent, windowName: WindowNames = WindowNames.main) => {
-      const win = this.get(windowName);
-      win?.getBrowserView()?.webContents?.reload();
-    });
-    ipcMain.handle('request-show-message-box', (_event, message: Electron.MessageBoxOptions['message'], type?: Electron.MessageBoxOptions['type']) => {
-      const mainWindow = this.get(WindowNames.main);
-      if (mainWindow !== undefined) {
-        dialog
-          .showMessageBox(mainWindow, {
-            type: type ?? 'error',
-            message,
-            buttons: ['OK'],
-            cancelId: 0,
-            defaultId: 0,
-          })
-          .catch(console.log);
-      }
-    });
-
     ipcMain.handle(WindowChannel.requestShowRequireRestartDialog, () => {
       const availableWindowToShowDialog = this.get(WindowNames.preferences) ?? this.get(WindowNames.main);
       if (availableWindowToShowDialog !== undefined) {
@@ -180,16 +137,47 @@ export class Window {
     const existedWindow = this.windows[windowName];
     const existedWindowMeta = this.windowMeta[windowName];
     if (existedWindow !== undefined) {
+      // TODO: handle this menubar logic
+      // if (attachToMenubar) {
+      //   if (menuBar == undefined) {
+      //     createAsync();
+      //   } else {
+      //     menuBar.on('ready', () => {
+      //       menuBar.showWindow();
+      //     });
+      //   }
+      // }
       if (recreate === true || (typeof recreate === 'function' && existedWindowMeta !== undefined && recreate(existedWindowMeta))) {
         existedWindow.close();
       } else {
         return existedWindow.show();
       }
     }
+
     const attachToMenubar: boolean = this.preferenceService.get('attachToMenubar');
+    let mainWindowConfig: Partial<BrowserWindowConstructorOptions> = {};
+    let mainWindowState: windowStateKeeperState | undefined;
+    const isMainWindow = windowName === WindowNames.main;
+    if (isMainWindow) {
+      if (attachToMenubar) {
+        await handleAttachToMenuBar();
+      }
+
+      mainWindowState = windowStateKeeper({
+        defaultWidth: windowDimension[WindowNames.main].width,
+        defaultHeight: windowDimension[WindowNames.main].height,
+      });
+      mainWindowConfig = {
+        x: mainWindowState.x,
+        y: mainWindowState.y,
+        width: mainWindowState.width,
+        height: mainWindowState.height,
+      };
+    }
 
     const newWindow = new BrowserWindow({
       ...windowDimension[windowName],
+      ...mainWindowConfig,
       resizable: false,
       maximizable: false,
       minimizable: false,
@@ -205,13 +193,105 @@ export class Window {
       },
       parent: windowName === WindowNames.main || attachToMenubar ? undefined : this.get(WindowNames.main),
     });
-    newWindow.setMenuBarVisibility(false);
 
+    this.windows[windowName] = newWindow;
+    if (isMainWindow) {
+      mainWindowState?.manage(newWindow);
+      await this.registerMainWindowListeners(newWindow);
+    } else {
+      newWindow.setMenuBarVisibility(false);
+    }
     newWindow.on('closed', () => {
       this.windows[windowName] = undefined;
     });
-    this.windows[windowName] = newWindow;
     return newWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+  }
+
+  private async registerMainWindowListeners(newWindow: BrowserWindow): Promise<void> {
+    const { wasOpenedAsHidden } = app.getLoginItemSettings();
+    // Enable swipe to navigate
+    const swipeToNavigate = this.preferenceService.get('swipeToNavigate');
+    if (swipeToNavigate) {
+      const mainWindow = this.get(WindowNames.main);
+      if (mainWindow === undefined) return;
+      mainWindow.on('swipe', (_event, direction) => {
+        const view = mainWindow?.getBrowserView();
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        if (view) {
+          if (direction === 'left') {
+            view.webContents.goBack();
+          } else if (direction === 'right') {
+            view.webContents.goForward();
+          }
+        }
+      });
+    }
+
+    // Hide window instead closing on macos
+    newWindow.on('close', (event) => {
+      const mainWindow = this.get(WindowNames.main);
+      if (mainWindow === undefined) return;
+      if (process.platform === 'darwin' && this.getWindowMeta(WindowNames.main).forceClose !== true) {
+        event.preventDefault();
+        // https://github.com/electron/electron/issues/6033#issuecomment-242023295
+        if (mainWindow.isFullScreen()) {
+          mainWindow.once('leave-full-screen', () => {
+            const mainWindow = this.get(WindowNames.main);
+            if (mainWindow !== undefined) {
+              mainWindow.hide();
+            }
+          });
+          mainWindow.setFullScreen(false);
+        } else {
+          mainWindow.hide();
+        }
+      }
+    });
+
+    newWindow.on('focus', () => {
+      const mainWindow = this.get(WindowNames.main);
+      if (mainWindow === undefined) return;
+      const view = mainWindow?.getBrowserView();
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      view?.webContents?.focus();
+    });
+
+    newWindow.once('ready-to-show', () => {
+      const mainWindow = this.get(WindowNames.main);
+      if (mainWindow === undefined) return;
+      if (!wasOpenedAsHidden) {
+        mainWindow.show();
+      }
+
+      // calling this to redundantly setBounds BrowserView
+      // after the UI is fully loaded
+      // if not, BrowserView mouseover event won't work correctly
+      // https://github.com/atomery/webcatalog/issues/812
+      this.workspaceViewService.realignActiveWorkspace();
+    });
+
+    newWindow.on('enter-full-screen', () => {
+      const mainWindow = this.get(WindowNames.main);
+      if (mainWindow === undefined) return;
+      mainWindow?.webContents.send('is-fullscreen-updated', true);
+      this.workspaceViewService.realignActiveWorkspace();
+    });
+    newWindow.on('leave-full-screen', () => {
+      const mainWindow = this.get(WindowNames.main);
+      if (mainWindow === undefined) return;
+      mainWindow?.webContents.send('is-fullscreen-updated', false);
+      this.workspaceViewService.realignActiveWorkspace();
+    });
+
+    return await new Promise<void>((resolve) => {
+      const mainWindow = this.get(WindowNames.main);
+      if (mainWindow === undefined) return;
+      // ensure redux is loaded first
+      // if not, redux might not be able catch changes sent from ipcMain
+      mainWindow.webContents.once('did-stop-loading', () => {
+        resolve();
+      });
+    });
   }
 
   public setWindowMeta<N extends WindowNames>(windowName: N, meta: WindowMeta[N]): void {
@@ -237,6 +317,57 @@ export class Window {
       win.webContents.send(channel, ...arguments_);
     });
   };
+
+  public async goHome(windowName: WindowNames = WindowNames.main): Promise<void> {
+    const win = this.get(windowName);
+    const contents = win?.getBrowserView()?.webContents;
+    const activeWorkspace = this.workspaceService.getActiveWorkspace();
+    if (contents !== undefined && activeWorkspace !== undefined && win !== undefined) {
+      await contents.loadURL(activeWorkspace.homeUrl);
+      contents.send('update-can-go-back', contents.canGoBack());
+      contents.send('update-can-go-forward', contents.canGoForward());
+    }
+  }
+
+  public goBack(windowName: WindowNames = WindowNames.main): void {
+    const win = this.get(windowName);
+    const contents = win?.getBrowserView()?.webContents;
+    if (contents?.canGoBack() === true) {
+      contents.goBack();
+      contents.send('update-can-go-back', contents.canGoBack());
+      contents.send('update-can-go-forward', contents.canGoForward());
+    }
+  }
+
+  public goForward(windowName: WindowNames = WindowNames.main): void {
+    const win = this.get(windowName);
+    const contents = win?.getBrowserView()?.webContents;
+    if (contents?.canGoForward() === true) {
+      contents.goForward();
+      contents.send('update-can-go-back', contents.canGoBack());
+      contents.send('update-can-go-forward', contents.canGoForward());
+    }
+  }
+
+  public reload(windowName: WindowNames = WindowNames.main): void {
+    const win = this.get(windowName);
+    win?.getBrowserView()?.webContents?.reload();
+  }
+
+  public showMessageBox(message: Electron.MessageBoxOptions['message'], type?: Electron.MessageBoxOptions['type']): void {
+    const mainWindow = this.get(WindowNames.main);
+    if (mainWindow !== undefined) {
+      dialog
+        .showMessageBox(mainWindow, {
+          type: type ?? 'error',
+          message,
+          buttons: ['OK'],
+          cancelId: 0,
+          defaultId: 0,
+        })
+        .catch(console.log);
+    }
+  }
 
   private registerMenu(): void {
     this.menuService.insertMenu(
@@ -368,6 +499,7 @@ export class Window {
     ]);
 
     if (process.platform === 'darwin') {
+      // TODO: restore updater options here
       this.menuService.insertMenu('TiddlyGit', [
         {
           label: i18n.t('ContextMenu.About'),
