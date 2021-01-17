@@ -229,16 +229,16 @@ export const createAsync = async (): Promise<void> =>
       // after the UI is fully loaded
       // if not, BrowserView mouseover event won't work correctly
       // https://github.com/atomery/webcatalog/issues/812
-      ipcMain.emit('request-realign-active-workspace');
+      this.workspaceViewService.realignActiveWorkspace();
     });
 
     win.on('enter-full-screen', () => {
       win?.webContents.send('is-fullscreen-updated', true);
-      ipcMain.emit('request-realign-active-workspace');
+      this.workspaceViewService.realignActiveWorkspace();
     });
     win.on('leave-full-screen', () => {
       win?.webContents.send('is-fullscreen-updated', false);
-      ipcMain.emit('request-realign-active-workspace');
+      this.workspaceViewService.realignActiveWorkspace();
     });
 
     // ensure redux is loaded first

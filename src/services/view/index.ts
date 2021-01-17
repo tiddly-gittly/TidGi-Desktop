@@ -4,15 +4,19 @@ import { injectable, inject } from 'inversify';
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Preference } from '@services/preferences';
 import { Workspace } from '@services/workspaces';
+import { WorkspaceView } from '@services/workspacesView';
 import { Wiki } from '@services/wiki';
 import { Authentication } from '@services/auth';
 import { Window } from '@services/windows';
+import { MenuService } from '@services/menu';
 import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
 import i18n from '../libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
 import { extractDomain } from '@services/libs/url';
 import { IWorkspace } from '@services/types';
 import setupViewEventHandlers from './setupViewEventHandlers';
+import getFromRenderer from '@services/libs/getFromRenderer';
+import { MetaDataChannel } from '@/constants/channels';
 
 @injectable()
 export class View {
@@ -22,11 +26,14 @@ export class View {
     @inject(serviceIdentifiers.Window) private readonly windowService: Window,
     @inject(serviceIdentifiers.Workspace) private readonly workspaceService: Workspace,
     @inject(serviceIdentifiers.Authentication) private readonly authService: Authentication,
+    @inject(serviceIdentifiers.MenuService) private readonly menuService: MenuService,
+    @inject(serviceIdentifiers.WorkspaceView) private readonly workspaceViewService: WorkspaceView,
   ) {
-    this.init();
+    this.initIPCHandlers();
+    this.registerMenu();
   }
 
-  private init(): void {
+  private initIPCHandlers(): void {
     // https://www.electronjs.org/docs/tutorial/online-offline-events
     ipcMain.handle('online-status-changed', (_event, online: boolean) => {
       if (online) {
@@ -36,6 +43,162 @@ export class View {
     ipcMain.handle('request-reload-views-dark-reader', () => {
       this.reloadViewsDarkReader();
     });
+  }
+
+  private registerMenu(): void {
+    const hasWorkspaces = this.workspaceService.countWorkspaces() > 0;
+    this.menuService.insertMenu('View', [
+      {
+        label: () => (this.preferenceService.get('sidebar') ? 'Hide Sidebar' : 'Show Sidebar'),
+        accelerator: 'CmdOrCtrl+Alt+S',
+        click: () => {
+          void this.preferenceService.set('sidebar', !this.preferenceService.get('sidebar'));
+          void this.workspaceViewService.realignActiveWorkspace();
+        },
+      },
+      {
+        label: () => (this.preferenceService.get('navigationBar') ? 'Hide Navigation Bar' : 'Show Navigation Bar'),
+        accelerator: 'CmdOrCtrl+Alt+N',
+        click: () => {
+          void this.preferenceService.set('navigationBar', !this.preferenceService.get('navigationBar'));
+          void this.workspaceViewService.realignActiveWorkspace();
+        },
+      },
+      {
+        label: () => (this.preferenceService.get('titleBar') ? 'Hide Title Bar' : 'Show Title Bar'),
+        accelerator: 'CmdOrCtrl+Alt+T',
+        enabled: process.platform === 'darwin',
+        visible: process.platform === 'darwin',
+        click: () => {
+          void this.preferenceService.set('titleBar', !this.preferenceService.get('titleBar'));
+          void this.workspaceViewService.realignActiveWorkspace();
+        },
+      },
+      // same behavior as BrowserWindow with autoHideMenuBar: true
+      // but with addition to readjust BrowserView so it won't cover the menu bar
+      {
+        label: 'Toggle Menu Bar',
+        visible: false,
+        accelerator: 'Alt+M',
+        enabled: process.platform === 'win32',
+        click: async (_menuItem, browserWindow) => {
+          // if back is called in popup window
+          // open menu bar in the popup window instead
+          if (browserWindow === undefined) return;
+          const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
+          if (isPopup === true) {
+            browserWindow.setMenuBarVisibility(!browserWindow.isMenuBarVisible());
+            return;
+          }
+          const mainWindow = this.windowService.get(WindowNames.main);
+          mainWindow?.setMenuBarVisibility(!mainWindow?.isMenuBarVisible());
+          void this.workspaceViewService.realignActiveWorkspace();
+        },
+      },
+      { type: 'separator' },
+      { role: 'togglefullscreen' },
+      {
+        label: 'Actual Size',
+        accelerator: 'CmdOrCtrl+0',
+        click: async (_menuItem, browserWindow) => {
+          // if item is called in popup window
+          // open menu bar in the popup window instead
+          if (browserWindow === undefined) return;
+          const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
+          if (isPopup === true) {
+            const contents = browserWindow.webContents;
+            contents.zoomFactor = 1;
+            return;
+          }
+          const mainWindow = this.windowService.get(WindowNames.main);
+          const webContent = mainWindow?.getBrowserView()?.webContents;
+          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+          if (webContent) {
+            webContent.setZoomFactor(1);
+          }
+        },
+        enabled: hasWorkspaces,
+      },
+      {
+        label: 'Zoom In',
+        accelerator: 'CmdOrCtrl+=',
+        click: async (_menuItem, browserWindow) => {
+          // if item is called in popup window
+          // open menu bar in the popup window instead
+          if (browserWindow === undefined) return;
+          const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
+          if (isPopup === true) {
+            const contents = browserWindow.webContents;
+            contents.zoomFactor += 0.1;
+            return;
+          }
+          const mainWindow = this.windowService.get(WindowNames.main);
+          const webContent = mainWindow?.getBrowserView()?.webContents;
+          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+          if (webContent) {
+            webContent.setZoomFactor(webContent.getZoomFactor() + 0.1);
+          }
+        },
+        enabled: hasWorkspaces,
+      },
+      {
+        label: 'Zoom Out',
+        accelerator: 'CmdOrCtrl+-',
+        click: async (_menuItem, browserWindow) => {
+          // if item is called in popup window
+          // open menu bar in the popup window instead
+          if (browserWindow === undefined) return;
+          const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
+          if (isPopup === true) {
+            const contents = browserWindow.webContents;
+            contents.zoomFactor -= 0.1;
+            return;
+          }
+          const mainWindow = this.windowService.get(WindowNames.main);
+          const webContent = mainWindow?.getBrowserView()?.webContents;
+          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+          if (webContent) {
+            webContent.setZoomFactor(webContent.getZoomFactor() - 0.1);
+          }
+        },
+        enabled: hasWorkspaces,
+      },
+      { type: 'separator' },
+      {
+        label: 'Reload This Page',
+        accelerator: 'CmdOrCtrl+R',
+        click: async (_menuItem, browserWindow) => {
+          // if item is called in popup window
+          // open menu bar in the popup window instead
+          if (browserWindow === undefined) return;
+          const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
+          if (isPopup === true) {
+            browserWindow.webContents.reload();
+            return;
+          }
+
+          const mainWindow = this.windowService.get(WindowNames.main);
+          const webContent = mainWindow?.getBrowserView()?.webContents;
+          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+          if (webContent) {
+            webContent.reload();
+          }
+        },
+        enabled: hasWorkspaces,
+      },
+      { type: 'separator' },
+      {
+        label: 'Developer Tools',
+        submenu: [
+          {
+            label: 'Open Developer Tools of Active Workspace',
+            accelerator: 'CmdOrCtrl+Option+I',
+            click: () => this.getActiveBrowserView()?.webContents?.openDevTools(),
+            enabled: hasWorkspaces,
+          },
+        ],
+      },
+    ]);
   }
 
   private views: Record<string, BrowserView> = {};
@@ -83,8 +246,7 @@ export class View {
       });
     } else if (proxyType === 'pacScript') {
       await sessionOfView.setProxy({
-        // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '{ proxyPacScript: any; proxyBypa... Remove this comment to see the full error message
-        proxyPacScript,
+        pacScript: proxyPacScript,
         proxyBypassRules,
       });
     }
@@ -227,6 +389,7 @@ export class View {
     const view = this.getView(id);
     void session.fromPartition(`persist:${id}`).clearStorageData();
     // FIXME: Property 'destroy' does not exist on type 'BrowserView'.ts(2339) , might related to https://github.com/electron/electron/pull/25411 which previously cause crush when I quit the app
+    // maybe use https://github.com/electron/electron/issues/10096
     // if (view !== undefined) {
     //   view.destroy();
     // }
@@ -265,7 +428,6 @@ export class View {
   public hibernateView = (id: string): void => {
     if (this.getView(id) !== undefined) {
       // FIXME: remove view
-      // @ts-expect-error Property 'destroy' does not exist on type 'BrowserView'.ts(2339)
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       this.getView(id).destroy();
       this.removeView(id);

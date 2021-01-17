@@ -9,6 +9,7 @@ import { buildResourcePath } from '@services/constants/paths';
 
 import { Preference } from '@services/preferences';
 import { Workspace } from '@services/workspaces';
+import { WorkspaceView } from '@services/workspacesView';
 import { Window } from '@services/windows';
 import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
 import { container } from '@services/container';
@@ -32,6 +33,7 @@ export default function setupViewEventHandlers(
   { adjustUserAgentByUrl }: IViewModifier,
 ): void {
   const workspaceService = container.resolve(Workspace);
+  const workspaceViewService = container.resolve(WorkspaceView);
   const windowService = container.resolve(Window);
   const preferenceService = container.resolve(Preference);
 
@@ -104,7 +106,7 @@ export default function setupViewEventHandlers(
       lastUrl: currentUrl,
     });
     // fix https://github.com/atomery/webcatalog/issues/870
-    ipcMain.emit('request-realign-active-workspace');
+    workspaceViewService.realignActiveWorkspace();
   });
   // focus on initial load
   // https://github.com/atomery/webcatalog/issues/398

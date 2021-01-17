@@ -1,29 +1,41 @@
 /* eslint-disable global-require */
 import Transport from 'winston-transport';
 
+import { container } from '@services/container';
+import { View } from '@services/view';
+import { Window } from '@services/windows';
+import { WindowNames } from '@services/windows/WindowProperties';
+
 const handlers = {
-  createWikiProgress: (message: any) => {
-    require('../../windows/add-workspace') // require here to prevent possible circular dependence
-      .get()
-      .webContents.send('create-wiki-progress', message);
+  createWikiProgress: (message: string) => {
+    const windowService = container.resolve(Window);
+    const createWorkspaceWindow = windowService.get(WindowNames.addWorkspace);
+    createWorkspaceWindow?.webContents?.send('create-wiki-progress', message);
   },
-  wikiSyncProgress: (message: any) => {
-    const { getActiveBrowserView } = require('../views');
-    const browserView = getActiveBrowserView();
-    if (browserView) {
-      browserView.webContents.send('wiki-sync-progress', message);
-    }
+  wikiSyncProgress: (message: string) => {
+    const viewService = container.resolve(View);
+    const browserView = viewService.getActiveBrowserView();
+    browserView?.webContents?.send('wiki-sync-progress', message);
   },
 };
 
+export type IHandlers = typeof handlers;
+
+export interface IInfo {
+  /** which method or handler function we are logging for */
+  handler: keyof IHandlers;
+  /** the detailed massage for debugging */
+  message: string;
+}
+
 export default class RendererTransport extends Transport {
-  log(info: any, callback: any) {
+  log(info: IInfo, callback: () => unknown): void {
     setImmediate(() => {
       this.emit('logged', info);
     });
 
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (info.handler && info.handler in handlers) {
-      // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
       handlers[info.handler](info.message);
     }
 

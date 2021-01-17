@@ -6,7 +6,7 @@ import isDev from 'electron-is-dev';
 import settings from 'electron-settings';
 import { autoUpdater } from 'electron-updater';
 
-import { clearMainBindings } from '@services/libs/i18n/i18next-electron-fs-backend';
+import { clearMainBindings, buildLanguageMenu } from '@services/libs/i18n/i18next-electron-fs-backend';
 import { ThemeChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
@@ -53,6 +53,7 @@ const viewService = container.resolve(View);
 const wikiService = container.resolve(Wiki);
 const windowService = container.resolve(Window);
 const workspaceService = container.resolve(Workspace);
+const workspaceViewService = container.resolve(WorkspaceView);
 
 app.on('second-instance', () => {
   // Someone tried to run a second instance, we should focus our window.
@@ -139,8 +140,8 @@ if (!gotTheLock) {
             proxyBypassRules,
           });
         }
+        // apply theme
         nativeTheme.themeSource = themeSource;
-        menuService.buildMenu();
         nativeTheme.addListener('updated', () => {
           windowService.sendToAllWindows(ThemeChannel.nativeThemeUpdated);
           viewService.reloadViewsDarkReader();
@@ -200,10 +201,10 @@ if (!gotTheLock) {
               // getContentSize is not updated immediately
               // try once after 0.2s (for fast computer), another one after 1s (to be sure)
               setTimeout(() => {
-                ipcMain.emit('request-realign-active-workspace');
+                workspaceViewService.realignActiveWorkspace();
               }, 200);
               setTimeout(() => {
-                ipcMain.emit('request-realign-active-workspace');
+                workspaceViewService.realignActiveWorkspace();
               }, 1000);
             };
             mainWindow.on('maximize', handleMaximize);
@@ -215,6 +216,11 @@ if (!gotTheLock) {
       .then(() => {
         // trigger whenTrulyReady
         ipcMain.emit(customCommonInitFinishedEvent);
+      })
+      .then(() => {
+        // build menu at last, this is not noticeable to user, so do it last
+        buildLanguageMenu();
+        menuService.buildMenu();
       });
   };
   app.on('ready', () => {

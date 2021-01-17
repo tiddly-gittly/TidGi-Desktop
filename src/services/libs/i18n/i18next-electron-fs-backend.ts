@@ -6,6 +6,7 @@ import { IpcRenderer, IpcMain, BrowserWindow, IpcMainInvokeEvent, IpcRendererEve
 import { Window } from '@services/windows';
 import { Preference } from '@services/preferences';
 import { View } from '@services/view';
+import { MenuService } from '@services/menu';
 import { container } from '@services/container';
 import { LOCALIZATION_FOLDER } from '@services/constants/paths';
 import { I18NChannels } from '@/constants/channels';
@@ -105,10 +106,14 @@ const whitelistMap = JSON.parse(fs.readFileSync(path.join(LOCALIZATION_FOLDER, '
 
 const whiteListedLanguages = Object.keys(whitelistMap);
 
-export function getLanguageMenu(): MenuItemConstructorOptions[] {
+/**
+ * Register languages into language menu, call this function after container init
+ */
+export function buildLanguageMenu(): void {
   const preferenceService = container.resolve(Preference);
   const windowService = container.resolve(Window);
   const viewService = container.resolve(View);
+  const menuService = container.resolve(MenuService);
   const subMenu: MenuItemConstructorOptions[] = [];
   for (const language of whiteListedLanguages) {
     subMenu.push({
@@ -127,5 +132,5 @@ export function getLanguageMenu(): MenuItemConstructorOptions[] {
     });
   }
 
-  return subMenu;
+  menuService.insertMenu('Language', subMenu);
 }

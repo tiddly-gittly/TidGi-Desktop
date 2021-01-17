@@ -260,13 +260,52 @@ export class Window {
       'close',
     );
 
-    const hasWorkspaces = this.workspaceService.countWorkspaces() > 0;
+    this.menuService.insertMenu(
+      'Edit',
+      [
+        {
+          label: 'Find',
+          accelerator: 'CmdOrCtrl+F',
+          click: () => {
+            const mainWindow = this.get(WindowNames.main);
+            if (mainWindow !== undefined) {
+              mainWindow.webContents.focus();
+              mainWindow.webContents.send('open-find-in-page');
+              const contentSize = mainWindow.getContentSize();
+              const view = mainWindow.getBrowserView();
+              view?.setBounds(getViewBounds(contentSize as [number, number], true));
+            }
+          },
+          enabled: () => this.workspaceService.countWorkspaces() > 0,
+        },
+        {
+          label: 'Find Next',
+          accelerator: 'CmdOrCtrl+G',
+          click: () => {
+            const mainWindow = this.get(WindowNames.main);
+            mainWindow?.webContents?.send('request-back-find-in-page', true);
+          },
+          enabled: () => this.workspaceService.countWorkspaces() > 0,
+        },
+        {
+          label: 'Find Previous',
+          accelerator: 'Shift+CmdOrCtrl+G',
+          click: () => {
+            const mainWindow = this.get(WindowNames.main);
+            mainWindow?.webContents?.send('request-back-find-in-page', false);
+          },
+          enabled: () => this.workspaceService.countWorkspaces() > 0,
+        },
+      ],
+      'close',
+    );
+
     this.menuService.insertMenu('History', [
       {
         label: 'Home',
         accelerator: 'Shift+CmdOrCtrl+H',
         click: () => ipcMain.emit('request-go-home'),
-        enabled: hasWorkspaces,
+        enabled: () => this.workspaceService.countWorkspaces() > 0,
       },
       {
         label: 'Back',
@@ -284,7 +323,7 @@ export class Window {
           }
           ipcMain.emit('request-go-back');
         },
-        enabled: hasWorkspaces,
+        enabled: () => this.workspaceService.countWorkspaces() > 0,
       },
       {
         label: 'Forward',
@@ -301,7 +340,7 @@ export class Window {
           }
           ipcMain.emit('request-go-forward');
         },
-        enabled: hasWorkspaces,
+        enabled: () => this.workspaceService.countWorkspaces() > 0,
       },
       { type: 'separator' },
       {
@@ -324,7 +363,7 @@ export class Window {
             clipboard.writeText(url);
           }
         },
-        enabled: hasWorkspaces,
+        enabled: () => this.workspaceService.countWorkspaces() > 0,
       },
     ]);
   }
