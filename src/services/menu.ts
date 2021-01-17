@@ -51,6 +51,10 @@ export class MenuService {
     // add some default app menus
     this.menuTemplate = [
       {
+        label: 'TiddlyGit',
+        id: 'TiddlyGit',
+      },
+      {
         label: 'Edit',
         id: 'Edit',
         submenu: [

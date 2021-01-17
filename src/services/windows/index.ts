@@ -3,13 +3,13 @@ import { BrowserWindow, ipcMain, dialog, app, App, remote, clipboard } from 'ele
 import isDevelopment from 'electron-is-dev';
 import { injectable, inject } from 'inversify';
 
-import { IBrowserViewMetaData } from '@services/windows/WindowProperties';
+import { IBrowserViewMetaData, WindowNames, windowDimension, WindowMeta, CodeInjectionType } from '@services/windows/WindowProperties';
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { Preference } from '@services/preferences';
 import { Workspace } from '@services/workspaces';
 import { MenuService } from '@services/menu';
 import { Channels, WindowChannel, MetaDataChannel } from '@/constants/channels';
-import { WindowNames, windowDimension, WindowMeta, CodeInjectionType } from '@services/windows/WindowProperties';
+
 import i18n from '@services/libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
 import getFromRenderer from '@services/libs/getFromRenderer';
@@ -366,5 +366,39 @@ export class Window {
         enabled: () => this.workspaceService.countWorkspaces() > 0,
       },
     ]);
+
+    if (process.platform === 'darwin') {
+      this.menuService.insertMenu('TiddlyGit', [
+        {
+          label: i18n.t('ContextMenu.About'),
+          click: async () => await this.open(WindowNames.about),
+        },
+        { type: 'separator' },
+        {
+          label: i18n.t('ContextMenu.Preferences'),
+          click: async () => await this.open(WindowNames.preferences),
+          accelerator: 'CmdOrCtrl+,',
+        },
+        { type: 'separator' },
+        {
+          label: i18n.t('ContextMenu.Notifications'),
+          click: async () => await this.open(WindowNames.notifications),
+          accelerator: 'CmdOrCtrl+Shift+N',
+        },
+        { type: 'separator' },
+        {
+          label: i18n.t('Preference.ClearBrowsingData'),
+          click: () => ipcMain.emit('request-clear-browsing-data'),
+        },
+        { type: 'separator' },
+        { role: 'services', submenu: [] },
+        { type: 'separator' },
+        { role: 'hide' },
+        { role: 'hideOthers' },
+        { role: 'unhide' },
+        { type: 'separator' },
+        { role: 'quit' },
+      ]);
+    }
   }
 }
