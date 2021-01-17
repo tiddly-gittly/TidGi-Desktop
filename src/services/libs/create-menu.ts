@@ -150,58 +150,7 @@ function createMenu() {
   template[4].submenu.push(
     // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'undefined... Remove this comment to see the full error message
     { type: 'separator' },
-    {
-      label: 'Select Next Workspace',
-      click: () => {
-        const currentActiveWorkspace = getActiveWorkspace();
-        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-        const nextWorkspace = getNextWorkspace(currentActiveWorkspace.id);
-        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-        setActiveWorkspaceView(nextWorkspace.id);
-        createMenu();
-      },
-      accelerator: 'CmdOrCtrl+Shift+]',
-      enabled: hasWorkspaces,
-    },
-    {
-      label: 'Select Previous Workspace',
-      click: () => {
-        const currentActiveWorkspace = getActiveWorkspace();
-        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-        const previousWorkspace = getPreviousWorkspace(currentActiveWorkspace.id);
-        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-        setActiveWorkspaceView(previousWorkspace.id);
-        createMenu();
-      },
-      accelerator: 'CmdOrCtrl+Shift+[',
-      enabled: hasWorkspaces,
-    },
-    { type: 'separator' },
-    {
-      label: 'Edit Current Workspace',
-      click: () => {
-        const activeWorkspace = getActiveWorkspace();
-        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-        editWorkspaceWindow.show(activeWorkspace.id);
-      },
-      enabled: hasWorkspaces,
-    },
-    {
-      label: 'Remove Current Workspace',
-      click: () => {
-        const activeWorkspace = getActiveWorkspace();
-        // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-        ipcMain.emit('request-remove-workspace', null, activeWorkspace.id);
-      },
-      enabled: hasWorkspaces,
-    },
-    { type: 'separator' },
-    {
-      label: 'Add Workspace',
-      click: () => {
-        addWorkspaceWindow.show();
-      },
-    },
+    
   );
   // @ts-expect-error ts-migrate(2345) FIXME: Argument of type '({ label: string; submenu: ({ la... Remove this comment to see the full error message
   const menu = Menu.buildFromTemplate(template);

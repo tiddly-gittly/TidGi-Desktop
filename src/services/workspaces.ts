@@ -15,6 +15,11 @@ import tmp from 'tmp';
 import serviceIdentifiers from '@services/serviceIdentifier';
 import { container } from '@services/container';
 import { Wiki } from '@services/wiki';
+import { View } from '@services/view';
+import { WorkspaceView } from '@services/workspacesView';
+import { Window } from '@services/windows';
+import { WindowNames } from '@services/windows/WindowProperties';
+import { MenuService } from '@services/menu';
 import { IWorkspace, IWorkspaceMetaData } from '@services/types';
 
 const { lazyInject } = getDecorators(container);
@@ -31,13 +36,18 @@ export class Workspace {
   workspaces: Record<string, IWorkspace> = {};
 
   @lazyInject(serviceIdentifiers.Wiki) private readonly wikiService!: Wiki;
+  @lazyInject(serviceIdentifiers.Window) private readonly windowService!: Window;
+  @lazyInject(serviceIdentifiers.View) private readonly viewService!: View;
+  @lazyInject(serviceIdentifiers.WorkspaceView) private readonly workspaceViewService!: WorkspaceView;
+  @lazyInject(serviceIdentifiers.MenuService) private readonly menuService!: MenuService;
 
   constructor() {
     this.workspaces = this.getInitWorkspacesForCache();
-    this.init();
+    this.initIPCHandlers();
+    this.registerMenu();
   }
 
-  init(): void {
+  initIPCHandlers(): void {
     ipcMain.handle('get-workspace-meta', (_event, id) => {
       return this.getMetaData(id);
     });
@@ -61,6 +71,90 @@ export class Workspace {
     });
   }
 
+  private registerMenu(): void {
+    this.menuService.insertMenu('Workspaces', [
+      {
+        label: 'Select Next Workspace',
+        click: () => {
+          const currentActiveWorkspace = this.getActiveWorkspace();
+          if (currentActiveWorkspace === undefined) return;
+          const nextWorkspace = this.getNextWorkspace(currentActiveWorkspace.id);
+          if (nextWorkspace === undefined) return;
+          return this.workspaceViewService.setActiveWorkspaceView(nextWorkspace.id);
+        },
+        accelerator: 'CmdOrCtrl+Shift+]',
+        enabled: () => this.countWorkspaces() > 0,
+      },
+      {
+        label: 'Select Previous Workspace',
+        click: () => {
+          const currentActiveWorkspace = this.getActiveWorkspace();
+          if (currentActiveWorkspace === undefined) return;
+          const previousWorkspace = this.getPreviousWorkspace(currentActiveWorkspace.id);
+          if (previousWorkspace === undefined) return;
+          return this.workspaceViewService.setActiveWorkspaceView(previousWorkspace.id);
+        },
+        accelerator: 'CmdOrCtrl+Shift+[',
+        enabled: () => this.countWorkspaces() > 0,
+      },
+      { type: 'separator' },
+      {
+        label: 'Edit Current Workspace',
+        click: () => {
+          const currentActiveWorkspace = this.getActiveWorkspace();
+          if (currentActiveWorkspace === undefined) return;
+          return this.windowService.open(WindowNames.editWorkspace, { workspaceID: currentActiveWorkspace.id });
+        },
+        enabled: () => this.countWorkspaces() > 0,
+      },
+      {
+        label: 'Remove Current Workspace',
+        click: () => {
+          const currentActiveWorkspace = this.getActiveWorkspace();
+          if (currentActiveWorkspace === undefined) return;
+          return this.remove(currentActiveWorkspace.id);
+        },
+        enabled: () => this.countWorkspaces() > 0,
+      },
+      { type: 'separator' },
+      {
+        label: 'Add Workspace',
+        click: async () => {
+          await this.windowService.open(WindowNames.addWorkspace);
+        },
+      },
+    ]);
+  }
+
+  /**
+   * Update items like "activate workspace1" or "open devtool in workspace1" in the menu
+   */
+  private updateWorkspaceMenuItems(): void {
+    const newMenuItems = this.getWorkspacesAsList().flatMap((workspace, index) => [
+      {
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        label: workspace.name || `Workspace ${index + 1}`,
+        type: 'checkbox' as const,
+        checked: workspace.active,
+        click: async () => {
+          await this.workspaceViewService.setActiveWorkspaceView(workspace.id);
+          // manually update menu since we have alter the active workspace
+          this.menuService.buildMenu();
+        },
+        accelerator: `CmdOrCtrl+${index + 1}`,
+      },
+      {
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        label: workspace.name || `Workspace ${index + 1}`,
+        click: () => {
+          const view = this.viewService.getView(workspace.id);
+          view.webContents.toggleDevTools();
+        },
+      },
+    ]);
+    this.menuService.insertMenu('Workspaces', newMenuItems);
+  }
+
   /**
    * load workspaces in sync, and ensure it is an Object
    */
@@ -81,6 +175,9 @@ export class Workspace {
     return Object.keys(this.workspaces).length;
   }
 
+  /**
+   * Get sorted workspace list
+   */
   getWorkspacesAsList(): IWorkspace[] {
     return Object.values(this.workspaces).sort((a, b) => a.order - b.order);
   }
@@ -93,6 +190,7 @@ export class Workspace {
     this.workspaces[id] = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspace);
     await settings.set(`workspaces.${this.version}.${id}`, { ...workspace });
+    this.updateWorkspaceMenuItems();
   }
 
   async update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void> {
@@ -264,6 +362,7 @@ export class Workspace {
     // const { name } = workspaces[id];
     // stopWiki(name);
     // stopWatchWiki(name);
+    this.updateWorkspaceMenuItems();
   }
 
   async create(newWorkspaceConfig: Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order'>): Promise<IWorkspace> {

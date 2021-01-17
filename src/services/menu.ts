@@ -120,7 +120,7 @@ export class MenuService {
   /**
    * Insert provided sub menu items into menubar, so user and services can register custom menu items
    * @param menuID Top level menu name to insert menu items
-   * @param menuItems An array of menu item to insert
+   * @param menuItems An array of menu item to insert or update, if some of item is already existed, it will be updated instead of inserted
    * @param afterSubMenu The `id` or `role` of a submenu you want your submenu insert after. `null` means inserted as first submenu item; `undefined` means inserted as last submenu item;
    * @param withSeparator Need to insert a separator first, before insert menu items
    */
@@ -128,8 +128,22 @@ export class MenuService {
     let foundMenuName = false;
     // try insert menu into an existed menu's submenu
     for (const menu of this.menuTemplate) {
+      // match top level menu
       if (menu.id === menuID) {
         foundMenuName = true;
+        // check some menu item existed, we update them and pop them out
+        const filteredMenuItems: DeferredMenuItemConstructorOptions[] = [];
+        for (const item of menuItems) {
+          const currentSubMenu = typeof menu.submenu === 'function' ? menu.submenu() : menu.submenu ?? [];
+          const existedItemIndex = currentSubMenu.findIndex(
+            (existedItem) => existedItem.id === item.id || existedItem.label === item.label || existedItem.role === item.role,
+          );
+          if (existedItemIndex !== -1) {
+            // TODO: update menu item
+          }
+        }
+
+        // directly insert whole sub menu
         if (Array.isArray(menu.submenu)) {
           if (afterSubMenu === undefined) {
             // inserted as last submenu item
