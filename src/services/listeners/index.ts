@@ -1,5 +1,4 @@
 import { app, ipcMain, nativeTheme, shell } from 'electron';
-import createMenu from '@services/libs/create-menu';
 
 const loadListeners = (): void => {
   ipcMain.handle('request-open', (_event, uri: string, isDirectory: boolean) => {
@@ -8,7 +7,7 @@ const loadListeners = (): void => {
   ipcMain.handle('request-quit', () => {
     app.quit();
   });
-  
+
   // Native Theme
   ipcMain.handle('get-should-use-dark-colors', (_event) => {
     return nativeTheme.shouldUseDarkColors;
