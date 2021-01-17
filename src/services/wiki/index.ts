@@ -391,7 +391,7 @@ export class Wiki {
 
     const userName = this.authService.get('userName') ?? '';
     const userInfo = this.authService.get('authing');
-    const { name: wikiPath, gitUrl: githubRepoUrl, port, isSubWiki, id } = workspace;
+    const { name: wikiPath, gitUrl: githubRepoUrl, port, isSubWiki, id, mainWikiToLink } = workspace;
     // if is main wiki
     if (!isSubWiki) {
       this.setWikiStarted(wikiPath);
@@ -405,18 +405,17 @@ export class Wiki {
         await this.watchWiki(wikiPath, githubRepoUrl, userInfo);
       }
       // if we are creating a sub-wiki, restart the main wiki to load content from private wiki
-      const mainWikiPath = workspace.mainWikiToLink;
-      if (!this.justStartedWiki[mainWikiPath]) {
+      if (!this.justStartedWiki[mainWikiToLink]) {
         // TODO: change to get by mainWikiPath
-        const mainWorkspace = this.workspaceService.getByName(mainWikiPath);
+        const mainWorkspace = this.workspaceService.getByName(mainWikiToLink);
         if (mainWorkspace === undefined) {
-          throw new Error(`mainWorkspace is undefined in wikiStartup() for mainWikiPath ${mainWikiPath}`);
+          throw new Error(`mainWorkspace is undefined in wikiStartup() for mainWikiPath ${mainWikiToLink}`);
         }
-        await this.stopWatchWiki(mainWikiPath);
-        await this.stopWiki(mainWikiPath);
-        await this.startWiki(mainWikiPath, mainWorkspace.port, userName);
+        await this.stopWatchWiki(mainWikiToLink);
+        await this.stopWiki(mainWikiToLink);
+        await this.startWiki(mainWikiToLink, mainWorkspace.port, userName);
         if (userInfo !== undefined) {
-          await this.watchWiki(mainWikiPath, githubRepoUrl, userInfo);
+          await this.watchWiki(mainWikiToLink, githubRepoUrl, userInfo);
         }
       }
     }
@@ -453,9 +452,6 @@ export class Wiki {
         });
         if (response === 0) {
           await this.workspaceViewService.removeWorkspaceView(workspaceID);
-          // TODO: createMenu
-          // const createMenu = require('../create-menu');
-          // createMenu();
         }
         return;
       }
