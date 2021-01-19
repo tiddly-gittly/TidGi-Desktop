@@ -5,10 +5,10 @@ import path from 'path';
 import semver from 'semver';
 import settings from 'electron-settings';
 
-import serviceIdentifiers from '@services/serviceIdentifier';
-import { Window } from '@services/windows';
-import { WorkspaceView } from '@services/workspacesView';
-import { Notification } from '@services/notifications';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWindowService } from '@services/windows';
+import type { IWorkspaceViewService } from '@services/workspacesView';
+import type { INotificationService } from '@services/notifications';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { PreferenceChannel } from '@/constants/channels';
 import { container } from '@services/container';
@@ -82,11 +82,20 @@ const defaultPreferences = {
 };
 export type IPreferences = typeof defaultPreferences;
 
+/**
+ * Getter and setter for app business logic preferences.
+ */
+export interface IPreferenceService {
+  set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void>;
+  getPreferences: () => IPreferences;
+  get<K extends keyof IPreferences>(key: K): IPreferences[K];
+  reset(): Promise<void>;
+}
 @injectable()
 export class Preference {
-  @lazyInject(serviceIdentifiers.Window) private readonly windowService!: Window;
-  @lazyInject(serviceIdentifiers.Notification) private readonly notificationService!: Notification;
-  @lazyInject(serviceIdentifiers.WorkspaceView) private readonly workspaceViewService!: WorkspaceView;
+  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.Notification) private readonly notificationService!: INotificationService;
+  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
 
   cachedPreferences: IPreferences;
   readonly version = '2018.2';
@@ -149,7 +158,7 @@ export class Preference {
   /**
    * load preferences in sync, and ensure it is an Object
    */
-  getInitPreferencesForCache = (): IPreferences => {
+  private readonly getInitPreferencesForCache = (): IPreferences => {
     let preferencesFromDisk = settings.getSync(`preferences.${this.version}`) ?? {};
     preferencesFromDisk = typeof preferencesFromDisk === 'object' && !Array.isArray(preferencesFromDisk) ? preferencesFromDisk : {};
     return { ...defaultPreferences, ...this.sanitizePreference(preferencesFromDisk) };

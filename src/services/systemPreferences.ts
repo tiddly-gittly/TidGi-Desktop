@@ -9,13 +9,18 @@ interface IUsedElectionSettings {
  * System Preferences are not stored in storage but stored in macOS Preferences.
  * It can be retrieved and changed using Electron APIs
  */
+export interface ISystemPreferenceService {
+  get<K extends keyof IUsedElectionSettings>(key: K): IUsedElectionSettings[K];
+  getSystemPreferences(): IUsedElectionSettings;
+  setSystemPreference<K extends keyof IUsedElectionSettings>(key: K, value: IUsedElectionSettings[K]): void;
+}
 @injectable()
-export class SystemPreference {
+export class SystemPreference implements ISystemPreferenceService {
   constructor() {
     this.init();
   }
 
-  init(): void {
+  private init(): void {
     ipcMain.handle('get-system-preference', (event, key: keyof IUsedElectionSettings) => {
       return this.get(key);
     });

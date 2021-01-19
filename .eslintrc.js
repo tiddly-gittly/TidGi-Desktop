@@ -42,6 +42,7 @@ module.exports = {
         },
       },
     ],
+    '@typescript-eslint/method-signature-style': 'off',
     '@typescript-eslint/member-delimiter-style': [
       'warn',
       {

@@ -2,8 +2,29 @@
 const webpack = require('webpack');
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const CspHtmlWebpackPlugin = require('csp-html-webpack-plugin');
+const CircularDependencyPlugin = require('circular-dependency-plugin');
+const CopyPlugin = require('copy-webpack-plugin');
 
-module.exports = [
+exports.main = [
+  // new ForkTsCheckerWebpackPlugin(),
+  new CopyPlugin({
+    // to is relative to ./.webpack/main/
+    patterns: [{ from: 'src/services/wiki/wiki-worker.js', to: 'wiki-worker.js' }],
+  }),
+  new CircularDependencyPlugin({
+    // exclude detection of files based on a RegExp
+    exclude: /node_modules/,
+    // add errors to webpack instead of warnings
+    failOnError: true,
+    // allow import cycles that include an asyncronous import,
+    // e.g. via import(/* webpackMode: "weak" */ './file.js')
+    allowAsyncCycles: true,
+    // set the current working directory for displaying module paths
+    cwd: process.cwd(),
+  }),
+];
+
+exports.renderer = [
   // new ForkTsCheckerWebpackPlugin(),
   new webpack.DefinePlugin({
     'process.env': '{}',

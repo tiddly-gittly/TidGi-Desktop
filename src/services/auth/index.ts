@@ -12,8 +12,13 @@ export type IUserInfos = typeof defaultUserInfos;
 /**
  * Handle login to Github GitLab Coding.net
  */
+export interface IAuthenticationService {
+  getUserInfos: () => IUserInfos;
+  get<K extends keyof IUserInfos>(key: K): IUserInfos[K] | undefined;
+  reset(): Promise<void>;
+}
 @injectable()
-export class Authentication {
+export class Authentication implements IAuthenticationService {
   cachedUserInfo: IUserInfos;
   readonly version = '2021.1';
 

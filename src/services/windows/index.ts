@@ -2,14 +2,17 @@
 import { BrowserWindow, ipcMain, dialog, app, App, remote, clipboard, BrowserWindowConstructorOptions } from 'electron';
 import isDevelopment from 'electron-is-dev';
 import { injectable, inject } from 'inversify';
+import getDecorators from 'inversify-inject-decorators';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
 
 import { IBrowserViewMetaData, WindowNames, windowDimension, WindowMeta, CodeInjectionType } from '@services/windows/WindowProperties';
-import serviceIdentifiers from '@services/serviceIdentifier';
-import { Preference } from '@services/preferences';
-import { Workspace } from '@services/workspaces';
-import { WorkspaceView } from '@services/workspacesView';
-import { MenuService } from '@services/menu';
+import serviceIdentifier from '@services/serviceIdentifier';
+
+import type { IPreferenceService } from '@services/preferences';
+import type { IWorkspaceService } from '@services/workspaces';
+import type { IWorkspaceViewService } from '@services/workspacesView';
+import type { IMenuService } from '@services/menu';
+import { container } from '@services/container';
 import { Channels, WindowChannel, MetaDataChannel } from '@/constants/channels';
 
 import i18n from '@services/libs/i18n';
@@ -17,17 +20,35 @@ import getViewBounds from '@services/libs/get-view-bounds';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import handleAttachToMenuBar from './handleAttachToMenuBar';
 
+const { lazyInject } = getDecorators(container);
+
+/**
+ * Create and manage window open and destroy, you can get all opened electron window instance here
+ */
+export interface IWindowService {
+  get(windowName: WindowNames): BrowserWindow | undefined;
+  open<N extends WindowNames>(windowName: N, meta?: WindowMeta[N], recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean)): Promise<void>;
+  setWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): void;
+  updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): void;
+  getWindowMeta<N extends WindowNames>(windowName: N): WindowMeta[N];
+  sendToAllWindows: (channel: Channels, ...arguments_: unknown[]) => void;
+  goHome(windowName: WindowNames): Promise<void>;
+  goBack(windowName: WindowNames): void;
+  goForward(windowName: WindowNames): void;
+  reload(windowName: WindowNames): void;
+  showMessageBox(message: Electron.MessageBoxOptions['message'], type?: Electron.MessageBoxOptions['type']): void;
+}
 @injectable()
 export class Window {
   private windows = {} as Record<WindowNames, BrowserWindow | undefined>;
   private windowMeta = {} as WindowMeta;
 
-  constructor(
-    @inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference,
-    @inject(serviceIdentifiers.Workspace) private readonly workspaceService: Workspace,
-    @inject(serviceIdentifiers.WorkspaceView) private readonly workspaceViewService: WorkspaceView,
-    @inject(serviceIdentifiers.MenuService) private readonly menuService: MenuService,
-  ) {
+  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
+  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
+  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
+  @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
+
+  constructor() {
     this.initIPCHandlers();
     this.registerMenu();
   }
@@ -391,45 +412,41 @@ export class Window {
       'close',
     );
 
-    this.menuService.insertMenu(
-      'Edit',
-      [
-        {
-          label: 'Find',
-          accelerator: 'CmdOrCtrl+F',
-          click: () => {
-            const mainWindow = this.get(WindowNames.main);
-            if (mainWindow !== undefined) {
-              mainWindow.webContents.focus();
-              mainWindow.webContents.send('open-find-in-page');
-              const contentSize = mainWindow.getContentSize();
-              const view = mainWindow.getBrowserView();
-              view?.setBounds(getViewBounds(contentSize as [number, number], true));
-            }
-          },
-          enabled: () => this.workspaceService.countWorkspaces() > 0,
+    this.menuService.insertMenu('Edit', [
+      {
+        label: 'Find',
+        accelerator: 'CmdOrCtrl+F',
+        click: () => {
+          const mainWindow = this.get(WindowNames.main);
+          if (mainWindow !== undefined) {
+            mainWindow.webContents.focus();
+            mainWindow.webContents.send('open-find-in-page');
+            const contentSize = mainWindow.getContentSize();
+            const view = mainWindow.getBrowserView();
+            view?.setBounds(getViewBounds(contentSize as [number, number], true));
+          }
         },
-        {
-          label: 'Find Next',
-          accelerator: 'CmdOrCtrl+G',
-          click: () => {
-            const mainWindow = this.get(WindowNames.main);
-            mainWindow?.webContents?.send('request-back-find-in-page', true);
-          },
-          enabled: () => this.workspaceService.countWorkspaces() > 0,
+        enabled: () => this.workspaceService.countWorkspaces() > 0,
+      },
+      {
+        label: 'Find Next',
+        accelerator: 'CmdOrCtrl+G',
+        click: () => {
+          const mainWindow = this.get(WindowNames.main);
+          mainWindow?.webContents?.send('request-back-find-in-page', true);
         },
-        {
-          label: 'Find Previous',
-          accelerator: 'Shift+CmdOrCtrl+G',
-          click: () => {
-            const mainWindow = this.get(WindowNames.main);
-            mainWindow?.webContents?.send('request-back-find-in-page', false);
-          },
-          enabled: () => this.workspaceService.countWorkspaces() > 0,
+        enabled: () => this.workspaceService.countWorkspaces() > 0,
+      },
+      {
+        label: 'Find Previous',
+        accelerator: 'Shift+CmdOrCtrl+G',
+        click: () => {
+          const mainWindow = this.get(WindowNames.main);
+          mainWindow?.webContents?.send('request-back-find-in-page', false);
         },
-      ],
-      'close',
-    );
+        enabled: () => this.workspaceService.countWorkspaces() > 0,
+      },
+    ]);
 
     this.menuService.insertMenu('History', [
       {

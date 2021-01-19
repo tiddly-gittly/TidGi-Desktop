@@ -1,34 +1,57 @@
 import { BrowserView, BrowserWindow, WebContents, app, session, dialog, ipcMain } from 'electron';
-import { injectable, inject } from 'inversify';
+import { injectable } from 'inversify';
+import getDecorators from 'inversify-inject-decorators';
 
-import serviceIdentifiers from '@services/serviceIdentifier';
-import { Preference } from '@services/preferences';
-import { Workspace } from '@services/workspaces';
-import { WorkspaceView } from '@services/workspacesView';
-import { Wiki } from '@services/wiki';
-import { Authentication } from '@services/auth';
-import { Window } from '@services/windows';
-import { MenuService } from '@services/menu';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IPreferenceService } from '@services/preferences';
+import type { IWorkspaceService } from '@services/workspaces';
+import type { IWorkspaceViewService } from '@services/workspacesView';
+import type { IWikiService } from '@services/wiki';
+import type { IAuthenticationService } from '@services/auth';
+import type { IWindowService } from '@services/windows';
+import type { IMenuService } from '@services/menu';
+
 import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
-import i18n from '../libs/i18n';
+import i18n from '@services/libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
 import { extractDomain } from '@services/libs/url';
 import { IWorkspace } from '@services/types';
 import setupViewEventHandlers from './setupViewEventHandlers';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import { MetaDataChannel } from '@/constants/channels';
+import { container } from '@services/container';
 
+const { lazyInject } = getDecorators(container);
+
+/**
+ * BrowserView related things, the BrowserView is the webview like frame that renders our wiki website.
+ */
+export interface IViewService {
+  addView: (browserWindow: BrowserWindow, workspace: IWorkspace) => Promise<void>;
+  getView: (id: string) => BrowserView;
+  forEachView: (functionToRun: (view: BrowserView, id: string) => void) => void;
+  setActiveView: (browserWindow: BrowserWindow, id: string) => Promise<void>;
+  removeView: (id: string) => void;
+  setViewsAudioPref: (_shouldMuteAudio?: boolean) => void;
+  setViewsNotificationsPref: (_shouldPauseNotifications?: boolean) => void;
+  hibernateView: (id: string) => void;
+  reloadViewsDarkReader: () => void;
+  reloadViewsWebContentsIfDidFailLoad: () => void;
+  reloadViewsWebContents: () => void;
+  getActiveBrowserView: () => BrowserView | undefined;
+  realignActiveView: (browserWindow: BrowserWindow, activeId: string) => void;
+}
 @injectable()
-export class View {
-  constructor(
-    @inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference,
-    @inject(serviceIdentifiers.Wiki) private readonly wikiService: Wiki,
-    @inject(serviceIdentifiers.Window) private readonly windowService: Window,
-    @inject(serviceIdentifiers.Workspace) private readonly workspaceService: Workspace,
-    @inject(serviceIdentifiers.Authentication) private readonly authService: Authentication,
-    @inject(serviceIdentifiers.MenuService) private readonly menuService: MenuService,
-    @inject(serviceIdentifiers.WorkspaceView) private readonly workspaceViewService: WorkspaceView,
-  ) {
+export class View implements IViewService {
+  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
+  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
+  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
+  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
+  @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
+  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
+
+  constructor() {
     this.initIPCHandlers();
     this.registerMenu();
   }
@@ -404,10 +427,8 @@ export class View {
     Object.keys(this.views).forEach((id) => {
       const view = this.getView(id);
       const workspace = this.workspaceService.get(id);
-      if (view !== undefined) {
-        if (workspace !== undefined) {
-          view.webContents.audioMuted = workspace.disableAudio || this.shouldMuteAudio;
-        }
+      if (view !== undefined && workspace !== undefined) {
+        view.webContents.audioMuted = workspace.disableAudio || this.shouldMuteAudio;
       }
     });
   };

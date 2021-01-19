@@ -7,10 +7,11 @@ import getViewBounds from '@services/libs/get-view-bounds';
 import { extractDomain, isInternalUrl } from '@services/libs/url';
 import { buildResourcePath } from '@services/constants/paths';
 
-import { Preference } from '@services/preferences';
-import { Workspace } from '@services/workspaces';
-import { WorkspaceView } from '@services/workspacesView';
-import { Window } from '@services/windows';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IPreferenceService } from '@services/preferences';
+import type { IWorkspaceService } from '@services/workspaces';
+import type { IWorkspaceViewService } from '@services/workspacesView';
+import type { IWindowService } from '@services/windows';
 import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
 import { container } from '@services/container';
 
@@ -32,10 +33,10 @@ export default function setupViewEventHandlers(
   { workspace, shouldPauseNotifications, sharedWebPreferences }: IViewContext,
   { adjustUserAgentByUrl }: IViewModifier,
 ): void {
-  const workspaceService = container.resolve(Workspace);
-  const workspaceViewService = container.resolve(WorkspaceView);
-  const windowService = container.resolve(Window);
-  const preferenceService = container.resolve(Preference);
+  const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+  const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+  const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+  const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 
   view.webContents.once('did-stop-loading', () => {
     view.webContents.send('should-pause-notifications-changed', workspace.disableNotifications || shouldPauseNotifications);
@@ -297,7 +298,7 @@ function handleNewWindow(
   _postBody: Electron.PostBody,
   newWindowContext: INewWindowContext,
 ): void {
-  const workspaceService = container.resolve(Workspace);
+  const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const { view, workspace, sharedWebPreferences, adjustUserAgentByUrl } = newWindowContext;
 
   const appUrl = workspaceService.get(workspace.id)?.homeUrl;

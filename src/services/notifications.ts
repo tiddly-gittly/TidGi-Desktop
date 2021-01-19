@@ -1,7 +1,7 @@
 import { injectable, inject } from 'inversify';
-import serviceIdentifiers from '@services/serviceIdentifier';
-import { Preference } from '@services/preferences';
-import { View } from '@services/view';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IPreferenceService } from '@services/preferences';
+import type { IViewService } from '@services/view';
 
 export interface IPauseNotificationsInfo {
   reason: string;
@@ -9,11 +9,18 @@ export interface IPauseNotificationsInfo {
   schedule: { from: Date; to: Date };
 }
 
+/**
+ * Preference and method about notification, to set and pause notification.
+ */
+export interface INotificationService {
+  updatePauseNotificationsInfo(): void;
+  getPauseNotificationsInfo: () => IPauseNotificationsInfo | undefined;
+}
 @injectable()
-export class Notification {
+export class Notification implements INotificationService {
   constructor(
-    @inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference,
-    @inject(serviceIdentifiers.View) private readonly viewService: View,
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
+    @inject(serviceIdentifier.View) private readonly viewService: IViewService,
   ) {}
 
   private pauseNotificationsInfo?: IPauseNotificationsInfo;

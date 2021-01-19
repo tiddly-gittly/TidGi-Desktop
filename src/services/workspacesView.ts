@@ -1,26 +1,36 @@
 import { app, ipcMain, session } from 'electron';
 import { injectable, inject } from 'inversify';
 
-import serviceIdentifiers from '@services/serviceIdentifier';
-import { View } from '@services/view';
-import { Workspace } from '@services/workspaces';
-import { Window } from '@services/windows';
-import { MenuService } from '@services/menu';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IViewService } from '@services/view';
+import type { IWorkspaceService } from '@services/workspaces';
+import type { IWindowService } from '@services/windows';
+import type { IMenuService } from '@services/menu';
 import { IWorkspace } from '@services/types';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { Preference } from '@services/preferences';
 
 /**
  * Deal with operations that needs to create a workspace and a browserView at once
  */
+export interface IWorkspaceViewService {
+  createWorkspaceView(workspaceOptions: IWorkspace): Promise<void>;
+  setWorkspaceView(id: string, workspaceOptions: IWorkspace): Promise<void>;
+  setWorkspaceViews(workspaces: Record<string, IWorkspace>): Promise<void>;
+  wakeUpWorkspaceView(id: string): Promise<void>;
+  hibernateWorkspaceView(id: string): Promise<void>;
+  setActiveWorkspaceView(id: string): Promise<void>;
+  removeWorkspaceView(id: string): Promise<void>;
+  clearBrowsingData(): Promise<void>;
+  loadURL(url: string, id: string): Promise<void>;
+  realignActiveWorkspace(): void;
+}
 @injectable()
-export class WorkspaceView {
+export class WorkspaceView implements IWorkspaceViewService {
   constructor(
-    @inject(serviceIdentifiers.View) private readonly viewService: View,
-    @inject(serviceIdentifiers.Workspace) private readonly workspaceService: Workspace,
-    @inject(serviceIdentifiers.Window) private readonly windowService: Window,
-    @inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference,
-    @inject(serviceIdentifiers.MenuService) private readonly menuService: MenuService,
+    @inject(serviceIdentifier.View) private readonly viewService: IViewService,
+    @inject(serviceIdentifier.Workspace) private readonly workspaceService: IWorkspaceService,
+    @inject(serviceIdentifier.Window) private readonly windowService: IWindowService,
+    @inject(serviceIdentifier.MenuService) private readonly menuService: IMenuService,
   ) {
     this.initIPCHandlers();
     this.registerMenu();

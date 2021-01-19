@@ -1,10 +1,11 @@
 import i18n from 'i18next';
 
 import { container } from '@services/container';
-import { Preference } from '@services/preferences';
+import type { IPreferenceService } from '@services/preferences';
+import serviceIdentifier from '@services/serviceIdentifier';
 
 export default async function useDefaultLanguage(i18next: typeof i18n): Promise<void> {
-  const preferences = container.resolve(Preference);
+  const preferences = container.get<IPreferenceService>(serviceIdentifier.Preference);
   const language = preferences.get('language');
   if (typeof language === 'string') {
     await i18next.changeLanguage(language);

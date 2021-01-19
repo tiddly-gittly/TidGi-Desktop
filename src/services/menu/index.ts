@@ -1,9 +1,6 @@
 import { Menu, MenuItemConstructorOptions, shell } from 'electron';
 import { debounce, take, drop } from 'lodash';
-import { injectable, inject } from 'inversify';
-import serviceIdentifiers from '@services/serviceIdentifier';
-import { Preference } from '@services/preferences';
-import { View } from '@services/view';
+import { injectable } from 'inversify';
 
 interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstructorOptions, 'label' | 'enabled' | 'submenu'> {
   label?: (() => string) | string;
@@ -13,8 +10,15 @@ interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstructorOpt
     | Array<MenuItemConstructorOptions | DeferredMenuItemConstructorOptions>;
 }
 
+/**
+ * Handle creation of app menu, other services can register their menu tab and menu items here.
+ */
+export interface IMenuService {
+  buildMenu(): void;
+  insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator = false): void;
+}
 @injectable()
-export class MenuService {
+export class MenuService implements IMenuService {
   private readonly menuTemplate: DeferredMenuItemConstructorOptions[];
 
   /**
@@ -42,10 +46,7 @@ export class MenuService {
     }));
   }
 
-  constructor(
-    @inject(serviceIdentifiers.Preference) private readonly preferenceService: Preference,
-    @inject(serviceIdentifiers.View) private readonly viewService: View,
-  ) {
+  constructor() {
     // debounce so build menu won't be call very frequently on app launch, where every services are registering menu items
     this.buildMenu = debounce(this.buildMenu.bind(this), 50);
     // add some default app menus
@@ -124,7 +125,7 @@ export class MenuService {
    * @param afterSubMenu The `id` or `role` of a submenu you want your submenu insert after. `null` means inserted as first submenu item; `undefined` means inserted as last submenu item;
    * @param withSeparator Need to insert a separator first, before insert menu items
    */
-  insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator = false): void {
+  public insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator = false): void {
     let foundMenuName = false;
     // try insert menu into an existed menu's submenu
     for (const menu of this.menuTemplate) {
@@ -162,9 +163,9 @@ export class MenuService {
             const afterSubMenuIndex = menu.submenu.findIndex((item) => item.id === afterSubMenu || item.role === afterSubMenu);
             if (afterSubMenuIndex === -1) {
               throw new Error(
-                `You try to insert menu with afterSubMenu ${afterSubMenu}, but we can not found it in menu ${
+                `You try to insert menu with afterSubMenu "${afterSubMenu}" in menu "${menuID}", but we can not found it in menu "${
                   menu.id ?? menu.role ?? JSON.stringify(menu)
-                }, please specific a menuitem with correct id attribute`,
+                }", please specific a menuitem with correct id attribute`,
               );
             }
             menu.submenu = [...take(menu.submenu, afterSubMenuIndex + 1), ...menuItems, ...drop(menu.submenu, afterSubMenuIndex - 1)];

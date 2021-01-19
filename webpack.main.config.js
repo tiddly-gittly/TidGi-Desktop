@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
 // @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'webpackAli... Remove this comment to see the full error message
 const { webpackAlias } = require('./webpack.alias');
-const CopyPlugin = require('copy-webpack-plugin');
+const plugins = require('./webpack.plugins');
 
 module.exports = {
   /**
@@ -13,12 +13,7 @@ module.exports = {
   module: {
     rules: require('./webpack.rules'),
   },
-  plugins: [
-    new CopyPlugin({
-      // to is relative to ./.webpack/main/
-      patterns: [{ from: 'src/services/wiki/wiki-worker.js', to: 'wiki-worker.js' }],
-    }),
-  ],
+  plugins: plugins.main,
   resolve: {
     alias: webpackAlias,
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.json'],

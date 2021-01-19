@@ -3,10 +3,10 @@ import fs from 'fs-extra';
 import path from 'path';
 import { IpcRenderer, IpcMain, BrowserWindow, IpcMainInvokeEvent, IpcRendererEvent, MenuItemConstructorOptions } from 'electron';
 
-import { Window } from '@services/windows';
-import { Preference } from '@services/preferences';
-import { View } from '@services/view';
-import { MenuService } from '@services/menu';
+import type { IWindowService } from '@services/windows';
+import type { IPreferenceService } from '@services/preferences';
+import type { IViewService } from '@services/view';
+import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';
 import { LOCALIZATION_FOLDER } from '@services/constants/paths';
 import { I18NChannels } from '@/constants/channels';
@@ -63,7 +63,7 @@ export const preloadBindings = function (
 export const mainBindings = function (ipcMain: IpcMain, browserWindow: BrowserWindow): void {
   ipcMain.handle(I18NChannels.readFileRequest, (_event: IpcMainInvokeEvent, readFileArgs: IReadFileRequest) => {
     const localeFilePath = path.join(LOCALIZATION_FOLDER, readFileArgs.filename);
-    const windowService = container.resolve(Window);
+    const windowService = container.get<IWindowService>(serviceIdentifier.Window);
     fs.readFile(localeFilePath, 'utf8', (error, data) => {
       windowService.sendToAllWindows(I18NChannels.readFileResponse, {
         key: readFileArgs.key,
@@ -76,7 +76,7 @@ export const mainBindings = function (ipcMain: IpcMain, browserWindow: BrowserWi
   ipcMain.handle(I18NChannels.writeFileRequest, (_event: IpcMainInvokeEvent, writeFileArgs: IWriteFileRequest) => {
     const localeFilePath = path.join(LOCALIZATION_FOLDER, writeFileArgs.filename);
     const localeFileFolderPath = path.dirname(localeFilePath);
-    const windowService = container.resolve(Window);
+    const windowService = container.get<IWindowService>(serviceIdentifier.Window);
     fs.ensureDir(localeFileFolderPath, (directoryCreationError?: Error) => {
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (directoryCreationError) {
@@ -110,10 +110,10 @@ const whiteListedLanguages = Object.keys(whitelistMap);
  * Register languages into language menu, call this function after container init
  */
 export function buildLanguageMenu(): void {
-  const preferenceService = container.resolve(Preference);
-  const windowService = container.resolve(Window);
-  const viewService = container.resolve(View);
-  const menuService = container.resolve(MenuService);
+  const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+  const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+  const viewService = container.get<IViewService>(serviceIdentifier.View);
+  const menuService = container.get<IMenuServiceService>(serviceIdentifier.MenuService);
   const subMenu: MenuItemConstructorOptions[] = [];
   for (const language of whiteListedLanguages) {
     subMenu.push({

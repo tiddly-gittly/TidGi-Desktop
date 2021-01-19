@@ -4,23 +4,24 @@ import { injectable, inject } from 'inversify';
 import { autoUpdater, UpdateInfo } from 'electron-updater';
 import type { ProgressInfo } from 'builder-util-runtime';
 
-import serviceIdentifiers from '@services/serviceIdentifier';
-import { Window } from '@services/windows';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWindowService } from '@services/windows';
 import { WindowNames } from '@services/windows/WindowProperties';
 
-// FIXME: use electron-forge 's auto update solution， maybe see https://headspring.com/2020/09/24/building-signing-and-publishing-electron-forge-applications-for-windows/
+// TODO: use electron-forge 's auto update solution， maybe see https://headspring.com/2020/09/24/building-signing-and-publishing-electron-forge-applications-for-windows/
+export interface IUpdaterService {}
 @injectable()
-export class Updater {
-  constructor(@inject(serviceIdentifiers.Window) private readonly windowService: Window) {}
+export class Updater implements IUpdaterService {
+  constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {}
 
-  init(): void {
+  private init(): void {
     (global as any).updateSilent = true;
     global.updaterObj = {};
     this.configAutoUpdater();
     this.initIPC();
   }
 
-  initIPC(): void {
+  private initIPC(): void {
     ipcMain.handle('request-check-for-updates', async (_event, isSilent) => {
       // https://github.com/electron-userland/electron-builder/issues/4028
       if (!autoUpdater.isUpdaterActive()) {
@@ -69,7 +70,7 @@ export class Updater {
     });
   }
 
-  configAutoUpdater(): void {
+  private configAutoUpdater(): void {
     autoUpdater.on('checking-for-update', () => {
       global.updaterObj = {
         status: 'checking-for-update',

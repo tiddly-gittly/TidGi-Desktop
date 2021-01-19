@@ -8,34 +8,63 @@ import isDev from 'electron-is-dev';
 import { dialog, ipcMain } from 'electron';
 import chokidar from 'chokidar';
 import { trim, compact, debounce } from 'lodash';
+import getDecorators from 'inversify-inject-decorators';
 
-import serviceIdentifiers from '@services/serviceIdentifier';
-import { Authentication } from '@services/auth';
-import { Window } from '@services/windows';
-import { View } from '@services/view';
-import { Workspace } from '@services/workspaces';
-import { Git } from '@services/git';
-import { WorkspaceView } from '@services/workspacesView';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IAuthenticationService } from '@services/auth';
+import type { IWindowService } from '@services/windows';
+import type { IViewService } from '@services/view';
+import type { IWorkspaceService } from '@services/workspaces';
+import type { IGitService } from '@services/git';
+import type { IWorkspaceViewService } from '@services/workspacesView';
 import { IWorkspace, IUserInfo } from '@services/types';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { logger, wikiOutputToFile, refreshOutputFile } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@services/constants/paths';
 import { updateSubWikiPluginContent, getSubWikiPluginContent } from './update-plugin-content';
+import { container } from '@services/container';
+
+const { lazyInject } = getDecorators(container);
 
 /**
  * Handle wiki worker startup and restart
  */
+export interface IWikiService {
+  updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): void;
+  startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void>;
+  stopWiki(homePath: string): Promise<void>;
+  stopAllWiki(): Promise<void>;
+  linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
+  createWiki(newFolderPath: string, folderName: string): Promise<void>;
+  createSubWiki(newFolderPath: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
+  removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
+  ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
+  cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: string, userInfo: IUserInfo): Promise<void>;
+  cloneSubWiki(
+    parentFolderLocation: string,
+    wikiFolderName: string,
+    mainWikiPath: string,
+    githubWikiUrl: string,
+    userInfo: IUserInfo,
+    tagName?: string,
+  ): Promise<void>;
+  wikiStartup(workspace: IWorkspace): Promise<void>;
+  startNodeJSWiki(homePath: string, port: number, userName: string, workspaceID: string): Promise<void>;
+  watchWiki(wikiRepoPath: string, githubRepoUrl: string, userInfo: IUserInfo, wikiFolderPath?: string): Promise<void>;
+  stopWatchWiki(wikiRepoPath: string): Promise<void>;
+  stopWatchAllWiki(): Promise<void>;
+}
 @injectable()
 export class Wiki {
-  constructor(
-    @inject(serviceIdentifiers.Authentication) private readonly authService: Authentication,
-    @inject(serviceIdentifiers.Window) private readonly windowService: Window,
-    @inject(serviceIdentifiers.Git) private readonly gitService: Git,
-    @inject(serviceIdentifiers.Workspace) private readonly workspaceService: Workspace,
-    @inject(serviceIdentifiers.View) private readonly viewService: View,
-    @inject(serviceIdentifiers.WorkspaceView) private readonly workspaceViewService: WorkspaceView,
-  ) {
+  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
+  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;
+  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
+  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
+  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
+
+  constructor() {
     this.init();
   }
 
@@ -321,7 +350,7 @@ export class Wiki {
     }
   }
 
-  public async cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: any, userInfo: IUserInfo): Promise<void> {
+  public async cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: string, userInfo: IUserInfo): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCloningWiki'));
     const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
     if (!(await fs.pathExists(parentFolderLocation))) {
@@ -538,7 +567,7 @@ export class Wiki {
     logger.info('All wiki watcher is stopped', { function: 'stopWatchAllWiki' });
   }
 
-  updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): void {
+  public updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): void {
     return updateSubWikiPluginContent(mainWikiPath, newConfig, oldConfig);
   }
 }

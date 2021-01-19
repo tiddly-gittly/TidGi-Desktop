@@ -9,7 +9,7 @@ module.exports = {
   module: {
     rules,
   },
-  plugins: plugins,
+  plugins: plugins.renderer,
   resolve: {
     alias: webpackAlias,
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.css'],

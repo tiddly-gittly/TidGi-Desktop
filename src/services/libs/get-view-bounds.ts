@@ -1,7 +1,8 @@
 import { container } from '@services/container';
-import { Window } from '@services/windows';
-import { Preference } from '@services/preferences';
+import type { IWindowService } from '@services/windows';
+import type { IPreferenceService } from '@services/preferences';
 import { WindowNames } from '@services/windows/WindowProperties';
+import serviceIdentifier from '@services/serviceIdentifier';
 
 export default function getViewBounds(
   contentSize: [number, number],
@@ -9,9 +10,9 @@ export default function getViewBounds(
   height?: number,
   width?: number,
 ): { x: number; y: number; height: number; width: number } {
-  const mainWindow = container.resolve(Window).get(WindowNames.main);
+  const mainWindow = container.get<IWindowService>(serviceIdentifier.Window).get(WindowNames.main);
   const isFullScreen = mainWindow?.isFullScreen();
-  const preferencesService = container.resolve(Preference);
+  const preferencesService = container.get<IPreferenceService>(serviceIdentifier.Preference);
   const showSidebar = preferencesService.get('sidebar');
   const showTitleBar = process.platform === 'darwin' && preferencesService.get('titleBar') && isFullScreen !== true;
   const showNavigationBar =

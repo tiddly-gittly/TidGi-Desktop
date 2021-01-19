@@ -12,20 +12,45 @@ import isUrl from 'is-url';
 import download from 'download';
 import tmp from 'tmp';
 
-import serviceIdentifiers from '@services/serviceIdentifier';
+import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';
-import { Wiki } from '@services/wiki';
-import { View } from '@services/view';
-import { WorkspaceView } from '@services/workspacesView';
-import { Window } from '@services/windows';
+import type { IWikiService } from '@services/wiki';
+import type { IViewService } from '@services/view';
+import type { IWorkspaceViewService } from '@services/workspacesView';
+import type { IWindowService } from '@services/windows';
+import type { IMenuService } from '@services/menu';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { MenuService } from '@services/menu';
 import { IWorkspace, IWorkspaceMetaData } from '@services/types';
 
 const { lazyInject } = getDecorators(container);
 
+/**
+ * Manage workspace level preferences and workspace metadata.
+ */
+export interface IWorkspaceService {
+  getWorkspacesAsList(): IWorkspace[];
+  get(id: string): IWorkspace | undefined;
+  create(newWorkspaceConfig: Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order'>): Promise<IWorkspace>;
+  getWorkspaces(): Record<string, IWorkspace>;
+  countWorkspaces(): number;
+  getMetaData: (id: string) => Partial<IWorkspaceMetaData>;
+  getAllMetaData: () => Record<string, Partial<IWorkspaceMetaData>>;
+  updateMetaData: (id: string, options: Partial<IWorkspaceMetaData>) => void;
+  set(id: string, workspace: IWorkspace): Promise<void>;
+  update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void>;
+  setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void>;
+  setActiveWorkspace(id: string): Promise<void>;
+  setWorkspacePicture(id: string, sourcePicturePath: string): Promise<void>;
+  removeWorkspacePicture(id: string): Promise<void>;
+  remove(id: string): Promise<void>;
+  getByName(name: string): IWorkspace | undefined;
+  getPreviousWorkspace: (id: string) => IWorkspace | undefined;
+  getNextWorkspace: (id: string) => IWorkspace | undefined;
+  getActiveWorkspace: () => IWorkspace | undefined;
+  getFirstWorkspace: () => IWorkspace | undefined;
+}
 @injectable()
-export class Workspace {
+export class Workspace implements IWorkspaceService {
   /**
    * version of current setting schema
    */
@@ -35,11 +60,11 @@ export class Workspace {
    */
   workspaces: Record<string, IWorkspace> = {};
 
-  @lazyInject(serviceIdentifiers.Wiki) private readonly wikiService!: Wiki;
-  @lazyInject(serviceIdentifiers.Window) private readonly windowService!: Window;
-  @lazyInject(serviceIdentifiers.View) private readonly viewService!: View;
-  @lazyInject(serviceIdentifiers.WorkspaceView) private readonly workspaceViewService!: WorkspaceView;
-  @lazyInject(serviceIdentifiers.MenuService) private readonly menuService!: MenuService;
+  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
+  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
+  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
+  @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
 
   constructor() {
     this.workspaces = this.getInitWorkspacesForCache();
@@ -178,22 +203,22 @@ export class Workspace {
   /**
    * Get sorted workspace list
    */
-  getWorkspacesAsList(): IWorkspace[] {
+  public getWorkspacesAsList(): IWorkspace[] {
     return Object.values(this.workspaces).sort((a, b) => a.order - b.order);
   }
 
-  get(id: string): IWorkspace | undefined {
+  public get(id: string): IWorkspace | undefined {
     return this.workspaces[id];
   }
 
-  async set(id: string, workspace: IWorkspace): Promise<void> {
+  public async set(id: string, workspace: IWorkspace): Promise<void> {
     this.workspaces[id] = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspace);
     await settings.set(`workspaces.${this.version}.${id}`, { ...workspace });
     this.updateWorkspaceMenuItems();
   }
 
-  async update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void> {
+  public async update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void> {
     const workspace = this.get(id);
     if (workspace === undefined) {
       return;
@@ -201,7 +226,7 @@ export class Workspace {
     await this.set(id, { ...workspace, ...workspaceSetting });
   }
 
-  async setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void> {
+  public async setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void> {
     for (const id in newWorkspaces) {
       await this.set(id, newWorkspaces[id]);
     }
@@ -232,11 +257,11 @@ export class Workspace {
     }
   }
 
-  getByName(name: string): IWorkspace | undefined {
+  public getByName(name: string): IWorkspace | undefined {
     return this.getWorkspacesAsList().find((workspace) => workspace.name === name);
   }
 
-  getPreviousWorkspace = (id: string): IWorkspace | undefined => {
+  public getPreviousWorkspace = (id: string): IWorkspace | undefined => {
     const workspaceList = this.getWorkspacesAsList();
     let currentWorkspaceIndex = 0;
     for (const [index, workspace] of workspaceList.entries()) {
@@ -251,7 +276,7 @@ export class Workspace {
     return workspaceList[currentWorkspaceIndex - 1];
   };
 
-  getNextWorkspace = (id: string): IWorkspace | undefined => {
+  public getNextWorkspace = (id: string): IWorkspace | undefined => {
     const workspaceList = this.getWorkspacesAsList();
     let currentWorkspaceIndex = 0;
     for (const [index, workspace] of workspaceList.entries()) {
@@ -266,15 +291,15 @@ export class Workspace {
     return workspaceList[currentWorkspaceIndex + 1];
   };
 
-  getActiveWorkspace = (): IWorkspace | undefined => {
+  public getActiveWorkspace = (): IWorkspace | undefined => {
     return this.getWorkspacesAsList().find((workspace) => workspace.active);
   };
 
-  getFirstWorkspace = (): IWorkspace | undefined => {
+  public getFirstWorkspace = (): IWorkspace | undefined => {
     return this.getWorkspacesAsList()[0];
   };
 
-  async setActiveWorkspace(id: string): Promise<void> {
+  public async setActiveWorkspace(id: string): Promise<void> {
     const currentActiveWorkspace = this.getActiveWorkspace();
     if (currentActiveWorkspace !== undefined) {
       if (currentActiveWorkspace.id === id) {
@@ -292,7 +317,7 @@ export class Workspace {
    * @param id workspace id
    * @param sourcePicturePath image path, could be an image in app's resource folder or temp folder, we will copy it into app data folder
    */
-  async setWorkspacePicture(id: string, sourcePicturePath: string): Promise<void> {
+  public async setWorkspacePicture(id: string, sourcePicturePath: string): Promise<void> {
     const workspace = this.get(id);
     if (workspace === undefined) {
       throw new Error(`Try to setWorkspacePicture() but this workspace is not existed ${id}`);
@@ -335,7 +360,7 @@ export class Workspace {
     }
   }
 
-  async removeWorkspacePicture(id: string): Promise<void> {
+  public async removeWorkspacePicture(id: string): Promise<void> {
     const workspace = this.get(id);
     if (workspace === undefined) {
       throw new Error(`Try to removeWorkspacePicture() but this workspace is not existed ${id}`);
@@ -350,7 +375,7 @@ export class Workspace {
     }
   }
 
-  async remove(id: string): Promise<void> {
+  public async remove(id: string): Promise<void> {
     if (id in this.workspaces) {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete this.workspaces[id];
@@ -365,7 +390,7 @@ export class Workspace {
     this.updateWorkspaceMenuItems();
   }
 
-  async create(newWorkspaceConfig: Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order'>): Promise<IWorkspace> {
+  public async create(newWorkspaceConfig: Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order'>): Promise<IWorkspace> {
     const newID = uuid();
 
     // find largest order
