@@ -30,9 +30,8 @@ export class MenuService implements IMenuService {
     Menu.setApplicationMenu(menu);
   }
 
-  private getCurrentMenuItemConstructorOptions(
-    submenu: Array<DeferredMenuItemConstructorOptions | MenuItemConstructorOptions> = this.menuTemplate,
-  ): MenuItemConstructorOptions[] {
+  private getCurrentMenuItemConstructorOptions(submenu?: Array<DeferredMenuItemConstructorOptions | MenuItemConstructorOptions>): MenuItemConstructorOptions[] {
+    if (submenu === undefined) return [];
     return submenu.map((item) => ({
       ...item,
       label: typeof item.label === 'function' ? item.label() : item.label,
