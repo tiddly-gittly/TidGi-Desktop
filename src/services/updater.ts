@@ -198,7 +198,7 @@ export class Updater implements IUpdaterService {
                 app.removeAllListeners('window-all-closed');
                 const mainWindow = this.windowService.get(WindowNames.main);
                 if (mainWindow !== undefined) {
-                  (mainWindow as any).forceClose = true;
+                  this.windowService.updateWindowMeta(WindowNames.main, { forceClose: true });
                   mainWindow.close();
                 }
                 autoUpdater.quitAndInstall(false);

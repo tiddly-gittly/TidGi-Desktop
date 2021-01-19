@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { BrowserWindow, ipcMain, dialog, app, App, remote, clipboard, BrowserWindowConstructorOptions } from 'electron';
 import isDevelopment from 'electron-is-dev';
-import { injectable, inject } from 'inversify';
+import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
 
@@ -30,7 +30,7 @@ export interface IWindowService {
   open<N extends WindowNames>(windowName: N, meta?: WindowMeta[N], recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean)): Promise<void>;
   setWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): void;
   updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): void;
-  getWindowMeta<N extends WindowNames>(windowName: N): WindowMeta[N];
+  getWindowMeta<N extends WindowNames>(windowName: N): WindowMeta[N] | undefined;
   sendToAllWindows: (channel: Channels, ...arguments_: unknown[]) => void;
   goHome(windowName: WindowNames): Promise<void>;
   goBack(windowName: WindowNames): void;
@@ -39,9 +39,9 @@ export interface IWindowService {
   showMessageBox(message: Electron.MessageBoxOptions['message'], type?: Electron.MessageBoxOptions['type']): void;
 }
 @injectable()
-export class Window {
-  private windows = {} as Record<WindowNames, BrowserWindow | undefined>;
-  private windowMeta = {} as WindowMeta;
+export class Window implements IWindowService {
+  private windows = {} as Partial<Record<WindowNames, BrowserWindow | undefined>>;
+  private windowMeta = {} as Partial<WindowMeta>;
 
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
   @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
@@ -155,8 +155,10 @@ export class Window {
     meta: WindowMeta[N] = {},
     recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean),
   ): Promise<void> {
-    const existedWindow = this.windows[windowName];
-    const existedWindowMeta = this.windowMeta[windowName];
+    const existedWindow = this.get(windowName);
+    // update window meta
+    this.setWindowMeta(windowName, meta);
+    const existedWindowMeta = this.getWindowMeta(windowName);
     if (existedWindow !== undefined) {
       // TODO: handle this menubar logic
       // if (attachToMenubar) {
@@ -218,18 +220,40 @@ export class Window {
     this.windows[windowName] = newWindow;
     if (isMainWindow) {
       mainWindowState?.manage(newWindow);
-      await this.registerMainWindowListeners(newWindow);
+      this.registerMainWindowListeners(newWindow);
     } else {
       newWindow.setMenuBarVisibility(false);
     }
     newWindow.on('closed', () => {
       this.windows[windowName] = undefined;
     });
-    return newWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+    await newWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+    if (isMainWindow) {
+      // handle window show and Webview/browserView show
+      return await new Promise<void>((resolve) => {
+        newWindow.once('ready-to-show', () => {
+          const mainWindow = this.get(WindowNames.main);
+          if (mainWindow === undefined) return;
+          const { wasOpenedAsHidden } = app.getLoginItemSettings();
+          if (!wasOpenedAsHidden) {
+            mainWindow.show();
+          }
+          // calling this to redundantly setBounds BrowserView
+          // after the UI is fully loaded
+          // if not, BrowserView mouseover event won't work correctly
+          // https://github.com/atomery/webcatalog/issues/812
+          this.workspaceViewService.realignActiveWorkspace();
+          // ensure redux is loaded first
+          // if not, redux might not be able catch changes sent from ipcMain
+          mainWindow.webContents.once('did-stop-loading', () => {
+            resolve();
+          });
+        });
+      });
+    }
   }
 
-  private async registerMainWindowListeners(newWindow: BrowserWindow): Promise<void> {
-    const { wasOpenedAsHidden } = app.getLoginItemSettings();
+  private registerMainWindowListeners(newWindow: BrowserWindow): void {
     // Enable swipe to navigate
     const swipeToNavigate = this.preferenceService.get('swipeToNavigate');
     if (swipeToNavigate) {
@@ -252,7 +276,7 @@ export class Window {
     newWindow.on('close', (event) => {
       const mainWindow = this.get(WindowNames.main);
       if (mainWindow === undefined) return;
-      if (process.platform === 'darwin' && this.getWindowMeta(WindowNames.main).forceClose !== true) {
+      if (process.platform === 'darwin' && this.getWindowMeta(WindowNames.main)?.forceClose !== true) {
         event.preventDefault();
         // https://github.com/electron/electron/issues/6033#issuecomment-242023295
         if (mainWindow.isFullScreen()) {
@@ -277,20 +301,6 @@ export class Window {
       view?.webContents?.focus();
     });
 
-    newWindow.once('ready-to-show', () => {
-      const mainWindow = this.get(WindowNames.main);
-      if (mainWindow === undefined) return;
-      if (!wasOpenedAsHidden) {
-        mainWindow.show();
-      }
-
-      // calling this to redundantly setBounds BrowserView
-      // after the UI is fully loaded
-      // if not, BrowserView mouseover event won't work correctly
-      // https://github.com/atomery/webcatalog/issues/812
-      this.workspaceViewService.realignActiveWorkspace();
-    });
-
     newWindow.on('enter-full-screen', () => {
       const mainWindow = this.get(WindowNames.main);
       if (mainWindow === undefined) return;
@@ -303,16 +313,6 @@ export class Window {
       mainWindow?.webContents.send('is-fullscreen-updated', false);
       this.workspaceViewService.realignActiveWorkspace();
     });
-
-    return await new Promise<void>((resolve) => {
-      const mainWindow = this.get(WindowNames.main);
-      if (mainWindow === undefined) return;
-      // ensure redux is loaded first
-      // if not, redux might not be able catch changes sent from ipcMain
-      mainWindow.webContents.once('did-stop-loading', () => {
-        resolve();
-      });
-    });
   }
 
   public setWindowMeta<N extends WindowNames>(windowName: N, meta: WindowMeta[N]): void {
@@ -323,7 +323,7 @@ export class Window {
     this.windowMeta[windowName] = { ...this.windowMeta[windowName], ...meta };
   }
 
-  public getWindowMeta<N extends WindowNames>(windowName: N): WindowMeta[N] {
+  public getWindowMeta<N extends WindowNames>(windowName: N): WindowMeta[N] | undefined {
     return this.windowMeta[windowName];
   }
 

@@ -126,7 +126,6 @@ if (!gotTheLock) {
       });
     }
     await windowService.open(WindowNames.main);
-
     const { hibernateUnusedWorkspacesAtLaunch, proxyBypassRules, proxyPacScript, proxyRules, proxyType, themeSource } = preferenceService.getPreferences();
     // configure proxy for default session
     if (proxyType === 'rules') {
