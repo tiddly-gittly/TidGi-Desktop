@@ -5,14 +5,17 @@ import { ipcMain, nativeTheme, protocol, session, powerMonitor, app } from 'elec
 import isDev from 'electron-is-dev';
 import settings from 'electron-settings';
 import { autoUpdater } from 'electron-updater';
+import unhandled from 'electron-unhandled';
+import { openNewGitHubIssue, debugInfo } from 'electron-util';
 
 import { clearMainBindings, buildLanguageMenu } from '@services/libs/i18n/i18next-electron-fs-backend';
-import { ThemeChannel } from '@/constants/channels';
+import { ThemeChannel, MainChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import extractHostname from '@services/libs/extract-hostname';
 import loadListeners from '@services/listeners';
 import MAILTO_URLS from '@services/constants/mailto-urls';
+import { initI18NAfterServiceReady } from '@services/libs/i18n';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IAuthenticationService, Authentication } from '@services/auth';
@@ -55,6 +58,7 @@ const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 
+logger.info('App booting');
 app.on('second-instance', () => {
   // Someone tried to run a second instance, we should focus our window.
   const mainWindow = windowService.get(WindowNames.main);
@@ -88,8 +92,7 @@ if (!gotTheLock) {
   }
   let commonInitFinished = false;
   /** mock app.whenReady */
-  const customCommonInitFinishedEvent = 'common-init-finished';
-  ipcMain.once(customCommonInitFinishedEvent, () => {
+  ipcMain.once(MainChannel.commonInitFinished, () => {
     commonInitFinished = true;
   });
   /**
@@ -100,7 +103,7 @@ if (!gotTheLock) {
       return await Promise.resolve();
     }
     return await new Promise((resolve) => {
-      ipcMain.once(customCommonInitFinishedEvent, () => {
+      ipcMain.once(MainChannel.commonInitFinished, () => {
         commonInitFinished = true;
         resolve();
       });
@@ -114,115 +117,107 @@ if (!gotTheLock) {
   loadListeners();
   const commonInit = async (): Promise<void> => {
     // eslint-disable-next-line promise/catch-or-return
-    return await app
-      .whenReady()
-      .then(
-        () =>
-          isDev &&
-          protocol.registerFileProtocol('file', (request, callback) => {
-            // TODO: this might be useless after use electron-forge, this is for loading html file after bundle, forge handle this now
-            const pathname = decodeURIComponent(request.url.replace('file:///', ''));
-            callback(pathname);
-          }),
-      )
-      .then(async () => await windowService.open(WindowNames.main))
-      .then(async () => {
-        const { hibernateUnusedWorkspacesAtLaunch, proxyBypassRules, proxyPacScript, proxyRules, proxyType, themeSource } = preferenceService.getPreferences();
-        // configure proxy for default session
-        if (proxyType === 'rules') {
-          await session.defaultSession.setProxy({
-            proxyRules,
-            proxyBypassRules,
-          });
-        } else if (proxyType === 'pacScript') {
-          await session.defaultSession.setProxy({
-            pacScript: proxyPacScript,
-            proxyBypassRules,
-          });
-        }
-        // apply theme
-        nativeTheme.themeSource = themeSource;
-        nativeTheme.addListener('updated', () => {
-          windowService.sendToAllWindows(ThemeChannel.nativeThemeUpdated);
-          viewService.reloadViewsDarkReader();
-        });
-        const workspaces = workspaceService.getWorkspaces();
-        for (const workspaceID in workspaces) {
-          const workspace = workspaces[workspaceID];
-          // TODO: move this logic to service
-          if ((hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) && !workspace.active) {
-            if (!workspace.hibernated) {
-              await workspaceService.update(workspaceID, { hibernated: true });
-            }
-            return;
-          }
-          const mainWindow = windowService.get(WindowNames.main);
-          if (mainWindow === undefined) return;
-          await viewService.addView(mainWindow, workspace);
-          try {
-            const userInfo = authService.get('authing');
-            const { name: wikiPath, gitUrl: githubRepoUrl, isSubWiki } = workspace;
-            // wait for main wiki's watch-fs plugin to be fully initialized
-            // and also wait for wiki BrowserView to be able to receive command
-            // eslint-disable-next-line global-require
-            let workspaceMetadata = workspaceService.getMetaData(workspaceID);
-            if (!isSubWiki) {
-              // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-              while (!workspaceMetadata.didFailLoadErrorMessage && !workspaceMetadata.isLoading) {
-                // eslint-disable-next-line no-await-in-loop
-                await delay(500);
-                workspaceMetadata = workspaceService.getMetaData(workspaceID);
-              }
-            }
-            // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-            if (!isSubWiki && !workspaceMetadata.didFailLoadErrorMessage?.length && userInfo) {
-              await gitService.commitAndSync(wikiPath, githubRepoUrl, userInfo);
-            }
-          } catch {
-            logger.warning(`Can't sync at wikiStartup()`);
-          }
-        }
-        ipcMain.emit('request-update-pause-notifications-info');
-      })
-      .then(() => {
-        // Fix webview is not resized automatically
-        // when window is maximized on Linux
-        // https://github.com/atomery/webcatalog/issues/561
-        // run it here not in mainWindow.createAsync()
-        // because if the `mainWindow` is maximized or minimized
-        // before the workspaces's BrowserView fully loaded
-        // error will occur
-        // see https://github.com/atomery/webcatalog/issues/637
-        // eslint-disable-next-line promise/always-return
-        if (process.platform === 'linux') {
-          const mainWindow = windowService.get(WindowNames.main);
-          if (mainWindow !== undefined) {
-            const handleMaximize = (): void => {
-              // getContentSize is not updated immediately
-              // try once after 0.2s (for fast computer), another one after 1s (to be sure)
-              setTimeout(() => {
-                workspaceViewService.realignActiveWorkspace();
-              }, 200);
-              setTimeout(() => {
-                workspaceViewService.realignActiveWorkspace();
-              }, 1000);
-            };
-            mainWindow.on('maximize', handleMaximize);
-            mainWindow.on('unmaximize', handleMaximize);
-          }
-        }
-      })
-      // eslint-disable-next-line promise/always-return
-      .then(() => {
-        // trigger whenTrulyReady
-        ipcMain.emit(customCommonInitFinishedEvent);
-      })
-      .then(() => {
-        // build menu at last, this is not noticeable to user, so do it last
-        buildLanguageMenu();
-        menuService.buildMenu();
+    await app.whenReady();
+    if (isDev) {
+      protocol.registerFileProtocol('file', (request, callback) => {
+        // TODO: this might be useless after use electron-forge, this is for loading html file after bundle, forge handle this now
+        const pathname = decodeURIComponent(request.url.replace('file:///', ''));
+        callback(pathname);
       });
+    }
+    await windowService.open(WindowNames.main);
+
+    const { hibernateUnusedWorkspacesAtLaunch, proxyBypassRules, proxyPacScript, proxyRules, proxyType, themeSource } = preferenceService.getPreferences();
+    // configure proxy for default session
+    if (proxyType === 'rules') {
+      await session.defaultSession.setProxy({
+        proxyRules,
+        proxyBypassRules,
+      });
+    } else if (proxyType === 'pacScript') {
+      await session.defaultSession.setProxy({
+        pacScript: proxyPacScript,
+        proxyBypassRules,
+      });
+    }
+    // apply theme
+    nativeTheme.themeSource = themeSource;
+    nativeTheme.addListener('updated', () => {
+      windowService.sendToAllWindows(ThemeChannel.nativeThemeUpdated);
+      viewService.reloadViewsDarkReader();
+    });
+    const workspaces = workspaceService.getWorkspaces();
+    for (const workspaceID in workspaces) {
+      const workspace = workspaces[workspaceID];
+      // TODO: move this logic to service
+      if ((hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) && !workspace.active) {
+        if (!workspace.hibernated) {
+          await workspaceService.update(workspaceID, { hibernated: true });
+        }
+        return;
+      }
+      const mainWindow = windowService.get(WindowNames.main);
+      if (mainWindow === undefined) return;
+      await viewService.addView(mainWindow, workspace);
+      try {
+        const userInfo = authService.get('authing');
+        const { name: wikiPath, gitUrl: githubRepoUrl, isSubWiki } = workspace;
+        // wait for main wiki's watch-fs plugin to be fully initialized
+        // and also wait for wiki BrowserView to be able to receive command
+        // eslint-disable-next-line global-require
+        let workspaceMetadata = workspaceService.getMetaData(workspaceID);
+        if (!isSubWiki) {
+          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+          while (!workspaceMetadata.didFailLoadErrorMessage && !workspaceMetadata.isLoading) {
+            // eslint-disable-next-line no-await-in-loop
+            await delay(500);
+            workspaceMetadata = workspaceService.getMetaData(workspaceID);
+          }
+        }
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        if (!isSubWiki && !workspaceMetadata.didFailLoadErrorMessage?.length && userInfo) {
+          await gitService.commitAndSync(wikiPath, githubRepoUrl, userInfo);
+        }
+      } catch {
+        logger.warning(`Can't sync at wikiStartup()`);
+      }
+    }
+    ipcMain.emit('request-update-pause-notifications-info');
+    // Fix webview is not resized automatically
+    // when window is maximized on Linux
+    // https://github.com/atomery/webcatalog/issues/561
+    // run it here not in mainWindow.createAsync()
+    // because if the `mainWindow` is maximized or minimized
+    // before the workspaces's BrowserView fully loaded
+    // error will occur
+    // see https://github.com/atomery/webcatalog/issues/637
+    // eslint-disable-next-line promise/always-return
+    if (process.platform === 'linux') {
+      const mainWindow = windowService.get(WindowNames.main);
+      if (mainWindow !== undefined) {
+        const handleMaximize = (): void => {
+          // getContentSize is not updated immediately
+          // try once after 0.2s (for fast computer), another one after 1s (to be sure)
+          setTimeout(() => {
+            workspaceViewService.realignActiveWorkspace();
+          }, 200);
+          setTimeout(() => {
+            workspaceViewService.realignActiveWorkspace();
+          }, 1000);
+        };
+        mainWindow.on('maximize', handleMaximize);
+        mainWindow.on('unmaximize', handleMaximize);
+      }
+    }
+    // trigger whenTrulyReady
+    ipcMain.emit(MainChannel.commonInitFinished);
+    await initI18NAfterServiceReady();
+    // build menu at last, this is not noticeable to user, so do it last
+    buildLanguageMenu();
+    menuService.buildMenu();
   };
+
+
   app.on('ready', () => {
     autoUpdater.allowPrerelease = preferenceService.get('allowPrerelease');
     autoUpdater.logger = logger;
@@ -281,8 +276,7 @@ if (!gotTheLock) {
           const hostName = extractHostname(mailtoWorkspaces[0].homeUrl);
           if (hostName !== undefined) {
             const mailtoUrl = MAILTO_URLS[hostName];
-            const u = mailtoUrl.replace('%s', url);
-            ipcMain.emit('request-load-url', undefined, u, mailtoWorkspaces[0].id);
+            await workspaceViewService.loadURL(mailtoUrl.replace('%s', url), mailtoWorkspaces[0].id);
           }
           return;
         }
@@ -290,8 +284,9 @@ if (!gotTheLock) {
       }
       // handle https/http
       // pick automatically if there's only one choice
-      if (workspaceService.countWorkspaces() === 1) {
-        ipcMain.emit('request-load-url', undefined, url, workspaceService.getFirstWorkspace()!.id);
+      const firstWorkspace = workspaceService.getFirstWorkspace();
+      if (firstWorkspace !== undefined) {
+        await workspaceViewService.loadURL(url, firstWorkspace.id);
         return;
       }
       return windowService.open(WindowNames.openUrlWith, { incomingUrl: url });
@@ -322,3 +317,15 @@ if (!gotTheLock) {
     logger.info('App quit');
   });
 }
+
+unhandled({
+  showDialog: true,
+  // logger: logger.error,
+  reportButton: (error) => {
+    openNewGitHubIssue({
+      user: 'TiddlyGit Desktop User',
+      repo: 'tiddly-gittly/TiddlyGit-Desktop',
+      body: `\`\`\`\n${error.stack ?? 'No error.stack'}\n\`\`\`\n\n---\n\n${debugInfo()}`,
+    });
+  },
+});

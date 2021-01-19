@@ -77,9 +77,6 @@ export class WorkspaceView implements IWorkspaceViewService {
       await this.setWorkspaceViews(workspaces);
       this.menuService.buildMenu();
     });
-    ipcMain.handle('request-load-url', async (_event, url, id) => {
-      await this.loadURL(url, id);
-    });
   }
 
   private registerMenu(): void {

@@ -1,3 +1,11 @@
+/** Channels controls main thread */
+export enum MainChannel {
+  /**
+   * Common initialization procedural of electron app booting finished, we can do more domain specific jobs
+   */
+  commonInitFinished = 'common-init-finished',
+}
+
 export enum PreferenceChannel {
   update = 'update',
   requestResetPreferences = 'request-reset-preferences',
