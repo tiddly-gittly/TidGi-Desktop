@@ -92,7 +92,7 @@ const runApp = (): void => {
       if (window.meta.windowName === WindowNames.editWorkspace) {
         store.dispatch(initDialogEditWorkspace());
         const { workspaces } = store.getState();
-        const workspaceList = getWorkspacesAsList(workspaces);
+        const workspaceList = Object.values(workspaces);
         const editWorkspaceId = window.remote.getGlobal('editWorkspaceId');
         const workspace = workspaces[editWorkspaceId];
         workspaceList.some((item, index) => {

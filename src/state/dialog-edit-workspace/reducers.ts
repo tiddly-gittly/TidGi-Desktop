@@ -3,14 +3,13 @@ import { combineReducers } from 'redux';
 import { DIALOG_EDIT_WORKSPACE_INIT, UPDATE_EDIT_WORKSPACE_DOWNLOADING_ICON, UPDATE_EDIT_WORKSPACE_FORM } from '../../constants/actions';
 
 import { getWorkspaces } from '../../senders';
-import getWorkspacesAsList from '../../helpers/get-workspaces-as-list';
 
 const form = (state = {}, action: any) => {
   switch (action.type) {
     case DIALOG_EDIT_WORKSPACE_INIT: {
       const editWorkspaceId = window.remote.getGlobal('editWorkspaceId');
       const workspaces = getWorkspaces();
-      const workspaceList = getWorkspacesAsList(workspaces);
+      const workspaceList = Object.values(workspaces);
       const workspace = workspaces[editWorkspaceId];
       workspaceList.some((item, index) => {
         // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.

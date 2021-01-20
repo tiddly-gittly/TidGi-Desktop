@@ -7,7 +7,6 @@ import ListItemText from '@material-ui/core/ListItemText';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 import connectComponent from '../../helpers/connect-component';
-import getWorkspacesAsList from '../../helpers/get-workspaces-as-list';
 import getMailtoUrl from '../../helpers/get-mailto-url';
 
 import { requestLoadUrl } from '../../senders';
@@ -37,7 +36,7 @@ const OpenUrlWith = ({ workspaces }: OpenUrlWithProps) => {
     );
   };
 
-  return <List dense>{getWorkspacesAsList(workspaces).map(renderWorkspace)}</List>;
+  return <List dense>{Object.values(workspaces).map(renderWorkspace)}</List>;
 };
 
 const mapStateToProps = (state: any) => ({

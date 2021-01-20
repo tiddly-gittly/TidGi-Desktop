@@ -17,7 +17,6 @@ import SettingsIcon from '@material-ui/icons/Settings';
 import { sortableContainer, sortableElement } from 'react-sortable-hoc';
 
 import connectComponent from '../../helpers/connect-component';
-import getWorkspacesAsList from '../../helpers/get-workspaces-as-list';
 
 import WorkspaceSelector from './workspace-selector';
 import FindInPage from './find-in-page';
@@ -269,7 +268,7 @@ type MainProps = OwnMainProps & typeof Main.defaultProps;
 
 // @ts-expect-error ts-migrate(7022) FIXME: 'Main' implicitly has type 'any' because it does n... Remove this comment to see the full error message
 const Main = ({ classes, didFailLoad, isFullScreen, isLoading, navigationBar, shouldPauseNotifications, sidebar, titleBar, workspaces }: MainProps) => {
-  const workspacesList = getWorkspacesAsList(workspaces);
+  const workspacesList = Object.values(workspaces);
   const showTitleBar = window.remote.getPlatform() === 'darwin' && titleBar && !isFullScreen;
 
   return (
