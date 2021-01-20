@@ -6,7 +6,8 @@ const CircularDependencyPlugin = require('circular-dependency-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 
 exports.main = [
-  // new ForkTsCheckerWebpackPlugin(),
+  // we only need one instance of TsChecker, it will check main and renderer all together
+  new ForkTsCheckerWebpackPlugin(),
   new CopyPlugin({
     // to is relative to ./.webpack/main/
     patterns: [{ from: 'src/services/wiki/wiki-worker.js', to: 'wiki-worker.js' }],
@@ -25,7 +26,6 @@ exports.main = [
 ];
 
 exports.renderer = [
-  // new ForkTsCheckerWebpackPlugin(),
   new webpack.DefinePlugin({
     'process.env': '{}',
     global: {},
