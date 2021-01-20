@@ -8,7 +8,8 @@ import { autoUpdater } from 'electron-updater';
 import unhandled from 'electron-unhandled';
 import { openNewGitHubIssue, debugInfo } from 'electron-util';
 
-import { clearMainBindings, buildLanguageMenu } from '@services/libs/i18n/i18next-electron-fs-backend';
+import { clearMainBindings } from '@services/libs/i18n/i18next-electron-fs-backend';
+import { buildLanguageMenu } from '@services/libs/i18n/buildLanguageMenu';
 import { ThemeChannel, MainChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';

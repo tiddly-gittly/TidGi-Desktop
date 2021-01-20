@@ -2,7 +2,11 @@ import { Menu, MenuItemConstructorOptions, shell } from 'electron';
 import { debounce, take, drop } from 'lodash';
 import { injectable } from 'inversify';
 
-interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstructorOptions, 'label' | 'enabled' | 'submenu'> {
+/**
+ * MenuItemConstructorOptions that allows properties like "label", "enabled", "submenu" to be () => xxx
+ * So these value can be determined at every build time (menu will be rebuilt every time the preferences change)
+ */
+export interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstructorOptions, 'label' | 'enabled' | 'submenu'> {
   label?: (() => string) | string;
   enabled?: (() => boolean) | boolean;
   submenu?:

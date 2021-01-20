@@ -1,16 +1,13 @@
 /* eslint-disable unicorn/prevent-abbreviations */
 import fs from 'fs-extra';
 import path from 'path';
-import { IpcRenderer, IpcMain, BrowserWindow, IpcMainInvokeEvent, IpcRendererEvent, MenuItemConstructorOptions } from 'electron';
+import { IpcRenderer, IpcMain, BrowserWindow, IpcMainInvokeEvent, IpcRendererEvent } from 'electron';
 
 import type { IWindowService } from '@services/windows';
-import type { IPreferenceService } from '@services/preferences';
-import type { IViewService } from '@services/view';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';
 import { LOCALIZATION_FOLDER } from '@services/constants/paths';
 import { I18NChannels } from '@/constants/channels';
-import i18n from '.';
 
 export interface IReadFileRequest {
   filename: string;
@@ -101,36 +98,3 @@ export const clearMainBindings = function (ipcMain: IpcMain): void {
   ipcMain.removeAllListeners(I18NChannels.readFileRequest);
   ipcMain.removeAllListeners(I18NChannels.writeFileRequest);
 };
-
-const whitelistMap = JSON.parse(fs.readFileSync(path.join(LOCALIZATION_FOLDER, 'whitelist.json'), 'utf-8')) as Record<string, string>;
-
-const whiteListedLanguages = Object.keys(whitelistMap);
-
-/**
- * Register languages into language menu, call this function after container init
- */
-export function buildLanguageMenu(): void {
-  const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-  const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-  const viewService = container.get<IViewService>(serviceIdentifier.View);
-  const menuService = container.get<IMenuServiceService>(serviceIdentifier.MenuService);
-  const subMenu: MenuItemConstructorOptions[] = [];
-  for (const language of whiteListedLanguages) {
-    subMenu.push({
-      label: whitelistMap[language],
-      click: async () => {
-        await Promise.all([preferenceService.set('language', language), i18n.changeLanguage(language)]);
-        viewService.forEachView((view) => {
-          view.webContents.send(I18NChannels.changeLanguageRequest, {
-            lng: language,
-          });
-        });
-        windowService.sendToAllWindows(I18NChannels.changeLanguageRequest, {
-          lng: language,
-        });
-      },
-    });
-  }
-
-  menuService.insertMenu('Language', subMenu);
-}

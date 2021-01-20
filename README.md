@@ -87,13 +87,12 @@ cd TiddlyGit-Desktop
 npm i
 
 # Run development mode
-
-npm run electron-dev
+# You can see webpack error messages in http://localhost:9000/
+npm start
 
 # Build for production
 
-npm run dist
-
+npm run package
 ```
 
 ### Publish

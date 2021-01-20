@@ -23,7 +23,7 @@ void i18next.use(Backend).init({
 });
 
 export async function initI18NAfterServiceReady(): Promise<void> {
-  bindI18nListener();
+  await bindI18nListener();
   await changeToDefaultLanguage(i18next);
 }
 
