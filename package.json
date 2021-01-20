@@ -167,6 +167,7 @@
     "eslint-plugin-react-hooks": "^4.2.0",
     "eslint-plugin-standard": "5.0.0",
     "eslint-plugin-unicorn": "26.0.0",
+    "file-loader": "^6.2.0",
     "fork-ts-checker-webpack-plugin": "^6.1.0",
     "graphql-hooks": "^5.1.0",
     "if-env": "^1.0.4",
