@@ -1,6 +1,6 @@
 /**
  * Provide API from electron to tiddlywiki
- * This file should be required by BrowserView's preload script to work
+ * This file should be required by view.ts preload script to work
  */
 import { contextBridge } from 'electron';
 

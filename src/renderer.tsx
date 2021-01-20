@@ -20,8 +20,6 @@ import i18n from './i18n';
 
 import AppWrapper from './components/app-wrapper';
 
-import getWorkspacesAsList from './helpers/get-workspaces-as-list';
-
 const DialogAbout = React.lazy(async () => await import('./components/dialog-about'));
 const DialogAddWorkspace = React.lazy(async () => await import('./components/dialog-add-workspace'));
 const DialogAuth = React.lazy(async () => await import('./components/dialog-auth'));
@@ -39,9 +37,6 @@ const Main = React.lazy(async () => await import('./components/main'));
 
 declare global {
   interface Window {
-    meta: {
-      windowName: string;
-    };
     remote: any;
     preventClosingWindow: boolean;
   }

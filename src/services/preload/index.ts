@@ -4,6 +4,7 @@ import './common/i18n';
 import './common/require-nodejs';
 import './common/simple-context-menu';
 import './common/authing-postmessage';
+import './common/services';
 import { MetaDataChannel } from '@/constants/channels';
 import { WindowNames } from '@services/windows/WindowProperties';
 
@@ -16,6 +17,13 @@ contextBridge.exposeInMainWorld('meta', browserViewMetaData);
 ipcRenderer.on(MetaDataChannel.getViewMetaData, (event) => {
   event.returnValue = browserViewMetaData;
 });
+declare global {
+  interface Window {
+    meta: {
+      windowName: WindowNames;
+    };
+  }
+}
 
 if (windowName === WindowNames.view) {
   void import('./view');

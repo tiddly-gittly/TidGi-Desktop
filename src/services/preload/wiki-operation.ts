@@ -1,6 +1,6 @@
 /**
  * Call tiddlywiki api from electron
- * This file should be required by BrowserView's preload script to work
+ * This file should be required by view.ts preload script to work
  */
 import { ipcRenderer, webFrame } from 'electron';
 import Promise from 'bluebird';
