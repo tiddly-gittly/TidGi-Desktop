@@ -55,7 +55,6 @@ declare global {
   interface Window {
     remote: {
       isFullScreen: () => boolean;
-      isFullScreen: () => boolean;
       getPlatform: () => NodeJS.Platform;
       getAppVersion: () => string;
       getAppName: () => string;

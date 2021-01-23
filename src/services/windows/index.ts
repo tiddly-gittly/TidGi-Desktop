@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { BrowserWindow, ipcMain, dialog, app, App, remote, clipboard, BrowserWindowConstructorOptions } from 'electron';
 import isDevelopment from 'electron-is-dev';
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
@@ -9,10 +8,10 @@ import windowStateKeeper, { State as windowStateKeeperState } from 'electron-win
 import { IBrowserViewMetaData, WindowNames, windowDimension, WindowMeta, CodeInjectionType } from '@services/windows/WindowProperties';
 import serviceIdentifier from '@services/serviceIdentifier';
 
-import type { IPreferenceService } from '@services/preferences';
-import type { IWorkspaceService } from '@services/workspaces';
-import type { IWorkspaceViewService } from '@services/workspacesView';
-import type { IMenuService } from '@services/menu';
+import type { IPreferenceService } from '@services/preferences/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { IMenuService } from '@services/menu/interface';
 import { container } from '@services/container';
 import { Channels, WindowChannel, MetaDataChannel } from '@/constants/channels';
 
@@ -20,41 +19,10 @@ import i18n from '@services/libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import handleAttachToMenuBar from './handleAttachToMenuBar';
+import { IWindowService } from './interface';
 
 const { lazyInject } = getDecorators(container);
 
-/**
- * Create and manage window open and destroy, you can get all opened electron window instance here
- */
-export interface IWindowService {
-  get(windowName: WindowNames): BrowserWindow | undefined;
-  open<N extends WindowNames>(windowName: N, meta?: WindowMeta[N], recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean)): Promise<void>;
-  setWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): void;
-  updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): void;
-  getWindowMeta<N extends WindowNames>(windowName: N): WindowMeta[N] | undefined;
-  sendToAllWindows: (channel: Channels, ...arguments_: unknown[]) => void;
-  goHome(windowName: WindowNames): Promise<void>;
-  goBack(windowName: WindowNames): void;
-  goForward(windowName: WindowNames): void;
-  reload(windowName: WindowNames): void;
-  showMessageBox(message: Electron.MessageBoxOptions['message'], type?: Electron.MessageBoxOptions['type']): void;
-}
-export const WindowServiceIPCDescriptor = {
-  channel: WindowChannel.name,
-  properties: {
-    get: ProxyPropertyType.Function,
-    open: ProxyPropertyType.Function,
-    setWindowMeta: ProxyPropertyType.Function,
-    updateWindowMeta: ProxyPropertyType.Function,
-    getWindowMeta: ProxyPropertyType.Function,
-    sendToAllWindows: ProxyPropertyType.Function,
-    goHome: ProxyPropertyType.Function,
-    goBack: ProxyPropertyType.Function,
-    goForward: ProxyPropertyType.Function,
-    reload: ProxyPropertyType.Function,
-    showMessageBox: ProxyPropertyType.Function,
-  },
-};
 @injectable()
 export class Window implements IWindowService {
   private windows = {} as Partial<Record<WindowNames, BrowserWindow | undefined>>;

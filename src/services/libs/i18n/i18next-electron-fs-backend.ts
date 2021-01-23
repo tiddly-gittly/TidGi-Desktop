@@ -3,7 +3,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { IpcRenderer, IpcMain, BrowserWindow, IpcMainInvokeEvent, IpcRendererEvent } from 'electron';
 
-import type { IWindowService } from '@services/windows';
+import type { IWindowService } from '@services/windows/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';
 import { LOCALIZATION_FOLDER } from '@services/constants/paths';

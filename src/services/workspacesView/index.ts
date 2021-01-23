@@ -1,46 +1,14 @@
 import { app, ipcMain, session } from 'electron';
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable, inject } from 'inversify';
 
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IViewService } from '@services/view';
-import type { IWorkspaceService } from '@services/workspaces';
-import type { IWindowService } from '@services/windows';
-import type { IMenuService } from '@services/menu';
-import { IWorkspace } from '@services/types';
+import type { IViewService } from '@services/view/interface';
+import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interface';
+import type { IWindowService } from '@services/windows/interface';
+import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { WorkspaceViewChannel } from '@/constants/channels';
+import { IWorkspaceViewService } from './interface';
 
-/**
- * Deal with operations that needs to create a workspace and a browserView at once
- */
-export interface IWorkspaceViewService {
-  createWorkspaceView(workspaceOptions: IWorkspace): Promise<void>;
-  setWorkspaceView(id: string, workspaceOptions: IWorkspace): Promise<void>;
-  setWorkspaceViews(workspaces: Record<string, IWorkspace>): Promise<void>;
-  wakeUpWorkspaceView(id: string): Promise<void>;
-  hibernateWorkspaceView(id: string): Promise<void>;
-  setActiveWorkspaceView(id: string): Promise<void>;
-  removeWorkspaceView(id: string): Promise<void>;
-  clearBrowsingData(): Promise<void>;
-  loadURL(url: string, id: string): Promise<void>;
-  realignActiveWorkspace(): void;
-}
-export const WorkspaceViewServiceIPCDescriptor = {
-  channel: WorkspaceViewChannel.name,
-  properties: {
-    createWorkspaceView: ProxyPropertyType.Function,
-    setWorkspaceView: ProxyPropertyType.Function,
-    setWorkspaceViews: ProxyPropertyType.Function,
-    wakeUpWorkspaceView: ProxyPropertyType.Function,
-    hibernateWorkspaceView: ProxyPropertyType.Function,
-    setActiveWorkspaceView: ProxyPropertyType.Function,
-    removeWorkspaceView: ProxyPropertyType.Function,
-    clearBrowsingData: ProxyPropertyType.Function,
-    loadURL: ProxyPropertyType.Function,
-    realignActiveWorkspace: ProxyPropertyType.Function,
-  },
-};
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
   constructor(

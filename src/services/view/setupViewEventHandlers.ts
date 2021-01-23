@@ -2,16 +2,16 @@ import { app, BrowserView, ipcMain, WebContents, shell, NativeImage, BrowserWind
 import path from 'path';
 import fsExtra from 'fs-extra';
 
-import { IWorkspace } from '@services/types';
+import { IWorkspace } from '@services/workspaces/interface';
 import getViewBounds from '@services/libs/get-view-bounds';
 import { extractDomain, isInternalUrl } from '@services/libs/url';
 import { buildResourcePath } from '@services/constants/paths';
 
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IPreferenceService } from '@services/preferences';
-import type { IWorkspaceService } from '@services/workspaces';
-import type { IWorkspaceViewService } from '@services/workspacesView';
-import type { IWindowService } from '@services/windows';
+import type { IPreferenceService } from '@services/preferences/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { IWindowService } from '@services/windows/interface';
 import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
 import { container } from '@services/container';
 

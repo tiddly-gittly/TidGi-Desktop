@@ -1,5 +1,4 @@
 /* eslint-disable unicorn/no-null */
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
 import { app, ipcMain } from 'electron';
@@ -15,67 +14,16 @@ import tmp from 'tmp';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';
-import type { IWikiService } from '@services/wiki';
-import type { IViewService } from '@services/view';
-import type { IWorkspaceViewService } from '@services/workspacesView';
-import type { IWindowService } from '@services/windows';
-import type { IMenuService } from '@services/menu';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IViewService } from '@services/view/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { IWindowService } from '@services/windows/interface';
+import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspace, IWorkspaceMetaData } from '@services/types';
-import { WorkspaceChannel } from '@/constants/channels';
+import { IWorkspaceService, IWorkspace, IWorkspaceMetaData } from './interface';
 
 const { lazyInject } = getDecorators(container);
 
-/**
- * Manage workspace level preferences and workspace metadata.
- */
-export interface IWorkspaceService {
-  getWorkspacesAsList(): IWorkspace[];
-  get(id: string): IWorkspace | undefined;
-  create(newWorkspaceConfig: Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order'>): Promise<IWorkspace>;
-  getWorkspaces(): Record<string, IWorkspace>;
-  countWorkspaces(): number;
-  getMetaData: (id: string) => Partial<IWorkspaceMetaData>;
-  getAllMetaData: () => Record<string, Partial<IWorkspaceMetaData>>;
-  updateMetaData: (id: string, options: Partial<IWorkspaceMetaData>) => void;
-  set(id: string, workspace: IWorkspace): Promise<void>;
-  update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void>;
-  setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void>;
-  setActiveWorkspace(id: string): Promise<void>;
-  setWorkspacePicture(id: string, sourcePicturePath: string): Promise<void>;
-  removeWorkspacePicture(id: string): Promise<void>;
-  remove(id: string): Promise<void>;
-  getByName(name: string): IWorkspace | undefined;
-  getPreviousWorkspace: (id: string) => IWorkspace | undefined;
-  getNextWorkspace: (id: string) => IWorkspace | undefined;
-  getActiveWorkspace: () => IWorkspace | undefined;
-  getFirstWorkspace: () => IWorkspace | undefined;
-}
-export const WorkspaceServiceIPCDescriptor = {
-  channel: WorkspaceChannel.name,
-  properties: {
-    getWorkspacesAsList: ProxyPropertyType.Function,
-    get: ProxyPropertyType.Function,
-    create: ProxyPropertyType.Function,
-    getWorkspaces: ProxyPropertyType.Function,
-    countWorkspaces: ProxyPropertyType.Function,
-    getMetaData: ProxyPropertyType.Function,
-    getAllMetaData: ProxyPropertyType.Function,
-    updateMetaData: ProxyPropertyType.Function,
-    set: ProxyPropertyType.Function,
-    update: ProxyPropertyType.Function,
-    setWorkspaces: ProxyPropertyType.Function,
-    setActiveWorkspace: ProxyPropertyType.Function,
-    setWorkspacePicture: ProxyPropertyType.Function,
-    removeWorkspacePicture: ProxyPropertyType.Function,
-    remove: ProxyPropertyType.Function,
-    getByName: ProxyPropertyType.Function,
-    getPreviousWorkspace: ProxyPropertyType.Function,
-    getNextWorkspace: ProxyPropertyType.Function,
-    getActiveWorkspace: ProxyPropertyType.Function,
-    getFirstWorkspace: ProxyPropertyType.Function,
-  },
-};
 @injectable()
 export class Workspace implements IWorkspaceService {
   /**

@@ -1,5 +1,4 @@
 import { ipcMain } from 'electron';
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable, inject } from 'inversify';
 import { truncate, debounce } from 'lodash';
 import { GitProcess } from 'dugite';
@@ -8,34 +7,13 @@ import isDev from 'electron-is-dev';
 import * as gitSync from './sync';
 import * as github from './github';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IViewService } from '@services/view';
-import type { IPreferenceService } from '@services/preferences';
+import type { IViewService } from '@services/view/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { IUserInfo } from '@services/types';
-import { GitChannel } from '@/constants/channels';
+import { IGitService } from './interface';
 
-/**
- * System Preferences are not stored in storage but stored in macOS Preferences.
- * It can be retrieved and changed using Electron APIs
- */
-export interface IGitService {
-  debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo) => Promise<void> | undefined;
-  updateGitInfoTiddler(githubRepoName: string): Promise<void>;
-  initWikiGit(wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo, isMainWiki: boolean): Promise<void>;
-  commitAndSync(wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo): Promise<void>;
-  clone(githubRepoUrl: string, repoFolderPath: string, userInfo: IUserInfo): Promise<void>;
-}
-export const GitServiceIPCDescriptor = {
-  channel: GitChannel.name,
-  properties: {
-    debounceCommitAndSync: ProxyPropertyType.Function,
-    updateGitInfoTiddler: ProxyPropertyType.Function,
-    initWikiGit: ProxyPropertyType.Function,
-    commitAndSync: ProxyPropertyType.Function,
-    clone: ProxyPropertyType.Function,
-  },
-};
 @injectable()
 export class Git implements IGitService {
   disableSyncOnDevelopment = true;

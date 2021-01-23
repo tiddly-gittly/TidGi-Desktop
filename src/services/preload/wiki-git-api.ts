@@ -6,9 +6,9 @@ import { contextBridge } from 'electron';
 
 import { container } from '@services/container';
 import { getModifiedFileList } from '@services/git/inspect';
-import type { IGitService } from '@services/git';
-import type { IWorkspaceService } from '@services/workspaces';
-import type { IAuthenticationService } from '@services/auth';
+import type { IGitService } from '@services/git/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { IAuthenticationService } from '@services/auth/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 
 contextBridge.exposeInMainWorld('git', {

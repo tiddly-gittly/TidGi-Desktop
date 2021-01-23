@@ -1,7 +1,7 @@
 import { ipcMain } from 'electron';
 
 import { container } from '@services/container';
-import type { IWindowService } from '@services/windows';
+import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import serviceIdentifier from '@services/serviceIdentifier';
 

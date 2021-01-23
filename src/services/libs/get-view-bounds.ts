@@ -1,6 +1,6 @@
 import { container } from '@services/container';
-import type { IWindowService } from '@services/windows';
-import type { IPreferenceService } from '@services/preferences';
+import type { IWindowService } from '@services/windows/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import serviceIdentifier from '@services/serviceIdentifier';
 

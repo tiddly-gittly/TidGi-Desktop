@@ -1,15 +1,15 @@
 import fs from 'fs-extra';
 import path from 'path';
 
-import type { IWindowService } from '@services/windows';
+import type { IWindowService } from '@services/windows/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';
 import { LOCALIZATION_FOLDER } from '@services/constants/paths';
 import { I18NChannels } from '@/constants/channels';
 
-import type { IPreferenceService } from '@services/preferences';
-import type { IViewService } from '@services/view';
-import type { IMenuService, DeferredMenuItemConstructorOptions } from '@services/menu';
+import type { IPreferenceService } from '@services/preferences/interface';
+import type { IViewService } from '@services/view/interface';
+import type { IMenuService, DeferredMenuItemConstructorOptions } from '@services/menu/interface';
 
 const whitelistMap = JSON.parse(fs.readFileSync(path.join(LOCALIZATION_FOLDER, 'whitelist.json'), 'utf-8')) as Record<string, string>;
 

@@ -1,65 +1,29 @@
 import { BrowserView, BrowserWindow, WebContents, app, session, dialog, ipcMain, WebPreferences } from 'electron';
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
 
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IPreferenceService } from '@services/preferences';
-import type { IWorkspaceService } from '@services/workspaces';
-import type { IWorkspaceViewService } from '@services/workspacesView';
-import type { IWikiService } from '@services/wiki';
-import type { IAuthenticationService } from '@services/auth';
-import type { IWindowService } from '@services/windows';
-import type { IMenuService } from '@services/menu';
+import type { IPreferenceService } from '@services/preferences/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IAuthenticationService } from '@services/auth/interface';
+import type { IWindowService } from '@services/windows/interface';
+import type { IMenuService } from '@services/menu/interface';
 
 import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
 import i18n from '@services/libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
 import { extractDomain } from '@services/libs/url';
-import { IWorkspace } from '@services/types';
+import { IWorkspace } from '@services/workspaces/interface';
 import setupViewEventHandlers from './setupViewEventHandlers';
 import getFromRenderer from '@services/libs/getFromRenderer';
-import { MetaDataChannel, ViewChannel } from '@/constants/channels';
+import { MetaDataChannel } from '@/constants/channels';
 import { container } from '@services/container';
+import { IViewService } from './interface';
 
 const { lazyInject } = getDecorators(container);
 
-/**
- * BrowserView related things, the BrowserView is the webview like frame that renders our wiki website.
- */
-export interface IViewService {
-  addView: (browserWindow: BrowserWindow, workspace: IWorkspace) => Promise<void>;
-  getView: (id: string) => BrowserView;
-  forEachView: (functionToRun: (view: BrowserView, id: string) => void) => void;
-  setActiveView: (browserWindow: BrowserWindow, id: string) => Promise<void>;
-  removeView: (id: string) => void;
-  setViewsAudioPref: (_shouldMuteAudio?: boolean) => void;
-  setViewsNotificationsPref: (_shouldPauseNotifications?: boolean) => void;
-  hibernateView: (id: string) => void;
-  reloadViewsDarkReader: () => void;
-  reloadViewsWebContentsIfDidFailLoad: () => void;
-  reloadViewsWebContents: () => void;
-  getActiveBrowserView: () => BrowserView | undefined;
-  realignActiveView: (browserWindow: BrowserWindow, activeId: string) => void;
-}
-export const ViewServiceIPCDescriptor = {
-  channel: ViewChannel.name,
-  properties: {
-    addView: ProxyPropertyType.Function,
-    getView: ProxyPropertyType.Function,
-    forEachView: ProxyPropertyType.Function,
-    setActiveView: ProxyPropertyType.Function,
-    removeView: ProxyPropertyType.Function,
-    setViewsAudioPref: ProxyPropertyType.Function,
-    setViewsNotificationsPref: ProxyPropertyType.Function,
-    hibernateView: ProxyPropertyType.Function,
-    reloadViewsDarkReader: ProxyPropertyType.Function,
-    reloadViewsWebContentsIfDidFailLoad: ProxyPropertyType.Function,
-    reloadViewsWebContents: ProxyPropertyType.Function,
-    getActiveBrowserView: ProxyPropertyType.Function,
-    realignActiveView: ProxyPropertyType.Function,
-  },
-};
 @injectable()
 export class View implements IViewService {
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;

@@ -1,30 +1,9 @@
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable, inject } from 'inversify';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IPreferenceService } from '@services/preferences';
-import type { IViewService } from '@services/view';
-import { NotificationChannel } from '@/constants/channels';
+import type { IPreferenceService } from '@services/preferences/interface';
+import type { IViewService } from '@services/view/interface';
+import { INotificationService, IPauseNotificationsInfo } from './interface';
 
-export interface IPauseNotificationsInfo {
-  reason: string;
-  tilDate: Date;
-  schedule: { from: Date; to: Date };
-}
-
-/**
- * Preference and method about notification, to set and pause notification.
- */
-export interface INotificationService {
-  updatePauseNotificationsInfo(): void;
-  getPauseNotificationsInfo: () => IPauseNotificationsInfo | undefined;
-}
-export const NotificationServiceIPCDescriptor = {
-  channel: NotificationChannel.name,
-  properties: {
-    updatePauseNotificationsInfo: ProxyPropertyType.Function,
-    getPauseNotificationsInfo: ProxyPropertyType.Function,
-  },
-};
 @injectable()
 export class Notification implements INotificationService {
   constructor(
@@ -79,19 +58,17 @@ export class Notification implements INotificationService {
 
     // pause notification from 7 AM to 8 AM
     // means pausing from 7 AM to 8 AM of today
-    if (fromMinute <= toMinute) {
-      if (currentMinute >= fromMinute && currentMinute <= toMinute) {
-        const from = new Date();
-        from.setDate(from.getDate());
-        from.setHours(mockFromDate.getHours());
-        from.setMinutes(mockFromDate.getMinutes()); // from 8 AM of today
+    if (fromMinute <= toMinute && currentMinute >= fromMinute && currentMinute <= toMinute) {
+      const from = new Date();
+      from.setDate(from.getDate());
+      from.setHours(mockFromDate.getHours());
+      from.setMinutes(mockFromDate.getMinutes()); // from 8 AM of today
 
-        const to = new Date();
-        to.setDate(to.getDate());
-        to.setHours(mockToDate.getHours());
-        to.setMinutes(mockToDate.getMinutes()); // til 8 AM of today
-        return { from, to };
-      }
+      const to = new Date();
+      to.setDate(to.getDate());
+      to.setHours(mockToDate.getHours());
+      to.setMinutes(mockToDate.getMinutes()); // til 8 AM of today
+      return { from, to };
     }
   }
 
@@ -167,7 +144,7 @@ export class Notification implements INotificationService {
 
     // create new update timeout
     const addTimeout = (d: Date): void => {
-      const t = new Date(d).getTime() - new Date().getTime();
+      const t = new Date(d).getTime() - Date.now();
       // https://github.com/nodejs/node-v0.x-archive/issues/8656
       if (t > 0 && t < 2147483647) {
         const newTimeout = setTimeout(() => {

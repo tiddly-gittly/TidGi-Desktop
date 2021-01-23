@@ -2,8 +2,8 @@
 import Transport from 'winston-transport';
 
 import { container } from '@services/container';
-import type { IViewService } from '@services/view';
-import type { IWindowService } from '@services/windows';
+import type { IViewService } from '@services/view/interface';
+import type { IWindowService } from '@services/windows/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 

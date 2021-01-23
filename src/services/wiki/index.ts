@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
-import { injectable, inject } from 'inversify';
+import { injectable } from 'inversify';
 import { delay } from 'bluebird';
 import fs from 'fs-extra';
 import path from 'path';
@@ -12,72 +11,22 @@ import { trim, compact, debounce } from 'lodash';
 import getDecorators from 'inversify-inject-decorators';
 
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IAuthenticationService } from '@services/auth';
-import type { IWindowService } from '@services/windows';
-import type { IViewService } from '@services/view';
-import type { IWorkspaceService } from '@services/workspaces';
-import type { IGitService } from '@services/git';
-import type { IWorkspaceViewService } from '@services/workspacesView';
-import { IWorkspace, IUserInfo } from '@services/types';
+import type { IAuthenticationService } from '@services/auth/interface';
+import type { IWindowService } from '@services/windows/interface';
+import type { IViewService } from '@services/view/interface';
+import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interface';
+import type { IGitService } from '@services/git/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import { IUserInfo } from '@services/types';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { logger, wikiOutputToFile, refreshOutputFile } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@services/constants/paths';
 import { updateSubWikiPluginContent, getSubWikiPluginContent } from './update-plugin-content';
 import { container } from '@services/container';
-import { WikiChannel } from '@/constants/channels';
 
 const { lazyInject } = getDecorators(container);
 
-/**
- * Handle wiki worker startup and restart
- */
-export interface IWikiService {
-  updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): void;
-  startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void>;
-  stopWiki(homePath: string): Promise<void>;
-  stopAllWiki(): Promise<void>;
-  linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
-  createWiki(newFolderPath: string, folderName: string): Promise<void>;
-  createSubWiki(newFolderPath: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
-  removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
-  ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
-  cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: string, userInfo: IUserInfo): Promise<void>;
-  cloneSubWiki(
-    parentFolderLocation: string,
-    wikiFolderName: string,
-    mainWikiPath: string,
-    githubWikiUrl: string,
-    userInfo: IUserInfo,
-    tagName?: string,
-  ): Promise<void>;
-  wikiStartup(workspace: IWorkspace): Promise<void>;
-  startNodeJSWiki(homePath: string, port: number, userName: string, workspaceID: string): Promise<void>;
-  watchWiki(wikiRepoPath: string, githubRepoUrl: string, userInfo: IUserInfo, wikiFolderPath?: string): Promise<void>;
-  stopWatchWiki(wikiRepoPath: string): Promise<void>;
-  stopWatchAllWiki(): Promise<void>;
-}
-export const WikiServiceIPCDescriptor = {
-  channel: WikiChannel.name,
-  properties: {
-    updateSubWikiPluginContent: ProxyPropertyType.Function,
-    startWiki: ProxyPropertyType.Function,
-    stopWiki: ProxyPropertyType.Function,
-    stopAllWiki: ProxyPropertyType.Function,
-    linkWiki: ProxyPropertyType.Function,
-    createWiki: ProxyPropertyType.Function,
-    createSubWiki: ProxyPropertyType.Function,
-    removeWiki: ProxyPropertyType.Function,
-    ensureWikiExist: ProxyPropertyType.Function,
-    cloneWiki: ProxyPropertyType.Function,
-    cloneSubWiki: ProxyPropertyType.Function,
-    wikiStartup: ProxyPropertyType.Function,
-    startNodeJSWiki: ProxyPropertyType.Function,
-    watchWiki: ProxyPropertyType.Function,
-    stopWatchWiki: ProxyPropertyType.Function,
-    stopWatchAllWiki: ProxyPropertyType.Function,
-  },
-};
 @injectable()
 export class Wiki {
   @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;

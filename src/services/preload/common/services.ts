@@ -6,19 +6,19 @@ import { contextBridge } from 'electron';
 
 import { createProxy } from '@/helpers/electron-ipc-proxy/client';
 
-import { IAuthenticationService, AuthenticationServiceIPCDescriptor } from '@services/auth';
-import { IGitService, GitServiceIPCDescriptor } from '@services/git';
-import { IMenuService, MenuServiceIPCDescriptor } from '@services/menu';
-import { INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications';
-import { IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/preferences';
-import { ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences';
-import { IUpdaterService, UpdaterServiceIPCDescriptor } from '@services/updater';
-import { IViewService, ViewServiceIPCDescriptor } from '@services/view';
-import { IWikiService, WikiServiceIPCDescriptor } from '@services/wiki';
-import { IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace';
-import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows';
-import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces';
-import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView';
+import { IAuthenticationService, AuthenticationServiceIPCDescriptor } from '@services/auth/interface';
+import { IGitService, GitServiceIPCDescriptor } from '@services/git/interface';
+import { IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
+import { INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
+import { IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/preferences/interface';
+import { ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences/interface';
+import { IUpdaterService, UpdaterServiceIPCDescriptor } from '@services/updater/interface';
+import { IViewService, ViewServiceIPCDescriptor } from '@services/view/interface';
+import { IWikiService, WikiServiceIPCDescriptor } from '@services/wiki/interface';
+import { IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
+import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows/interface';
+import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
+import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
 const authService = createProxy(AuthenticationServiceIPCDescriptor);
 const gitService = createProxy(GitServiceIPCDescriptor);

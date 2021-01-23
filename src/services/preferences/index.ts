@@ -1,4 +1,3 @@
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
 import { app, App, remote, ipcMain, dialog } from 'electron';
@@ -7,13 +6,14 @@ import semver from 'semver';
 import settings from 'electron-settings';
 
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IWindowService } from '@services/windows';
-import type { IWorkspaceViewService } from '@services/workspacesView';
-import type { INotificationService } from '@services/notifications';
+import type { IWindowService } from '@services/windows/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { INotificationService } from '@services/notifications/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { PreferenceChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import i18n from '@services/libs/i18n';
+import { IPreferences, IPreferenceService } from './interface';
 
 const { lazyInject } = getDecorators(container);
 
@@ -37,7 +37,7 @@ const getDefaultPauseNotificationsByScheduleTo = (): string => {
   return d.toString();
 };
 
-const defaultPreferences = {
+const defaultPreferences: IPreferences = {
   allowNodeInJsCodeInjection: false,
   allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
   askForDownloadPath: true,
@@ -81,28 +81,9 @@ const defaultPreferences = {
   unreadCountBadge: true,
   useHardwareAcceleration: true,
 };
-export type IPreferences = typeof defaultPreferences;
 
-/**
- * Getter and setter for app business logic preferences.
- */
-export interface IPreferenceService {
-  set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void>;
-  getPreferences: () => IPreferences;
-  get<K extends keyof IPreferences>(key: K): IPreferences[K];
-  reset(): Promise<void>;
-}
-export const PreferenceServiceIPCDescriptor = {
-  channel: PreferenceChannel.name,
-  properties: {
-    set: ProxyPropertyType.Function,
-    getPreferences: ProxyPropertyType.Function,
-    get: ProxyPropertyType.Function,
-    reset: ProxyPropertyType.Function,
-  },
-};
 @injectable()
-export class Preference {
+export class Preference implements IPreferenceService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.Notification) private readonly notificationService!: INotificationService;
   @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
@@ -224,7 +205,7 @@ export class Preference {
    * Batch update all preferences
    */
   private async setPreferences(newPreferences: IPreferences): Promise<void> {
-    await settings.set(`preferences.${this.version}`, newPreferences);
+    await settings.set(`preferences.${this.version}`, { ...newPreferences });
   }
 
   /**

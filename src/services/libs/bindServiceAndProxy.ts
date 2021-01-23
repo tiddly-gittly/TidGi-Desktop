@@ -1,21 +1,35 @@
 import { registerProxy } from '@/helpers/electron-ipc-proxy/server';
 
-import { IAuthenticationService, Authentication, AuthenticationServiceIPCDescriptor } from '@services/auth';
-import { IGitService, Git, GitServiceIPCDescriptor } from '@services/git';
-import { IMenuService, MenuService, MenuServiceIPCDescriptor } from '@services/menu';
-import { INotificationService, Notification, NotificationServiceIPCDescriptor } from '@services/notifications';
-import { IPreferenceService, Preference, PreferenceServiceIPCDescriptor } from '@services/preferences';
-import { ISystemPreferenceService, SystemPreference, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences';
-import { IUpdaterService, Updater, UpdaterServiceIPCDescriptor } from '@services/updater';
-import { IViewService, View, ViewServiceIPCDescriptor } from '@services/view';
-import { IWikiService, Wiki, WikiServiceIPCDescriptor } from '@services/wiki';
-import { IWikiGitWorkspaceService, WikiGitWorkspace, WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace';
-import { IWindowService, Window, WindowServiceIPCDescriptor } from '@services/windows';
-import { IWorkspaceService, Workspace, WorkspaceServiceIPCDescriptor } from '@services/workspaces';
-import { IWorkspaceViewService, WorkspaceView, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView';
-
 import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';
+
+import { Authentication } from '@services/auth';
+import { Git } from '@services/git';
+import { MenuService } from '@services/menu';
+import { Notification } from '@services/notifications';
+import { Preference } from '@services/preferences';
+import { SystemPreference } from '@services/systemPreferences';
+import { Updater } from '@services/updater';
+import { View } from '@services/view';
+import { Wiki } from '@services/wiki';
+import { WikiGitWorkspace } from '@services/wikiGitWorkspace';
+import { Window } from '@services/windows';
+import { Workspace } from '@services/workspaces';
+import { WorkspaceView } from '@services/workspacesView';
+
+import { IAuthenticationService, AuthenticationServiceIPCDescriptor } from '@services/auth/interface';
+import { IGitService, GitServiceIPCDescriptor } from '@services/git/interface';
+import { IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
+import { INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
+import { IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/preferences/interface';
+import { ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences/interface';
+import { IUpdaterService, UpdaterServiceIPCDescriptor } from '@services/updater/interface';
+import { IViewService, ViewServiceIPCDescriptor } from '@services/view/interface';
+import { IWikiService, WikiServiceIPCDescriptor } from '@services/wiki/interface';
+import { IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
+import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows/interface';
+import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
+import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
 container.bind<Authentication>(serviceIdentifier.Authentication).to(Authentication).inSingletonScope();
 container.bind<Git>(serviceIdentifier.Git).to(Git).inSingletonScope();

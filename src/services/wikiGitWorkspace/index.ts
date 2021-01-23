@@ -1,38 +1,23 @@
 import path from 'path';
-import { ipcMain, dialog } from 'electron';
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
+import { dialog } from 'electron';
 import { injectable, inject } from 'inversify';
 
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IWikiService } from '@services/wiki';
-import type { IGitService } from '@services/git';
-import type { IWorkspaceService } from '@services/workspaces';
-import type { IWorkspaceViewService } from '@services/workspacesView';
-import type { IWindowService } from '@services/windows';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IGitService } from '@services/git/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import type { IAuthenticationService } from '@services/auth';
+import type { IAuthenticationService } from '@services/auth/interface';
 
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
-import { IUserInfo } from '../types';
-import { WikiGitWorkspaceChannel } from '@/constants/channels';
+import { IUserInfo } from '@services/types';
+import { IWikiGitWorkspaceService } from './interface';
 
-/**
- * Deal with operations that needs to create a wiki and a git repo at once in a workspace
- */
-export interface IWikiGitWorkspaceService {
-  initWikiGit: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo, isMainWiki: boolean) => Promise<string>;
-  removeWorkspace: (id: string) => Promise<void>;
-}
-export const WikiGitWorkspaceServiceIPCDescriptor = {
-  channel: WikiGitWorkspaceChannel.name,
-  properties: {
-    initWikiGit: ProxyPropertyType.Function,
-    removeWorkspace: ProxyPropertyType.Function,
-  },
-};
 @injectable()
-export class WikiGitWorkspace {
+export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   constructor(
     @inject(serviceIdentifier.Wiki) private readonly wikiService: IWikiService,
     @inject(serviceIdentifier.Git) private readonly gitService: IGitService,

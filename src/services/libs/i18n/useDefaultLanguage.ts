@@ -1,7 +1,7 @@
 import i18n from 'i18next';
 
 import { container } from '@services/container';
-import type { IPreferenceService } from '@services/preferences';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 
 export default async function changeToDefaultLanguage(i18next: typeof i18n): Promise<void> {

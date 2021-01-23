@@ -2,7 +2,7 @@ import path from 'path';
 import fs from 'fs-extra';
 import { take, drop, compact } from 'lodash';
 import { logger } from '@services/libs/log';
-import { IWorkspace } from '@services/types';
+import { IWorkspace } from '@services/workspaces/interface';
 
 const getMatchPart = (tagToMatch: string): string => `[!is[system]kin::to[${tagToMatch}]`;
 const getPathPart = (folderToPlace: string): string => `addprefix[/]addprefix[${folderToPlace}]addprefix[/]addprefix[subwiki]]`;
