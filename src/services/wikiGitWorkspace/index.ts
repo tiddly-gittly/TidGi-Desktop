@@ -14,7 +14,7 @@ import type { IAuthenticationService } from '@services/auth';
 
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
-import { IUserInfo } from './types';
+import { IUserInfo } from '../types';
 import { WikiGitWorkspaceChannel } from '@/constants/channels';
 
 /**
