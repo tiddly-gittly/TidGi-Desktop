@@ -1,4 +1,4 @@
-import { BrowserView, BrowserWindow, WebContents, app, session, dialog, ipcMain } from 'electron';
+import { BrowserView, BrowserWindow, WebContents, app, session, dialog, ipcMain, WebPreferences } from 'electron';
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
 
@@ -278,7 +278,8 @@ export class View implements IViewService {
       sessionOfView.setSpellCheckerLanguages(spellcheckLanguages);
     }
     const browserViewMetaData: IBrowserViewMetaData = { workspaceID: workspace.id };
-    const sharedWebPreferences = {
+    const sharedWebPreferences: WebPreferences = {
+      devTools: true,
       spellcheck,
       nativeWindowOpen: true,
       nodeIntegration: false,

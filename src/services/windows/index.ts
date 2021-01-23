@@ -207,6 +207,7 @@ export class Window implements IWindowService {
       fullscreenable: false,
       autoHideMenuBar: false,
       webPreferences: {
+        devTools: true,
         nodeIntegration: false,
         enableRemoteModule: true,
         webSecurity: !isDevelopment,
