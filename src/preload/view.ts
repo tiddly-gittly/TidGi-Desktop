@@ -1,7 +1,7 @@
 import { ipcRenderer, remote, webFrame } from 'electron';
 import { enable as enableDarkMode, disable as disableDarkMode } from 'darkreader';
-import ContextMenuBuilder from '../libs/context-menu-builder';
-import i18next from '../libs/i18n';
+import ContextMenuBuilder from '@services/libs/context-menu-builder';
+import i18next from '@services/libs/i18n';
 import './wiki-operation';
 import './wiki-git-api';
 
