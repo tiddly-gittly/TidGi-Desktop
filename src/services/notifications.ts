@@ -1,7 +1,9 @@
+import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable, inject } from 'inversify';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IPreferenceService } from '@services/preferences';
 import type { IViewService } from '@services/view';
+import { NotificationChannel } from '@/constants/channels';
 
 export interface IPauseNotificationsInfo {
   reason: string;
@@ -16,6 +18,13 @@ export interface INotificationService {
   updatePauseNotificationsInfo(): void;
   getPauseNotificationsInfo: () => IPauseNotificationsInfo | undefined;
 }
+export const NotificationServiceIPCDescriptor = {
+  channel: NotificationChannel.name,
+  properties: {
+    updatePauseNotificationsInfo: ProxyPropertyType.Function,
+    getPauseNotificationsInfo: ProxyPropertyType.Function,
+  },
+};
 @injectable()
 export class Notification implements INotificationService {
   constructor(

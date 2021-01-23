@@ -1,4 +1,5 @@
 import { BrowserView, BrowserWindow, WebContents, app, session, dialog, ipcMain, WebPreferences } from 'electron';
+import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
 
@@ -18,7 +19,7 @@ import { extractDomain } from '@services/libs/url';
 import { IWorkspace } from '@services/types';
 import setupViewEventHandlers from './setupViewEventHandlers';
 import getFromRenderer from '@services/libs/getFromRenderer';
-import { MetaDataChannel } from '@/constants/channels';
+import { MetaDataChannel, ViewChannel } from '@/constants/channels';
 import { container } from '@services/container';
 
 const { lazyInject } = getDecorators(container);
@@ -41,6 +42,24 @@ export interface IViewService {
   getActiveBrowserView: () => BrowserView | undefined;
   realignActiveView: (browserWindow: BrowserWindow, activeId: string) => void;
 }
+export const ViewServiceIPCDescriptor = {
+  channel: ViewChannel.name,
+  properties: {
+    addView: ProxyPropertyType.Function,
+    getView: ProxyPropertyType.Function,
+    forEachView: ProxyPropertyType.Function,
+    setActiveView: ProxyPropertyType.Function,
+    removeView: ProxyPropertyType.Function,
+    setViewsAudioPref: ProxyPropertyType.Function,
+    setViewsNotificationsPref: ProxyPropertyType.Function,
+    hibernateView: ProxyPropertyType.Function,
+    reloadViewsDarkReader: ProxyPropertyType.Function,
+    reloadViewsWebContentsIfDidFailLoad: ProxyPropertyType.Function,
+    reloadViewsWebContents: ProxyPropertyType.Function,
+    getActiveBrowserView: ProxyPropertyType.Function,
+    realignActiveView: ProxyPropertyType.Function,
+  },
+};
 @injectable()
 export class View implements IViewService {
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;

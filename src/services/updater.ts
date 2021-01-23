@@ -1,4 +1,5 @@
 import { app, dialog, ipcMain, shell } from 'electron';
+import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable, inject } from 'inversify';
 
 import { autoUpdater, UpdateInfo } from 'electron-updater';
@@ -7,9 +8,14 @@ import type { ProgressInfo } from 'builder-util-runtime';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows';
 import { WindowNames } from '@services/windows/WindowProperties';
+import { UpdaterChannel } from '@/constants/channels';
 
 // TODO: use electron-forge 's auto update solution， maybe see https://headspring.com/2020/09/24/building-signing-and-publishing-electron-forge-applications-for-windows/
 export interface IUpdaterService {}
+export const UpdaterServiceIPCDescriptor = {
+  channel: UpdaterChannel.name,
+  properties: {},
+};
 @injectable()
 export class Updater implements IUpdaterService {
   constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {}

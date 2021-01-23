@@ -1,3 +1,4 @@
+import 'reflect-metadata';
 import { contextBridge, ipcRenderer } from 'electron';
 
 import './common/i18n';

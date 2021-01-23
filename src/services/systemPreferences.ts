@@ -1,4 +1,6 @@
+import { SystemPreferenceChannel } from '@/constants/channels';
 import { app, ipcMain } from 'electron';
+import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable } from 'inversify';
 
 interface IUsedElectionSettings {
@@ -14,6 +16,15 @@ export interface ISystemPreferenceService {
   getSystemPreferences(): IUsedElectionSettings;
   setSystemPreference<K extends keyof IUsedElectionSettings>(key: K, value: IUsedElectionSettings[K]): void;
 }
+export const SystemPreferenceServiceIPCDescriptor = {
+  channel: SystemPreferenceChannel.name,
+  properties: {
+    set: ProxyPropertyType.Function,
+    getPreferences: ProxyPropertyType.Function,
+    get: ProxyPropertyType.Function,
+    reset: ProxyPropertyType.Function,
+  },
+};
 @injectable()
 export class SystemPreference implements ISystemPreferenceService {
   constructor() {

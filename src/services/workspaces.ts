@@ -1,4 +1,5 @@
 /* eslint-disable unicorn/no-null */
+import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
 import { app, ipcMain } from 'electron';
@@ -21,6 +22,7 @@ import type { IWindowService } from '@services/windows';
 import type { IMenuService } from '@services/menu';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace, IWorkspaceMetaData } from '@services/types';
+import { WorkspaceChannel } from '@/constants/channels';
 
 const { lazyInject } = getDecorators(container);
 
@@ -49,6 +51,31 @@ export interface IWorkspaceService {
   getActiveWorkspace: () => IWorkspace | undefined;
   getFirstWorkspace: () => IWorkspace | undefined;
 }
+export const WorkspaceServiceIPCDescriptor = {
+  channel: WorkspaceChannel.name,
+  properties: {
+    getWorkspacesAsList: ProxyPropertyType.Function,
+    get: ProxyPropertyType.Function,
+    create: ProxyPropertyType.Function,
+    getWorkspaces: ProxyPropertyType.Function,
+    countWorkspaces: ProxyPropertyType.Function,
+    getMetaData: ProxyPropertyType.Function,
+    getAllMetaData: ProxyPropertyType.Function,
+    updateMetaData: ProxyPropertyType.Function,
+    set: ProxyPropertyType.Function,
+    update: ProxyPropertyType.Function,
+    setWorkspaces: ProxyPropertyType.Function,
+    setActiveWorkspace: ProxyPropertyType.Function,
+    setWorkspacePicture: ProxyPropertyType.Function,
+    removeWorkspacePicture: ProxyPropertyType.Function,
+    remove: ProxyPropertyType.Function,
+    getByName: ProxyPropertyType.Function,
+    getPreviousWorkspace: ProxyPropertyType.Function,
+    getNextWorkspace: ProxyPropertyType.Function,
+    getActiveWorkspace: ProxyPropertyType.Function,
+    getFirstWorkspace: ProxyPropertyType.Function,
+  },
+};
 @injectable()
 export class Workspace implements IWorkspaceService {
   /**

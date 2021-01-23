@@ -1,7 +1,9 @@
 /* eslint-disable unicorn/no-null */
+import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable } from 'inversify';
 import settings from 'electron-settings';
 import { IUserInfo as IAuthingUserInfo } from '@services/types';
+import { AuthenticationChannel } from '@/constants/channels';
 
 const defaultUserInfos = {
   userName: 'TiddlyGit User',
@@ -17,6 +19,14 @@ export interface IAuthenticationService {
   get<K extends keyof IUserInfos>(key: K): IUserInfos[K] | undefined;
   reset(): Promise<void>;
 }
+export const AuthenticationServiceIPCDescriptor = {
+  channel: AuthenticationChannel.name,
+  properties: {
+    getUserInfos: ProxyPropertyType.Function,
+    get: ProxyPropertyType.Function,
+    reset: ProxyPropertyType.Function,
+  },
+};
 @injectable()
 export class Authentication implements IAuthenticationService {
   cachedUserInfo: IUserInfos;

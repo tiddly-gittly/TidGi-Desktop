@@ -4,36 +4,35 @@
  */
 import { contextBridge } from 'electron';
 
-import serviceIdentifier from '@services/serviceIdentifier';
-import { IAuthenticationService, Authentication } from '@services/auth';
-import { IGitService, Git } from '@services/git';
-import { IMenuService, MenuService } from '@services/menu';
-import { INotificationService, Notification } from '@services/notifications';
-import { IPreferenceService, Preference } from '@services/preferences';
-import { ISystemPreferenceService, SystemPreference } from '@services/systemPreferences';
-import { IUpdaterService, Updater } from '@services/updater';
-import { IViewService, View } from '@services/view';
-import { IWikiService, Wiki } from '@services/wiki';
-import { IWikiGitWorkspaceService, WikiGitWorkspace } from '@services/wikiGitWorkspace';
-import { IWindowService, Window } from '@services/windows';
-import { IWorkspaceService, Workspace } from '@services/workspaces';
-import { IWorkspaceViewService, WorkspaceView } from '@services/workspacesView';
+import { createProxy } from '@/helpers/electron-ipc-proxy/client';
 
-import { container } from '@services/container';
+import { IAuthenticationService, AuthenticationServiceIPCDescriptor } from '@services/auth';
+import { IGitService, GitServiceIPCDescriptor } from '@services/git';
+import { IMenuService, MenuServiceIPCDescriptor } from '@services/menu';
+import { INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications';
+import { IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/preferences';
+import { ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences';
+import { IUpdaterService, UpdaterServiceIPCDescriptor } from '@services/updater';
+import { IViewService, ViewServiceIPCDescriptor } from '@services/view';
+import { IWikiService, WikiServiceIPCDescriptor } from '@services/wiki';
+import { IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace';
+import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows';
+import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces';
+import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView';
 
-const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
-const gitService = container.get<IGitService>(serviceIdentifier.Git);
-const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
-const notificationService = container.get<INotificationService>(serviceIdentifier.Notification);
-const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-const systemPreferenceService = container.get<ISystemPreferenceService>(serviceIdentifier.SystemPreference);
-const viewService = container.get<IViewService>(serviceIdentifier.View);
-const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater);
-const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);
-const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+const authService = createProxy(AuthenticationServiceIPCDescriptor);
+const gitService = createProxy(GitServiceIPCDescriptor);
+const menuService = createProxy(MenuServiceIPCDescriptor);
+const notificationService = createProxy(NotificationServiceIPCDescriptor);
+const preferenceService = createProxy(PreferenceServiceIPCDescriptor);
+const systemPreferenceService = createProxy(SystemPreferenceServiceIPCDescriptor);
+const viewService = createProxy(ViewServiceIPCDescriptor);
+const updaterService = createProxy(UpdaterServiceIPCDescriptor);
+const wikiService = createProxy(WikiServiceIPCDescriptor);
+const wikiGitWorkspaceService = createProxy(WikiGitWorkspaceServiceIPCDescriptor);
+const windowService = createProxy(WindowServiceIPCDescriptor);
+const workspaceService = createProxy(WorkspaceServiceIPCDescriptor);
+const workspaceViewService = createProxy(WorkspaceViewServiceIPCDescriptor);
 
 contextBridge.exposeInMainWorld('service', {
   auth: authService,

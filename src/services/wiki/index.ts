@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
+import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable, inject } from 'inversify';
 import { delay } from 'bluebird';
 import fs from 'fs-extra';
@@ -24,6 +25,7 @@ import i18n from '@services/libs/i18n';
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@services/constants/paths';
 import { updateSubWikiPluginContent, getSubWikiPluginContent } from './update-plugin-content';
 import { container } from '@services/container';
+import { WikiChannel } from '@/constants/channels';
 
 const { lazyInject } = getDecorators(container);
 
@@ -55,6 +57,27 @@ export interface IWikiService {
   stopWatchWiki(wikiRepoPath: string): Promise<void>;
   stopWatchAllWiki(): Promise<void>;
 }
+export const WikiServiceIPCDescriptor = {
+  channel: WikiChannel.name,
+  properties: {
+    updateSubWikiPluginContent: ProxyPropertyType.Function,
+    startWiki: ProxyPropertyType.Function,
+    stopWiki: ProxyPropertyType.Function,
+    stopAllWiki: ProxyPropertyType.Function,
+    linkWiki: ProxyPropertyType.Function,
+    createWiki: ProxyPropertyType.Function,
+    createSubWiki: ProxyPropertyType.Function,
+    removeWiki: ProxyPropertyType.Function,
+    ensureWikiExist: ProxyPropertyType.Function,
+    cloneWiki: ProxyPropertyType.Function,
+    cloneSubWiki: ProxyPropertyType.Function,
+    wikiStartup: ProxyPropertyType.Function,
+    startNodeJSWiki: ProxyPropertyType.Function,
+    watchWiki: ProxyPropertyType.Function,
+    stopWatchWiki: ProxyPropertyType.Function,
+    stopWatchAllWiki: ProxyPropertyType.Function,
+  },
+};
 @injectable()
 export class Wiki {
   @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;

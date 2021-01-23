@@ -1,6 +1,8 @@
 import { Menu, MenuItemConstructorOptions, shell } from 'electron';
 import { debounce, take, drop } from 'lodash';
+import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable } from 'inversify';
+import { MenuChannel } from '@/constants/channels';
 
 /**
  * MenuItemConstructorOptions that allows properties like "label", "enabled", "submenu" to be () => xxx
@@ -19,8 +21,15 @@ export interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstru
  */
 export interface IMenuService {
   buildMenu(): void;
-  insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator = false): void;
+  insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator?: boolean): void;
 }
+export const MenuServiceIPCDescriptor = {
+  channel: MenuChannel.name,
+  properties: {
+    buildMenu: ProxyPropertyType.Function,
+    insertMenu: ProxyPropertyType.Function,
+  },
+};
 @injectable()
 export class MenuService implements IMenuService {
   private readonly menuTemplate: DeferredMenuItemConstructorOptions[];

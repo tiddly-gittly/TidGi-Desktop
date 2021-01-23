@@ -1,3 +1,4 @@
+import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
 import { app, App, remote, ipcMain, dialog } from 'electron';
@@ -91,6 +92,15 @@ export interface IPreferenceService {
   get<K extends keyof IPreferences>(key: K): IPreferences[K];
   reset(): Promise<void>;
 }
+export const PreferenceServiceIPCDescriptor = {
+  channel: PreferenceChannel.name,
+  properties: {
+    set: ProxyPropertyType.Function,
+    getPreferences: ProxyPropertyType.Function,
+    get: ProxyPropertyType.Function,
+    reset: ProxyPropertyType.Function,
+  },
+};
 @injectable()
 export class Preference {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;

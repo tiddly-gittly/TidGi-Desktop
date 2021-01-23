@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { BrowserWindow, ipcMain, dialog, app, App, remote, clipboard, BrowserWindowConstructorOptions } from 'electron';
 import isDevelopment from 'electron-is-dev';
+import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
@@ -38,6 +39,22 @@ export interface IWindowService {
   reload(windowName: WindowNames): void;
   showMessageBox(message: Electron.MessageBoxOptions['message'], type?: Electron.MessageBoxOptions['type']): void;
 }
+export const WindowServiceIPCDescriptor = {
+  channel: WindowChannel.name,
+  properties: {
+    get: ProxyPropertyType.Function,
+    open: ProxyPropertyType.Function,
+    setWindowMeta: ProxyPropertyType.Function,
+    updateWindowMeta: ProxyPropertyType.Function,
+    getWindowMeta: ProxyPropertyType.Function,
+    sendToAllWindows: ProxyPropertyType.Function,
+    goHome: ProxyPropertyType.Function,
+    goBack: ProxyPropertyType.Function,
+    goForward: ProxyPropertyType.Function,
+    reload: ProxyPropertyType.Function,
+    showMessageBox: ProxyPropertyType.Function,
+  },
+};
 @injectable()
 export class Window implements IWindowService {
   private windows = {} as Partial<Record<WindowNames, BrowserWindow | undefined>>;

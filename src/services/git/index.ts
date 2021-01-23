@@ -1,4 +1,5 @@
 import { ipcMain } from 'electron';
+import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { injectable, inject } from 'inversify';
 import { truncate, debounce } from 'lodash';
 import { GitProcess } from 'dugite';
@@ -12,6 +13,7 @@ import type { IPreferenceService } from '@services/preferences';
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { IUserInfo } from '@services/types';
+import { GitChannel } from '@/constants/channels';
 
 /**
  * System Preferences are not stored in storage but stored in macOS Preferences.
@@ -24,6 +26,16 @@ export interface IGitService {
   commitAndSync(wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo): Promise<void>;
   clone(githubRepoUrl: string, repoFolderPath: string, userInfo: IUserInfo): Promise<void>;
 }
+export const GitServiceIPCDescriptor = {
+  channel: GitChannel.name,
+  properties: {
+    debounceCommitAndSync: ProxyPropertyType.Function,
+    updateGitInfoTiddler: ProxyPropertyType.Function,
+    initWikiGit: ProxyPropertyType.Function,
+    commitAndSync: ProxyPropertyType.Function,
+    clone: ProxyPropertyType.Function,
+  },
+};
 @injectable()
 export class Git implements IGitService {
   disableSyncOnDevelopment = true;
