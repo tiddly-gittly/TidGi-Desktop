@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/ban-types */
 /**
  * Provide API from main services to GUI (for example, preference window), and tiddlywiki
  * This file should be required by BrowserView's preload script to work
  */
-import { contextBridge } from 'electron';
+import { Asyncify, ConditionalKeys } from 'type-fest';
 
 import { createProxy } from '@/helpers/electron-ipc-proxy/client';
 
@@ -20,52 +21,24 @@ import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows/in
 import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
-const authService = createProxy(AuthenticationServiceIPCDescriptor);
-const gitService = createProxy(GitServiceIPCDescriptor);
-const menuService = createProxy(MenuServiceIPCDescriptor);
-const notificationService = createProxy(NotificationServiceIPCDescriptor);
-const preferenceService = createProxy(PreferenceServiceIPCDescriptor);
-const systemPreferenceService = createProxy(SystemPreferenceServiceIPCDescriptor);
-const viewService = createProxy(ViewServiceIPCDescriptor);
-const updaterService = createProxy(UpdaterServiceIPCDescriptor);
-const wikiService = createProxy(WikiServiceIPCDescriptor);
-const wikiGitWorkspaceService = createProxy(WikiGitWorkspaceServiceIPCDescriptor);
-const windowService = createProxy(WindowServiceIPCDescriptor);
-const workspaceService = createProxy(WorkspaceServiceIPCDescriptor);
-const workspaceViewService = createProxy(WorkspaceViewServiceIPCDescriptor);
+/**
+ * To call services that is located in main process, from the renderer process, we use IPC.invoke, so all method should now promisify
+ * Note this type only promisify methods that return things, not methods that returns observable.
+ */
+type AsyncifyProxy<OriginalProxy, K extends ConditionalKeys<OriginalProxy, Function> = ConditionalKeys<OriginalProxy, Function>> = {
+  [P in K]: Asyncify<OriginalProxy[P]>;
+};
 
-contextBridge.exposeInMainWorld('service', {
-  auth: authService,
-  git: gitService,
-  menu: menuService,
-  notification: notificationService,
-  preference: preferenceService,
-  systemPreference: systemPreferenceService,
-  updater: updaterService,
-  view: viewService,
-  wiki: wikiService,
-  wikiGitWorkspace: wikiGitWorkspaceService,
-  window: windowService,
-  workspace: workspaceService,
-  workspaceView: workspaceViewService,
-});
-
-declare global {
-  interface Window {
-    service: {
-      auth: IAuthenticationService;
-      git: IGitService;
-      menu: IMenuService;
-      notification: INotificationService;
-      preference: IPreferenceService;
-      systemPreference: ISystemPreferenceService;
-      updater: IUpdaterService;
-      view: IViewService;
-      wiki: IWikiService;
-      wikiGitWorkspace: IWikiGitWorkspaceService;
-      window: IWindowService;
-      workspace: IWorkspaceService;
-      workspaceView: IWorkspaceViewService;
-    };
-  }
-}
+export const auth = createProxy<AsyncifyProxy<IAuthenticationService>>(AuthenticationServiceIPCDescriptor);
+export const git = createProxy<AsyncifyProxy<IGitService>>(GitServiceIPCDescriptor);
+export const menu = createProxy<AsyncifyProxy<IMenuService>>(MenuServiceIPCDescriptor);
+export const notification = createProxy<AsyncifyProxy<INotificationService>>(NotificationServiceIPCDescriptor);
+export const preference = createProxy<AsyncifyProxy<IPreferenceService>>(PreferenceServiceIPCDescriptor);
+export const systemPreference = createProxy<AsyncifyProxy<ISystemPreferenceService>>(SystemPreferenceServiceIPCDescriptor);
+export const view = createProxy<AsyncifyProxy<IUpdaterService>>(ViewServiceIPCDescriptor);
+export const updater = createProxy<AsyncifyProxy<IViewService>>(UpdaterServiceIPCDescriptor);
+export const wiki = createProxy<AsyncifyProxy<IWikiService>>(WikiServiceIPCDescriptor);
+export const wikiGitWorkspace = createProxy<AsyncifyProxy<IWikiGitWorkspaceService>>(WikiGitWorkspaceServiceIPCDescriptor);
+export const window = createProxy<AsyncifyProxy<IWindowService>>(WindowServiceIPCDescriptor);
+export const workspace = createProxy<AsyncifyProxy<IWorkspaceService>>(WorkspaceServiceIPCDescriptor);
+export const workspaceView = createProxy<AsyncifyProxy<IWorkspaceViewService>>(WorkspaceViewServiceIPCDescriptor);

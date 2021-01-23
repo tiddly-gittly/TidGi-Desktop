@@ -5,7 +5,7 @@ import './common/i18n';
 import './common/require-nodejs';
 import './common/simple-context-menu';
 import './common/authing-postmessage';
-import './common/services';
+import * as service from './common/services';
 import { MetaDataChannel } from '@/constants/channels';
 import { WindowNames, WindowMeta, IPossibleWindowMeta } from '@services/windows/WindowProperties';
 
@@ -19,8 +19,11 @@ ipcRenderer.on(MetaDataChannel.getViewMetaData, (event) => {
   event.returnValue = browserViewMetaData;
 });
 
+contextBridge.exposeInMainWorld('service', service);
+
 declare global {
   interface Window {
+    service: typeof service;
     meta: IPossibleWindowMeta;
   }
 }

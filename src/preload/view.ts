@@ -4,12 +4,13 @@ import ContextMenuBuilder from '@services/libs/context-menu-builder';
 import i18next from '@services/libs/i18n';
 import './wiki-operation';
 import './wiki-git-api';
+import { preference } from './common/services';
 
 const { MenuItem, shell } = remote;
 // @ts-expect-error ts-migrate(2322) FIXME: Type '{}' is not assignable to type 'Global & type... Remove this comment to see the full error message
 window.global = {};
 let handled = false;
-const handleLoaded = (event: string): void => {
+const handleLoaded = async (event: string): Promise<void> => {
   if (handled) {
     return;
   }
@@ -17,9 +18,9 @@ const handleLoaded = (event: string): void => {
   console.log(`Preload script is loading on ${event}...`);
   const loadDarkReader = async (): Promise<void> => {
     const shouldUseDarkColor = (await ipcRenderer.invoke('get-should-use-dark-colors')) as boolean;
-    const darkReader = (await ipcRenderer.invoke('get-preference', 'darkReader')) as boolean;
+    const darkReader = (await preference.get('darkReader')) as boolean;
     if (shouldUseDarkColor && darkReader) {
-      const { darkReaderBrightness, darkReaderContrast, darkReaderGrayscale, darkReaderSepia } = ipcRenderer.invoke('get-preferences');
+      const { darkReaderBrightness, darkReaderContrast, darkReaderGrayscale, darkReaderSepia } = await preference.getPreferences();
       enableDarkMode({
         brightness: darkReaderBrightness,
         contrast: darkReaderContrast,
@@ -30,17 +31,15 @@ const handleLoaded = (event: string): void => {
       disableDarkMode();
     }
   };
-  loadDarkReader();
   ipcRenderer.on('reload-dark-reader', () => {
-    loadDarkReader();
+    void loadDarkReader();
   });
-  const jsCodeInjection = ipcRenderer.invoke('get-preference', 'jsCodeInjection');
-  const allowNodeInJsCodeInjection = ipcRenderer.invoke('get-preference', 'allowNodeInJsCodeInjection');
-  const cssCodeInjection = ipcRenderer.invoke('get-preference', 'cssCodeInjection');
-  if (jsCodeInjection && jsCodeInjection.trim().length > 0) {
+  await loadDarkReader();
+  const { jsCodeInjection, allowNodeInJsCodeInjection, cssCodeInjection } = await preference.getPreferences();
+  if (typeof jsCodeInjection === 'string' && jsCodeInjection.trim().length > 0) {
     if (allowNodeInJsCodeInjection) {
       try {
-        // eslint-disable-next-line no-new-func
+        // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
         new Function('require', `"use strict";${jsCodeInjection}`)(require);
       } catch (error) {
         /* eslint-disable no-console */
@@ -59,7 +58,7 @@ const handleLoaded = (event: string): void => {
       }
     }
   }
-  if (cssCodeInjection && cssCodeInjection.trim().length > 0) {
+  if (typeof cssCodeInjection === 'string' && cssCodeInjection.trim().length > 0) {
     try {
       const node = document.createElement('style');
       node.innerHTML = cssCodeInjection;
@@ -205,7 +204,7 @@ window.addEventListener('message', (e) => {
 const initialShouldPauseNotifications = ipcRenderer.invoke('get-pause-notifications-info') != undefined;
 // @ts-expect-error ts-migrate(2339) FIXME: Property 'workspaceId' does not exist on type 'Web... Remove this comment to see the full error message
 const { workspaceId } = remote.getCurrentWebContents();
-webFrame.executeJavaScript(`
+void webFrame.executeJavaScript(`
 (function() {
   window.chrome = {
     runtime: {

@@ -16,6 +16,7 @@ import {
   ApplySubscribeRequest,
 } from './common';
 
+// TODO: make it to be able to use @decorator, instead of write a description json. We can defer the setup of ipc handler to make this possible.
 const registrations: { [channel: string]: ProxyServerHandler | null } = {};
 
 export function registerProxy<T>(target: T, descriptor: ProxyDescriptor, transport: IpcMain = ipcMain): VoidFunction {
