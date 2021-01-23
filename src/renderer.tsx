@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable promise/always-return */
 import React from 'react';
 import ReactDOM from 'react-dom';
@@ -5,7 +6,7 @@ import { Provider } from 'react-redux';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
 import { I18nextProvider } from 'react-i18next';
-import { WindowNames } from '@services/windows/WindowProperties';
+import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
 
 import 'typeface-roboto/index.css';
 
@@ -35,19 +36,11 @@ const DialogProxy = React.lazy(async () => await import('./components/dialog-pro
 const DialogSpellcheckLanguages = React.lazy(async () => await import('./components/dialog-spellcheck-languages'));
 const Main = React.lazy(async () => await import('./components/main'));
 
-declare global {
-  interface Window {
-    remote: any;
-    preventClosingWindow: boolean;
-  }
-}
-
 const App = (): JSX.Element => {
   switch (window.meta.windowName) {
     case WindowNames.about:
       document.title = 'About';
       return <DialogAbout />;
-      document.title = 'Add Workspace';
     case WindowNames.addWorkspace:
       document.title = 'Add Workspace';
       return <DialogAddWorkspace />;
@@ -88,38 +81,39 @@ const App = (): JSX.Element => {
 const runApp = (): void => {
   Promise.resolve()
     .then(() => {
-      window.remote.webFrame.setVisualZoomLevelLimits(1, 1);
+      window.electron.webFrame.setVisualZoomLevelLimits(1, 1);
       if (window.meta.windowName === WindowNames.editWorkspace) {
+        const { workspaceID } = window.meta as WindowMeta[WindowNames.editWorkspace];
         store.dispatch(initDialogEditWorkspace());
         const { workspaces } = store.getState();
         const workspaceList = Object.values(workspaces);
-        const editWorkspaceId = window.remote.getGlobal('editWorkspaceId');
-        const workspace = workspaces[editWorkspaceId];
+        const workspace = workspaces[workspaceID];
         workspaceList.some((item, index) => {
-          // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
-          if (item.id === editWorkspaceId) {
+          if (item.id === workspaceID) {
             workspace.order = index;
             return true;
           }
           return false;
         });
         document.title = workspace.name ? `Edit Workspace ${workspace.order + 1} "${workspace.name}"` : `Edit Workspace ${workspace.order + 1}`;
-      } else if (window.meta.windowName === 'code-injection') {
+      } else if (window.meta.windowName === WindowNames.codeInjection) {
         store.dispatch(initDialogCodeInjection());
-        const codeInjectionType = window.remote.getGlobal('codeInjectionType');
+        const { codeInjectionType } = window.meta as WindowMeta[WindowNames.codeInjection];
+        if (!codeInjectionType) throw new Error(`codeInjectionType is undefined when startup renderer.tsx`);
         document.title = `Edit ${codeInjectionType.toUpperCase()} Code Injection`;
-      } else if (window.meta.windowName === 'custom-user-agent') {
+      } else if (window.meta.windowName === WindowNames.userAgent) {
         store.dispatch(initDialogCustomUserAgent());
         document.title = 'Edit Custom User Agent';
-      } else if (window.meta.windowName === 'proxy') {
+      } else if (window.meta.windowName === WindowNames.proxy) {
         store.dispatch(initDialogProxy());
         document.title = 'Proxy Settings';
-      } else if (window.meta.windowName === 'spellcheck-languages') {
+      } else if (window.meta.windowName === WindowNames.spellcheck) {
         store.dispatch(initDialogSpellcheckLanguages());
         document.title = 'Preferred Spell Checking Languages';
       }
 
-      if (window.meta.windowName !== 'main' && window.meta.windowName !== 'menubar') {
+      // FIXME: handle && window.meta.windowName !== 'menubar' here
+      if (window.meta.windowName !== WindowNames.main) {
         document.addEventListener('keydown', (event) => {
           if (event.key === 'Escape') {
             if (window.preventClosingWindow) {

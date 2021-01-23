@@ -104,6 +104,9 @@ export interface WindowMeta extends Record<WindowNames, Record<string, unknown> 
   [WindowNames.openUrlWith]: { incomingUrl?: string };
   [WindowNames.main]: { forceClose?: boolean };
 }
+export type IPossibleWindowMeta = {
+  windowName: WindowNames;
+} & WindowMeta[WindowNames];
 
 /**
  * Similar to WindowMeta, but is for BrowserView (workspace web content) and popup window from the BrowserView

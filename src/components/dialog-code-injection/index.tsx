@@ -11,6 +11,8 @@ import 'ace-builds/src-noconflict/mode-javascript';
 import 'ace-builds/src-noconflict/theme-github';
 import 'ace-builds/src-noconflict/theme-monokai';
 
+import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
+
 import connectComponent from '../../helpers/connect-component';
 
 import { updateForm, save } from '../../state/dialog-code-injection/actions';
@@ -65,7 +67,7 @@ type CodeInjectionProps = OwnCodeInjectionProps & typeof CodeInjection.defaultPr
 
 // @ts-expect-error ts-migrate(7022) FIXME: 'CodeInjection' implicitly has type 'any' because ... Remove this comment to see the full error message
 const CodeInjection = ({ allowNodeInJsCodeInjection, classes, code, onSave, onUpdateForm, shouldUseDarkColors }: CodeInjectionProps) => {
-  const codeInjectionType = window.remote.getGlobal('codeInjectionType');
+  const { codeInjectionType } = window.meta as WindowMeta[WindowNames.codeInjection];
   return (
     <div className={classes.root}>
       <div className={classes.flexGrow}>

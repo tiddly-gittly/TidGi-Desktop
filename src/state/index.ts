@@ -42,8 +42,7 @@ const rootReducer = combineReducers({
 const configureStore = (initialState: any) => createStore(rootReducer, initialState, applyMiddleware(thunkMiddleware));
 
 // init store
-// @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
-const store = configureStore();
+const store = configureStore({});
 
 loadListeners(store);
 
