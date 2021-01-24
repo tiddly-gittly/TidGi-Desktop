@@ -9,6 +9,9 @@ export enum MainChannel {
 export enum AuthenticationChannel {
   name = 'AuthenticationChannel',
 }
+export enum ContextChannel {
+  name = 'ContextChannel',
+}
 export enum GitChannel {
   name = 'GitChannel',
 }

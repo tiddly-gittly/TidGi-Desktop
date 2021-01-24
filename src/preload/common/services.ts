@@ -8,6 +8,7 @@ import { Asyncify, ConditionalKeys } from 'type-fest';
 import { createProxy } from '@/helpers/electron-ipc-proxy/client';
 
 import { IAuthenticationService, AuthenticationServiceIPCDescriptor } from '@services/auth/interface';
+import { IContextService, ContextServiceIPCDescriptor } from '@services/constants/interface';
 import { IGitService, GitServiceIPCDescriptor } from '@services/git/interface';
 import { IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
 import { INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
@@ -30,6 +31,7 @@ type AsyncifyProxy<OriginalProxy, K extends ConditionalKeys<OriginalProxy, Funct
 };
 
 export const auth = createProxy<AsyncifyProxy<IAuthenticationService>>(AuthenticationServiceIPCDescriptor);
+export const context = createProxy<AsyncifyProxy<IContextService>>(ContextServiceIPCDescriptor);
 export const git = createProxy<AsyncifyProxy<IGitService>>(GitServiceIPCDescriptor);
 export const menu = createProxy<AsyncifyProxy<IMenuService>>(MenuServiceIPCDescriptor);
 export const notification = createProxy<AsyncifyProxy<INotificationService>>(NotificationServiceIPCDescriptor);

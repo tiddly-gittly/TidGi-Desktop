@@ -3,8 +3,9 @@ import { Menu, Tray, ipcMain, nativeImage } from 'electron';
 import windowStateKeeper from 'electron-window-state';
 import { menubar, Menubar } from 'menubar';
 import path from 'path';
+import isDevelopment from 'electron-is-dev';
 
-import { REACT_PATH, isDev as isDevelopment, buildResourcePath } from '@services/constants/paths';
+import { REACT_PATH, buildResourcePath } from '@services/constants/paths';
 
 export default async function handleAttachToMenuBar(): Promise<Menubar> {
   const menubarWindowState = windowStateKeeper({

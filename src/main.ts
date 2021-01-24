@@ -7,6 +7,7 @@ import settings from 'electron-settings';
 import { autoUpdater } from 'electron-updater';
 import unhandled from 'electron-unhandled';
 import { openNewGitHubIssue, debugInfo } from 'electron-util';
+import i18n from 'i18next';
 
 import { clearMainBindings } from '@services/libs/i18n/i18next-electron-fs-backend';
 import { buildLanguageMenu } from '@services/libs/i18n/buildLanguageMenu';
@@ -19,20 +20,30 @@ import MAILTO_URLS from '@services/constants/mailto-urls';
 import { initI18NAfterServiceReady } from '@services/libs/i18n';
 
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IAuthenticationService, Authentication } from '@services/auth';
-import { IGitService, Git } from '@services/git';
-import { IMenuService, MenuService } from '@services/menu';
+import { Authentication } from '@services/auth';
+import { Git } from '@services/git';
+import { MenuService } from '@services/menu';
 import { Notification } from '@services/notifications';
-import { IPreferenceService, Preference } from '@services/preferences';
+import { Preference } from '@services/preferences';
 import { SystemPreference } from '@services/systemPreferences';
 import { Updater } from '@services/updater';
-import { IViewService, View } from '@services/view';
-import { IWikiService, Wiki } from '@services/wiki';
+import { View } from '@services/view';
+import { Wiki } from '@services/wiki';
 import { WikiGitWorkspace } from '@services/wikiGitWorkspace';
-import { IWindowService, Window } from '@services/windows';
+import { Window } from '@services/windows';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspaceService, Workspace } from '@services/workspaces';
-import { IWorkspaceViewService, WorkspaceView } from '@services/workspacesView';
+import { Workspace } from '@services/workspaces';
+import { WorkspaceView } from '@services/workspacesView';
+
+import { IAuthenticationService } from './services/auth/interface';
+import { IGitService } from './services/git/interface';
+import { IMenuService } from './services/menu/interface';
+import { IPreferenceService } from './services/preferences/interface';
+import { IViewService } from './services/view/interface';
+import { IWikiService } from './services/wiki/interface';
+import { IWindowService } from './services/windows/interface';
+import { IWorkspaceService } from './services/workspaces/interface';
+import { IWorkspaceViewService } from './services/workspacesView/interface';
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -127,7 +138,15 @@ if (!gotTheLock) {
       });
     }
     await windowService.open(WindowNames.main);
-    const { hibernateUnusedWorkspacesAtLaunch, proxyBypassRules, proxyPacScript, proxyRules, proxyType, themeSource } = preferenceService.getPreferences();
+    const {
+      hibernateUnusedWorkspacesAtLaunch,
+      proxyBypassRules,
+      proxyPacScript,
+      proxyRules,
+      proxyType,
+      themeSource,
+      language,
+    } = preferenceService.getPreferences();
     // configure proxy for default session
     if (proxyType === 'rules') {
       await session.defaultSession.setProxy({
@@ -146,6 +165,8 @@ if (!gotTheLock) {
       windowService.sendToAllWindows(ThemeChannel.nativeThemeUpdated);
       viewService.reloadViewsDarkReader();
     });
+    // set language async
+    void i18n.changeLanguage(language);
     const workspaces = workspaceService.getWorkspaces();
     for (const workspaceID in workspaces) {
       const workspace = workspaces[workspaceID];
@@ -216,7 +237,6 @@ if (!gotTheLock) {
     buildLanguageMenu();
     menuService.buildMenu();
   };
-
 
   app.on('ready', () => {
     autoUpdater.allowPrerelease = preferenceService.get('allowPrerelease');

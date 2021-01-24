@@ -1,9 +1,13 @@
+/**
+ * Don't forget to edit ./src/preload/common/services.ts to export service to renderer process
+ */
 import { registerProxy } from '@/helpers/electron-ipc-proxy/server';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';
 
 import { Authentication } from '@services/auth';
+import { ContextService } from '@services/constants';
 import { Git } from '@services/git';
 import { MenuService } from '@services/menu';
 import { Notification } from '@services/notifications';
@@ -18,6 +22,7 @@ import { Workspace } from '@services/workspaces';
 import { WorkspaceView } from '@services/workspacesView';
 
 import { IAuthenticationService, AuthenticationServiceIPCDescriptor } from '@services/auth/interface';
+import { IContextService, ContextServiceIPCDescriptor } from '@services/constants/interface';
 import { IGitService, GitServiceIPCDescriptor } from '@services/git/interface';
 import { IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
 import { INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
@@ -31,22 +36,24 @@ import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows/in
 import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
-container.bind<Authentication>(serviceIdentifier.Authentication).to(Authentication).inSingletonScope();
-container.bind<Git>(serviceIdentifier.Git).to(Git).inSingletonScope();
-container.bind<MenuService>(serviceIdentifier.MenuService).to(MenuService).inSingletonScope();
-container.bind<Notification>(serviceIdentifier.Notification).to(Notification).inSingletonScope();
-container.bind<Preference>(serviceIdentifier.Preference).to(Preference).inSingletonScope();
-container.bind<SystemPreference>(serviceIdentifier.SystemPreference).to(SystemPreference).inSingletonScope();
-container.bind<Updater>(serviceIdentifier.Updater).to(Updater).inSingletonScope();
-container.bind<View>(serviceIdentifier.View).to(View).inSingletonScope();
-container.bind<Wiki>(serviceIdentifier.Wiki).to(Wiki).inSingletonScope();
-container.bind<WikiGitWorkspace>(serviceIdentifier.WikiGitWorkspace).to(WikiGitWorkspace).inSingletonScope();
-container.bind<Window>(serviceIdentifier.Window).to(Window).inSingletonScope();
-container.bind<Workspace>(serviceIdentifier.Workspace).to(Workspace).inSingletonScope();
-container.bind<WorkspaceView>(serviceIdentifier.WorkspaceView).to(WorkspaceView).inSingletonScope();
+container.bind<IAuthenticationService>(serviceIdentifier.Authentication).to(Authentication).inSingletonScope();
+container.bind<IContextService>(serviceIdentifier.Context).to(ContextService).inSingletonScope();
+container.bind<IGitService>(serviceIdentifier.Git).to(Git).inSingletonScope();
+container.bind<IMenuService>(serviceIdentifier.MenuService).to(MenuService).inSingletonScope();
+container.bind<INotificationService>(serviceIdentifier.Notification).to(Notification).inSingletonScope();
+container.bind<IPreferenceService>(serviceIdentifier.Preference).to(Preference).inSingletonScope();
+container.bind<ISystemPreferenceService>(serviceIdentifier.SystemPreference).to(SystemPreference).inSingletonScope();
+container.bind<IUpdaterService>(serviceIdentifier.Updater).to(Updater).inSingletonScope();
+container.bind<IViewService>(serviceIdentifier.View).to(View).inSingletonScope();
+container.bind<IWikiService>(serviceIdentifier.Wiki).to(Wiki).inSingletonScope();
+container.bind<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace).to(WikiGitWorkspace).inSingletonScope();
+container.bind<IWindowService>(serviceIdentifier.Window).to(Window).inSingletonScope();
+container.bind<IWorkspaceService>(serviceIdentifier.Workspace).to(Workspace).inSingletonScope();
+container.bind<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).to(WorkspaceView).inSingletonScope();
 
 // TODO: delay service init, call init() manually
 const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
+const contextService = container.get<IContextService>(serviceIdentifier.Context);
 const gitService = container.get<IGitService>(serviceIdentifier.Git);
 const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
 const notificationService = container.get<INotificationService>(serviceIdentifier.Notification);
@@ -61,6 +68,7 @@ const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Work
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 
 registerProxy(authService, AuthenticationServiceIPCDescriptor);
+registerProxy(contextService, ContextServiceIPCDescriptor);
 registerProxy(gitService, GitServiceIPCDescriptor);
 registerProxy(menuService, MenuServiceIPCDescriptor);
 registerProxy(notificationService, NotificationServiceIPCDescriptor);

@@ -1,6 +1,7 @@
 export default {
   Authentication: Symbol.for('Authentication'),
   Git: Symbol.for('Git'),
+  Context: Symbol.for('Context'),
   MenuService: Symbol.for('MenuService'),
   Notification: Symbol.for('Notification'),
   Preference: Symbol.for('Preference'),
