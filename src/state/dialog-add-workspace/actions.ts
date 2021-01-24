@@ -9,7 +9,7 @@ import isUrl from '../../helpers/is-url';
 import hasErrors from '../../helpers/has-errors';
 
 import { requestCreateWorkspace } from '../../senders';
-import i18n from '../../i18n';
+import i18n from 'i18next';
 
 export const setWikiCreationMessage = (message: string) => ({
   type: ADD_WORKSPACE_CREATE_WIKI_MESSAGE,

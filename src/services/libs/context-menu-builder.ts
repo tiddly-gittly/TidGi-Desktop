@@ -4,7 +4,7 @@
 // Ported from
 // https://github.com/electron-userland/electron-spellchecker/blob/master/src/context-menu-builder.js
 import { clipboard, nativeImage, shell, remote } from 'electron';
-import i18next from './i18n';
+import i18next from 'i18next';
 const { Menu, MenuItem } = remote;
 /**
  * Truncates a string to a max length of 25. Will split on a word boundary and

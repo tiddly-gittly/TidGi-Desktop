@@ -1,3 +1,5 @@
+/* eslint-disable unicorn/prevent-abbreviations */
+import { BackendModule } from 'i18next';
 import { cloneDeep, merge } from 'lodash';
 // CONFIGS
 const defaultOptions = {
@@ -68,8 +70,10 @@ const groupByArray = function (xs: any, key: any) {
 };
 // Template is found at: https://www.i18next.com/misc/creating-own-plugins#backend;
 // also took code from: https://github.com/i18next/i18next-node-fs-backend
-class Backend {
+export class Backend implements BackendModule {
   static type = 'backend';
+  type = 'backend' as const;
+
   backendOptions: any;
   i18nextOptions: any;
   mainLog: any;
@@ -339,4 +343,3 @@ class Backend {
     }
   }
 }
-export default Backend;

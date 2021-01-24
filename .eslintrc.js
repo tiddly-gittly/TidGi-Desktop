@@ -39,6 +39,7 @@ module.exports = {
           Props: true,
           i18n: true,
           i18next: true,
+          'i18next-electron-fs-backend': true,
         },
       },
     ],

@@ -1,8 +1,9 @@
 import path from 'path';
 import i18next from 'i18next';
 import Backend from 'i18next-fs-backend';
+import isDevelopment from 'electron-is-dev';
 
-import { LOCALIZATION_FOLDER, isDev } from '@services/constants/paths';
+import { LOCALIZATION_FOLDER } from '@services/constants/paths';
 import bindI18nListener from './bindI18nListener';
 import changeToDefaultLanguage from './useDefaultLanguage';
 
@@ -15,11 +16,11 @@ void i18next.use(Backend).init({
 
   debug: false,
   interpolation: { escapeValue: false },
-  saveMissing: isDev,
+  saveMissing: isDevelopment,
   saveMissingTo: 'current',
   // namespace: 'translation',
   lng: 'zh_CN',
-  fallbackLng: isDev ? false : 'en', // set to false when generating translation files locally
+  fallbackLng: isDevelopment ? false : 'en', // set to false when generating translation files locally
 });
 
 export async function initI18NAfterServiceReady(): Promise<void> {

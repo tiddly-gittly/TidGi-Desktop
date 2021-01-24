@@ -3,6 +3,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
+import i18n from 'i18next';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
 import { I18nextProvider } from 'react-i18next';
@@ -17,7 +18,7 @@ import { init as initDialogEditWorkspace } from './state/dialog-edit-workspace/a
 import { init as initDialogProxy } from './state/dialog-proxy/actions';
 import { init as initDialogSpellcheckLanguages } from './state/dialog-spellcheck-languages/actions';
 
-import i18n from './i18n';
+import { initI18N } from './i18n';
 
 import AppWrapper from './components/app-wrapper';
 
@@ -78,53 +79,49 @@ const App = (): JSX.Element => {
   }
 };
 
-const runApp = (): void => {
-  Promise.resolve()
-    .then(() => {
-      window.electron.webFrame.setVisualZoomLevelLimits(1, 1);
-      if (window.meta.windowName === WindowNames.editWorkspace) {
-        const { workspaceID } = window.meta as WindowMeta[WindowNames.editWorkspace];
-        store.dispatch(initDialogEditWorkspace());
-        const { workspaces } = store.getState();
-        const workspaceList = Object.values(workspaces);
-        const workspace = workspaces[workspaceID];
-        workspaceList.some((item, index) => {
-          if (item.id === workspaceID) {
-            workspace.order = index;
-            return true;
-          }
-          return false;
-        });
-        document.title = workspace.name ? `Edit Workspace ${workspace.order + 1} "${workspace.name}"` : `Edit Workspace ${workspace.order + 1}`;
-      } else if (window.meta.windowName === WindowNames.codeInjection) {
-        store.dispatch(initDialogCodeInjection());
-        const { codeInjectionType } = window.meta as WindowMeta[WindowNames.codeInjection];
-        if (!codeInjectionType) throw new Error(`codeInjectionType is undefined when startup renderer.tsx`);
-        document.title = `Edit ${codeInjectionType.toUpperCase()} Code Injection`;
-      } else if (window.meta.windowName === WindowNames.userAgent) {
-        store.dispatch(initDialogCustomUserAgent());
-        document.title = 'Edit Custom User Agent';
-      } else if (window.meta.windowName === WindowNames.proxy) {
-        store.dispatch(initDialogProxy());
-        document.title = 'Proxy Settings';
-      } else if (window.meta.windowName === WindowNames.spellcheck) {
-        store.dispatch(initDialogSpellcheckLanguages());
-        document.title = 'Preferred Spell Checking Languages';
+async function runApp(): Promise<void> {
+  window.electron.webFrame.setVisualZoomLevelLimits(1, 1);
+  if (window.meta.windowName === WindowNames.editWorkspace) {
+    const { workspaceID } = window.meta as WindowMeta[WindowNames.editWorkspace];
+    store.dispatch(initDialogEditWorkspace());
+    const { workspaces } = store.getState();
+    const workspaceList = Object.values(workspaces);
+    const workspace = workspaces[workspaceID];
+    workspaceList.some((item, index) => {
+      if (item.id === workspaceID) {
+        workspace.order = index;
+        return true;
       }
+      return false;
+    });
+    document.title = workspace.name ? `Edit Workspace ${workspace.order + 1} "${workspace.name}"` : `Edit Workspace ${workspace.order + 1}`;
+  } else if (window.meta.windowName === WindowNames.codeInjection) {
+    store.dispatch(initDialogCodeInjection());
+    const { codeInjectionType } = window.meta as WindowMeta[WindowNames.codeInjection];
+    if (!codeInjectionType) throw new Error(`codeInjectionType is undefined when startup renderer.tsx`);
+    document.title = `Edit ${codeInjectionType.toUpperCase()} Code Injection`;
+  } else if (window.meta.windowName === WindowNames.userAgent) {
+    store.dispatch(initDialogCustomUserAgent());
+    document.title = 'Edit Custom User Agent';
+  } else if (window.meta.windowName === WindowNames.proxy) {
+    store.dispatch(initDialogProxy());
+    document.title = 'Proxy Settings';
+  } else if (window.meta.windowName === WindowNames.spellcheck) {
+    store.dispatch(initDialogSpellcheckLanguages());
+    document.title = 'Preferred Spell Checking Languages';
+  }
 
-      // FIXME: handle && window.meta.windowName !== 'menubar' here
-      if (window.meta.windowName !== WindowNames.main) {
-        document.addEventListener('keydown', (event) => {
-          if (event.key === 'Escape') {
-            if (window.preventClosingWindow) {
-              return;
-            }
-            window.remote.closeCurrentWindow();
-          }
-        });
+  // FIXME: handle && window.meta.windowName !== 'menubar' here
+  if (window.meta.windowName !== WindowNames.main) {
+    document.addEventListener('keydown', (event) => {
+      if (event.key === 'Escape') {
+        if (window.preventClosingWindow) {
+          return;
+        }
+        window.remote.closeCurrentWindow();
       }
-    })
-    .catch(console.error);
+    });
+  }
 
   ReactDOM.render(
     <Provider store={store}>
@@ -139,6 +136,8 @@ const runApp = (): void => {
     </Provider>,
     document.querySelector('#app'),
   );
-};
 
-runApp();
+  await initI18N();
+}
+
+void runApp();
