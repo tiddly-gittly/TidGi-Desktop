@@ -2,18 +2,16 @@ import { combineReducers } from 'redux';
 
 import { DIALOG_PROXY_FORM_UPDATE, DIALOG_PROXY_INIT } from '../../constants/actions';
 
-import { getPreferences } from '../../senders';
-
 const formInitialState = {
   proxyBypassRules: '',
   proxyPacScript: '',
   proxyRules: '',
   proxyType: 'none',
 };
-const form = (state = formInitialState, action: any) => {
+const form = async (state = formInitialState, action: any) => {
   switch (action.type) {
     case DIALOG_PROXY_INIT: {
-      const { proxyBypassRules, proxyPacScript, proxyRules, proxyType } = getPreferences();
+      const { proxyBypassRules, proxyPacScript, proxyRules, proxyType } = await window.service.preference.getPreferences();
 
       return {
         proxyBypassRules,

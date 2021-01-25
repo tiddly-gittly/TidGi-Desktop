@@ -55,6 +55,10 @@ export class Authentication implements IAuthenticationService {
     }
   }
 
+  public set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): void {
+    this.cachedUserInfo[key] = value;
+  }
+
   public async reset(): Promise<void> {
     await settings.unset();
     const UserInfos = this.getUserInfos();

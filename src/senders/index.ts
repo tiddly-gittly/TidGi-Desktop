@@ -20,16 +20,6 @@ export const requestUpdatePauseNotificationsInfo = async () => await ipcRenderer
 export const getPauseNotificationsInfo = () => ipcRenderer.invokeSync('get-pause-notifications-info');
 
 // Preferences
-// eslint-disable-next-line no-use-before-define
-export type JsonValue = string | number | boolean | null | JsonArray | JsonObject | void;
-export interface JsonObject {
-  [x: string]: JsonValue;
-}
-interface JsonArray extends Array<JsonValue> {} // tslint:disable-line no-empty-interface
-export function getPreference<T = JsonValue>(name: string): T {
-  return ipcRenderer.invokeSync('get-preference', name);
-}
-export const getPreferences = () => ipcRenderer.invokeSync('get-preferences');
 export const requestSetPreference = async (name: string, value: JsonValue) => await ipcRenderer.invoke('request-set-preference', name, value);
 export const requestResetPreferences = async () => await ipcRenderer.invoke('request-reset-preferences');
 export const requestShowRequireRestartDialog = async () => await ipcRenderer.invoke('request-show-require-restart-dialog');

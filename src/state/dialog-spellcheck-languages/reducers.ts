@@ -2,13 +2,11 @@ import { combineReducers } from 'redux';
 
 import { DIALOG_SPELLCHECK_LANGUAGES_INIT, DIALOG_SPELLCHECK_LANGUAGES_UPDATE_FORM } from '../../constants/actions';
 
-import { getPreference } from '../../senders';
-
-const form = (state = {}, action: any) => {
+const form = async (state = {}, action: any) => {
   switch (action.type) {
     case DIALOG_SPELLCHECK_LANGUAGES_INIT: {
       return {
-        spellcheckLanguages: getPreference('spellcheckLanguages'),
+        spellcheckLanguages: await window.service.preference.get('spellcheckLanguages'),
       };
     }
     case DIALOG_SPELLCHECK_LANGUAGES_UPDATE_FORM:

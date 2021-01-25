@@ -14,6 +14,7 @@ export interface IUserInfos {
 export interface IAuthenticationService {
   getUserInfos: () => IUserInfos;
   get<K extends keyof IUserInfos>(key: K): IUserInfos[K] | undefined;
+  set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): void;
   reset(): Promise<void>;
 }
 export const AuthenticationServiceIPCDescriptor = {
@@ -21,6 +22,7 @@ export const AuthenticationServiceIPCDescriptor = {
   properties: {
     getUserInfos: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,
+    set: ProxyPropertyType.Function,
     reset: ProxyPropertyType.Function,
   },
 };

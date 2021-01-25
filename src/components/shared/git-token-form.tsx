@@ -5,13 +5,12 @@ import { useTranslation } from 'react-i18next';
 import TextField from '@material-ui/core/TextField';
 
 import GitHubLogin from './github-login';
-import { requestSetPreference, getPreference } from '../../senders';
 import type { IUserInfo } from '@services/types';
 
 const GitTokenInput = styled(TextField)``;
 
-export const setGithubToken = (token: string | void) => requestSetPreference('github-token', token);
-export const getGithubToken = () => getPreference<string | void>('github-token') || undefined;
+export const setGithubToken = (token: string | void) => window.service.auth.set('github-token', token);
+export const getGithubToken = async () => window.service.auth.get('github-token');
 
 export default function GitTokenForm(props: {
   accessTokenSetter: (token: string | void) => void;

@@ -1,10 +1,6 @@
 import { SET_PREFERENCE } from '../../constants/actions';
 
-import { getPreferences } from '../../senders';
-
-const initialState = getPreferences();
-
-const preferences = (state = initialState, action: any) => {
+const preferences = async (state, action: any) => {
   switch (action.type) {
     case SET_PREFERENCE: {
       const newState = { ...state };
