@@ -442,7 +442,7 @@ export class Window implements IWindowService {
       {
         label: 'Home',
         accelerator: 'Shift+CmdOrCtrl+H',
-        click: () => ipcMain.emit('request-go-home'),
+        click: async () => await this.goHome(),
         enabled: () => this.workspaceService.countWorkspaces() > 0,
       },
       {

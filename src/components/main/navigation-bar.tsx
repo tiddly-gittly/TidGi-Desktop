@@ -11,7 +11,6 @@ import SettingsIcon from '@material-ui/icons/SettingsSharp';
 import InputBase from '@material-ui/core/InputBase';
 import connectComponent from '../../helpers/connect-component';
 import isUrl from '../../helpers/is-url';
-import { requestGoBack, requestGoForward, requestGoHome, requestReload, requestShowNotificationsWindow, requestShowPreferencesWindow } from '../../senders';
 import { updateAddressBarInfo } from '../../state/general/actions';
 const styles = (theme: any) => ({
   root: {
@@ -102,16 +101,32 @@ const NavigationBar = ({
   return (
     <div className={classNames(classes.root, hasTrafficLights && classes.rootWithTrafficLights)}>
       <div className={classes.left}>
-        <IconButton aria-label="Go back" className={classes.iconButton} disabled={!hasWorkspaces || !canGoBack} onClick={requestGoBack}>
+        <IconButton
+          aria-label="Go back"
+          className={classes.iconButton}
+          disabled={!hasWorkspaces || !canGoBack}
+          onClick={async () => await window.service.window.goBack(window.meta.windowName)}>
           <ArrowBackIcon className={classes.icon} />
         </IconButton>
-        <IconButton aria-label="Go forward" className={classes.iconButton} disabled={!hasWorkspaces || !canGoForward} onClick={requestGoForward}>
+        <IconButton
+          aria-label="Go forward"
+          className={classes.iconButton}
+          disabled={!hasWorkspaces || !canGoForward}
+          onClick={async () => await window.service.window.goForward(window.meta.windowName)}>
           <ArrowForwardIcon className={classes.icon} />
         </IconButton>
-        <IconButton aria-label="Reload" className={classes.iconButton} onClick={requestReload} disabled={!hasWorkspaces}>
+        <IconButton
+          aria-label="Reload"
+          className={classes.iconButton}
+          onClick={async () => await window.service.window.reload(window.meta.windowName)}
+          disabled={!hasWorkspaces}>
           <RefreshIcon className={classes.icon} />
         </IconButton>
-        <IconButton aria-label="Go home" className={classes.iconButton} onClick={requestGoHome} disabled={!hasWorkspaces}>
+        <IconButton
+          aria-label="Go home"
+          className={classes.iconButton}
+          onClick={async () => await window.service.window.goHome(window.meta.windowName)}
+          disabled={!hasWorkspaces}>
           <HomeIcon className={classes.icon} />
         </IconButton>
       </div>

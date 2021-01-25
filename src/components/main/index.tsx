@@ -29,22 +29,6 @@ import arrowWhite from '../../images/arrow-white.png';
 // @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '../../images/arrow-black.png' ... Remove this comment to see the full error message
 import arrowBlack from '../../images/arrow-black.png';
 
-import {
-  requestHibernateWorkspace,
-  requestRemoveWorkspace,
-  requestSetActiveWorkspace,
-  requestSetWorkspaces,
-  requestShowAddWorkspaceWindow,
-  requestShowEditWorkspaceWindow,
-  requestShowNotificationsWindow,
-  requestShowPreferencesWindow,
-  requestWakeUpWorkspace,
-  requestReload,
-  requestOpen,
-  getLogFolderPath,
-  requestGetActiveWorkspace,
-} from '../../senders';
-
 // https://github.com/sindresorhus/array-move/blob/master/index.js
 const arrayMove = (array: any, from: any, to: any) => {
   const newArray = array.slice();
@@ -268,6 +252,7 @@ type MainProps = OwnMainProps & typeof Main.defaultProps;
 const Main = ({ classes, didFailLoad, isFullScreen, isLoading, navigationBar, shouldPauseNotifications, sidebar, titleBar, workspaces }: MainProps) => {
   const workspacesList = Object.values(workspaces);
   const showTitleBar = window.remote.getPlatform() === 'darwin' && titleBar && !isFullScreen;
+  const requestReload = async () => await window.service.window.reload(window.meta.windowName);
 
   return (
     <div className={classes.outerRoot}>
@@ -339,8 +324,7 @@ const Main = ({ classes, didFailLoad, isFullScreen, isLoading, navigationBar, sh
                     <ul className={classes.ul}>
                       <li>
                         Click{' '}
-                        {/* @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'number | ... Remove this comment to see the full error message */}
-                        <b onClick={requestReload} onKeyPress={requestReload} role="button" tabIndex="0" style={{ cursor: 'pointer' }}>
+                        <b onClick={requestReload} onKeyPress={requestReload} role="button" tabIndex={0} style={{ cursor: 'pointer' }}>
                           Reload
                         </b>{' '}
                         button below or press <b>CMD_or_Ctrl + R</b> to reload the page.

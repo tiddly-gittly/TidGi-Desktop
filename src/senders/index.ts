@@ -12,11 +12,6 @@ export const getShouldUseDarkColors = async (): Promise<void> => {
   await ipcRenderer.invoke('get-should-use-dark-colors');
 };
 
-export const requestGoHome = async () => await ipcRenderer.invoke('request-go-home');
-export const requestGoBack = async () => await ipcRenderer.invoke('request-go-back');
-export const requestGoForward = async () => await ipcRenderer.invoke('request-go-forward');
-export const requestReload = async () => await ipcRenderer.invoke('request-reload');
-
 export const requestCheckForUpdates = async (isSilent: boolean) => await ipcRenderer.invoke('request-check-for-updates', isSilent);
 
 export const requestShowAboutWindow = async () => await ipcRenderer.invoke('request-show-about-window');
