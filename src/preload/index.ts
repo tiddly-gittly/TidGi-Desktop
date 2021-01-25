@@ -27,6 +27,18 @@ declare global {
     meta: IPossibleWindowMeta;
   }
 }
+contextBridge.exposeInMainWorld('remote', {
+  closeCurrentWindow: async () => {
+    await service.window.close(windowName);
+  },
+});
+declare global {
+  interface Window {
+    remote: {
+      closeCurrentWindow: () => void;
+    };
+  }
+}
 
 if (windowName === WindowNames.view) {
   void import('./view');

@@ -1,4 +1,4 @@
-import { ipcRenderer } from 'electron/renderer';
+import { ipcRenderer } from 'electron';
 
 export const requestOpen = async (uri: string, isDirectory: boolean): Promise<void> => {
   await ipcRenderer.invoke('request-open', uri, !!isDirectory);
@@ -11,9 +11,6 @@ export const requestQuit = async (): Promise<void> => {
 export const getShouldUseDarkColors = async (): Promise<void> => {
   await ipcRenderer.invoke('get-should-use-dark-colors');
 };
-
-export const requestShowMessageBox = async (message: string, type: string) => await ipcRenderer.invoke('request-show-message-box', message, type);
-export const requestLoadUrl = async (url: string, id: string) => await ipcRenderer.invoke('request-load-url', url, id);
 
 export const requestGoHome = async () => await ipcRenderer.invoke('request-go-home');
 export const requestGoBack = async () => await ipcRenderer.invoke('request-go-back');

@@ -3,6 +3,7 @@ export default {
   Git: Symbol.for('Git'),
   Context: Symbol.for('Context'),
   MenuService: Symbol.for('MenuService'),
+  NativeService: Symbol.for('NativeService'),
   Notification: Symbol.for('Notification'),
   Preference: Symbol.for('Preference'),
   SystemPreference: Symbol.for('SystemPreference'),

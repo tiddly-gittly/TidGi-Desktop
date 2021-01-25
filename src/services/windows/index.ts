@@ -135,6 +135,10 @@ export class Window implements IWindowService {
     return this.windows[windowName];
   }
 
+  public close(name: WindowNames): void {
+    this.get(name)?.close();
+  }
+
   public async open<N extends WindowNames>(
     windowName: N,
     meta: WindowMeta[N] = {},

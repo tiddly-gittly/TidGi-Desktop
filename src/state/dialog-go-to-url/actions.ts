@@ -2,7 +2,6 @@ import { UPDATE_GO_TO_URL_FORM } from '../../constants/actions';
 import hasErrors from '../../helpers/has-errors';
 import isUrl from '../../helpers/is-url';
 import validate from '../../helpers/validate';
-import { requestLoadUrl } from '../../senders';
 
 const getValidationRules = () => ({
   url: {
@@ -29,8 +28,8 @@ export const go = () => (dispatch: any, getState: any) => {
   const { url } = form;
   const finalUrl = isUrl(url) ? url : `http://${url}`;
 
-  // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-  requestLoadUrl(finalUrl);
-  window.remote.closeCurrentWindow();
+  void window.service.workspaceView.loadURL(finalUrl).then(() => {
+    window.remote.closeCurrentWindow();
+  })
   return null;
 };

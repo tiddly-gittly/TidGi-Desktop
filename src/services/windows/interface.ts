@@ -9,6 +9,7 @@ import { WindowNames, WindowMeta } from './WindowProperties';
 export interface IWindowService {
   get(windowName: WindowNames): BrowserWindow | undefined;
   open<N extends WindowNames>(windowName: N, meta?: WindowMeta[N], recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean)): Promise<void>;
+  close(name: WindowNames): void;
   setWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): void;
   updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): void;
   getWindowMeta<N extends WindowNames>(windowName: N): WindowMeta[N] | undefined;
@@ -24,6 +25,7 @@ export const WindowServiceIPCDescriptor = {
   properties: {
     get: ProxyPropertyType.Function,
     open: ProxyPropertyType.Function,
+    close: ProxyPropertyType.Function,
     setWindowMeta: ProxyPropertyType.Function,
     updateWindowMeta: ProxyPropertyType.Function,
     getWindowMeta: ProxyPropertyType.Function,

@@ -15,7 +15,12 @@ export interface IWorkspaceViewService {
   setActiveWorkspaceView(id: string): Promise<void>;
   removeWorkspaceView(id: string): Promise<void>;
   clearBrowsingData(): Promise<void>;
-  loadURL(url: string, id: string): Promise<void>;
+  /**
+   * Try load url, if no id or no active workspace, then nothing will happened
+   * @param url url to load
+   * @param id workspace id, if omit, will load url in active workspace if existed
+   */
+  loadURL(url: string, id?: string): Promise<void>;
   realignActiveWorkspace(): void;
 }
 export const WorkspaceViewServiceIPCDescriptor = {

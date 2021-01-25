@@ -11,6 +11,7 @@ import { IAuthenticationService, AuthenticationServiceIPCDescriptor } from '@ser
 import { IContextService, ContextServiceIPCDescriptor } from '@services/constants/interface';
 import { IGitService, GitServiceIPCDescriptor } from '@services/git/interface';
 import { IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
+import { INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';
 import { INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
 import { IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/preferences/interface';
 import { ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences/interface';
@@ -34,6 +35,7 @@ export const auth = createProxy<AsyncifyProxy<IAuthenticationService>>(Authentic
 export const context = createProxy<AsyncifyProxy<IContextService>>(ContextServiceIPCDescriptor);
 export const git = createProxy<AsyncifyProxy<IGitService>>(GitServiceIPCDescriptor);
 export const menu = createProxy<AsyncifyProxy<IMenuService>>(MenuServiceIPCDescriptor);
+export const native = createProxy<AsyncifyProxy<INativeService>>(NativeServiceIPCDescriptor);
 export const notification = createProxy<AsyncifyProxy<INotificationService>>(NotificationServiceIPCDescriptor);
 export const preference = createProxy<AsyncifyProxy<IPreferenceService>>(PreferenceServiceIPCDescriptor);
 export const systemPreference = createProxy<AsyncifyProxy<ISystemPreferenceService>>(SystemPreferenceServiceIPCDescriptor);

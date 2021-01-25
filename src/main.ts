@@ -23,6 +23,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { Authentication } from '@services/auth';
 import { Git } from '@services/git';
 import { MenuService } from '@services/menu';
+import { NativeService } from '@services/native';
 import { Notification } from '@services/notifications';
 import { Preference } from '@services/preferences';
 import { SystemPreference } from '@services/systemPreferences';
@@ -38,6 +39,7 @@ import { WorkspaceView } from '@services/workspacesView';
 import { IAuthenticationService } from './services/auth/interface';
 import { IGitService } from './services/git/interface';
 import { IMenuService } from './services/menu/interface';
+import { INativeService } from './services/native/interface';
 import { IPreferenceService } from './services/preferences/interface';
 import { IViewService } from './services/view/interface';
 import { IWikiService } from './services/wiki/interface';
@@ -51,6 +53,7 @@ container.bind<Authentication>(serviceIdentifier.Authentication).to(Authenticati
 container.bind<Git>(serviceIdentifier.Git).to(Git).inSingletonScope();
 container.bind<MenuService>(serviceIdentifier.MenuService).to(MenuService).inSingletonScope();
 container.bind<Notification>(serviceIdentifier.Notification).to(Notification).inSingletonScope();
+container.bind<NativeService>(serviceIdentifier.NativeService).to(NativeService).inSingletonScope();
 container.bind<Preference>(serviceIdentifier.Preference).to(Preference).inSingletonScope();
 container.bind<SystemPreference>(serviceIdentifier.SystemPreference).to(SystemPreference).inSingletonScope();
 container.bind<Updater>(serviceIdentifier.Updater).to(Updater).inSingletonScope();
@@ -63,6 +66,7 @@ container.bind<WorkspaceView>(serviceIdentifier.WorkspaceView).to(WorkspaceView)
 const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
 const gitService = container.get<IGitService>(serviceIdentifier.Git);
 const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 const viewService = container.get<IViewService>(serviceIdentifier.View);
 const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
@@ -289,7 +293,7 @@ if (!gotTheLock) {
         });
         // pick automatically if there's only one choice
         if (mailtoWorkspaces.length === 0) {
-          ipcMain.emit('request-show-message-box', undefined, 'None of your workspaces supports composing email messages.', 'error');
+          nativeService.('None of your workspaces supports composing email messages.', 'error');
           return;
         }
         if (mailtoWorkspaces.length === 1) {

@@ -18,6 +18,9 @@ export enum GitChannel {
 export enum MenuChannel {
   name = 'MenuChannel',
 }
+export enum NativeChannel {
+  name = 'NativeChannel',
+}
 export enum NotificationChannel {
   name = 'NotificationChannel',
 }

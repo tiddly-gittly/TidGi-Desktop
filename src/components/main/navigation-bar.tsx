@@ -11,15 +11,7 @@ import SettingsIcon from '@material-ui/icons/SettingsSharp';
 import InputBase from '@material-ui/core/InputBase';
 import connectComponent from '../../helpers/connect-component';
 import isUrl from '../../helpers/is-url';
-import {
-  requestGoBack,
-  requestGoForward,
-  requestGoHome,
-  requestLoadUrl,
-  requestReload,
-  requestShowNotificationsWindow,
-  requestShowPreferencesWindow,
-} from '../../senders';
+import { requestGoBack, requestGoForward, requestGoHome, requestReload, requestShowNotificationsWindow, requestShowPreferencesWindow } from '../../senders';
 import { updateAddressBarInfo } from '../../state/general/actions';
 const styles = (theme: any) => ({
   root: {
@@ -137,11 +129,10 @@ const NavigationBar = ({
               <IconButton
                 aria-label="Go"
                 className={classes.goButton}
-                onClick={() => {
+                onClick={async () => {
                   const processedUrl = processUrl(address);
                   onUpdateAddressBarInfo(processedUrl, false);
-                  // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                  requestLoadUrl(processedUrl);
+                  await window.service.workspaceView.loadURL(processedUrl);
                 }}>
                 <ArrowForwardIcon fontSize="small" />
               </IconButton>
@@ -150,13 +141,12 @@ const NavigationBar = ({
           onChange={(e) => {
             onUpdateAddressBarInfo(e.target.value, true);
           }}
-          onKeyDown={(e) => {
+          onKeyDown={async (e) => {
             if (e.key === 'Enter') {
               (e.target as any).blur();
               const processedUrl = processUrl(address);
               onUpdateAddressBarInfo(processedUrl, false);
-              // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-              requestLoadUrl(processedUrl);
+              await window.service.workspaceView.loadURL(processedUrl);
             }
           }}
           // https://stackoverflow.com/a/16659291

@@ -178,9 +178,9 @@ export class WorkspaceView implements IWorkspaceViewService {
     await session.fromPartition('persist:shared').clearStorageData();
   }
 
-  public async loadURL(url: string, id: string): Promise<void> {
+  public async loadURL(url: string, id: string | undefined = this.workspaceService.getActiveWorkspace()?.id): Promise<void> {
     const mainWindow = this.windowService.get(WindowNames.main);
-    if (mainWindow !== undefined) {
+    if (mainWindow !== undefined && id !== undefined) {
       await this.workspaceService.setActiveWorkspace(id);
       await this.viewService.setActiveView(mainWindow, id);
 

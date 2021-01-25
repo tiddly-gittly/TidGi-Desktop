@@ -9,8 +9,6 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import connectComponent from '../../helpers/connect-component';
 import getMailtoUrl from '../../helpers/get-mailto-url';
 
-import { requestLoadUrl } from '../../senders';
-
 interface OpenUrlWithProps {
   workspaces: any;
 }
@@ -24,10 +22,10 @@ const OpenUrlWith = ({ workspaces }: OpenUrlWithProps) => {
     return (
       <ListItem
         button
-        onClick={() => {
+        onClick={async () => {
           const u = isMailtoUrl ? getMailtoUrl(workspace.homeUrl).replace('%s', incomingUrl) : incomingUrl;
 
-          requestLoadUrl(u, workspace.id);
+          await window.service.workspaceView.loadURL(u, workspace.id);
           window.remote.closeCurrentWindow();
         }}>
         <ListItemText primary={workspace.name || `Workspace ${index + 1}`} secondary={`#${index + 1}`} />
