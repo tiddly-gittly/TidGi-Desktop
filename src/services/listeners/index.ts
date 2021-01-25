@@ -9,15 +9,8 @@ const loadListeners = (): void => {
   });
 
   // Native Theme
-  ipcMain.handle('get-should-use-dark-colors', (_event) => {
+  ipcMain.handle('get-should-use-dark-colors', () => {
     return nativeTheme.shouldUseDarkColors;
-  });
-
-  // if global.forceNewWindow = true
-  // the next external link request will be opened in new window
-  ipcMain.handle('request-set-global-force-new-window', (_event, value) => {
-    // FIXME: don't use untyped global.xx
-    // (global as any).forceNewWindow = value;
   });
 };
 export default loadListeners;

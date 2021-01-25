@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/consistent-destructuring */
 import { app, BrowserView, ipcMain, WebContents, shell, NativeImage, BrowserWindowConstructorOptions, BrowserWindow } from 'electron';
 import path from 'path';
 import fsExtra from 'fs-extra';
@@ -24,6 +25,10 @@ export interface IViewModifier {
   adjustUserAgentByUrl: (_contents: WebContents, nextUrl: string) => boolean;
 }
 
+export interface IViewMeta {
+  forceNewWindow: boolean;
+}
+
 /**
  * Bind workspace related event handler to view.webContent
  */
@@ -33,6 +38,17 @@ export default function setupViewEventHandlers(
   { workspace, shouldPauseNotifications, sharedWebPreferences }: IViewContext,
   { adjustUserAgentByUrl }: IViewModifier,
 ): void {
+  // metadata and state about current BrowserView
+  const viewMeta: IViewMeta = {
+    forceNewWindow: false,
+  };
+  // listeners to change meta from renderer process and services
+  // if viewMeta.forceNewWindow = true
+  // the next external link request will be opened in new window
+  ipcMain.handle('set-view-meta-force-new-window', (_event, value: boolean) => {
+    viewMeta.forceNewWindow = value;
+  });
+
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
@@ -214,6 +230,7 @@ export default function setupViewEventHandlers(
         sharedWebPreferences,
         view,
         adjustUserAgentByUrl,
+        meta: viewMeta,
       }),
   );
   // Handle downloads
@@ -282,6 +299,7 @@ export default function setupViewEventHandlers(
 
 export interface INewWindowContext {
   view: BrowserView;
+  meta: IViewMeta;
   workspace: IWorkspace;
   sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
   adjustUserAgentByUrl: (_contents: WebContents, nextUrl: string) => boolean;
@@ -375,18 +393,16 @@ function handleNewWindow(
   // or regular new-window event
   // or if in Google Drive app, open Google Docs files internally https://github.com/atomery/webcatalog/issues/800
   // the next external link request will be opened in new window
-  // if (
-  //   // FIXME: WebCatalog internal value to determine whether BrowserWindow is popup
-  //   // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-member-access
-  //   global.forceNewWindow === true ||
-  //   disposition === 'new-window' ||
-  //   disposition === 'default' ||
-  //   (appDomain === 'drive.google.com' && nextDomain === 'docs.google.com')
-  // ) {
-  //   global.forceNewWindow = false;
-  //   openInNewWindow();
-  //   return;
-  // }
+  if (
+    newWindowContext.meta.forceNewWindow ||
+    disposition === 'new-window' ||
+    disposition === 'default' ||
+    (appDomain === 'drive.google.com' && nextDomain === 'docs.google.com')
+  ) {
+    newWindowContext.meta.forceNewWindow = false;
+    openInNewWindow();
+    return;
+  }
   // load in same window
   if (
     // Google: Add account

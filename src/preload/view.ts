@@ -78,8 +78,8 @@ const handleLoaded = async (event: string): Promise<void> => {
         menu.append(
           new MenuItem({
             label: i18next.t('ContextMenu.OpenLinkInNewWindow'),
-            click: () => {
-              ipcRenderer.invoke('request-set-global-force-new-window', true);
+            click: async () => {
+              await ipcRenderer.invoke('set-view-meta-force-new-window', true);
               window.open(info.linkURL);
             },
           }),
