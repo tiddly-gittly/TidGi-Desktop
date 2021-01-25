@@ -60,40 +60,6 @@ export class Window implements IWindowService {
       }
     });
 
-    ipcMain.handle(WindowChannel.requestShowCodeInjectionWindow, (_event, codeInjectionType: CodeInjectionType) => {
-      void this.open(WindowNames.codeInjection, { codeInjectionType }, (windowMeta: WindowMeta[WindowNames.codeInjection]) => {
-        return codeInjectionType !== windowMeta.codeInjectionType;
-      });
-    });
-    ipcMain.handle(WindowChannel.requestShowCustomUserAgentWindow, () => {
-      void this.open(WindowNames.userAgent);
-    });
-
-    ipcMain.handle(WindowChannel.requestShowAboutWindow, () => {
-      void this.open(WindowNames.about);
-    });
-    ipcMain.handle(WindowChannel.requestShowPreferencesWindow, (_event, scrollTo: string) => {
-      // FIXME: make scrollTo enum, and find places use this scrollTo
-      void this.open(WindowNames.preferences, { scrollTo });
-    });
-    ipcMain.handle(WindowChannel.requestShowEditWorkspaceWindow, (_event, workspaceID: string) => {
-      void this.open(WindowNames.editWorkspace, { workspaceID }, (windowMeta: WindowMeta[WindowNames.editWorkspace]) => {
-        return workspaceID !== windowMeta.workspaceID;
-      });
-    });
-    ipcMain.handle(WindowChannel.requestShowAddWorkspaceWindow, () => {
-      void this.open(WindowNames.addWorkspace);
-    });
-    ipcMain.handle(WindowChannel.requestShowNotificationsWindow, () => {
-      void this.open(WindowNames.notifications);
-    });
-    ipcMain.handle(WindowChannel.requestShowProxyWindow, () => {
-      void this.open(WindowNames.proxy);
-    });
-    ipcMain.handle(WindowChannel.requestShowSpellcheckLanguagesWindow, () => {
-      void this.open(WindowNames.spellcheck);
-    });
-
     ipcMain.handle('request-find-in-page', (_event, text: string, forward?: boolean, windowName: WindowNames = WindowNames.main) => {
       const mainWindow = this.get(windowName);
       const contents = mainWindow?.getBrowserView()?.webContents;

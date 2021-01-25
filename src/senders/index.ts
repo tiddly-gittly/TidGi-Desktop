@@ -14,16 +14,6 @@ export const getShouldUseDarkColors = async (): Promise<void> => {
 
 export const requestCheckForUpdates = async (isSilent: boolean) => await ipcRenderer.invoke('request-check-for-updates', isSilent);
 
-export const requestShowAboutWindow = async () => await ipcRenderer.invoke('request-show-about-window');
-export const requestShowAddWorkspaceWindow = async () => await ipcRenderer.invoke('request-show-add-workspace-window');
-export const requestShowCodeInjectionWindow = async (type: string) => await ipcRenderer.invoke('request-show-code-injection-window', type);
-export const requestShowCustomUserAgentWindow = async () => await ipcRenderer.invoke('request-show-custom-user-agent-window');
-export const requestShowEditWorkspaceWindow = async (id: string) => await ipcRenderer.invoke('request-show-edit-workspace-window', id);
-export const requestShowNotificationsWindow = async () => await ipcRenderer.invoke('request-show-notifications-window');
-export const requestShowPreferencesWindow = async (scrollTo: string) => await ipcRenderer.invoke('request-show-preferences-window', scrollTo);
-export const requestShowProxyWindow = async () => await ipcRenderer.invoke('request-show-proxy-window');
-export const requestShowSpellcheckLanguagesWindow = async () => await ipcRenderer.invoke('request-show-spellcheck-languages-window');
-
 // Notifications
 export const requestShowNotification = async (options: { title: string; body: string }) => await ipcRenderer.invoke('request-show-notification', options);
 export const requestUpdatePauseNotificationsInfo = async () => await ipcRenderer.invoke('request-update-pause-notifications-info');

@@ -13,8 +13,9 @@ import NotificationsIcon from '@material-ui/icons/Notifications';
 import NotificationsPausedIcon from '@material-ui/icons/NotificationsPaused';
 import SettingsIcon from '@material-ui/icons/Settings';
 
-// @ts-expect-error ts-migrate(2724) FIXME: '"../../../node_modules/react-sortable-hoc/types"'... Remove this comment to see the full error message
-import { sortableContainer, sortableElement } from 'react-sortable-hoc';
+import { WindowNames } from '@services/windows/WindowProperties';
+
+import { SortableContainer as sortableContainer, SortableElement as sortableElement } from 'react-sortable-hoc';
 
 import connectComponent from '../../helpers/connect-component';
 
@@ -191,11 +192,11 @@ const SortableItem = withTranslation()(
           const template = [
             {
               label: t('WorkspaceSelector.EditWorkspace'),
-              click: () => requestShowEditWorkspaceWindow(id),
+              click: async () => await window.service.window.open(WindowNames.editWorkspace, { workspaceID: id }),
             },
             {
               label: t('WorkspaceSelector.RemoveWorkspace'),
-              click: () => requestRemoveWorkspace(id),
+              click: async () => await window.service.workspaceView.removeWorkspaceView(id),
             },
           ];
 
@@ -286,17 +287,21 @@ const Main = ({ classes, didFailLoad, isFullScreen, isLoading, navigationBar, sh
                   <SortableItem key={`item-${workspace.id}`} index={index} value={{ index: index, workspace }} />
                 ))}
               </SortableContainer>
-              {/* @ts-expect-error ts-migrate(2322) FIXME: Type '{ id: string; onClick: () => any; }' is not ... Remove this comment to see the full error message */}
-              <WorkspaceSelector id="add" onClick={() => requestShowAddWorkspaceWindow()} />
+              <WorkspaceSelector id="add" onClick={async () => await window.service.window.open(WindowNames.addWorkspace)} />
             </div>
             {!navigationBar && (
               <div className={classes.end}>
-                <IconButton aria-label="Notifications" onClick={requestShowNotificationsWindow} className={classes.iconButton}>
+                <IconButton
+                  aria-label="Notifications"
+                  onClick={async () => await window.service.window.open(WindowNames.notifications)}
+                  className={classes.iconButton}>
                   {shouldPauseNotifications ? <NotificationsPausedIcon /> : <NotificationsIcon />}
                 </IconButton>
                 {window.meta.windowName === 'menubar' && (
-                  // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
-                  <IconButton aria-label="Preferences" onClick={() => requestShowPreferencesWindow()} className={classes.iconButton}>
+                  <IconButton
+                    aria-label="Preferences"
+                    onClick={async () => await window.service.window.open(WindowNames.preferences)}
+                    className={classes.iconButton}>
                     <SettingsIcon />
                   </IconButton>
                 )}

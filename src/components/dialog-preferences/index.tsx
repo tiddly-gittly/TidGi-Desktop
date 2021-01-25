@@ -58,26 +58,7 @@ import ListItemDefaultMailClient from './list-item-default-mail-client';
 import ListItemDefaultBrowser from './list-item-default-browser';
 import GitTokenForm, { getGithubToken, setGithubToken } from '../shared/git-token-form';
 import type { IUserInfo } from '@services/types';
-
-import {
-  requestCheckForUpdates,
-  requestClearBrowsingData,
-  requestOpen,
-  requestQuit,
-  requestRealignActiveWorkspace,
-  requestResetPreferences,
-  requestSetPreference,
-  requestSetSystemPreference,
-  requestShowAboutWindow,
-  requestShowCodeInjectionWindow,
-  requestShowCustomUserAgentWindow,
-  requestShowNotification,
-  requestShowNotificationsWindow,
-  requestShowProxyWindow,
-  requestShowRequireRestartDialog,
-  requestShowSpellcheckLanguagesWindow,
-  getLogFolderPath,
-} from '../../senders';
+import { WindowNames } from '@services/windows/WindowProperties';
 
 const styles = (theme: any) => ({
   root: {
@@ -838,7 +819,7 @@ const Preferences = ({
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
-            <ListItem button onClick={requestShowNotificationsWindow}>
+            <ListItem button onClick={async () => await window.service.window.open(WindowNames.notifications)}>
               <ListItemText primary="Control notifications" />
               <ChevronRightIcon color="action" />
             </ListItem>
@@ -1004,7 +985,7 @@ const Preferences = ({
             {window.remote.getPlatform() !== 'darwin' && (
               <>
                 <Divider />
-                <ListItem button onClick={requestShowSpellcheckLanguagesWindow}>
+                <ListItem button onClick={async () => await window.service.window.open(WindowNames.spellcheck)}>
                   <ListItemText
                     primary="Preferred spell checking languages"
                     // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
@@ -1066,7 +1047,7 @@ const Preferences = ({
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List disablePadding dense>
-            <ListItem button onClick={requestShowProxyWindow}>
+            <ListItem button onClick={async () => await window.service.window.open(WindowNames.proxy)}>
               <ListItemText primary="Configure proxy settings (BETA)" />
               <ChevronRightIcon color="action" />
             </ListItem>
@@ -1209,12 +1190,12 @@ const Preferences = ({
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
-            <ListItem button onClick={requestShowCustomUserAgentWindow}>
+            <ListItem button onClick={async () => await window.service.window.open(WindowNames.userAgent)}>
               <ListItemText primary="Custom User Agent" secondary={customUserAgent || 'Not set'} classes={{ secondary: classes.secondaryEllipsis }} />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestShowCodeInjectionWindow('js')}>
+            <ListItem button onClick={async () => await window.service.window.open(WindowNames.codeInjection, { codeInjectionType: 'js' })}>
               <ListItemText
                 primary="JS Code Injection"
                 secondary={jsCodeInjection ? `Set ${allowNodeInJsCodeInjection ? ' (with access to Node.JS & Electron APIs)' : ''}` : 'Not set'}
@@ -1222,7 +1203,7 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={() => requestShowCodeInjectionWindow('css')}>
+            <ListItem button onClick={async () => await window.service.window.open(WindowNames.codeInjection, { codeInjectionType: 'css' })}>
               <ListItemText primary="CSS Code Injection" secondary={cssCodeInjection ? 'Set' : 'Not set'} />
               <ChevronRightIcon color="action" />
             </ListItem>
@@ -1395,7 +1376,7 @@ const Preferences = ({
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
-            <ListItem button onClick={requestShowAboutWindow}>
+            <ListItem button onClick={async () => await window.service.window.open(WindowNames.about)}>
               <ListItemText primary="About" />
               <ChevronRightIcon color="action" />
             </ListItem>

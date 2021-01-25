@@ -14,10 +14,9 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import { DateTimePicker } from '@material-ui/pickers';
 
 import { format, isTomorrow, isToday, addMinutes, addHours, addDays, addWeeks } from 'date-fns';
+import { WindowNames } from '@services/windows/WindowProperties';
 
 import connectComponent from '../../helpers/connect-component';
-
-import { requestSetPreference, requestShowPreferencesWindow, requestShowNotification } from '../../senders';
 
 import StatedMenu from '../shared/stated-menu';
 
@@ -197,8 +196,8 @@ const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
           <ListItem button>
             <ListItemText
               primary={pauseNotificationsInfo.reason === 'scheduled' ? 'Adjust schedule...' : 'Pause notifications by schedule...'}
-              onClick={() => {
-                requestShowPreferencesWindow('notifications');
+              onClick={async () => {
+                await window.service.window.open(WindowNames.preferences, { gotoTab: 'notifications' });
                 window.remote.closeCurrentWindow();
               }}
             />
@@ -221,8 +220,8 @@ const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
         <ListItem button>
           <ListItemText
             primary="Pause notifications by schedule..."
-            onClick={() => {
-              requestShowPreferencesWindow('notifications');
+            onClick={async () => {
+              await window.service.window.open(WindowNames.preferences, { gotoTab: 'notifications' });
               window.remote.closeCurrentWindow();
             }}
           />

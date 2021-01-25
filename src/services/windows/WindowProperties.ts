@@ -103,6 +103,7 @@ export interface WindowMeta extends Record<WindowNames, Record<string, unknown> 
   [WindowNames.editWorkspace]: { workspaceID?: string };
   [WindowNames.openUrlWith]: { incomingUrl?: string };
   [WindowNames.main]: { forceClose?: boolean };
+  [WindowNames.preferences]: { gotoTab?: string };
 }
 export type IPossibleWindowMeta = {
   windowName: WindowNames;

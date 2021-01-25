@@ -9,6 +9,8 @@ import NotificationsPausedIcon from '@material-ui/icons/NotificationsPaused';
 import RefreshIcon from '@material-ui/icons/Refresh';
 import SettingsIcon from '@material-ui/icons/SettingsSharp';
 import InputBase from '@material-ui/core/InputBase';
+
+import { WindowNames } from '@services/windows/WindowProperties';
 import connectComponent from '../../helpers/connect-component';
 import isUrl from '../../helpers/is-url';
 import { updateAddressBarInfo } from '../../state/general/actions';
@@ -177,11 +179,10 @@ const NavigationBar = ({
         />
       </div>
       <div>
-        <IconButton aria-label="Notifications" onClick={requestShowNotificationsWindow} className={classes.iconButton}>
+        <IconButton aria-label="Notifications" onClick={async () => await window.service.window.open(WindowNames.notifications)} className={classes.iconButton}>
           {shouldPauseNotifications ? <NotificationsPausedIcon className={classes.icon} /> : <NotificationsIcon className={classes.icon} />}
         </IconButton>
-        {/* @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0. */}
-        <IconButton aria-label="Preferences" className={classes.iconButton} onClick={() => requestShowPreferencesWindow()}>
+        <IconButton aria-label="Preferences" className={classes.iconButton} onClick={async () => await window.service.window.open(WindowNames.preferences)}>
           <SettingsIcon className={classes.icon} />
         </IconButton>
       </div>
