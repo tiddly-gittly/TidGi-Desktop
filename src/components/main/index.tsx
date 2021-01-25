@@ -42,8 +42,6 @@ import {
   requestReload,
   requestOpen,
   getLogFolderPath,
-  requestOpenTiddlerInWiki,
-  requestWikiSendActionMessage,
   requestGetActiveWorkspace,
 } from '../../senders';
 
@@ -191,13 +189,13 @@ const SortableItem = withTranslation()(
         transparentBackground={transparentBackground}
         order={index}
         hibernated={hibernated}
-        onClick={() => {
+        onClick={async () => {
           if (isSubWiki) {
-            requestOpenTiddlerInWiki(tagName);
+            await window.service.wiki.requestOpenTiddlerInWiki(tagName);
           } else {
             const activeWorkspace = requestGetActiveWorkspace();
             if (activeWorkspace.id === id) {
-              requestWikiSendActionMessage('tm-home');
+              await window.service.wiki.requestWikiSendActionMessage('tm-home');
             } else {
               requestSetActiveWorkspace(id);
             }

@@ -27,14 +27,13 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
     @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
   ) {}
 
-  public initWikiGit = async (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo, isMainWiki: boolean): Promise<string> => {
+  public initWikiGitTransaction = async (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo, isMainWiki: boolean): Promise<void> => {
     try {
       await this.gitService.initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
-      return '';
     } catch (error) {
       console.info(error);
       await this.wikiService.removeWiki(wikiFolderPath);
-      return String(error);
+      throw new Error(error);
     }
   };
 

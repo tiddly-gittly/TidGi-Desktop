@@ -16,7 +16,8 @@ import getMailtoUrl from '../../helpers/get-mailto-url';
 // @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '../../images/default-icon.png'... Remove this comment to see the full error message
 import defaultIcon from '../../images/default-icon.png';
 import { save, updateForm } from '../../state/dialog-edit-workspace/actions';
-import { getSubWikiPluginContent } from '../../senders';
+import type { ISubWikiPluginContent } from '@services/wiki/update-plugin-content';
+
 const styles = (theme: any) => ({
   root: {
     background: theme.palette.background.paper,
@@ -139,11 +140,9 @@ const EditWorkspace = ({
   isSubWiki,
 }: EditWorkspaceProps) => {
   const { t } = useTranslation();
-  const [fileSystemPaths, fileSystemPathsSetter] = useState([]);
+  const [fileSystemPaths, fileSystemPathsSetter] = useState<ISubWikiPluginContent[]>([]);
   useEffect(() => {
-    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'Dispatch<SetStateAction<never[]>... Remove this comment to see the full error message
-    // eslint-disable-next-line promise/catch-or-return
-    getSubWikiPluginContent(mainWikiToLink).then(fileSystemPathsSetter);
+    void window.service.wiki.getSubWikiPluginContent(mainWikiToLink).then(fileSystemPathsSetter);
   }, [mainWikiToLink]);
   return (
     <div className={classes.root}>

@@ -70,7 +70,11 @@ export function updateSubWikiPluginContent(
   fs.writeFileSync(FileSystemPathsTiddlerPath, newFileSystemPathsFile);
 }
 
-export async function getSubWikiPluginContent(mainWikiPath: string): Promise<Array<{ tagName: string; folderName: string }>> {
+export interface ISubWikiPluginContent {
+  tagName: string;
+  folderName: string;
+}
+export async function getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]> {
   if (mainWikiPath.length === 0) return [];
   const FileSystemPathsTiddlerPath = getFileSystemPathsTiddlerPath(mainWikiPath);
   try {

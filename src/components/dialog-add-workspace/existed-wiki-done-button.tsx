@@ -13,7 +13,7 @@ import Alert from '@material-ui/lab/Alert';
 import * as actions from '../../state/dialog-add-workspace/actions';
 
 import type { IUserInfo } from '@services/types';
-import { requestCreateSubWiki, getIconPath, ensureWikiExist, getBaseName, getDirectoryName } from '../../senders';
+import { getIconPath, getBaseName, getDirectoryName } from '../../senders';
 import useWikiCreationMessage from './use-wiki-creation-message';
 
 const CloseButton = styled(Button)`
@@ -31,9 +31,7 @@ interface OwnProps {
   userInfo: IUserInfo;
 }
 interface DispatchProps {
-  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
   updateForm: (Object) => void;
-  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
   setWikiCreationMessage: (string) => void;
   save: () => void;
 }
@@ -74,7 +72,6 @@ function DoneButton({
   return (
     <>
       {progressBarOpen && <LinearProgress color="secondary" />}
-      {/* @ts-expect-error ts-migrate(2322) FIXME: Type 'boolean | Dispatch<SetStateAction<boolean>>'... Remove this comment to see the full error message */}
       <Snackbar open={snackBarOpen} autoHideDuration={5000} onClose={() => snackBarOpenSetter(false)}>
         <Alert severity="info">{wikiCreationMessage}</Alert>
       </Snackbar>
@@ -83,18 +80,21 @@ function DoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.
           disabled={!existedFolderLocation || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             updateForm(workspaceFormData);
-            const creationError = await ensureWikiExist(existedFolderLocation, true);
-            if (creationError) {
+            let creationError: string | undefined;
+            try {
+              await window.service.wiki.ensureWikiExist(existedFolderLocation, true);
+            } catch (error) {
+              creationError = String(error);
+            }
+            if (creationError !== undefined) {
               setWikiCreationMessage(creationError);
             } else {
               save();
             }
           }}>
-          {/* @ts-expect-error ts-migrate(2322) FIXME: Type '{ children: ("" | Element)[]; t: TFunction<s... Remove this comment to see the full error message */}
           <Trans t={t} i18nKey="AddWorkspace.NewWikiDoneButton" wikiFolderLocation={existedFolderLocation}>
             {existedFolderLocation && (
               <>
@@ -115,24 +115,32 @@ function DoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.
           disabled={!existedFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             if (!userInfo) return;
             const wikiFolderName = getBaseName(existedFolderLocation);
             const parentFolderLocation = getDirectoryName(existedFolderLocation);
             updateForm(workspaceFormData);
-            let creationError = await ensureWikiExist(existedFolderLocation, false);
-            if (!creationError) {
-              creationError = await requestCreateSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name, tagName, true);
+            let creationError: string | undefined;
+            try {
+              await window.service.wiki.ensureWikiExist(existedFolderLocation, false);
+            } catch (error) {
+              creationError = String(error);
             }
-            if (creationError) {
+            if (creationError !== undefined) {
+              try {
+                await window.service.wiki.createSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name, tagName, true);
+              } catch (error) {
+                console.info(error);
+                creationError = String(error);
+              }
+            }
+            if (creationError !== undefined) {
               setWikiCreationMessage(creationError);
             } else {
               save();
             }
           }}>
-          {/* @ts-expect-error ts-migrate(2322) FIXME: Type '{ children: ("" | Element)[]; t: TFunction<s... Remove this comment to see the full error message */}
           <Trans t={t} i18nKey="AddWorkspace.NewSubWikiDoneButton" wikiFolderLocation={existedFolderLocation}>
             {existedFolderLocation && (
               <>
@@ -161,5 +169,4 @@ const mapStateToProps = (state: any) => ({
   wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
 });
 
-// @ts-expect-error ts-migrate(2558) FIXME: Expected 5 type arguments, but got 6.
 export default connect<Props, OwnProps, _, _, _, _>(mapStateToProps, (dispatch) => bindActionCreators(actions, dispatch))(DoneButton);

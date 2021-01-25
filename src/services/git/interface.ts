@@ -11,6 +11,7 @@ export interface IGitService {
   updateGitInfoTiddler(githubRepoName: string): Promise<void>;
   initWikiGit(wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo, isMainWiki: boolean): Promise<void>;
   commitAndSync(wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo): Promise<void>;
+  getWorkspacesRemote(wikiFolderPath: string): Promise<string>;
   clone(githubRepoUrl: string, repoFolderPath: string, userInfo: IUserInfo): Promise<void>;
 }
 export const GitServiceIPCDescriptor = {
@@ -20,6 +21,7 @@ export const GitServiceIPCDescriptor = {
     updateGitInfoTiddler: ProxyPropertyType.Function,
     initWikiGit: ProxyPropertyType.Function,
     commitAndSync: ProxyPropertyType.Function,
+    getWorkspacesRemote: ProxyPropertyType.Function,
     clone: ProxyPropertyType.Function,
   },
 };

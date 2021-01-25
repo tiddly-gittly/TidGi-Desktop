@@ -22,7 +22,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { logger, wikiOutputToFile, refreshOutputFile } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@services/constants/paths';
-import { updateSubWikiPluginContent, getSubWikiPluginContent } from './update-plugin-content';
+import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './update-plugin-content';
 import { container } from '@services/container';
 
 const { lazyInject } = getDecorators(container);
@@ -36,69 +36,32 @@ export class Wiki {
   @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
   @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
 
-  constructor() {
-    this.init();
+  public async getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]> {
+    return await getSubWikiPluginContent(mainWikiPath);
   }
 
-  private init(): void {
-    ipcMain.handle('copy-wiki-template', async (_event, newFolderPath, folderName) => {
-      try {
-        await this.createWiki(newFolderPath, folderName);
-        return '';
-      } catch (error) {
-        return String(error);
-      }
-    });
-    ipcMain.handle('create-sub-wiki', async (_event, newFolderPath, folderName, mainWikiToLink, tagName, onlyLink) => {
-      try {
-        await this.createSubWiki(newFolderPath, folderName, mainWikiToLink, tagName, onlyLink);
-        return '';
-      } catch (error) {
-        console.info(error);
-        return String(error);
-      }
-    });
-    ipcMain.handle('clone-wiki', async (_event, parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo) => {
-      try {
-        await this.cloneWiki(parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo);
-        return '';
-      } catch (error) {
-        console.info(error);
-        return String(error);
-      }
-    });
-    ipcMain.handle('clone-sub-wiki', async (_event, parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo, tagName) => {
-      try {
-        await this.cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo, tagName);
-        return '';
-      } catch (error) {
-        console.info(error);
-        return String(error);
-      }
-    });
-    ipcMain.handle('ensure-wiki-exist', async (_event, wikiPath, shouldBeMainWiki) => {
-      try {
-        await this.ensureWikiExist(wikiPath, shouldBeMainWiki);
-        return '';
-      } catch (error) {
-        console.info(error);
-        return String(error);
-      }
-    });
-    ipcMain.handle('get-sub-wiki-plugin-content', async (_event, mainWikiPath) => await getSubWikiPluginContent(mainWikiPath));
+  public requestOpenTiddlerInWiki(tiddlerName: string): void {
+    const browserView = this.viewService.getActiveBrowserView();
+    if (browserView !== undefined) {
+      browserView.webContents.send('wiki-open-tiddler', tiddlerName);
+    }
+  }
 
-    ipcMain.handle('request-wiki-open-tiddler', (event, tiddlerName) => {
-      const browserView = this.viewService.getActiveBrowserView();
-      if (browserView !== undefined) {
-        browserView.webContents.send('wiki-open-tiddler', tiddlerName);
-      }
-    });
-    ipcMain.handle('request-wiki-send-action-message', (event, actionMessage) => {
-      const browserView = this.viewService.getActiveBrowserView();
-      if (browserView !== undefined) {
-        browserView.webContents.send('wiki-send-action-message', actionMessage);
-      }
-    });
+  public requestWikiSendActionMessage(actionMessage: string): void {
+    const browserView = this.viewService.getActiveBrowserView();
+    if (browserView !== undefined) {
+      browserView.webContents.send('wiki-send-action-message', actionMessage);
+    }
+  }
+
+  // handlers
+  public async copyWikiTemplate(newFolderPath: string, folderName: string): Promise<string> {
+    try {
+      await this.createWiki(newFolderPath, folderName);
+      return '';
+    } catch (error) {
+      return String(error);
+    }
   }
 
   // wiki-worker-manager.ts

@@ -24,15 +24,12 @@ export class Git implements IGitService {
   ) {
     const syncDebounceInterval = this.preferenceService.get('syncDebounceInterval');
     this.debounceCommitAndSync = debounce(this.commitAndSync.bind(this), syncDebounceInterval);
-    this.init();
   }
 
   public debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo) => Promise<void> | undefined;
 
-  private init(): void {
-    ipcMain.handle('get-workspaces-remote', async (_event, wikiFolderPath) => {
-      return await github.getRemoteUrl(wikiFolderPath);
-    });
+  public async getWorkspacesRemote(wikiFolderPath: string): Promise<string> {
+    return await github.getRemoteUrl(wikiFolderPath);
   }
 
   /**

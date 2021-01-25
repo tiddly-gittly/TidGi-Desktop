@@ -2,6 +2,7 @@ import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { WikiChannel } from '@/constants/channels';
 import { IWorkspace } from '@services/workspaces/interface';
 import { IUserInfo } from '@services/types';
+import type { ISubWikiPluginContent } from './update-plugin-content';
 
 /**
  * Handle wiki worker startup and restart
@@ -11,6 +12,10 @@ export interface IWikiService {
   startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void>;
   stopWiki(homePath: string): Promise<void>;
   stopAllWiki(): Promise<void>;
+  copyWikiTemplate(newFolderPath: string, folderName: string): Promise<string>;
+  getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
+  requestWikiSendActionMessage(actionMessage: string): void;
+  requestOpenTiddlerInWiki(tiddlerName: string): void;
   linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
   createWiki(newFolderPath: string, folderName: string): Promise<void>;
   createSubWiki(newFolderPath: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
@@ -38,6 +43,10 @@ export const WikiServiceIPCDescriptor = {
     startWiki: ProxyPropertyType.Function,
     stopWiki: ProxyPropertyType.Function,
     stopAllWiki: ProxyPropertyType.Function,
+    copyWikiTemplate: ProxyPropertyType.Function,
+    getSubWikiPluginContent: ProxyPropertyType.Function,
+    requestWikiSendActionMessage: ProxyPropertyType.Function,
+    requestOpenTiddlerInWiki: ProxyPropertyType.Function,
     linkWiki: ProxyPropertyType.Function,
     createWiki: ProxyPropertyType.Function,
     createSubWiki: ProxyPropertyType.Function,

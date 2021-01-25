@@ -13,7 +13,7 @@ import Alert from '@material-ui/lab/Alert';
 import * as actions from '../../state/dialog-add-workspace/actions';
 
 import type { IUserInfo } from '@services/types';
-import { requestCloneWiki, requestCloneSubWiki, getIconPath } from '../../senders';
+import { getIconPath } from '../../senders';
 
 import useWikiCreationMessage from './use-wiki-creation-message';
 
@@ -96,8 +96,13 @@ function CloneWikiDoneButton({
               return;
             }
             updateForm(workspaceFormData);
-            const cloneError = await requestCloneWiki(parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo);
-            if (cloneError) {
+            let cloneError: string | undefined;
+            try {
+              await window.service.wiki.cloneWiki(parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo);
+            } catch (error) {
+              cloneError = String(error);
+            }
+            if (cloneError !== undefined) {
               setWikiCreationMessage(cloneError);
             } else {
               save();
@@ -132,9 +137,13 @@ function CloneWikiDoneButton({
               return;
             }
             updateForm(workspaceFormData);
-            const creationError = await requestCloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name, githubWikiUrl, userInfo, tagName);
-            console.log(tagName, creationError);
-            if (creationError) {
+            let creationError: string | undefined;
+            try {
+              await window.service.wiki.cloneSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name, githubWikiUrl, userInfo, tagName);
+            } catch (error) {
+              creationError = String(error);
+            }
+            if (creationError !== undefined) {
               setWikiCreationMessage(creationError);
             } else {
               save();

@@ -15,11 +15,12 @@ import ExistedWikiPathForm from './existed-wiki-path-form';
 import ExistedWikiDoneButton from './existed-wiki-done-button';
 import CloneWikiDoneButton from './clone-wiki-done-button';
 import { getGithubUserInfo, setGithubUserInfo } from '@services/types';
+import type { ISubWikiPluginContent } from '@services/wiki/update-plugin-content';
 import type { IUserInfo } from '@services/types';
 import TabBar from './tab-bar';
 import GitTokenForm, { getGithubToken, setGithubToken } from '../shared/git-token-form';
 
-import { requestOpen, getDesktopPath, countWorkspace, getWorkspaceRemote, getSubWikiPluginContent } from '../../senders';
+import { requestOpen, getDesktopPath, countWorkspace } from '../../senders';
 
 const graphqlClient = new GraphQLClient({
   url: GITHUB_GRAPHQL_API,
@@ -70,25 +71,25 @@ export default function AddWorkspace() {
 
   const [userInfo, userInfoSetter] = useState<IUserInfo | void>(getGithubUserInfo());
   useEffect(() => {
-    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'void | IUserInfo' is not assigna... Remove this comment to see the full error message
     setGithubUserInfo(userInfo);
   }, [userInfo]);
 
   const [mainWikiToLink, mainWikiToLinkSetter] = useState({ name: '', port: 0 });
   const [tagName, tagNameSetter] = useState<string>('');
-  const [fileSystemPaths, fileSystemPathsSetter] = useState([]);
+  const [fileSystemPaths, fileSystemPathsSetter] = useState<ISubWikiPluginContent[]>([]);
   useEffect(() => {
-    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'Dispatch<SetStateAction<never[]>... Remove this comment to see the full error message
-    // eslint-disable-next-line promise/catch-or-return
-    getSubWikiPluginContent(mainWikiToLink.name).then(fileSystemPathsSetter);
+    void window.service.wiki.getSubWikiPluginContent(mainWikiToLink.name).then(fileSystemPathsSetter);
   }, [mainWikiToLink]);
   const [githubWikiUrl, githubWikiUrlSetter] = useState<string>('');
   useEffect(() => {
-    async function getWorkspaceRemoteInEffect() {
-      const url = await getWorkspaceRemote(existedFolderLocation);
-      url && githubWikiUrlSetter(url);
+    async function getWorkspaceRemoteInEffect(): Promise<void> {
+      const url = await window.service.git.getWorkspacesRemote(existedFolderLocation);
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      if (url) {
+        githubWikiUrlSetter(url);
+      }
     }
-    getWorkspaceRemoteInEffect();
+    void getWorkspaceRemoteInEffect();
   }, [githubWikiUrl, existedFolderLocation]);
 
   const [wikiFolderName, wikiFolderNameSetter] = useState('tiddlywiki');

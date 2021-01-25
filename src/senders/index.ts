@@ -1,23 +1,5 @@
-import type { IUserInfo } from '../helpers/user-info';
 
-const { ipcRenderer } = window.remote;
 
-export const requestCopyWikiTemplate = (newFolderPath: string, folderName: string) => ipcRenderer.invoke('copy-wiki-template', newFolderPath, folderName);
-export const requestCreateSubWiki = (newFolderPath: string, folderName: string, mainWikiToLink: string, tagName: string, onlyLink: boolean) =>
-  ipcRenderer.invoke('create-sub-wiki', newFolderPath, folderName, mainWikiToLink, tagName, onlyLink);
-export const ensureWikiExist = (wikiPath: string, shouldBeMainWiki: boolean) => ipcRenderer.invoke('ensure-wiki-exist', wikiPath, shouldBeMainWiki);
-export const requestCloneWiki = (parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: string, userInfo: IUserInfo) =>
-  ipcRenderer.invoke('clone-wiki', parentFolderLocation, wikiFolderName, githubWikiUrl, userInfo);
-export const requestCloneSubWiki = (
-  parentFolderLocation: string,
-  wikiFolderName: string,
-  mainWikiPath: string,
-  githubWikiUrl: string,
-  userInfo: IUserInfo,
-  tagName: string,
-) => ipcRenderer.invoke('clone-sub-wiki', parentFolderLocation, wikiFolderName, mainWikiPath, githubWikiUrl, userInfo, tagName);
-export const getSubWikiPluginContent = (mainWikiPath: string): Promise<Array<{ tagName: string; folderName: string }>> =>
-  ipcRenderer.invoke('get-sub-wiki-plugin-content', mainWikiPath);
 export const requestOpen = (uri: string, isDirectory: boolean) => ipcRenderer.invoke('request-open', uri, !!isDirectory);
 export const requestShowMessageBox = (message: string, type: string) => ipcRenderer.invoke('request-show-message-box', message, type);
 export const requestLoadUrl = (url: string, id: string) => ipcRenderer.invoke('request-load-url', url, id);
@@ -69,7 +51,6 @@ export const requestSetSystemPreference = (name: string, value: JsonValue) => ip
 export const countWorkspace = () => ipcRenderer.invokeSync('count-workspace');
 export const getWorkspace = (id: string) => ipcRenderer.invokeSync('get-workspace', id);
 export const getWorkspaces = () => ipcRenderer.invokeSync('get-workspaces');
-export const getWorkspaceRemote = (wikiFolderPath: string) => ipcRenderer.invoke('get-workspaces-remote', wikiFolderPath);
 export const requestClearBrowsingData = () => ipcRenderer.invoke('request-clear-browsing-data');
 export const requestCreateWorkspace = (
   name: string,
@@ -83,8 +64,6 @@ export const requestCreateWorkspace = (
   tagName: string,
 ) => ipcRenderer.invoke('request-create-workspace', name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground, tagName);
 
-export const requestOpenTiddlerInWiki = (tiddlerName: string) => ipcRenderer.invoke('request-wiki-open-tiddler', tiddlerName);
-export const requestWikiSendActionMessage = (actionMessage: string) => ipcRenderer.invoke('request-wiki-send-action-message', actionMessage);
 export const requestHibernateWorkspace = (id: string) => ipcRenderer.invoke('request-hibernate-workspace', id);
 export const requestOpenUrlInWorkspace = (url: string, id: string) => ipcRenderer.invoke('request-open-url-in-workspace', url, id);
 export const requestRealignActiveWorkspace = () => ipcRenderer.invoke('request-realign-active-workspace');
@@ -111,10 +90,6 @@ export const getDirectoryName = (pathString: string): string => ipcRenderer.invo
 // Workspace Meta
 export const getWorkspaceMeta = (id: string) => ipcRenderer.invokeSync('get-workspace-meta', id);
 export const getWorkspaceMetas = () => ipcRenderer.invokeSync('get-workspace-metas');
-
-// Workspace Git
-export const initWikiGit = (wikiFolderPath: string, githubRepoUrl: string, userInfo: Object, isMainWiki: boolean) =>
-  ipcRenderer.invoke('request-init-wiki-git', wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
 
 // Find In Page
 export const requestFindInPage = (text: string, forward: boolean) => ipcRenderer.invoke('request-find-in-page', text, !!forward);
