@@ -12,8 +12,6 @@ export const getShouldUseDarkColors = async (): Promise<void> => {
   await ipcRenderer.invoke('get-should-use-dark-colors');
 };
 
-export const requestCheckForUpdates = async (isSilent: boolean) => await ipcRenderer.invoke('request-check-for-updates', isSilent);
-
 // Notifications
 export const requestShowNotification = async (options: { title: string; body: string }) => await ipcRenderer.invoke('request-show-notification', options);
 export const requestUpdatePauseNotificationsInfo = async () => await ipcRenderer.invoke('request-update-pause-notifications-info');

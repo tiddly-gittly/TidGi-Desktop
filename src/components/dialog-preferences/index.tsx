@@ -907,7 +907,7 @@ const Preferences = ({
             <ListItem
               button
               onClick={() => {
-                requestShowNotification({
+                window.service.notification({
                   title: 'Test notifications',
                   body: 'It is working!',
                 });
@@ -1297,7 +1297,7 @@ const Preferences = ({
           <List dense disablePadding>
             <ListItem
               button
-              onClick={() => requestCheckForUpdates(false)}
+              onClick={async () => await window.service.updater.checkForUpdates(false)}
               disabled={
                 updaterStatus === 'checking-for-update' ||
                 updaterStatus === 'download-progress' ||
