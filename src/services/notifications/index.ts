@@ -1,3 +1,4 @@
+import { Notification, NotificationConstructorOptions } from 'electron';
 import { injectable, inject } from 'inversify';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IPreferenceService } from '@services/preferences/interface';
@@ -5,13 +6,20 @@ import type { IViewService } from '@services/view/interface';
 import { INotificationService, IPauseNotificationsInfo } from './interface';
 
 @injectable()
-export class Notification implements INotificationService {
+export class NotificationService implements INotificationService {
   constructor(
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
     @inject(serviceIdentifier.View) private readonly viewService: IViewService,
   ) {}
 
   private pauseNotificationsInfo?: IPauseNotificationsInfo;
+
+  public show(options: NotificationConstructorOptions): void {
+    if (Notification.isSupported()) {
+      const notification = new Notification(options);
+      notification.show();
+    }
+  }
 
   private getCurrentScheduledDateTime(): { from: Date; to: Date } | undefined {
     const pauseNotificationsBySchedule = this.preferenceService.get('pauseNotificationsBySchedule');

@@ -134,7 +134,7 @@ const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
 
   const pauseNotif = (tilDate: any) => {
     requestSetPreference('pauseNotifications', `pause:${tilDate.toString()}`);
-    requestShowNotification({
+    void window.service.notification.show({
       title: 'Notifications paused',
       body: `Notifications paused until ${formatDate(tilDate)}.`,
     });
@@ -162,7 +162,7 @@ const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
                 } else {
                   requestSetPreference('pauseNotifications', null);
                 }
-                requestShowNotification({
+                void window.service.notification.show({
                   title: 'Notifications resumed',
                   body: 'Notifications are now resumed.',
                 });

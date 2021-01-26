@@ -11,7 +11,7 @@ import { ContextService } from '@services/constants';
 import { Git } from '@services/git';
 import { MenuService } from '@services/menu';
 import { NativeService } from '@services/native';
-import { Notification } from '@services/notifications';
+import { NotificationService } from '@services/notifications';
 import { Preference } from '@services/preferences';
 import { SystemPreference } from '@services/systemPreferences';
 import { Updater } from '@services/updater';
@@ -43,7 +43,7 @@ container.bind<IContextService>(serviceIdentifier.Context).to(ContextService).in
 container.bind<IGitService>(serviceIdentifier.Git).to(Git).inSingletonScope();
 container.bind<IMenuService>(serviceIdentifier.MenuService).to(MenuService).inSingletonScope();
 container.bind<INativeService>(serviceIdentifier.NativeService).to(NativeService).inSingletonScope();
-container.bind<INotificationService>(serviceIdentifier.Notification).to(Notification).inSingletonScope();
+container.bind<INotificationService>(serviceIdentifier.Notification).to(NotificationService).inSingletonScope();
 container.bind<IPreferenceService>(serviceIdentifier.Preference).to(Preference).inSingletonScope();
 container.bind<ISystemPreferenceService>(serviceIdentifier.SystemPreference).to(SystemPreference).inSingletonScope();
 container.bind<IUpdaterService>(serviceIdentifier.Updater).to(Updater).inSingletonScope();

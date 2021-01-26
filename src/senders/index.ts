@@ -13,7 +13,6 @@ export const getShouldUseDarkColors = async (): Promise<void> => {
 };
 
 // Notifications
-export const requestShowNotification = async (options: { title: string; body: string }) => await ipcRenderer.invoke('request-show-notification', options);
 export const requestUpdatePauseNotificationsInfo = async () => await ipcRenderer.invoke('request-update-pause-notifications-info');
 export const getPauseNotificationsInfo = () => ipcRenderer.invokeSync('get-pause-notifications-info');
 

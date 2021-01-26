@@ -4,7 +4,7 @@ export default {
   Context: Symbol.for('Context'),
   MenuService: Symbol.for('MenuService'),
   NativeService: Symbol.for('NativeService'),
-  Notification: Symbol.for('Notification'),
+  NotificationService: Symbol.for('NotificationService'),
   Preference: Symbol.for('Preference'),
   SystemPreference: Symbol.for('SystemPreference'),
   Updater: Symbol.for('Updater'),
