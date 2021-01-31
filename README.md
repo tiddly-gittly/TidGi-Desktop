@@ -6,6 +6,10 @@
 
 **TiddlyGit** - Customizable personal knowledge-base with Github as unlimited storage and blogging platform.
 
+注意，正在重构成 TS，版本一段时间内不会更新，新版会修复很多问题。[refactor TS](https://github.com/tiddly-gittly/TiddlyGit-Desktop/projects/7)
+
+Attention, It is in a process refactoring to ts, there won't be an update for a while. New version will fix various of things. [refactor TS](https://github.com/tiddly-gittly/TiddlyGit-Desktop/projects/7)
+
 [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TiddlyGit-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)
 
 For windows users (I'm personally using MacOS), I'm recently lacking time to fully test the Windows build, so there may be some bug in it, if you can help test and find some bug, please contact me github issue.
