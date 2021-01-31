@@ -2,8 +2,6 @@ import { combineReducers } from 'redux';
 
 import { UPDATE_PAUSE_NOTIFICATIONS_INFO, UPDATE_SHOW_DATE_TIME_PICKER } from '../../constants/actions';
 
-import { getPauseNotificationsInfo } from '../../senders';
-
 const showDateTimePicker = (state = false, action: any) => {
   switch (action.type) {
     case UPDATE_SHOW_DATE_TIME_PICKER: {
@@ -15,7 +13,7 @@ const showDateTimePicker = (state = false, action: any) => {
   }
 };
 
-const pauseNotificationsInfo = (state = getPauseNotificationsInfo(), action: any) => {
+const pauseNotificationsInfo = (state = await window.service.notification.getPauseNotificationsInfo(), action: any) => {
   switch (action.type) {
     case UPDATE_PAUSE_NOTIFICATIONS_INFO: {
       return action.pauseNotificationsInfo;

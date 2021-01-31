@@ -132,8 +132,8 @@ const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
     },
   ];
 
-  const pauseNotif = (tilDate: any) => {
-    requestSetPreference('pauseNotifications', `pause:${tilDate.toString()}`);
+  const pauseNotification = (tilDate: Date): void => {
+    void window.service.preference.set('pauseNotifications', `pause:${tilDate.toString()}`);
     void window.service.notification.show({
       title: 'Notifications paused',
       body: `Notifications paused until ${formatDate(tilDate)}.`,
@@ -182,7 +182,7 @@ const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
                   </ListItem>
                 }>
                 {quickShortcuts.map((shortcut) => (
-                  <MenuItem dense key={shortcut.name} onClick={() => pauseNotif(shortcut.calcDate())}>
+                  <MenuItem dense key={shortcut.name} onClick={() => pauseNotification(shortcut.calcDate())}>
                     {shortcut.name}
                   </MenuItem>
                 ))}
@@ -209,7 +209,7 @@ const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
     return (
       <List dense className={classes.list} disablePadding subheader={<ListSubheader component="div">Pause notifications</ListSubheader>}>
         {quickShortcuts.map((shortcut) => (
-          <ListItem button key={shortcut.name} onClick={() => pauseNotif(shortcut.calcDate())}>
+          <ListItem button key={shortcut.name} onClick={() => pauseNotification(shortcut.calcDate())}>
             <ListItemText primary={shortcut.name} />
           </ListItem>
         ))}
@@ -236,7 +236,7 @@ const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
       <DateTimePicker
         value={new Date()}
         renderInput={(dateTimeProps) => <TextField className={classes.hidden} {...dateTimeProps} />}
-        onChange={pauseNotif}
+        onChange={pauseNotification}
         label="Custom"
         open={showDateTimePicker}
         onOpen={() => onUpdateShowDateTimePicker(true)}

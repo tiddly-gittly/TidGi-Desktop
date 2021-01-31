@@ -12,10 +12,6 @@ export const getShouldUseDarkColors = async (): Promise<void> => {
   await ipcRenderer.invoke('get-should-use-dark-colors');
 };
 
-// Notifications
-export const requestUpdatePauseNotificationsInfo = async () => await ipcRenderer.invoke('request-update-pause-notifications-info');
-export const getPauseNotificationsInfo = () => ipcRenderer.invokeSync('get-pause-notifications-info');
-
 // Preferences
 export const requestSetPreference = async (name: string, value: JsonValue) => await ipcRenderer.invoke('request-set-preference', name, value);
 export const requestResetPreferences = async () => await ipcRenderer.invoke('request-reset-preferences');
