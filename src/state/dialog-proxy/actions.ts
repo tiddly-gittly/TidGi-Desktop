@@ -3,8 +3,6 @@ import { DIALOG_PROXY_FORM_UPDATE, DIALOG_PROXY_INIT } from '../../constants/act
 import validate from '../../helpers/validate';
 import hasErrors from '../../helpers/has-errors';
 
-import { requestSetPreference, requestShowRequireRestartDialog } from '../../senders';
-
 export const init = () => ({
   type: DIALOG_PROXY_INIT,
 });
@@ -59,10 +57,10 @@ export const save = () => (dispatch: any, getState: any) => {
     return dispatch(updateForm(validatedChanges));
   }
 
-  requestSetPreference('proxyRules', form.proxyRules);
-  requestSetPreference('proxyBypassRules', form.proxyBypassRules);
-  requestSetPreference('proxyPacScript', form.proxyPacScript);
-  requestSetPreference('proxyType', form.proxyType);
+  void window.service.preference.set('proxyRules', form.proxyRules);
+  void window.service.preference.set('proxyBypassRules', form.proxyBypassRules);
+  void window.service.preference.set('proxyPacScript', form.proxyPacScript);
+  void window.service.preference.set('proxyType', form.proxyType);
   requestShowRequireRestartDialog();
 
   window.remote.closeCurrentWindow();

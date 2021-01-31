@@ -13,7 +13,6 @@ export const getShouldUseDarkColors = async (): Promise<void> => {
 };
 
 // Preferences
-export const requestSetPreference = async (name: string, value: JsonValue) => await ipcRenderer.invoke('request-set-preference', name, value);
 export const requestResetPreferences = async () => await ipcRenderer.invoke('request-reset-preferences');
 export const requestShowRequireRestartDialog = async () => await ipcRenderer.invoke('request-show-require-restart-dialog');
 

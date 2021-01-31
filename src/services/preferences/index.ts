@@ -141,9 +141,6 @@ export class Preference implements IPreferenceService {
     ipcMain.handle(PreferenceChannel.getPreferences, (_event) => {
       return this.cachedPreferences;
     });
-    ipcMain.handle(PreferenceChannel.requestSetPreference, <K extends keyof IPreferences>(_: unknown, key: K, value: IPreferences[K]): void => {
-      void this.set(key, value);
-    });
   }
 
   /**

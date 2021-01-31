@@ -421,7 +421,7 @@ const Preferences = ({
                 helperText={t('Preference.UserNameDetail')}
                 fullWidth
                 onChange={(event) => {
-                  requestSetPreference('userName', event.target.value);
+                  void window.service.preference.set('userName', event.target.value);
                 }}
                 label={t('Preference.UserName')}
                 value={userName}
@@ -459,7 +459,7 @@ const Preferences = ({
                     // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'Date | null' is not assignable t... Remove this comment to see the full error message
                     const timeWithoutDate = setDate(setMonth(setYear(date, 1970), 0), 1);
                     const utcTime = (timeWithoutDate.getTime() / 1000 - new Date().getTimezoneOffset() * 60) * 1000;
-                    requestSetPreference('syncDebounceInterval', utcTime);
+                    void window.service.preference.set('syncDebounceInterval', utcTime);
                     debouncedRequestShowRequireRestartDialog();
                   }}
                   onClose={() => {
@@ -488,13 +488,13 @@ const Preferences = ({
                   <ChevronRightIcon color="action" />
                 </ListItem>
               }>
-              <MenuItem dense onClick={() => requestSetPreference('themeSource', 'system')}>
+              <MenuItem dense onClick={() => void window.service.preference.set('themeSource', 'system')}>
                 {t('Preference.SystemDefalutTheme')}
               </MenuItem>
-              <MenuItem dense onClick={() => requestSetPreference('themeSource', 'light')}>
+              <MenuItem dense onClick={() => void window.service.preference.set('themeSource', 'light')}>
                 {t('Preference.LightTheme')}
               </MenuItem>
-              <MenuItem dense onClick={() => requestSetPreference('themeSource', 'dark')}>
+              <MenuItem dense onClick={() => void window.service.preference.set('themeSource', 'dark')}>
                 {t('Preference.DarkTheme')}
               </MenuItem>
             </StatedMenu>
@@ -507,7 +507,7 @@ const Preferences = ({
                   color="primary"
                   checked={sidebar}
                   onChange={(event) => {
-                    requestSetPreference('sidebar', event.target.checked);
+                    void window.service.preference.set('sidebar', event.target.checked);
                     requestRealignActiveWorkspace();
                   }}
                 />
@@ -522,7 +522,7 @@ const Preferences = ({
                   color="primary"
                   checked={sidebarShortcutHints}
                   onChange={(event) => {
-                    requestSetPreference('sidebarShortcutHints', event.target.checked);
+                    void window.service.preference.set('sidebarShortcutHints', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -540,7 +540,7 @@ const Preferences = ({
                   checked={(window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar) || navigationBar}
                   disabled={window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar}
                   onChange={(event) => {
-                    requestSetPreference('navigationBar', event.target.checked);
+                    void window.service.preference.set('navigationBar', event.target.checked);
                     requestRealignActiveWorkspace();
                   }}
                 />
@@ -557,7 +557,7 @@ const Preferences = ({
                       color="primary"
                       checked={titleBar}
                       onChange={(event) => {
-                        requestSetPreference('titleBar', event.target.checked);
+                        void window.service.preference.set('titleBar', event.target.checked);
                         requestRealignActiveWorkspace();
                       }}
                     />
@@ -576,7 +576,7 @@ const Preferences = ({
                       color="primary"
                       checked={hideMenuBar}
                       onChange={(event) => {
-                        requestSetPreference('hideMenuBar', event.target.checked);
+                        void window.service.preference.set('hideMenuBar', event.target.checked);
                         requestShowRequireRestartDialog();
                       }}
                     />
@@ -596,7 +596,7 @@ const Preferences = ({
                   color="primary"
                   checked={attachToMenubar}
                   onChange={(event) => {
-                    requestSetPreference('attachToMenubar', event.target.checked);
+                    void window.service.preference.set('attachToMenubar', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -640,7 +640,7 @@ const Preferences = ({
                   color="primary"
                   checked={blockAds}
                   onChange={(event) => {
-                    requestSetPreference('blockAds', event.target.checked);
+                    void window.service.preference.set('blockAds', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -679,7 +679,7 @@ const Preferences = ({
                   checked={themeSource !== 'light' && darkReader}
                   disabled={themeSource === 'light'}
                   onChange={(event) => {
-                    requestSetPreference('darkReader', event.target.checked);
+                    void window.service.preference.set('darkReader', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -714,7 +714,7 @@ const Preferences = ({
                       max={50}
                       onChange={(_, value) => {
                         // @ts-expect-error ts-migrate(2365) FIXME: Operator '+' cannot be applied to types 'number | ... Remove this comment to see the full error message
-                        requestSetPreference('darkReaderBrightness', value + 100);
+                        void window.service.preference.set('darkReaderBrightness', value + 100);
                       }}
                     />
                   </Grid>
@@ -747,7 +747,7 @@ const Preferences = ({
                       max={50}
                       onChange={(_, value) => {
                         // @ts-expect-error ts-migrate(2365) FIXME: Operator '+' cannot be applied to types 'number | ... Remove this comment to see the full error message
-                        requestSetPreference('darkReaderContrast', value + 100);
+                        void window.service.preference.set('darkReaderContrast', value + 100);
                       }}
                     />
                   </Grid>
@@ -775,7 +775,7 @@ const Preferences = ({
                       min={0}
                       max={100}
                       onChange={(_, value) => {
-                        requestSetPreference('darkReaderSepia', value);
+                        void window.service.preference.set('darkReaderSepia', value);
                       }}
                     />
                   </Grid>
@@ -803,7 +803,7 @@ const Preferences = ({
                       min={0}
                       max={100}
                       onChange={(_, value) => {
-                        requestSetPreference('darkReaderGrayscale', value);
+                        void window.service.preference.set('darkReaderGrayscale', value);
                       }}
                     />
                   </Grid>
@@ -835,7 +835,7 @@ const Preferences = ({
                     renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleFrom)}
                     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-                    onChange={(d) => requestSetPreference('pauseNotificationsByScheduleFrom', d.toString())}
+                    onChange={(d) => void window.service.preference.set('pauseNotificationsByScheduleFrom', d.toString())}
                     onClose={() => {
                       window.preventClosingWindow = false;
                     }}
@@ -851,7 +851,7 @@ const Preferences = ({
                     renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleTo)}
                     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-                    onChange={(d) => requestSetPreference('pauseNotificationsByScheduleTo', d.toString())}
+                    onChange={(d) => void window.service.preference.set('pauseNotificationsByScheduleTo', d.toString())}
                     onClose={() => {
                       window.preventClosingWindow = false;
                     }}
@@ -869,7 +869,7 @@ const Preferences = ({
                   color="primary"
                   checked={pauseNotificationsBySchedule}
                   onChange={(event) => {
-                    requestSetPreference('pauseNotificationsBySchedule', event.target.checked);
+                    void window.service.preference.set('pauseNotificationsBySchedule', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -883,7 +883,7 @@ const Preferences = ({
                   color="primary"
                   checked={pauseNotificationsMuteAudio}
                   onChange={(event) => {
-                    requestSetPreference('pauseNotificationsMuteAudio', event.target.checked);
+                    void window.service.preference.set('pauseNotificationsMuteAudio', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -897,7 +897,7 @@ const Preferences = ({
                   color="primary"
                   checked={unreadCountBadge}
                   onChange={(event) => {
-                    requestSetPreference('unreadCountBadge', event.target.checked);
+                    void window.service.preference.set('unreadCountBadge', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -976,7 +976,7 @@ const Preferences = ({
                   color="primary"
                   checked={spellcheck}
                   onChange={(event) => {
-                    requestSetPreference('spellcheck', event.target.checked);
+                    void window.service.preference.set('spellcheck', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -1014,7 +1014,7 @@ const Preferences = ({
                   .then((result: any) => {
                     // eslint-disable-next-line promise/always-return
                     if (!result.canceled && result.filePaths) {
-                      requestSetPreference('downloadPath', result.filePaths[0]);
+                      void window.service.preference.set('downloadPath', result.filePaths[0]);
                     }
                   })
                   .catch((error: any) => {
@@ -1033,7 +1033,7 @@ const Preferences = ({
                   color="primary"
                   checked={askForDownloadPath}
                   onChange={(event) => {
-                    requestSetPreference('askForDownloadPath', event.target.checked);
+                    void window.service.preference.set('askForDownloadPath', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -1068,7 +1068,7 @@ const Preferences = ({
                   color="primary"
                   checked={blockAds}
                   onChange={(event) => {
-                    requestSetPreference('blockAds', event.target.checked);
+                    void window.service.preference.set('blockAds', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -1083,7 +1083,7 @@ const Preferences = ({
                   color="primary"
                   checked={rememberLastPageVisited}
                   onChange={(event) => {
-                    requestSetPreference('rememberLastPageVisited', event.target.checked);
+                    void window.service.preference.set('rememberLastPageVisited', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -1098,7 +1098,7 @@ const Preferences = ({
                   color="primary"
                   checked={shareWorkspaceBrowsingData}
                   onChange={(event) => {
-                    requestSetPreference('shareWorkspaceBrowsingData', event.target.checked);
+                    void window.service.preference.set('shareWorkspaceBrowsingData', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -1134,7 +1134,7 @@ const Preferences = ({
                   color="primary"
                   checked={ignoreCertificateErrors}
                   onChange={(event) => {
-                    requestSetPreference('ignoreCertificateErrors', event.target.checked);
+                    void window.service.preference.set('ignoreCertificateErrors', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -1232,7 +1232,7 @@ const Preferences = ({
                   color="primary"
                   checked={hibernateUnusedWorkspacesAtLaunch}
                   onChange={(event) => {
-                    requestSetPreference('hibernateUnusedWorkspacesAtLaunch', event.target.checked);
+                    void window.service.preference.set('hibernateUnusedWorkspacesAtLaunch', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -1263,7 +1263,7 @@ const Preferences = ({
                       color="primary"
                       checked={swipeToNavigate}
                       onChange={(event) => {
-                        requestSetPreference('swipeToNavigate', event.target.checked);
+                        void window.service.preference.set('swipeToNavigate', event.target.checked);
                         requestShowRequireRestartDialog();
                       }}
                     />
@@ -1280,7 +1280,7 @@ const Preferences = ({
                   color="primary"
                   checked={useHardwareAcceleration}
                   onChange={(event) => {
-                    requestSetPreference('useHardwareAcceleration', event.target.checked);
+                    void window.service.preference.set('useHardwareAcceleration', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />
@@ -1319,7 +1319,7 @@ const Preferences = ({
                   color="primary"
                   checked={allowPrerelease}
                   onChange={(event) => {
-                    requestSetPreference('allowPrerelease', event.target.checked);
+                    void window.service.preference.set('allowPrerelease', event.target.checked);
                     requestShowRequireRestartDialog();
                   }}
                 />

@@ -1,5 +1,4 @@
 import { DIALOG_SPELLCHECK_LANGUAGES_INIT, DIALOG_SPELLCHECK_LANGUAGES_UPDATE_FORM } from '../../constants/actions';
-import { requestSetPreference, requestShowRequireRestartDialog } from '../../senders';
 
 export const init = () => ({
   type: DIALOG_SPELLCHECK_LANGUAGES_INIT,
@@ -35,7 +34,7 @@ export const removeLanguage = (code: any) => (dispatch: any, getState: any) => {
 export const save = () => (dispatch: any, getState: any) => {
   const { form } = getState().dialogSpellcheckLanguages;
 
-  requestSetPreference('spellcheckLanguages', form.spellcheckLanguages);
+  void window.service.preference.set('spellcheckLanguages', form.spellcheckLanguages);
 
   requestShowRequireRestartDialog();
 

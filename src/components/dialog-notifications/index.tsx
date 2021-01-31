@@ -156,11 +156,11 @@ const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
               primary="Resume notifications"
               onClick={() => {
                 if (pauseNotificationsInfo.reason === 'scheduled') {
-                  requestSetPreference('pauseNotifications', `resume:${pauseNotificationsInfo.tilDate}`);
+                  void window.service.preference.set('pauseNotifications', `resume:${pauseNotificationsInfo.tilDate}`);
                 } else if (pauseNotificationsInfo.schedule && new Date() < new Date(pauseNotificationsInfo.schedule.to)) {
-                  requestSetPreference('pauseNotifications', `resume:${pauseNotificationsInfo.schedule.to}`);
+                  void window.service.preference.set('pauseNotifications', `resume:${pauseNotificationsInfo.schedule.to}`);
                 } else {
-                  requestSetPreference('pauseNotifications', null);
+                  void window.service.preference.set('pauseNotifications', null);
                 }
                 void window.service.notification.show({
                   title: 'Notifications resumed',

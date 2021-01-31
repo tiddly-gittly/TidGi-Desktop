@@ -53,7 +53,6 @@ export enum PreferenceChannel {
   requestShowRequireRestartDialog = 'request-show-require-restart-dialog',
   getPreference = 'get-preference',
   getPreferences = 'get-preferences',
-  requestSetPreference = 'request-set-preference',
   requestClearBrowsingData = 'request-clear-browsing-data',
 }
 
