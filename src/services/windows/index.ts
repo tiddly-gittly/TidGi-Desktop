@@ -39,27 +39,6 @@ export class Window implements IWindowService {
   }
 
   initIPCHandlers(): void {
-    ipcMain.handle(WindowChannel.requestShowRequireRestartDialog, () => {
-      const availableWindowToShowDialog = this.get(WindowNames.preferences) ?? this.get(WindowNames.main);
-      if (availableWindowToShowDialog !== undefined) {
-        dialog
-          .showMessageBox(availableWindowToShowDialog, {
-            type: 'question',
-            buttons: [i18n.t('Dialog.RestartNow'), i18n.t('Dialog.Later')],
-            message: i18n.t('Dialog.RestartMessage'),
-            cancelId: 1,
-          })
-          .then(({ response }) => {
-            if (response === 0) {
-              const availableApp = (app as App | undefined) === undefined ? remote.app : app;
-              availableApp.relaunch();
-              availableApp.quit();
-            }
-          })
-          .catch(console.error);
-      }
-    });
-
     ipcMain.handle('request-find-in-page', (_event, text: string, forward?: boolean, windowName: WindowNames = WindowNames.main) => {
       const mainWindow = this.get(windowName);
       const contents = mainWindow?.getBrowserView()?.webContents;
@@ -95,6 +74,26 @@ export class Window implements IWindowService {
         });
       }
     });
+  }
+
+  public async requestShowRequireRestartDialog(): Promise<void> {
+    const availableWindowToShowDialog = this.get(WindowNames.preferences) ?? this.get(WindowNames.main);
+    if (availableWindowToShowDialog !== undefined) {
+      await dialog
+        .showMessageBox(availableWindowToShowDialog, {
+          type: 'question',
+          buttons: [i18n.t('Dialog.RestartNow'), i18n.t('Dialog.Later')],
+          message: i18n.t('Dialog.RestartMessage'),
+          cancelId: 1,
+        })
+        .then(({ response }) => {
+          if (response === 0) {
+            app.relaunch();
+            app.quit();
+          }
+        })
+        .catch(console.error);
+    }
   }
 
   public get(windowName: WindowNames = WindowNames.main): BrowserWindow | undefined {

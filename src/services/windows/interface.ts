@@ -14,6 +14,7 @@ export interface IWindowService {
   updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): void;
   getWindowMeta<N extends WindowNames>(windowName: N): WindowMeta[N] | undefined;
   sendToAllWindows: (channel: Channels, ...arguments_: unknown[]) => void;
+  requestShowRequireRestartDialog(): Promise<void>;
   goHome(windowName: WindowNames): Promise<void>;
   goBack(windowName: WindowNames): void;
   goForward(windowName: WindowNames): void;
@@ -29,6 +30,7 @@ export const WindowServiceIPCDescriptor = {
     setWindowMeta: ProxyPropertyType.Function,
     updateWindowMeta: ProxyPropertyType.Function,
     getWindowMeta: ProxyPropertyType.Function,
+    requestShowRequireRestartDialog: ProxyPropertyType.Function,
     sendToAllWindows: ProxyPropertyType.Function,
     goHome: ProxyPropertyType.Function,
     goBack: ProxyPropertyType.Function,

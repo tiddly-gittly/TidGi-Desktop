@@ -31,12 +31,12 @@ export const removeLanguage = (code: any) => (dispatch: any, getState: any) => {
   );
 };
 
-export const save = () => (dispatch: any, getState: any) => {
+export const save = async () => (dispatch: any, getState: any) => {
   const { form } = getState().dialogSpellcheckLanguages;
 
   void window.service.preference.set('spellcheckLanguages', form.spellcheckLanguages);
 
-  requestShowRequireRestartDialog();
+  await window.service.window.requestShowRequireRestartDialog()
 
   window.remote.closeCurrentWindow();
 };

@@ -47,7 +47,7 @@ export const updateForm = (changes: any) => (dispatch: any, getState: any) => {
   }
 };
 
-export const save = () => (dispatch: any, getState: any) => {
+export const save = async () => (dispatch: any, getState: any) => {
   const state = getState();
 
   const { form } = state.dialogProxy;
@@ -61,7 +61,7 @@ export const save = () => (dispatch: any, getState: any) => {
   void window.service.preference.set('proxyBypassRules', form.proxyBypassRules);
   void window.service.preference.set('proxyPacScript', form.proxyPacScript);
   void window.service.preference.set('proxyType', form.proxyType);
-  requestShowRequireRestartDialog();
+  await window.service.window.requestShowRequireRestartDialog()
 
   window.remote.closeCurrentWindow();
   return null;

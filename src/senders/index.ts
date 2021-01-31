@@ -12,10 +12,6 @@ export const getShouldUseDarkColors = async (): Promise<void> => {
   await ipcRenderer.invoke('get-should-use-dark-colors');
 };
 
-// Preferences
-export const requestResetPreferences = async () => await ipcRenderer.invoke('request-reset-preferences');
-export const requestShowRequireRestartDialog = async () => await ipcRenderer.invoke('request-show-require-restart-dialog');
-
 // System Preferences
 export const getSystemPreference = (name: string): JsonValue => ipcRenderer.invokeSync('get-system-preference', name);
 export const getSystemPreferences = (): JsonObject => ipcRenderer.invokeSync('get-system-preferences');

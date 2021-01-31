@@ -53,6 +53,7 @@ export interface IPreferenceService {
   getPreferences: () => IPreferences;
   get<K extends keyof IPreferences>(key: K): IPreferences[K];
   reset(): Promise<void>;
+  resetWithConfirm(): Promise<void>;
 }
 export const PreferenceServiceIPCDescriptor = {
   channel: PreferenceChannel.name,
@@ -61,5 +62,6 @@ export const PreferenceServiceIPCDescriptor = {
     getPreferences: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,
     reset: ProxyPropertyType.Function,
+    resetWithConfirm: ProxyPropertyType.Function,
   },
 };

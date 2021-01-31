@@ -12,7 +12,7 @@ export const updateForm = (changes: any) => (dispatch: any) =>
     changes,
   });
 
-export const save = () => (dispatch: any, getState: any) => {
+export const save = async () => (dispatch: any, getState: any) => {
   const { form } = getState().dialogCodeInjection;
 
   const { codeInjectionType } = window.meta as WindowMeta[WindowNames.codeInjection];
@@ -22,7 +22,7 @@ export const save = () => (dispatch: any, getState: any) => {
     void window.service.preference.set('allowNodeInJsCodeInjection', form.allowNodeInJsCodeInjection);
   }
 
-  requestShowRequireRestartDialog();
+  await window.service.window.requestShowRequireRestartDialog();
 
   window.remote.closeCurrentWindow();
 };

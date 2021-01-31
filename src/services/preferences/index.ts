@@ -97,25 +97,6 @@ export class Preference implements IPreferenceService {
   }
 
   init(): void {
-    ipcMain.handle(PreferenceChannel.requestResetPreferences, () => {
-      const preferenceWindow = this.windowService.get(WindowNames.preferences);
-      if (preferenceWindow !== undefined) {
-        dialog
-          .showMessageBox(preferenceWindow, {
-            type: 'question',
-            buttons: [i18n.t('Preference.ResetNow'), i18n.t('Cancel')],
-            message: i18n.t('Preference.Reset'),
-            cancelId: 1,
-          })
-          .then(async ({ response }) => {
-            if (response === 0) {
-              await this.reset();
-              ipcMain.emit(PreferenceChannel.requestShowRequireRestartDialog);
-            }
-          })
-          .catch(console.error);
-      }
-    });
     ipcMain.handle(PreferenceChannel.requestClearBrowsingData, () => {
       const availableWindowToShowDialog = this.windowService.get(WindowNames.preferences) ?? this.windowService.get(WindowNames.main);
       if (availableWindowToShowDialog !== undefined) {
@@ -141,6 +122,26 @@ export class Preference implements IPreferenceService {
     ipcMain.handle(PreferenceChannel.getPreferences, (_event) => {
       return this.cachedPreferences;
     });
+  }
+
+  public async resetWithConfirm(): Promise<void> {
+    const preferenceWindow = this.windowService.get(WindowNames.preferences);
+    if (preferenceWindow !== undefined) {
+      await dialog
+        .showMessageBox(preferenceWindow, {
+          type: 'question',
+          buttons: [i18n.t('Preference.ResetNow'), i18n.t('Cancel')],
+          message: i18n.t('Preference.Reset'),
+          cancelId: 1,
+        })
+        .then(async ({ response }) => {
+          if (response === 0) {
+            await this.reset();
+            await this.windowService.requestShowRequireRestartDialog();
+          }
+        })
+        .catch(console.error);
+    }
   }
 
   /**

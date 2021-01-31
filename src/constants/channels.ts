@@ -49,8 +49,6 @@ export enum WorkspaceViewChannel {
 export enum PreferenceChannel {
   name = 'PreferenceChannel',
   update = 'update',
-  requestResetPreferences = 'request-reset-preferences',
-  requestShowRequireRestartDialog = 'request-show-require-restart-dialog',
   getPreference = 'get-preference',
   getPreferences = 'get-preferences',
   requestClearBrowsingData = 'request-clear-browsing-data',
@@ -58,7 +56,6 @@ export enum PreferenceChannel {
 
 export enum WindowChannel {
   name = 'WindowChannel',
-  requestShowRequireRestartDialog = 'request-show-require-restart-dialog',
 }
 
 export enum ThemeChannel {

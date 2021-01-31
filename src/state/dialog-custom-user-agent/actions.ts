@@ -15,7 +15,7 @@ export const save = () => async (dispatch: any, getState: any) => {
 
   if ((await window.service.preference.get('customUserAgent')) !== form.code) {
     await window.service.preference.set('customUserAgent', form.code);
-    requestShowRequireRestartDialog();
+    await window.service.window.requestShowRequireRestartDialog();
   }
 
   window.remote.closeCurrentWindow();

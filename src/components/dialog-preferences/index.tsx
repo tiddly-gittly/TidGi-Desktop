@@ -366,7 +366,7 @@ const Preferences = ({
   });
 
   const debouncedRequestShowRequireRestartDialog = useCallback(
-    debounce(() => requestShowRequireRestartDialog(), 2500),
+    debounce(async () => await window.service.window.requestShowRequireRestartDialog(), 2500),
     [],
   );
 
@@ -420,8 +420,8 @@ const Preferences = ({
               <TextField
                 helperText={t('Preference.UserNameDetail')}
                 fullWidth
-                onChange={(event) => {
-                  void window.service.preference.set('userName', event.target.value);
+                onChange={async (event) => {
+                  await window.service.preference.set('userName', event.target.value);
                 }}
                 label={t('Preference.UserName')}
                 value={userName}
@@ -455,14 +455,15 @@ const Preferences = ({
                   inputFormat="HH:mm:ss"
                   renderInput={(timeProps) => <TextField {...timeProps} />}
                   value={fromUnixTime(syncDebounceInterval / 1000 + new Date().getTimezoneOffset() * 60)}
-                  onChange={(date) => {
-                    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'Date | null' is not assignable t... Remove this comment to see the full error message
+                  onChange={async (date) => {
+                    if (date === null) throw new Error(`date is null`);
                     const timeWithoutDate = setDate(setMonth(setYear(date, 1970), 0), 1);
                     const utcTime = (timeWithoutDate.getTime() / 1000 - new Date().getTimezoneOffset() * 60) * 1000;
-                    void window.service.preference.set('syncDebounceInterval', utcTime);
-                    debouncedRequestShowRequireRestartDialog();
+                    await window.service.preference.set('syncDebounceInterval', utcTime);
+                    await debouncedRequestShowRequireRestartDialog();
                   }}
                   onClose={() => {
+                    // FIXME: no global assign
                     window.preventClosingWindow = false;
                   }}
                   onOpen={() => {
@@ -488,13 +489,13 @@ const Preferences = ({
                   <ChevronRightIcon color="action" />
                 </ListItem>
               }>
-              <MenuItem dense onClick={() => void window.service.preference.set('themeSource', 'system')}>
+              <MenuItem dense onClick={async () => await window.service.preference.set('themeSource', 'system')}>
                 {t('Preference.SystemDefalutTheme')}
               </MenuItem>
-              <MenuItem dense onClick={() => void window.service.preference.set('themeSource', 'light')}>
+              <MenuItem dense onClick={async () => await window.service.preference.set('themeSource', 'light')}>
                 {t('Preference.LightTheme')}
               </MenuItem>
-              <MenuItem dense onClick={() => void window.service.preference.set('themeSource', 'dark')}>
+              <MenuItem dense onClick={async () => await window.service.preference.set('themeSource', 'dark')}>
                 {t('Preference.DarkTheme')}
               </MenuItem>
             </StatedMenu>
@@ -506,8 +507,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={sidebar}
-                  onChange={(event) => {
-                    void window.service.preference.set('sidebar', event.target.checked);
+                  onChange={async (event) => {
+                    await window.service.preference.set('sidebar', event.target.checked);
                     requestRealignActiveWorkspace();
                   }}
                 />
@@ -521,8 +522,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={sidebarShortcutHints}
-                  onChange={(event) => {
-                    void window.service.preference.set('sidebarShortcutHints', event.target.checked);
+                  onChange={async (event) => {
+                    await window.service.preference.set('sidebarShortcutHints', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -539,8 +540,8 @@ const Preferences = ({
                   // they can't access preferences or notifications
                   checked={(window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar) || navigationBar}
                   disabled={window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar}
-                  onChange={(event) => {
-                    void window.service.preference.set('navigationBar', event.target.checked);
+                  onChange={async (event) => {
+                    await window.service.preference.set('navigationBar', event.target.checked);
                     requestRealignActiveWorkspace();
                   }}
                 />
@@ -556,8 +557,8 @@ const Preferences = ({
                       edge="end"
                       color="primary"
                       checked={titleBar}
-                      onChange={(event) => {
-                        void window.service.preference.set('titleBar', event.target.checked);
+                      onChange={async (event) => {
+                        await window.service.preference.set('titleBar', event.target.checked);
                         requestRealignActiveWorkspace();
                       }}
                     />
@@ -575,9 +576,9 @@ const Preferences = ({
                       edge="end"
                       color="primary"
                       checked={hideMenuBar}
-                      onChange={(event) => {
-                        void window.service.preference.set('hideMenuBar', event.target.checked);
-                        requestShowRequireRestartDialog();
+                      onChange={async (event) => {
+                        await window.service.preference.set('hideMenuBar', event.target.checked);
+                        await debouncedRequestShowRequireRestartDialog();
                       }}
                     />
                   </ListItemSecondaryAction>
@@ -595,9 +596,9 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={attachToMenubar}
-                  onChange={(event) => {
-                    void window.service.preference.set('attachToMenubar', event.target.checked);
-                    requestShowRequireRestartDialog();
+                  onChange={async (event) => {
+                    await window.service.preference.set('attachToMenubar', event.target.checked);
+                    await debouncedRequestShowRequireRestartDialog();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -639,9 +640,9 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={blockAds}
-                  onChange={(event) => {
-                    void window.service.preference.set('blockAds', event.target.checked);
-                    requestShowRequireRestartDialog();
+                  onChange={async (event) => {
+                    await window.service.preference.set('blockAds', event.target.checked);
+                    await debouncedRequestShowRequireRestartDialog();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -678,8 +679,8 @@ const Preferences = ({
                   color="primary"
                   checked={themeSource !== 'light' && darkReader}
                   disabled={themeSource === 'light'}
-                  onChange={(event) => {
-                    void window.service.preference.set('darkReader', event.target.checked);
+                  onChange={async (event) => {
+                    await window.service.preference.set('darkReader', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -714,7 +715,7 @@ const Preferences = ({
                       max={50}
                       onChange={(_, value) => {
                         // @ts-expect-error ts-migrate(2365) FIXME: Operator '+' cannot be applied to types 'number | ... Remove this comment to see the full error message
-                        void window.service.preference.set('darkReaderBrightness', value + 100);
+                        await window.service.preference.set('darkReaderBrightness', value + 100);
                       }}
                     />
                   </Grid>
@@ -747,7 +748,7 @@ const Preferences = ({
                       max={50}
                       onChange={(_, value) => {
                         // @ts-expect-error ts-migrate(2365) FIXME: Operator '+' cannot be applied to types 'number | ... Remove this comment to see the full error message
-                        void window.service.preference.set('darkReaderContrast', value + 100);
+                        await window.service.preference.set('darkReaderContrast', value + 100);
                       }}
                     />
                   </Grid>
@@ -774,8 +775,8 @@ const Preferences = ({
                       ]}
                       min={0}
                       max={100}
-                      onChange={(_, value) => {
-                        void window.service.preference.set('darkReaderSepia', value);
+                      onChange={async (_, value) => {
+                        await window.service.preference.set('darkReaderSepia', value);
                       }}
                     />
                   </Grid>
@@ -802,8 +803,8 @@ const Preferences = ({
                       ]}
                       min={0}
                       max={100}
-                      onChange={(_, value) => {
-                        void window.service.preference.set('darkReaderGrayscale', value);
+                      onChange={async (_, value) => {
+                        await window.service.preference.set('darkReaderGrayscale', value);
                       }}
                     />
                   </Grid>
@@ -835,7 +836,7 @@ const Preferences = ({
                     renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleFrom)}
                     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-                    onChange={(d) => void window.service.preference.set('pauseNotificationsByScheduleFrom', d.toString())}
+                    onChange={(d) => await window.service.preference.set('pauseNotificationsByScheduleFrom', d.toString())}
                     onClose={() => {
                       window.preventClosingWindow = false;
                     }}
@@ -851,7 +852,7 @@ const Preferences = ({
                     renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleTo)}
                     // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
-                    onChange={(d) => void window.service.preference.set('pauseNotificationsByScheduleTo', d.toString())}
+                    onChange={(d) => await window.service.preference.set('pauseNotificationsByScheduleTo', d.toString())}
                     onClose={() => {
                       window.preventClosingWindow = false;
                     }}
@@ -868,8 +869,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={pauseNotificationsBySchedule}
-                  onChange={(event) => {
-                    void window.service.preference.set('pauseNotificationsBySchedule', event.target.checked);
+                  onChange={async (event) => {
+                    await window.service.preference.set('pauseNotificationsBySchedule', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -882,8 +883,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={pauseNotificationsMuteAudio}
-                  onChange={(event) => {
-                    void window.service.preference.set('pauseNotificationsMuteAudio', event.target.checked);
+                  onChange={async (event) => {
+                    await window.service.preference.set('pauseNotificationsMuteAudio', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -896,9 +897,9 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={unreadCountBadge}
-                  onChange={(event) => {
-                    void window.service.preference.set('unreadCountBadge', event.target.checked);
-                    requestShowRequireRestartDialog();
+                  onChange={async (event) => {
+                    await window.service.preference.set('unreadCountBadge', event.target.checked);
+                    await debouncedRequestShowRequireRestartDialog();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -975,9 +976,9 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={spellcheck}
-                  onChange={(event) => {
-                    void window.service.preference.set('spellcheck', event.target.checked);
-                    requestShowRequireRestartDialog();
+                  onChange={async (event) => {
+                    await window.service.preference.set('spellcheck', event.target.checked);
+                    await debouncedRequestShowRequireRestartDialog();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -1011,10 +1012,10 @@ const Preferences = ({
                   .showOpenDialog({
                     properties: ['openDirectory'],
                   })
-                  .then((result: any) => {
+                  .then(async (result: any) => {
                     // eslint-disable-next-line promise/always-return
                     if (!result.canceled && result.filePaths) {
-                      void window.service.preference.set('downloadPath', result.filePaths[0]);
+                      await window.service.preference.set('downloadPath', result.filePaths[0]);
                     }
                   })
                   .catch((error: any) => {
@@ -1032,8 +1033,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={askForDownloadPath}
-                  onChange={(event) => {
-                    void window.service.preference.set('askForDownloadPath', event.target.checked);
+                  onChange={async (event) => {
+                    await window.service.preference.set('askForDownloadPath', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -1067,9 +1068,9 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={blockAds}
-                  onChange={(event) => {
-                    void window.service.preference.set('blockAds', event.target.checked);
-                    requestShowRequireRestartDialog();
+                  onChange={async (event) => {
+                    await window.service.preference.set('blockAds', event.target.checked);
+                    await debouncedRequestShowRequireRestartDialog();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -1082,9 +1083,9 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={rememberLastPageVisited}
-                  onChange={(event) => {
-                    void window.service.preference.set('rememberLastPageVisited', event.target.checked);
-                    requestShowRequireRestartDialog();
+                  onChange={async (event) => {
+                    await window.service.preference.set('rememberLastPageVisited', event.target.checked);
+                    await debouncedRequestShowRequireRestartDialog();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -1097,9 +1098,9 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={shareWorkspaceBrowsingData}
-                  onChange={(event) => {
-                    void window.service.preference.set('shareWorkspaceBrowsingData', event.target.checked);
-                    requestShowRequireRestartDialog();
+                  onChange={async (event) => {
+                    await window.service.preference.set('shareWorkspaceBrowsingData', event.target.checked);
+                    await debouncedRequestShowRequireRestartDialog();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -1133,9 +1134,9 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={ignoreCertificateErrors}
-                  onChange={(event) => {
-                    void window.service.preference.set('ignoreCertificateErrors', event.target.checked);
-                    requestShowRequireRestartDialog();
+                  onChange={async (event) => {
+                    await window.service.preference.set('ignoreCertificateErrors', event.target.checked);
+                    await debouncedRequestShowRequireRestartDialog();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -1231,8 +1232,8 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={hibernateUnusedWorkspacesAtLaunch}
-                  onChange={(event) => {
-                    void window.service.preference.set('hibernateUnusedWorkspacesAtLaunch', event.target.checked);
+                  onChange={async (event) => {
+                    await window.service.preference.set('hibernateUnusedWorkspacesAtLaunch', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
@@ -1262,9 +1263,9 @@ const Preferences = ({
                       edge="end"
                       color="primary"
                       checked={swipeToNavigate}
-                      onChange={(event) => {
-                        void window.service.preference.set('swipeToNavigate', event.target.checked);
-                        requestShowRequireRestartDialog();
+                      onChange={async (event) => {
+                        await window.service.preference.set('swipeToNavigate', event.target.checked);
+                        await debouncedRequestShowRequireRestartDialog();
                       }}
                     />
                   </ListItemSecondaryAction>
@@ -1279,9 +1280,9 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={useHardwareAcceleration}
-                  onChange={(event) => {
-                    void window.service.preference.set('useHardwareAcceleration', event.target.checked);
-                    requestShowRequireRestartDialog();
+                  onChange={async (event) => {
+                    await window.service.preference.set('useHardwareAcceleration', event.target.checked);
+                    await debouncedRequestShowRequireRestartDialog();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -1318,9 +1319,9 @@ const Preferences = ({
                   edge="end"
                   color="primary"
                   checked={allowPrerelease}
-                  onChange={(event) => {
-                    void window.service.preference.set('allowPrerelease', event.target.checked);
-                    requestShowRequireRestartDialog();
+                  onChange={async (event) => {
+                    await window.service.preference.set('allowPrerelease', event.target.checked);
+                    await debouncedRequestShowRequireRestartDialog();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -1334,7 +1335,7 @@ const Preferences = ({
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
-            <ListItem button onClick={requestResetPreferences}>
+            <ListItem button onClick={window.service.preference.resetWithConfirm}>
               <ListItemText primary="Restore preferences to their original defaults" />
               <ChevronRightIcon color="action" />
             </ListItem>
