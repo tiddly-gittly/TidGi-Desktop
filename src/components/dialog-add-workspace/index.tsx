@@ -20,8 +20,6 @@ import type { IUserInfo } from '@services/types';
 import TabBar from './tab-bar';
 import GitTokenForm, { getGithubToken, setGithubToken } from '../shared/git-token-form';
 
-import { requestOpen, getDesktopPath, countWorkspace } from '../../senders';
-
 const graphqlClient = new GraphQLClient({
   url: GITHUB_GRAPHQL_API,
 });
@@ -51,10 +49,18 @@ previousToken && setHeaderToGraphqlClient(previousToken);
 
 export default function AddWorkspace() {
   const [currentTab, currentTabSetter] = useState('CloneOnlineWiki');
-  const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(countWorkspace() === 0);
+  const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(false);
+  useEffect(() => {
+    void window.service.workspace.countWorkspaces().then((workspaceCount) => isCreateMainWorkspaceSetter(workspaceCount === 0));
+  }, []);
   const [parentFolderLocation, parentFolderLocationSetter] = useState(getDesktopPath());
   const [existedFolderLocation, existedFolderLocationSetter] = useState(getDesktopPath());
-  const [wikiPort, wikiPortSetter] = useState(5212 + countWorkspace());
+  const [wikiPort, wikiPortSetter] = useState(5212);
+  useEffect(() => {
+    // only update default port on component mount
+    void window.service.workspace.countWorkspaces().then((workspaceCount) => wikiPortSetter(wikiPort + workspaceCount));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // try get token on start up, so Github GraphQL client can use it
   const [accessToken, accessTokenSetter] = useState<string | void>(previousToken);

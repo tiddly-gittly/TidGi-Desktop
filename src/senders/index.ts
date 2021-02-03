@@ -13,7 +13,6 @@ export const getShouldUseDarkColors = async (): Promise<void> => {
 };
 
 // Workspace
-export const countWorkspace = () => ipcRenderer.invokeSync('count-workspace');
 export const getWorkspace = (id: string) => ipcRenderer.invokeSync('get-workspace', id);
 export const getWorkspaces = () => ipcRenderer.invokeSync('get-workspaces');
 export const requestClearBrowsingData = async () => await ipcRenderer.invoke('request-clear-browsing-data');
