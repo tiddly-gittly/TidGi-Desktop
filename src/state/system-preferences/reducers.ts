@@ -1,10 +1,7 @@
 import { SET_SYSTEM_PREFERENCE } from '../../constants/actions';
 
-import { getSystemPreferences } from '../../senders';
-
-const initialState = getSystemPreferences();
-
-const systemPreferences = (state = initialState, action: any) => {
+const systemPreferences = async (state, action: any) => {
+  state = await window.service.systemPreference.getSystemPreferences();
   switch (action.type) {
     case SET_SYSTEM_PREFERENCE: {
       const newState = { ...state };

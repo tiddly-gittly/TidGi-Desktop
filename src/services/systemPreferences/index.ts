@@ -4,23 +4,6 @@ import { ISystemPreferenceService, IUsedElectionSettings } from './interface';
 
 @injectable()
 export class SystemPreference implements ISystemPreferenceService {
-  constructor() {
-    this.init();
-  }
-
-  private init(): void {
-    ipcMain.handle('get-system-preference', (_event, key: keyof IUsedElectionSettings) => {
-      return this.get(key);
-    });
-    ipcMain.handle('get-system-preferences', (_event) => {
-      const preferences = this.getSystemPreferences();
-      return preferences;
-    });
-    ipcMain.handle('request-set-system-preference', <K extends keyof IUsedElectionSettings>(_: unknown, key: K, value: IUsedElectionSettings[K]) => {
-      this.setSystemPreference(key, value);
-    });
-  }
-
   public get<K extends keyof IUsedElectionSettings>(key: K): IUsedElectionSettings[K] {
     switch (key) {
       case 'openAtLogin': {

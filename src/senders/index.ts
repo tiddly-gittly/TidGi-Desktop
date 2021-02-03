@@ -12,11 +12,6 @@ export const getShouldUseDarkColors = async (): Promise<void> => {
   await ipcRenderer.invoke('get-should-use-dark-colors');
 };
 
-// System Preferences
-export const getSystemPreference = (name: string): JsonValue => ipcRenderer.invokeSync('get-system-preference', name);
-export const getSystemPreferences = (): JsonObject => ipcRenderer.invokeSync('get-system-preferences');
-export const requestSetSystemPreference = async (name: string, value: JsonValue) => await ipcRenderer.invoke('request-set-system-preference', name, value);
-
 // Workspace
 export const countWorkspace = () => ipcRenderer.invokeSync('count-workspace');
 export const getWorkspace = (id: string) => ipcRenderer.invokeSync('get-workspace', id);

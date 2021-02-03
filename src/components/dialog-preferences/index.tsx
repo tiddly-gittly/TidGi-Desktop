@@ -1172,13 +1172,13 @@ const Preferences = ({
                   <ChevronRightIcon color="action" />
                 </ListItem>
               }>
-              <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'yes')}>
+              <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'yes')}>
                 Yes
               </MenuItem>
-              <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'yes-hidden')}>
+              <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'yes-hidden')}>
                 Yes, but minimized
               </MenuItem>
-              <MenuItem dense onClick={() => requestSetSystemPreference('openAtLogin', 'no')}>
+              <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'no')}>
                 No
               </MenuItem>
             </StatedMenu>
