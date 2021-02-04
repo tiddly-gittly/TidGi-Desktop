@@ -39,33 +39,6 @@ export class Window implements IWindowService {
   }
 
   initIPCHandlers(): void {
-    ipcMain.handle('request-find-in-page', (_event, text: string, forward?: boolean, windowName: WindowNames = WindowNames.main) => {
-      const mainWindow = this.get(windowName);
-      const contents = mainWindow?.getBrowserView()?.webContents;
-      if (contents !== undefined) {
-        contents.findInPage(text, {
-          forward,
-        });
-      }
-    });
-    ipcMain.handle('request-stop-find-in-page', (_event, close?: boolean, windowName: WindowNames = WindowNames.main) => {
-      const mainWindow = this.get(windowName);
-      const view = mainWindow?.getBrowserView();
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      if (view) {
-        const contents = view.webContents;
-        if (contents !== undefined) {
-          contents.stopFindInPage('clearSelection');
-          contents.send('update-find-in-page-matches', 0, 0);
-          // adjust bounds to hide the gap for find in page
-          if (close === true && mainWindow !== undefined) {
-            const contentSize = mainWindow.getContentSize();
-            view.setBounds(getViewBounds(contentSize as [number, number]));
-          }
-        }
-      }
-    });
-
     ipcMain.handle('request-show-display-media-window', (_event: Electron.IpcMainInvokeEvent) => {
       const viewID = BrowserWindow.fromWebContents(_event.sender)?.id;
       if (viewID !== undefined) {
@@ -74,6 +47,34 @@ export class Window implements IWindowService {
         });
       }
     });
+  }
+
+  public findInPage(text: string, forward?: boolean, windowName: WindowNames = WindowNames.main): void {
+    const mainWindow = this.get(windowName);
+    const contents = mainWindow?.getBrowserView()?.webContents;
+    if (contents !== undefined) {
+      contents.findInPage(text, {
+        forward,
+      });
+    }
+  }
+
+  public stopFindInPage(close?: boolean, windowName: WindowNames = WindowNames.main): void {
+    const mainWindow = this.get(windowName);
+    const view = mainWindow?.getBrowserView();
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    if (view) {
+      const contents = view.webContents;
+      if (contents !== undefined) {
+        contents.stopFindInPage('clearSelection');
+        contents.send('update-find-in-page-matches', 0, 0);
+        // adjust bounds to hide the gap for find in page
+        if (close === true && mainWindow !== undefined) {
+          const contentSize = mainWindow.getContentSize();
+          view.setBounds(getViewBounds(contentSize as [number, number]));
+        }
+      }
+    }
   }
 
   public async requestShowRequireRestartDialog(): Promise<void> {

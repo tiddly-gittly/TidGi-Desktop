@@ -20,6 +20,8 @@ export interface IWindowService {
   goForward(windowName: WindowNames): void;
   reload(windowName: WindowNames): void;
   showMessageBox(message: Electron.MessageBoxOptions['message'], type?: Electron.MessageBoxOptions['type']): void;
+  findInPage(text: string, forward?: boolean | undefined, windowName?: WindowNames): void;
+  stopFindInPage(close?: boolean | undefined, windowName?: WindowNames): void;
 }
 export const WindowServiceIPCDescriptor = {
   channel: WindowChannel.name,
@@ -37,5 +39,7 @@ export const WindowServiceIPCDescriptor = {
     goForward: ProxyPropertyType.Function,
     reload: ProxyPropertyType.Function,
     showMessageBox: ProxyPropertyType.Function,
+    findInPage: ProxyPropertyType.Function,
+    stopFindInPage: ProxyPropertyType.Function,
   },
 };

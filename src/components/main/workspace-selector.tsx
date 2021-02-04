@@ -1,9 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import Badge from '@material-ui/core/Badge';
 import connectComponent from '../../helpers/connect-component';
-import { getBaseName } from '../../senders';
+import { getBaseName } from '@/senders';
 // @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '../../images/default-icon.png'... Remove this comment to see the full error message
 import defaultIcon from '../../images/default-icon.png';
 const styles = (theme: any) => ({
@@ -113,7 +113,13 @@ function WorkspaceSelector({
   workspaceName,
 }: Props) {
   const { t } = useTranslation();
-  const shortWorkspaceName = workspaceName ? getBaseName(workspaceName) : t('WorkspaceSelector.BadWorkspacePath');
+  const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
+  useEffect(() => {
+    void (async () => {
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      shortWorkspaceNameSetter(workspaceName ? await getBaseName(workspaceName) : t('WorkspaceSelector.BadWorkspacePath'));
+    });
+  }, []);
   return (
     <div
       role="button"

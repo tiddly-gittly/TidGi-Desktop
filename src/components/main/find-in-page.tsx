@@ -4,7 +4,7 @@ import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
 import connectComponent from '../../helpers/connect-component';
 import { closeFindInPage, updateFindInPageText } from '../../state/find-in-page/actions';
-import { requestFindInPage, requestStopFindInPage } from '../../senders';
+
 const styles = (theme: any) => ({
   root: {
     background: theme.palette.background.default,
@@ -37,9 +37,7 @@ const FindInPage = (props: FindInPageProps) => {
   // Event handler utilizing useCallback ...
   // ... so that reference never changes.
   const handleOpenFindInPage = useCallback(() => {
-    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     inputReference.current.focus();
-    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
     inputReference.current.select();
   }, [inputReference]);
   useEffect(() => {
@@ -74,20 +72,18 @@ const FindInPage = (props: FindInPageProps) => {
             const value = e.target.value;
             onUpdateFindInPageText(value);
             if (value.length > 0) {
-              requestFindInPage(value, true);
+              void window.service.window.findInPage(value, true);
             } else {
-              // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
-              requestStopFindInPage();
+              void window.service.window.stopFindInPage();
             }
           }}
           onInput={(e) => {
             const value = (e.target as any).value;
             onUpdateFindInPageText(value);
             if (value.length > 0) {
-              requestFindInPage(value, true);
+              void window.service.window.findInPage(value, true);
             } else {
-              // @ts-expect-error ts-migrate(2554) FIXME: Expected 1 arguments, but got 0.
-              requestStopFindInPage();
+              void window.service.window.stopFindInPage();
             }
           }}
           onKeyDown={(e) => {
@@ -95,12 +91,12 @@ const FindInPage = (props: FindInPageProps) => {
               // Enter
               const value = (e.target as any).value;
               if (value.length > 0) {
-                requestFindInPage(value, true);
+                void window.service.window.findInPage(value, true);
               }
             }
             if ((e.keyCode || e.which) === 27) {
               // Escape
-              requestStopFindInPage(true);
+              void window.service.window.stopFindInPage(true);
               onCloseFindInPage();
             }
           }}
@@ -111,7 +107,7 @@ const FindInPage = (props: FindInPageProps) => {
         disabled={text.length < 1 || matches < 1}
         onClick={() => {
           if (text.length > 0) {
-            requestFindInPage(text, false);
+            void window.service.window.findInPage(text, false);
           }
         }}>
         Previous
@@ -121,7 +117,7 @@ const FindInPage = (props: FindInPageProps) => {
         disabled={text.length < 1 || matches < 1}
         onClick={() => {
           if (text.length > 0) {
-            requestFindInPage(text, true);
+            void window.service.window.findInPage(text, true);
           }
         }}>
         Next
@@ -131,7 +127,7 @@ const FindInPage = (props: FindInPageProps) => {
         disabled={text.length < 1}
         onClick={() => {
           if (text.length > 0) {
-            requestFindInPage(text, true);
+            void window.service.window.findInPage(text, true);
           }
         }}>
         Find
@@ -139,7 +135,7 @@ const FindInPage = (props: FindInPageProps) => {
       <Button
         size="small"
         onClick={() => {
-          requestStopFindInPage(true);
+          void window.service.window.stopFindInPage(true);
           onCloseFindInPage();
         }}>
         Close

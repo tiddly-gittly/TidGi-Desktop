@@ -15,7 +15,7 @@ import {
 import { closeFindInPage, openFindInPage, updateFindInPageMatches } from '../state/find-in-page/actions';
 import { updatePauseNotificationsInfo } from '../state/notifications/actions';
 import { updateUpdater } from '../state/updater/actions';
-import { getShouldUseDarkColors, requestFindInPage, signalOnlineStatusChanged } from '../senders';
+import { getShouldUseDarkColors, signalOnlineStatusChanged } from '../senders';
 
 const loadListeners = (store: any) => {
   const { ipcRenderer } = window.remote;
@@ -93,7 +93,7 @@ const loadListeners = (store: any) => {
   ipcRenderer.on('request-back-find-in-page', (_event: Electron.IpcRendererEvent, forward: any) => {
     const { open, text } = store.getState().findInPage;
     if (!open) return;
-    requestFindInPage(text, forward);
+    void window.service.window.findInPage(text, forward);
   });
 
   ipcRenderer.on('should-pause-notifications-changed', (_event: Electron.IpcRendererEvent, value: any) => {
