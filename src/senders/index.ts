@@ -25,9 +25,5 @@ export const getDirectoryName = async (pathString: string): Promise<string> => {
   throw new Error(`getDirectoryName get bad result ${typeof result}`);
 };
 
-// Auth
-export const requestValidateAuthIdentity = async (windowId: string, username: string, password: string) =>
-  await ipcRenderer.invoke('request-validate-auth-identity', windowId, username, password);
-
 // Online Status
 export const signalOnlineStatusChanged = async (online: boolean) => await ipcRenderer.invoke('online-status-changed', online);
