@@ -509,7 +509,7 @@ const Preferences = ({
                   checked={sidebar}
                   onChange={async (event) => {
                     await window.service.preference.set('sidebar', event.target.checked);
-                    requestRealignActiveWorkspace();
+                    await window.service.workspaceView.realignActiveWorkspace();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -542,7 +542,7 @@ const Preferences = ({
                   disabled={window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar}
                   onChange={async (event) => {
                     await window.service.preference.set('navigationBar', event.target.checked);
-                    requestRealignActiveWorkspace();
+                    await window.service.workspaceView.realignActiveWorkspace();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -559,7 +559,7 @@ const Preferences = ({
                       checked={titleBar}
                       onChange={async (event) => {
                         await window.service.preference.set('titleBar', event.target.checked);
-                        requestRealignActiveWorkspace();
+                        await window.service.workspaceView.realignActiveWorkspace();
                       }}
                     />
                   </ListItemSecondaryAction>

@@ -23,6 +23,7 @@ export interface IWorkspaceViewService {
    */
   loadURL(url: string, id?: string): Promise<void>;
   realignActiveWorkspace(): void;
+  openUrlInWorkspace(url: string, id: string): Promise<void>;
 }
 export const WorkspaceViewServiceIPCDescriptor = {
   channel: WorkspaceViewChannel.name,
@@ -38,5 +39,6 @@ export const WorkspaceViewServiceIPCDescriptor = {
     clearBrowsingDataWithConfirm: ProxyPropertyType.Function,
     loadURL: ProxyPropertyType.Function,
     realignActiveWorkspace: ProxyPropertyType.Function,
+    openUrlInWorkspace: ProxyPropertyType.Function,
   },
 };

@@ -12,18 +12,6 @@ export const getShouldUseDarkColors = async (): Promise<void> => {
   await ipcRenderer.invoke('get-should-use-dark-colors');
 };
 
-export const requestHibernateWorkspace = async (id: string) => await ipcRenderer.invoke('request-hibernate-workspace', id);
-export const requestOpenUrlInWorkspace = async (url: string, id: string) => await ipcRenderer.invoke('request-open-url-in-workspace', url, id);
-export const requestRealignActiveWorkspace = async () => await ipcRenderer.invoke('request-realign-active-workspace');
-export const requestRemoveWorkspace = async (id: string) => await ipcRenderer.invoke('request-remove-workspace', id);
-export const requestRemoveWorkspacePicture = async (id: string) => await ipcRenderer.invoke('request-remove-workspace-picture', id);
-export const requestSetActiveWorkspace = async (id: string) => await ipcRenderer.invoke('request-set-active-workspace', id);
-export const requestGetActiveWorkspace = () => ipcRenderer.invokeSync('request-get-active-workspace');
-export const requestSetWorkspace = async (id: string, options: any) => await ipcRenderer.invoke('request-set-workspace', id, options);
-export const requestSetWorkspaces = async (workspaces: any) => await ipcRenderer.invoke('request-set-workspaces', workspaces);
-export const requestSetWorkspacePicture = async (id: string, picturePath: string) => await ipcRenderer.invoke('request-set-workspace-picture', id, picturePath);
-export const requestWakeUpWorkspace = async (id: string) => await ipcRenderer.invoke('request-wake-up-workspace', id);
-
 // eslint-disable-next-line sonarjs/no-duplicate-string
 export const getIconPath = () => ipcRenderer.invokeSync('get-constant', 'ICON_PATH');
 export const getReactPath = () => ipcRenderer.invokeSync('get-constant', 'REACT_PATH');

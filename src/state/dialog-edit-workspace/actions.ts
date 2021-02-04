@@ -4,8 +4,6 @@ import hasErrors from '../../helpers/has-errors';
 import isUrl from '../../helpers/is-url';
 import validate from '../../helpers/validate';
 
-import { requestSetWorkspace, requestSetWorkspacePicture, requestRemoveWorkspacePicture } from '../../senders';
-
 const getValidationRules = () => ({
   name: {
     fieldName: 'Name',
@@ -33,7 +31,7 @@ export const updateForm = (changes: any) => (dispatch: any) => {
   });
 };
 
-export const save = () => (dispatch: any, getState: any) => {
+export const save = () => async (dispatch: any, getState: any) => {
   const { form } = getState().dialogEditWorkspace;
 
   const validatedChanges = validate(form, getValidationRules());
@@ -45,7 +43,7 @@ export const save = () => (dispatch: any, getState: any) => {
   const url = form.homeUrl.trim();
   const homeUrl = isUrl(url) ? url : `http://${url}`;
 
-  requestSetWorkspace(id, {
+  await window.service.workspace.set(id, {
     name: form.name,
     port: form.port,
     tagName: form.tagName,
@@ -58,11 +56,11 @@ export const save = () => (dispatch: any, getState: any) => {
   });
 
   if (form.picturePath) {
-    requestSetWorkspacePicture(id, form.picturePath);
+    await window.service.workspace.setWorkspacePicture(id, form.picturePath);
   } else if (form.internetIcon) {
-    requestSetWorkspacePicture(id, form.internetIcon);
+    await window.service.workspace.setWorkspacePicture(id, form.internetIcon);
   } else {
-    requestRemoveWorkspacePicture(id);
+    await window.service.workspace.removeWorkspacePicture(id);
   }
 
   window.remote.closeCurrentWindow();

@@ -29,27 +29,6 @@ export class WorkspaceView implements IWorkspaceViewService {
         this.menuService.buildMenu();
       }
     });
-    ipcMain.handle('request-get-active-workspace', (_event) => {
-      return this.workspaceService.getActiveWorkspace();
-    });
-    ipcMain.handle('request-open-url-in-workspace', async (_event, url: string, id: string) => {
-      if (typeof id === 'string' && id.length > 0) {
-        // if id is defined, switch to that workspace
-        await this.setActiveWorkspaceView(id);
-        this.menuService.buildMenu();
-        // load url in the current workspace
-        const activeWorkspace = this.workspaceService.getActiveWorkspace();
-        if (activeWorkspace !== undefined) {
-          await this.loadURL(url, activeWorkspace.id);
-        }
-      }
-    });
-    ipcMain.handle('request-wake-up-workspace', async (_event, id: string) => {
-      await this.wakeUpWorkspaceView(id);
-    });
-    ipcMain.handle('request-hibernate-workspace', async (_event, id: string) => {
-      await this.hibernateWorkspaceView(id);
-    });
 
     ipcMain.handle('request-set-workspace', async (_event, id, options) => {
       await this.setWorkspaceView(id, options);
@@ -59,6 +38,19 @@ export class WorkspaceView implements IWorkspaceViewService {
       await this.setWorkspaceViews(workspaces);
       this.menuService.buildMenu();
     });
+  }
+
+  public async openUrlInWorkspace(url: string, id: string): Promise<void> {
+    if (typeof id === 'string' && id.length > 0) {
+      // if id is defined, switch to that workspace
+      await this.setActiveWorkspaceView(id);
+      this.menuService.buildMenu();
+      // load url in the current workspace
+      const activeWorkspace = this.workspaceService.getActiveWorkspace();
+      if (activeWorkspace !== undefined) {
+        await this.loadURL(url, activeWorkspace.id);
+      }
+    }
   }
 
   private registerMenu(): void {

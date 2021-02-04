@@ -165,7 +165,6 @@ const SortableItem = withTranslation()(
     const { active, id, name, picturePath, hibernated, transparentBackground, isSubWiki, tagName } = workspace;
     return (
       <WorkspaceSelector
-        // @ts-expect-error ts-migrate(2322) FIXME: Type '{ active: any; id: any; key: any; name: any;... Remove this comment to see the full error message
         active={active}
         id={id}
         key={id}
@@ -178,11 +177,11 @@ const SortableItem = withTranslation()(
           if (isSubWiki) {
             await window.service.wiki.requestOpenTiddlerInWiki(tagName);
           } else {
-            const activeWorkspace = requestGetActiveWorkspace();
-            if (activeWorkspace.id === id) {
+            const activeWorkspace = await window.service.workspace.getActiveWorkspace();
+            if (activeWorkspace?.id === id) {
               await window.service.wiki.requestWikiSendActionMessage('tm-home');
             } else {
-              requestSetActiveWorkspace(id);
+              await window.service.workspaceView.setActiveWorkspaceView(id);
             }
           }
         }}
@@ -203,11 +202,11 @@ const SortableItem = withTranslation()(
           if (!active && !isSubWiki) {
             template.splice(1, 0, {
               label: hibernated ? 'Wake Up Workspace' : 'Hibernate Workspace',
-              click: () => {
+              click: async () => {
                 if (hibernated) {
-                  return requestWakeUpWorkspace(id);
+                  return await window.service.workspaceView.wakeUpWorkspaceView(id);
                 }
-                return requestHibernateWorkspace(id);
+                return await window.service.workspaceView.hibernateWorkspaceView(id);
               },
             });
           }
@@ -271,7 +270,7 @@ const Main = ({ classes, didFailLoad, isFullScreen, isLoading, navigationBar, sh
               <SortableContainer
                 distance={10}
                 helperClass={classes.grabbing}
-                onSortEnd={({ oldIndex, newIndex }: any) => {
+                onSortEnd={async ({ oldIndex, newIndex }: any) => {
                   if (oldIndex === newIndex) return;
 
                   const newWorkspacesList = arrayMove(workspacesList, oldIndex, newIndex);
@@ -280,7 +279,7 @@ const Main = ({ classes, didFailLoad, isFullScreen, isLoading, navigationBar, sh
                     newWorkspaces[workspace.id].order = index;
                   });
 
-                  requestSetWorkspaces(newWorkspaces);
+                  await window.service.workspace.set(newWorkspaces);
                 }}>
                 {workspacesList.map((workspace, index) => (
                   // @ts-expect-error ts-migrate(2571) FIXME: Object is of type 'unknown'.
@@ -363,7 +362,7 @@ const Main = ({ classes, didFailLoad, isFullScreen, isLoading, navigationBar, sh
                 Loading..
               </Typography>
             )}
-            {Object.keys(workspaces).length < 1 && (
+            {Object.keys(workspaces).length === 0 && (
               <div>
                 {sidebar ? (
                   <>
