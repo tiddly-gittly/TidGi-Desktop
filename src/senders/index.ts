@@ -25,10 +25,6 @@ export const getDirectoryName = async (pathString: string): Promise<string> => {
   throw new Error(`getDirectoryName get bad result ${typeof result}`);
 };
 
-// Find In Page
-export const requestFindInPage = async (text: string, forward: boolean) => await ipcRenderer.invoke('request-find-in-page', text, !!forward);
-export const requestStopFindInPage = async (close: boolean) => await ipcRenderer.invoke('request-stop-find-in-page', !!close);
-
 // Auth
 export const requestValidateAuthIdentity = async (windowId: string, username: string, password: string) =>
   await ipcRenderer.invoke('request-validate-auth-identity', windowId, username, password);
