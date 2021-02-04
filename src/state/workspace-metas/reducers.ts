@@ -1,10 +1,10 @@
 import { SET_WORKSPACE_META, SET_WORKSPACE_METAS } from '../../constants/actions';
 
-import { getWorkspaceMetas } from '../../senders';
 
-const initialState = getWorkspaceMetas();
-
-const workspaceMetas = (state = initialState, action: any) => {
+const workspaceMetas = async (state, action: any) => {
+  if (state === undefined) {
+    state = await window.service.workspace.getAllMetaData()
+  }
   switch (action.type) {
     case SET_WORKSPACE_METAS: {
       return action.workspaceMetas;

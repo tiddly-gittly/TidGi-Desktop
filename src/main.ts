@@ -52,7 +52,7 @@ const gotTheLock = app.requestSingleInstanceLock();
 container.bind<Authentication>(serviceIdentifier.Authentication).to(Authentication).inSingletonScope();
 container.bind<Git>(serviceIdentifier.Git).to(Git).inSingletonScope();
 container.bind<MenuService>(serviceIdentifier.MenuService).to(MenuService).inSingletonScope();
-container.bind<NotificationService>(serviceIdentifier.Notification).to(NotificationService).inSingletonScope();
+container.bind<NotificationService>(serviceIdentifier.NotificationService).to(NotificationService).inSingletonScope();
 container.bind<NativeService>(serviceIdentifier.NativeService).to(NativeService).inSingletonScope();
 container.bind<Preference>(serviceIdentifier.Preference).to(Preference).inSingletonScope();
 container.bind<SystemPreference>(serviceIdentifier.SystemPreference).to(SystemPreference).inSingletonScope();

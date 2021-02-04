@@ -12,6 +12,7 @@ import type { IPreferenceService } from '@services/preferences/interface';
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { IUserInfo } from '@services/types';
+import { getModifiedFileList, ModifiedFileList } from './inspect';
 import { IGitService } from './interface';
 
 @injectable()
@@ -30,6 +31,10 @@ export class Git implements IGitService {
 
   public async getWorkspacesRemote(wikiFolderPath: string): Promise<string> {
     return await github.getRemoteUrl(wikiFolderPath);
+  }
+
+  public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {
+    return await getModifiedFileList(wikiFolderPath);
   }
 
   /**

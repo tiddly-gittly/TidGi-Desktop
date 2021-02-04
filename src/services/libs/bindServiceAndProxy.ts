@@ -43,7 +43,7 @@ container.bind<IContextService>(serviceIdentifier.Context).to(ContextService).in
 container.bind<IGitService>(serviceIdentifier.Git).to(Git).inSingletonScope();
 container.bind<IMenuService>(serviceIdentifier.MenuService).to(MenuService).inSingletonScope();
 container.bind<INativeService>(serviceIdentifier.NativeService).to(NativeService).inSingletonScope();
-container.bind<INotificationService>(serviceIdentifier.Notification).to(NotificationService).inSingletonScope();
+container.bind<INotificationService>(serviceIdentifier.NotificationService).to(NotificationService).inSingletonScope();
 container.bind<IPreferenceService>(serviceIdentifier.Preference).to(Preference).inSingletonScope();
 container.bind<ISystemPreferenceService>(serviceIdentifier.SystemPreference).to(SystemPreference).inSingletonScope();
 container.bind<IUpdaterService>(serviceIdentifier.Updater).to(Updater).inSingletonScope();
@@ -60,7 +60,7 @@ const contextService = container.get<IContextService>(serviceIdentifier.Context)
 const gitService = container.get<IGitService>(serviceIdentifier.Git);
 const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
 const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
-const notificationService = container.get<INotificationService>(serviceIdentifier.Notification);
+const notificationService = container.get<INotificationService>(serviceIdentifier.NotificationService);
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 const systemPreferenceService = container.get<ISystemPreferenceService>(serviceIdentifier.SystemPreference);
 const viewService = container.get<IViewService>(serviceIdentifier.View);

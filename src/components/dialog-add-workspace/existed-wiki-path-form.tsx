@@ -15,7 +15,6 @@ import MenuItem from '@material-ui/core/MenuItem';
 import FolderIcon from '@material-ui/icons/Folder';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import * as actions from '../../state/dialog-add-workspace/actions';
-import { getWorkspaces } from '../../senders';
 const CreateContainer: ComponentType<{}> = styled(Paper)`
   margin-top: 5px;
 `;
@@ -83,7 +82,9 @@ function WikiPathForm({
 }: Props) {
   const [workspaces, workspacesSetter] = useState({});
   useEffect(() => {
-    workspacesSetter(getWorkspaces());
+    void (async () => {
+      workspacesSetter(await window.service.workspace.getWorkspaces());
+    })();
   }, []);
   const hasError = wikiCreationMessage.startsWith('Error');
   const { t } = useTranslation();

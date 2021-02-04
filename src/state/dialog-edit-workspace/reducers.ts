@@ -2,13 +2,11 @@ import { combineReducers } from 'redux';
 
 import { DIALOG_EDIT_WORKSPACE_INIT, UPDATE_EDIT_WORKSPACE_DOWNLOADING_ICON, UPDATE_EDIT_WORKSPACE_FORM } from '../../constants/actions';
 
-import { getWorkspaces } from '../../senders';
-
-const form = (state = {}, action: any) => {
+const form = async (state = {}, action: any) => {
   switch (action.type) {
     case DIALOG_EDIT_WORKSPACE_INIT: {
       const editWorkspaceId = window.remote.getGlobal('editWorkspaceId');
-      const workspaces = getWorkspaces();
+      const workspaces = await window.service.workspace.getWorkspaces();
       const workspaceList = Object.values(workspaces);
       const workspace = workspaces[editWorkspaceId];
       workspaceList.some((item, index) => {

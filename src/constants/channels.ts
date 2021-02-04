@@ -51,7 +51,6 @@ export enum PreferenceChannel {
   update = 'update',
   getPreference = 'get-preference',
   getPreferences = 'get-preferences',
-  requestClearBrowsingData = 'request-clear-browsing-data',
 }
 
 export enum WindowChannel {

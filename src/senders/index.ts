@@ -12,22 +12,6 @@ export const getShouldUseDarkColors = async (): Promise<void> => {
   await ipcRenderer.invoke('get-should-use-dark-colors');
 };
 
-// Workspace
-export const getWorkspace = (id: string) => ipcRenderer.invokeSync('get-workspace', id);
-export const getWorkspaces = () => ipcRenderer.invokeSync('get-workspaces');
-export const requestClearBrowsingData = async () => await ipcRenderer.invoke('request-clear-browsing-data');
-export const requestCreateWorkspace = async (
-  name: string,
-  isSubWiki: boolean,
-  mainWikiToLink: string,
-  port: number,
-  homeUrl: string,
-  gitUrl: string,
-  picture: string,
-  transparentBackground: boolean,
-  tagName: string,
-) => await ipcRenderer.invoke('request-create-workspace', name, isSubWiki, mainWikiToLink, port, homeUrl, gitUrl, picture, transparentBackground, tagName);
-
 export const requestHibernateWorkspace = async (id: string) => await ipcRenderer.invoke('request-hibernate-workspace', id);
 export const requestOpenUrlInWorkspace = async (url: string, id: string) => await ipcRenderer.invoke('request-open-url-in-workspace', url, id);
 export const requestRealignActiveWorkspace = async () => await ipcRenderer.invoke('request-realign-active-workspace');
@@ -50,10 +34,6 @@ export const getIsDevelopment = () => ipcRenderer.invokeSync('get-constant', 'is
 // call path
 export const getBaseName = (pathString: string): string => ipcRenderer.invokeSync('get-basename', pathString);
 export const getDirectoryName = (pathString: string): string => ipcRenderer.invokeSync('get-dirname', pathString);
-
-// Workspace Meta
-export const getWorkspaceMeta = (id: string) => ipcRenderer.invokeSync('get-workspace-meta', id);
-export const getWorkspaceMetas = () => ipcRenderer.invokeSync('get-workspace-metas');
 
 // Find In Page
 export const requestFindInPage = async (text: string, forward: boolean) => await ipcRenderer.invoke('request-find-in-page', text, !!forward);

@@ -3,7 +3,6 @@ import { enable as enableDarkMode, disable as disableDarkMode } from 'darkreader
 import ContextMenuBuilder from '@services/libs/context-menu-builder';
 import i18next from '@services/libs/i18n';
 import './wiki-operation';
-import './wiki-git-api';
 import { preference } from './common/services';
 
 const { MenuItem, shell } = remote;

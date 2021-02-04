@@ -1142,7 +1142,7 @@ const Preferences = ({
               </ListItemSecondaryAction>
             </ListItem>
             <Divider />
-            <ListItem button onClick={requestClearBrowsingData}>
+            <ListItem button onClick={window.service.preference.clearBrowsingDataWithConfirm}>
               <ListItemText primary="Clear browsing data" secondary="Clear cookies, cache, and more" />
               <ChevronRightIcon color="action" />
             </ListItem>

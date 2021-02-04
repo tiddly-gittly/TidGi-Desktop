@@ -15,6 +15,7 @@ export interface IWorkspaceViewService {
   setActiveWorkspaceView(id: string): Promise<void>;
   removeWorkspaceView(id: string): Promise<void>;
   clearBrowsingData(): Promise<void>;
+  clearBrowsingDataWithConfirm(): Promise<void>;
   /**
    * Try load url, if no id or no active workspace, then nothing will happened
    * @param url url to load
@@ -34,6 +35,7 @@ export const WorkspaceViewServiceIPCDescriptor = {
     setActiveWorkspaceView: ProxyPropertyType.Function,
     removeWorkspaceView: ProxyPropertyType.Function,
     clearBrowsingData: ProxyPropertyType.Function,
+    clearBrowsingDataWithConfirm: ProxyPropertyType.Function,
     loadURL: ProxyPropertyType.Function,
     realignActiveWorkspace: ProxyPropertyType.Function,
   },

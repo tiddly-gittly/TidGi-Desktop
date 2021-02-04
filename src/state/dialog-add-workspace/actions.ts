@@ -8,7 +8,6 @@ import validate from '../../helpers/validate';
 import isUrl from '../../helpers/is-url';
 import hasErrors from '../../helpers/has-errors';
 
-import { requestCreateWorkspace } from '../../senders';
 import i18n from 'i18next';
 
 export const setWikiCreationMessage = (message: string) => ({
@@ -52,17 +51,19 @@ export const save = () => async (dispatch: any, getState: any) => {
   const url = form.homeUrl.trim();
   const homeUrl = isUrl(url) ? url : `http://${url}`;
 
-  await requestCreateWorkspace(
-    form.name,
-    form.isSubWiki,
-    form.mainWikiToLink,
-    form.port,
+  // FIXME: maybe use createWorkspace instead?
+  await window.service.workspaceView.createWorkspaceView({
+    name: form.name,
+    isSubWiki: form.isSubWiki,
+    mainWikiToLink: form.mainWikiToLink,
+    port: form.port,
     homeUrl,
-    form.gitUrl,
-    form.internetIcon || form.picturePath,
-    Boolean(form.transparentBackground),
-    form.tagName,
-  );
+    gitUrl: form.gitUrl,
+    picturePath: form.internetIcon || form.picturePath,
+    transparentBackground: Boolean(form.transparentBackground),
+    tagName: form.tagName,
+  });
+  await window.service.menu.buildMenu();
   if (!form.isSubWiki) {
     dispatch(setWikiCreationMessage(i18n.t('AddWorkspace.WorkspaceUpdated')));
     // and wiki will be closed after wiki server started, close logic is inside wiki-worker-manager.js

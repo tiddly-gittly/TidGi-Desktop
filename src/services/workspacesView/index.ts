@@ -1,7 +1,8 @@
-import { app, ipcMain, session } from 'electron';
+import { app, ipcMain, session, dialog } from 'electron';
 import { injectable, inject } from 'inversify';
 
 import serviceIdentifier from '@services/serviceIdentifier';
+import i18n from '@services/libs/i18n';
 import type { IViewService } from '@services/view/interface';
 import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interface';
 import type { IWindowService } from '@services/windows/interface';
@@ -22,10 +23,6 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   private initIPCHandlers(): void {
-    ipcMain.handle('request-create-workspace', async (_event, workspaceOptions: IWorkspace) => {
-      await this.createWorkspaceView(workspaceOptions);
-      this.menuService.buildMenu();
-    });
     ipcMain.handle('request-set-active-workspace', async (_event, id) => {
       if (this.workspaceService.get(id) !== undefined) {
         await this.setActiveWorkspaceView(id);
@@ -167,6 +164,25 @@ export class WorkspaceView implements IWorkspaceViewService {
 
     await this.workspaceService.remove(id);
     this.viewService.removeView(id);
+  }
+
+  public async clearBrowsingDataWithConfirm(): Promise<void> {
+    const availableWindowToShowDialog = this.windowService.get(WindowNames.preferences) ?? this.windowService.get(WindowNames.main);
+    if (availableWindowToShowDialog !== undefined) {
+      await dialog
+        .showMessageBox(availableWindowToShowDialog, {
+          type: 'question',
+          buttons: [i18n.t('Preference.ResetNow'), i18n.t('Cancel')],
+          message: i18n.t('Preference.ClearBrowsingDataMessage'),
+          cancelId: 1,
+        })
+        .then(({ response }) => {
+          if (response === 0) {
+            return this.clearBrowsingData();
+          }
+        })
+        .catch(console.error);
+    }
   }
 
   public async clearBrowsingData(): Promise<void> {

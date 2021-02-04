@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
-import { app, App, remote, ipcMain, dialog } from 'electron';
+import { app, App, remote, dialog } from 'electron';
 import path from 'path';
 import semver from 'semver';
 import settings from 'electron-settings';
@@ -85,43 +85,13 @@ const defaultPreferences: IPreferences = {
 @injectable()
 export class Preference implements IPreferenceService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-  @lazyInject(serviceIdentifier.Notification) private readonly notificationService!: INotificationService;
-  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
+  @lazyInject(serviceIdentifier.NotificationService) private readonly notificationService!: INotificationService;
 
   cachedPreferences: IPreferences;
   readonly version = '2018.2';
 
   constructor() {
     this.cachedPreferences = this.getInitPreferencesForCache();
-    this.init();
-  }
-
-  init(): void {
-    ipcMain.handle(PreferenceChannel.requestClearBrowsingData, () => {
-      const availableWindowToShowDialog = this.windowService.get(WindowNames.preferences) ?? this.windowService.get(WindowNames.main);
-      if (availableWindowToShowDialog !== undefined) {
-        dialog
-          .showMessageBox(availableWindowToShowDialog, {
-            type: 'question',
-            buttons: [i18n.t('Preference.ResetNow'), i18n.t('Cancel')],
-            message: i18n.t('Preference.ClearBrowsingDataMessage'),
-            cancelId: 1,
-          })
-          .then(({ response }) => {
-            if (response === 0) {
-              return this.workspaceViewService.clearBrowsingData();
-            }
-          })
-          .catch(console.error);
-      }
-    });
-
-    ipcMain.handle(PreferenceChannel.getPreference, (_event, name: keyof IPreferences) => {
-      return this.get(name);
-    });
-    ipcMain.handle(PreferenceChannel.getPreferences, (_event) => {
-      return this.cachedPreferences;
-    });
   }
 
   public async resetWithConfirm(): Promise<void> {

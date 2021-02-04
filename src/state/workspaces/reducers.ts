@@ -1,10 +1,9 @@
 import { SET_WORKSPACE, SET_WORKSPACES } from '../../constants/actions';
 
-import { getWorkspaces } from '../../senders';
-
-const initialState = getWorkspaces();
-
-const workspaces = (state = initialState, action: any) => {
+const workspaces = async (state = initialState, action: any) => {
+  if (state === undefined) {
+    state = await window.service.workspace.getWorkspaces();
+  }
   switch (action.type) {
     case SET_WORKSPACES: {
       return action.workspaces;

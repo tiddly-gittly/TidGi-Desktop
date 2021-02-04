@@ -88,14 +88,13 @@ export default function AddWorkspace() {
   }, [mainWikiToLink]);
   const [githubWikiUrl, githubWikiUrlSetter] = useState<string>('');
   useEffect(() => {
-    async function getWorkspaceRemoteInEffect(): Promise<void> {
+    void (async function getWorkspaceRemoteInEffect(): Promise<void> {
       const url = await window.service.git.getWorkspacesRemote(existedFolderLocation);
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (url) {
         githubWikiUrlSetter(url);
       }
-    }
-    void getWorkspaceRemoteInEffect();
+    })();
   }, [githubWikiUrl, existedFolderLocation]);
 
   const [wikiFolderName, wikiFolderNameSetter] = useState('tiddlywiki');
