@@ -1,4 +1,5 @@
 import { ipcRenderer } from 'electron';
+import { ContextChannel } from '@/constants/channels';
 
 export const requestOpen = async (uri: string, isDirectory: boolean): Promise<void> => {
   await ipcRenderer.invoke('request-open', uri, !!isDirectory);
@@ -12,16 +13,17 @@ export const getShouldUseDarkColors = async (): Promise<void> => {
   await ipcRenderer.invoke('get-should-use-dark-colors');
 };
 
-// eslint-disable-next-line sonarjs/no-duplicate-string
-export const getIconPath = () => ipcRenderer.invokeSync('get-constant', 'ICON_PATH');
-export const getReactPath = () => ipcRenderer.invokeSync('get-constant', 'REACT_PATH');
-export const getDesktopPath = () => ipcRenderer.invokeSync('get-constant', 'DESKTOP_PATH');
-export const getLogFolderPath = () => ipcRenderer.invokeSync('get-constant', 'LOG_FOLDER');
-export const getIsDevelopment = () => ipcRenderer.invokeSync('get-constant', 'isDev');
-
-// call path
-export const getBaseName = (pathString: string): string => ipcRenderer.invokeSync('get-basename', pathString);
-export const getDirectoryName = (pathString: string): string => ipcRenderer.invokeSync('get-dirname', pathString);
+// call NodeJS.path
+export const getBaseName = async (pathString: string): Promise<string> => {
+  const result = (await ipcRenderer.invoke(ContextChannel.getBaseName, pathString)) as string;
+  if (typeof result === 'string') return result;
+  throw new Error(`getBaseName get bad result ${typeof result}`);
+};
+export const getDirectoryName = async (pathString: string): Promise<string> => {
+  const result = (await ipcRenderer.invoke(ContextChannel.getDirectoryName, pathString)) as string;
+  if (typeof result === 'string') return result;
+  throw new Error(`getDirectoryName get bad result ${typeof result}`);
+};
 
 // Find In Page
 export const requestFindInPage = async (text: string, forward: boolean) => await ipcRenderer.invoke('request-find-in-page', text, !!forward);

@@ -13,8 +13,8 @@ import Alert from '@material-ui/lab/Alert';
 import * as actions from '../../state/dialog-add-workspace/actions';
 
 import type { IUserInfo } from '@services/types';
-import { getIconPath, getBaseName, getDirectoryName } from '../../senders';
 import useWikiCreationMessage from './use-wiki-creation-message';
+import { getBaseName, getDirectoryName } from '@/senders';
 
 const CloseButton = styled(Button)`
   white-space: nowrap;
@@ -62,7 +62,6 @@ function DoneButton({
     port,
     homeUrl: `http://localhost:${port}/`,
     gitUrl: githubWikiUrl, // don't need .git suffix
-    picturePath: getIconPath(),
     userInfo,
     tagName: isCreateMainWorkspace ? undefined : tagName,
   };
@@ -118,8 +117,8 @@ function DoneButton({
           disabled={!existedFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             if (!userInfo) return;
-            const wikiFolderName = getBaseName(existedFolderLocation);
-            const parentFolderLocation = getDirectoryName(existedFolderLocation);
+            const wikiFolderName = await getBaseName(existedFolderLocation);
+            const parentFolderLocation = await getDirectoryName(existedFolderLocation);
             updateForm(workspaceFormData);
             let creationError: string | undefined;
             try {

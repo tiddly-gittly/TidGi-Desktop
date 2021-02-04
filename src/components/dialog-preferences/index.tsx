@@ -1217,7 +1217,7 @@ const Preferences = ({
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
-            <ListItem button onClick={() => requestOpen(getLogFolderPath(), true)}>
+            <ListItem button onClick={async () => requestOpen(await window.service.context.get('LOG_FOLDER'), true)}>
               <ListItemText primary={t('Preference.OpenLogFolder')} secondary={t('Preference.OpenLogFolderDetail')} />
               <ChevronRightIcon color="action" />
             </ListItem>

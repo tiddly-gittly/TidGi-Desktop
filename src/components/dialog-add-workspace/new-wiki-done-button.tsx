@@ -13,7 +13,6 @@ import Alert from '@material-ui/lab/Alert';
 import * as actions from '../../state/dialog-add-workspace/actions';
 
 import type { IUserInfo } from '@services/types';
-import { getIconPath } from '../../senders';
 
 import useWikiCreationMessage from './use-wiki-creation-message';
 
@@ -68,7 +67,6 @@ function NewWikiDoneButton({
     port,
     homeUrl: `http://localhost:${port}/`,
     gitUrl: githubWikiUrl, // don't need .git suffix
-    picturePath: getIconPath(),
     userInfo,
     tagName: isCreateMainWorkspace ? undefined : tagName,
   };

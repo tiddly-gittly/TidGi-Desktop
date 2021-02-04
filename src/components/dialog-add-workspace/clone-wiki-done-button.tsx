@@ -13,7 +13,6 @@ import Alert from '@material-ui/lab/Alert';
 import * as actions from '../../state/dialog-add-workspace/actions';
 
 import type { IUserInfo } from '@services/types';
-import { getIconPath } from '../../senders';
 
 import useWikiCreationMessage from './use-wiki-creation-message';
 
@@ -33,9 +32,7 @@ interface OwnProps {
   userInfo: IUserInfo;
 }
 interface DispatchProps {
-  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
   updateForm: (Object) => void;
-  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
   setWikiCreationMessage: (string) => void;
   save: () => void;
 }
@@ -69,7 +66,6 @@ function CloneWikiDoneButton({
     port,
     homeUrl: `http://localhost:${port}/`,
     gitUrl: githubWikiUrl, // don't need .git suffix
-    picturePath: getIconPath(),
     userInfo,
     tagName: isCreateMainWorkspace ? undefined : tagName,
   };
@@ -79,7 +75,6 @@ function CloneWikiDoneButton({
   return (
     <>
       {progressBarOpen && <LinearProgress color="secondary" />}
-      {/* @ts-expect-error ts-migrate(2322) FIXME: Type 'boolean | Dispatch<SetStateAction<boolean>>'... Remove this comment to see the full error message */}
       <Snackbar open={snackBarOpen} autoHideDuration={5000} onClose={() => snackBarOpenSetter(false)}>
         <Alert severity="info">{wikiCreationMessage}</Alert>
       </Snackbar>
@@ -88,7 +83,6 @@ function CloneWikiDoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.
           disabled={!parentFolderLocation || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             if (!userInfo) {
@@ -108,7 +102,6 @@ function CloneWikiDoneButton({
               save();
             }
           }}>
-          {/* @ts-expect-error ts-migrate(2322) FIXME: Type '{ children: ("" | Element)[]; t: TFunction<s... Remove this comment to see the full error message */}
           <Trans t={t} i18nKey="AddWorkspace.CloneWikiDoneButton" wikiFolderLocation={wikiFolderLocation}>
             {parentFolderLocation && (
               <>
@@ -129,7 +122,6 @@ function CloneWikiDoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          // @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call.
           disabled={!parentFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             if (!userInfo) {
@@ -149,7 +141,6 @@ function CloneWikiDoneButton({
               save();
             }
           }}>
-          {/* @ts-expect-error ts-migrate(2322) FIXME: Type '{ children: ("" | Element)[]; t: TFunction<s... Remove this comment to see the full error message */}
           <Trans t={t} i18nKey="AddWorkspace.CloneSubWikiDoneButton" wikiFolderLocation={wikiFolderLocation}>
             {parentFolderLocation && (
               <>
@@ -178,5 +169,4 @@ const mapStateToProps = (state: any) => ({
   wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
 });
 
-// @ts-expect-error ts-migrate(2558) FIXME: Expected 5 type arguments, but got 6.
 export default connect<Props, OwnProps, _, _, _, _>(mapStateToProps, (dispatch) => bindActionCreators(actions, dispatch))(CloneWikiDoneButton);

@@ -53,8 +53,14 @@ export default function AddWorkspace() {
   useEffect(() => {
     void window.service.workspace.countWorkspaces().then((workspaceCount) => isCreateMainWorkspaceSetter(workspaceCount === 0));
   }, []);
-  const [parentFolderLocation, parentFolderLocationSetter] = useState(getDesktopPath());
-  const [existedFolderLocation, existedFolderLocationSetter] = useState(getDesktopPath());
+  const [parentFolderLocation, parentFolderLocationSetter] = useState<string | undefined>();
+  const [existedFolderLocation, existedFolderLocationSetter] = useState<string | undefined>();
+  useEffect(() => {
+    void (async () => {
+      parentFolderLocationSetter(await window.service.context.get('DESKTOP_PATH'));
+      existedFolderLocationSetter(await window.service.context.get('DESKTOP_PATH'));
+    })();
+  });
   const [wikiPort, wikiPortSetter] = useState(5212);
   useEffect(() => {
     // only update default port on component mount

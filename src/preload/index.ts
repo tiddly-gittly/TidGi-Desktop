@@ -2,7 +2,6 @@ import 'reflect-metadata';
 import { contextBridge, ipcRenderer } from 'electron';
 
 import './common/i18n';
-import './common/require-nodejs';
 import './common/simple-context-menu';
 import './common/authing-postmessage';
 import * as service from './common/services';
