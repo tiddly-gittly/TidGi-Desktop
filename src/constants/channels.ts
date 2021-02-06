@@ -4,10 +4,12 @@ export enum MainChannel {
    * Common initialization procedural of electron app booting finished, we can do more domain specific jobs
    */
   commonInitFinished = 'common-init-finished',
+  windowAllClosed = 'window-all-closed',
 }
 
 export enum AuthenticationChannel {
   name = 'AuthenticationChannel',
+  update = 'update',
 }
 export enum ContextChannel {
   name = 'ContextChannel',
@@ -25,16 +27,20 @@ export enum NativeChannel {
 }
 export enum NotificationChannel {
   name = 'NotificationChannel',
+  shouldPauseNotificationsChanged = 'should-pause-notifications-changed',
 }
 export enum SystemPreferenceChannel {
   name = 'SystemPreferenceChannel',
+  setSystemPreference = 'set-system-preference',
 }
 export enum UpdaterChannel {
   name = 'UpdaterChannel',
+  updateUpdater = 'update-updater',
 }
 export enum ViewChannel {
   name = 'ViewChannel',
   onlineStatusChanged = 'online-status-changed',
+  updateFindInPageMatches = 'update-find-in-page-matches',
 }
 export enum WikiChannel {
   name = 'WikiChannel',
@@ -58,6 +64,10 @@ export enum PreferenceChannel {
 
 export enum WindowChannel {
   name = 'WindowChannel',
+  updateAddress = 'update-address',
+  updateTitle = 'update-title',
+  updateCanGoBack = 'update-can-go-back',
+  updateCanGoForward = 'update-can-go-forward',
 }
 
 export enum ThemeChannel {
@@ -79,4 +89,23 @@ export enum MetaDataChannel {
   getViewMetaData = 'getViewMetaData',
 }
 
-export type Channels = PreferenceChannel | WindowChannel | ThemeChannel | I18NChannels | MetaDataChannel;
+export type Channels =
+  | MainChannel
+  | AuthenticationChannel
+  | ContextChannel
+  | GitChannel
+  | MenuChannel
+  | NativeChannel
+  | NotificationChannel
+  | SystemPreferenceChannel
+  | UpdaterChannel
+  | ViewChannel
+  | WikiChannel
+  | WikiGitWorkspaceChannel
+  | WorkspaceChannel
+  | WorkspaceViewChannel
+  | PreferenceChannel
+  | WindowChannel
+  | ThemeChannel
+  | I18NChannels
+  | MetaDataChannel;

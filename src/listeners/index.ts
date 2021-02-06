@@ -15,6 +15,7 @@ import {
 import { closeFindInPage, openFindInPage, updateFindInPageMatches } from '../state/find-in-page/actions';
 import { updatePauseNotificationsInfo } from '../state/notifications/actions';
 import { updateUpdater } from '../state/updater/actions';
+import { NotificationChannel, SystemPreferenceChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 
 const loadListeners = (store: any) => {
   const { ipcRenderer } = window.remote;
@@ -31,7 +32,7 @@ const loadListeners = (store: any) => {
     store.dispatch(setPreference(name, value));
   });
 
-  ipcRenderer.on('set-system-preference', (_event: Electron.IpcRendererEvent, name: any, value: any) => {
+  ipcRenderer.on(SystemPreferenceChannel.setSystemPreference, (_event: Electron.IpcRendererEvent, name: any, value: any) => {
     store.dispatch(setSystemPreference(name, value));
   });
 
@@ -51,19 +52,19 @@ const loadListeners = (store: any) => {
     store.dispatch(setWorkspaceMetas(newWorkspaceMetas));
   });
 
-  ipcRenderer.on('update-can-go-back', (_event: Electron.IpcRendererEvent, value: any) => {
+  ipcRenderer.on(WindowChannel.updateCanGoBack, (_event: Electron.IpcRendererEvent, value: any) => {
     store.dispatch(updateCanGoBack(value));
   });
 
-  ipcRenderer.on('update-address', (_event: Electron.IpcRendererEvent, address: any, edited: any) => {
+  ipcRenderer.on(WindowChannel.updateAddress, (_event: Electron.IpcRendererEvent, address: any, edited: any) => {
     store.dispatch(updateAddressBarInfo(address, edited));
   });
 
-  ipcRenderer.on('update-title', (_event: Electron.IpcRendererEvent, title: any) => {
+  ipcRenderer.on(WindowChannel.updateTitle, (_event: Electron.IpcRendererEvent, title: any) => {
     store.dispatch(updateTitle(title));
   });
 
-  ipcRenderer.on('update-can-go-forward', (_event: Electron.IpcRendererEvent, value: any) => {
+  ipcRenderer.on(WindowChannel.updateCanGoForward, (_event: Electron.IpcRendererEvent, value: any) => {
     store.dispatch(updateCanGoForward(value));
   });
 
@@ -76,7 +77,7 @@ const loadListeners = (store: any) => {
     store.dispatch(closeFindInPage());
   });
 
-  ipcRenderer.on('update-find-in-page-matches', (_event: Electron.IpcRendererEvent, activeMatch: any, matches: any) => {
+  ipcRenderer.on(ViewChannel.updateFindInPageMatches, (_event: Electron.IpcRendererEvent, activeMatch: any, matches: any) => {
     store.dispatch(updateFindInPageMatches(activeMatch, matches));
   });
 
@@ -87,7 +88,7 @@ const loadListeners = (store: any) => {
     void window.service.window.findInPage(text, forward);
   });
 
-  ipcRenderer.on('should-pause-notifications-changed', (_event: Electron.IpcRendererEvent, value: any) => {
+  ipcRenderer.on(NotificationChannel.shouldPauseNotificationsChanged, (_event: Electron.IpcRendererEvent, value: any) => {
     store.dispatch(updatePauseNotificationsInfo(value));
   });
 

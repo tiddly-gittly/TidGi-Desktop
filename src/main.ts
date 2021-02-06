@@ -143,14 +143,7 @@ if (!gotTheLock) {
       });
     }
     await windowService.open(WindowNames.main);
-    const {
-      hibernateUnusedWorkspacesAtLaunch,
-      proxyBypassRules,
-      proxyPacScript,
-      proxyRules,
-      proxyType,
-      language,
-    } = preferenceService.getPreferences();
+    const { hibernateUnusedWorkspacesAtLaunch, proxyBypassRules, proxyPacScript, proxyRules, proxyType, language } = preferenceService.getPreferences();
     // configure proxy for default session
     if (proxyType === 'rules') {
       await session.defaultSession.setProxy({
@@ -250,7 +243,7 @@ if (!gotTheLock) {
     });
     void commonInit();
   });
-  app.on('window-all-closed', () => {
+  app.on(MainChannel.windowAllClosed, () => {
     if (process.platform !== 'darwin') {
       app.quit();
     }
@@ -287,7 +280,7 @@ if (!gotTheLock) {
         });
         // pick automatically if there's only one choice
         if (mailtoWorkspaces.length === 0) {
-          nativeService.('None of your workspaces supports composing email messages.', 'error');
+          void nativeService.showElectronMessageBox('None of your workspaces supports composing email messages.', 'error');
           return;
         }
         if (mailtoWorkspaces.length === 1) {

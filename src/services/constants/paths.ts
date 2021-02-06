@@ -7,8 +7,7 @@ const isMac = process.platform === 'darwin';
 const sourcePath = path.resolve(__dirname, '..', '..');
 export const buildResourcePath = path.resolve(sourcePath, '..', 'build-resources');
 
-// FIXME: change to electron forge path
-const REACT_PATH = isDev ? 'http://localhost:3000' : `file://${path.resolve(__dirname, '..', '..', 'build', 'index.html')}`;
+const REACT_PATH = MAIN_WINDOW_WEBPACK_ENTRY;
 // .app/Contents/Resources/wiki/
 const TIDDLYWIKI_TEMPLATE_FOLDER_PATH = isDev ? path.resolve(sourcePath, '..', 'template', 'wiki') : path.resolve(process.resourcesPath, '..', 'wiki');
 const TIDDLERS_PATH = 'tiddlers';

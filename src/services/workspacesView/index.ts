@@ -9,6 +9,7 @@ import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspaceViewService } from './interface';
+import { WindowChannel } from '@/constants/channels';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
@@ -145,7 +146,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         // eslint-disable-next-line unicorn/no-null
         mainWindow.setBrowserView(null);
         mainWindow.setTitle(app.name);
-        this.windowService.sendToAllWindows('update-title', '');
+        this.windowService.sendToAllWindows(WindowChannel.updateTitle, '');
       }
     } else if (this.workspaceService.countWorkspaces() > 1 && this.workspaceService.get(id)?.active === true) {
       const previousWorkspace = this.workspaceService.getPreviousWorkspace(id);

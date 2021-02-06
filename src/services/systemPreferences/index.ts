@@ -1,9 +1,18 @@
-import { app, ipcMain } from 'electron';
+import { app } from 'electron';
 import { injectable } from 'inversify';
+import getDecorators from 'inversify-inject-decorators';
+import { container } from '@services/container';
 import { ISystemPreferenceService, IUsedElectionSettings } from './interface';
+import serviceIdentifier from '@services/serviceIdentifier';
+import { IWindowService } from '@services/windows/interface';
+import { SystemPreferenceChannel } from '@/constants/channels';
+
+const { lazyInject } = getDecorators(container);
 
 @injectable()
 export class SystemPreference implements ISystemPreferenceService {
+  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+
   public get<K extends keyof IUsedElectionSettings>(key: K): IUsedElectionSettings[K] {
     switch (key) {
       case 'openAtLogin': {
@@ -39,7 +48,6 @@ export class SystemPreference implements ISystemPreferenceService {
         break;
       }
     }
-    // TODO: sendToAllWindows?, maybe do this in the base class
-    // sendToAllWindows('set-system-preference', name, value);
+    this.windowService.sendToAllWindows(SystemPreferenceChannel.setSystemPreference, key, value);
   }
 }

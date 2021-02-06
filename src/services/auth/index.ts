@@ -1,8 +1,15 @@
 /* eslint-disable unicorn/no-null */
 import { injectable } from 'inversify';
+import getDecorators from 'inversify-inject-decorators';
 import settings from 'electron-settings';
 import { IUserInfo as IAuthingUserInfo } from '@services/types';
+import { container } from '@services/container';
+import type { IWindowService } from '@services/windows/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
+import { AuthenticationChannel } from '@/constants/channels';
 import { IAuthenticationService, IUserInfos } from './interface';
+
+const { lazyInject } = getDecorators(container);
 
 const defaultUserInfos = {
   userName: 'TiddlyGit User',
@@ -11,6 +18,8 @@ const defaultUserInfos = {
 
 @injectable()
 export class Authentication implements IAuthenticationService {
+  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+
   cachedUserInfo: IUserInfos;
   readonly version = '2021.1';
 
@@ -64,10 +73,9 @@ export class Authentication implements IAuthenticationService {
     const UserInfos = this.getUserInfos();
     this.cachedUserInfo = UserInfos;
     await this.setUserInfos(UserInfos);
-    // TODO: sendToAllWindows
-    // Object.keys(UserInfos).forEach((key) => {
-    //   const value = UserInfos[key as keyof IUserInfos];
-    //   this.windowService.sendToAllWindows(UserInfoChannel.update, key, value);
-    // });
+    Object.keys(UserInfos).forEach((key) => {
+      const value = UserInfos[key as keyof IUserInfos];
+      this.windowService.sendToAllWindows(AuthenticationChannel.update, key, value);
+    });
   }
 }

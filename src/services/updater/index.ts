@@ -1,22 +1,29 @@
-import { app, dialog, ipcMain, shell } from 'electron';
-import { injectable, inject } from 'inversify';
-
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
+import { app, dialog, shell } from 'electron';
+import { injectable } from 'inversify';
 import { autoUpdater, UpdateInfo } from 'electron-updater';
 import type { ProgressInfo } from 'builder-util-runtime';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IUpdaterService } from './interface';
+import { lazyInject } from '@services/container';
+import { MainChannel, UpdaterChannel } from '@/constants/channels';
+import { IUpdaterService, IUpdaterMetaData } from './interface';
+import { IMenuService } from '@services/menu/interface';
+import { logger } from '@services/libs/log';
 
 // TODO: use electron-forge 's auto update solution， maybe see https://headspring.com/2020/09/24/building-signing-and-publishing-electron-forge-applications-for-windows/
 @injectable()
 export class Updater implements IUpdaterService {
-  constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {}
+  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
 
-  private init(): void {
-    (global as any).updateSilent = true;
-    global.updaterObj = {};
+  private updateSilent = true;
+  private updaterMetaData = {} as IUpdaterMetaData;
+
+  public constructor() {
+    this.updateSilent = true;
     this.configAutoUpdater();
   }
 
@@ -51,35 +58,32 @@ export class Updater implements IUpdaterService {
     }
     // TODO: enable updater later, if I have time remove all untyped global.xxx
     // restart & apply updates
-    // if (global.updaterObj && global.updaterObj.status === 'update-downloaded') {
+    // if (this.updaterMetaData && this.updaterMetaData.status === 'update-downloaded') {
     //   setImmediate(() => {
-    //     app.removeAllListeners('window-all-closed');
+    //     app.removeAllListeners(MainChannel.windowAllClosed);
     //     if (mainWindow.get() !== undefined) {
     //       (mainWindow.get() as any).forceClose = true;
-    //       // @ts-expect-error ts-migrate(2532) FIXME: Object is possibly 'undefined'.
     //       mainWindow.get().close();
     //     }
     //     autoUpdater.quitAndInstall(false);
     //   });
     // }
     // // check for updates
-    // (global as any).updateSilent = Boolean(isSilent);
+    // this.updateSilent = Boolean(isSilent);
     // autoUpdater.checkForUpdates();
   }
 
   private configAutoUpdater(): void {
     autoUpdater.on('checking-for-update', () => {
-      global.updaterObj = {
+      this.updaterMetaData = {
         status: 'checking-for-update',
       };
-      // TODO: sendToAllWindows
-      // sendToAllWindows('update-updater', global.updaterObj);
-      // TODO: make createMenu a service that receive contribution registering from other services
-      // createMenu();
+      this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
+      this.menuService.buildMenu();
     });
     autoUpdater.on('update-available', (info: UpdateInfo) => {
       const mainWindow = this.windowService.get(WindowNames.main);
-      if (!(global as any).updateSilent && mainWindow !== undefined) {
+      if (!this.updateSilent && mainWindow !== undefined) {
         void dialog.showMessageBox(mainWindow, {
           title: 'An Update is Available',
           message: 'There is an available update. It is being downloaded. We will let you know when it is ready.',
@@ -87,20 +91,18 @@ export class Updater implements IUpdaterService {
           cancelId: 0,
           defaultId: 0,
         });
-        (global as any).updateSilent = true;
+        this.updateSilent = true;
       }
-      global.updaterObj = {
+      this.updaterMetaData = {
         status: 'update-available',
         info,
       };
-      // TODO: sendToAllWindows
-      // sendToAllWindows('update-updater', global.updaterObj);
-      // TODO: make createMenu a service
-      // createMenu();
+      this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
+      this.menuService.buildMenu();
     });
     autoUpdater.on('update-not-available', (info: UpdateInfo) => {
       const mainWindow = this.windowService.get(WindowNames.main);
-      if (!(global as any).updateSilent && mainWindow !== undefined) {
+      if (!this.updateSilent && mainWindow !== undefined) {
         dialog
           .showMessageBox(mainWindow, {
             title: 'No Updates',
@@ -110,22 +112,19 @@ export class Updater implements IUpdaterService {
             defaultId: 0,
           })
           .catch(console.log);
-        (global as any).updateSilent = true;
+        this.updateSilent = true;
       }
-      global.updaterObj = {
+      this.updaterMetaData = {
         status: 'update-not-available',
         info,
       };
-      // TODO: sendToAllWindows
-      // sendToAllWindows('update-updater', global.updaterObj);
-      // TODO: make createMenu a service
-      // createMenu();
+      this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
+      this.menuService.buildMenu();
     });
     autoUpdater.on('error', (error: Error) => {
       const mainWindow = this.windowService.get(WindowNames.main);
-      if (!(global as any).updateSilent && mainWindow !== undefined) {
+      if (!this.updateSilent && mainWindow !== undefined) {
         dialog
-          // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BrowserWindow | undefined' is no... Remove this comment to see the full error message
           .showMessageBox(mainWindow, {
             title: 'Failed to Check for Updates',
             message: 'Failed to check for updates. Please check your Internet connection.',
@@ -134,57 +133,48 @@ export class Updater implements IUpdaterService {
             defaultId: 0,
           })
           .catch(console.log);
-        (global as any).updateSilent = true;
+        this.updateSilent = true;
       }
-      // sendToAllWindows('log', error);
-      global.updaterObj = {
+      logger.error(error);
+      this.updaterMetaData = {
         status: 'error',
         info: error,
       };
-      // TODO: sendToAllWindows
-      // sendToAllWindows('update-updater', global.updaterObj);
-      // TODO: make createMenu a service
-      // createMenu();
+      this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
+      this.menuService.buildMenu();
     });
     autoUpdater.on('update-cancelled', () => {
-      global.updaterObj = {
+      this.updaterMetaData = {
         status: 'update-cancelled',
       };
-      // TODO: sendToAllWindows
-      // sendToAllWindows('update-updater', global.updaterObj);
-      // TODO: make createMenu a service
-      // createMenu();
+      this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
+      this.menuService.buildMenu();
     });
     autoUpdater.on('download-progress', (progressObject: ProgressInfo) => {
-      global.updaterObj = {
+      this.updaterMetaData = {
         status: 'download-progress',
         info: progressObject,
       };
-      // TODO: sendToAllWindows
-      // sendToAllWindows('update-updater', global.updaterObj);
-      // TODO: make createMenu a service
-      // createMenu();
+      this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
+      this.menuService.buildMenu();
     });
     autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
       const mainWindow = this.windowService.get(WindowNames.main);
       if (mainWindow !== undefined) {
-        global.updaterObj = {
+        this.updaterMetaData = {
           status: 'update-downloaded',
           info,
         };
-        // TODO: sendToAllWindows
-        // sendToAllWindows('update-updater', global.updaterObj);
-        // TODO: make createMenu a service
-        // createMenu();
+        this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
+        this.menuService.buildMenu();
         const dialogOptions = {
           type: 'info',
           buttons: ['Restart', 'Later'],
           title: 'Application Update',
-          detail: `A new version (${info.version}) has been downloaded. Restart the application to apply the updates.`,
+          message: `A new version (${info.version}) has been downloaded. Restart the application to apply the updates.`,
           cancelId: 1,
         };
         dialog
-          // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'BrowserWindow | undefined' is no... Remove this comment to see the full error message
           .showMessageBox(mainWindow, dialogOptions)
           .then(({ response }) => {
             if (response === 0) {
@@ -192,7 +182,7 @@ export class Updater implements IUpdaterService {
               // https://github.com/electron/electron/issues/3583
               // https://github.com/electron-userland/electron-builder/issues/1604
               setImmediate(() => {
-                app.removeAllListeners('window-all-closed');
+                app.removeAllListeners(MainChannel.windowAllClosed);
                 const mainWindow = this.windowService.get(WindowNames.main);
                 if (mainWindow !== undefined) {
                   this.windowService.updateWindowMeta(WindowNames.main, { forceClose: true });

@@ -7,7 +7,6 @@ import settings from 'electron-settings';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
-import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { INotificationService } from '@services/notifications/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { PreferenceChannel } from '@/constants/channels';

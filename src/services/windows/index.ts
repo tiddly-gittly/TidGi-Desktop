@@ -13,7 +13,7 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { container } from '@services/container';
-import { Channels, WindowChannel, MetaDataChannel } from '@/constants/channels';
+import { Channels, WindowChannel, MetaDataChannel, ViewChannel } from '@/constants/channels';
 
 import i18n from '@services/libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
@@ -67,7 +67,7 @@ export class Window implements IWindowService {
       const contents = view.webContents;
       if (contents !== undefined) {
         contents.stopFindInPage('clearSelection');
-        contents.send('update-find-in-page-matches', 0, 0);
+        contents.send(ViewChannel.updateFindInPageMatches, 0, 0);
         // adjust bounds to hide the gap for find in page
         if (close === true && mainWindow !== undefined) {
           const contentSize = mainWindow.getContentSize();
@@ -301,8 +301,8 @@ export class Window implements IWindowService {
     const activeWorkspace = this.workspaceService.getActiveWorkspace();
     if (contents !== undefined && activeWorkspace !== undefined && win !== undefined) {
       await contents.loadURL(activeWorkspace.homeUrl);
-      contents.send('update-can-go-back', contents.canGoBack());
-      contents.send('update-can-go-forward', contents.canGoForward());
+      contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
+      contents.send(WindowChannel.updateCanGoForward, contents.canGoForward());
     }
   }
 
@@ -311,8 +311,8 @@ export class Window implements IWindowService {
     const contents = win?.getBrowserView()?.webContents;
     if (contents?.canGoBack() === true) {
       contents.goBack();
-      contents.send('update-can-go-back', contents.canGoBack());
-      contents.send('update-can-go-forward', contents.canGoForward());
+      contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
+      contents.send(WindowChannel.updateCanGoForward, contents.canGoForward());
     }
   }
 
@@ -321,29 +321,14 @@ export class Window implements IWindowService {
     const contents = win?.getBrowserView()?.webContents;
     if (contents?.canGoForward() === true) {
       contents.goForward();
-      contents.send('update-can-go-back', contents.canGoBack());
-      contents.send('update-can-go-forward', contents.canGoForward());
+      contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
+      contents.send(WindowChannel.updateCanGoForward, contents.canGoForward());
     }
   }
 
   public reload(windowName: WindowNames = WindowNames.main): void {
     const win = this.get(windowName);
     win?.getBrowserView()?.webContents?.reload();
-  }
-
-  public showMessageBox(message: Electron.MessageBoxOptions['message'], type?: Electron.MessageBoxOptions['type']): void {
-    const mainWindow = this.get(WindowNames.main);
-    if (mainWindow !== undefined) {
-      dialog
-        .showMessageBox(mainWindow, {
-          type: type ?? 'error',
-          message,
-          buttons: ['OK'],
-          cancelId: 0,
-          defaultId: 0,
-        })
-        .catch(console.log);
-    }
   }
 
   private registerMenu(): void {

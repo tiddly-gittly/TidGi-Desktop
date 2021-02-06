@@ -1,4 +1,4 @@
-import { app, dialog, shell } from 'electron';
+import { app, dialog, shell, MessageBoxOptions } from 'electron';
 import { injectable, inject } from 'inversify';
 
 import type { IWindowService } from '@services/windows/interface';
@@ -10,8 +10,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 export class NativeService implements INativeService {
   constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {}
 
-  public async showMessageBox(WindowName: WindowNames, message: string, type: string): Promise<void> {
-    const window = this.windowService.get(WindowName);
+  public async showElectronMessageBox(message: string, type: MessageBoxOptions['type'] = 'info', windowName = WindowNames.main): Promise<void> {
+    const window = this.windowService.get(windowName);
     if (window !== undefined) {
       await dialog.showMessageBox(window, { message, type });
     }

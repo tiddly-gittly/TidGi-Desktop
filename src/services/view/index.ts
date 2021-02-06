@@ -18,7 +18,7 @@ import { extractDomain } from '@services/libs/url';
 import { IWorkspace } from '@services/workspaces/interface';
 import setupViewEventHandlers from './setupViewEventHandlers';
 import getFromRenderer from '@services/libs/getFromRenderer';
-import { ViewChannel, MetaDataChannel } from '@/constants/channels';
+import { ViewChannel, MetaDataChannel, WindowChannel, NotificationChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { IViewService } from './interface';
 
@@ -386,8 +386,8 @@ export class View implements IViewService {
       // focus on webview
       // https://github.com/quanglam2807/webcatalog/issues/398
       view.webContents.focus();
-      this.windowService.sendToAllWindows('update-address', view.webContents.getURL(), false);
-      this.windowService.sendToAllWindows('update-title', view.webContents.getTitle());
+      this.windowService.sendToAllWindows(WindowChannel.updateAddress, view.webContents.getURL(), false);
+      this.windowService.sendToAllWindows(WindowChannel.updateTitle, view.webContents.getTitle());
       browserWindow.setTitle(view.webContents.getTitle());
     }
   }
@@ -425,7 +425,7 @@ export class View implements IViewService {
       const view = this.getView(id);
       const workspace = this.workspaceService.get(id);
       if (view !== undefined && workspace !== undefined) {
-        view.webContents.send('should-pause-notifications-changed', Boolean(workspace.disableNotifications || this.shouldPauseNotifications));
+        view.webContents.send(NotificationChannel.shouldPauseNotificationsChanged, Boolean(workspace.disableNotifications || this.shouldPauseNotifications));
       }
     });
   };

@@ -15,6 +15,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
 import { container } from '@services/container';
+import { NotificationChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 
 export interface IViewContext {
   workspace: IWorkspace;
@@ -55,7 +56,7 @@ export default function setupViewEventHandlers(
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 
   view.webContents.once('did-stop-loading', () => {
-    view.webContents.send('should-pause-notifications-changed', workspace.disableNotifications || shouldPauseNotifications);
+    view.webContents.send(NotificationChannel.shouldPauseNotificationsChanged, workspace.disableNotifications || shouldPauseNotifications);
   });
   view.webContents.on('will-navigate', (event, nextUrl) => {
     // open external links in browser
@@ -116,7 +117,7 @@ export default function setupViewEventHandlers(
     //   isLoading: false,
     // });
     if (workspaceObject.active) {
-      windowService.sendToAllWindows('update-address', view.webContents.getURL(), false);
+      windowService.sendToAllWindows(WindowChannel.updateAddress, view.webContents.getURL(), false);
     }
     const currentUrl = view.webContents.getURL();
     void workspaceService.update(workspace.id, {
@@ -173,9 +174,9 @@ export default function setupViewEventHandlers(
       void view.webContents.loadURL(`https://chat.google.com${reference}`);
     }
     if (workspaceObject.active) {
-      windowService.sendToAllWindows('update-can-go-back', view.webContents.canGoBack());
-      windowService.sendToAllWindows('update-can-go-forward', view.webContents.canGoForward());
-      windowService.sendToAllWindows('update-address', url, false);
+      windowService.sendToAllWindows(WindowChannel.updateCanGoBack, view.webContents.canGoBack());
+      windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.canGoForward());
+      windowService.sendToAllWindows(WindowChannel.updateAddress, url, false);
     }
   });
   view.webContents.on('did-navigate-in-page', (_event, url) => {
@@ -187,9 +188,9 @@ export default function setupViewEventHandlers(
       return;
     }
     if (workspaceObject.active) {
-      windowService.sendToAllWindows('update-can-go-back', view.webContents.canGoBack());
-      windowService.sendToAllWindows('update-can-go-forward', view.webContents.canGoForward());
-      windowService.sendToAllWindows('update-address', url, false);
+      windowService.sendToAllWindows(WindowChannel.updateCanGoBack, view.webContents.canGoBack());
+      windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.canGoForward());
+      windowService.sendToAllWindows(WindowChannel.updateAddress, url, false);
     }
   });
   view.webContents.on('page-title-updated', (_event, title) => {
@@ -201,7 +202,7 @@ export default function setupViewEventHandlers(
       return;
     }
     if (workspaceObject.active) {
-      windowService.sendToAllWindows('update-title', title);
+      windowService.sendToAllWindows(WindowChannel.updateTitle, title);
       browserWindow.setTitle(title);
     }
   });
@@ -285,7 +286,7 @@ export default function setupViewEventHandlers(
   }
   // Find In Page
   view.webContents.on('found-in-page', (_event, result) => {
-    windowService.sendToAllWindows('update-find-in-page-matches', result.activeMatchOrdinal, result.matches);
+    windowService.sendToAllWindows(ViewChannel.updateFindInPageMatches, result.activeMatchOrdinal, result.matches);
   });
   // Link preview
   view.webContents.on('update-target-url', (_event, url) => {

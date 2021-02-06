@@ -1,7 +1,7 @@
 import { ipcRenderer, remote, webFrame } from 'electron';
 import { enable as enableDarkMode, disable as disableDarkMode } from 'darkreader';
 import ContextMenuBuilder from '@services/libs/context-menu-builder';
-import { ContextChannel } from '@/constants/channels';
+import { ContextChannel, NotificationChannel } from '@/constants/channels';
 import i18next from '@services/libs/i18n';
 import './wiki-operation';
 import { preference, theme } from './common/services';
@@ -177,9 +177,9 @@ document.addEventListener('DOMContentLoaded', () => handleLoaded('document.on("D
 window.addEventListener('load', () => handleLoaded('window.on("onload")'));
 // Communicate with the frame
 // Have to use this weird trick because contextIsolation: true
-ipcRenderer.on('should-pause-notifications-changed', (e, value) => {
+ipcRenderer.on(NotificationChannel.shouldPauseNotificationsChanged, (e, value) => {
   // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
-  window.postMessage({ type: 'should-pause-notifications-changed', val: value });
+  window.postMessage({ type: NotificationChannel.shouldPauseNotificationsChanged, val: value });
 });
 ipcRenderer.on('display-media-id-received', (e, value) => {
   // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
@@ -235,7 +235,7 @@ void webFrame.executeJavaScript(`
   let shouldPauseNotifications = ${initialShouldPauseNotifications};
 
   window.addEventListener('message', function(e) {
-    if (!e.data || e.data.type !== 'should-pause-notifications-changed') return;
+    if (!e.data || e.data.type !== '${NotificationChannel.shouldPauseNotificationsChanged}') return;
     shouldPauseNotifications = e.data.val;
   });
 

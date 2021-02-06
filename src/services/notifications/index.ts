@@ -1,16 +1,18 @@
 import { Notification, NotificationConstructorOptions } from 'electron';
-import { injectable, inject } from 'inversify';
+import { injectable } from 'inversify';
+import { lazyInject } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { IViewService } from '@services/view/interface';
 import { INotificationService, IPauseNotificationsInfo } from './interface';
+import { IWindowService } from '@services/windows/interface';
+import { NotificationChannel } from '@/constants/channels';
 
 @injectable()
 export class NotificationService implements INotificationService {
-  constructor(
-    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
-    @inject(serviceIdentifier.View) private readonly viewService: IViewService,
-  ) {}
+  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
+  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
+  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
 
   private pauseNotificationsInfo?: IPauseNotificationsInfo;
 
@@ -136,10 +138,9 @@ export class NotificationService implements INotificationService {
     const shouldMuteAudio = shouldPauseNotifications && this.preferenceService.get('pauseNotificationsMuteAudio');
     this.viewService.setViewsAudioPref(shouldMuteAudio);
     this.viewService.setViewsNotificationsPref(shouldPauseNotifications);
-    // FIXME: sync state to the UI
-    // sendToAllWindows('should-pause-notifications-changed', this.pauseNotificationsInfo);
+    this.windowService.sendToAllWindows(NotificationChannel.shouldPauseNotificationsChanged, this.pauseNotificationsInfo);
 
-    // set schedule for reupdating
+    // set schedule for re-updating
     const pauseNotifications = this.preferenceService.get('pauseNotifications');
     const schedule = this.getCurrentScheduledDateTime();
 
