@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { Observable, Subscription } from 'rxjs';
-import { ipcMain, IpcMain, Event, WebContents, IpcMainEvent } from 'electron';
+import { ipcMain, IpcMain, WebContents, IpcMainEvent } from 'electron';
 import Errio from 'errio';
 import { IpcProxyError, isFunction, isObservable } from './utils';
 import {

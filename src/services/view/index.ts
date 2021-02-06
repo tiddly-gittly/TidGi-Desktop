@@ -432,9 +432,9 @@ export class View implements IViewService {
 
   public hibernateView = (id: string): void => {
     if (this.getView(id) !== undefined) {
-      // FIXME: remove view
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      this.getView(id).destroy();
+      // FIXME: remove view, now using workaround in https://github.com/electron/electron/issues/10096#issuecomment-373063642
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
+      (this.getView(id) as any).destroy();
       this.removeView(id);
     }
   };
