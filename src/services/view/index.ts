@@ -392,11 +392,10 @@ export class View implements IViewService {
   public removeView = (id: string): void => {
     const view = this.getView(id);
     void session.fromPartition(`persist:${id}`).clearStorageData();
-    // FIXME: Property 'destroy' does not exist on type 'BrowserView'.ts(2339) , might related to https://github.com/electron/electron/pull/25411 which previously cause crush when I quit the app
-    // maybe use https://github.com/electron/electron/issues/10096
     if (view !== undefined) {
+      // currently use workaround https://github.com/electron/electron/issues/10096
       // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      (view as any).destroy();
+      (view as any).webContents.destroy();
     }
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete this.views[id];
@@ -430,9 +429,9 @@ export class View implements IViewService {
 
   public hibernateView = (id: string): void => {
     if (this.getView(id) !== undefined) {
-      // FIXME: remove view, now using workaround in https://github.com/electron/electron/issues/10096#issuecomment-373063642
+      // currently use workaround https://github.com/electron/electron/issues/10096
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      (this.getView(id) as any).destroy();
+      (this.getView(id) as any).webContents.destroy();
       this.removeView(id);
     }
   };
