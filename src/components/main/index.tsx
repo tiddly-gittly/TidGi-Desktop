@@ -336,8 +336,8 @@ const Main = ({ classes, didFailLoad, isFullScreen, isLoading, navigationBar, sh
                       <li>
                         Check the{' '}
                         <b
-                          onClick={() => requestOpen(getLogFolderPath(), true)}
-                          onKeyPress={() => requestOpen(getLogFolderPath(), true)}
+                          onClick={async () => await window.service.native.open(getLogFolderPath(), true)}
+                          onKeyPress={async () => await window.service.native.open(getLogFolderPath(), true)}
                           role="button"
                           // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'number | ... Remove this comment to see the full error message
                           tabIndex="0"

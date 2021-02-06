@@ -9,7 +9,7 @@ import Radio from '@material-ui/core/Radio';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
 import connectComponent from '../../helpers/connect-component';
 import { updateForm, save } from '../../state/dialog-proxy/actions';
-import { requestOpen } from '../../senders';
+
 const styles = (theme: any) => ({
   root: {
     background: theme.palette.background.paper,
@@ -50,9 +50,7 @@ interface OwnDialogProxyProps {
   proxyRulesError?: string;
   proxyType?: string;
 }
-// @ts-expect-error ts-migrate(2456) FIXME: Type alias 'DialogProxyProps' circularly reference... Remove this comment to see the full error message
 type DialogProxyProps = OwnDialogProxyProps & typeof DialogProxy.defaultProps;
-// @ts-expect-error ts-migrate(7022) FIXME: 'DialogProxy' implicitly has type 'any' because it... Remove this comment to see the full error message
 const DialogProxy = (props: DialogProxyProps) => {
   const { classes, onUpdateForm, onSave, proxyBypassRules, proxyPacScript, proxyPacScriptError, proxyRules, proxyRulesError, proxyType } = props;
   return (
@@ -88,18 +86,16 @@ const DialogProxy = (props: DialogProxyProps) => {
                         role="link"
                         tabIndex={0}
                         className={classes.link}
-                        // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                        onClick={() => requestOpen('https://www.npmjs.com/package/proxy-agent')}
+                        onClick={async () => await window.service.native.open('https://www.npmjs.com/package/proxy-agent')}
                         onKeyDown={(e) => {
                           if (e.key !== 'Enter') return;
                           {
                             return;
                           }
-                          // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                          requestOpen('https://www.npmjs.com/package/proxy-agent');
+                          void window.service.native.open('https://www.npmjs.com/package/proxy-agent');
                         }}>
                         Learn more
-                      </span>
+                      </span>void window.service.native.open
                     </>
                   )
                 }
@@ -122,15 +118,13 @@ const DialogProxy = (props: DialogProxyProps) => {
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                      onClick={() => requestOpen('https://www.electronjs.org/docs/api/session#sessetproxyconfig')}
+                      onClick={async () => await window.service.native.open('https://www.electronjs.org/docs/api/session#sessetproxyconfig')}
                       onKeyDown={(e) => {
                         if (e.key !== 'Enter') return;
                         {
                           return;
                         }
-                        // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                        requestOpen('https://www.electronjs.org/docs/api/session#sessetproxyconfig');
+                        void window.service.native.open('https://www.electronjs.org/docs/api/session#sessetproxyconfig');
                       }}>
                       Learn more
                     </span>
@@ -169,15 +163,13 @@ const DialogProxy = (props: DialogProxyProps) => {
                         role="link"
                         tabIndex={0}
                         className={classes.link}
-                        // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                        onClick={() => requestOpen('https://en.wikipedia.org/wiki/Proxy_auto-config')}
+                        onClick={async () => await window.service.native.open('https://en.wikipedia.org/wiki/Proxy_auto-config')}
                         onKeyDown={(e) => {
                           if (e.key !== 'Enter') return;
                           {
                             return;
                           }
-                          // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                          requestOpen('https://en.wikipedia.org/wiki/Proxy_auto-config');
+                          void window.service.native.open('https://en.wikipedia.org/wiki/Proxy_auto-config');
                         }}>
                         Learn more
                       </span>
@@ -203,15 +195,13 @@ const DialogProxy = (props: DialogProxyProps) => {
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                      onClick={() => requestOpen('https://www.electronjs.org/docs/api/session#sessetproxyconfig')}
+                      onClick={async () => await window.service.native.open('https://www.electronjs.org/docs/api/session#sessetproxyconfig')}
                       onKeyDown={(e) => {
                         if (e.key !== 'Enter') return;
                         {
                           return;
                         }
-                        // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                        requestOpen('https://www.electronjs.org/docs/api/session#sessetproxyconfig');
+                        void window.service.native.open('https://www.electronjs.org/docs/api/session#sessetproxyconfig');
                       }}>
                       Learn more
                     </span>

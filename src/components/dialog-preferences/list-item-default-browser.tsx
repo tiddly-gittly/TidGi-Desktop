@@ -9,8 +9,6 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 import connectComponent from '../../helpers/connect-component';
 
-import { requestOpen } from '../../senders';
-
 const ListItemDefaultBrowser = () => {
   const [isDefault, setIsDefault] = useState(false);
 
@@ -65,7 +63,7 @@ const ListItemDefaultBrowser = () => {
     return (
       // https://docs.microsoft.com/en-us/windows/uwp/launch-resume/launch-settings-app
       // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-      <ListItem button onClick={() => requestOpen('ms-settings:defaultapps')}>
+      <ListItem button onClick={async () => await window.service.native.open('ms-settings:defaultapps')}>
         {sharedListItemText}
         <ChevronRightIcon color="action" />
       </ListItem>

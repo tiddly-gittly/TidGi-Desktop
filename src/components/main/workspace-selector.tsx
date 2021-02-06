@@ -3,8 +3,7 @@ import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import Badge from '@material-ui/core/Badge';
 import connectComponent from '../../helpers/connect-component';
-import { getBaseName } from '@/senders';
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '../../images/default-icon.png'... Remove this comment to see the full error message
+
 import defaultIcon from '../../images/default-icon.png';
 const styles = (theme: any) => ({
   root: {
@@ -117,20 +116,16 @@ function WorkspaceSelector({
   useEffect(() => {
     void (async () => {
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      shortWorkspaceNameSetter(workspaceName ? await getBaseName(workspaceName) : t('WorkspaceSelector.BadWorkspacePath'));
+      shortWorkspaceNameSetter(workspaceName ? await window.remote.getBaseName(workspaceName) : t('WorkspaceSelector.BadWorkspacePath'));
     });
   }, []);
   return (
     <div
       role="button"
       className={classNames((classes as any).root, hibernated && (classes as any).rootHibernate, active && (classes as any).rootActive)}
-      // @ts-expect-error ts-migrate(2322) FIXME: Type 'Function' is not assignable to type '(event:... Remove this comment to see the full error message
       onClick={onClick}
-      // @ts-expect-error ts-migrate(2322) FIXME: Type 'Function' is not assignable to type '(event:... Remove this comment to see the full error message
       onKeyDown={onClick}
-      // @ts-expect-error ts-migrate(2322) FIXME: Type 'Function' is not assignable to type '(event:... Remove this comment to see the full error message
       onContextMenu={onContextMenu}
-      // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'number | ... Remove this comment to see the full error message
       tabIndex="0">
       <Badge color="secondary" badgeContent={badgeCount} max={99} classes={{ badge: (classes as any).badge }}>
         <div

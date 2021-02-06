@@ -1,5 +1,4 @@
-import path from 'path';
-import { dialog } from 'electron';
+import { app, dialog, shell } from 'electron';
 import { injectable, inject } from 'inversify';
 
 import type { IWindowService } from '@services/windows/interface';
@@ -16,5 +15,13 @@ export class NativeService implements INativeService {
     if (window !== undefined) {
       await dialog.showMessageBox(window, { message, type });
     }
+  }
+
+  public async open(uri: string, isDirectory = false): Promise<void> {
+    return isDirectory ? shell.showItemInFolder(uri) : await shell.openExternal(uri);
+  }
+
+  public quit(): void {
+    app.quit();
   }
 }

@@ -49,9 +49,7 @@ import StatedMenu from '../shared/stated-menu';
 
 import hunspellLanguagesMap from '../../constants/hunspell-languages';
 
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '../../images/webcatalog-logo.s... Remove this comment to see the full error message
 import webcatalogLogo from '../../images/webcatalog-logo.svg';
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '../../images/translatium-logo.... Remove this comment to see the full error message
 import translatiumLogo from '../../images/translatium-logo.svg';
 
 import ListItemDefaultMailClient from './list-item-default-mail-client';
@@ -361,7 +359,6 @@ const Preferences = ({
   useEffect(() => {
     const scrollTo = window.remote.getGlobal('preferencesScrollTo');
     if (!scrollTo) return;
-    // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
     sections[scrollTo].ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
@@ -372,7 +369,6 @@ const Preferences = ({
 
   const [userInfo, userInfoSetter] = useState<IUserInfo | void>(getGithubUserInfo());
   useEffect(() => {
-    // @ts-expect-error ts-migrate(2345) FIXME: Argument of type 'void | IUserInfo' is not assigna... Remove this comment to see the full error message
     setGithubUserInfo(userInfo);
   }, [userInfo]);
   // try get token on start up, so Github GraphQL client can use it
@@ -391,7 +387,6 @@ const Preferences = ({
       <div className={classes.sidebar}>
         <List dense>
           {Object.keys(sections).map((sectionKey, index) => {
-            // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
             const { Icon, text, ref, hidden } = sections[sectionKey];
             if (hidden) return;
             return (
@@ -410,7 +405,6 @@ const Preferences = ({
       </div>
 
       <div className={classes.inner}>
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.wiki.ref}>
           TiddlyWiki
         </Typography>
@@ -430,7 +424,6 @@ const Preferences = ({
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.sync.ref}>
           {t('Preference.Sync')}
         </Typography>
@@ -439,7 +432,6 @@ const Preferences = ({
             <ListItem>
               <ListItemText primary={t('Preference.Token')} secondary={t('Preference.TokenDescription')} />
               <div className={classes.tokenContainer}>
-                {/* @ts-expect-error ts-migrate(2322) FIXME: Type 'string | void' is not assignable to type 'st... Remove this comment to see the full error message */}
                 <GitTokenForm accessTokenSetter={accessTokenSetter} userInfoSetter={userInfoSetter} accessToken={accessToken} />
               </div>
             </ListItem>
@@ -447,7 +439,6 @@ const Preferences = ({
               <ListItemText primary={t('Preference.SyncInterval')} secondary={t('Preference.SyncIntervalDescription')} />
               <div className={classes.timePickerContainer}>
                 <TimePicker
-                  // @ts-expect-error ts-migrate(2322) FIXME: Type '{ autoOk: boolean; ampm: false; openTo: "hou... Remove this comment to see the full error message
                   autoOk={false}
                   ampm={false}
                   openTo="hours"
@@ -475,7 +466,6 @@ const Preferences = ({
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.general.ref}>
           {t('Preference.General')}
         </Typography>
@@ -606,7 +596,6 @@ const Preferences = ({
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.extensions.ref}>
           Extensions
         </Typography>
@@ -622,12 +611,10 @@ const Preferences = ({
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                      onClick={() => requestOpen('https://cliqz.com/en/whycliqz/adblocking')}
+                      onClick={async () => await window.service.native.open('https://cliqz.com/en/whycliqz/adblocking')}
                       onKeyDown={(event) => {
                         if (event.key !== 'Enter') return;
-                        // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                        requestOpen('https://cliqz.com/en/whycliqz/adblocking');
+                        void window.service.native.open('https://cliqz.com/en/whycliqz/adblocking');
                       }}>
                       Cliqz
                     </span>
@@ -658,12 +645,10 @@ const Preferences = ({
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                      onClick={() => requestOpen('https://darkreader.org/')}
+                      onClick={async () => await window.service.native.open('https://darkreader.org/')}
                       onKeyDown={(event) => {
                         if (event.key !== 'Enter') return;
-                        // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                        requestOpen('https://darkreader.org/');
+                        void window.service.native.open('https://darkreader.org/');
                       }}>
                       Dark Reader
                     </span>
@@ -714,7 +699,6 @@ const Preferences = ({
                       min={-50}
                       max={50}
                       onChange={(_, value) => {
-                        // @ts-expect-error ts-migrate(2365) FIXME: Operator '+' cannot be applied to types 'number | ... Remove this comment to see the full error message
                         await window.service.preference.set('darkReaderBrightness', value + 100);
                       }}
                     />
@@ -747,7 +731,6 @@ const Preferences = ({
                       min={-50}
                       max={50}
                       onChange={(_, value) => {
-                        // @ts-expect-error ts-migrate(2365) FIXME: Operator '+' cannot be applied to types 'number | ... Remove this comment to see the full error message
                         await window.service.preference.set('darkReaderContrast', value + 100);
                       }}
                     />
@@ -814,7 +797,6 @@ const Preferences = ({
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.notifications.ref}>
           Notifications
         </Typography>
@@ -830,12 +812,10 @@ const Preferences = ({
                 Automatically disable notifications by schedule:
                 <div className={classes.timePickerContainer}>
                   <TimePicker
-                    // @ts-expect-error ts-migrate(2322) FIXME: Type '{ autoOk: boolean; label: string; renderInpu... Remove this comment to see the full error message
                     autoOk={false}
                     label="from"
                     renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleFrom)}
-                    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
                     onChange={(d) => await window.service.preference.set('pauseNotificationsByScheduleFrom', d.toString())}
                     onClose={() => {
                       window.preventClosingWindow = false;
@@ -846,12 +826,10 @@ const Preferences = ({
                     disabled={!pauseNotificationsBySchedule}
                   />
                   <TimePicker
-                    // @ts-expect-error ts-migrate(2322) FIXME: Type '{ autoOk: boolean; label: string; renderInpu... Remove this comment to see the full error message
                     autoOk={false}
                     label="to"
                     renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleTo)}
-                    // @ts-expect-error ts-migrate(2531) FIXME: Object is possibly 'null'.
                     onChange={(d) => await window.service.preference.set('pauseNotificationsByScheduleTo', d.toString())}
                     onClose={() => {
                       window.preventClosingWindow = false;
@@ -946,12 +924,10 @@ const Preferences = ({
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                      onClick={() => requestOpen('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps')}
+                      onClick={async () => await window.service.native.open('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps')}
                       onKeyDown={(event) => {
                         if (event.key !== 'Enter') return;
-                        // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                        requestOpen('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
+                        void window.service.native.open('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
                       }}>
                       Learn more
                     </span>
@@ -963,7 +939,6 @@ const Preferences = ({
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.languages.ref}>
           Languages
         </Typography>
@@ -989,7 +964,6 @@ const Preferences = ({
                 <ListItem button onClick={async () => await window.service.window.open(WindowNames.spellcheck)}>
                   <ListItemText
                     primary="Preferred spell checking languages"
-                    // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
                     secondary={spellcheckLanguages.map((code) => hunspellLanguagesMap[code]).join(' | ')}
                   />
                   <ChevronRightIcon color="action" />
@@ -999,7 +973,6 @@ const Preferences = ({
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.downloads.ref}>
           Downloads
         </Typography>
@@ -1042,7 +1015,6 @@ const Preferences = ({
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" color="textPrimary" className={classes.sectionTitle} ref={sections.network.ref}>
           Network
         </Typography>
@@ -1055,7 +1027,6 @@ const Preferences = ({
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.privacy.ref}>
           Privacy &amp; Security
         </Typography>
@@ -1116,12 +1087,10 @@ const Preferences = ({
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                      onClick={() => requestOpen('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ')}
+                      onClick={async () => await window.service.native.open('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ')}
                       onKeyDown={(event) => {
                         if (event.key !== 'Enter') return;
-                        // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-                        requestOpen('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ');
+                        void window.service.native.open('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ');
                       }}>
                       Learn more
                     </span>
@@ -1147,14 +1116,12 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            {/* @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1. */}
-            <ListItem button onClick={() => requestOpen('https://github.com/tiddly-gittly/TiddlyGit-Desktop/blob/master/PrivacyPolicy.md')}>
+            <ListItem button onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TiddlyGit-Desktop/blob/master/PrivacyPolicy.md')}>
               <ListItemText primary="Privacy Policy" />
             </ListItem>
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.system.ref}>
           System
         </Typography>
@@ -1185,7 +1152,6 @@ const Preferences = ({
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.developers.ref}>
           Developers
         </Typography>
@@ -1211,13 +1177,12 @@ const Preferences = ({
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.advanced.ref}>
           Advanced
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
-            <ListItem button onClick={async () => requestOpen(await window.service.context.get('LOG_FOLDER'), true)}>
+            <ListItem button onClick={async async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}>
               <ListItemText primary={t('Preference.OpenLogFolder')} secondary={t('Preference.OpenLogFolderDetail')} />
               <ChevronRightIcon color="action" />
             </ListItem>
@@ -1290,7 +1255,6 @@ const Preferences = ({
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.updates.ref}>
           Updates
         </Typography>
@@ -1329,7 +1293,6 @@ const Preferences = ({
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.reset.ref}>
           Reset
         </Typography>
@@ -1342,20 +1305,17 @@ const Preferences = ({
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" color="textPrimary" className={classes.sectionTitle} ref={sections.webCatalogApps.ref}>
           WebCatalog Apps
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List disablePadding dense>
-            {/* @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1. */}
-            <ListItem button onClick={() => requestOpen('https://github.com/webcatalog/webcatalog-engine')}>
+            <ListItem button onClick={async () => await window.service.native.open('https://github.com/webcatalog/webcatalog-engine')}>
               <ListItemText secondary="WebCatalog is the initial code founder of TiddlyGit, we reuse lots of important code from the open-source WebCatalog, many thanks to WebCatalog and its author Quang Lam" />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            {/* @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1. */}
-            <ListItem button onClick={() => requestOpen('https://webcatalogapp.com?utm_source=tiddlygit_app')}>
+            <ListItem button onClick={async () => await window.service.native.open('https://webcatalogapp.com?utm_source=tiddlygit_app')}>
               <ListItemText
                 primary={<img src={webcatalogLogo} alt="WebCatalog" className={classes.logo} />}
                 secondary="Magically turn any websites into Mac apps. Work more productively and forget about switching tabs. "
@@ -1363,15 +1323,13 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            {/* @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1. */}
-            <ListItem button onClick={() => requestOpen('https://translatiumapp.com?utm_source=tiddlygit_app')}>
+            <ListItem button onClick={async () => await window.service.native.open('https://translatiumapp.com?utm_source=tiddlygit_app')}>
               <ListItemText primary={<img src={translatiumLogo} alt="Translatium" className={classes.logo} />} secondary="Translate Any Languages like a Pro" />
               <ChevronRightIcon color="action" />
             </ListItem>
           </List>
         </Paper>
 
-        {/* @ts-expect-error ts-migrate(2769) FIXME: No overload matches this call. */}
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.miscs.ref}>
           Miscellaneous
         </Typography>
@@ -1382,19 +1340,17 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            {/* @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1. */}
-            <ListItem button onClick={() => requestOpen('https://github.com/tiddly-gittly/tiddlygit-desktop/')}>
+            <ListItem button onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/tiddlygit-desktop/')}>
               <ListItemText primary="Website" />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            {/* @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1. */}
-            <ListItem button onClick={() => requestOpen('https://github.com/tiddly-gittly/tiddlygit-desktop/issues')}>
+            <ListItem button onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/tiddlygit-desktop/issues')}>
               <ListItemText primary="Support" />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={requestQuit}>
+            <ListItem button onClick={ window.service.native.quit}>
               <ListItemText primary="Quit" />
               <ChevronRightIcon color="action" />
             </ListItem>

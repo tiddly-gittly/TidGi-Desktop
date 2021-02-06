@@ -15,7 +15,6 @@ import { MainChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import extractHostname from '@services/libs/extract-hostname';
-import loadListeners from '@services/listeners';
 import MAILTO_URLS from '@services/constants/mailto-urls';
 import { initI18NAfterServiceReady } from '@services/libs/i18n';
 
@@ -133,7 +132,6 @@ if (!gotTheLock) {
     { scheme: 'https', privileges: { standard: true } },
     { scheme: 'mailto', privileges: { standard: true } },
   ]);
-  loadListeners();
   const commonInit = async (): Promise<void> => {
     // eslint-disable-next-line promise/catch-or-return
     await app.whenReady();

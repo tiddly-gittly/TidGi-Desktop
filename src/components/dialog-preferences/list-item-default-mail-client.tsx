@@ -9,8 +9,6 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 import connectComponent from '../../helpers/connect-component';
 
-import { requestOpen } from '../../senders';
-
 const ListItemDefaultMailClient = () => {
   const [isDefault, setIsDefault] = useState(false);
 
@@ -63,7 +61,7 @@ const ListItemDefaultMailClient = () => {
     return (
       // https://docs.microsoft.com/en-us/windows/uwp/launch-resume/launch-settings-app
       // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-      <ListItem button onClick={() => requestOpen('ms-settings:defaultapps')}>
+      <ListItem button onClick={async () => await window.service.native.open('ms-settings:defaultapps')}>
         <ListItemText primary="Default email client" secondary="Make TiddlyGit the default email client." />
         <ChevronRightIcon color="action" />
       </ListItem>

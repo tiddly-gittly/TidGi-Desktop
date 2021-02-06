@@ -3,7 +3,7 @@ import Button from '@material-ui/core/Button';
 import Typography from '@material-ui/core/Typography';
 import DialogContent from '@material-ui/core/DialogContent';
 import connectComponent from '../../helpers/connect-component';
-import { requestOpen } from '../../senders';
+
 const styles = (theme: any) => ({
   icon: {
     height: 96,
@@ -68,11 +68,9 @@ const About = (props: AboutProps) => {
           ))}
         </div>
 
-        {/* @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1. */}
-        <Button onClick={() => requestOpen('https://github.com/tiddly-gittly/TiddlyGit-Desktop')}>Website</Button>
+        <Button onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TiddlyGit-Desktop')}>Website</Button>
         <br />
-        {/* @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1. */}
-        <Button onClick={() => requestOpen('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose')}>Support</Button>
+        <Button onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose')}>Support</Button>
 
         <Typography variant="body2" className={classes.madeBy}>
           <span>Made with </span>
@@ -81,35 +79,29 @@ const About = (props: AboutProps) => {
           </span>
           <span> by </span>
           <span
-            // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-            onClick={() => requestOpen('https://onetwo.ren/wiki/')}
-            onKeyDown={(e) => {
-              if (e.key !== 'Enter') {
+            onClick={async () => await window.service.native.open('https://onetwo.ren/wiki/')}
+            onKeyDown={async (event) => {
+              if (event.key !== 'Enter') {
                 return;
               }
-              // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-              requestOpen('https://onetwo.ren/wiki/');
+              await window.service.native.open('https://onetwo.ren/wiki/');
             }}
             role="link"
-            // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'number | ... Remove this comment to see the full error message
-            tabIndex="0"
+            tabIndex={0}
             className={classes.link}>
             Lin Onetwo
           </span>
           <span> and </span>
           <span
-            // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-            onClick={() => requestOpen('https://webcatalog.app/?utm_source=tiddlygit_app')}
-            onKeyDown={(e) => {
-              if (e.key !== 'Enter') {
+            onClick={async () => await window.service.native.open('https://webcatalog.app/?utm_source=tiddlygit_app')}
+            onKeyDown={async (event) => {
+              if (event.key !== 'Enter') {
                 return;
               }
-              // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-              requestOpen('https://webcatalog.app/?utm_source=tiddlygit_app');
+              await window.service.native.open('https://webcatalog.app/?utm_source=tiddlygit_app');
             }}
             role="link"
-            // @ts-expect-error ts-migrate(2322) FIXME: Type 'string' is not assignable to type 'number | ... Remove this comment to see the full error message
-            tabIndex="0"
+            tabIndex={0}
             className={classes.link}>
             WebCatalog
           </span>

@@ -14,7 +14,6 @@ import * as actions from '../../state/dialog-add-workspace/actions';
 
 import type { IUserInfo } from '@services/types';
 import useWikiCreationMessage from './use-wiki-creation-message';
-import { getBaseName, getDirectoryName } from '@/senders';
 
 const CloseButton = styled(Button)`
   white-space: nowrap;
@@ -117,8 +116,8 @@ function DoneButton({
           disabled={!existedFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             if (!userInfo) return;
-            const wikiFolderName = await getBaseName(existedFolderLocation);
-            const parentFolderLocation = await getDirectoryName(existedFolderLocation);
+            const wikiFolderName = await window.remote.getBaseName(existedFolderLocation);
+            const parentFolderLocation = await window.remote.getDirectoryName(existedFolderLocation);
             updateForm(workspaceFormData);
             let creationError: string | undefined;
             try {

@@ -114,7 +114,7 @@ export default function AddWorkspace() {
         <GitTokenForm accessTokenSetter={accessTokenSetter} userInfoSetter={userInfoSetter} accessToken={accessToken}>
           {githubWikiUrl && (
             // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
-            <GithubRepoLink onClick={() => requestOpen(githubWikiUrl)} variant="subtitle2" align="center">
+            <GithubRepoLink onClick={async () => await window.service.native.open(githubWikiUrl)} variant="subtitle2" align="center">
               ({githubWikiUrl})
             </GithubRepoLink>
           )}
