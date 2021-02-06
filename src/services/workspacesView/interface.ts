@@ -8,6 +8,7 @@ import { IWorkspace } from '@services/workspaces/interface';
  */
 export interface IWorkspaceViewService {
   createWorkspaceView(workspaceOptions: IWorkspace): Promise<void>;
+  initializeAllWorkspaceView(): Promise<void>;
   setWorkspaceView(id: string, workspaceOptions: IWorkspace): Promise<void>;
   setWorkspaceViews(workspaces: Record<string, IWorkspace>): Promise<void>;
   wakeUpWorkspaceView(id: string): Promise<void>;

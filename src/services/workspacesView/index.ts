@@ -1,5 +1,6 @@
 import { app, ipcMain, session, dialog } from 'electron';
 import { injectable, inject } from 'inversify';
+import { delay } from 'bluebird';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import i18n from '@services/libs/i18n';
@@ -8,15 +9,22 @@ import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interfa
 import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspaceViewService } from './interface';
 import { WindowChannel } from '@/constants/channels';
+import { IPreferenceService } from '@services/preferences/interface';
+import { logger } from '@services/libs/log';
+import { IAuthenticationService } from '@services/auth/interface';
+import { IGitService } from '@services/git/interface';
+import { IWorkspaceViewService } from './interface';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
   constructor(
+    @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
     @inject(serviceIdentifier.View) private readonly viewService: IViewService,
+    @inject(serviceIdentifier.Git) private readonly gitService: IGitService,
     @inject(serviceIdentifier.Workspace) private readonly workspaceService: IWorkspaceService,
     @inject(serviceIdentifier.Window) private readonly windowService: IWindowService,
+    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
     @inject(serviceIdentifier.MenuService) private readonly menuService: IMenuService,
   ) {
     this.initIPCHandlers();
@@ -39,6 +47,47 @@ export class WorkspaceView implements IWorkspaceViewService {
       await this.setWorkspaceViews(workspaces);
       this.menuService.buildMenu();
     });
+  }
+
+  /**
+   * Prepare workspaces on startup
+   */
+  public async initializeAllWorkspaceView(): Promise<void> {
+    const workspaces = this.workspaceService.getWorkspaces();
+    for (const workspaceID in workspaces) {
+      const workspace = workspaces[workspaceID];
+      if ((this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch') || workspace.hibernateWhenUnused) && !workspace.active) {
+        if (!workspace.hibernated) {
+          await this.workspaceService.update(workspaceID, { hibernated: true });
+        }
+        return;
+      }
+      const mainWindow = this.windowService.get(WindowNames.main);
+      if (mainWindow === undefined) return;
+      await this.viewService.addView(mainWindow, workspace);
+      try {
+        const userInfo = this.authService.get('authing');
+        const { name: wikiPath, gitUrl: githubRepoUrl, isSubWiki } = workspace;
+        // wait for main wiki's watch-fs plugin to be fully initialized
+        // and also wait for wiki BrowserView to be able to receive command
+        // eslint-disable-next-line global-require
+        let workspaceMetadata = this.workspaceService.getMetaData(workspaceID);
+        if (!isSubWiki) {
+          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+          while (!workspaceMetadata.didFailLoadErrorMessage && !workspaceMetadata.isLoading) {
+            // eslint-disable-next-line no-await-in-loop
+            await delay(500);
+            workspaceMetadata = this.workspaceService.getMetaData(workspaceID);
+          }
+        }
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        if (!isSubWiki && !workspaceMetadata.didFailLoadErrorMessage?.length && userInfo) {
+          await this.gitService.commitAndSync(wikiPath, githubRepoUrl, userInfo);
+        }
+      } catch {
+        logger.warning(`Can't sync at wikiStartup()`);
+      }
+    }
   }
 
   public async openUrlInWorkspace(url: string, id: string): Promise<void> {

@@ -1,6 +1,5 @@
 import 'reflect-metadata';
 import fs from 'fs';
-import { delay } from 'bluebird';
 import { ipcMain, protocol, session, powerMonitor, app } from 'electron';
 import isDev from 'electron-is-dev';
 import settings from 'electron-settings';
@@ -36,13 +35,9 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { Workspace } from '@services/workspaces';
 import { WorkspaceView } from '@services/workspacesView';
 
-import { IAuthenticationService } from './services/auth/interface';
-import { IGitService } from './services/git/interface';
 import { IMenuService } from './services/menu/interface';
 import { INativeService } from './services/native/interface';
 import { IPreferenceService } from './services/preferences/interface';
-import { IThemeService } from './services/theme/interface';
-import { IViewService } from './services/view/interface';
 import { IWikiService } from './services/wiki/interface';
 import { IWindowService } from './services/windows/interface';
 import { IWorkspaceService } from './services/workspaces/interface';
@@ -65,12 +60,9 @@ container.bind<WikiGitWorkspace>(serviceIdentifier.WikiGitWorkspace).to(WikiGitW
 container.bind<Window>(serviceIdentifier.Window).to(Window).inSingletonScope();
 container.bind<Workspace>(serviceIdentifier.Workspace).to(Workspace).inSingletonScope();
 container.bind<WorkspaceView>(serviceIdentifier.WorkspaceView).to(WorkspaceView).inSingletonScope();
-const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
-const gitService = container.get<IGitService>(serviceIdentifier.Git);
 const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
 const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-const viewService = container.get<IViewService>(serviceIdentifier.View);
 const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
@@ -143,7 +135,7 @@ if (!gotTheLock) {
       });
     }
     await windowService.open(WindowNames.main);
-    const { hibernateUnusedWorkspacesAtLaunch, proxyBypassRules, proxyPacScript, proxyRules, proxyType, language } = preferenceService.getPreferences();
+    const { proxyBypassRules, proxyPacScript, proxyRules, proxyType, language } = preferenceService.getPreferences();
     // configure proxy for default session
     if (proxyType === 'rules') {
       await session.defaultSession.setProxy({
@@ -158,42 +150,9 @@ if (!gotTheLock) {
     }
     // set language async
     void i18n.changeLanguage(language);
-    const workspaces = workspaceService.getWorkspaces();
-    for (const workspaceID in workspaces) {
-      const workspace = workspaces[workspaceID];
-      // TODO: move this logic to service
-      if ((hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) && !workspace.active) {
-        if (!workspace.hibernated) {
-          await workspaceService.update(workspaceID, { hibernated: true });
-        }
-        return;
-      }
-      const mainWindow = windowService.get(WindowNames.main);
-      if (mainWindow === undefined) return;
-      await viewService.addView(mainWindow, workspace);
-      try {
-        const userInfo = authService.get('authing');
-        const { name: wikiPath, gitUrl: githubRepoUrl, isSubWiki } = workspace;
-        // wait for main wiki's watch-fs plugin to be fully initialized
-        // and also wait for wiki BrowserView to be able to receive command
-        // eslint-disable-next-line global-require
-        let workspaceMetadata = workspaceService.getMetaData(workspaceID);
-        if (!isSubWiki) {
-          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-          while (!workspaceMetadata.didFailLoadErrorMessage && !workspaceMetadata.isLoading) {
-            // eslint-disable-next-line no-await-in-loop
-            await delay(500);
-            workspaceMetadata = workspaceService.getMetaData(workspaceID);
-          }
-        }
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        if (!isSubWiki && !workspaceMetadata.didFailLoadErrorMessage?.length && userInfo) {
-          await gitService.commitAndSync(wikiPath, githubRepoUrl, userInfo);
-        }
-      } catch {
-        logger.warning(`Can't sync at wikiStartup()`);
-      }
-    }
+
+    await workspaceViewService.initializeAllWorkspaceView();
+
     ipcMain.emit('request-update-pause-notifications-info');
     // Fix webview is not resized automatically
     // when window is maximized on Linux
