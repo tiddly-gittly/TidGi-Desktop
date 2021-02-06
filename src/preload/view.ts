@@ -1,13 +1,12 @@
 import { ipcRenderer, remote, webFrame } from 'electron';
 import { enable as enableDarkMode, disable as disableDarkMode } from 'darkreader';
 import ContextMenuBuilder from '@services/libs/context-menu-builder';
-import { ContextChannel, NotificationChannel } from '@/constants/channels';
+import { WindowChannel, NotificationChannel, WorkspaceChannel } from '@/constants/channels';
 import i18next from '@services/libs/i18n';
 import './wiki-operation';
-import { preference, theme } from './common/services';
+import { preference, theme, workspace, workspaceView, menu } from './common/services';
 
 const { MenuItem, shell } = remote;
-// @ts-expect-error ts-migrate(2322) FIXME: Type '{}' is not assignable to type 'Global & type... Remove this comment to see the full error message
 window.global = {};
 let handled = false;
 const handleLoaded = async (event: string): Promise<void> => {
@@ -67,7 +66,6 @@ const handleLoaded = async (event: string): Promise<void> => {
       console.log(error); // eslint-disable-line no-console
     }
   }
-  // @ts-expect-error ts-migrate(2554) FIXME: Expected 1-2 arguments, but got 0.
   (window as any).contextMenuBuilder = new ContextMenuBuilder();
   remote.getCurrentWebContents().on('context-menu', (e, info) => {
     // eslint-disable-next-line promise/catch-or-return
@@ -121,30 +119,30 @@ const handleLoaded = async (event: string): Promise<void> => {
           submenu: [
             {
               label: i18next.t('ContextMenu.About'),
-              click: () => ipcRenderer.invoke('request-show-about-window'),
+              click: async () => await ipcRenderer.invoke('request-show-about-window'),
             },
             { type: 'separator' },
             {
               label: i18next.t('ContextMenu.CheckForUpdates'),
-              click: () => ipcRenderer.invoke('request-check-for-updates'),
+              click: async () => await ipcRenderer.invoke('request-check-for-updates'),
             },
             {
               label: i18next.t('ContextMenu.Preferences'),
-              click: () => ipcRenderer.invoke('request-show-preferences-window'),
+              click: async () => await ipcRenderer.invoke('request-show-preferences-window'),
             },
             { type: 'separator' },
             {
               label: i18next.t('ContextMenu.TiddlyGitSupport'),
-              click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose'),
+              click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose'),
             },
             {
               label: i18next.t('ContextMenu.TiddlyGitWebsite'),
-              click: () => shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop'),
+              click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop'),
             },
             { type: 'separator' },
             {
               label: i18next.t('ContextMenu.Quit'),
-              click: () => ipcRenderer.invoke('request-quit'),
+              click: async () => await ipcRenderer.invoke('request-quit'),
             },
           ],
         }),
@@ -170,31 +168,32 @@ const handleLoaded = async (event: string): Promise<void> => {
 };
 
 // try to load as soon as dom is loaded
-document.addEventListener('DOMContentLoaded', () => handleLoaded('document.on("DOMContentLoaded")'));
+document.addEventListener('DOMContentLoaded', async () => await handleLoaded('document.on("DOMContentLoaded")'));
 // if user navigates between the same website
 // DOMContentLoaded might not be triggered so double check with 'onload'
 // https://github.com/atomery/webcatalog/issues/797
-window.addEventListener('load', () => handleLoaded('window.on("onload")'));
+window.addEventListener('load', async () => await handleLoaded('window.on("onload")'));
 // Communicate with the frame
 // Have to use this weird trick because contextIsolation: true
 ipcRenderer.on(NotificationChannel.shouldPauseNotificationsChanged, (e, value) => {
-  // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
   window.postMessage({ type: NotificationChannel.shouldPauseNotificationsChanged, val: value });
 });
 ipcRenderer.on('display-media-id-received', (e, value) => {
-  // @ts-expect-error ts-migrate(2554) FIXME: Expected 2-3 arguments, but got 1.
   window.postMessage({ type: 'return-display-media-id', val: value });
 });
-window.addEventListener('message', (e) => {
-  if (!e.data) {
+window.addEventListener('message', (event) => {
+  if (!event.data) {
     return;
   }
-  if (e.data.type === 'get-display-media-id') {
-    ipcRenderer.invoke('request-show-display-media-window');
+  if (event.data.type === 'get-display-media-id') {
+    ipcRenderer.invoke(WindowChannel.showDisplayMediaWindow);
   }
   // set workspace to active when its notification is clicked
-  if (e.data.type === 'focus-workspace') {
-    ipcRenderer.invoke('request-set-active-workspace', e.data.workspaceId);
+  if (event.data.type === WorkspaceChannel.focusWorkspace) {
+    const id = event.data.workspaceId;
+    if (workspace.get(id) !== undefined) {
+      void workspaceView.setActiveWorkspaceView(id).then(async () => await menu.buildMenu());
+    }
   }
 });
 // Fix Can't show file list of Google Drive
@@ -202,7 +201,6 @@ window.addEventListener('message', (e) => {
 // Fix chrome.runtime.sendMessage is undefined for FastMail
 // https://github.com/atomery/singlebox/issues/21
 const initialShouldPauseNotifications = ipcRenderer.invoke('get-pause-notifications-info') != undefined;
-// @ts-expect-error ts-migrate(2339) FIXME: Property 'workspaceId' does not exist on type 'Web... Remove this comment to see the full error message
 const { workspaceId } = remote.getCurrentWebContents();
 void webFrame.executeJavaScript(`
 (function() {
@@ -243,7 +241,7 @@ void webFrame.executeJavaScript(`
     if (!shouldPauseNotifications) {
       const notif = new oldNotification(...arguments);
       notif.addEventListener('click', () => {
-        window.postMessage({ type: 'focus-workspace', workspaceId: "${workspaceId}" });
+        window.postMessage({ type: '${WorkspaceChannel.focusWorkspace}', workspaceId: "${workspaceId}" });
       });
       return notif;
     }

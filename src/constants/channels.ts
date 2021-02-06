@@ -50,6 +50,7 @@ export enum WikiGitWorkspaceChannel {
 }
 export enum WorkspaceChannel {
   name = 'WorkspaceChannel',
+  focusWorkspace = 'focus-workspace',
 }
 export enum WorkspaceViewChannel {
   name = 'WorkspaceViewChannel',
@@ -68,6 +69,7 @@ export enum WindowChannel {
   updateTitle = 'update-title',
   updateCanGoBack = 'update-can-go-back',
   updateCanGoForward = 'update-can-go-forward',
+  showDisplayMediaWindow = 'show-display-media-window',
 }
 
 export enum ThemeChannel {

@@ -43,32 +43,7 @@ export class Workspace implements IWorkspaceService {
 
   constructor() {
     this.workspaces = this.getInitWorkspacesForCache();
-    this.initIPCHandlers();
     this.registerMenu();
-  }
-
-  initIPCHandlers(): void {
-    ipcMain.handle('get-workspace-meta', (_event, id) => {
-      return this.getMetaData(id);
-    });
-    ipcMain.handle('get-workspace-metas', (_event) => {
-      return this.getAllMetaData();
-    });
-    ipcMain.handle('count-workspace', (_event) => {
-      return this.countWorkspaces();
-    });
-    ipcMain.handle('get-workspace', (_event, id) => {
-      return this.get(id);
-    });
-    ipcMain.handle('get-workspaces', (_event) => {
-      return this.getWorkspaces();
-    });
-    ipcMain.handle('request-set-workspace-picture', async (_event, id, picturePath) => {
-      await this.setWorkspacePicture(id, picturePath);
-    });
-    ipcMain.handle('request-remove-workspace-picture', async (_event, id) => {
-      await this.removeWorkspacePicture(id);
-    });
   }
 
   private registerMenu(): void {

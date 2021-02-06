@@ -1,6 +1,6 @@
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
-import { app, App, remote, dialog } from 'electron';
+import { app, App, remote, dialog, nativeTheme } from 'electron';
 import path from 'path';
 import semver from 'semver';
 import settings from 'electron-settings';
@@ -13,6 +13,7 @@ import { PreferenceChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import i18n from '@services/libs/i18n';
 import { IPreferences, IPreferenceService } from './interface';
+import { IViewService } from '@services/view/interface';
 
 const { lazyInject } = getDecorators(container);
 
@@ -84,6 +85,7 @@ const defaultPreferences: IPreferences = {
 @injectable()
 export class Preference implements IPreferenceService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
   @lazyInject(serviceIdentifier.NotificationService) private readonly notificationService!: INotificationService;
 
   cachedPreferences: IPreferences;
@@ -155,17 +157,16 @@ export class Preference implements IPreferenceService {
    * @param preference new preference settings
    */
   private reactWhenPreferencesChanged<K extends keyof IPreferences>(key: K, value: IPreferences[K]): void {
-    // TODO: call ThemeService
-    // if (key.startsWith('darkReader')) {
-    //   ipcMain.emit('request-reload-views-dark-reader');
-    // }
+    if (key.startsWith('darkReader')) {
+      this.viewService.reloadViewsDarkReader();
+    }
     // maybe pauseNotificationsBySchedule or pauseNotifications or ...
     if (key.startsWith('pauseNotifications')) {
       this.notificationService.updatePauseNotificationsInfo();
     }
-    // if (key === 'themeSource') {
-    //   nativeTheme.themeSource = value;
-    // }
+    if (key === 'themeSource') {
+      nativeTheme.themeSource = value as IPreferences['themeSource'];
+    }
   }
 
   /**

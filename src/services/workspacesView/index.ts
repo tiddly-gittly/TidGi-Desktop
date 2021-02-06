@@ -27,26 +27,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
     @inject(serviceIdentifier.MenuService) private readonly menuService: IMenuService,
   ) {
-    this.initIPCHandlers();
     this.registerMenu();
-  }
-
-  private initIPCHandlers(): void {
-    ipcMain.handle('request-set-active-workspace', async (_event, id) => {
-      if (this.workspaceService.get(id) !== undefined) {
-        await this.setActiveWorkspaceView(id);
-        this.menuService.buildMenu();
-      }
-    });
-
-    ipcMain.handle('request-set-workspace', async (_event, id, options) => {
-      await this.setWorkspaceView(id, options);
-      this.menuService.buildMenu();
-    });
-    ipcMain.handle('request-set-workspaces', async (_event, workspaces) => {
-      await this.setWorkspaceViews(workspaces);
-      this.menuService.buildMenu();
-    });
   }
 
   /**

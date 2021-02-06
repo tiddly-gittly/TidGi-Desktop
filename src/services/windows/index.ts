@@ -39,7 +39,7 @@ export class Window implements IWindowService {
   }
 
   initIPCHandlers(): void {
-    ipcMain.handle('request-show-display-media-window', (_event: Electron.IpcMainInvokeEvent) => {
+    ipcMain.handle(WindowChannel.showDisplayMediaWindow, (_event: Electron.IpcMainInvokeEvent) => {
       const viewID = BrowserWindow.fromWebContents(_event.sender)?.id;
       if (viewID !== undefined) {
         return this.open(WindowNames.displayMedia, { displayMediaRequestedViewID: viewID }, (windowMeta: WindowMeta[WindowNames.displayMedia]) => {

@@ -46,9 +46,6 @@ export class View implements IViewService {
         this.reloadViewsWebContentsIfDidFailLoad();
       }
     });
-    ipcMain.handle('request-reload-views-dark-reader', () => {
-      this.reloadViewsDarkReader();
-    });
   }
 
   private registerMenu(): void {
