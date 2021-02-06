@@ -299,8 +299,7 @@ export class Wiki {
     } catch {
       throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
     }
-    // TODO: call git service
-    // await clone(githubWikiUrl, path.join(parentFolderLocation, wikiFolderName), userInfo);
+    await this.gitService.clone(githubWikiUrl, path.join(parentFolderLocation, wikiFolderName), userInfo);
   }
 
   public async cloneSubWiki(
@@ -324,8 +323,7 @@ export class Wiki {
     } catch {
       throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
     }
-    // TODO: call git service
-    // await clone(githubWikiUrl, path.join(parentFolderLocation, wikiFolderName), userInfo);
+    await this.gitService.clone(githubWikiUrl, path.join(parentFolderLocation, wikiFolderName), userInfo);
     this.logProgress(i18n.t('AddWorkspace.StartLinkingSubWikiToMainWiki'));
     await this.linkWiki(mainWikiPath, wikiFolderName, path.join(parentFolderLocation, wikiFolderName));
     if (typeof tagName === 'string' && tagName.length > 0) {
@@ -370,7 +368,7 @@ export class Wiki {
       }
       // if we are creating a sub-wiki, restart the main wiki to load content from private wiki
       if (!this.justStartedWiki[mainWikiToLink]) {
-        // TODO: change to get by mainWikiPath
+        // TODO: change getByName to getByMainWikiPath, get by mainWikiPath
         const mainWorkspace = this.workspaceService.getByName(mainWikiToLink);
         if (mainWorkspace === undefined) {
           throw new Error(`mainWorkspace is undefined in wikiStartup() for mainWikiPath ${mainWikiToLink}`);
@@ -444,8 +442,8 @@ export class Wiki {
       }
       logger.info(`${fileName} changed`);
       lock = true;
-      // TODO: handle this promise
-      void this.gitService.debounceCommitAndSync(wikiRepoPath, githubRepoUrl, userInfo)!.then(() => {
+      // TODO: handle this promise, it might be undefined, need some test
+      void this.gitService.debounceCommitAndSync(wikiRepoPath, githubRepoUrl, userInfo)?.then(() => {
         lock = false;
       });
     }, 1000);

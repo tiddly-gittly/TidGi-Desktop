@@ -333,10 +333,10 @@ export class Workspace implements IWorkspaceService {
     } else {
       throw new Error(`Try to remote workspace, but id ${id} is not existed`);
     }
-    // TODO: call wiki service
-    // const { name } = workspaces[id];
-    // stopWiki(name);
-    // stopWatchWiki(name);
+    // call wiki service
+    const { name } = this.workspaces[id];
+    await this.wikiService.stopWiki(name);
+    await this.wikiService.stopWatchWiki(name);
     this.updateWorkspaceMenuItems();
   }
 

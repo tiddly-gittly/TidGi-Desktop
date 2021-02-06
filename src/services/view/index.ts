@@ -394,9 +394,10 @@ export class View implements IViewService {
     void session.fromPartition(`persist:${id}`).clearStorageData();
     // FIXME: Property 'destroy' does not exist on type 'BrowserView'.ts(2339) , might related to https://github.com/electron/electron/pull/25411 which previously cause crush when I quit the app
     // maybe use https://github.com/electron/electron/issues/10096
-    // if (view !== undefined) {
-    //   view.destroy();
-    // }
+    if (view !== undefined) {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
+      (view as any).destroy();
+    }
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete this.views[id];
   };

@@ -3,6 +3,7 @@ import { BrowserWindow, ipcMain, dialog, app, App, remote, clipboard, BrowserWin
 import isDevelopment from 'electron-is-dev';
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
+import { Menubar } from 'menubar';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
 
 import { IBrowserViewMetaData, WindowNames, windowDimension, WindowMeta, CodeInjectionType } from '@services/windows/WindowProperties';
@@ -27,6 +28,7 @@ const { lazyInject } = getDecorators(container);
 export class Window implements IWindowService {
   private windows = {} as Partial<Record<WindowNames, BrowserWindow | undefined>>;
   private windowMeta = {} as Partial<WindowMeta>;
+  private mainWindowMenuBar?: Menubar;
 
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
   @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
@@ -114,17 +116,21 @@ export class Window implements IWindowService {
     // update window meta
     this.setWindowMeta(windowName, meta);
     const existedWindowMeta = this.getWindowMeta(windowName);
+    const attachToMenubar: boolean = this.preferenceService.get('attachToMenubar');
+
     if (existedWindow !== undefined) {
       // TODO: handle this menubar logic
-      // if (attachToMenubar) {
-      //   if (menuBar == undefined) {
-      //     createAsync();
-      //   } else {
-      //     menuBar.on('ready', () => {
-      //       menuBar.showWindow();
-      //     });
-      //   }
-      // }
+      if (attachToMenubar) {
+        if (this.mainWindowMenuBar !== undefined) {
+          this.mainWindowMenuBar.on('ready', () => {
+            if (this.mainWindowMenuBar !== undefined) {
+              void this.mainWindowMenuBar.showWindow();
+            }
+          });
+        } else {
+          // create window with menubar
+        }
+      }
       if (recreate === true || (typeof recreate === 'function' && existedWindowMeta !== undefined && recreate(existedWindowMeta))) {
         existedWindow.close();
       } else {
@@ -132,13 +138,12 @@ export class Window implements IWindowService {
       }
     }
 
-    const attachToMenubar: boolean = this.preferenceService.get('attachToMenubar');
     let mainWindowConfig: Partial<BrowserWindowConstructorOptions> = {};
     let mainWindowState: windowStateKeeperState | undefined;
     const isMainWindow = windowName === WindowNames.main;
     if (isMainWindow) {
       if (attachToMenubar) {
-        await handleAttachToMenuBar();
+        this.mainWindowMenuBar = await handleAttachToMenuBar();
       }
 
       mainWindowState = windowStateKeeper({

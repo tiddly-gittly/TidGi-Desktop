@@ -1,6 +1,6 @@
 import path from 'path';
 import { dialog } from 'electron';
-import { injectable, inject } from 'inversify';
+import { injectable } from 'inversify';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
@@ -10,22 +10,23 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IAuthenticationService } from '@services/auth/interface';
+import { lazyInject } from '@services/container'
 
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { IUserInfo } from '@services/types';
 import { IWikiGitWorkspaceService } from './interface';
+import { IMenuService } from '@services/menu/interface';
 
 @injectable()
 export class WikiGitWorkspace implements IWikiGitWorkspaceService {
-  constructor(
-    @inject(serviceIdentifier.Wiki) private readonly wikiService: IWikiService,
-    @inject(serviceIdentifier.Git) private readonly gitService: IGitService,
-    @inject(serviceIdentifier.Workspace) private readonly workspaceService: IWorkspaceService,
-    @inject(serviceIdentifier.Window) private readonly windowService: IWindowService,
-    @inject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService: IWorkspaceViewService,
-    @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
-  ) {}
+  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
+  @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;
+  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
+  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
+  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
+  @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
 
   public initWikiGitTransaction = async (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo, isMainWiki: boolean): Promise<void> => {
     try {
@@ -56,8 +57,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           await this.wikiService.stopWiki(workspace.name).catch((error: any) => logger.error((error as Error).message, error));
           await this.wikiService.removeWiki(workspace.name, workspace.isSubWiki ? workspace.mainWikiToLink : undefined, response === 0);
           await this.workspaceViewService.removeWorkspaceView(id);
-          // TODO: createMenu();
-          // createMenu();
+          this.menuService.buildMenu();
           // restart the main wiki to load content from private wiki
           const mainWikiPath = workspace.mainWikiToLink;
           const mainWorkspace = this.workspaceService.getByName(mainWikiPath);

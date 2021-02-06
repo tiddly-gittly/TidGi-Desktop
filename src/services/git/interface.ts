@@ -8,6 +8,9 @@ import { ModifiedFileList } from './inspect';
  * It can be retrieved and changed using Electron APIs
  */
 export interface IGitService {
+  /**
+   * Call commitAndSync every period of time. This cannot be used as promise, as said in https://github.com/lodash/lodash/issues/4700
+   */
   debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo) => Promise<void> | undefined;
   updateGitInfoTiddler(githubRepoName: string): Promise<void>;
   getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]>;

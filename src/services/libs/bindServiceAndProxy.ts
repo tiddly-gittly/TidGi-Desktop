@@ -54,7 +54,6 @@ container.bind<IWindowService>(serviceIdentifier.Window).to(Window).inSingletonS
 container.bind<IWorkspaceService>(serviceIdentifier.Workspace).to(Workspace).inSingletonScope();
 container.bind<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).to(WorkspaceView).inSingletonScope();
 
-// TODO: delay service init, call init() manually
 const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
 const contextService = container.get<IContextService>(serviceIdentifier.Context);
 const gitService = container.get<IGitService>(serviceIdentifier.Git);
