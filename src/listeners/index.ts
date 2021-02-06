@@ -15,18 +15,9 @@ import {
 import { closeFindInPage, openFindInPage, updateFindInPageMatches } from '../state/find-in-page/actions';
 import { updatePauseNotificationsInfo } from '../state/notifications/actions';
 import { updateUpdater } from '../state/updater/actions';
-import { getShouldUseDarkColors, signalOnlineStatusChanged } from '../senders';
 
 const loadListeners = (store: any) => {
   const { ipcRenderer } = window.remote;
-
-  if (window.meta.windowName === 'main') {
-    // automatically reload page when wifi/network is connected
-    // https://www.electronjs.org/docs/tutorial/online-offline-events
-    const handleOnlineOffline = () => signalOnlineStatusChanged(window.navigator.onLine);
-    window.addEventListener('online', handleOnlineOffline);
-    window.addEventListener('offline', handleOnlineOffline);
-  }
 
   ipcRenderer.on('create-wiki-progress', (event: Electron.IpcRendererEvent, message: any) => {
     store.dispatch(setWikiCreationMessage(message));

@@ -7,10 +7,5 @@ const loadListeners = (): void => {
   ipcMain.handle('request-quit', () => {
     app.quit();
   });
-
-  // Native Theme
-  ipcMain.handle('get-should-use-dark-colors', () => {
-    return nativeTheme.shouldUseDarkColors;
-  });
 };
 export default loadListeners;

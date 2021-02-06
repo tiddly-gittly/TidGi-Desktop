@@ -18,7 +18,7 @@ import { extractDomain } from '@services/libs/url';
 import { IWorkspace } from '@services/workspaces/interface';
 import setupViewEventHandlers from './setupViewEventHandlers';
 import getFromRenderer from '@services/libs/getFromRenderer';
-import { MetaDataChannel } from '@/constants/channels';
+import { ViewChannel, MetaDataChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { IViewService } from './interface';
 
@@ -41,7 +41,7 @@ export class View implements IViewService {
 
   private initIPCHandlers(): void {
     // https://www.electronjs.org/docs/tutorial/online-offline-events
-    ipcMain.handle('online-status-changed', (_event, online: boolean) => {
+    ipcMain.handle(ViewChannel.onlineStatusChanged, (_event, online: boolean) => {
       if (online) {
         this.reloadViewsWebContentsIfDidFailLoad();
       }

@@ -7,6 +7,7 @@ export default {
   NotificationService: Symbol.for('NotificationService'),
   Preference: Symbol.for('Preference'),
   SystemPreference: Symbol.for('SystemPreference'),
+  ThemeService: Symbol.for('ThemeService'),
   Updater: Symbol.for('Updater'),
   View: Symbol.for('View'),
   Wiki: Symbol.for('Wiki'),

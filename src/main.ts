@@ -1,7 +1,7 @@
 import 'reflect-metadata';
 import fs from 'fs';
 import { delay } from 'bluebird';
-import { ipcMain, nativeTheme, protocol, session, powerMonitor, app } from 'electron';
+import { ipcMain, protocol, session, powerMonitor, app } from 'electron';
 import isDev from 'electron-is-dev';
 import settings from 'electron-settings';
 import { autoUpdater } from 'electron-updater';
@@ -11,7 +11,7 @@ import i18n from 'i18next';
 
 import { clearMainBindings } from '@services/libs/i18n/i18next-electron-fs-backend';
 import { buildLanguageMenu } from '@services/libs/i18n/buildLanguageMenu';
-import { ThemeChannel, MainChannel } from '@/constants/channels';
+import { MainChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import extractHostname from '@services/libs/extract-hostname';
@@ -27,6 +27,7 @@ import { NativeService } from '@services/native';
 import { NotificationService } from '@services/notifications';
 import { Preference } from '@services/preferences';
 import { SystemPreference } from '@services/systemPreferences';
+import { ThemeService } from '@services/theme';
 import { Updater } from '@services/updater';
 import { View } from '@services/view';
 import { Wiki } from '@services/wiki';
@@ -41,6 +42,7 @@ import { IGitService } from './services/git/interface';
 import { IMenuService } from './services/menu/interface';
 import { INativeService } from './services/native/interface';
 import { IPreferenceService } from './services/preferences/interface';
+import { IThemeService } from './services/theme/interface';
 import { IViewService } from './services/view/interface';
 import { IWikiService } from './services/wiki/interface';
 import { IWindowService } from './services/windows/interface';
@@ -56,6 +58,7 @@ container.bind<NotificationService>(serviceIdentifier.NotificationService).to(No
 container.bind<NativeService>(serviceIdentifier.NativeService).to(NativeService).inSingletonScope();
 container.bind<Preference>(serviceIdentifier.Preference).to(Preference).inSingletonScope();
 container.bind<SystemPreference>(serviceIdentifier.SystemPreference).to(SystemPreference).inSingletonScope();
+container.bind<ThemeService>(serviceIdentifier.ThemeService).to(ThemeService).inSingletonScope();
 container.bind<Updater>(serviceIdentifier.Updater).to(Updater).inSingletonScope();
 container.bind<View>(serviceIdentifier.View).to(View).inSingletonScope();
 container.bind<Wiki>(serviceIdentifier.Wiki).to(Wiki).inSingletonScope();
@@ -148,7 +151,6 @@ if (!gotTheLock) {
       proxyPacScript,
       proxyRules,
       proxyType,
-      themeSource,
       language,
     } = preferenceService.getPreferences();
     // configure proxy for default session
@@ -163,12 +165,6 @@ if (!gotTheLock) {
         proxyBypassRules,
       });
     }
-    // apply theme
-    nativeTheme.themeSource = themeSource;
-    nativeTheme.addListener('updated', () => {
-      windowService.sendToAllWindows(ThemeChannel.nativeThemeUpdated);
-      viewService.reloadViewsDarkReader();
-    });
     // set language async
     void i18n.changeLanguage(language);
     const workspaces = workspaceService.getWorkspaces();

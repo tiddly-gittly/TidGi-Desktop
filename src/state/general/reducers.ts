@@ -9,8 +9,6 @@ import {
   UPDATE_TITLE,
 } from '../../constants/actions';
 
-import { getShouldUseDarkColors } from '../../senders';
-
 const canGoBack = (state = false, action: any) => {
   switch (action.type) {
     case UPDATE_CAN_GO_BACK:
@@ -65,7 +63,10 @@ const isFullScreen = (state = window.remote.isFullScreen(), action: any) => {
   }
 };
 
-const shouldUseDarkColors = (state = getShouldUseDarkColors(), action: any) => {
+const shouldUseDarkColors = async (state, action: any) => {
+  if (!state) {
+    state = await window.service.theme.shouldUseDarkColors();
+  }
   switch (action.type) {
     case UPDATE_SHOULD_USE_DARK_COLORS:
       return action.shouldUseDarkColors;

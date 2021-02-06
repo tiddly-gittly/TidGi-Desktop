@@ -15,6 +15,7 @@ import { INativeService, NativeServiceIPCDescriptor } from '@services/native/int
 import { INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
 import { IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/preferences/interface';
 import { ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences/interface';
+import { IThemeService, ThemeServiceIPCDescriptor } from '@services/theme/interface';
 import { IUpdaterService, UpdaterServiceIPCDescriptor } from '@services/updater/interface';
 import { IViewService, ViewServiceIPCDescriptor } from '@services/view/interface';
 import { IWikiService, WikiServiceIPCDescriptor } from '@services/wiki/interface';
@@ -39,8 +40,9 @@ export const native = createProxy<AsyncifyProxy<INativeService>>(NativeServiceIP
 export const notification = createProxy<AsyncifyProxy<INotificationService>>(NotificationServiceIPCDescriptor);
 export const preference = createProxy<AsyncifyProxy<IPreferenceService>>(PreferenceServiceIPCDescriptor);
 export const systemPreference = createProxy<AsyncifyProxy<ISystemPreferenceService>>(SystemPreferenceServiceIPCDescriptor);
-export const view = createProxy<AsyncifyProxy<IViewService>>(ViewServiceIPCDescriptor);
+export const theme = createProxy<AsyncifyProxy<IThemeService>>(ThemeServiceIPCDescriptor);
 export const updater = createProxy<AsyncifyProxy<IUpdaterService>>(UpdaterServiceIPCDescriptor);
+export const view = createProxy<AsyncifyProxy<IViewService>>(ViewServiceIPCDescriptor);
 export const wiki = createProxy<AsyncifyProxy<IWikiService>>(WikiServiceIPCDescriptor);
 export const wikiGitWorkspace = createProxy<AsyncifyProxy<IWikiGitWorkspaceService>>(WikiGitWorkspaceServiceIPCDescriptor);
 export const window = createProxy<AsyncifyProxy<IWindowService>>(WindowServiceIPCDescriptor);

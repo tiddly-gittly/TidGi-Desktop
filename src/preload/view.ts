@@ -1,9 +1,10 @@
 import { ipcRenderer, remote, webFrame } from 'electron';
 import { enable as enableDarkMode, disable as disableDarkMode } from 'darkreader';
 import ContextMenuBuilder from '@services/libs/context-menu-builder';
+import { ContextChannel } from '@/constants/channels';
 import i18next from '@services/libs/i18n';
 import './wiki-operation';
-import { preference } from './common/services';
+import { preference, theme } from './common/services';
 
 const { MenuItem, shell } = remote;
 // @ts-expect-error ts-migrate(2322) FIXME: Type '{}' is not assignable to type 'Global & type... Remove this comment to see the full error message
@@ -16,7 +17,7 @@ const handleLoaded = async (event: string): Promise<void> => {
   // eslint-disable-next-line no-console
   console.log(`Preload script is loading on ${event}...`);
   const loadDarkReader = async (): Promise<void> => {
-    const shouldUseDarkColor = (await ipcRenderer.invoke('get-should-use-dark-colors')) as boolean;
+    const shouldUseDarkColor = await theme.shouldUseDarkColors();
     const darkReader = (await preference.get('darkReader')) as boolean;
     if (shouldUseDarkColor && darkReader) {
       const { darkReaderBrightness, darkReaderContrast, darkReaderGrayscale, darkReaderSepia } = await preference.getPreferences();

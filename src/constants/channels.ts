@@ -34,6 +34,7 @@ export enum UpdaterChannel {
 }
 export enum ViewChannel {
   name = 'ViewChannel',
+  onlineStatusChanged = 'online-status-changed',
 }
 export enum WikiChannel {
   name = 'WikiChannel',
