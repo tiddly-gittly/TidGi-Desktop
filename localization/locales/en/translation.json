@@ -181,5 +181,6 @@
     "Reset": "Are you sure? All preferences will be restored to their original defaults. Browsing data won't be affected. This action cannot be undone.",
     "ResetNow": "Reset Now",
     "ClearBrowsingDataMessage": "Are you sure? All browsing data will be cleared. This action cannot be undone."
-  }
+  },
+  "Loading": "Loading"
 }
