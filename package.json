@@ -68,6 +68,7 @@
     }
   },
   "dependencies": {
+    "@rematch/core": "^2.0.0",
     "@tiddlygit/tiddlywiki": "5.1.24-prerelease.20210103",
     "bluebird": "^3.7.2",
     "chokidar": "^3.5.0",
