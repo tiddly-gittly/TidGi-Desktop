@@ -16,9 +16,14 @@ export interface IPaths {
  */
 export interface IConstants {
   isDevelopment: boolean;
+  platform: string;
+  appVersion: string;
+  appName: string;
+  oSVersion: string;
+  environmentVersions: NodeJS.ProcessVersions;
 }
 
-export type IContext = IPaths | IConstants;
+export interface IContext extends IPaths, IConstants {}
 
 /**
  * Manage constant value like `isDevelopment` and many else, so you can know about about running environment in main and renderer process easily.

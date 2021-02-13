@@ -12,11 +12,6 @@ import { Channels } from '@/constants/channels';
 //       ipcRenderer.once(channel, listener);
 //     },
 //   },
-//   getPlatform: () => remote.process.platform,
-//   getAppVersion: () => remote.app.getVersion(),
-//   getAppName: () => remote.app.name,
-//   getOSVersion: () => remote.require('os').release(),
-//   getEnvironmentVersions: () => process.versions,
 //   getGlobal: (key: any) => remote.getGlobal(key),
 //   useCurrentWindow: (callback: any) => callback(remote.getCurrentWindow()),
 //   getCurrentWindowID: () => remote.getCurrentWindow().id,

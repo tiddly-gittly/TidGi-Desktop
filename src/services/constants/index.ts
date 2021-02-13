@@ -1,5 +1,8 @@
-import { injectable } from 'inversify';
+import { app } from 'electron';
+import process from 'process';
+import os from 'os';
 import isDevelopment from 'electron-is-dev';
+import { injectable } from 'inversify';
 
 import { IContextService, IContext, IPaths, IConstants } from './interface';
 import * as paths from '@services/constants/paths';
@@ -9,6 +12,11 @@ export class ContextService implements IContextService {
   pathConstants: IPaths = paths;
   constants: IConstants = {
     isDevelopment,
+    platform: process.platform,
+    appVersion: app.getVersion(),
+    appName: app.name,
+    oSVersion: os.release(),
+    environmentVersions: process.versions,
   };
 
   public get<K extends keyof IContext>(key: K): IContext[K] {

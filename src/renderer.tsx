@@ -22,7 +22,7 @@ import { initI18N } from './i18n';
 
 import AppWrapper from './components/app-wrapper';
 
-const DialogAbout = React.lazy(async () => await import('./components/dialog-about'));
+const AboutPage = React.lazy(async () => await import('./pages/About'));
 const DialogAddWorkspace = React.lazy(async () => await import('./components/dialog-add-workspace'));
 const DialogAuth = React.lazy(async () => await import('./components/dialog-auth'));
 const DialogCodeInjection = React.lazy(async () => await import('./components/dialog-code-injection'));
@@ -41,7 +41,7 @@ const App = (): JSX.Element => {
   switch (window.meta.windowName) {
     case WindowNames.about:
       document.title = 'About';
-      return <DialogAbout />;
+      return <AboutPage />;
     case WindowNames.addWorkspace:
       document.title = 'Add Workspace';
       return <DialogAddWorkspace />;
