@@ -15,18 +15,19 @@ import { logger } from '@services/libs/log';
 import { IAuthenticationService } from '@services/auth/interface';
 import { IGitService } from '@services/git/interface';
 import { IWorkspaceViewService } from './interface';
+import { lazyInject } from '@services/container';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
-  constructor(
-    @inject(serviceIdentifier.Authentication) private readonly authService: IAuthenticationService,
-    @inject(serviceIdentifier.View) private readonly viewService: IViewService,
-    @inject(serviceIdentifier.Git) private readonly gitService: IGitService,
-    @inject(serviceIdentifier.Workspace) private readonly workspaceService: IWorkspaceService,
-    @inject(serviceIdentifier.Window) private readonly windowService: IWindowService,
-    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
-    @inject(serviceIdentifier.MenuService) private readonly menuService: IMenuService,
-  ) {
+  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
+  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
+  @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;
+  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
+  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
+  @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
+
+  constructor() {
     this.registerMenu();
   }
 

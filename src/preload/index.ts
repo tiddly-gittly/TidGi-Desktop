@@ -56,7 +56,7 @@ declare global {
 if (windowName === WindowNames.view) {
   void import('./view');
 }
-if (window.meta.windowName === 'main') {
+if (browserViewMetaData.windowName === 'main') {
   // automatically reload page when wifi/network is connected
   // https://www.electronjs.org/docs/tutorial/online-offline-events
   const handleOnlineOffline = (): void => {

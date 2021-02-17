@@ -31,7 +31,7 @@ export const removeLanguage = (code: any) => (dispatch: any, getState: any) => {
   );
 };
 
-export const save = async () => (dispatch: any, getState: any) => {
+export const save = async () => async (dispatch: any, getState: any) => {
   const { form } = getState().dialogSpellcheckLanguages;
 
   void window.service.preference.set('spellcheckLanguages', form.spellcheckLanguages);

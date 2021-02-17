@@ -2,6 +2,7 @@ import { Menu, MenuItemConstructorOptions, shell } from 'electron';
 
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { MenuChannel } from '@/constants/channels';
+import { WindowNames } from '@services/windows/WindowProperties';
 
 /**
  * MenuItemConstructorOptions that allows properties like "label", "enabled", "submenu" to be () => xxx
@@ -21,11 +22,13 @@ export interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstru
 export interface IMenuService {
   buildMenu(): void;
   insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator?: boolean): void;
+  buildContextMenuAndPopup(template: MenuItemConstructorOptions[], windowName?: WindowNames): void;
 }
 export const MenuServiceIPCDescriptor = {
   channel: MenuChannel.name,
   properties: {
     buildMenu: ProxyPropertyType.Function,
     insertMenu: ProxyPropertyType.Function,
+    buildContextMenuAndPopup: ProxyPropertyType.Function,
   },
 };

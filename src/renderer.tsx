@@ -35,7 +35,7 @@ const DialogOpenUrlWith = React.lazy(async () => await import('./components/dial
 const DialogPreferences = React.lazy(async () => await import('./components/dialog-preferences'));
 const DialogProxy = React.lazy(async () => await import('./components/dialog-proxy'));
 const DialogSpellcheckLanguages = React.lazy(async () => await import('./components/dialog-spellcheck-languages'));
-const Main = React.lazy(async () => await import('./components/main'));
+const Main = React.lazy(async () => await import('./pages/Main'));
 
 const App = (): JSX.Element => {
   switch (window.meta.windowName) {

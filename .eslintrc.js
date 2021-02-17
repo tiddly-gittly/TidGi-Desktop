@@ -59,6 +59,8 @@ module.exports = {
     ],
     'comma-dangle': [2, 'always-multiline'],
     'no-undef': 'off',
+    'unicorn/no-array-for-each': 'off',
+    'multiline-ternary': 'off',
     'unicorn/filename-case': [
       0,
       {
@@ -68,6 +70,8 @@ module.exports = {
     ],
     'unicorn/consistent-function-scoping': [0],
     'no-void': [0],
+    'unicorn/prefer-ternary': 'off',
+    '@typescript-eslint/no-non-null-assertion': 'off',
     semi: [0],
     'no-use-before-define': [0],
     '@typescript-eslint/no-use-before-define': [1],

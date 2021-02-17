@@ -70,6 +70,7 @@
   "dependencies": {
     "@rematch/core": "^2.0.0",
     "@tiddlygit/tiddlywiki": "5.1.24-prerelease.20210103",
+    "array-move": "^3.0.1",
     "bluebird": "^3.7.2",
     "chokidar": "^3.5.1",
     "darkreader": "4.9.27",

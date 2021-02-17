@@ -2,7 +2,6 @@ import { contextBridge, remote, ipcRenderer, webFrame, desktopCapturer } from 'e
 import { Channels } from '@/constants/channels';
 
 // contextBridge.exposeInMainWorld('remote', {
-//   isFullScreen: () => remote.getCurrentWindow().isFullScreen(),
 //   ipcRenderer: {
 //     on: (channel: Channels, callback: (event: Electron.IpcRendererEvent, ...arguments_: unknown[]) => void) =>
 //       ipcRenderer.on(channel, (event, ...arguments_) => callback(event, ...arguments_)),

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import { Button, DialogContent } from '@material-ui/core';
 import { usePromiseValue } from '@/helpers/use-service-value';
@@ -54,16 +54,17 @@ export default function About(): JSX.Element {
       { name: 'Node Version', version: processVersions.node },
       { name: 'Chromium Version', version: processVersions.chrome },
     ];
-  }, []);
+  }, [] as Array<{ name: string; version: string }>);
 
-  const iconPath = usePromiseValue<string | undefined>(window.service.context.get('ICON_PATH') as Promise<string>);
-  const appVersion = usePromiseValue<string | undefined>(window.service.context.get('appVersion') as Promise<string>);
+  const iconPath = usePromiseValue<string>(async () => (await window.service.context.get('ICON_PATH')) as string);
+  const appVersion = usePromiseValue<string>(async () => (await window.service.context.get('appVersion')) as string);
+  const platform = usePromiseValue<string>(async () => (await window.service.context.get('platform')) as string);
 
   return (
     <div>
       <DialogContentSC>
         <Icon src={iconPath} alt="TiddlyGit" />
-        <Title>TiddlyGit</Title>
+        <Title>TiddlyGit ({platform ?? 'Unknown Platform'})</Title>
         <Version>{`Version v${appVersion ?? ' - '}.`}</Version>
         <VersionSmallContainer>
           {versions?.map(({ name, version }) => (

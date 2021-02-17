@@ -12,7 +12,7 @@ export const updateForm = (changes: any) => (dispatch: any) =>
     changes,
   });
 
-export const save = async () => (dispatch: any, getState: any) => {
+export const save = async () => async (dispatch: any, getState: any) => {
   const { form } = getState().dialogCodeInjection;
 
   const { codeInjectionType } = window.meta as WindowMeta[WindowNames.codeInjection];

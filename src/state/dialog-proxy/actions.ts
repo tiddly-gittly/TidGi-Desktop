@@ -47,7 +47,7 @@ export const updateForm = (changes: any) => (dispatch: any, getState: any) => {
   }
 };
 
-export const save = async () => (dispatch: any, getState: any) => {
+export const save = async () => async (dispatch: any, getState: any) => {
   const state = getState();
 
   const { form } = state.dialogProxy;

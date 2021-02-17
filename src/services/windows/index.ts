@@ -276,6 +276,10 @@ export class Window implements IWindowService {
     });
   }
 
+  public isFullScreen(windowName = WindowNames.main): boolean | undefined {
+    return this.windows[windowName]?.isFullScreen();
+  }
+
   public setWindowMeta<N extends WindowNames>(windowName: N, meta: WindowMeta[N]): void {
     this.windowMeta[windowName] = meta;
   }

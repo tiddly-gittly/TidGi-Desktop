@@ -2,9 +2,15 @@ import { Menu, MenuItemConstructorOptions, shell } from 'electron';
 import { debounce, take, drop } from 'lodash';
 import { injectable } from 'inversify';
 import { IMenuService, DeferredMenuItemConstructorOptions } from './interface';
+import { WindowNames } from '@services/windows/WindowProperties';
+import { lazyInject } from '@services/container';
+import serviceIdentifier from '@services/serviceIdentifier';
+import { IWindowService } from '@services/windows/interface';
 
 @injectable()
 export class MenuService implements IMenuService {
+  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+
   private readonly menuTemplate: DeferredMenuItemConstructorOptions[];
 
   /**
@@ -167,6 +173,14 @@ export class MenuService implements IMenuService {
         label: menuID,
         submenu: menuItems,
       });
+    }
+  }
+
+  public buildContextMenuAndPopup(template: MenuItemConstructorOptions[], windowName = WindowNames.main): void {
+    const menu = Menu.buildFromTemplate(template);
+    const windowToPopMenu = this.windowService.get(windowName);
+    if (windowToPopMenu !== undefined) {
+      menu.popup({ window: windowToPopMenu });
     }
   }
 }

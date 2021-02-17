@@ -112,10 +112,10 @@ export default function setupViewEventHandlers(
     if (workspaceObject === undefined) {
       return;
     }
-    // isLoading is now controlled by wiki-worker-manager.js
-    // workspaceService.updateMetaData(workspace.id, {
-    //   isLoading: false,
-    // });
+    // FIXME: seems isLoading is now controlled by wiki-worker-manager.js , and should not update here
+    workspaceService.updateMetaData(workspace.id, {
+      isLoading: false,
+    });
     if (workspaceObject.active) {
       windowService.sendToAllWindows(WindowChannel.updateAddress, view.webContents.getURL(), false);
     }
