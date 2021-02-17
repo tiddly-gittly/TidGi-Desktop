@@ -3,12 +3,10 @@ import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { PreferenceChannel } from '@/constants/channels';
 
 export interface IPreferences {
-  allowNodeInJsCodeInjection: boolean;
   allowPrerelease: boolean;
   askForDownloadPath: boolean;
   attachToMenubar: boolean;
   blockAds: boolean;
-  cssCodeInjection: string;
   customUserAgent: string;
   darkReader: boolean;
   darkReaderBrightness: number;
@@ -19,7 +17,6 @@ export interface IPreferences {
   hibernateUnusedWorkspacesAtLaunch: boolean;
   hideMenuBar: boolean;
   ignoreCertificateErrors: boolean;
-  jsCodeInjection: string;
   language: string;
   navigationBar: boolean;
   pauseNotifications: string;

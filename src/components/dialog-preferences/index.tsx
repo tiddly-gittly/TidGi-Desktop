@@ -189,13 +189,11 @@ const getUpdaterDesc = (status: any, info: any) => {
 };
 
 interface PreferencesProps {
-  allowNodeInJsCodeInjection: boolean;
   allowPrerelease: boolean;
   askForDownloadPath: boolean;
   attachToMenubar: boolean;
   blockAds: boolean;
   classes: any;
-  cssCodeInjection?: string;
   customUserAgent?: string;
   darkReader: boolean;
   darkReaderBrightness: number;
@@ -206,7 +204,6 @@ interface PreferencesProps {
   hibernateUnusedWorkspacesAtLaunch: boolean;
   hideMenuBar: boolean;
   ignoreCertificateErrors: boolean;
-  jsCodeInjection?: string;
   navigationBar: boolean;
   openAtLogin: 'yes' | 'yes-hidden' | 'no';
   pauseNotificationsBySchedule: boolean;
@@ -231,13 +228,11 @@ interface PreferencesProps {
 }
 
 const Preferences = ({
-  allowNodeInJsCodeInjection,
   allowPrerelease,
   askForDownloadPath,
   attachToMenubar,
   blockAds,
   classes,
-  cssCodeInjection,
   customUserAgent,
   darkReader,
   darkReaderBrightness,
@@ -248,7 +243,6 @@ const Preferences = ({
   hibernateUnusedWorkspacesAtLaunch,
   hideMenuBar,
   ignoreCertificateErrors,
-  jsCodeInjection,
   navigationBar,
   openAtLogin,
   pauseNotificationsBySchedule,
@@ -1161,19 +1155,6 @@ const Preferences = ({
               <ListItemText primary="Custom User Agent" secondary={customUserAgent || 'Not set'} classes={{ secondary: classes.secondaryEllipsis }} />
               <ChevronRightIcon color="action" />
             </ListItem>
-            <Divider />
-            <ListItem button onClick={async () => await window.service.window.open(WindowNames.codeInjection, { codeInjectionType: 'js' })}>
-              <ListItemText
-                primary="JS Code Injection"
-                secondary={jsCodeInjection ? `Set ${allowNodeInJsCodeInjection ? ' (with access to Node.JS & Electron APIs)' : ''}` : 'Not set'}
-              />
-              <ChevronRightIcon color="action" />
-            </ListItem>
-            <Divider />
-            <ListItem button onClick={async () => await window.service.window.open(WindowNames.codeInjection, { codeInjectionType: 'css' })}>
-              <ListItemText primary="CSS Code Injection" secondary={cssCodeInjection ? 'Set' : 'Not set'} />
-              <ChevronRightIcon color="action" />
-            </ListItem>
           </List>
         </Paper>
 
@@ -1182,7 +1163,7 @@ const Preferences = ({
         </Typography>
         <Paper elevation={0} className={classes.paper}>
           <List dense disablePadding>
-            <ListItem button onClick={async async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}>
+            <ListItem button onClick={async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}>
               <ListItemText primary={t('Preference.OpenLogFolder')} secondary={t('Preference.OpenLogFolderDetail')} />
               <ChevronRightIcon color="action" />
             </ListItem>
@@ -1360,48 +1341,3 @@ const Preferences = ({
     </div>
   );
 };
-
-const mapStateToProps = (state: any) => ({
-  allowNodeInJsCodeInjection: state.preferences.allowNodeInJsCodeInjection,
-  allowPrerelease: state.preferences.allowPrerelease,
-  askForDownloadPath: state.preferences.askForDownloadPath,
-  attachToMenubar: state.preferences.attachToMenubar,
-  blockAds: state.preferences.blockAds,
-  cssCodeInjection: state.preferences.cssCodeInjection,
-  customUserAgent: state.preferences.customUserAgent,
-  darkReader: state.preferences.darkReader,
-  darkReaderBrightness: state.preferences.darkReaderBrightness,
-  darkReaderContrast: state.preferences.darkReaderContrast,
-  darkReaderGrayscale: state.preferences.darkReaderGrayscale,
-  darkReaderSepia: state.preferences.darkReaderSepia,
-  downloadPath: state.preferences.downloadPath,
-  hibernateUnusedWorkspacesAtLaunch: state.preferences.hibernateUnusedWorkspacesAtLaunch,
-  hideMenuBar: state.preferences.hideMenuBar,
-  ignoreCertificateErrors: state.preferences.ignoreCertificateErrors,
-  isDefaultMailClient: state.general.isDefaultMailClient,
-  isDefaultWebBrowser: state.general.isDefaultWebBrowser,
-  jsCodeInjection: state.preferences.jsCodeInjection,
-  navigationBar: state.preferences.navigationBar,
-  openAtLogin: state.systemPreferences.openAtLogin,
-  pauseNotificationsBySchedule: state.preferences.pauseNotificationsBySchedule,
-  pauseNotificationsByScheduleFrom: state.preferences.pauseNotificationsByScheduleFrom,
-  pauseNotificationsByScheduleTo: state.preferences.pauseNotificationsByScheduleTo,
-  pauseNotificationsMuteAudio: state.preferences.pauseNotificationsMuteAudio,
-  rememberLastPageVisited: state.preferences.rememberLastPageVisited,
-  shareWorkspaceBrowsingData: state.preferences.shareWorkspaceBrowsingData,
-  sidebar: state.preferences.sidebar,
-  sidebarShortcutHints: state.preferences.sidebarShortcutHints,
-  spellcheck: state.preferences.spellcheck,
-  spellcheckLanguages: state.preferences.spellcheckLanguages,
-  swipeToNavigate: state.preferences.swipeToNavigate,
-  syncDebounceInterval: state.preferences.syncDebounceInterval,
-  themeSource: state.preferences.themeSource,
-  titleBar: state.preferences.titleBar,
-  unreadCountBadge: state.preferences.unreadCountBadge,
-  updaterInfo: state.updater.info,
-  updaterStatus: state.updater.status,
-  useHardwareAcceleration: state.preferences.useHardwareAcceleration,
-  userName: state.preferences.userName,
-});
-
-export default connectComponent(Preferences, mapStateToProps, undefined, styles);

@@ -12,7 +12,6 @@ import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
 import 'typeface-roboto/index.css';
 
 import store from './state';
-import { init as initDialogCodeInjection } from './state/dialog-code-injection/actions';
 import { init as initDialogCustomUserAgent } from './state/dialog-custom-user-agent/actions';
 import { init as initDialogEditWorkspace } from './state/dialog-edit-workspace/actions';
 import { init as initDialogProxy } from './state/dialog-proxy/actions';
@@ -25,7 +24,6 @@ import AppWrapper from './components/app-wrapper';
 const AboutPage = React.lazy(async () => await import('./pages/About'));
 const DialogAddWorkspace = React.lazy(async () => await import('./components/dialog-add-workspace'));
 const DialogAuth = React.lazy(async () => await import('./components/dialog-auth'));
-const DialogCodeInjection = React.lazy(async () => await import('./components/dialog-code-injection'));
 const DialogCustomUserAgent = React.lazy(async () => await import('./components/dialog-custom-user-agent'));
 const DialogDisplayMedia = React.lazy(async () => await import('./components/dialog-display-media'));
 const DialogEditWorkspace = React.lazy(async () => await import('./components/dialog-edit-workspace'));
@@ -48,8 +46,6 @@ const App = (): JSX.Element => {
     case WindowNames.auth:
       document.title = 'Sign In';
       return <DialogAuth />;
-    case WindowNames.codeInjection:
-      return <DialogCodeInjection />;
     case WindowNames.userAgent:
       return <DialogCustomUserAgent />;
     case WindowNames.displayMedia:
@@ -95,11 +91,6 @@ async function runApp(): Promise<void> {
       return false;
     });
     document.title = workspace.name ? `Edit Workspace ${workspace.order + 1} "${workspace.name}"` : `Edit Workspace ${workspace.order + 1}`;
-  } else if (window.meta.windowName === WindowNames.codeInjection) {
-    store.dispatch(initDialogCodeInjection());
-    const { codeInjectionType } = window.meta as WindowMeta[WindowNames.codeInjection];
-    if (!codeInjectionType) throw new Error(`codeInjectionType is undefined when startup renderer.tsx`);
-    document.title = `Edit ${codeInjectionType.toUpperCase()} Code Injection`;
   } else if (window.meta.windowName === WindowNames.userAgent) {
     store.dispatch(initDialogCustomUserAgent());
     document.title = 'Edit Custom User Agent';

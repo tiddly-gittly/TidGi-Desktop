@@ -7,7 +7,6 @@ export enum WindowNames {
   preferences = 'preferences',
   about = 'about',
   userAgent = 'userAgent',
-  codeInjection = 'codeInjection',
   proxy = 'proxy',
   spellcheck = 'spellcheck',
   auth = 'auth',
@@ -57,10 +56,6 @@ export const windowDimension: Record<WindowNames, { width?: number; height?: num
     width: 820,
     height: 640,
   },
-  [WindowNames.codeInjection]: {
-    width: 640,
-    height: 560,
-  },
   [WindowNames.userAgent]: {
     width: 400,
     height: 180,
@@ -91,15 +86,12 @@ export const windowDimension: Record<WindowNames, { width?: number; height?: num
   },
 };
 
-export type CodeInjectionType = 'css' | 'js';
-
 /**
  * metadata that send to window when create them.
  * Please make all property partial (?:), so wo can always assign {} as default metadata without type warning
  */
 export interface WindowMeta extends Record<WindowNames, Record<string, unknown> | undefined> {
   [WindowNames.displayMedia]: { displayMediaRequestedViewID?: number };
-  [WindowNames.codeInjection]: { codeInjectionType?: CodeInjectionType };
   [WindowNames.editWorkspace]: { workspaceID?: string };
   [WindowNames.openUrlWith]: { incomingUrl?: string };
   [WindowNames.main]: { forceClose?: boolean };

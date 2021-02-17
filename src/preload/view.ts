@@ -34,38 +34,6 @@ const handleLoaded = async (event: string): Promise<void> => {
     void loadDarkReader();
   });
   await loadDarkReader();
-  const { jsCodeInjection, allowNodeInJsCodeInjection, cssCodeInjection } = await preference.getPreferences();
-  if (typeof jsCodeInjection === 'string' && jsCodeInjection.trim().length > 0) {
-    if (allowNodeInJsCodeInjection) {
-      try {
-        // eslint-disable-next-line no-new-func, @typescript-eslint/no-implied-eval
-        new Function('require', `"use strict";${jsCodeInjection}`)(require);
-      } catch (error) {
-        /* eslint-disable no-console */
-        console.log(error);
-        /* eslint-enable no-console */
-      }
-    } else {
-      try {
-        const node = document.createElement('script');
-        node.innerHTML = jsCodeInjection;
-        document.body.append(node);
-      } catch (error) {
-        /* eslint-disable no-console */
-        console.log(error);
-        /* eslint-enable no-console */
-      }
-    }
-  }
-  if (typeof cssCodeInjection === 'string' && cssCodeInjection.trim().length > 0) {
-    try {
-      const node = document.createElement('style');
-      node.innerHTML = cssCodeInjection;
-      document.body.append(node);
-    } catch (error) {
-      console.log(error); // eslint-disable-line no-console
-    }
-  }
   (window as any).contextMenuBuilder = new ContextMenuBuilder();
   remote.getCurrentWebContents().on('context-menu', (e, info) => {
     // eslint-disable-next-line promise/catch-or-return

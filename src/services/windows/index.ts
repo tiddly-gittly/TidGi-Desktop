@@ -6,7 +6,7 @@ import getDecorators from 'inversify-inject-decorators';
 import { Menubar } from 'menubar';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
 
-import { IBrowserViewMetaData, WindowNames, windowDimension, WindowMeta, CodeInjectionType } from '@services/windows/WindowProperties';
+import { IBrowserViewMetaData, WindowNames, windowDimension, WindowMeta } from '@services/windows/WindowProperties';
 import serviceIdentifier from '@services/serviceIdentifier';
 
 import type { IPreferenceService } from '@services/preferences/interface';

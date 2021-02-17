@@ -38,12 +38,10 @@ const getDefaultPauseNotificationsByScheduleTo = (): string => {
 };
 
 const defaultPreferences: IPreferences = {
-  allowNodeInJsCodeInjection: false,
   allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
   askForDownloadPath: true,
   attachToMenubar: false,
   blockAds: false,
-  cssCodeInjection: '',
   customUserAgent: '',
   // default Dark Reader settings from its Chrome extension
   darkReader: false,
@@ -56,7 +54,6 @@ const defaultPreferences: IPreferences = {
   hibernateUnusedWorkspacesAtLaunch: false,
   hideMenuBar: false,
   ignoreCertificateErrors: false,
-  jsCodeInjection: '',
   language: 'zh_CN',
   navigationBar: false,
   pauseNotifications: '',
