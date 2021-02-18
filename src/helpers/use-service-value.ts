@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback, Dispatch } from 'react';
 import { AsyncReturnType } from 'type-fest';
 
 /**
@@ -12,6 +12,7 @@ export function usePromiseValue<T, DefaultValueType = T | undefined>(
   defaultValue?: AsyncReturnType<typeof asyncValue>,
 ): T | DefaultValueType {
   const [value, valueSetter] = useState<T | DefaultValueType>(defaultValue as T | DefaultValueType);
+  // use initial value
   useEffect(() => {
     void (async () => {
       valueSetter(await asyncValue());
@@ -19,4 +20,25 @@ export function usePromiseValue<T, DefaultValueType = T | undefined>(
   }, []);
 
   return value;
+}
+
+export function usePromiseValueAndSetter<T, DefaultValueType = T | undefined>(
+  asyncValue: () => Promise<T>,
+  asyncSetter: (newValue: T | DefaultValueType) => Promise<unknown>,
+  defaultValue?: AsyncReturnType<typeof asyncValue>,
+): [T | DefaultValueType, Dispatch<T | DefaultValueType>] {
+  const cachedSetter = useCallback(asyncSetter, [asyncSetter]);
+  const [value, valueSetter] = useState<T | DefaultValueType>(defaultValue as T | DefaultValueType);
+  // use initial value
+  useEffect(() => {
+    void (async () => {
+      valueSetter(await asyncValue());
+    });
+  }, []);
+  // update remote value on change
+  useEffect(() => {
+    void cachedSetter(value);
+  }, [value, cachedSetter]);
+
+  return [value, valueSetter];
 }

@@ -5,37 +5,32 @@ import { useTranslation } from 'react-i18next';
 import TextField from '@material-ui/core/TextField';
 
 import GitHubLogin from './github-login';
-import type { IUserInfo } from '@services/types';
+import type { IAuthingUserInfo, IAuthingResponse } from '@services/types';
 
 const GitTokenInput = styled(TextField)``;
 
-export const setGithubToken = (token: string | void) => window.service.auth.set('github-token', token);
-export const getGithubToken = async () => window.service.auth.get('github-token');
+export const setGithubToken = async (token: string | undefined): Promise<void> => await window.service.auth.set('github-token', token);
+export const getGithubToken = async (): Promise<string | undefined> => await window.service.auth.get('github-token');
 
-export default function GitTokenForm(props: {
-  accessTokenSetter: (token: string | void) => void;
-  userInfoSetter: (info: IUserInfo | void) => void;
+export function GithubTokenForm(props: {
+  accessTokenSetter: (token?: string) => void;
+  userInfoSetter: (info?: IAuthingUserInfo) => void;
   accessToken: string;
-  children: any;
-}) {
+  children: JSX.Element;
+}): JSX.Element {
   const { accessToken, children } = props;
   const { t } = useTranslation();
   return (
     <>
       <GitHubLogin
-        // @ts-expect-error ts-migrate(2322) FIXME: Type '{ clientId: string; clientSecret: string; re... Remove this comment to see the full error message
-        clientId="7b6e0fc33f4afd71a4bb"
-        clientSecret="6015d1ca4ded86b4778ed39109193ff20c630bdd"
-        redirectUri="http://localhost"
-        scope="repo"
-        onSuccess={(response: any) => {
+        onSuccess={(response: IAuthingResponse) => {
           const accessTokenToSet = response?.userInfo?.thirdPartyIdentity?.accessToken;
           const authDataString = response?.userInfo?.oauth;
-          if (accessTokenToSet) {
+          if (accessTokenToSet !== undefined) {
             props.accessTokenSetter(accessTokenToSet);
           }
           // all data we need
-          if (accessTokenToSet && authDataString) {
+          if (accessTokenToSet !== undefined && authDataString !== undefined) {
             const authData = JSON.parse(authDataString);
             const nextUserInfo = {
               ...response.userInfo,
@@ -44,7 +39,7 @@ export default function GitTokenForm(props: {
             };
             delete nextUserInfo.oauth;
             delete nextUserInfo.thirdPartyIdentity;
-            props.userInfoSetter(nextUserInfo);
+            props.userInfoSetter(nextUserInfo as IAuthingUserInfo);
           }
         }}
         // eslint-disable-next-line unicorn/no-null
@@ -60,7 +55,7 @@ export default function GitTokenForm(props: {
         onChange={(event) => {
           props.accessTokenSetter(event.target.value);
         }}
-        value={accessToken || ''}
+        value={accessToken ?? ''}
       />
       {children}
     </>

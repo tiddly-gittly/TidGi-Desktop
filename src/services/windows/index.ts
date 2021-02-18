@@ -340,6 +340,11 @@ export class Window implements IWindowService {
     win?.getBrowserView()?.webContents?.reload();
   }
 
+  public async clearStorageData(windowName: WindowNames = WindowNames.main): Promise<void> {
+    const win = this.get(windowName);
+    await win?.getBrowserView()?.webContents?.session?.clearStorageData();
+  }
+
   private registerMenu(): void {
     this.menuService.insertMenu(
       'window',

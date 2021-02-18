@@ -12,7 +12,7 @@ import Alert from '@material-ui/lab/Alert';
 
 import * as actions from '../../state/dialog-add-workspace/actions';
 
-import type { IUserInfo } from '@services/types';
+import type { IAuthingUserInfo } from '@services/types';
 
 import useWikiCreationMessage from './use-wiki-creation-message';
 
@@ -29,7 +29,7 @@ interface OwnProps {
   wikiFolderName: string;
   parentFolderLocation: string;
   tagName: string;
-  userInfo: IUserInfo;
+  userInfo: IAuthingUserInfo;
 }
 interface DispatchProps {
   updateForm: (Object) => void;

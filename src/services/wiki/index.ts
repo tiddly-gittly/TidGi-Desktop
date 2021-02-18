@@ -17,7 +17,7 @@ import type { IViewService } from '@services/view/interface';
 import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interface';
 import type { IGitService } from '@services/git/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { IUserInfo } from '@services/types';
+import { IAuthingUserInfo } from '@services/types';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { logger, wikiOutputToFile, refreshOutputFile } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
@@ -285,7 +285,7 @@ export class Wiki {
     }
   }
 
-  public async cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: string, userInfo: IUserInfo): Promise<void> {
+  public async cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: string, userInfo: IAuthingUserInfo): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCloningWiki'));
     const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
     if (!(await fs.pathExists(parentFolderLocation))) {
@@ -307,7 +307,7 @@ export class Wiki {
     wikiFolderName: string,
     mainWikiPath: string,
     githubWikiUrl: string,
-    userInfo: IUserInfo,
+    userInfo: IAuthingUserInfo,
     tagName = '',
   ): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCloningSubWiki'));
@@ -430,7 +430,7 @@ export class Wiki {
   // { [name: string]: Watcher }
   private readonly wikiWatchers: Record<string, chokidar.FSWatcher> = {};
 
-  public async watchWiki(wikiRepoPath: string, githubRepoUrl: string, userInfo: IUserInfo, wikiFolderPath = wikiRepoPath): Promise<void> {
+  public async watchWiki(wikiRepoPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo, wikiFolderPath = wikiRepoPath): Promise<void> {
     if (!fs.existsSync(wikiRepoPath)) {
       logger.error('Folder not exist in watchFolder()', { wikiRepoPath, wikiFolderPath, githubRepoUrl });
       return;

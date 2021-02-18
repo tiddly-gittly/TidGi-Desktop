@@ -18,7 +18,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 
 import connectComponent from '../../helpers/connect-component';
 
-import StatedMenu from '../shared/stated-menu';
+import StatedMenu from '../github/stated-menu';
 
 import { updateShowDateTimePicker } from '../../state/notifications/actions';
 

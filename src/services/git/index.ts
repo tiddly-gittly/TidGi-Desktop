@@ -11,7 +11,7 @@ import type { IViewService } from '@services/view/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
-import { IUserInfo } from '@services/types';
+import { IAuthingUserInfo } from '@services/types';
 import { getModifiedFileList, ModifiedFileList } from './inspect';
 import { IGitService } from './interface';
 
@@ -27,7 +27,7 @@ export class Git implements IGitService {
     this.debounceCommitAndSync = debounce(this.commitAndSync.bind(this), syncDebounceInterval);
   }
 
-  public debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo) => Promise<void> | undefined;
+  public debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo) => Promise<void> | undefined;
 
   public async getWorkspacesRemote(wikiFolderPath: string): Promise<string> {
     return await github.getRemoteUrl(wikiFolderPath);
@@ -69,7 +69,7 @@ export class Git implements IGitService {
    * @param {boolean} isMainWiki
    * @param {{ info: Function, notice: Function }} logger Logger instance from winston
    */
-  public async initWikiGit(wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo, isMainWiki: boolean): Promise<void> {
+  public async initWikiGit(wikiFolderPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo, isMainWiki: boolean): Promise<void> {
     const logProgress = (message: string): unknown => logger.notice(message, { handler: 'createWikiProgress', function: 'initWikiGit' });
     const logInfo = (message: string): unknown => logger.info(message, { function: 'initWikiGit' });
 
@@ -107,7 +107,7 @@ export class Git implements IGitService {
    * @param {string} githubRepoUrl
    * @param {{ login: string, email: string, accessToken: string }} userInfo
    */
-  public async commitAndSync(wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo): Promise<void> {
+  public async commitAndSync(wikiFolderPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo): Promise<void> {
     /** functions to send data to main thread */
     const logProgress = (message: string): unknown =>
       logger.notice(message, { handler: 'wikiSyncProgress', function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
@@ -217,7 +217,7 @@ export class Git implements IGitService {
     logProgress(i18n.t('Log.SynchronizationFinish'));
   }
 
-  public async clone(githubRepoUrl: string, repoFolderPath: string, userInfo: IUserInfo): Promise<void> {
+  public async clone(githubRepoUrl: string, repoFolderPath: string, userInfo: IAuthingUserInfo): Promise<void> {
     const logProgress = (message: string): unknown => logger.notice(message, { handler: 'createWikiProgress', function: 'clone' });
     const logInfo = (message: string): unknown => logger.info(message, { function: 'clone' });
     logProgress(i18n.t('Log.PrepareCloneOnlineWiki'));

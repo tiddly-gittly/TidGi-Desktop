@@ -16,7 +16,7 @@ import Button from '@material-ui/core/Button';
 import CachedIcon from '@material-ui/icons/Cached';
 import CreateNewFolderIcon from '@material-ui/icons/CreateNewFolder';
 
-import type { IUserInfo } from '@services/types';
+import type { IAuthingUserInfo } from '@services/types';
 
 const RepoSearchInput = styled(TextField)``;
 const ReloadButton = styled(Button)`
@@ -69,7 +69,7 @@ interface Props {
   githubWikiUrlSetter: (string) => void;
   // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
   wikiFolderNameSetter: (string) => void;
-  userInfo: IUserInfo;
+  userInfo: IAuthingUserInfo;
   isCreateMainWorkspace: boolean;
 }
 export default function SearchRepo({

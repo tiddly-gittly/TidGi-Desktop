@@ -2,7 +2,7 @@
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
 import settings from 'electron-settings';
-import { IUserInfo as IAuthingUserInfo } from '@services/types';
+import { IAuthingUserInfo as IAuthingUserInfo } from '@services/types';
 import { container } from '@services/container';
 import type { IWindowService } from '@services/windows/interface';
 import serviceIdentifier from '@services/serviceIdentifier';

@@ -1,5 +1,5 @@
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
-import { IUserInfo } from '@services/types';
+import { IAuthingUserInfo } from '@services/types';
 import { GitChannel } from '@/constants/channels';
 import { ModifiedFileList } from './inspect';
 
@@ -11,13 +11,13 @@ export interface IGitService {
   /**
    * Call commitAndSync every period of time. This cannot be used as promise, as said in https://github.com/lodash/lodash/issues/4700
    */
-  debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo) => Promise<void> | undefined;
+  debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo) => Promise<void> | undefined;
   updateGitInfoTiddler(githubRepoName: string): Promise<void>;
   getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]>;
-  initWikiGit(wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo, isMainWiki: boolean): Promise<void>;
-  commitAndSync(wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo): Promise<void>;
+  initWikiGit(wikiFolderPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo, isMainWiki: boolean): Promise<void>;
+  commitAndSync(wikiFolderPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo): Promise<void>;
   getWorkspacesRemote(wikiFolderPath: string): Promise<string>;
-  clone(githubRepoUrl: string, repoFolderPath: string, userInfo: IUserInfo): Promise<void>;
+  clone(githubRepoUrl: string, repoFolderPath: string, userInfo: IAuthingUserInfo): Promise<void>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,

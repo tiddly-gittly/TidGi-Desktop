@@ -45,7 +45,7 @@ import { TimePicker } from '@material-ui/pickers';
 import connectComponent from '../../helpers/connect-component';
 import { getGithubUserInfo, setGithubUserInfo } from '@services/types';
 
-import StatedMenu from '../shared/stated-menu';
+import StatedMenu from '../github/stated-menu';
 
 import hunspellLanguagesMap from '../../constants/hunspell-languages';
 
@@ -54,8 +54,8 @@ import translatiumLogo from '../../images/translatium-logo.svg';
 
 import ListItemDefaultMailClient from './list-item-default-mail-client';
 import ListItemDefaultBrowser from './list-item-default-browser';
-import GitTokenForm, { getGithubToken, setGithubToken } from '../shared/git-token-form';
-import type { IUserInfo } from '@services/types';
+import { GithubTokenForm, getGithubToken, setGithubToken } from '../github/git-token-form';
+import type { IAuthingUserInfo } from '@services/types';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 const styles = (theme: any) => ({
@@ -361,7 +361,7 @@ const Preferences = ({
     [],
   );
 
-  const [userInfo, userInfoSetter] = useState<IUserInfo | void>(getGithubUserInfo());
+  const [userInfo, userInfoSetter] = useState<IAuthingUserInfo | void>(getGithubUserInfo());
   useEffect(() => {
     setGithubUserInfo(userInfo);
   }, [userInfo]);
@@ -426,7 +426,7 @@ const Preferences = ({
             <ListItem>
               <ListItemText primary={t('Preference.Token')} secondary={t('Preference.TokenDescription')} />
               <div className={classes.tokenContainer}>
-                <GitTokenForm accessTokenSetter={accessTokenSetter} userInfoSetter={userInfoSetter} accessToken={accessToken} />
+                <GithubTokenForm accessTokenSetter={accessTokenSetter} userInfoSetter={userInfoSetter} accessToken={accessToken} />
               </div>
             </ListItem>
             <ListItem>

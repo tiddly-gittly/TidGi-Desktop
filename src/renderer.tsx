@@ -22,7 +22,7 @@ import { initI18N } from './i18n';
 import AppWrapper from './components/app-wrapper';
 
 const AboutPage = React.lazy(async () => await import('./pages/About'));
-const DialogAddWorkspace = React.lazy(async () => await import('./components/dialog-add-workspace'));
+const DialogAddWorkspace = React.lazy(async () => await import('./pages/AddWorkspace'));
 const DialogAuth = React.lazy(async () => await import('./components/dialog-auth'));
 const DialogCustomUserAgent = React.lazy(async () => await import('./components/dialog-custom-user-agent'));
 const DialogDisplayMedia = React.lazy(async () => await import('./components/dialog-display-media'));

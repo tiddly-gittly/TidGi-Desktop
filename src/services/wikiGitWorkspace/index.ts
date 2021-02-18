@@ -14,7 +14,7 @@ import { lazyInject } from '@services/container'
 
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
-import { IUserInfo } from '@services/types';
+import { IAuthingUserInfo } from '@services/types';
 import { IWikiGitWorkspaceService } from './interface';
 import { IMenuService } from '@services/menu/interface';
 
@@ -28,7 +28,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
 
-  public initWikiGitTransaction = async (wikiFolderPath: string, githubRepoUrl: string, userInfo: IUserInfo, isMainWiki: boolean): Promise<void> => {
+  public initWikiGitTransaction = async (wikiFolderPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo, isMainWiki: boolean): Promise<void> => {
     try {
       await this.gitService.initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
     } catch (error) {

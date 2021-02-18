@@ -12,7 +12,8 @@ import Alert from '@material-ui/lab/Alert';
 
 import * as actions from '../../state/dialog-add-workspace/actions';
 
-import type { IUserInfo } from '@services/types';
+import type { IAuthingUserInfo } from '@services/types';
+
 import useWikiCreationMessage from './use-wiki-creation-message';
 
 const CloseButton = styled(Button)`
@@ -25,37 +26,42 @@ interface OwnProps {
   wikiPort: number;
   mainWikiToLink: { name: string; port: number };
   githubWikiUrl: string;
-  existedFolderLocation: string;
+  wikiFolderName: string;
+  parentFolderLocation: string;
   tagName: string;
-  userInfo: IUserInfo;
+  userInfo: IAuthingUserInfo;
 }
 interface DispatchProps {
   updateForm: (Object) => void;
   setWikiCreationMessage: (string) => void;
   save: () => void;
 }
+
 interface StateProps {
   wikiCreationMessage: string;
 }
 
 type Props = OwnProps & DispatchProps & StateProps;
 
-function DoneButton({
+function NewWikiDoneButton({
   isCreateMainWorkspace,
   wikiPort,
   mainWikiToLink,
   githubWikiUrl,
-  existedFolderLocation,
+  wikiFolderName,
+  parentFolderLocation,
   updateForm,
   setWikiCreationMessage,
   wikiCreationMessage,
   tagName,
   save,
   userInfo,
-}: Props) {
+}: Props): JSX.Element {
+  const wikiFolderLocation = `${parentFolderLocation}/${wikiFolderName}`;
+
   const port = isCreateMainWorkspace ? wikiPort : mainWikiToLink.port;
   const workspaceFormData = {
-    name: existedFolderLocation,
+    name: wikiFolderLocation,
     isSubWiki: !isCreateMainWorkspace,
     mainWikiToLink: mainWikiToLink.name,
     port,
@@ -74,18 +80,33 @@ function DoneButton({
         <Alert severity="info">{wikiCreationMessage}</Alert>
       </Snackbar>
 
+      {isCreateMainWorkspace && (!githubWikiUrl || !userInfo) && (
+        <Typography variant="body1" display="inline">
+          {t('AddWorkspace.NoGitInfoAlert')}
+        </Typography>
+      )}
       {isCreateMainWorkspace ? (
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!existedFolderLocation || !githubWikiUrl || progressBarOpen || !userInfo}
+          disabled={!parentFolderLocation || progressBarOpen}
           onClick={async () => {
             updateForm(workspaceFormData);
+            setWikiCreationMessage(t('AddWorkspace.Processing'));
             let creationError: string | undefined;
             try {
-              await window.service.wiki.ensureWikiExist(existedFolderLocation, true);
+              await window.service.wiki.copyWikiTemplate(parentFolderLocation, wikiFolderName);
             } catch (error) {
+              console.info(error);
               creationError = String(error);
+            }
+            if (creationError === undefined) {
+              try {
+                await window.service.wikiGitWorkspace.initWikiGitTransaction(wikiFolderLocation, githubWikiUrl, userInfo, true);
+              } catch (error) {
+                console.info(error);
+                creationError = String(error);
+              }
             }
             if (creationError !== undefined) {
               setWikiCreationMessage(creationError);
@@ -93,14 +114,14 @@ function DoneButton({
               save();
             }
           }}>
-          <Trans t={t} i18nKey="AddWorkspace.NewWikiDoneButton" wikiFolderLocation={existedFolderLocation}>
-            {existedFolderLocation && (
+          <Trans t={t} i18nKey="AddWorkspace.NewWikiDoneButton" wikiFolderLocation={wikiFolderLocation}>
+            {parentFolderLocation && (
               <>
                 <Typography variant="body1" display="inline">
                   Use
                 </Typography>
                 <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-                  {{ wikiFolderLocation: existedFolderLocation }}
+                  {{ wikiFolderLocation }}
                 </Typography>
               </>
             )}
@@ -113,21 +134,21 @@ function DoneButton({
         <CloseButton
           variant="contained"
           color="secondary"
-          disabled={!existedFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
+          disabled={!parentFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             if (!userInfo) return;
-            const wikiFolderName = await window.remote.getBaseName(existedFolderLocation);
-            const parentFolderLocation = await window.remote.getDirectoryName(existedFolderLocation);
+            setWikiCreationMessage(t('AddWorkspace.Processing'));
             updateForm(workspaceFormData);
             let creationError: string | undefined;
             try {
-              await window.service.wiki.ensureWikiExist(existedFolderLocation, false);
+              await window.service.wiki.createSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name, tagName);
             } catch (error) {
+              console.info(error);
               creationError = String(error);
             }
-            if (creationError !== undefined) {
+            if (creationError === undefined) {
               try {
-                await window.service.wiki.createSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name, tagName, true);
+                await window.service.wikiGitWorkspace.initWikiGitTransaction(wikiFolderLocation, githubWikiUrl, userInfo, false);
               } catch (error) {
                 console.info(error);
                 creationError = String(error);
@@ -139,14 +160,19 @@ function DoneButton({
               save();
             }
           }}>
-          <Trans t={t} i18nKey="AddWorkspace.NewSubWikiDoneButton" wikiFolderLocation={existedFolderLocation}>
-            {existedFolderLocation && (
+          <Trans t={t} i18nKey="AddWorkspace.NewSubWikiDoneButton" wikiFolderLocation={wikiFolderLocation}>
+            {parentFolderLocation && (
               <>
                 <Typography variant="body1" display="inline">
                   Use
                 </Typography>
-                <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-                  {{ wikiFolderLocation: existedFolderLocation }}
+                <Typography
+                  variant="body2"
+                  noWrap
+                  display="inline"
+                  align="center"
+                  style={{ direction: 'rtl', textTransform: 'none', marginLeft: 5, marginRight: 5 }}>
+                  {{ wikiFolderLocation }}
                 </Typography>
               </>
             )}
@@ -167,4 +193,4 @@ const mapStateToProps = (state: any) => ({
   wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
 });
 
-export default connect<Props, OwnProps, _, _, _, _>(mapStateToProps, (dispatch) => bindActionCreators(actions, dispatch))(DoneButton);
+export default connect<Props, OwnProps, _, _, _, _>(mapStateToProps, (dispatch) => bindActionCreators(actions, dispatch))(NewWikiDoneButton);

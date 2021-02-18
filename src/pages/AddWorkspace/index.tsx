@@ -14,11 +14,11 @@ import NewWikiPathForm from './new-wiki-path-form';
 import ExistedWikiPathForm from './existed-wiki-path-form';
 import ExistedWikiDoneButton from './existed-wiki-done-button';
 import CloneWikiDoneButton from './clone-wiki-done-button';
-import { getGithubUserInfo, setGithubUserInfo } from '@services/types';
 import type { ISubWikiPluginContent } from '@services/wiki/update-plugin-content';
-import type { IUserInfo } from '@services/types';
+import type { IAuthingUserInfo } from '@services/types';
 import TabBar from './tab-bar';
-import GitTokenForm, { getGithubToken, setGithubToken } from '../shared/git-token-form';
+import { GithubTokenForm, getGithubToken, setGithubToken } from '../../components/github/git-token-form';
+import { usePromiseValue, usePromiseValueAndSetter } from '@/helpers/use-service-value';
 
 const graphqlClient = new GraphQLClient({
   url: GITHUB_GRAPHQL_API,
@@ -43,24 +43,15 @@ const GithubRepoLink = styled(Typography)`
   }
 `;
 
-const setHeaderToGraphqlClient = (token: string) => graphqlClient.setHeader('Authorization', `bearer ${token}`);
-const previousToken = getGithubToken();
-previousToken && setHeaderToGraphqlClient(previousToken);
-
-export default function AddWorkspace() {
+export default function AddWorkspace(): JSX.Element {
   const [currentTab, currentTabSetter] = useState('CloneOnlineWiki');
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(false);
   useEffect(() => {
     void window.service.workspace.countWorkspaces().then((workspaceCount) => isCreateMainWorkspaceSetter(workspaceCount === 0));
   }, []);
-  const [parentFolderLocation, parentFolderLocationSetter] = useState<string | undefined>();
-  const [existedFolderLocation, existedFolderLocationSetter] = useState<string | undefined>();
-  useEffect(() => {
-    void (async () => {
-      parentFolderLocationSetter(await window.service.context.get('DESKTOP_PATH'));
-      existedFolderLocationSetter(await window.service.context.get('DESKTOP_PATH'));
-    })();
-  });
+  const parentFolderLocation = usePromiseValue(async () => (await window.service.context.get('DESKTOP_PATH')) as string);
+  const existedFolderLocation = usePromiseValue(async () => (await window.service.context.get('DESKTOP_PATH')) as string);
+
   const [wikiPort, wikiPortSetter] = useState(5212);
   useEffect(() => {
     // only update default port on component mount
@@ -68,23 +59,28 @@ export default function AddWorkspace() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // TODO: refactor GITHUB related things out, make it can switch between vendors
+  const cachedGithubToken = usePromiseValue(getGithubToken);
   // try get token on start up, so Github GraphQL client can use it
-  const [accessToken, accessTokenSetter] = useState<string | void>(previousToken);
+  const [accessToken, accessTokenSetter] = useState<string | undefined>();
   // try get token from local storage, and set to state for gql to use
   useEffect(() => {
-    if (accessToken) {
-      graphqlClient.setHeader('Authorization', `bearer ${accessToken}`);
-      setGithubToken(accessToken);
-    } else {
+    // on startup, loading the cachedGithubToken
+    if (accessToken === undefined && cachedGithubToken !== undefined) {
+      graphqlClient.setHeader('Authorization', `bearer ${cachedGithubToken}`);
+      accessTokenSetter(cachedGithubToken);
+    } else if (accessToken !== undefined && accessToken !== cachedGithubToken) {
+      // if user or login button changed the token, we use latest token
       Object.keys(graphqlClient.headers).map((key) => graphqlClient.removeHeader(key));
-      setGithubToken();
+      accessTokenSetter(accessToken);
+      void setGithubToken(accessToken);
     }
-  }, [accessToken]);
+  }, [cachedGithubToken, accessToken]);
 
-  const [userInfo, userInfoSetter] = useState<IUserInfo | void>(getGithubUserInfo());
-  useEffect(() => {
-    setGithubUserInfo(userInfo);
-  }, [userInfo]);
+  const [userName, userNameSetter] = usePromiseValueAndSetter(
+    async () => await window.service.auth.get('userName'),
+    async (newUserName) => await window.service.auth.set('userName', newUserName),
+  );
 
   const [mainWikiToLink, mainWikiToLinkSetter] = useState({ name: '', port: 0 });
   const [tagName, tagNameSetter] = useState<string>('');
@@ -95,10 +91,12 @@ export default function AddWorkspace() {
   const [githubWikiUrl, githubWikiUrlSetter] = useState<string>('');
   useEffect(() => {
     void (async function getWorkspaceRemoteInEffect(): Promise<void> {
-      const url = await window.service.git.getWorkspacesRemote(existedFolderLocation);
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      if (url) {
-        githubWikiUrlSetter(url);
+      if (existedFolderLocation !== undefined) {
+        const url = await window.service.git.getWorkspacesRemote(existedFolderLocation);
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        if (url) {
+          githubWikiUrlSetter(url);
+        }
       }
     })();
   }, [githubWikiUrl, existedFolderLocation]);
@@ -110,26 +108,22 @@ export default function AddWorkspace() {
       <TabBar currentTab={currentTab} currentTabSetter={currentTabSetter} />
       <Description isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
       <SyncContainer elevation={2} square>
-        {/* @ts-expect-error ts-migrate(2322) FIXME: Type 'string | void' is not assignable to type 'st... Remove this comment to see the full error message */}
-        <GitTokenForm accessTokenSetter={accessTokenSetter} userInfoSetter={userInfoSetter} accessToken={accessToken}>
+        <GithubTokenForm accessTokenSetter={accessTokenSetter} userInfoSetter={userInfoSetter} accessToken={accessToken}>
           {githubWikiUrl && (
-            // @ts-expect-error ts-migrate(2554) FIXME: Expected 2 arguments, but got 1.
             <GithubRepoLink onClick={async () => await window.service.native.open(githubWikiUrl)} variant="subtitle2" align="center">
               ({githubWikiUrl})
             </GithubRepoLink>
           )}
           <SearchRepo
             githubWikiUrl={githubWikiUrl}
-            // @ts-expect-error ts-migrate(2322) FIXME: Type 'string | void' is not assignable to type 'st... Remove this comment to see the full error message
             accessToken={accessToken}
             githubWikiUrlSetter={githubWikiUrlSetter}
-            // @ts-expect-error ts-migrate(2322) FIXME: Type 'void | IUserInfo' is not assignable to type ... Remove this comment to see the full error message
             userInfo={userInfo}
             currentTab={currentTab}
             wikiFolderNameSetter={wikiFolderNameSetter}
             isCreateMainWorkspace={isCreateMainWorkspace}
           />
-        </GitTokenForm>
+        </GithubTokenForm>
       </SyncContainer>
 
       {currentTab === 'CreateNewWiki' && (
