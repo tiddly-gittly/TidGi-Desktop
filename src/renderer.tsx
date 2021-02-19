@@ -2,7 +2,6 @@
 /* eslint-disable promise/always-return */
 import React from 'react';
 import ReactDOM from 'react-dom';
-import { Provider } from 'react-redux';
 import i18n from 'i18next';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
@@ -10,12 +9,6 @@ import { I18nextProvider } from 'react-i18next';
 import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
 
 import 'typeface-roboto/index.css';
-
-import store from './state';
-import { init as initDialogCustomUserAgent } from './state/dialog-custom-user-agent/actions';
-import { init as initDialogEditWorkspace } from './state/dialog-edit-workspace/actions';
-import { init as initDialogProxy } from './state/dialog-proxy/actions';
-import { init as initDialogSpellcheckLanguages } from './state/dialog-spellcheck-languages/actions';
 
 import { initI18N } from './i18n';
 
@@ -79,7 +72,6 @@ async function runApp(): Promise<void> {
   window.electron.webFrame.setVisualZoomLevelLimits(1, 1);
   if (window.meta.windowName === WindowNames.editWorkspace) {
     const { workspaceID } = window.meta as WindowMeta[WindowNames.editWorkspace];
-    store.dispatch(initDialogEditWorkspace());
     const { workspaces } = store.getState();
     const workspaceList = Object.values(workspaces);
     const workspace = workspaces[workspaceID];
@@ -92,13 +84,10 @@ async function runApp(): Promise<void> {
     });
     document.title = workspace.name ? `Edit Workspace ${workspace.order + 1} "${workspace.name}"` : `Edit Workspace ${workspace.order + 1}`;
   } else if (window.meta.windowName === WindowNames.userAgent) {
-    store.dispatch(initDialogCustomUserAgent());
     document.title = 'Edit Custom User Agent';
   } else if (window.meta.windowName === WindowNames.proxy) {
-    store.dispatch(initDialogProxy());
     document.title = 'Proxy Settings';
   } else if (window.meta.windowName === WindowNames.spellcheck) {
-    store.dispatch(initDialogSpellcheckLanguages());
     document.title = 'Preferred Spell Checking Languages';
   }
 
@@ -115,7 +104,7 @@ async function runApp(): Promise<void> {
   }
 
   ReactDOM.render(
-    <Provider store={store}>
+    <>
       <AppWrapper>
         <CssBaseline />
         <React.Suspense fallback={<div />}>
@@ -124,7 +113,7 @@ async function runApp(): Promise<void> {
           </I18nextProvider>
         </React.Suspense>
       </AppWrapper>
-    </Provider>,
+    </>,
     document.querySelector('#app'),
   );
 

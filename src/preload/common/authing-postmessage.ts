@@ -2,17 +2,19 @@ import { remote } from 'electron';
 
 // on production build, if we try to redirect to http://localhost:3000 , we will reach chrome-error://chromewebdata/ , but we can easily get back
 // this happens when we are redirected by OAuth login
-import { CHROME_ERROR_PATH, REACT_PATH } from '@services/constants/paths';
+import { context } from './services';
 
 const CHECK_LOADED_INTERVAL = 500;
-function refresh(): void {
+async function refresh(): Promise<void> {
+  const CHROME_ERROR_PATH = (await context.get('CHROME_ERROR_PATH')) as string;
+  const REACT_PATH = (await context.get('REACT_PATH')) as string;
   if (window.location.href === CHROME_ERROR_PATH) {
     void remote.getCurrentWindow().loadURL(REACT_PATH);
   } else {
-    setTimeout(refresh, CHECK_LOADED_INTERVAL);
+    setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);
   }
 }
-setTimeout(refresh, CHECK_LOADED_INTERVAL);
+setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);
 
 interface IAuthingPostMessageEvent {
   code?: number;
