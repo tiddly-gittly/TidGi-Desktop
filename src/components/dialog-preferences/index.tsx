@@ -42,7 +42,6 @@ import MenuBookIcon from '@material-ui/icons/MenuBook';
 
 import { TimePicker } from '@material-ui/pickers';
 
-import connectComponent from '../../helpers/connect-component';
 import { getGithubUserInfo, setGithubUserInfo } from '@services/types';
 
 import StatedMenu from '../github/stated-menu';
@@ -227,44 +226,7 @@ interface PreferencesProps {
   useHardwareAcceleration: boolean;
 }
 
-const Preferences = ({
-  allowPrerelease,
-  askForDownloadPath,
-  attachToMenubar,
-  blockAds,
-  classes,
-  customUserAgent,
-  darkReader,
-  darkReaderBrightness,
-  darkReaderContrast,
-  darkReaderGrayscale,
-  darkReaderSepia,
-  downloadPath,
-  hibernateUnusedWorkspacesAtLaunch,
-  hideMenuBar,
-  ignoreCertificateErrors,
-  navigationBar,
-  openAtLogin,
-  pauseNotificationsBySchedule,
-  pauseNotificationsByScheduleFrom,
-  pauseNotificationsByScheduleTo,
-  pauseNotificationsMuteAudio,
-  rememberLastPageVisited,
-  shareWorkspaceBrowsingData,
-  sidebar,
-  sidebarShortcutHints,
-  spellcheck,
-  spellcheckLanguages,
-  swipeToNavigate,
-  syncDebounceInterval,
-  themeSource,
-  titleBar,
-  unreadCountBadge,
-  updaterInfo,
-  updaterStatus,
-  useHardwareAcceleration,
-  userName,
-}: PreferencesProps) => {
+export default function Preferences(): JSX.Element {
   const { t } = useTranslation();
 
   const sections = {
@@ -447,13 +409,8 @@ const Preferences = ({
                     await window.service.preference.set('syncDebounceInterval', utcTime);
                     await debouncedRequestShowRequireRestartDialog();
                   }}
-                  onClose={() => {
-                    // FIXME: no global assign
-                    window.preventClosingWindow = false;
-                  }}
-                  onOpen={() => {
-                    window.preventClosingWindow = true;
-                  }}
+                  onClose={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: false })}
+                  onOpen={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true })}
                 />
               </div>
             </ListItem>
@@ -811,12 +768,8 @@ const Preferences = ({
                     renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleFrom)}
                     onChange={(d) => await window.service.preference.set('pauseNotificationsByScheduleFrom', d.toString())}
-                    onClose={() => {
-                      window.preventClosingWindow = false;
-                    }}
-                    onOpen={() => {
-                      window.preventClosingWindow = true;
-                    }}
+                    onClose={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: false })}
+                    onOpen={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true })}
                     disabled={!pauseNotificationsBySchedule}
                   />
                   <TimePicker
@@ -825,12 +778,8 @@ const Preferences = ({
                     renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleTo)}
                     onChange={(d) => await window.service.preference.set('pauseNotificationsByScheduleTo', d.toString())}
-                    onClose={() => {
-                      window.preventClosingWindow = false;
-                    }}
-                    onOpen={() => {
-                      window.preventClosingWindow = true;
-                    }}
+                    onClose={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: false })}
+                    onOpen={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true })}
                     disabled={!pauseNotificationsBySchedule}
                   />
                 </div>
@@ -918,7 +867,9 @@ const Preferences = ({
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      onClick={async () => await window.service.native.open('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps')}
+                      onClick={async () =>
+                        await window.service.native.open('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps')
+                      }
                       onKeyDown={(event) => {
                         if (event.key !== 'Enter') return;
                         void window.service.native.open('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
@@ -1081,7 +1032,9 @@ const Preferences = ({
                       role="link"
                       tabIndex={0}
                       className={classes.link}
-                      onClick={async () => await window.service.native.open('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ')}
+                      onClick={async () =>
+                        await window.service.native.open('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ')
+                      }
                       onKeyDown={(event) => {
                         if (event.key !== 'Enter') return;
                         void window.service.native.open('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ');
@@ -1110,7 +1063,9 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TiddlyGit-Desktop/blob/master/PrivacyPolicy.md')}>
+            <ListItem
+              button
+              onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TiddlyGit-Desktop/blob/master/PrivacyPolicy.md')}>
               <ListItemText primary="Privacy Policy" />
             </ListItem>
           </List>
@@ -1331,7 +1286,7 @@ const Preferences = ({
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem button onClick={ window.service.native.quit}>
+            <ListItem button onClick={window.service.native.quit}>
               <ListItemText primary="Quit" />
               <ChevronRightIcon color="action" />
             </ListItem>
@@ -1340,4 +1295,4 @@ const Preferences = ({
       </div>
     </div>
   );
-};
+}

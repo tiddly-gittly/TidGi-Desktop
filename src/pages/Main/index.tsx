@@ -159,7 +159,7 @@ const SidebarContainer = ({ children }: { children: React.ReactNode }): JSX.Elem
   return <SidebarWithStyle>{children}</SidebarWithStyle>;
 };
 
-function Main(): JSX.Element {
+export default function Main(): JSX.Element {
   // TODO: make workspacesList observable
   const workspacesList = usePromiseValue(
     window.service.workspace.getWorkspacesAsList,

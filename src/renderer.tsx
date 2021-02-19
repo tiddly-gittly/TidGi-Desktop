@@ -6,7 +6,7 @@ import i18n from 'i18next';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
 import { I18nextProvider } from 'react-i18next';
-import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
+import { WindowNames, WindowMeta, IPreferenceWindowMeta } from '@services/windows/WindowProperties';
 
 import 'typeface-roboto/index.css';
 
@@ -14,6 +14,7 @@ import { initI18N } from './i18n';
 
 import AppWrapper from './components/app-wrapper';
 
+const Main = React.lazy(async () => await import('./pages/Main'));
 const AboutPage = React.lazy(async () => await import('./pages/About'));
 const DialogAddWorkspace = React.lazy(async () => await import('./pages/AddWorkspace'));
 const DialogAuth = React.lazy(async () => await import('./components/dialog-auth'));
@@ -26,7 +27,6 @@ const DialogOpenUrlWith = React.lazy(async () => await import('./components/dial
 const DialogPreferences = React.lazy(async () => await import('./components/dialog-preferences'));
 const DialogProxy = React.lazy(async () => await import('./components/dialog-proxy'));
 const DialogSpellcheckLanguages = React.lazy(async () => await import('./components/dialog-spellcheck-languages'));
-const Main = React.lazy(async () => await import('./pages/Main'));
 
 const App = (): JSX.Element => {
   switch (window.meta.windowName) {
@@ -69,11 +69,14 @@ const App = (): JSX.Element => {
 };
 
 async function runApp(): Promise<void> {
-  window.electron.webFrame.setVisualZoomLevelLimits(1, 1);
+  void window.service.window.setVisualZoomLevelLimits(1, 1);
   if (window.meta.windowName === WindowNames.editWorkspace) {
     const { workspaceID } = window.meta as WindowMeta[WindowNames.editWorkspace];
-    const { workspaces } = store.getState();
-    const workspaceList = Object.values(workspaces);
+    if (workspaceID === undefined) {
+      throw new Error(`workspaceID is undefined,  window.meta is ${typeof window.meta === 'object' ? JSON.stringify(window.meta) : String(window.meta)}`);
+    }
+    const workspaces = await window.service.workspace.getWorkspaces();
+    const workspaceList = await window.service.workspace.getWorkspacesAsList();
     const workspace = workspaces[workspaceID];
     workspaceList.some((item, index) => {
       if (item.id === workspaceID) {
@@ -91,15 +94,16 @@ async function runApp(): Promise<void> {
     document.title = 'Preferred Spell Checking Languages';
   }
 
-  // FIXME: handle && window.meta.windowName !== 'menubar' here
-  if (window.meta.windowName !== WindowNames.main) {
-    document.addEventListener('keydown', (event) => {
-      if (event.key === 'Escape') {
-        if (window.preventClosingWindow) {
+  const attachToMenubar = (await window.service.preference.get('attachToMenubar')) as boolean;
+  if (window.meta.windowName !== WindowNames.main && attachToMenubar) {
+    document.addEventListener('keydown', (_event) => {
+      void (async () => {
+        const { preventClosingWindow } = (await window.service.window.getWindowMeta(WindowNames.preferences)) as IPreferenceWindowMeta;
+        if (window.meta.windowName === WindowNames.preferences && preventClosingWindow) {
           return;
         }
         window.remote.closeCurrentWindow();
-      }
+      })();
     });
   }
 

@@ -86,6 +86,11 @@ export const windowDimension: Record<WindowNames, { width?: number; height?: num
   },
 };
 
+export interface IPreferenceWindowMeta {
+  gotoTab?: string;
+  preventClosingWindow?: boolean;
+}
+
 /**
  * metadata that send to window when create them.
  * Please make all property partial (?:), so wo can always assign {} as default metadata without type warning
@@ -95,7 +100,7 @@ export interface WindowMeta extends Record<WindowNames, Record<string, unknown> 
   [WindowNames.editWorkspace]: { workspaceID?: string };
   [WindowNames.openUrlWith]: { incomingUrl?: string };
   [WindowNames.main]: { forceClose?: boolean };
-  [WindowNames.preferences]: { gotoTab?: string };
+  [WindowNames.preferences]: IPreferenceWindowMeta;
 }
 export type IPossibleWindowMeta = {
   windowName: WindowNames;

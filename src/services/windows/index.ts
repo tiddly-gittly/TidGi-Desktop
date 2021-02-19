@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
-import { BrowserWindow, ipcMain, dialog, app, App, remote, clipboard, BrowserWindowConstructorOptions } from 'electron';
+import { BrowserWindow, ipcMain, dialog, app, webFrame, clipboard, BrowserWindowConstructorOptions } from 'electron';
 import isDevelopment from 'electron-is-dev';
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
@@ -343,6 +343,13 @@ export class Window implements IWindowService {
   public async clearStorageData(windowName: WindowNames = WindowNames.main): Promise<void> {
     const win = this.get(windowName);
     await win?.getBrowserView()?.webContents?.session?.clearStorageData();
+  }
+
+  /**
+   * an wrapper around setVisualZoomLevelLimits
+   */
+  public setVisualZoomLevelLimits(minimumLevel: number, maximumLevel: number): void {
+    webFrame.setVisualZoomLevelLimits(minimumLevel, maximumLevel);
   }
 
   private registerMenu(): void {
