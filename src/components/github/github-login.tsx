@@ -3,7 +3,7 @@ import React, { Component } from 'react';
 import styled from 'styled-components';
 import Button from '@material-ui/core/Button';
 import GithubIcon from '@material-ui/icons/GitHub';
-import AuthingSSO from '@authing/sso';
+import AuthingSSO, { ILoginInfo } from '@authing/sso';
 import { withTranslation } from 'react-i18next';
 
 import { APP_DOMAIN, APP_ID } from '../../constants/auth';
@@ -15,24 +15,24 @@ const SyncToGithubButton = styled(Button)`
 
 interface Props {
   t: (x: string) => string;
-  onRequest: Function;
-  onSuccess: Function;
-  onLogout: Function;
-  onFailure: Function;
+  onRequest: () => unknown;
+  onSuccess: (info: Partial<ILoginInfo>) => unknown;
+  onLogout: () => unknown;
+  onFailure: (error: Error) => unknown;
 }
 interface State {
   isLogin: boolean;
 }
 class GitHubLogin extends Component<Props, State> {
-  static defaultProps = {
+  static defaultProps: Partial<Props> = {
     onRequest: () => {},
     onSuccess: () => {},
     onLogout: () => {},
     onFailure: () => {},
   };
 
-  auth: typeof AuthingSSO;
-  intervalHandel: IntervalID;
+  auth: AuthingSSO;
+  intervalHandel?: NodeJS.Timeout;
 
   constructor(props: Props) {
     super(props);
@@ -47,7 +47,7 @@ class GitHubLogin extends Component<Props, State> {
     this.updateLoginState();
   }
 
-  async isLogin(): boolean {
+  async isLogin(): Promise<boolean> {
     const { onSuccess, onLogout } = this.props;
     const { session, ...rest } = await this.auth.trackSession();
     const isLogin = session !== null && session !== undefined;
@@ -61,10 +61,11 @@ class GitHubLogin extends Component<Props, State> {
 
   updateLoginState(): void {
     this.intervalHandel = setInterval(() => {
-      // eslint-disable-next-line promise/catch-or-return, promise/always-return
-      this.isLogin().then((isLogin) => {
+      void this.isLogin().then((isLogin) => {
         this.setState({ isLogin });
-        clearInterval(this.intervalHandel);
+        if (this.intervalHandel !== undefined) {
+          clearInterval(this.intervalHandel);
+        }
       });
     }, 500);
   }
@@ -91,13 +92,13 @@ class GitHubLogin extends Component<Props, State> {
       </SyncToGithubButton>
     ) : (
       <SyncToGithubButton
-        onClick={() => {
+        onClick={async () => {
           // clear token first, otherwise github login window won't give us a chance to see the form
           // void this.auth.logout();
           // window.remote.clearStorageData();
           try {
             onRequest();
-            this.auth.login();
+            await this.auth.login();
           } catch (error) {
             onFailure(error);
           }
