@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import Promise from 'bluebird';
 import React, { useState, useEffect } from 'react';
 import styled from 'styled-components';
@@ -62,12 +63,10 @@ const CREATE_REPO_MUTATION = `
 `;
 
 interface Props {
-  accessToken: string;
+  accessToken?: string;
   githubWikiUrl: string;
   currentTab: string;
-  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
   githubWikiUrlSetter: (string) => void;
-  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
   wikiFolderNameSetter: (string) => void;
   userInfo: IAuthingUserInfo;
   isCreateMainWorkspace: boolean;
@@ -80,7 +79,7 @@ export default function SearchRepo({
   wikiFolderNameSetter,
   userInfo,
   isCreateMainWorkspace,
-}: Props) {
+}: Props): JSX.Element {
   const [githubRepoSearchString, githubRepoSearchStringSetter] = useState('wiki');
   const loadCount = 10;
   const githubUsername = userInfo?.login || '';

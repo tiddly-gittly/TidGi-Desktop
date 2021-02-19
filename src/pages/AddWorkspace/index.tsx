@@ -108,12 +108,12 @@ export default function AddWorkspace(): JSX.Element {
       <TabBar currentTab={currentTab} currentTabSetter={currentTabSetter} />
       <Description isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
       <SyncContainer elevation={2} square>
-        <GithubTokenForm accessTokenSetter={accessTokenSetter} userInfoSetter={userInfoSetter} accessToken={accessToken}>
-          {githubWikiUrl && (
+        <GithubTokenForm accessTokenSetter={accessTokenSetter} userNameSetter={userNameSetter} accessToken={accessToken}>
+          {githubWikiUrl?.length > 0 ? (
             <GithubRepoLink onClick={async () => await window.service.native.open(githubWikiUrl)} variant="subtitle2" align="center">
               ({githubWikiUrl})
             </GithubRepoLink>
-          )}
+          ) : undefined}
           <SearchRepo
             githubWikiUrl={githubWikiUrl}
             accessToken={accessToken}

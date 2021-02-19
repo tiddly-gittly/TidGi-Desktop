@@ -1,7 +1,6 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React from 'react';
 import styled from 'styled-components';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
 import { Trans, useTranslation } from 'react-i18next';
 
 import Typography from '@material-ui/core/Typography';
@@ -9,8 +8,6 @@ import Button from '@material-ui/core/Button';
 import LinearProgress from '@material-ui/core/LinearProgress';
 import Snackbar from '@material-ui/core/Snackbar';
 import Alert from '@material-ui/lab/Alert';
-
-import * as actions from '../../state/dialog-add-workspace/actions';
 
 import type { IAuthingUserInfo } from '@services/types';
 
@@ -55,7 +52,7 @@ function CloneWikiDoneButton({
   tagName,
   save,
   userInfo,
-}: Props) {
+}: Props): JSX.Element {
   const wikiFolderLocation = `${parentFolderLocation}/${wikiFolderName}`;
 
   const port = isCreateMainWorkspace ? wikiPort : mainWikiToLink.port;
@@ -164,9 +161,3 @@ function CloneWikiDoneButton({
     </>
   );
 }
-
-const mapStateToProps = (state: any) => ({
-  wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
-});
-
-export default connect<Props, OwnProps, _, _, _, _>(mapStateToProps, (dispatch) => bindActionCreators(actions, dispatch))(CloneWikiDoneButton);

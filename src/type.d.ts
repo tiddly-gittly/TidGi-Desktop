@@ -32,6 +32,10 @@ declare module '@authing/sso' {
     company: string;
     nickname: string;
     username: string;
+    oauth?: string;
+    thirdPartyIdentity?: {
+      accessToken?: string;
+    };
   }
 
   export interface UrlParameters {

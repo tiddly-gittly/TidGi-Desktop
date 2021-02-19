@@ -5,7 +5,7 @@ import { useTranslation } from 'react-i18next';
 import TextField from '@material-ui/core/TextField';
 
 import GitHubLogin from './github-login';
-import type { IAuthingUserInfo, IAuthingResponse } from '@services/types';
+import type { IAuthingUserInfo } from '@services/types';
 
 const GitTokenInput = styled(TextField)``;
 
@@ -14,16 +14,16 @@ export const getGithubToken = async (): Promise<string | undefined> => await win
 
 export function GithubTokenForm(props: {
   accessTokenSetter: (token?: string) => void;
-  userInfoSetter: (info?: IAuthingUserInfo) => void;
-  accessToken: string;
-  children: JSX.Element;
+  userNameSetter: (userName?: string) => void;
+  accessToken?: string;
+  children: JSX.Element | Array<JSX.Element | undefined | string>;
 }): JSX.Element {
   const { accessToken, children } = props;
   const { t } = useTranslation();
   return (
     <>
       <GitHubLogin
-        onSuccess={(response: IAuthingResponse) => {
+        onSuccess={(response) => {
           const accessTokenToSet = response?.userInfo?.thirdPartyIdentity?.accessToken;
           const authDataString = response?.userInfo?.oauth;
           if (accessTokenToSet !== undefined) {
@@ -39,14 +39,13 @@ export function GithubTokenForm(props: {
             };
             delete nextUserInfo.oauth;
             delete nextUserInfo.thirdPartyIdentity;
-            props.userInfoSetter(nextUserInfo as IAuthingUserInfo);
+            props.userNameSetter((nextUserInfo as IAuthingUserInfo).username);
           }
         }}
-        // eslint-disable-next-line unicorn/no-null
-        onLogout={(response: any) => props.accessTokenSetter()}
-        onFailure={(response: any) => {
+        onLogout={() => props.accessTokenSetter()}
+        onFailure={() => {
           props.accessTokenSetter();
-          props.userInfoSetter();
+          props.userNameSetter();
         }}
       />
       <GitTokenInput
