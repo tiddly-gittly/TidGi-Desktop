@@ -36,19 +36,7 @@ export class Window implements IWindowService {
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
 
   constructor() {
-    this.initIPCHandlers();
     this.registerMenu();
-  }
-
-  initIPCHandlers(): void {
-    ipcMain.handle(WindowChannel.showDisplayMediaWindow, (_event: Electron.IpcMainInvokeEvent) => {
-      const viewID = BrowserWindow.fromWebContents(_event.sender)?.id;
-      if (viewID !== undefined) {
-        return this.open(WindowNames.displayMedia, { displayMediaRequestedViewID: viewID }, (windowMeta: WindowMeta[WindowNames.displayMedia]) => {
-          return viewID !== windowMeta.displayMediaRequestedViewID;
-        });
-      }
-    });
   }
 
   public findInPage(text: string, forward?: boolean, windowName: WindowNames = WindowNames.main): void {

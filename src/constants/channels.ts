@@ -69,7 +69,6 @@ export enum WindowChannel {
   updateTitle = 'update-title',
   updateCanGoBack = 'update-can-go-back',
   updateCanGoForward = 'update-can-go-forward',
-  showDisplayMediaWindow = 'show-display-media-window',
 }
 
 export enum ThemeChannel {

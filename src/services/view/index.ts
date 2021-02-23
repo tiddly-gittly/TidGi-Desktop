@@ -14,7 +14,6 @@ import type { IMenuService } from '@services/menu/interface';
 import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
 import i18n from '@services/libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
-import { extractDomain } from '@services/libs/url';
 import { IWorkspace } from '@services/workspaces/interface';
 import setupViewEventHandlers from './setupViewEventHandlers';
 import getFromRenderer from '@services/libs/getFromRenderer';
@@ -215,17 +214,7 @@ export class View implements IViewService {
     if (workspace.isSubWiki) {
       return;
     }
-    const {
-      customUserAgent,
-      proxyBypassRules,
-      proxyPacScript,
-      proxyRules,
-      proxyType,
-      rememberLastPageVisited,
-      shareWorkspaceBrowsingData,
-      spellcheck,
-      spellcheckLanguages,
-    } = this.preferenceService.getPreferences();
+    const { rememberLastPageVisited, shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = this.preferenceService.getPreferences();
     // configure session, proxy & ad blocker
     const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
     const userInfo = this.authService.get('authing');
@@ -241,18 +230,6 @@ export class View implements IViewService {
     }
     // session
     const sessionOfView = session.fromPartition(partitionId);
-    // proxy
-    if (proxyType === 'rules') {
-      await sessionOfView.setProxy({
-        proxyRules,
-        proxyBypassRules,
-      });
-    } else if (proxyType === 'pacScript') {
-      await sessionOfView.setProxy({
-        pacScript: proxyPacScript,
-        proxyBypassRules,
-      });
-    }
     // spellchecker
     if (spellcheck && process.platform !== 'darwin') {
       sessionOfView.setSpellCheckerLanguages(spellcheckLanguages);
@@ -281,47 +258,6 @@ export class View implements IViewService {
     // https://github.com/electron/electron/issues/16212
     view.setBackgroundColor('#FFF');
 
-    /**
-     * Side effect, update contents.userAgent
-     * @param _contents webContent to set userAgent
-     * @param _url
-     */
-    let adjustUserAgentByUrl = (_contents: WebContents, _url: string): boolean => false;
-    if (typeof customUserAgent === 'string' && customUserAgent.length > 0) {
-      view.webContents.userAgent = customUserAgent;
-    } else {
-      // Hide Electron from UA to improve compatibility
-      // https://github.com/quanglam2807/webcatalog/issues/182
-      const uaString = view.webContents.userAgent;
-      const commonUaString = uaString
-        // Fix WhatsApp requires Google Chrome 49+ bug
-        .replace(` ${app.name}/${app.getVersion()}`, '')
-        // Hide Electron from UA to improve compatibility
-        // https://github.com/quanglam2807/webcatalog/issues/182
-        .replace(` Electron/${process.versions.electron}`, '');
-      view.webContents.userAgent = commonUaString;
-      // fix Google prevents signing in because of security concerns
-      // https://github.com/quanglam2807/webcatalog/issues/455
-      // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
-      const fakedEdgeUaString = `${commonUaString} Edge/18.18875`;
-      adjustUserAgentByUrl = (contents: WebContents, url: string): boolean => {
-        if (typeof customUserAgent === 'string' && customUserAgent.length > 0) {
-          return false;
-        }
-        const navigatedDomain = extractDomain(url);
-        const currentUaString = contents.userAgent;
-        if (navigatedDomain === 'accounts.google.com') {
-          if (currentUaString !== fakedEdgeUaString) {
-            contents.userAgent = fakedEdgeUaString;
-            return true;
-          }
-        } else if (currentUaString !== commonUaString) {
-          contents.userAgent = commonUaString;
-          return true;
-        }
-        return false;
-      };
-    }
     // Handle audio & notification preferences
     if (this.shouldMuteAudio !== undefined) {
       view.webContents.audioMuted = this.shouldMuteAudio;
@@ -338,13 +274,7 @@ export class View implements IViewService {
     }
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const initialUrl = (rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl;
-    adjustUserAgentByUrl(view.webContents, initialUrl);
-    setupViewEventHandlers(
-      view,
-      browserWindow,
-      { shouldPauseNotifications: this.shouldPauseNotifications, workspace, sharedWebPreferences },
-      { adjustUserAgentByUrl },
-    );
+    setupViewEventHandlers(view, browserWindow, { shouldPauseNotifications: this.shouldPauseNotifications, workspace, sharedWebPreferences });
     // start wiki on startup, or on sub-wiki creation
     await this.wikiService.wikiStartup(workspace);
     void view.webContents.loadURL(initialUrl);

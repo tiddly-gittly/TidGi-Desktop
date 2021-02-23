@@ -193,7 +193,6 @@ interface PreferencesProps {
   attachToMenubar: boolean;
   blockAds: boolean;
   classes: any;
-  customUserAgent?: string;
   darkReader: boolean;
   darkReaderBrightness: number;
   darkReaderContrast: number;
@@ -959,14 +958,6 @@ export default function Preferences(): JSX.Element {
         <Typography variant="subtitle2" color="textPrimary" className={classes.sectionTitle} ref={sections.network.ref}>
           Network
         </Typography>
-        <Paper elevation={0} className={classes.paper}>
-          <List disablePadding dense>
-            <ListItem button onClick={async () => await window.service.window.open(WindowNames.proxy)}>
-              <ListItemText primary="Configure proxy settings (BETA)" />
-              <ChevronRightIcon color="action" />
-            </ListItem>
-          </List>
-        </Paper>
 
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.privacy.ref}>
           Privacy &amp; Security
@@ -1100,14 +1091,6 @@ export default function Preferences(): JSX.Element {
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.developers.ref}>
           Developers
         </Typography>
-        <Paper elevation={0} className={classes.paper}>
-          <List dense disablePadding>
-            <ListItem button onClick={async () => await window.service.window.open(WindowNames.userAgent)}>
-              <ListItemText primary="Custom User Agent" secondary={customUserAgent || 'Not set'} classes={{ secondary: classes.secondaryEllipsis }} />
-              <ChevronRightIcon color="action" />
-            </ListItem>
-          </List>
-        </Paper>
 
         <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.advanced.ref}>
           Advanced

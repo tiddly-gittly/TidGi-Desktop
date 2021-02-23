@@ -42,7 +42,6 @@ const defaultPreferences: IPreferences = {
   askForDownloadPath: true,
   attachToMenubar: false,
   blockAds: false,
-  customUserAgent: '',
   // default Dark Reader settings from its Chrome extension
   darkReader: false,
   darkReaderBrightness: 100,
@@ -61,10 +60,6 @@ const defaultPreferences: IPreferences = {
   pauseNotificationsByScheduleFrom: getDefaultPauseNotificationsByScheduleFrom(),
   pauseNotificationsByScheduleTo: getDefaultPauseNotificationsByScheduleTo(),
   pauseNotificationsMuteAudio: false,
-  proxyBypassRules: '',
-  proxyPacScript: '',
-  proxyRules: '',
-  proxyType: 'none',
   rememberLastPageVisited: false,
   shareWorkspaceBrowsingData: false,
   sidebar: true,

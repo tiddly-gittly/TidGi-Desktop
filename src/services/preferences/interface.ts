@@ -7,7 +7,6 @@ export interface IPreferences {
   askForDownloadPath: boolean;
   attachToMenubar: boolean;
   blockAds: boolean;
-  customUserAgent: string;
   darkReader: boolean;
   darkReaderBrightness: number;
   darkReaderContrast: number;
@@ -24,10 +23,6 @@ export interface IPreferences {
   pauseNotificationsByScheduleFrom: string;
   pauseNotificationsByScheduleTo: string;
   pauseNotificationsMuteAudio: boolean;
-  proxyBypassRules: string;
-  proxyPacScript: string;
-  proxyRules: string;
-  proxyType: string;
   rememberLastPageVisited: boolean;
   shareWorkspaceBrowsingData: boolean;
   sidebar: boolean;

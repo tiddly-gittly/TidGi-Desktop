@@ -95,7 +95,6 @@
     "lodash": "4.17.20",
     "menubar": "9.0.2",
     "node-fetch": "2.6.1",
-    "proxy-agent": "4.0.1",
     "reflect-metadata": "^0.1.13",
     "regedit": "3.0.3",
     "rxjs": "^6.6.3",

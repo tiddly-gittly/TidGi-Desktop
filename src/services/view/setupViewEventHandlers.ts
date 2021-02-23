@@ -22,9 +22,6 @@ export interface IViewContext {
   shouldPauseNotifications: boolean;
   sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
 }
-export interface IViewModifier {
-  adjustUserAgentByUrl: (_contents: WebContents, nextUrl: string) => boolean;
-}
 
 export interface IViewMeta {
   forceNewWindow: boolean;
@@ -37,7 +34,6 @@ export default function setupViewEventHandlers(
   view: BrowserView,
   browserWindow: BrowserWindow,
   { workspace, shouldPauseNotifications, sharedWebPreferences }: IViewContext,
-  { adjustUserAgentByUrl }: IViewModifier,
 ): void {
   // metadata and state about current BrowserView
   const viewMeta: IViewMeta = {
@@ -77,7 +73,6 @@ export default function setupViewEventHandlers(
         event.preventDefault();
         void shell.openExternal(nextUrl);
       }
-      adjustUserAgentByUrl(view.webContents, nextUrl);
     }
   });
   view.webContents.on('did-start-loading', () => {
@@ -230,7 +225,6 @@ export default function setupViewEventHandlers(
         workspace,
         sharedWebPreferences,
         view,
-        adjustUserAgentByUrl,
         meta: viewMeta,
       }),
   );
@@ -303,7 +297,6 @@ export interface INewWindowContext {
   meta: IViewMeta;
   workspace: IWorkspace;
   sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
-  adjustUserAgentByUrl: (_contents: WebContents, nextUrl: string) => boolean;
 }
 
 function handleNewWindow(
@@ -318,7 +311,7 @@ function handleNewWindow(
   newWindowContext: INewWindowContext,
 ): void {
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-  const { view, workspace, sharedWebPreferences, adjustUserAgentByUrl } = newWindowContext;
+  const { view, workspace, sharedWebPreferences } = newWindowContext;
 
   const appUrl = workspaceService.get(workspace.id)?.homeUrl;
   if (appUrl === undefined) {
@@ -366,21 +359,6 @@ function handleNewWindow(
         _postBody: Electron.PostBody,
       ) => handleNewWindow(_event, nextUrl, _frameName, disposition, options, _additionalFeatures, _referrer, _postBody, newWindowContext),
     );
-    // fix Google prevents signing in because of security concerns
-    // https://github.com/atomery/webcatalog/issues/455
-    // https://github.com/meetfranz/franz/issues/1720#issuecomment-566460763
-    // will-navigate doesn't trigger for loadURL, goBack, goForward
-    // so user agent to needed to be double check here
-    // not the best solution as page will be unexpectedly reloaded
-    // but it won't happen very often
-    popupWin.webContents.on('will-navigate', (_navigateEvent, url) => {
-      adjustUserAgentByUrl(popupWin.webContents, url);
-    });
-    popupWin.webContents.on('did-navigate', (_navigateEvent, url) => {
-      if (adjustUserAgentByUrl(popupWin.webContents, url)) {
-        popupWin.webContents.reload();
-      }
-    });
     // if 'new-window' is triggered with Cmd+Click
     // url is not loaded automatically
     // https://github.com/atomery/webcatalog/issues/842
@@ -419,7 +397,6 @@ function handleNewWindow(
     ((appDomain?.includes('asana.com') || currentDomain?.includes('asana.com')) && nextDomain?.includes('asana.com'))
   ) {
     event.preventDefault();
-    adjustUserAgentByUrl(view.webContents, nextUrl);
     void view.webContents.loadURL(nextUrl);
     return;
   }

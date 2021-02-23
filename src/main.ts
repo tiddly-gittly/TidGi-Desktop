@@ -135,21 +135,8 @@ if (!gotTheLock) {
       });
     }
     await windowService.open(WindowNames.main);
-    const { proxyBypassRules, proxyPacScript, proxyRules, proxyType, language } = preferenceService.getPreferences();
-    // configure proxy for default session
-    if (proxyType === 'rules') {
-      await session.defaultSession.setProxy({
-        proxyRules,
-        proxyBypassRules,
-      });
-    } else if (proxyType === 'pacScript') {
-      await session.defaultSession.setProxy({
-        pacScript: proxyPacScript,
-        proxyBypassRules,
-      });
-    }
     // set language async
-    void i18n.changeLanguage(language);
+    void i18n.changeLanguage(preferenceService.get('language'));
 
     await workspaceViewService.initializeAllWorkspaceView();
 
