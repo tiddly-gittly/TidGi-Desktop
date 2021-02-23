@@ -2,7 +2,7 @@ import 'reflect-metadata';
 import { contextBridge, ipcRenderer } from 'electron';
 
 import './common/i18n';
-import './common/simple-context-menu';
+import { initSimpleContextMenu } from './common/simple-context-menu';
 import './common/authing-postmessage';
 import * as service from './common/services';
 import { MetaDataChannel, ViewChannel, ContextChannel } from '@/constants/channels';
@@ -11,6 +11,7 @@ import { WindowNames, WindowMeta, IPossibleWindowMeta } from '@services/windows/
 const extraMetaJSONString = process.argv.pop() as string;
 const windowName = process.argv.pop() as WindowNames;
 const extraMeta = JSON.parse(extraMetaJSONString) as WindowMeta[WindowNames];
+void initSimpleContextMenu(windowName);
 
 const browserViewMetaData = { windowName, ...extraMeta };
 contextBridge.exposeInMainWorld('meta', browserViewMetaData);
@@ -27,6 +28,13 @@ declare global {
   }
 }
 contextBridge.exposeInMainWorld('remote', {
+  getCurrentWindow: async () => {
+    const currentWindow = await service.window.get(windowName);
+    if (currentWindow === undefined) {
+      throw new Error(`currentWindow is undefined when getCurrentWindow() in preload script with windowName: ${windowName}`);
+    }
+    return currentWindow;
+  },
   closeCurrentWindow: async () => {
     await service.window.close(windowName);
   },
@@ -46,6 +54,7 @@ contextBridge.exposeInMainWorld('remote', {
 declare global {
   interface Window {
     remote: {
+      getCurrentWindow: () => Promise<Electron.BrowserWindow>;
       closeCurrentWindow: () => void;
       getBaseName: (pathString: string) => Promise<string>;
       getDirectoryName: (pathString: string) => Promise<string>;
