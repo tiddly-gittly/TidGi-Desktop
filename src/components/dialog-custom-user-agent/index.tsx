@@ -5,8 +5,6 @@ import TextField from '@material-ui/core/TextField';
 
 import connectComponent from '../../helpers/connect-component';
 
-import { updateForm, save } from '../../state/dialog-custom-user-agent/actions';
-
 const styles = (theme: any) => ({
   root: {
     background: theme.palette.background.paper,

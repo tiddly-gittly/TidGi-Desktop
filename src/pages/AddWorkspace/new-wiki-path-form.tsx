@@ -14,8 +14,6 @@ import Select from '@material-ui/core/Select';
 import MenuItem from '@material-ui/core/MenuItem';
 import FolderIcon from '@material-ui/icons/Folder';
 import Autocomplete from '@material-ui/lab/Autocomplete';
-import * as actions from '../../state/dialog-add-workspace/actions';
-
 const CreateContainer: ComponentType<{}> = styled(Paper)`
   margin-top: 5px;
 `;

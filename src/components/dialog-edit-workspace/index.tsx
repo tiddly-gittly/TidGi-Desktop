@@ -13,9 +13,7 @@ import Typography from '@material-ui/core/Typography';
 import Autocomplete from '@material-ui/lab/Autocomplete';
 import connectComponent from '../../helpers/connect-component';
 import getMailtoUrl from '../../helpers/get-mailto-url';
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '../../images/default-icon.png'... Remove this comment to see the full error message
 import defaultIcon from '../../images/default-icon.png';
-import { save, updateForm } from '../../state/dialog-edit-workspace/actions';
 import type { ISubWikiPluginContent } from '@services/wiki/update-plugin-content';
 
 const styles = (theme: any) => ({
@@ -115,9 +113,7 @@ interface OwnEditWorkspaceProps {
   transparentBackground: boolean;
   isSubWiki?: boolean;
 }
-// @ts-expect-error ts-migrate(2456) FIXME: Type alias 'EditWorkspaceProps' circularly referen... Remove this comment to see the full error message
 type EditWorkspaceProps = OwnEditWorkspaceProps & typeof EditWorkspace.defaultProps;
-// @ts-expect-error ts-migrate(7022) FIXME: 'EditWorkspace' implicitly has type 'any' because ... Remove this comment to see the full error message
 const EditWorkspace = ({
   classes,
   disableAudio,

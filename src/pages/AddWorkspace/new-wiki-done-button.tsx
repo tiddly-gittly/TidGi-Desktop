@@ -10,8 +10,6 @@ import LinearProgress from '@material-ui/core/LinearProgress';
 import Snackbar from '@material-ui/core/Snackbar';
 import Alert from '@material-ui/lab/Alert';
 
-import * as actions from '../../state/dialog-add-workspace/actions';
-
 import type { IAuthingUserInfo } from '@services/types';
 
 import useWikiCreationMessage from './use-wiki-creation-message';
