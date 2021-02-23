@@ -11,8 +11,6 @@ import connectComponent from '../../helpers/connect-component';
 
 import hunspellLanguagesMap from '../../constants/hunspell-languages';
 
-import { addLanguage, removeLanguage, save } from '../../state/dialog-spellcheck-languages/actions';
-
 const styles = (theme: any) => ({
   root: {
     display: 'flex',

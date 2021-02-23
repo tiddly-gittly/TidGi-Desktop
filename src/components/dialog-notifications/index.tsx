@@ -20,10 +20,7 @@ import connectComponent from '../../helpers/connect-component';
 
 import StatedMenu from '../github/stated-menu';
 
-import { updateShowDateTimePicker } from '../../state/notifications/actions';
-
 // https://www.sketchappsources.com/free-source/2501-iphone-app-background-sketch-freebie-resource.html
-// @ts-expect-error ts-migrate(2307) FIXME: Cannot find module '../../images/night-background.... Remove this comment to see the full error message
 import nightBackgroundPng from '../../images/night-background.png';
 
 const styles = (theme: any) => ({
@@ -72,10 +69,8 @@ interface OwnDialogPauseNotificationsProps {
   showDateTimePicker: boolean;
 }
 
-// @ts-expect-error ts-migrate(2456) FIXME: Type alias 'DialogPauseNotificationsProps' circula... Remove this comment to see the full error message
 type DialogPauseNotificationsProps = OwnDialogPauseNotificationsProps & typeof DialogPauseNotifications.defaultProps;
 
-// @ts-expect-error ts-migrate(7022) FIXME: 'DialogPauseNotifications' implicitly has type 'an... Remove this comment to see the full error message
 const DialogPauseNotifications = (props: DialogPauseNotificationsProps) => {
   const { classes, onUpdateShowDateTimePicker, pauseNotificationsInfo, showDateTimePicker } = props;
 

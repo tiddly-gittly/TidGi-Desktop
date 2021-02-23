@@ -13,7 +13,7 @@ import InputBase from '@material-ui/core/InputBase';
 import { WindowNames } from '@services/windows/WindowProperties';
 import connectComponent from '../../helpers/connect-component';
 import isUrl from '../../helpers/is-url';
-import { updateAddressBarInfo } from '../../state/general/actions';
+
 const styles = (theme: any) => ({
   root: {
     width: '100%',

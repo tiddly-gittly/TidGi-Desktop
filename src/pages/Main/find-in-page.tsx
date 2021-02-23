@@ -3,7 +3,6 @@ import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
 import connectComponent from '../../helpers/connect-component';
-import { closeFindInPage, updateFindInPageText } from '../../state/find-in-page/actions';
 
 const styles = (theme: any) => ({
   root: {
