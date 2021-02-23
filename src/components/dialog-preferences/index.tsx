@@ -323,12 +323,12 @@ export default function Preferences(): JSX.Element {
     [],
   );
 
-  const [userInfo, userInfoSetter] = useState<IAuthingUserInfo | void>(getGithubUserInfo());
+  const [userInfo, userInfoSetter] = useState<IAuthingUserInfo | undefined>(getGithubUserInfo());
   useEffect(() => {
     setGithubUserInfo(userInfo);
   }, [userInfo]);
   // try get token on start up, so Github GraphQL client can use it
-  const [accessToken, accessTokenSetter] = useState<string | void>(getGithubToken());
+  const [accessToken, accessTokenSetter] = useState<string | undefined>(getGithubToken());
   // try get token from local storage, and set to state for gql to use
   useEffect(() => {
     if (accessToken) {
@@ -371,7 +371,7 @@ export default function Preferences(): JSX.Element {
                 helperText={t('Preference.UserNameDetail')}
                 fullWidth
                 onChange={async (event) => {
-                  await window.service.preference.set('userName', event.target.value);
+                  await window.service.auth.set('userName', event.target.value);
                 }}
                 label={t('Preference.UserName')}
                 value={userName}
@@ -649,9 +649,7 @@ export default function Preferences(): JSX.Element {
                       ]}
                       min={-50}
                       max={50}
-                      onChange={(_, value) => {
-                        await window.service.preference.set('darkReaderBrightness', value + 100);
-                      }}
+                      onChange={async (_, value) => await window.service.preference.set('darkReaderBrightness', (value as number) + 100)}
                     />
                   </Grid>
                 </Grid>
@@ -681,9 +679,7 @@ export default function Preferences(): JSX.Element {
                       ]}
                       min={-50}
                       max={50}
-                      onChange={(_, value) => {
-                        await window.service.preference.set('darkReaderContrast', value + 100);
-                      }}
+                      onChange={async (_, value) => await window.service.preference.set('darkReaderContrast', (value as number) + 100)}
                     />
                   </Grid>
                 </Grid>
@@ -767,7 +763,7 @@ export default function Preferences(): JSX.Element {
                     label="from"
                     renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleFrom)}
-                    onChange={(d) => await window.service.preference.set('pauseNotificationsByScheduleFrom', d.toString())}
+                    onChange={async (d) => await window.service.preference.set('pauseNotificationsByScheduleFrom', d.toString())}
                     onClose={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: false })}
                     onOpen={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true })}
                     disabled={!pauseNotificationsBySchedule}
@@ -777,7 +773,7 @@ export default function Preferences(): JSX.Element {
                     label="to"
                     renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleTo)}
-                    onChange={(d) => await window.service.preference.set('pauseNotificationsByScheduleTo', d.toString())}
+                    onChange={async (d) => await window.service.preference.set('pauseNotificationsByScheduleTo', d.toString())}
                     onClose={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: false })}
                     onOpen={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true })}
                     disabled={!pauseNotificationsBySchedule}
