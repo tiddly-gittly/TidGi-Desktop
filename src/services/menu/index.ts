@@ -1,4 +1,5 @@
-import { Menu, MenuItemConstructorOptions, shell } from 'electron';
+import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, BrowserWindow, WebviewTag, WebContents } from 'electron';
+import contextMenu, { Actions } from 'electron-context-menu';
 import { debounce, take, drop } from 'lodash';
 import { injectable } from 'inversify';
 import { IMenuService, DeferredMenuItemConstructorOptions } from './interface';
@@ -38,6 +39,7 @@ export class MenuService implements IMenuService {
   }
 
   constructor() {
+    this.initContextMenu();
     // debounce so build menu won't be call very frequently on app launch, where every services are registering menu items
     this.buildMenu = debounce(this.buildMenu.bind(this), 50);
     // add some default app menus
@@ -107,6 +109,26 @@ export class MenuService implements IMenuService {
         ],
       },
     ];
+  }
+
+  // A much simpler version of public/libs/context-menu-builder.js
+  // A fallback basic version
+  private initContextMenu(): void {
+    contextMenu({
+      prepend: (_defaultActions: Actions, _parameters: ContextMenuParams, browserWindow: BrowserWindow | WebviewTag | WebContents) => [
+        {
+          label: 'Developer Tools',
+          click: () => {
+            if ('openDevTools' in browserWindow) browserWindow.openDevTools();
+          },
+        },
+      ],
+      showCopyImageAddress: true,
+      showSaveImage: true,
+      showSaveImageAs: true,
+      showInspectElement: true,
+      showServices: true,
+    });
   }
 
   /**

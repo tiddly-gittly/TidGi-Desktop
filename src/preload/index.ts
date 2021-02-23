@@ -2,7 +2,6 @@ import 'reflect-metadata';
 import { contextBridge, ipcRenderer } from 'electron';
 
 import './common/i18n';
-import { initSimpleContextMenu } from './common/simple-context-menu';
 import './common/authing-postmessage';
 import * as service from './common/services';
 import { MetaDataChannel, ViewChannel, ContextChannel } from '@/constants/channels';
@@ -11,7 +10,6 @@ import { WindowNames, WindowMeta, IPossibleWindowMeta } from '@services/windows/
 const extraMetaJSONString = process.argv.pop() as string;
 const windowName = process.argv.pop() as WindowNames;
 const extraMeta = JSON.parse(extraMetaJSONString) as WindowMeta[WindowNames];
-void initSimpleContextMenu(windowName);
 
 const browserViewMetaData = { windowName, ...extraMeta };
 contextBridge.exposeInMainWorld('meta', browserViewMetaData);
