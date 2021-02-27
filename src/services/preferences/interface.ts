@@ -37,6 +37,25 @@ export interface IPreferences {
   useHardwareAcceleration: boolean;
 }
 
+export enum PreferenceSections {
+  wiki = 'wiki',
+  sync = 'sync',
+  general = 'general',
+  extensions = 'extensions',
+  notifications = 'notifications',
+  languages = 'languages',
+  downloads = 'downloads',
+  network = 'network',
+  privacy = 'privacy',
+  system = 'system',
+  developers = 'developers',
+  advanced = 'advanced',
+  updates = 'updates',
+  reset = 'reset',
+  webCatalogApps = 'webCatalogApps',
+  misc = 'misc',
+}
+
 /**
  * Getter and setter for app business logic preferences.
  */

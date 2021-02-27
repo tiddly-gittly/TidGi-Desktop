@@ -1,5 +1,6 @@
 /* eslint-disable consistent-return */
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import styled from 'styled-components';
 import semver from 'semver';
 import fromUnixTime from 'date-fns/fromUnixTime';
 import setYear from 'date-fns/setYear';
@@ -16,35 +17,17 @@ import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
 import ListItemText from '@material-ui/core/ListItemText';
 import MenuItem from '@material-ui/core/MenuItem';
-import Paper from '@material-ui/core/Paper';
+import PaperRaw from '@material-ui/core/Paper';
 import Slider from '@material-ui/core/Slider';
 import Switch from '@material-ui/core/Switch';
 import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
 
-import BuildIcon from '@material-ui/icons/Build';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
-import CodeIcon from '@material-ui/icons/Code';
-import ExtensionIcon from '@material-ui/icons/Extension';
-import LanguageIcon from '@material-ui/icons/Language';
-import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
-import NotificationsIcon from '@material-ui/icons/Notifications';
-import PowerIcon from '@material-ui/icons/Power';
-import RotateLeftIcon from '@material-ui/icons/RotateLeft';
-import RouterIcon from '@material-ui/icons/Router';
-import SecurityIcon from '@material-ui/icons/Security';
-import StorefrontIcon from '@material-ui/icons/Storefront';
-import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
-import WidgetsIcon from '@material-ui/icons/Widgets';
-import GitHubIcon from '@material-ui/icons/GitHub';
-import MenuBookIcon from '@material-ui/icons/MenuBook';
 
 import { TimePicker } from '@material-ui/pickers';
 
-import { getGithubUserInfo, setGithubUserInfo } from '@services/types';
-
-import StatedMenu from '../github/stated-menu';
+import StatedMenu from '../../components/github/stated-menu';
 
 import hunspellLanguagesMap from '../../constants/hunspell-languages';
 
@@ -53,93 +36,91 @@ import translatiumLogo from '../../images/translatium-logo.svg';
 
 import ListItemDefaultMailClient from './list-item-default-mail-client';
 import ListItemDefaultBrowser from './list-item-default-browser';
-import { GithubTokenForm, getGithubToken, setGithubToken } from '../github/git-token-form';
+import { GithubTokenForm, getGithubToken, setGithubToken } from '../../components/github/git-token-form';
 import type { IAuthingUserInfo } from '@services/types';
-import { WindowNames } from '@services/windows/WindowProperties';
+import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { PreferenceSections } from '@services/preferences/interface';
+import { usePreferenceSections } from './useSections';
 
-const styles = (theme: any) => ({
-  root: {
-    padding: theme.spacing(2),
-    background: theme.palette.background.default,
-  },
+const Root = styled.div`
+  padding: theme.spacing(2);
+  background: theme.palette.background.default;
+`;
 
-  sectionTitle: {
-    paddingLeft: theme.spacing(2),
-  },
+const SectionTitle = styled(Typography)`
+  padding-left: theme.spacing(2);
+`;
+SectionTitle.defaultProps = {
+  variant: 'subtitle2',
+};
 
-  paper: {
-    marginTop: theme.spacing(0.5),
-    marginBottom: theme.spacing(3),
-    border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)',
-  },
+const Paper = styled(PaperRaw)`
+  margin-top: theme.spacing(0.5);
+  margin-bottom: theme.spacing(3);
+  /* border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)'; */
+`;
 
-  tokenContainer: {
-    marginTop: theme.spacing(1),
-    marginBottom: theme.spacing(1),
-    display: 'flex',
-    justifyContent: 'space-around',
-    flexDirection: 'column',
-    width: 200,
-    minWidth: 200,
-  },
+const TokenContainer = styled.div`
+  margin-top: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-around;
+  flex-direction: column;
+  width: 200;
+  min-width: 200;
+`;
 
-  timePickerContainer: {
-    marginTop: theme.spacing(1),
-    marginBottom: theme.spacing(1),
-    display: 'flex',
-    justifyContent: 'space-around',
-    width: 200,
-    minWidth: 200,
-  },
+const TimePickerContainer = styled.div`
+  margin-top: 10px;
+  margin-bottom: 10px;
+  display: flex;
+  justify-content: space-around;
+  width: 200;
+  min-width: 200;
+`;
+const SideBar = styled.div`
+  position: fixed;
+  width: 200;
+  color: #666;
+`;
 
-  secondaryEllipsis: {
-    textOverflow: 'ellipsis',
-    overflow: 'hidden',
-    whiteSpace: 'nowrap',
-  },
+const Inner = styled.div`
+  width: 100%;
+  max-width: 550;
+  float: right;
+`;
 
-  sidebar: {
-    position: 'fixed',
-    width: 200,
-    color: theme.palette.text.primary,
-  },
+const Logo = styled.img`
+  height: 28;
+`;
 
-  inner: {
-    width: '100%',
-    maxWidth: 550,
-    float: 'right',
-  },
+const Link = styled.div`
+  cursor: pointer;
+  font-weight: 500;
+  outline: none;
+  &:hover {
+    text-decoration: underline;
+  }
+  &:focus {
+    text-decoration: underline;
+  }
+`;
 
-  logo: {
-    height: 28,
-  },
+const SliderContainer = styled(ListItemText)`
+  padding-left: 50px;
+  padding-right: 50px;
+`;
 
-  link: {
-    cursor: 'pointer',
-    fontWeight: 500,
-    outline: 'none',
-    '&:hover': {
-      textDecoration: 'underline',
-    },
-    '&:focus': {
-      textDecoration: 'underline',
-    },
-  },
+// TODO: handle classes={{ item: classes.sliderTitleContainer }}
+const SliderTitleContainer = styled(Grid)`
+  padding-top: 15px !important;
+  width: 100;
+`;
 
-  sliderContainer: {
-    paddingLeft: theme.spacing(5),
-    paddingRight: theme.spacing(5),
-  },
-
-  sliderTitleContainer: {
-    paddingTop: `${theme.spacing(1.5)}px !important`,
-    width: 100,
-  },
-
-  sliderMarkLabel: {
-    fontSize: '0.75rem',
-  },
-});
+// TODO: handle classes={{ markLabel: classes.sliderMarkLabel }}
+const SliderMarkLabel = styled.div`
+  font-size: 0.75rem;
+`;
 
 const getThemeString = (theme: any) => {
   if (theme === 'light') return 'Light';
@@ -148,7 +129,6 @@ const getThemeString = (theme: any) => {
 };
 
 const getOpenAtLoginString = (openAtLogin: any) => {
-  // eslint-disable-next-line sonarjs/no-duplicate-string
   if (openAtLogin === 'yes-hidden') return 'Yes, but minimized';
   if (openAtLogin === 'yes') return 'Yes';
   return 'No';
@@ -167,7 +147,6 @@ const formatBytes = (bytes: any, decimals = 2) => {
 };
 
 const getUpdaterDesc = (status: any, info: any) => {
-  // eslint-disable-next-line sonarjs/no-duplicate-string
   if (status === 'download-progress') {
     if (info !== null) {
       const { transferred, total, bytesPerSecond } = info;
@@ -227,94 +206,12 @@ interface PreferencesProps {
 
 export default function Preferences(): JSX.Element {
   const { t } = useTranslation();
-
-  const sections = {
-    wiki: {
-      text: 'Wiki',
-      Icon: MenuBookIcon,
-      ref: useRef(),
-    },
-    sync: {
-      text: t('Preference.Sync'),
-      Icon: GitHubIcon,
-      ref: useRef(),
-    },
-    general: {
-      text: t('Preference.General'),
-      Icon: WidgetsIcon,
-      ref: useRef(),
-    },
-    extensions: {
-      text: 'Extensions',
-      Icon: ExtensionIcon,
-      ref: useRef(),
-    },
-    notifications: {
-      text: 'Notifications',
-      Icon: NotificationsIcon,
-      ref: useRef(),
-    },
-    languages: {
-      text: 'Languages',
-      Icon: LanguageIcon,
-      ref: useRef(),
-    },
-    downloads: {
-      text: 'Downloads',
-      Icon: CloudDownloadIcon,
-      ref: useRef(),
-    },
-    network: {
-      text: 'Network',
-      Icon: RouterIcon,
-      ref: useRef(),
-    },
-    privacy: {
-      text: 'Privacy & Security',
-      Icon: SecurityIcon,
-      ref: useRef(),
-    },
-    system: {
-      text: 'System',
-      Icon: BuildIcon,
-      ref: useRef(),
-    },
-    developers: {
-      text: 'Developers',
-      Icon: CodeIcon,
-      ref: useRef(),
-    },
-    advanced: {
-      text: t('Preference.Advanced'),
-      Icon: PowerIcon,
-      ref: useRef(),
-    },
-    updates: {
-      text: 'Updates',
-      Icon: SystemUpdateAltIcon,
-      ref: useRef(),
-    },
-    reset: {
-      text: 'Reset',
-      Icon: RotateLeftIcon,
-      ref: useRef(),
-    },
-    webCatalogApps: {
-      text: 'Webcatalog Apps',
-      Icon: StorefrontIcon,
-      ref: useRef(),
-    },
-    miscs: {
-      text: 'Miscellaneous',
-      Icon: MoreHorizIcon,
-      ref: useRef(),
-    },
-  };
+  const sections = usePreferenceSections();
 
   useEffect(() => {
-    const scrollTo = window.remote.getGlobal('preferencesScrollTo');
-    if (!scrollTo) return;
-    sections[scrollTo].ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    const scrollTo = (window.meta as IPossibleWindowMeta<WindowMeta[WindowNames.preferences]>).gotoTab;
+    if (scrollTo === undefined) return;
+    sections[scrollTo].ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   });
 
   const debouncedRequestShowRequireRestartDialog = useCallback(
@@ -322,32 +219,17 @@ export default function Preferences(): JSX.Element {
     [],
   );
 
-  const [userInfo, userInfoSetter] = useState<IAuthingUserInfo | undefined>(getGithubUserInfo());
-  useEffect(() => {
-    setGithubUserInfo(userInfo);
-  }, [userInfo]);
-  // try get token on start up, so Github GraphQL client can use it
-  const [accessToken, accessTokenSetter] = useState<string | undefined>(getGithubToken());
-  // try get token from local storage, and set to state for gql to use
-  useEffect(() => {
-    if (accessToken) {
-      setGithubToken(accessToken);
-    } else {
-      setGithubToken();
-    }
-  }, [accessToken]);
-
   return (
-    <div className={classes.root}>
-      <div className={classes.sidebar}>
+    <Root>
+      <SideBar>
         <List dense>
-          {Object.keys(sections).map((sectionKey, index) => {
+          {Object.keys(sections).map((sectionKey: PreferenceSections, index) => {
             const { Icon, text, ref, hidden } = sections[sectionKey];
-            if (hidden) return;
+            if (hidden === true) return null;
             return (
               <React.Fragment key={sectionKey}>
                 {index > 0 && <Divider />}
-                <ListItem button onClick={() => ref.current.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                <ListItem button onClick={() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
                   <ListItemIcon>
                     <Icon />
                   </ListItemIcon>
@@ -357,13 +239,11 @@ export default function Preferences(): JSX.Element {
             );
           })}
         </List>
-      </div>
+      </SideBar>
 
-      <div className={classes.inner}>
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.wiki.ref}>
-          TiddlyWiki
-        </Typography>
-        <Paper elevation={0} className={classes.paper}>
+      <Inner>
+        <SectionTitle ref={sections.wiki.ref}>TiddlyWiki</SectionTitle>
+        <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem>
               <TextField
@@ -379,10 +259,8 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.sync.ref}>
-          {t('Preference.Sync')}
-        </Typography>
-        <Paper elevation={0} className={classes.paper}>
+        <SectionTitle ref={sections.sync.ref}>{t('Preference.Sync')}</SectionTitle>
+        <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem>
               <ListItemText primary={t('Preference.Token')} secondary={t('Preference.TokenDescription')} />
@@ -392,7 +270,7 @@ export default function Preferences(): JSX.Element {
             </ListItem>
             <ListItem>
               <ListItemText primary={t('Preference.SyncInterval')} secondary={t('Preference.SyncIntervalDescription')} />
-              <div className={classes.timePickerContainer}>
+              <TimePickerContainer>
                 <TimePicker
                   autoOk={false}
                   ampm={false}
@@ -411,15 +289,13 @@ export default function Preferences(): JSX.Element {
                   onClose={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: false })}
                   onOpen={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true })}
                 />
-              </div>
+              </TimePickerContainer>
             </ListItem>
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.general.ref}>
-          {t('Preference.General')}
-        </Typography>
-        <Paper elevation={0} className={classes.paper}>
+        <SectionTitle ref={sections.general.ref}>{t('Preference.General')}</SectionTitle>
+        <Paper elevation={0}>
           <List dense disablePadding>
             <StatedMenu
               id="theme"
@@ -546,10 +422,8 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.extensions.ref}>
-          Extensions
-        </Typography>
-        <Paper elevation={0} className={classes.paper}>
+        <SectionTitle ref={sections.extensions.ref}>Extensions</SectionTitle>
+        <Paper elevation={0}>
           <List disablePadding dense>
             <ListItem>
               <ListItemText
@@ -621,16 +495,15 @@ export default function Preferences(): JSX.Element {
               </ListItemSecondaryAction>
             </ListItem>
             <ListItem>
-              <ListItemText className={classes.sliderContainer}>
+              <SliderContainer>
                 <Grid container spacing={2}>
-                  <Grid classes={{ item: classes.sliderTitleContainer }} item>
+                  <SliderTitleContainer item>
                     <Typography id="brightness-slider" variant="body2" gutterBottom={false}>
                       Brightness
                     </Typography>
-                  </Grid>
+                  </SliderTitleContainer>
                   <Grid item xs>
-                    <Slider
-                      classes={{ markLabel: classes.sliderMarkLabel }}
+                    <SliderMarkLabel
                       value={darkReaderBrightness - 100}
                       disabled={themeSource === 'light' || !darkReader}
                       aria-labelledby="brightness-slider"
@@ -653,14 +526,13 @@ export default function Preferences(): JSX.Element {
                   </Grid>
                 </Grid>
                 <Grid container spacing={2}>
-                  <Grid classes={{ item: classes.sliderTitleContainer }} item>
+                  <SliderTitleContainer item>
                     <Typography id="contrast-slider" variant="body2" gutterBottom={false}>
                       Contrast
                     </Typography>
-                  </Grid>
+                  </SliderTitleContainer>
                   <Grid item xs>
-                    <Slider
-                      classes={{ markLabel: classes.sliderMarkLabel }}
+                    <SliderMarkLabel
                       value={darkReaderContrast - 100}
                       disabled={themeSource === 'light' || !darkReader}
                       aria-labelledby="contrast-slider"
@@ -683,14 +555,13 @@ export default function Preferences(): JSX.Element {
                   </Grid>
                 </Grid>
                 <Grid container spacing={2}>
-                  <Grid classes={{ item: classes.sliderTitleContainer }} item>
+                  <SliderTitleContainer item>
                     <Typography id="sepia-slider" variant="body2" gutterBottom={false}>
                       Sepia
                     </Typography>
-                  </Grid>
+                  </SliderTitleContainer>
                   <Grid item xs>
-                    <Slider
-                      classes={{ markLabel: classes.sliderMarkLabel }}
+                    <SliderMarkLabel
                       value={darkReaderSepia}
                       disabled={themeSource === 'light' || !darkReader}
                       aria-labelledby="sepia-slider"
@@ -711,14 +582,13 @@ export default function Preferences(): JSX.Element {
                   </Grid>
                 </Grid>
                 <Grid container spacing={2}>
-                  <Grid classes={{ item: classes.sliderTitleContainer }} item>
+                  <SliderTitleContainer item>
                     <Typography id="grayscale-slider" variant="body2" gutterBottom={false}>
                       Grayscale
                     </Typography>
-                  </Grid>
+                  </SliderTitleContainer>
                   <Grid item xs>
-                    <Slider
-                      classes={{ markLabel: classes.sliderMarkLabel }}
+                    <SliderMarkLabel
                       value={darkReaderGrayscale}
                       disabled={themeSource === 'light' || !darkReader}
                       aria-labelledby="grayscale-slider"
@@ -738,15 +608,13 @@ export default function Preferences(): JSX.Element {
                     />
                   </Grid>
                 </Grid>
-              </ListItemText>
+              </SliderContainer>
             </ListItem>
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.notifications.ref}>
-          Notifications
-        </Typography>
-        <Paper elevation={0} className={classes.paper}>
+        <SectionTitle ref={sections.notifications.ref}>Notifications</SectionTitle>
+        <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem button onClick={async () => await window.service.window.open(WindowNames.notifications)}>
               <ListItemText primary="Control notifications" />
@@ -756,9 +624,8 @@ export default function Preferences(): JSX.Element {
             <ListItem>
               <ListItemText>
                 Automatically disable notifications by schedule:
-                <div className={classes.timePickerContainer}>
+                <TimePickerContainer>
                   <TimePicker
-                    autoOk={false}
                     label="from"
                     renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleFrom)}
@@ -777,7 +644,7 @@ export default function Preferences(): JSX.Element {
                     onOpen={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true })}
                     disabled={!pauseNotificationsBySchedule}
                   />
-                </div>
+                </TimePickerContainer>
                 ({window.Intl.DateTimeFormat().resolvedOptions().timeZone})
               </ListItemText>
               <ListItemSecondaryAction>
@@ -879,10 +746,8 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.languages.ref}>
-          Languages
-        </Typography>
-        <Paper elevation={0} className={classes.paper}>
+        <SectionTitle ref={sections.languages.ref}>Languages</SectionTitle>
+        <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem>
               <ListItemText primary="Spell check" />
@@ -913,10 +778,8 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.downloads.ref}>
-          Downloads
-        </Typography>
-        <Paper elevation={0} className={classes.paper}>
+        <SectionTitle ref={sections.downloads.ref}>Downloads</SectionTitle>
+        <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem
               button
@@ -926,7 +789,6 @@ export default function Preferences(): JSX.Element {
                     properties: ['openDirectory'],
                   })
                   .then(async (result: any) => {
-                    // eslint-disable-next-line promise/always-return
                     if (!result.canceled && result.filePaths) {
                       await window.service.preference.set('downloadPath', result.filePaths[0]);
                     }
@@ -959,10 +821,8 @@ export default function Preferences(): JSX.Element {
           Network
         </Typography>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.privacy.ref}>
-          Privacy &amp; Security
-        </Typography>
-        <Paper elevation={0} className={classes.paper}>
+        <SectionTitle ref={sections.privacy.ref}>Privacy &amp; Security</SectionTitle>
+        <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem>
               <ListItemText primary="Block ads &amp; trackers" />
@@ -1058,10 +918,8 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.system.ref}>
-          System
-        </Typography>
-        <Paper elevation={0} className={classes.paper}>
+        <SectionTitle ref={sections.system.ref}>System</SectionTitle>
+        <Paper elevation={0}>
           <List dense disablePadding>
             <ListItemDefaultBrowser />
             <Divider />
@@ -1088,14 +946,10 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.developers.ref}>
-          Developers
-        </Typography>
+        <SectionTitle ref={sections.developers.ref}>Developers</SectionTitle>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.advanced.ref}>
-          Advanced
-        </Typography>
-        <Paper elevation={0} className={classes.paper}>
+        <SectionTitle ref={sections.advanced.ref}>Advanced</SectionTitle>
+        <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem button onClick={async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}>
               <ListItemText primary={t('Preference.OpenLogFolder')} secondary={t('Preference.OpenLogFolderDetail')} />
@@ -1170,10 +1024,8 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.updates.ref}>
-          Updates
-        </Typography>
-        <Paper elevation={0} className={classes.paper}>
+        <SectionTitle ref={sections.updates.ref}>Updates</SectionTitle>
+        <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem
               button
@@ -1208,10 +1060,8 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.reset.ref}>
-          Reset
-        </Typography>
-        <Paper elevation={0} className={classes.paper}>
+        <SectionTitle ref={sections.reset.ref}>Reset</SectionTitle>
+        <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem button onClick={window.service.preference.resetWithConfirm}>
               <ListItemText primary="Restore preferences to their original defaults" />
@@ -1223,7 +1073,7 @@ export default function Preferences(): JSX.Element {
         <Typography variant="subtitle2" color="textPrimary" className={classes.sectionTitle} ref={sections.webCatalogApps.ref}>
           WebCatalog Apps
         </Typography>
-        <Paper elevation={0} className={classes.paper}>
+        <Paper elevation={0}>
           <List disablePadding dense>
             <ListItem button onClick={async () => await window.service.native.open('https://github.com/webcatalog/webcatalog-engine')}>
               <ListItemText secondary="WebCatalog is the initial code founder of TiddlyGit, we reuse lots of important code from the open-source WebCatalog, many thanks to WebCatalog and its author Quang Lam" />
@@ -1232,23 +1082,21 @@ export default function Preferences(): JSX.Element {
             <Divider />
             <ListItem button onClick={async () => await window.service.native.open('https://webcatalogapp.com?utm_source=tiddlygit_app')}>
               <ListItemText
-                primary={<img src={webcatalogLogo} alt="WebCatalog" className={classes.logo} />}
+                primary={<Logo src={webcatalogLogo} alt="WebCatalog" />}
                 secondary="Magically turn any websites into Mac apps. Work more productively and forget about switching tabs. "
               />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
             <ListItem button onClick={async () => await window.service.native.open('https://translatiumapp.com?utm_source=tiddlygit_app')}>
-              <ListItemText primary={<img src={translatiumLogo} alt="Translatium" className={classes.logo} />} secondary="Translate Any Languages like a Pro" />
+              <ListItemText primary={<Logo src={translatiumLogo} alt="Translatium" />} secondary="Translate Any Languages like a Pro" />
               <ChevronRightIcon color="action" />
             </ListItem>
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" className={classes.sectionTitle} ref={sections.miscs.ref}>
-          Miscellaneous
-        </Typography>
-        <Paper elevation={0} className={classes.paper}>
+        <SectionTitle ref={sections.miscs.ref}>Miscellaneous</SectionTitle>
+        <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem button onClick={async () => await window.service.window.open(WindowNames.about)}>
               <ListItemText primary="About" />
@@ -1271,7 +1119,7 @@ export default function Preferences(): JSX.Element {
             </ListItem>
           </List>
         </Paper>
-      </div>
-    </div>
+      </Inner>
+    </Root>
   );
 }

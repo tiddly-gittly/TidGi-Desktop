@@ -1,3 +1,5 @@
+import { PreferenceSections } from '@services/preferences/interface';
+
 export enum WindowNames {
   newWindow = 'newWindow',
   main = 'main',
@@ -58,7 +60,7 @@ export const windowDimension: Record<WindowNames, { width?: number; height?: num
 };
 
 export interface IPreferenceWindowMeta {
-  gotoTab?: string;
+  gotoTab?: PreferenceSections;
   preventClosingWindow?: boolean;
 }
 
@@ -66,14 +68,21 @@ export interface IPreferenceWindowMeta {
  * metadata that send to window when create them.
  * Please make all property partial (?:), so wo can always assign {} as default metadata without type warning
  */
-export interface WindowMeta extends Record<WindowNames, Record<string, unknown> | undefined> {
+export interface WindowMeta {
   [WindowNames.editWorkspace]: { workspaceID?: string };
   [WindowNames.main]: { forceClose?: boolean };
   [WindowNames.preferences]: IPreferenceWindowMeta;
+  [WindowNames.about]: undefined;
+  [WindowNames.auth]: undefined;
+  [WindowNames.view]: undefined;
+  [WindowNames.newWindow]: undefined;
+  [WindowNames.addWorkspace]: undefined;
+  [WindowNames.notifications]: undefined;
+  [WindowNames.spellcheck]: undefined;
 }
-export type IPossibleWindowMeta = {
+export type IPossibleWindowMeta<M extends WindowMeta[WindowNames] = WindowMeta[WindowNames.main]> = {
   windowName: WindowNames;
-} & WindowMeta[WindowNames];
+} & M;
 
 /**
  * Similar to WindowMeta, but is for BrowserView (workspace web content) and popup window from the BrowserView
