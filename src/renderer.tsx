@@ -3,6 +3,7 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import i18n from 'i18next';
+import LogRocket from 'logrocket';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
 import { I18nextProvider } from 'react-i18next';
@@ -47,6 +48,8 @@ const App = (): JSX.Element => {
 };
 
 async function runApp(): Promise<void> {
+  LogRocket.init('kkauk7/tiddlygit-desktop');
+
   void window.service.window.setVisualZoomLevelLimits(1, 1);
   if (window.meta.windowName === WindowNames.editWorkspace) {
     const { workspaceID } = window.meta as WindowMeta[WindowNames.editWorkspace];

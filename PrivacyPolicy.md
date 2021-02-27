@@ -6,5 +6,6 @@ Still, the app does use third party services that may collect information used t
 
 - G Suite for email and business tools.
 - GitHub for distributing the software.
+- [logrocket](https://app.logrocket.com/kkauk7/tiddlygit-desktop/) to collect debug info and find bugs
 
-This privacy policy is subject to change without notice and was last updated on 2020-07-20. If you have any questions feel free to create a GitHub issue.
+This privacy policy is subject to change without notice and was last updated on 2021-02-27. If you have any questions feel free to create a GitHub issue.
