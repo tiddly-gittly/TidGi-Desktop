@@ -225,6 +225,7 @@ export default function Preferences(): JSX.Element {
     unreadCountBadge,
     useHardwareAcceleration,
   } = preference;
+  const platform = usePromiseValue(async () => (await window.service.context.get('platform')) as string);
 
   return (
     <Root>
@@ -361,8 +362,8 @@ export default function Preferences(): JSX.Element {
                   // must show sidebar or navigation bar on Linux
                   // if not, as user can't right-click on menu bar icon
                   // they can't access preferences or notifications
-                  checked={(window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar) || navigationBar}
-                  disabled={window.remote.getPlatform() === 'linux' && attachToMenubar && !sidebar}
+                  checked={(platform === 'linux' && attachToMenubar && !sidebar) || navigationBar}
+                  disabled={platform === 'linux' && attachToMenubar && !sidebar}
                   onChange={async (event) => {
                     await window.service.preference.set('navigationBar', event.target.checked);
                     await window.service.workspaceView.realignActiveWorkspace();
@@ -370,7 +371,7 @@ export default function Preferences(): JSX.Element {
                 />
               </ListItemSecondaryAction>
             </ListItem>
-            {window.remote.getPlatform() === 'darwin' && (
+            {platform === 'darwin' && (
               <>
                 <Divider />
                 <ListItem>
@@ -389,7 +390,7 @@ export default function Preferences(): JSX.Element {
                 </ListItem>
               </>
             )}
-            {window.remote.getPlatform() !== 'darwin' && (
+            {platform !== 'darwin' && (
               <>
                 <Divider />
                 <ListItem>
@@ -411,8 +412,8 @@ export default function Preferences(): JSX.Element {
             <Divider />
             <ListItem>
               <ListItemText
-                primary={window.remote.getPlatform() === 'win32' ? t('Preference.AttachToTaskbar') : t('Preference.AttachToMenuBar')}
-                secondary={window.remote.getPlatform() !== 'linux' ? t('Preference.AttachToMenuBarTip') : undefined}
+                primary={platform === 'win32' ? t('Preference.AttachToTaskbar') : t('Preference.AttachToMenuBar')}
+                secondary={platform !== 'linux' ? t('Preference.AttachToMenuBarTip') : undefined}
               />
               <ListItemSecondaryAction>
                 <Switch
@@ -707,7 +708,7 @@ export default function Preferences(): JSX.Element {
                 primary="Test notifications"
                 secondary={(() => {
                   // only show this message on macOS Catalina 10.15 & above
-                  if (window.remote.getPlatform() === 'darwin' && semver.gte(window.remote.getOSVersion(), '10.15.0')) {
+                  if (platform === 'darwin' && semver.gte(window.remote.getOSVersion(), '10.15.0')) {
                     return (
                       <>
                         <span>If notifications don&apos;t show up,</span>
@@ -770,7 +771,7 @@ export default function Preferences(): JSX.Element {
                 />
               </ListItemSecondaryAction>
             </ListItem>
-            {window.remote.getPlatform() !== 'darwin' && (
+            {platform !== 'darwin' && (
               <>
                 <Divider />
                 <ListItem button onClick={async () => await window.service.window.open(WindowNames.spellcheck)}>
@@ -791,13 +792,11 @@ export default function Preferences(): JSX.Element {
             <ListItem
               button
               onClick={() => {
-                window.remote.dialog
-                  .showOpenDialog({
-                    properties: ['openDirectory'],
-                  })
-                  .then(async (result: any) => {
-                    if (!result.canceled && result.filePaths) {
-                      await window.service.preference.set('downloadPath', result.filePaths[0]);
+                window.service.native
+                  .pickDirectory()
+                  .then(async (filePaths) => {
+                    if (filePaths.length > 0) {
+                      await window.service.preference.set('downloadPath', filePaths[0]);
                     }
                   })
                   .catch((error: any) => {
@@ -824,9 +823,9 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" color="textPrimary" className={classes.sectionTitle} ref={sections.network.ref}>
+        <SectionTitle color="textPrimary" ref={sections.network.ref}>
           Network
-        </Typography>
+        </SectionTitle>
 
         <SectionTitle ref={sections.privacy.ref}>Privacy &amp; Security</SectionTitle>
         <Paper elevation={0}>
@@ -882,10 +881,9 @@ export default function Preferences(): JSX.Element {
                 secondary={
                   <>
                     <span>Not recommended. </span>
-                    <span
+                    <Link
                       role="link"
                       tabIndex={0}
-                      className={classes.link}
                       onClick={async () =>
                         await window.service.native.open('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ')
                       }
@@ -894,7 +892,7 @@ export default function Preferences(): JSX.Element {
                         void window.service.native.open('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ');
                       }}>
                       Learn more
-                    </span>
+                    </Link>
                     .
                   </>
                 }
@@ -912,7 +910,7 @@ export default function Preferences(): JSX.Element {
               </ListItemSecondaryAction>
             </ListItem>
             <Divider />
-            <ListItem button onClick={window.service.preference.clearBrowsingDataWithConfirm}>
+            <ListItem button onClick={window.service.workspaceView.clearBrowsingDataWithConfirm}>
               <ListItemText primary="Clear browsing data" secondary="Clear cookies, cache, and more" />
               <ChevronRightIcon color="action" />
             </ListItem>
@@ -979,7 +977,7 @@ export default function Preferences(): JSX.Element {
                 />
               </ListItemSecondaryAction>
             </ListItem>
-            {window.remote.getPlatform() === 'darwin' && (
+            {platform === 'darwin' && (
               <>
                 <Divider />
                 <ListItem>
