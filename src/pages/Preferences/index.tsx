@@ -1,5 +1,6 @@
 /* eslint-disable consistent-return */
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { useObservable } from 'beautiful-react-hooks';
 import styled from 'styled-components';
 import semver from 'semver';
 import fromUnixTime from 'date-fns/fromUnixTime';
@@ -39,12 +40,12 @@ import ListItemDefaultBrowser from './list-item-default-browser';
 import { GithubTokenForm, getGithubToken, setGithubToken } from '../../components/github/git-token-form';
 import type { IAuthingUserInfo } from '@services/types';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
-import { PreferenceSections } from '@services/preferences/interface';
+import { IPreferences, PreferenceSections } from '@services/preferences/interface';
 import { usePreferenceSections } from './useSections';
 
 const Root = styled.div`
   padding: theme.spacing(2);
-  background: theme.palette.background.default;
+  /* background: theme.palette.background.default; */
 `;
 
 const SectionTitle = styled(Typography)`
@@ -166,42 +167,10 @@ const getUpdaterDesc = (status: any, info: any) => {
   }
 };
 
-interface PreferencesProps {
-  allowPrerelease: boolean;
-  askForDownloadPath: boolean;
-  attachToMenubar: boolean;
-  blockAds: boolean;
-  classes: any;
-  darkReader: boolean;
-  darkReaderBrightness: number;
-  darkReaderContrast: number;
-  darkReaderGrayscale: number;
-  darkReaderSepia: number;
-  downloadPath: string;
-  hibernateUnusedWorkspacesAtLaunch: boolean;
-  hideMenuBar: boolean;
-  ignoreCertificateErrors: boolean;
-  navigationBar: boolean;
-  openAtLogin: 'yes' | 'yes-hidden' | 'no';
-  pauseNotificationsBySchedule: boolean;
-  pauseNotificationsByScheduleFrom: string;
-  pauseNotificationsByScheduleTo: string;
-  pauseNotificationsMuteAudio: boolean;
-  rememberLastPageVisited: boolean;
-  shareWorkspaceBrowsingData: boolean;
-  sidebar: boolean;
-  sidebarShortcutHints: boolean;
-  spellcheck: boolean;
-  spellcheckLanguages: string[];
-  swipeToNavigate: boolean;
-  syncDebounceInterval: number;
-  themeSource: string;
-  titleBar: boolean;
-  unreadCountBadge: boolean;
-  updaterInfo?: any;
-  updaterStatus?: string;
-  userName?: string;
-  useHardwareAcceleration: boolean;
+function usePreferenceObservable(): IPreferences | undefined {
+  const [preference, preferenceSetter] = useState<IPreferences | undefined>();
+  useObservable<IPreferences | undefined>(window.service.preference.preference$, preferenceSetter);
+  return preference;
 }
 
 export default function Preferences(): JSX.Element {
@@ -219,13 +188,51 @@ export default function Preferences(): JSX.Element {
     [],
   );
 
+  const preference = usePreferenceObservable();
+  if (preference === undefined) {
+    return <Root>Loading...</Root>;
+  }
+
+  const {
+    allowPrerelease,
+    askForDownloadPath,
+    attachToMenubar,
+    blockAds,
+    darkReader,
+    darkReaderBrightness,
+    darkReaderContrast,
+    darkReaderGrayscale,
+    darkReaderSepia,
+    downloadPath,
+    hibernateUnusedWorkspacesAtLaunch,
+    hideMenuBar,
+    ignoreCertificateErrors,
+    navigationBar,
+    pauseNotificationsBySchedule,
+    pauseNotificationsByScheduleFrom,
+    pauseNotificationsByScheduleTo,
+    pauseNotificationsMuteAudio,
+    rememberLastPageVisited,
+    shareWorkspaceBrowsingData,
+    sidebar,
+    sidebarShortcutHints,
+    spellcheck,
+    spellcheckLanguages,
+    swipeToNavigate,
+    syncDebounceInterval,
+    themeSource,
+    titleBar,
+    unreadCountBadge,
+    useHardwareAcceleration,
+  } = preference;
+
   return (
     <Root>
       <SideBar>
         <List dense>
           {Object.keys(sections).map((sectionKey: PreferenceSections, index) => {
             const { Icon, text, ref, hidden } = sections[sectionKey];
-            if (hidden === true) return null;
+            if (hidden === true) return;
             return (
               <React.Fragment key={sectionKey}>
                 {index > 0 && <Divider />}
@@ -264,9 +271,9 @@ export default function Preferences(): JSX.Element {
           <List dense disablePadding>
             <ListItem>
               <ListItemText primary={t('Preference.Token')} secondary={t('Preference.TokenDescription')} />
-              <div className={classes.tokenContainer}>
+              <TokenContainer>
                 <GithubTokenForm accessTokenSetter={accessTokenSetter} userInfoSetter={userInfoSetter} accessToken={accessToken} />
-              </div>
+              </TokenContainer>
             </ListItem>
             <ListItem>
               <ListItemText primary={t('Preference.SyncInterval')} secondary={t('Preference.SyncIntervalDescription')} />

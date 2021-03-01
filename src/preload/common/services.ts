@@ -4,6 +4,7 @@
  * This file should be required by BrowserView's preload script to work
  */
 import { Asyncify, ConditionalKeys } from 'type-fest';
+import { Observable } from 'rxjs';
 
 import { createProxy } from '@/helpers/electron-ipc-proxy/client';
 
@@ -24,13 +25,20 @@ import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows/in
 import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
+type ProxyAsyncProperties<OriginalProxy> = ConditionalKeys<OriginalProxy, Function>;
 /**
  * To call services that is located in main process, from the renderer process, we use IPC.invoke, so all method should now promisify
  * Note this type only promisify methods that return things, not methods that returns observable.
  */
-type AsyncifyProxy<OriginalProxy, K extends ConditionalKeys<OriginalProxy, Function> = ConditionalKeys<OriginalProxy, Function>> = {
+type AsyncifyProxy<OriginalProxy, K extends ProxyAsyncProperties<OriginalProxy> = ProxyAsyncProperties<OriginalProxy>> = {
   [P in K]: Asyncify<OriginalProxy[P]>;
 };
+
+type ProxyNormalProperties<OriginalProxy> = ConditionalKeys<OriginalProxy, Observable<unknown>>;
+type NormalPartOfProxy<OriginalProxy, K extends ProxyNormalProperties<OriginalProxy> = ProxyNormalProperties<OriginalProxy>> = {
+  [P in K]: OriginalProxy[P];
+};
+type IPCProxy<OriginalProxy> = AsyncifyProxy<OriginalProxy> & NormalPartOfProxy<OriginalProxy>;
 
 export const auth = createProxy<AsyncifyProxy<IAuthenticationService>>(AuthenticationServiceIPCDescriptor);
 export const context = createProxy<AsyncifyProxy<IContextService>>(ContextServiceIPCDescriptor);
@@ -38,7 +46,7 @@ export const git = createProxy<AsyncifyProxy<IGitService>>(GitServiceIPCDescript
 export const menu = createProxy<AsyncifyProxy<IMenuService>>(MenuServiceIPCDescriptor);
 export const native = createProxy<AsyncifyProxy<INativeService>>(NativeServiceIPCDescriptor);
 export const notification = createProxy<AsyncifyProxy<INotificationService>>(NotificationServiceIPCDescriptor);
-export const preference = createProxy<AsyncifyProxy<IPreferenceService>>(PreferenceServiceIPCDescriptor);
+export const preference = createProxy<IPCProxy<IPreferenceService>>(PreferenceServiceIPCDescriptor);
 export const systemPreference = createProxy<AsyncifyProxy<ISystemPreferenceService>>(SystemPreferenceServiceIPCDescriptor);
 export const theme = createProxy<AsyncifyProxy<IThemeService>>(ThemeServiceIPCDescriptor);
 export const updater = createProxy<AsyncifyProxy<IUpdaterService>>(UpdaterServiceIPCDescriptor);

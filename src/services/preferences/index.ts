@@ -1,8 +1,7 @@
+import { Subject } from 'rxjs';
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
-import { app, App, remote, dialog, nativeTheme } from 'electron';
-import path from 'path';
-import semver from 'semver';
+import { dialog, nativeTheme } from 'electron';
 import settings from 'electron-settings';
 
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -14,65 +13,9 @@ import { container } from '@services/container';
 import i18n from '@services/libs/i18n';
 import { IPreferences, IPreferenceService } from './interface';
 import { IViewService } from '@services/view/interface';
+import { defaultPreferences } from './defaultPreferences';
 
 const { lazyInject } = getDecorators(container);
-
-/** get path, note that if use this from the preload script, app will be undefined, so have to use remote.app here */
-const getDefaultDownloadsPath = (): string => {
-  const availableApp = (app as App | undefined) === undefined ? remote.app : app;
-  return path.join(availableApp.getPath('home'), 'Downloads');
-};
-
-const getDefaultPauseNotificationsByScheduleFrom = (): string => {
-  const d = new Date();
-  d.setHours(23);
-  d.setMinutes(0);
-  return d.toString();
-};
-
-const getDefaultPauseNotificationsByScheduleTo = (): string => {
-  const d = new Date();
-  d.setHours(7);
-  d.setMinutes(0);
-  return d.toString();
-};
-
-const defaultPreferences: IPreferences = {
-  allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
-  askForDownloadPath: true,
-  attachToMenubar: false,
-  blockAds: false,
-  // default Dark Reader settings from its Chrome extension
-  darkReader: false,
-  darkReaderBrightness: 100,
-  darkReaderContrast: 100,
-  darkReaderGrayscale: 0,
-  darkReaderSepia: 0,
-  // default Dark Reader settings from its Chrome extension
-  downloadPath: getDefaultDownloadsPath(),
-  hibernateUnusedWorkspacesAtLaunch: false,
-  hideMenuBar: false,
-  ignoreCertificateErrors: false,
-  language: 'zh_CN',
-  navigationBar: false,
-  pauseNotifications: '',
-  pauseNotificationsBySchedule: false,
-  pauseNotificationsByScheduleFrom: getDefaultPauseNotificationsByScheduleFrom(),
-  pauseNotificationsByScheduleTo: getDefaultPauseNotificationsByScheduleTo(),
-  pauseNotificationsMuteAudio: false,
-  rememberLastPageVisited: false,
-  shareWorkspaceBrowsingData: false,
-  sidebar: true,
-  sidebarShortcutHints: true,
-  spellcheck: true,
-  spellcheckLanguages: ['en-US'],
-  swipeToNavigate: true,
-  syncDebounceInterval: 1000 * 60 * 30,
-  themeSource: 'system' as 'system' | 'light' | 'dark',
-  titleBar: true,
-  unreadCountBadge: true,
-  useHardwareAcceleration: true,
-};
 
 @injectable()
 export class Preference implements IPreferenceService {
@@ -80,11 +23,18 @@ export class Preference implements IPreferenceService {
   @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
   @lazyInject(serviceIdentifier.NotificationService) private readonly notificationService!: INotificationService;
 
-  cachedPreferences: IPreferences;
+  private cachedPreferences: IPreferences;
+  public preference$: Subject<IPreferences>;
   readonly version = '2018.2';
 
   constructor() {
     this.cachedPreferences = this.getInitPreferencesForCache();
+    this.preference$ = new Subject<IPreferences>();
+    this.updatePreferenceSubject();
+  }
+
+  private updatePreferenceSubject(): void {
+    this.preference$.next(this.cachedPreferences);
   }
 
   public async resetWithConfirm(): Promise<void> {
@@ -142,6 +92,7 @@ export class Preference implements IPreferenceService {
     await settings.set(`preferences.${this.version}.${key}`, this.cachedPreferences[key]);
 
     this.reactWhenPreferencesChanged(key, value);
+    this.updatePreferenceSubject();
   }
 
   /**
@@ -188,9 +139,6 @@ export class Preference implements IPreferenceService {
     const preferences = this.getPreferences();
     this.cachedPreferences = preferences;
     await this.setPreferences(preferences);
-    Object.keys(preferences).forEach((key) => {
-      const value = preferences[key as keyof IPreferences];
-      this.windowService.sendToAllWindows(PreferenceChannel.update, key, value);
-    });
+    this.updatePreferenceSubject();
   }
 }

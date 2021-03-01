@@ -1,6 +1,7 @@
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 
 import { PreferenceChannel } from '@/constants/channels';
+import { Subject } from 'rxjs';
 
 export interface IPreferences {
   allowPrerelease: boolean;
@@ -60,6 +61,8 @@ export enum PreferenceSections {
  * Getter and setter for app business logic preferences.
  */
 export interface IPreferenceService {
+  /** Subscribable stream to get react component updated with latest preferences */
+  preference$: Subject<IPreferences>;
   set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void>;
   getPreferences: () => IPreferences;
   get<K extends keyof IPreferences>(key: K): IPreferences[K];
@@ -69,6 +72,7 @@ export interface IPreferenceService {
 export const PreferenceServiceIPCDescriptor = {
   channel: PreferenceChannel.name,
   properties: {
+    preference$: ProxyPropertyType.Value$,
     set: ProxyPropertyType.Function,
     getPreferences: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,

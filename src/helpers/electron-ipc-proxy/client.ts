@@ -1,48 +1,51 @@
-import { Subscribable, Observer, TeardownLogic } from 'rxjs';
+import { Subscribable, Observer, TeardownLogic, Observable } from 'rxjs';
 import { IpcRenderer, ipcRenderer, Event } from 'electron';
 import { v4 as uuid } from 'uuid';
 import Errio from 'errio';
 import { IpcProxyError } from './utils';
 import { Request, RequestType, Response, ResponseType, ProxyDescriptor, ProxyPropertyType } from './common';
 
-export interface ObservableConstructor {
-  new (subscribe: (obs: Observer<any>) => TeardownLogic): Subscribable<any>;
-}
+export type ObservableConstructor = new (subscribe: (obs: Observer<any>) => TeardownLogic) => Subscribable<any>;
 
-export function createProxy<T>(descriptor: ProxyDescriptor, ObservableCtor: ObservableConstructor = null, transport: IpcRenderer = ipcRenderer): T {
+export function createProxy<T>(descriptor: ProxyDescriptor, ObservableCtor: ObservableConstructor = Observable, transport: IpcRenderer = ipcRenderer): T {
   const result = {};
 
-  Object.keys(descriptor.properties).forEach((propKey) => {
-    const propertyType = descriptor.properties[propKey];
+  Object.keys(descriptor.properties).forEach((propertyKey) => {
+    const propertyType = descriptor.properties[propertyKey];
 
     // Provide feedback if the Observable constructor has not been passed in
-    if (propertyType === ProxyPropertyType.Value$ || propertyType === ProxyPropertyType.Function$) {
-      if (typeof ObservableCtor !== 'function') {
-        throw new Error(
-          'You must provide an implementation of the Observable constructor if you want to proxy Observables. Please see the docs at https://github.com/frankwallis/electron-ipc-proxy.',
-        );
-      }
+    if ((propertyType === ProxyPropertyType.Value$ || propertyType === ProxyPropertyType.Function$) && typeof ObservableCtor !== 'function') {
+      throw new Error(
+        'You must provide an implementation of the Observable constructor if you want to proxy Observables. Please see the docs at https://github.com/frankwallis/electron-ipc-proxy.',
+      );
     }
 
-    Object.defineProperty(result, propKey, {
+    Object.defineProperty(result, propertyKey, {
       enumerable: true,
-      get: memoize(() => getProperty(propertyType, propKey, descriptor.channel, ObservableCtor, transport)),
+      get: memoize(() => getProperty(propertyType, propertyKey, descriptor.channel, ObservableCtor, transport)),
     });
   });
 
   return result as T;
 }
 
-function getProperty(propertyType: ProxyPropertyType, propKey: string, channel: string, ObservableCtor: ObservableConstructor, transport: IpcRenderer) {
+function getProperty(
+  propertyType: ProxyPropertyType,
+  propertyKey: string,
+  channel: string,
+  ObservableCtor: ObservableConstructor,
+  transport: IpcRenderer,
+): Promise<any> | Subscribable<any> | ((...arguments_: any[]) => Promise<any>) | ((...arguments_: any[]) => Subscribable<any>) {
   switch (propertyType) {
     case ProxyPropertyType.Value:
-      return makeRequest({ type: RequestType.Get, propKey }, channel, transport);
+      return makeRequest({ type: RequestType.Get, propKey: propertyKey }, channel, transport);
     case ProxyPropertyType.Value$:
-      return makeObservable({ type: RequestType.Subscribe, propKey }, channel, ObservableCtor, transport);
+      return makeObservable({ type: RequestType.Subscribe, propKey: propertyKey }, channel, ObservableCtor, transport);
     case ProxyPropertyType.Function:
-      return (...args: any[]) => makeRequest({ type: RequestType.Apply, propKey, args }, channel, transport);
+      return async (...arguments_: any[]) => await makeRequest({ type: RequestType.Apply, propKey: propertyKey, args: arguments_ }, channel, transport);
     case ProxyPropertyType.Function$:
-      return (...args: any[]) => makeObservable({ type: RequestType.ApplySubscribe, propKey, args }, channel, ObservableCtor, transport);
+      return (...arguments_: any[]) =>
+        makeObservable({ type: RequestType.ApplySubscribe, propKey: propertyKey, args: arguments_ }, channel, ObservableCtor, transport);
     default:
       throw new IpcProxyError(`Unrecognised ProxyPropertyType [${propertyType}]`);
   }
@@ -50,14 +53,14 @@ function getProperty(propertyType: ProxyPropertyType, propKey: string, channel: 
 
 function memoize<T>(getter: () => T): () => T {
   let result: T = null;
-  return () => (result ? result : (result = getter()));
+  return () => result || (result = getter());
 }
 
-function makeRequest(request: Request, channel: string, transport: IpcRenderer): Promise<any> {
+async function makeRequest(request: Request, channel: string, transport: IpcRenderer): Promise<any> {
   const correlationId = uuid();
   transport.send(channel, request, correlationId);
 
-  return new Promise((resolve, reject) => {
+  return await new Promise((resolve, reject) => {
     transport.once(correlationId, (event: Event, response: Response) => {
       switch (response.type) {
         case ResponseType.Result:
@@ -89,16 +92,16 @@ function makeObservable(request: Request, channel: string, ObservableCtor: Obser
       }
     });
 
-    makeRequest(subscriptionRequest, channel, transport).catch((err: Error) => {
-      console.log('Error subscribing to remote observable', err);
-      obs.error(err);
+    makeRequest(subscriptionRequest, channel, transport).catch((error: Error) => {
+      console.log('Error subscribing to remote observable', error);
+      obs.error(error);
     });
 
     return () => {
       transport.removeAllListeners(subscriptionId);
-      makeRequest({ type: RequestType.Unsubscribe, subscriptionId }, channel, transport).catch((err) => {
-        console.log('Error unsubscribing from remote observale', err);
-        obs.error(err);
+      makeRequest({ type: RequestType.Unsubscribe, subscriptionId }, channel, transport).catch((error) => {
+        console.log('Error unsubscribing from remote observale', error);
+        obs.error(error);
       });
     };
   });
