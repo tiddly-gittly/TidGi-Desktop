@@ -2,8 +2,7 @@
 // languages name from http://www.lingoes.net/en/translator/langcode.htm & Chrome preferences
 // sorted by name
 
-/* eslint-disable quote-props */
-const hunspellLanguagesMap = {
+export const hunspellLanguagesMap: IHunspellLanguagesMap = {
   af: 'Afrikaans',
   bg: 'Bulgarian - български',
   ca: 'Catalan - català',
@@ -55,6 +54,57 @@ const hunspellLanguagesMap = {
   uk: 'Ukrainian - українська',
   vi: 'Vietnamese - Tiếng Việt',
 };
-/* eslint-enable quote-props */
 
-export default hunspellLanguagesMap;
+export interface IHunspellLanguagesMap {
+  af: string;
+  bg: string;
+  ca: string;
+  cs: string;
+  cy: string;
+  da: string;
+  de: string;
+  el: string;
+  'en-AU': string;
+  'en-CA': string;
+  'en-GB': string;
+  'en-US': string;
+  es: string;
+  'es-419': string;
+  'es-AR': string;
+  'es-ES': string;
+  'es-MX': string;
+  'es-US': string;
+  et: string;
+  fa: string;
+  fo: string;
+  fr: string;
+  he: string;
+  hi: string;
+  hr: string;
+  hu: string;
+  hy: string;
+  id: string;
+  it: string;
+  ko: string;
+  lt: string;
+  lv: string;
+  nb: string;
+  nl: string;
+  pl: string;
+  'pt-BR': string;
+  'pt-PT': string;
+  ro: string;
+  ru: string;
+  sh: string;
+  sk: string;
+  sl: string;
+  sq: string;
+  sr: string;
+  sv: string;
+  ta: string;
+  tg: string;
+  tr: string;
+  uk: string;
+  vi: string;
+}
+export type HunspellLanguages = keyof IHunspellLanguagesMap;

@@ -9,7 +9,7 @@ import ListItemText from '@material-ui/core/ListItemText';
 
 import connectComponent from '../../helpers/connect-component';
 
-import hunspellLanguagesMap from '../../constants/hunspell-languages';
+import { hunspellLanguagesMap } from '../../constants/hunspell-languages';
 
 const styles = (theme: any) => ({
   root: {

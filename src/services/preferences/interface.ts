@@ -2,6 +2,7 @@ import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 
 import { PreferenceChannel } from '@/constants/channels';
 import { Subject } from 'rxjs';
+import { HunspellLanguages } from '@/constants/hunspell-languages';
 
 export interface IPreferences {
   allowPrerelease: boolean;
@@ -29,7 +30,7 @@ export interface IPreferences {
   sidebar: boolean;
   sidebarShortcutHints: boolean;
   spellcheck: boolean;
-  spellcheckLanguages: string[];
+  spellcheckLanguages: HunspellLanguages[];
   swipeToNavigate: boolean;
   syncDebounceInterval: number;
   themeSource: 'system' | 'light' | 'dark';

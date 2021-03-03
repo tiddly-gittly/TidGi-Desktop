@@ -30,7 +30,7 @@ import { TimePicker } from '@material-ui/pickers';
 
 import StatedMenu from '../../components/github/stated-menu';
 
-import hunspellLanguagesMap from '../../constants/hunspell-languages';
+import { hunspellLanguagesMap } from '../../constants/hunspell-languages';
 
 import webcatalogLogo from '../../images/webcatalog-logo.svg';
 import translatiumLogo from '../../images/translatium-logo.svg';
@@ -42,6 +42,7 @@ import type { IAuthingUserInfo } from '@services/types';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { IPreferences, PreferenceSections } from '@services/preferences/interface';
 import { usePreferenceSections } from './useSections';
+import { usePromiseValue } from '@/helpers/use-service-value';
 
 const Root = styled.div`
   padding: theme.spacing(2);
@@ -95,7 +96,7 @@ const Logo = styled.img`
   height: 28;
 `;
 
-const Link = styled.div`
+const Link = styled.span`
   cursor: pointer;
   font-weight: 500;
   outline: none;
@@ -106,6 +107,10 @@ const Link = styled.div`
     text-decoration: underline;
   }
 `;
+Link.defaultProps = {
+  role: 'link',
+  tabIndex: 0,
+};
 
 const SliderContainer = styled(ListItemText)`
   padding-left: 50px;
@@ -119,7 +124,7 @@ const SliderTitleContainer = styled(Grid)`
 `;
 
 // TODO: handle classes={{ markLabel: classes.sliderMarkLabel }}
-const SliderMarkLabel = styled.div`
+const SliderMarkLabel = styled(Slider)`
   font-size: 0.75rem;
 `;
 
@@ -225,7 +230,9 @@ export default function Preferences(): JSX.Element {
     unreadCountBadge,
     useHardwareAcceleration,
   } = preference;
+  
   const platform = usePromiseValue(async () => (await window.service.context.get('platform')) as string);
+  const oSVersion = usePromiseValue(async () => (await window.service.context.get('oSVersion')) as string);
 
   return (
     <Root>
@@ -439,17 +446,14 @@ export default function Preferences(): JSX.Element {
                 secondary={
                   <>
                     <span>Powered by </span>
-                    <span
-                      role="link"
-                      tabIndex={0}
-                      className={classes.link}
+                    <Link
                       onClick={async () => await window.service.native.open('https://cliqz.com/en/whycliqz/adblocking')}
                       onKeyDown={(event) => {
                         if (event.key !== 'Enter') return;
                         void window.service.native.open('https://cliqz.com/en/whycliqz/adblocking');
                       }}>
                       Cliqz
-                    </span>
+                    </Link>
                     <span>.</span>
                   </>
                 }
@@ -473,17 +477,14 @@ export default function Preferences(): JSX.Element {
                 secondary={
                   <>
                     <span>Powered by </span>
-                    <span
-                      role="link"
-                      tabIndex={0}
-                      className={classes.link}
+                    <Link
                       onClick={async () => await window.service.native.open('https://darkreader.org/')}
                       onKeyDown={(event) => {
                         if (event.key !== 'Enter') return;
                         void window.service.native.open('https://darkreader.org/');
                       }}>
                       Dark Reader
-                    </span>
+                    </Link>
                     <span>.</span>
                     <span> Invert bright colors making them high contrast </span>
                     <span>and easy to read at night.</span>
@@ -584,7 +585,9 @@ export default function Preferences(): JSX.Element {
                       min={0}
                       max={100}
                       onChange={async (_, value) => {
-                        await window.service.preference.set('darkReaderSepia', value);
+                        if (typeof value === 'number') {
+                          await window.service.preference.set('darkReaderSepia', value);
+                        }
                       }}
                     />
                   </Grid>
@@ -611,7 +614,9 @@ export default function Preferences(): JSX.Element {
                       min={0}
                       max={100}
                       onChange={async (_, value) => {
-                        await window.service.preference.set('darkReaderGrayscale', value);
+                        if (typeof value === 'number') {
+                          await window.service.preference.set('darkReaderGrayscale', value);
+                        }
                       }}
                     />
                   </Grid>
@@ -699,7 +704,7 @@ export default function Preferences(): JSX.Element {
             <ListItem
               button
               onClick={() => {
-                window.service.notification({
+                window.service.notification.show({
                   title: 'Test notifications',
                   body: 'It is working!',
                 });
@@ -708,7 +713,7 @@ export default function Preferences(): JSX.Element {
                 primary="Test notifications"
                 secondary={(() => {
                   // only show this message on macOS Catalina 10.15 & above
-                  if (platform === 'darwin' && semver.gte(window.remote.getOSVersion(), '10.15.0')) {
+                  if (platform === 'darwin' && oSVersion && semver.gte(oSVersion, '10.15.0')) {
                     return (
                       <>
                         <span>If notifications don&apos;t show up,</span>
@@ -733,10 +738,7 @@ export default function Preferences(): JSX.Element {
                     <span>But for some web apps, to receive notifications, </span>
                     <span>you will need to manually configure additional </span>
                     <span>web app settings. </span>
-                    <span
-                      role="link"
-                      tabIndex={0}
-                      className={classes.link}
+                    <Link
                       onClick={async () =>
                         await window.service.native.open('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps')
                       }
@@ -745,7 +747,7 @@ export default function Preferences(): JSX.Element {
                         void window.service.native.open('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
                       }}>
                       Learn more
-                    </span>
+                    </Link>
                     <span>.</span>
                   </>
                 }
@@ -882,8 +884,6 @@ export default function Preferences(): JSX.Element {
                   <>
                     <span>Not recommended. </span>
                     <Link
-                      role="link"
-                      tabIndex={0}
                       onClick={async () =>
                         await window.service.native.open('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ')
                       }

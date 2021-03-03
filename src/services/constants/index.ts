@@ -9,8 +9,8 @@ import * as paths from '@services/constants/paths';
 
 @injectable()
 export class ContextService implements IContextService {
-  pathConstants: IPaths = paths;
-  constants: IConstants = {
+  private pathConstants: IPaths = paths;
+  private constants: IConstants = {
     isDevelopment,
     platform: process.platform,
     appVersion: app.getVersion(),
@@ -18,13 +18,17 @@ export class ContextService implements IContextService {
     oSVersion: os.release(),
     environmentVersions: process.versions,
   };
+  private context: IContext;
+  constructor() {
+    this.context = {
+      ...this.pathConstants,
+      ...this.constants,
+    };
+  }
 
   public get<K extends keyof IContext>(key: K): IContext[K] {
-    if (key in this.pathConstants) {
-      return this.pathConstants[key];
-    }
-    if (key in this.constants) {
-      return this.constants[key];
+    if (key in this.context) {
+      return this.context[key];
     }
 
     throw new Error(`${String(key)} not existed in ContextService`);
