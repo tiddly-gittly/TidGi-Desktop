@@ -43,6 +43,8 @@ import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/
 import { IPreferences, PreferenceSections } from '@services/preferences/interface';
 import { usePreferenceSections } from './useSections';
 import { usePromiseValue } from '@/helpers/use-service-value';
+import { usePreferenceObservable } from '@services/preferences/hooks';
+import { useSystemPreferenceObservable } from '@services/systemPreferences/hooks';
 
 const Root = styled.div`
   padding: theme.spacing(2);
@@ -172,12 +174,6 @@ const getUpdaterDesc = (status: any, info: any) => {
   }
 };
 
-function usePreferenceObservable(): IPreferences | undefined {
-  const [preference, preferenceSetter] = useState<IPreferences | undefined>();
-  useObservable<IPreferences | undefined>(window.service.preference.preference$, preferenceSetter);
-  return preference;
-}
-
 export default function Preferences(): JSX.Element {
   const { t } = useTranslation();
   const sections = usePreferenceSections();
@@ -193,8 +189,13 @@ export default function Preferences(): JSX.Element {
     [],
   );
 
+  const platform = usePromiseValue(async () => (await window.service.context.get('platform')) as string);
+  const oSVersion = usePromiseValue(async () => (await window.service.context.get('oSVersion')) as string);
+  const LOG_FOLDER = usePromiseValue(async () => (await window.service.context.get('LOG_FOLDER')) as string);
+
   const preference = usePreferenceObservable();
-  if (preference === undefined) {
+  const systemPreference = useSystemPreferenceObservable();
+  if (preference === undefined || systemPreference === undefined) {
     return <Root>Loading...</Root>;
   }
 
@@ -230,9 +231,7 @@ export default function Preferences(): JSX.Element {
     unreadCountBadge,
     useHardwareAcceleration,
   } = preference;
-  
-  const platform = usePromiseValue(async () => (await window.service.context.get('platform')) as string);
-  const oSVersion = usePromiseValue(async () => (await window.service.context.get('oSVersion')) as string);
+  const { openAtLogin } = systemPreference;
 
   return (
     <Root>
@@ -956,7 +955,7 @@ export default function Preferences(): JSX.Element {
         <SectionTitle ref={sections.advanced.ref}>Advanced</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
-            <ListItem button onClick={async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}>
+            <ListItem button onClick={async () => await window.service.native.open(LOG_FOLDER, true)}>
               <ListItemText primary={t('Preference.OpenLogFolder')} secondary={t('Preference.OpenLogFolderDetail')} />
               <ChevronRightIcon color="action" />
             </ListItem>

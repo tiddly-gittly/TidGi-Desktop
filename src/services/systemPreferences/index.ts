@@ -5,13 +5,23 @@ import { container } from '@services/container';
 import { ISystemPreferenceService, IUsedElectionSettings } from './interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
-import { SystemPreferenceChannel } from '@/constants/channels';
+import { Subject } from 'rxjs';
 
 const { lazyInject } = getDecorators(container);
 
 @injectable()
 export class SystemPreference implements ISystemPreferenceService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  public systemPreference$: Subject<IUsedElectionSettings>;
+
+  constructor() {
+    this.systemPreference$ = new Subject<IUsedElectionSettings>();
+    this.updatePreferenceSubject();
+  }
+
+  private updatePreferenceSubject(): void {
+    this.systemPreference$.next(this.getSystemPreferences());
+  }
 
   public get<K extends keyof IUsedElectionSettings>(key: K): IUsedElectionSettings[K] {
     switch (key) {
@@ -48,6 +58,6 @@ export class SystemPreference implements ISystemPreferenceService {
         break;
       }
     }
-    this.windowService.sendToAllWindows(SystemPreferenceChannel.setSystemPreference, key, value);
+    this.updatePreferenceSubject();
   }
 }

@@ -15,5 +15,6 @@
   "i18n-ally.namespace": false,
   "i18n-ally.review.user.name": "{locale}/{namespaces}.json",
   "prettier.printWidth": 160,
-  "i18n-ally.keystyle": "nested"
+  "i18n-ally.keystyle": "nested",
+  "editor.wordSeparators": "`~!@#%^&*()-=+[{]}\\|;:'\",.<>/?"
 }
