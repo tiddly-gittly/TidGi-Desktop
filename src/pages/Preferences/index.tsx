@@ -45,6 +45,7 @@ import { usePreferenceSections } from './useSections';
 import { usePromiseValue } from '@/helpers/use-service-value';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useSystemPreferenceObservable } from '@services/systemPreferences/hooks';
+import { useUserInfoObservable } from '@services/auth/hooks';
 
 const Root = styled.div`
   padding: theme.spacing(2);
@@ -182,7 +183,7 @@ export default function Preferences(): JSX.Element {
     const scrollTo = (window.meta as IPossibleWindowMeta<WindowMeta[WindowNames.preferences]>).gotoTab;
     if (scrollTo === undefined) return;
     sections[scrollTo].ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  });
+  }, []);
 
   const debouncedRequestShowRequireRestartDialog = useCallback(
     debounce(async () => await window.service.window.requestShowRequireRestartDialog(), 2500),
@@ -195,7 +196,8 @@ export default function Preferences(): JSX.Element {
 
   const preference = usePreferenceObservable();
   const systemPreference = useSystemPreferenceObservable();
-  if (preference === undefined || systemPreference === undefined) {
+  const userInfo = useUserInfoObservable();
+  if (preference === undefined || systemPreference === undefined || userInfo === undefined) {
     return <Root>Loading...</Root>;
   }
 
@@ -237,8 +239,8 @@ export default function Preferences(): JSX.Element {
     <Root>
       <SideBar>
         <List dense>
-          {Object.keys(sections).map((sectionKey: PreferenceSections, index) => {
-            const { Icon, text, ref, hidden } = sections[sectionKey];
+          {Object.keys(sections).map((sectionKey, index) => {
+            const { Icon, text, ref, hidden } = sections[sectionKey as PreferenceSections];
             if (hidden === true) return;
             return (
               <React.Fragment key={sectionKey}>
@@ -267,7 +269,7 @@ export default function Preferences(): JSX.Element {
                   await window.service.auth.set('userName', event.target.value);
                 }}
                 label={t('Preference.UserName')}
-                value={userName}
+                value={userInfo?.userName}
               />
             </ListItem>
           </List>
@@ -1074,9 +1076,9 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <Typography variant="subtitle2" color="textPrimary" className={classes.sectionTitle} ref={sections.webCatalogApps.ref}>
+        <SectionTitle color="textPrimary" ref={sections.webCatalogApps.ref}>
           WebCatalog Apps
-        </Typography>
+        </SectionTitle>
         <Paper elevation={0}>
           <List disablePadding dense>
             <ListItem button onClick={async () => await window.service.native.open('https://github.com/webcatalog/webcatalog-engine')}>
@@ -1099,7 +1101,7 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <SectionTitle ref={sections.miscs.ref}>Miscellaneous</SectionTitle>
+        <SectionTitle ref={sections.misc.ref}>Miscellaneous</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem button onClick={async () => await window.service.window.open(WindowNames.about)}>

@@ -84,12 +84,10 @@ export class Preference implements IPreferenceService {
   }
 
   public async set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void> {
-    this.windowService.sendToAllWindows(PreferenceChannel.update, key, value);
     this.cachedPreferences[key] = value;
     this.cachedPreferences = { ...this.cachedPreferences, ...this.sanitizePreference(this.cachedPreferences) };
 
-    // eslint-disable-next-line promise/catch-or-return
-    await settings.set(`preferences.${this.version}.${key}`, this.cachedPreferences[key]);
+    void settings.set(`preferences.${this.version}.${key}`, this.cachedPreferences[key]);
 
     this.reactWhenPreferencesChanged(key, value);
     this.updatePreferenceSubject();
@@ -113,15 +111,15 @@ export class Preference implements IPreferenceService {
   }
 
   /**
-   * Batch update all preferences
+   * Batch update all preferences, update cache and observable
    */
   private async setPreferences(newPreferences: IPreferences): Promise<void> {
+    this.cachedPreferences = newPreferences;
     await settings.set(`preferences.${this.version}`, { ...newPreferences });
+    this.updatePreferenceSubject();
   }
 
-  /**
-   * get preferences, may return cached version
-   */
+
   public getPreferences = (): IPreferences => {
     // store in memory to boost performance
     if (this.cachedPreferences === undefined) {
@@ -139,6 +137,5 @@ export class Preference implements IPreferenceService {
     const preferences = this.getPreferences();
     this.cachedPreferences = preferences;
     await this.setPreferences(preferences);
-    this.updatePreferenceSubject();
   }
 }

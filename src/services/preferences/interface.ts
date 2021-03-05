@@ -64,7 +64,13 @@ export enum PreferenceSections {
 export interface IPreferenceService {
   /** Subscribable stream to get react component updated with latest preferences */
   preference$: Subject<IPreferences>;
+  /**
+   * Update preferences, update cache and observable
+   */
   set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void>;
+  /**
+   * get preferences, may return cached version
+   */
   getPreferences: () => IPreferences;
   get<K extends keyof IPreferences>(key: K): IPreferences[K];
   reset(): Promise<void>;

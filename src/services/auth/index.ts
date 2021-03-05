@@ -8,6 +8,7 @@ import type { IWindowService } from '@services/windows/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { AuthenticationChannel } from '@/constants/channels';
 import { IAuthenticationService, IUserInfos } from './interface';
+import { Subject } from 'rxjs';
 
 const { lazyInject } = getDecorators(container);
 
@@ -20,17 +21,24 @@ const defaultUserInfos = {
 export class Authentication implements IAuthenticationService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
 
-  cachedUserInfo: IUserInfos;
-  readonly version = '2021.1';
+  private cachedUserInfo: IUserInfos;
+  private readonly version = '2021.1';
+  public userInfo$: Subject<IUserInfos>;
 
   constructor() {
     this.cachedUserInfo = this.getInitUserInfoForCache();
+    this.userInfo$ = new Subject<IUserInfos>();
+    this.updateUserInfoSubject();
+  }
+
+  private updateUserInfoSubject(): void {
+    this.userInfo$.next(this.cachedUserInfo);
   }
 
   /**
    * load UserInfos in sync, and ensure it is an Object
    */
-  getInitUserInfoForCache = (): IUserInfos => {
+  private getInitUserInfoForCache = (): IUserInfos => {
     let userInfosFromDisk = settings.getSync(`userInfo.${this.version}`) ?? {};
     userInfosFromDisk = typeof userInfosFromDisk === 'object' && !Array.isArray(userInfosFromDisk) ? userInfosFromDisk : {};
     return { ...defaultUserInfos, ...this.sanitizeUserInfo(userInfosFromDisk) };
@@ -66,16 +74,15 @@ export class Authentication implements IAuthenticationService {
 
   public set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): void {
     this.cachedUserInfo[key] = value;
+    this.cachedUserInfo = { ...this.cachedUserInfo, ...this.sanitizeUserInfo(this.cachedUserInfo) };
+    this.updateUserInfoSubject();
+    void this.setUserInfos(this.cachedUserInfo)
   }
 
   public async reset(): Promise<void> {
     await settings.unset();
-    const UserInfos = this.getUserInfos();
-    this.cachedUserInfo = UserInfos;
-    await this.setUserInfos(UserInfos);
-    Object.keys(UserInfos).forEach((key) => {
-      const value = UserInfos[key as keyof IUserInfos];
-      this.windowService.sendToAllWindows(AuthenticationChannel.update, key, value);
-    });
+    this.cachedUserInfo = this.getInitUserInfoForCache();
+    await this.setUserInfos(this.cachedUserInfo);
+    this.updateUserInfoSubject();
   }
 }
