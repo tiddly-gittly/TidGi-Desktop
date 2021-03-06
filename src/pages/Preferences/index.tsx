@@ -1,6 +1,5 @@
 /* eslint-disable consistent-return */
-import React, { useRef, useEffect, useState, useCallback } from 'react';
-import { useObservable } from 'beautiful-react-hooks';
+import React, { useEffect, useCallback } from 'react';
 import styled from 'styled-components';
 import semver from 'semver';
 import fromUnixTime from 'date-fns/fromUnixTime';
@@ -44,8 +43,9 @@ import { IPreferences, PreferenceSections } from '@services/preferences/interfac
 import { usePreferenceSections } from './useSections';
 import { usePromiseValue } from '@/helpers/use-service-value';
 import { usePreferenceObservable } from '@services/preferences/hooks';
-import { useSystemPreferenceObservable } from '@services/systemPreferences/hooks';
+import { getOpenAtLoginString, useSystemPreferenceObservable } from '@services/systemPreferences/hooks';
 import { useUserInfoObservable } from '@services/auth/hooks';
+import { getUpdaterDesc, useUpdaterObservable } from '@services/updater/hooks';
 
 const Root = styled.div`
   padding: theme.spacing(2);
@@ -137,44 +137,6 @@ const getThemeString = (theme: any) => {
   return 'System default';
 };
 
-const getOpenAtLoginString = (openAtLogin: any) => {
-  if (openAtLogin === 'yes-hidden') return 'Yes, but minimized';
-  if (openAtLogin === 'yes') return 'Yes';
-  return 'No';
-};
-
-const formatBytes = (bytes: any, decimals = 2) => {
-  if (bytes === 0) return '0 Bytes';
-
-  const k = 1024;
-  const dm = decimals < 0 ? 0 : decimals;
-  const sizes = ['Bytes', 'KB', 'MB', 'GB', 'TB', 'PB', 'EB', 'ZB', 'YB'];
-
-  const index = Math.floor(Math.log(bytes) / Math.log(k));
-
-  return `${Number.parseFloat((bytes / k ** index).toFixed(dm))} ${sizes[index]}`;
-};
-
-const getUpdaterDesc = (status: any, info: any) => {
-  if (status === 'download-progress') {
-    if (info !== null) {
-      const { transferred, total, bytesPerSecond } = info;
-      return `Downloading updates (${formatBytes(transferred)}/${formatBytes(total)} at ${formatBytes(bytesPerSecond)}/s)...`;
-    }
-    return 'Downloading updates...';
-  }
-  if (status === 'checking-for-update') {
-    return 'Checking for updates...';
-  }
-  if (status === 'update-available') {
-    return 'Downloading updates...';
-  }
-  if (status === 'update-downloaded') {
-    if (info && info.version) return `A new version (${info.version}) has been downloaded.`;
-    return 'A new version has been downloaded.';
-  }
-};
-
 export default function Preferences(): JSX.Element {
   const { t } = useTranslation();
   const sections = usePreferenceSections();
@@ -197,7 +159,8 @@ export default function Preferences(): JSX.Element {
   const preference = usePreferenceObservable();
   const systemPreference = useSystemPreferenceObservable();
   const userInfo = useUserInfoObservable();
-  if (preference === undefined || systemPreference === undefined || userInfo === undefined) {
+  const updaterMetaData = useUpdaterObservable();
+  if (preference === undefined || systemPreference === undefined || userInfo === undefined || updaterMetaData === undefined) {
     return <Root>Loading...</Root>;
   }
 
@@ -241,7 +204,7 @@ export default function Preferences(): JSX.Element {
         <List dense>
           {Object.keys(sections).map((sectionKey, index) => {
             const { Icon, text, ref, hidden } = sections[sectionKey as PreferenceSections];
-            if (hidden === true) return;
+            if (hidden === true) return <></>;
             return (
               <React.Fragment key={sectionKey}>
                 {index > 0 && <Divider />}
@@ -281,7 +244,7 @@ export default function Preferences(): JSX.Element {
             <ListItem>
               <ListItemText primary={t('Preference.Token')} secondary={t('Preference.TokenDescription')} />
               <TokenContainer>
-                <GithubTokenForm accessTokenSetter={accessTokenSetter} userInfoSetter={userInfoSetter} accessToken={accessToken} />
+                <GithubTokenForm />
               </TokenContainer>
             </ListItem>
             <ListItem>
@@ -705,7 +668,7 @@ export default function Preferences(): JSX.Element {
             <ListItem
               button
               onClick={() => {
-                window.service.notification.show({
+                void window.service.notification.show({
                   title: 'Test notifications',
                   body: 'It is working!',
                 });
@@ -714,7 +677,7 @@ export default function Preferences(): JSX.Element {
                 primary="Test notifications"
                 secondary={(() => {
                   // only show this message on macOS Catalina 10.15 & above
-                  if (platform === 'darwin' && oSVersion && semver.gte(oSVersion, '10.15.0')) {
+                  if (platform === 'darwin' && oSVersion !== undefined && semver.gte(oSVersion, '10.15.0')) {
                     return (
                       <>
                         <span>If notifications don&apos;t show up,</span>
@@ -957,7 +920,13 @@ export default function Preferences(): JSX.Element {
         <SectionTitle ref={sections.advanced.ref}>Advanced</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
-            <ListItem button onClick={async () => await window.service.native.open(LOG_FOLDER, true)}>
+            <ListItem
+              button
+              onClick={() => {
+                if (LOG_FOLDER !== undefined) {
+                  void window.service.native.open(LOG_FOLDER, true);
+                }
+              }}>
               <ListItemText primary={t('Preference.OpenLogFolder')} secondary={t('Preference.OpenLogFolderDetail')} />
               <ChevronRightIcon color="action" />
             </ListItem>
@@ -1037,14 +1006,13 @@ export default function Preferences(): JSX.Element {
               button
               onClick={async () => await window.service.updater.checkForUpdates(false)}
               disabled={
-                updaterStatus === 'checking-for-update' ||
-                updaterStatus === 'download-progress' ||
-                updaterStatus === 'download-progress' ||
-                updaterStatus === 'update-available'
+                updaterMetaData.status === 'checking-for-update' ||
+                updaterMetaData.status === 'download-progress' ||
+                updaterMetaData.status === 'update-available'
               }>
               <ListItemText
-                primary={updaterStatus === 'update-downloaded' ? 'Restart to Apply Updates' : 'Check for Updates'}
-                secondary={getUpdaterDesc(updaterStatus, updaterInfo)}
+                primary={updaterMetaData.status === 'update-downloaded' ? 'Restart to Apply Updates' : 'Check for Updates'}
+                secondary={getUpdaterDesc(updaterMetaData.status, updaterMetaData.info)}
               />
               <ChevronRightIcon color="action" />
             </ListItem>

@@ -8,7 +8,6 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
 import type { INotificationService } from '@services/notifications/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { PreferenceChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import i18n from '@services/libs/i18n';
 import { IPreferences, IPreferenceService } from './interface';
@@ -83,7 +82,7 @@ export class Preference implements IPreferenceService {
     return preferenceToSanitize;
   }
 
-  public async set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void> {
+  public set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void> {
     this.cachedPreferences[key] = value;
     this.cachedPreferences = { ...this.cachedPreferences, ...this.sanitizePreference(this.cachedPreferences) };
 
@@ -118,7 +117,6 @@ export class Preference implements IPreferenceService {
     await settings.set(`preferences.${this.version}`, { ...newPreferences });
     this.updatePreferenceSubject();
   }
-
 
   public getPreferences = (): IPreferences => {
     // store in memory to boost performance

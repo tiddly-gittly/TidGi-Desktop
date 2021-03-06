@@ -6,20 +6,20 @@ import TextField from '@material-ui/core/TextField';
 
 import GitHubLogin from './github-login';
 import type { IAuthingUserInfo } from '@services/types';
+import { useUserInfoObservable } from '@services/auth/hooks';
 
 const GitTokenInput = styled(TextField)``;
 
 export const setGithubToken = async (token: string | undefined): Promise<void> => await window.service.auth.set('github-token', token);
 export const getGithubToken = async (): Promise<string | undefined> => await window.service.auth.get('github-token');
 
-export function GithubTokenForm(props: {
-  accessTokenSetter: (token?: string) => void;
-  userNameSetter: (userName?: string) => void;
-  accessToken?: string;
-  children: JSX.Element | Array<JSX.Element | undefined | string>;
-}): JSX.Element {
-  const { accessToken, children } = props;
+export function GithubTokenForm(props: { children?: JSX.Element | Array<JSX.Element | undefined | string> }): JSX.Element {
+  const { children } = props;
   const { t } = useTranslation();
+  const userInfo = useUserInfoObservable();
+  if (userInfo === undefined) {
+    return <div>Loading...</div>;
+  }
   return (
     <>
       <GitHubLogin
@@ -27,7 +27,7 @@ export function GithubTokenForm(props: {
           const accessTokenToSet = response?.userInfo?.thirdPartyIdentity?.accessToken;
           const authDataString = response?.userInfo?.oauth;
           if (accessTokenToSet !== undefined) {
-            props.accessTokenSetter(accessTokenToSet);
+            void window.service.auth.set('github-token', accessTokenToSet);
           }
           // all data we need
           if (accessTokenToSet !== undefined && authDataString !== undefined) {
@@ -35,26 +35,29 @@ export function GithubTokenForm(props: {
             const nextUserInfo = {
               ...response.userInfo,
               ...authData,
-              ...response.userInfo.thirdPartyIdentity,
+              ...response.userInfo?.thirdPartyIdentity,
             };
             delete nextUserInfo.oauth;
             delete nextUserInfo.thirdPartyIdentity;
-            props.userNameSetter((nextUserInfo as IAuthingUserInfo).username);
+            void window.service.auth.set('github-userName', (nextUserInfo as IAuthingUserInfo).username);
           }
         }}
-        onLogout={() => props.accessTokenSetter()}
+        onLogout={() => {
+          void window.service.auth.set('github-token', '');
+          void window.service.auth.set('github-userName', '');
+        }}
         onFailure={() => {
-          props.accessTokenSetter();
-          props.userNameSetter();
+          void window.service.auth.set('github-token', '');
+          void window.service.auth.set('github-userName', '');
         }}
       />
       <GitTokenInput
         helperText={t('AddWorkspace.GitTokenDescription')}
         fullWidth
         onChange={(event) => {
-          props.accessTokenSetter(event.target.value);
+          void window.service.auth.set('github-token', event.target.value);
         }}
-        value={accessToken ?? ''}
+        value={userInfo['github-token']}
       />
       {children}
     </>

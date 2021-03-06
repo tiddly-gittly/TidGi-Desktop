@@ -6,6 +6,7 @@ import { Subject } from 'rxjs';
 export interface IUserInfos {
   userName: string;
   'github-token'?: string;
+  'github-userName'?: string;
 }
 
 /**

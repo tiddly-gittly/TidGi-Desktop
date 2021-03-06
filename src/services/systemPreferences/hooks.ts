@@ -7,3 +7,9 @@ export function useSystemPreferenceObservable(): IUsedElectionSettings | undefin
   useObservable<IUsedElectionSettings | undefined>(window.service.systemPreference.systemPreference$, systemPreferenceSetter);
   return systemPreference;
 }
+
+export function getOpenAtLoginString(openAtLogin: IUsedElectionSettings['openAtLogin']): string {
+  if (openAtLogin === 'yes-hidden') return 'Yes, but minimized';
+  if (openAtLogin === 'yes') return 'Yes';
+  return 'No';
+}

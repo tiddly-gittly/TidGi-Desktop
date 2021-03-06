@@ -8,10 +8,11 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
-import { MainChannel, UpdaterChannel } from '@/constants/channels';
+import { MainChannel } from '@/constants/channels';
 import { IUpdaterService, IUpdaterMetaData } from './interface';
 import { IMenuService } from '@services/menu/interface';
 import { logger } from '@services/libs/log';
+import { Subject } from 'rxjs';
 
 // TODO: use electron-forge 's auto update solution， maybe see https://headspring.com/2020/09/24/building-signing-and-publishing-electron-forge-applications-for-windows/
 @injectable()
@@ -21,10 +22,26 @@ export class Updater implements IUpdaterService {
 
   private updateSilent = true;
   private updaterMetaData = {} as IUpdaterMetaData;
+  public updaterMetaData$: Subject<IUpdaterMetaData>;
 
   public constructor() {
     this.updateSilent = true;
     this.configAutoUpdater();
+    this.updaterMetaData$ = new Subject<IUpdaterMetaData>();
+    this.updateUpdaterSubject();
+  }
+
+  private updateUpdaterSubject(): void {
+    this.updaterMetaData$.next(this.updaterMetaData);
+  }
+
+  private setMetaData(newUpdaterMetaData: IUpdaterMetaData): void {
+    this.updaterMetaData = {
+      ...this.updaterMetaData,
+      ...newUpdaterMetaData,
+    };
+    this.updateUpdaterSubject();
+    this.menuService.buildMenu();
   }
 
   public async checkForUpdates(isSilent: boolean): Promise<void> {
@@ -75,11 +92,9 @@ export class Updater implements IUpdaterService {
 
   private configAutoUpdater(): void {
     autoUpdater.on('checking-for-update', () => {
-      this.updaterMetaData = {
+      this.setMetaData({
         status: 'checking-for-update',
-      };
-      this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
-      this.menuService.buildMenu();
+      });
     });
     autoUpdater.on('update-available', (info: UpdateInfo) => {
       const mainWindow = this.windowService.get(WindowNames.main);
@@ -93,12 +108,10 @@ export class Updater implements IUpdaterService {
         });
         this.updateSilent = true;
       }
-      this.updaterMetaData = {
+      this.setMetaData({
         status: 'update-available',
         info,
-      };
-      this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
-      this.menuService.buildMenu();
+      });
     });
     autoUpdater.on('update-not-available', (info: UpdateInfo) => {
       const mainWindow = this.windowService.get(WindowNames.main);
@@ -114,12 +127,10 @@ export class Updater implements IUpdaterService {
           .catch(console.log);
         this.updateSilent = true;
       }
-      this.updaterMetaData = {
+      this.setMetaData({
         status: 'update-not-available',
         info,
-      };
-      this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
-      this.menuService.buildMenu();
+      });
     });
     autoUpdater.on('error', (error: Error) => {
       const mainWindow = this.windowService.get(WindowNames.main);
@@ -136,46 +147,37 @@ export class Updater implements IUpdaterService {
         this.updateSilent = true;
       }
       logger.error(error);
-      this.updaterMetaData = {
+      this.setMetaData({
         status: 'error',
         info: error,
-      };
-      this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
-      this.menuService.buildMenu();
+      });
     });
     autoUpdater.on('update-cancelled', () => {
-      this.updaterMetaData = {
+      this.setMetaData({
         status: 'update-cancelled',
-      };
-      this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
-      this.menuService.buildMenu();
+      });
     });
     autoUpdater.on('download-progress', (progressObject: ProgressInfo) => {
-      this.updaterMetaData = {
+      this.setMetaData({
         status: 'download-progress',
         info: progressObject,
-      };
-      this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
-      this.menuService.buildMenu();
+      });
     });
     autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
       const mainWindow = this.windowService.get(WindowNames.main);
       if (mainWindow !== undefined) {
-        this.updaterMetaData = {
+        this.setMetaData({
           status: 'update-downloaded',
           info,
-        };
-        this.windowService.sendToAllWindows(UpdaterChannel.updateUpdater, this.updaterMetaData);
-        this.menuService.buildMenu();
-        const dialogOptions = {
-          type: 'info',
-          buttons: ['Restart', 'Later'],
-          title: 'Application Update',
-          message: `A new version (${info.version}) has been downloaded. Restart the application to apply the updates.`,
-          cancelId: 1,
-        };
+        });
         dialog
-          .showMessageBox(mainWindow, dialogOptions)
+          .showMessageBox(mainWindow, {
+            type: 'info',
+            buttons: ['Restart', 'Later'],
+            title: 'Application Update',
+            message: `A new version (${info.version}) has been downloaded. Restart the application to apply the updates.`,
+            cancelId: 1,
+          })
           .then(({ response }) => {
             if (response === 0) {
               // Fix autoUpdater.quitAndInstall() does not quit immediately
