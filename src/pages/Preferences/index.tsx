@@ -1,12 +1,11 @@
 /* eslint-disable consistent-return */
-import React, { useEffect, useCallback } from 'react';
+import React, { useEffect } from 'react';
 import styled from 'styled-components';
 import semver from 'semver';
 import fromUnixTime from 'date-fns/fromUnixTime';
 import setYear from 'date-fns/setYear';
 import setMonth from 'date-fns/setMonth';
 import setDate from 'date-fns/setDate';
-import { debounce } from 'lodash';
 import { useTranslation } from 'react-i18next';
 
 import Divider from '@material-ui/core/Divider';
@@ -36,16 +35,16 @@ import translatiumLogo from '../../images/translatium-logo.svg';
 
 import ListItemDefaultMailClient from './list-item-default-mail-client';
 import ListItemDefaultBrowser from './list-item-default-browser';
-import { GithubTokenForm, getGithubToken, setGithubToken } from '../../components/github/git-token-form';
-import type { IAuthingUserInfo } from '@services/types';
+import { GithubTokenForm } from '../../components/github/git-token-form';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
-import { IPreferences, PreferenceSections } from '@services/preferences/interface';
+import { PreferenceSections } from '@services/preferences/interface';
 import { usePreferenceSections } from './useSections';
 import { usePromiseValue } from '@/helpers/use-service-value';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { getOpenAtLoginString, useSystemPreferenceObservable } from '@services/systemPreferences/hooks';
 import { useUserInfoObservable } from '@services/auth/hooks';
 import { getUpdaterDesc, useUpdaterObservable } from '@services/updater/hooks';
+import { useDebouncedFn } from 'beautiful-react-hooks';
 
 const Root = styled.div`
   padding: theme.spacing(2);
@@ -145,12 +144,9 @@ export default function Preferences(): JSX.Element {
     const scrollTo = (window.meta as IPossibleWindowMeta<WindowMeta[WindowNames.preferences]>).gotoTab;
     if (scrollTo === undefined) return;
     sections[scrollTo].ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-  }, []);
+  }, [sections]);
 
-  const debouncedRequestShowRequireRestartDialog = useCallback(
-    debounce(async () => await window.service.window.requestShowRequireRestartDialog(), 2500),
-    [],
-  );
+  const debouncedRequestShowRequireRestartDialog = useDebouncedFn(async () => await window.service.window.requestShowRequireRestartDialog(), 2500);
 
   const platform = usePromiseValue(async () => (await window.service.context.get('platform')) as string);
   const oSVersion = usePromiseValue(async () => (await window.service.context.get('oSVersion')) as string);
