@@ -27,6 +27,17 @@ export class NativeService implements INativeService {
     return [];
   }
 
+  public async pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]> {
+    const dialogResult = await dialog.showOpenDialog({
+      properties: ['openFile'],
+      filters,
+    });
+    if (!dialogResult.canceled && dialogResult.filePaths.length > 0) {
+      return dialogResult.filePaths;
+    }
+    return [];
+  }
+
   public async open(uri: string, isDirectory = false): Promise<void> {
     return isDirectory ? shell.showItemInFolder(uri) : await shell.openExternal(uri);
   }

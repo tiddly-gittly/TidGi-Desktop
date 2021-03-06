@@ -1,5 +1,6 @@
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { WorkspaceChannel } from '@/constants/channels';
+import { Observable, Subject } from 'rxjs';
 
 export interface IWorkspace {
   /**
@@ -74,8 +75,10 @@ export interface IWorkspaceMetaData {
  * Manage workspace level preferences and workspace metadata.
  */
 export interface IWorkspaceService {
+  workspaces$: Subject<Record<string, IWorkspace>>;
   getWorkspacesAsList(): IWorkspace[];
   get(id: string): IWorkspace | undefined;
+  get$(id: string): Observable<IWorkspace | undefined>;
   create(newWorkspaceConfig: Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order'>): Promise<IWorkspace>;
   getWorkspaces(): Record<string, IWorkspace>;
   countWorkspaces(): number;
@@ -100,6 +103,7 @@ export const WorkspaceServiceIPCDescriptor = {
   properties: {
     getWorkspacesAsList: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,
+    get$: ProxyPropertyType.Function$,
     create: ProxyPropertyType.Function,
     getWorkspaces: ProxyPropertyType.Function,
     countWorkspaces: ProxyPropertyType.Function,

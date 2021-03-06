@@ -16,6 +16,7 @@ import defaultIcon from '../../images/default-icon.png';
 import type { ISubWikiPluginContent } from '@services/wiki/update-plugin-content';
 import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
 import { usePromiseValue } from '@/helpers/use-service-value';
+import { useWorkspaceObservable } from '@services/workspaces/hooks';
 
 const Root = styled.div`
   background: #fffff0;
@@ -104,17 +105,14 @@ Caption.defaultProps = {
   variant: 'caption',
 };
 
-const getValidIconPath = (iconPath?: string | null, internetIcon?: string): string => {
+const getValidIconPath = (iconPath?: string | null): string => {
   if (typeof iconPath === 'string') {
     return `file:///${iconPath}`;
-  }
-  if (typeof internetIcon === 'string') {
-    return internetIcon;
   }
   return defaultIcon;
 };
 
-const { workspaceID } = window.meta as WindowMeta[WindowNames.editWorkspace];
+const workspaceID = (window.meta as WindowMeta[WindowNames.editWorkspace]).workspaceID as string;
 
 export default function EditWorkspace(): JSX.Element {
   const { t } = useTranslation();
@@ -122,9 +120,12 @@ export default function EditWorkspace(): JSX.Element {
     async () => await window.service.wiki.getSubWikiPluginContent(mainWikiToLink),
     [],
   ) as ISubWikiPluginContent[];
-  const workspace = usePromiseValue(async () => await window.service.workspace.get(workspaceID as string));
-  if (workspace === undefined) {
+  const workspace = useWorkspaceObservable(workspaceID);
+  if (workspaceID === undefined) {
     return <Root>Error {workspaceID ?? '-'} not exists</Root>;
+  }
+  if (workspace === undefined) {
+    return <Root>Loading...</Root>;
   }
   const {
     mainWikiToLink,
@@ -149,7 +150,7 @@ export default function EditWorkspace(): JSX.Element {
           placeholder="Optional"
           helperText={nameError}
           value={name}
-          onChange={(e) => onUpdateForm({ name: e.target.value })}
+          onChange={async (e) => await window.service.workspace.update(workspaceID, { name: e.target.value })}
         />
         {!isSubWiki && (
           <TextField
@@ -159,42 +160,41 @@ export default function EditWorkspace(): JSX.Element {
             error={Boolean(homeUrlError)}
             placeholder="Optional"
             value={port}
-            onChange={(event) => onUpdateForm({ port: event.target.value, homeUrl: `http://localhost:${event.target.value}/` })}
+            onChange={async (event) =>
+              await window.service.workspace.update(workspaceID, { port: event.target.value, homeUrl: `http://localhost:${event.target.value}/` })
+            }
           />
         )}
         <Autocomplete
           freeSolo
           options={fileSystemPaths?.map((fileSystemPath) => fileSystemPath.tagName)}
           value={tagName}
-          onInputChange={(_, value) => onUpdateForm({ tagName: value })}
+          onInputChange={async (_, value) => await window.service.workspace.update(workspaceID, { tagName: value })}
           renderInput={(parameters) => <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
         />
         <AvatarFlex>
           <AvatarLeft>
             <Avatar transparentBackground={transparentBackground}>
-              <AvatarPicture alt="Icon" src={getValidIconPath(picturePath, internetIcon)} />
+              <AvatarPicture alt="Icon" src={getValidIconPath(picturePath)} />
             </Avatar>
           </AvatarLeft>
           <AvatarRight>
             <Button
               variant="outlined"
               size="small"
-              onClick={() => {
-                const options = {
-                  properties: ['openFile'],
-                  filters: [{ name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp', 'dib'] }],
-                };
-                window.remote.dialog.showOpenDialog(options).then(({ canceled, filePaths }: any) => {
-                  if (!canceled && filePaths.length > 0) {
-                    onUpdateForm({ picturePath: filePaths[0] });
-                  }
-                });
+              onClick={async () => {
+                const filePaths = await window.service.native.pickFile([
+                  { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp', 'dib'] },
+                ]);
+                if (filePaths.length > 0) {
+                  await window.service.workspace.update(workspaceID, { picturePath: filePaths[0] });
+                }
               }}>
               {t('EditWorkspace.SelectLocal')}
             </Button>
             <Caption>PNG, JPEG, GIF, TIFF or BMP.</Caption>
 
-            <ButtonBot onClick={() => onUpdateForm({ picturePath: null, internetIcon: null })} disabled={!(picturePath || internetIcon)}>
+            <ButtonBot onClick={async () => await window.service.workspace.update(workspaceID, { picturePath: null })} disabled={picturePath === undefined}>
               {t('EditWorkspace.ResetDefaultIcon')}
             </ButtonBot>
           </AvatarRight>
@@ -205,19 +205,34 @@ export default function EditWorkspace(): JSX.Element {
             <ListItem disableGutters>
               <ListItemText primary={t('EditWorkspace.HibernateTitle')} secondary={t('EditWorkspace.Hibernate')} />
               <ListItemSecondaryAction>
-                <Switch edge="end" color="primary" checked={hibernateWhenUnused} onChange={(e) => onUpdateForm({ hibernateWhenUnused: e.target.checked })} />
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={hibernateWhenUnused}
+                  onChange={async (e) => await window.service.workspace.update(workspaceID, { hibernateWhenUnused: e.target.checked })}
+                />
               </ListItemSecondaryAction>
             </ListItem>
             <ListItem disableGutters>
               <ListItemText primary={t('EditWorkspace.DisableNotificationTitle')} secondary={t('EditWorkspace.DisableNotification')} />
               <ListItemSecondaryAction>
-                <Switch edge="end" color="primary" checked={disableNotifications} onChange={(e) => onUpdateForm({ disableNotifications: e.target.checked })} />
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={disableNotifications}
+                  onChange={async (e) => await window.service.workspace.update(workspaceID, { disableNotifications: e.target.checked })}
+                />
               </ListItemSecondaryAction>
             </ListItem>
             <ListItem disableGutters>
               <ListItemText primary={t('EditWorkspace.DisableAudioTitle')} secondary={t('EditWorkspace.DisableAudio')} />
               <ListItemSecondaryAction>
-                <Switch edge="end" color="primary" checked={disableAudio} onChange={(e) => onUpdateForm({ disableAudio: e.target.checked })} />
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={disableAudio}
+                  onChange={async (e) => await window.service.workspace.update(workspaceID, { disableAudio: e.target.checked })}
+                />
               </ListItemSecondaryAction>
             </ListItem>
           </List>

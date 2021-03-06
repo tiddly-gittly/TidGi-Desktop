@@ -26,19 +26,25 @@ import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/work
 import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
 type ProxyAsyncProperties<OriginalProxy> = ConditionalKeys<OriginalProxy, Function>;
+type ProxyObservableProperties<OriginalProxy> =
+  | ConditionalKeys<OriginalProxy, Observable<unknown>>
+  | ConditionalKeys<OriginalProxy, (...arguments_: any[]) => Observable<unknown>>;
 /**
  * To call services that is located in main process, from the renderer process, we use IPC.invoke, so all method should now promisify
  * Note this type only promisify methods that return things, not methods that returns observable.
  */
-type AsyncifyProxy<OriginalProxy, K extends ProxyAsyncProperties<OriginalProxy> = ProxyAsyncProperties<OriginalProxy>> = {
-  [P in K]: Asyncify<OriginalProxy[P]>;
-};
+type AsyncifyProxy<
+  OriginalProxy,
+  ObservableKey extends ProxyObservableProperties<OriginalProxy> = ProxyObservableProperties<OriginalProxy>,
+  AsyncKey extends Exclude<ProxyAsyncProperties<OriginalProxy>, ObservableKey> = Exclude<ProxyAsyncProperties<OriginalProxy>, ObservableKey>
+> = {
+  [P in AsyncKey]: Asyncify<OriginalProxy[P]>;
+} &
+  {
+    [Q in ObservableKey]: OriginalProxy[Q];
+  };
 
-type ProxyNormalProperties<OriginalProxy> = ConditionalKeys<OriginalProxy, Observable<unknown>>;
-type NormalPartOfProxy<OriginalProxy, K extends ProxyNormalProperties<OriginalProxy> = ProxyNormalProperties<OriginalProxy>> = {
-  [P in K]: OriginalProxy[P];
-};
-type IPCProxy<OriginalProxy> = AsyncifyProxy<OriginalProxy> & NormalPartOfProxy<OriginalProxy>;
+type IPCProxy<OriginalProxy> = AsyncifyProxy<OriginalProxy>;
 
 export const auth = createProxy<IPCProxy<IAuthenticationService>>(AuthenticationServiceIPCDescriptor);
 export const context = createProxy<IPCProxy<IContextService>>(ContextServiceIPCDescriptor);

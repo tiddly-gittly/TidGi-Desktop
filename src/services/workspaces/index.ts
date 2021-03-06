@@ -11,6 +11,8 @@ import Jimp from 'jimp';
 import isUrl from 'is-url';
 import download from 'download';
 import tmp from 'tmp';
+import { Observable, Subject } from 'rxjs';
+import { map } from 'rxjs/operators';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';
@@ -34,6 +36,7 @@ export class Workspace implements IWorkspaceService {
    * Record from workspace id to workspace settings
    */
   private workspaces: Record<string, IWorkspace> = {};
+  public workspaces$: Subject<Record<string, IWorkspace>>;
 
   @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
@@ -44,6 +47,12 @@ export class Workspace implements IWorkspaceService {
   constructor() {
     this.workspaces = this.getInitWorkspacesForCache();
     this.registerMenu();
+    this.workspaces$ = new Subject<Record<string, IWorkspace>>();
+    this.updateWorkspaceSubject();
+  }
+
+  private updateWorkspaceSubject(): void {
+    this.workspaces$.next(this.getWorkspaces());
   }
 
   private registerMenu(): void {
@@ -161,11 +170,16 @@ export class Workspace implements IWorkspaceService {
     return this.workspaces[id];
   }
 
+  public get$(id: string): Observable<IWorkspace | undefined> {
+    return this.workspaces$.pipe(map((workspaces) => workspaces[id]));
+  }
+
   public async set(id: string, workspace: IWorkspace): Promise<void> {
     this.workspaces[id] = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspace);
     await settings.set(`workspaces.${this.version}.${id}`, { ...workspace });
     this.updateWorkspaceMenuItems();
+    this.updateWorkspaceSubject();
   }
 
   public async update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void> {
@@ -338,6 +352,7 @@ export class Workspace implements IWorkspaceService {
     await this.wikiService.stopWiki(name);
     await this.wikiService.stopWatchWiki(name);
     this.updateWorkspaceMenuItems();
+    this.updateWorkspaceSubject();
   }
 
   public async create(newWorkspaceConfig: Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order'>): Promise<IWorkspace> {

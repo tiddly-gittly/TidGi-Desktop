@@ -10,6 +10,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 export interface INativeService {
   showElectronMessageBox(message: string, type: MessageBoxOptions['type'], WindowName?: WindowNames): Promise<void>;
   pickDirectory(): Promise<string[]>;
+  pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   quit(): void;
 }
@@ -18,6 +19,7 @@ export const NativeServiceIPCDescriptor = {
   properties: {
     showElectronMessageBox: ProxyPropertyType.Function,
     pickDirectory: ProxyPropertyType.Function,
+    pickFile: ProxyPropertyType.Function,
     open: ProxyPropertyType.Function,
     quit: ProxyPropertyType.Function,
   },
