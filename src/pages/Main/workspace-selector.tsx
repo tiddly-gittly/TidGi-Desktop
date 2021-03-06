@@ -14,7 +14,6 @@ const styles = (theme: any) => ({
     alignItems: 'center',
     justifyContent: 'center',
     flexDirection: 'column',
-    fontFamily: theme.typography.fontFamily,
     outline: 'none',
     '&:hover': {
       background: theme.palette.action.hover,

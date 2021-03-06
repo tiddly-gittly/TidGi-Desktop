@@ -18,7 +18,7 @@ import AppWrapper from './components/app-wrapper';
 const Main = React.lazy(async () => await import('./pages/Main'));
 const AboutPage = React.lazy(async () => await import('./pages/About'));
 const DialogAddWorkspace = React.lazy(async () => await import('./pages/AddWorkspace'));
-const DialogEditWorkspace = React.lazy(async () => await import('./components/dialog-edit-workspace'));
+const EditWorkspace = React.lazy(async () => await import('./pages/EditWorkspace'));
 const DialogNotifications = React.lazy(async () => await import('./components/dialog-notifications'));
 const DialogPreferences = React.lazy(async () => await import('./pages/Preferences'));
 const DialogSpellcheckLanguages = React.lazy(async () => await import('./components/dialog-spellcheck-languages'));
@@ -32,7 +32,7 @@ const App = (): JSX.Element => {
       document.title = 'Add Workspace';
       return <DialogAddWorkspace />;
     case WindowNames.editWorkspace:
-      return <DialogEditWorkspace />;
+      return <EditWorkspace />;
     case WindowNames.notifications:
       document.title = 'Notifications';
       return <DialogNotifications />;

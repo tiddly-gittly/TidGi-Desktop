@@ -29,11 +29,11 @@ export class Workspace implements IWorkspaceService {
   /**
    * version of current setting schema
    */
-  version = '14';
+  private readonly version = '14';
   /**
    * Record from workspace id to workspace settings
    */
-  workspaces: Record<string, IWorkspace> = {};
+  private workspaces: Record<string, IWorkspace> = {};
 
   @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
