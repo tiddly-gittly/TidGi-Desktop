@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
+/* eslint-disable unicorn/no-null */
 import React, { useState, useEffect } from 'react';
 import styled, { css } from 'styled-components';
 import { useTranslation } from 'react-i18next';
@@ -17,6 +19,7 @@ import type { ISubWikiPluginContent } from '@services/wiki/update-plugin-content
 import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
 import { usePromiseValue } from '@/helpers/use-service-value';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
+import { useForm } from './formHook';
 
 const Root = styled.div`
   background: #fffff0;
@@ -120,7 +123,8 @@ export default function EditWorkspace(): JSX.Element {
     async () => await window.service.wiki.getSubWikiPluginContent(mainWikiToLink),
     [],
   ) as ISubWikiPluginContent[];
-  const workspace = useWorkspaceObservable(workspaceID);
+  const originalWorkspace = useWorkspaceObservable(workspaceID);
+  const [workspace, workspaceSetter, onSave] = useForm(originalWorkspace);
   if (workspaceID === undefined) {
     return <Root>Error {workspaceID ?? '-'} not exists</Root>;
   }
@@ -146,30 +150,29 @@ export default function EditWorkspace(): JSX.Element {
         <TextField
           id="outlined-full-width"
           label={t('EditWorkspace.Path')}
-          error={Boolean(nameError)}
           placeholder="Optional"
-          helperText={nameError}
           value={name}
-          onChange={async (e) => await window.service.workspace.update(workspaceID, { name: e.target.value })}
+          onChange={(event) => workspaceSetter({ ...workspace, name: event.target.value })}
         />
         {!isSubWiki && (
           <TextField
             id="outlined-full-width"
             label={t('EditWorkspace.Port')}
             helperText={`${t('EditWorkspace.URL')}: ${homeUrl}`}
-            error={Boolean(homeUrlError)}
             placeholder="Optional"
             value={port}
-            onChange={async (event) =>
-              await window.service.workspace.update(workspaceID, { port: event.target.value, homeUrl: `http://localhost:${event.target.value}/` })
-            }
+            onChange={(event) => {
+              if (!Number.isNaN(Number.parseInt(event.target.value))) {
+                workspaceSetter({ ...workspace, port: Number(event.target.value), homeUrl: `http://localhost:${event.target.value}/` });
+              }
+            }}
           />
         )}
         <Autocomplete
           freeSolo
           options={fileSystemPaths?.map((fileSystemPath) => fileSystemPath.tagName)}
           value={tagName}
-          onInputChange={async (_, value) => await window.service.workspace.update(workspaceID, { tagName: value })}
+          onInputChange={(_, value) => workspaceSetter({ ...workspace, tagName: value })}
           renderInput={(parameters) => <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
         />
         <AvatarFlex>
@@ -194,7 +197,7 @@ export default function EditWorkspace(): JSX.Element {
             </Button>
             <Caption>PNG, JPEG, GIF, TIFF or BMP.</Caption>
 
-            <ButtonBot onClick={async () => await window.service.workspace.update(workspaceID, { picturePath: null })} disabled={picturePath === undefined}>
+            <ButtonBot onClick={() => workspaceSetter({ ...workspace, picturePath: null })} disabled={!picturePath}>
               {t('EditWorkspace.ResetDefaultIcon')}
             </ButtonBot>
           </AvatarRight>
@@ -209,7 +212,7 @@ export default function EditWorkspace(): JSX.Element {
                   edge="end"
                   color="primary"
                   checked={hibernateWhenUnused}
-                  onChange={async (e) => await window.service.workspace.update(workspaceID, { hibernateWhenUnused: e.target.checked })}
+                  onChange={(event) => workspaceSetter({ ...workspace, hibernateWhenUnused: event.target.checked })}
                 />
               </ListItemSecondaryAction>
             </ListItem>
@@ -220,7 +223,7 @@ export default function EditWorkspace(): JSX.Element {
                   edge="end"
                   color="primary"
                   checked={disableNotifications}
-                  onChange={async (e) => await window.service.workspace.update(workspaceID, { disableNotifications: e.target.checked })}
+                  onChange={(event) => workspaceSetter({ ...workspace, disableNotifications: event.target.checked })}
                 />
               </ListItemSecondaryAction>
             </ListItem>
@@ -231,7 +234,7 @@ export default function EditWorkspace(): JSX.Element {
                   edge="end"
                   color="primary"
                   checked={disableAudio}
-                  onChange={async (e) => await window.service.workspace.update(workspaceID, { disableAudio: e.target.checked })}
+                  onChange={(event) => workspaceSetter({ ...workspace, disableAudio: event.target.checked })}
                 />
               </ListItemSecondaryAction>
             </ListItem>
@@ -239,7 +242,14 @@ export default function EditWorkspace(): JSX.Element {
         )}
       </FlexGrow>
       <div>
-        <Button color="primary" variant="contained" disableElevation onClick={onSave}>
+        <Button
+          color="primary"
+          variant="contained"
+          disableElevation
+          onClick={async () => {
+            await onSave();
+            window.remote.closeCurrentWindow();
+          }}>
           {t('EditWorkspace.Save')}
         </Button>
         <Button variant="contained" disableElevation onClick={() => window.remote.closeCurrentWindow()}>
