@@ -21,7 +21,7 @@ const DialogAddWorkspace = React.lazy(async () => await import('./pages/AddWorks
 const EditWorkspace = React.lazy(async () => await import('./pages/EditWorkspace'));
 const DialogNotifications = React.lazy(async () => await import('./components/dialog-notifications'));
 const DialogPreferences = React.lazy(async () => await import('./pages/Preferences'));
-const DialogSpellcheckLanguages = React.lazy(async () => await import('./components/dialog-spellcheck-languages'));
+const SpellcheckLanguages = React.lazy(async () => await import('./pages/SpellcheckLanguages'));
 
 const App = (): JSX.Element => {
   switch (window.meta.windowName) {
@@ -40,7 +40,7 @@ const App = (): JSX.Element => {
       document.title = 'Preferences';
       return <DialogPreferences />;
     case WindowNames.spellcheck:
-      return <DialogSpellcheckLanguages />;
+      return <SpellcheckLanguages />;
     default:
       document.title = 'TiddlyGit';
       return <Main />;
