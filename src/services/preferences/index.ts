@@ -82,7 +82,7 @@ export class Preference implements IPreferenceService {
     return preferenceToSanitize;
   }
 
-  public set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void> {
+  public set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): void {
     this.cachedPreferences[key] = value;
     this.cachedPreferences = { ...this.cachedPreferences, ...this.sanitizePreference(this.cachedPreferences) };
 

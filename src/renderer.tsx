@@ -19,7 +19,7 @@ const Main = React.lazy(async () => await import('./pages/Main'));
 const AboutPage = React.lazy(async () => await import('./pages/About'));
 const DialogAddWorkspace = React.lazy(async () => await import('./pages/AddWorkspace'));
 const EditWorkspace = React.lazy(async () => await import('./pages/EditWorkspace'));
-const DialogNotifications = React.lazy(async () => await import('./components/dialog-notifications'));
+const DialogNotifications = React.lazy(async () => await import('./pages/Notifications'));
 const DialogPreferences = React.lazy(async () => await import('./pages/Preferences'));
 const SpellcheckLanguages = React.lazy(async () => await import('./pages/SpellcheckLanguages'));
 

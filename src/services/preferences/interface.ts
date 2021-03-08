@@ -20,7 +20,7 @@ export interface IPreferences {
   ignoreCertificateErrors: boolean;
   language: string;
   navigationBar: boolean;
-  pauseNotifications: string;
+  pauseNotifications: string | undefined;
   pauseNotificationsBySchedule: boolean;
   pauseNotificationsByScheduleFrom: string;
   pauseNotificationsByScheduleTo: string;
@@ -67,7 +67,7 @@ export interface IPreferenceService {
   /**
    * Update preferences, update cache and observable
    */
-  set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void>;
+  set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): void;
   /**
    * get preferences, may return cached version
    */

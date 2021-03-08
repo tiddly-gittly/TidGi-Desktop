@@ -7,6 +7,7 @@ import type { IViewService } from '@services/view/interface';
 import { INotificationService, IPauseNotificationsInfo } from './interface';
 import { IWindowService } from '@services/windows/interface';
 import { NotificationChannel } from '@/constants/channels';
+import { Subject } from 'rxjs';
 
 @injectable()
 export class NotificationService implements INotificationService {
@@ -15,6 +16,16 @@ export class NotificationService implements INotificationService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
 
   private pauseNotificationsInfo?: IPauseNotificationsInfo;
+  public pauseNotificationsInfo$: Subject<IPauseNotificationsInfo>;
+
+  constructor() {
+    this.pauseNotificationsInfo$ = new Subject<IPauseNotificationsInfo>();
+    this.updateNotificationsInfoSubject();
+  }
+
+  private updateNotificationsInfoSubject(): void {
+    this.pauseNotificationsInfo$.next(this.pauseNotificationsInfo);
+  }
 
   public show(options: NotificationConstructorOptions): void {
     if (Notification.isSupported()) {
@@ -134,7 +145,7 @@ export class NotificationService implements INotificationService {
     this.pauseNotificationsInfo = this.calcPauseNotificationsInfo();
 
     // Send update to webview
-    const shouldPauseNotifications = this.pauseNotificationsInfo !== null;
+    const shouldPauseNotifications = this.pauseNotificationsInfo !== undefined;
     const shouldMuteAudio = shouldPauseNotifications && this.preferenceService.get('pauseNotificationsMuteAudio');
     this.viewService.setViewsAudioPref(shouldMuteAudio);
     this.viewService.setViewsNotificationsPref(shouldPauseNotifications);
@@ -176,6 +187,7 @@ export class NotificationService implements INotificationService {
     }
 
     this.updating = false;
+    this.updateNotificationsInfoSubject();
   }
 
   public getPauseNotificationsInfo = (): IPauseNotificationsInfo | undefined => this.pauseNotificationsInfo;
