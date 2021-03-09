@@ -31,31 +31,31 @@ import { IWorkspaceViewService } from './services/workspacesView/interface';
 
 const gotTheLock = app.requestSingleInstanceLock();
 
-bindServiceAndProxy();
-const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
-const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
-const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
-const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-
 logger.info('App booting');
-app.on('second-instance', () => {
-  // Someone tried to run a second instance, we should focus our window.
-  const mainWindow = windowService.get(WindowNames.main);
-  if (mainWindow !== undefined) {
-    if (mainWindow.isMinimized()) {
-      mainWindow.restore();
-    }
-    mainWindow.focus();
-  }
-});
+
 if (!gotTheLock) {
   logger.info('Quitting dut to we only allow one instance to run.');
   console.info('Quitting dut to we only allow one instance to run.');
   app.quit();
 } else {
+  bindServiceAndProxy();
+  const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+  const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
+  const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+  const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+  const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+  const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+  const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+  app.on('second-instance', () => {
+    // Someone tried to run a second instance, we should focus our window.
+    const mainWindow = windowService.get(WindowNames.main);
+    if (mainWindow !== undefined) {
+      if (mainWindow.isMinimized()) {
+        mainWindow.restore();
+      }
+      mainWindow.focus();
+    }
+  });
   // make sure "Settings" file exists
   // if not, ignore this chunk of code
   // as using electron-settings before app.on('ready') and "Settings" is created
