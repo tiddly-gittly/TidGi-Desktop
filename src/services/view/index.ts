@@ -59,14 +59,6 @@ export class View implements IViewService {
         },
       },
       {
-        label: () => (this.preferenceService.get('navigationBar') ? 'Hide Navigation Bar' : 'Show Navigation Bar'),
-        accelerator: 'CmdOrCtrl+Alt+N',
-        click: () => {
-          void this.preferenceService.set('navigationBar', !this.preferenceService.get('navigationBar'));
-          void this.workspaceViewService.realignActiveWorkspace();
-        },
-      },
-      {
         label: () => (this.preferenceService.get('titleBar') ? 'Hide Title Bar' : 'Show Title Bar'),
         accelerator: 'CmdOrCtrl+Alt+T',
         enabled: process.platform === 'darwin',

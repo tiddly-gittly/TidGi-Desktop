@@ -2,6 +2,7 @@ import React from 'react';
 import classnames from 'classnames';
 
 import connectComponent from '../../helpers/connect-component';
+import { usePromiseValue } from '@/helpers/use-service-value';
 
 const titleBarHeight = 22;
 
@@ -41,8 +42,9 @@ type FakeTitleBarProps = OwnFakeTitleBarProps & typeof FakeTitleBar.defaultProps
 // @ts-expect-error ts-migrate(7022) FIXME: 'FakeTitleBar' implicitly has type 'any' because i... Remove this comment to see the full error message
 const FakeTitleBar = (props: FakeTitleBarProps) => {
   const { classes, title } = props;
+  const platform = usePromiseValue(async () => (await window.service.context.get('platform')) as string);
 
-  if (window.remote.getPlatform() !== 'darwin') return null;
+  if (platform !== 'darwin') return null;
 
   return (
     <div

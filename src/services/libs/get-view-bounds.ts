@@ -15,12 +15,10 @@ export default function getViewBounds(
   const preferencesService = container.get<IPreferenceService>(serviceIdentifier.Preference);
   const showSidebar = preferencesService.get('sidebar');
   const showTitleBar = process.platform === 'darwin' && preferencesService.get('titleBar') && isFullScreen !== true;
-  const showNavigationBar =
-    (process.platform === 'linux' && preferencesService.get('attachToMenubar') && !showSidebar) || preferencesService.get('navigationBar');
 
   const offsetTitleBar = showTitleBar ? 22 : 0;
   const x = showSidebar ? 68 : 0;
-  const y = showNavigationBar ? 36 + offsetTitleBar : 0 + offsetTitleBar;
+  const y = offsetTitleBar;
 
   if (findInPage) {
     const FIND_IN_PAGE_HEIGHT = 42;

@@ -8,11 +8,13 @@ import ListItemText from '@material-ui/core/ListItemText';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 import connectComponent from '../../helpers/connect-component';
+import { usePromiseValue } from '@/helpers/use-service-value';
 
 const ListItemDefaultBrowser = () => {
   const [isDefault, setIsDefault] = useState(false);
 
-  const isWindows10 = window.remote.getPlatform() === 'win32' && semver.gt(window.remote.getOSVersion(), '10.0.0');
+  const platform = usePromiseValue(async () => (await window.service.context.get('platform')) as string);
+  const isWindows10 = platform === 'win32' && semver.gt(window.remote.getOSVersion(), '10.0.0');
 
   const recheckIsDefault = useCallback(() => {
     // Electron protocol API doesn't work with Windows 10

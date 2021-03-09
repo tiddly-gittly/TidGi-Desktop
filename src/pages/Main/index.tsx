@@ -20,7 +20,6 @@ import { usePromiseValue } from '@/helpers/use-service-value';
 
 import WorkspaceSelector from './workspace-selector';
 import FindInPage from '../../components/FindInPage';
-import NavigationBar from './navigation-bar';
 import FakeTitleBar from './fake-title-bar';
 import DraggableRegion from './draggable-region';
 
@@ -170,7 +169,6 @@ export default function Main(): JSX.Element {
   const titleBar = usePromiseValue(async () => (await window.service.preference.get('titleBar')) as boolean);
   const sidebar = usePromiseValue(async () => (await window.service.preference.get('sidebar')) as boolean);
   const pauseNotifications = usePromiseValue(async () => (await window.service.preference.get('pauseNotifications')) as string);
-  const navigationBar = usePromiseValue(async () => (await window.service.preference.get('navigationBar')) as boolean);
   const themeSource = usePromiseValue(async () => (await window.service.preference.get('themeSource')) as 'system' | 'light' | 'dark');
   const isFullScreen = usePromiseValue(window.service.window.isFullScreen);
   const showTitleBar = platform === 'darwin' && titleBar === true && isFullScreen === false;
@@ -213,7 +211,6 @@ export default function Main(): JSX.Element {
               </SortableContainer>
               <WorkspaceSelector id="add" onClick={async () => await window.service.window.open(WindowNames.addWorkspace)} />
             </SidebarTop>
-            {navigationBar === false && (
               <End>
                 <IconButton aria-label="Notifications" onClick={async () => await window.service.window.open(WindowNames.notifications)}>
                   {typeof pauseNotifications === 'string' && pauseNotifications.length > 0 ? <NotificationsPausedIcon /> : <NotificationsIcon />}
@@ -224,11 +221,9 @@ export default function Main(): JSX.Element {
                   </IconButton>
                 )}
               </End>
-            )}
           </SidebarContainer>
         )}
         <ContentRoot>
-          {navigationBar === true && <NavigationBar />}
           <FindInPage />
           <InnerContentRoot>
             {workspacesList.length > 0 && mainWorkspaceMetaData?.didFailLoadErrorMessage && mainWorkspaceMetaData?.isLoading === false && (

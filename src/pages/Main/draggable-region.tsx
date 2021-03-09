@@ -4,52 +4,39 @@
 // You can put the draggable divs at the same region in BrowserWindow,
 // then even if you put a BrowserView on top of that region, that region is still draggable.
 
+import { usePromiseValue } from '@/helpers/use-service-value';
+import { WindowNames } from '@services/windows/WindowProperties';
 import React from 'react';
-import classNames from 'classnames';
+import styled, { css } from 'styled-components';
 
-import connectComponent from '../../helpers/connect-component';
+const Root = styled.div<{ sidebar?: boolean }>`
+  height: 22;
+  width: 100vw;
+  webkit-app-region: drag;
+  user-select: none;
+  background: transparent;
+  position: absolute;
+  top: 0;
+  left: 0;
+  ${({ sidebar }) =>
+    sidebar &&
+    css`
+      /** BrowserView has different position & width because of sidebar, sidebar width is 68px */
+      width: calc(100vw - 68px);
+      left: 68;
+    `}
+`;
 
-const styles = () => ({
-  root: {
-    height: 22,
-    width: '100vw',
-    WebkitAppRegion: 'drag',
-    WebkitUserSelect: 'none',
-    background: 'transparent',
-    position: 'absolute',
-    top: 0,
-    left: 0,
-  },
-  // BrowserView has different position & width because of sidebar
-  rootWithSidebar: {
-    width: 'calc(100vw - 68px)', // sidebar width is 68px
-    left: 68,
-  },
-});
-
-interface DraggableRegionProps {
-  classes: any;
-  navigationBar: boolean;
-  sidebar: boolean;
-  titleBar: boolean;
-}
-
-const DraggableRegion = ({ classes, navigationBar, sidebar, titleBar }: DraggableRegionProps) => {
+export default function DraggableRegion(): JSX.Element | null {
+  const platform = usePromiseValue(async () => (await window.service.context.get('platform')) as string);
+  const titleBar = usePromiseValue(async () => (await window.service.preference.get('titleBar')) as boolean);
+  const sidebar = usePromiseValue(async () => (await window.service.preference.get('sidebar')) as boolean);
+  const hideMenuBar = usePromiseValue(async () => (await window.service.preference.get('hideMenuBar')) as boolean);
   // on macOS or menubar mode, if all bars are hidden
   // the top 22px part of BrowserView should be draggable
-  if ((window.remote.getPlatform() === 'darwin' || window.meta.windowName === 'menubar') && !navigationBar && !titleBar) {
-    return <div className={classNames(classes.root, sidebar && classes.rootWithSidebar)} />;
+  if ((platform === 'darwin' || (window.meta.windowName === WindowNames.main && hideMenuBar === false)) && !titleBar) {
+    return <Root sidebar={sidebar} />;
   }
 
   return null;
-};
-
-const mapStateToProps = (state: any) => ({
-  navigationBar:
-    (window.remote.getPlatform() === 'linux' && state.preferences.attachToMenubar && !state.preferences.sidebar) || state.preferences.navigationBar,
-
-  sidebar: state.preferences.sidebar,
-  titleBar: state.preferences.titleBar,
-});
-
-export default connectComponent(DraggableRegion, mapStateToProps, null, styles);
+}

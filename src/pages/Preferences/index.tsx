@@ -174,7 +174,6 @@ export default function Preferences(): JSX.Element {
     hibernateUnusedWorkspacesAtLaunch,
     hideMenuBar,
     ignoreCertificateErrors,
-    navigationBar,
     pauseNotificationsBySchedule,
     pauseNotificationsByScheduleFrom,
     pauseNotificationsByScheduleTo,
@@ -314,25 +313,6 @@ export default function Preferences(): JSX.Element {
                   checked={sidebarShortcutHints}
                   onChange={async (event) => {
                     await window.service.preference.set('sidebarShortcutHints', event.target.checked);
-                  }}
-                />
-              </ListItemSecondaryAction>
-            </ListItem>
-            <Divider />
-            <ListItem>
-              <ListItemText primary={t('Preference.ShowNavigationBar')} secondary={t('Preference.ShowNavigationBarDetail')} />
-              <ListItemSecondaryAction>
-                <Switch
-                  edge="end"
-                  color="primary"
-                  // must show sidebar or navigation bar on Linux
-                  // if not, as user can't right-click on menu bar icon
-                  // they can't access preferences or notifications
-                  checked={(platform === 'linux' && attachToMenubar && !sidebar) || navigationBar}
-                  disabled={platform === 'linux' && attachToMenubar && !sidebar}
-                  onChange={async (event) => {
-                    await window.service.preference.set('navigationBar', event.target.checked);
-                    await window.service.workspaceView.realignActiveWorkspace();
                   }}
                 />
               </ListItemSecondaryAction>

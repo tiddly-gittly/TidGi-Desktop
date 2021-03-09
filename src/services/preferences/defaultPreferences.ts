@@ -20,7 +20,6 @@ export const defaultPreferences: IPreferences = {
   hideMenuBar: false,
   ignoreCertificateErrors: false,
   language: 'zh_CN',
-  navigationBar: false,
   pauseNotifications: '',
   pauseNotificationsBySchedule: false,
   pauseNotificationsByScheduleFrom: getDefaultPauseNotificationsByScheduleFrom(),
