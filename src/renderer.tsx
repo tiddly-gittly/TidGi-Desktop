@@ -5,6 +5,8 @@ import ReactDOM from 'react-dom';
 import i18n from 'i18next';
 import LogRocket from 'logrocket';
 
+import DateFnsUtils from '@material-ui/pickers/adapter/date-fns';
+import { LocalizationProvider } from '@material-ui/pickers';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import { I18nextProvider } from 'react-i18next';
 import { WindowNames, WindowMeta, IPreferenceWindowMeta } from '@services/windows/WindowProperties';
@@ -12,8 +14,6 @@ import { WindowNames, WindowMeta, IPreferenceWindowMeta } from '@services/window
 import 'typeface-roboto/index.css';
 
 import { initI18N } from './i18n';
-
-import AppWrapper from './components/app-wrapper';
 
 const Main = React.lazy(async () => await import('./pages/Main'));
 const AboutPage = React.lazy(async () => await import('./pages/About'));
@@ -86,14 +86,14 @@ async function runApp(): Promise<void> {
 
   ReactDOM.render(
     <>
-      <AppWrapper>
+      <LocalizationProvider dateAdapter={DateFnsUtils}>
         <CssBaseline />
         <React.Suspense fallback={<div />}>
           <I18nextProvider i18n={i18n}>
             <App />
           </I18nextProvider>
         </React.Suspense>
-      </AppWrapper>
+      </LocalizationProvider>
     </>,
     document.querySelector('#app'),
   );
