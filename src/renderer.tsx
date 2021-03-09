@@ -5,7 +5,8 @@ import ReactDOM from 'react-dom';
 import i18n from 'i18next';
 import LogRocket from 'logrocket';
 
-import AdapterDateFns from '@material-ui/lab/AdapterDateFns';
+import StyledEngineProvider from '@material-ui/core/StyledEngineProvider';
+import DateFnsUtils from '@material-ui/lab/AdapterDateFns';
 import LocalizationProvider from '@material-ui/lab/LocalizationProvider';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import { I18nextProvider } from 'react-i18next';
@@ -86,14 +87,16 @@ async function runApp(): Promise<void> {
 
   ReactDOM.render(
     <>
-      <LocalizationProvider dateAdapter={DateFnsUtils}>
-        <CssBaseline />
-        <React.Suspense fallback={<div />}>
-          <I18nextProvider i18n={i18n}>
-            <App />
-          </I18nextProvider>
-        </React.Suspense>
-      </LocalizationProvider>
+      <StyledEngineProvider injectFirst>
+        <LocalizationProvider dateAdapter={DateFnsUtils}>
+          <CssBaseline />
+          <React.Suspense fallback={<div />}>
+            <I18nextProvider i18n={i18n}>
+              <App />
+            </I18nextProvider>
+          </React.Suspense>
+        </LocalizationProvider>
+      </StyledEngineProvider>
     </>,
     document.querySelector('#app'),
   );

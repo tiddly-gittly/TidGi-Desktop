@@ -14,6 +14,7 @@ const rootResolve = (...pathFragment) => path.resolve(__dirname, ...pathFragment
 const webpackAlias = {
   '@': rootResolve('src'),
   '@services': rootResolve('src/services'),
+  '@material-ui/styled-engine': '@material-ui/styled-engine-sc',
 };
 
 module.exports = {
