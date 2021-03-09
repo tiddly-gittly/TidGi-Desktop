@@ -370,7 +370,7 @@ export class Window implements IWindowService {
           const mainWindow = this.get(WindowNames.main);
           if (mainWindow !== undefined) {
             mainWindow.webContents.focus();
-            mainWindow.webContents.send('open-find-in-page');
+            mainWindow.webContents.send(WindowChannel.openFindInPage);
             const contentSize = mainWindow.getContentSize();
             const view = mainWindow.getBrowserView();
             view?.setBounds(getViewBounds(contentSize as [number, number], true));

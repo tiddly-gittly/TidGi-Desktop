@@ -4,7 +4,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 import './common/i18n';
 import './common/authing-postmessage';
 import * as service from './common/services';
-import { MetaDataChannel, ViewChannel, ContextChannel } from '@/constants/channels';
+import { MetaDataChannel, ViewChannel, ContextChannel, WindowChannel } from '@/constants/channels';
 import { WindowNames, WindowMeta, IPossibleWindowMeta } from '@services/windows/WindowProperties';
 
 const extraMetaJSONString = process.argv.pop() as string;
@@ -25,7 +25,8 @@ declare global {
     meta: IPossibleWindowMeta;
   }
 }
-contextBridge.exposeInMainWorld('remote', {
+
+const remoteMethods = {
   getCurrentWindow: async () => {
     const currentWindow = await service.window.get(windowName);
     if (currentWindow === undefined) {
@@ -47,16 +48,18 @@ contextBridge.exposeInMainWorld('remote', {
     if (typeof result === 'string') return result;
     throw new Error(`getDirectoryName get bad result ${typeof result}`);
   },
-});
+  registerOpenFindInPage: (handleOpenFindInPage: () => void) => void ipcRenderer.on(WindowChannel.openFindInPage, handleOpenFindInPage),
+  unregisterOpenFindInPage: (handleOpenFindInPage: () => void) => void ipcRenderer.removeListener(WindowChannel.openFindInPage, handleOpenFindInPage),
+  registerUpdateFindInPageMatches: (updateFindInPageMatches: (event: Electron.IpcRendererEvent, activeMatchOrdinal: number, matches: number) => void) =>
+    void ipcRenderer.on(ViewChannel.updateFindInPageMatches, updateFindInPageMatches),
+  unregisterUpdateFindInPageMatches: (updateFindInPageMatches: (event: Electron.IpcRendererEvent, activeMatchOrdinal: number, matches: number) => void) =>
+    void ipcRenderer.removeListener(ViewChannel.updateFindInPageMatches, updateFindInPageMatches),
+};
+contextBridge.exposeInMainWorld('remote', remoteMethods);
 
 declare global {
   interface Window {
-    remote: {
-      getCurrentWindow: () => Promise<Electron.BrowserWindow>;
-      closeCurrentWindow: () => void;
-      getBaseName: (pathString: string) => Promise<string>;
-      getDirectoryName: (pathString: string) => Promise<string>;
-    };
+    remote: typeof remoteMethods;
   }
 }
 

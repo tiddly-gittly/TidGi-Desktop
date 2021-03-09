@@ -1,65 +1,67 @@
-import React, { useCallback, useEffect, useRef } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
+import styled from 'styled-components';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
-import connectComponent from '../../helpers/connect-component';
 
-const styles = (theme: any) => ({
-  root: {
-    background: theme.palette.background.default,
-    display: 'flex',
-    alignItems: 'center',
-    padding: '0 4px',
-    zIndex: 1,
-    height: 41,
-    borderBottom: '1px solid rgba(0, 0, 0, 0.2)',
-    width: '100%',
-  },
-  infoContainer: {
-    flex: 1,
-    padding: '0 12px',
-  },
-});
-interface FindInPageProps {
-  activeMatch: number;
-  classes: any;
-  matches: number;
-  onCloseFindInPage: (...arguments_: any[]) => any;
-  onUpdateFindInPageText: (...arguments_: any[]) => any;
-  open: boolean;
-  text: string;
-}
-const FindInPage = (props: FindInPageProps) => {
-  const { activeMatch, classes, matches, onCloseFindInPage, onUpdateFindInPageText, open, text } = props;
-  const inputReference = useRef(null);
+const Root = styled.div`
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  z-index: 1;
+  height: 41;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  width: 100%;
+`;
+const InfoContainer = styled.div`
+  flex: 1;
+  padding: 0 12px;
+`;
+
+export default function FindInPage(): JSX.Element | null {
+  const [open, openSetter] = useState(false);
+  const [text, textSetter] = useState('');
+  const [activeMatch, activeMatchSetter] = useState(0);
+  const [matches, matchesSetter] = useState(0);
+
+  const inputReference = useRef<HTMLInputElement>(null);
   // https://stackoverflow.com/a/57556594
   // Event handler utilizing useCallback ...
   // ... so that reference never changes.
   const handleOpenFindInPage = useCallback(() => {
-    inputReference.current.focus();
-    inputReference.current.select();
-  }, [inputReference]);
+    openSetter(true);
+    inputReference.current?.focus();
+    inputReference.current?.select();
+  }, [inputReference, openSetter]);
+  const updateFindInPageMatches = useCallback(
+    (_event: Electron.IpcRendererEvent, activeMatchOrdinal: number, matchesResult: number) => {
+      activeMatchSetter(activeMatchOrdinal);
+      matchesSetter(matchesResult);
+    },
+    [activeMatchSetter, matchesSetter],
+  );
   useEffect(() => {
-    const { ipcRenderer } = window.remote;
-    ipcRenderer.on('open-find-in-page', handleOpenFindInPage);
+    window.remote.registerOpenFindInPage(handleOpenFindInPage);
+    window.remote.registerUpdateFindInPageMatches(updateFindInPageMatches);
     // Remove event listener on cleanup
     return () => {
-      ipcRenderer.removeListener('open-find-in-page', handleOpenFindInPage);
+      window.remote.unregisterOpenFindInPage(handleOpenFindInPage);
+      window.remote.unregisterUpdateFindInPageMatches(updateFindInPageMatches);
     };
   }, [handleOpenFindInPage]);
   if (!open) {
     return null;
   }
   return (
-    <div className={classes.root}>
-      <div className={classes.infoContainer}>
+    <Root>
+      <InfoContainer>
         <Typography variant="body2">
           <strong>{activeMatch}</strong>
           <span> / </span>
           <strong>{matches}</strong>
           <span> matches</span>
         </Typography>
-      </div>
+      </InfoContainer>
       <div>
         <TextField
           autoFocus
@@ -69,34 +71,33 @@ const FindInPage = (props: FindInPageProps) => {
           margin="dense"
           onChange={(e) => {
             const value = e.target.value;
-            onUpdateFindInPageText(value);
+            textSetter(value);
             if (value.length > 0) {
               void window.service.window.findInPage(value, true);
             } else {
               void window.service.window.stopFindInPage();
             }
           }}
-          onInput={(e) => {
-            const value = (e.target as any).value;
-            onUpdateFindInPageText(value);
+          onInput={(event: React.FormEvent<HTMLInputElement>) => {
+            const value = event.currentTarget.value;
+            textSetter(value);
             if (value.length > 0) {
               void window.service.window.findInPage(value, true);
             } else {
               void window.service.window.stopFindInPage();
             }
           }}
-          onKeyDown={(e) => {
-            if ((e.keyCode || e.which) === 13) {
+          onKeyDown={(event) => {
+            if (event.key === 'Enter') {
               // Enter
-              const value = (e.target as any).value;
-              if (value.length > 0) {
-                void window.service.window.findInPage(value, true);
+              if (text.length > 0) {
+                void window.service.window.findInPage(text, true);
               }
             }
-            if ((e.keyCode || e.which) === 27) {
+            if (event.key === 'Escape') {
               // Escape
               void window.service.window.stopFindInPage(true);
-              onCloseFindInPage();
+              openSetter(false);
             }
           }}
         />
@@ -135,21 +136,10 @@ const FindInPage = (props: FindInPageProps) => {
         size="small"
         onClick={() => {
           void window.service.window.stopFindInPage(true);
-          onCloseFindInPage();
+          openSetter(false);
         }}>
         Close
       </Button>
-    </div>
+    </Root>
   );
-};
-const mapStateToProps = (state: any) => ({
-  open: state.findInPage.open,
-  activeMatch: state.findInPage.activeMatch,
-  matches: state.findInPage.matches,
-  text: state.findInPage.text,
-});
-const actionCreators = {
-  closeFindInPage,
-  updateFindInPageText,
-};
-export default connectComponent(FindInPage, mapStateToProps, actionCreators, styles);
+}

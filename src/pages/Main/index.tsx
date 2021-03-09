@@ -19,7 +19,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { usePromiseValue } from '@/helpers/use-service-value';
 
 import WorkspaceSelector from './workspace-selector';
-import FindInPage from './find-in-page';
+import FindInPage from '../../components/FindInPage';
 import NavigationBar from './navigation-bar';
 import FakeTitleBar from './fake-title-bar';
 import DraggableRegion from './draggable-region';
