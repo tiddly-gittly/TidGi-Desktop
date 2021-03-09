@@ -303,7 +303,3 @@ export default function Main(): JSX.Element {
     </OuterRoot>
   );
 }
-
-Main.defaultProps = {
-  isLoading: false,
-};

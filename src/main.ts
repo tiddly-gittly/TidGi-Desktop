@@ -18,22 +18,8 @@ import MAILTO_URLS from '@services/constants/mailto-urls';
 import { initI18NAfterServiceReady } from '@services/libs/i18n';
 
 import serviceIdentifier from '@services/serviceIdentifier';
-import { Authentication } from '@services/auth';
-import { Git } from '@services/git';
-import { MenuService } from '@services/menu';
-import { NativeService } from '@services/native';
-import { NotificationService } from '@services/notifications';
-import { Preference } from '@services/preferences';
-import { SystemPreference } from '@services/systemPreferences';
-import { ThemeService } from '@services/theme';
-import { Updater } from '@services/updater';
-import { View } from '@services/view';
-import { Wiki } from '@services/wiki';
-import { WikiGitWorkspace } from '@services/wikiGitWorkspace';
-import { Window } from '@services/windows';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { Workspace } from '@services/workspaces';
-import { WorkspaceView } from '@services/workspacesView';
+import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 
 import { IMenuService } from './services/menu/interface';
 import { INativeService } from './services/native/interface';
@@ -45,21 +31,7 @@ import { IWorkspaceViewService } from './services/workspacesView/interface';
 
 const gotTheLock = app.requestSingleInstanceLock();
 
-container.bind<Authentication>(serviceIdentifier.Authentication).to(Authentication).inSingletonScope();
-container.bind<Git>(serviceIdentifier.Git).to(Git).inSingletonScope();
-container.bind<MenuService>(serviceIdentifier.MenuService).to(MenuService).inSingletonScope();
-container.bind<NotificationService>(serviceIdentifier.NotificationService).to(NotificationService).inSingletonScope();
-container.bind<NativeService>(serviceIdentifier.NativeService).to(NativeService).inSingletonScope();
-container.bind<Preference>(serviceIdentifier.Preference).to(Preference).inSingletonScope();
-container.bind<SystemPreference>(serviceIdentifier.SystemPreference).to(SystemPreference).inSingletonScope();
-container.bind<ThemeService>(serviceIdentifier.ThemeService).to(ThemeService).inSingletonScope();
-container.bind<Updater>(serviceIdentifier.Updater).to(Updater).inSingletonScope();
-container.bind<View>(serviceIdentifier.View).to(View).inSingletonScope();
-container.bind<Wiki>(serviceIdentifier.Wiki).to(Wiki).inSingletonScope();
-container.bind<WikiGitWorkspace>(serviceIdentifier.WikiGitWorkspace).to(WikiGitWorkspace).inSingletonScope();
-container.bind<Window>(serviceIdentifier.Window).to(Window).inSingletonScope();
-container.bind<Workspace>(serviceIdentifier.Workspace).to(Workspace).inSingletonScope();
-container.bind<WorkspaceView>(serviceIdentifier.WorkspaceView).to(WorkspaceView).inSingletonScope();
+bindServiceAndProxy();
 const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
 const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
