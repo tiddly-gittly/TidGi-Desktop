@@ -5,8 +5,8 @@ import ReactDOM from 'react-dom';
 import i18n from 'i18next';
 import LogRocket from 'logrocket';
 
-import DateFnsUtils from '@material-ui/pickers/adapter/date-fns';
-import { LocalizationProvider } from '@material-ui/pickers';
+import AdapterDateFns from '@material-ui/lab/AdapterDateFns';
+import LocalizationProvider from '@material-ui/lab/LocalizationProvider';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import { I18nextProvider } from 'react-i18next';
 import { WindowNames, WindowMeta, IPreferenceWindowMeta } from '@services/windows/WindowProperties';

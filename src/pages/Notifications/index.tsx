@@ -15,7 +15,7 @@ import Container from '@material-ui/core/Container';
 
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
-import { DateTimePicker } from '@material-ui/pickers';
+import DateTimePicker from '@material-ui/lab/DateTimePicker';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 import StatedMenu from '../../components/github/stated-menu';

@@ -24,7 +24,7 @@ import Typography from '@material-ui/core/Typography';
 
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
-import { TimePicker } from '@material-ui/pickers';
+import TimePicker from '@material-ui/lab/TimePicker';
 
 import StatedMenu from '../../components/github/stated-menu';
 
@@ -247,7 +247,6 @@ export default function Preferences(): JSX.Element {
               <ListItemText primary={t('Preference.SyncInterval')} secondary={t('Preference.SyncIntervalDescription')} />
               <TimePickerContainer>
                 <TimePicker
-                  autoOk={false}
                   ampm={false}
                   openTo="hours"
                   views={['hours', 'minutes', 'seconds']}
@@ -608,7 +607,6 @@ export default function Preferences(): JSX.Element {
                     disabled={!pauseNotificationsBySchedule}
                   />
                   <TimePicker
-                    autoOk={false}
                     label="to"
                     renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(pauseNotificationsByScheduleTo)}
