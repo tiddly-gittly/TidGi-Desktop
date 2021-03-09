@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { contextBridge, ipcRenderer } from 'electron';
+import { contextBridge, ipcRenderer, webFrame } from 'electron';
 
 import './common/i18n';
 import './common/authing-postmessage';
@@ -37,7 +37,7 @@ const remoteMethods = {
   closeCurrentWindow: async () => {
     await service.window.close(windowName);
   },
-  // call NodeJS.path
+  /** call NodeJS.path */
   getBaseName: async (pathString: string): Promise<string> => {
     const result = (await ipcRenderer.invoke(ContextChannel.getBaseName, pathString)) as string;
     if (typeof result === 'string') return result;
@@ -47,6 +47,12 @@ const remoteMethods = {
     const result = (await ipcRenderer.invoke(ContextChannel.getDirectoryName, pathString)) as string;
     if (typeof result === 'string') return result;
     throw new Error(`getDirectoryName get bad result ${typeof result}`);
+  },
+  /**
+   * an wrapper around setVisualZoomLevelLimits
+   */
+  setVisualZoomLevelLimits: (minimumLevel: number, maximumLevel: number): void => {
+    webFrame.setVisualZoomLevelLimits(minimumLevel, maximumLevel);
   },
   registerOpenFindInPage: (handleOpenFindInPage: () => void) => void ipcRenderer.on(WindowChannel.openFindInPage, handleOpenFindInPage),
   unregisterOpenFindInPage: (handleOpenFindInPage: () => void) => void ipcRenderer.removeListener(WindowChannel.openFindInPage, handleOpenFindInPage),

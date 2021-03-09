@@ -20,7 +20,6 @@ export interface IWindowService {
   goBack(windowName: WindowNames): void;
   goForward(windowName: WindowNames): void;
   reload(windowName: WindowNames): void;
-  setVisualZoomLevelLimits(minimumLevel: number, maximumLevel: number): void;
   clearStorageData(windowName?: WindowNames): Promise<void>;
   findInPage(text: string, forward?: boolean | undefined, windowName?: WindowNames): void;
   stopFindInPage(close?: boolean | undefined, windowName?: WindowNames): void;
@@ -41,7 +40,6 @@ export const WindowServiceIPCDescriptor = {
     goBack: ProxyPropertyType.Function,
     goForward: ProxyPropertyType.Function,
     reload: ProxyPropertyType.Function,
-    setVisualZoomLevelLimits: ProxyPropertyType.Function,
     clearStorageData: ProxyPropertyType.Function,
     findInPage: ProxyPropertyType.Function,
     stopFindInPage: ProxyPropertyType.Function,

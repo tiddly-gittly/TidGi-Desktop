@@ -51,7 +51,7 @@ const App = (): JSX.Element => {
 async function runApp(): Promise<void> {
   LogRocket.init('kkauk7/tiddlygit-desktop');
 
-  void window.service.window.setVisualZoomLevelLimits(1, 1);
+  void window.remote.setVisualZoomLevelLimits(1, 1);
   if (window.meta.windowName === WindowNames.editWorkspace) {
     const { workspaceID } = window.meta as WindowMeta[WindowNames.editWorkspace];
     if (workspaceID === undefined) {

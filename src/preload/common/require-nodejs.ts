@@ -73,9 +73,6 @@ import { Channels } from '@/constants/channels';
 //     //   };
 //     //   clearStorageData: () => void;
 //     // };
-//     electron: {
-//       webFrame: {
-//         setVisualZoomLevelLimits: (minimumLevel: number, maximumLevel: number) => void;
       };
     };
     ipcRenderer: {

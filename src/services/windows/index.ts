@@ -333,13 +333,6 @@ export class Window implements IWindowService {
     await win?.getBrowserView()?.webContents?.session?.clearStorageData();
   }
 
-  /**
-   * an wrapper around setVisualZoomLevelLimits
-   */
-  public setVisualZoomLevelLimits(minimumLevel: number, maximumLevel: number): void {
-    webFrame.setVisualZoomLevelLimits(minimumLevel, maximumLevel);
-  }
-
   private registerMenu(): void {
     this.menuService.insertMenu(
       'window',
