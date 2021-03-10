@@ -164,14 +164,12 @@ export default function Main(): JSX.Element {
     window.service.workspace.getWorkspacesAsList,
     [] as AsyncReturnType<typeof window.service.workspace.getWorkspacesAsList>,
   )!;
-  const platform = usePromiseValue<string>(async () => (await window.service.context.get('platform')) as string);
   const attachToMenubar = usePromiseValue(async () => (await window.service.preference.get('attachToMenubar')) as boolean);
   const titleBar = usePromiseValue(async () => (await window.service.preference.get('titleBar')) as boolean);
   const sidebar = usePromiseValue(async () => (await window.service.preference.get('sidebar')) as boolean);
   const pauseNotifications = usePromiseValue(async () => (await window.service.preference.get('pauseNotifications')) as string);
   const themeSource = usePromiseValue(async () => (await window.service.preference.get('themeSource')) as 'system' | 'light' | 'dark');
   const isFullScreen = usePromiseValue(window.service.window.isFullScreen);
-  const showTitleBar = platform === 'darwin' && titleBar === true && isFullScreen === false;
   const mainWorkspaceMetaData = usePromiseValue(async () => {
     const activeWorkspace = await window.service.workspace.getActiveWorkspace();
     if (activeWorkspace !== undefined) {
@@ -186,11 +184,10 @@ export default function Main(): JSX.Element {
   return (
     <OuterRoot>
       {workspacesList.length > 0 && <DraggableRegion />}
-      {showTitleBar && <FakeTitleBar />}
       <Root>
         {sidebar === true && (
           <SidebarContainer>
-            <SidebarTop fullscreen={isFullScreen === true || showTitleBar || attachToMenubar}>
+            <SidebarTop fullscreen={isFullScreen === true || titleBar || attachToMenubar}>
               <SortableContainer
                 distance={10}
                 onSortEnd={async ({ oldIndex, newIndex }) => {
