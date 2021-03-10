@@ -18,10 +18,10 @@ import { WindowNames } from '@services/windows/WindowProperties';
 
 import { usePromiseValue } from '@/helpers/use-service-value';
 
-import WorkspaceSelector from './workspace-selector';
+import WorkspaceSelector from './WorkspaceSelector';
 import FindInPage from '../../components/FindInPage';
 import FakeTitleBar from './fake-title-bar';
-import DraggableRegion from './draggable-region';
+import DraggableRegion from './DraggableRegion';
 
 import arrowWhite from '@/images/arrow-white.png';
 import arrowBlack from '@/images/arrow-black.png';

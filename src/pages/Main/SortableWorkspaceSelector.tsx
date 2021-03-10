@@ -2,7 +2,7 @@ import React from 'react';
 import { withTranslation, WithTranslation } from 'react-i18next';
 import { SortableContainer as sortableContainer, SortableElement as sortableElement } from 'react-sortable-hoc';
 import { WindowNames } from '@services/windows/WindowProperties';
-import WorkspaceSelector from './workspace-selector';
+import WorkspaceSelector from './WorkspaceSelector';
 import { IWorkspace } from '@services/workspaces/interface';
 
 export const SortableContainer = sortableContainer(({ children }: { children: React.ReactNode }) => <div>{children}</div>);

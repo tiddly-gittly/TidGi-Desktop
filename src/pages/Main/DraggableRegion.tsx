@@ -12,7 +12,7 @@ import styled, { css } from 'styled-components';
 const Root = styled.div<{ sidebar?: boolean }>`
   height: 22;
   width: 100vw;
-  webkit-app-region: drag;
+  -webkit-app-region: drag;
   user-select: none;
   background: transparent;
   position: absolute;
