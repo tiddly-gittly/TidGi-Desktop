@@ -178,10 +178,10 @@ export class Window implements IWindowService {
     newWindow.on('closed', () => {
       this.windows[windowName] = undefined;
     });
-    await newWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+    let webContentLoadingPromise: Promise<void> | undefined;
     if (isMainWindow) {
       // handle window show and Webview/browserView show
-      return await new Promise<void>((resolve) => {
+      webContentLoadingPromise = new Promise<void>((resolve) => {
         newWindow.once('ready-to-show', () => {
           const mainWindow = this.get(WindowNames.main);
           if (mainWindow === undefined) return;
@@ -202,6 +202,9 @@ export class Window implements IWindowService {
         });
       });
     }
+    // This loading will wait for a while
+    await newWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+    await webContentLoadingPromise;
   }
 
   private registerMainWindowListeners(newWindow: BrowserWindow): void {

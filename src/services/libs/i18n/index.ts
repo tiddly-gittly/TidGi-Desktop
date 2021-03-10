@@ -4,8 +4,8 @@ import Backend from 'i18next-fs-backend';
 import isDevelopment from 'electron-is-dev';
 
 import { LOCALIZATION_FOLDER } from '@services/constants/paths';
-import bindI18nListener from './bindI18nListener';
 import changeToDefaultLanguage from './useDefaultLanguage';
+import { mainBindings } from './i18nMainBindings';
 
 // init i18n is async, but our usage is basically await the electron app to start, so this is basically ok
 void i18next.use(Backend).init({
@@ -23,8 +23,8 @@ void i18next.use(Backend).init({
   fallbackLng: isDevelopment ? false : 'en', // set to false when generating translation files locally
 });
 
-export async function initI18NAfterServiceReady(): Promise<void> {
-  await bindI18nListener();
+export async function initRendererI18NHandler(): Promise<void> {
+  mainBindings();
   await changeToDefaultLanguage(i18next);
 }
 

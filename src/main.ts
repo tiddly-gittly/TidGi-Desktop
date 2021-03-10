@@ -8,14 +8,14 @@ import unhandled from 'electron-unhandled';
 import { openNewGitHubIssue, debugInfo } from 'electron-util';
 import i18n from 'i18next';
 
-import { clearMainBindings } from '@services/libs/i18n/i18next-electron-fs-backend';
+import { clearMainBindings } from '@services/libs/i18n/i18nMainBindings';
 import { buildLanguageMenu } from '@services/libs/i18n/buildLanguageMenu';
 import { MainChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import extractHostname from '@services/libs/extract-hostname';
 import MAILTO_URLS from '@services/constants/mailto-urls';
-import { initI18NAfterServiceReady } from '@services/libs/i18n';
+import { initRendererI18NHandler } from '@services/libs/i18n';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -56,6 +56,7 @@ if (!gotTheLock) {
       mainWindow.focus();
     }
   });
+  void initRendererI18NHandler();
   // make sure "Settings" file exists
   // if not, ignore this chunk of code
   // as using electron-settings before app.on('ready') and "Settings" is created
@@ -107,9 +108,8 @@ if (!gotTheLock) {
       });
     }
     await windowService.open(WindowNames.main);
-    // set language async
+    // set language async on main process
     void i18n.changeLanguage(preferenceService.get('language'));
-
     await workspaceViewService.initializeAllWorkspaceView();
 
     ipcMain.emit('request-update-pause-notifications-info');
@@ -141,7 +141,6 @@ if (!gotTheLock) {
     }
     // trigger whenTrulyReady
     ipcMain.emit(MainChannel.commonInitFinished);
-    await initI18NAfterServiceReady();
     // build menu at last, this is not noticeable to user, so do it last
     buildLanguageMenu();
     menuService.buildMenu();
