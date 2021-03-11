@@ -129,7 +129,7 @@ export default function WorkspaceSelector({
     void (async () => {
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       shortWorkspaceNameSetter(workspaceName ? await window.remote.getBaseName(workspaceName) : t('WorkspaceSelector.BadWorkspacePath'));
-    });
+    })();
   }, []);
   return (
     <Root role="button" hibernated={hibernated} active={active} onClick={onClick} onKeyDown={onClick} onContextMenu={onContextMenu} tabIndex={0}>

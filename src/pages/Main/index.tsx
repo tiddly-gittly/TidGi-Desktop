@@ -27,6 +27,7 @@ import arrowWhite from '@/images/arrow-white.png';
 import arrowBlack from '@/images/arrow-black.png';
 import { SortableContainer, SortableItem } from './SortableWorkspaceSelector';
 import { IWorkspace } from '@services/workspaces/interface';
+import { IPreferences } from '@services/preferences/interface';
 
 const OuterRoot = styled.div`
   display: flex;
@@ -164,12 +165,11 @@ export default function Main(): JSX.Element {
     window.service.workspace.getWorkspacesAsList,
     [] as AsyncReturnType<typeof window.service.workspace.getWorkspacesAsList>,
   )!;
-  const attachToMenubar = usePromiseValue(async () => (await window.service.preference.get('attachToMenubar')) as boolean);
-  const titleBar = usePromiseValue(async () => (await window.service.preference.get('titleBar')) as boolean);
-  const sidebar = usePromiseValue(async () => (await window.service.preference.get('sidebar')) as boolean);
-  const pauseNotifications = usePromiseValue(async () => (await window.service.preference.get('pauseNotifications')) as string);
-  const themeSource = usePromiseValue(async () => (await window.service.preference.get('themeSource')) as 'system' | 'light' | 'dark');
-  const isFullScreen = usePromiseValue(window.service.window.isFullScreen);
+  const [{ attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource }, isFullScreen] = usePromiseValue<[Partial<IPreferences>, boolean | undefined]>(
+    async () => await Promise.all([window.service.preference.getPreferences(), window.service.window.isFullScreen()]),
+    [{}, false],
+  )!;
+
   const mainWorkspaceMetaData = usePromiseValue(async () => {
     const activeWorkspace = await window.service.workspace.getActiveWorkspace();
     if (activeWorkspace !== undefined) {
@@ -208,16 +208,16 @@ export default function Main(): JSX.Element {
               </SortableContainer>
               <WorkspaceSelector id="add" onClick={async () => await window.service.window.open(WindowNames.addWorkspace)} />
             </SidebarTop>
-              <End>
-                <IconButton aria-label="Notifications" onClick={async () => await window.service.window.open(WindowNames.notifications)}>
-                  {typeof pauseNotifications === 'string' && pauseNotifications.length > 0 ? <NotificationsPausedIcon /> : <NotificationsIcon />}
+            <End>
+              <IconButton aria-label="Notifications" onClick={async () => await window.service.window.open(WindowNames.notifications)}>
+                {typeof pauseNotifications === 'string' && pauseNotifications.length > 0 ? <NotificationsPausedIcon /> : <NotificationsIcon />}
+              </IconButton>
+              {attachToMenubar === true && (
+                <IconButton aria-label="Preferences" onClick={async () => await window.service.window.open(WindowNames.preferences)}>
+                  <SettingsIcon />
                 </IconButton>
-                {attachToMenubar === true && (
-                  <IconButton aria-label="Preferences" onClick={async () => await window.service.window.open(WindowNames.preferences)}>
-                    <SettingsIcon />
-                  </IconButton>
-                )}
-              </End>
+              )}
+            </End>
           </SidebarContainer>
         )}
         <ContentRoot>

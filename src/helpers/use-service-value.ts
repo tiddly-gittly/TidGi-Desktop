@@ -16,7 +16,7 @@ export function usePromiseValue<T, DefaultValueType = T | undefined>(
   useEffect(() => {
     void (async () => {
       valueSetter(await asyncValue());
-    });
+    })();
   }, []);
 
   return value;
@@ -33,7 +33,7 @@ export function usePromiseValueAndSetter<T, DefaultValueType = T | undefined>(
   useEffect(() => {
     void (async () => {
       valueSetter(await asyncValue());
-    });
+    })();
   }, []);
   // update remote value on change
   useEffect(() => {
