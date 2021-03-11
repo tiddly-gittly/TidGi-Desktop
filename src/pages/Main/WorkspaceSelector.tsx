@@ -1,10 +1,12 @@
+import Promise from 'bluebird';
 import React, { useState, useEffect } from 'react';
-import classNames from 'classnames';
 import { useTranslation } from 'react-i18next';
 import BadgeRaw from '@material-ui/core/Badge';
 import styled, { css } from 'styled-components';
 
 import defaultIcon from '../../images/default-icon.png';
+
+Promise.config({ cancellation: true });
 
 // TODO: &:hover { background: theme.palette.action.hover;
 const Root = styled.div<{ hibernated?: boolean; active?: boolean }>`
@@ -125,10 +127,14 @@ export default function WorkspaceSelector({
   const { t } = useTranslation();
   const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {
-    void (async () => {
-      const baseName = await window.service.context.getBaseName(workspaceName);
+    const setBaseNamePromise = new Promise<string | undefined>((resolve) => {
+      window.service.context.getBaseName(workspaceName).then((baseName) => resolve(baseName));
+    });
+
+    setBaseNamePromise.then((baseName) => {
       shortWorkspaceNameSetter(baseName !== undefined ? baseName : t('WorkspaceSelector.BadWorkspacePath'));
-    })();
+    });
+    return () => setBaseNamePromise.cancel();
   }, [workspaceName]);
   return (
     <Root role="button" hibernated={hibernated} active={active} onClick={onClick} onKeyDown={onClick} onContextMenu={onContextMenu} tabIndex={0}>

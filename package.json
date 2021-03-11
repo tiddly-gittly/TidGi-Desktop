@@ -68,10 +68,12 @@
     }
   },
   "dependencies": {
+    "@dnd-kit/core": "^1.0.2",
+    "@dnd-kit/sortable": "^1.0.2",
+    "@dnd-kit/utilities": "^1.0.2",
     "@material-ui/styled-engine-sc": "^5.0.0-alpha.25",
     "@rematch/core": "^2.0.0",
     "@tiddlygit/tiddlywiki": "5.1.24-prerelease.20210103",
-    "array-move": "^3.0.1",
     "beautiful-react-hooks": "^0.31.0",
     "bluebird": "^3.7.2",
     "chokidar": "^3.5.1",
@@ -187,7 +189,6 @@
     "react-dom": "17.0.1",
     "react-i18next": "^11.8.6",
     "react-redux": "7.2.2",
-    "react-sortable-hoc": "1.11.0",
     "redux": "4.0.5",
     "rimraf": "^3.0.2",
     "simplebar": "6.0.0-beta.4",

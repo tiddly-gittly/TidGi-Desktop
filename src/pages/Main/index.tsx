@@ -1,7 +1,8 @@
 import React from 'react';
-import arrayMove from 'array-move';
 import styled, { css } from 'styled-components';
 import { AsyncReturnType } from 'type-fest';
+import { DndContext } from '@dnd-kit/core';
+import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
@@ -24,7 +25,7 @@ import DraggableRegion from './DraggableRegion';
 
 import arrowWhite from '@/images/arrow-white.png';
 import arrowBlack from '@/images/arrow-black.png';
-import SortableWorkspaceSelector, { SortableContainer } from './SortableWorkspaceSelector';
+import { SortableWorkspaceSelector } from './SortableWorkspaceSelector';
 import { IWorkspace } from '@services/workspaces/interface';
 import { IPreferences } from '@services/preferences/interface';
 
@@ -180,6 +181,7 @@ export default function Main(): JSX.Element {
   }, {} as AsyncReturnType<typeof window.service.workspace.getMetaData>);
   const requestReload = async (): Promise<void> => await window.service.window.reload(window.meta.windowName);
 
+  const workspaceIDs = workspacesList.map((workspace) => workspace.id);
   return (
     <OuterRoot>
       {workspacesList.length > 0 && <DraggableRegion />}
@@ -187,10 +189,11 @@ export default function Main(): JSX.Element {
         {sidebar === true && (
           <SidebarContainer>
             <SidebarTop fullscreen={isFullScreen === true || titleBar || attachToMenubar}>
-              <SortableContainer
-                distance={10}
-                onSortEnd={async ({ oldIndex, newIndex }) => {
-                  if (oldIndex === newIndex) return;
+              <DndContext
+                onDragEnd={async ({ active, over }) => {
+                  if (over === null || active.id === over.id) return;
+                  const oldIndex = workspaceIDs.indexOf(active.id);
+                  const newIndex = workspaceIDs.indexOf(over.id);
 
                   const newWorkspacesList = arrayMove(workspacesList, oldIndex, newIndex);
                   const newWorkspaces: Record<string, IWorkspace> = {};
@@ -201,10 +204,12 @@ export default function Main(): JSX.Element {
 
                   await window.service.workspace.setWorkspaces(newWorkspaces);
                 }}>
-                {workspacesList.map((workspace, index) => (
-                  <SortableWorkspaceSelector key={`item-${workspace.id}`} index={index} workspace={workspace} />
-                ))}
-              </SortableContainer>
+                <SortableContext items={workspaceIDs} strategy={verticalListSortingStrategy}>
+                  {workspacesList.map((workspace, index) => (
+                    <SortableWorkspaceSelector key={`item-${workspace.id}`} index={index} workspace={workspace} />
+                  ))}
+                </SortableContext>
+              </DndContext>
               <WorkspaceSelector id="add" onClick={async () => await window.service.window.open(WindowNames.addWorkspace)} />
             </SidebarTop>
             <End>
