@@ -20,12 +20,11 @@ import { usePromiseValue } from '@/helpers/use-service-value';
 
 import WorkspaceSelector from './WorkspaceSelector';
 import FindInPage from '../../components/FindInPage';
-import FakeTitleBar from './fake-title-bar';
 import DraggableRegion from './DraggableRegion';
 
 import arrowWhite from '@/images/arrow-white.png';
 import arrowBlack from '@/images/arrow-black.png';
-import { SortableContainer, SortableItem } from './SortableWorkspaceSelector';
+import SortableWorkspaceSelector, { SortableContainer } from './SortableWorkspaceSelector';
 import { IWorkspace } from '@services/workspaces/interface';
 import { IPreferences } from '@services/preferences/interface';
 
@@ -203,7 +202,7 @@ export default function Main(): JSX.Element {
                   await window.service.workspace.setWorkspaces(newWorkspaces);
                 }}>
                 {workspacesList.map((workspace, index) => (
-                  <SortableItem key={`item-${workspace.id}`} index={index} value={{ index: index, workspace }} />
+                  <SortableWorkspaceSelector key={`item-${workspace.id}`} index={index} workspace={workspace} />
                 ))}
               </SortableContainer>
               <WorkspaceSelector id="add" onClick={async () => await window.service.window.open(WindowNames.addWorkspace)} />

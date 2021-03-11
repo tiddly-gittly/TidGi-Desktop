@@ -1,5 +1,6 @@
 import { app } from 'electron';
 import process from 'process';
+import path from 'path';
 import os from 'os';
 import isDevelopment from 'electron-is-dev';
 import { injectable } from 'inversify';
@@ -32,5 +33,15 @@ export class ContextService implements IContextService {
     }
 
     throw new Error(`${String(key)} not existed in ContextService`);
+  }
+
+  public getBaseName(pathString: string | undefined): string | undefined {
+    try {
+      if (pathString !== undefined) {
+        return path.basename(pathString);
+      }
+    } catch {
+      return;
+    }
   }
 }

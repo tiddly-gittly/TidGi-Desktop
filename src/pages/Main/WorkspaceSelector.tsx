@@ -97,18 +97,17 @@ const Badge = styled(BadgeRaw)`
 `;
 
 interface Props {
-  active: boolean;
-  badgeCount: number;
-  classes: Object;
-  hibernated: boolean;
+  active?: boolean;
+  badgeCount?: number;
+  hibernated?: boolean;
   id: string;
-  onClick: () => void;
-  onContextMenu: () => void;
-  order: number;
-  picturePath: string;
-  sidebarShortcutHints: boolean;
-  transparentBackground: boolean;
-  workspaceName: string;
+  onClick?: () => void;
+  onContextMenu?: () => void;
+  order?: number;
+  picturePath?: string;
+  sidebarShortcutHints?: boolean;
+  transparentBackground?: boolean;
+  workspaceName?: string;
 }
 export default function WorkspaceSelector({
   active = false,
@@ -127,10 +126,10 @@ export default function WorkspaceSelector({
   const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {
     void (async () => {
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      shortWorkspaceNameSetter(workspaceName ? await window.remote.getBaseName(workspaceName) : t('WorkspaceSelector.BadWorkspacePath'));
+      const baseName = await window.service.context.getBaseName(workspaceName);
+      shortWorkspaceNameSetter(baseName !== undefined ? baseName : t('WorkspaceSelector.BadWorkspacePath'));
     })();
-  }, []);
+  }, [workspaceName]);
   return (
     <Root role="button" hibernated={hibernated} active={active} onClick={onClick} onKeyDown={onClick} onContextMenu={onContextMenu} tabIndex={0}>
       <Badge color="secondary" badgeContent={badgeCount} max={99}>
