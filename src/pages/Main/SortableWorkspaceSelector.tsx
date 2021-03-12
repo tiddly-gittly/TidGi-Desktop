@@ -32,6 +32,7 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
         transparentBackground={transparentBackground}
         order={index}
         hibernated={hibernated}
+        sidebarShortcutHints
         onClick={async () => {
           if (isSubWiki) {
             await window.service.wiki.requestOpenTiddlerInWiki(tagName);

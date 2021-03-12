@@ -11,7 +11,7 @@ Promise.config({ cancellation: true });
 // TODO: &:hover { background: theme.palette.action.hover;
 const Root = styled.div<{ hibernated?: boolean; active?: boolean }>`
   height: fit-content;
-  width: 68;
+  width: 68px;
   padding: 10px 0;
   display: flex;
   align-items: center;
@@ -46,9 +46,9 @@ const RootActive = styled.div``;
 // TODO: color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white),
 // TODO: border: theme.palette.type === 'dark' ? 'none' : 1px solid rgba(0, 0, 0, 0.12),
 const Avatar = styled.div<{ large?: boolean; transparent?: boolean; addAvatar?: boolean }>`
-  height: 36;
-  width: 36;
-  border-radius: 4;
+  height: 36px;
+  width: 36px;
+  border-radius: 4px;
   line-height: 36px;
   text-align: center;
   font-weight: 500;
@@ -57,8 +57,8 @@ const Avatar = styled.div<{ large?: boolean; transparent?: boolean; addAvatar?: 
   ${({ large }) =>
     large &&
     css`
-      height: 44;
-      width: 44;
+      height: 44px;
+      width: 44px;
       line-height: 44px;
     `}
   ${({ transparent }) =>
@@ -71,13 +71,13 @@ const Avatar = styled.div<{ large?: boolean; transparent?: boolean; addAvatar?: 
 `;
 
 const AvatarPicture = styled.img<{ large?: boolean }>`
-  height: 36 - 2;
-  width: 36 - 2;
+  height: calc(36px - 2px);
+  width: calc(36px - 2px);
   ${({ large }) =>
     large &&
     css`
-      height: 44;
-      width: 44;
+      height: 44px;
+      width: 44px;
     `}
 `;
 
@@ -86,7 +86,7 @@ const AvatarPicture = styled.img<{ large?: boolean }>`
 const AddAvatar = styled.div``;
 // TODO:  color: theme.palette.text.primary;
 const ShortcutText = styled.p`
-  margin-top: 2;
+  margin-top: 2px;
   margin-bottom: 0;
   padding: 0;
   font-size: 12px;

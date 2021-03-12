@@ -1,4 +1,5 @@
 const tsImportPluginFactory = require('ts-import-plugin');
+const styledComponentsTransformerFactory = require('typescript-plugin-styled-components').default;
 
 module.exports = [
   // Add support for native node modules
@@ -18,6 +19,7 @@ module.exports = [
   //   },
   // },
   {
+    // used to load css from npm package, we use styled-components
     test: /\.css$/,
     use: [{ loader: 'style-loader' }, { loader: 'css-loader' }],
   },
@@ -30,6 +32,7 @@ module.exports = [
         transpileOnly: true,
         getCustomTransformers: () => ({
           before: [
+            styledComponentsTransformerFactory(),
             // lodash
             tsImportPluginFactory({
               style: false,

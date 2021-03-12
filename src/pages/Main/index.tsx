@@ -48,9 +48,8 @@ const Root = styled.div`
 
 const sideBarStyle = css`
   height: 100%;
-  width: 68;
-  border-right: 1px solid rgba(0, 0, 0, 0.2);
-  background-color: #fffff0;
+  width: 68px;
+  background-color: white;
   -webkit-app-region: drag;
   user-select: none;
   display: flex;
@@ -70,9 +69,14 @@ const SidebarWithStyle = styled(SimpleBar)`
 
 const SidebarTop = styled.div<{ fullscreen?: boolean }>`
   flex: 1;
-  /** // TODO: darwin theme  */
-  /* padding-top-window-remote-get-platform-darwin-theme-spacing-3: 0; */
-  ${({ fullscreen }) => fullscreen === true && `padding-top: 0;`}
+  ${({ fullscreen }) =>
+    fullscreen === true
+      ? css`
+          padding-top: 0;
+        `
+      : css`
+          padding-top: 30px;
+        `}
 `;
 
 const IconButton = styled(IconButtonRaw)``;
