@@ -3,6 +3,7 @@ import styled, { css } from 'styled-components';
 import { AsyncReturnType } from 'type-fest';
 import { DndContext } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
@@ -194,6 +195,7 @@ export default function Main(): JSX.Element {
           <SidebarContainer>
             <SidebarTop fullscreen={isFullScreen === true || titleBar || attachToMenubar}>
               <DndContext
+                modifiers={[restrictToVerticalAxis]}
                 onDragEnd={async ({ active, over }) => {
                   if (over === null || active.id === over.id) return;
                   const oldIndex = workspaceIDs.indexOf(active.id);

@@ -69,6 +69,7 @@
   },
   "dependencies": {
     "@dnd-kit/core": "^1.0.2",
+    "@dnd-kit/modifiers": "^1.0.2",
     "@dnd-kit/sortable": "^1.0.2",
     "@dnd-kit/utilities": "^1.0.2",
     "@material-ui/styled-engine-sc": "^5.0.0-alpha.25",
