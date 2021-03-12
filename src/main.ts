@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import fs from 'fs';
+import fs from 'fs-extra';
 import { ipcMain, protocol, session, powerMonitor, app } from 'electron';
 import isDev from 'electron-is-dev';
 import settings from 'electron-settings';
@@ -28,6 +28,7 @@ import { IWikiService } from './services/wiki/interface';
 import { IWindowService } from './services/windows/interface';
 import { IWorkspaceService } from './services/workspaces/interface';
 import { IWorkspaceViewService } from './services/workspacesView/interface';
+import path from 'path';
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -101,10 +102,14 @@ if (!gotTheLock) {
     // eslint-disable-next-line promise/catch-or-return
     await app.whenReady();
     if (isDev) {
-      protocol.registerFileProtocol('file', (request, callback) => {
-        // TODO: this might be useless after use electron-forge, this is for loading html file after bundle, forge handle this now
+      protocol.registerFileProtocol('file', async (request, callback) => {
         const pathname = decodeURIComponent(request.url.replace('file:///', ''));
-        callback(pathname);
+        if (path.isAbsolute(pathname) ? await fs.pathExists(pathname) : await fs.pathExists(`/${pathname}`)) {
+          callback(pathname);
+        } else {
+          const filePath = path.join(app.getAppPath(), '.webpack/renderer', pathname);
+          callback(filePath);
+        }
       });
     }
     await windowService.open(WindowNames.main);
