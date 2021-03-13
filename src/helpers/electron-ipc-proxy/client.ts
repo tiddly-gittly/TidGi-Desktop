@@ -52,7 +52,7 @@ function getProperty(
 }
 
 function memoize<T>(getter: () => T): () => T {
-  let result: T = null;
+  let result: T | null = null;
   return () => result || (result = getter());
 }
 
@@ -75,33 +75,33 @@ async function makeRequest(request: Request, channel: string, transport: IpcRend
 }
 
 function makeObservable(request: Request, channel: string, ObservableCtor: ObservableConstructor, transport: IpcRenderer): Subscribable<any> {
-  return new ObservableCtor((obs) => {
-    const subscriptionId = uuidv4();
+  return new ObservableCtor((observer) => {
+    const subscriptionId = uuid();
     const subscriptionRequest = { ...request, subscriptionId };
 
     transport.on(subscriptionId, (event: Event, response: Response) => {
       switch (response.type) {
         case ResponseType.Next:
-          return obs.next(response.value);
+          return observer.next(response.value);
         case ResponseType.Error:
-          return obs.error(Errio.parse(response.error));
+          return observer.error(Errio.parse(response.error));
         case ResponseType.Complete:
-          return obs.complete();
+          return observer.complete();
         default:
-          return obs.error(new IpcProxyError(`Unhandled response type [${response.type}]`));
+          return observer.error(new IpcProxyError(`Unhandled response type [${response.type}]`));
       }
     });
 
     makeRequest(subscriptionRequest, channel, transport).catch((error: Error) => {
       console.log('Error subscribing to remote observable', error);
-      obs.error(error);
+      observer.error(error);
     });
 
     return () => {
       transport.removeAllListeners(subscriptionId);
       makeRequest({ type: RequestType.Unsubscribe, subscriptionId }, channel, transport).catch((error) => {
         console.log('Error unsubscribing from remote observale', error);
-        obs.error(error);
+        observer.error(error);
       });
     };
   });
