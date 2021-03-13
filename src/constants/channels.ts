@@ -13,8 +13,6 @@ export enum AuthenticationChannel {
 }
 export enum ContextChannel {
   name = 'ContextChannel',
-  getBaseName = 'get-basename',
-  getDirectoryName = 'get-dirname',
 }
 export enum GitChannel {
   name = 'GitChannel',

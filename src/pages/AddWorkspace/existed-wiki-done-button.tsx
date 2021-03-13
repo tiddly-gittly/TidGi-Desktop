@@ -114,8 +114,8 @@ function DoneButton({
           disabled={!existedFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
           onClick={async () => {
             if (!userInfo) return;
-            const wikiFolderName = await window.remote.getBaseName(existedFolderLocation);
-            const parentFolderLocation = await window.remote.getDirectoryName(existedFolderLocation);
+            const wikiFolderName = window.remote.getBaseName(existedFolderLocation);
+            const parentFolderLocation = window.remote.getDirectoryName(existedFolderLocation);
             updateForm(workspaceFormData);
             let creationError: string | undefined;
             try {

@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { contextBridge, ipcRenderer, webFrame } from 'electron';
+import path from 'path';
 
 import './common/i18n';
 import './common/authing-postmessage';
@@ -38,15 +39,11 @@ const remoteMethods = {
     await service.window.close(windowName);
   },
   /** call NodeJS.path */
-  getBaseName: async (pathString: string): Promise<string> => {
-    const result = (await ipcRenderer.invoke(ContextChannel.getBaseName, pathString)) as string;
-    if (typeof result === 'string') return result;
-    throw new Error(`getBaseName get bad result ${typeof result}`);
+  getBaseName: (pathString?: string): string | undefined => {
+    if (typeof pathString === 'string') return path.basename(pathString);
   },
-  getDirectoryName: async (pathString: string): Promise<string> => {
-    const result = (await ipcRenderer.invoke(ContextChannel.getDirectoryName, pathString)) as string;
-    if (typeof result === 'string') return result;
-    throw new Error(`getDirectoryName get bad result ${typeof result}`);
+  getDirectoryName: (pathString?: string): string | undefined => {
+    if (typeof pathString === 'string') return path.dirname(pathString);
   },
   /**
    * an wrapper around setVisualZoomLevelLimits

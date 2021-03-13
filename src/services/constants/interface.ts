@@ -30,13 +30,10 @@ export interface IContext extends IPaths, IConstants {}
  */
 export interface IContextService {
   get<K extends keyof IContext>(key: K): IContext[K];
-  /** call NodeJS.path for renderer */
-  getBaseName(pathString: string | undefined): string | undefined;
 }
 export const ContextServiceIPCDescriptor = {
   channel: ContextChannel.name,
   properties: {
     get: ProxyPropertyType.Function,
-    getBaseName: ProxyPropertyType.Function,
   },
 };

@@ -127,14 +127,8 @@ export default function WorkspaceSelector({
   const { t } = useTranslation();
   const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {
-    const setBaseNamePromise = new Promise<string | undefined>((resolve) => {
-      window.service.context.getBaseName(workspaceName).then((baseName) => resolve(baseName));
-    });
-
-    setBaseNamePromise.then((baseName) => {
-      shortWorkspaceNameSetter(baseName !== undefined ? baseName : t('WorkspaceSelector.BadWorkspacePath'));
-    });
-    return () => setBaseNamePromise.cancel();
+    const baseName = window.remote.getBaseName(workspaceName);
+    shortWorkspaceNameSetter(baseName !== undefined ? baseName : t('WorkspaceSelector.BadWorkspacePath'));
   }, [workspaceName]);
   return (
     <Root role="button" hibernated={hibernated} active={active} onClick={onClick} onKeyDown={onClick} onContextMenu={onContextMenu} tabIndex={0}>
