@@ -101,6 +101,7 @@ export interface IWorkspaceService {
 export const WorkspaceServiceIPCDescriptor = {
   channel: WorkspaceChannel.name,
   properties: {
+    workspaces$: ProxyPropertyType.Value$,
     getWorkspacesAsList: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,
     get$: ProxyPropertyType.Function$,

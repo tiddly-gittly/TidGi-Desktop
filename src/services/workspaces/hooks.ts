@@ -1,10 +1,16 @@
 import { useState } from 'react';
+import { map } from 'rxjs/operators';
 import { useObservable } from 'beautiful-react-hooks';
 import { IWorkspace } from './interface';
 
-export function useWorkspacesObservable(): Record<string, IWorkspace> | undefined {
-  const [workspaces, workspacesSetter] = useState<Record<string, IWorkspace> | undefined>();
-  useObservable<Record<string, IWorkspace> | undefined>(window.service.workspace.workspaces$, workspacesSetter);
+export function useWorkspacesListObservable(): IWorkspace[] | undefined {
+  const [workspaces, workspacesSetter] = useState<IWorkspace[] | undefined>();
+  useObservable<IWorkspace[] | undefined>(
+    window.service.workspace.workspaces$.pipe(
+      map<Record<string, IWorkspace>, IWorkspace[]>((workspaces) => Object.values(workspaces)),
+    ),
+    workspacesSetter,
+  );
   return workspaces;
 }
 

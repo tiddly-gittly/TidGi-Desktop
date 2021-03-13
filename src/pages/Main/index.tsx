@@ -29,6 +29,7 @@ import arrowBlack from '@/images/arrow-black.png';
 import { SortableWorkspaceSelector } from './SortableWorkspaceSelector';
 import { IWorkspace } from '@services/workspaces/interface';
 import { IPreferences } from '@services/preferences/interface';
+import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 
 const OuterRoot = styled.div`
   display: flex;
@@ -165,11 +166,7 @@ const SidebarContainer = ({ children }: { children: React.ReactNode }): JSX.Elem
 };
 
 export default function Main(): JSX.Element {
-  // TODO: make workspacesList observable
-  const workspacesList = usePromiseValue(
-    window.service.workspace.getWorkspacesAsList,
-    [] as AsyncReturnType<typeof window.service.workspace.getWorkspacesAsList>,
-  )!;
+  const workspacesList = useWorkspacesListObservable();
   const [{ attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource }, isFullScreen] = usePromiseValue<[Partial<IPreferences>, boolean | undefined]>(
     async () => await Promise.all([window.service.preference.getPreferences(), window.service.window.isFullScreen()]),
     [{}, false],
@@ -186,36 +183,39 @@ export default function Main(): JSX.Element {
   }, {} as AsyncReturnType<typeof window.service.workspace.getMetaData>);
   const requestReload = async (): Promise<void> => await window.service.window.reload(window.meta.windowName);
 
-  const workspaceIDs = workspacesList.map((workspace) => workspace.id);
+  const workspaceIDs = workspacesList?.map((workspace) => workspace.id) ?? [];
   return (
     <OuterRoot>
-      {workspacesList.length > 0 && <DraggableRegion />}
       <Root>
         {sidebar === true && (
           <SidebarContainer>
             <SidebarTop fullscreen={isFullScreen === true || titleBar || attachToMenubar}>
-              <DndContext
-                modifiers={[restrictToVerticalAxis]}
-                onDragEnd={async ({ active, over }) => {
-                  if (over === null || active.id === over.id) return;
-                  const oldIndex = workspaceIDs.indexOf(active.id);
-                  const newIndex = workspaceIDs.indexOf(over.id);
+              {workspacesList === undefined ? (
+                <div>Loading...</div>
+              ) : (
+                <DndContext
+                  modifiers={[restrictToVerticalAxis]}
+                  onDragEnd={async ({ active, over }) => {
+                    if (over === null || active.id === over.id) return;
+                    const oldIndex = workspaceIDs.indexOf(active.id);
+                    const newIndex = workspaceIDs.indexOf(over.id);
 
-                  const newWorkspacesList = arrayMove(workspacesList, oldIndex, newIndex);
-                  const newWorkspaces: Record<string, IWorkspace> = {};
-                  newWorkspacesList.forEach((workspace, index) => {
-                    newWorkspaces[workspace.id] = workspace;
-                    newWorkspaces[workspace.id].order = index;
-                  });
+                    const newWorkspacesList = arrayMove(workspacesList, oldIndex, newIndex);
+                    const newWorkspaces: Record<string, IWorkspace> = {};
+                    newWorkspacesList.forEach((workspace, index) => {
+                      newWorkspaces[workspace.id] = workspace;
+                      newWorkspaces[workspace.id].order = index;
+                    });
 
-                  await window.service.workspace.setWorkspaces(newWorkspaces);
-                }}>
-                <SortableContext items={workspaceIDs} strategy={verticalListSortingStrategy}>
-                  {workspacesList.map((workspace, index) => (
-                    <SortableWorkspaceSelector key={`item-${workspace.id}`} index={index} workspace={workspace} />
-                  ))}
-                </SortableContext>
-              </DndContext>
+                    await window.service.workspace.setWorkspaces(newWorkspaces);
+                  }}>
+                  <SortableContext items={workspaceIDs} strategy={verticalListSortingStrategy}>
+                    {workspacesList.map((workspace, index) => (
+                      <SortableWorkspaceSelector key={`item-${workspace.id}`} index={index} workspace={workspace} />
+                    ))}
+                  </SortableContext>
+                </DndContext>
+              )}
               <WorkspaceSelector id="add" onClick={async () => await window.service.window.open(WindowNames.addWorkspace)} />
             </SidebarTop>
             <End>
@@ -233,7 +233,7 @@ export default function Main(): JSX.Element {
         <ContentRoot>
           <FindInPage />
           <InnerContentRoot>
-            {workspacesList.length > 0 && mainWorkspaceMetaData?.didFailLoadErrorMessage && mainWorkspaceMetaData?.isLoading === false && (
+            {workspacesList?.length > 0 && mainWorkspaceMetaData?.didFailLoadErrorMessage && mainWorkspaceMetaData?.isLoading === false && (
               <div>
                 <Typography align="left" variant="h5">
                   Wiki is not started or not loaded
@@ -276,8 +276,10 @@ export default function Main(): JSX.Element {
                 </Button>
               </div>
             )}
-            {workspacesList.length > 0 && mainWorkspaceMetaData?.isLoading && <Typography color="textSecondary">Loading..</Typography>}
-            {workspacesList.length === 0 && (
+            {workspacesList !== undefined && workspacesList.length > 0 && mainWorkspaceMetaData?.isLoading && (
+              <Typography color="textSecondary">Loading..</Typography>
+            )}
+            {workspacesList?.length === 0 && (
               <div>
                 {sidebar === true ? (
                   <>
