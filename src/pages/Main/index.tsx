@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useCallback } from 'react';
 import styled, { css } from 'styled-components';
 import { AsyncReturnType } from 'type-fest';
 import { DndContext } from '@dnd-kit/core';
@@ -181,7 +181,7 @@ export default function Main(): JSX.Element {
     return { didFailLoadErrorMessage: 'No ActiveWorkspace' };
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   }, {} as AsyncReturnType<typeof window.service.workspace.getMetaData>);
-  const requestReload = async (): Promise<void> => await window.service.window.reload(window.meta.windowName);
+  const requestReload = useCallback(async (): Promise<void> => await window.service.window.reload(window.meta.windowName), [window.meta.windowName]);
 
   const workspaceIDs = workspacesList?.map((workspace) => workspace.id) ?? [];
   return (
@@ -233,53 +233,57 @@ export default function Main(): JSX.Element {
         <ContentRoot>
           <FindInPage />
           <InnerContentRoot>
-            {workspacesList?.length > 0 && mainWorkspaceMetaData?.didFailLoadErrorMessage && mainWorkspaceMetaData?.isLoading === false && (
-              <div>
-                <Typography align="left" variant="h5">
-                  Wiki is not started or not loaded
-                </Typography>
-                <Typography align="left" variant="body2">
-                  {mainWorkspaceMetaData.didFailLoadErrorMessage}
-                </Typography>
+            {Array.isArray(workspacesList) &&
+              workspacesList.length > 0 &&
+              typeof mainWorkspaceMetaData?.didFailLoadErrorMessage === 'string' &&
+              mainWorkspaceMetaData?.didFailLoadErrorMessage.length > 0 &&
+              mainWorkspaceMetaData?.isLoading === false && (
+                <div>
+                  <Typography align="left" variant="h5">
+                    Wiki is not started or not loaded
+                  </Typography>
+                  <Typography align="left" variant="body2">
+                    {mainWorkspaceMetaData.didFailLoadErrorMessage}
+                  </Typography>
 
-                <br />
-                <Typography align="left" variant="body2">
-                  <>
-                    Try:
-                    <HelperTextsList>
-                      <li>
-                        Click{' '}
-                        <b onClick={requestReload} onKeyPress={requestReload} role="button" tabIndex={0} style={{ cursor: 'pointer' }}>
-                          Reload
-                        </b>{' '}
-                        button below or press <b>CMD_or_Ctrl + R</b> to reload the page.
-                      </li>
-                      <li>
-                        Check the{' '}
-                        <b
-                          onClick={async () => await window.service.native.open((await window.service.context.get('LOG_FOLDER')) as string, true)}
-                          onKeyPress={async () => await window.service.native.open((await window.service.context.get('LOG_FOLDER')) as string, true)}
-                          role="button"
-                          tabIndex={0}
-                          style={{ cursor: 'pointer' }}>
-                          Log Folder
-                        </b>{' '}
-                        to see what happened.
-                      </li>
-                      <li>Backup your file, remove workspace and recreate one.</li>
-                    </HelperTextsList>
-                  </>
-                </Typography>
+                  <br />
+                  <Typography align="left" variant="body2">
+                    <>
+                      Try:
+                      <HelperTextsList>
+                        <li>
+                          Click{' '}
+                          <b onClick={requestReload} onKeyPress={requestReload} role="button" tabIndex={0} style={{ cursor: 'pointer' }}>
+                            Reload
+                          </b>{' '}
+                          button below or press <b>CMD_or_Ctrl + R</b> to reload the page.
+                        </li>
+                        <li>
+                          Check the{' '}
+                          <b
+                            onClick={async () => await window.service.native.open((await window.service.context.get('LOG_FOLDER')) as string, true)}
+                            onKeyPress={async () => await window.service.native.open((await window.service.context.get('LOG_FOLDER')) as string, true)}
+                            role="button"
+                            tabIndex={0}
+                            style={{ cursor: 'pointer' }}>
+                            Log Folder
+                          </b>{' '}
+                          to see what happened.
+                        </li>
+                        <li>Backup your file, remove workspace and recreate one.</li>
+                      </HelperTextsList>
+                    </>
+                  </Typography>
 
-                <Button variant="outlined" onClick={requestReload}>
-                  Reload
-                </Button>
-              </div>
-            )}
-            {workspacesList !== undefined && workspacesList.length > 0 && mainWorkspaceMetaData?.isLoading && (
+                  <Button variant="outlined" onClick={requestReload}>
+                    Reload
+                  </Button>
+                </div>
+              )}
+            {Array.isArray(workspacesList) && workspacesList.length > 0 && mainWorkspaceMetaData?.isLoading && (
               <Typography color="textSecondary">Loading..</Typography>
             )}
-            {workspacesList?.length === 0 && (
+            {Array.isArray(workspacesList) && workspacesList.length === 0 && (
               <div>
                 {sidebar === true ? (
                   <>
