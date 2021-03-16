@@ -15,6 +15,9 @@ import { WindowNames, WindowMeta, IPreferenceWindowMeta } from '@services/window
 import 'typeface-roboto/index.css';
 
 import { initI18N } from './i18n';
+import { fixContextIsolation } from './helpers/electron-ipc-proxy/fixContextIsolation';
+
+fixContextIsolation();
 
 const Main = React.lazy(async () => await import('./pages/Main'));
 const AboutPage = React.lazy(async () => await import('./pages/About'));

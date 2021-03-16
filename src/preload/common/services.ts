@@ -60,3 +60,22 @@ export const wikiGitWorkspace = createProxy<AsyncifyProxy<IWikiGitWorkspaceServi
 export const window = createProxy<AsyncifyProxy<IWindowService>>(WindowServiceIPCDescriptor);
 export const workspace = createProxy<AsyncifyProxy<IWorkspaceService>>(WorkspaceServiceIPCDescriptor);
 export const workspaceView = createProxy<AsyncifyProxy<IWorkspaceViewService>>(WorkspaceViewServiceIPCDescriptor);
+
+export const descriptors = {
+  auth: AuthenticationServiceIPCDescriptor,
+  context: ContextServiceIPCDescriptor,
+  git: GitServiceIPCDescriptor,
+  menu: MenuServiceIPCDescriptor,
+  native: NativeServiceIPCDescriptor,
+  notification: NotificationServiceIPCDescriptor,
+  preference: PreferenceServiceIPCDescriptor,
+  systemPreference: SystemPreferenceServiceIPCDescriptor,
+  theme: ThemeServiceIPCDescriptor,
+  updater: UpdaterServiceIPCDescriptor,
+  view: ViewServiceIPCDescriptor,
+  wiki: WikiServiceIPCDescriptor,
+  wikiGitWorkspace: WikiGitWorkspaceServiceIPCDescriptor,
+  window: WindowServiceIPCDescriptor,
+  workspace: WorkspaceServiceIPCDescriptor,
+  workspaceView: WorkspaceViewServiceIPCDescriptor,
+};

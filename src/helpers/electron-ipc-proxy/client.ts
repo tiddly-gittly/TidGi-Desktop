@@ -1,8 +1,8 @@
-import { Subscribable, Observer, TeardownLogic, Observable } from 'rxjs';
+import { Subscribable, Observer, TeardownLogic, Observable, isObservable } from 'rxjs';
 import { IpcRenderer, ipcRenderer, Event } from 'electron';
 import { v4 as uuid } from 'uuid';
 import Errio from 'errio';
-import { IpcProxyError } from './utils';
+import { getSubscriptionKey, IpcProxyError } from './utils';
 import { Request, RequestType, Response, ResponseType, ProxyDescriptor, ProxyPropertyType } from './common';
 
 export type ObservableConstructor = new (subscribe: (obs: Observer<any>) => TeardownLogic) => Subscribable<any>;
@@ -20,10 +20,23 @@ export function createProxy<T>(descriptor: ProxyDescriptor, ObservableCtor: Obse
       );
     }
 
-    Object.defineProperty(result, propertyKey, {
-      enumerable: true,
-      get: memoize(() => getProperty(propertyType, propertyKey, descriptor.channel, ObservableCtor, transport)),
-    });
+    // fix https://github.com/electron/electron/issues/28176
+    if (propertyType === ProxyPropertyType.Value$) {
+      Object.defineProperty(result, getSubscriptionKey(propertyKey), {
+        enumerable: true,
+        get: memoize(() => (next: (value?: any) => void) => {
+          const originalObservable = getProperty(propertyType, propertyKey, descriptor.channel, ObservableCtor, transport);
+          if (isObservable(originalObservable)) {
+            originalObservable.subscribe((value: any) => next(value));
+          }
+        }),
+      });
+    } else {
+      Object.defineProperty(result, propertyKey, {
+        enumerable: true,
+        get: memoize(() => getProperty(propertyType, propertyKey, descriptor.channel, ObservableCtor, transport)),
+      });
+    }
   });
 
   return result as T;

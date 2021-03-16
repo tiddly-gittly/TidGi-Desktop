@@ -5,7 +5,7 @@ import path from 'path';
 import './common/i18n';
 import './common/authing-postmessage';
 import * as service from './common/services';
-import { MetaDataChannel, ViewChannel, ContextChannel, WindowChannel } from '@/constants/channels';
+import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { WindowNames, WindowMeta, IPossibleWindowMeta } from '@services/windows/WindowProperties';
 
 const extraMetaJSONString = process.argv.pop() as string;

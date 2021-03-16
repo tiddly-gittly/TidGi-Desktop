@@ -1,4 +1,3 @@
-import { Observable } from 'rxjs';
 import Errio from 'errio';
 
 /* Custom Error */
@@ -15,6 +14,11 @@ export function isFunction(value: any): value is Function {
   return value && typeof value === 'function';
 }
 
-export function isObservable<T>(value: any): value is Observable<T> {
-  return value && typeof value.subscribe === 'function';
+/**
+ * Fix ContextIsolation
+ * @param key original key
+ * @returns
+ */
+export function getSubscriptionKey(key: string): string {
+  return `${key}Subscribe`;
 }

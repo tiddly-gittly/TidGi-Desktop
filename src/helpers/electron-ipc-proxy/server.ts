@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { Observable, Subscription } from 'rxjs';
+import { Observable, Subscription, isObservable } from 'rxjs';
 import { ipcMain, IpcMain, WebContents, IpcMainEvent } from 'electron';
 import Errio from 'errio';
-import { IpcProxyError, isFunction, isObservable } from './utils';
+import { IpcProxyError, isFunction } from './utils';
 import {
   Request,
   RequestType,
@@ -116,6 +116,9 @@ class ProxyServerHandler {
     if (!isObservable(obs)) {
       throw new IpcProxyError(`Remote property [${propKey}] is not an observable`);
     }
+    if (typeof subscriptionId !== 'string') {
+      throw new IpcProxyError(`subscriptionId [${subscriptionId}] is not a string`);
+    }
 
     this.doSubscribe(obs, subscriptionId, sender);
   }
@@ -133,6 +136,9 @@ class ProxyServerHandler {
     if (!isObservable(obs)) {
       throw new IpcProxyError(`Remote function [${propKey}] did not return an observable`);
     }
+    if (typeof subscriptionId !== 'string') {
+      throw new IpcProxyError(`subscriptionId [${subscriptionId}] is not a string`);
+    }
 
     this.doSubscribe(obs, subscriptionId, sender);
   }
@@ -148,8 +154,17 @@ class ProxyServerHandler {
       () => sender.send(subscriptionId, { type: ResponseType.Complete }),
     );
 
-    /* If the sender does not clean up after itself then we need to do it */
-    sender.once('destroyed', () => this.doUnsubscribe(subscriptionId));
+    /*
+     * If the sender does not clean up after itself then we need to do it
+     *  This won't be called when webContent refresh by CMD+R, so beware this kind of memory leak.
+     *  But we will try to detect devtools-reload-page
+     */
+    sender.once('destroyed', () => {
+      this.doUnsubscribe(subscriptionId);
+    });
+    sender.once('devtools-reload-page', () => {
+      this.doUnsubscribe(subscriptionId);
+    });
   }
 
   private handleUnsubscribe(request: UnsubscribeRequest): void {
