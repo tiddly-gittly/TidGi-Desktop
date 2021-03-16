@@ -11,7 +11,7 @@ import Jimp from 'jimp';
 import isUrl from 'is-url';
 import download from 'download';
 import tmp from 'tmp';
-import { Observable, Subject } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -36,7 +36,7 @@ export class Workspace implements IWorkspaceService {
    * Record from workspace id to workspace settings
    */
   private workspaces: Record<string, IWorkspace> = {};
-  public workspaces$: Subject<Record<string, IWorkspace>>;
+  public workspaces$: BehaviorSubject<Record<string, IWorkspace>>;
 
   @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
@@ -47,7 +47,7 @@ export class Workspace implements IWorkspaceService {
   constructor() {
     this.workspaces = this.getInitWorkspacesForCache();
     this.registerMenu();
-    this.workspaces$ = new Subject<Record<string, IWorkspace>>();
+    this.workspaces$ = new BehaviorSubject<Record<string, IWorkspace>>(this.workspaces);
     this.updateWorkspaceSubject();
   }
 
