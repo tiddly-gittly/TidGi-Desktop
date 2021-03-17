@@ -6,7 +6,7 @@ import { IUpdaterMetaData } from './interface';
 
 export function useUpdaterObservable(): IUpdaterMetaData | undefined {
   const [updaterMetaData, updaterMetaDataSetter] = useState<IUpdaterMetaData | undefined>();
-  useObservable<IUpdaterMetaData | undefined>(window.service.updater.updaterMetaData$, updaterMetaDataSetter);
+  useObservable<IUpdaterMetaData | undefined>(window.observables.updater.updaterMetaData$, updaterMetaDataSetter);
   return updaterMetaData;
 }
 

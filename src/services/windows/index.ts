@@ -97,7 +97,7 @@ export class Window implements IWindowService {
 
   public async open<N extends WindowNames>(
     windowName: N,
-    meta: WindowMeta[N] = {},
+    meta: WindowMeta[N] = {} as WindowMeta[N],
     recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean),
   ): Promise<void> {
     const existedWindow = this.get(windowName);
@@ -282,7 +282,7 @@ export class Window implements IWindowService {
   }
 
   public getWindowMeta<N extends WindowNames>(windowName: N): WindowMeta[N] | undefined {
-    return this.windowMeta[windowName];
+    return this.windowMeta[windowName] as WindowMeta[N];
   }
 
   /**

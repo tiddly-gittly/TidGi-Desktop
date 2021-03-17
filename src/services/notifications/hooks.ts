@@ -4,6 +4,6 @@ import { IPauseNotificationsInfo } from './interface';
 
 export function useNotificationInfoObservable(): IPauseNotificationsInfo | undefined {
   const [notificationInfo, notificationInfoSetter] = useState<IPauseNotificationsInfo | undefined>();
-  useObservable<IPauseNotificationsInfo | undefined>(window.service.notification.pauseNotificationsInfo$, notificationInfoSetter);
+  useObservable<IPauseNotificationsInfo | undefined>(window.observables.notification.pauseNotificationsInfo$, notificationInfoSetter);
   return notificationInfo;
 }

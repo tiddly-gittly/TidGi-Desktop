@@ -4,7 +4,7 @@ import { IUsedElectionSettings } from './interface';
 
 export function useSystemPreferenceObservable(): IUsedElectionSettings | undefined {
   const [systemPreference, systemPreferenceSetter] = useState<IUsedElectionSettings | undefined>();
-  useObservable<IUsedElectionSettings | undefined>(window.service.systemPreference.systemPreference$, systemPreferenceSetter);
+  useObservable<IUsedElectionSettings | undefined>(window.observables.systemPreference.systemPreference$, systemPreferenceSetter);
   return systemPreference;
 }
 
