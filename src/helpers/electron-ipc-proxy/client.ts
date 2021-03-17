@@ -1,6 +1,6 @@
 import { Subscribable, Observer, TeardownLogic, Observable, isObservable } from 'rxjs';
 import { IpcRenderer, ipcRenderer, Event } from 'electron';
-import { memoize } from 'lodash'
+import { memoize } from 'lodash';
 import { v4 as uuid } from 'uuid';
 import Errio from 'errio';
 import { getSubscriptionKey, IpcProxyError } from './utils';
@@ -29,6 +29,19 @@ export function createProxy<T>(descriptor: ProxyDescriptor, ObservableCtor: Obse
           const originalObservable = getProperty(propertyType, propertyKey, descriptor.channel, ObservableCtor, transport);
           if (isObservable(originalObservable)) {
             originalObservable.subscribe((value: any) => next(value));
+          }
+        }),
+      });
+    } else if (propertyType === ProxyPropertyType.Function$) {
+      Object.defineProperty(result, getSubscriptionKey(propertyKey), {
+        enumerable: true,
+        get: memoize(() => (...arguments_: any[]) => (next: (value?: any) => void) => {
+          const originalObservableFunction = getProperty(propertyType, propertyKey, descriptor.channel, ObservableCtor, transport);
+          if (typeof originalObservableFunction === 'function') {
+            const originalObservable = originalObservableFunction(...arguments_);
+            if (isObservable(originalObservable)) {
+              originalObservable.subscribe((value: any) => next(value));
+            }
           }
         }),
       });

@@ -14,6 +14,10 @@ import { getSubscriptionKey } from './utils';
  * @param descriptor electron ipc proxy descriptor
  */
 export function ipcProxyFixContextIsolation<T extends Record<string, any>>(name: keyof typeof window.service, service: T, descriptor: ProxyDescriptor): void {
+  if (window.observables === undefined) {
+    window.observables = {} as typeof window.observables;
+  }
+
   for (const key in descriptor.properties) {
     // Process all Observables, we pass a `.next` function from preload script, that we can used to reconstruct Observable
     if (ProxyPropertyType.Value$ === descriptor.properties[key] && !(key in service) && getSubscriptionKey(key) in service) {
@@ -21,15 +25,27 @@ export function ipcProxyFixContextIsolation<T extends Record<string, any>>(name:
         service[getSubscriptionKey(key)]((value: any) => observer.next(value));
       }) as T[keyof T];
       // store newly created Observable to `window.observables.xxx.yyy`
-      if (window.observables === undefined) {
-        window.observables = {} as typeof window.observables;
-      }
       if (window.observables[name] === undefined) {
         (window.observables as any)[name] = {
           [key]: subscribedObservable,
         };
       } else {
         (window.observables as any)[name][key] = subscribedObservable;
+      }
+    }
+    // create (id: string) => Observable
+    if (ProxyPropertyType.Function$ === descriptor.properties[key] && !(key in service) && getSubscriptionKey(key) in service) {
+      const subscribingObservable = (...arguments_: any[]) =>
+        new Observable((observer) => {
+          service[getSubscriptionKey(key)](...arguments_)((value: any) => observer.next(value));
+        }) as T[keyof T];
+      // store newly created Observable to `window.observables.xxx.yyy`
+      if (window.observables[name] === undefined) {
+        (window.observables as any)[name] = {
+          [key]: subscribingObservable,
+        };
+      } else {
+        (window.observables as any)[name][key] = subscribingObservable;
       }
     }
   }
