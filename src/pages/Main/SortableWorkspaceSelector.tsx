@@ -22,7 +22,49 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
     transition,
   };
   return (
-    <div ref={setNodeRef} style={style} {...attributes} {...listeners}>
+    <div
+      ref={setNodeRef}
+      style={style}
+      {...attributes}
+      {...listeners}
+      onClick={async () => {
+        if (isSubWiki) {
+          await window.service.wiki.requestOpenTiddlerInWiki(tagName);
+        } else {
+          const activeWorkspace = await window.service.workspace.getActiveWorkspace();
+          if (activeWorkspace?.id === id) {
+            await window.service.wiki.requestWikiSendActionMessage('tm-home');
+          } else {
+            await window.service.workspaceView.setActiveWorkspaceView(id);
+          }
+        }
+      }}
+      onContextMenu={() => {
+        const template = [
+          {
+            label: t('WorkspaceSelector.EditWorkspace'),
+            click: async () => await window.service.window.open(WindowNames.editWorkspace, { workspaceID: id }),
+          },
+          {
+            label: t('WorkspaceSelector.RemoveWorkspace'),
+            click: async () => await window.service.workspaceView.removeWorkspaceView(id),
+          },
+        ];
+
+        if (!active && !isSubWiki) {
+          template.splice(1, 0, {
+            label: hibernated ? 'Wake Up Workspace' : 'Hibernate Workspace',
+            click: async () => {
+              if (hibernated) {
+                return await window.service.workspaceView.wakeUpWorkspaceView(id);
+              }
+              return await window.service.workspaceView.hibernateWorkspaceView(id);
+            },
+          });
+        }
+
+        void window.service.menu.buildContextMenuAndPopup(template);
+      }}>
       <WorkspaceSelector
         active={active}
         id={id}
@@ -33,44 +75,6 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
         order={index}
         hibernated={hibernated}
         sidebarShortcutHints
-        onClick={async () => {
-          if (isSubWiki) {
-            await window.service.wiki.requestOpenTiddlerInWiki(tagName);
-          } else {
-            const activeWorkspace = await window.service.workspace.getActiveWorkspace();
-            if (activeWorkspace?.id === id) {
-              await window.service.wiki.requestWikiSendActionMessage('tm-home');
-            } else {
-              await window.service.workspaceView.setActiveWorkspaceView(id);
-            }
-          }
-        }}
-        onContextMenu={() => {
-          const template = [
-            {
-              label: t('WorkspaceSelector.EditWorkspace'),
-              click: async () => await window.service.window.open(WindowNames.editWorkspace, { workspaceID: id }),
-            },
-            {
-              label: t('WorkspaceSelector.RemoveWorkspace'),
-              click: async () => await window.service.workspaceView.removeWorkspaceView(id),
-            },
-          ];
-
-          if (!active && !isSubWiki) {
-            template.splice(1, 0, {
-              label: hibernated ? 'Wake Up Workspace' : 'Hibernate Workspace',
-              click: async () => {
-                if (hibernated) {
-                  return await window.service.workspaceView.wakeUpWorkspaceView(id);
-                }
-                return await window.service.workspaceView.hibernateWorkspaceView(id);
-              },
-            });
-          }
-
-          void window.service.menu.buildContextMenuAndPopup(template);
-        }}
       />
     </div>
   );

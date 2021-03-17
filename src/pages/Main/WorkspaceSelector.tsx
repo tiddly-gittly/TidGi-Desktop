@@ -103,8 +103,6 @@ interface Props {
   badgeCount?: number;
   hibernated?: boolean;
   id: string;
-  onClick?: () => void;
-  onContextMenu?: () => void;
   order?: number;
   picturePath?: string;
   sidebarShortcutHints?: boolean;
@@ -116,8 +114,6 @@ export default function WorkspaceSelector({
   badgeCount = 0,
   hibernated = false,
   id,
-  onClick = () => {},
-  onContextMenu = () => {},
   order = 0,
   picturePath,
   sidebarShortcutHints,
@@ -131,7 +127,7 @@ export default function WorkspaceSelector({
     shortWorkspaceNameSetter(baseName !== undefined ? baseName : t('WorkspaceSelector.BadWorkspacePath'));
   }, [workspaceName]);
   return (
-    <Root role="button" hibernated={hibernated} active={active} onClick={onClick} onKeyDown={onClick} onContextMenu={onContextMenu} tabIndex={0}>
+    <Root hibernated={hibernated} active={active}>
       <Badge color="secondary" badgeContent={badgeCount} max={99}>
         <Avatar large={!sidebarShortcutHints} transparent={transparentBackground} addAvatar={id === 'add'}>
           {id !== 'add' ? (
