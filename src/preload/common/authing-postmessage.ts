@@ -5,9 +5,22 @@ import { remote } from 'electron';
 import { context } from './services';
 
 const CHECK_LOADED_INTERVAL = 500;
+let CHROME_ERROR_PATH: string | undefined;
+
+let REACT_PATH: string | undefined;
+
 async function refresh(): Promise<void> {
-  const CHROME_ERROR_PATH = (await context.get('CHROME_ERROR_PATH')) as string;
-  const REACT_PATH = (await context.get('REACT_PATH')) as string;
+  if (CHROME_ERROR_PATH === undefined || REACT_PATH === undefined) {
+    Promise.all([
+      context.get('CHROME_ERROR_PATH').then((pathName) => {
+        CHROME_ERROR_PATH = pathName as string;
+      }),
+      context.get('REACT_PATH').then((pathName) => {
+        REACT_PATH = pathName as string;
+      }),
+    ]);
+    return;
+  }
   if (window.location.href === CHROME_ERROR_PATH) {
     void remote.getCurrentWindow().loadURL(REACT_PATH);
   } else {
