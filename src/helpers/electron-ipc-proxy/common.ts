@@ -1,3 +1,36 @@
+import { Asyncify, ConditionalKeys } from 'type-fest';
+import { Observable } from 'rxjs';
+
+export type ProxyAsyncProperties<OriginalProxy> = ConditionalKeys<OriginalProxy, Function>;
+export type ProxyObservableProperties<OriginalProxy> =
+  | ConditionalKeys<OriginalProxy, Observable<unknown>>
+  | ConditionalKeys<OriginalProxy, (id: string) => Observable<unknown>>;
+export type ProxyWithOnlyObservable<OriginalProxy> = Pick<OriginalProxy, ProxyObservableProperties<OriginalProxy>>;
+export type ProxyWithOutObservable<OriginalProxy> = Omit<OriginalProxy, ProxyObservableProperties<OriginalProxy>>;
+
+/**
+ * To call services that is located in main process, from the renderer process, we use IPC.invoke, so all method should now promisify
+ * Note this type only promisify methods that return things, not methods that returns observable.
+ */
+ export type AsyncifyProxy<
+  OriginalProxy,
+  ObservableKey extends ProxyObservableProperties<OriginalProxy> = ProxyObservableProperties<OriginalProxy>,
+  AsyncKey extends Exclude<ProxyAsyncProperties<OriginalProxy>, ObservableKey> = Exclude<ProxyAsyncProperties<OriginalProxy>, ObservableKey>
+> = {
+  [P in AsyncKey]: Asyncify<OriginalProxy[P]>;
+} &
+  {
+    [Q in ObservableKey]: OriginalProxy[Q];
+  };
+
+/** Extract observable keys from services */
+export type IServicesWithOnlyObservables<Services extends Record<string, Record<string, any>>> = {
+  [P in keyof Services]: ProxyWithOnlyObservable<Services[P]>;
+};
+export type IServicesWithoutObservables<Services extends Record<string, Record<string, any>>> = {
+  [P in keyof Services]: ProxyWithOutObservable<Services[P]>;
+};
+
 /* Proxy Descriptor Types */
 export enum ProxyPropertyType {
   Value = 'value',

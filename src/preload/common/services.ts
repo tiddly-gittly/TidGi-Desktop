@@ -3,10 +3,9 @@
  * Provide API from main services to GUI (for example, preference window), and tiddlywiki
  * This file should be required by BrowserView's preload script to work
  */
-import { Asyncify, ConditionalKeys } from 'type-fest';
-import { Observable, Subject } from 'rxjs';
 
 import { createProxy } from '@/helpers/electron-ipc-proxy/client';
+import { AsyncifyProxy } from '@/helpers/electron-ipc-proxy/common';
 
 import { IAuthenticationService, AuthenticationServiceIPCDescriptor } from '@services/auth/interface';
 import { IContextService, ContextServiceIPCDescriptor } from '@services/constants/interface';
@@ -24,36 +23,6 @@ import { IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '
 import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows/interface';
 import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
-
-type ProxyAsyncProperties<OriginalProxy> = ConditionalKeys<OriginalProxy, Function>;
-type ProxyObservableProperties<OriginalProxy> =
-  | ConditionalKeys<OriginalProxy, Observable<unknown>>
-  | ConditionalKeys<OriginalProxy, (id: string) => Observable<unknown>>;
-type ProxyWithOnlyObservable<OriginalProxy> = Pick<OriginalProxy, ProxyObservableProperties<OriginalProxy>>;
-type ProxyWithOutObservable<OriginalProxy> = Omit<OriginalProxy, ProxyObservableProperties<OriginalProxy>>;
-
-/**
- * To call services that is located in main process, from the renderer process, we use IPC.invoke, so all method should now promisify
- * Note this type only promisify methods that return things, not methods that returns observable.
- */
-type AsyncifyProxy<
-  OriginalProxy,
-  ObservableKey extends ProxyObservableProperties<OriginalProxy> = ProxyObservableProperties<OriginalProxy>,
-  AsyncKey extends Exclude<ProxyAsyncProperties<OriginalProxy>, ObservableKey> = Exclude<ProxyAsyncProperties<OriginalProxy>, ObservableKey>
-> = {
-  [P in AsyncKey]: Asyncify<OriginalProxy[P]>;
-} &
-  {
-    [Q in ObservableKey]: OriginalProxy[Q];
-  };
-
-/** Extract observable keys from services */
-export type IServicesWithOnlyObservables<Services extends Record<string, Record<string, any>>> = {
-  [P in keyof Services]: ProxyWithOnlyObservable<Services[P]>;
-};
-export type IServicesWithoutObservables<Services extends Record<string, Record<string, any>>> = {
-  [P in keyof Services]: ProxyWithOutObservable<Services[P]>;
-};
 
 export const auth = createProxy<AsyncifyProxy<IAuthenticationService>>(AuthenticationServiceIPCDescriptor);
 export const context = createProxy<AsyncifyProxy<IContextService>>(ContextServiceIPCDescriptor);
