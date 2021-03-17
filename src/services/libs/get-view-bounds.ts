@@ -10,15 +10,11 @@ export default function getViewBounds(
   height?: number,
   width?: number,
 ): { x: number; y: number; height: number; width: number } {
-  const mainWindow = container.get<IWindowService>(serviceIdentifier.Window).get(WindowNames.main);
-  const isFullScreen = mainWindow?.isFullScreen();
   const preferencesService = container.get<IPreferenceService>(serviceIdentifier.Preference);
   const showSidebar = preferencesService.get('sidebar');
-  const showTitleBar = process.platform === 'darwin' && preferencesService.get('titleBar') && isFullScreen !== true;
 
-  const offsetTitleBar = showTitleBar ? 22 : 0;
   const x = showSidebar ? 68 : 0;
-  const y = offsetTitleBar;
+  const y = 0;
 
   if (findInPage) {
     const FIND_IN_PAGE_HEIGHT = 42;
