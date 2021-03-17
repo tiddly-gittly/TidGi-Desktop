@@ -1,5 +1,6 @@
 import { Subscribable, Observer, TeardownLogic, Observable, isObservable } from 'rxjs';
 import { IpcRenderer, ipcRenderer, Event } from 'electron';
+import { memoize } from 'lodash'
 import { v4 as uuid } from 'uuid';
 import Errio from 'errio';
 import { getSubscriptionKey, IpcProxyError } from './utils';
@@ -62,11 +63,6 @@ function getProperty(
     default:
       throw new IpcProxyError(`Unrecognised ProxyPropertyType [${propertyType}]`);
   }
-}
-
-function memoize<T>(getter: () => T): () => T {
-  let result: T | null = null;
-  return () => result || (result = getter());
 }
 
 async function makeRequest(request: Request, channel: string, transport: IpcRenderer): Promise<any> {

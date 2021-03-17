@@ -5,6 +5,7 @@ import path from 'path';
 import './common/i18n';
 import './common/authing-postmessage';
 import * as service from './common/services';
+import type { IServicesWithOnlyObservables, IServicesWithoutObservables } from './common/services';
 import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { WindowNames, WindowMeta, IPossibleWindowMeta } from '@services/windows/WindowProperties';
 
@@ -22,7 +23,8 @@ contextBridge.exposeInMainWorld('service', service);
 
 declare global {
   interface Window {
-    service: typeof service;
+    service: IServicesWithoutObservables<typeof service>;
+    observables: IServicesWithOnlyObservables<typeof service>;
     meta: IPossibleWindowMeta;
   }
 }

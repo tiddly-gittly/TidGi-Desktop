@@ -29,6 +29,9 @@ type ProxyAsyncProperties<OriginalProxy> = ConditionalKeys<OriginalProxy, Functi
 type ProxyObservableProperties<OriginalProxy> =
   | ConditionalKeys<OriginalProxy, Observable<unknown>>
   | ConditionalKeys<OriginalProxy, (id: string) => Observable<unknown>>;
+type ProxyWithOnlyObservable<OriginalProxy> = Pick<OriginalProxy, ProxyObservableProperties<OriginalProxy>>;
+type ProxyWithOutObservable<OriginalProxy> = Omit<OriginalProxy, ProxyObservableProperties<OriginalProxy>>;
+
 /**
  * To call services that is located in main process, from the renderer process, we use IPC.invoke, so all method should now promisify
  * Note this type only promisify methods that return things, not methods that returns observable.
@@ -43,6 +46,14 @@ type AsyncifyProxy<
   {
     [Q in ObservableKey]: OriginalProxy[Q];
   };
+
+/** Extract observable keys from services */
+export type IServicesWithOnlyObservables<Services extends Record<string, Record<string, any>>> = {
+  [P in keyof Services]: ProxyWithOnlyObservable<Services[P]>;
+};
+export type IServicesWithoutObservables<Services extends Record<string, Record<string, any>>> = {
+  [P in keyof Services]: ProxyWithOutObservable<Services[P]>;
+};
 
 export const auth = createProxy<AsyncifyProxy<IAuthenticationService>>(AuthenticationServiceIPCDescriptor);
 export const context = createProxy<AsyncifyProxy<IContextService>>(ContextServiceIPCDescriptor);
