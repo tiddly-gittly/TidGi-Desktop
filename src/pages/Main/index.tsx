@@ -22,7 +22,6 @@ import { usePromiseValue } from '@/helpers/use-service-value';
 
 import WorkspaceSelector from './WorkspaceSelector';
 import FindInPage from '../../components/FindInPage';
-import DraggableRegion from './DraggableRegion';
 
 import arrowWhite from '@/images/arrow-white.png';
 import arrowBlack from '@/images/arrow-black.png';
