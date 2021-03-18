@@ -27,7 +27,6 @@ export class ThemeService implements IThemeService {
     // apply theme
     nativeTheme.themeSource = themeSource;
     nativeTheme.addListener('updated', () => {
-      this.windowService.sendToAllWindows(ThemeChannel.nativeThemeUpdated);
       this.viewService.reloadViewsDarkReader();
     });
   }

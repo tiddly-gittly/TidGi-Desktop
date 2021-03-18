@@ -306,8 +306,6 @@ export class View implements IViewService {
       // focus on webview
       // https://github.com/quanglam2807/webcatalog/issues/398
       view.webContents.focus();
-      this.windowService.sendToAllWindows(WindowChannel.updateAddress, view.webContents.getURL(), false);
-      this.windowService.sendToAllWindows(WindowChannel.updateTitle, view.webContents.getTitle());
       browserWindow.setTitle(view.webContents.getTitle());
     }
   }
@@ -341,13 +339,6 @@ export class View implements IViewService {
     if (_shouldPauseNotifications !== undefined) {
       this.shouldPauseNotifications = _shouldPauseNotifications;
     }
-    Object.keys(this.views).forEach((id) => {
-      const view = this.getView(id);
-      const workspace = this.workspaceService.get(id);
-      if (view !== undefined && workspace !== undefined) {
-        view.webContents.send(NotificationChannel.shouldPauseNotificationsChanged, Boolean(workspace.disableNotifications || this.shouldPauseNotifications));
-      }
-    });
   };
 
   public hibernateView = (id: string): void => {

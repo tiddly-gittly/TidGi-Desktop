@@ -177,7 +177,6 @@ export class WorkspaceView implements IWorkspaceViewService {
         // eslint-disable-next-line unicorn/no-null
         mainWindow.setBrowserView(null);
         mainWindow.setTitle(app.name);
-        this.windowService.sendToAllWindows(WindowChannel.updateTitle, '');
       }
     } else if (this.workspaceService.countWorkspaces() > 1 && this.workspaceService.get(id)?.active === true) {
       const previousWorkspace = this.workspaceService.getPreviousWorkspace(id);

@@ -62,8 +62,6 @@ export enum PreferenceChannel {
 
 export enum WindowChannel {
   name = 'WindowChannel',
-  updateAddress = 'update-address',
-  updateTitle = 'update-title',
   updateCanGoBack = 'update-can-go-back',
   updateCanGoForward = 'update-can-go-forward',
   openFindInPage = 'open-find-in-page',
@@ -71,7 +69,6 @@ export enum WindowChannel {
 
 export enum ThemeChannel {
   name = 'ThemeChannel',
-  nativeThemeUpdated = 'native-theme-updated',
 }
 
 export enum I18NChannels {

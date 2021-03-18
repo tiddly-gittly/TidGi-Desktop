@@ -51,9 +51,7 @@ export default function setupViewEventHandlers(
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 
-  view.webContents.once('did-stop-loading', () => {
-    view.webContents.send(NotificationChannel.shouldPauseNotificationsChanged, workspace.disableNotifications || shouldPauseNotifications);
-  });
+  view.webContents.once('did-stop-loading', () => {});
   view.webContents.on('will-navigate', (event, nextUrl) => {
     // open external links in browser
     // https://github.com/atomery/webcatalog/issues/849#issuecomment-629587264
@@ -111,9 +109,6 @@ export default function setupViewEventHandlers(
     workspaceService.updateMetaData(workspace.id, {
       isLoading: false,
     });
-    if (workspaceObject.active) {
-      windowService.sendToAllWindows(WindowChannel.updateAddress, view.webContents.getURL(), false);
-    }
     const currentUrl = view.webContents.getURL();
     void workspaceService.update(workspace.id, {
       lastUrl: currentUrl,
@@ -171,7 +166,6 @@ export default function setupViewEventHandlers(
     if (workspaceObject.active) {
       windowService.sendToAllWindows(WindowChannel.updateCanGoBack, view.webContents.canGoBack());
       windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.canGoForward());
-      windowService.sendToAllWindows(WindowChannel.updateAddress, url, false);
     }
   });
   view.webContents.on('did-navigate-in-page', (_event, url) => {
@@ -185,7 +179,6 @@ export default function setupViewEventHandlers(
     if (workspaceObject.active) {
       windowService.sendToAllWindows(WindowChannel.updateCanGoBack, view.webContents.canGoBack());
       windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.canGoForward());
-      windowService.sendToAllWindows(WindowChannel.updateAddress, url, false);
     }
   });
   view.webContents.on('page-title-updated', (_event, title) => {
@@ -197,7 +190,6 @@ export default function setupViewEventHandlers(
       return;
     }
     if (workspaceObject.active) {
-      windowService.sendToAllWindows(WindowChannel.updateTitle, title);
       browserWindow.setTitle(title);
     }
   });
