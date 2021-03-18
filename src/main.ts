@@ -113,6 +113,8 @@ if (!gotTheLock) {
       });
     }
     await windowService.open(WindowNames.main);
+    buildLanguageMenu();
+    // FIXME: this await is never ended
     await workspaceViewService.initializeAllWorkspaceView();
 
     ipcMain.emit('request-update-pause-notifications-info');
@@ -144,9 +146,6 @@ if (!gotTheLock) {
     }
     // trigger whenTrulyReady
     ipcMain.emit(MainChannel.commonInitFinished);
-
-    // build menu at last, this is not noticeable to user, so do it last
-    buildLanguageMenu();
   };
 
   app.on('ready', () => {
