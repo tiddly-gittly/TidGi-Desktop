@@ -469,24 +469,24 @@ export class Window implements IWindowService {
       // TODO: restore updater options here
       this.menuService.insertMenu('TiddlyGit', [
         {
-          label: i18n.t('ContextMenu.About'),
+          label: () => i18n.t('ContextMenu.About'),
           click: async () => await this.open(WindowNames.about),
         },
         { type: 'separator' },
         {
-          label: i18n.t('ContextMenu.Preferences'),
+          label: () => i18n.t('ContextMenu.Preferences'),
           click: async () => await this.open(WindowNames.preferences),
           accelerator: 'CmdOrCtrl+,',
         },
         { type: 'separator' },
         {
-          label: i18n.t('ContextMenu.Notifications'),
+          label: () => i18n.t('ContextMenu.Notifications'),
           click: async () => await this.open(WindowNames.notifications),
           accelerator: 'CmdOrCtrl+Shift+N',
         },
         { type: 'separator' },
         {
-          label: i18n.t('Preference.ClearBrowsingData'),
+          label: () => i18n.t('Preference.ClearBrowsingData'),
           click: () => ipcMain.emit('request-clear-browsing-data'),
         },
         { type: 'separator' },
