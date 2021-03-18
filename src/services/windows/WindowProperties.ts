@@ -74,7 +74,7 @@ export interface WindowMeta {
   [WindowNames.preferences]: IPreferenceWindowMeta;
   [WindowNames.about]: undefined;
   [WindowNames.auth]: undefined;
-  [WindowNames.view]: undefined;
+  [WindowNames.view]: { workspaceID?: string };
   [WindowNames.newWindow]: undefined;
   [WindowNames.addWorkspace]: undefined;
   [WindowNames.notifications]: undefined;

@@ -1,12 +1,14 @@
-import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, BrowserWindow, WebviewTag, WebContents } from 'electron';
+import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, BrowserWindow, WebviewTag, WebContents, MenuItem, ipcMain } from 'electron';
 import contextMenu, { Actions } from 'electron-context-menu';
 import { debounce, take, drop } from 'lodash';
 import { injectable } from 'inversify';
-import { IMenuService, DeferredMenuItemConstructorOptions } from './interface';
+import { IMenuService, DeferredMenuItemConstructorOptions, IOnContextMenuInfo } from './interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
+import ContextMenuBuilder from './contextMenuBuilder';
+import i18next from 'i18next';
 
 @injectable()
 export class MenuService implements IMenuService {
@@ -198,11 +200,92 @@ export class MenuService implements IMenuService {
     }
   }
 
-  public buildContextMenuAndPopup(template: MenuItemConstructorOptions[], windowName = WindowNames.main): void {
-    const menu = Menu.buildFromTemplate(template);
+  public buildContextMenuAndPopup(template: MenuItemConstructorOptions[], info: IOnContextMenuInfo, windowName = WindowNames.main): void {
     const windowToPopMenu = this.windowService.get(windowName);
-    if (windowToPopMenu !== undefined) {
-      menu.popup({ window: windowToPopMenu });
+    const webContents = windowToPopMenu?.webContents;
+    if (windowToPopMenu === undefined || webContents === undefined) {
+      return;
     }
+    const contextMenuBuilder = new ContextMenuBuilder(webContents);
+    contextMenuBuilder.buildMenuForElement(info).then((menu: any) => {
+      // eslint-disable-next-line promise/always-return
+      if (info.linkURL && info.linkURL.length > 0) {
+        menu.append(new MenuItem({ type: 'separator' }));
+        menu.append(
+          new MenuItem({
+            label: i18next.t('ContextMenu.OpenLinkInNewWindow'),
+            click: async () => {
+              ipcMain.emit('set-view-meta-force-new-window', true);
+              window.open(info.linkURL);
+            },
+          }),
+        );
+        menu.append(new MenuItem({ type: 'separator' }));
+      }
+
+      menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(
+        new MenuItem({
+          label: i18next.t('ContextMenu.Back'),
+          enabled: webContents.canGoBack(),
+          click: () => {
+            webContents.goBack();
+          },
+        }),
+      );
+      menu.append(
+        new MenuItem({
+          label: i18next.t('ContextMenu.Forward'),
+          enabled: webContents.canGoForward(),
+          click: () => {
+            webContents.goForward();
+          },
+        }),
+      );
+      menu.append(
+        new MenuItem({
+          label: i18next.t('ContextMenu.Reload'),
+          click: () => {
+            webContents.reload();
+          },
+        }),
+      );
+      menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(
+        new MenuItem({
+          label: i18next.t('ContextMenu.More'),
+          submenu: [
+            {
+              label: i18next.t('ContextMenu.About'),
+              click: () => ipcMain.emit('request-show-about-window'),
+            },
+            { type: 'separator' },
+            {
+              label: i18next.t('ContextMenu.CheckForUpdates'),
+              click: () => ipcMain.emit('request-check-for-updates'),
+            },
+            {
+              label: i18next.t('ContextMenu.Preferences'),
+              click: () => ipcMain.emit('request-show-preferences-window'),
+            },
+            { type: 'separator' },
+            {
+              label: i18next.t('ContextMenu.TiddlyGitSupport'),
+              click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose'),
+            },
+            {
+              label: i18next.t('ContextMenu.TiddlyGitWebsite'),
+              click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop'),
+            },
+            { type: 'separator' },
+            {
+              label: i18next.t('ContextMenu.Quit'),
+              click: () => ipcMain.emit('request-quit'),
+            },
+          ],
+        }),
+      );
+      menu.popup(windowToPopMenu);
+    });
   }
 }

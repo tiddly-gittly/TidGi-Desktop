@@ -1,13 +1,10 @@
-import { ipcRenderer, remote, webFrame } from 'electron';
+import { ipcRenderer, webFrame } from 'electron';
 import { enable as enableDarkMode, disable as disableDarkMode } from 'darkreader';
-import ContextMenuBuilder from '@services/libs/context-menu-builder';
-import { WindowChannel, NotificationChannel, WorkspaceChannel } from '@/constants/channels';
-import i18next from '@services/libs/i18n';
+import { NotificationChannel, WorkspaceChannel } from '@/constants/channels';
 import './wiki-operation';
 import { preference, theme, workspace, workspaceView, menu } from './common/services';
+import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 
-const { MenuItem, shell } = remote;
-window.global = {};
 let handled = false;
 const handleLoaded = async (event: string): Promise<void> => {
   if (handled) {
@@ -34,90 +31,6 @@ const handleLoaded = async (event: string): Promise<void> => {
     void loadDarkReader();
   });
   await loadDarkReader();
-  (window as any).contextMenuBuilder = new ContextMenuBuilder();
-  remote.getCurrentWebContents().on('context-menu', (e, info) => {
-    // eslint-disable-next-line promise/catch-or-return
-    (window as any).contextMenuBuilder.buildMenuForElement(info).then((menu: any) => {
-      // eslint-disable-next-line promise/always-return
-      if (info.linkURL && info.linkURL.length > 0) {
-        menu.append(new MenuItem({ type: 'separator' }));
-        menu.append(
-          new MenuItem({
-            label: i18next.t('ContextMenu.OpenLinkInNewWindow'),
-            click: async () => {
-              await ipcRenderer.invoke('set-view-meta-force-new-window', true);
-              window.open(info.linkURL);
-            },
-          }),
-        );
-        menu.append(new MenuItem({ type: 'separator' }));
-      }
-      const contents = remote.getCurrentWebContents();
-      menu.append(new MenuItem({ type: 'separator' }));
-      menu.append(
-        new MenuItem({
-          label: i18next.t('ContextMenu.Back'),
-          enabled: contents.canGoBack(),
-          click: () => {
-            contents.goBack();
-          },
-        }),
-      );
-      menu.append(
-        new MenuItem({
-          label: i18next.t('ContextMenu.Forward'),
-          enabled: contents.canGoForward(),
-          click: () => {
-            contents.goForward();
-          },
-        }),
-      );
-      menu.append(
-        new MenuItem({
-          label: i18next.t('ContextMenu.Reload'),
-          click: () => {
-            contents.reload();
-          },
-        }),
-      );
-      menu.append(new MenuItem({ type: 'separator' }));
-      menu.append(
-        new MenuItem({
-          label: i18next.t('ContextMenu.More'),
-          submenu: [
-            {
-              label: i18next.t('ContextMenu.About'),
-              click: async () => await ipcRenderer.invoke('request-show-about-window'),
-            },
-            { type: 'separator' },
-            {
-              label: i18next.t('ContextMenu.CheckForUpdates'),
-              click: async () => await ipcRenderer.invoke('request-check-for-updates'),
-            },
-            {
-              label: i18next.t('ContextMenu.Preferences'),
-              click: async () => await ipcRenderer.invoke('request-show-preferences-window'),
-            },
-            { type: 'separator' },
-            {
-              label: i18next.t('ContextMenu.TiddlyGitSupport'),
-              click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose'),
-            },
-            {
-              label: i18next.t('ContextMenu.TiddlyGitWebsite'),
-              click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop'),
-            },
-            { type: 'separator' },
-            {
-              label: i18next.t('ContextMenu.Quit'),
-              click: async () => await ipcRenderer.invoke('request-quit'),
-            },
-          ],
-        }),
-      );
-      menu.popup(remote.getCurrentWindow());
-    });
-  });
   // Link preview
   const linkPreview = document.createElement('div');
   linkPreview.style.cssText =
@@ -161,62 +74,65 @@ window.addEventListener('message', (event) => {
     }
   }
 });
-// Fix Can't show file list of Google Drive
-// https://github.com/electron/electron/issues/16587
-// Fix chrome.runtime.sendMessage is undefined for FastMail
-// https://github.com/atomery/singlebox/issues/21
-const initialShouldPauseNotifications = ipcRenderer.invoke('get-pause-notifications-info') != undefined;
-const { workspaceId } = remote.getCurrentWebContents();
-void webFrame.executeJavaScript(`
-(function() {
-  window.chrome = {
-    runtime: {
-      sendMessage: () => {},
-      connect: () => {
-        return {
-          onMessage: {
-            addListener: () => {},
-            removeListener: () => {},
-          },
-          postMessage: () => {},
-          disconnect: () => {},
+
+(async function executeJavaScriptInBrowserView() {
+  // Fix Can't show file list of Google Drive
+  // https://github.com/electron/electron/issues/16587
+  // Fix chrome.runtime.sendMessage is undefined for FastMail
+  // https://github.com/atomery/singlebox/issues/21
+  const initialShouldPauseNotifications = window.service.preference.get('pauseNotifications');
+  const { workspaceID } = window.meta as IPossibleWindowMeta<WindowMeta[WindowNames.view]>;
+  void webFrame.executeJavaScript(`
+  (function() {
+    window.chrome = {
+      runtime: {
+        sendMessage: () => {},
+        connect: () => {
+          return {
+            onMessage: {
+              addListener: () => {},
+              removeListener: () => {},
+            },
+            postMessage: () => {},
+            disconnect: () => {},
+          }
         }
       }
     }
-  }
 
-  window.electronSafeIpc = {
-    send: () => null,
-    on: () => null,
-  };
-  window.desktop = undefined;
+    window.electronSafeIpc = {
+      send: () => null,
+      on: () => null,
+    };
+    window.desktop = undefined;
 
-  // Customize Notification behavior
-  // https://stackoverflow.com/questions/53390156/how-to-override-javascript-web-api-notification-object
-  const oldNotification = window.Notification;
+    // Customize Notification behavior
+    // https://stackoverflow.com/questions/53390156/how-to-override-javascript-web-api-notification-object
+    const oldNotification = window.Notification;
 
-  let shouldPauseNotifications = ${initialShouldPauseNotifications};
+    let shouldPauseNotifications = ${initialShouldPauseNotifications};
 
-  window.addEventListener('message', function(e) {
-    if (!e.data || e.data.type !== '${NotificationChannel.shouldPauseNotificationsChanged}') return;
-    shouldPauseNotifications = e.data.val;
-  });
+    window.addEventListener('message', function(e) {
+      if (!e.data || e.data.type !== '${NotificationChannel.shouldPauseNotificationsChanged}') return;
+      shouldPauseNotifications = e.data.val;
+    });
 
-  window.Notification = function() {
-    if (!shouldPauseNotifications) {
-      const notif = new oldNotification(...arguments);
-      notif.addEventListener('click', () => {
-        window.postMessage({ type: '${WorkspaceChannel.focusWorkspace}', workspaceId: "${workspaceId}" });
-      });
-      return notif;
+    window.Notification = function() {
+      if (!shouldPauseNotifications) {
+        const notif = new oldNotification(...arguments);
+        notif.addEventListener('click', () => {
+          window.postMessage({ type: '${WorkspaceChannel.focusWorkspace}', workspaceId: "${workspaceID}" });
+        });
+        return notif;
+      }
+      return null;
     }
-    return null;
-  }
-  window.Notification.requestPermission = oldNotification.requestPermission;
-  Object.defineProperty(Notification, 'permission', {
-    get() {
-      return oldNotification.permission;
-    }
-  });
-})();
+    window.Notification.requestPermission = oldNotification.requestPermission;
+    Object.defineProperty(Notification, 'permission', {
+      get() {
+        return oldNotification.permission;
+      }
+    });
+  })();
 `);
+})();

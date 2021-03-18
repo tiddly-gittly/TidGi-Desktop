@@ -1,11 +1,11 @@
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-param-reassign */
-/* global Image */
 // Ported from
 // https://github.com/electron-userland/electron-spellchecker/blob/master/src/context-menu-builder.js
-import { clipboard, nativeImage, shell, remote } from 'electron';
+import { clipboard, shell, Menu, MenuItem, WebContents } from 'electron';
 import i18next from 'i18next';
-const { Menu, MenuItem } = remote;
+import { IOnContextMenuInfo } from './interface';
+
 /**
  * Truncates a string to a max length of 25. Will split on a word boundary and
  * add an ellipsis.
@@ -15,6 +15,7 @@ const { Menu, MenuItem } = remote;
  */
 const truncateString = (string: string): string => {
   const match = string.match(/^.{0,25}\S*/);
+  if (match === null) return string;
   const { length } = match[0];
   let result = match?.[0]?.replace(/\s$/, '') ?? '';
   if (length < string.length) {
@@ -49,42 +50,21 @@ const contextMenuStringTable = {
  * generate suggestions.
  */
 export default class ContextMenuBuilder {
-  getWebContents: any;
-  menu: any;
-  processMenu: any;
-  stringTable: any;
+  webContents: WebContents;
+  menu?: Menu;
+  processMenu: (menu: Menu, contextInfo: IOnContextMenuInfo) => Menu;
+  stringTable: typeof contextMenuStringTable;
   /**
    * Creates an instance of ContextMenuBuilder
    *
-   * @param  {BrowserWindow|WebView} windowOrWebView  The hosting window/WebView
-   * @param  {function} processMenu If passed, this method will be passed the menu to change
+   * @param   webContents  The hosting window's WebView
+   * @param   processMenu If passed, this method will be passed the menu to change
    *                                it prior to display. Signature: (menu, info) => menu
    */
-  constructor(windowOrWebView: any, processMenu = (m: any) => m) {
+  constructor(webContents: WebContents, processMenu = (m: Menu) => m) {
     this.processMenu = processMenu;
-    this.menu = null;
     this.stringTable = { ...contextMenuStringTable };
-    windowOrWebView = windowOrWebView || remote.getCurrentWebContents();
-    const ctorName = Object.getPrototypeOf(windowOrWebView).constructor.name;
-    if (ctorName === 'WebContents') {
-      this.getWebContents = () => windowOrWebView;
-    } else {
-      // NB: We do this because at the time a WebView is created, it doesn't
-      // have a WebContents, we need to defer the call to getWebContents
-      this.getWebContents = 'webContents' in windowOrWebView ? () => windowOrWebView.webContents : () => windowOrWebView.getWebContents();
-    }
-  }
-
-  /**
-   * Override the default logger for this class. You probably want to use
-   * {{setGlobalLogger}} instead
-   *
-   * @param {Function} fn   The function which will operate like console.log
-   */
-  static setLogger(function_: any) {
-    // @ts-expect-error ts-migrate(2304) FIXME: Cannot find name 'd'.
-    // eslint-disable-next-line no-undef
-    d = function_;
+    this.webContents = webContents;
   }
 
   /**
@@ -93,12 +73,11 @@ export default class ContextMenuBuilder {
    * allows to change string in runtime. All formatters are simply typeof () => string, except
    * lookUpDefinition provides word, ({word}) => string.
    *
-   * @param {Object} stringTable The object contains string foramtter function for context menu.
+   * @param stringTable The object contains string foramtter function for context menu.
    * It is allowed to specify only certain menu string as necessary, which will makes other string
    * fall backs to default.
-   *
    */
-  setAlternateStringFormatter(stringTable: any) {
+  setAlternateStringFormatter(stringTable: Record<string, () => string>) {
     this.stringTable = Object.assign(this.stringTable, stringTable);
   }
 
@@ -106,12 +85,12 @@ export default class ContextMenuBuilder {
    * Shows a popup menu given the information returned from the context-menu
    * event. This is probably the only method you need to call in this class.
    *
-   * @param  {Object} contextInfo   The object returned from the 'context-menu'
+   * @param   contextInfo   The object returned from the 'context-menu'
    *                                Electron event.
    *
-   * @return {Promise}              Completion
+   * @return               Completion
    */
-  async showPopupMenu(contextInfo: any) {
+  public async showPopupMenu(contextInfo: IOnContextMenuInfo): Promise<void> {
     const menu = await this.buildMenuForElement(contextInfo);
     if (!menu) {
       return;
@@ -126,7 +105,7 @@ export default class ContextMenuBuilder {
    *
    * @return {Promise<Menu>}      The newly created `Menu`
    */
-  async buildMenuForElement(info: any) {
+  async buildMenuForElement(info: IOnContextMenuInfo): Promise<Menu> {
     // d(`Got context menu event with args: ${JSON.stringify(info)}`);
     if (info.linkURL && info.linkURL.length > 0) {
       return this.buildMenuForLink(info);
@@ -145,7 +124,7 @@ export default class ContextMenuBuilder {
    *
    * @return {Menu}  The `Menu`
    */
-  async buildMenuForTextInput(menuInfo: any) {
+  async buildMenuForTextInput(menuInfo: IOnContextMenuInfo): Promise<Menu> {
     const menu = new Menu();
     await this.addSpellingItems(menu, menuInfo);
     this.addSearchItems(menu, menuInfo);
@@ -163,21 +142,22 @@ export default class ContextMenuBuilder {
    *
    * @return {Menu}  The `Menu`
    */
-  buildMenuForLink(menuInfo: any) {
+  private buildMenuForLink(menuInfo: IOnContextMenuInfo): Menu {
     const menu = new Menu();
+    if (menuInfo.linkURL === undefined || menuInfo.linkText === undefined) return menu;
     const isEmailAddress = menuInfo.linkURL.startsWith('mailto:');
     const copyLink = new MenuItem({
       label: isEmailAddress ? this.stringTable.copyMail() : this.stringTable.copyLinkUrl(),
       click: () => {
         // Omit the mailto: portion of the link; we just want the address
-        clipboard.writeText(isEmailAddress ? menuInfo.linkText : menuInfo.linkURL);
+        clipboard.writeText(isEmailAddress ? menuInfo.linkText! : menuInfo.linkURL!);
       },
     });
     const openLink = new MenuItem({
       label: this.stringTable.openLinkUrl(),
       click: () => {
         // d(`Navigating to: ${menuInfo.linkURL}`);
-        shell.openExternal(menuInfo.linkURL);
+        shell.openExternal(menuInfo.linkURL!);
       },
     });
     menu.append(copyLink);
@@ -197,7 +177,7 @@ export default class ContextMenuBuilder {
    *
    * @return {Menu}  The `Menu`
    */
-  buildMenuForText(menuInfo: any) {
+  private buildMenuForText(menuInfo: IOnContextMenuInfo): Menu {
     const menu = new Menu();
     this.addSearchItems(menu, menuInfo);
     this.addCopy(menu, menuInfo);
@@ -212,7 +192,7 @@ export default class ContextMenuBuilder {
    *
    * @return {Menu}  The `Menu`
    */
-  buildMenuForImage(menuInfo: any) {
+  private buildMenuForImage(menuInfo: IOnContextMenuInfo): Menu {
     const menu = new Menu();
     if (this.isSrcUrlValid(menuInfo)) {
       this.addImageItems(menu, menuInfo);
@@ -227,19 +207,17 @@ export default class ContextMenuBuilder {
    * Checks if the current text selection contains a single misspelled word and
    * if so, adds suggested spellings as individual menu items.
    */
-  async addSpellingItems(menu: any, menuInfo: any) {
-    // eslint-disable-next-line no-unused-vars
-    const target = this.getWebContents();
+  private async addSpellingItems(menu: Menu, menuInfo: IOnContextMenuInfo): Promise<Menu> {
     if (!menuInfo.misspelledWord || menuInfo.misspelledWord.length === 0) {
       return menu;
     }
     // Ensure that we have valid corrections for that word
     const corrections = menuInfo.dictionarySuggestions;
     if (corrections && corrections.length) {
-      corrections.forEach((correction: any) => {
+      corrections.forEach((correction: string) => {
         const item = new MenuItem({
           label: correction,
-          click: () => target.replaceMisspelling(correction),
+          click: () => this.webContents.replaceMisspelling(correction),
         });
         menu.append(item);
       });
@@ -251,7 +229,7 @@ export default class ContextMenuBuilder {
   /**
    * Adds search-related menu items.
    */
-  addSearchItems(menu: any, menuInfo: any) {
+  private addSearchItems(menu: Menu, menuInfo: IOnContextMenuInfo): Menu {
     if (!menuInfo.selectionText || menuInfo.selectionText.length === 0) {
       return menu;
     }
@@ -260,18 +238,16 @@ export default class ContextMenuBuilder {
       return menu;
     }
     if (process.platform === 'darwin') {
-      const target = this.getWebContents();
       const lookUpDefinition = new MenuItem({
         label: this.stringTable.lookUpDefinition({ word: truncateString(menuInfo.selectionText) }),
-        click: () => target.showDefinitionForSelection(),
+        click: () => this.webContents.showDefinitionForSelection(),
       });
       menu.append(lookUpDefinition);
     }
     const search = new MenuItem({
       label: this.stringTable.searchGoogle(),
       click: () => {
-        const url = `https://www.google.com/#q=${encodeURIComponent(menuInfo.selectionText)}`;
-        // d(`Searching Google using ${url}`);
+        const url = `https://www.google.com/#q=${encodeURIComponent(menuInfo.selectionText!)}`;
         shell.openExternal(url);
       },
     });
@@ -280,22 +256,18 @@ export default class ContextMenuBuilder {
     return menu;
   }
 
-  isSrcUrlValid(menuInfo: any) {
-    return menuInfo.srcURL && menuInfo.srcURL.length > 0;
+  private isSrcUrlValid(menuInfo: IOnContextMenuInfo): boolean {
+    return !!menuInfo.srcURL && menuInfo.srcURL.length > 0;
   }
 
   /**
-   * Adds "Copy Image" and "Copy Image URL" items when `src` is valid.
+   * Adds "Copy Image URL" items when `src` is valid.
    */
-  addImageItems(menu: any, menuInfo: any) {
-    const copyImage = new MenuItem({
-      label: this.stringTable.copyImage(),
-      click: () => this.convertImageToBase64(menuInfo.srcURL, (dataURL: any) => clipboard.writeImage(nativeImage.createFromDataURL(dataURL))),
-    });
-    menu.append(copyImage);
+  private addImageItems(menu: Menu, menuInfo: IOnContextMenuInfo): Menu {
+    if (!menuInfo.srcURL) return menu;
     const copyImageUrl = new MenuItem({
       label: this.stringTable.copyImageUrl(),
-      click: () => clipboard.writeText(menuInfo.srcURL),
+      click: () => clipboard.writeText(menuInfo.srcURL!),
     });
     menu.append(copyImageUrl);
     return menu;
@@ -304,14 +276,13 @@ export default class ContextMenuBuilder {
   /**
    * Adds the Cut menu item
    */
-  addCut(menu: any, menuInfo: any) {
-    const target = this.getWebContents();
+  private addCut(menu: Menu, menuInfo: IOnContextMenuInfo): Menu {
     menu.append(
       new MenuItem({
         label: this.stringTable.cut(),
         accelerator: 'CommandOrControl+X',
         enabled: menuInfo.editFlags.canCut,
-        click: () => target.cut(),
+        click: () => this.webContents.cut(),
       }),
     );
     return menu;
@@ -320,14 +291,13 @@ export default class ContextMenuBuilder {
   /**
    * Adds the Copy menu item.
    */
-  addCopy(menu: any, menuInfo: any) {
-    const target = this.getWebContents();
+  addCopy(menu: Menu, menuInfo: IOnContextMenuInfo) {
     menu.append(
       new MenuItem({
         label: this.stringTable.copy(),
         accelerator: 'CommandOrControl+C',
         enabled: menuInfo.editFlags.canCopy,
-        click: () => target.copy(),
+        click: () => this.webContents.copy(),
       }),
     );
     return menu;
@@ -336,14 +306,13 @@ export default class ContextMenuBuilder {
   /**
    * Adds the Paste menu item.
    */
-  addPaste(menu: any, menuInfo: any) {
-    const target = this.getWebContents();
+  addPaste(menu: Menu, menuInfo: IOnContextMenuInfo) {
     menu.append(
       new MenuItem({
         label: this.stringTable.paste(),
         accelerator: 'CommandOrControl+V',
         enabled: menuInfo.editFlags.canPaste,
-        click: () => target.paste(),
+        click: () => this.webContents.paste(),
       }),
     );
     return menu;
@@ -352,7 +321,7 @@ export default class ContextMenuBuilder {
   /**
    * Adds a separator item.
    */
-  addSeparator(menu: any) {
+  addSeparator(menu: Menu) {
     menu.append(new MenuItem({ type: 'separator' }));
     return menu;
   }
@@ -360,14 +329,13 @@ export default class ContextMenuBuilder {
   /**
    * Adds the "Inspect Element" menu item.
    */
-  addInspectElement(menu: any, menuInfo: any, needsSeparator = true) {
-    const target = this.getWebContents();
+  addInspectElement(menu: Menu, menuInfo: IOnContextMenuInfo, needsSeparator = true) {
     if (needsSeparator) {
       this.addSeparator(menu);
     }
     const inspect = new MenuItem({
       label: this.stringTable.inspectElement(),
-      click: () => target.inspectElement(menuInfo.x, menuInfo.y),
+      click: () => this.webContents.inspectElement(menuInfo.x, menuInfo.y),
     });
     menu.append(inspect);
     return menu;
@@ -376,40 +344,15 @@ export default class ContextMenuBuilder {
   /**
    * Adds the "Developer Tools" menu item.
    */
-  addDeveloperTools(menu: any, menuInfo: any, needsSeparator = false) {
-    const target = this.getWebContents();
+  addDeveloperTools(menu: Menu, menuInfo: IOnContextMenuInfo, needsSeparator = false) {
     if (needsSeparator) {
       this.addSeparator(menu);
     }
     const inspect = new MenuItem({
       label: this.stringTable.developerTools(),
-      click: () => target.openDevTools(),
+      click: () => this.webContents.openDevTools(),
     });
     menu.append(inspect);
     return menu;
-  }
-
-  /**
-   * Converts an image to a base-64 encoded string.
-   *
-   * @param  {String} url           The image URL
-   * @param  {Function} callback    A callback that will be invoked with the result
-   * @param  {String} outputFormat  The image format to use, defaults to 'image/png'
-   */
-  convertImageToBase64(url: any, callback: any, outputFormat = 'image/png') {
-    let canvas = document.createElement('CANVAS');
-    const context = (canvas as any).getContext('2d');
-    const img = new Image();
-    img.crossOrigin = 'Anonymous';
-    img.addEventListener('load', () => {
-      (canvas as any).height = img.height;
-      (canvas as any).width = img.width;
-      context.drawImage(img, 0, 0);
-      const dataURL = (canvas as any).toDataURL(outputFormat);
-      // @ts-expect-error ts-migrate(2322) FIXME: Type 'null' is not assignable to type 'HTMLElement... Remove this comment to see the full error message
-      canvas = null;
-      callback(dataURL);
-    });
-    img.src = url;
   }
 }

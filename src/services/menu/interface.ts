@@ -16,13 +16,32 @@ export interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstru
     | Array<MenuItemConstructorOptions | DeferredMenuItemConstructorOptions>;
 }
 
+export interface IOnContextMenuInfo {
+  x: number;
+  y: number;
+  linkURL?: string;
+  linkText?: string;
+  selectionText?: string;
+  misspelledWord?: string;
+  srcURL?: string;
+  hasImageContents?: boolean;
+  dictionarySuggestions?: string[];
+  isEditable?: boolean;
+  inputFieldType?: string;
+  editFlags: {
+    canCut?: boolean;
+    canCopy?: boolean;
+    canPaste?: boolean;
+  };
+}
+
 /**
  * Handle creation of app menu, other services can register their menu tab and menu items here.
  */
 export interface IMenuService {
   buildMenu(): void;
   insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator?: boolean): void;
-  buildContextMenuAndPopup(template: MenuItemConstructorOptions[], windowName?: WindowNames): void;
+  buildContextMenuAndPopup(template: MenuItemConstructorOptions[], info: IOnContextMenuInfo, windowName?: WindowNames): void;
 }
 export const MenuServiceIPCDescriptor = {
   channel: MenuChannel.name,
