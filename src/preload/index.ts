@@ -5,19 +5,12 @@ import path from 'path';
 import './common/i18n';
 import './common/authing-postmessage';
 import * as service from './common/services';
-import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
-import { WindowNames, WindowMeta, IPossibleWindowMeta } from '@services/windows/WindowProperties';
+import { ViewChannel, WindowChannel } from '@/constants/channels';
+import { WindowNames, IPossibleWindowMeta } from '@services/windows/WindowProperties';
 import { IServicesWithoutObservables, IServicesWithOnlyObservables } from '@/helpers/electron-ipc-proxy/common';
+import { windowName, browserViewMetaData } from './common/browserViewMetaData';
 
-const extraMetaJSONString = process.argv.pop() as string;
-const windowName = process.argv.pop() as WindowNames;
-const extraMeta = JSON.parse(extraMetaJSONString) as WindowMeta[WindowNames];
 
-const browserViewMetaData = { windowName, ...extraMeta };
-contextBridge.exposeInMainWorld('meta', browserViewMetaData);
-ipcRenderer.on(MetaDataChannel.getViewMetaData, (event) => {
-  event.returnValue = browserViewMetaData;
-});
 
 contextBridge.exposeInMainWorld('service', service);
 

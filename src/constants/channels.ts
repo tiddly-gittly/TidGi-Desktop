@@ -25,7 +25,6 @@ export enum NativeChannel {
 }
 export enum NotificationChannel {
   name = 'NotificationChannel',
-  shouldPauseNotificationsChanged = 'should-pause-notifications-changed',
 }
 export enum SystemPreferenceChannel {
   name = 'SystemPreferenceChannel',

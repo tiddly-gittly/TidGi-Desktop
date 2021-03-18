@@ -1,9 +1,10 @@
 import { ipcRenderer, webFrame } from 'electron';
 import { enable as enableDarkMode, disable as disableDarkMode } from 'darkreader';
-import { NotificationChannel, WorkspaceChannel } from '@/constants/channels';
+import { WorkspaceChannel } from '@/constants/channels';
 import './wiki-operation';
 import { preference, theme, workspace, workspaceView, menu } from './common/services';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { browserViewMetaData } from './common/browserViewMetaData';
 
 let handled = false;
 const handleLoaded = async (event: string): Promise<void> => {
@@ -12,6 +13,7 @@ const handleLoaded = async (event: string): Promise<void> => {
   }
   // eslint-disable-next-line no-console
   console.log(`Preload script is loading on ${event}...`);
+  void executeJavaScriptInBrowserView();
   const loadDarkReader = async (): Promise<void> => {
     const shouldUseDarkColor = await theme.shouldUseDarkColors();
     const darkReader = (await preference.get('darkReader')) as boolean;
@@ -31,18 +33,6 @@ const handleLoaded = async (event: string): Promise<void> => {
     void loadDarkReader();
   });
   await loadDarkReader();
-  // Link preview
-  const linkPreview = document.createElement('div');
-  linkPreview.style.cssText =
-    'max-width: 80vw;height: 22px;position: fixed;bottom: -1px;right: -1px;z-index: 1000000;background-color: rgb(245, 245, 245);border-radius: 2px;border: #9E9E9E  1px solid;font-size: 12.5px;color: rgb(0, 0, 0);padding: 0px 8px;line-height: 22px;font-family: -apple-system, system-ui, BlinkMacSystemFont, sans-serif;white-space: nowrap;text-overflow: ellipsis;overflow: hidden; pointer-events:none;';
-  ipcRenderer.on('update-target-url', (e, url) => {
-    if (url && document.body) {
-      linkPreview.textContent = url;
-      document.body.append(linkPreview);
-    } else if (document.body && document.body.contains(linkPreview)) {
-      linkPreview.remove();
-    }
-  });
   // eslint-disable-next-line no-console
   console.log('Preload script is loaded...');
   handled = true;
@@ -54,14 +44,6 @@ document.addEventListener('DOMContentLoaded', async () => await handleLoaded('do
 // DOMContentLoaded might not be triggered so double check with 'onload'
 // https://github.com/atomery/webcatalog/issues/797
 window.addEventListener('load', async () => await handleLoaded('window.on("onload")'));
-// Communicate with the frame
-// Have to use this weird trick because contextIsolation: true
-ipcRenderer.on(NotificationChannel.shouldPauseNotificationsChanged, (e, value) => {
-  window.postMessage({ type: NotificationChannel.shouldPauseNotificationsChanged, val: value });
-});
-ipcRenderer.on('display-media-id-received', (e, value) => {
-  window.postMessage({ type: 'return-display-media-id', val: value });
-});
 window.addEventListener('message', (event) => {
   if (!event.data) {
     return;
@@ -75,55 +57,31 @@ window.addEventListener('message', (event) => {
   }
 });
 
-(async function executeJavaScriptInBrowserView() {
+async function executeJavaScriptInBrowserView() {
   // Fix Can't show file list of Google Drive
   // https://github.com/electron/electron/issues/16587
   // Fix chrome.runtime.sendMessage is undefined for FastMail
   // https://github.com/atomery/singlebox/issues/21
-  const initialShouldPauseNotifications = window.service.preference.get('pauseNotifications');
-  const { workspaceID } = window.meta as IPossibleWindowMeta<WindowMeta[WindowNames.view]>;
-  void webFrame.executeJavaScript(`
+  const initialShouldPauseNotifications = await preference.get('pauseNotifications');
+  const { workspaceID } = browserViewMetaData as IPossibleWindowMeta<WindowMeta[WindowNames.view]>;
+
+  try {
+    await webFrame.executeJavaScript(`
   (function() {
-    window.chrome = {
-      runtime: {
-        sendMessage: () => {},
-        connect: () => {
-          return {
-            onMessage: {
-              addListener: () => {},
-              removeListener: () => {},
-            },
-            postMessage: () => {},
-            disconnect: () => {},
-          }
-        }
-      }
-    }
-
-    window.electronSafeIpc = {
-      send: () => null,
-      on: () => null,
-    };
-    window.desktop = undefined;
-
     // Customize Notification behavior
     // https://stackoverflow.com/questions/53390156/how-to-override-javascript-web-api-notification-object
+    // TODO: fix logic here, get latest pauseNotifications from preference, and focusWorkspace
     const oldNotification = window.Notification;
 
-    let shouldPauseNotifications = ${initialShouldPauseNotifications};
-
-    window.addEventListener('message', function(e) {
-      if (!e.data || e.data.type !== '${NotificationChannel.shouldPauseNotificationsChanged}') return;
-      shouldPauseNotifications = e.data.val;
-    });
+    let shouldPauseNotifications = ${initialShouldPauseNotifications ? initialShouldPauseNotifications : 'undefined'};
 
     window.Notification = function() {
       if (!shouldPauseNotifications) {
-        const notif = new oldNotification(...arguments);
-        notif.addEventListener('click', () => {
+        const notification = new oldNotification(...arguments);
+        notification.addEventListener('click', () => {
           window.postMessage({ type: '${WorkspaceChannel.focusWorkspace}', workspaceId: "${workspaceID}" });
         });
-        return notif;
+        return notification;
       }
       return null;
     }
@@ -135,4 +93,7 @@ window.addEventListener('message', (event) => {
     });
   })();
 `);
-})();
+  } catch (error) {
+    console.error(error);
+  }
+}
