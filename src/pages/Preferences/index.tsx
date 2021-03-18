@@ -33,8 +33,6 @@ import { hunspellLanguagesMap } from '../../constants/hunspell-languages';
 import webcatalogLogo from '../../images/webcatalog-logo.svg';
 import translatiumLogo from '../../images/translatium-logo.svg';
 
-import ListItemDefaultMailClient from './list-item-default-mail-client';
-import ListItemDefaultBrowser from './list-item-default-browser';
 import { GithubTokenForm } from '../../components/github/git-token-form';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { PreferenceSections } from '@services/preferences/interface';
@@ -47,20 +45,20 @@ import { getUpdaterDesc, useUpdaterObservable } from '@services/updater/hooks';
 import { useDebouncedFn } from 'beautiful-react-hooks';
 
 const Root = styled.div`
-  padding: theme.spacing(2);
+  padding: 20px;
   /* background: theme.palette.background.default; */
 `;
 
 const SectionTitle = styled(Typography)`
-  padding-left: theme.spacing(2);
+  padding-left: 20px;
 `;
 SectionTitle.defaultProps = {
   variant: 'subtitle2',
 };
 
 const Paper = styled(PaperRaw)`
-  margin-top: theme.spacing(0.5);
-  margin-bottom: theme.spacing(3);
+  margin-top: 5px;
+  margin-bottom: 30px;
   /* border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)'; */
 `;
 
@@ -864,10 +862,6 @@ export default function Preferences(): JSX.Element {
         <SectionTitle ref={sections.system.ref}>System</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
-            <ListItemDefaultBrowser />
-            <Divider />
-            <ListItemDefaultMailClient />
-            <Divider />
             <StatedMenu
               id="openAtLogin"
               buttonElement={
