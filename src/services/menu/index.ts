@@ -1,5 +1,4 @@
-import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, BrowserWindow, WebviewTag, WebContents, MenuItem, ipcMain } from 'electron';
-import contextMenu, { Actions } from 'electron-context-menu';
+import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, WebContents, MenuItem, ipcMain } from 'electron';
 import { debounce, take, drop } from 'lodash';
 import { injectable } from 'inversify';
 import { IMenuService, DeferredMenuItemConstructorOptions, IOnContextMenuInfo } from './interface';
@@ -41,7 +40,6 @@ export class MenuService implements IMenuService {
   }
 
   constructor() {
-    this.initContextMenu();
     // debounce so build menu won't be call very frequently on app launch, where every services are registering menu items
     this.buildMenu = debounce(this.buildMenu.bind(this), 50);
     // add some default app menus
@@ -113,24 +111,18 @@ export class MenuService implements IMenuService {
     ];
   }
 
-  // A much simpler version of public/libs/context-menu-builder.js
-  // A fallback basic version
-  private initContextMenu(): void {
-    contextMenu({
-      prepend: (_defaultActions: Actions, _parameters: ContextMenuParams, browserWindow: BrowserWindow | WebviewTag | WebContents) => [
-        {
-          label: 'Developer Tools',
-          click: () => {
-            if ('openDevTools' in browserWindow) browserWindow.openDevTools();
-          },
-        },
-      ],
-      showCopyImageAddress: true,
-      showSaveImage: true,
-      showSaveImageAs: true,
-      showInspectElement: true,
-      showServices: true,
-    });
+  /** Register `on('context-menu', openContextMenuForWindow)` for a window, return an unregister function */
+  public initContextMenuForWindowWebContents(webContents: WebContents): () => void {
+    const openContextMenuForWindow = (event: Electron.Event, params: ContextMenuParams) => this.buildContextMenuAndPopup([], params, webContents);
+    webContents.on('context-menu', openContextMenuForWindow);
+
+    return () => {
+      if (webContents.isDestroyed()) {
+        return;
+      }
+
+      webContents.removeListener('context-menu', openContextMenuForWindow);
+    };
   }
 
   /**
@@ -200,11 +192,21 @@ export class MenuService implements IMenuService {
     }
   }
 
-  public buildContextMenuAndPopup(template: MenuItemConstructorOptions[], info: IOnContextMenuInfo, windowName = WindowNames.main): void {
-    const windowToPopMenu = this.windowService.get(windowName);
-    const webContents = windowToPopMenu?.webContents;
-    if (windowToPopMenu === undefined || webContents === undefined) {
-      return;
+  public buildContextMenuAndPopup(
+    template: MenuItemConstructorOptions[],
+    info: IOnContextMenuInfo,
+    webContentsOrWindowName: WindowNames | WebContents = WindowNames.main,
+  ): void {
+    let webContents: WebContents;
+    if (typeof webContentsOrWindowName === 'string') {
+      const windowToPopMenu = this.windowService.get(webContentsOrWindowName);
+      const webContentsOfWindowToPopMenu = windowToPopMenu?.webContents;
+      if (windowToPopMenu === undefined || webContentsOfWindowToPopMenu === undefined) {
+        return;
+      }
+      webContents = webContentsOfWindowToPopMenu;
+    } else {
+      webContents = webContentsOrWindowName;
     }
     const contextMenuBuilder = new ContextMenuBuilder(webContents);
     contextMenuBuilder.buildMenuForElement(info).then((menu: any) => {
@@ -285,7 +287,7 @@ export class MenuService implements IMenuService {
           ],
         }),
       );
-      menu.popup(windowToPopMenu);
+      menu.popup(webContents);
     });
   }
 }

@@ -39,7 +39,7 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
           }
         }
       }}
-      onContextMenu={() => {
+      onContextMenu={(event) => {
         const template = [
           {
             label: t('WorkspaceSelector.EditWorkspace'),
@@ -63,7 +63,7 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
           });
         }
 
-        void window.service.menu.buildContextMenuAndPopup(template);
+        void window.service.menu.buildContextMenuAndPopup(template, { x: event.clientX, y: event.clientY }, window.meta.windowName);
       }}>
       <WorkspaceSelector
         active={active}

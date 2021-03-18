@@ -1,4 +1,4 @@
-import { Menu, MenuItemConstructorOptions, shell } from 'electron';
+import { Menu, MenuItemConstructorOptions, shell, WebContents } from 'electron';
 
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { MenuChannel } from '@/constants/channels';
@@ -28,7 +28,7 @@ export interface IOnContextMenuInfo {
   dictionarySuggestions?: string[];
   isEditable?: boolean;
   inputFieldType?: string;
-  editFlags: {
+  editFlags?: {
     canCut?: boolean;
     canCopy?: boolean;
     canPaste?: boolean;
@@ -40,6 +40,7 @@ export interface IOnContextMenuInfo {
  */
 export interface IMenuService {
   buildMenu(): void;
+  initContextMenuForWindowWebContents(webContents: WebContents): () => void;
   insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator?: boolean): void;
   buildContextMenuAndPopup(template: MenuItemConstructorOptions[], info: IOnContextMenuInfo, windowName?: WindowNames): void;
 }
@@ -47,6 +48,7 @@ export const MenuServiceIPCDescriptor = {
   channel: MenuChannel.name,
   properties: {
     buildMenu: ProxyPropertyType.Function,
+    initContextMenuForWindowWebContents: ProxyPropertyType.Function,
     insertMenu: ProxyPropertyType.Function,
     buildContextMenuAndPopup: ProxyPropertyType.Function,
   },

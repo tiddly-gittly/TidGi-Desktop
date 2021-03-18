@@ -281,7 +281,7 @@ export default class ContextMenuBuilder {
       new MenuItem({
         label: this.stringTable.cut(),
         accelerator: 'CommandOrControl+X',
-        enabled: menuInfo.editFlags.canCut,
+        enabled: menuInfo?.editFlags?.canCut,
         click: () => this.webContents.cut(),
       }),
     );
@@ -296,7 +296,7 @@ export default class ContextMenuBuilder {
       new MenuItem({
         label: this.stringTable.copy(),
         accelerator: 'CommandOrControl+C',
-        enabled: menuInfo.editFlags.canCopy,
+        enabled: menuInfo?.editFlags?.canCopy,
         click: () => this.webContents.copy(),
       }),
     );
@@ -311,7 +311,7 @@ export default class ContextMenuBuilder {
       new MenuItem({
         label: this.stringTable.paste(),
         accelerator: 'CommandOrControl+V',
-        enabled: menuInfo.editFlags.canPaste,
+        enabled: menuInfo?.editFlags?.canPaste,
         click: () => this.webContents.paste(),
       }),
     );

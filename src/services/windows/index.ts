@@ -205,6 +205,7 @@ export class Window implements IWindowService {
     // This loading will wait for a while
     await newWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
     await webContentLoadingPromise;
+    this.menuService.initContextMenuForWindowWebContents(newWindow.webContents)
   }
 
   private registerMainWindowListeners(newWindow: BrowserWindow): void {
