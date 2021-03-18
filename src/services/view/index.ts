@@ -270,6 +270,7 @@ export class View implements IViewService {
     // start wiki on startup, or on sub-wiki creation
     await this.wikiService.wikiStartup(workspace);
     void view.webContents.loadURL(initialUrl);
+    this.menuService.initContextMenuForWindowWebContents(view.webContents)
   }
 
   public getView = (id: string): BrowserView => this.views[id];
