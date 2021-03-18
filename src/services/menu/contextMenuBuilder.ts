@@ -3,7 +3,7 @@
 // Ported from
 // https://github.com/electron-userland/electron-spellchecker/blob/master/src/context-menu-builder.js
 import { clipboard, shell, Menu, MenuItem, WebContents } from 'electron';
-import i18next from 'i18next';
+import i18next from '@services/libs/i18n';
 import { IOnContextMenuInfo } from './interface';
 
 /**

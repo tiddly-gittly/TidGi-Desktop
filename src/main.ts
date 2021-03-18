@@ -1,12 +1,11 @@
 import 'reflect-metadata';
 import fs from 'fs-extra';
-import { ipcMain, protocol, session, powerMonitor, app } from 'electron';
+import { ipcMain, protocol, powerMonitor, app } from 'electron';
 import isDev from 'electron-is-dev';
 import settings from 'electron-settings';
 import { autoUpdater } from 'electron-updater';
 import unhandled from 'electron-unhandled';
 import { openNewGitHubIssue, debugInfo } from 'electron-util';
-import i18n from 'i18next';
 
 import { clearMainBindings } from '@services/libs/i18n/i18nMainBindings';
 import { buildLanguageMenu } from '@services/libs/i18n/buildLanguageMenu';
@@ -15,7 +14,7 @@ import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import extractHostname from '@services/libs/extract-hostname';
 import MAILTO_URLS from '@services/constants/mailto-urls';
-import { initRendererI18NHandler } from '@services/libs/i18n';
+import i18next, { initRendererI18NHandler } from '@services/libs/i18n';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -39,6 +38,11 @@ if (!gotTheLock) {
   console.info('Quitting dut to we only allow one instance to run.');
   app.quit();
 } else {
+  protocol.registerSchemesAsPrivileged([
+    { scheme: 'http', privileges: { standard: true } },
+    { scheme: 'https', privileges: { standard: true } },
+    { scheme: 'mailto', privileges: { standard: true } },
+  ]);
   bindServiceAndProxy();
   const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
   const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
@@ -57,7 +61,6 @@ if (!gotTheLock) {
       mainWindow.focus();
     }
   });
-  void initRendererI18NHandler();
   // make sure "Settings" file exists
   // if not, ignore this chunk of code
   // as using electron-settings before app.on('ready') and "Settings" is created
@@ -93,12 +96,9 @@ if (!gotTheLock) {
       });
     });
   };
-  protocol.registerSchemesAsPrivileged([
-    { scheme: 'http', privileges: { standard: true } },
-    { scheme: 'https', privileges: { standard: true } },
-    { scheme: 'mailto', privileges: { standard: true } },
-  ]);
   const commonInit = async (): Promise<void> => {
+    await initRendererI18NHandler();
+
     // eslint-disable-next-line promise/catch-or-return
     await app.whenReady();
     if (isDev) {
@@ -113,8 +113,6 @@ if (!gotTheLock) {
       });
     }
     await windowService.open(WindowNames.main);
-    // set language async on main process
-    void i18n.changeLanguage(preferenceService.get('language'));
     await workspaceViewService.initializeAllWorkspaceView();
 
     ipcMain.emit('request-update-pause-notifications-info');
@@ -146,9 +144,9 @@ if (!gotTheLock) {
     }
     // trigger whenTrulyReady
     ipcMain.emit(MainChannel.commonInitFinished);
+
     // build menu at last, this is not noticeable to user, so do it last
     buildLanguageMenu();
-    menuService.buildMenu();
   };
 
   app.on('ready', () => {
@@ -253,7 +251,7 @@ if (!gotTheLock) {
 
 unhandled({
   showDialog: true,
-  // logger: logger.error,
+  logger: logger.error,
   reportButton: (error) => {
     openNewGitHubIssue({
       user: 'TiddlyGit Desktop User',

@@ -6,8 +6,8 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
+import i18next from '@services/libs/i18n';
 import ContextMenuBuilder from './contextMenuBuilder';
-import i18next from 'i18next';
 
 @injectable()
 export class MenuService implements IMenuService {
@@ -196,6 +196,7 @@ export class MenuService implements IMenuService {
         submenu: menuItems,
       });
     }
+    this.buildMenu()
   }
 
   public buildContextMenuAndPopup(

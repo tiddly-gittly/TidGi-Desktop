@@ -18,6 +18,7 @@ const logger = winston.createLogger({
     debug: 8,
   },
   transports: [
+    new winston.transports.Console(),
     new winston.transports.DailyRotateFile({
       filename: 'TiddlyGit-%DATE%.log',
       datePattern: 'YYYY-MM-DD',
