@@ -1,6 +1,6 @@
 import { SystemPreferenceChannel } from '@/constants/channels';
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
-import { Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 export interface IUsedElectionSettings {
   openAtLogin: 'yes-hidden' | 'yes' | 'no';
@@ -11,7 +11,7 @@ export interface IUsedElectionSettings {
  * It can be retrieved and changed using Electron APIs
  */
 export interface ISystemPreferenceService {
-  systemPreference$: Subject<IUsedElectionSettings>;
+  systemPreference$: BehaviorSubject<IUsedElectionSettings>;
   get<K extends keyof IUsedElectionSettings>(key: K): IUsedElectionSettings[K];
   getSystemPreferences(): IUsedElectionSettings;
   setSystemPreference<K extends keyof IUsedElectionSettings>(key: K, value: IUsedElectionSettings[K]): void;

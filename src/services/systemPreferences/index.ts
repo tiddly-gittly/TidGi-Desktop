@@ -5,17 +5,17 @@ import { container } from '@services/container';
 import { ISystemPreferenceService, IUsedElectionSettings } from './interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
-import { Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 const { lazyInject } = getDecorators(container);
 
 @injectable()
 export class SystemPreference implements ISystemPreferenceService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-  public systemPreference$: Subject<IUsedElectionSettings>;
+  public systemPreference$: BehaviorSubject<IUsedElectionSettings>;
 
   constructor() {
-    this.systemPreference$ = new Subject<IUsedElectionSettings>();
+    this.systemPreference$ = new BehaviorSubject<IUsedElectionSettings>();
     this.updatePreferenceSubject();
   }
 

@@ -12,7 +12,7 @@ import { MainChannel } from '@/constants/channels';
 import { IUpdaterService, IUpdaterMetaData } from './interface';
 import { IMenuService } from '@services/menu/interface';
 import { logger } from '@services/libs/log';
-import { Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 // TODO: use electron-forge 's auto update solution， maybe see https://headspring.com/2020/09/24/building-signing-and-publishing-electron-forge-applications-for-windows/
 @injectable()
@@ -22,12 +22,12 @@ export class Updater implements IUpdaterService {
 
   private updateSilent = true;
   private updaterMetaData = {} as IUpdaterMetaData;
-  public updaterMetaData$: Subject<IUpdaterMetaData>;
+  public updaterMetaData$: BehaviorSubject<IUpdaterMetaData>;
 
   public constructor() {
     this.updateSilent = true;
     this.configAutoUpdater();
-    this.updaterMetaData$ = new Subject<IUpdaterMetaData>();
+    this.updaterMetaData$ = new BehaviorSubject<IUpdaterMetaData>();
     this.updateUpdaterSubject();
   }
 

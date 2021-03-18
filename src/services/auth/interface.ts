@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/no-null */
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { AuthenticationChannel } from '@/constants/channels';
-import { Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 export interface IUserInfos {
   userName: string;
@@ -13,7 +13,7 @@ export interface IUserInfos {
  * Handle login to Github GitLab Coding.net
  */
 export interface IAuthenticationService {
-  userInfo$: Subject<IUserInfos>;
+  userInfo$: BehaviorSubject<IUserInfos>;
   getUserInfos: () => IUserInfos;
   get<K extends keyof IUserInfos>(key: K): IUserInfos[K] | undefined;
   set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): void;

@@ -8,7 +8,7 @@ import type { IWindowService } from '@services/windows/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { AuthenticationChannel } from '@/constants/channels';
 import { IAuthenticationService, IUserInfos } from './interface';
-import { Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 const { lazyInject } = getDecorators(container);
 
@@ -23,11 +23,11 @@ export class Authentication implements IAuthenticationService {
 
   private cachedUserInfo: IUserInfos;
   private readonly version = '2021.1';
-  public userInfo$: Subject<IUserInfos>;
+  public userInfo$: BehaviorSubject<IUserInfos>;
 
   constructor() {
     this.cachedUserInfo = this.getInitUserInfoForCache();
-    this.userInfo$ = new Subject<IUserInfos>();
+    this.userInfo$ = new BehaviorSubject<IUserInfos>();
     this.updateUserInfoSubject();
   }
 
@@ -76,7 +76,7 @@ export class Authentication implements IAuthenticationService {
     this.cachedUserInfo[key] = value;
     this.cachedUserInfo = { ...this.cachedUserInfo, ...this.sanitizeUserInfo(this.cachedUserInfo) };
     this.updateUserInfoSubject();
-    void this.setUserInfos(this.cachedUserInfo)
+    void this.setUserInfos(this.cachedUserInfo);
   }
 
   public async reset(): Promise<void> {

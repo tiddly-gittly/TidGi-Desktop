@@ -1,7 +1,7 @@
 import type { NotificationConstructorOptions } from 'electron';
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { NotificationChannel } from '@/constants/channels';
-import { Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 export interface IPauseNotificationsInfo {
   reason: string;
@@ -13,7 +13,7 @@ export interface IPauseNotificationsInfo {
  * Preference and method about notification, to set and pause notification.
  */
 export interface INotificationService {
-  pauseNotificationsInfo$: Subject<IPauseNotificationsInfo>;
+  pauseNotificationsInfo$: BehaviorSubject<IPauseNotificationsInfo>;
   show(options: NotificationConstructorOptions): void;
   updatePauseNotificationsInfo(): void;
   getPauseNotificationsInfo: () => IPauseNotificationsInfo | undefined;

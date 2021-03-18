@@ -7,7 +7,7 @@ import type { IViewService } from '@services/view/interface';
 import { INotificationService, IPauseNotificationsInfo } from './interface';
 import { IWindowService } from '@services/windows/interface';
 import { NotificationChannel } from '@/constants/channels';
-import { Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 
 @injectable()
 export class NotificationService implements INotificationService {
@@ -16,10 +16,10 @@ export class NotificationService implements INotificationService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
 
   private pauseNotificationsInfo?: IPauseNotificationsInfo;
-  public pauseNotificationsInfo$: Subject<IPauseNotificationsInfo>;
+  public pauseNotificationsInfo$: BehaviorSubject<IPauseNotificationsInfo>;
 
   constructor() {
-    this.pauseNotificationsInfo$ = new Subject<IPauseNotificationsInfo>();
+    this.pauseNotificationsInfo$ = new BehaviorSubject<IPauseNotificationsInfo>();
     this.updateNotificationsInfoSubject();
   }
 
@@ -149,7 +149,6 @@ export class NotificationService implements INotificationService {
     const shouldMuteAudio = shouldPauseNotifications && this.preferenceService.get('pauseNotificationsMuteAudio');
     this.viewService.setViewsAudioPref(shouldMuteAudio);
     this.viewService.setViewsNotificationsPref(shouldPauseNotifications);
-    this.windowService.sendToAllWindows(NotificationChannel.shouldPauseNotificationsChanged, this.pauseNotificationsInfo);
 
     // set schedule for re-updating
     const pauseNotifications = this.preferenceService.get('pauseNotifications');

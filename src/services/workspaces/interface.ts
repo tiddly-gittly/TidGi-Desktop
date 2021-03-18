@@ -1,6 +1,6 @@
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { WorkspaceChannel } from '@/constants/channels';
-import { Observable, Subject } from 'rxjs';
+import { Observable, BehaviorSubject } from 'rxjs';
 
 export interface IWorkspace {
   /**
@@ -75,7 +75,7 @@ export interface IWorkspaceMetaData {
  * Manage workspace level preferences and workspace metadata.
  */
 export interface IWorkspaceService {
-  workspaces$: Subject<Record<string, IWorkspace>>;
+  workspaces$: BehaviorSubject<Record<string, IWorkspace>>;
   getWorkspacesAsList(): IWorkspace[];
   get(id: string): IWorkspace | undefined;
   get$(id: string): Observable<IWorkspace | undefined>;

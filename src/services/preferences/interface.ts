@@ -1,7 +1,7 @@
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 
 import { PreferenceChannel } from '@/constants/channels';
-import { Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { HunspellLanguages } from '@/constants/hunspell-languages';
 
 export interface IPreferences {
@@ -62,7 +62,7 @@ export enum PreferenceSections {
  */
 export interface IPreferenceService {
   /** Subscribable stream to get react component updated with latest preferences */
-  preference$: Subject<IPreferences>;
+  preference$: BehaviorSubject<IPreferences>;
   /**
    * Update preferences, update cache and observable
    */

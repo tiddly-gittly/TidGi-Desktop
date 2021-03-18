@@ -1,4 +1,4 @@
-import { Subject } from 'rxjs';
+import { BehaviorSubject } from 'rxjs';
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
 import { dialog, nativeTheme } from 'electron';
@@ -23,12 +23,12 @@ export class Preference implements IPreferenceService {
   @lazyInject(serviceIdentifier.NotificationService) private readonly notificationService!: INotificationService;
 
   private cachedPreferences: IPreferences;
-  public preference$: Subject<IPreferences>;
+  public preference$: BehaviorSubject<IPreferences>;
   readonly version = '2018.2';
 
   constructor() {
     this.cachedPreferences = this.getInitPreferencesForCache();
-    this.preference$ = new Subject<IPreferences>();
+    this.preference$ = new BehaviorSubject<IPreferences>();
     this.updatePreferenceSubject();
   }
 
