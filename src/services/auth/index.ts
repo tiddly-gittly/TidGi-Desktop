@@ -27,8 +27,7 @@ export class Authentication implements IAuthenticationService {
 
   constructor() {
     this.cachedUserInfo = this.getInitUserInfoForCache();
-    this.userInfo$ = new BehaviorSubject<IUserInfos>();
-    this.updateUserInfoSubject();
+    this.userInfo$ = new BehaviorSubject<IUserInfos>(this.cachedUserInfo);
   }
 
   private updateUserInfoSubject(): void {

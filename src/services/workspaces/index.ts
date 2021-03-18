@@ -48,7 +48,6 @@ export class Workspace implements IWorkspaceService {
     this.workspaces = this.getInitWorkspacesForCache();
     this.registerMenu();
     this.workspaces$ = new BehaviorSubject<Record<string, IWorkspace>>(this.workspaces);
-    this.updateWorkspaceSubject();
   }
 
   private updateWorkspaceSubject(): void {

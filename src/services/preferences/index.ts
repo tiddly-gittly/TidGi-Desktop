@@ -28,8 +28,7 @@ export class Preference implements IPreferenceService {
 
   constructor() {
     this.cachedPreferences = this.getInitPreferencesForCache();
-    this.preference$ = new BehaviorSubject<IPreferences>();
-    this.updatePreferenceSubject();
+    this.preference$ = new BehaviorSubject<IPreferences>(this.cachedPreferences);
   }
 
   private updatePreferenceSubject(): void {

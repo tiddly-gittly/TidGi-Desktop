@@ -27,8 +27,7 @@ export class Updater implements IUpdaterService {
   public constructor() {
     this.updateSilent = true;
     this.configAutoUpdater();
-    this.updaterMetaData$ = new BehaviorSubject<IUpdaterMetaData>();
-    this.updateUpdaterSubject();
+    this.updaterMetaData$ = new BehaviorSubject<IUpdaterMetaData>(this.updaterMetaData);
   }
 
   private updateUpdaterSubject(): void {

@@ -13,7 +13,7 @@ export interface IPauseNotificationsInfo {
  * Preference and method about notification, to set and pause notification.
  */
 export interface INotificationService {
-  pauseNotificationsInfo$: BehaviorSubject<IPauseNotificationsInfo>;
+  pauseNotificationsInfo$: BehaviorSubject<IPauseNotificationsInfo | undefined>;
   show(options: NotificationConstructorOptions): void;
   updatePauseNotificationsInfo(): void;
   getPauseNotificationsInfo: () => IPauseNotificationsInfo | undefined;

@@ -16,11 +16,10 @@ export class NotificationService implements INotificationService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
 
   private pauseNotificationsInfo?: IPauseNotificationsInfo;
-  public pauseNotificationsInfo$: BehaviorSubject<IPauseNotificationsInfo>;
+  public pauseNotificationsInfo$: BehaviorSubject<IPauseNotificationsInfo | undefined>;
 
   constructor() {
-    this.pauseNotificationsInfo$ = new BehaviorSubject<IPauseNotificationsInfo>();
-    this.updateNotificationsInfoSubject();
+    this.pauseNotificationsInfo$ = new BehaviorSubject<IPauseNotificationsInfo | undefined>(this.pauseNotificationsInfo);
   }
 
   private updateNotificationsInfoSubject(): void {

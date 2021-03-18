@@ -15,8 +15,7 @@ export class SystemPreference implements ISystemPreferenceService {
   public systemPreference$: BehaviorSubject<IUsedElectionSettings>;
 
   constructor() {
-    this.systemPreference$ = new BehaviorSubject<IUsedElectionSettings>();
-    this.updatePreferenceSubject();
+    this.systemPreference$ = new BehaviorSubject<IUsedElectionSettings>(this.getSystemPreferences());
   }
 
   private updatePreferenceSubject(): void {
