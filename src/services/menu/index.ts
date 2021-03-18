@@ -20,12 +20,18 @@ export class MenuService implements IMenuService {
    * You don't need to call this after calling method like insertMenu, it will be call automatically.
    */
   public buildMenu(): void {
-    const menu = Menu.buildFromTemplate(this.getCurrentMenuItemConstructorOptions(this.menuTemplate));
+    const latestTemplate = this.getCurrentMenuItemConstructorOptions(this.menuTemplate) ?? [];
+    const menu = Menu.buildFromTemplate(latestTemplate);
     Menu.setApplicationMenu(menu);
   }
 
-  private getCurrentMenuItemConstructorOptions(submenu?: Array<DeferredMenuItemConstructorOptions | MenuItemConstructorOptions>): MenuItemConstructorOptions[] {
-    if (submenu === undefined) return [];
+  /**
+   * We have some value in template that need to get latest value, they are functions, we execute every functions in the template
+   * @param submenu menu options to get latest value
+   * @returns MenuTemplate that `Menu.buildFromTemplate` wants
+   */
+  private getCurrentMenuItemConstructorOptions(submenu?: Array<DeferredMenuItemConstructorOptions | MenuItemConstructorOptions>): MenuItemConstructorOptions[] | undefined {
+    if (submenu === undefined) return;
     return submenu.map((item) => ({
       ...item,
       label: typeof item.label === 'function' ? item.label() : item.label,
