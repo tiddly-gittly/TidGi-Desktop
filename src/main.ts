@@ -14,7 +14,7 @@ import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import extractHostname from '@services/libs/extract-hostname';
 import MAILTO_URLS from '@services/constants/mailto-urls';
-import i18next, { initRendererI18NHandler } from '@services/libs/i18n';
+import { initRendererI18NHandler } from '@services/libs/i18n';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -44,7 +44,6 @@ if (!gotTheLock) {
     { scheme: 'mailto', privileges: { standard: true } },
   ]);
   bindServiceAndProxy();
-  const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
   const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
@@ -190,27 +189,6 @@ if (!gotTheLock) {
       }
       if (workspaceService.countWorkspaces() === 0) {
         return;
-      }
-      // handle mailto:
-      if (url.startsWith('mailto:')) {
-        const mailtoWorkspaces = workspaceService.getWorkspacesAsList().filter((workspace) => {
-          const hostName = extractHostname(workspace.homeUrl);
-          return hostName !== undefined && hostName in MAILTO_URLS;
-        });
-        // pick automatically if there's only one choice
-        if (mailtoWorkspaces.length === 0) {
-          void nativeService.showElectronMessageBox('None of your workspaces supports composing email messages.', 'error');
-          return;
-        }
-        if (mailtoWorkspaces.length === 1) {
-          const hostName = extractHostname(mailtoWorkspaces[0].homeUrl);
-          if (hostName !== undefined) {
-            const mailtoUrl = MAILTO_URLS[hostName];
-            await workspaceViewService.loadURL(mailtoUrl.replace('%s', url), mailtoWorkspaces[0].id);
-          }
-          return;
-        }
-        return windowService.open(WindowNames.openUrlWith, { incomingUrl: url });
       }
       // handle https/http
       // pick automatically if there's only one choice

@@ -1,5 +1,5 @@
-import { app, ipcMain, session, dialog } from 'electron';
-import { injectable, inject } from 'inversify';
+import { app, session, dialog } from 'electron';
+import { injectable } from 'inversify';
 import { delay } from 'bluebird';
 
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -9,7 +9,6 @@ import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interfa
 import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { WindowChannel } from '@/constants/channels';
 import { IPreferenceService } from '@services/preferences/interface';
 import { logger } from '@services/libs/log';
 import { IAuthenticationService } from '@services/auth/interface';
