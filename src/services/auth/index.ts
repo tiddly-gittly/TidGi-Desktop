@@ -2,13 +2,14 @@
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
 import settings from 'electron-settings';
-import { IAuthingUserInfo as IAuthingUserInfo } from '@services/types';
+import { IAuthingUserInfo as IAuthingUserInfo, SupportedStorageServices } from '@services/types';
 import { container } from '@services/container';
 import type { IWindowService } from '@services/windows/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { AuthenticationChannel } from '@/constants/channels';
 import { IAuthenticationService, IUserInfos } from './interface';
 import { BehaviorSubject } from 'rxjs';
+import { IGitUserInfos } from '@services/git/interface';
 
 const { lazyInject } = getDecorators(container);
 
@@ -32,6 +33,27 @@ export class Authentication implements IAuthenticationService {
 
   private updateUserInfoSubject(): void {
     this.userInfo$.next(this.cachedUserInfo);
+  }
+
+  public getStorageServiceUserInfo(serviceName: SupportedStorageServices): IGitUserInfos | undefined {
+    switch (serviceName) {
+      case SupportedStorageServices.github:
+        const gitUserName = this.get('github-userName');
+        const email = this.get('email');
+        const accessToken = this.get('github-token');
+        if (gitUserName && email && accessToken) {
+          return {
+            gitUserName,
+            email,
+            accessToken,
+          };
+        }
+
+        break;
+
+      default:
+        break;
+    }
   }
 
   /**
