@@ -39,16 +39,20 @@ export class WorkspaceView implements IWorkspaceViewService {
     for (const workspaceID in workspaces) {
       const workspace = workspaces[workspaceID];
       if ((this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch') || workspace.hibernateWhenUnused) && !workspace.active) {
-        if (!workspace.hibernated) {
+        if (!workspace.hibernated && !workspace.isSubWiki) {
           await this.workspaceService.update(workspaceID, { hibernated: true });
         }
         return;
       }
       const mainWindow = this.windowService.get(WindowNames.main);
-      if (mainWindow === undefined) return;
-      await this.viewService.addView(mainWindow, workspace);
+      if (mainWindow === undefined) {
+        throw new Error(i18n.t(`Log.MainWindowMissing`));
+      }
+      if (!workspace.isSubWiki) {
+        await this.viewService.addView(mainWindow, workspace);
+      }
       try {
-        const userInfo = this.authService.get('authing');
+        const userInfo = this.authService.getStorageServiceUserInfo(workspace.storageService);
         const { name: wikiPath, gitUrl: githubRepoUrl, isSubWiki } = workspace;
         // wait for main wiki's watch-fs plugin to be fully initialized
         // and also wait for wiki BrowserView to be able to receive command
@@ -63,7 +67,7 @@ export class WorkspaceView implements IWorkspaceViewService {
           }
         }
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        if (!isSubWiki && !workspaceMetadata.didFailLoadErrorMessage?.length && userInfo) {
+        if (!isSubWiki && !workspaceMetadata.didFailLoadErrorMessage?.length && userInfo?.accessToken) {
           await this.gitService.commitAndSync(wikiPath, githubRepoUrl, userInfo);
         }
       } catch {
