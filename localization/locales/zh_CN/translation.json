@@ -119,6 +119,8 @@
     "CantSyncGitNotInitialized": "无法同步，这个文件夹没有初始化为 Git 仓库",
     "HaveThingsToCommit": "有需要提交(commit)的内容，正在自动提交",
     "PreparingUserInfo": "正在配置身份信息",
+    "GitTokenMissing": "Git 身份信息缺失",
+    "MainWindowMissing": "程序无法获取主窗口信息，无法正常运行",
     "FetchingData": "正在拉取云端数据，以便进行数据比对",
     "NoNeedToSync": "无需同步，本地状态和云端一致",
     "LocalAheadStartUpload": "本地状态超前于云端，开始上传",

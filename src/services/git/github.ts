@@ -1,8 +1,6 @@
 import { compact, trim } from 'lodash';
 import { GitProcess } from 'dugite';
 
-import { IAuthingUserInfo } from '@services/types';
-
 const getGitUrlWithCredential = (rawUrl: string, username: string, accessToken: string): string =>
   trim(`${rawUrl}.git`.replace(/\n/g, '').replace('https://github.com/', `https://${username}:${accessToken}@github.com/`));
 const getGitUrlWithOutCredential = (urlWithCredential: string): string => trim(urlWithCredential.replace(/.+@/, 'https://'));
@@ -24,9 +22,8 @@ export async function getRemoteUrl(wikiFolderPath: string): Promise<string> {
  * @param {string} githubRepoUrl
  * @param {{ login: string, email: string, accessToken: string }} userInfo
  */
-export async function credentialOn(wikiFolderPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo): Promise<void> {
-  const { login: username, accessToken } = userInfo;
-  const gitUrlWithCredential = getGitUrlWithCredential(githubRepoUrl, username, accessToken);
+export async function credentialOn(wikiFolderPath: string, githubRepoUrl: string, userName: string, accessToken: string): Promise<void> {
+  const gitUrlWithCredential = getGitUrlWithCredential(githubRepoUrl, userName, accessToken);
   await GitProcess.exec(['remote', 'add', 'origin', gitUrlWithCredential], wikiFolderPath);
   await GitProcess.exec(['remote', 'set-url', 'origin', gitUrlWithCredential], wikiFolderPath);
 }

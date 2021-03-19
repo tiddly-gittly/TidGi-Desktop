@@ -15,9 +15,8 @@ import type { IAuthenticationService } from '@services/auth/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IViewService } from '@services/view/interface';
 import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interface';
-import type { IGitService } from '@services/git/interface';
+import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { IAuthingUserInfo } from '@services/types';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { logger, wikiOutputToFile, refreshOutputFile } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
@@ -285,7 +284,7 @@ export class Wiki {
     }
   }
 
-  public async cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: string, userInfo: IAuthingUserInfo): Promise<void> {
+  public async cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: string, userInfo: IGitUserInfos): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCloningWiki'));
     const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
     if (!(await fs.pathExists(parentFolderLocation))) {
@@ -307,7 +306,7 @@ export class Wiki {
     wikiFolderName: string,
     mainWikiPath: string,
     githubWikiUrl: string,
-    userInfo: IAuthingUserInfo,
+    userInfo: IGitUserInfos,
     tagName = '',
   ): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCloningSubWiki'));
@@ -351,8 +350,9 @@ export class Wiki {
       // do nothing
     }
 
+    const userInfo = this.authService.getStorageServiceUserInfo(workspace.storageService);
+    // pass empty editor username if undefined
     const userName = this.authService.get('userName') ?? '';
-    const userInfo = this.authService.get('authing');
     const { name: wikiPath, gitUrl: githubRepoUrl, port, isSubWiki, id, mainWikiToLink } = workspace;
     // if is main wiki
     if (!isSubWiki) {
@@ -383,7 +383,15 @@ export class Wiki {
     }
   }
 
-  // start-nodejs-wiki.ts
+  /**
+   * Start nodejs version of TiddlyWiki, show error dialog is prerequisites missing
+   * start-nodejs-wiki.ts
+   * @param homePath
+   * @param port
+   * @param userName UserName of tiddlywiki editor, this is not the username for git or storage services
+   * @param workspaceID
+   * @returns
+   */
   public async startNodeJSWiki(homePath: string, port: number, userName: string, workspaceID: string): Promise<void> {
     if (typeof homePath !== 'string' || homePath.length === 0 || !path.isAbsolute(homePath)) {
       const errorMessage = i18n.t('Dialog.NeedCorrectTiddlywikiFolderPath');
@@ -430,7 +438,7 @@ export class Wiki {
   // { [name: string]: Watcher }
   private readonly wikiWatchers: Record<string, chokidar.FSWatcher> = {};
 
-  public async watchWiki(wikiRepoPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo, wikiFolderPath = wikiRepoPath): Promise<void> {
+  public async watchWiki(wikiRepoPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, wikiFolderPath = wikiRepoPath): Promise<void> {
     if (!fs.existsSync(wikiRepoPath)) {
       logger.error('Folder not exist in watchFolder()', { wikiRepoPath, wikiFolderPath, githubRepoUrl });
       return;

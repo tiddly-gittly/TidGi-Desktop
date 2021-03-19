@@ -11,9 +11,8 @@ import type { IViewService } from '@services/view/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
-import { IAuthingUserInfo } from '@services/types';
 import { getModifiedFileList, ModifiedFileList } from './inspect';
-import { IGitService } from './interface';
+import { IGitService, IGitUserInfos } from './interface';
 
 @injectable()
 export class Git implements IGitService {
@@ -27,7 +26,7 @@ export class Git implements IGitService {
     this.debounceCommitAndSync = debounce(this.commitAndSync.bind(this), syncDebounceInterval);
   }
 
-  public debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo) => Promise<void> | undefined;
+  public debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos) => Promise<void> | undefined;
 
   public async getWorkspacesRemote(wikiFolderPath: string): Promise<string> {
     return await github.getRemoteUrl(wikiFolderPath);
@@ -62,28 +61,31 @@ export class Git implements IGitService {
   }
 
   /**
-   *
+   * Run git init in a folder, prepare remote origin
    * @param {string} wikiFolderPath
    * @param {string} githubRepoUrl
    * @param {{ login: string, email: string, accessToken: string }} userInfo
    * @param {boolean} isMainWiki
    * @param {{ info: Function, notice: Function }} logger Logger instance from winston
    */
-  public async initWikiGit(wikiFolderPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo, isMainWiki: boolean): Promise<void> {
+  public async initWikiGit(wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, isMainWiki: boolean): Promise<void> {
     const logProgress = (message: string): unknown => logger.notice(message, { handler: 'createWikiProgress', function: 'initWikiGit' });
     const logInfo = (message: string): unknown => logger.info(message, { function: 'initWikiGit' });
 
     logProgress(i18n.t('Log.StartGitInitialization'));
-    const { login: username, email, accessToken } = userInfo;
+    const { gitUserName, email, accessToken } = userInfo;
+    if (!accessToken) {
+      throw new Error(i18n.t('Log.GitTokenMissing'));
+    }
     logInfo(
-      `Using gitUrl ${githubRepoUrl} with username ${username} and accessToken ${truncate(accessToken, {
+      `Using gitUrl ${githubRepoUrl} with gitUserName ${gitUserName} and accessToken ${truncate(accessToken, {
         length: 24,
       })}`,
     );
     await GitProcess.exec(['init'], wikiFolderPath);
-    await gitSync.commitFiles(wikiFolderPath, username, email);
+    await gitSync.commitFiles(wikiFolderPath, gitUserName, email);
     logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
-    await github.credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
+    await github.credentialOn(wikiFolderPath, githubRepoUrl, gitUserName, accessToken);
     logProgress(i18n.t('Log.StartBackupToGithubRemote'));
     const defaultBranchName = await gitSync.getDefaultBranchName(wikiFolderPath);
     const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(
@@ -107,7 +109,7 @@ export class Git implements IGitService {
    * @param {string} githubRepoUrl
    * @param {{ login: string, email: string, accessToken: string }} userInfo
    */
-  public async commitAndSync(wikiFolderPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo): Promise<void> {
+  public async commitAndSync(wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos): Promise<void> {
     /** functions to send data to main thread */
     const logProgress = (message: string): unknown =>
       logger.notice(message, { handler: 'wikiSyncProgress', function: 'commitAndSync', wikiFolderPath, githubRepoUrl });
@@ -116,7 +118,10 @@ export class Git implements IGitService {
     if (this.disableSyncOnDevelopment && isDev) {
       return;
     }
-    const { login: username, email } = userInfo;
+    const { gitUserName, email, accessToken } = userInfo;
+    if (!accessToken) {
+      throw new Error(i18n.t('Log.GitTokenMissing'));
+    }
     const commitMessage = 'Wiki updated with TiddlyGit-Desktop';
     const defaultBranchName = await gitSync.getDefaultBranchName(wikiFolderPath);
     const branchMapping = `${defaultBranchName}:${defaultBranchName}`;
@@ -133,20 +138,20 @@ export class Git implements IGitService {
     if (repoStartingState.length > 0 || repoStartingState === '|DIRTY') {
       const SYNC_MESSAGE = i18n.t('Log.PrepareSync');
       logProgress(SYNC_MESSAGE);
-      logInfo(`${SYNC_MESSAGE} ${wikiFolderPath} , ${username} <${email}>`);
+      logInfo(`${SYNC_MESSAGE} ${wikiFolderPath} , ${gitUserName} <${email}>`);
     } else if (repoStartingState === 'NOGIT') {
       const CANT_SYNC_MESSAGE = i18n.t('Log.CantSyncGitNotInitialized');
       logProgress(CANT_SYNC_MESSAGE);
       throw new Error(CANT_SYNC_MESSAGE);
     } else {
       // we may be in middle of a rebase, try fix that
-      await gitSync.continueRebase(wikiFolderPath, username, email, logInfo, logProgress);
+      await gitSync.continueRebase(wikiFolderPath, gitUserName, email, logInfo, logProgress);
     }
     if (await gitSync.haveLocalChanges(wikiFolderPath)) {
       const SYNC_MESSAGE = i18n.t('Log.HaveThingsToCommit');
       logProgress(SYNC_MESSAGE);
       logInfo(`${SYNC_MESSAGE} ${commitMessage}`);
-      const { exitCode: commitExitCode, stderr: commitStdError } = await gitSync.commitFiles(wikiFolderPath, username, email, commitMessage);
+      const { exitCode: commitExitCode, stderr: commitStdError } = await gitSync.commitFiles(wikiFolderPath, gitUserName, email, commitMessage);
       if (commitExitCode !== 0) {
         logInfo('commit failed');
         logInfo(commitStdError);
@@ -154,7 +159,7 @@ export class Git implements IGitService {
       logProgress(i18n.t('Log.CommitComplete'));
     }
     logProgress(i18n.t('Log.PreparingUserInfo'));
-    await github.credentialOn(wikiFolderPath, githubRepoUrl, userInfo);
+    await github.credentialOn(wikiFolderPath, githubRepoUrl, gitUserName, accessToken);
     logProgress(i18n.t('Log.FetchingData'));
     await GitProcess.exec(['fetch', 'origin', defaultBranchName], wikiFolderPath);
     //
@@ -201,7 +206,7 @@ export class Git implements IGitService {
         ) {
           logProgress(i18n.t('Log.RebaseSucceed'));
         } else {
-          await gitSync.continueRebase(wikiFolderPath, username, email, logInfo, logProgress);
+          await gitSync.continueRebase(wikiFolderPath, gitUserName, email, logInfo, logProgress);
           logProgress(i18n.t('Log.RebaseConflictNeedsResolve'));
         }
         await GitProcess.exec(['push', 'origin', branchMapping], wikiFolderPath);
@@ -217,16 +222,19 @@ export class Git implements IGitService {
     logProgress(i18n.t('Log.SynchronizationFinish'));
   }
 
-  public async clone(githubRepoUrl: string, repoFolderPath: string, userInfo: IAuthingUserInfo): Promise<void> {
+  public async clone(githubRepoUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void> {
     const logProgress = (message: string): unknown => logger.notice(message, { handler: 'createWikiProgress', function: 'clone' });
     const logInfo = (message: string): unknown => logger.info(message, { function: 'clone' });
     logProgress(i18n.t('Log.PrepareCloneOnlineWiki'));
     logProgress(i18n.t('Log.StartGitInitialization'));
-    const { login: username, accessToken } = userInfo;
+    const { gitUserName, accessToken } = userInfo;
+    if (!accessToken) {
+      throw new Error(i18n.t('Log.GitTokenMissing'));
+    }
     logInfo(
-      i18n.t('Log.UsingUrlAndUsername', {
+      i18n.t('Log.UsingUrlAnduserName', {
         githubRepoUrl,
-        username,
+        gitUserName,
         accessToken: truncate(accessToken, {
           length: 24,
         }),
@@ -234,7 +242,7 @@ export class Git implements IGitService {
     );
     await GitProcess.exec(['init'], repoFolderPath);
     logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
-    await github.credentialOn(repoFolderPath, githubRepoUrl, userInfo);
+    await github.credentialOn(repoFolderPath, githubRepoUrl, gitUserName, accessToken);
     logProgress(i18n.t('Log.StartFetchingFromGithubRemote'));
     const defaultBranchName = await gitSync.getDefaultBranchName(repoFolderPath);
     const { stderr, exitCode } = await GitProcess.exec(['pull', 'origin', `${defaultBranchName}:${defaultBranchName}`], repoFolderPath);

@@ -1,6 +1,7 @@
+import { Observable, BehaviorSubject } from 'rxjs';
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { WorkspaceChannel } from '@/constants/channels';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { SupportedStorageServices } from '@services/types';
 
 export interface IWorkspace {
   /**
@@ -57,6 +58,10 @@ export interface IWorkspace {
   disableNotifications: boolean;
   disableAudio: boolean;
   hibernateWhenUnused: boolean;
+  /**
+   * Storage service this workspace sync to
+   */
+  storageService: SupportedStorageServices;
 }
 
 export interface IWorkspaceMetaData {

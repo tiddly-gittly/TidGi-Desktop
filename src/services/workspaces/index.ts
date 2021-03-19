@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/no-null */
 import { injectable } from 'inversify';
 import getDecorators from 'inversify-inject-decorators';
-import { app, ipcMain } from 'electron';
+import { app } from 'electron';
 import settings from 'electron-settings';
 import { pickBy, mapValues } from 'lodash';
 import { v4 as uuid } from 'uuid';
@@ -22,6 +22,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
+import { SupportedStorageServices } from '@services/types';
 import { IWorkspaceService, IWorkspace, IWorkspaceMetaData } from './interface';
 
 const { lazyInject } = getDecorators(container);
@@ -201,7 +202,10 @@ export class Workspace implements IWorkspaceService {
    */
   private sanitizeWorkspace(workspaceToSanitize: IWorkspace): IWorkspace {
     const subWikiFolderName = path.basename(workspaceToSanitize.name);
-    return { ...workspaceToSanitize, subWikiFolderName };
+    const defaultValues: Partial<IWorkspace> = {
+      storageService: SupportedStorageServices.github,
+    };
+    return { ...defaultValues, ...workspaceToSanitize, subWikiFolderName };
   }
 
   /**
