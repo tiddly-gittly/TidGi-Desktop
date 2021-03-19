@@ -175,32 +175,6 @@ if (!gotTheLock) {
     }
   });
   app.on(
-    'open-url',
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    async (event, url): Promise<void> => {
-      event.preventDefault();
-      await whenCommonInitFinished();
-      // focus on window
-      const mainWindow = windowService.get(WindowNames.main);
-      if (mainWindow === undefined) {
-        await commonInit();
-      } else {
-        mainWindow.show();
-      }
-      if (workspaceService.countWorkspaces() === 0) {
-        return;
-      }
-      // handle https/http
-      // pick automatically if there's only one choice
-      const firstWorkspace = workspaceService.getFirstWorkspace();
-      if (firstWorkspace !== undefined) {
-        await workspaceViewService.loadURL(url, firstWorkspace.id);
-        return;
-      }
-      return windowService.open(WindowNames.openUrlWith, { incomingUrl: url });
-    },
-  );
-  app.on(
     'before-quit',
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     async (): Promise<void> => {
