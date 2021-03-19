@@ -53,21 +53,26 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
       try {
         const userInfo = this.authService.getStorageServiceUserInfo(workspace.storageService);
-        const { name: wikiPath, gitUrl: githubRepoUrl, isSubWiki } = workspace;
+        // TODO: rename name to wikiPath
+        const { name: wikiPath, gitUrl: githubRepoUrl } = workspace;
         // wait for main wiki's watch-fs plugin to be fully initialized
         // and also wait for wiki BrowserView to be able to receive command
         // eslint-disable-next-line global-require
         let workspaceMetadata = this.workspaceService.getMetaData(workspaceID);
-        if (!isSubWiki) {
+        // wait for main wiki webview loaded
+        if (!workspace.isSubWiki) {
           // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-          while (!workspaceMetadata.didFailLoadErrorMessage && !workspaceMetadata.isLoading) {
+          while (workspaceMetadata.isLoading !== false) {
             // eslint-disable-next-line no-await-in-loop
             await delay(500);
             workspaceMetadata = this.workspaceService.getMetaData(workspaceID);
           }
+          if (workspaceMetadata.didFailLoadErrorMessage) {
+            throw new Error(workspaceMetadata.didFailLoadErrorMessage);
+          }
         }
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        if (!isSubWiki && !workspaceMetadata.didFailLoadErrorMessage?.length && userInfo?.accessToken) {
+        if (!workspace.isSubWiki && !workspaceMetadata.didFailLoadErrorMessage?.length && userInfo?.accessToken) {
           await this.gitService.commitAndSync(wikiPath, githubRepoUrl, userInfo);
         }
       } catch {

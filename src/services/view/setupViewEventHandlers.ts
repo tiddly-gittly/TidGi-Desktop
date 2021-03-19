@@ -105,7 +105,6 @@ export default function setupViewEventHandlers(
     if (workspaceObject === undefined) {
       return;
     }
-    // FIXME: seems isLoading is now controlled by wiki-worker-manager.js , and should not update here
     workspaceService.updateMetaData(workspace.id, {
       isLoading: false,
     });

@@ -102,6 +102,7 @@ if (!gotTheLock) {
     // eslint-disable-next-line promise/catch-or-return
     await app.whenReady();
     if (isDev) {
+      // eslint-disable-next-line @typescript-eslint/no-misused-promises
       protocol.registerFileProtocol('file', async (request, callback) => {
         const pathname = decodeURIComponent(request.url.replace('file:///', ''));
         if (path.isAbsolute(pathname) ? await fs.pathExists(pathname) : await fs.pathExists(`/${pathname}`)) {
@@ -114,7 +115,6 @@ if (!gotTheLock) {
     }
     await windowService.open(WindowNames.main);
     buildLanguageMenu();
-    // FIXME: this await is never ended
     await workspaceViewService.initializeAllWorkspaceView();
 
     ipcMain.emit('request-update-pause-notifications-info');
