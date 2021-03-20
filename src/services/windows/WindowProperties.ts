@@ -47,7 +47,7 @@ export const windowDimension: Record<WindowNames, { width?: number; height?: num
   },
   [WindowNames.preferences]: {
     width: 820,
-    height: 640,
+    height: 700,
   },
   [WindowNames.notifications]: {
     width: 400,

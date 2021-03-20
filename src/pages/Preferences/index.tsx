@@ -1,6 +1,6 @@
 import React, { useEffect } from 'react';
 import { useDebouncedFn } from 'beautiful-react-hooks';
-import styled from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import semver from 'semver';
 import fromUnixTime from 'date-fns/fromUnixTime';
 import setYear from 'date-fns/setYear';
@@ -19,7 +19,7 @@ import MenuItem from '@material-ui/core/MenuItem';
 import PaperRaw from '@material-ui/core/Paper';
 import Slider from '@material-ui/core/Slider';
 import Switch from '@material-ui/core/Switch';
-import TextField from '@material-ui/core/TextField';
+import TextFieldRaw from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
 
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
@@ -49,12 +49,42 @@ const Root = styled.div`
   /* background: theme.palette.background.default; */
 `;
 
+const animateMoveFromRight = keyframes`
+  from {
+    transform: translate3d(40px, 0, 0);
+    opacity: 0;
+  }
+
+  to {
+    transform:translate3d(0px, 0, 0);
+    opacity: 1;
+  }
+`;
+
 const SectionTitle = styled(Typography)`
-  padding-left: 20px;
+  padding-left: 0px !important;
+  animation: ${animateMoveFromRight} 0.5s cubic-bezier(0.4, 0, 0.2, 1);
 `;
 SectionTitle.defaultProps = {
   variant: 'subtitle2',
 };
+
+const animateMoveFromLeft = keyframes`
+  from {
+    transform: translate3d(-40px, 0, 0);
+    opacity: 0;
+  }
+
+  to {
+    transform: translate3d(0px, 0, 0);
+    opacity: 1;
+  }
+`;
+
+const SideMenuListItem = styled(ListItem)<{ index: number }>`
+  animation: ${animateMoveFromLeft} 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  animation-delay: ${({ index }) => index * 0.05}s;
+`;
 
 const Paper = styled(PaperRaw)<{ dark?: 0 | 1 }>`
   margin-top: 5px;
@@ -76,9 +106,7 @@ const TimePickerContainer = styled.div`
   margin-top: 10px;
   margin-bottom: 10px;
   display: flex;
-  justify-content: space-around;
-  width: 200px;
-  min-width: 200px;
+  margin-right: 20px;
 `;
 const SideBar = styled.div`
   position: fixed;
@@ -126,6 +154,17 @@ const SliderTitleContainer = styled(Grid)`
 // TODO: handle classes={{ markLabel: classes.sliderMarkLabel }}
 const SliderMarkLabel = styled(Slider)`
   font-size: 0.75rem;
+`;
+
+const TextField = styled(TextFieldRaw)``;
+const ListItemVertical = styled(ListItem)`
+  flex-direction: column;
+  align-items: flex-start;
+  padding-bottom: 10px;
+
+  & ${TextField} {
+    margin-top: 20px;
+  }
 `;
 
 const getThemeString = (theme: IPreferences['themeSource']): string => {
@@ -204,12 +243,12 @@ export default function Preferences(): JSX.Element {
             return (
               <React.Fragment key={sectionKey}>
                 {index > 0 && <Divider />}
-                <ListItem button onClick={() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+                <SideMenuListItem button index={index} onClick={() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
                   <ListItemIcon>
                     <Icon />
                   </ListItemIcon>
                   <ListItemText primary={text} />
-                </ListItem>
+                </SideMenuListItem>
               </React.Fragment>
             );
           })}
@@ -220,7 +259,8 @@ export default function Preferences(): JSX.Element {
         <SectionTitle ref={sections.wiki.ref}>TiddlyWiki</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
-            <ListItem>
+            <ListItemVertical>
+              <ListItemText primary={t('Preference.WikiMetaData')} secondary={t('Preference.WikiMetaDataDescription')} />
               <TextField
                 helperText={t('Preference.UserNameDetail')}
                 fullWidth
@@ -230,7 +270,7 @@ export default function Preferences(): JSX.Element {
                 label={t('Preference.UserName')}
                 value={userInfo?.userName}
               />
-            </ListItem>
+            </ListItemVertical>
           </List>
         </Paper>
 
@@ -574,31 +614,29 @@ export default function Preferences(): JSX.Element {
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
-            <ListItem>
-              <ListItemText>
-                Automatically disable notifications by schedule:
-                <TimePickerContainer>
-                  <TimePicker
-                    label="from"
-                    renderInput={(timeProps) => <TextField {...timeProps} />}
-                    value={new Date(pauseNotificationsByScheduleFrom)}
-                    onChange={async (d) => await window.service.preference.set('pauseNotificationsByScheduleFrom', d.toString())}
-                    onClose={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: false })}
-                    onOpen={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true })}
-                    disabled={!pauseNotificationsBySchedule}
-                  />
-                  <TimePicker
-                    label="to"
-                    renderInput={(timeProps) => <TextField {...timeProps} />}
-                    value={new Date(pauseNotificationsByScheduleTo)}
-                    onChange={async (d) => await window.service.preference.set('pauseNotificationsByScheduleTo', d.toString())}
-                    onClose={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: false })}
-                    onOpen={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true })}
-                    disabled={!pauseNotificationsBySchedule}
-                  />
-                </TimePickerContainer>
-                ({window.Intl.DateTimeFormat().resolvedOptions().timeZone})
-              </ListItemText>
+            <ListItemVertical>
+              <ListItemText primary="Automatically disable notifications by schedule:" />
+              <TimePickerContainer>
+                <TimePicker
+                  label="from"
+                  renderInput={(timeProps) => <TextField {...timeProps} />}
+                  value={new Date(pauseNotificationsByScheduleFrom)}
+                  onChange={async (d) => await window.service.preference.set('pauseNotificationsByScheduleFrom', (d ?? '').toString())}
+                  onClose={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: false })}
+                  onOpen={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true })}
+                  disabled={!pauseNotificationsBySchedule}
+                />
+                <TimePicker
+                  label="to"
+                  renderInput={(timeProps) => <TextField {...timeProps} />}
+                  value={new Date(pauseNotificationsByScheduleTo)}
+                  onChange={async (d) => await window.service.preference.set('pauseNotificationsByScheduleTo', (d ?? '').toString())}
+                  onClose={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: false })}
+                  onOpen={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true })}
+                  disabled={!pauseNotificationsBySchedule}
+                />
+              </TimePickerContainer>
+              ({window.Intl.DateTimeFormat().resolvedOptions().timeZone})
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
@@ -609,7 +647,7 @@ export default function Preferences(): JSX.Element {
                   }}
                 />
               </ListItemSecondaryAction>
-            </ListItem>
+            </ListItemVertical>
             <Divider />
             <ListItem>
               <ListItemText primary="Mute audio when notifications are paused" />

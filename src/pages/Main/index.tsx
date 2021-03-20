@@ -45,12 +45,13 @@ const Root = styled.div`
   height: 100%;
   width: 100%;
   overflow: hidden;
+  background-color: #fafafa;
 `;
 
 const sideBarStyle = css`
   height: 100%;
   width: 68px;
-  background-color: white;
+  background-color: #fafafa;
   -webkit-app-region: drag;
   user-select: none;
   display: flex;

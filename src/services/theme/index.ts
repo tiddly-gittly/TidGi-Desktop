@@ -8,7 +8,6 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { lazyInject } from '@services/container';
 import { IViewService } from '@services/view/interface';
 
-
 @injectable()
 export class ThemeService implements IThemeService {
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
@@ -18,7 +17,6 @@ export class ThemeService implements IThemeService {
   constructor() {
     this.init();
     this.theme$ = new BehaviorSubject<ITheme>({ shouldUseDarkColors: this.shouldUseDarkColors() });
-    this.theme$.subscribe((theme: ITheme) => console.log(theme));
   }
 
   private updateThemeSubject(newTheme: ITheme): void {
