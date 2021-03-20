@@ -1,13 +1,11 @@
 import { app } from 'electron';
 import { injectable } from 'inversify';
-import getDecorators from 'inversify-inject-decorators';
-import { container } from '@services/container';
+import { BehaviorSubject } from 'rxjs';
 import { ISystemPreferenceService, IUsedElectionSettings } from './interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
-import { BehaviorSubject } from 'rxjs';
+import { lazyInject } from '@services/container';
 
-const { lazyInject } = getDecorators(container);
 
 @injectable()
 export class SystemPreference implements ISystemPreferenceService {

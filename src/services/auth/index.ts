@@ -1,17 +1,13 @@
 /* eslint-disable unicorn/no-null */
 import { injectable } from 'inversify';
-import getDecorators from 'inversify-inject-decorators';
 import settings from 'electron-settings';
-import { IAuthingUserInfo as IAuthingUserInfo, SupportedStorageServices } from '@services/types';
-import { container } from '@services/container';
+import { IAuthingUserInfo, SupportedStorageServices } from '@services/types';
+import { lazyInject } from '@services/container';
 import type { IWindowService } from '@services/windows/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { AuthenticationChannel } from '@/constants/channels';
 import { IAuthenticationService, IUserInfos } from './interface';
 import { BehaviorSubject } from 'rxjs';
 import { IGitUserInfos } from '@services/git/interface';
-
-const { lazyInject } = getDecorators(container);
 
 const defaultUserInfos = {
   userName: 'TiddlyGit User',

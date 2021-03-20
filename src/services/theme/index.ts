@@ -1,21 +1,16 @@
 import { nativeTheme } from 'electron';
 import { injectable } from 'inversify';
-import getDecorators from 'inversify-inject-decorators';
 
-import type { IWindowService } from '@services/windows/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
-import { IThemeService } from './interface';
+import { ITheme, IThemeService } from './interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { container } from '@services/container';
-import { ThemeChannel } from '@/constants/channels';
+import { lazyInject } from '@services/container';
 import { IViewService } from '@services/view/interface';
 
-const { lazyInject } = getDecorators(container);
 
 @injectable()
 export class ThemeService implements IThemeService {
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
 
   constructor() {
@@ -28,6 +23,7 @@ export class ThemeService implements IThemeService {
     nativeTheme.themeSource = themeSource;
     nativeTheme.addListener('updated', () => {
       this.viewService.reloadViewsDarkReader();
+      this.updateThemeSubject({ shouldUseDarkColors: this.shouldUseDarkColors() });
     });
   }
 

@@ -2,7 +2,6 @@
 import { BrowserWindow, ipcMain, dialog, app, webFrame, clipboard, BrowserWindowConstructorOptions } from 'electron';
 import isDevelopment from 'electron-is-dev';
 import { injectable } from 'inversify';
-import getDecorators from 'inversify-inject-decorators';
 import { Menubar } from 'menubar';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
 
@@ -13,16 +12,14 @@ import type { IPreferenceService } from '@services/preferences/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IMenuService } from '@services/menu/interface';
-import { container } from '@services/container';
 import { Channels, WindowChannel, MetaDataChannel, ViewChannel } from '@/constants/channels';
 
 import i18n from '@services/libs/i18n';
 import getViewBounds from '@services/libs/get-view-bounds';
 import getFromRenderer from '@services/libs/getFromRenderer';
+import { lazyInject } from '@services/container';
 import handleAttachToMenuBar from './handleAttachToMenuBar';
 import { IWindowService } from './interface';
-
-const { lazyInject } = getDecorators(container);
 
 @injectable()
 export class Window implements IWindowService {

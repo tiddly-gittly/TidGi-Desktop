@@ -1,6 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
 import { injectable } from 'inversify';
-import getDecorators from 'inversify-inject-decorators';
 import { dialog, nativeTheme } from 'electron';
 import settings from 'electron-settings';
 
@@ -8,13 +7,11 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
 import type { INotificationService } from '@services/notifications/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { container } from '@services/container';
 import i18n from '@services/libs/i18n';
 import { IPreferences, IPreferenceService } from './interface';
 import { IViewService } from '@services/view/interface';
 import { defaultPreferences } from './defaultPreferences';
-
-const { lazyInject } = getDecorators(container);
+import { lazyInject } from '@services/container';
 
 @injectable()
 export class Preference implements IPreferenceService {

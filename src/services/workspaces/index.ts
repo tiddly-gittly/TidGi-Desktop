@@ -1,6 +1,5 @@
 /* eslint-disable unicorn/no-null */
 import { injectable } from 'inversify';
-import getDecorators from 'inversify-inject-decorators';
 import { app } from 'electron';
 import settings from 'electron-settings';
 import { pickBy, mapValues } from 'lodash';
@@ -15,7 +14,6 @@ import { Observable, BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 
 import serviceIdentifier from '@services/serviceIdentifier';
-import { container } from '@services/container';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IViewService } from '@services/view/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
@@ -23,9 +21,8 @@ import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { SupportedStorageServices } from '@services/types';
+import { lazyInject } from '@services/container';
 import { IWorkspaceService, IWorkspace, IWorkspaceMetaData } from './interface';
-
-const { lazyInject } = getDecorators(container);
 
 @injectable()
 export class Workspace implements IWorkspaceService {

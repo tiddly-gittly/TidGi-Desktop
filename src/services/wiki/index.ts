@@ -5,10 +5,9 @@ import fs from 'fs-extra';
 import path from 'path';
 import { Worker } from 'worker_threads';
 import isDev from 'electron-is-dev';
-import { dialog, ipcMain } from 'electron';
+import { dialog } from 'electron';
 import chokidar from 'chokidar';
 import { trim, compact, debounce } from 'lodash';
-import getDecorators from 'inversify-inject-decorators';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IAuthenticationService } from '@services/auth/interface';
@@ -20,11 +19,9 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { logger, wikiOutputToFile, refreshOutputFile } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
+import { lazyInject } from '@services/container';
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@services/constants/paths';
 import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './update-plugin-content';
-import { container } from '@services/container';
-
-const { lazyInject } = getDecorators(container);
 
 @injectable()
 export class Wiki {

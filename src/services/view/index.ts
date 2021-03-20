@@ -1,6 +1,5 @@
-import { BrowserView, BrowserWindow, WebContents, app, session, dialog, ipcMain, WebPreferences } from 'electron';
+import { BrowserView, BrowserWindow, session, dialog, ipcMain, WebPreferences } from 'electron';
 import { injectable } from 'inversify';
-import getDecorators from 'inversify-inject-decorators';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IPreferenceService } from '@services/preferences/interface';
@@ -17,11 +16,9 @@ import getViewBounds from '@services/libs/get-view-bounds';
 import { IWorkspace } from '@services/workspaces/interface';
 import setupViewEventHandlers from './setupViewEventHandlers';
 import getFromRenderer from '@services/libs/getFromRenderer';
-import { ViewChannel, MetaDataChannel, WindowChannel, NotificationChannel } from '@/constants/channels';
-import { container } from '@services/container';
+import { ViewChannel, MetaDataChannel } from '@/constants/channels';
+import { lazyInject } from '@services/container';
 import { IViewService } from './interface';
-
-const { lazyInject } = getDecorators(container);
 
 @injectable()
 export class View implements IViewService {
