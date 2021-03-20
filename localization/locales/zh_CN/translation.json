@@ -144,8 +144,8 @@
     "RemoveWorkspace": "移除工作区",
     "DoNotCare": "不管",
     "PathPassInCantUse": "传入的路径无法使用",
-    "GithubUserInfoNoFound": "找不到 Github 用户信息",
-    "GithubUserInfoNoFoundDetail": "似乎你尚未登录 Github，因此此 Wiki 的同步暂时禁用，直到你登录以提供有可用于同步的登录信息。",
+    "StorageServiceUserInfoNoFound": "找不到存储备份服务的用户信息",
+    "StorageServiceUserInfoNoFoundDetail": "似乎你尚未登录存储备份服务，因此此 Wiki 的同步暂时禁用，直到你登录以提供有可用于同步的登录信息。",
     "Later": "稍后",
     "RestartMessage": "您需要重新启动本程序才能使此更改生效。",
     "RestartNow": "现在重启"

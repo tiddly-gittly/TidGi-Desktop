@@ -196,12 +196,12 @@ export class View implements IViewService {
     const { rememberLastPageVisited, shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = this.preferenceService.getPreferences();
     // configure session, proxy & ad blocker
     const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
-    const userInfo = this.authService.get('authing');
-    if (userInfo !== undefined) {
-      // user not logined into Github
+    const userInfo = this.authService.getStorageServiceUserInfo(workspace.storageService);
+    if (userInfo === undefined) {
+      // user not login into Github or something else
       void dialog.showMessageBox(browserWindow, {
-        title: i18n.t('Dialog.GithubUserInfoNoFound'),
-        message: i18n.t('Dialog.GithubUserInfoNoFoundDetail'),
+        title: i18n.t('Dialog.StorageServiceUserInfoNoFound'),
+        message: i18n.t('Dialog.StorageServiceUserInfoNoFoundDetail'),
         buttons: ['OK'],
         cancelId: 0,
         defaultId: 0,

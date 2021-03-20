@@ -497,7 +497,7 @@ export default function Preferences(): JSX.Element {
                 secondary={
                   <>
                     <span>TiddlyGit supports notifications out of the box. </span>
-                    <span>But for some web apps, to receive notifications, </span>
+                    <span>But for some cases, to receive notifications, </span>
                     <span>you will need to manually configure additional </span>
                     <span>web app settings. </span>
                     <Link
