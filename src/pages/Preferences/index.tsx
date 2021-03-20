@@ -225,7 +225,6 @@ export default function Preferences(): JSX.Element {
     swipeToNavigate,
     syncDebounceInterval,
     themeSource,
-    titleBar,
     unreadCountBadge,
     useHardwareAcceleration,
   } = preference;
@@ -358,25 +357,6 @@ export default function Preferences(): JSX.Element {
                 />
               </ListItemSecondaryAction>
             </ListItem>
-            {platform === 'darwin' && (
-              <>
-                <Divider />
-                <ListItem>
-                  <ListItemText primary={t('Preference.ShowTitleBar')} secondary={t('Preference.ShowTitleBarDetail')} />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      color="primary"
-                      checked={titleBar}
-                      onChange={async (event) => {
-                        await window.service.preference.set('titleBar', event.target.checked);
-                        await window.service.workspaceView.realignActiveWorkspace();
-                      }}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-              </>
-            )}
             {platform !== 'darwin' && (
               <>
                 <Divider />

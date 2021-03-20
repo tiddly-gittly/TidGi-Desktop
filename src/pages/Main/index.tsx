@@ -167,7 +167,7 @@ const SidebarContainer = ({ children }: { children: React.ReactNode }): JSX.Elem
 
 export default function Main(): JSX.Element {
   const workspacesList = useWorkspacesListObservable();
-  const [{ attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource }, isFullScreen] = usePromiseValue<[Partial<IPreferences>, boolean | undefined]>(
+  const [{ attachToMenubar, sidebar, pauseNotifications, themeSource }, isFullScreen] = usePromiseValue<[Partial<IPreferences>, boolean | undefined]>(
     async () => await Promise.all([window.service.preference.getPreferences(), window.service.window.isFullScreen()]),
     [{}, false],
   )!;
@@ -189,7 +189,7 @@ export default function Main(): JSX.Element {
       <Root>
         {sidebar === true && (
           <SidebarContainer>
-            <SidebarTop fullscreen={isFullScreen === true || titleBar || attachToMenubar}>
+            <SidebarTop fullscreen={isFullScreen === true || attachToMenubar}>
               {workspacesList === undefined ? (
                 <div>Loading...</div>
               ) : (

@@ -55,16 +55,6 @@ export class View implements IViewService {
           void this.workspaceViewService.realignActiveWorkspace();
         },
       },
-      {
-        label: () => (this.preferenceService.get('titleBar') ? 'Hide Title Bar' : 'Show Title Bar'),
-        accelerator: 'CmdOrCtrl+Alt+T',
-        enabled: process.platform === 'darwin',
-        visible: process.platform === 'darwin',
-        click: () => {
-          void this.preferenceService.set('titleBar', !this.preferenceService.get('titleBar'));
-          void this.workspaceViewService.realignActiveWorkspace();
-        },
-      },
       // same behavior as BrowserWindow with autoHideMenuBar: true
       // but with addition to readjust BrowserView so it won't cover the menu bar
       {
