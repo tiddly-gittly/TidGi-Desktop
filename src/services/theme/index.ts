@@ -1,3 +1,4 @@
+import { BehaviorSubject } from 'rxjs';
 import { nativeTheme } from 'electron';
 import { injectable } from 'inversify';
 
@@ -12,9 +13,16 @@ import { IViewService } from '@services/view/interface';
 export class ThemeService implements IThemeService {
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
   @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
+  public theme$: BehaviorSubject<ITheme>;
 
   constructor() {
     this.init();
+    this.theme$ = new BehaviorSubject<ITheme>({ shouldUseDarkColors: this.shouldUseDarkColors() });
+    this.theme$.subscribe((theme: ITheme) => console.log(theme));
+  }
+
+  private updateThemeSubject(newTheme: ITheme): void {
+    this.theme$.next(newTheme);
   }
 
   private init(): void {
