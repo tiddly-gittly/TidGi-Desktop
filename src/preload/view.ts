@@ -1,8 +1,8 @@
-import { ipcRenderer, webFrame } from 'electron';
-import { enable as enableDarkMode, disable as disableDarkMode } from 'darkreader';
+/* eslint-disable @typescript-eslint/no-misused-promises */
+import { webFrame } from 'electron';
 import { WorkspaceChannel } from '@/constants/channels';
 import './wiki-operation';
-import { preference, theme, workspace, workspaceView, menu } from './common/services';
+import { preference, workspace, workspaceView, menu } from './common/services';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData } from './common/browserViewMetaData';
 
@@ -13,26 +13,7 @@ const handleLoaded = async (event: string): Promise<void> => {
   }
   // eslint-disable-next-line no-console
   console.log(`Preload script is loading on ${event}...`);
-  void executeJavaScriptInBrowserView();
-  const loadDarkReader = async (): Promise<void> => {
-    const shouldUseDarkColor = await theme.shouldUseDarkColors();
-    const darkReader = (await preference.get('darkReader')) as boolean;
-    if (shouldUseDarkColor && darkReader) {
-      const { darkReaderBrightness, darkReaderContrast, darkReaderGrayscale, darkReaderSepia } = await preference.getPreferences();
-      enableDarkMode({
-        brightness: darkReaderBrightness,
-        contrast: darkReaderContrast,
-        grayscale: darkReaderGrayscale,
-        sepia: darkReaderSepia,
-      });
-    } else {
-      disableDarkMode();
-    }
-  };
-  ipcRenderer.on('reload-dark-reader', () => {
-    void loadDarkReader();
-  });
-  await loadDarkReader();
+  await executeJavaScriptInBrowserView();
   // eslint-disable-next-line no-console
   console.log('Preload script is loaded...');
   handled = true;
@@ -57,7 +38,7 @@ window.addEventListener('message', (event) => {
   }
 });
 
-async function executeJavaScriptInBrowserView() {
+async function executeJavaScriptInBrowserView(): Promise<void> {
   // Fix Can't show file list of Google Drive
   // https://github.com/electron/electron/issues/16587
   // Fix chrome.runtime.sendMessage is undefined for FastMail

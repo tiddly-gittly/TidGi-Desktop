@@ -340,15 +340,6 @@ export class View implements IViewService {
     }
   };
 
-  public reloadViewsDarkReader(): void {
-    Object.keys(this.views).forEach((id) => {
-      const view = this.getView(id);
-      if (view !== undefined) {
-        view.webContents.send('reload-dark-reader');
-      }
-    });
-  }
-
   public reloadViewsWebContentsIfDidFailLoad(): void {
     const workspaceMetaData = this.workspaceService.getAllMetaData();
     Object.keys(workspaceMetaData).forEach((id) => {

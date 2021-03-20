@@ -93,9 +93,6 @@ export class Preference implements IPreferenceService {
    * @param preference new preference settings
    */
   private reactWhenPreferencesChanged<K extends keyof IPreferences>(key: K, value: IPreferences[K]): void {
-    if (key.startsWith('darkReader')) {
-      this.viewService.reloadViewsDarkReader();
-    }
     // maybe pauseNotificationsBySchedule or pauseNotifications or ...
     if (key.startsWith('pauseNotifications')) {
       this.notificationService.updatePauseNotificationsInfo();

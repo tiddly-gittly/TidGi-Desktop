@@ -28,7 +28,6 @@ export class ThemeService implements IThemeService {
     // apply theme
     nativeTheme.themeSource = themeSource;
     nativeTheme.addListener('updated', () => {
-      this.viewService.reloadViewsDarkReader();
       this.updateThemeSubject({ shouldUseDarkColors: this.shouldUseDarkColors() });
     });
   }

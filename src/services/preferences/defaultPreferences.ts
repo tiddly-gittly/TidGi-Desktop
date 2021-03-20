@@ -8,12 +8,6 @@ export const defaultPreferences: IPreferences = {
   askForDownloadPath: true,
   attachToMenubar: false,
   // default Dark Reader settings from its Chrome extension
-  darkReader: false,
-  darkReaderBrightness: 100,
-  darkReaderContrast: 100,
-  darkReaderGrayscale: 0,
-  darkReaderSepia: 0,
-  // default Dark Reader settings from its Chrome extension
   downloadPath: getDefaultDownloadsPath(),
   hibernateUnusedWorkspacesAtLaunch: false,
   hideMenuBar: false,

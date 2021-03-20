@@ -8,11 +8,6 @@ export interface IPreferences {
   allowPrerelease: boolean;
   askForDownloadPath: boolean;
   attachToMenubar: boolean;
-  darkReader: boolean;
-  darkReaderBrightness: number;
-  darkReaderContrast: number;
-  darkReaderGrayscale: number;
-  darkReaderSepia: number;
   downloadPath: string;
   hibernateUnusedWorkspacesAtLaunch: boolean;
   hideMenuBar: boolean;

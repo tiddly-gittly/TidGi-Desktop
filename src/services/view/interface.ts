@@ -16,7 +16,6 @@ export interface IViewService {
   setViewsAudioPref: (_shouldMuteAudio?: boolean) => void;
   setViewsNotificationsPref: (_shouldPauseNotifications?: boolean) => void;
   hibernateView: (id: string) => void;
-  reloadViewsDarkReader: () => void;
   reloadViewsWebContentsIfDidFailLoad: () => void;
   reloadViewsWebContents: () => void;
   getActiveBrowserView: () => BrowserView | undefined;
@@ -33,7 +32,6 @@ export const ViewServiceIPCDescriptor = {
     setViewsAudioPref: ProxyPropertyType.Function,
     setViewsNotificationsPref: ProxyPropertyType.Function,
     hibernateView: ProxyPropertyType.Function,
-    reloadViewsDarkReader: ProxyPropertyType.Function,
     reloadViewsWebContentsIfDidFailLoad: ProxyPropertyType.Function,
     reloadViewsWebContents: ProxyPropertyType.Function,
     getActiveBrowserView: ProxyPropertyType.Function,
