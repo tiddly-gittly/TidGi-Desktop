@@ -102,6 +102,7 @@ export class Window implements IWindowService {
     this.setWindowMeta(windowName, meta);
     const existedWindowMeta = this.getWindowMeta(windowName);
     const attachToMenubar: boolean = this.preferenceService.get('attachToMenubar');
+    const titleBar: boolean = this.preferenceService.get('titleBar');
 
     if (existedWindow !== undefined) {
       // TODO: handle this menubar logic
@@ -151,6 +152,7 @@ export class Window implements IWindowService {
       minimizable: false,
       fullscreenable: false,
       autoHideMenuBar: false,
+      titleBarStyle: titleBar ? 'default' : 'hidden',
       webPreferences: {
         devTools: true,
         nodeIntegration: false,
