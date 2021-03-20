@@ -1,5 +1,5 @@
-/* eslint-disable consistent-return */
 import React, { useEffect } from 'react';
+import { useDebouncedFn } from 'beautiful-react-hooks';
 import styled from 'styled-components';
 import semver from 'semver';
 import fromUnixTime from 'date-fns/fromUnixTime';
@@ -35,14 +35,14 @@ import translatiumLogo from '../../images/translatium-logo.svg';
 
 import { GithubTokenForm } from '../../components/github/git-token-form';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
-import { PreferenceSections } from '@services/preferences/interface';
+import { IPreferences, PreferenceSections } from '@services/preferences/interface';
 import { usePreferenceSections } from './useSections';
 import { usePromiseValue } from '@/helpers/use-service-value';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { getOpenAtLoginString, useSystemPreferenceObservable } from '@services/systemPreferences/hooks';
 import { useUserInfoObservable } from '@services/auth/hooks';
 import { getUpdaterDesc, useUpdaterObservable } from '@services/updater/hooks';
-import { useDebouncedFn } from 'beautiful-react-hooks';
+import { useThemeObservable } from '@services/theme/hooks';
 
 const Root = styled.div`
   padding: 20px;
@@ -56,10 +56,10 @@ SectionTitle.defaultProps = {
   variant: 'subtitle2',
 };
 
-const Paper = styled(PaperRaw)`
+const Paper = styled(PaperRaw)<{ dark?: 0 | 1 }>`
   margin-top: 5px;
   margin-bottom: 30px;
-  /* border: theme.palette.type === 'dark' ? 'none' : '1px solid rgba(0, 0, 0, 0.12)'; */
+  border: ${({ dark }) => (dark === 1 ? 'none' : '1px solid rgba(0, 0, 0, 0.12)')};
 `;
 
 const TokenContainer = styled.div`
@@ -68,8 +68,8 @@ const TokenContainer = styled.div`
   display: flex;
   justify-content: space-around;
   flex-direction: column;
-  width: 200;
-  min-width: 200;
+  width: 200px;
+  min-width: 200px;
 `;
 
 const TimePickerContainer = styled.div`
@@ -77,28 +77,28 @@ const TimePickerContainer = styled.div`
   margin-bottom: 10px;
   display: flex;
   justify-content: space-around;
-  width: 200;
-  min-width: 200;
+  width: 200px;
+  min-width: 200px;
 `;
 const SideBar = styled.div`
   position: fixed;
-  width: 200;
+  width: 200px;
   color: #666;
 `;
 
 const Inner = styled.div`
   width: 100%;
-  max-width: 550;
+  max-width: 550px;
   float: right;
 `;
 
 const Logo = styled.img`
-  height: 28;
+  height: 28px;
 `;
 
 const Link = styled.span`
   cursor: pointer;
-  font-weight: 500;
+  font-weight: 500px;
   outline: none;
   &:hover {
     text-decoration: underline;
@@ -120,7 +120,7 @@ const SliderContainer = styled(ListItemText)`
 // TODO: handle classes={{ item: classes.sliderTitleContainer }}
 const SliderTitleContainer = styled(Grid)`
   padding-top: 15px !important;
-  width: 100;
+  width: 100px;
 `;
 
 // TODO: handle classes={{ markLabel: classes.sliderMarkLabel }}
@@ -128,7 +128,7 @@ const SliderMarkLabel = styled(Slider)`
   font-size: 0.75rem;
 `;
 
-const getThemeString = (theme: any) => {
+const getThemeString = (theme: IPreferences['themeSource']): string => {
   if (theme === 'light') return 'Light';
   if (theme === 'dark') return 'Dark';
   return 'System default';
@@ -154,7 +154,8 @@ export default function Preferences(): JSX.Element {
   const systemPreference = useSystemPreferenceObservable();
   const userInfo = useUserInfoObservable();
   const updaterMetaData = useUpdaterObservable();
-  if (preference === undefined || systemPreference === undefined || userInfo === undefined || updaterMetaData === undefined) {
+  const theme = useThemeObservable();
+  if (preference === undefined || systemPreference === undefined || userInfo === undefined || updaterMetaData === undefined || theme === undefined) {
     return <Root>Loading...</Root>;
   }
 
@@ -190,6 +191,8 @@ export default function Preferences(): JSX.Element {
     useHardwareAcceleration,
   } = preference;
   const { openAtLogin } = systemPreference;
+
+  Paper.defaultProps = { dark: theme.shouldUseDarkColors ? 1 : 0 };
 
   return (
     <Root>
