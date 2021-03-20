@@ -8,7 +8,6 @@ export interface IPreferences {
   allowPrerelease: boolean;
   askForDownloadPath: boolean;
   attachToMenubar: boolean;
-  blockAds: boolean;
   darkReader: boolean;
   darkReaderBrightness: number;
   darkReaderContrast: number;
@@ -42,7 +41,6 @@ export enum PreferenceSections {
   wiki = 'wiki',
   sync = 'sync',
   general = 'general',
-  extensions = 'extensions',
   notifications = 'notifications',
   languages = 'languages',
   downloads = 'downloads',

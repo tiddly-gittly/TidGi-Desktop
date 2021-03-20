@@ -48,11 +48,6 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
       Icon: WidgetsIcon,
       ref: useRef<SectionTitleElement>(),
     },
-    [PreferenceSections.extensions]: {
-      text: 'Extensions',
-      Icon: ExtensionIcon,
-      ref: useRef<SectionTitleElement>(),
-    },
     [PreferenceSections.notifications]: {
       text: 'Notifications',
       Icon: NotificationsIcon,

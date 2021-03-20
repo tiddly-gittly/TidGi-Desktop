@@ -202,7 +202,6 @@ export default function Preferences(): JSX.Element {
     allowPrerelease,
     askForDownloadPath,
     attachToMenubar,
-    blockAds,
     darkReader,
     darkReaderBrightness,
     darkReaderContrast,
@@ -400,37 +399,6 @@ export default function Preferences(): JSX.Element {
         <SectionTitle ref={sections.extensions.ref}>Extensions</SectionTitle>
         <Paper elevation={0}>
           <List disablePadding dense>
-            <ListItem>
-              <ListItemText
-                primary="Block ads &amp; trackers"
-                secondary={
-                  <>
-                    <span>Powered by </span>
-                    <Link
-                      onClick={async () => await window.service.native.open('https://cliqz.com/en/whycliqz/adblocking')}
-                      onKeyDown={(event) => {
-                        if (event.key !== 'Enter') return;
-                        void window.service.native.open('https://cliqz.com/en/whycliqz/adblocking');
-                      }}>
-                      Cliqz
-                    </Link>
-                    <span>.</span>
-                  </>
-                }
-              />
-              <ListItemSecondaryAction>
-                <Switch
-                  edge="end"
-                  color="primary"
-                  checked={blockAds}
-                  onChange={async (event) => {
-                    await window.service.preference.set('blockAds', event.target.checked);
-                    await debouncedRequestShowRequireRestartDialog();
-                  }}
-                />
-              </ListItemSecondaryAction>
-            </ListItem>
-            <Divider />
             <ListItem>
               <ListItemText
                 primary="Create dark themes for web apps on the fly"
@@ -789,21 +757,6 @@ export default function Preferences(): JSX.Element {
         <SectionTitle ref={sections.privacy.ref}>Privacy &amp; Security</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
-            <ListItem>
-              <ListItemText primary="Block ads &amp; trackers" />
-              <ListItemSecondaryAction>
-                <Switch
-                  edge="end"
-                  color="primary"
-                  checked={blockAds}
-                  onChange={async (event) => {
-                    await window.service.preference.set('blockAds', event.target.checked);
-                    await debouncedRequestShowRequireRestartDialog();
-                  }}
-                />
-              </ListItemSecondaryAction>
-            </ListItem>
-            <Divider />
             <ListItem>
               <ListItemText primary="Remember last page visited" />
               <ListItemSecondaryAction>

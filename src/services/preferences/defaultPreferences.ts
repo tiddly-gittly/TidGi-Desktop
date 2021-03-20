@@ -7,7 +7,6 @@ export const defaultPreferences: IPreferences = {
   allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
   askForDownloadPath: true,
   attachToMenubar: false,
-  blockAds: false,
   // default Dark Reader settings from its Chrome extension
   darkReader: false,
   darkReaderBrightness: 100,
