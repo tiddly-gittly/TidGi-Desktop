@@ -22,9 +22,10 @@ import i18n from '@services/libs/i18n';
 import { lazyInject } from '@services/container';
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@services/constants/paths';
 import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './update-plugin-content';
+import { IWikiService } from './interface';
 
 @injectable()
-export class Wiki {
+export class Wiki implements IWikiService {
   @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;

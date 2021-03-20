@@ -1,5 +1,5 @@
 /**
- * Don't forget to edit ./src/preload/common/services.ts to export service to renderer process
+ * Don't forget to edit src/preload/common/services.ts to export service to renderer process
  */
 import { registerProxy } from '@/helpers/electron-ipc-proxy/server';
 
@@ -14,6 +14,7 @@ import { NativeService } from '@services/native';
 import { NotificationService } from '@services/notifications';
 import { Preference } from '@services/preferences';
 import { SystemPreference } from '@services/systemPreferences';
+import { ThemeService } from '@services/theme';
 import { Updater } from '@services/updater';
 import { View } from '@services/view';
 import { Wiki } from '@services/wiki';
@@ -30,15 +31,16 @@ import { INativeService, NativeServiceIPCDescriptor } from '@services/native/int
 import { INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
 import { IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/preferences/interface';
 import { ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences/interface';
+import { IThemeService, ThemeServiceIPCDescriptor } from '@services/theme/interface';
 import { IUpdaterService, UpdaterServiceIPCDescriptor } from '@services/updater/interface';
 import { IViewService, ViewServiceIPCDescriptor } from '@services/view/interface';
-import { IWikiService, WikiServiceIPCDescriptor } from '@services/wiki/interface';
 import { IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
+import { IWikiService, WikiServiceIPCDescriptor } from '@services/wiki/interface';
 import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows/interface';
 import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
-export function bindServiceAndProxy() {
+export function bindServiceAndProxy(): void {
   container.bind<IAuthenticationService>(serviceIdentifier.Authentication).to(Authentication).inSingletonScope();
   container.bind<IContextService>(serviceIdentifier.Context).to(ContextService).inSingletonScope();
   container.bind<IGitService>(serviceIdentifier.Git).to(Git).inSingletonScope();
@@ -47,10 +49,11 @@ export function bindServiceAndProxy() {
   container.bind<INotificationService>(serviceIdentifier.NotificationService).to(NotificationService).inSingletonScope();
   container.bind<IPreferenceService>(serviceIdentifier.Preference).to(Preference).inSingletonScope();
   container.bind<ISystemPreferenceService>(serviceIdentifier.SystemPreference).to(SystemPreference).inSingletonScope();
+  container.bind<IThemeService>(serviceIdentifier.ThemeService).to(ThemeService).inSingletonScope();
   container.bind<IUpdaterService>(serviceIdentifier.Updater).to(Updater).inSingletonScope();
   container.bind<IViewService>(serviceIdentifier.View).to(View).inSingletonScope();
-  container.bind<IWikiService>(serviceIdentifier.Wiki).to(Wiki).inSingletonScope();
   container.bind<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace).to(WikiGitWorkspace).inSingletonScope();
+  container.bind<IWikiService>(serviceIdentifier.Wiki).to(Wiki).inSingletonScope();
   container.bind<IWindowService>(serviceIdentifier.Window).to(Window).inSingletonScope();
   container.bind<IWorkspaceService>(serviceIdentifier.Workspace).to(Workspace).inSingletonScope();
   container.bind<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).to(WorkspaceView).inSingletonScope();
@@ -63,10 +66,11 @@ export function bindServiceAndProxy() {
   const notificationService = container.get<INotificationService>(serviceIdentifier.NotificationService);
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
   const systemPreferenceService = container.get<ISystemPreferenceService>(serviceIdentifier.SystemPreference);
-  const viewService = container.get<IViewService>(serviceIdentifier.View);
+  const themeService = container.get<IThemeService>(serviceIdentifier.ThemeService);
   const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater);
-  const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+  const viewService = container.get<IViewService>(serviceIdentifier.View);
   const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);
+  const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
@@ -79,10 +83,11 @@ export function bindServiceAndProxy() {
   registerProxy(notificationService, NotificationServiceIPCDescriptor);
   registerProxy(preferenceService, PreferenceServiceIPCDescriptor);
   registerProxy(systemPreferenceService, SystemPreferenceServiceIPCDescriptor);
-  registerProxy(viewService, ViewServiceIPCDescriptor);
+  registerProxy(themeService, ThemeServiceIPCDescriptor);
   registerProxy(updaterService, UpdaterServiceIPCDescriptor);
-  registerProxy(wikiService, WikiServiceIPCDescriptor);
+  registerProxy(viewService, ViewServiceIPCDescriptor);
   registerProxy(wikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor);
+  registerProxy(wikiService, WikiServiceIPCDescriptor);
   registerProxy(windowService, WindowServiceIPCDescriptor);
   registerProxy(workspaceService, WorkspaceServiceIPCDescriptor);
   registerProxy(workspaceViewService, WorkspaceViewServiceIPCDescriptor);

@@ -1,7 +1,7 @@
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { WikiChannel } from '@/constants/channels';
 import { IWorkspace } from '@services/workspaces/interface';
-import { IAuthingUserInfo } from '@services/types';
+import { IGitUserInfos } from '@services/git/interface';
 import type { ISubWikiPluginContent } from './update-plugin-content';
 
 /**
@@ -21,18 +21,18 @@ export interface IWikiService {
   createSubWiki(newFolderPath: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
-  cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: string, userInfo: IAuthingUserInfo): Promise<void>;
+  cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: string, userInfo: IGitUserInfos): Promise<void>;
   cloneSubWiki(
     parentFolderLocation: string,
     wikiFolderName: string,
     mainWikiPath: string,
     githubWikiUrl: string,
-    userInfo: IAuthingUserInfo,
+    userInfo: IGitUserInfos,
     tagName?: string,
   ): Promise<void>;
   wikiStartup(workspace: IWorkspace): Promise<void>;
   startNodeJSWiki(homePath: string, port: number, userName: string, workspaceID: string): Promise<void>;
-  watchWiki(wikiRepoPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo, wikiFolderPath?: string): Promise<void>;
+  watchWiki(wikiRepoPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, wikiFolderPath?: string): Promise<void>;
   stopWatchWiki(wikiRepoPath: string): Promise<void>;
   stopWatchAllWiki(): Promise<void>;
 }
