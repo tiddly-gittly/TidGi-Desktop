@@ -365,6 +365,7 @@ export default function Preferences(): JSX.Element {
                       onChange={async (event) => {
                         await window.service.preference.set('titleBar', event.target.checked);
                         await window.service.workspaceView.realignActiveWorkspace();
+                        await debouncedRequestShowRequireRestartDialog();
                       }}
                     />
                   </ListItemSecondaryAction>
