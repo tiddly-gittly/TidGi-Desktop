@@ -8,22 +8,20 @@ import setMonth from 'date-fns/setMonth';
 import setDate from 'date-fns/setDate';
 import { useTranslation } from 'react-i18next';
 
-import Divider from '@material-ui/core/Divider';
-import Grid from '@material-ui/core/Grid';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
-import ListItemText from '@material-ui/core/ListItemText';
-import MenuItem from '@material-ui/core/MenuItem';
-import PaperRaw from '@material-ui/core/Paper';
-import Slider from '@material-ui/core/Slider';
-import Switch from '@material-ui/core/Switch';
-import TextFieldRaw from '@material-ui/core/TextField';
-import Typography from '@material-ui/core/Typography';
-
+import {
+  Divider,
+  Switch,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemSecondaryAction,
+  ListItemText,
+  MenuItem,
+  Paper as PaperRaw,
+  TextField as TextFieldRaw,
+  Typography,
+} from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
-
 import TimePicker from '@material-ui/lab/TimePicker';
 
 import StatedMenu from '../../components/github/stated-menu';
@@ -140,23 +138,10 @@ Link.defaultProps = {
   tabIndex: 0,
 };
 
-const SliderContainer = styled(ListItemText)`
-  padding-left: 50px;
-  padding-right: 50px;
-`;
-
-// TODO: handle classes={{ item: classes.sliderTitleContainer }}
-const SliderTitleContainer = styled(Grid)`
-  padding-top: 15px !important;
-  width: 100px;
-`;
-
-// TODO: handle classes={{ markLabel: classes.sliderMarkLabel }}
-const SliderMarkLabel = styled(Slider)`
-  font-size: 0.75rem;
-`;
-
 const TextField = styled(TextFieldRaw)``;
+TextField.defaultProps = {
+  variant: 'standard',
+};
 const ListItemVertical = styled(ListItem)`
   flex-direction: column;
   align-items: flex-start;
@@ -165,7 +150,7 @@ const ListItemVertical = styled(ListItem)`
   & ${TextField} {
     margin-top: 20px;
   }
-`;
+` as typeof ListItem;
 
 const getThemeString = (theme: IPreferences['themeSource']): string => {
   if (theme === 'light') return 'Light';
@@ -285,6 +270,7 @@ export default function Preferences(): JSX.Element {
                   openTo="hours"
                   views={['hours', 'minutes', 'seconds']}
                   inputFormat="HH:mm:ss"
+                  mask="__:__:__"
                   renderInput={(timeProps) => <TextField {...timeProps} />}
                   value={fromUnixTime(syncDebounceInterval / 1000 + new Date().getTimezoneOffset() * 60)}
                   onChange={async (date) => {
