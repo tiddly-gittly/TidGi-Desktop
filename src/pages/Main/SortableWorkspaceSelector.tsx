@@ -6,7 +6,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import WorkspaceSelector from './WorkspaceSelector';
 import { IWorkspace } from '@services/workspaces/interface';
 
-import defaultIcon from '../../images/default-icon.png';
+import defaultIcon from '@/images/default-icon.png';
 
 export interface ISortableItemProps {
   index: number;

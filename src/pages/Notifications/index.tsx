@@ -82,7 +82,6 @@ export default function PauseNotifications(): JSX.Element {
     if (pauseNotificationsInfo !== undefined) {
       return (
         <List>
-          {/** @ts-ignore */}
           <PausingHeader>
             <PausingHeaderText primary={`Notifications paused until ${formatDate(new Date(pauseNotificationsInfo.tilDate))}.`} />
           </PausingHeader>

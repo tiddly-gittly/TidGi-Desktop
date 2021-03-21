@@ -28,8 +28,8 @@ import StatedMenu from '../../components/github/stated-menu';
 
 import { hunspellLanguagesMap } from '../../constants/hunspell-languages';
 
-import webcatalogLogo from '../../images/webcatalog-logo.svg';
-import translatiumLogo from '../../images/translatium-logo.svg';
+import webcatalogLogo from '@/images/webcatalog-logo.svg';
+import translatiumLogo from '@/images/translatium-logo.svg';
 
 import { GithubTokenForm } from '../../components/github/git-token-form';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
