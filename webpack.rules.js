@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/restrict-plus-operands */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable @typescript-eslint/no-unsafe-return */
 const tsImportPluginFactory = require('ts-import-plugin');
 const styledComponentsTransformerFactory = require('typescript-plugin-styled-components').default;
 
@@ -50,17 +56,17 @@ module.exports = [
             tsImportPluginFactory({
               libraryDirectory: (importName) => {
                 const stringVec = importName
-                  .split(/([A-Z][a-z]+|[0-9]*)/)
+                  .split(/([A-Z][a-z]+|\d*)/)
                   .filter((s) => s.length)
                   .map((s) => s.toLocaleLowerCase());
 
-                return stringVec.reduce((acc, cur, index) => {
+                return stringVec.reduce((accumulator, current, index) => {
                   if (index > 1) {
-                    return acc + '-' + cur;
+                    return `${accumulator}-${current}`;
                   } else if (index === 1) {
-                    return acc + '/' + cur;
+                    return `${accumulator}/${current}`;
                   }
-                  return acc + cur;
+                  return accumulator + current;
                 }, '');
               },
               libraryName: '@material-ui/icons',

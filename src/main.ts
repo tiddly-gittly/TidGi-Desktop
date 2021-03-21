@@ -93,18 +93,15 @@ if (!gotTheLock) {
 
     // eslint-disable-next-line promise/catch-or-return
     await app.whenReady();
-    if (isDev) {
-      // eslint-disable-next-line @typescript-eslint/no-misused-promises
-      protocol.registerFileProtocol('file', async (request, callback) => {
-        const pathname = decodeURIComponent(request.url.replace('file:///', ''));
-        if (path.isAbsolute(pathname) ? await fs.pathExists(pathname) : await fs.pathExists(`/${pathname}`)) {
-          callback(pathname);
-        } else {
-          const filePath = path.join(app.getAppPath(), '.webpack/renderer', pathname);
-          callback(filePath);
-        }
-      });
-    }
+    protocol.registerFileProtocol('file', (request, callback) => {
+      const pathname = decodeURIComponent(request.url.replace('file:///', ''));
+      if (path.isAbsolute(pathname) ? fs.existsSync(pathname) : fs.existsSync(`/${pathname}`)) {
+        callback(pathname);
+      } else {
+        const filePath = path.join(app.getAppPath(), '.webpack/renderer', pathname);
+        callback(filePath);
+      }
+    });
     await windowService.open(WindowNames.main);
     await workspaceViewService.initializeAllWorkspaceView();
     buildLanguageMenu();

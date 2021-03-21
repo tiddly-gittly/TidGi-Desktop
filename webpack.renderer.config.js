@@ -13,4 +13,5 @@ module.exports = {
     alias: webpackAlias,
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.css'],
   },
+  output: { chunkFilename: 'main_window/[name].chunk.js', publicPath: '../' },
 };
