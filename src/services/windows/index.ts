@@ -156,7 +156,7 @@ export class Window implements IWindowService {
       webPreferences: {
         devTools: true,
         nodeIntegration: false,
-        enableRemoteModule: true,
+        enableRemoteModule: false,
         webSecurity: !isDevelopment,
         allowRunningInsecureContent: false,
         contextIsolation: true,

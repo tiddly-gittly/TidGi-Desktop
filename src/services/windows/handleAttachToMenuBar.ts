@@ -6,6 +6,7 @@ import path from 'path';
 import isDevelopment from 'electron-is-dev';
 
 import { REACT_PATH, buildResourcePath } from '@services/constants/paths';
+import { WindowNames } from './WindowProperties';
 
 export default async function handleAttachToMenuBar(): Promise<Menubar> {
   const menubarWindowState = windowStateKeeper({
@@ -36,12 +37,14 @@ export default async function handleAttachToMenuBar(): Promise<Menubar> {
       minHeight: 100,
       minWidth: 250,
       webPreferences: {
-        allowRunningInsecureContent: false,
+        devTools: true,
         nodeIntegration: false,
-        enableRemoteModule: true,
+        enableRemoteModule: false,
         webSecurity: !isDevelopment,
+        allowRunningInsecureContent: false,
         contextIsolation: true,
-        preload: path.join(__dirname, '..', 'preload', 'menubar.js'),
+        preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+        additionalArguments: [WindowNames.main, JSON.stringify({})],
       },
     },
   });
