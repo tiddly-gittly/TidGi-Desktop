@@ -15,41 +15,8 @@ import { WindowNames, WindowMeta, IPreferenceWindowMeta } from '@services/window
 import 'typeface-roboto/index.css';
 
 import { initI18N } from './i18n';
-import { fixContextIsolation } from './helpers/electron-ipc-proxy/fixContextIsolation';
-
-fixContextIsolation();
-
-const Main = React.lazy(async () => await import('./pages/Main'));
-const AboutPage = React.lazy(async () => await import('./pages/About'));
-const DialogAddWorkspace = React.lazy(async () => await import('./pages/AddWorkspace'));
-const EditWorkspace = React.lazy(async () => await import('./pages/EditWorkspace'));
-const DialogNotifications = React.lazy(async () => await import('./pages/Notifications'));
-const DialogPreferences = React.lazy(async () => await import('./pages/Preferences'));
-const SpellcheckLanguages = React.lazy(async () => await import('./pages/SpellcheckLanguages'));
-
-const App = (): JSX.Element => {
-  switch (window.meta.windowName) {
-    case WindowNames.about:
-      document.title = 'About';
-      return <AboutPage />;
-    case WindowNames.addWorkspace:
-      document.title = 'Add Workspace';
-      return <DialogAddWorkspace />;
-    case WindowNames.editWorkspace:
-      return <EditWorkspace />;
-    case WindowNames.notifications:
-      document.title = 'Notifications';
-      return <DialogNotifications />;
-    case WindowNames.preferences:
-      document.title = 'Preferences';
-      return <DialogPreferences />;
-    case WindowNames.spellcheck:
-      return <SpellcheckLanguages />;
-    default:
-      document.title = 'TiddlyGit';
-      return <Main />;
-  }
-};
+import './helpers/electron-ipc-proxy/fixContextIsolation';
+import { App } from './pages';
 
 async function runApp(): Promise<void> {
   LogRocket.init('kkauk7/tiddlygit-desktop');
