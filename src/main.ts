@@ -195,7 +195,7 @@ if (!gotTheLock) {
 
 unhandled({
   showDialog: true,
-  logger: logger.error,
+  logger: logger.error.bind(logger),
   reportButton: (error) => {
     openNewGitHubIssue({
       user: 'TiddlyGit Desktop User',
