@@ -19,6 +19,6 @@ const LOG_FOLDER = isDev
   : isMac
   ? path.resolve(process.resourcesPath, '..', 'logs')
   : path.resolve(os.homedir(), '.tg-note', 'logs');
-const LOCALIZATION_FOLDER = isDev ? path.resolve(sourcePath, '..', 'localization') : path.resolve(process.resourcesPath, '..', 'localization');
+const LOCALIZATION_FOLDER = isDev ? path.resolve(sourcePath, '..', 'localization') : path.resolve(process.resourcesPath, 'localization');
 
 export { REACT_PATH, TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH, ICON_PATH, CHROME_ERROR_PATH, DESKTOP_PATH, LOG_FOLDER, LOCALIZATION_FOLDER };

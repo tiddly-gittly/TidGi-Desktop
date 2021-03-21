@@ -12,7 +12,10 @@ exports.main = [
   // new ForkTsCheckerWebpackPlugin(),
   new CopyPlugin({
     // to is relative to ./.webpack/main/
-    patterns: [{ from: 'src/services/wiki/wiki-worker.js', to: 'wiki-worker.js' }],
+    patterns: [
+      { from: 'src/services/wiki/wiki-worker.js', to: 'wiki-worker.js' },
+      { from: 'localization', to: 'localization' },
+    ],
   }),
   new CircularDependencyPlugin({
     // exclude detection of files based on a RegExp

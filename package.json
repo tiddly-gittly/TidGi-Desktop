@@ -20,7 +20,20 @@
       "packagerConfig": {
         "icon": "build-resources/icon.icns",
         "asar": true,
-        "extraResource": []
+        "extraResource": [
+          "localization",
+          ".webpack/main/wiki-worker.js"
+        ],
+        "mac": {
+          "category": "productivity",
+          "target": "dmg",
+          "icon": "build-resources/icon.icns",
+          "electronLanguages": [
+            "zh_CN",
+            "en",
+            "ja"
+          ]
+        }
       },
       "makers": [
         {

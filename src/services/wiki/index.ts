@@ -86,9 +86,7 @@ export class Wiki implements IWikiService {
   // don't forget to config option in `dist.js` https://github.com/electron/electron/issues/18540#issuecomment-652430001
   // to copy all worker.js and its local dependence to `process.resourcesPath`
   // On dev, this file will be in .webpack/main/index.js ,so:
-  private readonly WIKI_WORKER_PATH = isDev
-    ? path.resolve('./.webpack/main/wiki-worker.js')
-    : path.resolve(process.resourcesPath, 'app.asar.unpacked', 'wiki-worker.js');
+  private readonly WIKI_WORKER_PATH = isDev ? path.resolve('./.webpack/main/wiki-worker.js') : path.resolve(process.resourcesPath, 'wiki-worker.js');
 
   public async startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void> {
     // use Promise to handle worker callbacks
