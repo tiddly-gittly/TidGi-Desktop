@@ -91,7 +91,7 @@ export interface IWorkspaceService {
   getAllMetaData: () => Record<string, Partial<IWorkspaceMetaData>>;
   updateMetaData: (id: string, options: Partial<IWorkspaceMetaData>) => void;
   set(id: string, workspace: IWorkspace): Promise<void>;
-  update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void>;
+  update(id: string, workspaceSetting: Partial<IWorkspace>): void;
   setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void>;
   setActiveWorkspace(id: string): Promise<void>;
   setWorkspacePicture(id: string, sourcePicturePath: string): Promise<void>;

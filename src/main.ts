@@ -113,8 +113,8 @@ if (!gotTheLock) {
       });
     }
     await windowService.open(WindowNames.main);
-    buildLanguageMenu();
     await workspaceViewService.initializeAllWorkspaceView();
+    buildLanguageMenu();
 
     ipcMain.emit('request-update-pause-notifications-info');
     // Fix webview is not resized automatically

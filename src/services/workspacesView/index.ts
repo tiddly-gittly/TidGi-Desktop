@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/consistent-destructuring */
 import { app, session, dialog } from 'electron';
 import { injectable } from 'inversify';
 import { delay } from 'bluebird';
@@ -39,7 +40,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       const workspace = workspaces[workspaceID];
       if ((this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch') || workspace.hibernateWhenUnused) && !workspace.active) {
         if (!workspace.hibernated && !workspace.isSubWiki) {
-          await this.workspaceService.update(workspaceID, { hibernated: true });
+          this.workspaceService.update(workspaceID, { hibernated: true });
         }
         return;
       }
@@ -66,6 +67,7 @@ export class WorkspaceView implements IWorkspaceViewService {
             await delay(500);
             workspaceMetadata = this.workspaceService.getMetaData(workspaceID);
           }
+          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
           if (workspaceMetadata.didFailLoadErrorMessage) {
             throw new Error(workspaceMetadata.didFailLoadErrorMessage);
           }

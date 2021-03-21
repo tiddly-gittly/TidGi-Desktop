@@ -175,16 +175,16 @@ export class Workspace implements IWorkspaceService {
     this.workspaces[id] = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspace);
     await settings.set(`workspaces.${this.version}.${id}`, { ...workspace });
-    this.updateWorkspaceMenuItems();
     this.updateWorkspaceSubject();
+    this.updateWorkspaceMenuItems();
   }
 
-  public async update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void> {
+  public update(id: string, workspaceSetting: Partial<IWorkspace>): void {
     const workspace = this.get(id);
     if (workspace === undefined) {
       return;
     }
-    await this.set(id, { ...workspace, ...workspaceSetting });
+    void this.set(id, { ...workspace, ...workspaceSetting });
   }
 
   public async setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void> {

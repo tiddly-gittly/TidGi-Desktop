@@ -109,7 +109,7 @@ export default function setupViewEventHandlers(
       isLoading: false,
     });
     const currentUrl = view.webContents.getURL();
-    void workspaceService.update(workspace.id, {
+    workspaceService.update(workspace.id, {
       lastUrl: currentUrl,
     });
     // fix https://github.com/atomery/webcatalog/issues/870
