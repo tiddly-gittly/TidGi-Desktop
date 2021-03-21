@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import fs from 'fs-extra';
+import path from 'path';
 import { ipcMain, protocol, powerMonitor, app } from 'electron';
 import settings from 'electron-settings';
 import { autoUpdater } from 'electron-updater';
@@ -21,7 +22,6 @@ import { IPreferenceService } from './services/preferences/interface';
 import { IWikiService } from './services/wiki/interface';
 import { IWindowService } from './services/windows/interface';
 import { IWorkspaceViewService } from './services/workspacesView/interface';
-import path from 'path';
 
 const gotTheLock = app.requestSingleInstanceLock();
 
