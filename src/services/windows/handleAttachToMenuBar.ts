@@ -36,6 +36,7 @@ export default async function handleAttachToMenuBar(): Promise<Menubar> {
       minHeight: 100,
       minWidth: 250,
       webPreferences: {
+        allowRunningInsecureContent: false,
         nodeIntegration: false,
         enableRemoteModule: true,
         webSecurity: !isDevelopment,

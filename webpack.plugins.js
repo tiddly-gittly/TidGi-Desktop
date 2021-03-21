@@ -5,6 +5,8 @@ const CspHtmlWebpackPlugin = require('csp-html-webpack-plugin');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 const CopyPlugin = require('copy-webpack-plugin');
 
+const isDevelopment = process.env.NODE_ENV === 'development';
+
 exports.main = [
   // we only need one instance of TsChecker, it will check main and renderer all together
   // new ForkTsCheckerWebpackPlugin(),
@@ -34,7 +36,7 @@ exports.renderer = [
     {
       'base-uri': ["'self'"],
       'object-src': ["'none'"],
-      'script-src': ["'self' 'unsafe-eval'"],
+      'script-src': [`'self' ${isDevelopment ? "'unsafe-eval'" : ''}`],
       'style-src': ["'self' 'unsafe-inline'"],
       'frame-src': ["'none'"],
       'worker-src': ["'none'"],

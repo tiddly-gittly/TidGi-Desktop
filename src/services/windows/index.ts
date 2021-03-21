@@ -158,6 +158,7 @@ export class Window implements IWindowService {
         nodeIntegration: false,
         enableRemoteModule: true,
         webSecurity: !isDevelopment,
+        allowRunningInsecureContent: false,
         contextIsolation: true,
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
         additionalArguments: [windowName, JSON.stringify(meta)],

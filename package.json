@@ -4,7 +4,7 @@
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
   "version": "0.3.6",
   "scripts": {
-    "start": "electron-forge start",
+    "start": "NODE_ENV=development electron-forge start",
     "package": "electron-forge package",
     "make": "electron-forge make",
     "lint": "eslint ./src --ext js",
