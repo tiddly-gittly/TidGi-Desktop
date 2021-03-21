@@ -1,7 +1,6 @@
 import 'reflect-metadata';
 import fs from 'fs-extra';
 import { ipcMain, protocol, powerMonitor, app } from 'electron';
-import isDev from 'electron-is-dev';
 import settings from 'electron-settings';
 import { autoUpdater } from 'electron-updater';
 import unhandled from 'electron-unhandled';
@@ -93,15 +92,21 @@ if (!gotTheLock) {
 
     // eslint-disable-next-line promise/catch-or-return
     await app.whenReady();
-    protocol.registerFileProtocol('file', (request, callback) => {
-      const pathname = decodeURIComponent(request.url.replace('file:///', ''));
-      if (path.isAbsolute(pathname) ? fs.existsSync(pathname) : fs.existsSync(`/${pathname}`)) {
-        callback(pathname);
-      } else {
-        const filePath = path.join(app.getAppPath(), '.webpack/renderer', pathname);
-        callback(filePath);
-      }
-    });
+    if (
+      !protocol.registerFileProtocol('file', (request, callback) => {
+        const pathname = decodeURIComponent(request.url.replace('file:///', ''));
+        if (path.isAbsolute(pathname) ? fs.existsSync(pathname) : fs.existsSync(`/${pathname}`)) {
+          callback(pathname);
+        } else {
+          // on production, __dirname will be in .webpack/main
+          const filePath = path.join(app.getAppPath(), '.webpack', 'renderer', pathname);
+          callback(filePath);
+        }
+      })
+    ) {
+      logger.error('Failed to registerFileProtocol file:///');
+      app.quit();
+    }
     await windowService.open(WindowNames.main);
     await workspaceViewService.initializeAllWorkspaceView();
     buildLanguageMenu();
