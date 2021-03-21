@@ -39,7 +39,7 @@ exports.renderer = [
     {
       'base-uri': ["'self'"],
       'object-src': ["'none'"],
-      'script-src': [`'self' ${isDevelopment ? "'unsafe-eval'" : ''}`],
+      'script-src': ["'self' 'unsafe-eval'"],
       'style-src': ["'self' 'unsafe-inline'"],
       'frame-src': ["'none'"],
       'worker-src': ["'none'"],
