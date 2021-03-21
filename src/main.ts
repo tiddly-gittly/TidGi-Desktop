@@ -12,20 +12,15 @@ import { buildLanguageMenu } from '@services/libs/i18n/buildLanguageMenu';
 import { MainChannel } from '@/constants/channels';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
-import extractHostname from '@services/libs/extract-hostname';
-import MAILTO_URLS from '@services/constants/mailto-urls';
 import { initRendererI18NHandler } from '@services/libs/i18n';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 
-import { IMenuService } from './services/menu/interface';
-import { INativeService } from './services/native/interface';
 import { IPreferenceService } from './services/preferences/interface';
 import { IWikiService } from './services/wiki/interface';
 import { IWindowService } from './services/windows/interface';
-import { IWorkspaceService } from './services/workspaces/interface';
 import { IWorkspaceViewService } from './services/workspacesView/interface';
 import path from 'path';
 
@@ -44,11 +39,9 @@ if (!gotTheLock) {
     { scheme: 'mailto', privileges: { standard: true } },
   ]);
   bindServiceAndProxy();
-  const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-  const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
   app.on('second-instance', () => {
     // Someone tried to run a second instance, we should focus our window.
