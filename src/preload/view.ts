@@ -7,31 +7,31 @@ import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/
 import { browserViewMetaData } from './common/browserViewMetaData';
 
 let handled = false;
-const handleLoaded = async (event: string): Promise<void> => {
+const handleLoaded = (event: string): void => {
   if (handled) {
     return;
   }
   // eslint-disable-next-line no-console
   console.log(`Preload script is loading on ${event}...`);
-  await executeJavaScriptInBrowserView();
+  void executeJavaScriptInBrowserView();
   // eslint-disable-next-line no-console
   console.log('Preload script is loaded...');
   handled = true;
 };
 
 // try to load as soon as dom is loaded
-document.addEventListener('DOMContentLoaded', async () => await handleLoaded('document.on("DOMContentLoaded")'));
+document.addEventListener('DOMContentLoaded', () => handleLoaded('document.on("DOMContentLoaded")'));
 // if user navigates between the same website
 // DOMContentLoaded might not be triggered so double check with 'onload'
 // https://github.com/atomery/webcatalog/issues/797
-window.addEventListener('load', async () => await handleLoaded('window.on("onload")'));
+window.addEventListener('load', () => handleLoaded('window.on("onload")'));
 window.addEventListener('message', (event) => {
   if (!event.data) {
     return;
   }
   // set workspace to active when its notification is clicked
   if (event.data.type === WorkspaceChannel.focusWorkspace) {
-    const id = event.data.workspaceId;
+    const id = event.data.workspaceID;
     if (workspace.get(id) !== undefined) {
       void workspaceView.setActiveWorkspaceView(id).then(async () => await menu.buildMenu());
     }
@@ -54,13 +54,15 @@ async function executeJavaScriptInBrowserView(): Promise<void> {
     // TODO: fix logic here, get latest pauseNotifications from preference, and focusWorkspace
     const oldNotification = window.Notification;
 
-    let shouldPauseNotifications = ${initialShouldPauseNotifications ? initialShouldPauseNotifications : 'undefined'};
+    let shouldPauseNotifications = ${
+      typeof initialShouldPauseNotifications === 'string' && initialShouldPauseNotifications.length > 0 ? `"${initialShouldPauseNotifications}"` : 'undefined'
+    };
 
     window.Notification = function() {
       if (!shouldPauseNotifications) {
         const notification = new oldNotification(...arguments);
         notification.addEventListener('click', () => {
-          window.postMessage({ type: '${WorkspaceChannel.focusWorkspace}', workspaceId: "${workspaceID}" });
+          window.postMessage({ type: '${WorkspaceChannel.focusWorkspace}', workspaceID: "${workspaceID ?? '-'}" });
         });
         return notification;
       }
