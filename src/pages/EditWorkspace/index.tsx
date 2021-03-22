@@ -248,11 +248,11 @@ export default function EditWorkspace(): JSX.Element {
           disableElevation
           onClick={async () => {
             await onSave();
-            window.remote.closeCurrentWindow();
+            await window.remote.closeCurrentWindow();
           }}>
           {t('EditWorkspace.Save')}
         </Button>
-        <Button variant="contained" disableElevation onClick={() => window.remote.closeCurrentWindow()}>
+        <Button variant="contained" disableElevation onClick={() => void window.remote.closeCurrentWindow()}>
           {t('EditWorkspace.Cancel')}
         </Button>
       </div>

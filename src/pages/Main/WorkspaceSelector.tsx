@@ -28,12 +28,12 @@ const Root = styled.div<{ hibernated?: boolean; active?: boolean }>`
   border-left: 4px solid;
   border-color: transparent;
   ${({ hibernated }) =>
-    hibernated &&
+    hibernated === true &&
     css`
       opacity: 0.4;
     `}
   ${({ active }) =>
-    active &&
+    active === true &&
     css`
       opacity: 1;
     `}
@@ -55,14 +55,14 @@ const Avatar = styled.div<{ large?: boolean; transparent?: boolean; addAvatar?: 
   text-transform: uppercase;
   overflow: hidden;
   ${({ large }) =>
-    large &&
+    large === true &&
     css`
       height: 44px;
       width: 44px;
       line-height: 44px;
     `}
   ${({ transparent }) =>
-    transparent &&
+    transparent === true &&
     css`
       background: transparent;
       border: none;
@@ -74,7 +74,7 @@ const AvatarPicture = styled.img<{ large?: boolean }>`
   height: calc(36px - 2px);
   width: calc(36px - 2px);
   ${({ large }) =>
-    large &&
+    large === true &&
     css`
       height: 44px;
       width: 44px;
@@ -105,9 +105,10 @@ interface Props {
   id: string;
   order?: number;
   picturePath?: string;
-  sidebarShortcutHints?: boolean;
+  showSidebarShortcutHints?: boolean;
   transparentBackground?: boolean;
   workspaceName?: string;
+  onClick?: () => void;
 }
 export default function WorkspaceSelector({
   active = false,
@@ -116,24 +117,25 @@ export default function WorkspaceSelector({
   id,
   order = 0,
   picturePath,
-  sidebarShortcutHints,
+  showSidebarShortcutHints = false,
   transparentBackground = false,
   workspaceName,
-}: Props) {
+  onClick = () => {},
+}: Props): JSX.Element {
   const { t } = useTranslation();
   const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {
     const baseName = window.remote.getBaseName(workspaceName);
     shortWorkspaceNameSetter(baseName !== undefined ? baseName : t('WorkspaceSelector.BadWorkspacePath'));
-  }, [workspaceName]);
+  }, [workspaceName, t]);
   return (
-    <Root hibernated={hibernated} active={active}>
+    <Root hibernated={hibernated} active={active} onClick={onClick}>
       <Badge color="secondary" badgeContent={badgeCount} max={99}>
-        <Avatar large={!sidebarShortcutHints} transparent={transparentBackground} addAvatar={id === 'add'}>
-          {id !== 'add' ? <AvatarPicture alt="Icon" large={!sidebarShortcutHints} src={picturePath ?? defaultIcon} draggable={false} /> : '+'}
+        <Avatar large={!showSidebarShortcutHints} transparent={transparentBackground} addAvatar={id === 'add'}>
+          {id !== 'add' ? <AvatarPicture alt="Icon" large={!showSidebarShortcutHints} src={picturePath ?? defaultIcon} draggable={false} /> : '+'}
         </Avatar>
       </Badge>
-      {sidebarShortcutHints && (id === 'add' || order < 9) && <ShortcutText>{id === 'add' ? t('WorkspaceSelector.Add') : shortWorkspaceName}</ShortcutText>}
+      {showSidebarShortcutHints && (id === 'add' || order < 9) && <ShortcutText>{id === 'add' ? t('WorkspaceSelector.Add') : shortWorkspaceName}</ShortcutText>}
     </Root>
   );
 }

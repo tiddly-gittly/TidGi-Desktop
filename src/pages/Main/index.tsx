@@ -181,7 +181,7 @@ export default function Main(): JSX.Element {
     return { didFailLoadErrorMessage: 'No ActiveWorkspace' };
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   }, {} as AsyncReturnType<typeof window.service.workspace.getMetaData>);
-  const requestReload = useCallback(async (): Promise<void> => await window.service.window.reload(window.meta.windowName), [window.meta.windowName]);
+  const requestReload = useCallback(async (): Promise<void> => await window.service.window.reload(window.meta.windowName), []);
 
   const workspaceIDs = workspacesList?.map((workspace) => workspace.id) ?? [];
   return (
@@ -189,7 +189,7 @@ export default function Main(): JSX.Element {
       <Root>
         {sidebar === true && (
           <SidebarContainer>
-            <SidebarTop fullscreen={isFullScreen === true || titleBar || attachToMenubar}>
+            <SidebarTop fullscreen={isFullScreen === true || titleBar === true || attachToMenubar === true}>
               {workspacesList === undefined ? (
                 <div>Loading...</div>
               ) : (
@@ -216,7 +216,7 @@ export default function Main(): JSX.Element {
                   </SortableContext>
                 </DndContext>
               )}
-              <WorkspaceSelector id="add" onClick={async () => await window.service.window.open(WindowNames.addWorkspace)} />
+              <WorkspaceSelector id="add" onClick={() => void window.service.window.open(WindowNames.addWorkspace)} />
             </SidebarTop>
             <End>
               <IconButton aria-label="Notifications" onClick={async () => await window.service.window.open(WindowNames.notifications)}>

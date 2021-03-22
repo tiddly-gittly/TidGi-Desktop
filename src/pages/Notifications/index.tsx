@@ -54,7 +54,7 @@ const PausingHeader = styled(ListItem)`
   height: 210;
   background-size: 400;
   align-items: flex-end;
-`;
+` as typeof ListItem;
 
 // TODO: handle classes={{ primary: classes.pausingHeaderText }}
 const PausingHeaderText = styled(ListItemText)`
@@ -67,7 +67,7 @@ const pauseNotification = (tilDate: Date): void => {
     title: 'Notifications paused',
     body: `Notifications paused until ${formatDate(tilDate)}.`,
   });
-  window.remote.closeCurrentWindow();
+  void window.remote.closeCurrentWindow();
 };
 
 export default function PauseNotifications(): JSX.Element {
@@ -88,22 +88,22 @@ export default function PauseNotifications(): JSX.Element {
           <ListItem button>
             <ListItemText
               primary="Resume notifications"
-              onClick={() => {
+              onClick={async () => {
                 if (pauseNotificationsInfo === undefined) {
                   return;
                 }
                 if (pauseNotificationsInfo.reason === 'scheduled') {
-                  void window.service.preference.set('pauseNotifications', `resume:${pauseNotificationsInfo.tilDate.toISOString()}`);
+                  await window.service.preference.set('pauseNotifications', `resume:${pauseNotificationsInfo.tilDate.toISOString()}`);
                 } else if (pauseNotificationsInfo.schedule !== undefined && new Date() < new Date(pauseNotificationsInfo.schedule.to.toISOString())) {
-                  void window.service.preference.set('pauseNotifications', `resume:${pauseNotificationsInfo.schedule.to.toISOString()}`);
+                  await window.service.preference.set('pauseNotifications', `resume:${pauseNotificationsInfo.schedule.to.toISOString()}`);
                 } else {
-                  void window.service.preference.set('pauseNotifications', undefined);
+                  await window.service.preference.set('pauseNotifications', undefined);
                 }
-                void window.service.notification.show({
+                await window.service.notification.show({
                   title: 'Notifications resumed',
                   body: 'Notifications are now resumed.',
                 });
-                window.remote.closeCurrentWindow();
+                void window.remote.closeCurrentWindow();
               }}
             />
           </ListItem>
@@ -135,7 +135,7 @@ export default function PauseNotifications(): JSX.Element {
               primary={pauseNotificationsInfo.reason === 'scheduled' ? 'Adjust schedule...' : 'Pause notifications by schedule...'}
               onClick={async () => {
                 await window.service.window.open(WindowNames.preferences, { gotoTab: PreferenceSections.notifications });
-                window.remote.closeCurrentWindow();
+                void window.remote.closeCurrentWindow();
               }}
             />
           </ListItem>
@@ -159,7 +159,7 @@ export default function PauseNotifications(): JSX.Element {
             primary="Pause notifications by schedule..."
             onClick={async () => {
               await window.service.window.open(WindowNames.preferences, { gotoTab: PreferenceSections.notifications });
-              window.remote.closeCurrentWindow();
+              void window.remote.closeCurrentWindow();
             }}
           />
         </ListItem>

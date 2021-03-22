@@ -13,7 +13,7 @@ export interface ISortableItemProps {
   workspace: IWorkspace;
 }
 
-export function SortableWorkspaceSelector({ index, workspace }: ISortableItemProps) {
+export function SortableWorkspaceSelector({ index, workspace }: ISortableItemProps): JSX.Element {
   const { t } = useTranslation();
   const { active, id, name, picturePath, hibernated, transparentBackground, isSubWiki, tagName } = workspace;
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
@@ -74,7 +74,7 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
         transparentBackground={transparentBackground}
         order={index}
         hibernated={hibernated}
-        sidebarShortcutHints
+        showSidebarShortcutHints
       />
     </div>
   );
