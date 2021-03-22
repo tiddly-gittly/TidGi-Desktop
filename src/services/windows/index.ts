@@ -196,6 +196,9 @@ export class Window implements IWindowService {
           this.workspaceViewService.realignActiveWorkspace();
           // ensure redux is loaded first
           // if not, redux might not be able catch changes sent from ipcMain
+          if (!mainWindow.webContents.isLoading()) {
+            return resolve();
+          }
           mainWindow.webContents.once('did-stop-loading', () => {
             resolve();
           });
