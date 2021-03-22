@@ -5,6 +5,7 @@ import BadgeRaw from '@material-ui/core/Badge';
 import styled, { css } from 'styled-components';
 
 import defaultIcon from '../../images/default-icon.png';
+import { getAssetsFileUrl } from '@/helpers/url';
 
 Promise.config({ cancellation: true });
 
@@ -132,7 +133,11 @@ export default function WorkspaceSelector({
     <Root hibernated={hibernated} active={active} onClick={onClick}>
       <Badge color="secondary" badgeContent={badgeCount} max={99}>
         <Avatar large={!showSidebarShortcutHints} transparent={transparentBackground} addAvatar={id === 'add'}>
-          {id !== 'add' ? <AvatarPicture alt="Icon" large={!showSidebarShortcutHints} src={picturePath ?? defaultIcon} draggable={false} /> : '+'}
+          {id !== 'add' ? (
+            <AvatarPicture alt="Icon" large={!showSidebarShortcutHints} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />
+          ) : (
+            '+'
+          )}
         </Avatar>
       </Badge>
       {showSidebarShortcutHints && (id === 'add' || order < 9) && <ShortcutText>{id === 'add' ? t('WorkspaceSelector.Add') : shortWorkspaceName}</ShortcutText>}

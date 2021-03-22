@@ -62,3 +62,16 @@ export function isInternalUrl(url: string, currentInternalUrls: Array<string | v
   });
   return Boolean(matchedInternalUrl);
 }
+
+/**
+ * Electron's registerFileProtocol only work in development (seems?), so its logic can't help us in production.
+ * In production, we should add file:/// to absolute paths, and no in relative path
+ * @param url static assert url, can be relative or absolute
+ * @returns if url is absolute, we add file:/// to it, if is relative, we just let electron handle it
+ */
+export function getAssetsFileUrl(url: string): string {
+  if (url.startsWith('.')) {
+    return url;
+  }
+  return `file:///${url}`;
+}
