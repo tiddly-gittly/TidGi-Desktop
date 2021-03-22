@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useObservable } from 'beautiful-react-hooks';
 
-import formatBytes from '@services/libs/format-bytes';
+import formatBytes from '@services/libs/formatBytes';
 import { IUpdaterMetaData } from './interface';
 
 export function useUpdaterObservable(): IUpdaterMetaData | undefined {

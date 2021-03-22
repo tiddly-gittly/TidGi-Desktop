@@ -18,7 +18,7 @@ import type { ISubWikiPluginContent } from '@services/wiki/update-plugin-content
 import type { IAuthingUserInfo } from '@services/types';
 import TabBar from './tab-bar';
 import { GithubTokenForm, getGithubToken, setGithubToken } from '../../components/github/git-token-form';
-import { usePromiseValue, usePromiseValueAndSetter } from '@/helpers/use-service-value';
+import { usePromiseValue, usePromiseValueAndSetter } from '@/helpers/useServiceValue';
 
 const graphqlClient = new GraphQLClient({
   url: GITHUB_GRAPHQL_API,

@@ -4,7 +4,7 @@ import path from 'path';
 import fsExtra from 'fs-extra';
 
 import { IWorkspace } from '@services/workspaces/interface';
-import getViewBounds from '@services/libs/get-view-bounds';
+import getViewBounds from '@services/libs/getViewBounds';
 import { extractDomain, isInternalUrl } from '@services/libs/url';
 import { buildResourcePath } from '@services/constants/paths';
 

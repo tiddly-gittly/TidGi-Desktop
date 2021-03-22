@@ -1,7 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Button, DialogContent } from '@material-ui/core';
-import { usePromiseValue } from '@/helpers/use-service-value';
+import { usePromiseValue } from '@/helpers/useServiceValue';
 
 const Icon = styled.img`
   height: 96;

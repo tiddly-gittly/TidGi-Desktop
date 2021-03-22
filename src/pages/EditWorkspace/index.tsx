@@ -17,7 +17,7 @@ import defaultIcon from '../../images/default-icon.png';
 
 import type { ISubWikiPluginContent } from '@services/wiki/update-plugin-content';
 import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
-import { usePromiseValue } from '@/helpers/use-service-value';
+import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
 import { useForm } from './formHook';
 

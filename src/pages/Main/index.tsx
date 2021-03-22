@@ -18,7 +18,7 @@ import SettingsIcon from '@material-ui/icons/Settings';
 
 import { WindowNames } from '@services/windows/WindowProperties';
 
-import { usePromiseValue } from '@/helpers/use-service-value';
+import { usePromiseValue } from '@/helpers/useServiceValue';
 
 import WorkspaceSelector from './WorkspaceSelector';
 import FindInPage from '../../components/FindInPage';

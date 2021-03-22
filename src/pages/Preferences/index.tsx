@@ -35,7 +35,7 @@ import { GithubTokenForm } from '../../components/github/git-token-form';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { IPreferences, PreferenceSections } from '@services/preferences/interface';
 import { usePreferenceSections } from './useSections';
-import { usePromiseValue } from '@/helpers/use-service-value';
+import { usePromiseValue } from '@/helpers/useServiceValue';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { getOpenAtLoginString, useSystemPreferenceObservable } from '@services/systemPreferences/hooks';
 import { useUserInfoObservable } from '@services/auth/hooks';
