@@ -1,5 +1,5 @@
-export function extractDomain(fullUrl: string): string | undefined {
-  const matches = fullUrl.match(/^https?:\/\/([^#/?]+)(?:[#/?]|$)/i);
+export function extractDomain(fullUrl: string | undefined): string | undefined {
+  const matches = /^https?:\/\/([^#/?]+)(?:[#/?]|$)/i.exec(fullUrl ?? '');
   const domain = matches !== null ? matches[1] : undefined;
   // https://stackoverflow.com/a/9928725
   return typeof domain === 'string' ? domain.replace(/^(www\.)/, '') : undefined;
@@ -10,7 +10,7 @@ export function extractDomain(fullUrl: string): string | undefined {
  */
 export function isSubdomain(url: string): boolean {
   const regex = /^([a-z]+:\/{2})?((?:[\w-]+\.){2}\w+)$/;
-  return url.match(regex) === null;
+  return regex.exec(url) === null;
 }
 
 export function equivalentDomain(domain?: string): string | undefined {
@@ -36,7 +36,7 @@ export function equivalentDomain(domain?: string): string | undefined {
   return equivalent;
 }
 
-export function isInternalUrl(url: string, currentInternalUrls: Array<string | void>): boolean {
+export function isInternalUrl(url: string, currentInternalUrls: Array<string | undefined>): boolean {
   // google have a lot of redirects after logging in
   // so assume any requests made after 'accounts.google.com' are internals
   for (const currentInternalUrl of currentInternalUrls) {
@@ -50,7 +50,7 @@ export function isInternalUrl(url: string, currentInternalUrls: Array<string | v
     return false;
   }
   const domain = equivalentDomain(extractDomain(url));
-  const matchedInternalUrl = currentInternalUrls.find((internalUrl: any) => {
+  const matchedInternalUrl = currentInternalUrls.find((internalUrl: string | undefined) => {
     const internalDomain = equivalentDomain(extractDomain(internalUrl));
     // Ex: music.yandex.ru => passport.yandex.ru?retpath=....music.yandex.ru
     // https://github.com/quanglam2807/webcatalog/issues/546#issuecomment-586639519
