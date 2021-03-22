@@ -130,11 +130,7 @@ export default function WorkspaceSelector({
     <Root hibernated={hibernated} active={active}>
       <Badge color="secondary" badgeContent={badgeCount} max={99}>
         <Avatar large={!sidebarShortcutHints} transparent={transparentBackground} addAvatar={id === 'add'}>
-          {id !== 'add' ? (
-            <AvatarPicture alt="Icon" large={!sidebarShortcutHints} src={picturePath ? `file:///${picturePath}` : defaultIcon} draggable={false} />
-          ) : (
-            '+'
-          )}
+          {id !== 'add' ? <AvatarPicture alt="Icon" large={!sidebarShortcutHints} src={picturePath ?? defaultIcon} draggable={false} /> : '+'}
         </Avatar>
       </Badge>
       {sidebarShortcutHints && (id === 'add' || order < 9) && <ShortcutText>{id === 'add' ? t('WorkspaceSelector.Add') : shortWorkspaceName}</ShortcutText>}
