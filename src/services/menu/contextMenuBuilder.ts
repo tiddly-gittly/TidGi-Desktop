@@ -1,9 +1,11 @@
+/**
+ * Maybe this should be used in the preload script, because menu item callback can't be easily pass to main thread.
+ * Ported from https://github.com/electron-userland/electron-spellchecker/blob/master/src/context-menu-builder.js
+ */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-param-reassign */
-// Ported from
-// https://github.com/electron-userland/electron-spellchecker/blob/master/src/context-menu-builder.js
-import { clipboard, shell, Menu, MenuItem, WebContents } from 'electron';
-import i18next from '@services/libs/i18n';
+import { clipboard, shell, Menu, MenuItem, webContents } from 'electron';
+import i18next from 'i18next';
 import { IOnContextMenuInfo } from './interface';
 
 /**
@@ -14,7 +16,7 @@ import { IOnContextMenuInfo } from './interface';
  * @return {String}        The truncated string
  */
 const truncateString = (string: string): string => {
-  const match = string.match(/^.{0,25}\S*/);
+  const match = /^.{0,25}\S*/.exec(string);
   if (match === null) return string;
   const { length } = match[0];
   let result = match?.[0]?.replace(/\s$/, '') ?? '';
@@ -34,7 +36,7 @@ const contextMenuStringTable = {
   copyImageUrl: () => i18next.t('ContextMenu.CopyImageURL'),
   copyImage: () => i18next.t('ContextMenu.CopyImage'),
   addToDictionary: () => i18next.t('ContextMenu.AddToDictionary'),
-  lookUpDefinition: ({ word }: any) => i18next.t('ContextMenu.LookUp', { word }),
+  lookUpDefinition: ({ word }: { word: string }) => i18next.t('ContextMenu.LookUp', { word }),
   searchGoogle: () => i18next.t('ContextMenu.SearchWithGoogle'),
   cut: () => i18next.t('ContextMenu.Cut'),
   copy: () => i18next.t('ContextMenu.Copy'),
@@ -50,7 +52,6 @@ const contextMenuStringTable = {
  * generate suggestions.
  */
 export default class ContextMenuBuilder {
-  webContents: WebContents;
   menu?: Menu;
   processMenu: (menu: Menu, contextInfo: IOnContextMenuInfo) => Menu;
   stringTable: typeof contextMenuStringTable;
@@ -61,10 +62,9 @@ export default class ContextMenuBuilder {
    * @param   processMenu If passed, this method will be passed the menu to change
    *                                it prior to display. Signature: (menu, info) => menu
    */
-  constructor(webContents: WebContents, processMenu = (m: Menu) => m) {
+  constructor(processMenu = (m: Menu) => m) {
     this.processMenu = processMenu;
     this.stringTable = { ...contextMenuStringTable };
-    this.webContents = webContents;
   }
 
   /**
@@ -77,7 +77,7 @@ export default class ContextMenuBuilder {
    * It is allowed to specify only certain menu string as necessary, which will makes other string
    * fall backs to default.
    */
-  setAlternateStringFormatter(stringTable: Record<string, () => string>) {
+  setAlternateStringFormatter(stringTable: Record<string, () => string>): void {
     this.stringTable = Object.assign(this.stringTable, stringTable);
   }
 
@@ -90,12 +90,9 @@ export default class ContextMenuBuilder {
    *
    * @return               Completion
    */
-  public async showPopupMenu(contextInfo: IOnContextMenuInfo): Promise<void> {
-    const menu = await this.buildMenuForElement(contextInfo);
-    if (!menu) {
-      return;
-    }
-    menu.popup({});
+  public showPopupMenu(contextInfo: IOnContextMenuInfo): void {
+    const menu = this.buildMenuForElement(contextInfo);
+    menu?.popup({});
   }
 
   /**
@@ -105,16 +102,16 @@ export default class ContextMenuBuilder {
    *
    * @return {Promise<Menu>}      The newly created `Menu`
    */
-  async buildMenuForElement(info: IOnContextMenuInfo): Promise<Menu> {
+  buildMenuForElement(info: IOnContextMenuInfo): Menu {
     // d(`Got context menu event with args: ${JSON.stringify(info)}`);
-    if (info.linkURL && info.linkURL.length > 0) {
+    if (typeof info.linkURL === 'string' && info.linkURL.length > 0) {
       return this.buildMenuForLink(info);
     }
-    if (info.hasImageContents && info.srcURL && info.srcURL.length > 1) {
+    if (info.hasImageContents === true && typeof info.srcURL === 'string' && info.srcURL.length > 1) {
       return this.buildMenuForImage(info);
     }
-    if (info.isEditable || (info.inputFieldType && info.inputFieldType !== 'none')) {
-      return await this.buildMenuForTextInput(info);
+    if (info.isEditable === true || (typeof info.inputFieldType === 'string' && info.inputFieldType !== 'none')) {
+      return this.buildMenuForTextInput(info);
     }
     return this.buildMenuForText(info);
   }
@@ -124,9 +121,9 @@ export default class ContextMenuBuilder {
    *
    * @return {Menu}  The `Menu`
    */
-  async buildMenuForTextInput(menuInfo: IOnContextMenuInfo): Promise<Menu> {
+  buildMenuForTextInput(menuInfo: IOnContextMenuInfo): Menu {
     const menu = new Menu();
-    await this.addSpellingItems(menu, menuInfo);
+    this.addSpellingItems(menu, menuInfo);
     this.addSearchItems(menu, menuInfo);
     this.addCut(menu, menuInfo);
     this.addCopy(menu, menuInfo);
@@ -156,8 +153,7 @@ export default class ContextMenuBuilder {
     const openLink = new MenuItem({
       label: this.stringTable.openLinkUrl(),
       click: () => {
-        // d(`Navigating to: ${menuInfo.linkURL}`);
-        shell.openExternal(menuInfo.linkURL!);
+        void shell.openExternal(menuInfo.linkURL!);
       },
     });
     menu.append(copyLink);
@@ -207,17 +203,17 @@ export default class ContextMenuBuilder {
    * Checks if the current text selection contains a single misspelled word and
    * if so, adds suggested spellings as individual menu items.
    */
-  private async addSpellingItems(menu: Menu, menuInfo: IOnContextMenuInfo): Promise<Menu> {
-    if (!menuInfo.misspelledWord || menuInfo.misspelledWord.length === 0) {
+  private addSpellingItems(menu: Menu, menuInfo: IOnContextMenuInfo): Menu {
+    if (typeof menuInfo.misspelledWord !== 'string' || menuInfo.misspelledWord.length === 0) {
       return menu;
     }
     // Ensure that we have valid corrections for that word
     const corrections = menuInfo.dictionarySuggestions;
-    if (corrections && corrections.length) {
+    if (Array.isArray(corrections) && corrections.length > 0) {
       corrections.forEach((correction: string) => {
         const item = new MenuItem({
           label: correction,
-          click: () => this.webContents.replaceMisspelling(correction),
+          click: () => webContents.replaceMisspelling(correction),
         });
         menu.append(item);
       });
@@ -230,17 +226,17 @@ export default class ContextMenuBuilder {
    * Adds search-related menu items.
    */
   private addSearchItems(menu: Menu, menuInfo: IOnContextMenuInfo): Menu {
-    if (!menuInfo.selectionText || menuInfo.selectionText.length === 0) {
+    if (typeof menuInfo.selectionText !== 'string' || menuInfo.selectionText.length === 0) {
       return menu;
     }
     const match = matchesWord(menuInfo.selectionText);
-    if (!match || match.length === 0) {
+    if (match === null || match.length === 0) {
       return menu;
     }
     if (process.platform === 'darwin') {
       const lookUpDefinition = new MenuItem({
         label: this.stringTable.lookUpDefinition({ word: truncateString(menuInfo.selectionText) }),
-        click: () => this.webContents.showDefinitionForSelection(),
+        click: () => webContents.showDefinitionForSelection(),
       });
       menu.append(lookUpDefinition);
     }
@@ -248,7 +244,7 @@ export default class ContextMenuBuilder {
       label: this.stringTable.searchGoogle(),
       click: () => {
         const url = `https://www.google.com/#q=${encodeURIComponent(menuInfo.selectionText!)}`;
-        shell.openExternal(url);
+        void shell.openExternal(url);
       },
     });
     menu.append(search);
@@ -257,14 +253,14 @@ export default class ContextMenuBuilder {
   }
 
   private isSrcUrlValid(menuInfo: IOnContextMenuInfo): boolean {
-    return !!menuInfo.srcURL && menuInfo.srcURL.length > 0;
+    return typeof menuInfo.srcURL === 'string' && menuInfo.srcURL.length > 0;
   }
 
   /**
    * Adds "Copy Image URL" items when `src` is valid.
    */
   private addImageItems(menu: Menu, menuInfo: IOnContextMenuInfo): Menu {
-    if (!menuInfo.srcURL) return menu;
+    if (menuInfo.srcURL === undefined) return menu;
     const copyImageUrl = new MenuItem({
       label: this.stringTable.copyImageUrl(),
       click: () => clipboard.writeText(menuInfo.srcURL!),
@@ -282,7 +278,7 @@ export default class ContextMenuBuilder {
         label: this.stringTable.cut(),
         accelerator: 'CommandOrControl+X',
         enabled: menuInfo?.editFlags?.canCut,
-        click: () => this.webContents.cut(),
+        click: () => webContents.cut(),
       }),
     );
     return menu;
@@ -291,13 +287,13 @@ export default class ContextMenuBuilder {
   /**
    * Adds the Copy menu item.
    */
-  addCopy(menu: Menu, menuInfo: IOnContextMenuInfo) {
+  addCopy(menu: Menu, menuInfo: IOnContextMenuInfo): Menu {
     menu.append(
       new MenuItem({
         label: this.stringTable.copy(),
         accelerator: 'CommandOrControl+C',
         enabled: menuInfo?.editFlags?.canCopy,
-        click: () => this.webContents.copy(),
+        click: () => webContents.copy(),
       }),
     );
     return menu;
@@ -306,13 +302,13 @@ export default class ContextMenuBuilder {
   /**
    * Adds the Paste menu item.
    */
-  addPaste(menu: Menu, menuInfo: IOnContextMenuInfo) {
+  addPaste(menu: Menu, menuInfo: IOnContextMenuInfo): Menu {
     menu.append(
       new MenuItem({
         label: this.stringTable.paste(),
         accelerator: 'CommandOrControl+V',
         enabled: menuInfo?.editFlags?.canPaste,
-        click: () => this.webContents.paste(),
+        click: () => webContents.paste(),
       }),
     );
     return menu;
@@ -321,7 +317,7 @@ export default class ContextMenuBuilder {
   /**
    * Adds a separator item.
    */
-  addSeparator(menu: Menu) {
+  addSeparator(menu: Menu): Menu {
     menu.append(new MenuItem({ type: 'separator' }));
     return menu;
   }
@@ -329,13 +325,13 @@ export default class ContextMenuBuilder {
   /**
    * Adds the "Inspect Element" menu item.
    */
-  addInspectElement(menu: Menu, menuInfo: IOnContextMenuInfo, needsSeparator = true) {
+  addInspectElement(menu: Menu, menuInfo: IOnContextMenuInfo, needsSeparator = true): Menu {
     if (needsSeparator) {
       this.addSeparator(menu);
     }
     const inspect = new MenuItem({
       label: this.stringTable.inspectElement(),
-      click: () => this.webContents.inspectElement(menuInfo.x, menuInfo.y),
+      click: () => webContents.inspectElement(menuInfo.x, menuInfo.y),
     });
     menu.append(inspect);
     return menu;
@@ -344,13 +340,13 @@ export default class ContextMenuBuilder {
   /**
    * Adds the "Developer Tools" menu item.
    */
-  addDeveloperTools(menu: Menu, menuInfo: IOnContextMenuInfo, needsSeparator = false) {
+  addDeveloperTools(menu: Menu, menuInfo: IOnContextMenuInfo, needsSeparator = false): Menu {
     if (needsSeparator) {
       this.addSeparator(menu);
     }
     const inspect = new MenuItem({
       label: this.stringTable.developerTools(),
-      click: () => this.webContents.openDevTools(),
+      click: () => webContents.openDevTools(),
     });
     menu.append(inspect);
     return menu;
