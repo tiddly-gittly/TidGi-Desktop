@@ -4,7 +4,7 @@
  */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-param-reassign */
-import { clipboard, shell, Menu, MenuItem, webContents } from 'electron';
+import { clipboard, shell, Menu, MenuItem, WebContents } from 'electron';
 import i18next from 'i18next';
 import { IOnContextMenuInfo } from './interface';
 
@@ -52,6 +52,7 @@ const contextMenuStringTable = {
  * generate suggestions.
  */
 export default class ContextMenuBuilder {
+  webContents: WebContents;
   menu?: Menu;
   processMenu: (menu: Menu, contextInfo: IOnContextMenuInfo) => Menu;
   stringTable: typeof contextMenuStringTable;
@@ -62,9 +63,10 @@ export default class ContextMenuBuilder {
    * @param   processMenu If passed, this method will be passed the menu to change
    *                                it prior to display. Signature: (menu, info) => menu
    */
-  constructor(processMenu = (m: Menu) => m) {
+  constructor(webContents: WebContents, processMenu = (m: Menu) => m) {
     this.processMenu = processMenu;
     this.stringTable = { ...contextMenuStringTable };
+    this.webContents = webContents;
   }
 
   /**
@@ -213,7 +215,7 @@ export default class ContextMenuBuilder {
       corrections.forEach((correction: string) => {
         const item = new MenuItem({
           label: correction,
-          click: () => webContents.replaceMisspelling(correction),
+          click: () => this.webContents.replaceMisspelling(correction),
         });
         menu.append(item);
       });
@@ -236,7 +238,7 @@ export default class ContextMenuBuilder {
     if (process.platform === 'darwin') {
       const lookUpDefinition = new MenuItem({
         label: this.stringTable.lookUpDefinition({ word: truncateString(menuInfo.selectionText) }),
-        click: () => webContents.showDefinitionForSelection(),
+        click: () => this.webContents.showDefinitionForSelection(),
       });
       menu.append(lookUpDefinition);
     }
@@ -278,7 +280,7 @@ export default class ContextMenuBuilder {
         label: this.stringTable.cut(),
         accelerator: 'CommandOrControl+X',
         enabled: menuInfo?.editFlags?.canCut,
-        click: () => webContents.cut(),
+        click: () => this.webContents.cut(),
       }),
     );
     return menu;
@@ -293,7 +295,7 @@ export default class ContextMenuBuilder {
         label: this.stringTable.copy(),
         accelerator: 'CommandOrControl+C',
         enabled: menuInfo?.editFlags?.canCopy,
-        click: () => webContents.copy(),
+        click: () => this.webContents.copy(),
       }),
     );
     return menu;
@@ -308,7 +310,7 @@ export default class ContextMenuBuilder {
         label: this.stringTable.paste(),
         accelerator: 'CommandOrControl+V',
         enabled: menuInfo?.editFlags?.canPaste,
-        click: () => webContents.paste(),
+        click: () => this.webContents.paste(),
       }),
     );
     return menu;
@@ -331,7 +333,7 @@ export default class ContextMenuBuilder {
     }
     const inspect = new MenuItem({
       label: this.stringTable.inspectElement(),
-      click: () => webContents.inspectElement(menuInfo.x, menuInfo.y),
+      click: () => this.webContents.inspectElement(menuInfo.x, menuInfo.y),
     });
     menu.append(inspect);
     return menu;
@@ -346,7 +348,7 @@ export default class ContextMenuBuilder {
     }
     const inspect = new MenuItem({
       label: this.stringTable.developerTools(),
-      click: () => webContents.openDevTools(),
+      click: () => this.webContents.openDevTools(),
     });
     menu.append(inspect);
     return menu;

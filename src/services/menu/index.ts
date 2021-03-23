@@ -30,7 +30,9 @@ export class MenuService implements IMenuService {
    * @param submenu menu options to get latest value
    * @returns MenuTemplate that `Menu.buildFromTemplate` wants
    */
-  private getCurrentMenuItemConstructorOptions(submenu?: Array<DeferredMenuItemConstructorOptions | MenuItemConstructorOptions>): MenuItemConstructorOptions[] | undefined {
+  private getCurrentMenuItemConstructorOptions(
+    submenu?: Array<DeferredMenuItemConstructorOptions | MenuItemConstructorOptions>,
+  ): MenuItemConstructorOptions[] | undefined {
     if (submenu === undefined) return;
     return submenu.map((item) => ({
       ...item,
@@ -196,7 +198,7 @@ export class MenuService implements IMenuService {
         submenu: menuItems,
       });
     }
-    this.buildMenu()
+    this.buildMenu();
   }
 
   public buildContextMenuAndPopup(
@@ -216,85 +218,84 @@ export class MenuService implements IMenuService {
       webContents = webContentsOrWindowName;
     }
     const contextMenuBuilder = new ContextMenuBuilder(webContents);
-    contextMenuBuilder.buildMenuForElement(info).then((menu: any) => {
-      // eslint-disable-next-line promise/always-return
-      if (info.linkURL && info.linkURL.length > 0) {
-        menu.append(new MenuItem({ type: 'separator' }));
-        menu.append(
-          new MenuItem({
-            label: i18next.t('ContextMenu.OpenLinkInNewWindow'),
-            click: async () => {
-              ipcMain.emit('set-view-meta-force-new-window', true);
-              window.open(info.linkURL);
-            },
-          }),
-        );
-        menu.append(new MenuItem({ type: 'separator' }));
-      }
+    const menu = contextMenuBuilder.buildMenuForElement(info);
+    // eslint-disable-next-line promise/always-return
+    if (info.linkURL !== undefined && info.linkURL.length > 0) {
+      menu.append(new MenuItem({ type: 'separator' }));
+      menu.append(
+        new MenuItem({
+          label: i18next.t('ContextMenu.OpenLinkInNewWindow'),
+          click: () => {
+            ipcMain.emit('set-view-meta-force-new-window', true);
+            window.open(info.linkURL);
+          },
+        }),
+      );
+      menu.append(new MenuItem({ type: 'separator' }));
+    }
 
-      menu.append(new MenuItem({ type: 'separator' }));
-      menu.append(
-        new MenuItem({
-          label: i18next.t('ContextMenu.Back'),
-          enabled: webContents.canGoBack(),
-          click: () => {
-            webContents.goBack();
+    menu.append(new MenuItem({ type: 'separator' }));
+    menu.append(
+      new MenuItem({
+        label: i18next.t('ContextMenu.Back'),
+        enabled: webContents.canGoBack(),
+        click: () => {
+          webContents.goBack();
+        },
+      }),
+    );
+    menu.append(
+      new MenuItem({
+        label: i18next.t('ContextMenu.Forward'),
+        enabled: webContents.canGoForward(),
+        click: () => {
+          webContents.goForward();
+        },
+      }),
+    );
+    menu.append(
+      new MenuItem({
+        label: i18next.t('ContextMenu.Reload'),
+        click: () => {
+          webContents.reload();
+        },
+      }),
+    );
+    menu.append(new MenuItem({ type: 'separator' }));
+    menu.append(
+      new MenuItem({
+        label: i18next.t('ContextMenu.More'),
+        submenu: [
+          {
+            label: i18next.t('ContextMenu.About'),
+            click: () => ipcMain.emit('request-show-about-window'),
           },
-        }),
-      );
-      menu.append(
-        new MenuItem({
-          label: i18next.t('ContextMenu.Forward'),
-          enabled: webContents.canGoForward(),
-          click: () => {
-            webContents.goForward();
+          { type: 'separator' },
+          {
+            label: i18next.t('ContextMenu.CheckForUpdates'),
+            click: () => ipcMain.emit('request-check-for-updates'),
           },
-        }),
-      );
-      menu.append(
-        new MenuItem({
-          label: i18next.t('ContextMenu.Reload'),
-          click: () => {
-            webContents.reload();
+          {
+            label: i18next.t('ContextMenu.Preferences'),
+            click: () => ipcMain.emit('request-show-preferences-window'),
           },
-        }),
-      );
-      menu.append(new MenuItem({ type: 'separator' }));
-      menu.append(
-        new MenuItem({
-          label: i18next.t('ContextMenu.More'),
-          submenu: [
-            {
-              label: i18next.t('ContextMenu.About'),
-              click: () => ipcMain.emit('request-show-about-window'),
-            },
-            { type: 'separator' },
-            {
-              label: i18next.t('ContextMenu.CheckForUpdates'),
-              click: () => ipcMain.emit('request-check-for-updates'),
-            },
-            {
-              label: i18next.t('ContextMenu.Preferences'),
-              click: () => ipcMain.emit('request-show-preferences-window'),
-            },
-            { type: 'separator' },
-            {
-              label: i18next.t('ContextMenu.TiddlyGitSupport'),
-              click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose'),
-            },
-            {
-              label: i18next.t('ContextMenu.TiddlyGitWebsite'),
-              click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop'),
-            },
-            { type: 'separator' },
-            {
-              label: i18next.t('ContextMenu.Quit'),
-              click: () => ipcMain.emit('request-quit'),
-            },
-          ],
-        }),
-      );
-      menu.popup(webContents);
-    });
+          { type: 'separator' },
+          {
+            label: i18next.t('ContextMenu.TiddlyGitSupport'),
+            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose'),
+          },
+          {
+            label: i18next.t('ContextMenu.TiddlyGitWebsite'),
+            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop'),
+          },
+          { type: 'separator' },
+          {
+            label: i18next.t('ContextMenu.Quit'),
+            click: () => ipcMain.emit('request-quit'),
+          },
+        ],
+      }),
+    );
+    menu.popup();
   }
 }
