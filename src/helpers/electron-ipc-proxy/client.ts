@@ -69,16 +69,17 @@ function getProperty(
     case ProxyPropertyType.Value$:
       return makeObservable({ type: RequestType.Subscribe, propKey: propertyKey }, channel, ObservableCtor, transport);
     case ProxyPropertyType.Function:
-      return async (...arguments_: any[]) => await makeRequest({ type: RequestType.Apply, propKey: propertyKey, args: arguments_ }, channel, transport);
+      return async (...arguments_: unknown[]) => await makeRequest({ type: RequestType.Apply, propKey: propertyKey, args: arguments_ }, channel, transport);
     case ProxyPropertyType.Function$:
       return (...arguments_: any[]) =>
         makeObservable({ type: RequestType.ApplySubscribe, propKey: propertyKey, args: arguments_ }, channel, ObservableCtor, transport);
     default:
+      // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
       throw new IpcProxyError(`Unrecognised ProxyPropertyType [${propertyType}]`);
   }
 }
 
-async function makeRequest(request: Request, channel: string, transport: IpcRenderer): Promise<any> {
+async function makeRequest(request: Request, channel: string, transport: IpcRenderer): Promise<unknown> {
   const correlationId = uuid();
   transport.send(channel, request, correlationId);
 

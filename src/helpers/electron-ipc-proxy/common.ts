@@ -65,7 +65,7 @@ export interface GetRequest {
 export interface ApplyRequest {
   type: RequestType.Apply;
   propKey: string;
-  args: any[];
+  args: unknown[];
 }
 
 export interface SubscribeRequest {
@@ -77,7 +77,7 @@ export interface SubscribeRequest {
 export interface ApplySubscribeRequest {
   type: RequestType.ApplySubscribe;
   propKey: string;
-  args: any[];
+  args: unknown[];
   subscriptionId?: string;
 }
 
@@ -98,17 +98,17 @@ export enum ResponseType {
 
 export interface ResultResponse {
   type: ResponseType.Result;
-  result: any;
+  result: unknown;
 }
 
 export interface ErrorResponse {
   type: ResponseType.Error;
-  error: any;
+  error: Error;
 }
 
 export interface NextResponse {
   type: ResponseType.Next;
-  value: any;
+  value: unknown;
 }
 
 export interface CompleteResponse {

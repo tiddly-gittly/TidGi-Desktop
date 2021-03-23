@@ -1,4 +1,6 @@
-declare module 'errio';
+declare module 'errio' {
+  export function parse(error: Error): Error;
+}
 declare module '*.png' {
   const value: string;
   export default value;
