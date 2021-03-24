@@ -43,7 +43,10 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
         const template = [
           {
             label: t('WorkspaceSelector.EditWorkspace'),
-            click: async () => await window.service.window.open(WindowNames.editWorkspace, { workspaceID: id }),
+            click: async () => {
+              console.log('aaa');
+              await window.service.window.open(WindowNames.editWorkspace, { workspaceID: id });
+            },
           },
           {
             label: t('WorkspaceSelector.RemoveWorkspace'),
@@ -63,7 +66,8 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
           });
         }
 
-        void window.service.menu.buildContextMenuAndPopup(template, { x: event.clientX, y: event.clientY }, window.meta.windowName);
+        const unregister = window.remote.popContextMenu(template, { x: event.clientX, y: event.clientY });
+        // unregister();
       }}>
       <WorkspaceSelector
         active={active}

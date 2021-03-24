@@ -1,5 +1,5 @@
 import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, WebContents, MenuItem, ipcMain } from 'electron';
-import { debounce, take, drop } from 'lodash';
+import { debounce, take, drop, reverse } from 'lodash';
 import { injectable } from 'inversify';
 import { IMenuService, DeferredMenuItemConstructorOptions, IOnContextMenuInfo } from './interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -8,6 +8,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
 import i18next from '@services/libs/i18n';
 import ContextMenuBuilder from './contextMenuBuilder';
+import { IpcSafeMenuItem, mainMenuItemProxy } from './rendererMenuItemProxy';
 
 @injectable()
 export class MenuService implements IMenuService {
@@ -121,7 +122,7 @@ export class MenuService implements IMenuService {
 
   /** Register `on('context-menu', openContextMenuForWindow)` for a window, return an unregister function */
   public initContextMenuForWindowWebContents(webContents: WebContents): () => void {
-    const openContextMenuForWindow = (event: Electron.Event, params: ContextMenuParams) => this.buildContextMenuAndPopup([], params, webContents);
+    const openContextMenuForWindow = (event: Electron.Event, parameters: ContextMenuParams): void => this.buildContextMenuAndPopup([], parameters, webContents);
     webContents.on('context-menu', openContextMenuForWindow);
 
     return () => {
@@ -147,7 +148,7 @@ export class MenuService implements IMenuService {
       // match top level menu
       if (menu.id === menuID) {
         foundMenuName = true;
-        // check some menu item existed, we update them and pop them out
+        // TODO: check some menu item existed, we update them and pop them out
         const filteredMenuItems: DeferredMenuItemConstructorOptions[] = [];
         for (const item of menuItems) {
           const currentSubMenu = typeof menu.submenu === 'function' ? menu.submenu() : menu.submenu ?? [];
@@ -202,7 +203,7 @@ export class MenuService implements IMenuService {
   }
 
   public buildContextMenuAndPopup(
-    template: MenuItemConstructorOptions[],
+    template: MenuItemConstructorOptions[] | IpcSafeMenuItem[],
     info: IOnContextMenuInfo,
     webContentsOrWindowName: WindowNames | WebContents = WindowNames.main,
   ): void {
@@ -296,6 +297,20 @@ export class MenuService implements IMenuService {
         ],
       }),
     );
+
+    // add custom menu items
+    if (template !== undefined && Array.isArray(template) && template.length > 0) {
+      // if our menu item config is pass from the renderer process, we reconstruct callback from the ipc.on channel id.
+      const menuItems = ((typeof template?.[0]?.click === 'string'
+        ? mainMenuItemProxy(template as IpcSafeMenuItem[], webContents)
+        : template) as unknown) as MenuItemConstructorOptions[];
+      menu.insert(0, new MenuItem({ type: 'separator' }));
+      // we are going to prepend items, so inverse first, so order will remain
+      reverse(menuItems)
+        .map((menuItem) => new MenuItem(menuItem))
+        .forEach((menuItem) => menu.insert(0, menuItem));
+    }
+
     menu.popup();
   }
 }
