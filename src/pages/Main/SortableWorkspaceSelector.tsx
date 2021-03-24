@@ -44,7 +44,6 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
           {
             label: t('WorkspaceSelector.EditWorkspace'),
             click: async () => {
-              console.log('aaa');
               await window.service.window.open(WindowNames.editWorkspace, { workspaceID: id });
             },
           },
@@ -66,8 +65,7 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
           });
         }
 
-        const unregister = window.remote.popContextMenu(template, { x: event.clientX, y: event.clientY });
-        // unregister();
+        window.remote.popContextMenu(template, { x: event.clientX, y: event.clientY });
       }}>
       <WorkspaceSelector
         active={active}

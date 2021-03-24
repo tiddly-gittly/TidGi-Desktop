@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-dynamic-delete */
 import { ipcRenderer, IpcRendererEvent, MenuItemConstructorOptions, WebContents } from 'electron';
 import { v4 as uuid } from 'uuid';
 
@@ -14,6 +15,13 @@ export interface IpcSafeMenuItem {
 export function rendererMenuItemProxy(menus: MenuItemConstructorOptions[]): [IpcSafeMenuItem[], () => void] {
   const originalCallbackIdMap: Record<string, () => void> = {};
   const ipcCallbackIdMap: Record<string, (_event: IpcRendererEvent) => void> = {};
+  const unregister = (): void => {
+    Object.keys(originalCallbackIdMap).forEach((id) => {
+      ipcRenderer.removeListener(id, ipcCallbackIdMap[id]);
+      delete originalCallbackIdMap[id];
+      delete ipcCallbackIdMap[id];
+    });
+  };
   const newMenus: IpcSafeMenuItem[] = [];
   for (const menuItem of menus) {
     if (menuItem.click !== undefined) {
@@ -22,6 +30,7 @@ export function rendererMenuItemProxy(menus: MenuItemConstructorOptions[]): [Ipc
       originalCallbackIdMap[id] = menuItem.click as () => void;
       const ipcCallback = (_event: IpcRendererEvent): void => {
         originalCallbackIdMap[id]?.();
+        unregister();
       };
       ipcCallbackIdMap[id] = ipcCallback;
       ipcRenderer.on(id, ipcCallback);
@@ -31,10 +40,6 @@ export function rendererMenuItemProxy(menus: MenuItemConstructorOptions[]): [Ipc
       });
     }
   }
-
-  const unregister = (): void => {
-    Object.keys(originalCallbackIdMap).forEach((id) => ipcRenderer.removeListener(id, ipcCallbackIdMap[id]));
-  };
   return [newMenus, unregister];
 }
 
