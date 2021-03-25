@@ -43,10 +43,9 @@ export enum PreferenceSections {
   privacy = 'privacy',
   system = 'system',
   developers = 'developers',
-  advanced = 'advanced',
+  performance = 'performance',
   updates = 'updates',
-  reset = 'reset',
-  webCatalogApps = 'webCatalogApps',
+  friendLinks = 'friendLinks',
   misc = 'misc',
 }
 

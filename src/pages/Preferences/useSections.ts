@@ -34,79 +34,74 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
   const { t } = useTranslation();
   const sections = {
     [PreferenceSections.wiki]: {
-      text: 'Wiki',
+      text: t('Preference.TiddlyWiki'),
       Icon: MenuBookIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.sync]: {
       text: t('Preference.Sync'),
       Icon: GitHubIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.general]: {
       text: t('Preference.General'),
       Icon: WidgetsIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.notifications]: {
-      text: 'Notifications',
+      text: t('Preference.Notifications'),
       Icon: NotificationsIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.languages]: {
-      text: 'Languages',
+      text: t('Preference.Languages'),
       Icon: LanguageIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.downloads]: {
-      text: 'Downloads',
+      text: t('Preference.Downloads'),
       Icon: CloudDownloadIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.network]: {
-      text: 'Network',
+      text: t('Preference.Network'),
       Icon: RouterIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.privacy]: {
-      text: 'Privacy & Security',
+      text: t('Preference.PrivacyAndSecurity'),
       Icon: SecurityIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.system]: {
-      text: 'System',
+      text: t('Preference.System'),
       Icon: BuildIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.developers]: {
-      text: 'Developers',
+      text: t('Preference.DeveloperTools'),
       Icon: CodeIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
-    [PreferenceSections.advanced]: {
-      text: t('Preference.Advanced'),
+    [PreferenceSections.performance]: {
+      text: t('Preference.Performance'),
       Icon: PowerIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.updates]: {
-      text: 'Updates',
+      text: t('Preference.Updates'),
       Icon: SystemUpdateAltIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
-    [PreferenceSections.reset]: {
-      text: 'Reset',
-      Icon: RotateLeftIcon,
-      ref: useRef<SectionTitleElement>(),
-    },
-    [PreferenceSections.webCatalogApps]: {
-      text: 'Webcatalog Apps',
+    [PreferenceSections.friendLinks]: {
+      text: t('Preference.FriendLinks'),
       Icon: StorefrontIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.misc]: {
-      text: 'Miscellaneous',
+      text: t('Preference.Miscellaneous'),
       Icon: MoreHorizIcon,
-      ref: useRef<SectionTitleElement>(),
+      ref: useRef<SectionTitleElement>(null),
     },
   };
 

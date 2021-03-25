@@ -6,7 +6,7 @@ import fromUnixTime from 'date-fns/fromUnixTime';
 import setYear from 'date-fns/setYear';
 import setMonth from 'date-fns/setMonth';
 import setDate from 'date-fns/setDate';
-import { useTranslation } from 'react-i18next';
+import { Trans, useTranslation } from 'react-i18next';
 
 import {
   Divider,
@@ -235,7 +235,7 @@ export default function Preferences(): JSX.Element {
       </SideBar>
 
       <Inner>
-        <SectionTitle ref={sections.wiki.ref}>TiddlyWiki</SectionTitle>
+        <SectionTitle ref={sections.wiki.ref}>{t('Preference.TiddlyWiki')}</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
             <ListItemVertical>
@@ -291,6 +291,21 @@ export default function Preferences(): JSX.Element {
         <SectionTitle ref={sections.general.ref}>{t('Preference.General')}</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
+            <ListItem>
+              <ListItemText primary={t('Preference.RememberLastVisitState')} />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={rememberLastPageVisited}
+                  onChange={async (event) => {
+                    await window.service.preference.set('rememberLastPageVisited', event.target.checked);
+                    await debouncedRequestShowRequireRestartDialog();
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            <Divider />
             <StatedMenu
               id="theme"
               buttonElement={
@@ -395,19 +410,52 @@ export default function Preferences(): JSX.Element {
                 />
               </ListItemSecondaryAction>
             </ListItem>
+            {platform === 'darwin' && (
+              <>
+                <Divider />
+                <ListItem>
+                  <ListItemText
+                    primary={t('Preference.SwipeWithThreeFingersToNavigate')}
+                    secondary={
+                      <Trans t={t} i18nKey="Preference.SwipeWithThreeFingersToNavigateDescription">
+                        Navigate between pages with 3-finger gestures. Swipe left to go back or swipe right to go forward.
+                        <br />
+                        To enable it, you also need to change
+                        <b>macOS Preferences → TrackPad → More Gestures → Swipe between page</b>
+                        to
+                        <b>Swipe with three fingers</b>
+                        or
+                        <b>Swipe with two or three fingers.</b>
+                      </Trans>
+                    }
+                  />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge="end"
+                      color="primary"
+                      checked={swipeToNavigate}
+                      onChange={async (event) => {
+                        await window.service.preference.set('swipeToNavigate', event.target.checked);
+                        await debouncedRequestShowRequireRestartDialog();
+                      }}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </>
+            )}
           </List>
         </Paper>
 
-        <SectionTitle ref={sections.notifications.ref}>Notifications</SectionTitle>
+        <SectionTitle ref={sections.notifications.ref}>{t('Preference.Notifications')}</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem button onClick={async () => await window.service.window.open(WindowNames.notifications)}>
-              <ListItemText primary="Control notifications" />
+              <ListItemText primary={t('Preference.NotificationsDetail')} />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
             <ListItemVertical>
-              <ListItemText primary="Automatically disable notifications by schedule:" />
+              <ListItemText primary={t('Preference.NotificationsDisableSchedule')} />
               <TimePickerContainer>
                 <TimePicker
                   label="from"
@@ -442,7 +490,7 @@ export default function Preferences(): JSX.Element {
             </ListItemVertical>
             <Divider />
             <ListItem>
-              <ListItemText primary="Mute audio when notifications are paused" />
+              <ListItemText primary={t('Preference.NotificationsMuteAudio')} />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
@@ -474,24 +522,22 @@ export default function Preferences(): JSX.Element {
               button
               onClick={() => {
                 void window.service.notification.show({
-                  title: 'Test notifications',
-                  body: 'It is working!',
+                  title: t('Preference.TestNotification'),
+                  body: t('Preference.ItIsWorking'),
                 });
               }}>
               <ListItemText
-                primary="Test notifications"
+                primary={t('Preference.TestNotification')}
                 secondary={(() => {
                   // only show this message on macOS Catalina 10.15 & above
                   if (platform === 'darwin' && oSVersion !== undefined && semver.gte(oSVersion, '10.15.0')) {
                     return (
-                      <>
-                        <span>If notifications don&apos;t show up,</span>
-                        <span> make sure you enable notifications in </span>
-                        <b>
-                          <span>macOS Preferences &gt; Notifications &gt; TiddlyGit</span>
-                        </b>
-                        <span>.</span>
-                      </>
+                      <Trans t={t} i18nKey="Preference.TestNotificationDescription">
+                        <span>
+                          If notifications dont show up, make sure you enable notifications in
+                          <b>macOS Preferences → Notifications → TiddlyGit</b>.
+                        </span>
+                      </Trans>
                     );
                   }
                 })()}
@@ -502,11 +548,11 @@ export default function Preferences(): JSX.Element {
             <ListItem>
               <ListItemText
                 secondary={
-                  <>
-                    <span>TiddlyGit supports notifications out of the box. </span>
-                    <span>But for some cases, to receive notifications, </span>
-                    <span>you will need to manually configure additional </span>
-                    <span>web app settings. </span>
+                  <Trans t={t} i18nKey="Preference.HowToEnableNotifications">
+                    <span>
+                      TiddlyGit supports notifications out of the box. But for some cases, to receive notifications, you will need to manually configure
+                      additional web app settings.
+                    </span>
                     <Link
                       onClick={async () =>
                         await window.service.native.open('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps')
@@ -518,18 +564,18 @@ export default function Preferences(): JSX.Element {
                       Learn more
                     </Link>
                     <span>.</span>
-                  </>
+                  </Trans>
                 }
               />
             </ListItem>
           </List>
         </Paper>
 
-        <SectionTitle ref={sections.languages.ref}>Languages</SectionTitle>
+        <SectionTitle ref={sections.languages.ref}>{t('Preference.Languages')}</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem>
-              <ListItemText primary="Spell check" />
+              <ListItemText primary={t('Preference.SpellCheck')} />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
@@ -547,7 +593,7 @@ export default function Preferences(): JSX.Element {
                 <Divider />
                 <ListItem button onClick={async () => await window.service.window.open(WindowNames.spellcheck)}>
                   <ListItemText
-                    primary="Preferred spell checking languages"
+                    primary={t('Preference.SpellCheckLanguages')}
                     secondary={spellcheckLanguages.map((code) => hunspellLanguagesMap[code]).join(' | ')}
                   />
                   <ChevronRightIcon color="action" />
@@ -557,7 +603,7 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <SectionTitle ref={sections.downloads.ref}>Downloads</SectionTitle>
+        <SectionTitle ref={sections.downloads.ref}>{t('Preference.Downloads')}</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem
@@ -574,12 +620,12 @@ export default function Preferences(): JSX.Element {
                     console.log(error); // eslint-disable-line no-console
                   });
               }}>
-              <ListItemText primary="Download Location" secondary={downloadPath} />
+              <ListItemText primary={t('Preference.DownloadLocation')} secondary={downloadPath} />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
             <ListItem>
-              <ListItemText primary="Ask where to save each file before downloading" />
+              <ListItemText primary={t('Preference.AskDownloadLocation')} />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
@@ -595,29 +641,14 @@ export default function Preferences(): JSX.Element {
         </Paper>
 
         <SectionTitle color="textPrimary" ref={sections.network.ref}>
-          Network
+          {t('Preference.Network')}
         </SectionTitle>
 
-        <SectionTitle ref={sections.privacy.ref}>Privacy &amp; Security</SectionTitle>
+        <SectionTitle ref={sections.privacy.ref}>{t('Preference.PrivacyAndSecurity')}</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem>
-              <ListItemText primary="Remember last page visited" />
-              <ListItemSecondaryAction>
-                <Switch
-                  edge="end"
-                  color="primary"
-                  checked={rememberLastPageVisited}
-                  onChange={async (event) => {
-                    await window.service.preference.set('rememberLastPageVisited', event.target.checked);
-                    await debouncedRequestShowRequireRestartDialog();
-                  }}
-                />
-              </ListItemSecondaryAction>
-            </ListItem>
-            <Divider />
-            <ListItem>
-              <ListItemText primary="Share browsing data between workspaces" />
+              <ListItemText primary={t('Preference.ShareBrowsingData')} />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
@@ -633,9 +664,9 @@ export default function Preferences(): JSX.Element {
             <Divider />
             <ListItem>
               <ListItemText
-                primary="Ignore certificate errors"
+                primary={t('Preference.IgnoreCertificateErrors')}
                 secondary={
-                  <>
+                  <Trans t={t} i18nKey="Preference.IgnoreCertificateErrorsDescription">
                     <span>Not recommended. </span>
                     <Link
                       onClick={async () =>
@@ -648,7 +679,7 @@ export default function Preferences(): JSX.Element {
                       Learn more
                     </Link>
                     .
-                  </>
+                  </Trans>
                 }
               />
               <ListItemSecondaryAction>
@@ -665,7 +696,7 @@ export default function Preferences(): JSX.Element {
             </ListItem>
             <Divider />
             <ListItem button onClick={window.service.workspaceView.clearBrowsingDataWithConfirm}>
-              <ListItemText primary="Clear browsing data" secondary="Clear cookies, cache, and more" />
+              <ListItemText primary={t('Preference.ClearBrowsingData')} secondary={t('Preference.ClearBrowsingDataDescription')} />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
@@ -677,33 +708,31 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <SectionTitle ref={sections.system.ref}>System</SectionTitle>
+        <SectionTitle ref={sections.system.ref}>{t('Preference.System')}</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
             <StatedMenu
               id="openAtLogin"
               buttonElement={
                 <ListItem button>
-                  <ListItemText primary="Open at login" secondary={getOpenAtLoginString(openAtLogin)} />
+                  <ListItemText primary={t('Preference.OpenAtLogin')} secondary={getOpenAtLoginString(openAtLogin)} />
                   <ChevronRightIcon color="action" />
                 </ListItem>
               }>
               <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'yes')}>
-                Yes
+                {t('Yes')}
               </MenuItem>
               <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'yes-hidden')}>
-                Yes, but minimized
+                {t('Preference.OpenAtLoginMinimized')}
               </MenuItem>
               <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'no')}>
-                No
+                {t('No')}
               </MenuItem>
             </StatedMenu>
           </List>
         </Paper>
 
-        <SectionTitle ref={sections.developers.ref}>Developers</SectionTitle>
-
-        <SectionTitle ref={sections.advanced.ref}>Advanced</SectionTitle>
+        <SectionTitle ref={sections.developers.ref}>{t('Preference.DeveloperTools')}</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem
@@ -717,11 +746,18 @@ export default function Preferences(): JSX.Element {
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
+            <ListItem button onClick={window.service.preference.resetWithConfirm}>
+              <ListItemText primary={t('Preference.RestorePreferences')} />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+          </List>
+        </Paper>
+
+        <SectionTitle ref={sections.performance.ref}>{t('Preference.Performance')}</SectionTitle>
+        <Paper elevation={0}>
+          <List dense disablePadding>
             <ListItem>
-              <ListItemText
-                primary="Hibernate unused workspaces at app launch"
-                secondary="Hibernate all workspaces at launch, except the last active workspace."
-              />
+              <ListItemText primary={t('Preference.HibernateAllUnusedWorkspaces')} secondary={t('Preference.HibernateAllUnusedWorkspacesDescription')} />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
@@ -733,43 +769,10 @@ export default function Preferences(): JSX.Element {
                 />
               </ListItemSecondaryAction>
             </ListItem>
-            {platform === 'darwin' && (
-              <>
-                <Divider />
-                <ListItem>
-                  <ListItemText
-                    primary="Swipe with three fingers to navigate"
-                    secondary={
-                      <>
-                        <span>Navigate between pages with 3-finger gestures. </span>
-                        <span>Swipe left to go back or swipe right to go forward.</span>
-                        <br />
-                        <span>To enable it, you also need to change </span>
-                        <b>macOS Preferences &gt; Trackpad &gt; More Gestures &gt; Swipe between page</b>
-                        <span> to </span>
-                        <b>Swipe with three fingers</b>
-                        <span> or </span>
-                        <b>Swipe with two or three fingers.</b>
-                      </>
-                    }
-                  />
-                  <ListItemSecondaryAction>
-                    <Switch
-                      edge="end"
-                      color="primary"
-                      checked={swipeToNavigate}
-                      onChange={async (event) => {
-                        await window.service.preference.set('swipeToNavigate', event.target.checked);
-                        await debouncedRequestShowRequireRestartDialog();
-                      }}
-                    />
-                  </ListItemSecondaryAction>
-                </ListItem>
-              </>
-            )}
+
             <Divider />
             <ListItem>
-              <ListItemText primary="Use hardware acceleration when available" />
+              <ListItemText primary={t('Preference.hardwareAcceleration')} />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
@@ -785,7 +788,7 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <SectionTitle ref={sections.updates.ref}>Updates</SectionTitle>
+        <SectionTitle ref={sections.updates.ref}>{t('Preference.Updates')}</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem
@@ -797,14 +800,14 @@ export default function Preferences(): JSX.Element {
                 updaterMetaData.status === 'update-available'
               }>
               <ListItemText
-                primary={updaterMetaData.status === 'update-downloaded' ? 'Restart to Apply Updates' : 'Check for Updates'}
+                primary={updaterMetaData.status === 'update-downloaded' ? t('Preference.RestartToApplyUpdates') : t('ContextMenu.CheckForUpdates')}
                 secondary={getUpdaterDesc(updaterMetaData.status, updaterMetaData.info)}
               />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
             <ListItem>
-              <ListItemText primary="Receive pre-release updates" />
+              <ListItemText primary={t('Preference.ReceivePreReleaseUpdates')} />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"
@@ -820,61 +823,48 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
-        <SectionTitle ref={sections.reset.ref}>Reset</SectionTitle>
-        <Paper elevation={0}>
-          <List dense disablePadding>
-            <ListItem button onClick={window.service.preference.resetWithConfirm}>
-              <ListItemText primary="Restore preferences to their original defaults" />
-              <ChevronRightIcon color="action" />
-            </ListItem>
-          </List>
-        </Paper>
-
-        <SectionTitle color="textPrimary" ref={sections.webCatalogApps.ref}>
-          WebCatalog Apps
+        <SectionTitle color="textPrimary" ref={sections.friendLinks.ref}>
+          {t('Preference.FriendLinks')}
         </SectionTitle>
         <Paper elevation={0}>
           <List disablePadding dense>
             <ListItem button onClick={async () => await window.service.native.open('https://github.com/webcatalog/webcatalog-engine')}>
-              <ListItemText secondary="WebCatalog is the initial code founder of TiddlyGit, we reuse lots of important code from the open-source WebCatalog, many thanks to WebCatalog and its author Quang Lam" />
+              <ListItemText secondary={t('Preference.WebCatalogEngineIntro')} />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
             <ListItem button onClick={async () => await window.service.native.open('https://webcatalogapp.com?utm_source=tiddlygit_app')}>
-              <ListItemText
-                primary={<Logo src={webcatalogLogo} alt="WebCatalog" />}
-                secondary="Magically turn any websites into Mac apps. Work more productively and forget about switching tabs. "
-              />
+              <ListItemText primary={<Logo src={webcatalogLogo} alt={t('Preference.WebCatalog')} />} secondary={t('Preference.WebCatalogIntro')} />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
             <ListItem button onClick={async () => await window.service.native.open('https://translatiumapp.com?utm_source=tiddlygit_app')}>
-              <ListItemText primary={<Logo src={translatiumLogo} alt="Translatium" />} secondary="Translate Any Languages like a Pro" />
+              <ListItemText primary={<Logo src={translatiumLogo} alt={t('Preference.Translatium')} />} secondary={t('Preference.TranslatiumIntro')} />
               <ChevronRightIcon color="action" />
             </ListItem>
           </List>
         </Paper>
 
-        <SectionTitle ref={sections.misc.ref}>Miscellaneous</SectionTitle>
+        <SectionTitle ref={sections.misc.ref}>{t('Preference.Miscellaneous')}</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem button onClick={async () => await window.service.window.open(WindowNames.about)}>
-              <ListItemText primary="About" />
+              <ListItemText primary={t('ContextMenu.About')} />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
             <ListItem button onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/tiddlygit-desktop/')}>
-              <ListItemText primary="Website" />
+              <ListItemText primary={t('Preference.WebSite')} />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
             <ListItem button onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/tiddlygit-desktop/issues')}>
-              <ListItemText primary="Support" />
+              <ListItemText primary={t('Preference.Support')} />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />
             <ListItem button onClick={window.service.native.quit}>
-              <ListItemText primary="Quit" />
+              <ListItemText primary={t('ContextMenu.Quit')} />
               <ChevronRightIcon color="action" />
             </ListItem>
           </List>

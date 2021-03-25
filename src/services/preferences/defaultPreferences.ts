@@ -18,7 +18,7 @@ export const defaultPreferences: IPreferences = {
   pauseNotificationsByScheduleFrom: getDefaultPauseNotificationsByScheduleFrom(),
   pauseNotificationsByScheduleTo: getDefaultPauseNotificationsByScheduleTo(),
   pauseNotificationsMuteAudio: false,
-  rememberLastPageVisited: false,
+  rememberLastPageVisited: true,
   shareWorkspaceBrowsingData: false,
   sidebar: true,
   sidebarShortcutHints: true,
