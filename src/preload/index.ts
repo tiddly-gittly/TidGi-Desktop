@@ -10,6 +10,7 @@ import { WindowNames, IPossibleWindowMeta } from '@services/windows/WindowProper
 import { IServicesWithoutObservables, IServicesWithOnlyObservables } from '@/helpers/electron-ipc-proxy/common';
 import { windowName, browserViewMetaData } from './common/browserViewMetaData';
 import { rendererMenuItemProxy } from '@services/menu/rendererMenuItemProxy';
+import { IOnContextMenuInfo } from '@services/menu/interface';
 
 contextBridge.exposeInMainWorld('service', service);
 
@@ -22,9 +23,9 @@ declare global {
 }
 
 const remoteMethods = {
-  popContextMenu: (menus: MenuItemConstructorOptions[], parameters: ContextMenuParams): (() => void) => {
+  popContextMenu: (menus: MenuItemConstructorOptions[], parameters: IOnContextMenuInfo): (() => void) => {
     const [ipcSafeMenus, unregister] = rendererMenuItemProxy(menus);
-    service.menu.buildContextMenuAndPopup(ipcSafeMenus, parameters, windowName);
+    void service.menu.buildContextMenuAndPopup(ipcSafeMenus, parameters, windowName);
     return unregister;
   },
   getCurrentWindow: async () => {

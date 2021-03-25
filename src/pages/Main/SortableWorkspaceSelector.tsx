@@ -65,7 +65,7 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
           });
         }
 
-        window.remote.popContextMenu(template, { x: event.clientX, y: event.clientY });
+        window.remote.popContextMenu(template, { x: event.clientX, y: event.clientY, editFlags: { canCopy: false } });
       }}>
       <WorkspaceSelector
         active={active}

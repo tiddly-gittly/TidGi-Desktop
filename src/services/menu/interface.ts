@@ -17,6 +17,9 @@ export interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstru
     | Array<MenuItemConstructorOptions | DeferredMenuItemConstructorOptions>;
 }
 
+/**
+ * Basically Partial<ContextMenuParams>, but must fill in xy
+ */
 export interface IOnContextMenuInfo {
   x: number;
   y: number;

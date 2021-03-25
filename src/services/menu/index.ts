@@ -220,22 +220,6 @@ export class MenuService implements IMenuService {
     }
     const contextMenuBuilder = new ContextMenuBuilder(webContents);
     const menu = contextMenuBuilder.buildMenuForElement(info);
-    // eslint-disable-next-line promise/always-return
-    if (info.linkURL !== undefined && info.linkURL.length > 0) {
-      menu.append(new MenuItem({ type: 'separator' }));
-      menu.append(
-        new MenuItem({
-          label: i18next.t('ContextMenu.OpenLinkInNewWindow'),
-          click: () => {
-            ipcMain.emit('set-view-meta-force-new-window', true);
-            window.open(info.linkURL);
-          },
-        }),
-      );
-      menu.append(new MenuItem({ type: 'separator' }));
-    }
-
-    menu.append(new MenuItem({ type: 'separator' }));
     menu.append(
       new MenuItem({
         label: i18next.t('ContextMenu.Back'),

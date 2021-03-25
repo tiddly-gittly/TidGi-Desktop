@@ -30,21 +30,11 @@ export interface IViewMeta {
 /**
  * Bind workspace related event handler to view.webContent
  */
-export default function setupViewEventHandlers(
-  view: BrowserView,
-  browserWindow: BrowserWindow,
-  { workspace, shouldPauseNotifications, sharedWebPreferences }: IViewContext,
-): void {
+export default function setupViewEventHandlers(view: BrowserView, browserWindow: BrowserWindow, { workspace, sharedWebPreferences }: IViewContext): void {
   // metadata and state about current BrowserView
   const viewMeta: IViewMeta = {
     forceNewWindow: false,
   };
-  // listeners to change meta from renderer process and services
-  // if viewMeta.forceNewWindow = true
-  // the next external link request will be opened in new window
-  ipcMain.handle('set-view-meta-force-new-window', (_event, value: boolean) => {
-    viewMeta.forceNewWindow = value;
-  });
 
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
