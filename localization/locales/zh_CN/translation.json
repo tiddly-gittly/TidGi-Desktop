@@ -148,7 +148,8 @@
     "StorageServiceUserInfoNoFoundDetail": "似乎你尚未登录存储备份服务，因此此 Wiki 的同步暂时禁用，直到你登录以提供有可用于同步的登录信息。",
     "Later": "稍后",
     "RestartMessage": "您需要重新启动本程序才能使此更改生效。",
-    "RestartNow": "现在重启"
+    "RestartNow": "现在重启",
+    "MadeWithLove":"<0>有</0><1> ❤ </1><2>的开发者：</2>"
   },
   "Cancel": "取消",
   "Preference": {
@@ -222,7 +223,7 @@
     "SpellCheck": "拼写检查",
     "SpellCheckLanguages": "首选拼写检查语言",
     "Support": "支持",
-    "TiddlyWiki": "微分维基（TiddlyWiki）",
+    "TiddlyWiki": "滴粒维基（TiddlyWiki）",
     "System": "系统",
     "TranslatiumIntro": "像大佬一样翻译任何语言",
     "HowToEnableNotifications": "<0>TiddlyGit支持原生通知功能。但在某些情况下，要接收通知，您需要手动配置一些Web应用设置。</0><1>了解详情</1><2>。</2>",
