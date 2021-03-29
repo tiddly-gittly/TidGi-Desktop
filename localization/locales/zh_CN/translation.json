@@ -100,8 +100,10 @@
     "DisableNotification": "阻止工作区的消息提醒",
     "SelectLocal": "选择本地图片...",
     "ResetDefaultIcon": "还原默认图标",
+    "NoRevert": "注意！这个操作无法撤销！",
     "URL": "本地服务器地址",
-    "Port": "本地服务器端口"
+    "Port": "本地服务器端口",
+    "PathDescription": "本地维基文件夹的地址"
   },
   "Log": {
     "StartGitInitialization": "开始初始化本地Git仓库",

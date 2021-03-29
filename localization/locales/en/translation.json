@@ -100,8 +100,10 @@
     "Hibernate": "Save CPU usage, memory and battery.",
     "SelectLocal": "Select Local Image...",
     "ResetDefaultIcon": "Reset Default Icon",
+    "NoRevert": "Caution! This operation can't be reverted.",
     "URL": "Wiki URL",
-    "Port": "Local host server port"
+    "Port": "Local host server port",
+    "PathDescription": "Location of your local wiki folder."
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed! \nDo you want to remove the workspace?",

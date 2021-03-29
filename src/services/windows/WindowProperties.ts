@@ -43,7 +43,7 @@ export const windowDimension: Record<WindowNames, { width?: number; height?: num
   },
   [WindowNames.editWorkspace]: {
     width: 420,
-    height: 700,
+    height: 600,
   },
   [WindowNames.preferences]: {
     width: 820,
@@ -51,7 +51,7 @@ export const windowDimension: Record<WindowNames, { width?: number; height?: num
   },
   [WindowNames.notifications]: {
     width: 400,
-    height: 565,
+    height: 585,
   },
   [WindowNames.spellcheck]: {
     width: 400,

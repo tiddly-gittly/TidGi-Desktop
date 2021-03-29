@@ -10,6 +10,7 @@ import { AsyncReturnType } from 'type-fest';
 export function usePromiseValue<T, DefaultValueType = T | undefined>(
   asyncValue: () => Promise<T>,
   defaultValue?: AsyncReturnType<typeof asyncValue>,
+  dependency: unknown[] = [],
 ): T | DefaultValueType {
   const [value, valueSetter] = useState<T | DefaultValueType>(defaultValue as T | DefaultValueType);
   // use initial value
@@ -17,7 +18,7 @@ export function usePromiseValue<T, DefaultValueType = T | undefined>(
     void (async () => {
       valueSetter(await asyncValue());
     })();
-  }, []);
+  }, dependency);
 
   return value;
 }
