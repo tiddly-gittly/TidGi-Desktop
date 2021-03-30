@@ -1,5 +1,6 @@
 import React, { useCallback } from 'react';
 import styled, { css } from 'styled-components';
+import { useTranslation } from 'react-i18next';
 import { AsyncReturnType } from 'type-fest';
 import { DndContext } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -146,7 +147,7 @@ const Tip2 = styled.div`
   user-select: none;
 `;
 
-const End = styled.div`
+const SideBarEnd = styled.div`
   display: flex;
   flex-direction: column;
 `;
@@ -166,6 +167,7 @@ const SidebarContainer = ({ children }: { children: React.ReactNode }): JSX.Elem
 };
 
 export default function Main(): JSX.Element {
+  const { t } = useTranslation();
   const workspacesList = useWorkspacesListObservable();
   const [{ attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource }, isFullScreen] = usePromiseValue<[Partial<IPreferences>, boolean | undefined]>(
     async () => await Promise.all([window.service.preference.getPreferences(), window.service.window.isFullScreen()]),
@@ -218,16 +220,14 @@ export default function Main(): JSX.Element {
               )}
               <WorkspaceSelector id="add" onClick={() => void window.service.window.open(WindowNames.addWorkspace)} />
             </SidebarTop>
-            <End>
-              <IconButton aria-label="Notifications" onClick={async () => await window.service.window.open(WindowNames.notifications)}>
+            <SideBarEnd>
+              <IconButton aria-label={t('Preference.Notifications')} onClick={async () => await window.service.window.open(WindowNames.notifications)}>
                 {typeof pauseNotifications === 'string' && pauseNotifications.length > 0 ? <NotificationsPausedIcon /> : <NotificationsIcon />}
               </IconButton>
-              {attachToMenubar === true && (
-                <IconButton aria-label="Preferences" onClick={async () => await window.service.window.open(WindowNames.preferences)}>
-                  <SettingsIcon />
-                </IconButton>
-              )}
-            </End>
+              <IconButton aria-label={t('ContextMenu.Preferences')} onClick={async () => await window.service.window.open(WindowNames.preferences)}>
+                <SettingsIcon />
+              </IconButton>
+            </SideBarEnd>
           </SidebarContainer>
         )}
         <ContentRoot>

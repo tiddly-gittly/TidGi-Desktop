@@ -1,18 +1,21 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null */
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import styled, { css } from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import ButtonRaw from '@material-ui/core/Button';
-import TextFieldRaw from '@material-ui/core/TextField';
-import Divider from '@material-ui/core/Divider';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
-import ListItemSecondaryAction from '@material-ui/core/ListItemSecondaryAction';
-import Switch from '@material-ui/core/Switch';
-import Typography from '@material-ui/core/Typography';
-import Autocomplete from '@material-ui/lab/Autocomplete';
+import {
+  Tooltip,
+  Button as ButtonRaw,
+  TextField as TextFieldRaw,
+  Divider,
+  List as ListRaw,
+  ListItem,
+  ListItemText,
+  ListItemSecondaryAction,
+  Switch,
+  Typography,
+} from '@material-ui/core';
+import { Autocomplete } from '@material-ui/lab';
 import defaultIcon from '../../images/default-icon.png';
 
 import type { ISubWikiPluginContent } from '@services/wiki/update-plugin-content';
@@ -20,11 +23,11 @@ import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
 import { useForm } from './formHook';
+import { IWorkspace } from '@services/workspaces/interface';
 
 const Root = styled.div`
-  background: #fffff0;
-  height: 100vh;
-  width: 100vw;
+  height: 100%;
+  width: 100%;
   padding: 20px;
   display: flex;
   flex-direction: column;
@@ -37,18 +40,19 @@ const Button = styled(ButtonRaw)`
   margin-left: 10px;
 `;
 const TextField = styled(TextFieldRaw)`
-  margin-bottom: 30px;
+  margin-bottom: 10px;
 `;
 TextField.defaultProps = {
   fullWidth: true,
   margin: 'dense',
-  variant: 'outlined',
+  size: 'small',
+  variant: 'filled',
   InputLabelProps: {
     shrink: true,
   },
 };
 const AvatarFlex = styled.div`
-  display: 'flex';
+  display: flex;
 `;
 const AvatarLeft = styled.div`
   padding-top: 10px;
@@ -58,6 +62,10 @@ const AvatarLeft = styled.div`
 `;
 const AvatarRight = styled.div`
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-around;
+  align-items: flex-start;
   padding-top: 10px;
   padding-bottom: 10px;
   padding-left: 10px;
@@ -67,10 +75,9 @@ const AvatarRight = styled.div`
  * border: theme.palette.type === 'dark' ? 'none': '1px solid rgba(0, 0, 0, 0.12)';
  * */
 const Avatar = styled.div<{ transparentBackground?: boolean }>`
-  height: 85;
-  width: 85;
-  background: white;
-  border-radius: 4;
+  height: 85px;
+  width: 85px;
+  border-radius: 4px;
   color: #333;
   font-size: 32px;
   line-height: 64px;
@@ -94,10 +101,8 @@ const AvatarPicture = styled.img`
   height: 100%;
   width: 100%;
 `;
-const ButtonBot = styled(ButtonRaw)`
-  margin-top: 10px;
-`;
-ButtonBot.defaultProps = {
+const PictureButton = styled(ButtonRaw)``;
+PictureButton.defaultProps = {
   variant: 'outlined',
   size: 'small',
 };
@@ -107,6 +112,12 @@ const Caption = styled(Typography)`
 Caption.defaultProps = {
   variant: 'caption',
 };
+const List = styled(ListRaw)`
+  & > li > div {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+`;
 
 const getValidIconPath = (iconPath?: string | null): string => {
   if (typeof iconPath === 'string') {
@@ -116,21 +127,12 @@ const getValidIconPath = (iconPath?: string | null): string => {
 };
 
 const workspaceID = (window.meta as WindowMeta[WindowNames.editWorkspace]).workspaceID as string;
+const wikiPictureExtensions = ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp', 'dib'];
 
 export default function EditWorkspace(): JSX.Element {
   const { t } = useTranslation();
-  const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
-    async () => await window.service.wiki.getSubWikiPluginContent(mainWikiToLink),
-    [],
-  ) as ISubWikiPluginContent[];
   const originalWorkspace = useWorkspaceObservable(workspaceID);
   const [workspace, workspaceSetter, onSave] = useForm(originalWorkspace);
-  if (workspaceID === undefined) {
-    return <Root>Error {workspaceID ?? '-'} not exists</Root>;
-  }
-  if (workspace === undefined) {
-    return <Root>Loading...</Root>;
-  }
   const {
     mainWikiToLink,
     isSubWiki,
@@ -143,13 +145,25 @@ export default function EditWorkspace(): JSX.Element {
     disableAudio,
     disableNotifications,
     homeUrl,
-  } = workspace;
+  } = ((workspace ?? {}) as unknown) as IWorkspace;
+  const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
+    async () => (mainWikiToLink ? await window.service.wiki.getSubWikiPluginContent(mainWikiToLink) : []),
+    [],
+    [mainWikiToLink],
+  ) as ISubWikiPluginContent[];
+  if (workspaceID === undefined) {
+    return <Root>Error {workspaceID ?? '-'} not exists</Root>;
+  }
+  if (workspace === undefined) {
+    return <Root>Loading...</Root>;
+  }
   return (
     <Root>
       <FlexGrow>
         <TextField
           id="outlined-full-width"
           label={t('EditWorkspace.Path')}
+          helperText={t('EditWorkspace.PathDescription')}
           placeholder="Optional"
           value={name}
           onChange={(event) => workspaceSetter({ ...workspace, name: event.target.value })}
@@ -168,13 +182,15 @@ export default function EditWorkspace(): JSX.Element {
             }}
           />
         )}
-        <Autocomplete
-          freeSolo
-          options={fileSystemPaths?.map((fileSystemPath) => fileSystemPath.tagName)}
-          value={tagName}
-          onInputChange={(_, value) => workspaceSetter({ ...workspace, tagName: value })}
-          renderInput={(parameters) => <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
-        />
+        {isSubWiki && (
+          <Autocomplete
+            freeSolo
+            options={fileSystemPaths?.map((fileSystemPath) => fileSystemPath.tagName)}
+            value={tagName}
+            onInputChange={(_, value) => workspaceSetter({ ...workspace, tagName: value })}
+            renderInput={(parameters) => <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
+          />
+        )}
         <AvatarFlex>
           <AvatarLeft>
             <Avatar transparentBackground={transparentBackground}>
@@ -182,24 +198,25 @@ export default function EditWorkspace(): JSX.Element {
             </Avatar>
           </AvatarLeft>
           <AvatarRight>
-            <Button
-              variant="outlined"
-              size="small"
-              onClick={async () => {
-                const filePaths = await window.service.native.pickFile([
-                  { name: 'Images', extensions: ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp', 'dib'] },
-                ]);
-                if (filePaths.length > 0) {
-                  await window.service.workspace.update(workspaceID, { picturePath: filePaths[0] });
-                }
-              }}>
-              {t('EditWorkspace.SelectLocal')}
-            </Button>
-            <Caption>PNG, JPEG, GIF, TIFF or BMP.</Caption>
+            <Tooltip title={wikiPictureExtensions.join(', ')} placement="top">
+              <PictureButton
+                variant="outlined"
+                size="small"
+                onClick={async () => {
+                  const filePaths = await window.service.native.pickFile([{ name: 'Images', extensions: wikiPictureExtensions }]);
+                  if (filePaths.length > 0) {
+                    await window.service.workspace.update(workspaceID, { picturePath: filePaths[0] });
+                  }
+                }}>
+                {t('EditWorkspace.SelectLocal')}
+              </PictureButton>
+            </Tooltip>
 
-            <ButtonBot onClick={() => workspaceSetter({ ...workspace, picturePath: null })} disabled={!picturePath}>
-              {t('EditWorkspace.ResetDefaultIcon')}
-            </ButtonBot>
+            <Tooltip title={t('EditWorkspace.NoRevert') ?? ''} placement="bottom">
+              <PictureButton onClick={() => workspaceSetter({ ...workspace, picturePath: null })} disabled={!picturePath}>
+                {t('EditWorkspace.ResetDefaultIcon')}
+              </PictureButton>
+            </Tooltip>
           </AvatarRight>
         </AvatarFlex>
         {!isSubWiki && (
