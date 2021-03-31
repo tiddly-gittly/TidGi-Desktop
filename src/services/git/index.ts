@@ -11,7 +11,7 @@ import type { IViewService } from '@services/view/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
-import { getModifiedFileList, ModifiedFileList } from './inspect';
+import { getModifiedFileList, ModifiedFileList, getRemoteUrl } from './inspect';
 import { IGitService, IGitUserInfos } from './interface';
 
 @injectable()
@@ -29,7 +29,7 @@ export class Git implements IGitService {
   public debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos) => Promise<void> | undefined;
 
   public async getWorkspacesRemote(wikiFolderPath: string): Promise<string> {
-    return await github.getRemoteUrl(wikiFolderPath);
+    return await getRemoteUrl(wikiFolderPath);
   }
 
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {

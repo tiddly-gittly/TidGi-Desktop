@@ -22,7 +22,7 @@ import type { ISubWikiPluginContent } from '@services/wiki/update-plugin-content
 import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
-import { useForm } from './formHook';
+import { useForm } from './useForm';
 import { IWorkspace } from '@services/workspaces/interface';
 
 const Root = styled.div`

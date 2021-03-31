@@ -16,6 +16,18 @@ export const getGithubToken = async (): Promise<string | undefined> => await win
 export function GithubTokenForm(props: { children?: JSX.Element | Array<JSX.Element | undefined | string> }): JSX.Element {
   const { children } = props;
   const { t } = useTranslation();
+  useEffect(() => {
+    // on startup, loading the cachedGithubToken
+    if (accessToken === undefined && cachedGithubToken !== undefined) {
+      graphqlClient.setHeader('Authorization', `bearer ${cachedGithubToken}`);
+      accessTokenSetter(cachedGithubToken);
+    } else if (accessToken !== undefined && accessToken !== cachedGithubToken) {
+      // if user or login button changed the token, we use latest token
+      Object.keys(graphqlClient.headers).map((key) => graphqlClient.removeHeader(key));
+      accessTokenSetter(accessToken);
+      void setGithubToken(accessToken);
+    }
+  }, [cachedGithubToken, accessToken]);
   const userInfo = useUserInfoObservable();
   if (userInfo === undefined) {
     return <div>Loading...</div>;

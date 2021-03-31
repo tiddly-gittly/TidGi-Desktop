@@ -24,6 +24,7 @@ export interface IGitService {
   getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]>;
   initWikiGit(wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, isMainWiki: boolean): Promise<void>;
   commitAndSync(wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos): Promise<void>;
+  /** Inspect git's remote url from folder's .git config */
   getWorkspacesRemote(wikiFolderPath: string): Promise<string>;
   clone(githubRepoUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void>;
 }

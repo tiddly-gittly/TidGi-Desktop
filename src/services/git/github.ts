@@ -1,20 +1,10 @@
-import { compact, trim } from 'lodash';
+import { trim } from 'lodash';
 import { GitProcess } from 'dugite';
+import { getRemoteUrl } from './inspect';
 
 const getGitUrlWithCredential = (rawUrl: string, username: string, accessToken: string): string =>
   trim(`${rawUrl}.git`.replace(/\n/g, '').replace('https://github.com/', `https://${username}:${accessToken}@github.com/`));
 const getGitUrlWithOutCredential = (urlWithCredential: string): string => trim(urlWithCredential.replace(/.+@/, 'https://'));
-
-export async function getRemoteUrl(wikiFolderPath: string): Promise<string> {
-  const { stdout: remoteStdout } = await GitProcess.exec(['remote'], wikiFolderPath);
-  const remotes = compact(remoteStdout.split('\n'));
-  const githubRemote = remotes.find((remote) => remote === 'origin') ?? remotes[0] ?? '';
-  if (githubRemote.length > 0) {
-    const { stdout: remoteUrlStdout } = await GitProcess.exec(['remote', 'get-url', githubRemote], wikiFolderPath);
-    return remoteUrlStdout.replace('.git', '');
-  }
-  return '';
-}
 
 /**
  *  Add remote with credential

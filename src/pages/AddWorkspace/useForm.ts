@@ -1,0 +1,105 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
+/* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+import { usePromiseValueAndSetter } from '@/helpers/useServiceValue';
+import { SupportedStorageServices } from '@services/types';
+import { ISubWikiPluginContent } from '@services/wiki/update-plugin-content';
+import { useEffect, useState } from 'react';
+
+export function useIsCreateMainWorkspace(): [boolean, React.Dispatch<React.SetStateAction<boolean>>] {
+  const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(false);
+  useEffect(() => {
+    void window.service.workspace.countWorkspaces().then((workspaceCount) => isCreateMainWorkspaceSetter(workspaceCount === 0));
+  }, []);
+  return [isCreateMainWorkspace, isCreateMainWorkspaceSetter];
+}
+
+export function useWikiWorkspaceForm() {
+  const [wikiPort, wikiPortSetter] = useState(5212);
+  useEffect(() => {
+    // only update default port on component mount
+    void window.service.workspace.countWorkspaces().then((workspaceCount) => wikiPortSetter(wikiPort + workspaceCount));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  /**
+   * Set storage service used by this workspace, for example, Github.
+   */
+  const [storageProvider, storageProviderSetter] = useState<SupportedStorageServices>(SupportedStorageServices.github);
+
+  /**
+   *
+   */
+  const [userName, userNameSetter] = usePromiseValueAndSetter(
+    async () => await window.service.auth.get('userName'),
+    async (newUserName) => await window.service.auth.set('userName', newUserName),
+  );
+
+  /**
+   * For sub-wiki, we need to link it to a main wiki's folder, so all wiki contents can be loaded together.
+   */
+  const [mainWikiToLink, mainWikiToLinkSetter] = useState({ name: '', port: 0 });
+  const [tagName, tagNameSetter] = useState<string>('');
+  /**
+   * For sub-wiki, we need `fileSystemPaths` which is a TiddlyWiki concept that tells wiki where to put sub-wiki files.
+   */
+  const [fileSystemPaths, fileSystemPathsSetter] = useState<ISubWikiPluginContent[]>([]);
+  useEffect(() => {
+    void window.service.wiki.getSubWikiPluginContent(mainWikiToLink.name).then(fileSystemPathsSetter);
+  }, [mainWikiToLink]);
+  /**
+   * For importing existed nodejs wiki into TiddlyGit, we use existedWikiFolderPath to determine which folder to import
+   */
+  const [existedWikiFolderPath, existedWikiFolderPathSetter] = useState<string | undefined>();
+  /**
+   * For creating new wiki, we use parentFolderLocation to determine in which folder we create the new wiki folder.
+   * New folder will basically be created in `${parentFolderLocation}/${wikiFolderName}`
+   */
+  const [parentFolderLocation, parentFolderLocationSetter] = useState<string | undefined>();
+  /**
+   * For creating new wiki, we put `tiddlers` folder in this `${parentFolderLocation}/${wikiFolderName}` folder
+   */
+  const [wikiFolderName, wikiFolderNameSetter] = useState('tiddlywiki');
+
+  useEffect(() => {
+    void (async function getDefaultExistedWikiFolderPathEffect() {
+      const desktopPathAsDefaultExistedWikiFolderPath = (await window.service.context.get('DESKTOP_PATH')) as string;
+      existedWikiFolderPathSetter(desktopPathAsDefaultExistedWikiFolderPath);
+      parentFolderLocationSetter(desktopPathAsDefaultExistedWikiFolderPath);
+    })();
+  }, [mainWikiToLink]);
+  const [githubWikiUrl, githubWikiUrlSetter] = useState<string>('');
+
+  useEffect(() => {
+    void (async function getWorkspaceRemoteEffect(): Promise<void> {
+      if (existedWikiFolderPath !== undefined) {
+        const url = await window.service.git.getWorkspacesRemote(existedWikiFolderPath);
+        if (typeof url === 'string' && url.length > 0) {
+          githubWikiUrlSetter(url);
+        }
+      }
+    })();
+  }, [githubWikiUrlSetter, existedWikiFolderPath]);
+
+  return {
+    storageProvider,
+    storageProviderSetter,
+    wikiPort,
+    wikiPortSetter,
+    userName,
+    userNameSetter,
+    mainWikiToLink,
+    mainWikiToLinkSetter,
+    tagName,
+    tagNameSetter,
+    fileSystemPaths,
+    fileSystemPathsSetter,
+    githubWikiUrl,
+    githubWikiUrlSetter,
+    existedWikiFolderPath,
+    existedWikiFolderPathSetter,
+    parentFolderLocation,
+    parentFolderLocationSetter,
+    wikiFolderName,
+    wikiFolderNameSetter,
+  };
+}

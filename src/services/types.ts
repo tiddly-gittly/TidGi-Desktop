@@ -3,13 +3,14 @@ export interface IService {
 }
 
 export enum SupportedStorageServices {
+  local = 'local',
   /** High availability git service without storage limit, but is blocked by GFW in China somehow */
-  github,
+  github = 'github',
   /** SocialLinkedData, a privacy first DApp platform leading by Tim Berners-Lee, you can run a server by you own  */
-  solid,
+  solid = 'solid',
   /** China's Collaboration platform for software development & code hosting,
    * with some official background, very secure in China, but have 500M storage limit */
-  gitee,
+  gitee = 'gitee',
 }
 
 export interface IAuthingResponse {

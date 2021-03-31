@@ -39,7 +39,7 @@ interface StateProps {
 
 type Props = OwnProps & DispatchProps & StateProps;
 
-function CloneWikiDoneButton({
+export function CloneWikiDoneButton({
   isCreateMainWorkspace,
   wikiPort,
   mainWikiToLink,
