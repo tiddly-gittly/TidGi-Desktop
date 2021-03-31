@@ -1,16 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import styled from 'styled-components';
 import { GraphQLClient, ClientContext } from 'graphql-hooks';
 
 import { GITHUB_GRAPHQL_API } from '../../constants/auth';
 
-import Description from './description-and-mode-switch';
+import { Description } from './Description';
 
-import NewWikiDoneButton from './new-wiki-done-button';
-import NewWikiPathForm from './new-wiki-path-form';
-import ExistedWikiPathForm from './existed-wiki-path-form';
-import ExistedWikiDoneButton from './existed-wiki-done-button';
-import CloneWikiDoneButton from './clone-wiki-done-button';
+import { NewWikiForm } from './NewWikiForm';
+import { NewWikiDoneButton } from './NewWikiDoneButton';
+import { ExistedWikiForm } from './ExistedWikiForm';
+import { ExistedWikiDoneButton } from './ExistedWikiDoneButton';
+import { CloneWikiDoneButton } from './CloneWikiDoneButton';
 
 import { TabBar, CreateWorkspaceTabs } from './TabBar';
 import { useIsCreateMainWorkspace, useWikiWorkspaceForm } from './useForm';
@@ -41,7 +41,7 @@ export default function AddWorkspace(): JSX.Element {
 
       {currentTab === 'CreateNewWiki' && (
         <Container>
-          <NewWikiPathForm form={form} />
+          <NewWikiForm form={form} />
 
           <NewWikiDoneButton form={form} />
         </Container>

@@ -13,6 +13,10 @@ export function useIsCreateMainWorkspace(): [boolean, React.Dispatch<React.SetSt
   return [isCreateMainWorkspace, isCreateMainWorkspaceSetter];
 }
 
+export type IWikiWorkspaceForm = ReturnType<typeof useWikiWorkspaceForm>;
+export interface IWikiWorkspaceFormProps {
+  form: IWikiWorkspaceForm;
+}
 export function useWikiWorkspaceForm() {
   const [wikiPort, wikiPortSetter] = useState(5212);
   useEffect(() => {

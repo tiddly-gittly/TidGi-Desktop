@@ -1,19 +1,10 @@
-import type { ComponentType } from 'react';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, ComponentType } from 'react';
 import styled from 'styled-components';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
 import { useTranslation } from 'react-i18next';
-import Paper from '@material-ui/core/Paper';
-import Typography from '@material-ui/core/Typography';
-import Button from '@material-ui/core/Button';
-import TextField from '@material-ui/core/TextField';
-import InputLabel from '@material-ui/core/InputLabel';
-import FormHelperText from '@material-ui/core/FormHelperText';
-import Select from '@material-ui/core/Select';
-import MenuItem from '@material-ui/core/MenuItem';
-import FolderIcon from '@material-ui/icons/Folder';
-import Autocomplete from '@material-ui/lab/Autocomplete';
+import { Paper, Typography, Button, TextField, InputLabel, FormHelperText, Select, MenuItem, Autocomplete } from '@material-ui/core';
+import { Folder as FolderIcon } from '@material-ui/icons';
+import type { IWikiWorkspaceFormProps } from './useForm';
+
 const CreateContainer: ComponentType<{}> = styled(Paper)`
   margin-top: 5px;
 `;
@@ -32,52 +23,8 @@ const SoftLinkToMainWikiSelect = styled(Select)`
 const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
   margin-top: 5px;
 `;
-interface OwnProps {
-  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
-  parentFolderLocationSetter: (string) => void;
-  wikiFolderName: string;
-  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
-  wikiFolderNameSetter: (string) => void;
-  tagName: string;
-  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
-  tagNameSetter: (string) => void;
-  mainWikiToLink: Object;
-  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
-  mainWikiToLinkSetter: (Object) => void;
-  parentFolderLocation: string;
-  wikiPort: number;
-  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
-  wikiPortSetter: (number) => void;
-  fileSystemPaths: Array<{
-    tagName: string;
-    folderName: string;
-  }>;
-  isCreateMainWorkspace: boolean;
-}
-interface DispatchProps {
-  // @ts-expect-error ts-migrate(7051) FIXME: Parameter has a name but no type. Did you mean 'ar... Remove this comment to see the full error message
-  setWikiCreationMessage: (string) => void;
-}
-interface StateProps {
-  wikiCreationMessage: string;
-}
-type Props = OwnProps & DispatchProps & StateProps;
-function NewWikiPathForm({
-  setWikiCreationMessage,
-  wikiCreationMessage = '',
-  parentFolderLocation,
-  parentFolderLocationSetter,
-  tagName,
-  tagNameSetter,
-  wikiFolderName,
-  wikiFolderNameSetter,
-  mainWikiToLink,
-  mainWikiToLinkSetter,
-  wikiPort,
-  wikiPortSetter,
-  fileSystemPaths,
-  isCreateMainWorkspace,
-}: Props) {
+
+export function NewWikiForm({ form }: IWikiWorkspaceFormProps): JSX.Element {
   const [workspaces, workspacesSetter] = useState({});
   useEffect(() => {
     void (async () => {
@@ -87,7 +34,6 @@ function NewWikiPathForm({
   const hasError = wikiCreationMessage.startsWith('Error');
   const { t } = useTranslation();
   return (
-    // @ts-expect-error ts-migrate(2322) FIXME: Type '{ children: (false | Element)[]; elevation: ... Remove this comment to see the full error message
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
         <LocationPickerInput
@@ -154,9 +100,7 @@ function NewWikiPathForm({
             value={mainWikiToLink}
             onChange={(event) => mainWikiToLinkSetter(event.target.value)}>
             {Object.keys(workspaces).map((workspaceID) => (
-              // @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message
               <MenuItem key={workspaceID} value={workspaces[workspaceID]}>
-                {/* @ts-expect-error ts-migrate(7053) FIXME: Element implicitly has an 'any' type because expre... Remove this comment to see the full error message */}
                 {workspaces[workspaceID].name}
               </MenuItem>
             ))}
@@ -183,14 +127,3 @@ function NewWikiPathForm({
     </CreateContainer>
   );
 }
-// @ts-expect-error ts-migrate(2558) FIXME: Expected 5 type arguments, but got 6.
-export default connect<Props, OwnProps, _, _, _, _>(
-  (
-    state: any,
-  ): {
-    wikiCreationMessage: string;
-  } => ({
-    wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
-  }),
-  (dispatch) => bindActionCreators(actions, dispatch),
-)(NewWikiPathForm);

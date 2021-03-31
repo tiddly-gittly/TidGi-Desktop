@@ -1,63 +1,21 @@
 import React from 'react';
 import styled from 'styled-components';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
 import { Trans, useTranslation } from 'react-i18next';
 
-import Typography from '@material-ui/core/Typography';
-import Button from '@material-ui/core/Button';
-import LinearProgress from '@material-ui/core/LinearProgress';
-import Snackbar from '@material-ui/core/Snackbar';
+import { Typography, Button, LinearProgress, Snackbar } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 
-import type { IAuthingUserInfo } from '@services/types';
-
 import useWikiCreationMessage from './use-wiki-creation-message';
+import type { IWikiWorkspaceFormProps } from './useForm';
 
 const CloseButton = styled(Button)`
   white-space: nowrap;
   width: 100%;
 `;
 
-interface OwnProps {
-  isCreateMainWorkspace: boolean;
-  wikiPort: number;
-  mainWikiToLink: { name: string; port: number };
-  githubWikiUrl: string;
-  wikiFolderName: string;
-  parentFolderLocation: string;
-  tagName: string;
-  userInfo: IAuthingUserInfo;
-}
-interface DispatchProps {
-  updateForm: (Object) => void;
-  setWikiCreationMessage: (string) => void;
-  save: () => void;
-}
-
-interface StateProps {
-  wikiCreationMessage: string;
-}
-
-type Props = OwnProps & DispatchProps & StateProps;
-
-function NewWikiDoneButton({
-  isCreateMainWorkspace,
-  wikiPort,
-  mainWikiToLink,
-  githubWikiUrl,
-  wikiFolderName,
-  parentFolderLocation,
-  updateForm,
-  setWikiCreationMessage,
-  wikiCreationMessage,
-  tagName,
-  save,
-  userInfo,
-}: Props): JSX.Element {
+export function NewWikiDoneButton({ form }: IWikiWorkspaceFormProps): JSX.Element {
   const wikiFolderLocation = `${parentFolderLocation}/${wikiFolderName}`;
 
-  const port = isCreateMainWorkspace ? wikiPort : mainWikiToLink.port;
   const workspaceFormData = {
     name: wikiFolderLocation,
     isSubWiki: !isCreateMainWorkspace,
@@ -186,9 +144,3 @@ function NewWikiDoneButton({
     </>
   );
 }
-
-const mapStateToProps = (state: any) => ({
-  wikiCreationMessage: state.dialogAddWorkspace.wikiCreationMessage,
-});
-
-export default connect<Props, OwnProps, _, _, _, _>(mapStateToProps, (dispatch) => bindActionCreators(actions, dispatch))(NewWikiDoneButton);
