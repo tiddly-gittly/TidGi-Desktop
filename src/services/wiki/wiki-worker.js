@@ -1,5 +1,4 @@
 const { workerData, parentPort, isMainThread } = require('worker_threads');
-// @ts-expect-error ts-migrate(2451) FIXME: Cannot redeclare block-scoped variable 'path'.
 const path = require('path');
 const $tw = require('@tiddlygit/tiddlywiki').TiddlyWiki();
 

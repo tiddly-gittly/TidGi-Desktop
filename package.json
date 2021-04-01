@@ -87,7 +87,7 @@
     "@dnd-kit/utilities": "^1.0.2",
     "@material-ui/styled-engine-sc": "^5.0.0-alpha.25",
     "@rematch/core": "^2.0.1",
-    "@tiddlygit/tiddlywiki": "5.1.24-prerelease.20210103",
+    "@tiddlygit/tiddlywiki": "^5.1.24-prerelease.20210331",
     "beautiful-react-hooks": "^0.31.1",
     "bluebird": "^3.7.2",
     "chokidar": "^3.5.1",
