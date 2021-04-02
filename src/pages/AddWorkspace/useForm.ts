@@ -1,9 +1,12 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+
 import { usePromiseValueAndSetter } from '@/helpers/useServiceValue';
+import { useStorageServiceUserInfo } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
 import { ISubWikiPluginContent } from '@services/wiki/update-plugin-content';
-import { useEffect, useState } from 'react';
 
 export function useIsCreateMainWorkspace(): [boolean, React.Dispatch<React.SetStateAction<boolean>>] {
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(false);
@@ -18,6 +21,8 @@ export interface IWikiWorkspaceFormProps {
   form: IWikiWorkspaceForm;
 }
 export function useWikiWorkspaceForm() {
+  const { t } = useTranslation();
+
   const [wikiPort, wikiPortSetter] = useState(5212);
   useEffect(() => {
     // only update default port on component mount
@@ -29,6 +34,7 @@ export function useWikiWorkspaceForm() {
    * Set storage service used by this workspace, for example, Github.
    */
   const [storageProvider, storageProviderSetter] = useState<SupportedStorageServices>(SupportedStorageServices.github);
+  const gitUserInfo = useStorageServiceUserInfo(storageProvider);
 
   /**
    *
@@ -71,18 +77,21 @@ export function useWikiWorkspaceForm() {
       parentFolderLocationSetter(desktopPathAsDefaultExistedWikiFolderPath);
     })();
   }, [mainWikiToLink]);
-  const [githubWikiUrl, githubWikiUrlSetter] = useState<string>('');
+  const [gitRepoUrl, gitRepoUrlSetter] = useState<string>('');
 
   useEffect(() => {
     void (async function getWorkspaceRemoteEffect(): Promise<void> {
       if (existedWikiFolderPath !== undefined) {
         const url = await window.service.git.getWorkspacesRemote(existedWikiFolderPath);
         if (typeof url === 'string' && url.length > 0) {
-          githubWikiUrlSetter(url);
+          gitRepoUrlSetter(url);
         }
       }
     })();
-  }, [githubWikiUrlSetter, existedWikiFolderPath]);
+  }, [gitRepoUrlSetter, existedWikiFolderPath]);
+
+  // derived values
+  const wikiFolderLocation = `${parentFolderLocation ?? t('Error') ?? 'Error'}/${wikiFolderName}`;
 
   return {
     storageProvider,
@@ -97,13 +106,15 @@ export function useWikiWorkspaceForm() {
     tagNameSetter,
     fileSystemPaths,
     fileSystemPathsSetter,
-    githubWikiUrl,
-    githubWikiUrlSetter,
+    gitRepoUrl,
+    gitRepoUrlSetter,
     existedWikiFolderPath,
     existedWikiFolderPathSetter,
     parentFolderLocation,
     parentFolderLocationSetter,
     wikiFolderName,
     wikiFolderNameSetter,
+    gitUserInfo,
+    wikiFolderLocation,
   };
 }

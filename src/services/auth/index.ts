@@ -33,11 +33,11 @@ export class Authentication implements IAuthenticationService {
 
   public getStorageServiceUserInfo(serviceName: SupportedStorageServices): IGitUserInfos | undefined {
     switch (serviceName) {
-      case SupportedStorageServices.github:
+      case SupportedStorageServices.github: {
         const gitUserName = this.get('github-userName');
         const email = this.get('email');
         const accessToken = this.get('github-token');
-        if (gitUserName && email && accessToken) {
+        if (gitUserName !== undefined && email !== undefined && accessToken !== undefined) {
           return {
             gitUserName,
             email,
@@ -46,6 +46,7 @@ export class Authentication implements IAuthenticationService {
         }
 
         break;
+      }
 
       default:
         break;

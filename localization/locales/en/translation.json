@@ -36,10 +36,11 @@
     "Paste": "Paste"
   },
   "AddWorkspace": {
-    "NewWikiDoneButton": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>As new Wiki folder</1>",
-    "NewSubWikiDoneButton": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>As new Wiki folder</1><2>, and link to main Wiki</2>",
-    "CloneWikiDoneButton": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>As cloned Wiki folder</1>",
-    "CloneSubWikiDoneButton": "<0><0>Use</0><1>{{wikiFolderLocation}}</1></0><1>As cloned Wiki folder</1><2>, and link to main Wiki</2>",
+    "NotFilled": "Not Filled",
+    "GitRepoUrl": "Git repo online url",
+    "AndLinkToMainWorkspace": "and link to main Wiki",
+    "CreateWiki": "Create WIKI",
+    "CloneWiki": "Clone Wiki",
     "LoginGithubAccount": "Login Github Account",
     "LogoutGithubAccount": "Log out of Github account",
     "MainWorkspaceDescription": "Contains TiddlyWiki's configuration files and public content when published as a blog.",
@@ -233,6 +234,7 @@
     "HowToEnableNotifications": "<0>TiddlyGit supports notifications out of the box. But for some cases, to receive notifications, you will need to manually configure additional web app settings.</0><1>Learn more</1><2>.</2>",
     "IgnoreCertificateErrorsDescription": "<0>Not recommended. </0><1>Learn more</1>."
   },
+  "Error": "Error",
   "Loading": "Loading",
   "Yes": "Yes",
   "No": "No",

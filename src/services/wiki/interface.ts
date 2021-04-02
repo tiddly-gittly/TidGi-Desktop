@@ -21,13 +21,13 @@ export interface IWikiService {
   createSubWiki(newFolderPath: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
-  cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: string, userInfo: IGitUserInfos): Promise<void>;
+  cloneWiki(parentFolderLocation: string, wikiFolderName: string, gitRepoUrl: string, gitUserInfo: IGitUserInfos): Promise<void>;
   cloneSubWiki(
     parentFolderLocation: string,
     wikiFolderName: string,
     mainWikiPath: string,
-    githubWikiUrl: string,
-    userInfo: IGitUserInfos,
+    gitRepoUrl: string,
+    gitUserInfo: IGitUserInfos,
     tagName?: string,
   ): Promise<void>;
   wikiStartup(workspace: IWorkspace): Promise<void>;

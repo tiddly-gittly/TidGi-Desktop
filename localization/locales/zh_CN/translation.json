@@ -36,16 +36,17 @@
     "SearchWithGoogle": "用 Google 搜索"
   },
   "AddWorkspace": {
-    "NewWikiDoneButton": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>创建WIKI</1>",
-    "NewSubWikiDoneButton": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>创建WIKI</1><2>并链接到主知识库</2>",
-    "CloneWikiDoneButton": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>克隆Wiki</1>",
-    "CloneSubWikiDoneButton": "<0><0>在</0><1>{{wikiFolderLocation}}</1></0><1>克隆Wiki</1><2>并链接到主知识库</2>",
+    "NotFilled": "未填",
+    "AndLinkToMainWorkspace": "并链接到主知识库",
+    "CreateWiki": "创建WIKI",
+    "CloneWiki": "克隆Wiki",
     "MainWorkspaceDescription": "包含了TiddlyWiki的配置文件，以及发布为博客时的公开内容。",
     "SubWorkspaceDescription": "必须依附于一个主知识库，可用于存放私有内容，同步到一个私有的Github仓库内，仅本人可读写。子知识库通过创建一个到主知识库的软链接（快捷方式）来生效，创建链接后主知识库内便可看到子知识库内的内容了。",
     "NotLoggedIn": "未登录",
     "LogoutGithubAccount": "登出Github账号",
     "LoginGithubAccount": "登录Github账号",
     "GitToken": "Git Token",
+    "GitRepoUrl": "Git仓库线上网址",
     "GitTokenDescription": "用于登录Git的凭证，一定时间后会过期",
     "SwitchCreateNewOrOpenExisted": "切换创建新的还是打开现有的WIKI",
     "CreateNewWiki": "创建新WIKI",
@@ -151,7 +152,7 @@
     "Later": "稍后",
     "RestartMessage": "您需要重新启动本程序才能使此更改生效。",
     "RestartNow": "现在重启",
-    "MadeWithLove":"<0>有</0><1> ❤ </1><2>的开发者：</2>"
+    "MadeWithLove": "<0>有</0><1> ❤ </1><2>的开发者：</2>"
   },
   "Cancel": "取消",
   "Preference": {
@@ -233,6 +234,7 @@
     "SwipeWithThreeFingersToNavigateDescription": "使用3个指手势在页面之间导航。向左轻扫可返回，向右轻扫可前进。<br/>要启用它，还需要更改<3>macOS首选项 → 触控板 → 更多手势 → 在页面间轻扫</3>到<5>用三个手指轻扫</5>或<7>用两个或三个手指轻扫。</7>",
     "TestNotificationDescription": "<0>如果通知未显示，请确保在<1>macOS首选项 → 通知 → TiddlyGit中启用通知</1></0>"
   },
+  "Error": "错误",
   "Loading": "加载中",
   "Yes": "是的",
   "No": "不了"

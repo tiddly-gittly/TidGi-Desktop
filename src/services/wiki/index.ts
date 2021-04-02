@@ -280,7 +280,7 @@ export class Wiki implements IWikiService {
     }
   }
 
-  public async cloneWiki(parentFolderLocation: string, wikiFolderName: string, githubWikiUrl: string, userInfo: IGitUserInfos): Promise<void> {
+  public async cloneWiki(parentFolderLocation: string, wikiFolderName: string, gitRepoUrl: string, gitUserInfo: IGitUserInfos): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCloningWiki'));
     const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
     if (!(await fs.pathExists(parentFolderLocation))) {
@@ -294,15 +294,15 @@ export class Wiki implements IWikiService {
     } catch {
       throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
     }
-    await this.gitService.clone(githubWikiUrl, path.join(parentFolderLocation, wikiFolderName), userInfo);
+    await this.gitService.clone(gitRepoUrl, path.join(parentFolderLocation, wikiFolderName), gitUserInfo);
   }
 
   public async cloneSubWiki(
     parentFolderLocation: string,
     wikiFolderName: string,
     mainWikiPath: string,
-    githubWikiUrl: string,
-    userInfo: IGitUserInfos,
+    gitRepoUrl: string,
+    gitUserInfo: IGitUserInfos,
     tagName = '',
   ): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCloningSubWiki'));
