@@ -1,144 +1,56 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React from 'react';
 import styled from 'styled-components';
-import { Trans, useTranslation } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 
 import { Typography, Button, LinearProgress, Snackbar } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 
-import useWikiCreationMessage from './use-wiki-creation-message';
 import type { IWikiWorkspaceFormProps } from './useForm';
+import { useNewWiki } from './useNewWiki';
+import { useWikiCreationProgress } from './useIndicator';
 
 const CloseButton = styled(Button)`
   white-space: nowrap;
   width: 100%;
 `;
 
-export function NewWikiDoneButton({ form }: IWikiWorkspaceFormProps): JSX.Element {
-  const wikiFolderLocation = `${parentFolderLocation}/${wikiFolderName}`;
-
-  const workspaceFormData = {
-    name: wikiFolderLocation,
-    isSubWiki: !isCreateMainWorkspace,
-    mainWikiToLink: mainWikiToLink.name,
-    port,
-    homeUrl: `http://localhost:${port}/`,
-    gitUrl: githubWikiUrl, // don't need .git suffix
-    userInfo,
-    tagName: isCreateMainWorkspace ? undefined : tagName,
-  };
-
-  const [snackBarOpen, progressBarOpen, snackBarOpenSetter] = useWikiCreationMessage(wikiCreationMessage);
+export function NewWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
+  const [onSubmit, wikiCreationMessage, hasError] = useNewWiki(isCreateMainWorkspace, form);
+  const [logPanelOpened, logPanelSetter, progressBarOpen] = useWikiCreationProgress(wikiCreationMessage, hasError);
   return (
     <>
       {progressBarOpen && <LinearProgress color="secondary" />}
-      <Snackbar open={snackBarOpen} autoHideDuration={5000} onClose={() => snackBarOpenSetter(false)}>
+      <Snackbar open={logPanelOpened} autoHideDuration={5000} onClose={() => logPanelSetter(false)}>
         <Alert severity="info">{wikiCreationMessage}</Alert>
       </Snackbar>
 
-      {isCreateMainWorkspace && (!githubWikiUrl || !userInfo) && (
+      {(!form.gitRepoUrl || !form.gitUserInfo?.accessToken) && (
         <Typography variant="body1" display="inline">
           {t('AddWorkspace.NoGitInfoAlert')}
         </Typography>
       )}
       {isCreateMainWorkspace ? (
-        <CloseButton
-          variant="contained"
-          color="secondary"
-          disabled={!parentFolderLocation || progressBarOpen}
-          onClick={async () => {
-            updateForm(workspaceFormData);
-            setWikiCreationMessage(t('AddWorkspace.Processing'));
-            let creationError: string | undefined;
-            try {
-              await window.service.wiki.copyWikiTemplate(parentFolderLocation, wikiFolderName);
-            } catch (error) {
-              console.info(error);
-              creationError = String(error);
-            }
-            if (creationError === undefined) {
-              try {
-                await window.service.wikiGitWorkspace.initWikiGitTransaction(wikiFolderLocation, githubWikiUrl, userInfo, true);
-              } catch (error) {
-                console.info(error);
-                creationError = String(error);
-              }
-            }
-            if (creationError !== undefined) {
-              setWikiCreationMessage(creationError);
-            } else {
-              save();
-            }
-          }}>
-          <Trans t={t} i18nKey="AddWorkspace.NewWikiDoneButton" wikiFolderLocation={wikiFolderLocation}>
-            {parentFolderLocation && (
-              <>
-                <Typography variant="body1" display="inline">
-                  Use
-                </Typography>
-                <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-                  {{ wikiFolderLocation }}
-                </Typography>
-              </>
-            )}
-            <Typography variant="body1" display="inline">
-              as Wiki folder
-            </Typography>
-          </Trans>
+        <CloseButton variant="contained" color="secondary" disabled={!hasError} onClick={onSubmit}>
+          <Typography variant="body1" display="inline">
+            {t('AddWorkspace.CreateWiki')}
+          </Typography>
+          <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
+            {form.wikiFolderLocation}
+          </Typography>
         </CloseButton>
       ) : (
-        <CloseButton
-          variant="contained"
-          color="secondary"
-          disabled={!parentFolderLocation || !mainWikiToLink.name || !githubWikiUrl || progressBarOpen || !userInfo}
-          onClick={async () => {
-            if (!userInfo) return;
-            setWikiCreationMessage(t('AddWorkspace.Processing'));
-            updateForm(workspaceFormData);
-            let creationError: string | undefined;
-            try {
-              await window.service.wiki.createSubWiki(parentFolderLocation, wikiFolderName, mainWikiToLink.name, tagName);
-            } catch (error) {
-              console.info(error);
-              creationError = String(error);
-            }
-            if (creationError === undefined) {
-              try {
-                await window.service.wikiGitWorkspace.initWikiGitTransaction(wikiFolderLocation, githubWikiUrl, userInfo, false);
-              } catch (error) {
-                console.info(error);
-                creationError = String(error);
-              }
-            }
-            if (creationError !== undefined) {
-              setWikiCreationMessage(creationError);
-            } else {
-              save();
-            }
-          }}>
-          <Trans t={t} i18nKey="AddWorkspace.NewSubWikiDoneButton" wikiFolderLocation={wikiFolderLocation}>
-            {parentFolderLocation && (
-              <>
-                <Typography variant="body1" display="inline">
-                  Use
-                </Typography>
-                <Typography
-                  variant="body2"
-                  noWrap
-                  display="inline"
-                  align="center"
-                  style={{ direction: 'rtl', textTransform: 'none', marginLeft: 5, marginRight: 5 }}>
-                  {{ wikiFolderLocation }}
-                </Typography>
-              </>
-            )}
-            <Typography variant="body1" display="inline">
-              as Wiki folder
-            </Typography>
-            <Typography variant="body1" display="inline">
-              and link to main Workspace
-            </Typography>
-          </Trans>
+        <CloseButton variant="contained" color="secondary" disabled={!hasError} onClick={onSubmit}>
+          <Typography variant="body1" display="inline">
+            {t('AddWorkspace.CreateWiki')}
+          </Typography>
+          <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none', marginLeft: 5, marginRight: 5 }}>
+            {form.wikiFolderLocation}
+          </Typography>
+          <Typography variant="body1" display="inline">
+            {t('AddWorkspace.AndLinkToMainWorkspace')}
+          </Typography>
         </CloseButton>
       )}
     </>

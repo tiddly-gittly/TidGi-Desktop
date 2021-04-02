@@ -25,13 +25,9 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
 `;
 
 export function NewWikiForm({ form }: IWikiWorkspaceFormProps): JSX.Element {
-  const [workspaces, workspacesSetter] = useState({});
-  useEffect(() => {
-    void (async () => {
-      workspacesSetter(await window.service.workspace.getWorkspaces());
-    })();
-  }, []);
-  const hasError = wikiCreationMessage.startsWith('Error');
+  const { t } = useTranslation();
+  const [onSubmit, wikiCreationMessage, hasError] = useCloneWiki(isCreateMainWorkspace, form);
+
   const { t } = useTranslation();
   return (
     <CreateContainer elevation={2} square>

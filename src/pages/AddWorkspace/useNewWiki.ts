@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { IWikiWorkspaceForm } from './useForm';
 
-export function useCloneWiki(isCreateMainWorkspace: boolean, form: IWikiWorkspaceForm): [() => void, string | undefined, boolean] {
+export function useNewWiki(isCreateMainWorkspace: boolean, form: IWikiWorkspaceForm): [() => void, string | undefined, boolean] {
   const { t } = useTranslation();
   const [wikiCreationMessage, wikiCreationMessageSetter] = useState<string | undefined>();
   const [hasError, hasErrorSetter] = useState<boolean>(false);
@@ -33,23 +33,29 @@ export function useCloneWiki(isCreateMainWorkspace: boolean, form: IWikiWorkspac
 
   const onSubmit = useCallback(async () => {
     if (!form.parentFolderLocation || !form.wikiFolderName || !form.gitRepoUrl || !form.gitUserInfo) return;
+    wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     try {
       if (isCreateMainWorkspace) {
-        await window.service.wiki.cloneWiki(form.parentFolderLocation, form.wikiFolderName, form.gitRepoUrl, form.gitUserInfo);
+        await window.service.wiki.copyWikiTemplate(form.parentFolderLocation, form.wikiFolderName);
+        await window.service.wikiGitWorkspace.initWikiGitTransaction(form.wikiFolderLocation, form.gitRepoUrl, form.gitUserInfo, true);
       } else {
-        await window.service.wiki.cloneSubWiki(
-          form.parentFolderLocation,
-          form.wikiFolderName,
-          form.mainWikiToLink.name,
-          form.gitRepoUrl,
-          form.gitUserInfo,
-          form.tagName,
-        );
+        await window.service.wiki.createSubWiki(form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink?.name, form.tagName);
+        await window.service.wikiGitWorkspace.initWikiGitTransaction(form.wikiFolderLocation, form.gitRepoUrl, form.gitUserInfo, false);
       }
     } catch (error) {
       wikiCreationMessageSetter(String(error));
     }
-  }, [isCreateMainWorkspace, form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink.name, form.gitRepoUrl, form.gitUserInfo, form.tagName]);
+  }, [
+    t,
+    isCreateMainWorkspace,
+    form.parentFolderLocation,
+    form.wikiFolderName,
+    form.gitRepoUrl,
+    form.gitUserInfo,
+    form.wikiFolderLocation,
+    form.mainWikiToLink?.name,
+    form.tagName,
+  ]);
 
   return [onSubmit, wikiCreationMessage, hasError];
 }

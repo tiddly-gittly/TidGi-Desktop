@@ -4,17 +4,16 @@ import { injectable } from 'inversify';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
-import type { IGitService } from '@services/git/interface';
+import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IAuthenticationService } from '@services/auth/interface';
-import { lazyInject } from '@services/container'
+import { lazyInject } from '@services/container';
 
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
-import { IAuthingUserInfo } from '@services/types';
 import { IWikiGitWorkspaceService } from './interface';
 import { IMenuService } from '@services/menu/interface';
 
@@ -28,7 +27,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
 
-  public initWikiGitTransaction = async (wikiFolderPath: string, githubRepoUrl: string, userInfo: IAuthingUserInfo, isMainWiki: boolean): Promise<void> => {
+  public initWikiGitTransaction = async (wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, isMainWiki: boolean): Promise<void> => {
     try {
       await this.gitService.initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
     } catch (error) {

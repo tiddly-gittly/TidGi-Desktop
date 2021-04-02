@@ -87,7 +87,7 @@
     "AddFileSystemPath": "正在为子Wiki添加FileSystemPaths",
     "TagName": "标签名",
     "TagNameHelp": "加上此标签的笔记将会自动被放入这个子知识库内（可先不填，之后右键点击这个工作区的图标选择编辑工作区修改）",
-    "NoGitInfoAlert": "你未选择在线Git仓库地址，或未成功登录Github账号（可能被墙）。点击创建按钮将创建一个不会自动同步到Github的本地仓库，请注意。"
+    "NoGitInfoAlert": "你未选择在线Git仓库地址，或未成功登录在线Git存储服务账号（可能被墙）。点击创建按钮将创建一个不会自动同步到Github的本地仓库，请注意。"
   },
   "EditWorkspace": {
     "Path": "Wiki的位置",

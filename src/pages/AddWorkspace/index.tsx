@@ -42,7 +42,7 @@ export default function AddWorkspace(): JSX.Element {
       {currentTab === 'CreateNewWiki' && (
         <Container>
           <NewWikiForm form={form} />
-          <NewWikiDoneButton form={form} />
+          <NewWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
         </Container>
       )}
       {currentTab === 'OpenLocalWiki' && (

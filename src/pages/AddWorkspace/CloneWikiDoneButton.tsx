@@ -29,29 +29,21 @@ export function CloneWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorksp
 
       {isCreateMainWorkspace ? (
         <CloseButton variant="contained" color="secondary" disabled={!hasError} onClick={onSubmit}>
-          {form.parentFolderLocation && (
-            <>
-              <Typography variant="body1" display="inline">
-                {t('AddWorkspace.CloneWiki')}
-              </Typography>
-              <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-                {form.wikiFolderLocation}
-              </Typography>
-            </>
-          )}
+          <Typography variant="body1" display="inline">
+            {t('AddWorkspace.CloneWiki')}
+          </Typography>
+          <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
+            {form.wikiFolderLocation}
+          </Typography>
         </CloseButton>
       ) : (
         <CloseButton variant="contained" color="secondary" disabled={!hasError} onClick={onSubmit}>
-          {form.parentFolderLocation && (
-            <>
-              <Typography variant="body1" display="inline">
-                {t('AddWorkspace.CloneWiki')}
-              </Typography>
-              <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-                {form.wikiFolderLocation}
-              </Typography>
-            </>
-          )}
+          <Typography variant="body1" display="inline">
+            {t('AddWorkspace.CloneWiki')}
+          </Typography>
+          <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
+            {form.wikiFolderLocation}
+          </Typography>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.AndLinkToMainWorkspace')}
           </Typography>
