@@ -28,7 +28,7 @@ export function CloneWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorksp
       </Snackbar>
 
       {isCreateMainWorkspace ? (
-        <CloseButton variant="contained" color="secondary" disabled={!hasError} onClick={onSubmit}>
+        <CloseButton variant="contained" color="secondary" disabled={hasError} onClick={onSubmit}>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.CloneWiki')}
           </Typography>
@@ -37,7 +37,7 @@ export function CloneWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorksp
           </Typography>
         </CloseButton>
       ) : (
-        <CloseButton variant="contained" color="secondary" disabled={!hasError} onClick={onSubmit}>
+        <CloseButton variant="contained" color="secondary" disabled={hasError} onClick={onSubmit}>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.CloneWiki')}
           </Typography>

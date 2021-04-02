@@ -37,12 +37,17 @@ export function useWikiWorkspaceForm() {
   const gitUserInfo = useStorageServiceUserInfo(storageProvider);
 
   /**
-   *
+   * Update tiddlywiki's editor user name when first time creating new workspace
    */
   const [userName, userNameSetter] = usePromiseValueAndSetter(
     async () => await window.service.auth.get('userName'),
     async (newUserName) => await window.service.auth.set('userName', newUserName),
   );
+
+  /**
+   * When importing existed tiddlywiki folder, we use this existedFolderLocation
+   */
+  const [existedFolderLocation, existedFolderLocationSetter] = useState<string | undefined>();
 
   /**
    * For sub-wiki, we need to link it to a main wiki's folder, so all wiki contents can be loaded together.
@@ -98,6 +103,8 @@ export function useWikiWorkspaceForm() {
     storageProviderSetter,
     wikiPort,
     wikiPortSetter,
+    existedFolderLocation,
+    existedFolderLocationSetter,
     userName,
     userNameSetter,
     mainWikiToLink,

@@ -41,19 +41,19 @@ export default function AddWorkspace(): JSX.Element {
 
       {currentTab === 'CreateNewWiki' && (
         <Container>
-          <NewWikiForm form={form} />
+          <NewWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
           <NewWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
         </Container>
       )}
       {currentTab === 'OpenLocalWiki' && (
         <Container>
-          <ExistedWikiForm form={form} />
-          <ExistedWikiDoneButton form={form} />
+          <ExistedWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
+          <ExistedWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
         </Container>
       )}
       {currentTab === 'CloneOnlineWiki' && (
         <Container>
-          <NewWikiForm form={form} />
+          <NewWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
           <CloneWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
         </Container>
       )}

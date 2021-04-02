@@ -27,7 +27,7 @@ const SoftLinkToMainWikiSelect = styled(Select)`
 const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
   margin-top: 5px;
 `;
-export function ExistedWikiForm({ form }: IWikiWorkspaceFormProps): JSX.Element{
+export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element{
   const [workspaces, workspacesSetter] = useState({});
   useEffect(() => {
     void (async () => {

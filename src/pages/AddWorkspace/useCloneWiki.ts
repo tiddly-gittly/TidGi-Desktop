@@ -48,6 +48,7 @@ export function useCloneWiki(isCreateMainWorkspace: boolean, form: IWikiWorkspac
       }
     } catch (error) {
       wikiCreationMessageSetter(String(error));
+      hasErrorSetter(true);
     }
   }, [isCreateMainWorkspace, form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink.name, form.gitRepoUrl, form.gitUserInfo, form.tagName]);
 
