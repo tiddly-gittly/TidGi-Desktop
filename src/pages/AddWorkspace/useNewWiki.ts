@@ -3,7 +3,10 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { IWikiWorkspaceForm } from './useForm';
 
-export function useNewWiki(isCreateMainWorkspace: boolean, form: IWikiWorkspaceForm): [() => void, string | undefined, boolean] {
+export function useValidateNewWiki(
+  isCreateMainWorkspace: boolean,
+  form: IWikiWorkspaceForm,
+): [string | undefined, boolean, (m: string) => void, (m: boolean) => void] {
   const { t } = useTranslation();
   const [wikiCreationMessage, wikiCreationMessageSetter] = useState<string | undefined>();
   const [hasError, hasErrorSetter] = useState<boolean>(false);
@@ -27,13 +30,26 @@ export function useNewWiki(isCreateMainWorkspace: boolean, form: IWikiWorkspaceF
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.TagName')}`);
       hasErrorSetter(true);
     } else {
+      wikiCreationMessageSetter('');
       hasErrorSetter(false);
     }
   }, [t, isCreateMainWorkspace, form.parentFolderLocation, form.wikiFolderName, form.gitRepoUrl, form.gitUserInfo, form.mainWikiToLink?.name, form.tagName]);
 
+  return [wikiCreationMessage, hasError, wikiCreationMessageSetter, hasErrorSetter];
+}
+
+export function useNewWiki(
+  isCreateMainWorkspace: boolean,
+  form: IWikiWorkspaceForm,
+  wikiCreationMessageSetter: (m: string) => void,
+  hasErrorSetter: (m: boolean) => void,
+): () => Promise<void> {
+  const { t } = useTranslation();
+
   const onSubmit = useCallback(async () => {
     if (!form.parentFolderLocation || !form.wikiFolderName || !form.gitRepoUrl || !form.gitUserInfo) return;
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
+    hasErrorSetter(false);
     try {
       if (isCreateMainWorkspace) {
         await window.service.wiki.copyWikiTemplate(form.parentFolderLocation, form.wikiFolderName);
@@ -47,8 +63,6 @@ export function useNewWiki(isCreateMainWorkspace: boolean, form: IWikiWorkspaceF
       hasErrorSetter(true);
     }
   }, [
-    t,
-    isCreateMainWorkspace,
     form.parentFolderLocation,
     form.wikiFolderName,
     form.gitRepoUrl,
@@ -56,7 +70,11 @@ export function useNewWiki(isCreateMainWorkspace: boolean, form: IWikiWorkspaceF
     form.wikiFolderLocation,
     form.mainWikiToLink?.name,
     form.tagName,
+    wikiCreationMessageSetter,
+    t,
+    hasErrorSetter,
+    isCreateMainWorkspace,
   ]);
 
-  return [onSubmit, wikiCreationMessage, hasError];
+  return onSubmit;
 }

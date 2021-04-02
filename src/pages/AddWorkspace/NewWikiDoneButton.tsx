@@ -7,7 +7,7 @@ import { Typography, Button, LinearProgress, Snackbar } from '@material-ui/core'
 import Alert from '@material-ui/lab/Alert';
 
 import type { IWikiWorkspaceFormProps } from './useForm';
-import { useNewWiki } from './useNewWiki';
+import { useValidateNewWiki, useNewWiki } from './useNewWiki';
 import { useWikiCreationProgress } from './useIndicator';
 
 const CloseButton = styled(Button)`
@@ -17,7 +17,8 @@ const CloseButton = styled(Button)`
 
 export function NewWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
-  const [onSubmit, wikiCreationMessage, hasError] = useNewWiki(isCreateMainWorkspace, form);
+  const [wikiCreationMessage, hasError, wikiCreationMessageSetter, hasErrorSetter] = useValidateNewWiki(isCreateMainWorkspace, form);
+  const onSubmit = useNewWiki(isCreateMainWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
   const [logPanelOpened, logPanelSetter, progressBarOpen] = useWikiCreationProgress(wikiCreationMessage, hasError);
   return (
     <>

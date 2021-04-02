@@ -7,7 +7,7 @@ import { Typography, Button, LinearProgress, Snackbar } from '@material-ui/core'
 import Alert from '@material-ui/lab/Alert';
 
 import type { IWikiWorkspaceFormProps } from './useForm';
-import { useCloneWiki } from './useCloneWiki';
+import { useValidateCloneWiki, useCloneWiki } from './useCloneWiki';
 import { useWikiCreationProgress } from './useIndicator';
 
 const CloseButton = styled(Button)`
@@ -17,7 +17,8 @@ const CloseButton = styled(Button)`
 
 export function CloneWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
-  const [onSubmit, wikiCreationMessage, hasError] = useCloneWiki(isCreateMainWorkspace, form);
+  const [wikiCreationMessage, hasError, wikiCreationMessageSetter, hasErrorSetter] = useValidateCloneWiki(isCreateMainWorkspace, form);
+  const onSubmit = useCloneWiki(isCreateMainWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
   const [logPanelOpened, logPanelSetter, progressBarOpen] = useWikiCreationProgress(wikiCreationMessage, hasError);
 
   return (

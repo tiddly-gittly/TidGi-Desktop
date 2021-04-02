@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next';
 import { Paper, Typography, Button, TextField, InputLabel, FormHelperText, Select, MenuItem, Autocomplete } from '@material-ui/core';
 import { Folder as FolderIcon } from '@material-ui/icons';
 import type { IWikiWorkspaceFormProps } from './useForm';
+import { useValidateNewWiki } from './useNewWiki';
 
-const CreateContainer: ComponentType<{}> = styled(Paper)`
+const CreateContainer = styled(Paper)`
   margin-top: 5px;
 `;
 const LocationPickerContainer = styled.div`
@@ -26,9 +27,7 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
 
 export function NewWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
-  const [onSubmit, wikiCreationMessage, hasError] = useCloneWiki(isCreateMainWorkspace, form);
-
-  const { t } = useTranslation();
+  const [wikiCreationMessage, hasError] = useValidateNewWiki(isCreateMainWorkspace, form);
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>

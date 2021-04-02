@@ -6,7 +6,7 @@ import { Typography, Button, LinearProgress, Snackbar } from '@material-ui/core'
 import Alert from '@material-ui/lab/Alert';
 
 import type { IWikiWorkspaceFormProps } from './useForm';
-import { useExistedWiki } from './useExistedWiki';
+import { useValidateExistedWiki, useExistedWiki } from './useExistedWiki';
 import { useWikiCreationProgress } from './useIndicator';
 
 const CloseButton = styled(Button)`
@@ -16,7 +16,8 @@ const CloseButton = styled(Button)`
 
 export function ExistedWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
-  const [onSubmit, wikiCreationMessage, hasError] = useExistedWiki(isCreateMainWorkspace, form);
+  const [wikiCreationMessage, hasError, wikiCreationMessageSetter, hasErrorSetter] = useValidateExistedWiki(isCreateMainWorkspace, form);
+  const onSubmit = useExistedWiki(isCreateMainWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
   const [logPanelOpened, logPanelSetter, progressBarOpen] = useWikiCreationProgress(wikiCreationMessage, hasError);
   return (
     <>

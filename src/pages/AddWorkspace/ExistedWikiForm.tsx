@@ -1,13 +1,12 @@
-import type { ComponentType } from 'react';
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import styled from 'styled-components';
-import { connect } from 'react-redux';
-import { bindActionCreators } from 'redux';
 import { useTranslation } from 'react-i18next';
 import { Paper, Typography, Button, TextField, InputLabel, FormHelperText, Select, MenuItem } from '@material-ui/core';
 import { Folder as FolderIcon } from '@material-ui/icons';
 import { Autocomplete } from '@material-ui/lab';
+
 import type { IWikiWorkspaceFormProps } from './useForm';
+import { useValidateExistedWiki } from './useExistedWiki';
 
 const CreateContainer = styled(Paper)`
   margin-top: 5px;
@@ -27,21 +26,14 @@ const SoftLinkToMainWikiSelect = styled(Select)`
 const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
   margin-top: 5px;
 `;
-export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element{
-  const [workspaces, workspacesSetter] = useState({});
-  useEffect(() => {
-    void (async () => {
-      workspacesSetter(await window.service.workspace.getWorkspaces());
-    })();
-  }, []);
-  const hasError = wikiCreationMessage.startsWith('Error');
+export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
+  const [wikiCreationMessage, hasError] = useValidateExistedWiki(isCreateMainWorkspace, form);
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
         <LocationPickerInput
           error={hasError}
-          helperText={hasError ? wikiCreationMessage : ''}
           fullWidth
           onChange={(event) => {
             existedFolderLocationSetter(event.target.value);
