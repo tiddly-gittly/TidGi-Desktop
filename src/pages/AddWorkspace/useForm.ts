@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
 import { useEffect, useState } from 'react';
@@ -49,8 +50,18 @@ export function useWikiWorkspaceForm() {
   /**
    * For sub-wiki, we need to link it to a main wiki's folder, so all wiki contents can be loaded together.
    */
-  const [mainWikiToLink, mainWikiToLinkSetter] = useState({ name: '', port: 0, id: '' });
+  const mainWorkspaceList = workspaceList.filter((workspace) => !workspace.isSubWiki);
+  const [mainWikiToLink, mainWikiToLinkSetter] = useState(mainWorkspaceList[0] ?? { name: '', port: 0, id: '' });
   const [tagName, tagNameSetter] = useState<string>('');
+  let mainWikiToLinkIndex = mainWorkspaceList.findIndex((workspace) => workspace.id === mainWikiToLink.id);
+  if (mainWikiToLinkIndex < 0) {
+    mainWikiToLinkIndex = 0;
+  }
+  useEffect(() => {
+    if (mainWorkspaceList[mainWikiToLinkIndex]?.name) {
+      mainWikiToLinkSetter(mainWorkspaceList[mainWikiToLinkIndex]);
+    }
+  }, [mainWorkspaceList, mainWikiToLinkIndex]);
   /**
    * For sub-wiki, we need `fileSystemPaths` which is a TiddlyWiki concept that tells wiki where to put sub-wiki files.
    */
@@ -94,11 +105,6 @@ export function useWikiWorkspaceForm() {
 
   // derived values
   const wikiFolderLocation = `${parentFolderLocation ?? t('Error') ?? 'Error'}/${wikiFolderName}`;
-  const mainWorkspaceList = workspaceList.filter((workspace) => !workspace.isSubWiki);
-  let mainWikiToLinkIndex = mainWorkspaceList.findIndex((workspace) => workspace.id === mainWikiToLink.id);
-  if (mainWikiToLinkIndex < 0) {
-    mainWikiToLinkIndex = 0;
-  }
 
   return {
     storageProvider,

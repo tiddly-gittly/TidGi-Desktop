@@ -1,42 +1,29 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React from 'react';
-import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { Paper, Typography, Button, TextField, InputLabel, FormHelperText, Select, MenuItem } from '@material-ui/core';
+import { Typography, TextField, FormHelperText, MenuItem } from '@material-ui/core';
 import { Folder as FolderIcon } from '@material-ui/icons';
-import { Autocomplete } from '@material-ui/lab';
+
+import {
+  CreateContainer,
+  LocationPickerContainer,
+  LocationPickerInput,
+  LocationPickerButton,
+  SoftLinkToMainWikiSelect,
+  SubWikiTagAutoComplete,
+} from './FormComponents';
 
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateExistedWiki } from './useExistedWiki';
 
-const CreateContainer = styled(Paper)`
-  margin-top: 5px;
-`;
-const LocationPickerContainer = styled.div`
-  display: flex;
-  flex-direction: row;
-`;
-const LocationPickerInput = styled(TextField)``;
-const LocationPickerButton = styled(Button)`
-  white-space: nowrap;
-  width: fit-content;
-`;
-const SoftLinkToMainWikiSelect = styled(Select)`
-  width: 100%;
-`;
-const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
-  margin-top: 5px;
-`;
 export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
-  const [wikiCreationMessage, hasError] = useValidateExistedWiki(isCreateMainWorkspace, form);
+  const [errorInWhichComponent] = useValidateExistedWiki(isCreateMainWorkspace, form);
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
         <LocationPickerInput
-          error={hasError}
-          helperText={hasError ? wikiCreationMessage : ''}
-          fullWidth
+          error={errorInWhichComponent.existedWikiFolderPath}
           onChange={(event) => {
             form.existedWikiFolderPathSetter(event.target.value);
           }}
@@ -50,9 +37,7 @@ export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceF
               form.existedWikiFolderPathSetter(filePaths[0]);
             }
           }}
-          variant="outlined"
           color={typeof form.existedWikiFolderPath === 'string' && form.existedWikiFolderPath?.length > 0 ? 'inherit' : 'primary'}
-          disableElevation
           endIcon={<FolderIcon />}>
           <Typography variant="button" display="inline">
             {t('AddWorkspace.Choose')}
@@ -61,7 +46,7 @@ export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceF
       </LocationPickerContainer>
       {isCreateMainWorkspace && (
         <LocationPickerInput
-          fullWidth
+          error={errorInWhichComponent.wikiPort}
           onChange={(event) => {
             form.wikiPortSetter(Number(event.target.value));
           }}
@@ -71,13 +56,12 @@ export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceF
       )}
       {!isCreateMainWorkspace && (
         <>
-          <SoftLinkToMainWikiSelectInputLabel id="main-wiki-select-label">{t('AddWorkspace.MainWorkspaceLocation')}</SoftLinkToMainWikiSelectInputLabel>
           <SoftLinkToMainWikiSelect
-            labelId="main-wiki-select-label"
-            id="main-wiki-select"
+            error={errorInWhichComponent.mainWikiToLink}
+            label={t('AddWorkspace.MainWorkspaceLocation')}
             value={form.mainWikiToLinkIndex}
             onChange={(event) => {
-              const index = event.target.value as number;
+              const index = (event.target.value as unknown) as number;
               form.mainWikiToLinkSetter(form.mainWorkspaceList[index]);
             }}>
             {form.mainWorkspaceList.map((workspace, index) => (
@@ -96,12 +80,18 @@ export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceF
               </Typography>
             </FormHelperText>
           )}
-          <Autocomplete
-            freeSolo
+          <SubWikiTagAutoComplete
             options={form.fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
             value={form.tagName}
             onInputChange={(_, value) => form.tagNameSetter(value)}
-            renderInput={(parameters) => <TextField {...parameters} fullWidth label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
+            renderInput={(parameters) => (
+              <LocationPickerInput
+                {...parameters}
+                error={errorInWhichComponent.tagName}
+                label={t('AddWorkspace.TagName')}
+                helperText={t('AddWorkspace.TagNameHelp')}
+              />
+            )}
           />
         </>
       )}
