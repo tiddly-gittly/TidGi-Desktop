@@ -8,7 +8,6 @@ import { Autocomplete } from '@material-ui/lab';
 
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateExistedWiki } from './useExistedWiki';
-import { usePromiseValue } from '@/helpers/useServiceValue';
 
 const CreateContainer = styled(Paper)`
   margin-top: 5px;
@@ -31,7 +30,6 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
 export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
   const [wikiCreationMessage, hasError] = useValidateExistedWiki(isCreateMainWorkspace, form);
-  const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList()) ?? [];
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
@@ -40,20 +38,20 @@ export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceF
           helperText={hasError ? wikiCreationMessage : ''}
           fullWidth
           onChange={(event) => {
-            form.existedFolderLocationSetter(event.target.value);
+            form.existedWikiFolderPathSetter(event.target.value);
           }}
           label={t('AddWorkspace.WorkspaceFolder')}
-          value={form.existedFolderLocation}
+          value={form.existedWikiFolderPath}
         />
         <LocationPickerButton
           onClick={async () => {
             const filePaths = await window.service.native.pickDirectory();
             if (filePaths?.length > 0) {
-              form.existedFolderLocationSetter(filePaths[0]);
+              form.existedWikiFolderPathSetter(filePaths[0]);
             }
           }}
           variant="outlined"
-          color={typeof form.existedFolderLocation === 'string' && form.existedFolderLocation?.length > 0 ? 'inherit' : 'primary'}
+          color={typeof form.existedWikiFolderPath === 'string' && form.existedWikiFolderPath?.length > 0 ? 'inherit' : 'primary'}
           disableElevation
           endIcon={<FolderIcon />}>
           <Typography variant="button" display="inline">
@@ -77,12 +75,12 @@ export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceF
           <SoftLinkToMainWikiSelect
             labelId="main-wiki-select-label"
             id="main-wiki-select"
-            value={form.mainWikiToLink}
+            value={form.mainWikiToLinkIndex}
             onChange={(event) => {
               const index = event.target.value as number;
-              form.mainWikiToLinkSetter(workspaceList[index]);
+              form.mainWikiToLinkSetter(form.mainWorkspaceList[index]);
             }}>
-            {workspaceList.map((workspace, index) => (
+            {form.mainWorkspaceList.map((workspace, index) => (
               <MenuItem key={index} value={index}>
                 {workspace.name}
               </MenuItem>

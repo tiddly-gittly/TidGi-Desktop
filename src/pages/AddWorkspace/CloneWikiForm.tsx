@@ -4,9 +4,8 @@ import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { Paper, Typography, Button, TextField, InputLabel, FormHelperText, Select, MenuItem, Autocomplete } from '@material-ui/core';
 import { Folder as FolderIcon } from '@material-ui/icons';
-import { usePromiseValue } from '@/helpers/useServiceValue';
 import type { IWikiWorkspaceFormProps } from './useForm';
-import { useValidateNewWiki } from './useNewWiki';
+import { useValidateCloneWiki } from './useCloneWiki';
 
 const CreateContainer = styled(Paper)`
   margin-top: 5px;
@@ -29,8 +28,7 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
 
 export function CloneWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
-  const [wikiCreationMessage, hasError] = useValidateNewWiki(isCreateMainWorkspace, form);
-  const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList()) ?? [];
+  const [wikiCreationMessage, hasError] = useValidateCloneWiki(isCreateMainWorkspace, form);
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
@@ -81,12 +79,12 @@ export function CloneWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFor
           <SoftLinkToMainWikiSelect
             labelId="main-wiki-select-label"
             id="main-wiki-select"
-            value={form.mainWikiToLink}
+            value={form.mainWikiToLinkIndex}
             onChange={(event) => {
               const index = event.target.value as number;
-              form.mainWikiToLinkSetter(workspaceList[index]);
+              form.mainWikiToLinkSetter(form.mainWorkspaceList[index]);
             }}>
-            {workspaceList.map((workspace, index) => (
+            {form.mainWorkspaceList.map((workspace, index) => (
               <MenuItem key={index} value={index}>
                 {workspace.name}
               </MenuItem>

@@ -32,7 +32,7 @@ export function ExistedWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWork
             {t('AddWorkspace.ImportWiki')}
           </Typography>
           <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-            {form.existedFolderLocation}
+            {form.existedWikiFolderPath}
           </Typography>
         </CloseButton>
       ) : (
@@ -41,7 +41,7 @@ export function ExistedWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWork
             {t('AddWorkspace.ImportWiki')}
           </Typography>
           <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-            {form.existedFolderLocation}
+            {form.existedWikiFolderPath}
           </Typography>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.AndLinkToMainWorkspace')}

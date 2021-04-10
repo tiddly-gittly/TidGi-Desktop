@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { usePromiseValueAndSetter } from '@/helpers/useServiceValue';
+import { usePromiseValue, usePromiseValueAndSetter } from '@/helpers/useServiceValue';
 import { useStorageServiceUserInfo } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
 import { ISubWikiPluginContent } from '@services/wiki/update-plugin-content';
@@ -22,6 +22,8 @@ export interface IWikiWorkspaceFormProps {
 }
 export function useWikiWorkspaceForm() {
   const { t } = useTranslation();
+
+  const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList()) ?? [];
 
   const [wikiPort, wikiPortSetter] = useState(5212);
   useEffect(() => {
@@ -45,14 +47,9 @@ export function useWikiWorkspaceForm() {
   );
 
   /**
-   * When importing existed tiddlywiki folder, we use this existedFolderLocation
-   */
-  const [existedFolderLocation, existedFolderLocationSetter] = useState<string | undefined>();
-
-  /**
    * For sub-wiki, we need to link it to a main wiki's folder, so all wiki contents can be loaded together.
    */
-  const [mainWikiToLink, mainWikiToLinkSetter] = useState({ name: '', port: 0 });
+  const [mainWikiToLink, mainWikiToLinkSetter] = useState({ name: '', port: 0, id: '' });
   const [tagName, tagNameSetter] = useState<string>('');
   /**
    * For sub-wiki, we need `fileSystemPaths` which is a TiddlyWiki concept that tells wiki where to put sub-wiki files.
@@ -64,12 +61,12 @@ export function useWikiWorkspaceForm() {
   /**
    * For importing existed nodejs wiki into TiddlyGit, we use existedWikiFolderPath to determine which folder to import
    */
-  const [existedWikiFolderPath, existedWikiFolderPathSetter] = useState<string | undefined>();
+  const [existedWikiFolderPath, existedWikiFolderPathSetter] = useState<string>('');
   /**
    * For creating new wiki, we use parentFolderLocation to determine in which folder we create the new wiki folder.
    * New folder will basically be created in `${parentFolderLocation}/${wikiFolderName}`
    */
-  const [parentFolderLocation, parentFolderLocationSetter] = useState<string | undefined>();
+  const [parentFolderLocation, parentFolderLocationSetter] = useState<string>('');
   /**
    * For creating new wiki, we put `tiddlers` folder in this `${parentFolderLocation}/${wikiFolderName}` folder
    */
@@ -97,14 +94,17 @@ export function useWikiWorkspaceForm() {
 
   // derived values
   const wikiFolderLocation = `${parentFolderLocation ?? t('Error') ?? 'Error'}/${wikiFolderName}`;
+  const mainWorkspaceList = workspaceList.filter((workspace) => !workspace.isSubWiki);
+  let mainWikiToLinkIndex = mainWorkspaceList.findIndex((workspace) => workspace.id === mainWikiToLink.id);
+  if (mainWikiToLinkIndex < 0) {
+    mainWikiToLinkIndex = 0;
+  }
 
   return {
     storageProvider,
     storageProviderSetter,
     wikiPort,
     wikiPortSetter,
-    existedFolderLocation,
-    existedFolderLocationSetter,
     userName,
     userNameSetter,
     mainWikiToLink,
@@ -123,5 +123,8 @@ export function useWikiWorkspaceForm() {
     wikiFolderNameSetter,
     gitUserInfo,
     wikiFolderLocation,
+    workspaceList,
+    mainWorkspaceList,
+    mainWikiToLinkIndex,
   };
 }
