@@ -10,6 +10,7 @@ import { NewWikiForm } from './NewWikiForm';
 import { NewWikiDoneButton } from './NewWikiDoneButton';
 import { ExistedWikiForm } from './ExistedWikiForm';
 import { ExistedWikiDoneButton } from './ExistedWikiDoneButton';
+import { CloneWikiForm } from './CloneWikiForm';
 import { CloneWikiDoneButton } from './CloneWikiDoneButton';
 
 import { TabBar, CreateWorkspaceTabs } from './TabBar';
@@ -53,7 +54,7 @@ export default function AddWorkspace(): JSX.Element {
       )}
       {currentTab === 'CloneOnlineWiki' && (
         <Container>
-          <NewWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
+          <CloneWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
           <CloneWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
         </Container>
       )}

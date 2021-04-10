@@ -107,8 +107,9 @@ export function useCloneWiki(
     form.gitUserInfo,
     form.mainWikiToLink.name,
     form.tagName,
-    isCreateMainWorkspace,
     wikiCreationMessageSetter,
+    t,
+    isCreateMainWorkspace,
     hasErrorSetter,
   ]);
 

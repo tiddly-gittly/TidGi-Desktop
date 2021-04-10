@@ -27,7 +27,7 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
   margin-top: 5px;
 `;
 
-export function NewWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
+export function CloneWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
   const [wikiCreationMessage, hasError] = useValidateNewWiki(isCreateMainWorkspace, form);
   const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList()) ?? [];

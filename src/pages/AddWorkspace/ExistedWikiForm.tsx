@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
@@ -7,6 +8,7 @@ import { Autocomplete } from '@material-ui/lab';
 
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateExistedWiki } from './useExistedWiki';
+import { usePromiseValue } from '@/helpers/useServiceValue';
 
 const CreateContainer = styled(Paper)`
   margin-top: 5px;
@@ -29,36 +31,29 @@ const SoftLinkToMainWikiSelectInputLabel = styled(InputLabel)`
 export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
   const [wikiCreationMessage, hasError] = useValidateExistedWiki(isCreateMainWorkspace, form);
+  const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList()) ?? [];
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
         <LocationPickerInput
           error={hasError}
+          helperText={hasError ? wikiCreationMessage : ''}
           fullWidth
           onChange={(event) => {
-            existedFolderLocationSetter(event.target.value);
-            setWikiCreationMessage('');
+            form.existedFolderLocationSetter(event.target.value);
           }}
           label={t('AddWorkspace.WorkspaceFolder')}
-          value={existedFolderLocation}
+          value={form.existedFolderLocation}
         />
         <LocationPickerButton
-          onClick={() => {
-            const { dialog } = window.remote;
-            // eslint-disable-next-line promise/catch-or-return
-            dialog
-              .showOpenDialog({
-                properties: ['openDirectory'],
-              })
-              .then(({ canceled, filePaths }: any) => {
-                // eslint-disable-next-line promise/always-return
-                if (!canceled && filePaths.length > 0) {
-                  existedFolderLocationSetter(filePaths[0]);
-                }
-              });
+          onClick={async () => {
+            const filePaths = await window.service.native.pickDirectory();
+            if (filePaths?.length > 0) {
+              form.existedFolderLocationSetter(filePaths[0]);
+            }
           }}
           variant="outlined"
-          color={existedFolderLocation ? 'default' : 'primary'}
+          color={typeof form.existedFolderLocation === 'string' && form.existedFolderLocation?.length > 0 ? 'inherit' : 'primary'}
           disableElevation
           endIcon={<FolderIcon />}>
           <Typography variant="button" display="inline">
@@ -70,10 +65,10 @@ export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceF
         <LocationPickerInput
           fullWidth
           onChange={(event) => {
-            wikiPortSetter(event.target.value);
+            form.wikiPortSetter(Number(event.target.value));
           }}
           label={t('AddWorkspace.WikiServerPort')}
-          value={wikiPort}
+          value={form.wikiPort}
         />
       )}
       {!isCreateMainWorkspace && (
@@ -82,29 +77,32 @@ export function ExistedWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceF
           <SoftLinkToMainWikiSelect
             labelId="main-wiki-select-label"
             id="main-wiki-select"
-            value={mainWikiToLink}
-            onChange={(event) => mainWikiToLinkSetter(event.target.value)}>
-            {Object.keys(workspaces).map((workspaceID) => (
-              <MenuItem key={workspaceID} value={workspaces[workspaceID]}>
-                {workspaces[workspaceID].name}
+            value={form.mainWikiToLink}
+            onChange={(event) => {
+              const index = event.target.value as number;
+              form.mainWikiToLinkSetter(workspaceList[index]);
+            }}>
+            {workspaceList.map((workspace, index) => (
+              <MenuItem key={index} value={index}>
+                {workspace.name}
               </MenuItem>
             ))}
           </SoftLinkToMainWikiSelect>
-          {(mainWikiToLink as any).name && (
+          {form.mainWikiToLink.name && (
             <FormHelperText>
               <Typography variant="body1" display="inline" component="span">
                 {t('AddWorkspace.SubWorkspaceWillLinkTo')}
               </Typography>
               <Typography variant="body2" component="span" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-                {(mainWikiToLink as any).name}/tiddlers/{wikiFolderName}
+                {form.mainWikiToLink.name}/tiddlers/{form.wikiFolderName}
               </Typography>
             </FormHelperText>
           )}
           <Autocomplete
             freeSolo
-            options={fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
-            value={tagName}
-            onInputChange={(_, value) => tagNameSetter(value)}
+            options={form.fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
+            value={form.tagName}
+            onInputChange={(_, value) => form.tagNameSetter(value)}
             renderInput={(parameters) => <TextField {...parameters} fullWidth label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
           />
         </>
