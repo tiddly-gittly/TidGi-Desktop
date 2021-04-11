@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Typography, TextField, FormHelperText, MenuItem } from '@material-ui/core';
+import { Typography, MenuItem } from '@material-ui/core';
 import { Folder as FolderIcon } from '@material-ui/icons';
 
 import {
@@ -41,22 +41,36 @@ export function CloneWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFor
           </Typography>
         </LocationPickerButton>
       </LocationPickerContainer>
-      <LocationPickerInput error={errorInWhichComponent.wikiFolderName} label={t('AddWorkspace.WorkspaceFolderNameToCreate')} value={form.wikiFolderName} />
-      {isCreateMainWorkspace && (
+      <LocationPickerContainer>
         <LocationPickerInput
-          error={errorInWhichComponent.wikiPort}
-          onChange={(event) => {
-            form.wikiPortSetter(Number(event.target.value));
-          }}
-          label={t('AddWorkspace.WikiServerPort')}
-          value={form.wikiPort}
+          error={errorInWhichComponent.wikiFolderName}
+          label={t('AddWorkspace.WorkspaceFolderNameToCreate')}
+          helperText={`${t('AddWorkspace.CloneWiki')}${form.wikiFolderLocation}`}
+          value={form.wikiFolderName}
         />
+      </LocationPickerContainer>
+      {isCreateMainWorkspace && (
+        <LocationPickerContainer>
+          <LocationPickerInput
+            error={errorInWhichComponent.wikiPort}
+            onChange={(event) => {
+              form.wikiPortSetter(Number(event.target.value));
+            }}
+            label={t('AddWorkspace.WikiServerPort')}
+            value={form.wikiPort}
+          />
+        </LocationPickerContainer>
       )}
       {!isCreateMainWorkspace && (
         <>
           <SoftLinkToMainWikiSelect
             error={errorInWhichComponent.mainWikiToLink}
             label={t('AddWorkspace.MainWorkspaceLocation')}
+            helperText={
+              form.mainWikiToLink.name &&
+              `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
+                    ${form.mainWikiToLink.name}/tiddlers/${form.wikiFolderName}`
+            }
             value={form.mainWikiToLinkIndex}
             onChange={(event) => {
               const index = (event.target.value as unknown) as number;
@@ -68,16 +82,6 @@ export function CloneWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFor
               </MenuItem>
             ))}
           </SoftLinkToMainWikiSelect>
-          {form.mainWikiToLink.name && (
-            <FormHelperText>
-              <Typography variant="body1" display="inline" component="span">
-                {t('AddWorkspace.SubWorkspaceWillLinkTo')}
-              </Typography>
-              <Typography variant="body2" component="span" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-                {form.mainWikiToLink.name}/tiddlers/{form.wikiFolderName}
-              </Typography>
-            </FormHelperText>
-          )}
           <SubWikiTagAutoComplete
             options={form.fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
             value={form.tagName}

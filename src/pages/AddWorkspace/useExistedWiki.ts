@@ -101,8 +101,9 @@ export function useExistedWiki(
     form.gitUserInfo,
     form.mainWikiToLink?.name,
     form.tagName,
-    isCreateMainWorkspace,
     wikiCreationMessageSetter,
+    t,
+    isCreateMainWorkspace,
     hasErrorSetter,
   ]);
 

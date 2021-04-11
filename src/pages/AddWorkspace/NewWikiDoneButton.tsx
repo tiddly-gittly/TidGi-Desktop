@@ -17,9 +17,16 @@ const CloseButton = styled(Button)`
 
 export function NewWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
-  const [wikiCreationMessage, hasError, wikiCreationMessageSetter, hasErrorSetter] = useValidateNewWiki(isCreateMainWorkspace, form);
+  const [, hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateNewWiki(isCreateMainWorkspace, form);
   const onSubmit = useNewWiki(isCreateMainWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
   const [logPanelOpened, logPanelSetter, progressBarOpen] = useWikiCreationProgress(wikiCreationMessage, hasError);
+  if (hasError) {
+    return (
+      <CloseButton variant="contained" disabled={true}>
+        {wikiCreationMessage}
+      </CloseButton>
+    );
+  }
   return (
     <>
       {progressBarOpen && <LinearProgress color="secondary" />}
@@ -27,13 +34,8 @@ export function NewWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorkspac
         <Alert severity="info">{wikiCreationMessage}</Alert>
       </Snackbar>
 
-      {(!form.gitRepoUrl || !form.gitUserInfo?.accessToken) && (
-        <Typography variant="body1" display="inline">
-          {t('AddWorkspace.NoGitInfoAlert')}
-        </Typography>
-      )}
       {isCreateMainWorkspace ? (
-        <CloseButton variant="contained" color="secondary" disabled={hasError} onClick={onSubmit}>
+        <CloseButton variant="contained" color="secondary" onClick={onSubmit}>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.CreateWiki')}
           </Typography>
@@ -42,7 +44,7 @@ export function NewWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorkspac
           </Typography>
         </CloseButton>
       ) : (
-        <CloseButton variant="contained" color="secondary" disabled={hasError} onClick={onSubmit}>
+        <CloseButton variant="contained" color="secondary" onClick={onSubmit}>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.CreateWiki')}
           </Typography>

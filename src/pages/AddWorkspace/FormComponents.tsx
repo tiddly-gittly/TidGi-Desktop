@@ -2,7 +2,7 @@ import styled from 'styled-components';
 import { Paper, Button, TextField, InputLabel, Select, Autocomplete } from '@material-ui/core';
 
 export const CreateContainer = styled(Paper)`
-  padding-top: 20px;
+  padding: 10px;
 `;
 export const LocationPickerContainer = styled.div`
   display: flex;
@@ -17,11 +17,10 @@ LocationPickerInput.defaultProps = {
 export const LocationPickerButton = styled(Button)`
   white-space: nowrap;
   width: fit-content;
-  color: 'secondary';
 `;
 LocationPickerButton.defaultProps = {
   variant: 'contained',
-  color: 'primary',
+  color: 'inherit',
 };
 export const SoftLinkToMainWikiSelect = styled(LocationPickerInput)`
   width: 100%;

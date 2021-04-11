@@ -48,6 +48,7 @@ export function NewWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormP
           error={errorInWhichComponent.wikiFolderName}
           onChange={(event) => form.wikiFolderNameSetter(event.target.value)}
           label={t('AddWorkspace.WorkspaceFolderNameToCreate')}
+          helperText={`${t('AddWorkspace.CreateWiki')}${form.wikiFolderLocation}`}
           value={form.wikiFolderName}
         />
       </LocationPickerContainer>
@@ -68,6 +69,11 @@ export function NewWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormP
           <SoftLinkToMainWikiSelect
             error={errorInWhichComponent.mainWikiToLink}
             label={t('AddWorkspace.MainWorkspaceLocation')}
+            helperText={
+              form.mainWikiToLink.name &&
+              `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
+                    ${form.mainWikiToLink.name}/tiddlers/${form.wikiFolderName}`
+            }
             value={form.mainWikiToLinkIndex}
             onChange={(event) => {
               const index = (event.target.value as unknown) as number;
@@ -79,16 +85,6 @@ export function NewWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormP
               </MenuItem>
             ))}
           </SoftLinkToMainWikiSelect>
-          {form.mainWikiToLink.name && (
-            <FormHelperText>
-              <Typography variant="body1" display="inline" component="span">
-                {t('AddWorkspace.SubWorkspaceWillLinkTo')}
-              </Typography>
-              <Typography variant="body2" component="span" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-                {form.mainWikiToLink.name}/tiddlers/{form.wikiFolderName}
-              </Typography>
-            </FormHelperText>
-          )}
           <SubWikiTagAutoComplete
             options={form.fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
             value={form.tagName}

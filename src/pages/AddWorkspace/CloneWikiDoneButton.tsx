@@ -17,10 +17,16 @@ const CloseButton = styled(Button)`
 
 export function CloneWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
-  const [wikiCreationMessage, hasError, wikiCreationMessageSetter, hasErrorSetter] = useValidateCloneWiki(isCreateMainWorkspace, form);
+  const [, hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateCloneWiki(isCreateMainWorkspace, form);
   const onSubmit = useCloneWiki(isCreateMainWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
   const [logPanelOpened, logPanelSetter, progressBarOpen] = useWikiCreationProgress(wikiCreationMessage, hasError);
-
+  if (hasError) {
+    return (
+      <CloseButton variant="contained" disabled>
+        {wikiCreationMessage}
+      </CloseButton>
+    );
+  }
   return (
     <>
       {progressBarOpen && <LinearProgress color="secondary" />}
@@ -29,7 +35,7 @@ export function CloneWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorksp
       </Snackbar>
 
       {isCreateMainWorkspace ? (
-        <CloseButton variant="contained" color="secondary" disabled={hasError} onClick={onSubmit}>
+        <CloseButton variant="contained" color="secondary" onClick={onSubmit}>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.CloneWiki')}
           </Typography>
@@ -38,7 +44,7 @@ export function CloneWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorksp
           </Typography>
         </CloseButton>
       ) : (
-        <CloseButton variant="contained" color="secondary" disabled={hasError} onClick={onSubmit}>
+        <CloseButton variant="contained" color="secondary" onClick={onSubmit}>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.CloneWiki')}
           </Typography>
