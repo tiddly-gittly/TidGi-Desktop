@@ -4,6 +4,8 @@ import { GraphQLClient, ClientContext } from 'graphql-hooks';
 
 import { GITHUB_GRAPHQL_API } from '../../constants/auth';
 
+import { TokenForm } from '@/components/TokenForm';
+
 import { Description } from './Description';
 
 import { NewWikiForm } from './NewWikiForm';
@@ -39,6 +41,8 @@ export default function AddWorkspace(): JSX.Element {
     <ClientContext.Provider value={graphqlClient}>
       <TabBar currentTab={currentTab} currentTabSetter={currentTabSetter} />
       <Description isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
+
+      <TokenForm />
 
       {currentTab === 'CreateNewWiki' && (
         <Container>
