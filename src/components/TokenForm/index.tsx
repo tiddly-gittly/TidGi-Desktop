@@ -1,6 +1,6 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import { Tab, ListItemText } from '@material-ui/core';
+import React, { useState } from 'react';
+import styled, { keyframes } from 'styled-components';
+import { Tab as TabRaw, ListItemText } from '@material-ui/core';
 import { TabPanel, TabContext, TabList } from '@material-ui/lab';
 import { SupportedStorageServices } from '@services/types';
 import { useTranslation } from 'react-i18next';
@@ -13,6 +13,16 @@ const Container = styled.div`
 const TabsContainer = styled.div`
   display: flex;
   flex-direction: row;
+`;
+const backgroundColorShift = keyframes`
+from {background-color: #fdfdfd;}
+  to {background-color: #fff;}
+`;
+const Tab = styled(TabRaw)`
+  background-color: #999;
+  animation: ${backgroundColorShift} 5s infinite;
+  animation-direction: alternate;
+  animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
 `;
 
 /**

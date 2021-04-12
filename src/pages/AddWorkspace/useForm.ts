@@ -17,6 +17,14 @@ export function useIsCreateMainWorkspace(): [boolean, React.Dispatch<React.SetSt
   return [isCreateMainWorkspace, isCreateMainWorkspaceSetter];
 }
 
+export function useIsCreateSyncedWorkspace(): [boolean, React.Dispatch<React.SetStateAction<boolean>>] {
+  const [isCreateSyncedWorkspace, isCreateSyncedWorkspaceSetter] = useState(false);
+  useEffect(() => {
+    void window.service.auth.getRandomStorageServiceUserInfo().then((result) => isCreateSyncedWorkspaceSetter(result !== undefined));
+  }, []);
+  return [isCreateSyncedWorkspace, isCreateSyncedWorkspaceSetter];
+}
+
 export type IWikiWorkspaceForm = ReturnType<typeof useWikiWorkspaceForm>;
 export interface IWikiWorkspaceFormProps {
   form: IWikiWorkspaceForm;

@@ -53,6 +53,15 @@ export class Authentication implements IAuthenticationService {
     }
   }
 
+  public getRandomStorageServiceUserInfo(): { name: SupportedStorageServices; info: IGitUserInfos } | undefined {
+    for (const serviceName of Object.values(SupportedStorageServices)) {
+      const info = this.getStorageServiceUserInfo(serviceName);
+      if (info?.accessToken !== undefined && info.accessToken.length > 0 && info?.email !== undefined && info?.gitUserName !== undefined) {
+        return { name: serviceName, info };
+      }
+    }
+  }
+
   /**
    * load UserInfos in sync, and ensure it is an Object
    */

@@ -89,7 +89,11 @@
     "TagNameHelp": "Tiddlers with this Tag will be add to this sub-wiki (you can add or change this Tag later, by right-click workspace Icon and choose Edit Workspace)",
     "GitToken": "Git Token",
     "GitTokenDescription": "The credentials used to log in to Git. Will expire after a certain period of time",
-    "NoGitInfoAlert": "You haven't selected an online Git repo address, or you haven't successfully logged in to your Github account. Click the Create button will create a local wiki that will not be automatically sync to Github. Please be aware."
+    "NoGitInfoAlert": "You haven't selected an online Git repo address, or you haven't successfully logged in to your Github account. Click the Create button will create a local wiki that will not be automatically sync to Github. Please be aware.",
+    "LocalWorkspace": "Local Workspace",
+    "LocalWorkspaceDescription": "Only use locally, fully control your own data. TiddlyGit will still create a local git backup system for you, allowing you to go back to the previous versions of tiddlers, but all contents will be lost when the local folder is deleted.",
+    "SyncedWorkspace": "Synced Workspace",
+    "SyncedWorkspaceDescription": "To synchronize to an online storage service (such as Github), you need to login to a storage service or enter your login credentials, and have a good network connection. You can sync data across devices, and you still own the data when you use a trusted storage service. And even after the folder is accidentally deleted, you can still download the data from the online service to the local again."
   },
   "EditWorkspace": {
     "Path": "Wiki Path",

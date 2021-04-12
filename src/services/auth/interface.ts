@@ -22,6 +22,10 @@ export interface IUserInfos {
 export interface IAuthenticationService {
   userInfo$: BehaviorSubject<IUserInfos>;
   getStorageServiceUserInfo(serviceName: SupportedStorageServices): IGitUserInfos | undefined;
+  /**
+   * Get a random storage info, useful for checking if user have any token in the storage
+   */
+  getRandomStorageServiceUserInfo(): { name: SupportedStorageServices; info: IGitUserInfos } | undefined;
   getUserInfos: () => IUserInfos;
   get<K extends keyof IUserInfos>(key: K): IUserInfos[K] | undefined;
   set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): void;
@@ -32,6 +36,7 @@ export const AuthenticationServiceIPCDescriptor = {
   properties: {
     userInfo$: ProxyPropertyType.Value$,
     getStorageServiceUserInfo: ProxyPropertyType.Function,
+    getRandomStorageServiceUserInfo: ProxyPropertyType.Function,
     getUserInfos: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,
     set: ProxyPropertyType.Function,

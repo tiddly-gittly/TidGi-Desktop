@@ -51,8 +51,8 @@ export function SyncedWikiDescription({
   isCreateSyncedWorkspaceSetter: (is: boolean) => void;
 }): JSX.Element {
   const { t } = useTranslation();
-  const label = isCreateSyncedWorkspace ? t('AddWorkspace.MainWorkspace') : t('AddWorkspace.SubWorkspace');
-  const description = isCreateSyncedWorkspace ? t('AddWorkspace.MainWorkspaceDescription') : t('AddWorkspace.SubWorkspaceDescription');
+  const label = isCreateSyncedWorkspace ? t('AddWorkspace.SyncedWorkspace') : t('AddWorkspace.LocalWorkspace');
+  const description = isCreateSyncedWorkspace ? t('AddWorkspace.SyncedWorkspaceDescription') : t('AddWorkspace.LocalWorkspaceDescription');
   return (
     <Container elevation={0} square>
       <FormControlLabel

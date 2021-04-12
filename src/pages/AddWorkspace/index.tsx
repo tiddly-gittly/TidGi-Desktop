@@ -39,7 +39,7 @@ const Container = styled.main`
   }
 `;
 const TokenFormContainer = styled(Paper)`
-  margin-top: 10px;
+  margin-bottom: 10px;
   padding: 5px 10px;
 `;
 TokenFormContainer.defaultProps = {
@@ -47,7 +47,7 @@ TokenFormContainer.defaultProps = {
   elevation: 2,
 };
 const TabPanel = styled(TabPanelRaw)`
-  margin-top: 10px;
+  margin-bottom: 10px;
   padding: 0 !important;
 `;
 
@@ -77,9 +77,11 @@ export default function AddWorkspace(): JSX.Element {
         </AppBar>
 
         <SyncedWikiDescription isCreateSyncedWorkspace={isCreateSyncedWorkspace} isCreateSyncedWorkspaceSetter={isCreateSyncedWorkspaceSetter} />
-        <TokenFormContainer>
-          <TokenForm />
-        </TokenFormContainer>
+        {isCreateSyncedWorkspace && (
+          <TokenFormContainer>
+            <TokenForm />
+          </TokenFormContainer>
+        )}
 
         <MainSubWikiDescription isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
         <TabPanel value={CreateWorkspaceTabs.CloneOnlineWiki}>
