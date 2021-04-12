@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Paper, Button, TextField, InputLabel, Select, Autocomplete } from '@material-ui/core';
+import { Paper, Button, TextField, Autocomplete } from '@material-ui/core';
 
 export const CreateContainer = styled(Paper)`
   padding: 10px;
