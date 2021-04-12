@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import Promise from 'bluebird';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
-import { useQuery, useMutation } from 'graphql-hooks';
+import { useQuery, useMutation, GraphQLClient, ClientContext } from 'graphql-hooks';
 import { trim } from 'lodash';
 import { useTranslation } from 'react-i18next';
 
@@ -18,6 +18,7 @@ import CachedIcon from '@material-ui/icons/Cached';
 import CreateNewFolderIcon from '@material-ui/icons/CreateNewFolder';
 
 import type { IAuthingUserInfo } from '@services/types';
+import { GITHUB_GRAPHQL_API } from '@/constants/auth';
 
 const RepoSearchInput = styled(TextField)``;
 const ReloadButton = styled(Button)`
@@ -80,6 +81,12 @@ export default function SearchRepo({
   userInfo,
   isCreateMainWorkspace,
 }: Props): JSX.Element {
+  const graphqlClient = useMemo(
+    () =>
+      new GraphQLClient({
+        url: GITHUB_GRAPHQL_API,
+      }),
+  );
   const [githubRepoSearchString, githubRepoSearchStringSetter] = useState('wiki');
   const loadCount = 10;
   const githubUsername = userInfo?.login || '';
@@ -137,7 +144,7 @@ export default function SearchRepo({
   const githubPagesUrl = `https://${userInfo?.login || '???'}.github.io/${githubRepoSearchString}`;
 
   return (
-    <>
+    <ClientContext.Provider value={graphqlClient}>
       <RepoSearchInput
         fullWidth
         onChange={(event) => {
@@ -208,6 +215,6 @@ export default function SearchRepo({
           {t('AddWorkspace.Reload')}
         </ReloadButton>
       )}
-    </>
+    </ClientContext.Provider>
   );
 }
