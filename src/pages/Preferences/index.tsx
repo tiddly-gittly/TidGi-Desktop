@@ -31,7 +31,7 @@ import { hunspellLanguagesMap } from '../../constants/hunspell-languages';
 import webcatalogLogo from '@/images/webcatalog-logo.svg';
 import translatiumLogo from '@/images/translatium-logo.svg';
 
-import { GithubTokenForm } from '../../components/github/git-token-form';
+import { TokenForm } from '../../components/TokenForm';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { IPreferences, PreferenceSections } from '@services/preferences/interface';
 import { usePreferenceSections } from './useSections';
@@ -88,16 +88,6 @@ const Paper = styled(PaperRaw)<{ dark?: 0 | 1 }>`
   margin-top: 5px;
   margin-bottom: 30px;
   border: ${({ dark }) => (dark === 1 ? 'none' : '1px solid rgba(0, 0, 0, 0.12)')};
-`;
-
-const TokenContainer = styled.div`
-  margin-top: 10px;
-  margin-bottom: 10px;
-  display: flex;
-  justify-content: space-around;
-  flex-direction: column;
-  width: 200px;
-  min-width: 200px;
 `;
 
 const TimePickerContainer = styled.div`
@@ -257,10 +247,7 @@ export default function Preferences(): JSX.Element {
         <Paper elevation={0}>
           <List dense disablePadding>
             <ListItem>
-              <ListItemText primary={t('Preference.Token')} secondary={t('Preference.TokenDescription')} />
-              <TokenContainer>
-                <GithubTokenForm />
-              </TokenContainer>
+              <TokenForm />
             </ListItem>
             <ListItem>
               <ListItemText primary={t('Preference.SyncInterval')} secondary={t('Preference.SyncIntervalDescription')} />
