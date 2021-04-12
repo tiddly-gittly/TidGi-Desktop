@@ -5,6 +5,9 @@ import { TabPanel, TabContext, TabList } from '@material-ui/lab';
 import { SupportedStorageServices } from '@services/types';
 import { useTranslation } from 'react-i18next';
 
+import GitHubLogin from './AuthingLoginButton';
+import { GitTokenForm } from './GitTokenForm';
+
 const Container = styled.div`
   width: 100%;
   display: flex;
@@ -47,7 +50,9 @@ export function TokenForm(): JSX.Element {
             <Tab label="GitLab" value={SupportedStorageServices.gitlab} />
             <Tab label="Gitee" value={SupportedStorageServices.gitee} />
           </TabList>
-          <TabPanel value={SupportedStorageServices.github}>Item One</TabPanel>
+          <TabPanel value={SupportedStorageServices.github}>
+            <GitTokenForm storageService={SupportedStorageServices.github} />
+          </TabPanel>
           <TabPanel value={SupportedStorageServices.gitlab}>Item Two</TabPanel>
           <TabPanel value={SupportedStorageServices.gitee}>Item Two</TabPanel>
         </TabsContainer>

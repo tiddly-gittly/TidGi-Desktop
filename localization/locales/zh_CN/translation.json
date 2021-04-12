@@ -42,6 +42,7 @@
     "ImportWiki": "导入WIKI",
     "CloneWiki": "克隆Wiki",
     "NotLoggedIn": "未登录",
+    "LogoutToGetStorageServiceToken": "登录在线存储服务以获取凭证",
     "LogoutGithubAccount": "登出Github账号",
     "LoginGithubAccount": "登录Github账号",
     "GitToken": "Git Token",
