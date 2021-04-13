@@ -1,6 +1,5 @@
 import { app } from 'electron';
 import process from 'process';
-import path from 'path';
 import os from 'os';
 import isDevelopment from 'electron-is-dev';
 import { injectable } from 'inversify';
@@ -10,8 +9,8 @@ import * as paths from '@services/constants/paths';
 
 @injectable()
 export class ContextService implements IContextService {
-  private pathConstants: IPaths = paths;
-  private constants: IConstants = {
+  private readonly pathConstants: IPaths = paths;
+  private readonly constants: IConstants = {
     isDevelopment,
     platform: process.platform,
     appVersion: app.getVersion(),
@@ -19,7 +18,8 @@ export class ContextService implements IContextService {
     oSVersion: os.release(),
     environmentVersions: process.versions,
   };
-  private context: IContext;
+
+  private readonly context: IContext;
   constructor() {
     this.context = {
       ...this.pathConstants,

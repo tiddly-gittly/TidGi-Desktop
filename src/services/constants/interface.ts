@@ -7,6 +7,7 @@ export interface IPaths {
   TIDDLERS_PATH: string;
   ICON_PATH: string;
   CHROME_ERROR_PATH: string;
+  LOGIN_REDIRECT_PATH: string;
   DESKTOP_PATH: string;
   LOG_FOLDER: string;
   LOCALIZATION_FOLDER: string;
