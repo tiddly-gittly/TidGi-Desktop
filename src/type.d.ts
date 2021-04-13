@@ -41,6 +41,7 @@ declare module '@authing/sso' {
     oauth?: string;
     thirdPartyIdentity?: {
       accessToken?: string;
+      provider?: string;
     };
   }
 

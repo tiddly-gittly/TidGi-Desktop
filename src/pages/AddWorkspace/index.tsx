@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useCallback } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { AppBar, Paper, Tab } from '@material-ui/core';
@@ -16,6 +16,7 @@ import { CloneWikiForm } from './CloneWikiForm';
 import { CloneWikiDoneButton } from './CloneWikiDoneButton';
 
 import { useIsCreateMainWorkspace, useIsCreateSyncedWorkspace, useWikiWorkspaceForm } from './useForm';
+import { useAuthing, useTokenFromAuthingRedirect } from '@/components/TokenForm/gitTokenHooks';
 
 enum CreateWorkspaceTabs {
   CloneOnlineWiki = 'CloneOnlineWiki',
@@ -49,6 +50,12 @@ export default function AddWorkspace(): JSX.Element {
   const [currentTab, currentTabSetter] = useState<CreateWorkspaceTabs>(CreateWorkspaceTabs.CreateNewWiki);
   const [isCreateSyncedWorkspace, isCreateSyncedWorkspaceSetter] = useIsCreateSyncedWorkspace();
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useIsCreateMainWorkspace();
+
+  const authing = useAuthing();
+  useTokenFromAuthingRedirect(
+    authing,
+    useCallback(() => isCreateSyncedWorkspaceSetter(true), []),
+  );
 
   const form = useWikiWorkspaceForm();
 
