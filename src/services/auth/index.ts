@@ -5,7 +5,7 @@ import { IAuthingUserInfo, SupportedStorageServices } from '@services/types';
 import { lazyInject } from '@services/container';
 import type { IWindowService } from '@services/windows/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IAuthenticationService, IUserInfos } from './interface';
+import { IAuthenticationService, IUserInfos, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
 import { BehaviorSubject } from 'rxjs';
 import { IGitUserInfos } from '@services/git/interface';
 
@@ -32,24 +32,15 @@ export class Authentication implements IAuthenticationService {
   }
 
   public getStorageServiceUserInfo(serviceName: SupportedStorageServices): IGitUserInfos | undefined {
-    switch (serviceName) {
-      case SupportedStorageServices.github: {
-        const gitUserName = this.get('github-userName');
-        const email = this.get('email');
-        const accessToken = this.get('github-token');
-        if (gitUserName !== undefined && email !== undefined && accessToken !== undefined) {
-          return {
-            gitUserName,
-            email,
-            accessToken,
-          };
-        }
-
-        break;
-      }
-
-      default:
-        break;
+    const gitUserName = this.get(`${serviceName}-userName` as ServiceUserNameTypes);
+    const email = this.get(`${serviceName}-email` as ServiceEmailTypes);
+    const accessToken = this.get(`${serviceName}-token` as ServiceTokenTypes);
+    if (gitUserName !== undefined && email !== undefined && accessToken !== undefined) {
+      return {
+        gitUserName,
+        email,
+        accessToken,
+      };
     }
   }
 

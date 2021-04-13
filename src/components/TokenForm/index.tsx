@@ -1,11 +1,10 @@
 import React, { useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Tab as TabRaw, ListItemText } from '@material-ui/core';
-import { TabPanel, TabContext, TabList } from '@material-ui/lab';
+import { TabPanel as TabPanelRaw, TabContext, TabList as TabListRaw } from '@material-ui/lab';
 import { SupportedStorageServices } from '@services/types';
 import { useTranslation } from 'react-i18next';
 
-import GitHubLogin from './AuthingLoginButton';
 import { GitTokenForm } from './GitTokenForm';
 
 const Container = styled.div`
@@ -13,9 +12,16 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
 `;
+const TabPanel = styled(TabPanelRaw)`
+  padding: 5px 0 !important;
+`;
+const TabList = styled(TabListRaw)``;
 const TabsContainer = styled.div`
   display: flex;
   flex-direction: row;
+  & ${TabList} {
+    min-width: 160px;
+  }
 `;
 const backgroundColorShift = keyframes`
 from {background-color: #fdfdfd;}

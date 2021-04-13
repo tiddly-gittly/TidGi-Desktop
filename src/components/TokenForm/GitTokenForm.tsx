@@ -9,13 +9,17 @@ import { SupportedStorageServices, IAuthingUserInfo } from '@services/types';
 import { useUserInfoObservable } from '@services/auth/hooks';
 import { usePromiseValueAndSetter } from '@/helpers/useServiceValue';
 import { APP_ID, APP_DOMAIN } from '@/constants/auth';
-import { IUserInfos, ServiceTokenTypes } from '@services/auth/interface';
+import { ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from '@services/auth/interface';
 
 const AuthingLoginButton = styled(Button)`
   white-space: nowrap;
   width: 100%;
 `;
 const GitTokenInput = styled(TextField)``;
+GitTokenInput.defaultProps = {
+  fullWidth: true,
+  variant: 'standard',
+};
 
 export function GitTokenForm(props: {
   children?: JSX.Element | Array<JSX.Element | undefined | string>;
@@ -53,18 +57,19 @@ export function GitTokenForm(props: {
       if ('userInfo' in response && response.userInfo?.thirdPartyIdentity?.accessToken !== undefined) {
         const accessTokenToSet = response?.userInfo?.thirdPartyIdentity?.accessToken;
         const authDataString = response?.userInfo?.oauth;
-        if (accessTokenToSet !== undefined) {
-          await window.service.auth.set(`${storageService}-token` as ServiceTokenTypes, accessTokenToSet);
-        }
         // all data we need
         if (accessTokenToSet !== undefined && authDataString !== undefined) {
           const authData = JSON.parse(authDataString);
+          // DEBUG: console
+          console.log(`authData`, authData);
           const nextUserInfo: IAuthingUserInfo = {
             ...response.userInfo,
             ...authData,
             ...response.userInfo?.thirdPartyIdentity,
           };
-          void window.service.auth.set(`${storageService}-userName` as ServiceTokenTypes, nextUserInfo.username);
+          void window.service.auth.set(`${storageService}-token` as ServiceTokenTypes, accessTokenToSet);
+          void window.service.auth.set(`${storageService}-userName` as ServiceUserNameTypes, nextUserInfo.username);
+          void window.service.auth.set(`${storageService}-email` as ServiceEmailTypes, nextUserInfo.email);
           if (userName === undefined || (userName === '' && nextUserInfo.username !== userName)) {
             userNameSetter(nextUserInfo.username);
           }
@@ -119,11 +124,24 @@ export function GitTokenForm(props: {
       <AuthingLoginButton onClick={onClickLogin}>{t('AddWorkspace.LogoutToGetStorageServiceToken')}</AuthingLoginButton>
       <GitTokenInput
         helperText={t('AddWorkspace.GitTokenDescription')}
-        fullWidth
         onChange={(event) => {
           void window.service.auth.set(`${storageService}-token` as ServiceTokenTypes, event.target.value);
         }}
         value={userInfo[`${storageService}-token` as ServiceTokenTypes] ?? ''}
+      />
+      <GitTokenInput
+        helperText={t('AddWorkspace.GitUserNameDescription')}
+        onChange={(event) => {
+          void window.service.auth.set(`${storageService}-userName` as ServiceUserNameTypes, event.target.value);
+        }}
+        value={userInfo[`${storageService}-userName` as ServiceUserNameTypes] ?? ''}
+      />
+      <GitTokenInput
+        helperText={t('AddWorkspace.GitEmailDescription')}
+        onChange={(event) => {
+          void window.service.auth.set(`${storageService}-email` as ServiceEmailTypes, event.target.value);
+        }}
+        value={userInfo[`${storageService}-email` as ServiceEmailTypes] ?? ''}
       />
       {children}
     </>

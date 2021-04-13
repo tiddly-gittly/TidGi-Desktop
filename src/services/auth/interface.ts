@@ -6,19 +6,23 @@ import { IGitUserInfos } from '@services/git/interface';
 import { SupportedStorageServices } from '@services/types';
 
 export type ServiceTokenTypes = `${SupportedStorageServices}-token`;
-/** Github Login: token */
+/** Git Login: token */
 type TokenRecord = Record<ServiceTokenTypes, string>;
-export type ServiceUserNameTypes = `${SupportedStorageServices}-token`;
-/** Github Login: username , this is also used to filter user's repo when searching repo */
+
+export type ServiceUserNameTypes = `${SupportedStorageServices}-userName`;
+/** Git Login: username , this is also used to filter user's repo when searching repo */
 type UserNameRecord = Record<ServiceUserNameTypes, string>;
+
+export type ServiceEmailTypes = `${SupportedStorageServices}-email`;
+/** Git push: Git commit message email, you may use different email for different storage service */
+type EmailRecord = Record<ServiceEmailTypes, string>;
+
 export type IUserInfos = {
   /** UserName in TiddlyWiki */
   userName: string;
-  /** Git commit message email */
-  email: string;
-  'github-userName'?: string;
 } & Partial<TokenRecord> &
-  Partial<UserNameRecord>;
+  Partial<UserNameRecord> &
+  Partial<EmailRecord>;
 
 /**
  * Handle login to Github GitLab Coding.net

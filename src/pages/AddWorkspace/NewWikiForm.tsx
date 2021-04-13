@@ -19,8 +19,6 @@ import { useValidateNewWiki } from './useNewWiki';
 export function NewWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
   const [errorInWhichComponent] = useValidateNewWiki(isCreateMainWorkspace, form);
-  // DEBUG: console
-  console.log(`form.mainWikiToLink`, form.mainWikiToLink);
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
