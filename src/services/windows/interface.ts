@@ -19,6 +19,7 @@ export interface IWindowService {
   goHome(windowName: WindowNames): Promise<void>;
   goBack(windowName: WindowNames): void;
   goForward(windowName: WindowNames): void;
+  loadURL(windowName: WindowNames, newUrl?: string): Promise<void>;
   reload(windowName: WindowNames): void;
   clearStorageData(windowName?: WindowNames): Promise<void>;
   findInPage(text: string, forward?: boolean | undefined, windowName?: WindowNames): void;
@@ -40,6 +41,7 @@ export const WindowServiceIPCDescriptor = {
     goBack: ProxyPropertyType.Function,
     goForward: ProxyPropertyType.Function,
     reload: ProxyPropertyType.Function,
+    loadURL: ProxyPropertyType.Function,
     clearStorageData: ProxyPropertyType.Function,
     findInPage: ProxyPropertyType.Function,
     stopFindInPage: ProxyPropertyType.Function,

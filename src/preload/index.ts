@@ -2,6 +2,7 @@ import 'reflect-metadata';
 import { contextBridge, ipcRenderer } from 'electron';
 
 import './common/i18n';
+import './common/remote';
 import './common/authing-postmessage';
 import * as service from './common/services';
 import { ViewChannel } from '@/constants/channels';

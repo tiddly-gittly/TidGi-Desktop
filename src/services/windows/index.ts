@@ -336,6 +336,11 @@ export class Window implements IWindowService {
     win?.getBrowserView()?.webContents?.reload();
   }
 
+  async loadURL(windowName: WindowNames, newUrl: string): Promise<void> {
+    const win = this.get(windowName);
+    await win?.loadURL(newUrl);
+  }
+
   public async clearStorageData(windowName: WindowNames = WindowNames.main): Promise<void> {
     const win = this.get(windowName);
     await win?.getBrowserView()?.webContents?.session?.clearStorageData();
