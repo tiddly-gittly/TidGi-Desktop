@@ -5,16 +5,20 @@ import { BehaviorSubject } from 'rxjs';
 import { IGitUserInfos } from '@services/git/interface';
 import { SupportedStorageServices } from '@services/types';
 
-export interface IUserInfos {
+export type ServiceTokenTypes = `${SupportedStorageServices}-token`;
+/** Github Login: token */
+type TokenRecord = Record<ServiceTokenTypes, string>;
+export type ServiceUserNameTypes = `${SupportedStorageServices}-token`;
+/** Github Login: username , this is also used to filter user's repo when searching repo */
+type UserNameRecord = Record<ServiceUserNameTypes, string>;
+export type IUserInfos = {
   /** UserName in TiddlyWiki */
   userName: string;
   /** Git commit message email */
   email: string;
-  /** Github Login: token */
-  'github-token'?: string;
-  /** Github Login: username , this is also used to filter user's repo when searching repo */
   'github-userName'?: string;
-}
+} & Partial<TokenRecord> &
+  Partial<UserNameRecord>;
 
 /**
  * Handle login to Github GitLab Coding.net

@@ -1,16 +1,15 @@
-import React, { useMemo, useCallback } from 'react';
+import React, { useMemo, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import AuthingSSO from '@authing/sso';
+import AuthingSSO, { ITrackSessionResult } from '@authing/sso';
 
 import { TextField, Button } from '@material-ui/core';
 
 import { SupportedStorageServices, IAuthingUserInfo } from '@services/types';
 import { useUserInfoObservable } from '@services/auth/hooks';
 import { usePromiseValueAndSetter } from '@/helpers/useServiceValue';
-import GitHubLogin from './AuthingLoginButton';
 import { APP_ID, APP_DOMAIN } from '@/constants/auth';
-import { IUserInfos } from '@services/auth/interface';
+import { IUserInfos, ServiceTokenTypes } from '@services/auth/interface';
 
 const AuthingLoginButton = styled(Button)`
   white-space: nowrap;
@@ -43,22 +42,19 @@ export function GitTokenForm(props: {
     [],
   );
 
-  const onFailure = useCallback(async (error: Error) => {}, []);
+  const onFailure = useCallback((error: Error) => {
+    console.error(error);
+  }, []);
 
-  const onClickLogin = useCallback(async () => {
-    // clear token first, otherwise github login window won't give us a chance to see the form
-    // void this.auth.logout();
-    // window.remote.clearStorageData();
-    try {
-      await authing.login();
-
-      const { session, ...response } = await authing.trackSession();
-      const isLogin = session !== null && session !== undefined;
-      if (isLogin && 'userInfo' in response && response.userInfo?.thirdPartyIdentity?.accessToken !== undefined) {
+  const onLoginSuccessResponse = useCallback(
+    async (response: ITrackSessionResult) => {
+      // DEBUG: console
+      console.log(`response`, response);
+      if ('userInfo' in response && response.userInfo?.thirdPartyIdentity?.accessToken !== undefined) {
         const accessTokenToSet = response?.userInfo?.thirdPartyIdentity?.accessToken;
         const authDataString = response?.userInfo?.oauth;
         if (accessTokenToSet !== undefined) {
-          void window.service.auth.set((`${storageService}-token` as unknown) as keyof IUserInfos, accessTokenToSet);
+          await window.service.auth.set(`${storageService}-token` as ServiceTokenTypes, accessTokenToSet);
         }
         // all data we need
         if (accessTokenToSet !== undefined && authDataString !== undefined) {
@@ -68,42 +64,66 @@ export function GitTokenForm(props: {
             ...authData,
             ...response.userInfo?.thirdPartyIdentity,
           };
-          delete nextUserInfo.oauth;
-          delete nextUserInfo.thirdPartyIdentity;
-          void window.service.auth.set((`${storageService}-userName` as unknown) as keyof IUserInfos, nextUserInfo.username);
-          if (userName === undefined || userName === '') {
+          void window.service.auth.set(`${storageService}-userName` as ServiceTokenTypes, nextUserInfo.username);
+          if (userName === undefined || (userName === '' && nextUserInfo.username !== userName)) {
             userNameSetter(nextUserInfo.username);
           }
         }
       }
-    } catch (error) {
-      void onFailure(error);
-    }
-  }, [authing, onFailure]);
+    },
+    [storageService, userName, userNameSetter],
+  );
+
   const onClickLogout = useCallback(async () => {
     const { code, message } = await authing.logout();
     await window.service.window.clearStorageData();
     if (code === 200) {
       // TODO: clear the input
     } else {
-      console.error(message);
+      onFailure(new Error(message));
+    }
+  }, [authing, onFailure]);
+
+  // after authing redirect to 3rd party page and success, it will redirect back, we then check if login is success on component mount
+  useEffect(() => {
+    void (async () => {
+      const response = await authing.trackSession();
+      // we logout so login into github won't block use from login into gitlab
+      await onClickLogout();
+      const isLogin = response?.session !== undefined && response?.session !== null;
+      if (isLogin) {
+        await onLoginSuccessResponse(response);
+      }
+    })();
+  }, [authing, onLoginSuccessResponse, onClickLogout]);
+
+  const onClickLogin = useCallback(async () => {
+    // clear token first, otherwise github login window won't give us a chance to see the form
+    // void this.auth.logout();
+    // window.remote.clearStorageData();
+    try {
+      await authing.login();
+    } catch (error) {
+      onFailure(error);
     }
   }, [authing, onFailure]);
 
   const userInfo = useUserInfoObservable();
+  // DEBUG: console
+  console.log(`userInfo`, JSON.stringify(userInfo));
   if (userInfo === undefined) {
     return <div>Loading...</div>;
   }
   return (
     <>
-      <AuthingLoginButton>{t('AddWorkspace.LogoutToGetStorageServiceToken')}</AuthingLoginButton>
+      <AuthingLoginButton onClick={onClickLogin}>{t('AddWorkspace.LogoutToGetStorageServiceToken')}</AuthingLoginButton>
       <GitTokenInput
         helperText={t('AddWorkspace.GitTokenDescription')}
         fullWidth
         onChange={(event) => {
-          void window.service.auth.set(`${storageService}-token`, event.target.value);
+          void window.service.auth.set(`${storageService}-token` as ServiceTokenTypes, event.target.value);
         }}
-        value={userInfo[`${storageService}-token`]}
+        value={userInfo[`${storageService}-token` as ServiceTokenTypes] ?? ''}
       />
       {children}
     </>
