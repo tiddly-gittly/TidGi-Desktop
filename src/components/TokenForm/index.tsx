@@ -59,8 +59,12 @@ export function TokenForm(): JSX.Element {
           <TabPanel value={SupportedStorageServices.github}>
             <GitTokenForm storageService={SupportedStorageServices.github} />
           </TabPanel>
-          <TabPanel value={SupportedStorageServices.gitlab}>Item Two</TabPanel>
-          <TabPanel value={SupportedStorageServices.gitee}>Item Two</TabPanel>
+          <TabPanel value={SupportedStorageServices.gitlab}>
+            <GitTokenForm storageService={SupportedStorageServices.gitlab} />
+          </TabPanel>
+          <TabPanel value={SupportedStorageServices.gitee}>
+            Gitee（码云）一直不愿意支持 OAuth2 ，所以我们没法适配它的登录系统，如果你认识相关开发人员，请催促他们尽快支持，与国际接轨。
+          </TabPanel>
         </TabsContainer>
       </TabContext>
     </Container>
