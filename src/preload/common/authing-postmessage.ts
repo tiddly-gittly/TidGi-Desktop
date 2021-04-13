@@ -6,22 +6,26 @@ import { context } from './services';
 
 const CHECK_LOADED_INTERVAL = 500;
 let CHROME_ERROR_PATH: string | undefined;
-
+let LOGIN_REDIRECT_PATH: string | undefined;
 let REACT_PATH: string | undefined;
 
 async function refresh(): Promise<void> {
-  if (CHROME_ERROR_PATH === undefined || REACT_PATH === undefined) {
-    Promise.all([
+  if (CHROME_ERROR_PATH === undefined || REACT_PATH === undefined || LOGIN_REDIRECT_PATH === undefined) {
+    await Promise.all([
       context.get('CHROME_ERROR_PATH').then((pathName) => {
         CHROME_ERROR_PATH = pathName as string;
+      }),
+      context.get('LOGIN_REDIRECT_PATH').then((pathName) => {
+        LOGIN_REDIRECT_PATH = pathName as string;
       }),
       context.get('REACT_PATH').then((pathName) => {
         REACT_PATH = pathName as string;
       }),
     ]);
+    setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);
     return;
   }
-  if (window.location.href === CHROME_ERROR_PATH) {
+  if (window.location.href === CHROME_ERROR_PATH || window.location.href.startsWith(LOGIN_REDIRECT_PATH)) {
     void remote.getCurrentWindow().loadURL(REACT_PATH);
   } else {
     setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);
