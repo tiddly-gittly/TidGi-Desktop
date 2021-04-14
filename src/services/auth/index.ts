@@ -57,7 +57,7 @@ export class Authentication implements IAuthenticationService {
    * load UserInfos in sync, and ensure it is an Object
    */
   private readonly getInitUserInfoForCache = (): IUserInfos => {
-    let userInfosFromDisk = settings.getSync(`userInfo.${this.version}`) ?? {};
+    let userInfosFromDisk = settings.getSync(`userInfos.${this.version}`) ?? {};
     userInfosFromDisk = typeof userInfosFromDisk === 'object' && !Array.isArray(userInfosFromDisk) ? userInfosFromDisk : {};
     return { ...defaultUserInfos, ...this.sanitizeUserInfo(userInfosFromDisk) };
   };

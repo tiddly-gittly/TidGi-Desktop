@@ -82,7 +82,7 @@ export class Preference implements IPreferenceService {
     this.cachedPreferences[key] = value;
     this.cachedPreferences = { ...this.cachedPreferences, ...this.sanitizePreference(this.cachedPreferences) };
 
-    void settings.set(`preferences.${this.version}.${key}`, this.cachedPreferences[key]);
+    void settings.set(`preferences.${this.version}.${key}`, this.cachedPreferences[key] as any);
 
     this.reactWhenPreferencesChanged(key, value);
     this.updatePreferenceSubject();
@@ -107,7 +107,7 @@ export class Preference implements IPreferenceService {
    */
   private async setPreferences(newPreferences: IPreferences): Promise<void> {
     this.cachedPreferences = newPreferences;
-    await settings.set(`preferences.${this.version}`, { ...newPreferences });
+    await settings.set(`preferences.${this.version}`, { ...newPreferences } as any);
     this.updatePreferenceSubject();
   }
 

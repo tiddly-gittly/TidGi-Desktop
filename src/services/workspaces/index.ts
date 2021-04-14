@@ -311,7 +311,7 @@ export class Workspace implements IWorkspaceService {
       newImage.clone().resize(128, 128).quality(100).write(destinationPicturePath, resolve);
     });
     const currentPicturePath = this.get(id)?.picturePath;
-    await this.update(id, {
+    this.update(id, {
       picturePath: destinationPicturePath,
     });
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
