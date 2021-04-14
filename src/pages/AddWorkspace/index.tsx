@@ -54,7 +54,7 @@ export default function AddWorkspace(): JSX.Element {
   const authing = useAuthing();
   useTokenFromAuthingRedirect(
     authing,
-    useCallback(() => isCreateSyncedWorkspaceSetter(true), []),
+    useCallback(() => isCreateSyncedWorkspaceSetter(true), [isCreateSyncedWorkspaceSetter]),
   );
 
   const form = useWikiWorkspaceForm();

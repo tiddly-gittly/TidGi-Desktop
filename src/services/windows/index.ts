@@ -343,7 +343,11 @@ export class Window implements IWindowService {
 
   public async clearStorageData(windowName: WindowNames = WindowNames.main): Promise<void> {
     const win = this.get(windowName);
-    await win?.getBrowserView()?.webContents?.session?.clearStorageData();
+    const session = win?.getBrowserView()?.webContents?.session;
+    if (session !== undefined) {
+      await session.clearStorageData();
+      await session.clearAuthCache();
+    }
   }
 
   private registerMenu(): void {

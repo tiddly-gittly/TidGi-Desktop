@@ -44,8 +44,6 @@ interface IAuthingPostMessageEvent {
 window.addEventListener(
   'message',
   (event: MessageEvent<IAuthingPostMessageEvent>) => {
-    // DEBUG: console
-    console.log(`event`, event);
     if (typeof event?.data?.code === 'number' && typeof event?.data?.data?.token === 'string' && event?.data.from !== 'preload') {
       // This message will be catch by this handler again, so we add a 'from' to indicate that it is re-send by ourself
       // we re-send this, so authing in this window can catch it

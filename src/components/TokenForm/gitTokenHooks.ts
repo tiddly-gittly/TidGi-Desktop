@@ -6,14 +6,6 @@ import { APP_ID, APP_DOMAIN } from '@/constants/auth';
 import { usePromiseValueAndSetter } from '@/helpers/useServiceValue';
 
 export function useTokenFromAuthingRedirect(authing: AuthingSSO, callback?: () => void): void {
-  /**
-   * Update tiddlywiki's editor user name when first time creating new workspace
-   */
-  const [userName, userNameSetter] = usePromiseValueAndSetter(
-    async () => await window.service.auth.get('userName'),
-    async (newUserName) => await window.service.auth.set('userName', newUserName),
-  );
-
   const onLoginSuccessResponse = useCallback(
     async (response: ITrackSessionResult) => {
       // DEBUG: console
@@ -43,19 +35,18 @@ export function useTokenFromAuthingRedirect(authing: AuthingSSO, callback?: () =
             window.service.auth.set(`${provider}-userName` as ServiceUserNameTypes, nextUserInfo.username),
             window.service.auth.set(`${provider}-email` as ServiceEmailTypes, nextUserInfo.email),
           ]);
-          callback();
-          if (userName === undefined || (userName === '' && nextUserInfo.username !== userName)) {
-            userNameSetter(nextUserInfo.username);
-          }
+          callback?.();
         }
       }
     },
-    [userName, userNameSetter],
+    [callback],
   );
 
   const onClickLogout = useCallback(async () => {
     const { code, message } = await authing.logout();
     await window.service.window.clearStorageData();
+    // DEBUG: console
+    console.log(`{ code, message }`, { code, message });
     if (code === 200) {
       // TODO: clear the input
     } else {
