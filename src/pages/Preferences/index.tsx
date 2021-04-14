@@ -24,9 +24,9 @@ import {
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import TimePicker from '@material-ui/lab/TimePicker';
 
-import StatedMenu from '../../components/github/stated-menu';
+import PopUpMenuItem from '@/components/PopUpMenuItem';
 
-import { hunspellLanguagesMap } from '../../constants/hunspell-languages';
+import { hunspellLanguagesMap } from '@/constants/hunspell-languages';
 
 import webcatalogLogo from '@/images/webcatalog-logo.svg';
 import translatiumLogo from '@/images/translatium-logo.svg';
@@ -293,7 +293,7 @@ export default function Preferences(): JSX.Element {
               </ListItemSecondaryAction>
             </ListItem>
             <Divider />
-            <StatedMenu
+            <PopUpMenuItem
               id="theme"
               buttonElement={
                 <ListItem button>
@@ -310,7 +310,7 @@ export default function Preferences(): JSX.Element {
               <MenuItem dense onClick={async () => await window.service.preference.set('themeSource', 'dark')}>
                 {t('Preference.DarkTheme')}
               </MenuItem>
-            </StatedMenu>
+            </PopUpMenuItem>
             <Divider />
             <ListItem>
               <ListItemText primary={t('Preference.ShowSideBar')} secondary={t('Preference.ShowSideBarDetail')} />
@@ -698,7 +698,7 @@ export default function Preferences(): JSX.Element {
         <SectionTitle ref={sections.system.ref}>{t('Preference.System')}</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
-            <StatedMenu
+            <PopUpMenuItem
               id="openAtLogin"
               buttonElement={
                 <ListItem button>
@@ -715,7 +715,7 @@ export default function Preferences(): JSX.Element {
               <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'no')}>
                 {t('No')}
               </MenuItem>
-            </StatedMenu>
+            </PopUpMenuItem>
           </List>
         </Paper>
 

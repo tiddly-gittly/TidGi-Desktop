@@ -1,14 +1,11 @@
-import React, { useMemo, useCallback, useEffect } from 'react';
+import React, { useCallback } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import AuthingSSO, { ITrackSessionResult } from '@authing/sso';
 
 import { TextField, Button } from '@material-ui/core';
 
-import { SupportedStorageServices, IAuthingUserInfo } from '@services/types';
+import { SupportedStorageServices } from '@services/types';
 import { useUserInfoObservable } from '@services/auth/hooks';
-import { usePromiseValueAndSetter } from '@/helpers/useServiceValue';
-import { APP_ID, APP_DOMAIN } from '@/constants/auth';
 import { ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from '@services/auth/interface';
 import { useAuthing } from './gitTokenHooks';
 

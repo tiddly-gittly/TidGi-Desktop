@@ -18,7 +18,7 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import DateTimePicker from '@material-ui/lab/DateTimePicker';
 import { WindowNames } from '@services/windows/WindowProperties';
 
-import StatedMenu from '../../components/github/stated-menu';
+import PopUpMenuItem from '@/components/PopUpMenuItem';
 
 // https://www.sketchappsources.com/free-source/2501-iphone-app-background-sketch-freebie-resource.html
 import nightBackgroundPng from '../../images/night-background.png';
@@ -110,7 +110,7 @@ export default function PauseNotifications(): JSX.Element {
           {pauseNotificationsInfo.reason !== 'scheduled' && (
             <>
               <Divider />
-              <StatedMenu
+              <PopUpMenuItem
                 id="adjustTime"
                 buttonElement={
                   <ListItem button>
@@ -126,7 +126,7 @@ export default function PauseNotifications(): JSX.Element {
                 <MenuItem dense onClick={() => showDateTimePickerSetter(true)}>
                   Custom...
                 </MenuItem>
-              </StatedMenu>
+              </PopUpMenuItem>
             </>
           )}
           <Divider />

@@ -3,7 +3,6 @@ import AuthingSSO, { ITrackSessionResult } from '@authing/sso';
 import { ServiceTokenTypes, ServiceUserNameTypes, ServiceEmailTypes } from '@services/auth/interface';
 import { SupportedStorageServices, IAuthingUserInfo } from '@services/types';
 import { APP_ID, APP_DOMAIN } from '@/constants/auth';
-import { usePromiseValueAndSetter } from '@/helpers/useServiceValue';
 
 export function useTokenFromAuthingRedirect(authing: AuthingSSO, callback?: () => void): void {
   const onLoginSuccessResponse = useCallback(
