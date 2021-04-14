@@ -14,10 +14,12 @@ const Container = styled.div`
 `;
 const TabPanel = styled(TabPanelRaw)`
   padding: 5px 0 !important;
+  padding-left: 16px !important;
 `;
 const TabList = styled(TabListRaw)``;
 const TabsContainer = styled.div`
   display: flex;
+  padding: 15px 0;
   flex-direction: row;
   & ${TabList} {
     min-width: 160px;
