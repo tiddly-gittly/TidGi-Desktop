@@ -44,7 +44,7 @@ export function useWikiWorkspaceForm() {
   /**
    * Set storage service used by this workspace, for example, Github.
    */
-  const [storageProvider, storageProviderSetter] = useState<SupportedStorageServices>(SupportedStorageServices.github);
+  const [storageProvider, storageProviderSetter] = useState<SupportedStorageServices>(SupportedStorageServices.local);
   const gitUserInfo = useStorageServiceUserInfo(storageProvider);
 
   /**

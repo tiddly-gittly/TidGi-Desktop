@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Tab as TabRaw, ListItemText } from '@material-ui/core';
 import { TabPanel as TabPanelRaw, TabContext, TabList as TabListRaw } from '@material-ui/lab';
@@ -36,13 +36,28 @@ const Tab = styled(TabRaw)`
   animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
 `;
 
+interface Props {
+  storageProvider?: SupportedStorageServices;
+  storageProviderSetter?: React.Dispatch<React.SetStateAction<SupportedStorageServices>>;
+}
 /**
  * Create storage provider's token.
  * @returns
  */
-export function TokenForm(): JSX.Element {
+export function TokenForm({ storageProvider, storageProviderSetter }: Props): JSX.Element {
   const { t } = useTranslation();
-  const [currentTab, currentTabSetter] = useState<SupportedStorageServices>(SupportedStorageServices.github);
+  let [currentTab, currentTabSetter] = useState<SupportedStorageServices>(SupportedStorageServices.github);
+  // use external controls if provided
+  if (storageProvider !== undefined && typeof storageProviderSetter === 'function') {
+    currentTab = storageProvider;
+    currentTabSetter = storageProviderSetter;
+  }
+  // update storageProvider to be an online service, if this Component is opened
+  useEffect(() => {
+    if (storageProvider === SupportedStorageServices.local && typeof storageProviderSetter === 'function') {
+      storageProviderSetter(SupportedStorageServices.github);
+    }
+  }, [storageProvider, storageProviderSetter]);
   return (
     <Container>
       <ListItemText primary={t('Preference.Token')} secondary={t('Preference.TokenDescription')} />
