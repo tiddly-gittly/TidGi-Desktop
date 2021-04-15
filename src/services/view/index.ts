@@ -19,6 +19,7 @@ import getFromRenderer from '@services/libs/getFromRenderer';
 import { ViewChannel, MetaDataChannel } from '@/constants/channels';
 import { lazyInject } from '@services/container';
 import { IViewService } from './interface';
+import { SupportedStorageServices } from '@services/types';
 
 @injectable()
 export class View implements IViewService {
@@ -206,16 +207,18 @@ export class View implements IViewService {
     const { rememberLastPageVisited, shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = this.preferenceService.getPreferences();
     // configure session, proxy & ad blocker
     const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
-    const userInfo = this.authService.getStorageServiceUserInfo(workspace.storageService);
-    if (userInfo === undefined) {
-      // user not login into Github or something else
-      void dialog.showMessageBox(browserWindow, {
-        title: i18n.t('Dialog.StorageServiceUserInfoNoFound'),
-        message: i18n.t('Dialog.StorageServiceUserInfoNoFoundDetail'),
-        buttons: ['OK'],
-        cancelId: 0,
-        defaultId: 0,
-      });
+    if (workspace.storageService !== SupportedStorageServices.local) {
+      const userInfo = this.authService.getStorageServiceUserInfo(workspace.storageService);
+      if (userInfo === undefined) {
+        // user not login into Github or something else
+        void dialog.showMessageBox(browserWindow, {
+          title: i18n.t('Dialog.StorageServiceUserInfoNoFound'),
+          message: i18n.t('Dialog.StorageServiceUserInfoNoFoundDetail'),
+          buttons: ['OK'],
+          cancelId: 0,
+          defaultId: 0,
+        });
+      }
     }
     // session
     const sessionOfView = session.fromPartition(partitionId);
