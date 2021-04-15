@@ -53,6 +53,14 @@ export default function AddWorkspace(): JSX.Element {
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useIsCreateMainWorkspace();
   const form = useWikiWorkspaceForm();
 
+  // update storageProviderSetter to local based on isCreateSyncedWorkspace. Other services value will be changed by TokenForm
+  const { storageProviderSetter } = form;
+  useEffect(() => {
+    if (!isCreateSyncedWorkspace && storageProviderSetter !== SupportedStorageServices.local) {
+      storageProviderSetter(SupportedStorageServices.local);
+    }
+  }, [isCreateSyncedWorkspace, storageProviderSetter]);
+
   const authing = useAuthing();
   useTokenFromAuthingRedirect(
     authing,
