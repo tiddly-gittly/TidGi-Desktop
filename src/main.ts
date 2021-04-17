@@ -206,6 +206,8 @@ unhandled({
     openNewGitHubIssue({
       user: 'tiddly-gittly',
       repo: 'TiddlyGit-Desktop',
+      template: 'bug.md',
+      title: `bug: ${error.message}`,
       body: `\`\`\`\n${error.stack ?? 'No error.stack'}\n\`\`\`\n\n---\n\n${debugInfo()}`,
     });
   },
