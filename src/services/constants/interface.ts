@@ -10,6 +10,7 @@ export interface IPaths {
   LOGIN_REDIRECT_PATH: string;
   DESKTOP_PATH: string;
   LOG_FOLDER: string;
+  SETTINGS_FOLDER: string;
   LOCALIZATION_FOLDER: string;
 }
 /**

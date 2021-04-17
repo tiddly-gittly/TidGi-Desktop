@@ -60,3 +60,6 @@ template/wiki/settings/settings.json
 # web build
 .webpack
 out/
+
+# paths
+settings-dev/

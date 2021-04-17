@@ -22,6 +22,7 @@ import { IPreferenceService } from './services/preferences/interface';
 import { IWikiService } from './services/wiki/interface';
 import { IWindowService } from './services/windows/interface';
 import { IWorkspaceViewService } from './services/workspacesView/interface';
+import { SETTINGS_FOLDER } from '@services/constants/paths';
 
 const gotTheLock = app.requestSingleInstanceLock();
 
@@ -32,6 +33,9 @@ if (!gotTheLock) {
   console.info('Quitting dut to we only allow one instance to run.');
   app.quit();
 } else {
+  settings.configure({
+    dir: SETTINGS_FOLDER,
+  });
   protocol.registerSchemesAsPrivileged([
     { scheme: 'http', privileges: { standard: true } },
     { scheme: 'https', privileges: { standard: true } },

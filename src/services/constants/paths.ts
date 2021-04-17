@@ -1,9 +1,11 @@
+import { app } from 'electron';
 import isDev from 'electron-is-dev';
 import path from 'path';
 import os from 'os';
 
 const isMac = process.platform === 'darwin';
 
+/** src folder */
 const sourcePath = path.resolve(__dirname, '..', '..');
 export const buildResourcePath = path.resolve(sourcePath, '..', 'build-resources');
 
@@ -20,6 +22,7 @@ const LOG_FOLDER = isDev
   : isMac
   ? path.resolve(process.resourcesPath, '..', 'logs')
   : path.resolve(os.homedir(), '.tg-note', 'logs');
+const SETTINGS_FOLDER = isDev ? path.resolve(sourcePath, '..', 'settings-dev') : path.resolve(app.getPath('userData'), 'settings');
 const LOCALIZATION_FOLDER = isDev ? path.resolve(sourcePath, '..', 'localization') : path.resolve(process.resourcesPath, 'localization');
 
 export {
@@ -31,5 +34,6 @@ export {
   LOGIN_REDIRECT_PATH,
   DESKTOP_PATH,
   LOG_FOLDER,
+  SETTINGS_FOLDER,
   LOCALIZATION_FOLDER,
 };
