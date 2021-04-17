@@ -27,10 +27,6 @@ import { IWorkspaceService, IWorkspace, IWorkspaceMetaData } from './interface';
 @injectable()
 export class Workspace implements IWorkspaceService {
   /**
-   * version of current setting schema
-   */
-  private readonly version = '14';
-  /**
    * Record from workspace id to workspace settings
    */
   private workspaces: Record<string, IWorkspace> = {};
@@ -140,7 +136,7 @@ export class Workspace implements IWorkspaceService {
    * load workspaces in sync, and ensure it is an Object
    */
   getInitWorkspacesForCache = (): Record<string, IWorkspace> => {
-    const workspacesFromDisk = settings.getSync(`workspaces.${this.version}`) ?? {};
+    const workspacesFromDisk = settings.getSync(`workspaces`) ?? {};
     return typeof workspacesFromDisk === 'object' && !Array.isArray(workspacesFromDisk)
       ? mapValues((pickBy(workspacesFromDisk, (value) => value !== null) as unknown) as Record<string, IWorkspace>, (workspace) =>
           this.sanitizeWorkspace(workspace),
@@ -174,7 +170,7 @@ export class Workspace implements IWorkspaceService {
   public async set(id: string, workspace: IWorkspace): Promise<void> {
     this.workspaces[id] = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspace);
-    await settings.set(`workspaces.${this.version}.${id}`, { ...workspace });
+    await settings.set(`workspaces.${id}`, { ...workspace });
     this.updateWorkspaceSubject();
     this.updateWorkspaceMenuItems();
   }
@@ -343,7 +339,7 @@ export class Workspace implements IWorkspaceService {
     if (id in this.workspaces) {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete this.workspaces[id];
-      await settings.unset(`workspaces.${this.version}.${id}`);
+      await settings.unset(`workspaces.${id}`);
     } else {
       throw new Error(`Try to remote workspace, but id ${id} is not existed`);
     }

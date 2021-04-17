@@ -21,7 +21,6 @@ export class Preference implements IPreferenceService {
 
   private cachedPreferences: IPreferences;
   public preference$: BehaviorSubject<IPreferences>;
-  readonly version = '2018.2';
 
   constructor() {
     this.cachedPreferences = this.getInitPreferencesForCache();
@@ -56,7 +55,7 @@ export class Preference implements IPreferenceService {
    * load preferences in sync, and ensure it is an Object
    */
   private readonly getInitPreferencesForCache = (): IPreferences => {
-    let preferencesFromDisk = settings.getSync(`preferences.${this.version}`) ?? {};
+    let preferencesFromDisk = settings.getSync(`preferences`) ?? {};
     preferencesFromDisk = typeof preferencesFromDisk === 'object' && !Array.isArray(preferencesFromDisk) ? preferencesFromDisk : {};
     return { ...defaultPreferences, ...this.sanitizePreference(preferencesFromDisk) };
   };
@@ -82,7 +81,7 @@ export class Preference implements IPreferenceService {
     this.cachedPreferences[key] = value;
     this.cachedPreferences = { ...this.cachedPreferences, ...this.sanitizePreference(this.cachedPreferences) };
 
-    void settings.set(`preferences.${this.version}.${key}`, this.cachedPreferences[key] as any);
+    void settings.set(`preferences.${key}`, this.cachedPreferences[key] as any);
 
     this.reactWhenPreferencesChanged(key, value);
     this.updatePreferenceSubject();
@@ -107,7 +106,7 @@ export class Preference implements IPreferenceService {
    */
   private async setPreferences(newPreferences: IPreferences): Promise<void> {
     this.cachedPreferences = newPreferences;
-    await settings.set(`preferences.${this.version}`, { ...newPreferences } as any);
+    await settings.set(`preferences`, { ...newPreferences } as any);
     this.updatePreferenceSubject();
   }
 

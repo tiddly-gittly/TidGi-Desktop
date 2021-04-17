@@ -19,7 +19,6 @@ export class Authentication implements IAuthenticationService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
 
   private cachedUserInfo: IUserInfos;
-  private readonly version = '2021.1';
   public userInfo$: BehaviorSubject<IUserInfos>;
 
   constructor() {
@@ -57,7 +56,7 @@ export class Authentication implements IAuthenticationService {
    * load UserInfos in sync, and ensure it is an Object
    */
   private readonly getInitUserInfoForCache = (): IUserInfos => {
-    let userInfosFromDisk = settings.getSync(`userInfos.${this.version}`) ?? {};
+    let userInfosFromDisk = settings.getSync(`userInfos`) ?? {};
     userInfosFromDisk = typeof userInfosFromDisk === 'object' && !Array.isArray(userInfosFromDisk) ? userInfosFromDisk : {};
     return { ...defaultUserInfos, ...this.sanitizeUserInfo(userInfosFromDisk) };
   };
@@ -70,7 +69,7 @@ export class Authentication implements IAuthenticationService {
    * Batch update all UserInfos
    */
   private async setUserInfos(newUserInfos: IUserInfos): Promise<void> {
-    await settings.set(`userInfos.${this.version}`, newUserInfos as any);
+    await settings.set(`userInfos`, newUserInfos as any);
   }
 
   /**
