@@ -200,8 +200,8 @@ unhandled({
   logger: logger.error.bind(logger),
   reportButton: (error) => {
     openNewGitHubIssue({
-      user: 'TiddlyGit Desktop User',
-      repo: 'tiddly-gittly/TiddlyGit-Desktop',
+      user: 'tiddly-gittly',
+      repo: 'TiddlyGit-Desktop',
       body: `\`\`\`\n${error.stack ?? 'No error.stack'}\n\`\`\`\n\n---\n\n${debugInfo()}`,
     });
   },
