@@ -6,3 +6,10 @@ Feature: Open
   Scenario: Opening TiddlyGit
     Given the app is launched
     Then the element "#new-user-tip" is on the page
+    Then the element "#add-workspace-button" is on the page
+
+  Scenario: Opening TiddlyGit
+    Given the app is launched
+    Then the element "#add-workspace-button" is on the page
+    Then click on this element
+    Then "AddWorkspace" window show up
