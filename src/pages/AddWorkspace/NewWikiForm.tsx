@@ -29,7 +29,7 @@ export function NewWikiForm({
         <LocationPickerInput
           error={errorInWhichComponent.parentFolderLocation}
           onChange={(event) => form.parentFolderLocationSetter(event.target.value)}
-          label={t('AddWorkspace.WorkspaceFolder')}
+          label={t('AddWorkspace.WorkspaceParentFolder')}
           value={form.parentFolderLocation}
         />
         <LocationPickerButton

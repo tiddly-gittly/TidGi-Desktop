@@ -8,6 +8,7 @@ import Alert from '@material-ui/lab/Alert';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateExistedWiki, useExistedWiki } from './useExistedWiki';
 import { useWikiCreationProgress } from './useIndicator';
+import { WikiLocation } from './FormComponents';
 
 const CloseButton = styled(Button)`
   white-space: nowrap;
@@ -46,18 +47,14 @@ export function ExistedWikiDoneButton({
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.ImportWiki')}
           </Typography>
-          <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-            {form.existedWikiFolderPath}
-          </Typography>
+          <WikiLocation>{form.existedWikiFolderPath}</WikiLocation>
         </CloseButton>
       ) : (
         <CloseButton variant="contained" color="secondary" onClick={onSubmit}>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.ImportWiki')}
           </Typography>
-          <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-            {form.existedWikiFolderPath}
-          </Typography>
+          <WikiLocation>{form.existedWikiFolderPath}</WikiLocation>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.AndLinkToMainWorkspace')}
           </Typography>

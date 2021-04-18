@@ -9,6 +9,7 @@ import Alert from '@material-ui/lab/Alert';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateCloneWiki, useCloneWiki } from './useCloneWiki';
 import { useWikiCreationProgress } from './useIndicator';
+import { WikiLocation } from './FormComponents';
 
 const CloseButton = styled(Button)`
   white-space: nowrap;
@@ -39,18 +40,14 @@ export function CloneWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorksp
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.CloneWiki')}
           </Typography>
-          <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-            {form.wikiFolderLocation}
-          </Typography>
+          <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
         </CloseButton>
       ) : (
         <CloseButton variant="contained" color="secondary" onClick={onSubmit}>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.CloneWiki')}
           </Typography>
-          <Typography variant="body2" noWrap display="inline" align="center" style={{ direction: 'rtl', textTransform: 'none' }}>
-            {form.wikiFolderLocation}
-          </Typography>
+          <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.AndLinkToMainWorkspace')}
           </Typography>

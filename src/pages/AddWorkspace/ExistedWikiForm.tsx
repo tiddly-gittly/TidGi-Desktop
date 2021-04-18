@@ -32,7 +32,7 @@ export function ExistedWikiForm({
             form.existedWikiFolderPathSetter(event.target.value);
           }}
           label={t('AddWorkspace.WorkspaceFolder')}
-          helperText={`${t('AddWorkspace.ImportWiki')}${form.wikiFolderLocation}`}
+          helperText={`${t('AddWorkspace.ImportWiki')}${form.existedWikiFolderPath}`}
           value={form.existedWikiFolderPath}
         />
         <LocationPickerButton

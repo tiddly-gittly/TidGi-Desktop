@@ -1,5 +1,5 @@
 import styled from 'styled-components';
-import { Paper, Button, TextField, Autocomplete } from '@material-ui/core';
+import { Paper, Button, TextField, Autocomplete, Typography } from '@material-ui/core';
 
 export const CreateContainer = styled(Paper)`
   padding: 10px;
@@ -30,3 +30,10 @@ export const SubWikiTagAutoComplete = styled(Autocomplete)``;
 SubWikiTagAutoComplete.defaultProps = {
   freeSolo: true,
 };
+export const WikiLocation = styled(Typography)`
+  direction: rtl;
+  text-transform: none;
+  margin-left: 5px;
+  margin-right: 5px;
+`;
+WikiLocation.defaultProps = { variant: 'body2', noWrap: true, display: 'inline', align: 'center' };
