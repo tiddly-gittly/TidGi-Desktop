@@ -4,5 +4,5 @@ import { developmentSettingFolderName, developmentWikiFolderName } from '../../s
 
 export const sourcePath = path.resolve(__dirname, '..', '..');
 
-export const temporarySettingPath = path.resolve(sourcePath, '..', developmentSettingFolderName)
-export const mockWikiPath = path.resolve(sourcePath, '..', developmentWikiFolderName)
+export const temporarySettingPath = path.resolve(sourcePath, '..', developmentSettingFolderName);
+export const mockWikiPath = path.resolve(sourcePath, '..', developmentWikiFolderName);
