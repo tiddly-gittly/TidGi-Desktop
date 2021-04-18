@@ -1,5 +1,6 @@
 {
   "Hello": "你好",
+  "LinOnetwo": "林一二",
   "WorkspaceSelector": {
     "Add": "添加",
     "EditWorkspace": "编辑工作区",
@@ -36,6 +37,8 @@
     "SearchWithGoogle": "用 Google 搜索"
   },
   "AddWorkspace": {
+    "MainPageTipWithoutSidebar": "<0>使用菜单上的</0><strong> 工作区 → 添加工作区 </strong><2>来开始使用太微！</2>",
+    "MainPageTipWithSidebar": "<0>点击侧边栏上的这个 </0><1>+</1><2>（加号按钮）来开始使用太微!</2>",
     "NotFilled": "未填",
     "AndLinkToMainWorkspace": "并链接到主知识库",
     "CreateWiki": "创建WIKI",

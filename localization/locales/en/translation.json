@@ -36,6 +36,8 @@
     "Paste": "Paste"
   },
   "AddWorkspace": {
+    "MainPageTipWithoutSidebar": "<0>Click </0><strong>Workspaces > Add Workspace</strong><2> on the menu to start using TiddlyWiki!</2>",
+    "MainPageTipWithSidebar": "<0>Click </0><1>+</1><2> button on the sidebar to start using TiddlyWiki!</2>",
     "NotFilled": "Not Filled",
     "GitRepoUrl": "Git repo online url",
     "AndLinkToMainWorkspace": "and link to main Wiki",

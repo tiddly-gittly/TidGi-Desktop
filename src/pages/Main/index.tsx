@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import styled, { css } from 'styled-components';
-import { useTranslation } from 'react-i18next';
+import { useTranslation, Trans } from 'react-i18next';
 import { AsyncReturnType } from 'type-fest';
 import { DndContext } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -136,14 +136,14 @@ const Tip2Text = styled.span`
   /* color: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black; */
 `;
 
-const Tip = styled.div`
+const TipWithSidebar = styled.div`
   position: absolute;
   top: 112px;
   left: 180px;
   user-select: none;
 `;
 
-const Tip2 = styled.div`
+const TipWithoutSidebar = styled.div`
   user-select: none;
 `;
 
@@ -288,20 +288,24 @@ export default function Main(): JSX.Element {
                 {sidebar === true ? (
                   <>
                     <Arrow image={themeSource === 'dark' ? arrowWhite : arrowBlack} />
-                    <Tip id="new-user-tip">
-                      <Tip2Text>Click</Tip2Text>
-                      <Avatar>+</Avatar>
-                      <Tip2Text>to get started!</Tip2Text>
-                    </Tip>
+                    <TipWithSidebar id="new-user-tip">
+                      <Trans t={t} i18nKey="AddWorkspace.MainPageTipWithSidebar">
+                        <Tip2Text>Click</Tip2Text>
+                        <Avatar>+</Avatar>
+                        <Tip2Text>to get started!</Tip2Text>
+                      </Trans>
+                    </TipWithSidebar>
                   </>
                 ) : (
-                  <Tip2 id="new-user-tip">
+                  <TipWithoutSidebar id="new-user-tip">
                     <Tip2Text>
-                      <span>Click </span>
-                      <strong>Workspaces &gt; Add Workspace</strong>
-                      <span> to get started!</span>
+                      <Trans t={t} i18nKey="AddWorkspace.MainPageTipWithoutSidebar">
+                        <span>Click </span>
+                        <strong>Workspaces &gt; Add Workspace</strong>
+                        <span> to get started!</span>
+                      </Trans>
                     </Tip2Text>
-                  </Tip2>
+                  </TipWithoutSidebar>
                 )}
               </div>
             )}
