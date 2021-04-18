@@ -161,7 +161,8 @@ if (!gotTheLock) {
     void commonInit();
   });
   app.on(MainChannel.windowAllClosed, () => {
-    if (process.platform !== 'darwin') {
+    // prevent quit on MacOS. But also quit if we are in test.
+    if (process.platform !== 'darwin' || isTest) {
       app.quit();
     }
   });
