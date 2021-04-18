@@ -3,10 +3,10 @@ import { Menu, Tray, ipcMain, nativeImage } from 'electron';
 import windowStateKeeper from 'electron-window-state';
 import { menubar, Menubar } from 'menubar';
 import path from 'path';
-import isDevelopment from 'electron-is-dev';
 
 import { REACT_PATH, buildResourcePath } from '@services/constants/paths';
 import { WindowNames } from './WindowProperties';
+import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 
 export default async function handleAttachToMenuBar(): Promise<Menubar> {
   const menubarWindowState = windowStateKeeper({
@@ -37,10 +37,10 @@ export default async function handleAttachToMenuBar(): Promise<Menubar> {
       minHeight: 100,
       minWidth: 250,
       webPreferences: {
-        devTools: true,
+        devTools: !isTest,
         nodeIntegration: false,
         enableRemoteModule: false,
-        webSecurity: !isDevelopment,
+        webSecurity: !isDevelopmentOrTest,
         allowRunningInsecureContent: false,
         contextIsolation: true,
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,

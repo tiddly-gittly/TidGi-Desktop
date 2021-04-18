@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
-import { BrowserWindow, ipcMain, dialog, app, webFrame, clipboard, BrowserWindowConstructorOptions } from 'electron';
-import isDevelopment from 'electron-is-dev';
+import { BrowserWindow, ipcMain, dialog, app, clipboard, BrowserWindowConstructorOptions } from 'electron';
 import { injectable } from 'inversify';
 import { Menubar } from 'menubar';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
@@ -20,6 +19,7 @@ import getFromRenderer from '@services/libs/getFromRenderer';
 import { lazyInject } from '@services/container';
 import handleAttachToMenuBar from './handleAttachToMenuBar';
 import { IWindowService } from './interface';
+import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 
 @injectable()
 export class Window implements IWindowService {
@@ -154,10 +154,10 @@ export class Window implements IWindowService {
       autoHideMenuBar: false,
       titleBarStyle: titleBar ? 'default' : 'hidden',
       webPreferences: {
-        devTools: true,
+        devTools: !isTest,
         nodeIntegration: false,
         enableRemoteModule: false,
-        webSecurity: !isDevelopment,
+        webSecurity: !isDevelopmentOrTest,
         allowRunningInsecureContent: false,
         contextIsolation: true,
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,

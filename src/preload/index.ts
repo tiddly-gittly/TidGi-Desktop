@@ -1,6 +1,7 @@
 import 'reflect-metadata';
 import { contextBridge, ipcRenderer } from 'electron';
 
+import './common/test';
 import './common/i18n';
 import './common/remote';
 import './common/authing-postmessage';

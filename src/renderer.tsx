@@ -50,7 +50,7 @@ async function runApp(): Promise<void> {
         if (window.meta.windowName === WindowNames.preferences && preventClosingWindow) {
           return;
         }
-        window.remote.closeCurrentWindow();
+        void window.remote.closeCurrentWindow();
       })();
     });
   }
@@ -62,6 +62,7 @@ async function runApp(): Promise<void> {
           <CssBaseline />
           <React.Suspense fallback={<div />}>
             <I18nextProvider i18n={i18n}>
+              <div id="test" data-usage="For spectron automating testing" />
               <App />
             </I18nextProvider>
           </React.Suspense>

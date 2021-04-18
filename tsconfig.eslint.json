@@ -13,6 +13,7 @@
     "src/**/*.jsx",
     "public/**/*.ts",
     "public/**/*.js",
+    "features/**/*.ts",
     "src/**/*.d.ts",
     "public/**/*.d.ts",
     "./*.json",

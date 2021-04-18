@@ -288,14 +288,14 @@ export default function Main(): JSX.Element {
                 {sidebar === true ? (
                   <>
                     <Arrow image={themeSource === 'dark' ? arrowWhite : arrowBlack} />
-                    <Tip>
+                    <Tip id="new-user-tip">
                       <Tip2Text>Click</Tip2Text>
                       <Avatar>+</Avatar>
                       <Tip2Text>to get started!</Tip2Text>
                     </Tip>
                   </>
                 ) : (
-                  <Tip2>
+                  <Tip2 id="new-user-tip">
                     <Tip2Text>
                       <span>Click </span>
                       <strong>Workspaces &gt; Add Workspace</strong>
