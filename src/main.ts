@@ -93,8 +93,6 @@ if (!gotTheLock) {
     });
   };
   const commonInit = async (): Promise<void> => {
-    await initRendererI18NHandler();
-
     // eslint-disable-next-line promise/catch-or-return
     await app.whenReady();
     if (
@@ -159,6 +157,7 @@ if (!gotTheLock) {
     powerMonitor.on('shutdown', () => {
       app.quit();
     });
+    void initRendererI18NHandler();
     void commonInit();
   });
   app.on(MainChannel.windowAllClosed, () => {
