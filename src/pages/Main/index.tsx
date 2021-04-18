@@ -28,8 +28,8 @@ import arrowWhite from '@/images/arrow-white.png';
 import arrowBlack from '@/images/arrow-black.png';
 import { SortableWorkspaceSelector } from './SortableWorkspaceSelector';
 import { IWorkspace } from '@services/workspaces/interface';
-import { IPreferences } from '@services/preferences/interface';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
+import { usePreferenceObservable } from '@services/preferences/hooks';
 
 const OuterRoot = styled.div`
   display: flex;
@@ -169,10 +169,8 @@ const SidebarContainer = ({ children }: { children: React.ReactNode }): JSX.Elem
 export default function Main(): JSX.Element {
   const { t } = useTranslation();
   const workspacesList = useWorkspacesListObservable();
-  const [{ attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource }, isFullScreen] = usePromiseValue<[Partial<IPreferences>, boolean | undefined]>(
-    async () => await Promise.all([window.service.preference.getPreferences(), window.service.window.isFullScreen()]),
-    [{}, false],
-  )!;
+  const preferences = usePreferenceObservable();
+  const isFullScreen = usePromiseValue<boolean | undefined>(window.service.window.isFullScreen, false)!;
 
   const mainWorkspaceMetaData = usePromiseValue(async () => {
     const activeWorkspace = await window.service.workspace.getActiveWorkspace();
@@ -186,10 +184,12 @@ export default function Main(): JSX.Element {
   const requestReload = useCallback(async (): Promise<void> => await window.service.window.reload(window.meta.windowName), []);
 
   const workspaceIDs = workspacesList?.map((workspace) => workspace.id) ?? [];
+  if (preferences === undefined) return <div>Loading...</div>;
+  const { attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource } = preferences;
   return (
     <OuterRoot>
       <Root>
-        {sidebar === true && (
+        {sidebar && (
           <SidebarContainer>
             <SidebarTop fullscreen={isFullScreen === true || titleBar === true || attachToMenubar === true}>
               {workspacesList === undefined ? (
@@ -285,7 +285,7 @@ export default function Main(): JSX.Element {
             )}
             {Array.isArray(workspacesList) && workspacesList.length === 0 && (
               <div>
-                {sidebar === true ? (
+                {sidebar ? (
                   <>
                     <Arrow image={themeSource === 'dark' ? arrowWhite : arrowBlack} />
                     <TipWithSidebar id="new-user-tip">
