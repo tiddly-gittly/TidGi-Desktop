@@ -61,5 +61,6 @@ template/wiki/settings/settings.json
 .webpack
 out/
 
-# paths
+# testing and dev temp folders
 settings-dev/
+wiki-dev/

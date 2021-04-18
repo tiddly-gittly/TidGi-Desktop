@@ -2,6 +2,7 @@ import { app } from 'electron';
 import path from 'path';
 import os from 'os';
 import { isDevelopmentOrTest } from '@/constants/environment';
+import { developmentSettingFolderName, localizationFolderName } from '@/constants/fileNames';
 
 const isMac = process.platform === 'darwin';
 
@@ -24,8 +25,10 @@ const LOG_FOLDER = isDevelopmentOrTest
   : isMac
   ? path.resolve(process.resourcesPath, '..', 'logs')
   : path.resolve(os.homedir(), '.tg-note', 'logs');
-const SETTINGS_FOLDER = isDevelopmentOrTest ? path.resolve(sourcePath, '..', 'settings-dev') : path.resolve(app.getPath('userData'), 'settings');
-const LOCALIZATION_FOLDER = isDevelopmentOrTest ? path.resolve(sourcePath, '..', 'localization') : path.resolve(process.resourcesPath, 'localization');
+const SETTINGS_FOLDER = isDevelopmentOrTest ? path.resolve(sourcePath, '..', developmentSettingFolderName) : path.resolve(app.getPath('userData'), 'settings');
+const LOCALIZATION_FOLDER = isDevelopmentOrTest
+  ? path.resolve(sourcePath, '..', localizationFolderName)
+  : path.resolve(process.resourcesPath, localizationFolderName);
 
 export {
   REACT_PATH,

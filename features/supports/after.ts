@@ -1,14 +1,18 @@
 /* eslint-disable unicorn/filename-case */
 import { After, Before, Status } from '@cucumber/cucumber';
-import jetpack from 'fs-extra';
-import path from 'path';
+import fs from 'fs-extra';
+
+import { temporarySettingPath, mockWikiPath } from './constants';
 import { TiddlyGitWorld } from './world';
 
-Before(function () {
-  // TODO: clear setting folder
+Before(async function () {
+  // clear setting folder
+  await fs.remove(temporarySettingPath);
+  await fs.remove(mockWikiPath);
 });
 
 After(async function (this: TiddlyGitWorld, testCase) {
+  // print logs if test failed
   if (this.app !== undefined && testCase.result?.status === Status.FAILED) {
     console.log('main:\n---\n');
     await this.app.client.getMainProcessLogs().then(function (logs) {
@@ -24,5 +28,5 @@ After(async function (this: TiddlyGitWorld, testCase) {
     });
     console.log('\n');
   }
-  return this.close();
+  await this.close();
 });
