@@ -10,6 +10,7 @@ import { openNewGitHubIssue, debugInfo } from 'electron-util';
 import { clearMainBindings } from '@services/libs/i18n/i18nMainBindings';
 import { buildLanguageMenu } from '@services/libs/i18n/buildLanguageMenu';
 import { MainChannel } from '@/constants/channels';
+import { isTest } from '@/constants/environment';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import { initRendererI18NHandler } from '@services/libs/i18n';
@@ -181,7 +182,7 @@ if (!gotTheLock) {
       await Promise.all([wikiService.stopAllWiki(), wikiService.stopWatchAllWiki()]);
       logger.info('Worker threads and watchers all terminated.');
       logger.info('Quitting I18N server.');
-      clearMainBindings(ipcMain);
+      clearMainBindings();
       logger.info('Quitted I18N server.');
       // https://github.com/atom/electron/issues/444#issuecomment-76492576
       if (process.platform === 'darwin') {
@@ -199,16 +200,18 @@ if (!gotTheLock) {
   });
 }
 
-unhandled({
-  showDialog: true,
-  logger: logger.error.bind(logger),
-  reportButton: (error) => {
-    openNewGitHubIssue({
-      user: 'tiddly-gittly',
-      repo: 'TiddlyGit-Desktop',
-      template: 'bug.md',
-      title: `bug: ${error.message}`,
-      body: `\`\`\`\n${error.stack ?? 'No error.stack'}\n\`\`\`\n\n---\n\n${debugInfo()}`,
-    });
-  },
-});
+if (!isTest) {
+  unhandled({
+    showDialog: true,
+    logger: logger.error.bind(logger),
+    reportButton: (error) => {
+      openNewGitHubIssue({
+        user: 'tiddly-gittly',
+        repo: 'TiddlyGit-Desktop',
+        template: 'bug.md',
+        title: `bug: ${error.message}`,
+        body: `\`\`\`\n${error.stack ?? 'No error.stack'}\n\`\`\`\n\n---\n\n${debugInfo()}`,
+      });
+    },
+  });
+}

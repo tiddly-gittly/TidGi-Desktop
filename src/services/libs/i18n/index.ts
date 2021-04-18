@@ -5,7 +5,7 @@ import isDevelopment from 'electron-is-dev';
 
 import { LOCALIZATION_FOLDER } from '@services/constants/paths';
 import changeToDefaultLanguage from './useDefaultLanguage';
-import { mainBindings } from './i18nMainBindings';
+import { mainBindings, clearMainBindings } from './i18nMainBindings';
 
 // init i18n is async, but our usage is basically await the electron app to start, so this is basically ok
 void i18next.use(Backend).init({
@@ -24,6 +24,7 @@ void i18next.use(Backend).init({
 });
 
 export async function initRendererI18NHandler(): Promise<void> {
+  clearMainBindings();
   mainBindings();
   await changeToDefaultLanguage(i18next);
 }
