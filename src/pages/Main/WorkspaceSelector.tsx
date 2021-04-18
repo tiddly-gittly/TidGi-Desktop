@@ -130,7 +130,11 @@ export default function WorkspaceSelector({
   return (
     <Root hibernated={hibernated} active={active} onClick={onClick}>
       <Badge color="secondary" badgeContent={badgeCount} max={99}>
-        <Avatar large={!showSidebarShortcutHints} transparent={transparentBackground} addAvatar={id === 'add'}>
+        <Avatar
+          large={!showSidebarShortcutHints}
+          transparent={transparentBackground}
+          addAvatar={id === 'add'}
+          id={id === 'add' ? 'add-workspace-button' : `workspace-avatar-${id}`}>
           {id !== 'add' ? (
             <AvatarPicture alt="Icon" large={!showSidebarShortcutHints} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />
           ) : (
