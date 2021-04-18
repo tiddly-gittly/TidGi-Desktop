@@ -51,8 +51,8 @@ const HiddenTextField = styled(TextField)`
 // TODO: handle classes={{ root: classes.pausingHeader }}
 const PausingHeader = styled(ListItem)`
   background: url(${nightBackgroundPng});
-  height: 210;
-  background-size: 400;
+  height: 210px;
+  background-size: 400px;
   align-items: flex-end;
 ` as typeof ListItem;
 

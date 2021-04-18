@@ -100,11 +100,11 @@ const ContentRoot = styled.div`
 `;
 
 const Arrow = styled.div<{ image: string }>`
-  height: 202;
-  width: 150;
+  height: 202px;
+  width: 150px;
   position: absolute;
-  top: 50;
-  left: 72;
+  top: 50px;
+  left: 72px;
 
   background-image: url(${({ image }) => image});
   background-size: 150px 202px;
@@ -112,8 +112,8 @@ const Arrow = styled.div<{ image: string }>`
 
 const Avatar = styled.div`
   display: inline-block;
-  height: 32;
-  width: 32;
+  height: 32px;
+  width: 32px;
   /** // TODO: dark theme  */
   /* background: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black; */
   border-radius: 4;
@@ -138,8 +138,8 @@ const Tip2Text = styled.span`
 
 const Tip = styled.div`
   position: absolute;
-  top: 112;
-  left: 180;
+  top: 112px;
+  left: 180px;
   user-select: none;
 `;
 
