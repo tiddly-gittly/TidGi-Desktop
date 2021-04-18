@@ -178,6 +178,8 @@
     "ShowSideBarShortcut": "展示侧边栏的快捷方式",
     "OpenLogFolder": "打开Log文件夹",
     "OpenLogFolderDetail": "上报问题时，请打开日期最新的一个 .log 文件，将其内容发送给开发者，或黏贴到 pastebin.com 后将 URL 黏贴到 Github Issue 里",
+    "OpenMetaDataFolder": "打开太记工作区元信息文件夹",
+    "OpenMetaDataFolderDetail": "太微的数据和太记的工作区数据是分开存放的，太记的数据包含工作区的设置等，它们以 JSON 形式存放在这个文件夹里。",
     "AttachToMenuBar": "附加到菜单栏",
     "AttachToMenuBarTip": "提示：右键单击应用程序图标以访问上下文菜单。",
     "AttachToTaskbar": "附加到任务栏",

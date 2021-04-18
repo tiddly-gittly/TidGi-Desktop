@@ -160,9 +160,19 @@ export default function Preferences(): JSX.Element {
 
   const debouncedRequestShowRequireRestartDialog = useDebouncedFn(async () => await window.service.window.requestShowRequireRestartDialog(), 2500);
 
-  const platform = usePromiseValue(async () => (await window.service.context.get('platform')) as string);
-  const oSVersion = usePromiseValue(async () => (await window.service.context.get('oSVersion')) as string);
-  const LOG_FOLDER = usePromiseValue(async () => (await window.service.context.get('LOG_FOLDER')) as string);
+  const [platform, oSVersion, LOG_FOLDER, SETTINGS_FOLDER] = usePromiseValue(
+    async () =>
+      await Promise.all([
+        window.service.context.get('platform') as Promise<string>,
+        window.service.context.get('oSVersion') as Promise<string>,
+        window.service.context.get('LOG_FOLDER') as Promise<string>,
+        window.service.context.get('SETTINGS_FOLDER') as Promise<string>,
+      ]).catch((error) => {
+        console.error(error);
+        return [];
+      }),
+    [],
+  );
 
   const preference = usePreferenceObservable();
   const systemPreference = useSystemPreferenceObservable();
@@ -730,6 +740,17 @@ export default function Preferences(): JSX.Element {
                 }
               }}>
               <ListItemText primary={t('Preference.OpenLogFolder')} secondary={t('Preference.OpenLogFolderDetail')} />
+              <ChevronRightIcon color="action" />
+            </ListItem>
+            <Divider />
+            <ListItem
+              button
+              onClick={() => {
+                if (SETTINGS_FOLDER !== undefined) {
+                  void window.service.native.open(SETTINGS_FOLDER, true);
+                }
+              }}>
+              <ListItemText primary={t('Preference.OpenMetaDataFolder')} secondary={t('Preference.OpenMetaDataFolderDetail')} />
               <ChevronRightIcon color="action" />
             </ListItem>
             <Divider />

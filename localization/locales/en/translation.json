@@ -241,7 +241,9 @@
     "SwipeWithThreeFingersToNavigateDescription": "Navigate between pages with 3-finger gestures. Swipe left to go back or swipe right to go forward.<br/>To enable it, you also need to change<3>macOS Preferences → TrackPad → More Gestures → Swipe between page</3>to<5>Swipe with three fingers</5>or<7>Swipe with two or three fingers.</7>",
     "TestNotificationDescription": "<0>If notifications dont show up, make sure you enable notifications in<1>macOS Preferences → Notifications → TiddlyGit</1>.</0>",
     "HowToEnableNotifications": "<0>TiddlyGit supports notifications out of the box. But for some cases, to receive notifications, you will need to manually configure additional web app settings.</0><1>Learn more</1><2>.</2>",
-    "IgnoreCertificateErrorsDescription": "<0>Not recommended. </0><1>Learn more</1>."
+    "IgnoreCertificateErrorsDescription": "<0>Not recommended. </0><1>Learn more</1>.",
+    "OpenMetaDataFolder": "Open the metadata folder of TiddlyGit workspace",
+    "OpenMetaDataFolderDetail": "TiddlyWiki's data and TiddlyGit's workspace metadata are stored separately. TiddlyGit's metadata includes workspace settings, etc., which are stored in this folder in JSON format."
   },
   "Error": "Error",
   "Loading": "Loading",
