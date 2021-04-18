@@ -1,11 +1,9 @@
 /* eslint-disable @typescript-eslint/no-var-requires */
-const webpack = require('webpack');
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const CspHtmlWebpackPlugin = require('csp-html-webpack-plugin');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
+const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
-
-const isDevelopment = process.env.NODE_ENV === 'development';
 
 exports.main = [
   // we only need one instance of TsChecker, it will check main and renderer all together
@@ -28,13 +26,16 @@ exports.main = [
     // set the current working directory for displaying module paths
     cwd: process.cwd(),
   }),
+  new webpack.DefinePlugin({
+    'process.env.NODE_ENV': `"${process.env.NODE_ENV ?? 'production'}"`,
+  }),
 ];
 
 exports.renderer = [
-  // new webpack.DefinePlugin({
-  //   'process.env': '{}',
-  //   global: {},
-  // }),
+  new webpack.DefinePlugin({
+    'process.env.NODE_ENV': `"${process.env.NODE_ENV ?? 'production'}"`,
+    // global: {},
+  }),
   new CspHtmlWebpackPlugin(
     {
       'base-uri': ["'self'"],
