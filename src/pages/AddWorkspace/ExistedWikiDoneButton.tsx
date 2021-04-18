@@ -14,9 +14,17 @@ const CloseButton = styled(Button)`
   width: 100%;
 `;
 
-export function ExistedWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
+export function ExistedWikiDoneButton({
+  form,
+  isCreateMainWorkspace,
+  isCreateSyncedWorkspace,
+}: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean; isCreateSyncedWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
-  const [, hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateExistedWiki(isCreateMainWorkspace, form);
+  const [, hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateExistedWiki(
+    isCreateMainWorkspace,
+    isCreateSyncedWorkspace,
+    form,
+  );
   const onSubmit = useExistedWiki(isCreateMainWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
   const [logPanelOpened, logPanelSetter, progressBarOpen] = useWikiCreationProgress(wikiCreationMessage, hasError);
   if (hasError) {

@@ -16,9 +16,13 @@ import {
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateNewWiki } from './useNewWiki';
 
-export function NewWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
+export function NewWikiForm({
+  form,
+  isCreateMainWorkspace,
+  isCreateSyncedWorkspace,
+}: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean; isCreateSyncedWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
-  const [errorInWhichComponent] = useValidateNewWiki(isCreateMainWorkspace, form);
+  const [errorInWhichComponent] = useValidateNewWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form);
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>

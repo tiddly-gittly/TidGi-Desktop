@@ -5,6 +5,7 @@ import type { IWikiWorkspaceForm } from './useForm';
 
 export function useValidateNewWiki(
   isCreateMainWorkspace: boolean,
+  isCreateSyncedWorkspace: boolean,
   form: IWikiWorkspaceForm,
 ): [Record<string, boolean>, boolean, string | undefined, (m: string) => void, (m: boolean) => void] {
   const { t } = useTranslation();
@@ -20,7 +21,7 @@ export function useValidateNewWiki(
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.WorkspaceFolderNameToCreate')}`);
       errorInWhichComponentSetter({ wikiFolderName: true });
       hasErrorSetter(true);
-    } else if (!form.gitRepoUrl) {
+    } else if (isCreateSyncedWorkspace && !form.gitRepoUrl) {
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.GitRepoUrl')}`);
       errorInWhichComponentSetter({ gitRepoUrl: true });
       hasErrorSetter(true);
@@ -32,7 +33,7 @@ export function useValidateNewWiki(
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.TagName')}`);
       errorInWhichComponentSetter({ tagName: true });
       hasErrorSetter(true);
-    } else if (form.gitUserInfo === undefined || !(form.gitUserInfo.accessToken?.length > 0)) {
+    } else if (isCreateSyncedWorkspace && (form.gitUserInfo === undefined || !(form.gitUserInfo.accessToken?.length > 0))) {
       wikiCreationMessageSetter(t('AddWorkspace.NotLoggedIn'));
       errorInWhichComponentSetter({ gitUserInfo: true });
       hasErrorSetter(true);
@@ -41,7 +42,17 @@ export function useValidateNewWiki(
       errorInWhichComponentSetter({});
       hasErrorSetter(false);
     }
-  }, [t, isCreateMainWorkspace, form.parentFolderLocation, form.wikiFolderName, form.gitRepoUrl, form.gitUserInfo, form.mainWikiToLink?.name, form.tagName]);
+  }, [
+    t,
+    isCreateMainWorkspace,
+    isCreateSyncedWorkspace,
+    form.parentFolderLocation,
+    form.wikiFolderName,
+    form.gitRepoUrl,
+    form.gitUserInfo,
+    form.mainWikiToLink?.name,
+    form.tagName,
+  ]);
 
   return [errorInWhichComponent, hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter];
 }

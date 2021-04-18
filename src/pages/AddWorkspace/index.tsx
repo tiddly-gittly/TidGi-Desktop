@@ -86,24 +86,28 @@ export default function AddWorkspace(): JSX.Element {
       <SyncedWikiDescription isCreateSyncedWorkspace={isCreateSyncedWorkspace} isCreateSyncedWorkspaceSetter={isCreateSyncedWorkspaceSetter} />
       {isCreateSyncedWorkspace && (
         <TokenFormContainer>
-          <TokenForm storageProvider={form.storageProvider} storageProviderSetter={form.storageProviderSetter} />
+          <TokenForm storageProvider={storageProvider} storageProviderSetter={storageProviderSetter} />
         </TokenFormContainer>
       )}
 
       <MainSubWikiDescription isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
       <TabPanel value={CreateWorkspaceTabs.CloneOnlineWiki}>
         <Container>
-          <NewWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
-          <NewWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
+          <CloneWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
+          <CloneWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
         </Container>
       </TabPanel>
       <TabPanel value={CreateWorkspaceTabs.CreateNewWiki}>
-        <ExistedWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
-        <ExistedWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
+        <Container>
+          <NewWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+          <NewWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+        </Container>
       </TabPanel>
       <TabPanel value={CreateWorkspaceTabs.OpenLocalWiki}>
-        <CloneWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
-        <CloneWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
+        <Container>
+          <ExistedWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+          <ExistedWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+        </Container>
       </TabPanel>
     </TabContext>
   );
