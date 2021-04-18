@@ -40,9 +40,6 @@ const Root = styled.div<{ hibernated?: boolean; active?: boolean }>`
     `}
 `;
 
-// TODO: borderColor: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black;
-const RootActive = styled.div``;
-
 // TODO: background: theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white,
 // TODO: color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white),
 // TODO: border: theme.palette.type === 'dark' ? 'none' : 1px solid rgba(0, 0, 0, 0.12),
@@ -69,6 +66,11 @@ const Avatar = styled.div<{ large?: boolean; transparent?: boolean; addAvatar?: 
       border: none;
       border-radius: 0;
     `}
+
+  &:hover {
+    background-color: #eeeeee;
+    opacity: 0.5;
+  }
 `;
 
 const AvatarPicture = styled.img<{ large?: boolean }>`
@@ -82,10 +84,6 @@ const AvatarPicture = styled.img<{ large?: boolean }>`
     `}
 `;
 
-// TODO: background: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black;
-// TODO: color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black);
-const AddAvatar = styled.div``;
-// TODO:  color: theme.palette.text.primary;
 const ShortcutText = styled.p`
   margin-top: 2px;
   margin-bottom: 0;
