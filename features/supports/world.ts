@@ -41,9 +41,7 @@ export class TiddlyGitWorld extends World {
       port: 9156,
     });
     await this.app.start();
-    while (undefined === (await this.getElement('#test'))) {
-      await delay(500);
-    }
+    await this.waitReactReady();
   }
 
   public async getElement(selector: string): Promise<WebdriverIO.Element | undefined> {
@@ -58,6 +56,13 @@ export class TiddlyGitWorld extends World {
     if (element !== undefined && !('error' in element)) {
       return element;
     }
+  }
+
+  /**
+   * We add `<div id="test" />` to each page in react render, so we can wait until it exists
+   */
+  public async waitReactReady(): Promise<void> {
+    await this?.app?.client?.waitUntil(async () => undefined !== (await this.getElement('#test')));
   }
 
   public updateContext(context: Partial<IContext>): void {

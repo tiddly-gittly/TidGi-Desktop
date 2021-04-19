@@ -12,4 +12,4 @@ Feature: Open
     Given the app is launched
     Then the element "#add-workspace-button" is on the page
     Then click on this element
-    Then "AddWorkspace" window show up
+    Then "Add Workspace" window show up

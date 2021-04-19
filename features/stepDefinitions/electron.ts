@@ -31,9 +31,9 @@ Then('{string} window show up', { timeout: 120 * 1000 }, async function (this: T
   const handles = await this.app?.client?.getWindowHandles();
   expect(handles).to.not.be.undefined;
   if (handles !== undefined) {
-    // DEBUG: console
-    console.log(`handles`, handles);
-    await this.app?.client?.switchToWindow(handles[0]);
-    await delay(1000);
+    await this.app?.client?.switchToWindow(handles[1]);
+    await this.waitReactReady();
+    const currentTitle = await this.app?.client?.getTitle();
+    expect(currentTitle).to.be.equal(windowName);
   }
 });
