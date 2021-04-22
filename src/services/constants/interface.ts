@@ -12,6 +12,7 @@ export interface IPaths {
   LOG_FOLDER: string;
   SETTINGS_FOLDER: string;
   LOCALIZATION_FOLDER: string;
+  DEFAULT_WIKI_FOLDER: string;
 }
 /**
  * Available values about running environment
