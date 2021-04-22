@@ -6,24 +6,32 @@ import { TiddlyGitWorld } from '../supports/world';
 
 setWorldConstructor(TiddlyGitWorld);
 
-Given('the app is launched', { timeout: 120 * 1000 }, async function (this: TiddlyGitWorld) {
+Given('the app is launched', async function (this: TiddlyGitWorld) {
   await this.start();
   const windowCount = await this.app?.client?.getWindowCount();
   expect(windowCount).equal(1);
 });
 
-Then('the element {string} is on the page', { timeout: 120 * 1000 }, async function (this: TiddlyGitWorld, elementSelector: string) {
+Then('the element {string} is on the page', async function (this: TiddlyGitWorld, elementSelector: string) {
   const result = await this.getElement(elementSelector);
   expect(result).to.not.be.undefined;
   this.updateContext({ previousElement: result });
 });
-Then('click on this element', { timeout: 120 * 1000 }, async function (this: TiddlyGitWorld) {
+Then('click on this element', async function (this: TiddlyGitWorld) {
   expect(this.context?.previousElement).to.not.be.undefined;
   if (this.context?.previousElement !== undefined) {
     await this.context.previousElement.click();
   }
 });
-Then('{string} window show up', { timeout: 120 * 1000 }, async function (this: TiddlyGitWorld, windowName: string) {
+Then('click on {string} element', async function (this: TiddlyGitWorld, elementSelector: string) {
+  const result = await this.getElement(elementSelector);
+  expect(result).to.not.be.undefined;
+  if (result !== undefined) {
+    this.updateContext({ previousElement: result });
+    await result.click();
+  }
+});
+Then('{string} window show up', async function (this: TiddlyGitWorld, windowName: string) {
   // await delay(1000);
   const windowCount = await this.app?.client?.getWindowCount();
   expect(windowCount).equal(2);

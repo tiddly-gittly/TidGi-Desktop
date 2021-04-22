@@ -221,10 +221,16 @@ export default function Main(): JSX.Element {
               <WorkspaceSelector id="add" onClick={() => void window.service.window.open(WindowNames.addWorkspace)} />
             </SidebarTop>
             <SideBarEnd>
-              <IconButton aria-label={t('Preference.Notifications')} onClick={async () => await window.service.window.open(WindowNames.notifications)}>
+              <IconButton
+                id="open-notification-settings-button"
+                aria-label={t('Preference.Notifications')}
+                onClick={async () => await window.service.window.open(WindowNames.notifications)}>
                 {typeof pauseNotifications === 'string' && pauseNotifications.length > 0 ? <NotificationsPausedIcon /> : <NotificationsIcon />}
               </IconButton>
-              <IconButton aria-label={t('ContextMenu.Preferences')} onClick={async () => await window.service.window.open(WindowNames.preferences)}>
+              <IconButton
+                id="open-preferences-button"
+                aria-label={t('ContextMenu.Preferences')}
+                onClick={async () => await window.service.window.open(WindowNames.preferences)}>
                 <SettingsIcon />
               </IconButton>
             </SideBarEnd>
