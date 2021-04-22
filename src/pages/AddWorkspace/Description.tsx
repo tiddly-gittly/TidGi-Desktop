@@ -4,8 +4,15 @@ import { useTranslation } from 'react-i18next';
 
 import Paper from '@material-ui/core/Paper';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Switch from '@material-ui/core/Switch';
+import SwitchRaw from '@material-ui/core/Switch';
 import Typography from '@material-ui/core/Typography';
+
+const Switch = styled(SwitchRaw)`
+  & span.MuiSwitch-track,
+  & > span:not(.Mui-checked) span.MuiSwitch-thumb {
+    background-color: #1976d2;
+  }
+`;
 
 const Container = styled(Paper)`
   margin-top: 10px;
