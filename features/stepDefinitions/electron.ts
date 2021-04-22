@@ -7,6 +7,7 @@ import { TiddlyGitWorld } from '../supports/world';
 setWorldConstructor(TiddlyGitWorld);
 
 Given('the app is launched', async function (this: TiddlyGitWorld) {
+  await delay(100);
   await this.start();
   const windowCount = await this.app?.client?.getWindowCount();
   expect(windowCount).equal(1);

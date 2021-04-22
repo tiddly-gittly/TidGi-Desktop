@@ -13,20 +13,21 @@ Before(async function () {
 
 After(async function (this: TiddlyGitWorld, testCase) {
   // print logs if test failed
-  if (this.app !== undefined && testCase.result?.status === Status.FAILED) {
-    console.log('main:\n---\n');
-    await this.app.client.getMainProcessLogs().then(function (logs) {
-      logs.forEach(function (log) {
-        console.log(log, '\n');
-      });
-    });
-    console.log('renderer:\n---\n');
-    await this.app.client.getRenderProcessLogs().then(function (logs) {
-      logs.forEach(function (log) {
-        console.log(JSON.stringify(log), '\n');
-      });
-    });
-    console.log('\n');
-  }
+  // if (this.app !== undefined && testCase.result?.status === Status.FAILED) {
+  //   console.log('main:\n---\n');
+  //   // FIXME: TypeError: this.app.client.getMainProcessLogs is not a function
+  //   await this.app.client.getMainProcessLogs().then(function (logs) {
+  //     logs.forEach(function (log) {
+  //       console.log(log, '\n');
+  //     });
+  //   });
+  //   console.log('renderer:\n---\n');
+  //   await this.app.client.getRenderProcessLogs().then(function (logs) {
+  //     logs.forEach(function (log) {
+  //       console.log(JSON.stringify(log), '\n');
+  //     });
+  //   });
+  //   console.log('\n');
+  // }
   await this.close();
 });
