@@ -11,12 +11,10 @@ export interface ITheme {
  */
 export interface IThemeService {
   theme$: BehaviorSubject<ITheme>;
-  shouldUseDarkColors(): boolean;
 }
 export const ThemeServiceIPCDescriptor = {
   channel: ThemeChannel.name,
   properties: {
     theme$: ProxyPropertyType.Value$,
-    shouldUseDarkColors: ProxyPropertyType.Function,
   },
 };

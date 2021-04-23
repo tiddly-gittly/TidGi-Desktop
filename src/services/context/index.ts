@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { app } from 'electron';
 import process from 'process';
 import os from 'os';
@@ -27,7 +28,7 @@ export class ContextService implements IContextService {
     };
   }
 
-  public get<K extends keyof IContext>(key: K): IContext[K] {
+  public async get<K extends keyof IContext>(key: K): Promise<IContext[K]> {
     if (key in this.context) {
       return this.context[key];
     }

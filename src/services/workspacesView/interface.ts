@@ -23,7 +23,7 @@ export interface IWorkspaceViewService {
    * @param id workspace id, if omit, will load url in active workspace if existed
    */
   loadURL(url: string, id?: string): Promise<void>;
-  realignActiveWorkspace(): void;
+  realignActiveWorkspace(): Promise<void>;
   openUrlInWorkspace(url: string, id: string): Promise<void>;
 }
 export const WorkspaceViewServiceIPCDescriptor = {

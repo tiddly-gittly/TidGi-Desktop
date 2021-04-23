@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/consistent-destructuring */
 import { app, session, dialog } from 'electron';
 import { injectable } from 'inversify';
@@ -38,9 +39,9 @@ export class WorkspaceView implements IWorkspaceViewService {
     const workspaces = this.workspaceService.getWorkspaces();
     for (const workspaceID in workspaces) {
       const workspace = workspaces[workspaceID];
-      if ((this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch') || workspace.hibernateWhenUnused) && !workspace.active) {
+      if (((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) && !workspace.active) {
         if (!workspace.hibernated && !workspace.isSubWiki) {
-          this.workspaceService.update(workspaceID, { hibernated: true });
+          await this.workspaceService.update(workspaceID, { hibernated: true });
         }
         return;
       }
@@ -245,7 +246,7 @@ export class WorkspaceView implements IWorkspaceViewService {
    * Seems this is for relocating BrowserView in the electron window
    * // TODO: why we need this?
    */
-  public realignActiveWorkspace(): void {
+  public async realignActiveWorkspace(): Promise<void> {
     // this function only call browserView.setBounds
     // do not attempt to recall browserView.webContents.focus()
     // as it breaks page focus (cursor, scroll bar not visible)
@@ -258,7 +259,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     const activeWorkspace = this.workspaceService.getActiveWorkspace();
     const mainWindow = this.windowService.get(WindowNames.main);
     if (activeWorkspace !== undefined && mainWindow !== undefined) {
-      this.viewService.realignActiveView(mainWindow, activeWorkspace.id);
+      void this.viewService.realignActiveView(mainWindow, activeWorkspace.id);
     }
   }
 }

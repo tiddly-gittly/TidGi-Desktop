@@ -46,7 +46,7 @@ export class Window implements IWindowService {
     }
   }
 
-  public stopFindInPage(close?: boolean, windowName: WindowNames = WindowNames.main): void {
+  public async stopFindInPage(close?: boolean, windowName: WindowNames = WindowNames.main): Promise<void> {
     const mainWindow = this.get(windowName);
     const view = mainWindow?.getBrowserView();
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
@@ -58,7 +58,7 @@ export class Window implements IWindowService {
         // adjust bounds to hide the gap for find in page
         if (close === true && mainWindow !== undefined) {
           const contentSize = mainWindow.getContentSize();
-          view.setBounds(getViewBounds(contentSize as [number, number]));
+          view.setBounds(await getViewBounds(contentSize as [number, number]));
         }
       }
     }
@@ -101,8 +101,8 @@ export class Window implements IWindowService {
     // update window meta
     this.setWindowMeta(windowName, meta);
     const existedWindowMeta = this.getWindowMeta(windowName);
-    const attachToMenubar: boolean = this.preferenceService.get('attachToMenubar');
-    const titleBar: boolean = this.preferenceService.get('titleBar');
+    const attachToMenubar: boolean = await this.preferenceService.get('attachToMenubar');
+    const titleBar: boolean = await this.preferenceService.get('titleBar');
 
     if (existedWindow !== undefined) {
       // TODO: handle this menubar logic
@@ -212,23 +212,23 @@ export class Window implements IWindowService {
 
   private registerMainWindowListeners(newWindow: BrowserWindow): void {
     // Enable swipe to navigate
-    const swipeToNavigate = this.preferenceService.get('swipeToNavigate');
-    if (swipeToNavigate) {
-      const mainWindow = this.get(WindowNames.main);
-      if (mainWindow === undefined) return;
-      mainWindow.on('swipe', (_event, direction) => {
-        const view = mainWindow?.getBrowserView();
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        if (view) {
-          if (direction === 'left') {
-            view.webContents.goBack();
-          } else if (direction === 'right') {
-            view.webContents.goForward();
+    void this.preferenceService.get('swipeToNavigate').then((swipeToNavigate) => {
+      if (swipeToNavigate) {
+        const mainWindow = this.get(WindowNames.main);
+        if (mainWindow === undefined) return;
+        mainWindow.on('swipe', (_event, direction) => {
+          const view = mainWindow?.getBrowserView();
+          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+          if (view) {
+            if (direction === 'left') {
+              view.webContents.goBack();
+            } else if (direction === 'right') {
+              view.webContents.goForward();
+            }
           }
-        }
-      });
-    }
-
+        });
+      }
+    });
     // Hide window instead closing on macos
     newWindow.on('close', (event) => {
       const mainWindow = this.get(WindowNames.main);
@@ -376,14 +376,14 @@ export class Window implements IWindowService {
       {
         label: 'Find',
         accelerator: 'CmdOrCtrl+F',
-        click: () => {
+        click: async () => {
           const mainWindow = this.get(WindowNames.main);
           if (mainWindow !== undefined) {
             mainWindow.webContents.focus();
             mainWindow.webContents.send(WindowChannel.openFindInPage);
             const contentSize = mainWindow.getContentSize();
             const view = mainWindow.getBrowserView();
-            view?.setBounds(getViewBounds(contentSize as [number, number], true));
+            view?.setBounds(await getViewBounds(contentSize as [number, number], true));
           }
         },
         enabled: () => this.workspaceService.countWorkspaces() > 0,

@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable unicorn/consistent-destructuring */
-import { app, BrowserView, ipcMain, WebContents, shell, NativeImage, BrowserWindowConstructorOptions, BrowserWindow } from 'electron';
+import { app, BrowserView, shell, NativeImage, BrowserWindowConstructorOptions, BrowserWindow } from 'electron';
 import path from 'path';
 import fsExtra from 'fs-extra';
 
@@ -15,7 +16,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
 import { container } from '@services/container';
-import { NotificationChannel, ViewChannel, WindowChannel } from '@/constants/channels';
+import { ViewChannel, WindowChannel } from '@/constants/channels';
 
 export interface IViewContext {
   workspace: IWorkspace;
@@ -63,7 +64,7 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
       }
     }
   });
-  view.webContents.on('did-start-loading', () => {
+  view.webContents.on('did-start-loading', async () => {
     const workspaceObject = workspaceService.get(workspace.id);
     // this event might be triggered
     // even after the workspace obj and BrowserView
@@ -79,15 +80,15 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     ) {
       // fix https://github.com/atomery/singlebox/issues/228
       const contentSize = browserWindow.getContentSize();
-      view.setBounds(getViewBounds(contentSize as [number, number]));
+      view.setBounds(await getViewBounds(contentSize as [number, number]));
     }
-    workspaceService.updateMetaData(workspace.id, {
+    await workspaceService.updateMetaData(workspace.id, {
       // eslint-disable-next-line unicorn/no-null
       didFailLoadErrorMessage: null,
       isLoading: true,
     });
   });
-  view.webContents.on('did-stop-loading', () => {
+  view.webContents.on('did-stop-loading', async () => {
     const workspaceObject = workspaceService.get(workspace.id);
     // this event might be triggered
     // even after the workspace obj and BrowserView
@@ -95,15 +96,15 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     if (workspaceObject === undefined) {
       return;
     }
-    workspaceService.updateMetaData(workspace.id, {
+    await workspaceService.updateMetaData(workspace.id, {
       isLoading: false,
     });
     const currentUrl = view.webContents.getURL();
-    workspaceService.update(workspace.id, {
+    await workspaceService.update(workspace.id, {
       lastUrl: currentUrl,
     });
     // fix https://github.com/atomery/webcatalog/issues/870
-    workspaceViewService.realignActiveWorkspace();
+    await workspaceViewService.realignActiveWorkspace();
   });
   // focus on initial load
   // https://github.com/atomery/webcatalog/issues/398
@@ -115,7 +116,7 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     });
   }
   // https://electronjs.org/docs/api/web-contents#event-did-fail-load
-  view.webContents.on('did-fail-load', (_event, errorCode, errorDesc, _validateUrl, isMainFrame) => {
+  view.webContents.on('did-fail-load', async (_event, errorCode, errorDesc, _validateUrl, isMainFrame) => {
     const workspaceObject = workspaceService.get(workspace.id);
     // this event might be triggered
     // even after the workspace obj and BrowserView
@@ -124,13 +125,13 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
       return;
     }
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {
-      workspaceService.updateMetaData(workspace.id, {
+      await workspaceService.updateMetaData(workspace.id, {
         didFailLoadErrorMessage: errorDesc,
       });
       if (workspaceObject.active && browserWindow !== undefined && !browserWindow.isDestroyed()) {
         // fix https://github.com/atomery/singlebox/issues/228
         const contentSize = browserWindow.getContentSize();
-        view.setBounds(getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
+        view.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       }
     }
     // edge case to handle failed auth
@@ -211,8 +212,8 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
   );
   // Handle downloads
   // https://electronjs.org/docs/api/download-item
-  view.webContents.session.on('will-download', (_event, item) => {
-    const { askForDownloadPath, downloadPath } = preferenceService.getPreferences();
+  view.webContents.session.on('will-download', async (_event, item) => {
+    const { askForDownloadPath, downloadPath } = await preferenceService.getPreferences();
     // Set the save path, making Electron not to prompt a save dialog.
     if (!askForDownloadPath) {
       const finalFilePath = path.join(downloadPath, item.getFilename());
@@ -230,35 +231,37 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     }
   });
   // Unread count badge
-  if (preferenceService.get('unreadCountBadge')) {
-    view.webContents.on('page-title-updated', (_event, title) => {
-      const itemCountRegex = /[([{](\d*?)[)\]}]/;
-      const match = itemCountRegex.exec(title);
-      const incString = match !== null ? match[1] : '';
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      const inc = Number.parseInt(incString, 10) || 0;
-      workspaceService.updateMetaData(workspace.id, {
-        badgeCount: inc,
-      });
-      let count = 0;
-      const workspaceMetaData = workspaceService.getAllMetaData();
-      Object.values(workspaceMetaData).forEach((metaData) => {
-        if (typeof metaData?.badgeCount === 'number') {
-          count += metaData.badgeCount;
+  void preferenceService.get('unreadCountBadge').then((unreadCountBadge) => {
+    if (unreadCountBadge) {
+      view.webContents.on('page-title-updated', async (_event, title) => {
+        const itemCountRegex = /[([{](\d*?)[)\]}]/;
+        const match = itemCountRegex.exec(title);
+        const incString = match !== null ? match[1] : '';
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        const inc = Number.parseInt(incString, 10) || 0;
+        await workspaceService.updateMetaData(workspace.id, {
+          badgeCount: inc,
+        });
+        let count = 0;
+        const workspaceMetaData = workspaceService.getAllMetaData();
+        Object.values(workspaceMetaData).forEach((metaData) => {
+          if (typeof metaData?.badgeCount === 'number') {
+            count += metaData.badgeCount;
+          }
+        });
+        app.badgeCount = count;
+        if (process.platform === 'win32') {
+          if (count > 0) {
+            const icon = NativeImage.createFromPath(path.resolve(buildResourcePath, 'overlay-icon.png'));
+            browserWindow.setOverlayIcon(icon, `You have ${count} new messages.`);
+          } else {
+            // eslint-disable-next-line unicorn/no-null
+            browserWindow.setOverlayIcon(null, '');
+          }
         }
       });
-      app.badgeCount = count;
-      if (process.platform === 'win32') {
-        if (count > 0) {
-          const icon = NativeImage.createFromPath(path.resolve(buildResourcePath, 'overlay-icon.png'));
-          browserWindow.setOverlayIcon(icon, `You have ${count} new messages.`);
-        } else {
-          // eslint-disable-next-line unicorn/no-null
-          browserWindow.setOverlayIcon(null, '');
-        }
-      }
-    });
-  }
+    }
+  });
   // Find In Page
   view.webContents.on('found-in-page', (_event, result) => {
     windowService.sendToAllWindows(ViewChannel.updateFindInPageMatches, result.activeMatchOrdinal, result.matches);

@@ -33,7 +33,7 @@ export class View implements IViewService {
 
   constructor() {
     this.initIPCHandlers();
-    this.registerMenu();
+    void this.registerMenu();
   }
 
   private initIPCHandlers(): void {
@@ -45,24 +45,28 @@ export class View implements IViewService {
     });
   }
 
-  private registerMenu(): void {
+  private async registerMenu(): Promise<void> {
     const hasWorkspaces = this.workspaceService.countWorkspaces() > 0;
+    const sidebar = await this.preferenceService.get('sidebar');
+    const titleBar = await this.preferenceService.get('titleBar');
     this.menuService.insertMenu('View', [
       {
-        label: () => (this.preferenceService.get('sidebar') ? 'Hide Sidebar' : 'Show Sidebar'),
+        label: () => (sidebar ? 'Hide Sidebar' : 'Show Sidebar'),
         accelerator: 'CmdOrCtrl+Alt+S',
-        click: () => {
-          void this.preferenceService.set('sidebar', !this.preferenceService.get('sidebar'));
+        click: async () => {
+          const sidebarLatest = await this.preferenceService.get('sidebar');
+          void this.preferenceService.set('sidebar', !sidebarLatest);
           void this.workspaceViewService.realignActiveWorkspace();
         },
       },
       {
-        label: () => (this.preferenceService.get('titleBar') ? 'Hide Title Bar' : 'Show Title Bar'),
+        label: () => (titleBar ? 'Hide Title Bar' : 'Show Title Bar'),
         accelerator: 'CmdOrCtrl+Alt+T',
         enabled: process.platform === 'darwin',
         visible: process.platform === 'darwin',
-        click: () => {
-          void this.preferenceService.set('titleBar', !this.preferenceService.get('titleBar'));
+        click: async () => {
+          const titleBarLatest = await this.preferenceService.get('titleBar');
+          void this.preferenceService.set('titleBar', !titleBarLatest);
           void this.workspaceViewService.realignActiveWorkspace();
         },
       },
@@ -204,7 +208,7 @@ export class View implements IViewService {
     if (workspace.isSubWiki) {
       return;
     }
-    const { rememberLastPageVisited, shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = this.preferenceService.getPreferences();
+    const { rememberLastPageVisited, shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = await this.preferenceService.getPreferences();
     // configure session, proxy & ad blocker
     const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
     if (workspace.storageService !== SupportedStorageServices.local) {
@@ -260,7 +264,7 @@ export class View implements IViewService {
     if (workspace.active) {
       browserWindow.setBrowserView(view);
       const contentSize = browserWindow.getContentSize();
-      view.setBounds(getViewBounds(contentSize as [number, number]));
+      view.setBounds(await getViewBounds(contentSize as [number, number]));
       view.setAutoResize({
         width: true,
         height: true,
@@ -300,9 +304,9 @@ export class View implements IViewService {
       browserWindow.setBrowserView(view);
       const contentSize = browserWindow.getContentSize();
       if (typeof this.workspaceService.getMetaData(id).didFailLoadErrorMessage !== 'string') {
-        view.setBounds(getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
+        view.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       } else {
-        view.setBounds(getViewBounds(contentSize as [number, number]));
+        view.setBounds(await getViewBounds(contentSize as [number, number]));
       }
       view.setAutoResize({
         width: true,
@@ -385,14 +389,14 @@ export class View implements IViewService {
     }
   }
 
-  public realignActiveView = (browserWindow: BrowserWindow, activeId: string): void => {
+  public realignActiveView = async (browserWindow: BrowserWindow, activeId: string): Promise<void> => {
     const view = browserWindow.getBrowserView();
     if (view?.webContents !== null) {
       const contentSize = browserWindow.getContentSize();
       if (typeof this.workspaceService.getMetaData(activeId).didFailLoadErrorMessage === 'string') {
-        view?.setBounds(getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
+        view?.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       } else {
-        view?.setBounds(getViewBounds(contentSize as [number, number]));
+        view?.setBounds(await getViewBounds(contentSize as [number, number]));
       }
     }
   };

@@ -42,7 +42,7 @@ async function runApp(): Promise<void> {
     document.title = 'Preferred Spell Checking Languages';
   }
 
-  const attachToMenubar = (await window.service.preference.get('attachToMenubar')) as boolean;
+  const attachToMenubar = await window.service.preference.get('attachToMenubar');
   if (window.meta.windowName !== WindowNames.main && attachToMenubar) {
     document.addEventListener('keydown', (_event) => {
       void (async () => {

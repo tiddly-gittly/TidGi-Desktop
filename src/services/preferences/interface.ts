@@ -58,12 +58,12 @@ export interface IPreferenceService {
   /**
    * Update preferences, update cache and observable
    */
-  set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): void;
+  set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void>;
   /**
    * get preferences, may return cached version
    */
-  getPreferences: () => IPreferences;
-  get<K extends keyof IPreferences>(key: K): IPreferences[K];
+  getPreferences: () => Promise<IPreferences>;
+  get<K extends keyof IPreferences>(key: K): Promise<IPreferences[K]>;
   reset(): Promise<void>;
   resetWithConfirm(): Promise<void>;
 }

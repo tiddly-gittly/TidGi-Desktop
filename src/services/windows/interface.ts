@@ -23,7 +23,7 @@ export interface IWindowService {
   reload(windowName: WindowNames): void;
   clearStorageData(windowName?: WindowNames): Promise<void>;
   findInPage(text: string, forward?: boolean | undefined, windowName?: WindowNames): void;
-  stopFindInPage(close?: boolean | undefined, windowName?: WindowNames): void;
+  stopFindInPage(close?: boolean | undefined, windowName?: WindowNames): Promise<void>;
 }
 export const WindowServiceIPCDescriptor = {
   channel: WindowChannel.name,

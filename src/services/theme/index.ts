@@ -6,16 +6,14 @@ import type { IPreferenceService } from '@services/preferences/interface';
 import { ITheme, IThemeService } from './interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { lazyInject } from '@services/container';
-import { IViewService } from '@services/view/interface';
 
 @injectable()
 export class ThemeService implements IThemeService {
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
-  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
   public theme$: BehaviorSubject<ITheme>;
 
   constructor() {
-    this.init();
+    void this.init();
     this.theme$ = new BehaviorSubject<ITheme>({ shouldUseDarkColors: this.shouldUseDarkColors() });
   }
 
@@ -23,8 +21,8 @@ export class ThemeService implements IThemeService {
     this.theme$.next(newTheme);
   }
 
-  private init(): void {
-    const themeSource = this.preferenceService.get('themeSource');
+  private async init(): Promise<void> {
+    const themeSource = await this.preferenceService.get('themeSource');
     // apply theme
     nativeTheme.themeSource = themeSource;
     nativeTheme.addListener('updated', () => {
@@ -32,7 +30,7 @@ export class ThemeService implements IThemeService {
     });
   }
 
-  public shouldUseDarkColors(): boolean {
+  private shouldUseDarkColors(): boolean {
     return nativeTheme.shouldUseDarkColors;
   }
 }

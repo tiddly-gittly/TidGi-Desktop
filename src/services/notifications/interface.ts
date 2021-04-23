@@ -14,9 +14,9 @@ export interface IPauseNotificationsInfo {
  */
 export interface INotificationService {
   pauseNotificationsInfo$: BehaviorSubject<IPauseNotificationsInfo | undefined>;
-  show(options: NotificationConstructorOptions): void;
-  updatePauseNotificationsInfo(): void;
-  getPauseNotificationsInfo: () => IPauseNotificationsInfo | undefined;
+  show(options: NotificationConstructorOptions): Promise<void>;
+  updatePauseNotificationsInfo(): Promise<void>;
+  getPauseNotificationsInfo: () => Promise<IPauseNotificationsInfo | undefined>;
 }
 export const NotificationServiceIPCDescriptor = {
   channel: NotificationChannel.name,

@@ -23,8 +23,10 @@ export class Git implements IGitService {
     @inject(serviceIdentifier.View) private readonly viewService: IViewService,
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
   ) {
-    const syncDebounceInterval = this.preferenceService.get('syncDebounceInterval');
-    this.debounceCommitAndSync = debounce(this.commitAndSync.bind(this), syncDebounceInterval);
+    this.debounceCommitAndSync = this.commitAndSync.bind(this);
+    void this.preferenceService.get('syncDebounceInterval').then((syncDebounceInterval) => {
+      this.debounceCommitAndSync = debounce(this.commitAndSync.bind(this), syncDebounceInterval);
+    });
   }
 
   public debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos) => Promise<void> | undefined;

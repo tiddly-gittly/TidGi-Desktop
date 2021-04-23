@@ -19,7 +19,7 @@ export interface IViewService {
   reloadViewsWebContentsIfDidFailLoad: () => void;
   reloadViewsWebContents: () => void;
   getActiveBrowserView: () => BrowserView | undefined;
-  realignActiveView: (browserWindow: BrowserWindow, activeId: string) => void;
+  realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;
 }
 export const ViewServiceIPCDescriptor = {
   channel: ViewChannel.name,

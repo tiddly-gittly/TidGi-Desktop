@@ -25,12 +25,12 @@ import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/work
 import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
 export const auth = createProxy<AsyncifyProxy<IAuthenticationService>>(AuthenticationServiceIPCDescriptor);
-export const context = createProxy<AsyncifyProxy<IContextService>>(ContextServiceIPCDescriptor);
-export const git = createProxy<AsyncifyProxy<IGitService>>(GitServiceIPCDescriptor);
+export const context = createProxy<IContextService>(ContextServiceIPCDescriptor);
+export const git = createProxy<IGitService>(GitServiceIPCDescriptor);
 export const menu = createProxy<AsyncifyProxy<IMenuService>>(MenuServiceIPCDescriptor);
-export const native = createProxy<AsyncifyProxy<INativeService>>(NativeServiceIPCDescriptor);
-export const notification = createProxy<AsyncifyProxy<INotificationService>>(NotificationServiceIPCDescriptor);
-export const preference = createProxy<AsyncifyProxy<IPreferenceService>>(PreferenceServiceIPCDescriptor);
+export const native = createProxy<INativeService>(NativeServiceIPCDescriptor);
+export const notification = createProxy<INotificationService>(NotificationServiceIPCDescriptor);
+export const preference = createProxy<IPreferenceService>(PreferenceServiceIPCDescriptor);
 export const systemPreference = createProxy<AsyncifyProxy<ISystemPreferenceService>>(SystemPreferenceServiceIPCDescriptor);
 export const theme = createProxy<AsyncifyProxy<IThemeService>>(ThemeServiceIPCDescriptor);
 export const updater = createProxy<AsyncifyProxy<IUpdaterService>>(UpdaterServiceIPCDescriptor);
@@ -39,7 +39,7 @@ export const wiki = createProxy<AsyncifyProxy<IWikiService>>(WikiServiceIPCDescr
 export const wikiGitWorkspace = createProxy<IWikiGitWorkspaceService>(WikiGitWorkspaceServiceIPCDescriptor);
 export const window = createProxy<AsyncifyProxy<IWindowService>>(WindowServiceIPCDescriptor);
 export const workspace = createProxy<AsyncifyProxy<IWorkspaceService>>(WorkspaceServiceIPCDescriptor);
-export const workspaceView = createProxy<AsyncifyProxy<IWorkspaceViewService>>(WorkspaceViewServiceIPCDescriptor);
+export const workspaceView = createProxy<IWorkspaceViewService>(WorkspaceViewServiceIPCDescriptor);
 
 export const descriptors = {
   auth: AuthenticationServiceIPCDescriptor,

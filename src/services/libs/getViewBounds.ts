@@ -1,17 +1,15 @@
 import { container } from '@services/container';
-import type { IWindowService } from '@services/windows/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
 import serviceIdentifier from '@services/serviceIdentifier';
 
-export default function getViewBounds(
+export default async function getViewBounds(
   contentSize: [number, number],
   findInPage = false,
   height?: number,
   width?: number,
-): { x: number; y: number; height: number; width: number } {
+): Promise<{ x: number; y: number; height: number; width: number }> {
   const preferencesService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-  const showSidebar = preferencesService.get('sidebar');
+  const showSidebar = await preferencesService.get('sidebar');
 
   const x = showSidebar ? 68 : 0;
   const y = 0;

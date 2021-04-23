@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { Notification, NotificationConstructorOptions } from 'electron';
 import { injectable } from 'inversify';
 import { lazyInject } from '@services/container';
@@ -6,7 +7,6 @@ import type { IPreferenceService } from '@services/preferences/interface';
 import type { IViewService } from '@services/view/interface';
 import { INotificationService, IPauseNotificationsInfo } from './interface';
 import { IWindowService } from '@services/windows/interface';
-import { NotificationChannel } from '@/constants/channels';
 import { BehaviorSubject } from 'rxjs';
 
 @injectable()
@@ -26,17 +26,17 @@ export class NotificationService implements INotificationService {
     this.pauseNotificationsInfo$.next(this.pauseNotificationsInfo);
   }
 
-  public show(options: NotificationConstructorOptions): void {
+  public async show(options: NotificationConstructorOptions): Promise<void> {
     if (Notification.isSupported()) {
       const notification = new Notification(options);
       notification.show();
     }
   }
 
-  private getCurrentScheduledDateTime(): { from: Date; to: Date } | undefined {
-    const pauseNotificationsBySchedule = this.preferenceService.get('pauseNotificationsBySchedule');
-    const pauseNotificationsByScheduleFrom = this.preferenceService.get('pauseNotificationsByScheduleFrom');
-    const pauseNotificationsByScheduleTo = this.preferenceService.get('pauseNotificationsByScheduleTo');
+  private async getCurrentScheduledDateTime(): Promise<{ from: Date; to: Date } | undefined> {
+    const pauseNotificationsBySchedule = await this.preferenceService.get('pauseNotificationsBySchedule');
+    const pauseNotificationsByScheduleFrom = await this.preferenceService.get('pauseNotificationsByScheduleFrom');
+    const pauseNotificationsByScheduleTo = await this.preferenceService.get('pauseNotificationsByScheduleTo');
 
     if (!pauseNotificationsBySchedule) return;
 
@@ -95,10 +95,10 @@ export class NotificationService implements INotificationService {
   /**
    * return reason why notifications are paused
    */
-  private calcPauseNotificationsInfo(): IPauseNotificationsInfo | undefined {
-    const pauseNotifications = this.preferenceService.get('pauseNotifications');
+  private async calcPauseNotificationsInfo(): Promise<IPauseNotificationsInfo | undefined> {
+    const pauseNotifications = await this.preferenceService.get('pauseNotifications');
 
-    const schedule = this.getCurrentScheduledDateTime();
+    const schedule = await this.getCurrentScheduledDateTime();
 
     const currentDate = new Date();
 
@@ -137,21 +137,21 @@ export class NotificationService implements INotificationService {
   private timeouts: NodeJS.Timeout[] = [];
   /* lock to avoid multiple timeouts running at the same time */
   private updating = false;
-  public updatePauseNotificationsInfo(): void {
+  public async updatePauseNotificationsInfo(): Promise<void> {
     if (this.updating) return;
     this.updating = true;
 
-    this.pauseNotificationsInfo = this.calcPauseNotificationsInfo();
+    this.pauseNotificationsInfo = await this.calcPauseNotificationsInfo();
 
     // Send update to webview
     const shouldPauseNotifications = this.pauseNotificationsInfo !== undefined;
-    const shouldMuteAudio = shouldPauseNotifications && this.preferenceService.get('pauseNotificationsMuteAudio');
+    const shouldMuteAudio = shouldPauseNotifications && (await this.preferenceService.get('pauseNotificationsMuteAudio'));
     this.viewService.setViewsAudioPref(shouldMuteAudio);
     this.viewService.setViewsNotificationsPref(shouldPauseNotifications);
 
     // set schedule for re-updating
-    const pauseNotifications = this.preferenceService.get('pauseNotifications');
-    const schedule = this.getCurrentScheduledDateTime();
+    const pauseNotifications = await this.preferenceService.get('pauseNotifications');
+    const schedule = await this.getCurrentScheduledDateTime();
 
     // clear old timeouts
     this.timeouts.forEach((timeout: NodeJS.Timeout) => {
@@ -166,7 +166,7 @@ export class NotificationService implements INotificationService {
       // https://github.com/nodejs/node-v0.x-archive/issues/8656
       if (t > 0 && t < 2147483647) {
         const newTimeout = setTimeout(() => {
-          this.updatePauseNotificationsInfo();
+          void this.updatePauseNotificationsInfo();
         }, t);
         this.timeouts.push(newTimeout);
       }
@@ -188,5 +188,5 @@ export class NotificationService implements INotificationService {
     this.updateNotificationsInfoSubject();
   }
 
-  public getPauseNotificationsInfo = (): IPauseNotificationsInfo | undefined => this.pauseNotificationsInfo;
+  public getPauseNotificationsInfo = async (): Promise<IPauseNotificationsInfo | undefined> => this.pauseNotificationsInfo;
 }

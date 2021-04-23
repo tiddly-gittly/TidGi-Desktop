@@ -63,15 +63,17 @@ if (!gotTheLock) {
   // would return error
   // https://github.com/nathanbuchar/electron-settings/issues/111
   if (fs.existsSync(settings.file())) {
-    const useHardwareAcceleration = preferenceService.get('useHardwareAcceleration');
-    if (!useHardwareAcceleration) {
-      app.disableHardwareAcceleration();
-    }
-    const ignoreCertificateErrors = preferenceService.get('ignoreCertificateErrors');
-    if (ignoreCertificateErrors) {
-      // https://www.electronjs.org/docs/api/command-line-switches
-      app.commandLine.appendSwitch('ignore-certificate-errors');
-    }
+    void preferenceService.get('useHardwareAcceleration').then((useHardwareAcceleration) => {
+      if (!useHardwareAcceleration) {
+        app.disableHardwareAcceleration();
+      }
+    });
+    void preferenceService.get('ignoreCertificateErrors').then((ignoreCertificateErrors) => {
+      if (ignoreCertificateErrors) {
+        // https://www.electronjs.org/docs/api/command-line-switches
+        app.commandLine.appendSwitch('ignore-certificate-errors');
+      }
+    });
   }
   let commonInitFinished = false;
   /** mock app.whenReady */

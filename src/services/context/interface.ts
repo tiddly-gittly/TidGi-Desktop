@@ -32,7 +32,7 @@ export interface IContext extends IPaths, IConstants {}
  * Manage constant value like `isDevelopment` and many else, so you can know about about running environment in main and renderer process easily.
  */
 export interface IContextService {
-  get<K extends keyof IContext>(key: K): IContext[K];
+  get<K extends keyof IContext>(key: K): Promise<IContext[K]>;
 }
 export const ContextServiceIPCDescriptor = {
   channel: ContextChannel.name,

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { BehaviorSubject } from 'rxjs';
 import { injectable } from 'inversify';
 import { dialog, nativeTheme } from 'electron';
@@ -77,11 +78,11 @@ export class Preference implements IPreferenceService {
     return preferenceToSanitize;
   }
 
-  public set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): void {
+  public async set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void> {
     this.cachedPreferences[key] = value;
     this.cachedPreferences = { ...this.cachedPreferences, ...this.sanitizePreference(this.cachedPreferences) };
 
-    void settings.set(`preferences.${key}`, this.cachedPreferences[key] as any);
+    await settings.set(`preferences.${key}`, this.cachedPreferences[key] as any);
 
     this.reactWhenPreferencesChanged(key, value);
     this.updatePreferenceSubject();
@@ -94,7 +95,7 @@ export class Preference implements IPreferenceService {
   private reactWhenPreferencesChanged<K extends keyof IPreferences>(key: K, value: IPreferences[K]): void {
     // maybe pauseNotificationsBySchedule or pauseNotifications or ...
     if (key.startsWith('pauseNotifications')) {
-      this.notificationService.updatePauseNotificationsInfo();
+      void this.notificationService.updatePauseNotificationsInfo();
     }
     if (key === 'themeSource') {
       nativeTheme.themeSource = value as IPreferences['themeSource'];
@@ -110,7 +111,7 @@ export class Preference implements IPreferenceService {
     this.updatePreferenceSubject();
   }
 
-  public getPreferences = (): IPreferences => {
+  public getPreferences = async (): Promise<IPreferences> => {
     // store in memory to boost performance
     if (this.cachedPreferences === undefined) {
       return this.getInitPreferencesForCache();
@@ -118,13 +119,13 @@ export class Preference implements IPreferenceService {
     return this.cachedPreferences;
   };
 
-  public get<K extends keyof IPreferences>(key: K): IPreferences[K] {
+  public async get<K extends keyof IPreferences>(key: K): Promise<IPreferences[K]> {
     return this.cachedPreferences[key];
   }
 
   public async reset(): Promise<void> {
     await settings.unset();
-    const preferences = this.getPreferences();
+    const preferences = await this.getPreferences();
     this.cachedPreferences = preferences;
     await this.setPreferences(preferences);
   }

@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/no-null */
 import { injectable } from 'inversify';
 import { app } from 'electron';
@@ -175,12 +176,12 @@ export class Workspace implements IWorkspaceService {
     this.updateWorkspaceMenuItems();
   }
 
-  public update(id: string, workspaceSetting: Partial<IWorkspace>): void {
+  public async update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void> {
     const workspace = this.get(id);
     if (workspace === undefined) {
       return;
     }
-    void this.set(id, { ...workspace, ...workspaceSetting });
+    await this.set(id, { ...workspace, ...workspaceSetting });
   }
 
   public async setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void> {
@@ -307,7 +308,7 @@ export class Workspace implements IWorkspaceService {
       newImage.clone().resize(128, 128).quality(100).write(destinationPicturePath, resolve);
     });
     const currentPicturePath = this.get(id)?.picturePath;
-    this.update(id, {
+    await this.update(id, {
       picturePath: destinationPicturePath,
     });
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
@@ -386,7 +387,7 @@ export class Workspace implements IWorkspaceService {
 
   public getAllMetaData = (): Record<string, Partial<IWorkspaceMetaData>> => this.metaData;
 
-  public updateMetaData = (id: string, options: Partial<IWorkspaceMetaData>): void => {
+  public updateMetaData = async (id: string, options: Partial<IWorkspaceMetaData>): Promise<void> => {
     this.metaData[id] = {
       ...this.metaData[id],
       ...options,

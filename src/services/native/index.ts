@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { app, dialog, shell, MessageBoxOptions } from 'electron';
 import { injectable, inject } from 'inversify';
 
@@ -42,7 +43,7 @@ export class NativeService implements INativeService {
     return isDirectory ? shell.showItemInFolder(uri) : await shell.openExternal(uri);
   }
 
-  public quit(): void {
+  public async quit(): Promise<void> {
     app.quit();
   }
 }
