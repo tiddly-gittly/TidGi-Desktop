@@ -100,6 +100,7 @@ export function useWikiWorkspaceForm() {
   }, [mainWikiToLink]);
   const [gitRepoUrl, gitRepoUrlSetter] = useState<string>('');
 
+  // FIXME: on dev, this will get TiddlyGit 's remote repo
   useEffect(() => {
     void (async function getWorkspaceRemoteEffect(): Promise<void> {
       if (existedWikiFolderPath !== undefined) {

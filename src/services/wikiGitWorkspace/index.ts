@@ -27,12 +27,33 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
 
-  public initWikiGitTransaction = async (wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, isMainWiki: boolean): Promise<void> => {
+  public initWikiGitTransaction = async (
+    wikiFolderPath: string,
+    isMainWiki: boolean,
+    isSyncedWiki: boolean,
+    githubRepoUrlOrMainWikiToUnLinkOverload?: string,
+    userInfo?: IGitUserInfos,
+    mainWikiToUnLink?: string,
+  ): Promise<void> => {
     try {
-      await this.gitService.initWikiGit(wikiFolderPath, githubRepoUrl, userInfo, isMainWiki);
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      if (isSyncedWiki) {
+        const githubRepoUrl = githubRepoUrlOrMainWikiToUnLinkOverload;
+        if (githubRepoUrl !== undefined && userInfo !== undefined) {
+          await this.gitService.initWikiGit(wikiFolderPath, isMainWiki, isSyncedWiki, githubRepoUrl, userInfo);
+        } else {
+          throw new Error(`githubRepoUrl is ${githubRepoUrl ?? 'undefined'} , userInfo is ${userInfo === undefined ? JSON.stringify(userInfo) : 'undefined'}`);
+        }
+      } else {
+        await this.gitService.initWikiGit(wikiFolderPath, isMainWiki, false);
+      }
     } catch (error) {
-      console.info(error);
-      await this.wikiService.removeWiki(wikiFolderPath);
+      logger.info(error);
+      if (isMainWiki) {
+        await this.wikiService.removeWiki(wikiFolderPath);
+      } else {
+        await this.wikiService.removeWiki(wikiFolderPath, isSyncedWiki ? mainWikiToUnLink : githubRepoUrlOrMainWikiToUnLinkOverload);
+      }
       throw new Error(error);
     }
   };

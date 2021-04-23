@@ -2,11 +2,14 @@ import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { GitChannel } from '@/constants/channels';
 import { ModifiedFileList } from './inspect';
 
-export interface IGitUserInfos {
-  /** Git commit message email */
-  email: string;
+export interface IGitUserInfos extends IGitUserInfosWithoutToken {
   /** Github Login: token */
   accessToken: string;
+}
+
+export interface IGitUserInfosWithoutToken {
+  /** Git commit message email */
+  email: string;
   /** Github Login: username , this is also used to filter user's repo when searching repo */
   gitUserName: string;
 }
@@ -22,7 +25,11 @@ export interface IGitService {
   debounceCommitAndSync: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos) => Promise<void> | undefined;
   updateGitInfoTiddler(githubRepoName: string): Promise<void>;
   getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]>;
-  initWikiGit(wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, isMainWiki: boolean): Promise<void>;
+  /**
+   * Run git init in a folder, prepare remote origin if isSyncedWiki
+   */
+  initWikiGit(wikiFolderPath: string, isMainWiki: boolean, isSyncedWiki: true, githubRepoUrl: string, userInfo: IGitUserInfos): Promise<void>;
+  initWikiGit(wikiFolderPath: string, isMainWiki: boolean, isSyncedWiki?: false): Promise<void>;
   commitAndSync(wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos): Promise<void>;
   /** Inspect git's remote url from folder's .git config */
   getWorkspacesRemote(wikiFolderPath: string): Promise<string>;

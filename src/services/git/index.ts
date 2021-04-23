@@ -13,6 +13,7 @@ import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { getModifiedFileList, ModifiedFileList, getRemoteUrl } from './inspect';
 import { IGitService, IGitUserInfos } from './interface';
+import { defaultGitInfo } from './defaultGitInfo';
 
 @injectable()
 export class Git implements IGitService {
@@ -60,32 +61,40 @@ export class Git implements IGitService {
     logger.error('no browserView in updateGitInfoTiddler');
   }
 
-  /**
-   * Run git init in a folder, prepare remote origin
-   * @param {string} wikiFolderPath
-   * @param {string} githubRepoUrl
-   * @param {{ login: string, email: string, accessToken: string }} userInfo
-   * @param {boolean} isMainWiki
-   * @param {{ info: Function, notice: Function }} logger Logger instance from winston
-   */
-  public async initWikiGit(wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, isMainWiki: boolean): Promise<void> {
+  public async initWikiGit(
+    wikiFolderPath: string,
+    isMainWiki: boolean,
+    isSyncedWiki?: boolean,
+    githubRepoUrl?: string,
+    userInfo?: IGitUserInfos,
+  ): Promise<void> {
     const logProgress = (message: string): unknown => logger.notice(message, { handler: 'createWikiProgress', function: 'initWikiGit' });
     const logInfo = (message: string): unknown => logger.info(message, { function: 'initWikiGit' });
 
+    const { gitUserName, email } = userInfo ?? defaultGitInfo;
+    await GitProcess.exec(['init'], wikiFolderPath);
+    await gitSync.commitFiles(wikiFolderPath, gitUserName, email);
+
     logProgress(i18n.t('Log.StartGitInitialization'));
-    const { gitUserName, email, accessToken } = userInfo;
-    if (!accessToken) {
-      throw new Error(i18n.t('Log.GitTokenMissing'));
+    // if we are config local wiki, we are done here
+    if (isSyncedWiki !== true) {
+      logProgress(i18n.t('Log.GitRepositoryConfigurationFinished'));
+      return;
+    }
+    // start config synced wiki
+    if (userInfo?.accessToken === undefined) {
+      throw new Error(i18n.t('Log.GitTokenMissing') + 'accessToken');
+    }
+    if (githubRepoUrl === undefined) {
+      throw new Error(i18n.t('Log.GitTokenMissing') + 'githubRepoUrl');
     }
     logInfo(
-      `Using gitUrl ${githubRepoUrl} with gitUserName ${gitUserName} and accessToken ${truncate(accessToken, {
+      `Using gitUrl ${githubRepoUrl ?? 'githubRepoUrl unset'} with gitUserName ${gitUserName} and accessToken ${truncate(userInfo?.accessToken, {
         length: 24,
       })}`,
     );
-    await GitProcess.exec(['init'], wikiFolderPath);
-    await gitSync.commitFiles(wikiFolderPath, gitUserName, email);
     logProgress(i18n.t('Log.StartConfiguringGithubRemoteRepository'));
-    await github.credentialOn(wikiFolderPath, githubRepoUrl, gitUserName, accessToken);
+    await github.credentialOn(wikiFolderPath, githubRepoUrl, gitUserName, userInfo.accessToken);
     logProgress(i18n.t('Log.StartBackupToGithubRemote'));
     const defaultBranchName = await gitSync.getDefaultBranchName(wikiFolderPath);
     const { stderr: pushStdError, exitCode: pushExitCode } = await GitProcess.exec(

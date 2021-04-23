@@ -6,7 +6,18 @@ import { IGitUserInfos } from '@services/git/interface';
  * Deal with operations that needs to create a wiki and a git repo at once in a workspace
  */
 export interface IWikiGitWorkspaceService {
-  initWikiGitTransaction: (wikiFolderPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, isMainWiki: boolean) => Promise<void>;
+  /** call git.initWikiGit , and rollback (delete created wiki folder) if it failed */
+  initWikiGitTransaction(wikiFolderPath: string, isMainWiki: false, isSyncedWiki: false, mainWikiToUnLink: string): Promise<void>;
+  initWikiGitTransaction(
+    wikiFolderPath: string,
+    isMainWiki: false,
+    isSyncedWiki: true,
+    githubRepoUrl: string,
+    userInfo: IGitUserInfos,
+    mainWikiToUnLink: string,
+  ): Promise<void>;
+  initWikiGitTransaction(wikiFolderPath: string, isMainWiki: true, isSyncedWiki: false): Promise<void>;
+  initWikiGitTransaction(wikiFolderPath: string, isMainWiki: true, isSyncedWiki: true, githubRepoUrl: string, userInfo: IGitUserInfos): Promise<void>;
   removeWorkspace: (id: string) => Promise<void>;
 }
 export const WikiGitWorkspaceServiceIPCDescriptor = {

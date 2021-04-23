@@ -59,6 +59,7 @@ export function useValidateNewWiki(
 
 export function useNewWiki(
   isCreateMainWorkspace: boolean,
+  isCreateSyncedWorkspace: boolean,
   form: IWikiWorkspaceForm,
   wikiCreationMessageSetter: (m: string) => void,
   hasErrorSetter: (m: boolean) => void,
@@ -66,16 +67,31 @@ export function useNewWiki(
   const { t } = useTranslation();
 
   const onSubmit = useCallback(async () => {
-    if (!form.parentFolderLocation || !form.wikiFolderName || !form.gitRepoUrl || !form.gitUserInfo) return;
+    if (!form.parentFolderLocation || !form.wikiFolderName) return;
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     hasErrorSetter(false);
     try {
       if (isCreateMainWorkspace) {
         await window.service.wiki.copyWikiTemplate(form.parentFolderLocation, form.wikiFolderName);
-        await window.service.wikiGitWorkspace.initWikiGitTransaction(form.wikiFolderLocation, form.gitRepoUrl, form.gitUserInfo, true);
+        if (isCreateSyncedWorkspace) {
+          await window.service.wikiGitWorkspace.initWikiGitTransaction(form.wikiFolderLocation, true, true, form.gitRepoUrl, form.gitUserInfo!);
+        } else {
+          await window.service.wikiGitWorkspace.initWikiGitTransaction(form.wikiFolderLocation, true, false);
+        }
       } else {
         await window.service.wiki.createSubWiki(form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink?.name, form.tagName);
-        await window.service.wikiGitWorkspace.initWikiGitTransaction(form.wikiFolderLocation, form.gitRepoUrl, form.gitUserInfo, false);
+        if (isCreateSyncedWorkspace) {
+          await window.service.wikiGitWorkspace.initWikiGitTransaction(
+            form.wikiFolderLocation,
+            false,
+            true,
+            form.gitRepoUrl,
+            form.gitUserInfo!,
+            form.mainWikiToLink?.name,
+          );
+        } else {
+          await window.service.wikiGitWorkspace.initWikiGitTransaction(form.wikiFolderLocation, false, false, form.mainWikiToLink?.name);
+        }
       }
     } catch (error) {
       wikiCreationMessageSetter(String(error));
@@ -84,15 +100,16 @@ export function useNewWiki(
   }, [
     form.parentFolderLocation,
     form.wikiFolderName,
+    form.wikiFolderLocation,
     form.gitRepoUrl,
     form.gitUserInfo,
-    form.wikiFolderLocation,
     form.mainWikiToLink?.name,
     form.tagName,
     wikiCreationMessageSetter,
     t,
     hasErrorSetter,
     isCreateMainWorkspace,
+    isCreateSyncedWorkspace,
   ]);
 
   return onSubmit;
