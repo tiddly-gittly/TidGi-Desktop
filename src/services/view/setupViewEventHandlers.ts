@@ -6,7 +6,7 @@ import fsExtra from 'fs-extra';
 import { IWorkspace } from '@services/workspaces/interface';
 import getViewBounds from '@services/libs/getViewBounds';
 import { extractDomain, isInternalUrl } from '@/helpers/url';
-import { buildResourcePath } from '@services/constants/paths';
+import { buildResourcePath } from '@/constants/paths';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IPreferenceService } from '@services/preferences/interface';

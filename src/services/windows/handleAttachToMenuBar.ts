@@ -4,7 +4,7 @@ import windowStateKeeper from 'electron-window-state';
 import { menubar, Menubar } from 'menubar';
 import path from 'path';
 
-import { REACT_PATH, buildResourcePath } from '@services/constants/paths';
+import { REACT_PATH, buildResourcePath } from '@/constants/paths';
 import { WindowNames } from './WindowProperties';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 

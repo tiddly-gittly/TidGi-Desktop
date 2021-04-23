@@ -8,7 +8,7 @@ import { createProxy } from '@/helpers/electron-ipc-proxy/client';
 import { AsyncifyProxy } from '@/helpers/electron-ipc-proxy/common';
 
 import { IAuthenticationService, AuthenticationServiceIPCDescriptor } from '@services/auth/interface';
-import { IContextService, ContextServiceIPCDescriptor } from '@services/constants/interface';
+import { IContextService, ContextServiceIPCDescriptor } from '@services/context/interface';
 import { IGitService, GitServiceIPCDescriptor } from '@services/git/interface';
 import { IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
 import { INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';

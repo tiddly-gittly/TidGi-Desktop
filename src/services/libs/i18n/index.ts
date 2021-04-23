@@ -3,7 +3,7 @@ import i18next from 'i18next';
 import Backend from 'i18next-fs-backend';
 import isDevelopment from 'electron-is-dev';
 
-import { LOCALIZATION_FOLDER } from '@services/constants/paths';
+import { LOCALIZATION_FOLDER } from '@/constants/paths';
 import changeToDefaultLanguage from './useDefaultLanguage';
 import { mainBindings, clearMainBindings } from './i18nMainBindings';
 

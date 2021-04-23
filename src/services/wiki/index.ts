@@ -20,7 +20,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { logger, wikiOutputToFile, refreshOutputFile } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { lazyInject } from '@services/container';
-import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@services/constants/paths';
+import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@/constants/paths';
 import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './update-plugin-content';
 import { IWikiService } from './interface';
 

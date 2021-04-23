@@ -1,13 +1,13 @@
 import { app } from 'electron';
 import path from 'path';
 import os from 'os';
-import { isDevelopmentOrTest } from '@/constants/environment';
-import { developmentSettingFolderName, developmentWikiFolderName, localizationFolderName } from '@/constants/fileNames';
+import { isDevelopmentOrTest } from './environment';
+import { developmentSettingFolderName, developmentWikiFolderName, localizationFolderName } from './fileNames';
 
 const isMac = process.platform === 'darwin';
 
 /** src folder */
-const sourcePath = path.resolve(__dirname, '..', '..');
+const sourcePath = path.resolve(__dirname, '..');
 export const buildResourcePath = path.resolve(sourcePath, '..', 'build-resources');
 
 export const REACT_PATH = MAIN_WINDOW_WEBPACK_ENTRY;

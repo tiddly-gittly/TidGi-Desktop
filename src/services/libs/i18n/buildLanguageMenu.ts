@@ -4,7 +4,7 @@ import path from 'path';
 import type { IWindowService } from '@services/windows/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';
-import { LOCALIZATION_FOLDER } from '@services/constants/paths';
+import { LOCALIZATION_FOLDER } from '@/constants/paths';
 import { I18NChannels } from '@/constants/channels';
 
 import type { IPreferenceService } from '@services/preferences/interface';

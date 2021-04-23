@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs-extra';
 
-import { LOG_FOLDER } from '../../constants/paths';
+import { LOG_FOLDER } from '@/constants/paths';
 
 export function wikiOutputToFile(wikiName: string, stream: NodeJS.ReadableStream): void {
   const logFilePath = path.join(LOG_FOLDER, `${wikiName}.log`);

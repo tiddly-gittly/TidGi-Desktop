@@ -5,7 +5,7 @@ import isDevelopment from 'electron-is-dev';
 import { injectable } from 'inversify';
 
 import { IContextService, IContext, IPaths, IConstants } from './interface';
-import * as paths from '@services/constants/paths';
+import * as paths from '@/constants/paths';
 
 @injectable()
 export class ContextService implements IContextService {

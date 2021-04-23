@@ -7,7 +7,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';
 
 import { Authentication } from '@services/auth';
-import { ContextService } from '@services/constants';
+import { ContextService } from '@services/context';
 import { Git } from '@services/git';
 import { MenuService } from '@services/menu';
 import { NativeService } from '@services/native';
@@ -24,7 +24,7 @@ import { Workspace } from '@services/workspaces';
 import { WorkspaceView } from '@services/workspacesView';
 
 import { IAuthenticationService, AuthenticationServiceIPCDescriptor } from '@services/auth/interface';
-import { IContextService, ContextServiceIPCDescriptor } from '@services/constants/interface';
+import { IContextService, ContextServiceIPCDescriptor } from '@services/context/interface';
 import { IGitService, GitServiceIPCDescriptor } from '@services/git/interface';
 import { IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
 import { INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';
