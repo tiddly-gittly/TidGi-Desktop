@@ -29,14 +29,14 @@ export type IUserInfos = {
  */
 export interface IAuthenticationService {
   userInfo$: BehaviorSubject<IUserInfos>;
-  getStorageServiceUserInfo(serviceName: SupportedStorageServices): IGitUserInfos | undefined;
+  getStorageServiceUserInfo(serviceName: SupportedStorageServices): Promise<IGitUserInfos | undefined>;
   /**
    * Get a random storage info, useful for checking if user have any token in the storage
    */
-  getRandomStorageServiceUserInfo(): { name: SupportedStorageServices; info: IGitUserInfos } | undefined;
-  getUserInfos: () => IUserInfos;
-  get<K extends keyof IUserInfos>(key: K): IUserInfos[K] | undefined;
-  set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): void;
+  getRandomStorageServiceUserInfo(): Promise<{ name: SupportedStorageServices; info: IGitUserInfos } | undefined>;
+  getUserInfos: () => Promise<IUserInfos>;
+  get<K extends keyof IUserInfos>(key: K): Promise<IUserInfos[K] | undefined>;
+  set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): Promise<void>;
   reset(): Promise<void>;
 }
 export const AuthenticationServiceIPCDescriptor = {

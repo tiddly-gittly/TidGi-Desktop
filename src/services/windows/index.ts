@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/require-await */
+/* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { BrowserWindow, ipcMain, dialog, app, clipboard, BrowserWindowConstructorOptions } from 'electron';
 import { injectable } from 'inversify';
@@ -33,10 +35,10 @@ export class Window implements IWindowService {
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
 
   constructor() {
-    this.registerMenu();
+    void this.registerMenu();
   }
 
-  public findInPage(text: string, forward?: boolean, windowName: WindowNames = WindowNames.main): void {
+  public async findInPage(text: string, forward?: boolean, windowName: WindowNames = WindowNames.main): Promise<void> {
     const mainWindow = this.get(windowName);
     const contents = mainWindow?.getBrowserView()?.webContents;
     if (contents !== undefined) {
@@ -88,7 +90,7 @@ export class Window implements IWindowService {
     return this.windows[windowName];
   }
 
-  public close(name: WindowNames): void {
+  public async close(name: WindowNames): Promise<void> {
     this.get(name)?.close();
   }
 
@@ -99,8 +101,8 @@ export class Window implements IWindowService {
   ): Promise<void> {
     const existedWindow = this.get(windowName);
     // update window meta
-    this.setWindowMeta(windowName, meta);
-    const existedWindowMeta = this.getWindowMeta(windowName);
+    await this.setWindowMeta(windowName, meta);
+    const existedWindowMeta = await this.getWindowMeta(windowName);
     const attachToMenubar: boolean = await this.preferenceService.get('attachToMenubar');
     const titleBar: boolean = await this.preferenceService.get('titleBar');
 
@@ -173,7 +175,7 @@ export class Window implements IWindowService {
     } else {
       newWindow.setMenuBarVisibility(false);
     }
-    const unregisterContextMenu = this.menuService.initContextMenuForWindowWebContents(newWindow.webContents);
+    const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(newWindow.webContents);
     newWindow.on('closed', () => {
       this.windows[windowName] = undefined;
       unregisterContextMenu();
@@ -182,7 +184,7 @@ export class Window implements IWindowService {
     if (isMainWindow) {
       // handle window show and Webview/browserView show
       webContentLoadingPromise = new Promise<void>((resolve) => {
-        newWindow.once('ready-to-show', () => {
+        newWindow.once('ready-to-show', async () => {
           const mainWindow = this.get(WindowNames.main);
           if (mainWindow === undefined) return;
           const { wasOpenedAsHidden } = app.getLoginItemSettings();
@@ -193,7 +195,7 @@ export class Window implements IWindowService {
           // after the UI is fully loaded
           // if not, BrowserView mouseover event won't work correctly
           // https://github.com/atomery/webcatalog/issues/812
-          this.workspaceViewService.realignActiveWorkspace();
+          await this.workspaceViewService.realignActiveWorkspace();
           // ensure redux is loaded first
           // if not, redux might not be able catch changes sent from ipcMain
           if (!mainWindow.webContents.isLoading()) {
@@ -230,10 +232,10 @@ export class Window implements IWindowService {
       }
     });
     // Hide window instead closing on macos
-    newWindow.on('close', (event) => {
+    newWindow.on('close', async (event) => {
       const mainWindow = this.get(WindowNames.main);
       if (mainWindow === undefined) return;
-      if (process.platform === 'darwin' && this.getWindowMeta(WindowNames.main)?.forceClose !== true) {
+      if (process.platform === 'darwin' && (await this.getWindowMeta(WindowNames.main))?.forceClose !== true) {
         event.preventDefault();
         // https://github.com/electron/electron/issues/6033#issuecomment-242023295
         if (mainWindow.isFullScreen()) {
@@ -258,33 +260,33 @@ export class Window implements IWindowService {
       view?.webContents?.focus();
     });
 
-    newWindow.on('enter-full-screen', () => {
+    newWindow.on('enter-full-screen', async () => {
       const mainWindow = this.get(WindowNames.main);
       if (mainWindow === undefined) return;
       mainWindow?.webContents.send('is-fullscreen-updated', true);
-      this.workspaceViewService.realignActiveWorkspace();
+      await this.workspaceViewService.realignActiveWorkspace();
     });
-    newWindow.on('leave-full-screen', () => {
+    newWindow.on('leave-full-screen', async () => {
       const mainWindow = this.get(WindowNames.main);
       if (mainWindow === undefined) return;
       mainWindow?.webContents.send('is-fullscreen-updated', false);
-      this.workspaceViewService.realignActiveWorkspace();
+      await this.workspaceViewService.realignActiveWorkspace();
     });
   }
 
-  public isFullScreen(windowName = WindowNames.main): boolean | undefined {
+  public async isFullScreen(windowName = WindowNames.main): Promise<boolean | undefined> {
     return this.windows[windowName]?.isFullScreen();
   }
 
-  public setWindowMeta<N extends WindowNames>(windowName: N, meta: WindowMeta[N]): void {
+  public async setWindowMeta<N extends WindowNames>(windowName: N, meta: WindowMeta[N]): Promise<void> {
     this.windowMeta[windowName] = meta;
   }
 
-  public updateWindowMeta<N extends WindowNames>(windowName: N, meta: WindowMeta[N]): void {
+  public async updateWindowMeta<N extends WindowNames>(windowName: N, meta: WindowMeta[N]): Promise<void> {
     this.windowMeta[windowName] = { ...this.windowMeta[windowName], ...meta };
   }
 
-  public getWindowMeta<N extends WindowNames>(windowName: N): WindowMeta[N] | undefined {
+  public async getWindowMeta<N extends WindowNames>(windowName: N): Promise<WindowMeta[N] | undefined> {
     return this.windowMeta[windowName] as WindowMeta[N];
   }
 
@@ -293,7 +295,7 @@ export class Window implements IWindowService {
    * @param channel ipc channel to send
    * @param arguments_ any messages
    */
-  public sendToAllWindows = (channel: Channels, ...arguments_: unknown[]): void => {
+  public sendToAllWindows = async (channel: Channels, ...arguments_: unknown[]): Promise<void> => {
     const wins = BrowserWindow.getAllWindows();
     wins.forEach((win) => {
       win.webContents.send(channel, ...arguments_);
@@ -303,7 +305,7 @@ export class Window implements IWindowService {
   public async goHome(windowName: WindowNames = WindowNames.main): Promise<void> {
     const win = this.get(windowName);
     const contents = win?.getBrowserView()?.webContents;
-    const activeWorkspace = this.workspaceService.getActiveWorkspace();
+    const activeWorkspace = await this.workspaceService.getActiveWorkspace();
     if (contents !== undefined && activeWorkspace !== undefined && win !== undefined) {
       await contents.loadURL(activeWorkspace.homeUrl);
       contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
@@ -311,7 +313,7 @@ export class Window implements IWindowService {
     }
   }
 
-  public goBack(windowName: WindowNames = WindowNames.main): void {
+  public async goBack(windowName: WindowNames = WindowNames.main): Promise<void> {
     const win = this.get(windowName);
     const contents = win?.getBrowserView()?.webContents;
     if (contents?.canGoBack() === true) {
@@ -321,7 +323,7 @@ export class Window implements IWindowService {
     }
   }
 
-  public goForward(windowName: WindowNames = WindowNames.main): void {
+  public async goForward(windowName: WindowNames = WindowNames.main): Promise<void> {
     const win = this.get(windowName);
     const contents = win?.getBrowserView()?.webContents;
     if (contents?.canGoForward() === true) {
@@ -331,7 +333,7 @@ export class Window implements IWindowService {
     }
   }
 
-  public reload(windowName: WindowNames = WindowNames.main): void {
+  public async reload(windowName: WindowNames = WindowNames.main): Promise<void> {
     const win = this.get(windowName);
     win?.getBrowserView()?.webContents?.reload();
   }
@@ -350,8 +352,8 @@ export class Window implements IWindowService {
     }
   }
 
-  private registerMenu(): void {
-    this.menuService.insertMenu(
+  private async registerMenu(): Promise<void> {
+    await this.menuService.insertMenu(
       'window',
       [
         // `role: 'zoom'` is only supported on macOS
@@ -372,7 +374,7 @@ export class Window implements IWindowService {
       'close',
     );
 
-    this.menuService.insertMenu('Edit', [
+    await this.menuService.insertMenu('Edit', [
       {
         label: 'Find',
         accelerator: 'CmdOrCtrl+F',
@@ -386,7 +388,7 @@ export class Window implements IWindowService {
             view?.setBounds(await getViewBounds(contentSize as [number, number], true));
           }
         },
-        enabled: () => this.workspaceService.countWorkspaces() > 0,
+        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
       {
         label: 'Find Next',
@@ -395,7 +397,7 @@ export class Window implements IWindowService {
           const mainWindow = this.get(WindowNames.main);
           mainWindow?.webContents?.send('request-back-find-in-page', true);
         },
-        enabled: () => this.workspaceService.countWorkspaces() > 0,
+        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
       {
         label: 'Find Previous',
@@ -404,16 +406,16 @@ export class Window implements IWindowService {
           const mainWindow = this.get(WindowNames.main);
           mainWindow?.webContents?.send('request-back-find-in-page', false);
         },
-        enabled: () => this.workspaceService.countWorkspaces() > 0,
+        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
     ]);
 
-    this.menuService.insertMenu('History', [
+    await this.menuService.insertMenu('History', [
       {
         label: 'Home',
         accelerator: 'Shift+CmdOrCtrl+H',
         click: async () => await this.goHome(),
-        enabled: () => this.workspaceService.countWorkspaces() > 0,
+        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
       {
         label: 'Back',
@@ -431,7 +433,7 @@ export class Window implements IWindowService {
           }
           ipcMain.emit('request-go-back');
         },
-        enabled: () => this.workspaceService.countWorkspaces() > 0,
+        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
       {
         label: 'Forward',
@@ -448,7 +450,7 @@ export class Window implements IWindowService {
           }
           ipcMain.emit('request-go-forward');
         },
-        enabled: () => this.workspaceService.countWorkspaces() > 0,
+        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
       { type: 'separator' },
       {
@@ -471,13 +473,13 @@ export class Window implements IWindowService {
             clipboard.writeText(url);
           }
         },
-        enabled: () => this.workspaceService.countWorkspaces() > 0,
+        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
     ]);
 
     if (process.platform === 'darwin') {
       // TODO: restore updater options here
-      this.menuService.insertMenu('TiddlyGit', [
+      await this.menuService.insertMenu('TiddlyGit', [
         {
           label: () => i18n.t('ContextMenu.About'),
           click: async () => await this.open(WindowNames.about),

@@ -81,14 +81,14 @@ export interface IWorkspaceMetaData {
  */
 export interface IWorkspaceService {
   workspaces$: BehaviorSubject<Record<string, IWorkspace>>;
-  getWorkspacesAsList(): IWorkspace[];
-  get(id: string): IWorkspace | undefined;
+  getWorkspacesAsList(): Promise<IWorkspace[]>;
+  get(id: string): Promise<IWorkspace | undefined>;
   get$(id: string): Observable<IWorkspace | undefined>;
   create(newWorkspaceConfig: Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order'>): Promise<IWorkspace>;
-  getWorkspaces(): Record<string, IWorkspace>;
-  countWorkspaces(): number;
-  getMetaData: (id: string) => Partial<IWorkspaceMetaData>;
-  getAllMetaData: () => Record<string, Partial<IWorkspaceMetaData>>;
+  getWorkspaces(): Promise<Record<string, IWorkspace>>;
+  countWorkspaces(): Promise<number>;
+  getMetaData: (id: string) => Promise<Partial<IWorkspaceMetaData>>;
+  getAllMetaData: () => Promise<Record<string, Partial<IWorkspaceMetaData>>>;
   updateMetaData: (id: string, options: Partial<IWorkspaceMetaData>) => Promise<void>;
   set(id: string, workspace: IWorkspace): Promise<void>;
   update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void>;
@@ -97,11 +97,11 @@ export interface IWorkspaceService {
   setWorkspacePicture(id: string, sourcePicturePath: string): Promise<void>;
   removeWorkspacePicture(id: string): Promise<void>;
   remove(id: string): Promise<void>;
-  getByName(name: string): IWorkspace | undefined;
-  getPreviousWorkspace: (id: string) => IWorkspace | undefined;
-  getNextWorkspace: (id: string) => IWorkspace | undefined;
-  getActiveWorkspace: () => IWorkspace | undefined;
-  getFirstWorkspace: () => IWorkspace | undefined;
+  getByName(name: string): Promise<IWorkspace | undefined>;
+  getPreviousWorkspace: (id: string) => Promise<IWorkspace | undefined>;
+  getNextWorkspace: (id: string) => Promise<IWorkspace | undefined>;
+  getActiveWorkspace: () => Promise<IWorkspace | undefined>;
+  getFirstWorkspace: () => Promise<IWorkspace | undefined>;
 }
 export const WorkspaceServiceIPCDescriptor = {
   channel: WorkspaceChannel.name,

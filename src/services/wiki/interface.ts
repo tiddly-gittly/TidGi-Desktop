@@ -8,14 +8,14 @@ import type { ISubWikiPluginContent } from './update-plugin-content';
  * Handle wiki worker startup and restart
  */
 export interface IWikiService {
-  updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): void;
+  updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void>;
   startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void>;
   stopWiki(homePath: string): Promise<void>;
   stopAllWiki(): Promise<void>;
   copyWikiTemplate(newFolderPath: string, folderName: string): Promise<string>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
-  requestWikiSendActionMessage(actionMessage: string): void;
-  requestOpenTiddlerInWiki(tiddlerName: string): void;
+  requestWikiSendActionMessage(actionMessage: string): Promise<void>;
+  requestOpenTiddlerInWiki(tiddlerName: string): Promise<void>;
   linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
   createWiki(newFolderPath: string, folderName: string): Promise<void>;
   createSubWiki(newFolderPath: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;

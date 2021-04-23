@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
+/* eslint-disable @typescript-eslint/require-await */
 import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, WebContents, MenuItem, ipcMain } from 'electron';
 import { debounce, take, drop, reverse } from 'lodash';
 import { injectable } from 'inversify';
@@ -20,8 +22,8 @@ export class MenuService implements IMenuService {
    * Rebuild or create menubar from the latest menu template, will be call after some method change the menuTemplate
    * You don't need to call this after calling method like insertMenu, it will be call automatically.
    */
-  public buildMenu(): void {
-    const latestTemplate = this.getCurrentMenuItemConstructorOptions(this.menuTemplate) ?? [];
+  public async buildMenu(): Promise<void> {
+    const latestTemplate = (await this.getCurrentMenuItemConstructorOptions(this.menuTemplate)) ?? [];
     const menu = Menu.buildFromTemplate(latestTemplate);
     Menu.setApplicationMenu(menu);
   }
@@ -31,26 +33,28 @@ export class MenuService implements IMenuService {
    * @param submenu menu options to get latest value
    * @returns MenuTemplate that `Menu.buildFromTemplate` wants
    */
-  private getCurrentMenuItemConstructorOptions(
+  private async getCurrentMenuItemConstructorOptions(
     submenu?: Array<DeferredMenuItemConstructorOptions | MenuItemConstructorOptions>,
-  ): MenuItemConstructorOptions[] | undefined {
+  ): Promise<MenuItemConstructorOptions[] | undefined> {
     if (submenu === undefined) return;
-    return submenu.map((item) => ({
-      ...item,
-      label: typeof item.label === 'function' ? item.label() : item.label,
-      enabled: typeof item.enabled === 'function' ? item.enabled() : item.enabled,
-      submenu:
-        typeof item.submenu === 'function'
-          ? this.getCurrentMenuItemConstructorOptions(item.submenu())
-          : item.submenu instanceof Menu
-          ? item.submenu
-          : this.getCurrentMenuItemConstructorOptions(item.submenu),
-    }));
+    return await Promise.all(
+      submenu.map(async (item) => ({
+        ...item,
+        label: typeof item.label === 'function' ? item.label() : item.label,
+        enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
+        submenu:
+          typeof item.submenu === 'function'
+            ? await this.getCurrentMenuItemConstructorOptions(item.submenu())
+            : item.submenu instanceof Menu
+            ? item.submenu
+            : await this.getCurrentMenuItemConstructorOptions(item.submenu),
+      })),
+    );
   }
 
   constructor() {
     // debounce so build menu won't be call very frequently on app launch, where every services are registering menu items
-    this.buildMenu = debounce(this.buildMenu.bind(this), 50);
+    this.buildMenu = debounce(this.buildMenu.bind(this), 50) as () => Promise<void>;
     // add some default app menus
     this.menuTemplate = [
       {
@@ -121,8 +125,9 @@ export class MenuService implements IMenuService {
   }
 
   /** Register `on('context-menu', openContextMenuForWindow)` for a window, return an unregister function */
-  public initContextMenuForWindowWebContents(webContents: WebContents): () => void {
-    const openContextMenuForWindow = (event: Electron.Event, parameters: ContextMenuParams): void => this.buildContextMenuAndPopup([], parameters, webContents);
+  public async initContextMenuForWindowWebContents(webContents: WebContents): Promise<() => void> {
+    const openContextMenuForWindow = async (event: Electron.Event, parameters: ContextMenuParams): Promise<void> =>
+      await this.buildContextMenuAndPopup([], parameters, webContents);
     webContents.on('context-menu', openContextMenuForWindow);
 
     return () => {
@@ -141,7 +146,7 @@ export class MenuService implements IMenuService {
    * @param afterSubMenu The `id` or `role` of a submenu you want your submenu insert after. `null` means inserted as first submenu item; `undefined` means inserted as last submenu item;
    * @param withSeparator Need to insert a separator first, before insert menu items
    */
-  public insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator = false): void {
+  public async insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator = false): Promise<void> {
     let foundMenuName = false;
     // try insert menu into an existed menu's submenu
     for (const menu of this.menuTemplate) {
@@ -199,14 +204,14 @@ export class MenuService implements IMenuService {
         submenu: menuItems,
       });
     }
-    this.buildMenu();
+    await this.buildMenu();
   }
 
-  public buildContextMenuAndPopup(
+  public async buildContextMenuAndPopup(
     template: MenuItemConstructorOptions[] | IpcSafeMenuItem[],
     info: IOnContextMenuInfo,
     webContentsOrWindowName: WindowNames | WebContents = WindowNames.main,
-  ): void {
+  ): Promise<void> {
     let webContents: WebContents;
     if (typeof webContentsOrWindowName === 'string') {
       const windowToPopMenu = this.windowService.get(webContentsOrWindowName);

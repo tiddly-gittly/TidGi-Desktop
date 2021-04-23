@@ -18,7 +18,7 @@ export interface IViewService {
   hibernateView: (id: string) => void;
   reloadViewsWebContentsIfDidFailLoad: () => void;
   reloadViewsWebContents: () => void;
-  getActiveBrowserView: () => BrowserView | undefined;
+  getActiveBrowserView: () => Promise<BrowserView | undefined>;
   realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;
 }
 export const ViewServiceIPCDescriptor = {

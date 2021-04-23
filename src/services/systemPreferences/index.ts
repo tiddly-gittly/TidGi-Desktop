@@ -1,26 +1,23 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { app } from 'electron';
 import { injectable } from 'inversify';
 import { BehaviorSubject } from 'rxjs';
 import { ISystemPreferenceService, IUsedElectionSettings } from './interface';
-import serviceIdentifier from '@services/serviceIdentifier';
-import { IWindowService } from '@services/windows/interface';
-import { lazyInject } from '@services/container';
-
 
 @injectable()
 export class SystemPreference implements ISystemPreferenceService {
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   public systemPreference$: BehaviorSubject<IUsedElectionSettings>;
 
   constructor() {
-    this.systemPreference$ = new BehaviorSubject<IUsedElectionSettings>(this.getSystemPreferences());
+    this.systemPreference$ = new BehaviorSubject<IUsedElectionSettings>({ openAtLogin: 'no' });
+    void this.updatePreferenceSubject();
   }
 
-  private updatePreferenceSubject(): void {
-    this.systemPreference$.next(this.getSystemPreferences());
+  private async updatePreferenceSubject(): Promise<void> {
+    this.systemPreference$.next(await this.getSystemPreferences());
   }
 
-  public get<K extends keyof IUsedElectionSettings>(key: K): IUsedElectionSettings[K] {
+  public async get<K extends keyof IUsedElectionSettings>(key: K): Promise<IUsedElectionSettings[K]> {
     switch (key) {
       case 'openAtLogin': {
         // return our custom setting enum, to be cross-platform
@@ -36,13 +33,13 @@ export class SystemPreference implements ISystemPreferenceService {
     }
   }
 
-  public getSystemPreferences(): IUsedElectionSettings {
+  public async getSystemPreferences(): Promise<IUsedElectionSettings> {
     return {
-      openAtLogin: this.get('openAtLogin'),
+      openAtLogin: await this.get('openAtLogin'),
     };
   }
 
-  public setSystemPreference<K extends keyof IUsedElectionSettings>(key: K, value: IUsedElectionSettings[K]): void {
+  public async setSystemPreference<K extends keyof IUsedElectionSettings>(key: K, value: IUsedElectionSettings[K]): Promise<void> {
     switch (key) {
       case 'openAtLogin': {
         app.setLoginItemSettings({
@@ -55,6 +52,6 @@ export class SystemPreference implements ISystemPreferenceService {
         break;
       }
     }
-    this.updatePreferenceSubject();
+    await this.updatePreferenceSubject();
   }
 }

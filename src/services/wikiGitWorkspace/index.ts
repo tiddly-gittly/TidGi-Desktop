@@ -69,7 +69,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       });
       try {
         if (response === 0 || response === 1) {
-          const workspace = this.workspaceService.get(id);
+          const workspace = await this.workspaceService.get(id);
           if (workspace === undefined) {
             throw new Error(`Need to get workspace with id ${id} but failed`);
           }
@@ -77,19 +77,19 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           await this.wikiService.stopWiki(workspace.name).catch((error: any) => logger.error((error as Error).message, error));
           await this.wikiService.removeWiki(workspace.name, workspace.isSubWiki ? workspace.mainWikiToLink : undefined, response === 0);
           await this.workspaceViewService.removeWorkspaceView(id);
-          this.menuService.buildMenu();
+          await this.menuService.buildMenu();
           // restart the main wiki to load content from private wiki
           const mainWikiPath = workspace.mainWikiToLink;
           const mainWorkspace = this.workspaceService.getByName(mainWikiPath);
           if (mainWorkspace === undefined) {
             throw new Error(`Need to get mainWorkspace with name ${mainWikiPath} but failed`);
           }
-          const userName = this.authService.get('userName') ?? '';
+          const userName = (await this.authService.get('userName')) ?? '';
           await this.wikiService.stopWiki(mainWikiPath);
           await this.wikiService.startWiki(mainWikiPath, mainWorkspace.port, userName);
           // remove folderName from fileSystemPaths
           if (workspace.isSubWiki) {
-            this.wikiService.updateSubWikiPluginContent(mainWikiPath, undefined, {
+            await this.wikiService.updateSubWikiPluginContent(mainWikiPath, undefined, {
               ...workspace,
               subWikiFolderName: path.basename(workspace.name),
             });

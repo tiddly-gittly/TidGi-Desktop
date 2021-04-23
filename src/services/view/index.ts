@@ -46,10 +46,10 @@ export class View implements IViewService {
   }
 
   private async registerMenu(): Promise<void> {
-    const hasWorkspaces = this.workspaceService.countWorkspaces() > 0;
+    const hasWorkspaces = (await this.workspaceService.countWorkspaces()) > 0;
     const sidebar = await this.preferenceService.get('sidebar');
     const titleBar = await this.preferenceService.get('titleBar');
-    this.menuService.insertMenu('View', [
+    await this.menuService.insertMenu('View', [
       {
         label: () => (sidebar ? 'Hide Sidebar' : 'Show Sidebar'),
         accelerator: 'CmdOrCtrl+Alt+S',
@@ -276,7 +276,7 @@ export class View implements IViewService {
     // start wiki on startup, or on sub-wiki creation
     await this.wikiService.wikiStartup(workspace);
     void view.webContents.loadURL(initialUrl);
-    const unregisterContextMenu = this.menuService.initContextMenuForWindowWebContents(view.webContents);
+    const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
     view.webContents.on('destroyed', () => {
       unregisterContextMenu();
     });
@@ -296,7 +296,7 @@ export class View implements IViewService {
       // FIXME: is this useful?
       // browserWindow.send('close-find-in-page');
     }
-    const workspace = this.workspaceService.get(id);
+    const workspace = await this.workspaceService.get(id);
     if (this.getView(id) === undefined && workspace !== undefined) {
       return await this.addView(browserWindow, workspace);
     } else {
@@ -337,7 +337,7 @@ export class View implements IViewService {
     }
     Object.keys(this.views).forEach((id) => {
       const view = this.getView(id);
-      const workspace = this.workspaceService.get(id);
+      const workspace = await this.workspaceService.get(id);
       if (view !== undefined && workspace !== undefined) {
         view.webContents.audioMuted = workspace.disableAudio || this.shouldMuteAudio;
       }
@@ -382,8 +382,8 @@ export class View implements IViewService {
     });
   }
 
-  public getActiveBrowserView(): BrowserView | undefined {
-    const workspace = this.workspaceService.getActiveWorkspace();
+  public async getActiveBrowserView(): Promise<BrowserView | undefined> {
+    const workspace = await this.workspaceService.getActiveWorkspace();
     if (workspace !== undefined) {
       return this.getView(workspace.id);
     }

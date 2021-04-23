@@ -42,5 +42,5 @@ export function buildLanguageMenu(): void {
     });
   }
 
-  menuService.insertMenu('Language', subMenu);
+  void menuService.insertMenu('Language', subMenu);
 }

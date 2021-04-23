@@ -8,9 +8,9 @@ import * as service from './services';
 import { windowName } from './browserViewMetaData';
 
 export const remoteMethods = {
-  popContextMenu: (menus: MenuItemConstructorOptions[], parameters: IOnContextMenuInfo): (() => void) => {
+  popContextMenu: async (menus: MenuItemConstructorOptions[], parameters: IOnContextMenuInfo): Promise<() => void> => {
     const [ipcSafeMenus, unregister] = rendererMenuItemProxy(menus);
-    void service.menu.buildContextMenuAndPopup(ipcSafeMenus, parameters, windowName);
+    await service.menu.buildContextMenuAndPopup(ipcSafeMenus, parameters, windowName);
     return unregister;
   },
   getCurrentWindow: async () => {

@@ -12,9 +12,9 @@ export interface IUsedElectionSettings {
  */
 export interface ISystemPreferenceService {
   systemPreference$: BehaviorSubject<IUsedElectionSettings>;
-  get<K extends keyof IUsedElectionSettings>(key: K): IUsedElectionSettings[K];
-  getSystemPreferences(): IUsedElectionSettings;
-  setSystemPreference<K extends keyof IUsedElectionSettings>(key: K, value: IUsedElectionSettings[K]): void;
+  get<K extends keyof IUsedElectionSettings>(key: K): Promise<IUsedElectionSettings[K]>;
+  getSystemPreferences(): Promise<IUsedElectionSettings>;
+  setSystemPreference<K extends keyof IUsedElectionSettings>(key: K, value: IUsedElectionSettings[K]): Promise<void>;
 }
 export const SystemPreferenceServiceIPCDescriptor = {
   channel: SystemPreferenceChannel.name,

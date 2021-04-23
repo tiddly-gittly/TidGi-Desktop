@@ -11,7 +11,7 @@ import type { IpcSafeMenuItem } from './rendererMenuItemProxy';
  */
 export interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstructorOptions, 'label' | 'enabled' | 'submenu'> {
   label?: (() => string) | string;
-  enabled?: (() => boolean) | boolean;
+  enabled?: (() => boolean) | (() => Promise<boolean>) | boolean;
   submenu?:
     | (() => Array<MenuItemConstructorOptions | DeferredMenuItemConstructorOptions>)
     | Array<MenuItemConstructorOptions | DeferredMenuItemConstructorOptions>;
@@ -43,10 +43,10 @@ export interface IOnContextMenuInfo {
  * Handle creation of app menu, other services can register their menu tab and menu items here.
  */
 export interface IMenuService {
-  buildMenu(): void;
-  initContextMenuForWindowWebContents(webContents: WebContents): () => void;
-  insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator?: boolean): void;
-  buildContextMenuAndPopup(template: MenuItemConstructorOptions[] | IpcSafeMenuItem[], info: IOnContextMenuInfo, windowName?: WindowNames): void;
+  buildMenu(): Promise<void>;
+  initContextMenuForWindowWebContents(webContents: WebContents): Promise<() => void>;
+  insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator?: boolean): Promise<void>;
+  buildContextMenuAndPopup(template: MenuItemConstructorOptions[] | IpcSafeMenuItem[], info: IOnContextMenuInfo, windowName?: WindowNames): Promise<void>;
 }
 export const MenuServiceIPCDescriptor = {
   channel: MenuChannel.name,

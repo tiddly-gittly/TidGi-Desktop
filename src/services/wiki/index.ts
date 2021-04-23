@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
 import { injectable } from 'inversify';
 import { delay } from 'bluebird';
@@ -346,9 +347,9 @@ export class Wiki implements IWikiService {
       // do nothing
     }
 
-    const userInfo = this.authService.getStorageServiceUserInfo(workspace.storageService);
+    const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
     // pass empty editor username if undefined
-    const userName = this.authService.get('userName') ?? '';
+    const userName = (await this.authService.get('userName')) ?? '';
     const { name: wikiPath, gitUrl: githubRepoUrl, port, isSubWiki, id, mainWikiToLink } = workspace;
     // if is main wiki
     if (!isSubWiki) {
@@ -504,7 +505,7 @@ export class Wiki implements IWikiService {
     logger.info('All wiki watcher is stopped', { function: 'stopWatchAllWiki' });
   }
 
-  public updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): void {
+  public async updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void> {
     return updateSubWikiPluginContent(mainWikiPath, newConfig, oldConfig);
   }
 }

@@ -1,10 +1,8 @@
+/* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/no-null */
 import { injectable } from 'inversify';
 import settings from 'electron-settings';
 import { IAuthingUserInfo, SupportedStorageServices } from '@services/types';
-import { lazyInject } from '@services/container';
-import type { IWindowService } from '@services/windows/interface';
-import serviceIdentifier from '@services/serviceIdentifier';
 import { IAuthenticationService, IUserInfos, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
 import { BehaviorSubject } from 'rxjs';
 import { IGitUserInfos } from '@services/git/interface';
@@ -16,8 +14,6 @@ const defaultUserInfos = {
 
 @injectable()
 export class Authentication implements IAuthenticationService {
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-
   private cachedUserInfo: IUserInfos;
   public userInfo$: BehaviorSubject<IUserInfos>;
 
@@ -30,10 +26,10 @@ export class Authentication implements IAuthenticationService {
     this.userInfo$.next(this.cachedUserInfo);
   }
 
-  public getStorageServiceUserInfo(serviceName: SupportedStorageServices): IGitUserInfos | undefined {
-    const gitUserName = this.get(`${serviceName}-userName` as ServiceUserNameTypes);
-    const email = this.get(`${serviceName}-email` as ServiceEmailTypes);
-    const accessToken = this.get(`${serviceName}-token` as ServiceTokenTypes);
+  public async getStorageServiceUserInfo(serviceName: SupportedStorageServices): Promise<IGitUserInfos | undefined> {
+    const gitUserName = await this.get(`${serviceName}-userName` as ServiceUserNameTypes);
+    const email = await this.get(`${serviceName}-email` as ServiceEmailTypes);
+    const accessToken = await this.get(`${serviceName}-token` as ServiceTokenTypes);
     if (gitUserName !== undefined && email !== undefined && accessToken !== undefined) {
       return {
         gitUserName,
@@ -43,9 +39,9 @@ export class Authentication implements IAuthenticationService {
     }
   }
 
-  public getRandomStorageServiceUserInfo(): { name: SupportedStorageServices; info: IGitUserInfos } | undefined {
+  public async getRandomStorageServiceUserInfo(): Promise<{ name: SupportedStorageServices; info: IGitUserInfos } | undefined> {
     for (const serviceName of Object.values(SupportedStorageServices)) {
-      const info = this.getStorageServiceUserInfo(serviceName);
+      const info = await this.getStorageServiceUserInfo(serviceName);
       if (info?.accessToken !== undefined && info.accessToken.length > 0 && info?.email !== undefined && info?.gitUserName !== undefined) {
         return { name: serviceName, info };
       }
@@ -69,13 +65,13 @@ export class Authentication implements IAuthenticationService {
    * Batch update all UserInfos
    */
   private async setUserInfos(newUserInfos: IUserInfos): Promise<void> {
-    await settings.set(`userInfos`, newUserInfos as any);
+    await settings.set(`userInfos`, newUserInfos);
   }
 
   /**
    * get UserInfos, may return cached version
    */
-  public getUserInfos = (): IUserInfos => {
+  public getUserInfos = async (): Promise<IUserInfos> => {
     // store in memory to boost performance
     if (this.cachedUserInfo === undefined) {
       return this.getInitUserInfoForCache();
@@ -83,13 +79,13 @@ export class Authentication implements IAuthenticationService {
     return this.cachedUserInfo;
   };
 
-  public get<K extends keyof IUserInfos>(key: K): IUserInfos[K] | undefined {
+  public async get<K extends keyof IUserInfos>(key: K): Promise<IUserInfos[K] | undefined> {
     if (this.cachedUserInfo[key] !== null && this.cachedUserInfo[key] !== undefined) {
       return this.cachedUserInfo[key];
     }
   }
 
-  public set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): void {
+  public async set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): Promise<void> {
     this.cachedUserInfo[key] = value;
     this.cachedUserInfo = { ...this.cachedUserInfo, ...this.sanitizeUserInfo(this.cachedUserInfo) };
     this.updateUserInfoSubject();

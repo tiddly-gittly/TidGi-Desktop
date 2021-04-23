@@ -40,7 +40,7 @@ export class Updater implements IUpdaterService {
       ...newUpdaterMetaData,
     };
     this.updateUpdaterSubject();
-    this.menuService.buildMenu();
+    void this.menuService.buildMenu();
   }
 
   public async checkForUpdates(isSilent: boolean): Promise<void> {
