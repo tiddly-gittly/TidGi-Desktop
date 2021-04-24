@@ -38,9 +38,9 @@ export class View implements IViewService {
 
   private initIPCHandlers(): void {
     // https://www.electronjs.org/docs/tutorial/online-offline-events
-    ipcMain.handle(ViewChannel.onlineStatusChanged, (_event, online: boolean) => {
+    ipcMain.handle(ViewChannel.onlineStatusChanged, async (_event, online: boolean) => {
       if (online) {
-        this.reloadViewsWebContentsIfDidFailLoad();
+        await this.reloadViewsWebContentsIfDidFailLoad();
       }
     });
   }
@@ -324,8 +324,9 @@ export class View implements IViewService {
     void session.fromPartition(`persist:${id}`).clearStorageData();
     if (view !== undefined) {
       // currently use workaround https://github.com/electron/electron/issues/10096
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
-      (view as any).webContents.destroy();
+      // @ts-expect-error Property 'destroy' does not exist on type 'WebContents'.ts(2339)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      view.webContents.destroy();
     }
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete this.views[id];
@@ -354,8 +355,9 @@ export class View implements IViewService {
   public hibernateView = (id: string): void => {
     if (this.getView(id) !== undefined) {
       // currently use workaround https://github.com/electron/electron/issues/10096
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call, @typescript-eslint/no-unsafe-member-access
-      (this.getView(id) as any).webContents.destroy();
+      // @ts-expect-error Property 'destroy' does not exist on type 'WebContents'.ts(2339)
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      this.getView(id).webContents.destroy();
       this.removeView(id);
     }
   };

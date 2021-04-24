@@ -73,8 +73,8 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           if (workspace === undefined) {
             throw new Error(`Need to get workspace with id ${id} but failed`);
           }
-          await this.wikiService.stopWatchWiki(workspace.name).catch((error) => logger.error((error as Error).message, error));
-          await this.wikiService.stopWiki(workspace.name).catch((error: any) => logger.error((error as Error).message, error));
+          await this.wikiService.stopWatchWiki(workspace.name).catch((error: Error) => logger.error(error.message, error));
+          await this.wikiService.stopWiki(workspace.name).catch((error: Error) => logger.error(error.message, error));
           await this.wikiService.removeWiki(workspace.name, workspace.isSubWiki ? workspace.mainWikiToLink : undefined, response === 0);
           await this.workspaceViewService.removeWorkspaceView(id);
           await this.menuService.buildMenu();
