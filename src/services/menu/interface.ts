@@ -1,4 +1,4 @@
-import { Menu, MenuItemConstructorOptions, shell, WebContents } from 'electron';
+import { MenuItemConstructorOptions, WebContents } from 'electron';
 
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { MenuChannel } from '@/constants/channels';

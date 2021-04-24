@@ -6,6 +6,7 @@ import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
+import { WikiChannel } from '@/constants/channels';
 
 const handlers = {
   createWikiProgress: (message: string) => {
@@ -16,7 +17,7 @@ const handlers = {
   wikiSyncProgress: async (message: string) => {
     const viewService = container.get<IViewService>(serviceIdentifier.View);
     const browserView = await viewService.getActiveBrowserView();
-    browserView?.webContents?.send('wiki-sync-progress', message);
+    browserView?.webContents?.send(WikiChannel.syncProgress, message);
   },
 };
 

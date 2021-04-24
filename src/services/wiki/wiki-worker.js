@@ -1,3 +1,9 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
+/* eslint-disable @typescript-eslint/restrict-template-expressions */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 const { workerData, parentPort, isMainThread } = require('worker_threads');
 const path = require('path');
 const $tw = require('@tiddlygit/tiddlywiki').TiddlyWiki();
@@ -29,7 +35,7 @@ module.exports = startNodeJSWiki;
 
 if (!isMainThread) {
   startNodeJSWiki();
-  parentPort.once('message', async (message) => {
+  parentPort.once('message', (message) => {
     if (typeof message === 'object' && message.type === 'command' && message.message === 'exit') {
       process.exit(0);
     }

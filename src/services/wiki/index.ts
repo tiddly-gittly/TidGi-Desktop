@@ -25,6 +25,7 @@ import { lazyInject } from '@services/container';
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@/constants/paths';
 import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './update-plugin-content';
 import { IWikiService } from './interface';
+import { WikiChannel } from '@/constants/channels';
 
 @injectable()
 export class Wiki implements IWikiService {
@@ -42,14 +43,14 @@ export class Wiki implements IWikiService {
   public async requestOpenTiddlerInWiki(tiddlerName: string): Promise<void> {
     const browserView = await this.viewService.getActiveBrowserView();
     if (browserView !== undefined) {
-      browserView.webContents.send('wiki-open-tiddler', tiddlerName);
+      browserView.webContents.send(WikiChannel.openTiddler, tiddlerName);
     }
   }
 
   public async requestWikiSendActionMessage(actionMessage: string): Promise<void> {
     const browserView = await this.viewService.getActiveBrowserView();
     if (browserView !== undefined) {
-      browserView.webContents.send('wiki-send-action-message', actionMessage);
+      browserView.webContents.send(WikiChannel.sendActionMessage, actionMessage);
     }
   }
 

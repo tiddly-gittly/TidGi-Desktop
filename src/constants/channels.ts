@@ -41,6 +41,13 @@ export enum ViewChannel {
 }
 export enum WikiChannel {
   name = 'WikiChannel',
+  addTiddler = 'wiki-add-tiddler',
+  addTiddlerDone = 'wiki-add-tiddler-done',
+  getTiddlerText = 'wiki-get-tiddler-text',
+  getTiddlerTextDone = 'wiki-get-tiddler-text-done',
+  syncProgress = 'wiki-sync-progress',
+  openTiddler = 'wiki-open-tiddler',
+  sendActionMessage = 'wiki-send-action-message',
 }
 export enum WikiGitWorkspaceChannel {
   name = 'WikiGitWorkspaceChannel',

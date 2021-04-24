@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { app, dialog, shell } from 'electron';
 import { injectable } from 'inversify';
@@ -162,38 +163,34 @@ export class Updater implements IUpdaterService {
         info: progressObject,
       });
     });
-    autoUpdater.on('update-downloaded', (info: UpdateInfo) => {
+    autoUpdater.on('update-downloaded', async (info: UpdateInfo) => {
       const mainWindow = this.windowService.get(WindowNames.main);
       if (mainWindow !== undefined) {
         this.setMetaData({
           status: 'update-downloaded',
           info,
         });
-        dialog
-          .showMessageBox(mainWindow, {
-            type: 'info',
-            buttons: ['Restart', 'Later'],
-            title: 'Application Update',
-            message: `A new version (${info.version}) has been downloaded. Restart the application to apply the updates.`,
-            cancelId: 1,
-          })
-          .then(({ response }) => {
-            if (response === 0) {
-              // Fix autoUpdater.quitAndInstall() does not quit immediately
-              // https://github.com/electron/electron/issues/3583
-              // https://github.com/electron-userland/electron-builder/issues/1604
-              setImmediate(() => {
-                app.removeAllListeners(MainChannel.windowAllClosed);
-                const mainWindow = this.windowService.get(WindowNames.main);
-                if (mainWindow !== undefined) {
-                  this.windowService.updateWindowMeta(WindowNames.main, { forceClose: true });
-                  mainWindow.close();
-                }
-                autoUpdater.quitAndInstall(false);
-              });
+        const { response } = await dialog.showMessageBox(mainWindow, {
+          type: 'info',
+          buttons: ['Restart', 'Later'],
+          title: 'Application Update',
+          message: `A new version (${info.version}) has been downloaded. Restart the application to apply the updates.`,
+          cancelId: 1,
+        });
+        if (response === 0) {
+          // Fix autoUpdater.quitAndInstall() does not quit immediately
+          // https://github.com/electron/electron/issues/3583
+          // https://github.com/electron-userland/electron-builder/issues/1604
+          setImmediate(async () => {
+            app.removeAllListeners(MainChannel.windowAllClosed);
+            const mainWindow = this.windowService.get(WindowNames.main);
+            if (mainWindow !== undefined) {
+              await this.windowService.updateWindowMeta(WindowNames.main, { forceClose: true });
+              mainWindow.close();
             }
-          })
-          .catch(console.log);
+            autoUpdater.quitAndInstall(false);
+          });
+        }
       }
     });
   }

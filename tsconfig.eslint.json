@@ -19,5 +19,5 @@
     "./*.json",
     "./*.js"
   ],
-  "exclude": ["template/**/*.js", "src/services/libs/i18n/i18next-electron-fs-backend.ts"]
+  "exclude": ["template/**/*.js", "src/services/libs/i18n/i18next-electron-fs-backend.ts", "src/services/wiki/wiki-worker.js"]
 }

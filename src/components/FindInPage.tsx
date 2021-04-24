@@ -18,7 +18,7 @@ const InfoContainer = styled.div`
   padding: 0 12px;
 `;
 
-export default function FindInPage(): JSX.Element | null {
+export default function FindInPage(): JSX.Element | undefined {
   const [open, openSetter] = useState(false);
   const [text, textSetter] = useState('');
   const [activeMatch, activeMatchSetter] = useState(0);
@@ -48,9 +48,9 @@ export default function FindInPage(): JSX.Element | null {
       window.remote.unregisterOpenFindInPage(handleOpenFindInPage);
       window.remote.unregisterUpdateFindInPageMatches(updateFindInPageMatches);
     };
-  }, [handleOpenFindInPage]);
+  }, [handleOpenFindInPage, updateFindInPageMatches]);
   if (!open) {
-    return null;
+    return;
   }
   return (
     <Root>
@@ -69,8 +69,8 @@ export default function FindInPage(): JSX.Element | null {
           placeholder="Find"
           value={text}
           margin="dense"
-          onChange={(e) => {
-            const value = e.target.value;
+          onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            const value = event.target.value;
             textSetter(value);
             if (value.length > 0) {
               void window.service.window.findInPage(value, true);

@@ -14,6 +14,7 @@ import i18n from '@services/libs/i18n';
 import { getModifiedFileList, ModifiedFileList, getRemoteUrl } from './inspect';
 import { IGitService, IGitUserInfos } from './interface';
 import { defaultGitInfo } from './defaultGitInfo';
+import { WikiChannel } from '@/constants/channels';
 
 @injectable()
 export class Git implements IGitService {
@@ -47,15 +48,15 @@ export class Git implements IGitService {
     const browserView = await this.viewService.getActiveBrowserView();
     if (browserView !== undefined) {
       const tiddlerText = await new Promise((resolve) => {
-        browserView.webContents.send('wiki-get-tiddler-text', '$:/GitHub/Repo');
-        ipcMain.once('wiki-get-tiddler-text-done', (_event, value) => resolve(value));
+        browserView.webContents.send(WikiChannel.getTiddlerText, '$:/GitHub/Repo');
+        ipcMain.once(WikiChannel.getTiddlerTextDone, (_event, value) => resolve(value));
       });
       if (tiddlerText !== githubRepoName) {
         await new Promise<void>((resolve) => {
-          browserView.webContents.send('wiki-add-tiddler', '$:/GitHub/Repo', githubRepoName, {
+          browserView.webContents.send(WikiChannel.addTiddler, '$:/GitHub/Repo', githubRepoName, {
             type: 'text/vnd.tiddlywiki',
           });
-          ipcMain.once('wiki-add-tiddler-done', () => resolve());
+          ipcMain.once(WikiChannel.addTiddlerDone, () => resolve());
         });
       }
       return;

@@ -13,14 +13,7 @@ export const remoteMethods = {
     await service.menu.buildContextMenuAndPopup(ipcSafeMenus, parameters, windowName);
     return unregister;
   },
-  getCurrentWindow: async () => {
-    const currentWindow = await service.window.get(windowName);
-    if (currentWindow === undefined) {
-      throw new Error(`currentWindow is undefined when getCurrentWindow() in preload script with windowName: ${windowName}`);
-    }
-    return currentWindow;
-  },
-  closeCurrentWindow: async () => {
+  closeCurrentWindow: async (): Promise<() => void> => {
     await service.window.close(windowName);
   },
   /** call NodeJS.path */
@@ -36,11 +29,11 @@ export const remoteMethods = {
   setVisualZoomLevelLimits: (minimumLevel: number, maximumLevel: number): void => {
     webFrame.setVisualZoomLevelLimits(minimumLevel, maximumLevel);
   },
-  registerOpenFindInPage: (handleOpenFindInPage: () => void) => void ipcRenderer.on(WindowChannel.openFindInPage, handleOpenFindInPage),
-  unregisterOpenFindInPage: (handleOpenFindInPage: () => void) => void ipcRenderer.removeListener(WindowChannel.openFindInPage, handleOpenFindInPage),
-  registerUpdateFindInPageMatches: (updateFindInPageMatches: (event: Electron.IpcRendererEvent, activeMatchOrdinal: number, matches: number) => void) =>
+  registerOpenFindInPage: (handleOpenFindInPage: () => void): void => void ipcRenderer.on(WindowChannel.openFindInPage, handleOpenFindInPage),
+  unregisterOpenFindInPage: (handleOpenFindInPage: () => void): void => void ipcRenderer.removeListener(WindowChannel.openFindInPage, handleOpenFindInPage),
+  registerUpdateFindInPageMatches: (updateFindInPageMatches: (event: Electron.IpcRendererEvent, activeMatchOrdinal: number, matches: number) => void): void =>
     void ipcRenderer.on(ViewChannel.updateFindInPageMatches, updateFindInPageMatches),
-  unregisterUpdateFindInPageMatches: (updateFindInPageMatches: (event: Electron.IpcRendererEvent, activeMatchOrdinal: number, matches: number) => void) =>
+  unregisterUpdateFindInPageMatches: (updateFindInPageMatches: (event: Electron.IpcRendererEvent, activeMatchOrdinal: number, matches: number) => void): void =>
     void ipcRenderer.removeListener(ViewChannel.updateFindInPageMatches, updateFindInPageMatches),
 };
 contextBridge.exposeInMainWorld('remote', remoteMethods);

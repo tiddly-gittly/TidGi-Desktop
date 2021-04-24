@@ -1,43 +1,45 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 /**
  * Call tiddlywiki api from electron
  * This file should be required by view.ts preload script to work
  */
 import { ipcRenderer, webFrame } from 'electron';
-import Promise from 'bluebird';
+import { delay } from 'bluebird';
+import { WikiChannel } from '@/constants/channels';
 
 // add tiddler
-ipcRenderer.on('wiki-add-tiddler', async (event, title, text, meta) => {
+ipcRenderer.on(WikiChannel.addTiddler, async (event, title: string, text: string, meta: unknown) => {
   const extraMeta = typeof meta === 'object' ? JSON.stringify(meta) : '{}';
   await webFrame.executeJavaScript(`
     $tw.wiki.addTiddler({ title: '${title}', text: '${text}', ...${extraMeta} });
   `);
   // wait for fs to be settle
-  await (Promise as any).delay(1000);
-  ipcRenderer.invoke('wiki-add-tiddler-done');
+  await delay(1000);
+  await ipcRenderer.invoke(WikiChannel.addTiddlerDone);
 });
 // get tiddler text
-ipcRenderer.on('wiki-get-tiddler-text', async (event, title) => {
-  const tiddlerText = await webFrame.executeJavaScript(`
+ipcRenderer.on(WikiChannel.getTiddlerText, async (event, title: string) => {
+  const tiddlerText: string = await (webFrame.executeJavaScript(`
     $tw.wiki.getTiddlerText('${title}');
-  `);
-  ipcRenderer.invoke('wiki-get-tiddler-text-done', tiddlerText);
+  `) as Promise<string>);
+  await ipcRenderer.invoke(WikiChannel.getTiddlerTextDone, tiddlerText);
 });
 // add snackbar to notify user
-ipcRenderer.on('wiki-sync-progress', (event, message) => {
-  webFrame.executeJavaScript(`
-    $tw.wiki.addTiddler({ title: '$:/state/notification/wiki-sync-progress', text: '${message}' });
-    $tw.notifier.display('$:/state/notification/wiki-sync-progress');
+ipcRenderer.on(WikiChannel.syncProgress, async (event, message: string) => {
+  await webFrame.executeJavaScript(`
+    $tw.wiki.addTiddler({ title: '$:/state/notification/${WikiChannel.syncProgress}', text: '${message}' });
+    $tw.notifier.display('$:/state/notification/${WikiChannel.syncProgress}');
   `);
 });
 // open a tiddler
-ipcRenderer.on('wiki-open-tiddler', (event, tiddlerName) => {
-  webFrame.executeJavaScript(`
+ipcRenderer.on(WikiChannel.openTiddler, async (event, tiddlerName: string) => {
+  await webFrame.executeJavaScript(`
     window.location.href = "http://localhost:5212/#${tiddlerName}";
   `);
 });
 // send an action message
-ipcRenderer.on('wiki-send-action-message', (event, actionMessage) => {
-  webFrame.executeJavaScript(`
+ipcRenderer.on(WikiChannel.sendActionMessage, async (event, actionMessage: string) => {
+  await webFrame.executeJavaScript(`
     $tw.rootWidget.dispatchEvent({ type: "${actionMessage}" });
   `);
 });

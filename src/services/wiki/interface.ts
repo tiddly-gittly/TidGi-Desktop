@@ -14,6 +14,7 @@ export interface IWikiService {
   stopAllWiki(): Promise<void>;
   copyWikiTemplate(newFolderPath: string, folderName: string): Promise<string>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
+  /** send tiddlywiki action message to current active wiki */
   requestWikiSendActionMessage(actionMessage: string): Promise<void>;
   requestOpenTiddlerInWiki(tiddlerName: string): Promise<void>;
   linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;

@@ -613,7 +613,7 @@ export default function Preferences(): JSX.Element {
                       await window.service.preference.set('downloadPath', filePaths[0]);
                     }
                   })
-                  .catch((error: any) => {
+                  .catch((error: Error) => {
                     console.log(error); // eslint-disable-line no-console
                   });
               }}>

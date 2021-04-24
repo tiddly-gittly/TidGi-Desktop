@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 import { webFrame } from 'electron';
-import { WorkspaceChannel } from '@/constants/channels';
+import { WorkspaceChannel, Channels } from '@/constants/channels';
 import './wiki-operation';
 import { preference, workspace, workspaceView, menu } from './common/services';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
@@ -25,15 +25,13 @@ document.addEventListener('DOMContentLoaded', () => handleLoaded('document.on("D
 // DOMContentLoaded might not be triggered so double check with 'onload'
 // https://github.com/atomery/webcatalog/issues/797
 window.addEventListener('load', () => handleLoaded('window.on("onload")'));
-window.addEventListener('message', (event) => {
-  if (!event.data) {
-    return;
-  }
+window.addEventListener('message', async (event?: MessageEvent<{ type?: Channels; workspaceID?: string } | undefined>) => {
   // set workspace to active when its notification is clicked
-  if (event.data.type === WorkspaceChannel.focusWorkspace) {
+  if (event?.data?.type === WorkspaceChannel.focusWorkspace) {
     const id = event.data.workspaceID;
-    if (workspace.get(id) !== undefined) {
-      void workspaceView.setActiveWorkspaceView(id).then(async () => await menu.buildMenu());
+    if (id !== undefined && (await workspace.get(id)) !== undefined) {
+      await workspaceView.setActiveWorkspaceView(id);
+      await menu.buildMenu();
     }
   }
 });

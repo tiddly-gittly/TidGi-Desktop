@@ -1,4 +1,7 @@
+const tsEslintConfig = require('./tsconfig.eslint.json');
+
 module.exports = {
+  ignorePatterns: tsEslintConfig.exclude,
   parser: '@typescript-eslint/parser',
   parserOptions: {
     project: './tsconfig.eslint.json',

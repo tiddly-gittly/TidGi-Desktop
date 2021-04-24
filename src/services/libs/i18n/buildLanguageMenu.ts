@@ -35,7 +35,7 @@ export function buildLanguageMenu(): void {
             lng: language,
           });
         });
-        windowService.sendToAllWindows(I18NChannels.changeLanguageRequest, {
+        await windowService.sendToAllWindows(I18NChannels.changeLanguageRequest, {
           lng: language,
         });
       },

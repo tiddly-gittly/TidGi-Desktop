@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback, Dispatch } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { AsyncReturnType } from 'type-fest';
 import { useDebouncedFn } from 'beautiful-react-hooks';
 
@@ -19,6 +19,7 @@ export function usePromiseValue<T, DefaultValueType = T | undefined>(
     void (async () => {
       valueSetter(await asyncValue());
     })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependency);
 
   return value;

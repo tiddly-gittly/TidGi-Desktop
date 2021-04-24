@@ -10,14 +10,12 @@ import type { INotificationService } from '@services/notifications/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import i18n from '@services/libs/i18n';
 import { IPreferences, IPreferenceService } from './interface';
-import { IViewService } from '@services/view/interface';
 import { defaultPreferences } from './defaultPreferences';
 import { lazyInject } from '@services/container';
 
 @injectable()
 export class Preference implements IPreferenceService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
   @lazyInject(serviceIdentifier.NotificationService) private readonly notificationService!: INotificationService;
 
   private cachedPreferences: IPreferences;
@@ -82,6 +80,7 @@ export class Preference implements IPreferenceService {
     this.cachedPreferences[key] = value;
     this.cachedPreferences = { ...this.cachedPreferences, ...this.sanitizePreference(this.cachedPreferences) };
 
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await settings.set(`preferences.${key}`, this.cachedPreferences[key] as any);
 
     this.reactWhenPreferencesChanged(key, value);
@@ -107,6 +106,7 @@ export class Preference implements IPreferenceService {
    */
   private async setPreferences(newPreferences: IPreferences): Promise<void> {
     this.cachedPreferences = newPreferences;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     await settings.set(`preferences`, { ...newPreferences } as any);
     this.updatePreferenceSubject();
   }

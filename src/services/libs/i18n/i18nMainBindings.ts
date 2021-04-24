@@ -1,4 +1,4 @@
-import { ipcMain, IpcMain, IpcMainInvokeEvent } from 'electron';
+import { ipcMain, IpcMainInvokeEvent } from 'electron';
 import fs from 'fs-extra';
 import path from 'path';
 
@@ -18,7 +18,7 @@ export function mainBindings(): void {
     const localeFilePath = path.join(LOCALIZATION_FOLDER, readFileArguments.filename);
     const windowService = container.get<IWindowService>(serviceIdentifier.Window);
     fs.readFile(localeFilePath, 'utf8', (error, data) => {
-      windowService.sendToAllWindows(I18NChannels.readFileResponse, {
+      void windowService.sendToAllWindows(I18NChannels.readFileResponse, {
         key: readFileArguments.key,
         error,
         data: typeof data !== 'undefined' && data !== null ? data.toString() : '',
@@ -37,7 +37,7 @@ export function mainBindings(): void {
         return;
       }
       fs.writeFile(localeFilePath, JSON.stringify(writeFileArguments.data), (error: Error) => {
-        windowService.sendToAllWindows(I18NChannels.writeFileResponse, {
+        void windowService.sendToAllWindows(I18NChannels.writeFileResponse, {
           keys: writeFileArguments.keys,
           error,
         });
