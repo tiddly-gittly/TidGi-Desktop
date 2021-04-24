@@ -35,8 +35,7 @@ export function updateSubWikiPluginContent(
   // if newConfig is undefined, but oldConfig is provided, we delete the old config
   if (newConfig === undefined) {
     if (oldConfig === undefined) {
-      // @ts-expect-error ts-migrate(2554) FIXME: Expected 0-1 arguments, but got 2.
-      throw new Error('Both newConfig and oldConfig are not provided in the updateSubWikiPluginContent() for', JSON.stringify(mainWikiPath));
+      throw new Error('Both newConfig and oldConfig are not provided in the updateSubWikiPluginContent() for\n' + JSON.stringify(mainWikiPath));
     }
     // find the old line, delete it
     const newFileSystemPaths = FileSystemPaths.filter(

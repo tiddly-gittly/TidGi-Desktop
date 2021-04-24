@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import 'reflect-metadata';
 import fs from 'fs-extra';
 import path from 'path';
@@ -133,10 +134,10 @@ if (!gotTheLock) {
           // getContentSize is not updated immediately
           // try once after 0.2s (for fast computer), another one after 1s (to be sure)
           setTimeout(() => {
-            workspaceViewService.realignActiveWorkspace();
+            void workspaceViewService.realignActiveWorkspace();
           }, 200);
           setTimeout(() => {
-            workspaceViewService.realignActiveWorkspace();
+            void workspaceViewService.realignActiveWorkspace();
           }, 1000);
         };
         mainWindow.on('maximize', handleMaximize);
@@ -147,8 +148,8 @@ if (!gotTheLock) {
     ipcMain.emit(MainChannel.commonInitFinished);
   };
 
-  app.on('ready', () => {
-    autoUpdater.allowPrerelease = preferenceService.get('allowPrerelease');
+  app.on('ready', async () => {
+    autoUpdater.allowPrerelease = await preferenceService.get('allowPrerelease');
     autoUpdater.logger = logger;
     whenCommonInitFinished()
       // eslint-disable-next-line promise/always-return
@@ -191,7 +192,7 @@ if (!gotTheLock) {
         const mainWindow = windowService.get(WindowNames.main);
         if (mainWindow !== undefined) {
           logger.info('App force quit on MacOS');
-          windowService.updateWindowMeta(WindowNames.main, { forceClose: true });
+          await windowService.updateWindowMeta(WindowNames.main, { forceClose: true });
         }
       }
       app.exit(0);

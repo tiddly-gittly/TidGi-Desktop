@@ -44,7 +44,7 @@ export class Git implements IGitService {
    * @param {string} githubRepoName similar to "linonetwo/wiki", string after "https://github.com/"
    */
   public async updateGitInfoTiddler(githubRepoName: string): Promise<void> {
-    const browserView = this.viewService.getActiveBrowserView();
+    const browserView = await this.viewService.getActiveBrowserView();
     if (browserView !== undefined) {
       const tiddlerText = await new Promise((resolve) => {
         browserView.webContents.send('wiki-get-tiddler-text', '$:/GitHub/Repo');
@@ -130,7 +130,7 @@ export class Git implements IGitService {
       return;
     }
     const { gitUserName, email, accessToken } = userInfo;
-    if (!accessToken) {
+    if (accessToken === '' || accessToken === undefined) {
       throw new Error(i18n.t('Log.GitTokenMissing'));
     }
     const commitMessage = 'Wiki updated with TiddlyGit-Desktop';
@@ -239,7 +239,7 @@ export class Git implements IGitService {
     logProgress(i18n.t('Log.PrepareCloneOnlineWiki'));
     logProgress(i18n.t('Log.StartGitInitialization'));
     const { gitUserName, accessToken } = userInfo;
-    if (!accessToken) {
+    if (accessToken === '' || accessToken === undefined) {
       throw new Error(i18n.t('Log.GitTokenMissing'));
     }
     logInfo(

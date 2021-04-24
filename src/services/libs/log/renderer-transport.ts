@@ -13,9 +13,9 @@ const handlers = {
     const createWorkspaceWindow = windowService.get(WindowNames.addWorkspace);
     createWorkspaceWindow?.webContents?.send('create-wiki-progress', message);
   },
-  wikiSyncProgress: (message: string) => {
+  wikiSyncProgress: async (message: string) => {
     const viewService = container.get<IViewService>(serviceIdentifier.View);
-    const browserView = viewService.getActiveBrowserView();
+    const browserView = await viewService.getActiveBrowserView();
     browserView?.webContents?.send('wiki-sync-progress', message);
   },
 };
@@ -37,7 +37,7 @@ export default class RendererTransport extends Transport {
 
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (info.handler && info.handler in handlers) {
-      handlers[info.handler](info.message);
+      void handlers[info.handler](info.message);
     }
 
     callback();

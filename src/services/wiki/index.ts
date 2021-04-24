@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
 import { injectable } from 'inversify';
@@ -38,15 +39,15 @@ export class Wiki implements IWikiService {
     return await getSubWikiPluginContent(mainWikiPath);
   }
 
-  public requestOpenTiddlerInWiki(tiddlerName: string): void {
-    const browserView = this.viewService.getActiveBrowserView();
+  public async requestOpenTiddlerInWiki(tiddlerName: string): Promise<void> {
+    const browserView = await this.viewService.getActiveBrowserView();
     if (browserView !== undefined) {
       browserView.webContents.send('wiki-open-tiddler', tiddlerName);
     }
   }
 
-  public requestWikiSendActionMessage(actionMessage: string): void {
-    const browserView = this.viewService.getActiveBrowserView();
+  public async requestWikiSendActionMessage(actionMessage: string): Promise<void> {
+    const browserView = await this.viewService.getActiveBrowserView();
     if (browserView !== undefined) {
       browserView.webContents.send('wiki-send-action-message', actionMessage);
     }
@@ -91,20 +92,25 @@ export class Wiki implements IWikiService {
 
   public async startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void> {
     // use Promise to handle worker callbacks
-    await new Promise<void>((resolve, reject) => {
-      const workspace = this.workspaceService.getByName(homePath);
-      const workspaceID = workspace?.id;
-      if (workspace === undefined || workspaceID === undefined) {
-        logger.error('Try to start wiki, but workspace not found', { homePath, workspace, workspaceID });
-        return;
-      }
-      this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
-      const workerData = { homePath, userName, tiddlyWikiPort };
-      const worker = new Worker(this.WIKI_WORKER_PATH, { workerData });
-      this.wikiWorkers[homePath] = worker;
-      const loggerMeta = { worker: 'NodeJSWiki', homePath };
-      const loggerForWorker = this.logMessage(loggerMeta);
-      let started = false;
+    const workspace = await this.workspaceService.getByName(homePath);
+    const workspaceID = workspace?.id;
+    if (workspace === undefined || workspaceID === undefined) {
+      logger.error('Try to start wiki, but workspace not found', { homePath, workspace, workspaceID });
+      return;
+    }
+    await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
+    const workerData = { homePath, userName, tiddlyWikiPort };
+    const worker = new Worker(this.WIKI_WORKER_PATH, { workerData });
+    this.wikiWorkers[homePath] = worker;
+    const loggerMeta = { worker: 'NodeJSWiki', homePath };
+    const loggerForWorker = this.logMessage(loggerMeta);
+    let started = false;
+    // redirect stdout to file
+    const logFileName = workspace.name.replace(/[/\\]/g, '_');
+    refreshOutputFile(logFileName);
+    wikiOutputToFile(logFileName, worker.stdout);
+    wikiOutputToFile(logFileName, worker.stderr);
+    return await new Promise<void>((resolve, reject) => {
       worker.on('error', (error: Error) => {
         console.log(error);
         logger.error(error.message, { ...loggerMeta, ...error });
@@ -122,9 +128,9 @@ export class Wiki implements IWikiService {
         loggerForWorker(message);
         if (!started) {
           started = true;
-          setTimeout(() => {
+          setTimeout(async () => {
             this.viewService.reloadViewsWebContents();
-            this.workspaceService.updateMetaData(workspaceID, { isLoading: false });
+            await this.workspaceService.updateMetaData(workspaceID, { isLoading: false });
             // close add-workspace dialog
             const addWorkspaceWindow = this.windowService.get(WindowNames.addWorkspace);
             if (addWorkspaceWindow !== undefined) {
@@ -134,11 +140,6 @@ export class Wiki implements IWikiService {
           }, 100);
         }
       });
-      // redirect stdout to file
-      const logFileName = workspace.name.replace(/[/\\]/g, '_');
-      refreshOutputFile(logFileName);
-      wikiOutputToFile(logFileName, worker.stdout);
-      wikiOutputToFile(logFileName, worker.stderr);
     });
   }
 
@@ -319,7 +320,7 @@ export class Wiki implements IWikiService {
     } catch {
       throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
     }
-    await this.gitService.clone(githubWikiUrl, path.join(parentFolderLocation, wikiFolderName), userInfo);
+    await this.gitService.clone(gitRepoUrl, path.join(parentFolderLocation, wikiFolderName), gitUserInfo);
     this.logProgress(i18n.t('AddWorkspace.StartLinkingSubWikiToMainWiki'));
     await this.linkWiki(mainWikiPath, wikiFolderName, path.join(parentFolderLocation, wikiFolderName));
     if (typeof tagName === 'string' && tagName.length > 0) {
@@ -366,7 +367,7 @@ export class Wiki implements IWikiService {
       // if we are creating a sub-wiki, restart the main wiki to load content from private wiki
       if (!this.justStartedWiki[mainWikiToLink]) {
         // TODO: change getByName to getByMainWikiPath, get by mainWikiPath
-        const mainWorkspace = this.workspaceService.getByName(mainWikiToLink);
+        const mainWorkspace = await this.workspaceService.getByName(mainWikiToLink);
         if (mainWorkspace === undefined) {
           throw new Error(`mainWorkspace is undefined in wikiStartup() for mainWikiPath ${mainWikiToLink}`);
         }

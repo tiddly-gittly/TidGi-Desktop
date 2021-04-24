@@ -1,7 +1,8 @@
+/* eslint-disable */
 /* eslint-disable unicorn/prevent-abbreviations */
 import { BackendModule } from 'i18next';
-import { cloneDeep, merge } from 'lodash';
-import { v4 as uuid } from 'uuid'
+import { cloneDeep, merge, Object } from 'lodash';
+import { v4 as uuid } from 'uuid';
 import { I18NChannels } from '@/constants/channels';
 
 // CONFIGS
@@ -12,18 +13,18 @@ const defaultOptions = {
 };
 
 // Merges objects together
-const mergeNested = function (object: any, path: string, split: string, value: any) {
+function mergeNestedI18NObject<T extends Object<any>>(object: T, path: string, split: string, value: any): T {
   const tokens = path.split(split);
-  let temporary = {};
-  let temporary2;
-  temporary[`${tokens[tokens.length - 1]}`] = value;
+  let temporary: T = {} as T;
+  let temporary2: T;
+  (temporary as any)[`${tokens[tokens.length - 1]}`] = value;
   for (let index = tokens.length - 2; index >= 0; index--) {
-    temporary2 = {};
-    temporary2[`${tokens[index]}`] = temporary;
+    temporary2 = {} as T;
+    (temporary2 as any)[`${tokens[index]}`] = temporary;
     temporary = temporary2;
   }
   return merge(object, temporary);
-};
+}
 // https://stackoverflow.com/a/34890276/1837080
 const groupByArray = function (xs: any, key: any) {
   return xs.reduce(function (rv: any, x: any) {
@@ -167,7 +168,7 @@ export class Backend implements BackendModule {
     // for all changes within a given file
     const toWork = groupByArray(writeQueue, 'filename');
     for (const element of toWork) {
-      const anonymous = function (error: any, data: any) {
+      const anonymous = (error: any, data: any) => {
         if (error) {
           console.error(
             `${this.rendererLog} encountered error when trying to read file '{filename}' before writing missing translation ('{key}'/'{fallbackValue}') to file. Please resolve this error so missing translation values can be written to file. Error: '${error}'.`,
@@ -183,7 +184,7 @@ export class Backend implements BackendModule {
           } else {
             // Created the nested object structure based on the key separator, and merge that
             // into the existing translation data
-            data = mergeNested(data, element.values[index].key, this.i18nextOptions.keySeparator, element.values[index].fallbackValue);
+            data = mergeNestedI18NObject(data, element.values[index].key, this.i18nextOptions.keySeparator, element.values[index].fallbackValue);
           }
           const writeKey = uuid();
           if (element.values[index].callback) {
@@ -194,13 +195,13 @@ export class Backend implements BackendModule {
           }
         }
         // Send out the message to the ipcMain process
-        debug ? console.log(`${this.rendererLog} requesting the missing key '${key}' be written to file '${filename}'.`) : null;
+        debug ? console.log(`${this.rendererLog} requesting the missing key '${String(writeKeys)}' be written to file '${element.key}'.`) : null;
         i18nextElectronBackend.send(I18NChannels.writeFileRequest, {
           keys: writeKeys,
           filename: element.key,
           data,
         });
-      }.bind(this);
+      };
       this.requestFileRead(element.key, anonymous);
     }
   }
@@ -238,12 +239,12 @@ export class Backend implements BackendModule {
   }
 
   // Not implementing at this time
-  readMulti(languages:string, namespaces: any, callback: any) {
+  readMulti(languages: string[], namespaces: any, callback: any) {
     throw 'Not implemented exception.';
   }
 
   // Writes a missing translation to file
-  create(languages:string, namespace: any, key: any, fallbackValue: any, callback: any) {
+  create(languages: string[], namespace: string, key: string, fallbackValue: string) {
     const { addPath } = this.backendOptions;
     let filename;
     languages = typeof languages === 'string' ? [languages] : languages;
@@ -261,14 +262,12 @@ export class Backend implements BackendModule {
           filename,
           key,
           fallbackValue,
-          callback,
         });
       } else {
         this.writeQueue.push({
           filename,
           key,
           fallbackValue,
-          callback,
         });
       }
     }
@@ -278,24 +277,21 @@ export class Backend implements BackendModule {
       if (typeof this.writeTimeout !== 'undefined') {
         clearInterval(this.writeTimeout);
       }
-      this.writeTimeout = setInterval(
-        function () {
-          // Write writeQueue entries, then after,
-          // fill in any from the writeQueueOverflow
-          if (this.writeQueue.length > 0) {
-            this.write(cloneDeep(this.writeQueue));
-          }
-          this.writeQueue = cloneDeep(this.writeQueueOverflow);
-          this.writeQueueOverflow = [];
-          if (this.writeQueue.length === 0) {
-            // Clear timer
-            clearInterval(this.writeTimeout);
-            delete this.writeTimeout;
-            this.useOverflow = false;
-          }
-        }.bind(this),
-        1000,
-      );
+      this.writeTimeout = setInterval(() => {
+        // Write writeQueue entries, then after,
+        // fill in any from the writeQueueOverflow
+        if (this.writeQueue.length > 0) {
+          this.write(cloneDeep(this.writeQueue));
+        }
+        this.writeQueue = cloneDeep(this.writeQueueOverflow);
+        this.writeQueueOverflow = [];
+        if (this.writeQueue.length === 0) {
+          // Clear timer
+          clearInterval(this.writeTimeout);
+          delete this.writeTimeout;
+          this.useOverflow = false;
+        }
+      }, 1000);
       this.useOverflow = true;
     }
   }

@@ -80,7 +80,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           await this.menuService.buildMenu();
           // restart the main wiki to load content from private wiki
           const mainWikiPath = workspace.mainWikiToLink;
-          const mainWorkspace = this.workspaceService.getByName(mainWikiPath);
+          const mainWorkspace = await this.workspaceService.getByName(mainWikiPath);
           if (mainWorkspace === undefined) {
             throw new Error(`Need to get mainWorkspace with name ${mainWikiPath} but failed`);
           }

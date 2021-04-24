@@ -67,8 +67,8 @@ interface Props {
   accessToken?: string;
   githubWikiUrl: string;
   currentTab: string;
-  githubWikiUrlSetter: (string) => void;
-  wikiFolderNameSetter: (string) => void;
+  githubWikiUrlSetter: (value: string) => void;
+  wikiFolderNameSetter: (value: string) => void;
   userInfo: IAuthingUserInfo;
   isCreateMainWorkspace: boolean;
 }
@@ -86,6 +86,7 @@ export default function SearchRepo({
       new GraphQLClient({
         url: GITHUB_GRAPHQL_API,
       }),
+    [GITHUB_GRAPHQL_API],
   );
   const [githubRepoSearchString, githubRepoSearchStringSetter] = useState('wiki');
   const loadCount = 10;
@@ -127,7 +128,7 @@ export default function SearchRepo({
   }
   const { t } = useTranslation();
   let helperText = '';
-  const notLogin = !githubUsername || !accessToken;
+  const notLogin = githubUsername === '' || githubUsername === undefined || accessToken === '' || accessToken === undefined;
   if (notLogin) {
     helperText = t('AddWorkspace.WaitForLogin');
   } else if (error) {

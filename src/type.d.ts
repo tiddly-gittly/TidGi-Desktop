@@ -1,5 +1,7 @@
 declare module 'errio' {
   export function parse(error: Error): Error;
+  export function stringify(error: Error): string;
+  export function register(error: ErrorConstructor): void;
 }
 declare module '*.png' {
   const value: string;

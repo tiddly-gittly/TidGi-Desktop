@@ -52,7 +52,9 @@ export function useWikiWorkspaceForm() {
    */
   const [userName, userNameSetter] = usePromiseValueAndSetter(
     async () => await window.service.auth.get('userName'),
-    async (newUserName) => await window.service.auth.set('userName', newUserName),
+    async (newUserName) => {
+      if (newUserName !== undefined) await window.service.auth.set('userName', newUserName);
+    },
   );
 
   /**
