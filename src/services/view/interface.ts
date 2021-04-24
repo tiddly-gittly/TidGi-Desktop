@@ -16,7 +16,7 @@ export interface IViewService {
   setViewsAudioPref: (_shouldMuteAudio?: boolean) => void;
   setViewsNotificationsPref: (_shouldPauseNotifications?: boolean) => void;
   hibernateView: (id: string) => void;
-  reloadViewsWebContentsIfDidFailLoad: () => void;
+  reloadViewsWebContentsIfDidFailLoad: () => Promise<void>;
   reloadViewsWebContents: () => void;
   getActiveBrowserView: () => Promise<BrowserView | undefined>;
   realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;

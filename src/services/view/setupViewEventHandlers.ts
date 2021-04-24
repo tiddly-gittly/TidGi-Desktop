@@ -17,6 +17,7 @@ import type { IWindowService } from '@services/windows/interface';
 import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
 import { container } from '@services/container';
 import { ViewChannel, WindowChannel } from '@/constants/channels';
+import { logger } from '@services/libs/log';
 
 export interface IViewContext {
   workspace: IWorkspace;
@@ -43,12 +44,12 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 
   view.webContents.once('did-stop-loading', () => {});
-  view.webContents.on('will-navigate', (event, nextUrl) => {
+  view.webContents.on('will-navigate', async (event, nextUrl) => {
     // open external links in browser
     // https://github.com/atomery/webcatalog/issues/849#issuecomment-629587264
     // this behavior is likely to break many apps (eg Microsoft Teams)
     // apply this rule only to github.com for now
-    const appUrl = workspaceService.get(workspace.id)?.homeUrl;
+    const appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
     const currentUrl = view.webContents.getURL();
     if (appUrl !== undefined) {
       const appDomain = extractDomain(appUrl);
@@ -65,7 +66,7 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     }
   });
   view.webContents.on('did-start-loading', async () => {
-    const workspaceObject = workspaceService.get(workspace.id);
+    const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
     // even after the workspace obj and BrowserView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
@@ -74,7 +75,7 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     }
     if (
       workspaceObject.active &&
-      typeof workspaceService.getMetaData(workspace.id).didFailLoadErrorMessage === 'string' &&
+      typeof (await workspaceService.getMetaData(workspace.id)).didFailLoadErrorMessage === 'string' &&
       browserWindow !== undefined &&
       !browserWindow.isDestroyed()
     ) {
@@ -89,7 +90,7 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     });
   });
   view.webContents.on('did-stop-loading', async () => {
-    const workspaceObject = workspaceService.get(workspace.id);
+    const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
     // even after the workspace obj and BrowserView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
@@ -117,7 +118,7 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
   }
   // https://electronjs.org/docs/api/web-contents#event-did-fail-load
   view.webContents.on('did-fail-load', async (_event, errorCode, errorDesc, _validateUrl, isMainFrame) => {
-    const workspaceObject = workspaceService.get(workspace.id);
+    const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
     // even after the workspace obj and BrowserView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
@@ -139,8 +140,8 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
       void view.webContents.loadURL(workspaceObject.homeUrl);
     }
   });
-  view.webContents.on('did-navigate', (_event, url) => {
-    const workspaceObject = workspaceService.get(workspace.id);
+  view.webContents.on('did-navigate', async (_event, url) => {
+    const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
     // even after the workspace obj and BrowserView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
@@ -154,12 +155,12 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
       void view.webContents.loadURL(`https://chat.google.com${reference}`);
     }
     if (workspaceObject.active) {
-      windowService.sendToAllWindows(WindowChannel.updateCanGoBack, view.webContents.canGoBack());
-      windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.canGoForward());
+      await windowService.sendToAllWindows(WindowChannel.updateCanGoBack, view.webContents.canGoBack());
+      await windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.canGoForward());
     }
   });
-  view.webContents.on('did-navigate-in-page', (_event, url) => {
-    const workspaceObject = workspaceService.get(workspace.id);
+  view.webContents.on('did-navigate-in-page', async (_event, url) => {
+    const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
     // even after the workspace obj and BrowserView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
@@ -167,12 +168,12 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
       return;
     }
     if (workspaceObject.active) {
-      windowService.sendToAllWindows(WindowChannel.updateCanGoBack, view.webContents.canGoBack());
-      windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.canGoForward());
+      await windowService.sendToAllWindows(WindowChannel.updateCanGoBack, view.webContents.canGoBack());
+      await windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.canGoForward());
     }
   });
-  view.webContents.on('page-title-updated', (_event, title) => {
-    const workspaceObject = workspaceService.get(workspace.id);
+  view.webContents.on('page-title-updated', async (_event, title) => {
+    const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
     // even after the workspace obj and BrowserView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
@@ -193,7 +194,7 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
   // })
   view.webContents.on(
     'new-window',
-    (
+    async (
       _event: Electron.NewWindowWebContentsEvent,
       nextUrl: string,
       _frameName: string,
@@ -203,7 +204,7 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
       _referrer: Electron.Referrer,
       _postBody: Electron.PostBody,
     ) =>
-      handleNewWindow(_event, nextUrl, _frameName, disposition, options, _additionalFeatures, _referrer, _postBody, {
+      await handleNewWindow(_event, nextUrl, _frameName, disposition, options, _additionalFeatures, _referrer, _postBody, {
         workspace,
         sharedWebPreferences,
         view,
@@ -243,7 +244,7 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
           badgeCount: inc,
         });
         let count = 0;
-        const workspaceMetaData = workspaceService.getAllMetaData();
+        const workspaceMetaData = await workspaceService.getAllMetaData();
         Object.values(workspaceMetaData).forEach((metaData) => {
           if (typeof metaData?.badgeCount === 'number') {
             count += metaData.badgeCount;
@@ -263,15 +264,15 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     }
   });
   // Find In Page
-  view.webContents.on('found-in-page', (_event, result) => {
-    windowService.sendToAllWindows(ViewChannel.updateFindInPageMatches, result.activeMatchOrdinal, result.matches);
+  view.webContents.on('found-in-page', async (_event, result) => {
+    await windowService.sendToAllWindows(ViewChannel.updateFindInPageMatches, result.activeMatchOrdinal, result.matches);
   });
   // Link preview
   view.webContents.on('update-target-url', (_event, url) => {
     try {
       view.webContents.send('update-target-url', url);
     } catch (error) {
-      console.log(error); // eslint-disable-line no-console
+      logger.warn(error); // eslint-disable-line no-console
     }
   });
 }
@@ -283,7 +284,7 @@ export interface INewWindowContext {
   sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
 }
 
-function handleNewWindow(
+async function handleNewWindow(
   event: Electron.NewWindowWebContentsEvent,
   nextUrl: string,
   _frameName: string,
@@ -293,11 +294,11 @@ function handleNewWindow(
   _referrer: Electron.Referrer,
   _postBody: Electron.PostBody,
   newWindowContext: INewWindowContext,
-): void {
+): Promise<void> {
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const { view, workspace, sharedWebPreferences } = newWindowContext;
 
-  const appUrl = workspaceService.get(workspace.id)?.homeUrl;
+  const appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
   if (appUrl === undefined) {
     throw new Error(`Workspace ${workspace.id} not existed, or don't have homeUrl setting`);
   }
@@ -332,7 +333,7 @@ function handleNewWindow(
     popupWin.setMenuBarVisibility(false);
     popupWin.webContents.on(
       'new-window',
-      (
+      async (
         _event: Electron.NewWindowWebContentsEvent,
         nextUrl: string,
         _frameName: string,
@@ -341,7 +342,7 @@ function handleNewWindow(
         _additionalFeatures: string[],
         _referrer: Electron.Referrer,
         _postBody: Electron.PostBody,
-      ) => handleNewWindow(_event, nextUrl, _frameName, disposition, options, _additionalFeatures, _referrer, _postBody, newWindowContext),
+      ) => await handleNewWindow(_event, nextUrl, _frameName, disposition, options, _additionalFeatures, _referrer, _postBody, newWindowContext),
     );
     // if 'new-window' is triggered with Cmd+Click
     // url is not loaded automatically
@@ -408,7 +409,7 @@ function handleNewWindow(
     popupWin.setMenuBarVisibility(false);
     popupWin.webContents.on(
       'new-window',
-      (
+      async (
         _event: Electron.NewWindowWebContentsEvent,
         nextUrl: string,
         _frameName: string,
@@ -417,7 +418,7 @@ function handleNewWindow(
         _additionalFeatures: string[],
         _referrer: Electron.Referrer,
         _postBody: Electron.PostBody,
-      ) => handleNewWindow(_event, nextUrl, _frameName, disposition, options, _additionalFeatures, _referrer, _postBody, newWindowContext),
+      ) => await handleNewWindow(_event, nextUrl, _frameName, disposition, options, _additionalFeatures, _referrer, _postBody, newWindowContext),
     );
     popupWin.webContents.once('will-navigate', (_event, url) => {
       // if the window is used for the current app, then use default behavior

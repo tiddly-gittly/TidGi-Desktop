@@ -189,7 +189,7 @@ export class View implements IViewService {
           {
             label: 'Open Developer Tools of Active Workspace',
             accelerator: 'CmdOrCtrl+Option+I',
-            click: () => this.getActiveBrowserView()?.webContents?.openDevTools(),
+            click: async () => (await this.getActiveBrowserView())?.webContents?.openDevTools(),
             enabled: hasWorkspaces,
           },
         ],
@@ -303,7 +303,7 @@ export class View implements IViewService {
       const view = this.getView(id);
       browserWindow.setBrowserView(view);
       const contentSize = browserWindow.getContentSize();
-      if (typeof this.workspaceService.getMetaData(id).didFailLoadErrorMessage !== 'string') {
+      if (typeof (await this.workspaceService.getMetaData(id)).didFailLoadErrorMessage !== 'string') {
         view.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       } else {
         view.setBounds(await getViewBounds(contentSize as [number, number]));
@@ -335,7 +335,8 @@ export class View implements IViewService {
     if (_shouldMuteAudio !== undefined) {
       this.shouldMuteAudio = _shouldMuteAudio;
     }
-    Object.keys(this.views).forEach((id) => {
+    // eslint-disable-next-line @typescript-eslint/no-misused-promises
+    void Object.keys(this.views).forEach(async (id) => {
       const view = this.getView(id);
       const workspace = await this.workspaceService.get(id);
       if (view !== undefined && workspace !== undefined) {
@@ -359,8 +360,8 @@ export class View implements IViewService {
     }
   };
 
-  public reloadViewsWebContentsIfDidFailLoad(): void {
-    const workspaceMetaData = this.workspaceService.getAllMetaData();
+  public async reloadViewsWebContentsIfDidFailLoad(): Promise<void> {
+    const workspaceMetaData = await this.workspaceService.getAllMetaData();
     Object.keys(workspaceMetaData).forEach((id) => {
       if (typeof workspaceMetaData[id].didFailLoadErrorMessage !== 'string') {
         return;
@@ -393,7 +394,7 @@ export class View implements IViewService {
     const view = browserWindow.getBrowserView();
     if (view?.webContents !== null) {
       const contentSize = browserWindow.getContentSize();
-      if (typeof this.workspaceService.getMetaData(activeId).didFailLoadErrorMessage === 'string') {
+      if (typeof (await this.workspaceService.getMetaData(activeId)).didFailLoadErrorMessage === 'string') {
         view?.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       } else {
         view?.setBounds(await getViewBounds(contentSize as [number, number]));
