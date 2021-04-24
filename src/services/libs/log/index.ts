@@ -7,7 +7,14 @@ export * from './wiki-output';
 
 const logger =
   process.env.NODE_ENV === 'test'
-    ? console
+    ? Object.assign(console, {
+        emerg: console.error.bind(console),
+        alert: console.error.bind(console),
+        crit: console.error.bind(console),
+        warning: console.warn.bind(console),
+        notice: console.log.bind(console),
+        debug: console.log.bind(console),
+      })
     : winston.createLogger({
         levels: {
           emerg: 0,
