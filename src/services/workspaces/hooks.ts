@@ -3,7 +3,6 @@ import { map } from 'rxjs/operators';
 import { useObservable } from 'beautiful-react-hooks';
 import { IWorkspace } from './interface';
 
-
 export function useWorkspacesListObservable(): IWorkspace[] | undefined {
   const [workspaces, workspacesSetter] = useState<IWorkspace[] | undefined>();
   // beware not pipe directly in the react hock, as it will re-pipe every time React reRenders, and every time regarded as new Observable, so it will re-subscribe

@@ -81,7 +81,7 @@ export default function SpellcheckLanguages(): JSX.Element {
         <Button color="primary" disabled>
           This Page is Auto Saved
         </Button>
-        <Button onClick={() => window.remote.closeCurrentWindow()}>Close</Button>
+        <Button onClick={async () => await window.remote.closeCurrentWindow()}>Close</Button>
       </Bottom>
     </Root>
   );

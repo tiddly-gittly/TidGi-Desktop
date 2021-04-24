@@ -212,7 +212,7 @@ export default function SearchRepo({
           )}
       </List>
       {repoList.length === 0 && !notLogin && (
-        <ReloadButton color="secondary" endIcon={<CachedIcon />} onClick={() => refetch()}>
+        <ReloadButton color="secondary" endIcon={<CachedIcon />} onClick={async () => await refetch()}>
           {t('AddWorkspace.Reload')}
         </ReloadButton>
       )}

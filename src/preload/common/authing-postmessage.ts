@@ -12,13 +12,13 @@ async function refresh(): Promise<void> {
   if (CHROME_ERROR_PATH === undefined || REACT_PATH === undefined || LOGIN_REDIRECT_PATH === undefined) {
     await Promise.all([
       context.get('CHROME_ERROR_PATH').then((pathName) => {
-        CHROME_ERROR_PATH = pathName as string;
+        CHROME_ERROR_PATH = pathName;
       }),
       context.get('LOGIN_REDIRECT_PATH').then((pathName) => {
-        LOGIN_REDIRECT_PATH = pathName as string;
+        LOGIN_REDIRECT_PATH = pathName;
       }),
       context.get('REACT_PATH').then((pathName) => {
-        REACT_PATH = pathName as string;
+        REACT_PATH = pathName;
       }),
     ]);
     setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);

@@ -88,11 +88,11 @@ export default function FindInPage(): JSX.Element | null {
             }
           }}
           onKeyDown={(event) => {
-            if (event.key === 'Enter') {
-              // Enter
-              if (text.length > 0) {
-                void window.service.window.findInPage(text, true);
-              }
+            if (
+              event.key === 'Enter' && // Enter
+              text.length > 0
+            ) {
+              void window.service.window.findInPage(text, true);
             }
             if (event.key === 'Escape') {
               // Escape
@@ -104,7 +104,7 @@ export default function FindInPage(): JSX.Element | null {
       </div>
       <Button
         size="small"
-        disabled={text.length < 1 || matches < 1}
+        disabled={text.length === 0 || matches < 1}
         onClick={() => {
           if (text.length > 0) {
             void window.service.window.findInPage(text, false);
@@ -114,7 +114,7 @@ export default function FindInPage(): JSX.Element | null {
       </Button>
       <Button
         size="small"
-        disabled={text.length < 1 || matches < 1}
+        disabled={text.length === 0 || matches < 1}
         onClick={() => {
           if (text.length > 0) {
             void window.service.window.findInPage(text, true);
@@ -124,7 +124,7 @@ export default function FindInPage(): JSX.Element | null {
       </Button>
       <Button
         size="small"
-        disabled={text.length < 1}
+        disabled={text.length === 0}
         onClick={() => {
           if (text.length > 0) {
             void window.service.window.findInPage(text, true);

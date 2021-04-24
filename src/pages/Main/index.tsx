@@ -158,7 +158,7 @@ const HelperTextsList = styled.ul`
 `;
 
 const SidebarContainer = ({ children }: { children: React.ReactNode }): JSX.Element => {
-  const platform = usePromiseValue(async () => (await window.service.context.get('platform')) as string);
+  const platform = usePromiseValue(async () => await window.service.context.get('platform'));
   // use native scroll bar on macOS
   if (platform === 'darwin') {
     return <SidebarRoot>{children}</SidebarRoot>;
@@ -191,7 +191,7 @@ export default function Main(): JSX.Element {
       <Root>
         {sidebar && (
           <SidebarContainer>
-            <SidebarTop fullscreen={isFullScreen === true || titleBar === true || attachToMenubar === true}>
+            <SidebarTop fullscreen={isFullScreen || titleBar || attachToMenubar}>
               {workspacesList === undefined ? (
                 <div>Loading...</div>
               ) : (
@@ -267,8 +267,8 @@ export default function Main(): JSX.Element {
                         <li>
                           Check the{' '}
                           <b
-                            onClick={async () => await window.service.native.open((await window.service.context.get('LOG_FOLDER')) as string, true)}
-                            onKeyPress={async () => await window.service.native.open((await window.service.context.get('LOG_FOLDER')) as string, true)}
+                            onClick={async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}
+                            onKeyPress={async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}
                             role="button"
                             tabIndex={0}
                             style={{ cursor: 'pointer' }}>

@@ -12,7 +12,7 @@ export type ProxyWithOutObservable<OriginalProxy> = Omit<OriginalProxy, ProxyObs
  * To call services that is located in main process, from the renderer process, we use IPC.invoke, so all method should now promisify
  * Note this type only promisify methods that return things, not methods that returns observable.
  */
- export type AsyncifyProxy<
+export type AsyncifyProxy<
   OriginalProxy,
   ObservableKey extends ProxyObservableProperties<OriginalProxy> = ProxyObservableProperties<OriginalProxy>,
   AsyncKey extends Exclude<ProxyAsyncProperties<OriginalProxy>, ObservableKey> = Exclude<ProxyAsyncProperties<OriginalProxy>, ObservableKey>

@@ -3,7 +3,7 @@ import { initReactI18next } from 'react-i18next';
 import { Backend as ElectronFsBackend } from './services/libs/i18n/i18next-electron-fs-backend';
 
 export async function initI18N(): Promise<void> {
-  const isDevelopment = (await window.service.context.get('isDevelopment')) as boolean;
+  const isDevelopment = await window.service.context.get('isDevelopment');
   await i18n
     .use(ElectronFsBackend)
     .use(initReactI18next)

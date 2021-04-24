@@ -65,7 +65,7 @@ const Link = styled.span`
 export default function About(): JSX.Element {
   const { t } = useTranslation();
   const versions = usePromiseValue(async () => {
-    const processVersions = (await window.service.context.get('environmentVersions')) as NodeJS.ProcessVersions;
+    const processVersions = await window.service.context.get('environmentVersions');
     return [
       { name: 'Electron Version', version: processVersions.electron },
       { name: 'Node Version', version: processVersions.node },
@@ -73,9 +73,9 @@ export default function About(): JSX.Element {
     ];
   }, [] as Array<{ name: string; version: string }>);
 
-  const iconPath = usePromiseValue<string>(async () => (await window.service.context.get('ICON_PATH')) as string);
-  const appVersion = usePromiseValue<string>(async () => (await window.service.context.get('appVersion')) as string);
-  const platform = usePromiseValue<string>(async () => (await window.service.context.get('platform')) as string);
+  const iconPath = usePromiseValue<string>(async () => await window.service.context.get('ICON_PATH'));
+  const appVersion = usePromiseValue<string>(async () => await window.service.context.get('appVersion'));
+  const platform = usePromiseValue<string>(async () => await window.service.context.get('platform'));
 
   return (
     <DialogContent>

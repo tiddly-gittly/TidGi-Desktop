@@ -163,10 +163,10 @@ export default function Preferences(): JSX.Element {
   const [platform, oSVersion, LOG_FOLDER, SETTINGS_FOLDER] = usePromiseValue(
     async () =>
       await Promise.all([
-        window.service.context.get('platform') as Promise<string>,
-        window.service.context.get('oSVersion') as Promise<string>,
-        window.service.context.get('LOG_FOLDER') as Promise<string>,
-        window.service.context.get('SETTINGS_FOLDER') as Promise<string>,
+        window.service.context.get('platform'),
+        window.service.context.get('oSVersion'),
+        window.service.context.get('LOG_FOLDER'),
+        window.service.context.get('SETTINGS_FOLDER'),
       ]).catch((error) => {
         console.error(error);
         return [];

@@ -95,7 +95,7 @@ export function useWikiWorkspaceForm() {
 
   useEffect(() => {
     void (async function getDefaultExistedWikiFolderPathEffect() {
-      const desktopPathAsDefaultExistedWikiFolderPath = (await window.service.context.get('DEFAULT_WIKI_FOLDER')) as string;
+      const desktopPathAsDefaultExistedWikiFolderPath = await window.service.context.get('DEFAULT_WIKI_FOLDER');
       existedWikiFolderPathSetter(desktopPathAsDefaultExistedWikiFolderPath);
       parentFolderLocationSetter(desktopPathAsDefaultExistedWikiFolderPath);
     })();
