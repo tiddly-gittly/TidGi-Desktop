@@ -7,7 +7,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 
 exports.main = [
   // we only need one instance of TsChecker, it will check main and renderer all together
-  // new ForkTsCheckerWebpackPlugin(),
+  new ForkTsCheckerWebpackPlugin(),
   new CopyPlugin({
     // to is relative to ./.webpack/main/
     patterns: [
