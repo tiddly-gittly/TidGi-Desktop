@@ -12,7 +12,7 @@ export interface IWikiService {
   startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void>;
   stopWiki(homePath: string): Promise<void>;
   stopAllWiki(): Promise<void>;
-  copyWikiTemplate(newFolderPath: string, folderName: string): Promise<string>;
+  copyWikiTemplate(newFolderPath: string, folderName: string): Promise<void>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
   /** send tiddlywiki action message to current active wiki */
   requestWikiSendActionMessage(actionMessage: string): Promise<void>;

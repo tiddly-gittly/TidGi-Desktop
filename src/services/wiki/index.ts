@@ -26,6 +26,7 @@ import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@/constants/path
 import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './update-plugin-content';
 import { IWikiService } from './interface';
 import { WikiChannel } from '@/constants/channels';
+import { CopyWikiTemplateError } from './error';
 
 @injectable()
 export class Wiki implements IWikiService {
@@ -55,12 +56,11 @@ export class Wiki implements IWikiService {
   }
 
   // handlers
-  public async copyWikiTemplate(newFolderPath: string, folderName: string): Promise<string> {
+  public async copyWikiTemplate(newFolderPath: string, folderName: string): Promise<void> {
     try {
       await this.createWiki(newFolderPath, folderName);
-      return '';
     } catch (error) {
-      return (error as Error).message;
+      throw new CopyWikiTemplateError((error as Error).message);
     }
   }
 

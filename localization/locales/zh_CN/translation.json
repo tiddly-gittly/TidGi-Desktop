@@ -253,7 +253,9 @@
     "InitWikiGitError": "笔记仓库初始化失败错误",
     "InitWikiGitErrorDescription": "新笔记仓库所用的模板复制失败或者笔记仓库的git初始化失败，这应该是个bug。",
     "InitWikiGitRevertError": "笔记仓库初始化失败且撤销失败错误",
-    "InitWikiGitRevertErrorDescription": "不仅笔记仓库初始化失败了，而且撤销也失败了，这是个严重问题，需要你手动清理该位置生成的新文件夹。"
+    "InitWikiGitRevertErrorDescription": "不仅笔记仓库初始化失败了，而且撤销也失败了，这是个严重问题，需要你手动清理该位置生成的新文件夹。",
+    "CopyWikiTemplateError": "复制维基模板错误",
+    "CopyWikiTemplateErrorDescription": "尝试把最新维基模板复制或覆盖到对应位置，但是失败了，这应该是由bug导致的。"
   },
   "Loading": "加载中",
   "Yes": "是的",

@@ -252,7 +252,9 @@
     "InitWikiGitError": "InitWikiGitError",
     "InitWikiGitErrorDescription": "The template used by the new note repository failed to copy or the git initialization of the note repository failed. This should be a bug.",
     "InitWikiGitRevertError": "InitWikiGitRevertError",
-    "InitWikiGitRevertErrorDescription": "Not only did the initialization of the note warehouse fail, but also the revocation failed. This is a serious problem, and you need to manually clean up the new folder generated in this location."
+    "InitWikiGitRevertErrorDescription": "Not only did the initialization of the note warehouse fail, but also the revocation failed. This is a serious problem, and you need to manually clean up the new folder generated in this location.",
+    "CopyWikiTemplateError": "CopyWikiTemplateError",
+    "CopyWikiTemplateErrorDescription": "Attempt to copy or overwrite the latest wiki template to the corresponding location, but failed. This should be caused by a bug."
   },
   "Loading": "Loading",
   "Yes": "Yes",
