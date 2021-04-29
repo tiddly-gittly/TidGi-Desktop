@@ -50,6 +50,7 @@ module.exports = {
     ],
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/method-signature-style': 'off',
+    'unicorn/no-array-reduce': 'off',
     '@typescript-eslint/member-delimiter-style': [
       'warn',
       {

@@ -1,3 +1,4 @@
+/* eslint-disable */
 import { Subscribable, Observer, TeardownLogic, Observable, isObservable } from 'rxjs';
 import { IpcRenderer, ipcRenderer, Event } from 'electron';
 import { memoize } from 'lodash';

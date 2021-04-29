@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
+/* eslint-disable */
 import { Observable, Subscription, isObservable } from 'rxjs';
 import { ipcMain, IpcMain, WebContents, IpcMainEvent } from 'electron';
 import Errio from 'errio';
