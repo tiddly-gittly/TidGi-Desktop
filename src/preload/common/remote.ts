@@ -13,7 +13,7 @@ export const remoteMethods = {
     await service.menu.buildContextMenuAndPopup(ipcSafeMenus, parameters, windowName);
     return unregister;
   },
-  closeCurrentWindow: async (): Promise<() => void> => {
+  closeCurrentWindow: async (): Promise<void> => {
     await service.window.close(windowName);
   },
   /** call NodeJS.path */

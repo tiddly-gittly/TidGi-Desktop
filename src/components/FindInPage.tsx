@@ -18,7 +18,7 @@ const InfoContainer = styled.div`
   padding: 0 12px;
 `;
 
-export default function FindInPage(): JSX.Element | undefined {
+export default function FindInPage(): JSX.Element | null {
   const [open, openSetter] = useState(false);
   const [text, textSetter] = useState('');
   const [activeMatch, activeMatchSetter] = useState(0);
@@ -50,7 +50,7 @@ export default function FindInPage(): JSX.Element | undefined {
     };
   }, [handleOpenFindInPage, updateFindInPageMatches]);
   if (!open) {
-    return;
+    return null;
   }
   return (
     <Root>
