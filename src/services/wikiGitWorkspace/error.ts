@@ -7,3 +7,11 @@ export class InitWikiGitError extends Error {
     this.message = `${i18n.t('Error.InitWikiGitErrorDescription')} ${extraMessage ?? ''}`;
   }
 }
+
+export class InitWikiGitRevertError extends Error {
+  constructor(extraMessage?: string) {
+    super(extraMessage);
+    this.name = i18n.t('Error.InitWikiGitRevertError');
+    this.message = `${i18n.t('Error.InitWikiGitRevertErrorDescription')} ${extraMessage ?? ''}`;
+  }
+}

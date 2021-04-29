@@ -249,8 +249,10 @@
     "OpenMetaDataFolderDetail": "TiddlyWiki's data and TiddlyGit's workspace metadata are stored separately. TiddlyGit's metadata includes workspace settings, etc., which are stored in this folder in JSON format."
   },
   "Error": {
-    "InitWikiGitError": "Note warehouse initialization failed error",
-    "InitWikiGitErrorDescription": "The template used by the new note repository failed to copy or the git initialization of the note repository failed. This should be a bug."
+    "InitWikiGitError": "InitWikiGitError",
+    "InitWikiGitErrorDescription": "The template used by the new note repository failed to copy or the git initialization of the note repository failed. This should be a bug.",
+    "InitWikiGitRevertError": "InitWikiGitRevertError",
+    "InitWikiGitRevertErrorDescription": "Not only did the initialization of the note warehouse fail, but also the revocation failed. This is a serious problem, and you need to manually clean up the new folder generated in this location."
   },
   "Loading": "Loading",
   "Yes": "Yes",

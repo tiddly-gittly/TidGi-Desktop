@@ -16,7 +16,7 @@ import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { IWikiGitWorkspaceService } from './interface';
 import { IMenuService } from '@services/menu/interface';
-import { InitWikiGitError } from './error';
+import { InitWikiGitError, InitWikiGitRevertError } from './error';
 
 @injectable()
 export class WikiGitWorkspace implements IWikiGitWorkspaceService {
@@ -50,10 +50,14 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       }
     } catch (error) {
       logger.info(error);
-      if (isMainWiki) {
-        await this.wikiService.removeWiki(wikiFolderPath);
-      } else {
-        await this.wikiService.removeWiki(wikiFolderPath, isSyncedWiki ? mainWikiToUnLink : githubRepoUrlOrMainWikiToUnLinkOverload);
+      try {
+        if (isMainWiki) {
+          await this.wikiService.removeWiki(wikiFolderPath);
+        } else {
+          await this.wikiService.removeWiki(wikiFolderPath, isSyncedWiki ? mainWikiToUnLink : githubRepoUrlOrMainWikiToUnLinkOverload);
+        }
+      } catch (error_) {
+        throw new InitWikiGitRevertError((error_ as Error).message);
       }
       throw new InitWikiGitError((error as Error).message);
     }
