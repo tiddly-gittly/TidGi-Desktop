@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { Paper, Button, TextField, Autocomplete, Typography } from '@material-ui/core';
 
 export const CreateContainer = styled(Paper)`
@@ -17,6 +17,15 @@ LocationPickerInput.defaultProps = {
 export const LocationPickerButton = styled(Button)`
   white-space: nowrap;
   width: fit-content;
+`;
+export const CloseButton = styled(Button)`
+  ${({ disabled }) =>
+    disabled === true
+      ? ''
+      : css`
+          white-space: nowrap;
+        `}
+  width: 100%;
 `;
 LocationPickerButton.defaultProps = {
   variant: 'contained',

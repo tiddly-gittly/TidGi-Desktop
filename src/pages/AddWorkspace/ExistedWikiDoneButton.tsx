@@ -1,19 +1,13 @@
 import React from 'react';
-import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 
-import { Typography, Button, LinearProgress, Snackbar } from '@material-ui/core';
+import { Typography, LinearProgress, Snackbar } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateExistedWiki, useExistedWiki } from './useExistedWiki';
 import { useWikiCreationProgress } from './useIndicator';
-import { WikiLocation } from './FormComponents';
-
-const CloseButton = styled(Button)`
-  white-space: nowrap;
-  width: 100%;
-`;
+import { WikiLocation, CloseButton } from './FormComponents';
 
 export function ExistedWikiDoneButton({
   form,
