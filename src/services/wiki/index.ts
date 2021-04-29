@@ -60,7 +60,7 @@ export class Wiki implements IWikiService {
       await this.createWiki(newFolderPath, folderName);
       return '';
     } catch (error) {
-      return String(error);
+      return (error as Error).message;
     }
   }
 
@@ -160,7 +160,7 @@ export class Wiki implements IWikiService {
       });
       await delay(100);
     } catch (error) {
-      logger.info(`Wiki-worker have error ${String(error)} when try to stop`, { function: 'stopWiki' });
+      logger.info(`Wiki-worker have error ${error.message} when try to stop`, { function: 'stopWiki' });
       await worker.terminate();
     }
     // delete this.wikiWorkers[homePath];

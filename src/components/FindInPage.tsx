@@ -50,6 +50,7 @@ export default function FindInPage(): JSX.Element | null {
     };
   }, [handleOpenFindInPage, updateFindInPageMatches]);
   if (!open) {
+    // eslint-disable-next-line unicorn/no-null
     return null;
   }
   return (

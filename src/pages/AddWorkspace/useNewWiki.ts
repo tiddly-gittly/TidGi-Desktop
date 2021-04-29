@@ -94,7 +94,7 @@ export function useNewWiki(
         }
       }
     } catch (error) {
-      wikiCreationMessageSetter(String(error));
+      wikiCreationMessageSetter((error as Error).message);
       hasErrorSetter(true);
     }
   }, [

@@ -68,7 +68,7 @@ export function useCloneWiki(
         );
       }
     } catch (error) {
-      wikiCreationMessageSetter(String(error));
+      wikiCreationMessageSetter((error as Error).message);
       hasErrorSetter(true);
     }
   }, [
