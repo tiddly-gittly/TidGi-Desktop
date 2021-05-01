@@ -116,7 +116,9 @@
     "NoRevert": "Caution! This operation can't be reverted.",
     "URL": "Wiki URL",
     "Port": "Local host server port",
-    "PathDescription": "Location of your local wiki folder."
+    "PathDescription": "Location of your local wiki folder.",
+    "UserName": "User Name",
+    "UserNameDetail": "The user name in the Wiki, this only take effect after restart, this will fill in the creator field of the newly created or edited tiddlers. This will override the global setting in the preference"
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed! \nDo you want to remove the workspace?",
@@ -173,8 +175,8 @@
     "Sync": "Sync",
     "SyncInterval": "Sync Interval",
     "SyncIntervalDescription": "After there is no new change for more than this length of time, it will automatically start backing up to Github (take effect after restart app)",
-    "UserName": "User Name",
-    "UserNameDetail": "The user name in the Wiki, this only take effect after restart, this will fill in the creator field of the newly created or edited tiddlers",
+    "DefaultUserName": "User Name",
+    "DefaultUserNameDetail": "The user name in the Wiki, this only take effect after restart, this will fill in the creator field of the newly created or edited tiddlers. Can be override by user name set in the workspace setting.",
     "ShowSideBarDetail": "Sidebar lets you switch easily between workspaces.",
     "ShowSideBarShortcut": "Show keyboard shortcut hints on sidebar",
     "ShowNavigationBar": "Show navigation bar",

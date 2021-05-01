@@ -350,8 +350,9 @@ export class Wiki implements IWikiService {
     }
 
     const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
-    // pass empty editor username if undefined
-    const userName = (await this.authService.get('userName')) ?? '';
+    // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    const userName = (workspace.userName || (await this.authService.get('userName'))) ?? '';
     const { name: wikiPath, gitUrl: githubRepoUrl, port, isSubWiki, id, mainWikiToLink } = workspace;
     // if is main wiki
     if (!isSubWiki) {
@@ -437,6 +438,9 @@ export class Wiki implements IWikiService {
   // { [name: string]: Watcher }
   private readonly wikiWatchers: Record<string, chokidar.FSWatcher> = {};
 
+  /**
+   * watch wiki change and reset git sync count down
+   */
   public async watchWiki(wikiRepoPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, wikiFolderPath = wikiRepoPath): Promise<void> {
     if (!fs.existsSync(wikiRepoPath)) {
       logger.error('Folder not exist in watchFolder()', { wikiRepoPath, wikiFolderPath, githubRepoUrl });

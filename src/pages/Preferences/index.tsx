@@ -241,12 +241,12 @@ export default function Preferences(): JSX.Element {
             <ListItemVertical>
               <ListItemText primary={t('Preference.WikiMetaData')} secondary={t('Preference.WikiMetaDataDescription')} />
               <TextField
-                helperText={t('Preference.UserNameDetail')}
+                helperText={t('Preference.DefaultUserNameDetail')}
                 fullWidth
                 onChange={async (event) => {
                   await window.service.auth.set('userName', event.target.value);
                 }}
-                label={t('Preference.UserName')}
+                label={t('Preference.DefaultUserName')}
                 value={userInfo?.userName}
               />
             </ListItemVertical>
