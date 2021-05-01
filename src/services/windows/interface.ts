@@ -10,7 +10,7 @@ export interface IWindowService {
   /** get window, this should not be called in renderer side */
   get(windowName: WindowNames): BrowserWindow | undefined;
   open<N extends WindowNames>(windowName: N, meta?: WindowMeta[N], recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean)): Promise<void>;
-  close(name: WindowNames): Promise<void>;
+  close(windowName: WindowNames): Promise<void>;
   setWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;
   updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;
   getWindowMeta<N extends WindowNames>(windowName: N): Promise<WindowMeta[N] | undefined>;

@@ -9,7 +9,7 @@ import { usePromiseValue, usePromiseValueAndSetter } from '@/helpers/useServiceV
 import { useStorageServiceUserInfo } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
 import { ISubWikiPluginContent } from '@services/wiki/update-plugin-content';
-import { INewWorkspaceConfig } from '@services/workspaces/interface';
+import { INewWorkspaceConfig, IWorkspace } from '@services/workspaces/interface';
 
 export function useIsCreateMainWorkspace(): [boolean, React.Dispatch<React.SetStateAction<boolean>>] {
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(false);
@@ -63,14 +63,16 @@ export function useWikiWorkspaceForm() {
    * For sub-wiki, we need to link it to a main wiki's folder, so all wiki contents can be loaded together.
    */
   const mainWorkspaceList = workspaceList.filter((workspace) => !workspace.isSubWiki);
-  const [mainWikiToLink, mainWikiToLinkSetter] = useState(mainWorkspaceList[0] ?? { name: '', port: 0, id: '' });
+  const [mainWikiToLink, mainWikiToLinkSetter] = useState<Pick<IWorkspace, 'wikiFolderLocation' | 'port' | 'id'>>(
+    mainWorkspaceList[0] ?? { wikiFolderLocation: '', port: 0, id: '' },
+  );
   const [tagName, tagNameSetter] = useState<string>('');
   let mainWikiToLinkIndex = mainWorkspaceList.findIndex((workspace) => workspace.id === mainWikiToLink.id);
   if (mainWikiToLinkIndex < 0) {
     mainWikiToLinkIndex = 0;
   }
   useEffect(() => {
-    if (mainWorkspaceList[mainWikiToLinkIndex]?.name) {
+    if (mainWorkspaceList[mainWikiToLinkIndex]?.wikiFolderLocation) {
       mainWikiToLinkSetter(mainWorkspaceList[mainWikiToLinkIndex]);
     }
   }, [mainWorkspaceList, mainWikiToLinkIndex]);
@@ -79,7 +81,7 @@ export function useWikiWorkspaceForm() {
    */
   const [fileSystemPaths, fileSystemPathsSetter] = useState<ISubWikiPluginContent[]>([]);
   useEffect(() => {
-    void window.service.wiki.getSubWikiPluginContent(mainWikiToLink.name).then(fileSystemPathsSetter);
+    void window.service.wiki.getSubWikiPluginContent(mainWikiToLink.wikiFolderLocation).then(fileSystemPathsSetter);
   }, [mainWikiToLink]);
   /**
    * For importing existed nodejs wiki into TiddlyGit, we use existedWikiFolderPath to determine which folder to import
@@ -152,7 +154,7 @@ export function workspaceConfigFromFrom(form: IWikiWorkspaceForm, isCreateMainWo
   return {
     gitUrl: isCreateSyncedWorkspace ? form.gitRepoUrl : null,
     isSubWiki: !isCreateMainWorkspace,
-    mainWikiToLink: !isCreateMainWorkspace ? form.mainWikiToLink.name : null,
+    mainWikiToLink: !isCreateMainWorkspace ? form.mainWikiToLink.wikiFolderLocation : null,
     name: form.wikiFolderName,
     storageService: form.storageProvider,
     tagName: !isCreateMainWorkspace ? form.tagName : null,

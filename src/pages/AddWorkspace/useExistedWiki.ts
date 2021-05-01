@@ -29,7 +29,7 @@ export function useValidateExistedWiki(
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.GitRepoUrl')}`);
       errorInWhichComponentSetter({ gitRepoUrl: true });
       hasErrorSetter(true);
-    } else if (!isCreateMainWorkspace && !form.mainWikiToLink?.name) {
+    } else if (!isCreateMainWorkspace && !form.mainWikiToLink?.wikiFolderLocation) {
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.MainWorkspace')}`);
       errorInWhichComponentSetter({ mainWikiToLink: true });
       hasErrorSetter(true);
@@ -53,7 +53,7 @@ export function useValidateExistedWiki(
     form.wikiFolderName,
     form.gitRepoUrl,
     form.gitUserInfo,
-    form.mainWikiToLink?.name,
+    form.mainWikiToLink?.wikiFolderLocation,
     form.tagName,
     form.existedWikiFolderPath,
   ]);
@@ -87,7 +87,7 @@ export function useExistedWiki(
         await window.service.wiki.createSubWiki(
           wikiFolderNameForExistedFolder,
           parentFolderLocationForExistedFolder,
-          form.mainWikiToLink?.name,
+          form.mainWikiToLink?.wikiFolderLocation,
           form.tagName,
           true,
         );
@@ -101,7 +101,7 @@ export function useExistedWiki(
     form.parentFolderLocation,
     form.gitRepoUrl,
     form.gitUserInfo,
-    form.mainWikiToLink?.name,
+    form.mainWikiToLink?.wikiFolderLocation,
     form.tagName,
     wikiCreationMessageSetter,
     t,

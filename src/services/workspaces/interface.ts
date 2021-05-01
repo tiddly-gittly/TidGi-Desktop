@@ -43,6 +43,10 @@ export interface IWorkspace {
    */
   name: string;
   /**
+   * folder path for this wiki workspace
+   */
+  wikiFolderLocation: string;
+  /**
    * You can drag workspaces to reorder them
    */
   order: number;
@@ -107,7 +111,7 @@ export interface IWorkspaceService {
   setWorkspacePicture(id: string, sourcePicturePath: string): Promise<void>;
   removeWorkspacePicture(id: string): Promise<void>;
   remove(id: string): Promise<void>;
-  getByName(name: string): Promise<IWorkspace | undefined>;
+  getByWikiFolderLocation(name: string): Promise<IWorkspace | undefined>;
   getPreviousWorkspace: (id: string) => Promise<IWorkspace | undefined>;
   getNextWorkspace: (id: string) => Promise<IWorkspace | undefined>;
   getActiveWorkspace: () => Promise<IWorkspace | undefined>;

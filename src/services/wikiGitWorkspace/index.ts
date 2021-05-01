@@ -5,7 +5,7 @@ import { injectable } from 'inversify';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
-import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { INewWorkspaceConfig, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -17,6 +17,7 @@ import i18n from '@services/libs/i18n';
 import { IWikiGitWorkspaceService } from './interface';
 import { IMenuService } from '@services/menu/interface';
 import { InitWikiGitError, InitWikiGitRevertError } from './error';
+import { SupportedStorageServices } from '@services/types';
 
 @injectable()
 export class WikiGitWorkspace implements IWikiGitWorkspaceService {
@@ -28,41 +29,31 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
 
-  public initWikiGitTransaction = async (
-    workspaceID: string,
-    wikiFolderPath: string,
-    isMainWiki: boolean,
-    isSyncedWiki: boolean,
-    githubRepoUrlOrMainWikiToUnLinkOverload?: string,
-    userInfo?: IGitUserInfos,
-    mainWikiToUnLink?: string,
-  ): Promise<void> => {
+  public initWikiGitTransaction = async (newWorkspaceConfig: INewWorkspaceConfig, userInfo?: IGitUserInfos): Promise<void> => {
+    const newWorkspace = await this.workspaceViewService.createWorkspaceView(newWorkspaceConfig);
+    const { gitUrl, storageService, wikiFolderLocation, isSubWiki, id: workspaceID, mainWikiToLink } = newWorkspace;
+    const isSyncedWiki = storageService !== SupportedStorageServices.local;
     try {
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (isSyncedWiki) {
-        const githubRepoUrl = githubRepoUrlOrMainWikiToUnLinkOverload;
-        if (githubRepoUrl !== undefined && userInfo !== undefined) {
-          await this.gitService.initWikiGit(wikiFolderPath, isMainWiki, isSyncedWiki, githubRepoUrl, userInfo);
+        if (typeof gitUrl === 'string' && userInfo !== undefined) {
+          await this.gitService.initWikiGit(wikiFolderLocation, !isSubWiki, isSyncedWiki, gitUrl, userInfo);
         } else {
-          throw new Error(`githubRepoUrl is ${githubRepoUrl ?? 'undefined'} , userInfo is ${userInfo === undefined ? JSON.stringify(userInfo) : 'undefined'}`);
+          throw new Error(
+            `E-1-1 SyncedWiki gitUrl is ${gitUrl ?? 'undefined'} , userInfo is ${userInfo === undefined ? JSON.stringify(userInfo) : 'undefined'}`,
+          );
         }
       } else {
-        await this.gitService.initWikiGit(wikiFolderPath, isMainWiki, false);
+        await this.gitService.initWikiGit(wikiFolderLocation, !isSubWiki, false);
       }
-      const workspace = await this.workspaceService.get(workspaceID);
-      if (workspace === undefined) {
-        throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
-      }
-      await this.wikiService.wikiStartup(workspace);
     } catch (error) {
       const errorMessage = `initWikiGitTransaction failed, ${(error as Error).message} ${(error as Error).stack ?? ''}`;
       logger.crit(errorMessage);
       await this.workspaceService.remove(workspaceID);
       try {
-        if (isMainWiki) {
-          await this.wikiService.removeWiki(wikiFolderPath);
-        } else {
-          await this.wikiService.removeWiki(wikiFolderPath, isSyncedWiki ? mainWikiToUnLink : githubRepoUrlOrMainWikiToUnLinkOverload);
+        if (!isSubWiki) {
+          await this.wikiService.removeWiki(wikiFolderLocation);
+        } else if (typeof mainWikiToLink === 'string') {
+          await this.wikiService.removeWiki(wikiFolderLocation, mainWikiToLink);
         }
       } catch (error_) {
         throw new InitWikiGitRevertError((error_ as Error).message);
@@ -86,21 +77,21 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           if (workspace === undefined) {
             throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
           }
-          await this.wikiService.stopWatchWiki(workspace.name).catch((error: Error) => logger.error(error.message, error));
-          await this.wikiService.stopWiki(workspace.name).catch((error: Error) => logger.error(error.message, error));
-          const { name, isSubWiki, mainWikiToLink } = workspace;
+          const { isSubWiki, mainWikiToLink, wikiFolderLocation } = workspace;
+          await this.wikiService.stopWatchWiki(wikiFolderLocation).catch((error: Error) => logger.error(error.message, error));
+          await this.wikiService.stopWiki(wikiFolderLocation).catch((error: Error) => logger.error(error.message, error));
           if (isSubWiki) {
             if (mainWikiToLink === null) {
               throw new Error(`workspace.mainWikiToLink is null in WikiGitWorkspace.removeWorkspace ${JSON.stringify(workspace)}`);
             }
-            await this.wikiService.removeWiki(name, mainWikiToLink, response === 0);
+            await this.wikiService.removeWiki(wikiFolderLocation, mainWikiToLink, response === 0);
             // remove folderName from fileSystemPaths
             await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, undefined, {
               ...workspace,
-              subWikiFolderName: path.basename(name),
+              subWikiFolderName: path.basename(wikiFolderLocation),
             });
           } else {
-            await this.wikiService.removeWiki(name);
+            await this.wikiService.removeWiki(wikiFolderLocation);
           }
           await this.workspaceViewService.removeWorkspaceView(workspaceID);
           await this.wikiService.wikiStartup(workspace);

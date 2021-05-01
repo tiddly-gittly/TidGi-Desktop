@@ -83,8 +83,8 @@ export class Wiki implements IWikiService {
     }
   };
 
-  // key is same to workspace name, so we can get this worker by workspace name
-  // { [name: string]: Worker }
+  // key is same to workspace wikiFolderLocation, so we can get this worker by workspace wikiFolderLocation
+  // { [wikiFolderLocation: string]: Worker }
   private wikiWorkers: Record<string, Worker> = {};
 
   // don't forget to config option in `dist.js` https://github.com/electron/electron/issues/18540#issuecomment-652430001
@@ -94,7 +94,7 @@ export class Wiki implements IWikiService {
 
   public async startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void> {
     // use Promise to handle worker callbacks
-    const workspace = await this.workspaceService.getByName(homePath);
+    const workspace = await this.workspaceService.getByWikiFolderLocation(homePath);
     const workspaceID = workspace?.id;
     if (workspace === undefined || workspaceID === undefined) {
       logger.error('Try to start wiki, but workspace not found', { homePath, workspace, workspaceID });
@@ -108,13 +108,12 @@ export class Wiki implements IWikiService {
     const loggerForWorker = this.logMessage(loggerMeta);
     let started = false;
     // redirect stdout to file
-    const logFileName = workspace.name.replace(/[/\\]/g, '_');
+    const logFileName = workspace.wikiFolderLocation.replace(/[/\\]/g, '_');
     refreshOutputFile(logFileName);
     wikiOutputToFile(logFileName, worker.stdout);
     wikiOutputToFile(logFileName, worker.stderr);
     return await new Promise<void>((resolve, reject) => {
       worker.on('error', (error: Error) => {
-        console.log(error);
         logger.error(error.message, { ...loggerMeta, ...error });
         reject(error);
       });
@@ -126,7 +125,6 @@ export class Wiki implements IWikiService {
         resolve();
       });
       worker.on('message', (message: string | { type: string; payload?: string | { message: string; handler: string } }) => {
-        console.log(message);
         loggerForWorker(message);
         if (!started) {
           started = true;
@@ -229,7 +227,7 @@ export class Wiki implements IWikiService {
     } catch {
       throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
     }
-    this.logProgress(i18n.t('AddWorkspace.WikiTemplateCopyCompleted'));
+    this.logProgress(i18n.t('AddWorkspace.WikiTemplateCopyCompleted') + newWikiPath);
   }
 
   /**
@@ -343,35 +341,36 @@ export class Wiki implements IWikiService {
   }
 
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
+    const { wikiFolderLocation, gitUrl: githubRepoUrl, port, isSubWiki, id, mainWikiToLink, storageService } = workspace;
+
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     try {
-      fs.unlinkSync(path.resolve(workspace.name, 'tiddlers', '$__StoryList'));
+      fs.unlinkSync(path.resolve(wikiFolderLocation, 'tiddlers', '$__StoryList'));
     } catch {
       // do nothing
     }
 
-    const { name: wikiPath, gitUrl: githubRepoUrl, port, isSubWiki, id, mainWikiToLink, storageService } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const userName = (workspace.userName || (await this.authService.get('userName'))) ?? '';
     const tryWatchForSync = async (watchPath?: string): Promise<void> => {
       if (storageService !== SupportedStorageServices.local && typeof githubRepoUrl === 'string' && userInfo !== undefined) {
-        await this.watchWikiForDebounceCommitAndSync(wikiPath, githubRepoUrl, userInfo, watchPath);
+        await this.watchWikiForDebounceCommitAndSync(wikiFolderLocation, githubRepoUrl, userInfo, watchPath);
       }
     };
     // if is main wiki
     if (!isSubWiki) {
-      this.setWikiStarted(wikiPath);
-      await this.startNodeJSWiki(wikiPath, port, userName, id);
+      this.setWikiStarted(wikiFolderLocation);
+      await this.startNodeJSWiki(wikiFolderLocation, port, userName, id);
       // sync to cloud
-      await tryWatchForSync(path.join(wikiPath, TIDDLERS_PATH));
+      await tryWatchForSync(path.join(wikiFolderLocation, TIDDLERS_PATH));
     } else {
       // if is private repo wiki
       // if we are creating a sub-wiki just now, restart the main wiki to load content from private wiki
       if (typeof mainWikiToLink === 'string' && !this.justStartedWiki[mainWikiToLink]) {
         // TODO: change getByName to getByMainWikiPath, get by mainWikiPath
-        const mainWorkspace = await this.workspaceService.getByName(mainWikiToLink);
+        const mainWorkspace = await this.workspaceService.getByWikiFolderLocation(mainWikiToLink);
         if (mainWorkspace === undefined) {
           throw new Error(`mainWorkspace is undefined in wikiStartup() for mainWikiPath ${mainWikiToLink}`);
         }
@@ -396,7 +395,7 @@ export class Wiki implements IWikiService {
   public async startNodeJSWiki(homePath: string, port: number, userName: string, workspaceID: string): Promise<void> {
     if (typeof homePath !== 'string' || homePath.length === 0 || !path.isAbsolute(homePath)) {
       const errorMessage = i18n.t('Dialog.NeedCorrectTiddlywikiFolderPath') + homePath;
-      console.error(errorMessage);
+      logger.error(errorMessage);
       const mainWindow = this.windowService.get(WindowNames.main);
       if (mainWindow !== undefined) {
         await dialog.showMessageBox(mainWindow, {
@@ -410,13 +409,13 @@ export class Wiki implements IWikiService {
       return;
     }
     if (!fs.pathExistsSync(homePath)) {
-      const errorMessage = i18n.t('Dialog.CantFindWorkspaceFolderRemoveWorkspace');
-      console.error(errorMessage);
+      const errorMessage = i18n.t('Dialog.CantFindWorkspaceFolderRemoveWorkspace') + homePath;
+      logger.error(errorMessage);
       const mainWindow = this.windowService.get(WindowNames.main);
       if (mainWindow !== undefined) {
         const { response } = await dialog.showMessageBox(mainWindow, {
           title: i18n.t('Dialog.WorkspaceFolderRemoved'),
-          message: errorMessage + homePath,
+          message: errorMessage,
           buttons: [i18n.t('Dialog.RemoveWorkspace'), i18n.t('Dialog.DoNotCare')],
           cancelId: 1,
           defaultId: 0,
@@ -435,8 +434,8 @@ export class Wiki implements IWikiService {
   private readonly frequentlyChangedFileThatShouldBeIgnoredFromWatch = ['output', /\$__StoryList/];
   private readonly topLevelFoldersToIgnored = ['node_modules', '.git'];
 
-  // key is same to workspace name, so we can get this watcher by workspace name
-  // { [name: string]: Watcher }
+  // key is same to workspace wikiFolderLocation, so we can get this watcher by workspace wikiFolderLocation
+  // { [wikiFolderLocation: string]: Watcher }
   private readonly wikiWatchers: Record<string, chokidar.FSWatcher> = {};
 
   /**

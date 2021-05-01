@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IWikiWorkspaceForm, workspaceConfigFromFrom } from './useForm';
+import { IWikiWorkspaceForm, workspaceConfigFromFrom as workspaceConfigFromForm } from './useForm';
 
 export function useValidateNewWiki(
   isCreateMainWorkspace: boolean,
@@ -25,7 +25,7 @@ export function useValidateNewWiki(
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.GitRepoUrl')}`);
       errorInWhichComponentSetter({ gitRepoUrl: true });
       hasErrorSetter(true);
-    } else if (!isCreateMainWorkspace && !form.mainWikiToLink?.name) {
+    } else if (!isCreateMainWorkspace && !form.mainWikiToLink?.wikiFolderLocation) {
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.MainWorkspace')}`);
       errorInWhichComponentSetter({ mainWikiToLink: true });
       hasErrorSetter(true);
@@ -50,7 +50,7 @@ export function useValidateNewWiki(
     form.wikiFolderName,
     form.gitRepoUrl,
     form.gitUserInfo,
-    form.mainWikiToLink?.name,
+    form.mainWikiToLink?.wikiFolderLocation,
     form.tagName,
   ]);
 
@@ -71,41 +71,13 @@ export function useNewWiki(
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     hasErrorSetter(false);
     try {
-      // we first create the workspace
-      const newWorkspace = await window.service.workspaceView.createWorkspaceView(
-        workspaceConfigFromFrom(form, isCreateMainWorkspace, isCreateSyncedWorkspace),
-      );
-      // then create the wiki and git
+      const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, isCreateSyncedWorkspace);
       if (isCreateMainWorkspace) {
         await window.service.wiki.copyWikiTemplate(form.parentFolderLocation, form.wikiFolderName);
-        if (isCreateSyncedWorkspace) {
-          await window.service.wikiGitWorkspace.initWikiGitTransaction(
-            newWorkspace.id,
-            form.wikiFolderLocation,
-            true,
-            true,
-            form.gitRepoUrl,
-            form.gitUserInfo!,
-          );
-        } else {
-          await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspace.id, form.wikiFolderLocation, true, false);
-        }
       } else {
-        await window.service.wiki.createSubWiki(form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink?.name, form.tagName);
-        if (isCreateSyncedWorkspace) {
-          await window.service.wikiGitWorkspace.initWikiGitTransaction(
-            newWorkspace.id,
-            form.wikiFolderLocation,
-            false,
-            true,
-            form.gitRepoUrl,
-            form.gitUserInfo!,
-            form.mainWikiToLink?.name,
-          );
-        } else {
-          await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspace.id, form.wikiFolderLocation, false, false, form.mainWikiToLink?.name);
-        }
+        await window.service.wiki.createSubWiki(form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink?.wikiFolderLocation, form.tagName);
       }
+      await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspaceConfig);
       // wait for wiki to start and close the window now.
       await window.remote.closeCurrentWindow();
     } catch (error) {

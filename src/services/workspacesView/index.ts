@@ -55,8 +55,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
       try {
         const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
-        // TODO: rename name to wikiPath
-        const { name: wikiPath, gitUrl: githubRepoUrl, storageService } = workspace;
+        const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService } = workspace;
         // wait for main wiki's watch-fs plugin to be fully initialized
         // and also wait for wiki BrowserView to be able to receive command
         // eslint-disable-next-line global-require
@@ -77,12 +76,12 @@ export class WorkspaceView implements IWorkspaceViewService {
         if (storageService !== SupportedStorageServices.local) {
           // check synced wiki should have githubRepoUrl
           if (typeof githubRepoUrl !== 'string') {
-            throw new TypeError(`githubRepoUrl is undefined in initializeAllWorkspaceView when init ${wikiPath}`);
+            throw new TypeError(`githubRepoUrl is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
           }
           if (userInfo === undefined) {
-            throw new TypeError(`userInfo is undefined in initializeAllWorkspaceView when init ${wikiPath}`);
+            throw new TypeError(`userInfo is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
           }
-          await this.gitService.commitAndSync(wikiPath, githubRepoUrl, userInfo);
+          await this.gitService.commitAndSync(wikiFolderLocation, githubRepoUrl, userInfo);
         }
       } catch {
         logger.warning(`Can't sync at wikiStartup()`);
@@ -127,12 +126,10 @@ export class WorkspaceView implements IWorkspaceViewService {
   public async createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<IWorkspace> {
     const newWorkspace = await this.workspaceService.create(workspaceOptions);
     const mainWindow = this.windowService.get(WindowNames.main);
-    if (mainWindow !== undefined) {
-      if (!workspaceOptions.isSubWiki) {
-        await this.workspaceService.setActiveWorkspace(newWorkspace.id);
-        await this.viewService.setActiveView(mainWindow, newWorkspace.id);
-      }
+    if (mainWindow !== undefined && !workspaceOptions.isSubWiki) {
+      await this.workspaceService.setActiveWorkspace(newWorkspace.id);
       await this.viewService.addView(mainWindow, newWorkspace);
+      await this.viewService.setActiveView(mainWindow, newWorkspace.id);
     }
 
     if (typeof workspaceOptions.picturePath === 'string') {

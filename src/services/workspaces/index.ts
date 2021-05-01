@@ -197,11 +197,11 @@ export class Workspace implements IWorkspaceService {
    * @param workspaceToSanitize User input workspace or loaded workspace, that may contains bad values
    */
   private sanitizeWorkspace(workspaceToSanitize: IWorkspace): IWorkspace {
-    const subWikiFolderName = path.basename(workspaceToSanitize.name);
+    const subWikiFolderLocation = path.basename(workspaceToSanitize.wikiFolderLocation);
     const defaultValues: Partial<IWorkspace> = {
       storageService: SupportedStorageServices.github,
     };
-    return { ...defaultValues, ...workspaceToSanitize, subWikiFolderName };
+    return { ...defaultValues, ...workspaceToSanitize };
   }
 
   /**
@@ -228,8 +228,8 @@ export class Workspace implements IWorkspaceService {
     }
   }
 
-  public async getByName(name: string): Promise<IWorkspace | undefined> {
-    return (await this.getWorkspacesAsList()).find((workspace) => workspace.name === name);
+  public async getByWikiFolderLocation(wikiFolderLocation: string): Promise<IWorkspace | undefined> {
+    return (await this.getWorkspacesAsList()).find((workspace) => workspace.wikiFolderLocation === wikiFolderLocation);
   }
 
   public getPreviousWorkspace = async (id: string): Promise<IWorkspace | undefined> => {
@@ -347,6 +347,7 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async remove(id: string): Promise<void> {
+    const { wikiFolderLocation } = this.workspaces[id];
     if (id in this.workspaces) {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete this.workspaces[id];
@@ -355,9 +356,8 @@ export class Workspace implements IWorkspaceService {
       throw new Error(`Try to remote workspace, but id ${id} is not existed`);
     }
     // call wiki service
-    const { name } = this.workspaces[id];
-    await this.wikiService.stopWiki(name);
-    await this.wikiService.stopWatchWiki(name);
+    await this.wikiService.stopWiki(wikiFolderLocation);
+    await this.wikiService.stopWatchWiki(wikiFolderLocation);
     await this.updateWorkspaceMenuItems();
     await this.updateWorkspaceSubject();
   }

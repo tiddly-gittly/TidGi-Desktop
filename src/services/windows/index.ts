@@ -90,8 +90,8 @@ export class Window implements IWindowService {
     return this.windows[windowName];
   }
 
-  public async close(name: WindowNames): Promise<void> {
-    this.get(name)?.close();
+  public async close(windowName: WindowNames): Promise<void> {
+    this.get(windowName)?.close();
   }
 
   public async open<N extends WindowNames>(

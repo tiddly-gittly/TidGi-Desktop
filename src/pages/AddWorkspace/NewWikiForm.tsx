@@ -72,9 +72,9 @@ export function NewWikiForm({
             error={errorInWhichComponent.mainWikiToLink}
             label={t('AddWorkspace.MainWorkspaceLocation')}
             helperText={
-              form.mainWikiToLink.name &&
+              form.mainWikiToLink.wikiFolderLocation &&
               `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
-                    ${form.mainWikiToLink.name}/tiddlers/${form.wikiFolderName}`
+                    ${form.mainWikiToLink.wikiFolderLocation}/tiddlers/${form.wikiFolderName}`
             }
             value={form.mainWikiToLinkIndex}
             onChange={(event) => {

@@ -23,7 +23,7 @@ export function useValidateCloneWiki(
     } else if (!form.gitRepoUrl) {
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.GitRepoUrl')}`);
       hasErrorSetter(true);
-    } else if (!isCreateMainWorkspace && !form.mainWikiToLink?.name) {
+    } else if (!isCreateMainWorkspace && !form.mainWikiToLink?.wikiFolderLocation) {
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.MainWorkspace')}`);
       errorInWhichComponentSetter({ mainWikiToLink: true });
       hasErrorSetter(true);
@@ -39,7 +39,16 @@ export function useValidateCloneWiki(
       errorInWhichComponentSetter({});
       hasErrorSetter(false);
     }
-  }, [t, isCreateMainWorkspace, form.parentFolderLocation, form.wikiFolderName, form.gitRepoUrl, form.gitUserInfo, form.mainWikiToLink?.name, form.tagName]);
+  }, [
+    t,
+    isCreateMainWorkspace,
+    form.parentFolderLocation,
+    form.wikiFolderName,
+    form.gitRepoUrl,
+    form.gitUserInfo,
+    form.mainWikiToLink?.wikiFolderLocation,
+    form.tagName,
+  ]);
   return [errorInWhichComponent, hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter];
 }
 
@@ -61,7 +70,7 @@ export function useCloneWiki(
         await window.service.wiki.cloneSubWiki(
           form.parentFolderLocation,
           form.wikiFolderName,
-          form.mainWikiToLink.name,
+          form.mainWikiToLink.wikiFolderLocation,
           form.gitRepoUrl,
           form.gitUserInfo,
           form.tagName,
@@ -76,7 +85,7 @@ export function useCloneWiki(
     form.wikiFolderName,
     form.gitRepoUrl,
     form.gitUserInfo,
-    form.mainWikiToLink.name,
+    form.mainWikiToLink.wikiFolderLocation,
     form.tagName,
     wikiCreationMessageSetter,
     t,
