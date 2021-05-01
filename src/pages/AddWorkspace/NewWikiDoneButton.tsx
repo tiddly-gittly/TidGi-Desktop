@@ -18,7 +18,7 @@ export function NewWikiDoneButton({
   const { t } = useTranslation();
   const [, hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateNewWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form);
   const onSubmit = useNewWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
-  const [logPanelOpened, logPanelSetter, progressBarOpen] = useWikiCreationProgress(wikiCreationMessage, hasError);
+  const [logPanelOpened, logPanelSetter, progressBarOpen] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {
     return (
       <CloseButton variant="contained" disabled={true}>

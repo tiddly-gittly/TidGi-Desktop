@@ -46,6 +46,7 @@ export enum WikiChannel {
   getTiddlerText = 'wiki-get-tiddler-text',
   getTiddlerTextDone = 'wiki-get-tiddler-text-done',
   syncProgress = 'wiki-sync-progress',
+  createProgress = 'wiki-create-progress',
   openTiddler = 'wiki-open-tiddler',
   sendActionMessage = 'wiki-send-action-message',
 }

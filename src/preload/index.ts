@@ -3,6 +3,7 @@ import { contextBridge, ipcRenderer } from 'electron';
 
 import './common/test';
 import './common/i18n';
+import './common/log';
 import './common/remote';
 import './common/authing-postmessage';
 import * as service from './common/services';

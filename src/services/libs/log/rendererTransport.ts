@@ -12,7 +12,7 @@ const handlers = {
   createWikiProgress: (message: string) => {
     const windowService = container.get<IWindowService>(serviceIdentifier.Window);
     const createWorkspaceWindow = windowService.get(WindowNames.addWorkspace);
-    createWorkspaceWindow?.webContents?.send('create-wiki-progress', message);
+    createWorkspaceWindow?.webContents?.send(WikiChannel.createProgress, message);
   },
   wikiSyncProgress: async (message: string) => {
     const viewService = container.get<IViewService>(serviceIdentifier.View);
@@ -30,6 +30,9 @@ export interface IInfo {
   message: string;
 }
 
+/**
+ * Send some log to renderer progress for user to read, for example, wiki creation progress.
+ */
 export default class RendererTransport extends Transport {
   log(info: IInfo, callback: () => unknown): void {
     setImmediate(() => {

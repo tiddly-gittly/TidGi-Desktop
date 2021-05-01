@@ -21,7 +21,7 @@ export function ExistedWikiDoneButton({
     form,
   );
   const onSubmit = useExistedWiki(isCreateMainWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
-  const [logPanelOpened, logPanelSetter, progressBarOpen] = useWikiCreationProgress(wikiCreationMessage, hasError);
+  const [logPanelOpened, logPanelSetter, progressBarOpen] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {
     return (
       <CloseButton variant="contained" disabled>

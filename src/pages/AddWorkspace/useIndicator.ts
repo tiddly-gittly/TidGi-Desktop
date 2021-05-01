@@ -1,6 +1,10 @@
 import { useState, useEffect } from 'react';
 
-export function useWikiCreationProgress(wikiCreationMessage?: string, hasError?: boolean): [boolean, React.Dispatch<React.SetStateAction<boolean>>, boolean] {
+export function useWikiCreationProgress(
+  wikiCreationMessageSetter: (message: string) => void,
+  wikiCreationMessage?: string,
+  hasError?: boolean,
+): [boolean, React.Dispatch<React.SetStateAction<boolean>>, boolean] {
   const [logPanelOpened, logPanelSetter] = useState<boolean>(false);
   const [progressBarOpen, progressBarOpenSetter] = useState<boolean>(false);
   useEffect(() => {
@@ -14,5 +18,12 @@ export function useWikiCreationProgress(wikiCreationMessage?: string, hasError?:
       progressBarOpenSetter(false);
     }
   }, [wikiCreationMessage, hasError]);
+  // register to WikiChannel.createProgress on component mount
+  useEffect(() => {
+    const unregister = window.log.registerWikiCreationMessage((message: string) => {
+      wikiCreationMessageSetter(message);
+    });
+    return unregister;
+  }, [wikiCreationMessageSetter]);
   return [logPanelOpened, logPanelSetter, progressBarOpen];
 }

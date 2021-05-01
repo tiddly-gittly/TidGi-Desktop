@@ -1,6 +1,6 @@
 import winston from 'winston';
 import { LOG_FOLDER } from '@/constants/paths';
-import RendererTransport from './renderer-transport';
+import RendererTransport from './rendererTransport';
 import 'winston-daily-rotate-file';
 
 export * from './wiki-output';
