@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/no-null */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
@@ -8,6 +9,7 @@ import { usePromiseValue, usePromiseValueAndSetter } from '@/helpers/useServiceV
 import { useStorageServiceUserInfo } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
 import { ISubWikiPluginContent } from '@services/wiki/update-plugin-content';
+import { INewWorkspaceConfig } from '@services/workspaces/interface';
 
 export function useIsCreateMainWorkspace(): [boolean, React.Dispatch<React.SetStateAction<boolean>>] {
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(false);
@@ -143,5 +145,17 @@ export function useWikiWorkspaceForm() {
     workspaceList,
     mainWorkspaceList,
     mainWikiToLinkIndex,
+  };
+}
+
+export function workspaceConfigFromFrom(form: IWikiWorkspaceForm, isCreateMainWorkspace: boolean, isCreateSyncedWorkspace: boolean): INewWorkspaceConfig {
+  return {
+    gitUrl: isCreateSyncedWorkspace ? form.gitRepoUrl : null,
+    isSubWiki: isCreateMainWorkspace,
+    mainWikiToLink: isCreateMainWorkspace ? form.mainWikiToLink.name : null,
+    name: form.wikiFolderName,
+    storageService: form.storageProvider,
+    tagName: isCreateMainWorkspace ? form.tagName : null,
+    port: form.wikiPort,
   };
 }

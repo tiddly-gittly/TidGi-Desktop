@@ -7,7 +7,7 @@ import { delay } from 'bluebird';
 import serviceIdentifier from '@services/serviceIdentifier';
 import i18n from '@services/libs/i18n';
 import type { IViewService } from '@services/view/interface';
-import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interface';
+import type { IWorkspaceService, IWorkspace, INewWorkspaceConfig } from '@services/workspaces/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -17,6 +17,7 @@ import { IAuthenticationService } from '@services/auth/interface';
 import { IGitService } from '@services/git/interface';
 import { IWorkspaceViewService } from './interface';
 import { lazyInject } from '@services/container';
+import { SupportedStorageServices } from '@services/types';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
@@ -55,26 +56,32 @@ export class WorkspaceView implements IWorkspaceViewService {
       try {
         const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
         // TODO: rename name to wikiPath
-        const { name: wikiPath, gitUrl: githubRepoUrl } = workspace;
+        const { name: wikiPath, gitUrl: githubRepoUrl, storageService } = workspace;
         // wait for main wiki's watch-fs plugin to be fully initialized
         // and also wait for wiki BrowserView to be able to receive command
         // eslint-disable-next-line global-require
         let workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
+        let loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
         // wait for main wiki webview loaded
         if (!workspace.isSubWiki) {
-          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
           while (workspaceMetadata.isLoading !== false) {
             // eslint-disable-next-line no-await-in-loop
             await delay(500);
             workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
           }
-          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-          if (workspaceMetadata.didFailLoadErrorMessage) {
-            throw new Error(workspaceMetadata.didFailLoadErrorMessage);
+          loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
+          if (loadFailed) {
+            throw new Error(workspaceMetadata.didFailLoadErrorMessage!);
           }
         }
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        if (!workspace.isSubWiki && !workspaceMetadata.didFailLoadErrorMessage?.length && userInfo?.accessToken) {
+        if (storageService !== SupportedStorageServices.local) {
+          // check synced wiki should have githubRepoUrl
+          if (typeof githubRepoUrl !== 'string') {
+            throw new TypeError(`githubRepoUrl is undefined in initializeAllWorkspaceView when init ${wikiPath}`);
+          }
+          if (userInfo === undefined) {
+            throw new TypeError(`userInfo is undefined in initializeAllWorkspaceView when init ${wikiPath}`);
+          }
           await this.gitService.commitAndSync(wikiPath, githubRepoUrl, userInfo);
         }
       } catch {
@@ -117,7 +124,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     );
   }
 
-  public async createWorkspaceView(workspaceOptions: IWorkspace): Promise<void> {
+  public async createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<void> {
     const newWorkspace = await this.workspaceService.create(workspaceOptions);
     const mainWindow = this.windowService.get(WindowNames.main);
     if (mainWindow !== undefined) {

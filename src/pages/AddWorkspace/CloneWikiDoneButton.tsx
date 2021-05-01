@@ -14,7 +14,7 @@ export function CloneWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorksp
   const { t } = useTranslation();
   const [, hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateCloneWiki(isCreateMainWorkspace, form);
   const onSubmit = useCloneWiki(isCreateMainWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
-  const [logPanelOpened, logPanelSetter, progressBarOpen] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
+  const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {
     return (
       <CloseButton variant="contained" disabled>
@@ -24,20 +24,20 @@ export function CloneWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorksp
   }
   return (
     <>
-      {progressBarOpen && <LinearProgress color="secondary" />}
+      {inProgressOrError && <LinearProgress color="secondary" />}
       <Snackbar open={logPanelOpened} autoHideDuration={5000} onClose={() => logPanelSetter(false)}>
         <Alert severity="info">{wikiCreationMessage}</Alert>
       </Snackbar>
 
       {isCreateMainWorkspace ? (
-        <CloseButton variant="contained" color="secondary" onClick={onSubmit}>
+        <CloseButton variant="contained" color="secondary" disabled={inProgressOrError} onClick={onSubmit}>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.CloneWiki')}
           </Typography>
           <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
         </CloseButton>
       ) : (
-        <CloseButton variant="contained" color="secondary" onClick={onSubmit}>
+        <CloseButton variant="contained" color="secondary" disabled={inProgressOrError} onClick={onSubmit}>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.CloneWiki')}
           </Typography>

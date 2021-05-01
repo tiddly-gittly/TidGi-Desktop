@@ -18,7 +18,7 @@ export type ServiceEmailTypes = `${SupportedStorageServices}-email`;
 type EmailRecord = Record<ServiceEmailTypes, string>;
 
 export type IUserInfos = {
-  /** UserName in TiddlyWiki */
+  /** Default UserName in TiddlyWiki, each wiki can have different username, but fallback to this if not specific on */
   userName: string;
 } & Partial<TokenRecord> &
   Partial<UserNameRecord> &

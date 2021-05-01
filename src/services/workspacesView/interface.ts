@@ -1,13 +1,13 @@
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 
 import { WorkspaceViewChannel } from '@/constants/channels';
-import { IWorkspace } from '@services/workspaces/interface';
+import { IWorkspace, INewWorkspaceConfig } from '@services/workspaces/interface';
 
 /**
  * Deal with operations that needs to create a workspace and a browserView at once
  */
 export interface IWorkspaceViewService {
-  createWorkspaceView(workspaceOptions: IWorkspace): Promise<void>;
+  createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<void>;
   initializeAllWorkspaceView(): Promise<void>;
   setWorkspaceView(id: string, workspaceOptions: IWorkspace): Promise<void>;
   setWorkspaceViews(workspaces: Record<string, IWorkspace>): Promise<void>;

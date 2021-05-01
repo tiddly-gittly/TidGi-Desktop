@@ -21,9 +21,10 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
+import { IAuthenticationService } from '@services/auth/interface';
 import { SupportedStorageServices } from '@services/types';
 import { lazyInject } from '@services/container';
-import { IWorkspaceService, IWorkspace, IWorkspaceMetaData } from './interface';
+import { IWorkspaceService, IWorkspace, IWorkspaceMetaData, INewWorkspaceConfig } from './interface';
 
 @injectable()
 export class Workspace implements IWorkspaceService {
@@ -38,6 +39,7 @@ export class Workspace implements IWorkspaceService {
   @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
   @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
+  @lazyInject(serviceIdentifier.Authentication) private readonly authenticationService!: IAuthenticationService;
 
   constructor() {
     this.workspaces = this.getInitWorkspacesForCache();
@@ -209,8 +211,16 @@ export class Workspace implements IWorkspaceService {
    */
   private async reactBeforeWorkspaceChanged(newWorkspaceConfig: IWorkspace): Promise<void> {
     const { id, tagName } = newWorkspaceConfig;
-    if (this.workspaces[id].isSubWiki && typeof tagName === 'string' && tagName.length > 0 && this.workspaces[id].tagName !== tagName) {
-      await this.wikiService.updateSubWikiPluginContent(this.workspaces[id].mainWikiToLink, newWorkspaceConfig, {
+    if (this.workspaces[id]?.isSubWiki && typeof tagName === 'string' && tagName.length > 0 && this.workspaces[id].tagName !== tagName) {
+      const { mainWikiToLink } = this.workspaces[id];
+      if (typeof mainWikiToLink !== 'string') {
+        throw new TypeError(
+          `mainWikiToLink is null in reactBeforeWorkspaceChanged when try to updateSubWikiPluginContent, workspacesID: ${id}\n${JSON.stringify(
+            this.workspaces,
+          )}`,
+        );
+      }
+      await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, newWorkspaceConfig, {
         ...newWorkspaceConfig,
         tagName: this.workspaces[id].tagName,
       });
@@ -352,7 +362,7 @@ export class Workspace implements IWorkspaceService {
     await this.updateWorkspaceSubject();
   }
 
-  public async create(newWorkspaceConfig: Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order'>): Promise<IWorkspace> {
+  public async create(newWorkspaceConfig: INewWorkspaceConfig): Promise<IWorkspace> {
     const newID = uuid();
 
     // find largest order
@@ -365,11 +375,20 @@ export class Workspace implements IWorkspaceService {
     }
 
     const newWorkspace: IWorkspace = {
+      userName: (await this.authenticationService.get('userName')) ?? 'TiddlyGitUser',
       ...newWorkspaceConfig,
       active: false,
       hibernated: false,
+      disableAudio: false,
+      disableNotifications: false,
+      transparentBackground: false,
+      hibernateWhenUnused: false,
       id: newID,
       order: max + 1,
+      lastUrl: null,
+      homeUrl: `0.0.0.0:${newWorkspaceConfig.port}`,
+      subWikiFolderName: 'subwiki',
+      picturePath: null,
     };
 
     await this.set(newID, newWorkspace);

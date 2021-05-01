@@ -1,4 +1,5 @@
 import { Observable, BehaviorSubject } from 'rxjs';
+import { SetOptional } from 'type-fest';
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { WorkspaceChannel } from '@/constants/channels';
 import { SupportedStorageServices } from '@services/types';
@@ -19,7 +20,7 @@ export interface IWorkspace {
   /**
    * Only useful when isSubWiki === true , this is the wiki repo that this subwiki's folder soft links to
    */
-  mainWikiToLink: string;
+  mainWikiToLink: string | null;
   /**
    * Last visited url, used for rememberLastPageVisited in preferences
    */
@@ -35,7 +36,7 @@ export interface IWorkspace {
   /**
    * The online repo to back data up to
    */
-  gitUrl: string;
+  gitUrl: string | null;
   id: string;
   /**
    * Display name for this wiki workspace
@@ -49,7 +50,10 @@ export interface IWorkspace {
   /**
    * Tag name in tiddlywiki's filesystemPath, tiddler with this tag will be save into this subwiki
    */
-  tagName: string;
+  tagName: string | null;
+  /**
+   * We basically place sub-wiki in main wiki's `tiddlers/subwiki/` folder, but the `subwiki` part can be configured. Default is `subwiki`
+   */
   subWikiFolderName: string;
   /**
    * workspace icon's path in file system
@@ -62,6 +66,7 @@ export interface IWorkspace {
    * Storage service this workspace sync to
    */
   storageService: SupportedStorageServices;
+  userName: string;
 }
 
 export interface IWorkspaceMetaData {
@@ -76,6 +81,11 @@ export interface IWorkspaceMetaData {
   badgeCount: number;
 }
 
+export type INewWorkspaceConfig = SetOptional<
+  Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order' | 'lastUrl'>,
+  'homeUrl' | 'transparentBackground' | 'picturePath' | 'disableNotifications' | 'disableAudio' | 'hibernateWhenUnused' | 'subWikiFolderName' | 'userName'
+>;
+
 /**
  * Manage workspace level preferences and workspace metadata.
  */
@@ -84,7 +94,7 @@ export interface IWorkspaceService {
   getWorkspacesAsList(): Promise<IWorkspace[]>;
   get(id: string): Promise<IWorkspace | undefined>;
   get$(id: string): Observable<IWorkspace | undefined>;
-  create(newWorkspaceConfig: Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order'>): Promise<IWorkspace>;
+  create(newWorkspaceConfig: INewWorkspaceConfig): Promise<IWorkspace>;
   getWorkspaces(): Promise<Record<string, IWorkspace>>;
   countWorkspaces(): Promise<number>;
   getMetaData: (id: string) => Promise<Partial<IWorkspaceMetaData>>;

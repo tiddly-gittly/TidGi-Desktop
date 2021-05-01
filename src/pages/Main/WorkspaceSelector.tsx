@@ -103,7 +103,7 @@ interface Props {
   hibernated?: boolean;
   id: string;
   order?: number;
-  picturePath?: string;
+  picturePath?: string | null;
   showSidebarShortcutHints?: boolean;
   transparentBackground?: boolean;
   workspaceName?: string;

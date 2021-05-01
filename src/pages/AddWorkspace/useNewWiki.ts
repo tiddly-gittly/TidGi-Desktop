@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { IWikiWorkspaceForm } from './useForm';
+import { IWikiWorkspaceForm, workspaceConfigFromFrom } from './useForm';
 
 export function useValidateNewWiki(
   isCreateMainWorkspace: boolean,
@@ -93,24 +93,17 @@ export function useNewWiki(
           await window.service.wikiGitWorkspace.initWikiGitTransaction(form.wikiFolderLocation, false, false, form.mainWikiToLink?.name);
         }
       }
+      // we are done physical creation! we can create the workspace
+      await window.service.workspaceView.createWorkspaceView(workspaceConfigFromFrom(form, isCreateMainWorkspace, isCreateSyncedWorkspace));
+
+      // wait for wiki to start and close the window now.
+
+      await window.remote.closeCurrentWindow();
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
       hasErrorSetter(true);
     }
-  }, [
-    form.parentFolderLocation,
-    form.wikiFolderName,
-    form.wikiFolderLocation,
-    form.gitRepoUrl,
-    form.gitUserInfo,
-    form.mainWikiToLink?.name,
-    form.tagName,
-    wikiCreationMessageSetter,
-    t,
-    hasErrorSetter,
-    isCreateMainWorkspace,
-    isCreateSyncedWorkspace,
-  ]);
+  }, [form, wikiCreationMessageSetter, t, hasErrorSetter, isCreateMainWorkspace, isCreateSyncedWorkspace]);
 
   return onSubmit;
 }
