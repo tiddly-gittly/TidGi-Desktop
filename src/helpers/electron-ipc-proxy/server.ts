@@ -15,6 +15,7 @@ import {
   ProxyPropertyType,
   ApplySubscribeRequest,
 } from './common';
+import { logger } from '@services/libs/log';
 
 // TODO: make it to be able to use @decorator, instead of write a description json. We can defer the setup of ipc handler to make this possible.
 const registrations: { [channel: string]: ProxyServerHandler | null } = {};
@@ -46,6 +47,13 @@ export function registerProxy<T>(target: T, descriptor: ProxyDescriptor, transpo
       })
       .catch((error) => {
         if (sender) {
+          let stringifiedRequest = '';
+          try {
+            stringifiedRequest = request ? JSON.stringify(request) : '';
+          } catch {
+            stringifiedRequest = request.type;
+          }
+          logger.error(`E-0 IPC Error on ${channel} ${stringifiedRequest} ${error.message} ${error.stack}`);
           sender.send(correlationId, { type: ResponseType.Error, error: Errio.stringify(error) });
           sender.removeListener('destroyed', nullify);
         }

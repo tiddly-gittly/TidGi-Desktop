@@ -124,7 +124,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     );
   }
 
-  public async createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<void> {
+  public async createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<IWorkspace> {
     const newWorkspace = await this.workspaceService.create(workspaceOptions);
     const mainWindow = this.windowService.get(WindowNames.main);
     if (mainWindow !== undefined) {
@@ -138,6 +138,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (typeof workspaceOptions.picturePath === 'string') {
       await this.workspaceService.setWorkspacePicture(newWorkspace.id, workspaceOptions.picturePath);
     }
+    return newWorkspace;
   }
 
   public async setWorkspaceView(id: string, workspaceOptions: IWorkspace): Promise<void> {

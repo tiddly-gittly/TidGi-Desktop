@@ -7,7 +7,7 @@ import { IWorkspace, INewWorkspaceConfig } from '@services/workspaces/interface'
  * Deal with operations that needs to create a workspace and a browserView at once
  */
 export interface IWorkspaceViewService {
-  createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<void>;
+  createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<IWorkspace>;
   initializeAllWorkspaceView(): Promise<void>;
   setWorkspaceView(id: string, workspaceOptions: IWorkspace): Promise<void>;
   setWorkspaceViews(workspaces: Record<string, IWorkspace>): Promise<void>;

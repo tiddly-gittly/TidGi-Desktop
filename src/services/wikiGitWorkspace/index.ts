@@ -29,6 +29,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
 
   public initWikiGitTransaction = async (
+    workspaceID: string,
     wikiFolderPath: string,
     isMainWiki: boolean,
     isSyncedWiki: boolean,
@@ -48,8 +49,15 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       } else {
         await this.gitService.initWikiGit(wikiFolderPath, isMainWiki, false);
       }
+      const workspace = await this.workspaceService.get(workspaceID);
+      if (workspace === undefined) {
+        throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
+      }
+      await this.wikiService.wikiStartup(workspace);
     } catch (error) {
-      logger.info(error);
+      const errorMessage = `initWikiGitTransaction failed, ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+      logger.crit(errorMessage);
+      await this.workspaceService.remove(workspaceID);
       try {
         if (isMainWiki) {
           await this.wikiService.removeWiki(wikiFolderPath);
@@ -59,11 +67,11 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       } catch (error_) {
         throw new InitWikiGitRevertError((error_ as Error).message);
       }
-      throw new InitWikiGitError((error as Error).message);
+      throw new InitWikiGitError(errorMessage);
     }
   };
 
-  public removeWorkspace = async (id: string): Promise<void> => {
+  public removeWorkspace = async (workspaceID: string): Promise<void> => {
     const mainWindow = this.windowService.get(WindowNames.main);
     if (mainWindow !== undefined) {
       const { response } = await dialog.showMessageBox(mainWindow, {
@@ -74,31 +82,28 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       });
       try {
         if (response === 0 || response === 1) {
-          const workspace = await this.workspaceService.get(id);
+          const workspace = await this.workspaceService.get(workspaceID);
           if (workspace === undefined) {
-            throw new Error(`Need to get workspace with id ${id} but failed`);
+            throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
           }
           await this.wikiService.stopWatchWiki(workspace.name).catch((error: Error) => logger.error(error.message, error));
           await this.wikiService.stopWiki(workspace.name).catch((error: Error) => logger.error(error.message, error));
-          await this.wikiService.removeWiki(workspace.name, workspace.isSubWiki ? workspace.mainWikiToLink : undefined, response === 0);
-          await this.workspaceViewService.removeWorkspaceView(id);
-          await this.menuService.buildMenu();
-          // restart the main wiki to load content from private wiki
-          const mainWikiPath = workspace.mainWikiToLink;
-          const mainWorkspace = await this.workspaceService.getByName(mainWikiPath);
-          if (mainWorkspace === undefined) {
-            throw new Error(`Need to get mainWorkspace with name ${mainWikiPath} but failed`);
-          }
-          const userName = (await this.authService.get('userName')) ?? '';
-          await this.wikiService.stopWiki(mainWikiPath);
-          await this.wikiService.startWiki(mainWikiPath, mainWorkspace.port, userName);
-          // remove folderName from fileSystemPaths
-          if (workspace.isSubWiki) {
-            await this.wikiService.updateSubWikiPluginContent(mainWikiPath, undefined, {
+          const { name, isSubWiki, mainWikiToLink } = workspace;
+          if (isSubWiki) {
+            if (mainWikiToLink === null) {
+              throw new Error(`workspace.mainWikiToLink is null in WikiGitWorkspace.removeWorkspace ${JSON.stringify(workspace)}`);
+            }
+            await this.wikiService.removeWiki(name, mainWikiToLink, response === 0);
+            // remove folderName from fileSystemPaths
+            await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, undefined, {
               ...workspace,
-              subWikiFolderName: path.basename(workspace.name),
+              subWikiFolderName: path.basename(name),
             });
+          } else {
+            await this.wikiService.removeWiki(name);
           }
+          await this.workspaceViewService.removeWorkspaceView(workspaceID);
+          await this.wikiService.wikiStartup(workspace);
         }
       } catch (error) {
         logger.error((error as Error).message, error);

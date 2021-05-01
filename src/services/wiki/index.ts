@@ -27,6 +27,7 @@ import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginCont
 import { IWikiService } from './interface';
 import { WikiChannel } from '@/constants/channels';
 import { CopyWikiTemplateError } from './error';
+import { SupportedStorageServices } from '@services/types';
 
 @injectable()
 export class Wiki implements IWikiService {
@@ -160,7 +161,7 @@ export class Wiki implements IWikiService {
       });
       await delay(100);
     } catch (error) {
-      logger.info(`Wiki-worker have error ${error.message} when try to stop`, { function: 'stopWiki' });
+      logger.info(`Wiki-worker have error ${(error as Error).message} when try to stop`, { function: 'stopWiki' });
       await worker.terminate();
     }
     // delete this.wikiWorkers[homePath];
@@ -349,25 +350,26 @@ export class Wiki implements IWikiService {
       // do nothing
     }
 
-    const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
+    const { name: wikiPath, gitUrl: githubRepoUrl, port, isSubWiki, id, mainWikiToLink, storageService } = workspace;
+    const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const userName = (workspace.userName || (await this.authService.get('userName'))) ?? '';
-    const { name: wikiPath, gitUrl: githubRepoUrl, port, isSubWiki, id, mainWikiToLink } = workspace;
+    const tryWatchForSync = async (watchPath?: string): Promise<void> => {
+      if (storageService !== SupportedStorageServices.local && typeof githubRepoUrl === 'string' && userInfo !== undefined) {
+        await this.watchWikiForDebounceCommitAndSync(wikiPath, githubRepoUrl, userInfo, watchPath);
+      }
+    };
     // if is main wiki
     if (!isSubWiki) {
       this.setWikiStarted(wikiPath);
       await this.startNodeJSWiki(wikiPath, port, userName, id);
-      if (userInfo !== undefined) {
-        await this.watchWiki(wikiPath, githubRepoUrl, userInfo, path.join(wikiPath, TIDDLERS_PATH));
-      }
+      // sync to cloud
+      await tryWatchForSync(path.join(wikiPath, TIDDLERS_PATH));
     } else {
       // if is private repo wiki
-      if (userInfo !== undefined) {
-        await this.watchWiki(wikiPath, githubRepoUrl, userInfo);
-      }
-      // if we are creating a sub-wiki, restart the main wiki to load content from private wiki
-      if (!this.justStartedWiki[mainWikiToLink]) {
+      // if we are creating a sub-wiki just now, restart the main wiki to load content from private wiki
+      if (typeof mainWikiToLink === 'string' && !this.justStartedWiki[mainWikiToLink]) {
         // TODO: change getByName to getByMainWikiPath, get by mainWikiPath
         const mainWorkspace = await this.workspaceService.getByName(mainWikiToLink);
         if (mainWorkspace === undefined) {
@@ -376,10 +378,9 @@ export class Wiki implements IWikiService {
         await this.stopWatchWiki(mainWikiToLink);
         await this.stopWiki(mainWikiToLink);
         await this.startWiki(mainWikiToLink, mainWorkspace.port, userName);
-        if (userInfo !== undefined) {
-          await this.watchWiki(mainWikiToLink, githubRepoUrl, userInfo);
-        }
       }
+      // sync to cloud
+      await tryWatchForSync();
     }
   }
 
@@ -394,13 +395,13 @@ export class Wiki implements IWikiService {
    */
   public async startNodeJSWiki(homePath: string, port: number, userName: string, workspaceID: string): Promise<void> {
     if (typeof homePath !== 'string' || homePath.length === 0 || !path.isAbsolute(homePath)) {
-      const errorMessage = i18n.t('Dialog.NeedCorrectTiddlywikiFolderPath');
+      const errorMessage = i18n.t('Dialog.NeedCorrectTiddlywikiFolderPath') + homePath;
       console.error(errorMessage);
       const mainWindow = this.windowService.get(WindowNames.main);
       if (mainWindow !== undefined) {
         await dialog.showMessageBox(mainWindow, {
           title: i18n.t('Dialog.PathPassInCantUse'),
-          message: errorMessage + homePath,
+          message: errorMessage,
           buttons: ['OK'],
           cancelId: 0,
           defaultId: 0,
@@ -441,11 +442,18 @@ export class Wiki implements IWikiService {
   /**
    * watch wiki change and reset git sync count down
    */
-  public async watchWiki(wikiRepoPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, wikiFolderPath = wikiRepoPath): Promise<void> {
+  public async watchWikiForDebounceCommitAndSync(
+    wikiRepoPath: string,
+    githubRepoUrl: string,
+    userInfo: IGitUserInfos,
+    wikiFolderPath = wikiRepoPath,
+  ): Promise<void> {
     if (!fs.existsSync(wikiRepoPath)) {
       logger.error('Folder not exist in watchFolder()', { wikiRepoPath, wikiFolderPath, githubRepoUrl });
       return;
     }
+    // simple lock to prevent running two instance of commit task
+    let lock = false;
     const onChange = debounce((fileName: string): void => {
       if (lock) {
         logger.info(`${fileName} changed, but lock is on, so skip`);
@@ -458,8 +466,6 @@ export class Wiki implements IWikiService {
         lock = false;
       });
     }, 1000);
-    // simple lock to prevent running two instance of commit task
-    let lock = false;
     // load ignore config from .gitignore located in the wiki repo folder
     const gitIgnoreFilePath = path.join(wikiRepoPath, '.gitignore');
     let gitignoreFile = '';

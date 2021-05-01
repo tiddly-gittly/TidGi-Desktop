@@ -151,11 +151,12 @@ export function useWikiWorkspaceForm() {
 export function workspaceConfigFromFrom(form: IWikiWorkspaceForm, isCreateMainWorkspace: boolean, isCreateSyncedWorkspace: boolean): INewWorkspaceConfig {
   return {
     gitUrl: isCreateSyncedWorkspace ? form.gitRepoUrl : null,
-    isSubWiki: isCreateMainWorkspace,
-    mainWikiToLink: isCreateMainWorkspace ? form.mainWikiToLink.name : null,
+    isSubWiki: !isCreateMainWorkspace,
+    mainWikiToLink: !isCreateMainWorkspace ? form.mainWikiToLink.name : null,
     name: form.wikiFolderName,
     storageService: form.storageProvider,
-    tagName: isCreateMainWorkspace ? form.tagName : null,
+    tagName: !isCreateMainWorkspace ? form.tagName : null,
     port: form.wikiPort,
+    wikiFolderLocation: form.wikiFolderLocation,
   };
 }

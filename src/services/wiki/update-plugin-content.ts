@@ -37,25 +37,31 @@ export function updateSubWikiPluginContent(
     if (oldConfig === undefined) {
       throw new Error('Both newConfig and oldConfig are not provided in the updateSubWikiPluginContent() for\n' + JSON.stringify(mainWikiPath));
     }
+    const { tagName, subWikiFolderName } = oldConfig;
+    if (typeof tagName !== 'string' || subWikiFolderName === undefined) {
+      throw new Error('tagName or subWikiFolderName is not string for in the updateSubWikiPluginContent() for\n' + JSON.stringify(mainWikiPath));
+    }
     // find the old line, delete it
-    const newFileSystemPaths = FileSystemPaths.filter(
-      (line) => !(line.includes(getMatchPart(oldConfig.tagName)) && line.includes(getPathPart(oldConfig.subWikiFolderName))),
-    );
+    const newFileSystemPaths = FileSystemPaths.filter((line) => !(line.includes(getMatchPart(tagName)) && line.includes(getPathPart(subWikiFolderName))));
 
     newFileSystemPathsFile = `${header.join('\n')}\n\n${newFileSystemPaths.join('\n')}`;
   } else {
     // if this config already exists, just return
-    if (FileSystemPaths.some((line) => line.includes(getMatchPart(newConfig.tagName)) && line.includes(getPathPart(newConfig.subWikiFolderName)))) {
+    const { tagName, subWikiFolderName } = newConfig;
+    if (typeof tagName !== 'string' || subWikiFolderName === undefined) {
+      throw new Error('tagName or subWikiFolderName is not string for in the updateSubWikiPluginContent() for\n' + JSON.stringify(mainWikiPath));
+    }
+    if (FileSystemPaths.some((line) => line.includes(getMatchPart(tagName)) && line.includes(getPathPart(subWikiFolderName)))) {
       return;
     }
     // prepare new line
-    const { tagName, subWikiFolderName } = newConfig;
     const newConfigLine = getMatchPart(tagName) + getPathPart(subWikiFolderName);
     // if we are just to add a new config, just append it to the end of the file
-    if (oldConfig !== undefined) {
+    const oldConfigTagName = oldConfig?.tagName;
+    if (oldConfig !== undefined && typeof oldConfigTagName === 'string') {
       // find the old line, replace it with the new line
       const newFileSystemPaths = FileSystemPaths.map((line) => {
-        if (line.includes(getMatchPart(oldConfig.tagName)) && line.includes(getPathPart(oldConfig.subWikiFolderName))) {
+        if (line.includes(getMatchPart(oldConfigTagName)) && line.includes(getPathPart(oldConfig.subWikiFolderName))) {
           return newConfigLine;
         }
         return line;

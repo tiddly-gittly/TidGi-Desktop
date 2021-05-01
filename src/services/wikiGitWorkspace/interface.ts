@@ -7,8 +7,9 @@ import { IGitUserInfos } from '@services/git/interface';
  */
 export interface IWikiGitWorkspaceService {
   /** call git.initWikiGit , and rollback (delete created wiki folder) if it failed */
-  initWikiGitTransaction(wikiFolderPath: string, isMainWiki: false, isSyncedWiki: false, mainWikiToUnLink: string): Promise<void>;
+  initWikiGitTransaction(workspaceID: string, wikiFolderPath: string, isMainWiki: false, isSyncedWiki: false, mainWikiToUnLink: string): Promise<void>;
   initWikiGitTransaction(
+    workspaceID: string,
     wikiFolderPath: string,
     isMainWiki: false,
     isSyncedWiki: true,
@@ -16,8 +17,15 @@ export interface IWikiGitWorkspaceService {
     userInfo: IGitUserInfos,
     mainWikiToUnLink: string,
   ): Promise<void>;
-  initWikiGitTransaction(wikiFolderPath: string, isMainWiki: true, isSyncedWiki: false): Promise<void>;
-  initWikiGitTransaction(wikiFolderPath: string, isMainWiki: true, isSyncedWiki: true, githubRepoUrl: string, userInfo: IGitUserInfos): Promise<void>;
+  initWikiGitTransaction(workspaceID: string, wikiFolderPath: string, isMainWiki: true, isSyncedWiki: false): Promise<void>;
+  initWikiGitTransaction(
+    workspaceID: string,
+    wikiFolderPath: string,
+    isMainWiki: true,
+    isSyncedWiki: true,
+    githubRepoUrl: string,
+    userInfo: IGitUserInfos,
+  ): Promise<void>;
   removeWorkspace: (id: string) => Promise<void>;
 }
 export const WikiGitWorkspaceServiceIPCDescriptor = {

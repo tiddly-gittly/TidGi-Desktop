@@ -28,7 +28,7 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
       {...attributes}
       {...listeners}
       onClick={async () => {
-        if (isSubWiki) {
+        if (isSubWiki && typeof tagName === 'string') {
           await window.service.wiki.requestOpenTiddlerInWiki(tagName);
         } else {
           const activeWorkspace = await window.service.workspace.getActiveWorkspace();

@@ -32,7 +32,7 @@ export interface IWikiService {
   ): Promise<void>;
   wikiStartup(workspace: IWorkspace): Promise<void>;
   startNodeJSWiki(homePath: string, port: number, userName: string, workspaceID: string): Promise<void>;
-  watchWiki(wikiRepoPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, wikiFolderPath?: string): Promise<void>;
+  watchWikiForDebounceCommitAndSync(wikiRepoPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, wikiFolderPath?: string): Promise<void>;
   stopWatchWiki(wikiRepoPath: string): Promise<void>;
   stopWatchAllWiki(): Promise<void>;
 }
@@ -55,7 +55,7 @@ export const WikiServiceIPCDescriptor = {
     cloneSubWiki: ProxyPropertyType.Function,
     wikiStartup: ProxyPropertyType.Function,
     startNodeJSWiki: ProxyPropertyType.Function,
-    watchWiki: ProxyPropertyType.Function,
+    watchWikiForDebounceCommitAndSync: ProxyPropertyType.Function,
     stopWatchWiki: ProxyPropertyType.Function,
     stopWatchAllWiki: ProxyPropertyType.Function,
   },

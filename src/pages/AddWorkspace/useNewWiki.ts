@@ -71,17 +71,30 @@ export function useNewWiki(
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     hasErrorSetter(false);
     try {
+      // we first create the workspace
+      const newWorkspace = await window.service.workspaceView.createWorkspaceView(
+        workspaceConfigFromFrom(form, isCreateMainWorkspace, isCreateSyncedWorkspace),
+      );
+      // then create the wiki and git
       if (isCreateMainWorkspace) {
         await window.service.wiki.copyWikiTemplate(form.parentFolderLocation, form.wikiFolderName);
         if (isCreateSyncedWorkspace) {
-          await window.service.wikiGitWorkspace.initWikiGitTransaction(form.wikiFolderLocation, true, true, form.gitRepoUrl, form.gitUserInfo!);
+          await window.service.wikiGitWorkspace.initWikiGitTransaction(
+            newWorkspace.id,
+            form.wikiFolderLocation,
+            true,
+            true,
+            form.gitRepoUrl,
+            form.gitUserInfo!,
+          );
         } else {
-          await window.service.wikiGitWorkspace.initWikiGitTransaction(form.wikiFolderLocation, true, false);
+          await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspace.id, form.wikiFolderLocation, true, false);
         }
       } else {
         await window.service.wiki.createSubWiki(form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink?.name, form.tagName);
         if (isCreateSyncedWorkspace) {
           await window.service.wikiGitWorkspace.initWikiGitTransaction(
+            newWorkspace.id,
             form.wikiFolderLocation,
             false,
             true,
@@ -90,14 +103,10 @@ export function useNewWiki(
             form.mainWikiToLink?.name,
           );
         } else {
-          await window.service.wikiGitWorkspace.initWikiGitTransaction(form.wikiFolderLocation, false, false, form.mainWikiToLink?.name);
+          await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspace.id, form.wikiFolderLocation, false, false, form.mainWikiToLink?.name);
         }
       }
-      // we are done physical creation! we can create the workspace
-      await window.service.workspaceView.createWorkspaceView(workspaceConfigFromFrom(form, isCreateMainWorkspace, isCreateSyncedWorkspace));
-
       // wait for wiki to start and close the window now.
-
       await window.remote.closeCurrentWindow();
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
