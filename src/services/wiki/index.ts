@@ -211,7 +211,7 @@ export class Wiki implements IWikiService {
     }
   }
 
-  public async createWiki(newFolderPath: string, folderName: string): Promise<void> {
+  private async createWiki(newFolderPath: string, folderName: string): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartUsingTemplateToCreateWiki'));
     const newWikiPath = path.join(newFolderPath, folderName);
     if (!(await fs.pathExists(newFolderPath))) {

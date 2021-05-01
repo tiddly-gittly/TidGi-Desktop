@@ -74,11 +74,11 @@ export class Git implements IGitService {
     const logProgress = (message: string): unknown => logger.notice(message, { handler: 'createWikiProgress', function: 'initWikiGit' });
     const logInfo = (message: string): unknown => logger.info(message, { function: 'initWikiGit' });
 
+    logProgress(i18n.t('Log.StartGitInitialization'));
     const { gitUserName, email } = userInfo ?? defaultGitInfo;
     await GitProcess.exec(['init'], wikiFolderPath);
     await gitSync.commitFiles(wikiFolderPath, gitUserName, email);
 
-    logProgress(i18n.t('Log.StartGitInitialization'));
     // if we are config local wiki, we are done here
     if (isSyncedWiki !== true) {
       logProgress(i18n.t('Log.GitRepositoryConfigurationFinished'));

@@ -18,7 +18,6 @@ export interface IWikiService {
   requestWikiSendActionMessage(actionMessage: string): Promise<void>;
   requestOpenTiddlerInWiki(tiddlerName: string): Promise<void>;
   linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
-  createWiki(newFolderPath: string, folderName: string): Promise<void>;
   createSubWiki(newFolderPath: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
@@ -49,7 +48,6 @@ export const WikiServiceIPCDescriptor = {
     requestWikiSendActionMessage: ProxyPropertyType.Function,
     requestOpenTiddlerInWiki: ProxyPropertyType.Function,
     linkWiki: ProxyPropertyType.Function,
-    createWiki: ProxyPropertyType.Function,
     createSubWiki: ProxyPropertyType.Function,
     removeWiki: ProxyPropertyType.Function,
     ensureWikiExist: ProxyPropertyType.Function,
