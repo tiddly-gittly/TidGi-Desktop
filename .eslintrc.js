@@ -86,6 +86,7 @@ module.exports = {
   extends: [
     'eslint:recommended',
     'standard',
+    'plugin:security/recommended',
     'plugin:react/recommended',
     'plugin:unicorn/recommended',
     'plugin:prettier/recommended',
@@ -98,8 +99,9 @@ module.exports = {
     'plugin:import/typescript',
     'plugin:react-hooks/recommended',
     'prettier',
+    'plugin:security-node/recommended',
   ],
-  plugins: ['@typescript-eslint/eslint-plugin', 'prettier', 'react', 'html', 'react', 'unicorn', 'import', 'react-hooks'],
+  plugins: ['@typescript-eslint/eslint-plugin', 'prettier', 'react', 'html', 'react', 'unicorn', 'import', 'react-hooks', 'security', 'security-node'],
   env: {
     browser: true,
     es6: true,
