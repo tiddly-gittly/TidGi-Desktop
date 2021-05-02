@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prefer-module */
 /* eslint-disable @typescript-eslint/no-var-requires */
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const CspHtmlWebpackPlugin = require('csp-html-webpack-plugin');

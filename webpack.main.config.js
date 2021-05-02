@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prefer-module */
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { webpackAlias } = require('./webpack.alias');
 const plugins = require('./webpack.plugins');
