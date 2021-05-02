@@ -166,7 +166,12 @@
     "SynchronizationFinish": "Synchronization complete",
     "UsingUrlAndUsername": "Using Git Url {{githubRepoUrl}} with username {{username}} and accessToken {{accessToken}}",
     "GitTokenMissing": "Git token missing",
-    "MainWindowMissing": "This program can't access main window data, can't run normally."
+    "MainWindowMissing": "This program can't access main window data, can't run normally.",
+    "AddingFiles": "Start Git Add your files that needs backed up",
+    "AddComplete": "Git Add successful",
+    "CheckingLocalGitRepoSanity": "Checking whether the local Git repository is properly initialized",
+    "CheckingLocalSyncState": "Detecting whether the local state needs to be synchronized to the cloud",
+    "CheckingRebaseStatus": "Analyzing the rebase processing plan"
   },
   "Cancel": "Cancel",
   "Preference": {
