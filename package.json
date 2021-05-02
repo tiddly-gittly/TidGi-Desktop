@@ -25,6 +25,7 @@
         "asar": true,
         "extraResource": [
           "localization",
+          "template/wiki",
           ".webpack/main/wiki-worker.js"
         ],
         "mac": {
@@ -200,7 +201,7 @@
     "graphql-hooks": "5.1.1",
     "if-env": "1.0.4",
     "image-webpack-loader": "7.0.1",
-    "node-loader": "2.0.0",
+    "node-loader": "1.0.3",
     "prettier": "2.2.1",
     "react": "17.0.2",
     "react-ace": "9.4.0",

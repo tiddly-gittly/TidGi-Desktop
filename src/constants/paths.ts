@@ -14,7 +14,7 @@ export const REACT_PATH = MAIN_WINDOW_WEBPACK_ENTRY;
 // .app/Contents/Resources/wiki/
 export const TIDDLYWIKI_TEMPLATE_FOLDER_PATH = isDevelopmentOrTest
   ? path.resolve(sourcePath, '..', 'template', 'wiki')
-  : path.resolve(process.resourcesPath, '..', 'wiki');
+  : path.resolve(process.resourcesPath, 'wiki');
 export const TIDDLERS_PATH = 'tiddlers';
 export const ICON_PATH = isDevelopmentOrTest ? path.resolve(buildResourcePath, 'icon.png') : `file://${path.resolve(__dirname, '..', 'icon.png')}`;
 export const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';
