@@ -48,6 +48,7 @@ module.exports = {
         },
       },
     ],
+    'unicorn/prefer-node-protocol': 'off',
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/method-signature-style': 'off',
     'unicorn/no-array-reduce': 'off',
