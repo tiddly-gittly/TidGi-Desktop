@@ -166,6 +166,7 @@
     "@types/uuid": "8.3.0",
     "@typescript-eslint/eslint-plugin": "4.22.0",
     "@typescript-eslint/parser": "4.22.0",
+    "@zeit/webpack-asset-relocator-loader": "^0.8.0",
     "ace-builds": "1.4.12",
     "chai": "4.3.4",
     "circular-dependency-plugin": "5.2.2",
