@@ -9,7 +9,7 @@
     "test-without-package": "mkdir -p logs && cross-env NODE_ENV=test cucumber-js",
     "package": "electron-forge package",
     "make": "cross-env NODE_ENV=production electron-forge make",
-    "clean": "rimraf ./out ./settings-dev ./wiki-dev ./logs && mkdir ./wiki-dev",
+    "clean": "rimraf ./out ./settings-dev ./wiki-dev ./logs && mkdir \"./wiki-dev\"",
     "lint": "eslint ./src --ext js",
     "lint:fix": "eslint ./src --ext js --fix",
     "installType": "typesync",
