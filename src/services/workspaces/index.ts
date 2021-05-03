@@ -8,9 +8,6 @@ import { v4 as uuid } from 'uuid';
 import path from 'path';
 import fsExtra from 'fs-extra';
 import Jimp from 'jimp';
-import isUrl from 'is-url';
-import download from 'download';
-import tmp from 'tmp';
 import { Observable, BehaviorSubject } from 'rxjs';
 import { map } from 'rxjs/operators';
 
@@ -301,19 +298,7 @@ export class Workspace implements IWorkspaceService {
 
     const destinationPicturePath = path.join(app.getPath('userData'), 'pictures', `${pictureID}.png`);
 
-    // store new picture to fs
-    let picturePath;
-    if (isUrl(sourcePicturePath)) {
-      const temporaryObject = tmp.dirSync();
-      const temporaryPath = temporaryObject.name;
-      picturePath = await download(sourcePicturePath, temporaryPath, {
-        filename: 'e.png',
-      }).then(() => path.join(temporaryPath, 'e.png'));
-    } else {
-      picturePath = sourcePicturePath;
-    }
-
-    const newImage = await Jimp.read(picturePath);
+    const newImage = await Jimp.read(sourcePicturePath);
     await new Promise((resolve) => {
       newImage.clone().resize(128, 128).quality(100).write(destinationPicturePath, resolve);
     });
