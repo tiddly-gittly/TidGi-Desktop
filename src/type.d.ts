@@ -3,6 +3,20 @@ declare module 'errio' {
   export function stringify(error: Error): string;
   export function register(error: ErrorConstructor): void;
 }
+declare module '@tiddlygit/tiddlywiki' {
+  export interface I$TW {
+    boot: { argv: string[]; startup: (options: { callback: () => unknown }) => void };
+  }
+  export function TiddlyWiki(): I$TW;
+}
+declare module 'threads-plugin' {
+  const value: any;
+  export default value;
+}
+declare module 'webpack2-externals-plugin' {
+  const value: any;
+  export default value;
+}
 declare module '*.png' {
   const value: string;
   export default value;

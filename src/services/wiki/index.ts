@@ -2,11 +2,12 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
 import { injectable } from 'inversify';
+import { PromiseValue } from 'type-fest';
 import { delay } from 'bluebird';
 import fs from 'fs-extra';
 import path from 'path';
-import { Worker } from 'worker_threads';
-import { isElectronDevelopment } from '@/constants/isElectronDevelopment';
+import { spawn, Thread, Worker } from 'threads';
+import type { WorkerEvent } from 'threads/dist/types/master';
 import { dialog } from 'electron';
 import chokidar from 'chokidar';
 import { trim, compact, debounce } from 'lodash';
@@ -19,7 +20,7 @@ import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interfa
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { logger, wikiOutputToFile, refreshOutputFile } from '@services/libs/log';
+import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { lazyInject } from '@services/container';
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@/constants/paths';
@@ -84,15 +85,8 @@ export class Wiki implements IWikiService {
   };
 
   // key is same to workspace wikiFolderLocation, so we can get this worker by workspace wikiFolderLocation
-  // { [wikiFolderLocation: string]: Worker }
-  private wikiWorkers: Record<string, Worker> = {};
-
-  // don't forget to config option in `dist.js` https://github.com/electron/electron/issues/18540#issuecomment-652430001
-  // to copy all worker.js and its local dependence to `process.resourcesPath`
-  // On dev, this file will be in .webpack/main/index.js ,so:
-  private readonly WIKI_WORKER_PATH = isElectronDevelopment
-    ? path.resolve('./.webpack/main/wiki-worker.ts')
-    : path.resolve(process.resourcesPath, 'wiki-worker.ts');
+  // { [wikiFolderLocation: string]: ArbitraryThreadType }
+  private wikiWorkers: Record<string, PromiseValue<ReturnType<typeof spawn>>> = {};
 
   public async startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void> {
     // use Promise to handle worker callbacks
@@ -104,30 +98,28 @@ export class Wiki implements IWikiService {
     }
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
     const workerData = { homePath, userName, tiddlyWikiPort };
-    const worker = new Worker(this.WIKI_WORKER_PATH, { workerData });
+    const worker = await spawn(new Worker('./wiki-worker.ts'));
     this.wikiWorkers[homePath] = worker;
     const loggerMeta = { worker: 'NodeJSWiki', homePath };
     const loggerForWorker = this.logMessage(loggerMeta);
     let started = false;
-    // redirect stdout to file
-    const logFileName = workspace.wikiFolderLocation.replace(/[/\\]/g, '_');
-    refreshOutputFile(logFileName);
-    wikiOutputToFile(logFileName, worker.stdout);
-    wikiOutputToFile(logFileName, worker.stderr);
     return await new Promise<void>((resolve, reject) => {
-      worker.on('error', (error: Error) => {
+      Thread.errors(worker).subscribe((error) => {
         logger.error(error.message, { ...loggerMeta, ...error });
         reject(error);
       });
-      worker.on('exit', (code: number) => {
-        if (code !== 0) {
+      Thread.events(worker).subscribe((event: WorkerEvent) => {
+        if (event.type === 'message') {
+          loggerForWorker(event.data);
+          logger.debug(event.data, loggerMeta);
+        } else if (event.type === 'termination') {
           delete this.wikiWorkers[homePath];
+          logger.warning(`NodeJSWiki ${homePath} Worker stopped`, loggerMeta);
+          resolve();
         }
-        logger.warning(`NodeJSWiki ${homePath} Worker stopped with exit code ${code}.`, loggerMeta);
-        resolve();
       });
-      worker.on('message', (message: string | { type: string; payload?: string | { message: string; handler: string } }) => {
-        loggerForWorker(message);
+
+      return worker.startNodeJSWiki(workerData).then(() => {
         if (!started) {
           started = true;
           setTimeout(async () => {
@@ -154,15 +146,11 @@ export class Wiki implements IWikiService {
       return await Promise.resolve();
     }
     try {
-      await new Promise((resolve, reject) => {
-        worker.postMessage({ type: 'command', message: 'exit' });
-        worker.once('exit', resolve);
-        worker.once('error', reject);
-      });
+      await Thread.terminate(worker);
       await delay(100);
     } catch (error) {
       logger.info(`Wiki-worker have error ${(error as Error).message} when try to stop`, { function: 'stopWiki' });
-      await worker.terminate();
+      // await worker.terminate();
     }
     // delete this.wikiWorkers[homePath];
     logger.info(`Wiki-worker for ${homePath} stopped`, { function: 'stopWiki' });

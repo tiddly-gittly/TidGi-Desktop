@@ -94,7 +94,7 @@ module.exports = [
           ],
         }),
         compilerOptions: {
-          module: 'es2015',
+          module: 'esnext',
         },
       },
     },

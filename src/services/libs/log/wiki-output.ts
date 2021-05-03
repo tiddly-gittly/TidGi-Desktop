@@ -3,9 +3,13 @@ import fs from 'fs-extra';
 
 import { LOG_FOLDER } from '@/constants/paths';
 
-export function wikiOutputToFile(wikiName: string, stream: NodeJS.ReadableStream): void {
-  const logFilePath = path.join(LOG_FOLDER, `${wikiName}.log`);
-  stream.pipe(fs.createWriteStream(logFilePath));
+function getWikiLogFilePath(wikiName: string): string {
+  const logFileName = wikiName.replace(/[/\\]/g, '_');
+  const logFilePath = path.join(LOG_FOLDER, `${logFileName}.log`);
+  return logFilePath;
+}
+export function wikiOutputToFile(wikiName: string, message: string): void {
+  fs.appendFileSync(getWikiLogFilePath(wikiName), message);
 }
 
 /**
@@ -13,7 +17,7 @@ export function wikiOutputToFile(wikiName: string, stream: NodeJS.ReadableStream
  * @param {string} wikiName
  */
 export function refreshOutputFile(wikiName: string): void {
-  const logFilePath = path.join(LOG_FOLDER, `${wikiName}.log`);
+  const logFilePath = getWikiLogFilePath(wikiName);
   if (fs.existsSync(logFilePath)) {
     fs.removeSync(logFilePath);
   }

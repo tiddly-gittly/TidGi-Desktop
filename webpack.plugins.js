@@ -3,18 +3,18 @@
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const CspHtmlWebpackPlugin = require('csp-html-webpack-plugin');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
+const path = require('path');
 const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
+const ThreadsPlugin = require('threads-plugin');
+const ExternalsPlugin = require('webpack2-externals-plugin');
 
 exports.main = [
   // we only need one instance of TsChecker, it will check main and renderer all together
   new ForkTsCheckerWebpackPlugin(),
   new CopyPlugin({
     // to is relative to ./.webpack/main/
-    patterns: [
-      { from: 'src/services/wiki/wiki-worker.js', to: 'wiki-worker.js' },
-      { from: 'localization', to: 'localization' },
-    ],
+    patterns: [{ from: 'localization', to: 'localization' }],
   }),
   new CircularDependencyPlugin({
     // exclude detection of files based on a RegExp
@@ -29,6 +29,15 @@ exports.main = [
   }),
   new webpack.DefinePlugin({
     'process.env.NODE_ENV': `"${process.env.NODE_ENV ?? 'production'}"`,
+  }),
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  new ExternalsPlugin({
+    type: 'commonjs',
+    include: path.join(__dirname, 'node_modules'),
+  }),
+  new ThreadsPlugin({
+    target: 'electron-node-worker',
+    plugins: ['ExternalsPlugin'],
   }),
 ];
 
@@ -52,4 +61,6 @@ exports.renderer = [
       },
     },
   ),
+  // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+  new ThreadsPlugin(),
 ];
