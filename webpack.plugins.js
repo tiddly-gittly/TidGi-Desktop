@@ -33,7 +33,7 @@ exports.main = [
   // eslint-disable-next-line @typescript-eslint/no-unsafe-call
   new ExternalsPlugin({
     type: 'commonjs',
-    include: path.join(__dirname, 'node_modules'),
+    include: path.join(__dirname, 'node_modules', '@tiddlygit', 'tiddlywiki'),
   }),
   new ThreadsPlugin({
     target: 'electron-node-worker',
