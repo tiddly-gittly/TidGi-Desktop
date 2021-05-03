@@ -22,7 +22,9 @@
     "forge": {
       "packagerConfig": {
         "icon": "build-resources/icon.icns",
-        "asar": true,
+        "asar": {
+          "unpack": "**/.webpack/main/*.worker.*"
+        },
         "extraResource": [
           "localization",
           "template/wiki"
