@@ -94,7 +94,6 @@
     "bluebird": "3.7.2",
     "chokidar": "3.5.1",
     "download": "8.0.0",
-    "electron-is-dev": "2.0.0",
     "electron-settings": "4.0.2",
     "electron-unhandled": "3.0.2",
     "electron-updater": "4.3.8",

@@ -1,7 +1,7 @@
 import path from 'path';
 import i18next from 'i18next';
 import Backend from 'i18next-fs-backend';
-import isDevelopment from 'electron-is-dev';
+import { isElectronDevelopment } from '@/constants/isElectronDevelopment';
 
 import { LOCALIZATION_FOLDER } from '@/constants/paths';
 import changeToDefaultLanguage from './useDefaultLanguage';
@@ -16,11 +16,11 @@ void i18next.use(Backend).init({
 
   debug: false,
   interpolation: { escapeValue: false },
-  saveMissing: isDevelopment,
+  saveMissing: isElectronDevelopment,
   saveMissingTo: 'current',
   // namespace: 'translation',
   lng: 'zh_CN',
-  fallbackLng: isDevelopment ? false : 'en', // set to false when generating translation files locally
+  fallbackLng: isElectronDevelopment ? false : 'en', // set to false when generating translation files locally
 });
 
 export async function initRendererI18NHandler(): Promise<void> {

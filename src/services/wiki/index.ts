@@ -6,7 +6,7 @@ import { delay } from 'bluebird';
 import fs from 'fs-extra';
 import path from 'path';
 import { Worker } from 'worker_threads';
-import isDev from 'electron-is-dev';
+import { isElectronDevelopment } from '@/constants/isElectronDevelopment';
 import { dialog } from 'electron';
 import chokidar from 'chokidar';
 import { trim, compact, debounce } from 'lodash';
@@ -90,7 +90,9 @@ export class Wiki implements IWikiService {
   // don't forget to config option in `dist.js` https://github.com/electron/electron/issues/18540#issuecomment-652430001
   // to copy all worker.js and its local dependence to `process.resourcesPath`
   // On dev, this file will be in .webpack/main/index.js ,so:
-  private readonly WIKI_WORKER_PATH = isDev ? path.resolve('./.webpack/main/wiki-worker.js') : path.resolve(process.resourcesPath, 'wiki-worker.js');
+  private readonly WIKI_WORKER_PATH = isElectronDevelopment
+    ? path.resolve('./.webpack/main/wiki-worker.ts')
+    : path.resolve(process.resourcesPath, 'wiki-worker.ts');
 
   public async startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void> {
     // use Promise to handle worker callbacks

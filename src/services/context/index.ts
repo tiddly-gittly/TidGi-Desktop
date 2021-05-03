@@ -2,7 +2,7 @@
 import { app } from 'electron';
 import process from 'process';
 import os from 'os';
-import isDevelopment from 'electron-is-dev';
+import { isElectronDevelopment } from '@/constants/isElectronDevelopment';
 import { injectable } from 'inversify';
 
 import { IContextService, IContext, IPaths, IConstants } from './interface';
@@ -12,7 +12,7 @@ import * as paths from '@/constants/paths';
 export class ContextService implements IContextService {
   private readonly pathConstants: IPaths = paths;
   private readonly constants: IConstants = {
-    isDevelopment,
+    isDevelopment: isElectronDevelopment,
     platform: process.platform,
     appVersion: app.getVersion(),
     appName: app.name,

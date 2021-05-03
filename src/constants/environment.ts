@@ -1,4 +1,4 @@
-import isDevelopment from 'electron-is-dev';
+import { isElectronDevelopment } from './isElectronDevelopment';
 
 export const isTest = process.env.NODE_ENV === 'test';
-export const isDevelopmentOrTest = isDevelopment || isTest;
+export const isDevelopmentOrTest = isElectronDevelopment || isTest;
