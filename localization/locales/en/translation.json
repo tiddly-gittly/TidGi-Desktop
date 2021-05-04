@@ -268,5 +268,18 @@
   "Loading": "Loading",
   "Yes": "Yes",
   "No": "No",
-  "LinOnetwo": "Lin Onetwo"
+  "LinOnetwo": "Lin Onetwo",
+  "Menu": {
+    "Help": "help",
+    "ReportBugViaGithub": "Report a Bug via GitHub...",
+    "RequestFeatureViaGithub": "Request a New Feature via GitHub...",
+    "LearnMore": "Learn More...",
+    "Edit": "edit",
+    "TiddlyGit": "Tai Kee",
+    "View": "View",
+    "History": "history",
+    "Language": "Language",
+    "Window": "window",
+    "Workspaces": "Work area"
+  }
 }

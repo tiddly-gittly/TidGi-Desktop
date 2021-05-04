@@ -160,8 +160,8 @@ if (!gotTheLock) {
     powerMonitor.on('shutdown', () => {
       app.quit();
     });
-    void initRendererI18NHandler();
-    void commonInit();
+    await initRendererI18NHandler();
+    await commonInit();
   });
   app.on(MainChannel.windowAllClosed, () => {
     // prevent quit on MacOS. But also quit if we are in test.

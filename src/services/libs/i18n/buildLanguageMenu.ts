@@ -38,6 +38,7 @@ export function buildLanguageMenu(): void {
         await windowService.sendToAllWindows(I18NChannels.changeLanguageRequest, {
           lng: language,
         });
+        await menuService.buildMenu();
       },
     });
   }

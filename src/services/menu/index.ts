@@ -16,7 +16,17 @@ import { IpcSafeMenuItem, mainMenuItemProxy } from './rendererMenuItemProxy';
 export class MenuService implements IMenuService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
 
-  private readonly menuTemplate: DeferredMenuItemConstructorOptions[];
+  private _menuTemplate?: DeferredMenuItemConstructorOptions[];
+  private get menuTemplate(): DeferredMenuItemConstructorOptions[] {
+    // wait for translations to be initialized
+    if (i18next.t('Menu.TiddlyGit') === undefined || i18next.t('Menu.TiddlyGit') === 'Menu.TiddlyGit') {
+      return [];
+    }
+    if (this._menuTemplate === undefined) {
+      this.loadDefaultMenuTemplate();
+    }
+    return this._menuTemplate!;
+  }
 
   /**
    * Rebuild or create menubar from the latest menu template, will be call after some method change the menuTemplate
@@ -52,17 +62,17 @@ export class MenuService implements IMenuService {
     );
   }
 
-  constructor() {
-    // debounce so build menu won't be call very frequently on app launch, where every services are registering menu items
-    this.buildMenu = debounce(this.buildMenu.bind(this), 50) as () => Promise<void>;
-    // add some default app menus
-    this.menuTemplate = [
+  /**
+   * Defer to i18next ready to call this
+   */
+  private loadDefaultMenuTemplate(): void {
+    this._menuTemplate = [
       {
-        label: 'TiddlyGit',
+        label: i18next.t('Menu.TiddlyGit'),
         id: 'TiddlyGit',
       },
       {
-        label: 'Edit',
+        label: i18next.t('Menu.Edit'),
         id: 'Edit',
         submenu: [
           { role: 'undo' },
@@ -78,50 +88,57 @@ export class MenuService implements IMenuService {
         ],
       },
       {
-        label: 'View',
+        label: i18next.t('Menu.View'),
         id: 'View',
       },
       {
-        label: 'Language',
+        label: i18next.t('Menu.Language'),
         id: 'Language',
       },
       {
-        label: 'History',
+        label: i18next.t('Menu.History'),
         id: 'History',
       },
       {
-        label: 'Workspaces',
+        label: i18next.t('Menu.Workspaces'),
         id: 'Workspaces',
         submenu: [],
       },
       {
+        label: i18next.t('Menu.Window'),
         role: 'window',
         id: 'window',
         submenu: [{ role: 'minimize' }, { role: 'close' }, { type: 'separator' }, { role: 'front' }, { type: 'separator' }],
       },
       {
+        label: i18next.t('Menu.Help'),
         role: 'help',
         id: 'help',
         submenu: [
           {
-            label: 'TiddlyGit Support',
+            label: i18next.t('ContextMenu.TiddlyGitSupport'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues'),
           },
           {
-            label: 'Report a Bug via GitHub...',
+            label: i18next.t('Menu.ReportBugViaGithub'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues'),
           },
           {
-            label: 'Request a New Feature via GitHub...',
+            label: i18next.t('Menu.RequestFeatureViaGithub'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues/new?template=feature.md&title=feature%3A+'),
           },
           {
-            label: 'Learn More...',
+            label: i18next.t('Menu.LearnMore'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/'),
           },
         ],
       },
     ];
+  }
+
+  constructor() {
+    // debounce so build menu won't be call very frequently on app launch, where every services are registering menu items
+    this.buildMenu = debounce(this.buildMenu.bind(this), 50) as () => Promise<void>;
   }
 
   /** Register `on('context-menu', openContextMenuForWindow)` for a window, return an unregister function */

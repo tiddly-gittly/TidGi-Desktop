@@ -36,6 +36,19 @@
     "Paste": "粘贴",
     "SearchWithGoogle": "用 Google 搜索"
   },
+  "Menu": {
+    "TiddlyGit": "太记",
+    "Edit": "编辑",
+    "View": "查看",
+    "Language": "语言",
+    "History": "历史",
+    "Workspaces": "工作区",
+    "Window": "窗口",
+    "Help": "帮助",
+    "ReportBugViaGithub": "通过 GitHub 反馈问题...",
+    "RequestFeatureViaGithub": "通过 GitHub 提新需求...",
+    "LearnMore": "了解更多..."
+  },
   "AddWorkspace": {
     "MainPageTipWithoutSidebar": "<0>使用菜单上的</0><strong> 工作区 → 添加工作区 </strong><2>来开始使用太微！</2>",
     "MainPageTipWithSidebar": "<0>点击侧边栏上的这个 </0><1>+</1><2>（加号按钮）来开始使用太微!</2>",
