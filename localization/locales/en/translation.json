@@ -270,16 +270,16 @@
   "No": "No",
   "LinOnetwo": "Lin Onetwo",
   "Menu": {
-    "Help": "help",
+    "Help": "Help",
     "ReportBugViaGithub": "Report a Bug via GitHub...",
     "RequestFeatureViaGithub": "Request a New Feature via GitHub...",
     "LearnMore": "Learn More...",
-    "Edit": "edit",
-    "TiddlyGit": "Tai Kee",
+    "Edit": "Edit",
+    "TiddlyGit": "TiddlyGit",
     "View": "View",
-    "History": "history",
+    "History": "History",
     "Language": "Language",
-    "Window": "window",
-    "Workspaces": "Work area"
+    "Window": "Window",
+    "Workspaces": "Workspaces"
   }
 }

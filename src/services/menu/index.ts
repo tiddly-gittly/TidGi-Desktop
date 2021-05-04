@@ -68,11 +68,11 @@ export class MenuService implements IMenuService {
   private loadDefaultMenuTemplate(): void {
     this._menuTemplate = [
       {
-        label: i18next.t('Menu.TiddlyGit'),
+        label: () => i18next.t('Menu.TiddlyGit'),
         id: 'TiddlyGit',
       },
       {
-        label: i18next.t('Menu.Edit'),
+        label: () => i18next.t('Menu.Edit'),
         id: 'Edit',
         submenu: [
           { role: 'undo' },
@@ -88,47 +88,47 @@ export class MenuService implements IMenuService {
         ],
       },
       {
-        label: i18next.t('Menu.View'),
+        label: () => i18next.t('Menu.View'),
         id: 'View',
       },
       {
-        label: i18next.t('Menu.Language'),
+        label: () => i18next.t('Menu.Language'),
         id: 'Language',
       },
       {
-        label: i18next.t('Menu.History'),
+        label: () => i18next.t('Menu.History'),
         id: 'History',
       },
       {
-        label: i18next.t('Menu.Workspaces'),
+        label: () => i18next.t('Menu.Workspaces'),
         id: 'Workspaces',
         submenu: [],
       },
       {
-        label: i18next.t('Menu.Window'),
+        label: () => i18next.t('Menu.Window'),
         role: 'window',
         id: 'window',
         submenu: [{ role: 'minimize' }, { role: 'close' }, { type: 'separator' }, { role: 'front' }, { type: 'separator' }],
       },
       {
-        label: i18next.t('Menu.Help'),
+        label: () => i18next.t('Menu.Help'),
         role: 'help',
         id: 'help',
         submenu: [
           {
-            label: i18next.t('ContextMenu.TiddlyGitSupport'),
+            label: () => i18next.t('ContextMenu.TiddlyGitSupport'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues'),
           },
           {
-            label: i18next.t('Menu.ReportBugViaGithub'),
+            label: () => i18next.t('Menu.ReportBugViaGithub'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues'),
           },
           {
-            label: i18next.t('Menu.RequestFeatureViaGithub'),
+            label: () => i18next.t('Menu.RequestFeatureViaGithub'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues/new?template=feature.md&title=feature%3A+'),
           },
           {
-            label: i18next.t('Menu.LearnMore'),
+            label: () => i18next.t('Menu.LearnMore'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/'),
           },
         ],
