@@ -12,6 +12,7 @@ import {
   ModifiedFileList,
   SyncParameterMissingError,
   SyncScriptIsInDeadLoopError,
+  hasGit,
 } from 'git-sync-js';
 import { spawn, Worker, ModuleThread } from 'threads';
 

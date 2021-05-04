@@ -18,6 +18,7 @@ import { IWikiGitWorkspaceService } from './interface';
 import { IMenuService } from '@services/menu/interface';
 import { InitWikiGitError, InitWikiGitRevertError } from './error';
 import { SupportedStorageServices } from '@services/types';
+import { hasGit } from 'git-sync-js';
 
 @injectable()
 export class WikiGitWorkspace implements IWikiGitWorkspaceService {
@@ -34,16 +35,20 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
     const { gitUrl, storageService, wikiFolderLocation, isSubWiki, id: workspaceID, mainWikiToLink } = newWorkspace;
     const isSyncedWiki = storageService !== SupportedStorageServices.local;
     try {
-      if (isSyncedWiki) {
-        if (typeof gitUrl === 'string' && userInfo !== undefined) {
-          await this.gitService.initWikiGit(wikiFolderLocation, isSyncedWiki, gitUrl, userInfo);
-        } else {
-          throw new Error(
-            `E-1-1 SyncedWiki gitUrl is ${gitUrl ?? 'undefined'} , userInfo is ${userInfo === undefined ? JSON.stringify(userInfo) : 'undefined'}`,
-          );
-        }
+      if (await hasGit(wikiFolderLocation)) {
+        logger.warn('Skip git init because it already has a git setup.');
       } else {
-        await this.gitService.initWikiGit(wikiFolderLocation, false);
+        if (isSyncedWiki) {
+          if (typeof gitUrl === 'string' && userInfo !== undefined) {
+            await this.gitService.initWikiGit(wikiFolderLocation, isSyncedWiki, gitUrl, userInfo);
+          } else {
+            throw new Error(
+              `E-1-1 SyncedWiki gitUrl is ${gitUrl ?? 'undefined'} , userInfo is ${userInfo === undefined ? JSON.stringify(userInfo) : 'undefined'}`,
+            );
+          }
+        } else {
+          await this.gitService.initWikiGit(wikiFolderLocation, false);
+        }
       }
     } catch (error) {
       const errorMessage = `initWikiGitTransaction failed, ${(error as Error).message} ${(error as Error).stack ?? ''}`;

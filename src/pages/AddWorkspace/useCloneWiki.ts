@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { IWikiWorkspaceForm } from './useForm';
+import { IWikiWorkspaceForm, workspaceConfigFromForm } from './useForm';
 
 export function useValidateCloneWiki(
   isCreateMainWorkspace: boolean,
@@ -64,6 +64,7 @@ export function useCloneWiki(
     if (!form.parentFolderLocation || !form.wikiFolderName || !form.gitRepoUrl || !form.gitUserInfo) return;
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     try {
+      const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, true);
       if (isCreateMainWorkspace) {
         await window.service.wiki.cloneWiki(form.parentFolderLocation, form.wikiFolderName, form.gitRepoUrl, form.gitUserInfo);
       } else {
@@ -76,22 +77,12 @@ export function useCloneWiki(
           form.tagName,
         );
       }
+      await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspaceConfig);
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
       hasErrorSetter(true);
     }
-  }, [
-    form.parentFolderLocation,
-    form.wikiFolderName,
-    form.gitRepoUrl,
-    form.gitUserInfo,
-    form.mainWikiToLink.wikiFolderLocation,
-    form.tagName,
-    wikiCreationMessageSetter,
-    t,
-    isCreateMainWorkspace,
-    hasErrorSetter,
-  ]);
+  }, [form, wikiCreationMessageSetter, t, isCreateMainWorkspace, hasErrorSetter]);
 
   return onSubmit;
 }

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { IWikiWorkspaceForm } from './useForm';
+import { IWikiWorkspaceForm, workspaceConfigFromForm } from './useForm';
 
 export function useValidateExistedWiki(
   isCreateMainWorkspace: boolean,
@@ -61,6 +61,7 @@ export function useValidateExistedWiki(
 }
 export function useExistedWiki(
   isCreateMainWorkspace: boolean,
+  isCreateSyncedWorkspace: boolean,
   form: IWikiWorkspaceForm,
   wikiCreationMessageSetter: (m: string) => void,
   hasErrorSetter: (m: boolean) => void,
@@ -70,6 +71,7 @@ export function useExistedWiki(
   const onSubmit = useCallback(async () => {
     if (!form.existedWikiFolderPath || !form.parentFolderLocation || !form.gitRepoUrl || !form.gitUserInfo) return;
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
+    const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, isCreateSyncedWorkspace);
     try {
       if (isCreateMainWorkspace) {
         await window.service.wiki.ensureWikiExist(form.existedWikiFolderPath, true);
@@ -92,22 +94,12 @@ export function useExistedWiki(
           true,
         );
       }
+      await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspaceConfig);
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
       hasErrorSetter(true);
     }
-  }, [
-    form.existedWikiFolderPath,
-    form.parentFolderLocation,
-    form.gitRepoUrl,
-    form.gitUserInfo,
-    form.mainWikiToLink?.wikiFolderLocation,
-    form.tagName,
-    wikiCreationMessageSetter,
-    t,
-    isCreateMainWorkspace,
-    hasErrorSetter,
-  ]);
+  }, [form, wikiCreationMessageSetter, t, isCreateMainWorkspace, isCreateSyncedWorkspace, hasErrorSetter]);
 
   return onSubmit;
 }
