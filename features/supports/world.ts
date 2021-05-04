@@ -7,7 +7,7 @@ import { keyboard, Key } from '@nut-tree/nut-js';
 setDefaultTimeout(30 * 1000);
 
 const projectRoot = path.join(__dirname, '..', '..');
-const packageName = process.env.npm_package_name ?? 'TiddlyGit';
+const packageName = process.env.npm_product_name ?? 'TiddlyGit';
 
 interface IContext {
   previousElement?: WebdriverIO.Element;
