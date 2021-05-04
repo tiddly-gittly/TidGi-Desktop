@@ -185,7 +185,7 @@ export default function Main(): JSX.Element {
 
   const workspaceIDs = workspacesList?.map((workspace) => workspace.id) ?? [];
   if (preferences === undefined) return <div>Loading...</div>;
-  const { attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource } = preferences;
+  const { attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource, sidebarShortcutHints } = preferences;
   return (
     <OuterRoot>
       <Root>
@@ -213,12 +213,22 @@ export default function Main(): JSX.Element {
                   }}>
                   <SortableContext items={workspaceIDs} strategy={verticalListSortingStrategy}>
                     {workspacesList.map((workspace, index) => (
-                      <SortableWorkspaceSelector key={`item-${workspace.id}`} index={index} workspace={workspace} />
+                      <SortableWorkspaceSelector
+                        key={`item-${workspace.id}`}
+                        index={index}
+                        workspace={workspace}
+                        showSidebarShortcutHints={sidebarShortcutHints}
+                      />
                     ))}
                   </SortableContext>
                 </DndContext>
               )}
-              <WorkspaceSelector id="add" index={workspacesList?.length ?? 0} onClick={() => void window.service.window.open(WindowNames.addWorkspace)} />
+              <WorkspaceSelector
+                id="add"
+                index={workspacesList?.length ?? 0}
+                showSidebarShortcutHints={sidebarShortcutHints}
+                onClick={() => void window.service.window.open(WindowNames.addWorkspace)}
+              />
             </SidebarTop>
             <SideBarEnd>
               <IconButton

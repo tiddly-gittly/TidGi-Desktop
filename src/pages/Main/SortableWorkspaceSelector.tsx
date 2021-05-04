@@ -11,9 +11,10 @@ import defaultIcon from '@/images/default-icon.png';
 export interface ISortableItemProps {
   index: number;
   workspace: IWorkspace;
+  showSidebarShortcutHints: boolean;
 }
 
-export function SortableWorkspaceSelector({ index, workspace }: ISortableItemProps): JSX.Element {
+export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcutHints }: ISortableItemProps): JSX.Element {
   const { t } = useTranslation();
   const { active, id, name, picturePath, hibernated, transparentBackground, isSubWiki, tagName } = workspace;
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
@@ -76,7 +77,7 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
         transparentBackground={transparentBackground}
         index={index}
         hibernated={hibernated}
-        showSidebarShortcutHints
+        showSidebarShortcutHints={showSidebarShortcutHints}
       />
     </div>
   );

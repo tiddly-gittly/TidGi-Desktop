@@ -67,7 +67,7 @@ const Avatar = styled.div<{ large?: boolean; transparent?: boolean; addAvatar: b
       border-radius: 0;
     `}
 
-  &${({ highlightAdd }) => (highlightAdd ? '' : ':hover')} {
+  &${({ highlightAdd, addAvatar }) => (highlightAdd && addAvatar ? '' : ':hover')}, &:hover {
     background-color: #eeeeee;
     color: black;
   }
@@ -75,7 +75,7 @@ const Avatar = styled.div<{ large?: boolean; transparent?: boolean; addAvatar: b
     addAvatar
       ? ''
       : css`
-          background-color: transparent !important;
+          background-color: transparent;
         `}
 `;
 
