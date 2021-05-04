@@ -4,6 +4,7 @@ import { Backend as ElectronFsBackend } from './services/libs/i18n/i18next-elect
 
 export async function initI18N(): Promise<void> {
   const isDevelopment = await window.service.context.get('isDevelopment');
+  const language = await window.service.preference.get('language');
   await i18n
     .use(ElectronFsBackend)
     .use(initReactI18next)
@@ -18,11 +19,11 @@ export async function initI18N(): Promise<void> {
       saveMissing: isDevelopment,
       saveMissingTo: 'current',
       // namespace: 'translation',
-      lng: 'zh_CN', // we switch to language set in preference later, in src/main.ts
+      lng: language,
       fallbackLng: isDevelopment ? false : 'en',
     });
-  window.i18n.i18nextElectronBackend.onLanguageChange(async (language: string) => {
-    await i18n.changeLanguage(language, (error?: Error) => {
+  window.i18n.i18nextElectronBackend.onLanguageChange(async (language: { lng: string }) => {
+    await i18n.changeLanguage(language.lng, (error?: Error) => {
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (error) {
         console.error(error);

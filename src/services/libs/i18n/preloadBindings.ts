@@ -11,7 +11,7 @@ export const preloadBindings = function (
 ): {
   send: (channel: I18NChannels, readWriteFileArgs: IReadWriteFileRequest) => Promise<void>;
   onReceive: (channel: I18NChannels, callback: (readWriteFileArgs: IReadWriteFileRequest) => void) => void;
-  onLanguageChange: (callback: (language: string) => unknown) => void;
+  onLanguageChange: (callback: (language: { lng: string }) => unknown) => void;
 } {
   return {
     send: async (channel: I18NChannels, readWriteFileArgs: IReadWriteFileRequest): Promise<void> => {
@@ -27,9 +27,9 @@ export const preloadBindings = function (
         ipcRenderer.on(channel, (_event: IpcRendererEvent, arguments_: IReadWriteFileRequest) => callback(arguments_));
       }
     },
-    onLanguageChange: (callback: (language: string) => unknown) => {
+    onLanguageChange: (callback: (language: { lng: string }) => unknown) => {
       // Deliberately strip event as it includes "sender"
-      ipcRenderer.on(I18NChannels.changeLanguageRequest, (_event: IpcRendererEvent, language: string) => {
+      ipcRenderer.on(I18NChannels.changeLanguageRequest, (_event: IpcRendererEvent, language: { lng: string }) => {
         callback(language);
       });
     },
