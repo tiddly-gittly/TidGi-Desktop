@@ -17,17 +17,6 @@ module.exports = [
     use: 'node-loader',
   },
   {
-    test: /\.(m?js|node)$/,
-    parser: { amd: true },
-    use: {
-      loader: '@zeit/webpack-asset-relocator-loader',
-      options: {
-        outputAssetBase: 'native_modules',
-        emitDirnameAll: true,
-      },
-    },
-  },
-  {
     // used to load css from npm package, we use styled-components
     test: /\.css$/,
     use: [{ loader: 'style-loader' }, { loader: 'css-loader' }],

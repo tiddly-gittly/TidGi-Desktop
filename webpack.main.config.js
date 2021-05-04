@@ -11,7 +11,20 @@ module.exports = {
   entry: './src/main.ts',
   // Put your normal webpack config below here
   module: {
-    rules: require('./webpack.rules'),
+    rules: [
+      ...require('./webpack.rules'),
+      {
+        test: /\.(m?js|node)$/,
+        parser: { amd: true },
+        use: {
+          loader: '@zeit/webpack-asset-relocator-loader',
+          options: {
+            outputAssetBase: 'native_modules',
+            emitDirnameAll: true,
+          },
+        },
+      },
+    ],
   },
   plugins: plugins.main,
   resolve: {
