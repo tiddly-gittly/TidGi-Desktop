@@ -38,7 +38,8 @@
             "en",
             "ja"
           ]
-        }
+        },
+        "afterPrune": ["scripts/afterPack.js"]
       },
       "makers": [
         {
