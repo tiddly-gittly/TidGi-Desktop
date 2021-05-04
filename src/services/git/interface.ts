@@ -37,8 +37,8 @@ export interface IGitService {
   initWikiGit(wikiFolderPath: string, isSyncedWiki: true, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
   initWikiGit(wikiFolderPath: string, isSyncedWiki?: false): Promise<void>;
   commitAndSync(wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
-  /** Inspect git's remote url from folder's .git config */
-  getWorkspacesRemote(wikiFolderPath: string): Promise<string>;
+  /** Inspect git's remote url from folder's .git config, return undefined if there is no initialized git */
+  getWorkspacesRemote(wikiFolderPath: string): Promise<string | undefined>;
   clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void>;
 }
 export const GitServiceIPCDescriptor = {

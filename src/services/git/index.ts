@@ -47,8 +47,10 @@ export class Git implements IGitService {
 
   public debounceCommitAndSync: (wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos) => Promise<void> | undefined;
 
-  public async getWorkspacesRemote(wikiFolderPath: string): Promise<string> {
-    return await getRemoteUrl(wikiFolderPath);
+  public async getWorkspacesRemote(wikiFolderPath: string): Promise<string | undefined> {
+    if (await hasGit(wikiFolderPath)) {
+      return await getRemoteUrl(wikiFolderPath);
+    }
   }
 
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {
