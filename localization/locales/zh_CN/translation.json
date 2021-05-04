@@ -40,7 +40,7 @@
     "TiddlyGit": "太记",
     "Edit": "编辑",
     "View": "查看",
-    "Language": "语言",
+    "Language": "语言/Language",
     "History": "历史",
     "Workspaces": "工作区",
     "Window": "窗口",
@@ -50,6 +50,7 @@
     "LearnMore": "了解更多..."
   },
   "AddWorkspace": {
+    "AddWorkspace": "添加工作区",
     "MainPageTipWithoutSidebar": "<0>使用菜单上的</0><strong> 工作区 → 添加工作区 </strong><2>来开始使用太微！</2>",
     "MainPageTipWithSidebar": "<0>点击侧边栏上的这个 </0><1>+</1><2>（加号按钮）来开始使用太微!</2>",
     "NotFilled": "未填",

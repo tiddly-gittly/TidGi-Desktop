@@ -99,7 +99,8 @@
     "SyncedWorkspaceDescription": "To synchronize to an online storage service (such as Github), you need to login to a storage service or enter your login credentials, and have a good network connection. You can sync data across devices, and you still own the data when you use a trusted storage service. And even after the folder is accidentally deleted, you can still download the data from the online service to the local again.",
     "GitEmailDescription": "Email used for Git commit, and is used to count daily activities on Github and other online git services",
     "GitUserNameDescription": "The account name used to log in to Git. Not the nickname",
-    "LogoutToGetStorageServiceToken": "Log in to the online storage service to obtain latest credentials"
+    "LogoutToGetStorageServiceToken": "Log in to the online storage service to obtain latest credentials",
+    "AddWorkspace": "Add Workspace"
   },
   "EditWorkspace": {
     "Path": "Wiki Path",

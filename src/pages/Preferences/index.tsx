@@ -1,6 +1,7 @@
 import React, { useEffect } from 'react';
 import { useDebouncedFn } from 'beautiful-react-hooks';
 import styled, { keyframes } from 'styled-components';
+import { Helmet } from 'react-helmet';
 import semver from 'semver';
 import fromUnixTime from 'date-fns/fromUnixTime';
 import setYear from 'date-fns/setYear';
@@ -214,6 +215,11 @@ export default function Preferences(): JSX.Element {
 
   return (
     <Root>
+      <Helmet>
+        <title>
+          {t('ContextMenu.Preferences')}
+        </title>
+      </Helmet>
       <SideBar>
         <List dense>
           {Object.keys(sections).map((sectionKey, index) => {

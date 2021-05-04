@@ -1,6 +1,7 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet';
 import { AppBar, Paper, Tab } from '@material-ui/core';
 import { TabPanel as TabPanelRaw, TabContext, TabList } from '@material-ui/lab';
 
@@ -54,7 +55,7 @@ export default function AddWorkspace(): JSX.Element {
   const form = useWikiWorkspaceForm();
 
   // update storageProviderSetter to local based on isCreateSyncedWorkspace. Other services value will be changed by TokenForm
-  const { storageProvider, storageProviderSetter } = form;
+  const { storageProvider, storageProviderSetter, wikiFolderName } = form;
   useEffect(() => {
     if (!isCreateSyncedWorkspace && storageProvider !== SupportedStorageServices.local) {
       storageProviderSetter(SupportedStorageServices.local);
@@ -69,6 +70,11 @@ export default function AddWorkspace(): JSX.Element {
 
   return (
     <TabContext value={currentTab}>
+      <Helmet>
+        <title>
+          {t('AddWorkspace.AddWorkspace')} {wikiFolderName}
+        </title>
+      </Helmet>
       <AppBar position="static">
         <Paper square>
           <TabList

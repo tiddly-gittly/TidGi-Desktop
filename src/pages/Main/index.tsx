@@ -1,6 +1,7 @@
 import React, { useCallback } from 'react';
 import styled, { css } from 'styled-components';
 import { useTranslation, Trans } from 'react-i18next';
+import { Helmet } from 'react-helmet';
 import { AsyncReturnType } from 'type-fest';
 import { DndContext } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -188,6 +189,9 @@ export default function Main(): JSX.Element {
   const { attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource, sidebarShortcutHints } = preferences;
   return (
     <OuterRoot>
+      <Helmet>
+        <title>{t('Menu.TiddlyGit')}</title>
+      </Helmet>
       <Root>
         {sidebar && (
           <SidebarContainer>

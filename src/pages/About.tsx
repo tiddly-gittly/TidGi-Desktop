@@ -1,6 +1,8 @@
 import React from 'react';
 import styled from 'styled-components';
 import { Trans, useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet';
+
 import { Button, DialogContent as DialogContentRaw } from '@material-ui/core';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 
@@ -79,6 +81,9 @@ export default function About(): JSX.Element {
 
   return (
     <DialogContent>
+      <Helmet>
+        <title>{t('ContextMenu.About')}</title>
+      </Helmet>
       <Icon src={`file:///${iconPath ?? ''}`} alt="TiddlyGit" />
       <Title>TiddlyGit ({platform ?? 'Unknown Platform'})</Title>
       <TiddlyGitVersion>{`Version v${appVersion ?? ' - '}.`}</TiddlyGitVersion>

@@ -39,7 +39,9 @@
             "ja"
           ]
         },
-        "afterPrune": ["scripts/afterPack.js"]
+        "afterPrune": [
+          "scripts/afterPack.js"
+        ]
       },
       "makers": [
         {
@@ -160,6 +162,7 @@
     "@types/prettier": "2.2.3",
     "@types/react": "17.0.4",
     "@types/react-dom": "17.0.3",
+    "@types/react-helmet": "^6.1.1",
     "@types/rimraf": "3.0.0",
     "@types/semver": "7.3.5",
     "@types/simplebar": "5.1.2",
@@ -204,6 +207,7 @@
     "react": "17.0.2",
     "react-ace": "9.4.0",
     "react-dom": "17.0.2",
+    "react-helmet": "^6.1.0",
     "react-i18next": "11.8.15",
     "rimraf": "3.0.2",
     "simplebar": "6.0.0-beta.4",

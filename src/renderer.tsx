@@ -22,25 +22,6 @@ async function runApp(): Promise<void> {
   LogRocket.init('kkauk7/tiddlygit-desktop');
 
   void window.remote.setVisualZoomLevelLimits(1, 1);
-  if (window.meta.windowName === WindowNames.editWorkspace) {
-    const { workspaceID } = window.meta as WindowMeta[WindowNames.editWorkspace];
-    if (workspaceID === undefined) {
-      throw new Error(`workspaceID is undefined,  window.meta is ${typeof window.meta === 'object' ? JSON.stringify(window.meta) : String(window.meta)}`);
-    }
-    const workspaces = await window.service.workspace.getWorkspaces();
-    const workspaceList = await window.service.workspace.getWorkspacesAsList();
-    const workspace = workspaces[workspaceID];
-    workspaceList.some((item, index) => {
-      if (item.id === workspaceID) {
-        workspace.order = index;
-        return true;
-      }
-      return false;
-    });
-    document.title = workspace.name ? `Edit Workspace ${workspace.order + 1} "${workspace.name}"` : `Edit Workspace ${workspace.order + 1}`;
-  } else if (window.meta.windowName === WindowNames.spellcheck) {
-    document.title = 'Preferred Spell Checking Languages';
-  }
 
   const attachToMenubar = await window.service.preference.get('attachToMenubar');
   if (window.meta.windowName !== WindowNames.main && attachToMenubar) {

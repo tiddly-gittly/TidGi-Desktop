@@ -1,5 +1,7 @@
 import React from 'react';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet';
 
 import ButtonRaw from '@material-ui/core/Button';
 import Checkbox from '@material-ui/core/Checkbox';
@@ -44,12 +46,16 @@ Button.defaultProps = {
 };
 
 export default function SpellcheckLanguages(): JSX.Element {
+  const { t } = useTranslation();
   const preference = usePreferenceObservable();
   if (preference === undefined) {
     return <Root>Loading...</Root>;
   }
   return (
     <Root>
+      <Helmet>
+        <title>{t('Preference.SpellCheckLanguages')}</title>
+      </Helmet>
       <Top>
         {(Object.keys(hunspellLanguagesMap) as HunspellLanguages[]).map((code) => (
           <ListItem

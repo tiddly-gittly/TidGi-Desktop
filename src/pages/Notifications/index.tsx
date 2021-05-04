@@ -3,6 +3,8 @@
 /* eslint-disable unicorn/no-useless-undefined */
 import React, { useState } from 'react';
 import styled from 'styled-components';
+import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet';
 
 import ListSubheader from '@material-ui/core/ListSubheader';
 import ListRaw from '@material-ui/core/List';
@@ -70,7 +72,8 @@ const pauseNotification = (tilDate: Date): void => {
   void window.remote.closeCurrentWindow();
 };
 
-export default function PauseNotifications(): JSX.Element {
+export default function Notifications(): JSX.Element {
+  const { t } = useTranslation();
   const preference = usePreferenceObservable();
   const pauseNotificationsInfo = useNotificationInfoObservable();
   const [showDateTimePicker, showDateTimePickerSetter] = useState(false);
@@ -169,6 +172,9 @@ export default function PauseNotifications(): JSX.Element {
 
   return (
     <Root>
+      <Helmet>
+        <title>{t('ContextMenu.Notifications')}</title>
+      </Helmet>
       {renderList()}
       <DateTimePicker
         value={new Date()}

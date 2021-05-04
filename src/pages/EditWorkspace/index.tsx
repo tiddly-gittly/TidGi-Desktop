@@ -3,6 +3,7 @@
 import React from 'react';
 import styled, { css } from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import { Helmet } from 'react-helmet';
 import {
   Tooltip,
   Button as ButtonRaw,
@@ -159,6 +160,11 @@ export default function EditWorkspace(): JSX.Element {
   }
   return (
     <Root>
+      <Helmet>
+        <title>
+          {t('WorkspaceSelector.EditWorkspace')} {String(workspace.order ?? 1)} {workspace.name}
+        </title>
+      </Helmet>
       <FlexGrow>
         <TextField
           id="outlined-full-width"
