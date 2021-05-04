@@ -607,7 +607,7 @@ export default function Preferences(): JSX.Element {
               button
               onClick={() => {
                 window.service.native
-                  .pickDirectory()
+                  .pickDirectory(downloadPath)
                   .then(async (filePaths) => {
                     if (filePaths.length > 0) {
                       await window.service.preference.set('downloadPath', filePaths[0]);

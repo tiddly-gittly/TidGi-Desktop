@@ -32,7 +32,6 @@ export const defaultPreferences: IPreferences = {
   useHardwareAcceleration: true,
 };
 
-/** get path, note that if use this from the preload script, app will be undefined, so have to use remote.app here */
 function getDefaultDownloadsPath(): string {
   return path.join(app.getPath('home'), 'Downloads');
 }

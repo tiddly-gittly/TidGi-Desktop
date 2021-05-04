@@ -18,9 +18,10 @@ export class NativeService implements INativeService {
     }
   }
 
-  public async pickDirectory(): Promise<string[]> {
+  public async pickDirectory(defaultPath?: string): Promise<string[]> {
     const dialogResult = await dialog.showOpenDialog({
       properties: ['openDirectory'],
+      defaultPath,
     });
     if (!dialogResult.canceled && dialogResult.filePaths.length > 0) {
       return dialogResult.filePaths;

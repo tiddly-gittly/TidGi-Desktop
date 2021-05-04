@@ -34,7 +34,7 @@ export function NewWikiForm({
         />
         <LocationPickerButton
           onClick={async () => {
-            const filePaths = await window.service.native.pickDirectory();
+            const filePaths = await window.service.native.pickDirectory(form.parentFolderLocation);
             if (filePaths?.length > 0) {
               form.parentFolderLocationSetter(filePaths[0]);
             }

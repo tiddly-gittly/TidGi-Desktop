@@ -9,7 +9,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
  */
 export interface INativeService {
   showElectronMessageBox(message: string, type: MessageBoxOptions['type'], WindowName?: WindowNames): Promise<void>;
-  pickDirectory(): Promise<string[]>;
+  pickDirectory(defaultPath?: string): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   quit(): void;
