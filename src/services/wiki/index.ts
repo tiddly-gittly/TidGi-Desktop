@@ -111,13 +111,8 @@ export class Wiki implements IWikiService {
           switch (message.actions) {
             case WikiControlActions.booted: {
               setTimeout(async () => {
+                await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
                 this.viewService.reloadViewsWebContents();
-                await this.workspaceService.updateMetaData(workspaceID, { isLoading: false });
-                // close add-workspace dialog
-                const addWorkspaceWindow = this.windowService.get(WindowNames.addWorkspace);
-                if (addWorkspaceWindow !== undefined) {
-                  addWorkspaceWindow.close();
-                }
                 resolve();
               }, 100);
               break;
