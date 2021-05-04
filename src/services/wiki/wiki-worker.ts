@@ -43,7 +43,7 @@ function startNodeJSWiki({
       ];
       wikiInstance.boot.startup({
         callback: () =>
-          observer.next({ type: 'control', actions: WikiControlActions.start, message: `Tiddlywiki booted at http://localhost:${tiddlyWikiPort}` }),
+          observer.next({ type: 'control', actions: WikiControlActions.booted, message: `Tiddlywiki booted at http://localhost:${tiddlyWikiPort}` }),
       });
     } catch (error) {
       const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;

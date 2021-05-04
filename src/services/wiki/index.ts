@@ -99,9 +99,9 @@ export class Wiki implements IWikiService {
           logger.debug(event.data, loggerMeta);
         } else if (event.type === 'termination') {
           delete this.wikiWorkers[homePath];
-          const warningMessage = `NodeJSWiki ${homePath} Worker stopped`;
-          logger.warning(warningMessage, loggerMeta);
-          reject(new Error(warningMessage));
+          const warningMessage = `NodeJSWiki ${homePath} Worker stopped (can be normal quit, or unexpected error, see other logs to determine)`;
+          logger.info(warningMessage, loggerMeta);
+          resolve();
         }
       });
 

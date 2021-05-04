@@ -53,26 +53,26 @@ export class WorkspaceView implements IWorkspaceViewService {
       if (!workspace.isSubWiki) {
         await this.viewService.addView(mainWindow, workspace);
       }
-      try {
-        const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
-        const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService } = workspace;
-        // wait for main wiki's watch-fs plugin to be fully initialized
-        // and also wait for wiki BrowserView to be able to receive command
-        // eslint-disable-next-line global-require
-        let workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
-        let loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
-        // wait for main wiki webview loaded
-        if (!workspace.isSubWiki) {
-          while (workspaceMetadata.isLoading !== false) {
-            // eslint-disable-next-line no-await-in-loop
-            await delay(500);
-            workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
-          }
-          loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
-          if (loadFailed) {
-            throw new Error(workspaceMetadata.didFailLoadErrorMessage!);
-          }
+      const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
+      const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService } = workspace;
+      // wait for main wiki's watch-fs plugin to be fully initialized
+      // and also wait for wiki BrowserView to be able to receive command
+      // eslint-disable-next-line global-require
+      let workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
+      let loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
+      // wait for main wiki webview loaded
+      if (!workspace.isSubWiki) {
+        while (workspaceMetadata.isLoading !== false) {
+          // eslint-disable-next-line no-await-in-loop
+          await delay(500);
+          workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
         }
+        loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
+        if (loadFailed) {
+          throw new Error(workspaceMetadata.didFailLoadErrorMessage!);
+        }
+      }
+      try {
         if (storageService !== SupportedStorageServices.local) {
           // check synced wiki should have githubRepoUrl
           if (typeof githubRepoUrl !== 'string') {
@@ -83,8 +83,8 @@ export class WorkspaceView implements IWorkspaceViewService {
           }
           await this.gitService.commitAndSync(wikiFolderLocation, githubRepoUrl, userInfo);
         }
-      } catch {
-        logger.warning(`Can't sync at wikiStartup()`);
+      } catch (error) {
+        logger.error(`Can't sync at wikiStartup(), ${(error as Error).message}\n${(error as Error).stack ?? 'no stack'}`);
       }
     }
   }
