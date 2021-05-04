@@ -1,6 +1,9 @@
 {
   "exclude": ["template/**/*.js"],
   "include": ["src", "features"],
+  "ts-node": {
+    "files": true
+  },
   "compilerOptions": {
     "baseUrl": "./",
     "paths": {

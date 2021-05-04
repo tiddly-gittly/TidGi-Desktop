@@ -11,6 +11,7 @@
     "public/**/*.ts",
     "public/**/*.js",
     "features/**/*.ts",
+    "scripts/**/*.ts",
     "src/**/*.d.ts",
     "public/**/*.d.ts",
     "./*.json",
