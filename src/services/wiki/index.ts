@@ -23,12 +23,12 @@ import { logger, wikiOutputToFile, refreshOutputFile } from '@services/libs/log'
 import i18n from '@services/libs/i18n';
 import { lazyInject } from '@services/container';
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@/constants/paths';
-import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './update-plugin-content';
+import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './updatePluginContent';
 import { IWikiService, WikiControlActions } from './interface';
 import { WikiChannel } from '@/constants/channels';
 import { CopyWikiTemplateError, DoubleWikiInstanceError } from './error';
 import { SupportedStorageServices } from '@services/types';
-import type { WikiWorker } from './wiki-worker';
+import type { WikiWorker } from './wikiWorker';
 
 @injectable()
 export class Wiki implements IWikiService {
@@ -83,7 +83,7 @@ export class Wiki implements IWikiService {
     }
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
     const workerData = { homePath, userName, tiddlyWikiPort };
-    const worker = await spawn<WikiWorker>(new Worker('./wiki-worker.ts'));
+    const worker = await spawn<WikiWorker>(new Worker('./wikiWorker.ts'));
     this.wikiWorkers[homePath] = worker;
     refreshOutputFile(homePath);
     const loggerMeta = { worker: 'NodeJSWiki', homePath };
@@ -169,9 +169,7 @@ export class Wiki implements IWikiService {
       tasks.push(this.stopWiki(homePath));
     }
     await Promise.all(tasks);
-    // try to prevent https://github.com/electron/electron/issues/23315, but seems not working at all
-    await delay(100);
-    logger.info('All wiki-worker is stopped', { function: 'stopAllWiki' });
+    logger.info('All wiki workers are stopped', { function: 'stopAllWiki' });
   }
 
   /**

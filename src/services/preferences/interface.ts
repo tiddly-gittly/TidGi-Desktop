@@ -2,7 +2,7 @@ import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 
 import { PreferenceChannel } from '@/constants/channels';
 import { BehaviorSubject } from 'rxjs';
-import { HunspellLanguages } from '@/constants/hunspell-languages';
+import { HunspellLanguages } from '@/constants/hunspellLanguages';
 
 export interface IPreferences {
   allowPrerelease: boolean;

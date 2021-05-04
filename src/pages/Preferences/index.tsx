@@ -26,7 +26,7 @@ import TimePicker from '@material-ui/lab/TimePicker';
 
 import PopUpMenuItem from '@/components/PopUpMenuItem';
 
-import { hunspellLanguagesMap } from '@/constants/hunspell-languages';
+import { hunspellLanguagesMap } from '@/constants/hunspellLanguages';
 
 import webcatalogLogo from '@/images/webcatalog-logo.svg';
 import translatiumLogo from '@/images/translatium-logo.svg';

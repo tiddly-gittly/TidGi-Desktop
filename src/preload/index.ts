@@ -5,7 +5,7 @@ import './common/test';
 import './common/i18n';
 import './common/log';
 import './common/remote';
-import './common/authing-postmessage';
+import './common/authingPostMessage';
 import * as service from './common/services';
 import { ViewChannel } from '@/constants/channels';
 import { WindowNames, IPossibleWindowMeta } from '@services/windows/WindowProperties';

@@ -3,7 +3,7 @@ import { LOG_FOLDER } from '@/constants/paths';
 import RendererTransport from './rendererTransport';
 import 'winston-daily-rotate-file';
 
-export * from './wiki-output';
+export * from './wikiOutput';
 
 const logger = (process.env.NODE_ENV === 'test'
   ? Object.assign(console, {

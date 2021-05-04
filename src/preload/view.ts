@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 import { webFrame } from 'electron';
 import { WorkspaceChannel, Channels } from '@/constants/channels';
-import './wiki-operation';
+import './wikiOperation';
 import { preference, workspace, workspaceView, menu } from './common/services';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData } from './common/browserViewMetaData';
