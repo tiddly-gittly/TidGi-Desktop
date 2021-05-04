@@ -371,7 +371,7 @@ export class Workspace implements IWorkspaceService {
       id: newID,
       order: max + 1,
       lastUrl: null,
-      homeUrl: `0.0.0.0:${newWorkspaceConfig.port}`,
+      homeUrl: `http://0.0.0.0:${newWorkspaceConfig.port}`,
       subWikiFolderName: 'subwiki',
       picturePath: null,
     };

@@ -117,6 +117,7 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     });
   }
   // https://electronjs.org/docs/api/web-contents#event-did-fail-load
+  // https://github.com/webcatalog/neutron/blob/3d9e65c255792672c8bc6da025513a5404d98730/main-src/libs/views.js#L397
   view.webContents.on('did-fail-load', async (_event, errorCode, errorDesc, _validateUrl, isMainFrame) => {
     const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
@@ -135,9 +136,11 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
         view.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       }
     }
-    // edge case to handle failed auth
-    if (errorCode === -300 && view.webContents.getURL().length === 0) {
-      void view.webContents.loadURL(workspaceObject.homeUrl);
+    // edge case to handle failed auth, use setTimeout to prevent infinite loop
+    if (errorCode === -300 && view.webContents.getURL().length === 0 && workspaceObject.homeUrl.startsWith('http')) {
+      setTimeout(() => {
+        void view.webContents.loadURL(workspaceObject.homeUrl);
+      }, 1000);
     }
   });
   view.webContents.on('did-navigate', async (_event, url) => {
