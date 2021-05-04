@@ -36,14 +36,14 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
     try {
       if (isSyncedWiki) {
         if (typeof gitUrl === 'string' && userInfo !== undefined) {
-          await this.gitService.initWikiGit(wikiFolderLocation, !isSubWiki, isSyncedWiki, gitUrl, userInfo);
+          await this.gitService.initWikiGit(wikiFolderLocation, isSyncedWiki, gitUrl, userInfo);
         } else {
           throw new Error(
             `E-1-1 SyncedWiki gitUrl is ${gitUrl ?? 'undefined'} , userInfo is ${userInfo === undefined ? JSON.stringify(userInfo) : 'undefined'}`,
           );
         }
       } else {
-        await this.gitService.initWikiGit(wikiFolderLocation, !isSubWiki, false);
+        await this.gitService.initWikiGit(wikiFolderLocation, false);
       }
     } catch (error) {
       const errorMessage = `initWikiGitTransaction failed, ${(error as Error).message} ${(error as Error).stack ?? ''}`;

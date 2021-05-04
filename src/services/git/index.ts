@@ -5,40 +5,43 @@ import {
   AssumeSyncError,
   CantSyncGitNotInitializedError,
   CantSyncInSpecialGitStateAutoFixFailed,
-  clone,
-  commitAndSync,
   getModifiedFileList,
   getRemoteUrl,
   GitPullPushError,
   GitStep,
-  ILoggerContext,
-  initGit,
   ModifiedFileList,
   SyncParameterMissingError,
   SyncScriptIsInDeadLoopError,
 } from 'git-sync-js';
+import { spawn, Worker, ModuleThread } from 'threads';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IViewService } from '@services/view/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
-import { IGitService, IGitUserInfos } from './interface';
-import { defaultGitInfo } from './defaultGitInfo';
+import { IGitLogMessage, IGitService, IGitUserInfos } from './interface';
 import { WikiChannel } from '@/constants/channels';
+import { GitWorker } from './gitWorker';
+import { Observer } from 'rxjs';
 
 @injectable()
 export class Git implements IGitService {
-  disableSyncOnDevelopment = true;
+  private gitWorker?: ModuleThread<GitWorker>;
 
   constructor(
     @inject(serviceIdentifier.View) private readonly viewService: IViewService,
     @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
   ) {
+    void this.initWorker();
     this.debounceCommitAndSync = this.commitAndSync.bind(this);
     void this.preferenceService.get('syncDebounceInterval').then((syncDebounceInterval) => {
       this.debounceCommitAndSync = debounce(this.commitAndSync.bind(this), syncDebounceInterval);
     });
+  }
+
+  private async initWorker(): Promise<void> {
+    this.gitWorker = await spawn<GitWorker>(new Worker('./gitWorker.ts'));
   }
 
   public debounceCommitAndSync: (wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos) => Promise<void> | undefined;
@@ -167,7 +170,7 @@ export class Git implements IGitService {
     }
   }
 
-  private translateErrorMessage(error: Error): void {
+  private translateAndLogErrorMessage(error: Error): void {
     logger.error(error?.message ?? error);
     if (error instanceof AssumeSyncError) {
       error.message = i18n.t('Log.SynchronizationFailed');
@@ -186,67 +189,32 @@ export class Git implements IGitService {
     throw error;
   }
 
-  public async initWikiGit(wikiFolderPath: string, isMainWiki: boolean, isSyncedWiki?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Promise<void> {
-    try {
-      await initGit({
-        dir: wikiFolderPath,
-        remoteUrl,
-        syncImmediately: isSyncedWiki,
-        userInfo: { ...defaultGitInfo, ...userInfo },
-        logger: {
-          log: (message: string, context: ILoggerContext): unknown => logger.info(message, { callerFunction: 'initWikiGit', ...context }),
-          warn: (message: string, context: ILoggerContext): unknown => logger.warn(message, { callerFunction: 'initWikiGit', ...context }),
-          info: (message: GitStep, context: ILoggerContext): void => {
-            logger.notice(this.translateMessage(message), { handler: WikiChannel.syncProgress, callerFunction: 'initWikiGit', ...context });
-          },
-        },
-      });
-    } catch (error) {
-      this.translateErrorMessage(error);
-    }
+  private readonly getWorkerObserver = (resolve: () => void, reject: (error: Error) => void): Observer<IGitLogMessage> => ({
+    next: (message) => {
+      logger.log(message.level, this.translateMessage(message.message), message.meta);
+    },
+    error: (error) => {
+      this.translateAndLogErrorMessage(error);
+      reject(error);
+    },
+    complete: () => resolve(),
+  });
+
+  public async initWikiGit(wikiFolderPath: string, isSyncedWiki?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Promise<void> {
+    return await new Promise<void>((resolve, reject) => {
+      this.gitWorker?.initWikiGit(wikiFolderPath, isSyncedWiki, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
+    });
   }
 
-  /**
-   *
-   * @param {string} wikiFolderPath
-   * @param {string} remoteUrl
-   * @param {{ login: string, email: string, accessToken: string }} userInfo
-   */
   public async commitAndSync(wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos): Promise<void> {
-    try {
-      await commitAndSync({
-        dir: wikiFolderPath,
-        remoteUrl,
-        userInfo: { ...defaultGitInfo, ...userInfo },
-        logger: {
-          log: (message: string, context: ILoggerContext): unknown => logger.info(message, { callerFunction: 'commitAndSync', ...context }),
-          warn: (message: string, context: ILoggerContext): unknown => logger.warn(message, { callerFunction: 'commitAndSync', ...context }),
-          info: (message: GitStep, context: ILoggerContext): void => {
-            logger.notice(this.translateMessage(message), { handler: WikiChannel.syncProgress, callerFunction: 'commitAndSync', ...context });
-          },
-        },
-      });
-    } catch (error) {
-      this.translateErrorMessage(error);
-    }
+    return await new Promise<void>((resolve, reject) => {
+      this.gitWorker?.commitAndSyncWiki(wikiFolderPath, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
+    });
   }
 
   public async clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void> {
-    try {
-      await clone({
-        dir: repoFolderPath,
-        remoteUrl,
-        userInfo: { ...defaultGitInfo, ...userInfo },
-        logger: {
-          log: (message: string, context: ILoggerContext): unknown => logger.info(message, { callerFunction: 'clone', ...context }),
-          warn: (message: string, context: ILoggerContext): unknown => logger.warn(message, { callerFunction: 'clone', ...context }),
-          info: (message: GitStep, context: ILoggerContext): void => {
-            logger.notice(this.translateMessage(message), { handler: WikiChannel.syncProgress, callerFunction: 'clone', ...context });
-          },
-        },
-      });
-    } catch (error) {
-      this.translateErrorMessage(error);
-    }
+    return await new Promise<void>((resolve, reject) => {
+      this.gitWorker?.cloneWiki(repoFolderPath, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
+    });
   }
 }
