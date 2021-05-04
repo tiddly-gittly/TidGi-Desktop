@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
-import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, WebContents, MenuItem, ipcMain } from 'electron';
+import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, WebContents, MenuItem, ipcMain, app } from 'electron';
 import { debounce, take, drop, reverse } from 'lodash';
 import { injectable } from 'inversify';
 import { IMenuService, DeferredMenuItemConstructorOptions, IOnContextMenuInfo } from './interface';
@@ -70,6 +70,35 @@ export class MenuService implements IMenuService {
       {
         label: () => i18next.t('Menu.TiddlyGit'),
         id: 'TiddlyGit',
+        submenu: [
+          {
+            label: () => i18next.t('ContextMenu.About'),
+            click: async () => await this.windowService.open(WindowNames.about),
+          },
+          { type: 'separator' },
+          {
+            label: () => i18next.t('ContextMenu.CheckForUpdates'),
+            click: () => ipcMain.emit('request-check-for-updates'),
+          },
+          {
+            label: () => i18next.t('ContextMenu.Preferences'),
+            accelerator: 'CmdOrCtrl+,',
+            click: async () => await this.windowService.open(WindowNames.preferences),
+          },
+          { type: 'separator' },
+          {
+            label: () => i18next.t('Preference.Notifications'),
+            click: async () => await this.windowService.open(WindowNames.notifications),
+            accelerator: 'CmdOrCtrl+Shift+N',
+          },
+          { type: 'separator' },
+          { role: 'services', submenu: [] },
+          { type: 'separator' },
+          { role: 'hide' },
+          { role: 'hideOthers' },
+          { role: 'unhide' },
+          { label: () => i18next.t('ContextMenu.Quit') + i18next.t('Menu.TiddlyGit'), role: 'quit' },
+        ],
       },
       {
         label: () => i18next.t('Menu.Edit'),
@@ -275,7 +304,7 @@ export class MenuService implements IMenuService {
         submenu: [
           {
             label: i18next.t('ContextMenu.About'),
-            click: () => ipcMain.emit('request-show-about-window'),
+            click: async () => await this.windowService.open(WindowNames.about),
           },
           { type: 'separator' },
           {
@@ -284,7 +313,7 @@ export class MenuService implements IMenuService {
           },
           {
             label: i18next.t('ContextMenu.Preferences'),
-            click: () => ipcMain.emit('request-show-preferences-window'),
+            click: async () => await this.windowService.open(WindowNames.preferences),
           },
           { type: 'separator' },
           {
@@ -298,7 +327,7 @@ export class MenuService implements IMenuService {
           { type: 'separator' },
           {
             label: i18next.t('ContextMenu.Quit'),
-            click: () => ipcMain.emit('request-quit'),
+            click: () => app.quit(),
           },
         ],
       }),
