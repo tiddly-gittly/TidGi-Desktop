@@ -7,3 +7,11 @@ export class CopyWikiTemplateError extends Error {
     this.message = `${i18n.t('Error.CopyWikiTemplateErrorDescription')} ${extraMessage ?? ''}`;
   }
 }
+
+export class DoubleWikiInstanceError extends Error {
+  constructor(wikiHomePath?: string) {
+    super(wikiHomePath);
+    this.name = i18n.t('Error.DoubleWikiInstanceError');
+    this.message = `${i18n.t('Error.DoubleWikiInstanceErrorDescription')} ${wikiHomePath ?? ''}`;
+  }
+}

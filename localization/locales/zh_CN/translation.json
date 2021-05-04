@@ -262,7 +262,9 @@
     "InitWikiGitRevertError": "笔记仓库初始化失败且撤销失败错误",
     "InitWikiGitRevertErrorDescription": "E-2 不仅笔记仓库初始化失败了，而且撤销也失败了，这是个严重问题，需要你手动清理该位置生成的新文件夹。",
     "CopyWikiTemplateError": "复制维基模板错误",
-    "CopyWikiTemplateErrorDescription": "E-3 尝试把最新维基模板复制或覆盖到对应位置，但是失败了，这应该是由bug导致的。"
+    "CopyWikiTemplateErrorDescription": "E-3 尝试把最新维基模板复制或覆盖到对应位置，但是失败了，这应该是由bug导致的。",
+    "DoubleWikiInstanceError": "重复启动维基错误",
+    "DoubleWikiInstanceErrorDescription": "E-4 你启动了同一个Wiki两次，这可能是程序bug导致的。"
   },
   "Loading": "加载中",
   "Yes": "是的",

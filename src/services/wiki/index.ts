@@ -2,12 +2,11 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
 import { injectable } from 'inversify';
-import { PromiseValue } from 'type-fest';
 import { delay } from 'bluebird';
 import fs from 'fs-extra';
 import path from 'path';
 import { spawn, Thread, Worker } from 'threads';
-import type { WorkerEvent } from 'threads/dist/types/master';
+import type { ModuleThread, WorkerEvent } from 'threads/dist/types/master';
 import { dialog } from 'electron';
 import chokidar from 'chokidar';
 import { trim, compact, debounce } from 'lodash';
@@ -20,15 +19,16 @@ import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interfa
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { logger } from '@services/libs/log';
+import { logger, wikiOutputToFile, refreshOutputFile } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { lazyInject } from '@services/container';
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@/constants/paths';
 import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './update-plugin-content';
-import { IWikiService } from './interface';
+import { IWikiService, WikiControlActions } from './interface';
 import { WikiChannel } from '@/constants/channels';
-import { CopyWikiTemplateError } from './error';
+import { CopyWikiTemplateError, DoubleWikiInstanceError } from './error';
 import { SupportedStorageServices } from '@services/types';
+import type { WikiWorker } from './wiki-worker';
 
 @injectable()
 export class Wiki implements IWikiService {
@@ -66,29 +66,14 @@ export class Wiki implements IWikiService {
     }
   }
 
-  // wiki-worker-manager.ts
-
-  // worker should send payload in form of `{ message: string, handler: string }` where `handler` is the name of function to call
-  private readonly logMessage = (loggerMeta: Record<string, string>) => (
-    message: string | { type: string; payload?: string | { message: string; handler: string } },
-  ): void => {
-    if (typeof message === 'string') {
-      logger.info(message, loggerMeta);
-    } else if (message?.payload !== undefined) {
-      const { type, payload } = message;
-      if (type === 'progress' && typeof payload === 'object') {
-        logger.info(payload.message, { ...loggerMeta, handler: payload.handler });
-      } else if (typeof payload === 'string') {
-        logger.info(payload, loggerMeta);
-      }
-    }
-  };
-
   // key is same to workspace wikiFolderLocation, so we can get this worker by workspace wikiFolderLocation
   // { [wikiFolderLocation: string]: ArbitraryThreadType }
-  private wikiWorkers: Record<string, PromiseValue<ReturnType<typeof spawn>>> = {};
+  private wikiWorkers: Record<string, ModuleThread<WikiWorker>> = {};
 
   public async startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void> {
+    if (this.wikiWorkers[homePath] !== undefined) {
+      throw new DoubleWikiInstanceError(homePath);
+    }
     // use Promise to handle worker callbacks
     const workspace = await this.workspaceService.getByWikiFolderLocation(homePath);
     const workspaceID = workspace?.id;
@@ -98,40 +83,59 @@ export class Wiki implements IWikiService {
     }
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
     const workerData = { homePath, userName, tiddlyWikiPort };
-    const worker = await spawn(new Worker('./wiki-worker.ts'));
+    const worker = await spawn<WikiWorker>(new Worker('./wiki-worker.ts'));
     this.wikiWorkers[homePath] = worker;
+    refreshOutputFile(homePath);
     const loggerMeta = { worker: 'NodeJSWiki', homePath };
-    const loggerForWorker = this.logMessage(loggerMeta);
-    let started = false;
     return await new Promise<void>((resolve, reject) => {
+      // handle native messages
       Thread.errors(worker).subscribe((error) => {
         logger.error(error.message, { ...loggerMeta, ...error });
         reject(error);
       });
       Thread.events(worker).subscribe((event: WorkerEvent) => {
         if (event.type === 'message') {
-          loggerForWorker(event.data);
+          wikiOutputToFile(homePath, String(event.data));
           logger.debug(event.data, loggerMeta);
         } else if (event.type === 'termination') {
           delete this.wikiWorkers[homePath];
-          logger.warning(`NodeJSWiki ${homePath} Worker stopped`, loggerMeta);
-          resolve();
+          const warningMessage = `NodeJSWiki ${homePath} Worker stopped`;
+          logger.warning(warningMessage, loggerMeta);
+          reject(new Error(warningMessage));
         }
       });
 
-      return worker.startNodeJSWiki(workerData).then(() => {
-        if (!started) {
-          started = true;
-          setTimeout(async () => {
-            this.viewService.reloadViewsWebContents();
-            await this.workspaceService.updateMetaData(workspaceID, { isLoading: false });
-            // close add-workspace dialog
-            const addWorkspaceWindow = this.windowService.get(WindowNames.addWorkspace);
-            if (addWorkspaceWindow !== undefined) {
-              addWorkspaceWindow.close();
+      // subscribe to the Observable that startNodeJSWiki returns, handle messages send by our code
+      worker.startNodeJSWiki(workerData).subscribe((message) => {
+        if (message.type === 'control') {
+          switch (message.actions) {
+            case WikiControlActions.booted: {
+              setTimeout(async () => {
+                this.viewService.reloadViewsWebContents();
+                await this.workspaceService.updateMetaData(workspaceID, { isLoading: false });
+                // close add-workspace dialog
+                const addWorkspaceWindow = this.windowService.get(WindowNames.addWorkspace);
+                if (addWorkspaceWindow !== undefined) {
+                  addWorkspaceWindow.close();
+                }
+                resolve();
+              }, 100);
+              break;
             }
-            resolve();
-          }, 100);
+            case WikiControlActions.start: {
+              if (message.message !== undefined) {
+                logger.debug(message.message, loggerMeta);
+              }
+              break;
+            }
+            case WikiControlActions.error: {
+              const errorMessage = message.message ?? 'get WikiControlActions.error without message';
+              logger.error(errorMessage, { ...loggerMeta, message });
+              reject(new Error(errorMessage));
+            }
+          }
+        } else if (message.type === 'stderr' || message.type === 'stdout') {
+          wikiOutputToFile(homePath, message.message);
         }
       });
     });

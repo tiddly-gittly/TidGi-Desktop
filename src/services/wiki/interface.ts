@@ -4,6 +4,24 @@ import { IWorkspace } from '@services/workspaces/interface';
 import { IGitUserInfos } from '@services/git/interface';
 import type { ISubWikiPluginContent } from './update-plugin-content';
 
+export type IWikiMessage = IWikiLogMessage | IWikiControlMessage;
+export interface IWikiLogMessage {
+  type: 'stdout' | 'stderr';
+  message: string;
+}
+export enum WikiControlActions {
+  /** means worker is just started */
+  start = 'start',
+  /** wiki is booted */
+  booted = 'booted',
+  error = 'error',
+}
+export interface IWikiControlMessage {
+  type: 'control';
+  actions: WikiControlActions;
+  message?: string;
+}
+
 /**
  * Handle wiki worker startup and restart
  */
