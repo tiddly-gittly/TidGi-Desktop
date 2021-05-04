@@ -67,7 +67,6 @@ export function useNewWiki(
   const { t } = useTranslation();
 
   const onSubmit = useCallback(async () => {
-    if (!form.parentFolderLocation || !form.wikiFolderName) return;
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     hasErrorSetter(false);
     try {

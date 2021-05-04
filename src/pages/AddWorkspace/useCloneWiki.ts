@@ -61,23 +61,24 @@ export function useCloneWiki(
   const { t } = useTranslation();
 
   const onSubmit = useCallback(async () => {
-    if (!form.parentFolderLocation || !form.wikiFolderName || !form.gitRepoUrl || !form.gitUserInfo) return;
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     try {
       const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, true);
       if (isCreateMainWorkspace) {
-        await window.service.wiki.cloneWiki(form.parentFolderLocation, form.wikiFolderName, form.gitRepoUrl, form.gitUserInfo);
+        await window.service.wiki.cloneWiki(form.parentFolderLocation, form.wikiFolderName, form.gitRepoUrl, form.gitUserInfo!);
       } else {
         await window.service.wiki.cloneSubWiki(
           form.parentFolderLocation,
           form.wikiFolderName,
           form.mainWikiToLink.wikiFolderLocation,
           form.gitRepoUrl,
-          form.gitUserInfo,
+          form.gitUserInfo!,
           form.tagName,
         );
       }
       await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspaceConfig);
+      // wait for wiki to start and close the window now.
+      await window.remote.closeCurrentWindow();
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
       hasErrorSetter(true);

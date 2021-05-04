@@ -69,7 +69,6 @@ export function useExistedWiki(
   const { t } = useTranslation();
 
   const onSubmit = useCallback(async () => {
-    if (!form.existedWikiFolderPath || !form.parentFolderLocation || !form.gitRepoUrl || !form.gitUserInfo) return;
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, isCreateSyncedWorkspace);
     try {
@@ -95,6 +94,8 @@ export function useExistedWiki(
         );
       }
       await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspaceConfig);
+      // wait for wiki to start and close the window now.
+      await window.remote.closeCurrentWindow();
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
       hasErrorSetter(true);
