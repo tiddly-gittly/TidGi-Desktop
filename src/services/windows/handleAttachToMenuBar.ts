@@ -4,7 +4,7 @@ import windowStateKeeper from 'electron-window-state';
 import { menubar, Menubar } from 'menubar';
 import path from 'path';
 
-import { REACT_PATH, buildResourcePath } from '@/constants/paths';
+import { buildResourcePath } from '@/constants/paths';
 import { WindowNames } from './WindowProperties';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 
@@ -25,7 +25,7 @@ export default async function handleAttachToMenuBar(): Promise<Menubar> {
   tray.setImage(iconPath);
 
   const menuBar = menubar({
-    index: REACT_PATH,
+    index: MAIN_WINDOW_WEBPACK_ENTRY,
     tray,
     preloadWindow: true,
     tooltip: 'TiddlyGit',

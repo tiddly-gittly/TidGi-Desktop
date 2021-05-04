@@ -1,14 +1,13 @@
-/* eslint-disable unicorn/filename-case */
 import { After, Before, Status } from '@cucumber/cucumber';
 import fs from 'fs-extra';
 
-import { temporarySettingPath, mockWikiPath } from './constants';
+import { SETTINGS_FOLDER, DEFAULT_WIKI_FOLDER } from '../../src/constants/paths';
 import { TiddlyGitWorld } from './world';
 
 Before(async function () {
   // clear setting folder
-  await fs.remove(temporarySettingPath);
-  await fs.remove(mockWikiPath);
+  await fs.remove(SETTINGS_FOLDER);
+  await fs.remove(DEFAULT_WIKI_FOLDER);
 });
 
 After(async function (this: TiddlyGitWorld, testCase) {

@@ -2,7 +2,7 @@ import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { ContextChannel } from '@/constants/channels';
 
 export interface IPaths {
-  REACT_PATH: string;
+  MAIN_WINDOW_WEBPACK_ENTRY: string;
   TIDDLYWIKI_TEMPLATE_FOLDER_PATH: string;
   TIDDLERS_PATH: string;
   ICON_PATH: string;

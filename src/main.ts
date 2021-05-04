@@ -24,7 +24,7 @@ import { IPreferenceService } from './services/preferences/interface';
 import { IWikiService } from './services/wiki/interface';
 import { IWindowService } from './services/windows/interface';
 import { IWorkspaceViewService } from './services/workspacesView/interface';
-import { SETTINGS_FOLDER } from '@/constants/electronPaths';
+import { SETTINGS_FOLDER } from '@/constants/paths';
 
 const gotTheLock = app.requestSingleInstanceLock();
 

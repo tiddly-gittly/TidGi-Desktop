@@ -6,10 +6,10 @@ import { windowName } from './browserViewMetaData';
 const CHECK_LOADED_INTERVAL = 500;
 let CHROME_ERROR_PATH: string | undefined;
 let LOGIN_REDIRECT_PATH: string | undefined;
-let REACT_PATH: string | undefined;
+let MAIN_WINDOW_WEBPACK_ENTRY: string | undefined;
 
 async function refresh(): Promise<void> {
-  if (CHROME_ERROR_PATH === undefined || REACT_PATH === undefined || LOGIN_REDIRECT_PATH === undefined) {
+  if (CHROME_ERROR_PATH === undefined || MAIN_WINDOW_WEBPACK_ENTRY === undefined || LOGIN_REDIRECT_PATH === undefined) {
     await Promise.all([
       context.get('CHROME_ERROR_PATH').then((pathName) => {
         CHROME_ERROR_PATH = pathName;
@@ -17,15 +17,15 @@ async function refresh(): Promise<void> {
       context.get('LOGIN_REDIRECT_PATH').then((pathName) => {
         LOGIN_REDIRECT_PATH = pathName;
       }),
-      context.get('REACT_PATH').then((pathName) => {
-        REACT_PATH = pathName;
+      context.get('MAIN_WINDOW_WEBPACK_ENTRY').then((pathName) => {
+        MAIN_WINDOW_WEBPACK_ENTRY = pathName;
       }),
     ]);
     setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);
     return;
   }
   if (window.location.href === CHROME_ERROR_PATH || window.location.href.startsWith(LOGIN_REDIRECT_PATH)) {
-    await windowService.loadURL(windowName, REACT_PATH);
+    await windowService.loadURL(windowName, MAIN_WINDOW_WEBPACK_ENTRY);
   } else {
     setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);
   }
