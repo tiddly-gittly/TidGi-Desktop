@@ -95,11 +95,10 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
               ...workspace,
               subWikiFolderName: path.basename(wikiFolderLocation),
             });
-          } else {
+          } else if (response === 1) {
             await this.wikiService.removeWiki(wikiFolderLocation);
           }
           await this.workspaceViewService.removeWorkspaceView(workspaceID);
-          await this.wikiService.wikiStartup(workspace);
         }
       } catch (error) {
         logger.error((error as Error).message, error);
