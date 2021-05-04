@@ -174,13 +174,12 @@ export class Wiki implements IWikiService {
     logger.info('All wiki-worker is stopped', { function: 'stopAllWiki' });
   }
 
-  // create-wiki.ts
-
+  /**
+   * Send message to UI via WikiChannel.createProgress
+   * @param message will show in the UI
+   */
   private readonly logProgress = (message: string): void => {
-    logger.notice({
-      type: 'progress',
-      payload: { message, handler: 'createWikiProgress' },
-    });
+    logger.notice(message, { handler: WikiChannel.createProgress });
   };
 
   private readonly folderToContainSymlinks = 'subwiki';

@@ -9,12 +9,12 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { WikiChannel } from '@/constants/channels';
 
 const handlers = {
-  createWikiProgress: (message: string) => {
+  [WikiChannel.createProgress]: (message: string) => {
     const windowService = container.get<IWindowService>(serviceIdentifier.Window);
     const createWorkspaceWindow = windowService.get(WindowNames.addWorkspace);
     createWorkspaceWindow?.webContents?.send(WikiChannel.createProgress, message);
   },
-  wikiSyncProgress: async (message: string) => {
+  [WikiChannel.syncProgress]: async (message: string) => {
     const viewService = container.get<IViewService>(serviceIdentifier.View);
     const browserView = await viewService.getActiveBrowserView();
     browserView?.webContents?.send(WikiChannel.syncProgress, message);

@@ -19,7 +19,7 @@ function initWikiGit(wikiFolderPath: string, isSyncedWiki?: boolean, remoteUrl?:
         warn: (message: string, context: ILoggerContext): unknown =>
           observer.next({ message, level: 'warn', meta: { callerFunction: 'initWikiGit', ...context } }),
         info: (message: GitStep, context: ILoggerContext): void => {
-          observer.next({ message, level: 'warn', meta: { handler: WikiChannel.syncProgress, callerFunction: 'initWikiGit', ...context } });
+          observer.next({ message, level: 'notice', meta: { handler: WikiChannel.createProgress, callerFunction: 'initWikiGit', ...context } });
         },
       },
     }).then(
@@ -47,7 +47,7 @@ function commitAndSyncWiki(wikiFolderPath: string, remoteUrl: string, userInfo: 
         warn: (message: string, context: ILoggerContext): unknown =>
           observer.next({ message, level: 'warn', meta: { callerFunction: 'commitAndSync', ...context } }),
         info: (message: GitStep, context: ILoggerContext): void => {
-          observer.next({ message, level: 'warn', meta: { handler: WikiChannel.syncProgress, callerFunction: 'commitAndSync', ...context } });
+          observer.next({ message, level: 'notice', meta: { handler: WikiChannel.syncProgress, callerFunction: 'commitAndSync', ...context } });
         },
       },
     }).then(
@@ -67,7 +67,7 @@ function cloneWiki(remoteUrl: string, repoFolderPath: string, userInfo: IGitUser
         log: (message: string, context: ILoggerContext): unknown => observer.next({ message, level: 'log', meta: { callerFunction: 'clone', ...context } }),
         warn: (message: string, context: ILoggerContext): unknown => observer.next({ message, level: 'warn', meta: { callerFunction: 'clone', ...context } }),
         info: (message: GitStep, context: ILoggerContext): void => {
-          observer.next({ message, level: 'warn', meta: { handler: WikiChannel.syncProgress, callerFunction: 'clone', ...context } });
+          observer.next({ message, level: 'notice', meta: { handler: WikiChannel.createProgress, callerFunction: 'clone', ...context } });
         },
       },
     }).then(
