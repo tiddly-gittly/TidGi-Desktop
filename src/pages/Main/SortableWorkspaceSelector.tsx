@@ -49,7 +49,7 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
           },
           {
             label: t('WorkspaceSelector.RemoveWorkspace'),
-            click: async () => await window.service.workspaceView.removeWorkspaceView(id),
+            click: async () => await window.service.wikiGitWorkspace.removeWorkspace(id),
           },
         ];
 
@@ -74,7 +74,7 @@ export function SortableWorkspaceSelector({ index, workspace }: ISortableItemPro
         workspaceName={name}
         picturePath={picturePath ?? defaultIcon}
         transparentBackground={transparentBackground}
-        order={index}
+        index={index}
         hibernated={hibernated}
         showSidebarShortcutHints
       />

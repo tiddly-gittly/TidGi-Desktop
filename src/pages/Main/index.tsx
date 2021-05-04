@@ -218,7 +218,7 @@ export default function Main(): JSX.Element {
                   </SortableContext>
                 </DndContext>
               )}
-              <WorkspaceSelector id="add" onClick={() => void window.service.window.open(WindowNames.addWorkspace)} />
+              <WorkspaceSelector id="add" index={workspacesList?.length ?? 0} onClick={() => void window.service.window.open(WindowNames.addWorkspace)} />
             </SidebarTop>
             <SideBarEnd>
               <IconButton

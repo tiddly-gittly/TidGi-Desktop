@@ -43,7 +43,7 @@ const Root = styled.div<{ hibernated?: boolean; active?: boolean }>`
 // TODO: background: theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white,
 // TODO: color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white),
 // TODO: border: theme.palette.type === 'dark' ? 'none' : 1px solid rgba(0, 0, 0, 0.12),
-const Avatar = styled.div<{ large?: boolean; transparent?: boolean; addAvatar?: boolean }>`
+const Avatar = styled.div<{ large?: boolean; transparent?: boolean; addAvatar: boolean; highlightAdd: boolean }>`
   height: 36px;
   width: 36px;
   border-radius: 4px;
@@ -67,10 +67,16 @@ const Avatar = styled.div<{ large?: boolean; transparent?: boolean; addAvatar?: 
       border-radius: 0;
     `}
 
-  &:hover {
+  &${({ highlightAdd }) => (highlightAdd ? '' : ':hover')} {
     background-color: #eeeeee;
-    opacity: 0.5;
+    color: black;
   }
+  ${({ addAvatar }) =>
+    addAvatar
+      ? ''
+      : css`
+          background-color: transparent !important;
+        `}
 `;
 
 const AvatarPicture = styled.img<{ large?: boolean }>`
@@ -102,7 +108,7 @@ interface Props {
   badgeCount?: number;
   hibernated?: boolean;
   id: string;
-  order?: number;
+  index?: number;
   picturePath?: string | null;
   showSidebarShortcutHints?: boolean;
   transparentBackground?: boolean;
@@ -114,7 +120,7 @@ export default function WorkspaceSelector({
   badgeCount = 0,
   hibernated = false,
   id,
-  order = 0,
+  index = 0,
   picturePath,
   showSidebarShortcutHints = false,
   transparentBackground = false,
@@ -134,6 +140,7 @@ export default function WorkspaceSelector({
           large={!showSidebarShortcutHints}
           transparent={transparentBackground}
           addAvatar={id === 'add'}
+          highlightAdd={index === 0}
           id={id === 'add' ? 'add-workspace-button' : `workspace-avatar-${id}`}>
           {id !== 'add' ? (
             <AvatarPicture alt="Icon" large={!showSidebarShortcutHints} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />
@@ -142,7 +149,7 @@ export default function WorkspaceSelector({
           )}
         </Avatar>
       </Badge>
-      {showSidebarShortcutHints && (id === 'add' || order < 9) && <ShortcutText>{id === 'add' ? t('WorkspaceSelector.Add') : shortWorkspaceName}</ShortcutText>}
+      {showSidebarShortcutHints && <ShortcutText>{id === 'add' ? t('WorkspaceSelector.Add') : shortWorkspaceName}</ShortcutText>}
     </Root>
   );
 }
