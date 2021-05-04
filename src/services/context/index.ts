@@ -7,10 +7,11 @@ import { injectable } from 'inversify';
 
 import { IContextService, IContext, IPaths, IConstants } from './interface';
 import * as paths from '@/constants/paths';
+import * as electronPaths from '@/constants/electronPaths';
 
 @injectable()
 export class ContextService implements IContextService {
-  private readonly pathConstants: IPaths = paths;
+  private readonly pathConstants: IPaths = { ...paths, ...electronPaths };
   private readonly constants: IConstants = {
     isDevelopment: isElectronDevelopment,
     platform: process.platform,

@@ -1,13 +1,12 @@
-import { app } from 'electron';
 import path from 'path';
 import os from 'os';
 import { isDevelopmentOrTest } from './environment';
-import { developmentSettingFolderName, developmentWikiFolderName, localizationFolderName } from './fileNames';
+import { developmentWikiFolderName, localizationFolderName } from './fileNames';
 
 const isMac = process.platform === 'darwin';
 
 /** src folder */
-const sourcePath = path.resolve(__dirname, '..');
+export const sourcePath = path.resolve(__dirname, '..');
 export const buildResourcePath = path.resolve(sourcePath, '..', 'build-resources');
 
 export const REACT_PATH = MAIN_WINDOW_WEBPACK_ENTRY;
@@ -25,9 +24,6 @@ export const LOG_FOLDER = isDevelopmentOrTest
   : isMac
   ? path.resolve(process.resourcesPath, '..', 'logs')
   : path.resolve(os.homedir(), '.tg-note', 'logs');
-export const SETTINGS_FOLDER = isDevelopmentOrTest
-  ? path.resolve(sourcePath, '..', developmentSettingFolderName)
-  : path.resolve(app.getPath('userData'), 'settings');
 export const LOCALIZATION_FOLDER = isDevelopmentOrTest
   ? path.resolve(sourcePath, '..', localizationFolderName)
   : path.resolve(process.resourcesPath, localizationFolderName);
