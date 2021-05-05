@@ -12,7 +12,8 @@ function initWikiGit(wikiFolderPath: string, isSyncedWiki?: boolean, remoteUrl?:
       dir: wikiFolderPath,
       remoteUrl,
       syncImmediately: isSyncedWiki,
-      userInfo: { ...defaultGitInfo, ...userInfo },
+      userInfo,
+      defaultGitInfo,
       logger: {
         log: (message: string, context: ILoggerContext): unknown =>
           observer.next({ message, level: 'log', meta: { callerFunction: 'initWikiGit', ...context } }),
@@ -40,7 +41,8 @@ function commitAndSyncWiki(wikiFolderPath: string, remoteUrl: string, userInfo: 
     void commitAndSync({
       dir: wikiFolderPath,
       remoteUrl,
-      userInfo: { ...defaultGitInfo, ...userInfo },
+      userInfo,
+      defaultGitInfo,
       logger: {
         log: (message: string, context: ILoggerContext): unknown =>
           observer.next({ message, level: 'log', meta: { callerFunction: 'commitAndSync', ...context } }),
@@ -62,7 +64,8 @@ function cloneWiki(remoteUrl: string, repoFolderPath: string, userInfo: IGitUser
     void clone({
       dir: repoFolderPath,
       remoteUrl,
-      userInfo: { ...defaultGitInfo, ...userInfo },
+      userInfo,
+      defaultGitInfo,
       logger: {
         log: (message: string, context: ILoggerContext): unknown => observer.next({ message, level: 'log', meta: { callerFunction: 'clone', ...context } }),
         warn: (message: string, context: ILoggerContext): unknown => observer.next({ message, level: 'warn', meta: { callerFunction: 'clone', ...context } }),
