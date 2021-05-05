@@ -10,7 +10,7 @@ const fs = require('fs-extra');
 /**
  * Specific which lproj you want to keep
  */
-const keepingLprojRegEx = /(en)\.lproj/g;
+const keepingLprojRegEx = /(en|zh_CN)\.lproj/g;
 
 /**
  *
