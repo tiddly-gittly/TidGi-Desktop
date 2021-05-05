@@ -6,7 +6,9 @@
     "RemoveWorkspace": "Remove Workspace",
     "AreYouSure": "Are you sure you want to remove this workspace? \nRemoving the workspace will delete the workspace in this application, but will not delete the folders from the hard drive. \nBut, if you choose to delete the Wiki folder as well, all contents will be deleted.",
     "RemoveWorkspaceAndDelete": "Remove workspace and delete Wiki folder from the disk",
-    "BadWorkspacePath": "There are some problem in your workspace setup"
+    "BadWorkspacePath": "There are some problem in your workspace setup",
+    "EditCurrentWorkspace": "Edit Current Workspace",
+    "RemoveCurrentWorkspace": "Remove Current Workspace"
   },
   "ContextMenu": {
     "OpenLinkInNewWindow": "Open Link in New Window",
@@ -254,7 +256,8 @@
     "HowToEnableNotifications": "<0>TiddlyGit supports notifications out of the box. But for some cases, to receive notifications, you will need to manually configure additional web app settings.</0><1>Learn more</1><2>.</2>",
     "IgnoreCertificateErrorsDescription": "<0>Not recommended. </0><1>Learn more</1>.",
     "OpenMetaDataFolder": "Open the metadata folder of TiddlyGit workspace",
-    "OpenMetaDataFolderDetail": "TiddlyWiki's data and TiddlyGit's workspace metadata are stored separately. TiddlyGit's metadata includes workspace settings, etc., which are stored in this folder in JSON format."
+    "OpenMetaDataFolderDetail": "TiddlyWiki's data and TiddlyGit's workspace metadata are stored separately. TiddlyGit's metadata includes workspace settings, etc., which are stored in this folder in JSON format.",
+    "HideSideBar": "Hide SideBar"
   },
   "Error": {
     "InitWikiGitError": "InitWikiGitError",
@@ -286,6 +289,11 @@
     "Language": "Language",
     "Window": "Window",
     "Workspaces": "Workspaces",
-    "Back": "Back"
+    "Back": "Back",
+    "Find": "Find",
+    "FindNext": "Find Next",
+    "FindPrevious": "Find Previous",
+    "Forward": "Forward",
+    "Home": "Home"
   }
 }

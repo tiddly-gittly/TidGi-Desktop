@@ -277,6 +277,7 @@ export class MenuService implements IMenuService {
     } else {
       webContents = webContentsOrWindowName;
     }
+    const sidebar = await this.preferenceService.get('sidebar');
     const contextMenuBuilder = new ContextMenuBuilder(webContents);
     const menu = contextMenuBuilder.buildMenuForElement(info);
     menu.append(
@@ -307,9 +308,9 @@ export class MenuService implements IMenuService {
     );
     menu.append(
       new MenuItem({
-        label: (await this.preferenceService.get('sidebar')) ? i18next.t('Preference.HideSideBar') : i18next.t('Preference.ShowSideBar'),
+        label: sidebar ? i18next.t('Preference.HideSideBar') : i18next.t('Preference.ShowSideBar'),
         click: async () => {
-          await this.preferenceService.set('sidebar', !(await this.preferenceService.get('sidebar')));
+          await this.preferenceService.set('sidebar', !sidebar);
         },
       }),
     );
