@@ -4,7 +4,9 @@
   "WorkspaceSelector": {
     "Add": "添加",
     "EditWorkspace": "编辑工作区",
+    "EditCurrentWorkspace": "编辑当前工作区",
     "RemoveWorkspace": "移除工作区",
+    "RemoveCurrentWorkspace": "移除当前工作区",
     "RemoveWorkspaceAndDelete": "移除工作区并删除Wiki文件夹",
     "AreYouSure": "你确定要移除这个工作区吗？移除工作区会删除本应用中的工作区，但不会删除硬盘上的文件夹。如果你选择一并删除Wiki文件夹，则所有内容都会被被删除。",
     "BadWorkspacePath": "工作区路径有问题"
@@ -40,6 +42,14 @@
     "TiddlyGit": "太记",
     "Edit": "编辑",
     "View": "查看",
+    "Find": "查找",
+    "FindNext": "查找下一个",
+    "FindPrevious": "查找上一个",
+    "Home": "首页",
+    "Back": "返回",
+    "Forward": "前进",
+    "SelectPreviousWorkspace": "选择前一个工作区",
+    "SelectNextWorkspace": "选择下一个工作区",
     "Language": "语言/Lang",
     "History": "历史",
     "Workspaces": "工作区",
@@ -278,7 +288,9 @@
     "CopyWikiTemplateError": "复制维基模板错误",
     "CopyWikiTemplateErrorDescription": "E-3 尝试把最新维基模板复制或覆盖到对应位置，但是失败了，这应该是由bug导致的。",
     "DoubleWikiInstanceError": "重复启动维基错误",
-    "DoubleWikiInstanceErrorDescription": "E-4 你启动了同一个Wiki两次，这可能是程序bug导致的。"
+    "DoubleWikiInstanceErrorDescription": "E-4 你启动了同一个Wiki两次，这可能是程序bug导致的。",
+    "InsertMenuAfterSubMenuIndexError": "插入目录模板到现有目录后错误",
+    "InsertMenuAfterSubMenuIndexErrorDescription": "E-5 你尝试插入目录，且 afterSubMenu \"{afterSubMenu}\" 在目录 menuID \"{menuID}\" 内，但我们无法在目录 \"{menu}\" 里找到它，请用正确的 menuID 指定一个目录。"
   },
   "Loading": "加载中",
   "Yes": "是的",

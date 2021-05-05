@@ -263,8 +263,10 @@
     "InitWikiGitRevertErrorDescription": "E-2 Not only did the initialization of the note warehouse fail, but also the revocation failed. This is a serious problem, and you need to manually clean up the new folder generated in this location.",
     "CopyWikiTemplateError": "CopyWikiTemplateError",
     "CopyWikiTemplateErrorDescription": "E-3 Attempt to copy or overwrite the latest wiki template to the corresponding location, but failed. This should be caused by a bug.",
-    "DoubleWikiInstanceError": "Repeatedly start wiki error",
-    "DoubleWikiInstanceErrorDescription": "E-4 You started the same Wiki twice. This may be caused by a bug in the program."
+    "DoubleWikiInstanceError": "DoubleWikiInstanceError",
+    "DoubleWikiInstanceErrorDescription": "E-4 You started the same Wiki twice. This may be caused by a bug in the program.",
+    "InsertMenuAfterSubMenuIndexError": "InsertMenuAfterSubMenuIndexError",
+    "InsertMenuAfterSubMenuIndexErrorDescription": "E-5 You try to insert menu with afterSubMenu \"{afterSubMenu}\" in menu \"{menuID}\", but we can not found it in menu \"{menu}\", please specific a menuitem with correct id attribute"
   },
   "Loading": "Loading",
   "Yes": "Yes",
@@ -278,6 +280,8 @@
     "Edit": "Edit",
     "TiddlyGit": "TiddlyGit",
     "View": "View",
+    "SelectPreviousWorkspace": "Select Previous Workspace",
+    "SelectNextWorkspace": "Select Next Workspace",
     "History": "History",
     "Language": "Language",
     "Window": "Window",

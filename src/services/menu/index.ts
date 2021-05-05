@@ -1,27 +1,30 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
 import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, WebContents, MenuItem, ipcMain, app } from 'electron';
-import { debounce, take, drop, reverse } from 'lodash';
+import { debounce, take, drop, reverse, uniqBy, remove } from 'lodash';
 import { injectable } from 'inversify';
 import { IMenuService, DeferredMenuItemConstructorOptions, IOnContextMenuInfo } from './interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
+import { IViewService } from '@services/view/interface';
 import i18next from '@services/libs/i18n';
 import ContextMenuBuilder from './contextMenuBuilder';
 import { IpcSafeMenuItem, mainMenuItemProxy } from './rendererMenuItemProxy';
+import { InsertMenuAfterSubMenuIndexError } from './error';
 
 @injectable()
 export class MenuService implements IMenuService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
 
   private _menuTemplate?: DeferredMenuItemConstructorOptions[];
   private get menuTemplate(): DeferredMenuItemConstructorOptions[] {
     // wait for translations to be initialized
-    if (i18next.t('Menu.TiddlyGit') === undefined || i18next.t('Menu.TiddlyGit') === 'Menu.TiddlyGit') {
-      return [];
-    }
+    // if (i18next.t('Menu.TiddlyGit') === undefined || i18next.t('Menu.TiddlyGit') === 'Menu.TiddlyGit') {
+    //   return [];
+    // }
     if (this._menuTemplate === undefined) {
       this.loadDefaultMenuTemplate();
     }
@@ -52,12 +55,7 @@ export class MenuService implements IMenuService {
         ...item,
         label: typeof item.label === 'function' ? item.label() : item.label,
         enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
-        submenu:
-          typeof item.submenu === 'function'
-            ? await this.getCurrentMenuItemConstructorOptions(item.submenu())
-            : item.submenu instanceof Menu
-            ? item.submenu
-            : await this.getCurrentMenuItemConstructorOptions(item.submenu),
+        submenu: item.submenu instanceof Menu ? item.submenu : await this.getCurrentMenuItemConstructorOptions(item.submenu),
       })),
     );
   }
@@ -103,22 +101,12 @@ export class MenuService implements IMenuService {
       {
         label: () => i18next.t('Menu.Edit'),
         id: 'Edit',
-        submenu: [
-          { role: 'undo' },
-          { role: 'redo' },
-          { type: 'separator' },
-          { role: 'cut' },
-          { role: 'copy' },
-          { role: 'paste' },
-          { role: 'pasteAndMatchStyle' },
-          { role: 'delete' },
-          { role: 'selectAll' },
-          { type: 'separator' },
-        ],
+        role: 'editMenu',
       },
       {
         label: () => i18next.t('Menu.View'),
         id: 'View',
+        role: 'viewMenu',
       },
       {
         label: () => i18next.t('Menu.Language'),
@@ -127,6 +115,22 @@ export class MenuService implements IMenuService {
       {
         label: () => i18next.t('Menu.History'),
         id: 'History',
+        submenu: [
+          {
+            label: i18next.t('ContextMenu.Back'),
+            enabled: async () => (await this.viewService.getActiveBrowserView())?.webContents?.canGoBack() ?? false,
+            click: async () => {
+              (await this.viewService.getActiveBrowserView())?.webContents?.goBack();
+            },
+          },
+          {
+            label: i18next.t('ContextMenu.Forward'),
+            enabled: async () => (await this.viewService.getActiveBrowserView())?.webContents?.canGoForward() ?? false,
+            click: async () => {
+              (await this.viewService.getActiveBrowserView())?.webContents?.goForward();
+            },
+          },
+        ],
       },
       {
         label: () => i18next.t('Menu.Workspaces'),
@@ -135,9 +139,8 @@ export class MenuService implements IMenuService {
       },
       {
         label: () => i18next.t('Menu.Window'),
-        role: 'window',
-        id: 'window',
-        submenu: [{ role: 'minimize' }, { role: 'close' }, { type: 'separator' }, { role: 'front' }, { type: 'separator' }],
+        role: 'windowMenu',
+        id: 'Window',
       },
       {
         label: () => i18next.t('Menu.Help'),
@@ -188,66 +191,69 @@ export class MenuService implements IMenuService {
   /**
    * Insert provided sub menu items into menubar, so user and services can register custom menu items
    * @param menuID Top level menu name to insert menu items
-   * @param menuItems An array of menu item to insert or update, if some of item is already existed, it will be updated instead of inserted
+   * @param newSubMenuItems An array of menu item to insert or update, if some of item is already existed, it will be updated instead of inserted
    * @param afterSubMenu The `id` or `role` of a submenu you want your submenu insert after. `null` means inserted as first submenu item; `undefined` means inserted as last submenu item;
    * @param withSeparator Need to insert a separator first, before insert menu items
    */
-  public async insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator = false): Promise<void> {
+  public async insertMenu(
+    menuID: string,
+    newSubMenuItems: Array<DeferredMenuItemConstructorOptions | MenuItemConstructorOptions>,
+    afterSubMenu?: string | null,
+    withSeparator = false,
+  ): Promise<void> {
     let foundMenuName = false;
     // try insert menu into an existed menu's submenu
     for (const menu of this.menuTemplate) {
       // match top level menu
       if (menu.id === menuID) {
         foundMenuName = true;
-        // TODO: check some menu item existed, we update them and pop them out
-        const filteredMenuItems: DeferredMenuItemConstructorOptions[] = [];
-        for (const item of menuItems) {
-          const currentSubMenu = typeof menu.submenu === 'function' ? menu.submenu() : menu.submenu ?? [];
+        // heck some menu item existed, we update them and pop them out
+        const currentSubMenu = menu.submenu ?? [];
+        // we push old and new content into this array, and assign back to menu.submenu later
+        let filteredSubMenu: Array<DeferredMenuItemConstructorOptions | MenuItemConstructorOptions> = currentSubMenu;
+        for (const newSubMenuItem of newSubMenuItems) {
           const existedItemIndex = currentSubMenu.findIndex(
-            (existedItem) => existedItem.id === item.id || existedItem.label === item.label || existedItem.role === item.role,
+            (existedItem) => existedItem.id === newSubMenuItem.id || existedItem.label === newSubMenuItem.label || existedItem.role === newSubMenuItem.role,
           );
+          // replace existed item, and remove it from needed-to-add-items
           if (existedItemIndex !== -1) {
-            // TODO: update menu item
+            filteredSubMenu[existedItemIndex] = newSubMenuItem;
+            remove(newSubMenuItems, (item) => item.id === newSubMenuItem.id);
           }
         }
 
-        // directly insert whole sub menu
-        if (Array.isArray(menu.submenu)) {
-          if (afterSubMenu === undefined) {
-            // inserted as last submenu item
-            if (withSeparator) {
-              menu.submenu.push({ type: 'separator' });
-            }
-            menu.submenu = [...menu.submenu, ...menuItems];
-          } else if (afterSubMenu === null) {
-            // inserted as first submenu item
-            if (withSeparator) {
-              menuItems.push({ type: 'separator' });
-            }
-            menu.submenu = [...menuItems, ...menu.submenu];
-          } else if (typeof afterSubMenu === 'string') {
-            // insert after afterSubMenu
-            const afterSubMenuIndex = menu.submenu.findIndex((item) => item.id === afterSubMenu || item.role === afterSubMenu);
-            if (afterSubMenuIndex === -1) {
-              throw new Error(
-                `You try to insert menu with afterSubMenu "${afterSubMenu}" in menu "${menuID}", but we can not found it in menu "${
-                  menu.id ?? menu.role ?? JSON.stringify(menu)
-                }", please specific a menuitem with correct id attribute`,
-              );
-            }
-            menu.submenu = [...take(menu.submenu, afterSubMenuIndex + 1), ...menuItems, ...drop(menu.submenu, afterSubMenuIndex - 1)];
+        if (afterSubMenu === undefined) {
+          // inserted as last submenu item
+          if (withSeparator) {
+            filteredSubMenu.push({ type: 'separator' });
           }
-        } else {
-          // if menu existed but submenu is undefined
-          menu.submenu = menuItems;
+          filteredSubMenu = [...filteredSubMenu, ...newSubMenuItems];
+        } else if (afterSubMenu === null) {
+          // inserted as first submenu item
+          if (withSeparator) {
+            newSubMenuItems.push({ type: 'separator' });
+          }
+          filteredSubMenu = [...newSubMenuItems, ...filteredSubMenu];
+        } else if (typeof afterSubMenu === 'string') {
+          // insert after afterSubMenu
+          // DEBUG: console
+          console.log(`filteredSubMenu`, afterSubMenu, filteredSubMenu);
+          const afterSubMenuIndex = filteredSubMenu.findIndex((item) => item.id === afterSubMenu || item.role === afterSubMenu);
+          if (afterSubMenuIndex === -1) {
+            throw new InsertMenuAfterSubMenuIndexError(afterSubMenu, menuID, menu);
+          }
+          filteredSubMenu = [...take(filteredSubMenu, afterSubMenuIndex + 1), ...newSubMenuItems, ...drop(filteredSubMenu, afterSubMenuIndex - 1)];
         }
+        menu.submenu = filteredSubMenu;
+        // leave this finding menu loop
+        break;
       }
     }
     // if user wants to create a new menu in menubar
     if (!foundMenuName) {
       this.menuTemplate.push({
         label: menuID,
-        submenu: menuItems,
+        submenu: newSubMenuItems,
       });
     }
     await this.buildMenu();

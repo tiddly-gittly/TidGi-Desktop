@@ -12,9 +12,7 @@ import type { IpcSafeMenuItem } from './rendererMenuItemProxy';
 export interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstructorOptions, 'label' | 'enabled' | 'submenu'> {
   label?: (() => string) | string;
   enabled?: (() => boolean) | (() => Promise<boolean>) | boolean;
-  submenu?:
-    | (() => Array<MenuItemConstructorOptions | DeferredMenuItemConstructorOptions>)
-    | Array<MenuItemConstructorOptions | DeferredMenuItemConstructorOptions>;
+  submenu?: Array<MenuItemConstructorOptions | DeferredMenuItemConstructorOptions>;
 }
 
 /**

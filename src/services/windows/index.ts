@@ -353,30 +353,27 @@ export class Window implements IWindowService {
   }
 
   private async registerMenu(): Promise<void> {
-    await this.menuService.insertMenu(
-      'window',
-      [
-        // `role: 'zoom'` is only supported on macOS
-        process.platform === 'darwin'
-          ? {
-              role: 'zoom',
-            }
-          : {
-              label: 'Zoom',
-              click: () => {
-                const mainWindow = this.get(WindowNames.main);
-                if (mainWindow !== undefined) {
-                  mainWindow.maximize();
-                }
-              },
+    await this.menuService.insertMenu('Window', [
+      // `role: 'zoom'` is only supported on macOS
+      process.platform === 'darwin'
+        ? {
+            role: 'zoom',
+          }
+        : {
+            label: 'Zoom',
+            click: () => {
+              const mainWindow = this.get(WindowNames.main);
+              if (mainWindow !== undefined) {
+                mainWindow.maximize();
+              }
             },
-      ],
-      'close',
-    );
+          },
+      { role: 'close' },
+    ]);
 
     await this.menuService.insertMenu('Edit', [
       {
-        label: 'Find',
+        label: () => i18n.t('Menu.Find'),
         accelerator: 'CmdOrCtrl+F',
         click: async () => {
           const mainWindow = this.get(WindowNames.main);
@@ -391,7 +388,7 @@ export class Window implements IWindowService {
         enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
       {
-        label: 'Find Next',
+        label: () => i18n.t('Menu.FindNext'),
         accelerator: 'CmdOrCtrl+G',
         click: () => {
           const mainWindow = this.get(WindowNames.main);
@@ -400,7 +397,7 @@ export class Window implements IWindowService {
         enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
       {
-        label: 'Find Previous',
+        label: () => i18n.t('Menu.FindPrevious'),
         accelerator: 'Shift+CmdOrCtrl+G',
         click: () => {
           const mainWindow = this.get(WindowNames.main);
@@ -412,13 +409,13 @@ export class Window implements IWindowService {
 
     await this.menuService.insertMenu('History', [
       {
-        label: 'Home',
+        label: () => i18n.t('Menu.Home'),
         accelerator: 'Shift+CmdOrCtrl+H',
         click: async () => await this.goHome(),
         enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
       {
-        label: 'Back',
+        label: () => i18n.t('Menu.Back'),
         accelerator: 'CmdOrCtrl+[',
         click: async (_menuItem, browserWindow) => {
           // if back is called in popup window
@@ -436,7 +433,7 @@ export class Window implements IWindowService {
         enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
       {
-        label: 'Forward',
+        label: () => i18n.t('Menu.Forward'),
         accelerator: 'CmdOrCtrl+]',
         click: async (_menuItem, browserWindow) => {
           // if back is called in popup window
@@ -454,7 +451,7 @@ export class Window implements IWindowService {
       },
       { type: 'separator' },
       {
-        label: 'Copy URL',
+        label: () => i18n.t('ContextMenu.CopyLink'),
         accelerator: 'CmdOrCtrl+L',
         click: async (_menuItem, browserWindow) => {
           // if back is called in popup window
@@ -476,40 +473,5 @@ export class Window implements IWindowService {
         enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
     ]);
-
-    if (process.platform === 'darwin') {
-      // TODO: restore updater options here
-      await this.menuService.insertMenu('TiddlyGit', [
-        {
-          label: () => i18n.t('ContextMenu.About'),
-          click: async () => await this.open(WindowNames.about),
-        },
-        { type: 'separator' },
-        {
-          label: () => i18n.t('ContextMenu.Preferences'),
-          click: async () => await this.open(WindowNames.preferences),
-          accelerator: 'CmdOrCtrl+,',
-        },
-        { type: 'separator' },
-        {
-          label: () => i18n.t('ContextMenu.Notifications'),
-          click: async () => await this.open(WindowNames.notifications),
-          accelerator: 'CmdOrCtrl+Shift+N',
-        },
-        { type: 'separator' },
-        {
-          label: () => i18n.t('Preference.ClearBrowsingData'),
-          click: () => ipcMain.emit('request-clear-browsing-data'),
-        },
-        { type: 'separator' },
-        { role: 'services', submenu: [] },
-        { type: 'separator' },
-        { role: 'hide' },
-        { role: 'hideOthers' },
-        { role: 'unhide' },
-        { type: 'separator' },
-        { role: 'quit' },
-      ]);
-    }
   }
 }

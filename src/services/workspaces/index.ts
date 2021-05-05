@@ -22,6 +22,8 @@ import { IAuthenticationService } from '@services/auth/interface';
 import { SupportedStorageServices } from '@services/types';
 import { lazyInject } from '@services/container';
 import { IWorkspaceService, IWorkspace, IWorkspaceMetaData, INewWorkspaceConfig } from './interface';
+import i18n from '@services/libs/i18n';
+import { workspace } from '@/preload/common/services';
 
 @injectable()
 export class Workspace implements IWorkspaceService {
@@ -51,7 +53,7 @@ export class Workspace implements IWorkspaceService {
   private async registerMenu(): Promise<void> {
     await this.menuService.insertMenu('Workspaces', [
       {
-        label: 'Select Next Workspace',
+        label: () => i18n.t('Menu.SelectNextWorkspace'),
         click: async () => {
           const currentActiveWorkspace = await this.getActiveWorkspace();
           if (currentActiveWorkspace === undefined) return;
@@ -60,10 +62,10 @@ export class Workspace implements IWorkspaceService {
           await this.workspaceViewService.setActiveWorkspaceView(nextWorkspace.id);
         },
         accelerator: 'CmdOrCtrl+Shift+]',
-        enabled: async () => (await this.countWorkspaces()) > 0,
+        enabled: async () => (await this.countWorkspaces()) > 1,
       },
       {
-        label: 'Select Previous Workspace',
+        label: () => i18n.t('Menu.SelectPreviousWorkspace'),
         click: async () => {
           const currentActiveWorkspace = await this.getActiveWorkspace();
           if (currentActiveWorkspace === undefined) return;
@@ -72,11 +74,11 @@ export class Workspace implements IWorkspaceService {
           await this.workspaceViewService.setActiveWorkspaceView(previousWorkspace.id);
         },
         accelerator: 'CmdOrCtrl+Shift+[',
-        enabled: async () => (await this.countWorkspaces()) > 0,
+        enabled: async () => (await this.countWorkspaces()) > 1,
       },
       { type: 'separator' },
       {
-        label: 'Edit Current Workspace',
+        label: () => i18n.t('WorkspaceSelector.EditCurrentWorkspace'),
         click: async () => {
           const currentActiveWorkspace = await this.getActiveWorkspace();
           if (currentActiveWorkspace === undefined) return;
@@ -85,17 +87,17 @@ export class Workspace implements IWorkspaceService {
         enabled: async () => (await this.countWorkspaces()) > 0,
       },
       {
-        label: 'Remove Current Workspace',
+        label: () => i18n.t('WorkspaceSelector.RemoveCurrentWorkspace'),
         click: async () => {
           const currentActiveWorkspace = await this.getActiveWorkspace();
           if (currentActiveWorkspace === undefined) return;
-          await this.remove(currentActiveWorkspace.id);
+          await this.workspaceViewService.removeWorkspaceView(currentActiveWorkspace.id);
         },
         enabled: async () => (await this.countWorkspaces()) > 0,
       },
       { type: 'separator' },
       {
-        label: 'Add Workspace',
+        label: () => i18n.t('AddWorkspace.AddWorkspace'),
         click: async () => {
           await this.windowService.open(WindowNames.addWorkspace);
         },
@@ -110,7 +112,8 @@ export class Workspace implements IWorkspaceService {
     const newMenuItems = (await this.getWorkspacesAsList()).flatMap((workspace, index) => [
       {
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        label: workspace.name || `Workspace ${index + 1}`,
+        label: () => workspace.name || `Workspace ${index + 1}`,
+        id: workspace.id,
         type: 'checkbox' as const,
         checked: workspace.active,
         click: async () => {
@@ -122,7 +125,8 @@ export class Workspace implements IWorkspaceService {
       },
       {
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        label: workspace.name || `Workspace ${index + 1}`,
+        label: () => i18n.t('ContextMenu.DeveloperTools') + (workspace.name || `Workspace ${index + 1}`),
+        id: `${workspace.id}-devtool`,
         click: async () => {
           const view = this.viewService.getView(workspace.id);
           view.webContents.toggleDevTools();
