@@ -1,6 +1,6 @@
 import { IGitUserInfosWithoutToken } from './interface';
 
-export const defaultGitInfo: IGitUserInfosWithoutToken = {
+export const defaultGitInfo = {
   email: 'tiddlygit@gmail.com',
   gitUserName: 'tiddlygit',
 };
