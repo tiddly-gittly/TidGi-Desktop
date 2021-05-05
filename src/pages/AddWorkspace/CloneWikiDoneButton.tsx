@@ -10,9 +10,13 @@ import { useValidateCloneWiki, useCloneWiki } from './useCloneWiki';
 import { useWikiCreationProgress } from './useIndicator';
 import { WikiLocation, CloseButton } from './FormComponents';
 
-export function CloneWikiDoneButton({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
+export function CloneWikiDoneButton({ form, isCreateMainWorkspace, errorInWhichComponentSetter }: IWikiWorkspaceFormProps): JSX.Element {
   const { t } = useTranslation();
-  const [, hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateCloneWiki(isCreateMainWorkspace, form);
+  const [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateCloneWiki(
+    isCreateMainWorkspace,
+    form,
+    errorInWhichComponentSetter,
+  );
   const onSubmit = useCloneWiki(isCreateMainWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
   const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {

@@ -1,16 +1,16 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IWikiWorkspaceForm, workspaceConfigFromForm } from './useForm';
+import { IErrorInWhichComponent, IWikiWorkspaceForm, workspaceConfigFromForm } from './useForm';
 
 export function useValidateCloneWiki(
   isCreateMainWorkspace: boolean,
   form: IWikiWorkspaceForm,
-): [Record<string, boolean>, boolean, string | undefined, (m: string) => void, (m: boolean) => void] {
+  errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void,
+): [boolean, string | undefined, (m: string) => void, (m: boolean) => void] {
   const { t } = useTranslation();
   const [wikiCreationMessage, wikiCreationMessageSetter] = useState<string | undefined>();
   const [hasError, hasErrorSetter] = useState<boolean>(false);
-  const [errorInWhichComponent, errorInWhichComponentSetter] = useState<Record<string, boolean>>({});
   useEffect(() => {
     if (!form.parentFolderLocation) {
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.WorkspaceFolder')}`);
@@ -21,6 +21,7 @@ export function useValidateCloneWiki(
       errorInWhichComponentSetter({ wikiFolderName: true });
       hasErrorSetter(true);
     } else if (!form.gitRepoUrl) {
+      errorInWhichComponentSetter({ gitRepoUrl: true });
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.GitRepoUrl')}`);
       hasErrorSetter(true);
     } else if (!isCreateMainWorkspace && !form.mainWikiToLink?.wikiFolderLocation) {
@@ -48,8 +49,9 @@ export function useValidateCloneWiki(
     form.gitUserInfo,
     form.mainWikiToLink?.wikiFolderLocation,
     form.tagName,
+    errorInWhichComponentSetter,
   ]);
-  return [errorInWhichComponent, hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter];
+  return [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter];
 }
 
 export function useCloneWiki(

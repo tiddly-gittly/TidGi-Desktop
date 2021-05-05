@@ -28,8 +28,12 @@ export function useIsCreateSyncedWorkspace(): [boolean, React.Dispatch<React.Set
 }
 
 export type IWikiWorkspaceForm = ReturnType<typeof useWikiWorkspaceForm>;
+export type IErrorInWhichComponent = Partial<Record<keyof IWikiWorkspaceForm, boolean>>;
 export interface IWikiWorkspaceFormProps {
   form: IWikiWorkspaceForm;
+  isCreateMainWorkspace: boolean;
+  errorInWhichComponent: IErrorInWhichComponent;
+  errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void;
 }
 export function useWikiWorkspaceForm() {
   const { t } = useTranslation();

@@ -5,7 +5,7 @@ import { Helmet } from 'react-helmet';
 import { AppBar, Paper, Tab } from '@material-ui/core';
 import { TabPanel as TabPanelRaw, TabContext, TabList } from '@material-ui/lab';
 
-import { TokenForm } from '@/components/TokenForm';
+import { SupportedStorageServices } from '@services/types';
 
 import { MainSubWikiDescription, SyncedWikiDescription } from './Description';
 
@@ -15,10 +15,11 @@ import { ExistedWikiForm } from './ExistedWikiForm';
 import { ExistedWikiDoneButton } from './ExistedWikiDoneButton';
 import { CloneWikiForm } from './CloneWikiForm';
 import { CloneWikiDoneButton } from './CloneWikiDoneButton';
+import { IErrorInWhichComponent, useIsCreateMainWorkspace, useIsCreateSyncedWorkspace, useWikiWorkspaceForm } from './useForm';
 
-import { useIsCreateMainWorkspace, useIsCreateSyncedWorkspace, useWikiWorkspaceForm } from './useForm';
+import { TokenForm } from '@/components/TokenForm';
 import { useAuthing, useTokenFromAuthingRedirect } from '@/components/TokenForm/gitTokenHooks';
-import { SupportedStorageServices } from '@services/types';
+import { GitRepoUrlForm } from './GitRepoUrlForm';
 
 enum CreateWorkspaceTabs {
   CloneOnlineWiki = 'CloneOnlineWiki',
@@ -53,6 +54,7 @@ export default function AddWorkspace(): JSX.Element {
   const [isCreateSyncedWorkspace, isCreateSyncedWorkspaceSetter] = useIsCreateSyncedWorkspace();
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useIsCreateMainWorkspace();
   const form = useWikiWorkspaceForm();
+  const [errorInWhichComponent, errorInWhichComponentSetter] = useState<IErrorInWhichComponent>({});
 
   // update storageProviderSetter to local based on isCreateSyncedWorkspace. Other services value will be changed by TokenForm
   const { storageProvider, storageProviderSetter, wikiFolderName } = form;
@@ -67,6 +69,13 @@ export default function AddWorkspace(): JSX.Element {
     authing,
     useCallback(() => isCreateSyncedWorkspaceSetter(true), [isCreateSyncedWorkspaceSetter]),
   );
+
+  const formProps = {
+    form: form,
+    isCreateMainWorkspace: isCreateMainWorkspace,
+    errorInWhichComponent: errorInWhichComponent,
+    errorInWhichComponentSetter: errorInWhichComponentSetter,
+  };
 
   return (
     <TabContext value={currentTab}>
@@ -99,20 +108,20 @@ export default function AddWorkspace(): JSX.Element {
       <MainSubWikiDescription isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
       <TabPanel value={CreateWorkspaceTabs.CloneOnlineWiki}>
         <Container>
-          <CloneWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
-          <CloneWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} />
+          <CloneWikiForm {...formProps} />
+          <CloneWikiDoneButton {...formProps} />
         </Container>
       </TabPanel>
       <TabPanel value={CreateWorkspaceTabs.CreateNewWiki}>
         <Container>
-          <NewWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
-          <NewWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+          <NewWikiForm {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+          <NewWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
         </Container>
       </TabPanel>
       <TabPanel value={CreateWorkspaceTabs.OpenLocalWiki}>
         <Container>
-          <ExistedWikiForm form={form} isCreateMainWorkspace={isCreateMainWorkspace} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
-          <ExistedWikiDoneButton form={form} isCreateMainWorkspace={isCreateMainWorkspace} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+          <ExistedWikiForm {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+          <ExistedWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
         </Container>
       </TabPanel>
     </TabContext>

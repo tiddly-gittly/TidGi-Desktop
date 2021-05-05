@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { IWikiWorkspaceForm, workspaceConfigFromForm } from './useForm';
+import { IErrorInWhichComponent, IWikiWorkspaceForm, workspaceConfigFromForm } from './useForm';
 
 export function useValidateExistedWiki(
   isCreateMainWorkspace: boolean,
   isCreateSyncedWorkspace: boolean,
   form: IWikiWorkspaceForm,
-): [Record<string, boolean>, boolean, string | undefined, (m: string) => void, (m: boolean) => void] {
+  errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void,
+): [boolean, string | undefined, (m: string) => void, (m: boolean) => void] {
   const { t } = useTranslation();
   const [wikiCreationMessage, wikiCreationMessageSetter] = useState<string | undefined>();
   const [hasError, hasErrorSetter] = useState<boolean>(false);
-  const [errorInWhichComponent, errorInWhichComponentSetter] = useState<Record<string, boolean>>({});
   useEffect(() => {
     if (!form.existedWikiFolderPath) {
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.ExistedWikiLocation')}`);
@@ -56,8 +56,9 @@ export function useValidateExistedWiki(
     form.mainWikiToLink?.wikiFolderLocation,
     form.tagName,
     form.existedWikiFolderPath,
+    errorInWhichComponentSetter,
   ]);
-  return [errorInWhichComponent, hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter];
+  return [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter];
 }
 export function useExistedWiki(
   isCreateMainWorkspace: boolean,

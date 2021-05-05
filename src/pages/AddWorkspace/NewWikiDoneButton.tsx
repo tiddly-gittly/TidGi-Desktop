@@ -14,9 +14,15 @@ export function NewWikiDoneButton({
   form,
   isCreateMainWorkspace,
   isCreateSyncedWorkspace,
+  errorInWhichComponentSetter,
 }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean; isCreateSyncedWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
-  const [, hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateNewWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form);
+  const [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateNewWiki(
+    isCreateMainWorkspace,
+    isCreateSyncedWorkspace,
+    form,
+    errorInWhichComponentSetter,
+  );
   const onSubmit = useNewWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
   const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {

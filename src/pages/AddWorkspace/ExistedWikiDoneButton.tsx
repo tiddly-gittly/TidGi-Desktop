@@ -13,12 +13,14 @@ export function ExistedWikiDoneButton({
   form,
   isCreateMainWorkspace,
   isCreateSyncedWorkspace,
+  errorInWhichComponentSetter,
 }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean; isCreateSyncedWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
-  const [, hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateExistedWiki(
+  const [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateExistedWiki(
     isCreateMainWorkspace,
     isCreateSyncedWorkspace,
     form,
+    errorInWhichComponentSetter,
   );
   const onSubmit = useExistedWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
   const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);

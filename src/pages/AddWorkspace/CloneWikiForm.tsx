@@ -16,9 +16,9 @@ import {
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateCloneWiki } from './useCloneWiki';
 
-export function CloneWikiForm({ form, isCreateMainWorkspace }: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean }): JSX.Element {
+export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichComponent, errorInWhichComponentSetter }: IWikiWorkspaceFormProps): JSX.Element {
   const { t } = useTranslation();
-  const [errorInWhichComponent] = useValidateCloneWiki(isCreateMainWorkspace, form);
+  useValidateCloneWiki(isCreateMainWorkspace, form, errorInWhichComponentSetter);
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
