@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
+/* eslint-disable @typescript-eslint/no-misused-promises */
 import Promise from 'bluebird';
 import React, { useState, useEffect, useMemo } from 'react';
 import styled from 'styled-components';
@@ -17,8 +17,8 @@ import Button from '@material-ui/core/Button';
 import CachedIcon from '@material-ui/icons/Cached';
 import CreateNewFolderIcon from '@material-ui/icons/CreateNewFolder';
 
-import type { IAuthingUserInfo } from '@services/types';
 import { GITHUB_GRAPHQL_API } from '@/constants/auth';
+import { useUserInfoObservable } from '@services/auth/hooks';
 
 const RepoSearchInput = styled(TextField)``;
 const ReloadButton = styled(Button)`
@@ -64,33 +64,47 @@ const CREATE_REPO_MUTATION = `
 `;
 
 interface Props {
-  accessToken?: string;
   githubWikiUrl: string;
-  currentTab: string;
   githubWikiUrlSetter: (value: string) => void;
   wikiFolderNameSetter: (value: string) => void;
-  userInfo: IAuthingUserInfo;
   isCreateMainWorkspace: boolean;
 }
-export default function SearchRepo({
-  accessToken,
+export default function SearchGithubRepo(props: Props): JSX.Element {
+  const userInfos = useUserInfoObservable();
+  const githubUsername = userInfos?.['github-userName'];
+  const accessToken = userInfos?.['github-token'];
+
+  const { t } = useTranslation();
+
+  const notLogin = githubUsername === '' || githubUsername === undefined || accessToken === '' || accessToken === undefined;
+
+  return notLogin ? <ListItemText>{t('AddWorkspace.WaitForLogin')}</ListItemText> : <SearchGithubRepoResultList {...props} />;
+}
+
+interface ITokens {
+  githubUsername: string;
+  accessToken: string;
+}
+function SearchGithubRepoResultList({
   githubWikiUrl,
-  currentTab,
   githubWikiUrlSetter,
   wikiFolderNameSetter,
-  userInfo,
   isCreateMainWorkspace,
-}: Props): JSX.Element {
+  githubUsername,
+  accessToken,
+}: Props & ITokens): JSX.Element {
+  const { t } = useTranslation();
   const graphqlClient = useMemo(
     () =>
       new GraphQLClient({
         url: GITHUB_GRAPHQL_API,
       }),
-    [GITHUB_GRAPHQL_API],
+    [],
   );
+
   const [githubRepoSearchString, githubRepoSearchStringSetter] = useState('wiki');
   const loadCount = 10;
-  const githubUsername = userInfo?.login || '';
+  // eslint-disable-next-line @typescript-eslint/unbound-method
   const { loading, error, data, refetch } = useQuery(SEARCH_REPO_QUERY, {
     variables: {
       first: loadCount,
@@ -101,17 +115,17 @@ export default function SearchRepo({
   });
   // clear list on logout, which will cause accessToken change
   useEffect(() => {
-    const timeoutHandle = setTimeout(() => {
-      refetch();
+    const timeoutHandle = setTimeout(async () => {
+      await refetch();
     }, 100);
     return () => clearTimeout(timeoutHandle);
   }, [refetch, githubUsername, accessToken]);
   // try refetch on error
   const [retryInterval, retryIntervalSetter] = useState(100);
   useEffect(() => {
-    if (error && githubUsername && accessToken) {
-      const timeoutHandle = setTimeout(() => {
-        refetch();
+    if (error !== undefined && githubUsername !== undefined && githubUsername.length > 0 && accessToken !== undefined && accessToken.length > 0) {
+      const timeoutHandle = setTimeout(async () => {
+        await refetch();
         retryIntervalSetter(retryInterval * 10);
       }, retryInterval);
       return () => clearTimeout(timeoutHandle);
@@ -123,26 +137,23 @@ export default function SearchRepo({
 
   const repositoryCount = data?.search?.repositoryCount;
   let repoList = [];
-  if (repositoryCount) {
-    repoList = data.search.edges.map(({ node }: any) => node);
+  if ((repositoryCount ?? 0) > 0) {
+    repoList = data.search.edges.map(({ node }) => node);
   }
-  const { t } = useTranslation();
+
+  const [isCreatingRepo, isCreatingRepoSetter] = useState(false);
+  const githubUserID = data?.repositoryOwner?.id;
+  const wikiUrlToCreate = `https://github.com/${githubUsername ?? '???'}/${githubRepoSearchString}`;
+  const isCreateNewRepo = trim(githubWikiUrl) === wikiUrlToCreate;
+  const githubPagesUrl = `https://${githubUsername ?? '???'}.github.io/${githubRepoSearchString}`;
+
   let helperText = '';
-  const notLogin = githubUsername === '' || githubUsername === undefined || accessToken === '' || accessToken === undefined;
-  if (notLogin) {
-    helperText = t('AddWorkspace.WaitForLogin');
-  } else if (error) {
+  if (error !== undefined) {
     helperText = t('AddWorkspace.CanNotLoadList');
   }
   if (repositoryCount > loadCount) {
     helperText = t('AddWorkspace.OmitMoreResult', { loadCount });
   }
-
-  const [isCreatingRepo, isCreatingRepoSetter] = useState(false);
-  const githubUserID = data?.repositoryOwner?.id;
-  const wikiUrlToCreate = `https://github.com/${userInfo?.login || '???'}/${githubRepoSearchString}`;
-  const isCreateNewRepo = trim(githubWikiUrl) === wikiUrlToCreate;
-  const githubPagesUrl = `https://${userInfo?.login || '???'}.github.io/${githubRepoSearchString}`;
 
   return (
     <ClientContext.Provider value={graphqlClient}>
@@ -156,8 +167,9 @@ export default function SearchRepo({
         helperText={helperText}
       />
       {(loading || isCreatingRepo) && <LinearProgress variant="query" />}
+
       <List component="nav" aria-label="main mailbox folders">
-        {repoList.map(({ name, url }: any) => (
+        {repoList.map(({ name, url }) => (
           <ListItem
             button
             key={url}
@@ -172,46 +184,39 @@ export default function SearchRepo({
             <ListItemText primary={name} />
           </ListItem>
         ))}
-        {userInfo &&
-          currentTab !== 'CloneOnlineWiki' &&
-          !notLogin &&
-          !error &&
-          !loading &&
-          !isCreatingRepo &&
-          !repoList.some(({ url }: any) => trim(url) === wikiUrlToCreate) &&
-          githubRepoSearchString && (
-            <ListItem
-              button
-              key={wikiUrlToCreate}
-              onClick={async () => {
-                isCreatingRepoSetter(true);
-                await createRepository({
-                  variables: {
-                    repoName: githubRepoSearchString,
-                    homePageUrl: isCreateMainWorkspace ? githubPagesUrl : undefined,
-                    ownerId: githubUserID,
-                    visibility: isCreateMainWorkspace ? 'PUBLIC' : 'PRIVATE',
-                  },
-                });
-                // wait for Github update their db
-                await Promise.delay(1000);
-                await refetch();
-                isCreatingRepoSetter(false);
-                githubWikiUrlSetter(wikiUrlToCreate);
-              }}
-              selected={isCreateNewRepo}>
-              <ListItemIcon>
-                <CreateNewFolderIcon />
-              </ListItemIcon>
-              <ListItemText
-                primary={`${
-                  isCreateMainWorkspace ? t('AddWorkspace.CreatePublicRepository') : t('AddWorkspace.CreatePrivateRepository')
-                } ${githubRepoSearchString}`}
-              />
-            </ListItem>
-          )}
+        {error === undefined && !loading && !isCreatingRepo && !repoList.some(({ url }) => trim(url) === wikiUrlToCreate) && githubRepoSearchString && (
+          <ListItem
+            button
+            key={wikiUrlToCreate}
+            onClick={async () => {
+              isCreatingRepoSetter(true);
+              await createRepository({
+                variables: {
+                  repoName: githubRepoSearchString,
+                  homePageUrl: isCreateMainWorkspace ? githubPagesUrl : undefined,
+                  ownerId: githubUserID,
+                  visibility: isCreateMainWorkspace ? 'PUBLIC' : 'PRIVATE',
+                },
+              });
+              // wait for Github update their db
+              await Promise.delay(1000);
+              await refetch();
+              isCreatingRepoSetter(false);
+              githubWikiUrlSetter(wikiUrlToCreate);
+            }}
+            selected={isCreateNewRepo}>
+            <ListItemIcon>
+              <CreateNewFolderIcon />
+            </ListItemIcon>
+            <ListItemText
+              primary={`${
+                isCreateMainWorkspace ? t('AddWorkspace.CreatePublicRepository') : t('AddWorkspace.CreatePrivateRepository')
+              } ${githubRepoSearchString}`}
+            />
+          </ListItem>
+        )}
       </List>
-      {repoList.length === 0 && !notLogin && (
+      {repoList.length === 0 && (
         <ReloadButton color="secondary" endIcon={<CachedIcon />} onClick={async () => await refetch()}>
           {t('AddWorkspace.Reload')}
         </ReloadButton>

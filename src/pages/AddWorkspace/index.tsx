@@ -104,6 +104,7 @@ export default function AddWorkspace(): JSX.Element {
           <TokenForm storageProvider={storageProvider} storageProviderSetter={storageProviderSetter} />
         </TokenFormContainer>
       )}
+      {storageProvider !== SupportedStorageServices.local && <GitRepoUrlForm error={errorInWhichComponent.gitRepoUrl} {...formProps} />}
 
       <MainSubWikiDescription isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
       <TabPanel value={CreateWorkspaceTabs.CloneOnlineWiki}>
