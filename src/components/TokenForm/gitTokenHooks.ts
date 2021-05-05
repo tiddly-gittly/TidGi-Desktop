@@ -29,6 +29,8 @@ export function useTokenFromAuthingRedirect(authing: AuthingSSO, callback?: () =
             ...authData,
             ...response.userInfo?.thirdPartyIdentity,
           };
+          // DEBUG: console
+          console.log(`nextUserInfo`, nextUserInfo);
           await Promise.all([
             window.service.auth.set(`${provider}-token` as ServiceTokenTypes, accessTokenToSet),
             window.service.auth.set(`${provider}-userName` as ServiceUserNameTypes, nextUserInfo.username),

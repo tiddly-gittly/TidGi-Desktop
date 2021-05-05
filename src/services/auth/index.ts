@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/no-null */
+import { debounce } from 'lodash';
 import { injectable } from 'inversify';
 import settings from 'electron-settings';
 import { IAuthingUserInfo, SupportedStorageServices } from '@services/types';
@@ -20,6 +21,7 @@ export class Authentication implements IAuthenticationService {
   constructor() {
     this.cachedUserInfo = this.getInitUserInfoForCache();
     this.userInfo$ = new BehaviorSubject<IUserInfos>(this.cachedUserInfo);
+    this.setUserInfos = debounce(this.setUserInfos.bind(this), 10) as (newUserInfos: IUserInfos) => Promise<void>;
   }
 
   private updateUserInfoSubject(): void {
@@ -30,7 +32,7 @@ export class Authentication implements IAuthenticationService {
     const gitUserName = await this.get(`${serviceName}-userName` as ServiceUserNameTypes);
     const email = await this.get(`${serviceName}-email` as ServiceEmailTypes);
     const accessToken = await this.get(`${serviceName}-token` as ServiceTokenTypes);
-    if (gitUserName !== undefined && email !== undefined && accessToken !== undefined) {
+    if (gitUserName !== undefined && accessToken !== undefined) {
       return {
         gitUserName,
         email,
@@ -80,6 +82,8 @@ export class Authentication implements IAuthenticationService {
   };
 
   public async get<K extends keyof IUserInfos>(key: K): Promise<IUserInfos[K] | undefined> {
+    // DEBUG: console
+    console.log(`key, this.cachedUserInfo`, key, this.cachedUserInfo);
     if (this.cachedUserInfo[key] !== null && this.cachedUserInfo[key] !== undefined) {
       return this.cachedUserInfo[key];
     }
