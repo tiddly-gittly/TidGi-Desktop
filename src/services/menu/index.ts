@@ -9,6 +9,7 @@ import { lazyInject } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
 import { IViewService } from '@services/view/interface';
+import { IPreferenceService } from '@services/preferences/interface';
 import i18next from '@services/libs/i18n';
 import ContextMenuBuilder from './contextMenuBuilder';
 import { IpcSafeMenuItem, mainMenuItemProxy } from './rendererMenuItemProxy';
@@ -18,6 +19,7 @@ import { InsertMenuAfterSubMenuIndexError } from './error';
 export class MenuService implements IMenuService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
+  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
 
   private _menuTemplate?: DeferredMenuItemConstructorOptions[];
   private get menuTemplate(): DeferredMenuItemConstructorOptions[] {
@@ -300,6 +302,14 @@ export class MenuService implements IMenuService {
         label: i18next.t('ContextMenu.Reload'),
         click: () => {
           webContents.reload();
+        },
+      }),
+    );
+    menu.append(
+      new MenuItem({
+        label: (await this.preferenceService.get('sidebar')) ? i18next.t('Preference.HideSideBar') : i18next.t('Preference.ShowSideBar'),
+        click: async () => {
+          await this.preferenceService.set('sidebar', !(await this.preferenceService.get('sidebar')));
         },
       }),
     );

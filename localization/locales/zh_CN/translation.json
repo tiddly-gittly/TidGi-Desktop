@@ -227,6 +227,7 @@
     "DarkTheme": "黑暗主题",
     "LightTheme": "亮色主题",
     "ShowSideBar": "显示侧边栏",
+    "HideSideBar": "隐藏侧边栏",
     "SystemDefalutTheme": "系统默认主题色",
     "Theme": "主题色",
     "Reset": "你确定吗？所有首选项都将恢复为其原始默认值。浏览数据不会受到影响。此操作无法撤消。",

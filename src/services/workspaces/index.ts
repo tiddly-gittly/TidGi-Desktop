@@ -19,11 +19,11 @@ import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { IAuthenticationService } from '@services/auth/interface';
+import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import { SupportedStorageServices } from '@services/types';
 import { lazyInject } from '@services/container';
 import { IWorkspaceService, IWorkspace, IWorkspaceMetaData, INewWorkspaceConfig } from './interface';
 import i18n from '@services/libs/i18n';
-import { workspace } from '@/preload/common/services';
 
 @injectable()
 export class Workspace implements IWorkspaceService {
@@ -37,6 +37,7 @@ export class Workspace implements IWorkspaceService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
   @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
+  @lazyInject(serviceIdentifier.WikiGitWorkspace) private readonly wikiGitWorkspaceService!: IWikiGitWorkspaceService;
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
   @lazyInject(serviceIdentifier.Authentication) private readonly authenticationService!: IAuthenticationService;
 
@@ -91,7 +92,7 @@ export class Workspace implements IWorkspaceService {
         click: async () => {
           const currentActiveWorkspace = await this.getActiveWorkspace();
           if (currentActiveWorkspace === undefined) return;
-          await this.workspaceViewService.removeWorkspaceView(currentActiveWorkspace.id);
+          await this.wikiGitWorkspaceService.removeWorkspace(currentActiveWorkspace.id);
         },
         enabled: async () => (await this.countWorkspaces()) > 0,
       },
