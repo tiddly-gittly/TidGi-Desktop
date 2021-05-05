@@ -10,7 +10,6 @@ import { ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from '@ser
 import { useAuthing } from './gitTokenHooks';
 
 const AuthingLoginButton = styled(Button)`
-  white-space: nowrap;
   width: 100%;
 `;
 const GitTokenInput = styled(TextField)``;
