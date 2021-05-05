@@ -76,9 +76,11 @@ export default function SearchGithubRepo(props: Props): JSX.Element {
 
   const { t } = useTranslation();
 
-  const notLogin = githubUsername === '' || githubUsername === undefined || accessToken === '' || accessToken === undefined;
-
-  return notLogin ? <ListItemText>{t('AddWorkspace.WaitForLogin')}</ListItemText> : <SearchGithubRepoResultList {...props} />;
+  if (githubUsername === '' || githubUsername === undefined || accessToken === '' || accessToken === undefined) {
+    return <ListItemText>{t('AddWorkspace.WaitForLogin')}</ListItemText>;
+  } else {
+    return <SearchGithubRepoResultList {...props} githubUsername={githubUsername} accessToken={accessToken} />;
+  }
 }
 
 interface ITokens {
