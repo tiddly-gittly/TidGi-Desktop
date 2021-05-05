@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Typography, MenuItem } from '@material-ui/core';
 import { Folder as FolderIcon } from '@material-ui/icons';
@@ -16,9 +16,19 @@ import {
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateCloneWiki } from './useCloneWiki';
 
-export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichComponent, errorInWhichComponentSetter }: IWikiWorkspaceFormProps): JSX.Element {
+export function CloneWikiForm({
+  form,
+  isCreateMainWorkspace,
+  errorInWhichComponent,
+  errorInWhichComponentSetter,
+  isCreateSyncedWorkspaceSetter,
+}: IWikiWorkspaceFormProps & { isCreateSyncedWorkspaceSetter: (is: boolean) => void }): JSX.Element {
   const { t } = useTranslation();
   useValidateCloneWiki(isCreateMainWorkspace, form, errorInWhichComponentSetter);
+  // cloned wiki can only be synced
+  useEffect(() => {
+    isCreateSyncedWorkspaceSetter(true);
+  }, [isCreateSyncedWorkspaceSetter]);
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>

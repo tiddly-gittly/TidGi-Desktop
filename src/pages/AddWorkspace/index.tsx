@@ -109,7 +109,7 @@ export default function AddWorkspace(): JSX.Element {
       <MainSubWikiDescription isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
       <TabPanel value={CreateWorkspaceTabs.CloneOnlineWiki}>
         <Container>
-          <CloneWikiForm {...formProps} />
+          <CloneWikiForm {...formProps} isCreateSyncedWorkspaceSetter={isCreateSyncedWorkspaceSetter} />
           <CloneWikiDoneButton {...formProps} />
         </Container>
       </TabPanel>
