@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 import Promise from 'bluebird';
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import styled from 'styled-components';
 import { useQuery, useMutation, GraphQLClient, ClientContext } from 'graphql-hooks';
 import { trim } from 'lodash';
@@ -116,6 +116,13 @@ function SearchGithubRepoResultList({
 }: Props & ITokens): JSX.Element {
   const { t } = useTranslation();
 
+  const onSelectRepo = useCallback(
+    (url: string, name: string) => {
+      githubWikiUrlSetter(url);
+      wikiFolderNameSetter(name);
+    },
+    [githubWikiUrlSetter, wikiFolderNameSetter],
+  );
   const [githubRepoSearchString, githubRepoSearchStringSetter] = useState('wiki');
   const loadCount = 10;
   // eslint-disable-next-line @typescript-eslint/unbound-method
@@ -157,6 +164,12 @@ function SearchGithubRepoResultList({
   if (data !== undefined && (repositoryCount ?? 0) > 0) {
     repoList = data.search.edges.map(({ node }) => node);
   }
+  // auto select first one after first search
+  useEffect(() => {
+    if (githubWikiUrl?.length === 0 && repoList.length > 0) {
+      onSelectRepo(repoList[0].url, repoList[0].name);
+    }
+  }, [repoList, githubWikiUrl, onSelectRepo]);
 
   const [isCreatingRepo, isCreatingRepoSetter] = useState(false);
   const githubUserID = data?.repositoryOwner?.id;
@@ -187,14 +200,7 @@ function SearchGithubRepoResultList({
 
       <List component="nav" aria-label="main mailbox folders">
         {repoList.map(({ name, url }) => (
-          <ListItem
-            button
-            key={url}
-            onClick={() => {
-              githubWikiUrlSetter(url);
-              wikiFolderNameSetter(name);
-            }}
-            selected={trim(githubWikiUrl) === trim(url)}>
+          <ListItem button key={url} onClick={() => onSelectRepo(url, name)} selected={trim(githubWikiUrl) === trim(url)}>
             <ListItemIcon>
               <FolderIcon />
             </ListItemIcon>
