@@ -257,7 +257,9 @@
     "IgnoreCertificateErrorsDescription": "<0>Not recommended. </0><1>Learn more</1>.",
     "OpenMetaDataFolder": "Open the metadata folder of TiddlyGit workspace",
     "OpenMetaDataFolderDetail": "TiddlyWiki's data and TiddlyGit's workspace metadata are stored separately. TiddlyGit's metadata includes workspace settings, etc., which are stored in this folder in JSON format.",
-    "HideSideBar": "Hide SideBar"
+    "HideSideBar": "Hide SideBar",
+    "HideTitleBar": "Hide Title Bar",
+    "ToggleMenuBar": "Toggle Menu Bar"
   },
   "Error": {
     "InitWikiGitError": "InitWikiGitError",
@@ -294,6 +296,10 @@
     "FindNext": "Find Next",
     "FindPrevious": "Find Previous",
     "Forward": "Forward",
-    "Home": "Home"
+    "DeveloperToolsActiveWorkspace": "Open Developer Tools of Active Workspace",
+    "Home": "Home",
+    "ActualSize": "Actual Size",
+    "ZoomIn": "Zoom In",
+    "ZoomOut": "Zoom Out"
   }
 }

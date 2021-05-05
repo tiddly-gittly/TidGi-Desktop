@@ -353,7 +353,9 @@ export class Window implements IWindowService {
   }
 
   private async registerMenu(): Promise<void> {
-    await this.menuService.insertMenu('Window', [
+    await this.menuService.insertMenu('View', [
+      { role: 'reload' },
+      { role: 'forceReload' },
       // `role: 'zoom'` is only supported on macOS
       process.platform === 'darwin'
         ? {
@@ -368,10 +370,12 @@ export class Window implements IWindowService {
               }
             },
           },
+      { role: 'resetZoom' },
+      { role: 'togglefullscreen' },
       { role: 'close' },
     ]);
 
-    await this.menuService.insertMenu('Edit', [
+    await this.menuService.insertMenu('View', [
       {
         label: () => i18n.t('Menu.Find'),
         accelerator: 'CmdOrCtrl+F',

@@ -104,9 +104,9 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   private async registerMenu(): Promise<void> {
     const hasWorkspaces = (await this.workspaceService.countWorkspaces()) > 0;
-    await this.menuService.insertMenu('Window', [
+    await this.menuService.insertMenu('Workspaces', [
       {
-        label: 'Developer Tools',
+        label: () => i18n.t('Preference.DeveloperTools'),
         submenu: [
           {
             label: 'Open Developer Tools of Active Workspace',

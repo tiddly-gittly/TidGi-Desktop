@@ -51,7 +51,7 @@ export class View implements IViewService {
     const titleBar = await this.preferenceService.get('titleBar');
     await this.menuService.insertMenu('View', [
       {
-        label: () => (sidebar ? 'Hide Sidebar' : 'Show Sidebar'),
+        label: () => (sidebar ? i18n.t('Preference.HideSideBar') : i18n.t('Preference.ShowSideBar')),
         accelerator: 'CmdOrCtrl+Alt+S',
         click: async () => {
           const sidebarLatest = await this.preferenceService.get('sidebar');
@@ -60,7 +60,7 @@ export class View implements IViewService {
         },
       },
       {
-        label: () => (titleBar ? 'Hide Title Bar' : 'Show Title Bar'),
+        label: () => (titleBar ? i18n.t('Preference.HideTitleBar') : i18n.t('Preference.ShowTitleBar')),
         accelerator: 'CmdOrCtrl+Alt+T',
         enabled: process.platform === 'darwin',
         visible: process.platform === 'darwin',
@@ -73,7 +73,7 @@ export class View implements IViewService {
       // same behavior as BrowserWindow with autoHideMenuBar: true
       // but with addition to readjust BrowserView so it won't cover the menu bar
       {
-        label: 'Toggle Menu Bar',
+        label: () => i18n.t('Preference.ToggleMenuBar'),
         visible: false,
         accelerator: 'Alt+M',
         enabled: process.platform === 'win32',
@@ -94,7 +94,7 @@ export class View implements IViewService {
       { type: 'separator' },
       { role: 'togglefullscreen' },
       {
-        label: 'Actual Size',
+        label: () => i18n.t('Menu.ActualSize'),
         accelerator: 'CmdOrCtrl+0',
         click: async (_menuItem, browserWindow) => {
           // if item is called in popup window
@@ -116,7 +116,7 @@ export class View implements IViewService {
         enabled: hasWorkspaces,
       },
       {
-        label: 'Zoom In',
+        label: () => i18n.t('Menu.ZoomIn'),
         accelerator: 'CmdOrCtrl+=',
         click: async (_menuItem, browserWindow) => {
           // if item is called in popup window
@@ -138,7 +138,7 @@ export class View implements IViewService {
         enabled: hasWorkspaces,
       },
       {
-        label: 'Zoom Out',
+        label: () => i18n.t('Menu.ZoomOut'),
         accelerator: 'CmdOrCtrl+-',
         click: async (_menuItem, browserWindow) => {
           // if item is called in popup window
@@ -161,7 +161,7 @@ export class View implements IViewService {
       },
       { type: 'separator' },
       {
-        label: 'Reload This Page',
+        label: () => i18n.t('ContextMenu.Reload'),
         accelerator: 'CmdOrCtrl+R',
         click: async (_menuItem, browserWindow) => {
           // if item is called in popup window
@@ -181,18 +181,6 @@ export class View implements IViewService {
           }
         },
         enabled: hasWorkspaces,
-      },
-      { type: 'separator' },
-      {
-        label: 'Developer Tools',
-        submenu: [
-          {
-            label: 'Open Developer Tools of Active Workspace',
-            accelerator: 'CmdOrCtrl+Option+I',
-            click: async () => (await this.getActiveBrowserView())?.webContents?.openDevTools(),
-            enabled: hasWorkspaces,
-          },
-        ],
       },
     ]);
   }

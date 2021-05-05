@@ -108,7 +108,6 @@ export class MenuService implements IMenuService {
       {
         label: () => i18next.t('Menu.View'),
         id: 'View',
-        role: 'viewMenu',
       },
       {
         label: () => i18next.t('Menu.Language'),
