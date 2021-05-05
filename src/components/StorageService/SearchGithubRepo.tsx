@@ -5,6 +5,7 @@ import styled from 'styled-components';
 import { useQuery, useMutation, GraphQLClient, ClientContext } from 'graphql-hooks';
 import { trim } from 'lodash';
 import { useTranslation } from 'react-i18next';
+import { useDebouncedFn } from 'beautiful-react-hooks';
 
 import TextField from '@material-ui/core/TextField';
 import FolderIcon from '@material-ui/icons/Folder';
@@ -19,7 +20,11 @@ import CreateNewFolderIcon from '@material-ui/icons/CreateNewFolder';
 
 import { GITHUB_GRAPHQL_API } from '@/constants/auth';
 import { useUserInfoObservable } from '@services/auth/hooks';
+import { IGithubSearchNode, IGithubSearchRepoQuery } from './interfaces';
 
+const RepoSearchContainer = styled.div`
+  margin-top: 20px;
+`;
 const RepoSearchInput = styled(TextField)``;
 const ReloadButton = styled(Button)`
   white-space: nowrap;
@@ -75,11 +80,25 @@ export default function SearchGithubRepo(props: Props): JSX.Element {
   const accessToken = userInfos?.['github-token'];
 
   const { t } = useTranslation();
+  const graphqlClient = useMemo(
+    () =>
+      new GraphQLClient({
+        url: GITHUB_GRAPHQL_API,
+      }),
+    [],
+  );
+  useEffect(() => {
+    graphqlClient.setHeader('Authorization', accessToken !== undefined ? `Bearer ${accessToken}` : '');
+  }, [accessToken, graphqlClient]);
 
   if (githubUsername === '' || githubUsername === undefined || accessToken === '' || accessToken === undefined) {
     return <ListItemText>{t('AddWorkspace.WaitForLogin')}</ListItemText>;
   } else {
-    return <SearchGithubRepoResultList {...props} githubUsername={githubUsername} accessToken={accessToken} />;
+    return (
+      <ClientContext.Provider value={graphqlClient}>
+        <SearchGithubRepoResultList {...props} githubUsername={githubUsername} accessToken={accessToken} />
+      </ClientContext.Provider>
+    );
   }
 }
 
@@ -96,18 +115,11 @@ function SearchGithubRepoResultList({
   accessToken,
 }: Props & ITokens): JSX.Element {
   const { t } = useTranslation();
-  const graphqlClient = useMemo(
-    () =>
-      new GraphQLClient({
-        url: GITHUB_GRAPHQL_API,
-      }),
-    [],
-  );
 
   const [githubRepoSearchString, githubRepoSearchStringSetter] = useState('wiki');
   const loadCount = 10;
   // eslint-disable-next-line @typescript-eslint/unbound-method
-  const { loading, error, data, refetch } = useQuery(SEARCH_REPO_QUERY, {
+  const { loading, error, data, refetch } = useQuery<IGithubSearchRepoQuery>(SEARCH_REPO_QUERY, {
     variables: {
       first: loadCount,
       queryString: `user:${githubUsername} ${githubRepoSearchString}`,
@@ -115,31 +127,34 @@ function SearchGithubRepoResultList({
     },
     skipCache: true,
   });
+  const refetchDebounced = useDebouncedFn(refetch, 300);
   // clear list on logout, which will cause accessToken change
   useEffect(() => {
     const timeoutHandle = setTimeout(async () => {
-      await refetch();
+      await refetchDebounced();
     }, 100);
     return () => clearTimeout(timeoutHandle);
-  }, [refetch, githubUsername, accessToken]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [githubUsername, accessToken]);
   // try refetch on error
   const [retryInterval, retryIntervalSetter] = useState(100);
   useEffect(() => {
-    if (error !== undefined && githubUsername !== undefined && githubUsername.length > 0 && accessToken !== undefined && accessToken.length > 0) {
+    if (error !== undefined && githubUsername.length > 0 && accessToken.length > 0) {
       const timeoutHandle = setTimeout(async () => {
-        await refetch();
+        await refetchDebounced();
         retryIntervalSetter(retryInterval * 10);
       }, retryInterval);
       return () => clearTimeout(timeoutHandle);
     }
     return () => {};
-  }, [error, refetch, githubUsername, accessToken, retryInterval]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [error, githubUsername, accessToken, retryInterval]);
 
   const [createRepository] = useMutation(CREATE_REPO_MUTATION);
 
   const repositoryCount = data?.search?.repositoryCount;
-  let repoList = [];
-  if ((repositoryCount ?? 0) > 0) {
+  let repoList: IGithubSearchNode[] = [];
+  if (data !== undefined && (repositoryCount ?? 0) > 0) {
     repoList = data.search.edges.map(({ node }) => node);
   }
 
@@ -153,12 +168,12 @@ function SearchGithubRepoResultList({
   if (error !== undefined) {
     helperText = t('AddWorkspace.CanNotLoadList');
   }
-  if (repositoryCount > loadCount) {
+  if (repositoryCount !== undefined && repositoryCount > loadCount) {
     helperText = t('AddWorkspace.OmitMoreResult', { loadCount });
   }
 
   return (
-    <ClientContext.Provider value={graphqlClient}>
+    <RepoSearchContainer>
       <RepoSearchInput
         fullWidth
         onChange={(event) => {
@@ -202,7 +217,7 @@ function SearchGithubRepoResultList({
               });
               // wait for Github update their db
               await Promise.delay(1000);
-              await refetch();
+              await refetchDebounced();
               isCreatingRepoSetter(false);
               githubWikiUrlSetter(wikiUrlToCreate);
             }}
@@ -219,10 +234,10 @@ function SearchGithubRepoResultList({
         )}
       </List>
       {repoList.length === 0 && (
-        <ReloadButton color="secondary" endIcon={<CachedIcon />} onClick={async () => await refetch()}>
+        <ReloadButton color="secondary" endIcon={<CachedIcon />} onClick={async () => await refetchDebounced()}>
           {t('AddWorkspace.Reload')}
         </ReloadButton>
       )}
-    </ClientContext.Provider>
+    </RepoSearchContainer>
   );
 }
