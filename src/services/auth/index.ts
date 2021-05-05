@@ -82,8 +82,6 @@ export class Authentication implements IAuthenticationService {
   };
 
   public async get<K extends keyof IUserInfos>(key: K): Promise<IUserInfos[K] | undefined> {
-    // DEBUG: console
-    console.log(`key, this.cachedUserInfo`, key, this.cachedUserInfo);
     if (this.cachedUserInfo[key] !== null && this.cachedUserInfo[key] !== undefined) {
       return this.cachedUserInfo[key];
     }
