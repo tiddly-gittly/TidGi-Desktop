@@ -2,9 +2,8 @@
 import { Menu, Tray, ipcMain, nativeImage } from 'electron';
 import windowStateKeeper from 'electron-window-state';
 import { menubar, Menubar } from 'menubar';
-import path from 'path';
 
-import { buildResourcePath } from '@/constants/paths';
+import { MENUBAR_ICON_PATH } from '@/constants/paths';
 import { WindowNames } from './WindowProperties';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 
@@ -21,8 +20,7 @@ export default async function handleAttachToMenuBar(): Promise<Menubar> {
   // https://github.com/atomery/translatium/issues/164
   const tray = new Tray(nativeImage.createEmpty());
   // icon template is not supported on Windows & Linux
-  const iconPath = path.resolve(buildResourcePath, process.platform === 'darwin' ? 'menubarTemplate.png' : 'menubar.png');
-  tray.setImage(iconPath);
+  tray.setImage(MENUBAR_ICON_PATH);
 
   const menuBar = menubar({
     index: MAIN_WINDOW_WEBPACK_ENTRY,

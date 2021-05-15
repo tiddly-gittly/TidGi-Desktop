@@ -8,6 +8,7 @@ const isMac = process.platform === 'darwin';
 /** src folder */
 export const sourcePath = path.resolve(__dirname, '..');
 export const buildResourcePath = path.resolve(sourcePath, '..', 'build-resources');
+export const developmentImageFolderPath = path.resolve(sourcePath, 'images');
 
 // .app/Contents/Resources/wiki/
 export const TIDDLYWIKI_TEMPLATE_FOLDER_PATH = isDevelopmentOrTest
@@ -15,6 +16,10 @@ export const TIDDLYWIKI_TEMPLATE_FOLDER_PATH = isDevelopmentOrTest
   : path.resolve(process.resourcesPath, 'wiki');
 export const TIDDLERS_PATH = 'tiddlers';
 export const ICON_PATH = isDevelopmentOrTest ? path.resolve(buildResourcePath, 'icon.png') : `file://${path.resolve(__dirname, '..', 'icon.png')}`;
+
+const menuBarIconFileName = process.platform === 'darwin' ? 'menubarTemplate.png' : 'menubar.png';
+export const MENUBAR_ICON_PATH = path.resolve(isDevelopmentOrTest ? developmentImageFolderPath : process.resourcesPath, menuBarIconFileName);
+
 export const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';
 export const LOGIN_REDIRECT_PATH = 'http://localhost:3000/?code=';
 export const DESKTOP_PATH = path.join(os.homedir(), 'Desktop');

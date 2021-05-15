@@ -169,13 +169,8 @@ if (!gotTheLock) {
       app.quit();
     }
   });
-  app.on('activate', () => {
-    const mainWindow = windowService.get(WindowNames.main);
-    if (mainWindow === undefined) {
-      void commonInit();
-    } else {
-      mainWindow.show();
-    }
+  app.on('activate', async () => {
+    await windowService.open(WindowNames.main);
   });
   app.on(
     'before-quit',

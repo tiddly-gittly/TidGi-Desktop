@@ -108,19 +108,19 @@ export class Window implements IWindowService {
 
     // handle existed window, bring existed window to the front and return.
     if (existedWindow !== undefined) {
-      if (attachToMenubar && this.mainWindowMenuBar !== undefined) {
-        this.mainWindowMenuBar.on('ready', () => {
-          if (this.mainWindowMenuBar !== undefined) {
-            void this.mainWindowMenuBar.showWindow();
-          }
-        });
-        return;
-      }
       if (recreate === true || (typeof recreate === 'function' && existedWindowMeta !== undefined && recreate(existedWindowMeta))) {
         existedWindow.close();
       } else {
         return existedWindow.show();
       }
+    }
+    if (this.mainWindowMenuBar !== undefined && attachToMenubar) {
+      this.mainWindowMenuBar.on('ready', () => {
+        if (this.mainWindowMenuBar !== undefined) {
+          void this.mainWindowMenuBar.showWindow();
+        }
+      });
+      return;
     }
 
     // create new window
