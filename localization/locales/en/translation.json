@@ -8,7 +8,9 @@
     "RemoveWorkspaceAndDelete": "Remove workspace and delete Wiki folder from the disk",
     "BadWorkspacePath": "There are some problem in your workspace setup",
     "EditCurrentWorkspace": "Edit Current Workspace",
-    "RemoveCurrentWorkspace": "Remove Current Workspace"
+    "RemoveCurrentWorkspace": "Remove Current Workspace",
+    "HibernateWorkspace": "Hibernate Workspace",
+    "WakeUpWorkspace": "WakeUp Workspace"
   },
   "ContextMenu": {
     "OpenTiddlyGit": "Open TiddlyGit",

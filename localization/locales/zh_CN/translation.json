@@ -5,6 +5,8 @@
     "Add": "添加",
     "EditWorkspace": "编辑工作区",
     "EditCurrentWorkspace": "编辑当前工作区",
+    "HibernateWorkspace": "休眠工作区",
+    "WakeUpWorkspace": "唤醒工作区",
     "RemoveWorkspace": "移除工作区",
     "RemoveCurrentWorkspace": "移除当前工作区",
     "RemoveWorkspaceAndDelete": "移除工作区并删除Wiki文件夹",

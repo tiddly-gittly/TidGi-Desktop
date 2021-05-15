@@ -56,7 +56,7 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
 
         if (!active && !isSubWiki) {
           template.splice(1, 0, {
-            label: hibernated ? 'Wake Up Workspace' : 'Hibernate Workspace',
+            label: hibernated ? t('WorkspaceSelector.WakeUpWorkspace') : t('WorkspaceSelector.HibernateWorkspace'),
             click: async () => {
               if (hibernated) {
                 return await window.service.workspaceView.wakeUpWorkspaceView(id);
