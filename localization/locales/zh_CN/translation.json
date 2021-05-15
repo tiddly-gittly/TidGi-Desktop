@@ -12,6 +12,7 @@
     "BadWorkspacePath": "工作区路径有问题"
   },
   "ContextMenu": {
+    "OpenTiddlyGit": "打开太记",
     "OpenLinkInNewWindow": "在新窗口中打开链接",
     "Preferences": "设置…",
     "TiddlyGitSupport": "TiddlyGit 用户支持",
@@ -222,6 +223,7 @@
     "AttachToMenuBar": "附加到菜单栏",
     "AttachToMenuBarTip": "提示：右键单击应用程序图标以访问上下文菜单。",
     "AttachToTaskbar": "附加到任务栏",
+    "NoAttach": "恢复窗口模式",
     "ToggleMenuBar": "切换显隐菜单栏",
     "HideMenuBar": "隐藏菜单栏",
     "HideMenuBarDetail": "按下 Alt + M 可以显示被隐藏的菜单栏",

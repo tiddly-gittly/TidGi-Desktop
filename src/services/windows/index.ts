@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
-import { BrowserWindow, ipcMain, dialog, app, clipboard, BrowserWindowConstructorOptions } from 'electron';
+import { BrowserWindow, ipcMain, dialog, app, clipboard, BrowserWindowConstructorOptions, Tray, nativeImage, Menu } from 'electron';
 import { injectable } from 'inversify';
-import { Menubar } from 'menubar';
+import { menubar, Menubar } from 'menubar';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
 
 import { IBrowserViewMetaData, WindowNames, windowDimension, WindowMeta } from '@services/windows/WindowProperties';
@@ -19,9 +19,9 @@ import i18n from '@services/libs/i18n';
 import getViewBounds from '@services/libs/getViewBounds';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import { lazyInject } from '@services/container';
-import handleAttachToMenuBar from './handleAttachToMenuBar';
 import { IWindowService } from './interface';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
+import { MENUBAR_ICON_PATH } from '@/constants/paths';
 
 @injectable()
 export class Window implements IWindowService {
@@ -129,7 +129,7 @@ export class Window implements IWindowService {
     const isMainWindow = windowName === WindowNames.main;
     if (isMainWindow) {
       if (attachToMenubar) {
-        this.mainWindowMenuBar = await handleAttachToMenuBar();
+        this.mainWindowMenuBar = await this.handleAttachToMenuBar();
         return;
       }
 
@@ -476,5 +476,108 @@ export class Window implements IWindowService {
         enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
     ]);
+  }
+
+  private async handleAttachToMenuBar(): Promise<Menubar> {
+    const menubarWindowState = windowStateKeeper({
+      file: 'window-state-menubar.json',
+      defaultWidth: 400,
+      defaultHeight: 400,
+    });
+
+    // setImage after Tray instance is created to avoid
+    // "Segmentation fault (core dumped)" bug on Linux
+    // https://github.com/electron/electron/issues/22137#issuecomment-586105622
+    // https://github.com/atomery/translatium/issues/164
+    const tray = new Tray(nativeImage.createEmpty());
+    // icon template is not supported on Windows & Linux
+    tray.setImage(MENUBAR_ICON_PATH);
+
+    const menuBar = menubar({
+      index: MAIN_WINDOW_WEBPACK_ENTRY,
+      tray,
+      preloadWindow: true,
+      tooltip: 'TiddlyGit',
+      browserWindow: {
+        x: menubarWindowState.x,
+        y: menubarWindowState.y,
+        width: menubarWindowState.width,
+        height: menubarWindowState.height,
+        minHeight: 100,
+        minWidth: 250,
+        webPreferences: {
+          devTools: !isTest,
+          nodeIntegration: false,
+          enableRemoteModule: false,
+          webSecurity: !isDevelopmentOrTest,
+          allowRunningInsecureContent: false,
+          contextIsolation: true,
+          preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
+          additionalArguments: [WindowNames.main, JSON.stringify({})],
+        },
+      },
+    });
+
+    menuBar.on('after-create-window', () => {
+      if (menuBar.window !== undefined) {
+        menubarWindowState.manage(menuBar.window);
+
+        menuBar.window.on('focus', () => {
+          const view = menuBar.window?.getBrowserView();
+          if (view?.webContents !== undefined) {
+            view.webContents.focus();
+          }
+        });
+      }
+    });
+
+    return await new Promise<Menubar>((resolve) => {
+      menuBar.on('ready', () => {
+        menuBar.tray.on('right-click', () => {
+          // TODO: restore updater options here
+          const contextMenu = Menu.buildFromTemplate([
+            {
+              label: i18n.t('ContextMenu.OpenTiddlyGit'),
+              click: async () => await menuBar.showWindow(),
+            },
+            {
+              label: i18n.t('Preference.NoAttach'),
+              click: async () => {
+                await this.preferenceService.set('attachToMenubar', false);
+                app.relaunch();
+                app.quit();
+              },
+            },
+            {
+              type: 'separator',
+            },
+            {
+              label: i18n.t('ContextMenu.About'),
+              click: async () => await this.open(WindowNames.about),
+            },
+            { type: 'separator' },
+            {
+              label: i18n.t('ContextMenu.Preferences'),
+              click: async () => await this.open(WindowNames.preferences),
+            },
+            {
+              label: i18n.t('ContextMenu.Notifications'),
+              click: async () => await this.open(WindowNames.notifications),
+            },
+            { type: 'separator' },
+            {
+              label: i18n.t('ContextMenu.Quit'),
+              click: () => {
+                menuBar.app.quit();
+              },
+            },
+          ]);
+
+          menuBar.tray.popUpContextMenu(contextMenu);
+        });
+
+        resolve(menuBar);
+      });
+    });
   }
 }

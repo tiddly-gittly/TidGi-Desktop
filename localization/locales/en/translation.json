@@ -11,6 +11,7 @@
     "RemoveCurrentWorkspace": "Remove Current Workspace"
   },
   "ContextMenu": {
+    "OpenTiddlyGit": "Open TiddlyGit",
     "OpenLinkInNewWindow": "Open Link in New Window",
     "Preferences": "Preferences...",
     "TiddlyGitSupport": "TiddlyGit Support",
@@ -259,7 +260,8 @@
     "OpenMetaDataFolderDetail": "TiddlyWiki's data and TiddlyGit's workspace metadata are stored separately. TiddlyGit's metadata includes workspace settings, etc., which are stored in this folder in JSON format.",
     "HideSideBar": "Hide SideBar",
     "HideTitleBar": "Hide Title Bar",
-    "ToggleMenuBar": "Toggle Menu Bar"
+    "ToggleMenuBar": "Toggle Menu Bar",
+    "NoAttach": "Resume Window Mode"
   },
   "Error": {
     "InitWikiGitError": "InitWikiGitError",
