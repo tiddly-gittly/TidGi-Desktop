@@ -7,7 +7,7 @@ import { TextField, Button } from '@material-ui/core';
 import { SupportedStorageServices } from '@services/types';
 import { useUserInfoObservable } from '@services/auth/hooks';
 import { ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from '@services/auth/interface';
-import { useAuthing } from './gitTokenHooks';
+import { useAuth } from './gitTokenHooks';
 
 const AuthingLoginButton = styled(Button)`
   width: 100%;
@@ -25,22 +25,7 @@ export function GitTokenForm(props: {
   const { children, storageService } = props;
   const { t } = useTranslation();
 
-  const authing = useAuthing();
-
-  const onFailure = useCallback((error: Error) => {
-    console.error(error);
-  }, []);
-
-  const onClickLogin = useCallback(async () => {
-    // clear token first, otherwise github login window won't give us a chance to see the form
-    // void this.auth.logout();
-    // window.remote.clearStorageData();
-    try {
-      await authing.login();
-    } catch (error) {
-      onFailure(error);
-    }
-  }, [authing, onFailure]);
+  const [onClickLogin] = useAuth(storageService);
 
   const userInfo = useUserInfoObservable();
   if (userInfo === undefined) {

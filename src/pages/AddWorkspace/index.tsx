@@ -18,7 +18,7 @@ import { CloneWikiDoneButton } from './CloneWikiDoneButton';
 import { IErrorInWhichComponent, useIsCreateMainWorkspace, useIsCreateSyncedWorkspace, useWikiWorkspaceForm } from './useForm';
 
 import { TokenForm } from '@/components/TokenForm';
-import { useAuthing, useTokenFromAuthingRedirect } from '@/components/TokenForm/gitTokenHooks';
+// import { useAuthing, useTokenFromAuthingRedirect } from '@/components/TokenForm/gitTokenHooks';
 import { GitRepoUrlForm } from './GitRepoUrlForm';
 
 enum CreateWorkspaceTabs {
@@ -64,11 +64,7 @@ export default function AddWorkspace(): JSX.Element {
     }
   }, [isCreateSyncedWorkspace, storageProvider, storageProviderSetter]);
 
-  const authing = useAuthing();
-  useTokenFromAuthingRedirect(
-    authing,
-    useCallback(() => isCreateSyncedWorkspaceSetter(true), [isCreateSyncedWorkspaceSetter]),
-  );
+  // const [onClickLogin] = useAuth(storageService);
 
   const formProps = {
     form: form,

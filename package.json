@@ -94,6 +94,7 @@
     "@dnd-kit/sortable": "1.0.2",
     "@dnd-kit/utilities": "1.0.2",
     "@tiddlygit/tiddlywiki": "5.1.24-prerelease.20210331",
+    "authing-js-sdk": "4.19.5",
     "beautiful-react-hooks": "0.31.1",
     "bluebird": "3.7.2",
     "chokidar": "3.5.1",
