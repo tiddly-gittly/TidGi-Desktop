@@ -383,7 +383,8 @@ export class View implements IViewService {
     const view = browserWindow.getBrowserView();
     if (view?.webContents !== null) {
       const contentSize = browserWindow.getContentSize();
-      if (typeof (await this.workspaceService.getMetaData(activeId)).didFailLoadErrorMessage === 'string') {
+      const didFailLoadErrorMessage = (await this.workspaceService.getMetaData(activeId)).didFailLoadErrorMessage;
+      if (typeof didFailLoadErrorMessage === 'string' && didFailLoadErrorMessage.length > 0) {
         view?.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       } else {
         view?.setBounds(await getViewBounds(contentSize as [number, number]));

@@ -179,6 +179,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         await this.hibernateWorkspaceView(oldActiveWorkspace.id);
       }
     }
+    await this.realignActiveWorkspace();
   }
 
   public async removeWorkspaceView(id: string): Promise<void> {

@@ -29,8 +29,10 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
       {...attributes}
       {...listeners}
       onClick={async () => {
-        if (isSubWiki && typeof tagName === 'string') {
-          await window.service.wiki.requestOpenTiddlerInWiki(tagName);
+        if (isSubWiki) {
+          if (typeof tagName === 'string') {
+            await window.service.wiki.requestOpenTiddlerInWiki(tagName);
+          }
         } else {
           const activeWorkspace = await window.service.workspace.getActiveWorkspace();
           if (activeWorkspace?.id === id) {
