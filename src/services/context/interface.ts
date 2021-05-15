@@ -5,7 +5,7 @@ export interface IPaths {
   MAIN_WINDOW_WEBPACK_ENTRY: string;
   TIDDLYWIKI_TEMPLATE_FOLDER_PATH: string;
   TIDDLERS_PATH: string;
-  ICON_PATH: string;
+  MENUBAR_ICON_PATH: string;
   CHROME_ERROR_PATH: string;
   LOGIN_REDIRECT_PATH: string;
   DESKTOP_PATH: string;

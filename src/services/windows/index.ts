@@ -28,6 +28,7 @@ import { MENUBAR_ICON_PATH } from '@/constants/paths';
 export class Window implements IWindowService {
   private windows = {} as Partial<Record<WindowNames, BrowserWindow | undefined>>;
   private windowMeta = {} as Partial<WindowMeta>;
+  /** menubar version of main window, if user set openInMenubar to true in preferences */
   private mainWindowMenuBar?: Menubar;
 
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
@@ -88,6 +89,9 @@ export class Window implements IWindowService {
   }
 
   public get(windowName: WindowNames = WindowNames.main): BrowserWindow | undefined {
+    if (windowName === WindowNames.main && this.mainWindowMenuBar?.window !== undefined) {
+      return this.mainWindowMenuBar.window;
+    }
     return this.windows[windowName];
   }
 
@@ -106,6 +110,7 @@ export class Window implements IWindowService {
     const existedWindowMeta = await this.getWindowMeta(windowName);
     const attachToMenubar: boolean = await this.preferenceService.get('attachToMenubar');
     const titleBar: boolean = await this.preferenceService.get('titleBar');
+    const isMainWindow = windowName === WindowNames.main;
 
     // handle existed window, bring existed window to the front and return.
     if (existedWindow !== undefined) {
@@ -115,19 +120,10 @@ export class Window implements IWindowService {
         return existedWindow.show();
       }
     }
-    if (this.mainWindowMenuBar !== undefined && attachToMenubar) {
-      this.mainWindowMenuBar.on('ready', () => {
-        if (this.mainWindowMenuBar !== undefined) {
-          void this.mainWindowMenuBar.showWindow();
-        }
-      });
-      return;
-    }
 
     // create new window
     let mainWindowConfig: Partial<BrowserWindowConstructorOptions> = {};
     let mainWindowState: windowStateKeeperState | undefined;
-    const isMainWindow = windowName === WindowNames.main;
     if (isMainWindow) {
       mainWindowState = windowStateKeeper({
         defaultWidth: windowDimension[WindowNames.main].width,
@@ -525,7 +521,8 @@ export class Window implements IWindowService {
     });
 
     return await new Promise<Menubar>((resolve) => {
-      menuBar.on('ready', () => {
+      menuBar.on('ready', async () => {
+        // right on tray icon
         menuBar.tray.on('right-click', () => {
           // TODO: restore updater options here
           const contextMenu = Menu.buildFromTemplate([
@@ -568,6 +565,14 @@ export class Window implements IWindowService {
 
           menuBar.tray.popUpContextMenu(contextMenu);
         });
+
+        // right click on window content
+        if (menuBar.window?.webContents !== undefined) {
+          const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(menuBar.window.webContents);
+          menuBar.on('after-close', () => {
+            unregisterContextMenu();
+          });
+        }
 
         resolve(menuBar);
       });

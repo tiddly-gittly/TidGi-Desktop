@@ -237,8 +237,6 @@ export class MenuService implements IMenuService {
           filteredSubMenu = [...newSubMenuItems, ...filteredSubMenu];
         } else if (typeof afterSubMenu === 'string') {
           // insert after afterSubMenu
-          // DEBUG: console
-          console.log(`filteredSubMenu`, afterSubMenu, filteredSubMenu);
           const afterSubMenuIndex = filteredSubMenu.findIndex((item) => item.id === afterSubMenu || item.role === afterSubMenu);
           if (afterSubMenuIndex === -1) {
             throw new InsertMenuAfterSubMenuIndexError(afterSubMenu, menuID, menu);
