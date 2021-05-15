@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { useCallback, useEffect, useMemo } from 'react';
 import AuthingSSO, { ITrackSessionResult } from '@authing/sso';
 import { AuthenticationClient } from 'authing-js-sdk';
@@ -33,12 +34,17 @@ export function useAuth(storageService: SupportedStorageServices): [() => Promis
           // DEBUG: console
           console.log('user', user);
           const thirdPartyIdentity = user.identities?.find((identity) => identity?.provider === storageService);
-          await Promise.all([
-            thirdPartyIdentity?.accessToken !== undefined &&
-              window.service.auth.set(`${storageService}-token` as ServiceTokenTypes, thirdPartyIdentity.accessToken),
-            window.service.auth.set(`${storageService}-userName` as ServiceUserNameTypes, user.username),
-            window.service.auth.set(`${storageService}-email` as ServiceEmailTypes, user.email),
-          ]);
+          if (thirdPartyIdentity) {
+            if (thirdPartyIdentity.accessToken) {
+              await window.service.auth.set(`${storageService}-token` as ServiceTokenTypes, thirdPartyIdentity.accessToken);
+            }
+            if (user.username) {
+              await window.service.auth.set(`${storageService}-userName` as ServiceUserNameTypes, user.username);
+            }
+            if (user.email) {
+              await window.service.auth.set(`${storageService}-email` as ServiceEmailTypes, user.email);
+            }
+          }
         },
         onError: (code, message) => onFailure(new Error(message + String(code))),
       });
