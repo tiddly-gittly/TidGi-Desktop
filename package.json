@@ -4,7 +4,7 @@
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
   "version": "0.3.6",
   "scripts": {
-    "start": "npm run clean && npm run start",
+    "start": "npm run clean && npm run start-without-clean",
     "start-without-clean": "cross-env NODE_ENV=development electron-forge start",
     "test": "npm run clean && cross-env NODE_ENV=test npm run package && npm run test-without-package",
     "test-without-package": "mkdir -p logs && cross-env NODE_ENV=test cucumber-js",
