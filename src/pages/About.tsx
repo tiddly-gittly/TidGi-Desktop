@@ -5,6 +5,7 @@ import { Helmet } from 'react-helmet';
 
 import { Button, DialogContent as DialogContentRaw } from '@material-ui/core';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import iconPath from '../../build-resources/icon.png';
 
 const DialogContent = styled(DialogContentRaw)`
   min-width: 320px;
@@ -75,7 +76,6 @@ export default function About(): JSX.Element {
     ];
   }, [] as Array<{ name: string; version: string }>);
 
-  const iconPath = usePromiseValue<string>(async () => await window.service.context.get('ICON_PATH'));
   const appVersion = usePromiseValue<string>(async () => await window.service.context.get('appVersion'));
   const platform = usePromiseValue<string>(async () => await window.service.context.get('platform'));
 
@@ -84,7 +84,7 @@ export default function About(): JSX.Element {
       <Helmet>
         <title>{t('ContextMenu.About')}</title>
       </Helmet>
-      <Icon src={`file:///${iconPath ?? ''}`} alt="TiddlyGit" />
+      <Icon src={iconPath} alt="TiddlyGit" />
       <Title>TiddlyGit ({platform ?? 'Unknown Platform'})</Title>
       <TiddlyGitVersion>{`Version v${appVersion ?? ' - '}.`}</TiddlyGitVersion>
       <DependenciesVersionsContainer>

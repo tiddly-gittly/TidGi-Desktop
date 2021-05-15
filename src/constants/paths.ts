@@ -15,10 +15,9 @@ export const TIDDLYWIKI_TEMPLATE_FOLDER_PATH = isDevelopmentOrTest
   ? path.resolve(sourcePath, '..', 'template', 'wiki')
   : path.resolve(process.resourcesPath, 'wiki');
 export const TIDDLERS_PATH = 'tiddlers';
-export const ICON_PATH = isDevelopmentOrTest ? path.resolve(buildResourcePath, 'icon.png') : `file://${path.resolve(__dirname, '..', 'icon.png')}`;
 
-const menuBarIconFileName = process.platform === 'darwin' ? 'menubarTemplate.png' : 'menubar.png';
-export const MENUBAR_ICON_PATH = path.resolve(isDevelopmentOrTest ? developmentImageFolderPath : process.resourcesPath, menuBarIconFileName);
+const menuBarIconFileName = process.platform === 'darwin' ? 'menubarTemplate@2x.png' : 'menubar@2x.png';
+export const MENUBAR_ICON_PATH = path.resolve(isDevelopmentOrTest ? buildResourcePath : process.resourcesPath, menuBarIconFileName);
 
 export const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';
 export const LOGIN_REDIRECT_PATH = 'http://localhost:3000/?code=';
