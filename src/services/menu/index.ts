@@ -116,22 +116,6 @@ export class MenuService implements IMenuService {
       {
         label: () => i18next.t('Menu.History'),
         id: 'History',
-        submenu: [
-          {
-            label: i18next.t('ContextMenu.Back'),
-            enabled: async () => (await this.viewService.getActiveBrowserView())?.webContents?.canGoBack() ?? false,
-            click: async () => {
-              (await this.viewService.getActiveBrowserView())?.webContents?.goBack();
-            },
-          },
-          {
-            label: i18next.t('ContextMenu.Forward'),
-            enabled: async () => (await this.viewService.getActiveBrowserView())?.webContents?.canGoForward() ?? false,
-            click: async () => {
-              (await this.viewService.getActiveBrowserView())?.webContents?.goForward();
-            },
-          },
-        ],
       },
       {
         label: () => i18next.t('Menu.Workspaces'),
@@ -189,6 +173,28 @@ export class MenuService implements IMenuService {
     };
   }
 
+  private static isMenuItemEqual<T extends DeferredMenuItemConstructorOptions | MenuItemConstructorOptions>(a: T, b: T): boolean {
+    if (a.id === b.id && a.id !== undefined) {
+      return true;
+    }
+    if (a.role === b.role && a.role !== undefined) {
+      return true;
+    }
+    if (typeof a.label === 'string' && typeof b.label === 'string' && a.label === b.label && a.label !== undefined) {
+      return true;
+    }
+    if (typeof a.label === 'function' && typeof b.label === 'function' && a.label() === b.label() && a.label() !== undefined) {
+      return true;
+    }
+    if (typeof a.label === 'function' && typeof b.label === 'string' && a.label() === b.label && b.label !== undefined) {
+      return true;
+    }
+    if (typeof b.label === 'function' && typeof a.label === 'string' && b.label() === a.label && a.label !== undefined) {
+      return true;
+    }
+    return false;
+  }
+
   /**
    * Insert provided sub menu items into menubar, so user and services can register custom menu items
    * @param menuID Top level menu name to insert menu items
@@ -213,9 +219,7 @@ export class MenuService implements IMenuService {
         // we push old and new content into this array, and assign back to menu.submenu later
         let filteredSubMenu: Array<DeferredMenuItemConstructorOptions | MenuItemConstructorOptions> = currentSubMenu;
         for (const newSubMenuItem of newSubMenuItems) {
-          const existedItemIndex = currentSubMenu.findIndex(
-            (existedItem) => existedItem.id === newSubMenuItem.id || existedItem.label === newSubMenuItem.label || existedItem.role === newSubMenuItem.role,
-          );
+          const existedItemIndex = currentSubMenu.findIndex((existedItem) => MenuService.isMenuItemEqual(existedItem, newSubMenuItem));
           // replace existed item, and remove it from needed-to-add-items
           if (existedItemIndex !== -1) {
             filteredSubMenu[existedItemIndex] = newSubMenuItem;

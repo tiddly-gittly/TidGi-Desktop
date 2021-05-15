@@ -372,41 +372,47 @@ export class Window implements IWindowService {
       { role: 'close' },
     ]);
 
-    await this.menuService.insertMenu('View', [
-      {
-        label: () => i18n.t('Menu.Find'),
-        accelerator: 'CmdOrCtrl+F',
-        click: async () => {
-          const mainWindow = this.get(WindowNames.main);
-          if (mainWindow !== undefined) {
-            mainWindow.webContents.focus();
-            mainWindow.webContents.send(WindowChannel.openFindInPage);
-            const contentSize = mainWindow.getContentSize();
-            const view = mainWindow.getBrowserView();
-            view?.setBounds(await getViewBounds(contentSize as [number, number], true));
-          }
+    await this.menuService.insertMenu(
+      'View',
+      [
+        {
+          label: () => i18n.t('Menu.Find'),
+          accelerator: 'CmdOrCtrl+F',
+          click: async () => {
+            const mainWindow = this.get(WindowNames.main);
+            if (mainWindow !== undefined) {
+              mainWindow.webContents.focus();
+              mainWindow.webContents.send(WindowChannel.openFindInPage);
+              const contentSize = mainWindow.getContentSize();
+              const view = mainWindow.getBrowserView();
+              view?.setBounds(await getViewBounds(contentSize as [number, number], true));
+            }
+          },
+          enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
         },
-        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
-      },
-      {
-        label: () => i18n.t('Menu.FindNext'),
-        accelerator: 'CmdOrCtrl+G',
-        click: () => {
-          const mainWindow = this.get(WindowNames.main);
-          mainWindow?.webContents?.send('request-back-find-in-page', true);
+        {
+          label: () => i18n.t('Menu.FindNext'),
+          accelerator: 'CmdOrCtrl+G',
+          click: () => {
+            const mainWindow = this.get(WindowNames.main);
+            mainWindow?.webContents?.send('request-back-find-in-page', true);
+          },
+          enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
         },
-        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
-      },
-      {
-        label: () => i18n.t('Menu.FindPrevious'),
-        accelerator: 'Shift+CmdOrCtrl+G',
-        click: () => {
-          const mainWindow = this.get(WindowNames.main);
-          mainWindow?.webContents?.send('request-back-find-in-page', false);
+        {
+          label: () => i18n.t('Menu.FindPrevious'),
+          accelerator: 'Shift+CmdOrCtrl+G',
+          click: () => {
+            const mainWindow = this.get(WindowNames.main);
+            mainWindow?.webContents?.send('request-back-find-in-page', false);
+          },
+          enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
         },
-        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
-      },
-    ]);
+      ],
+      // eslint-disable-next-line unicorn/no-null
+      null,
+      true,
+    );
 
     await this.menuService.insertMenu('History', [
       {
@@ -416,7 +422,7 @@ export class Window implements IWindowService {
         enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
       {
-        label: () => i18n.t('Menu.Back'),
+        label: () => i18n.t('ContextMenu.Back'),
         accelerator: 'CmdOrCtrl+[',
         click: async (_menuItem, browserWindow) => {
           // if back is called in popup window
@@ -434,7 +440,7 @@ export class Window implements IWindowService {
         enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
       {
-        label: () => i18n.t('Menu.Forward'),
+        label: () => i18n.t('ContextMenu.Forward'),
         accelerator: 'CmdOrCtrl+]',
         click: async (_menuItem, browserWindow) => {
           // if back is called in popup window
