@@ -261,7 +261,9 @@
     "HideSideBar": "Hide SideBar",
     "HideTitleBar": "Hide Title Bar",
     "ToggleMenuBar": "Toggle Menu Bar",
-    "NoAttach": "Resume Window Mode"
+    "NoAttach": "Resume Window Mode",
+    "AlwaysOnTop": "Always on top",
+    "AlwaysOnTopDetail": "Keep TiddlyGit’s main window always on top of other windows, and will not be covered by other windows"
   },
   "Error": {
     "InitWikiGitError": "InitWikiGitError",
@@ -302,6 +304,8 @@
     "Home": "Home",
     "ActualSize": "Actual Size",
     "ZoomIn": "Zoom In",
-    "ZoomOut": "Zoom Out"
+    "ZoomOut": "Zoom Out",
+    "Close": "Close",
+    "FindMatches": "matches"
   }
 }

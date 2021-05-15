@@ -1,4 +1,5 @@
 import React, { useState, useCallback, useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
@@ -19,6 +20,7 @@ const InfoContainer = styled.div`
 `;
 
 export default function FindInPage(): JSX.Element | null {
+  const { t } = useTranslation();
   const [open, openSetter] = useState(false);
   const [text, textSetter] = useState('');
   const [activeMatch, activeMatchSetter] = useState(0);
@@ -60,14 +62,14 @@ export default function FindInPage(): JSX.Element | null {
           <strong>{activeMatch}</strong>
           <span> / </span>
           <strong>{matches}</strong>
-          <span> matches</span>
+          <span> {t('Menu.FindMatches')}</span>
         </Typography>
       </InfoContainer>
       <div>
         <TextField
           autoFocus
           inputRef={inputReference}
-          placeholder="Find"
+          placeholder={t('Menu.Find')}
           value={text}
           margin="dense"
           onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -111,7 +113,7 @@ export default function FindInPage(): JSX.Element | null {
             void window.service.window.findInPage(text, false);
           }
         }}>
-        Previous
+        {t('Menu.FindPrevious')}
       </Button>
       <Button
         size="small"
@@ -121,7 +123,7 @@ export default function FindInPage(): JSX.Element | null {
             void window.service.window.findInPage(text, true);
           }
         }}>
-        Next
+        {t('Menu.FindNext')}
       </Button>
       <Button
         size="small"
@@ -131,7 +133,7 @@ export default function FindInPage(): JSX.Element | null {
             void window.service.window.findInPage(text, true);
           }
         }}>
-        Find
+        {t('Menu.Find')}
       </Button>
       <Button
         size="small"
@@ -139,7 +141,7 @@ export default function FindInPage(): JSX.Element | null {
           void window.service.window.stopFindInPage(true);
           openSetter(false);
         }}>
-        Close
+        {t('Menu.Close')}
       </Button>
     </Root>
   );
