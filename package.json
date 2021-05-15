@@ -29,8 +29,8 @@
         "extraResource": [
           "localization",
           "template/wiki",
-          "build-resources/menubar.png",
-          "build-resources/menubarTemplate.png"
+          "build-resources/menubar@2x.png",
+          "build-resources/menubarTemplate@2x.png"
         ],
         "mac": {
           "category": "productivity",
