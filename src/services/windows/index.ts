@@ -106,18 +106,15 @@ export class Window implements IWindowService {
     const attachToMenubar: boolean = await this.preferenceService.get('attachToMenubar');
     const titleBar: boolean = await this.preferenceService.get('titleBar');
 
+    // handle existed window, bring existed window to the front and return.
     if (existedWindow !== undefined) {
-      // TODO: handle this menubar logic
-      if (attachToMenubar) {
-        if (this.mainWindowMenuBar !== undefined) {
-          this.mainWindowMenuBar.on('ready', () => {
-            if (this.mainWindowMenuBar !== undefined) {
-              void this.mainWindowMenuBar.showWindow();
-            }
-          });
-        } else {
-          // create window with menubar
-        }
+      if (attachToMenubar && this.mainWindowMenuBar !== undefined) {
+        this.mainWindowMenuBar.on('ready', () => {
+          if (this.mainWindowMenuBar !== undefined) {
+            void this.mainWindowMenuBar.showWindow();
+          }
+        });
+        return;
       }
       if (recreate === true || (typeof recreate === 'function' && existedWindowMeta !== undefined && recreate(existedWindowMeta))) {
         existedWindow.close();
@@ -126,12 +123,14 @@ export class Window implements IWindowService {
       }
     }
 
+    // create new window
     let mainWindowConfig: Partial<BrowserWindowConstructorOptions> = {};
     let mainWindowState: windowStateKeeperState | undefined;
     const isMainWindow = windowName === WindowNames.main;
     if (isMainWindow) {
       if (attachToMenubar) {
         this.mainWindowMenuBar = await handleAttachToMenuBar();
+        return;
       }
 
       mainWindowState = windowStateKeeper({

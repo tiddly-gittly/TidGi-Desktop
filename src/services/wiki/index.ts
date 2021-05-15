@@ -355,7 +355,6 @@ export class Wiki implements IWikiService {
       // if is private repo wiki
       // if we are creating a sub-wiki just now, restart the main wiki to load content from private wiki
       if (typeof mainWikiToLink === 'string' && !this.justStartedWiki[mainWikiToLink]) {
-        // TODO: change getByName to getByMainWikiPath, get by mainWikiPath
         const mainWorkspace = await this.workspaceService.getByWikiFolderLocation(mainWikiToLink);
         if (mainWorkspace === undefined) {
           throw new Error(`mainWorkspace is undefined in wikiStartup() for mainWikiPath ${mainWikiToLink}`);
