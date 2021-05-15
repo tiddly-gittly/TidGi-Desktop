@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
+import mergeDeep from 'lodash/merge';
 import { BrowserWindow, ipcMain, dialog, app, clipboard, BrowserWindowConstructorOptions, Tray, nativeImage, Menu } from 'electron';
 import { injectable } from 'inversify';
 import { menubar, Menubar } from 'menubar';
@@ -128,11 +129,6 @@ export class Window implements IWindowService {
     let mainWindowState: windowStateKeeperState | undefined;
     const isMainWindow = windowName === WindowNames.main;
     if (isMainWindow) {
-      if (attachToMenubar) {
-        this.mainWindowMenuBar = await this.handleAttachToMenuBar();
-        return;
-      }
-
       mainWindowState = windowStateKeeper({
         defaultWidth: windowDimension[WindowNames.main].width,
         defaultHeight: windowDimension[WindowNames.main].height,
@@ -145,8 +141,7 @@ export class Window implements IWindowService {
         alwaysOnTop: this.preferenceService.get('alwaysOnTop'),
       };
     }
-
-    const newWindow = new BrowserWindow({
+    const windowConfig: BrowserWindowConstructorOptions = {
       ...windowDimension[windowName],
       ...mainWindowConfig,
       resizable: false,
@@ -165,8 +160,14 @@ export class Window implements IWindowService {
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
         additionalArguments: [windowName, JSON.stringify(meta)],
       },
-      parent: windowName === WindowNames.main || attachToMenubar ? undefined : this.get(WindowNames.main),
-    });
+      parent: isMainWindow || attachToMenubar ? undefined : this.get(WindowNames.main),
+    };
+    if (isMainWindow && attachToMenubar) {
+      this.mainWindowMenuBar = await this.handleAttachToMenuBar(windowConfig);
+      return;
+    }
+
+    const newWindow = new BrowserWindow(windowConfig);
 
     this.windows[windowName] = newWindow;
     if (isMainWindow) {
@@ -479,7 +480,7 @@ export class Window implements IWindowService {
     ]);
   }
 
-  private async handleAttachToMenuBar(): Promise<Menubar> {
+  private async handleAttachToMenuBar(windowConfig: BrowserWindowConstructorOptions): Promise<Menubar> {
     const menubarWindowState = windowStateKeeper({
       file: 'window-state-menubar.json',
       defaultWidth: 400,
@@ -498,25 +499,15 @@ export class Window implements IWindowService {
       index: MAIN_WINDOW_WEBPACK_ENTRY,
       tray,
       preloadWindow: true,
-      tooltip: 'TiddlyGit',
-      browserWindow: {
+      tooltip: i18n.t('Menu.TiddlyGit'),
+      browserWindow: mergeDeep(windowConfig, {
         x: menubarWindowState.x,
         y: menubarWindowState.y,
         width: menubarWindowState.width,
         height: menubarWindowState.height,
         minHeight: 100,
         minWidth: 250,
-        webPreferences: {
-          devTools: !isTest,
-          nodeIntegration: false,
-          enableRemoteModule: false,
-          webSecurity: !isDevelopmentOrTest,
-          allowRunningInsecureContent: false,
-          contextIsolation: true,
-          preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-          additionalArguments: [WindowNames.main, JSON.stringify({})],
-        },
-      },
+      }),
     });
 
     menuBar.on('after-create-window', () => {
