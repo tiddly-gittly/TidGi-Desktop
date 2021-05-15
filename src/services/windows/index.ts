@@ -138,7 +138,7 @@ export class Window implements IWindowService {
         y: mainWindowState.y,
         width: mainWindowState.width,
         height: mainWindowState.height,
-        alwaysOnTop: this.preferenceService.get('alwaysOnTop'),
+        alwaysOnTop: await this.preferenceService.get('alwaysOnTop'),
       };
     }
     const windowConfig: BrowserWindowConstructorOptions = {
@@ -501,6 +501,7 @@ export class Window implements IWindowService {
       preloadWindow: true,
       tooltip: i18n.t('Menu.TiddlyGit'),
       browserWindow: mergeDeep(windowConfig, {
+        show: false,
         x: menubarWindowState.x,
         y: menubarWindowState.y,
         width: menubarWindowState.width,
