@@ -246,14 +246,12 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   /**
    * Seems this is for relocating BrowserView in the electron window
-   * // TODO: why we need this?
    */
   public async realignActiveWorkspace(): Promise<void> {
     // this function only call browserView.setBounds
     // do not attempt to recall browserView.webContents.focus()
     // as it breaks page focus (cursor, scroll bar not visible)
     await this.realignActiveWorkspaceView();
-    // TODO: why we need to rebuild menu?
     await this.menuService.buildMenu();
   }
 

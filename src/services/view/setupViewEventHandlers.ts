@@ -188,13 +188,6 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     }
   });
 
-  // TODO: refactor to setWindowOpenHandler
-  //   view.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) => {
-  //     action: "deny";
-  // } | {
-  //     action: "allow";
-  //     overrideBrowserWindowOptions?: BrowserWindowConstructorOptions | undefined;
-  // })
   view.webContents.on(
     'new-window',
     async (

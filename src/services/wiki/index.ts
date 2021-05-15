@@ -317,7 +317,6 @@ export class Wiki implements IWikiService {
 
   // wiki-startup.ts
 
-  // FIXME: prevent private wiki try to restart wiki on start-up, where there will be several subsequent wikiStartup() call
   private readonly justStartedWiki: Record<string, boolean> = {};
   private setWikiStarted(wikiPath: string): void {
     this.justStartedWiki[wikiPath] = true;
