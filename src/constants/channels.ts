@@ -75,6 +75,7 @@ export enum WindowChannel {
   updateCanGoBack = 'update-can-go-back',
   updateCanGoForward = 'update-can-go-forward',
   openFindInPage = 'open-find-in-page',
+  closeFindInPage = 'close-find-in-page',
 }
 
 export enum ThemeChannel {

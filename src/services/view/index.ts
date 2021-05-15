@@ -16,7 +16,7 @@ import getViewBounds from '@services/libs/getViewBounds';
 import { IWorkspace } from '@services/workspaces/interface';
 import setupViewEventHandlers from './setupViewEventHandlers';
 import getFromRenderer from '@services/libs/getFromRenderer';
-import { ViewChannel, MetaDataChannel } from '@/constants/channels';
+import { ViewChannel, MetaDataChannel, WindowChannel } from '@/constants/channels';
 import { lazyInject } from '@services/container';
 import { IViewService } from './interface';
 import { SupportedStorageServices } from '@services/types';
@@ -281,8 +281,7 @@ export class View implements IViewService {
     const currentView = browserWindow.getBrowserView();
     if (currentView !== null) {
       currentView.webContents.stopFindInPage('clearSelection');
-      // FIXME: is this useful?
-      // browserWindow.send('close-find-in-page');
+      currentView.webContents.send(WindowChannel.closeFindInPage);
     }
     const workspace = await this.workspaceService.get(id);
     if (this.getView(id) === undefined && workspace !== undefined) {

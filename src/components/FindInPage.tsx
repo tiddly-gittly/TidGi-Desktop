@@ -35,6 +35,12 @@ export default function FindInPage(): JSX.Element | null {
     inputReference.current?.focus();
     inputReference.current?.select();
   }, [inputReference, openSetter]);
+  const handleCloseFindInPage = useCallback(() => {
+    openSetter(false);
+    textSetter('');
+    activeMatchSetter(0);
+    matchesSetter(0);
+  }, []);
   const updateFindInPageMatches = useCallback(
     (_event: Electron.IpcRendererEvent, activeMatchOrdinal: number, matchesResult: number) => {
       activeMatchSetter(activeMatchOrdinal);
@@ -44,13 +50,15 @@ export default function FindInPage(): JSX.Element | null {
   );
   useEffect(() => {
     window.remote.registerOpenFindInPage(handleOpenFindInPage);
+    window.remote.registerCloseFindInPage(handleCloseFindInPage);
     window.remote.registerUpdateFindInPageMatches(updateFindInPageMatches);
     // Remove event listener on cleanup
     return () => {
       window.remote.unregisterOpenFindInPage(handleOpenFindInPage);
+      window.remote.unregisterCloseFindInPage(handleCloseFindInPage);
       window.remote.unregisterUpdateFindInPageMatches(updateFindInPageMatches);
     };
-  }, [handleOpenFindInPage, updateFindInPageMatches]);
+  }, [handleCloseFindInPage, handleOpenFindInPage, updateFindInPageMatches]);
   if (!open) {
     // eslint-disable-next-line unicorn/no-null
     return null;
