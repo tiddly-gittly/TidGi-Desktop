@@ -196,7 +196,7 @@
     "HideMenuBarDetail": "Hide the menu bar unless the Alt+M is pressed.",
     "AttachToTaskbar": "Attach to taskbar",
     "AttachToMenuBar": "Attach to menu bar",
-    "AttachToMenuBarTip": "Tip: Right-click on app icon to access context menu.",
+    "AttachToMenuBarTip": "Make TiddlyGit a small popup window that pop when you click appbar mini icon, and hide the main window. Tip: Right-click on mini app icon to access context menu.",
     "OpenLogFolder": "Open the Log folder",
     "OpenLogFolderDetail": "When reporting a problem, please open the latest .log file in the folder and send its content to the developer, or paste it to pastebin.com and then paste the URL into the Github Issue",
     "SystemDefalutTheme": "System Defalut Theme",

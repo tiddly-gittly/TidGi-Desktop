@@ -30,6 +30,7 @@ export interface IPreferences {
   titleBar: boolean;
   unreadCountBadge: boolean;
   useHardwareAcceleration: boolean;
+  alwaysOnTop: boolean;
 }
 
 export enum PreferenceSections {

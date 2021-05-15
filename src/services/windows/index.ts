@@ -142,6 +142,7 @@ export class Window implements IWindowService {
         y: mainWindowState.y,
         width: mainWindowState.width,
         height: mainWindowState.height,
+        alwaysOnTop: this.preferenceService.get('alwaysOnTop'),
       };
     }
 

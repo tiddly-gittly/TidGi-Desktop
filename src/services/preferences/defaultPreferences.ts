@@ -30,6 +30,7 @@ export const defaultPreferences: IPreferences = {
   titleBar: true,
   unreadCountBadge: true,
   useHardwareAcceleration: true,
+  alwaysOnTop: false,
 };
 
 function getDefaultDownloadsPath(): string {

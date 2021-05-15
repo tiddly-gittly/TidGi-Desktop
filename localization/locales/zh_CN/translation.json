@@ -221,7 +221,7 @@
     "OpenMetaDataFolder": "打开太记工作区元信息文件夹",
     "OpenMetaDataFolderDetail": "太微的数据和太记的工作区数据是分开存放的，太记的数据包含工作区的设置等，它们以 JSON 形式存放在这个文件夹里。",
     "AttachToMenuBar": "附加到菜单栏",
-    "AttachToMenuBarTip": "提示：右键单击应用程序图标以访问上下文菜单。",
+    "AttachToMenuBarTip": "让太记变成点击菜单栏/任务栏图标会弹出的一个小弹出窗口，而不显示大的主窗口。提示：右键单击小图标以访问上下文菜单。",
     "AttachToTaskbar": "附加到任务栏",
     "NoAttach": "恢复窗口模式",
     "ToggleMenuBar": "切换显隐菜单栏",
@@ -287,7 +287,9 @@
     "HowToEnableNotifications": "<0>TiddlyGit支持原生通知功能。但在某些情况下，要接收通知，您需要手动配置一些Web应用设置。</0><1>了解详情</1><2>。</2>",
     "IgnoreCertificateErrorsDescription": "<0>不建议。</0><1>了解详情</1>。",
     "SwipeWithThreeFingersToNavigateDescription": "使用3个指手势在页面之间导航。向左轻扫可返回，向右轻扫可前进。<br/>要启用它，还需要更改<3>macOS首选项 → 触控板 → 更多手势 → 在页面间轻扫</3>到<5>用三个手指轻扫</5>或<7>用两个或三个手指轻扫。</7>",
-    "TestNotificationDescription": "<0>如果通知未显示，请确保在<1>macOS首选项 → 通知 → TiddlyGit中启用通知</1></0>"
+    "TestNotificationDescription": "<0>如果通知未显示，请确保在<1>macOS首选项 → 通知 → TiddlyGit中启用通知</1></0>",
+    "AlwaysOnTop": "保持窗口在其他窗口上方",
+    "AlwaysOnTopDetail": "让太记的主窗口永远保持在其它窗口上方，不会被其他窗口覆盖"
   },
   "Error": {
     "InitWikiGitError": "笔记仓库初始化失败错误",

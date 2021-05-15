@@ -188,6 +188,7 @@ export default function Preferences(): JSX.Element {
     allowPrerelease,
     askForDownloadPath,
     attachToMenubar,
+    alwaysOnTop,
     downloadPath,
     hibernateUnusedWorkspacesAtLaunch,
     hideMenuBar,
@@ -216,9 +217,7 @@ export default function Preferences(): JSX.Element {
   return (
     <Root>
       <Helmet>
-        <title>
-          {t('ContextMenu.Preferences')}
-        </title>
+        <title>{t('ContextMenu.Preferences')}</title>
       </Helmet>
       <SideBar>
         <List dense>
@@ -409,6 +408,19 @@ export default function Preferences(): JSX.Element {
                   onChange={async (event) => {
                     await window.service.preference.set('attachToMenubar', event.target.checked);
                     await debouncedRequestShowRequireRestartDialog();
+                  }}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            <ListItem>
+              <ListItemText primary={t('Preference.AlwaysOnTop')} secondary={t('Preference.AlwaysOnTopDetail')} />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={alwaysOnTop}
+                  onChange={async (event) => {
+                    await window.service.preference.set('alwaysOnTop', event.target.checked);
                   }}
                 />
               </ListItemSecondaryAction>
