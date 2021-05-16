@@ -427,7 +427,6 @@ async function handleNewWindow(
         popupWin.close();
       }
     });
-    // FIXME: type definition of event
     event.newGuest = popupWin;
   }
 }
