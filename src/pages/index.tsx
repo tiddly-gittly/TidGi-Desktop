@@ -9,7 +9,7 @@ import DialogNotifications from './Notifications';
 import DialogPreferences from './Preferences';
 import SpellcheckLanguages from './SpellcheckLanguages';
 
-export function App(): JSX.Element {
+export function Pages(): JSX.Element {
   switch (window.meta.windowName) {
     case WindowNames.about:
       return <AboutPage />;

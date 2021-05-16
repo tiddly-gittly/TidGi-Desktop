@@ -47,13 +47,13 @@ const Root = styled.div`
   height: 100%;
   width: 100%;
   overflow: hidden;
-  background-color: #fafafa;
+  background-color: ${({ theme }) => theme.palette.background.default};
 `;
 
 const sideBarStyle = css`
   height: 100%;
   width: 68px;
-  background-color: #fafafa;
+  background-color: ${({ theme }) => theme.palette.background.default};
   -webkit-app-region: drag;
   user-select: none;
   display: flex;

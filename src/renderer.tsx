@@ -4,19 +4,43 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import i18n from 'i18next';
 import LogRocket from 'logrocket';
+import { ThemeProvider } from 'styled-components';
 
 import StyledEngineProvider from '@material-ui/core/StyledEngineProvider';
 import DateFnsUtils from '@material-ui/lab/AdapterDateFns';
 import LocalizationProvider from '@material-ui/lab/LocalizationProvider';
 import CssBaseline from '@material-ui/core/CssBaseline';
 import { I18nextProvider } from 'react-i18next';
-import { WindowNames, WindowMeta, IPreferenceWindowMeta } from '@services/windows/WindowProperties';
-
 import 'typeface-roboto/index.css';
 
+import { WindowNames, IPreferenceWindowMeta } from '@services/windows/WindowProperties';
+import { useThemeObservable } from '@services/theme/hooks';
+import { darkTheme, lightTheme } from '@services/theme/defaultTheme';
 import { initI18N } from './i18n';
 import './helpers/electron-ipc-proxy/fixContextIsolation';
-import { App } from './pages';
+import { Pages } from './pages';
+
+function App(): JSX.Element {
+  const theme = useThemeObservable();
+
+  // DEBUG: console
+  console.log(`theme?.shouldUseDarkColors`, theme?.shouldUseDarkColors);
+  return (
+    <ThemeProvider theme={theme?.shouldUseDarkColors === true ? darkTheme : lightTheme}>
+      <StyledEngineProvider injectFirst>
+        <LocalizationProvider dateAdapter={DateFnsUtils}>
+          <CssBaseline />
+          <React.Suspense fallback={<div />}>
+            <I18nextProvider i18n={i18n}>
+              <div id="test" data-usage="For spectron automating testing" />
+              <Pages />
+            </I18nextProvider>
+          </React.Suspense>
+        </LocalizationProvider>
+      </StyledEngineProvider>
+    </ThemeProvider>
+  );
+}
 
 async function runApp(): Promise<void> {
   LogRocket.init('kkauk7/tiddlygit-desktop');
@@ -36,22 +60,7 @@ async function runApp(): Promise<void> {
     });
   }
 
-  ReactDOM.render(
-    <>
-      <StyledEngineProvider injectFirst>
-        <LocalizationProvider dateAdapter={DateFnsUtils}>
-          <CssBaseline />
-          <React.Suspense fallback={<div />}>
-            <I18nextProvider i18n={i18n}>
-              <div id="test" data-usage="For spectron automating testing" />
-              <App />
-            </I18nextProvider>
-          </React.Suspense>
-        </LocalizationProvider>
-      </StyledEngineProvider>
-    </>,
-    document.querySelector('#app'),
-  );
+  ReactDOM.render(<App />, document.querySelector('#app'));
 
   await initI18N();
 }

@@ -6,10 +6,10 @@ import styled, { css, keyframes } from 'styled-components';
 
 import defaultIcon from '../../images/default-icon.png';
 import { getAssetsFileUrl } from '@/helpers/url';
+import { Theme } from '@material-ui/core';
 
 Promise.config({ cancellation: true });
 
-// TODO: &:hover { background: theme.palette.action.hover;
 const Root = styled.div<{ hibernated?: boolean; active?: boolean }>`
   height: fit-content;
   width: 68px;
@@ -44,10 +44,13 @@ const backgroundColorShift = keyframes`
 from {background-color: #dddddd;}
   to {background-color: #eeeeee}
 `;
-// TODO: background: theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white,
-// TODO: color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.black : theme.palette.common.white),
-// TODO: border: theme.palette.type === 'dark' ? 'none' : 1px solid rgba(0, 0, 0, 0.12),
-const Avatar = styled.div<{ large?: boolean; transparent?: boolean; addAvatar: boolean; highlightAdd: boolean }>`
+interface IAvatarProps {
+  large?: boolean;
+  transparent?: boolean;
+  addAvatar: boolean;
+  highlightAdd: boolean;
+}
+const Avatar = styled.div<IAvatarProps>`
   height: 36px;
   width: 36px;
   border-radius: 4px;
@@ -72,13 +75,13 @@ const Avatar = styled.div<{ large?: boolean; transparent?: boolean; addAvatar: b
     `}
 
   &${({ highlightAdd, addAvatar }) => (highlightAdd && addAvatar ? '' : ':hover')}, &:hover {
-    background-color: #eeeeee;
+    background-color: ${({ theme }) => theme.palette.background.default};
     animation: ${backgroundColorShift} 5s infinite;
     animation-direction: alternate;
     animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
-    color: black;
+    color: ${({ theme }) => theme.palette.common.black};
   }
-  ${({ addAvatar }) =>
+  ${({ addAvatar }: IAvatarProps) =>
     addAvatar
       ? ''
       : css`
