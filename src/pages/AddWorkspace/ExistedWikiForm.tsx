@@ -31,7 +31,11 @@ export function ExistedWikiForm({
         <LocationPickerInput
           error={errorInWhichComponent.existedWikiFolderPath}
           onChange={(event) => {
-            form.existedWikiFolderPathSetter(event.target.value);
+            const folderName = window.remote.getBaseName(event.target.value);
+            if (folderName !== undefined) {
+              form.existedWikiFolderPathSetter(event.target.value);
+              form.wikiFolderNameSetter(folderName);
+            }
           }}
           label={t('AddWorkspace.WorkspaceFolder')}
           helperText={`${t('AddWorkspace.ImportWiki')}${form.existedWikiFolderPath}`}
