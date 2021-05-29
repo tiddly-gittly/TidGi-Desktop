@@ -13,6 +13,7 @@ module.exports = {
   resolve: {
     alias: webpackAlias,
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.css'],
+    fallback: { crypto: false },
   },
   output: { chunkFilename: 'main_window/[name].chunk.js', publicPath: '../' },
 };

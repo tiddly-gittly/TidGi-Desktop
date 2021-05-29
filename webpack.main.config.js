@@ -31,6 +31,9 @@ module.exports = {
     alias: webpackAlias,
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.json'],
   },
+  externals: {
+    '@tiddlygit/tiddlywiki': 'commonjs @tiddlygit/tiddlywiki',
+  },
   node: {
     __filename: true,
     __dirname: true,
