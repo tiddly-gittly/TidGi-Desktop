@@ -7,16 +7,8 @@ import { trim } from 'lodash';
 import { useTranslation } from 'react-i18next';
 import { useDebouncedFn } from 'beautiful-react-hooks';
 
-import TextField from '@material-ui/core/TextField';
-import FolderIcon from '@material-ui/icons/Folder';
-import LinearProgress from '@material-ui/core/LinearProgress';
-import List from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemIcon from '@material-ui/core/ListItemIcon';
-import ListItemText from '@material-ui/core/ListItemText';
-import Button from '@material-ui/core/Button';
-import CachedIcon from '@material-ui/icons/Cached';
-import CreateNewFolderIcon from '@material-ui/icons/CreateNewFolder';
+import { TextField, LinearProgress, List, ListItem, ListItemIcon, ListItemText, Button } from '@material-ui/core';
+import { Folder as FolderIcon, Cached as CachedIcon, CreateNewFolder as CreateNewFolderIcon } from '@material-ui/icons';
 
 import { GITHUB_GRAPHQL_API } from '@/constants/auth';
 import { useUserInfoObservable } from '@services/auth/hooks';
