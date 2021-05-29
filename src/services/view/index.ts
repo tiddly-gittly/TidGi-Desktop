@@ -20,6 +20,7 @@ import { ViewChannel, MetaDataChannel, WindowChannel } from '@/constants/channel
 import { lazyInject } from '@services/container';
 import { IViewService } from './interface';
 import { SupportedStorageServices } from '@services/types';
+import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 
 @injectable()
 export class View implements IViewService {
@@ -259,7 +260,7 @@ export class View implements IViewService {
       });
     }
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-    const initialUrl = (rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl;
+    const initialUrl = getLocalHostUrlWithActualIP((rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl);
     setupViewEventHandlers(view, browserWindow, { shouldPauseNotifications: this.shouldPauseNotifications, workspace, sharedWebPreferences });
     // start wiki on startup, or on sub-wiki creation
     await this.wikiService.wikiStartup(workspace);

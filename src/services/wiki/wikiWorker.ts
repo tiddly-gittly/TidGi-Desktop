@@ -3,7 +3,9 @@ import path from 'path';
 import tiddlywiki from '@tiddlygit/tiddlywiki';
 import { Observable } from 'rxjs';
 import intercept from 'intercept-stdout';
+
 import { IWikiMessage, WikiControlActions } from './interface';
+import { defaultServerIP } from '@/constants/urls';
 
 function startNodeJSWiki({
   homePath,
@@ -38,7 +40,7 @@ function startNodeJSWiki({
         '--listen',
         `anon-username=${userName}`,
         `port=${tiddlyWikiPort}`,
-        'host=0.0.0.0',
+        `host=${defaultServerIP}`,
         'root-tiddler=$:/core/save/lazy-images',
       ];
       wikiInstance.boot.startup({

@@ -18,6 +18,7 @@ import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowPrope
 import { container } from '@services/container';
 import { ViewChannel, WindowChannel } from '@/constants/channels';
 import { logger } from '@services/libs/log';
+import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 
 export interface IViewContext {
   workspace: IWorkspace;
@@ -49,9 +50,10 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     // https://github.com/atomery/webcatalog/issues/849#issuecomment-629587264
     // this behavior is likely to break many apps (eg Microsoft Teams)
     // apply this rule only to github.com for now
-    const appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
+    let appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
     const currentUrl = view.webContents.getURL();
     if (appUrl !== undefined) {
+      appUrl = getLocalHostUrlWithActualIP(appUrl);
       const appDomain = extractDomain(appUrl);
       const currentDomain = extractDomain(currentUrl);
       if (
@@ -139,7 +141,7 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     // edge case to handle failed auth, use setTimeout to prevent infinite loop
     if (errorCode === -300 && view.webContents.getURL().length === 0 && workspaceObject.homeUrl.startsWith('http')) {
       setTimeout(() => {
-        void view.webContents.loadURL(workspaceObject.homeUrl);
+        void view.webContents.loadURL(getLocalHostUrlWithActualIP(workspaceObject.homeUrl));
       }, 1000);
     }
   });
@@ -294,10 +296,11 @@ async function handleNewWindow(
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const { view, workspace, sharedWebPreferences } = newWindowContext;
 
-  const appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
+  let appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
   if (appUrl === undefined) {
     throw new Error(`Workspace ${workspace.id} not existed, or don't have homeUrl setting`);
   }
+  appUrl = getLocalHostUrlWithActualIP(appUrl);
   const appDomain = extractDomain(appUrl);
   const currentUrl = view.webContents.getURL();
   const currentDomain = extractDomain(currentUrl);

@@ -23,6 +23,7 @@ import { lazyInject } from '@services/container';
 import { IWindowService } from './interface';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 import { MENUBAR_ICON_PATH } from '@/constants/paths';
+import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 
 @injectable()
 export class Window implements IWindowService {
@@ -304,7 +305,7 @@ export class Window implements IWindowService {
     const contents = win?.getBrowserView()?.webContents;
     const activeWorkspace = await this.workspaceService.getActiveWorkspace();
     if (contents !== undefined && activeWorkspace !== undefined && win !== undefined) {
-      await contents.loadURL(activeWorkspace.homeUrl);
+      await contents.loadURL(getLocalHostUrlWithActualIP(activeWorkspace.homeUrl));
       contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
       contents.send(WindowChannel.updateCanGoForward, contents.canGoForward());
     }

@@ -24,6 +24,7 @@ import { SupportedStorageServices } from '@services/types';
 import { lazyInject } from '@services/container';
 import { IWorkspaceService, IWorkspace, IWorkspaceMetaData, INewWorkspaceConfig } from './interface';
 import i18n from '@services/libs/i18n';
+import { defaultServerIP } from '@/constants/urls';
 
 @injectable()
 export class Workspace implements IWorkspaceService {
@@ -376,7 +377,7 @@ export class Workspace implements IWorkspaceService {
       id: newID,
       order: max + 1,
       lastUrl: null,
-      homeUrl: `http://0.0.0.0:${newWorkspaceConfig.port}`,
+      homeUrl: `http://${defaultServerIP}:${newWorkspaceConfig.port}`,
       subWikiFolderName: 'subwiki',
       picturePath: null,
     };
