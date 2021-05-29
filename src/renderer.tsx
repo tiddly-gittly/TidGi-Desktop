@@ -23,8 +23,6 @@ import { Pages } from './pages';
 function App(): JSX.Element {
   const theme = useThemeObservable();
 
-  // DEBUG: console
-  console.log(`theme?.shouldUseDarkColors`, theme?.shouldUseDarkColors);
   return (
     <ThemeProvider theme={theme?.shouldUseDarkColors === true ? darkTheme : lightTheme}>
       <StyledEngineProvider injectFirst>
