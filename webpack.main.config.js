@@ -1,7 +1,10 @@
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable unicorn/prefer-module */
 /* eslint-disable @typescript-eslint/no-var-requires */
 const { webpackAlias } = require('./webpack.alias');
 const plugins = require('./webpack.plugins');
+const nodeExternals = require('webpack-node-externals');
 
 module.exports = {
   /**
@@ -31,9 +34,12 @@ module.exports = {
     alias: webpackAlias,
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.json'],
   },
-  externals: {
-    '@tiddlygit/tiddlywiki': '@tiddlygit/tiddlywiki',
-  },
+  externals: [
+    nodeExternals({
+      additionalModuleDirs: ['@tiddlygit/tiddlywiki'],
+      allowlist: [/threads-plugin/],
+    }),
+  ],
   externalsType: 'commonjs',
   externalsPresets: { electronMain: true },
   node: {

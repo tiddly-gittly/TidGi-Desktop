@@ -31,7 +31,6 @@ exports.main = [
   }),
   new ThreadsPlugin({
     target: 'electron-node-worker',
-    plugins: ['ExternalsPlugin'],
   }),
 ];
 

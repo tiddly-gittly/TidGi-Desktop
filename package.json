@@ -230,7 +230,8 @@
     "typeface-roboto": "1.1.13",
     "typescript": "4.3.2",
     "typescript-plugin-styled-components": "1.5.0",
-    "typesync": "0.8.0"
+    "typesync": "0.8.0",
+    "webpack-node-externals": "^3.0.0"
   },
   "private": false
 }
