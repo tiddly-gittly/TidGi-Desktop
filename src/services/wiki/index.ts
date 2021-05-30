@@ -30,6 +30,10 @@ import { CopyWikiTemplateError, DoubleWikiInstanceError } from './error';
 import { SupportedStorageServices } from '@services/types';
 import type { WikiWorker } from './wikiWorker';
 
+// @ts-expect-error it don't want .ts
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import workerURL from 'threads-plugin/dist/loader?name=worker!./wikiWorker.ts';
+
 @injectable()
 export class Wiki implements IWikiService {
   @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
@@ -83,7 +87,7 @@ export class Wiki implements IWikiService {
     }
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
     const workerData = { homePath, userName, tiddlyWikiPort };
-    const worker = await spawn<WikiWorker>(new Worker('./wikiWorker.ts'));
+    const worker = await spawn<WikiWorker>(new Worker(workerURL));
     this.wikiWorkers[homePath] = worker;
     refreshOutputFile(homePath);
     const loggerMeta = { worker: 'NodeJSWiki', homePath };

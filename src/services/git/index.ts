@@ -26,6 +26,10 @@ import { WikiChannel } from '@/constants/channels';
 import { GitWorker } from './gitWorker';
 import { Observer } from 'rxjs';
 
+// @ts-expect-error it don't want .ts
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import workerURL from 'threads-plugin/dist/loader?name=worker!./gitWorker.ts';
+
 @injectable()
 export class Git implements IGitService {
   private gitWorker?: ModuleThread<GitWorker>;
@@ -42,7 +46,7 @@ export class Git implements IGitService {
   }
 
   private async initWorker(): Promise<void> {
-    this.gitWorker = await spawn<GitWorker>(new Worker('./gitWorker.ts'));
+    this.gitWorker = await spawn<GitWorker>(new Worker(workerURL));
   }
 
   public debounceCommitAndSync: (wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos) => Promise<void> | undefined;

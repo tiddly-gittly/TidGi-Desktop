@@ -32,8 +32,10 @@ module.exports = {
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.json'],
   },
   externals: {
-    '@tiddlygit/tiddlywiki': 'commonjs @tiddlygit/tiddlywiki',
+    '@tiddlygit/tiddlywiki': '@tiddlygit/tiddlywiki',
   },
+  externalsType: 'commonjs',
+  externalsPresets: { electronMain: true },
   node: {
     __filename: true,
     __dirname: true,
