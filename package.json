@@ -231,7 +231,8 @@
     "typescript": "4.3.2",
     "typescript-plugin-styled-components": "1.5.0",
     "typesync": "0.8.0",
-    "webpack-node-externals": "^3.0.0"
+    "webpack-node-externals": "^3.0.0",
+    "webpack5-externals-plugin": "^1.0.4"
   },
   "private": false
 }

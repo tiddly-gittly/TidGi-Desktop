@@ -7,6 +7,7 @@ const path = require('path');
 const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 const ThreadsPlugin = require('threads-plugin');
+const ExternalsPlugin = require('webpack5-externals-plugin');
 
 exports.main = [
   // we only need one instance of TsChecker, it will check main and renderer all together
@@ -29,8 +30,13 @@ exports.main = [
   new webpack.DefinePlugin({
     'process.env.NODE_ENV': `"${process.env.NODE_ENV ?? 'production'}"`,
   }),
+  new ExternalsPlugin({
+    type: 'commonjs',
+    include: path.join(__dirname, 'node_modules', '@tiddlygit', 'tiddlywiki'),
+  }),
   new ThreadsPlugin({
     target: 'electron-node-worker',
+    plugins: ['ExternalsPlugin'],
   }),
 ];
 
