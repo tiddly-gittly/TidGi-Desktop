@@ -37,6 +37,7 @@ export function useValidateCloneWiki(
       errorInWhichComponentSetter({ gitUserInfo: true });
       hasErrorSetter(true);
     } else {
+      wikiCreationMessageSetter('');
       errorInWhichComponentSetter({});
       hasErrorSetter(false);
     }

@@ -16,8 +16,7 @@ export function useWikiCreationProgress(
     if (hasError === true) {
       logPanelSetter(false);
       inProgressOrErrorSetter(false);
-    }
-    if (hasError === false && !creationInProgress) {
+    } else if (!creationInProgress) {
       logPanelSetter(false);
       inProgressOrErrorSetter(false);
     }

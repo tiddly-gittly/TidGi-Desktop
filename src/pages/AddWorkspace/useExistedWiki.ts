@@ -42,6 +42,7 @@ export function useValidateExistedWiki(
       errorInWhichComponentSetter({ gitUserInfo: true });
       hasErrorSetter(true);
     } else {
+      wikiCreationMessageSetter('');
       errorInWhichComponentSetter({});
       hasErrorSetter(false);
     }
