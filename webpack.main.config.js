@@ -35,13 +35,13 @@ module.exports = {
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.json'],
   },
   externals: [
-    nodeExternals({
-      additionalModuleDirs: ['@tiddlygit/tiddlywiki'],
-      allowlist: [/threads-plugin/],
-    }),
+    // nodeExternals({
+    //   additionalModuleDirs: ['@tiddlygit/tiddlywiki'],
+    //   allowlist: [/(threads-plugin)/],
+    // }),
   ],
-  externalsType: 'commonjs',
-  externalsPresets: { electronMain: true },
+  // externalsType: 'commonjs',
+  // externalsPresets: { electronMain: true },
   node: {
     __filename: true,
     __dirname: true,

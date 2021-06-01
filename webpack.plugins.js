@@ -14,7 +14,10 @@ exports.main = [
   new ForkTsCheckerWebpackPlugin(),
   new CopyPlugin({
     // to is relative to ./.webpack/main/
-    patterns: [{ from: 'localization', to: 'localization' }],
+    patterns: [
+      { from: 'localization', to: 'localization' },
+      { from: 'node_modules/@tiddlygit/tiddlywiki', to: 'node_modules/@tiddlygit/tiddlywiki' },
+    ],
   }),
   new CircularDependencyPlugin({
     // exclude detection of files based on a RegExp
