@@ -28,7 +28,7 @@ import { Observer } from 'rxjs';
 
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
-import workerURL from 'threads-plugin/dist/loader?name=worker!./gitWorker.ts';
+import workerURL from 'threads-plugin/dist/loader?name=gitWorker!./gitWorker.ts';
 
 @injectable()
 export class Git implements IGitService {

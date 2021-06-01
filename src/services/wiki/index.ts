@@ -32,7 +32,7 @@ import type { WikiWorker } from './wikiWorker';
 
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
-import workerURL from 'threads-plugin/dist/loader?name=worker!./wikiWorker.ts';
+import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker.ts';
 
 @injectable()
 export class Wiki implements IWikiService {
