@@ -17,6 +17,10 @@ export function useWikiCreationProgress(
       logPanelSetter(false);
       inProgressOrErrorSetter(false);
     }
+    if (hasError === false && !creationInProgress) {
+      logPanelSetter(false);
+      inProgressOrErrorSetter(false);
+    }
   }, [wikiCreationMessage, hasError]);
   // register to WikiChannel.createProgress on component mount
   useEffect(() => {
