@@ -22,6 +22,8 @@
   "config": {
     "forge": {
       "packagerConfig": {
+        "name": "TiddlyGit",
+        "executableName": "TiddlyGit",
         "icon": "build-resources/icon.icns",
         "asar": {
           "unpack": "**/.webpack/main/*.worker.*"
@@ -51,7 +53,7 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "name": "my_new_app"
+            "name": "TiddlyGit"
           }
         },
         {
