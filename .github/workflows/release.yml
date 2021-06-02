@@ -36,12 +36,13 @@ jobs:
       with:
         node-version: 14.x
 
-    - name: Cache dependencies
+    - name: Get npm cache directory
       uses: actions/cache@v2
       with:
         path: ~/.npm
-        key: npm-${{ hashFiles('package-lock.json') }}
-        restore-keys: npm-
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
 
     - name: Install dependencies
       run: npm ci
@@ -73,12 +74,13 @@ jobs:
       with:
         node-version: 14.x
 
-    - name: Cache dependencies
+    - name: Get npm cache directory
       uses: actions/cache@v2
       with:
         path: ~/.npm
-        key: npm-${{ hashFiles('package-lock.json') }}
-        restore-keys: npm-
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
 
     - name: Install dependencies
       run: npm ci
@@ -112,12 +114,16 @@ jobs:
       with:
         node-version: 14.x
 
-    - name: Cache dependencies
-      uses: actions/cache@v2
+    - name: Get npm cache directory
+      id: npm-cache
+      run: |
+        echo "::set-output name=dir::$(npm config get cache)"
+    - uses: actions/cache@v2
       with:
-        path: ~/.npm
-        key: npm-${{ hashFiles('package-lock.json') }}
-        restore-keys: npm-
+        path: ${{ steps.npm-cache.outputs.dir }}
+        key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-node-
 
     - name: Install dependencies
       run: npm ci
