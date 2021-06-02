@@ -42,6 +42,7 @@ jobs:
         path: ~/.npm
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
+          ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           ${{ runner.os }}-node-
 
     - name: Install dependencies
@@ -80,6 +81,7 @@ jobs:
         path: ~/.npm
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
+          ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           ${{ runner.os }}-node-
 
     - name: Install dependencies
@@ -123,6 +125,7 @@ jobs:
         path: ${{ steps.npm-cache.outputs.dir }}
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
         restore-keys: |
+          ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           ${{ runner.os }}-node-
 
     - name: Install dependencies
