@@ -1,5 +1,9 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
+/* eslint-disable @typescript-eslint/no-var-requires */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable unicorn/prefer-module */
-// eslint-disable-next-line @typescript-eslint/no-var-requires
 const electron = require('electron');
+const { isPackaged } = require('electron-is-packaged');
 
-export const isElectronDevelopment = process.env.NODE_ENV === 'development' || (typeof electron === 'string' ? false : !electron.app.isPackaged);
+export const isElectronDevelopment =
+  !isPackaged && (process.env.NODE_ENV === 'development' || (typeof electron === 'string' ? false : !electron.app.isPackaged));

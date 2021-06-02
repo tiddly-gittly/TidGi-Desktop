@@ -9,6 +9,7 @@ declare module '@tiddlygit/tiddlywiki' {
   }
   export function TiddlyWiki(): I$TW;
 }
+
 declare module 'threads-plugin' {
   const value: any;
   export default value;

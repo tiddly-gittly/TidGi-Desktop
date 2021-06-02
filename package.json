@@ -102,6 +102,7 @@
     "beautiful-react-hooks": "0.35.0",
     "bluebird": "3.7.2",
     "chokidar": "3.5.1",
+    "electron-is-packaged": "^1.0.2",
     "electron-settings": "4.0.2",
     "electron-unhandled": "3.0.2",
     "electron-updater": "4.3.9",
