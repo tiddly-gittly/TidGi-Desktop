@@ -29,7 +29,7 @@
           "unpack": "**/.webpack/main/*.worker.*"
         },
         "extraResource": [
-          "node_modules/@tiddlygit/tiddlywiki",
+          ".webpack/node_modules",
           "localization",
           "template/wiki",
           "build-resources/menubar@2x.png",
@@ -160,6 +160,7 @@
     "@types/electron-window-state": "5.0.0",
     "@types/eslint": "7.2.12",
     "@types/eslint-plugin-prettier": "3.1.0",
+    "@types/event-hooks-webpack-plugin": "^2.2.1",
     "@types/file-loader": "5.0.0",
     "@types/fs-extra": "9.0.11",
     "@types/i18next-fs-backend": "1.0.0",
@@ -207,6 +208,7 @@
     "eslint-plugin-security": "1.4.0",
     "eslint-plugin-security-node": "1.0.14",
     "eslint-plugin-unicorn": "32.0.1",
+    "event-hooks-webpack-plugin": "^2.2.0",
     "file-loader": "6.2.0",
     "fork-ts-checker-webpack-plugin": "6.2.10",
     "graphql-hooks": "5.1.2",
