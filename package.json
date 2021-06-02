@@ -175,6 +175,7 @@
     "@types/simplebar": "5.3.3",
     "@types/styled-components": "5.1.9",
     "@types/uuid": "8.3.0",
+    "@types/webpack-node-externals": "^2.5.1",
     "@typescript-eslint/eslint-plugin": "4.25.0",
     "@typescript-eslint/parser": "4.25.0",
     "@zeit/webpack-asset-relocator-loader": "^0.8.0",
