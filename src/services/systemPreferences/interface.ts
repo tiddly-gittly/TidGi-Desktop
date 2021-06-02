@@ -20,9 +20,8 @@ export const SystemPreferenceServiceIPCDescriptor = {
   channel: SystemPreferenceChannel.name,
   properties: {
     systemPreference$: ProxyPropertyType.Value$,
-    set: ProxyPropertyType.Function,
-    getPreferences: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,
-    reset: ProxyPropertyType.Function,
+    getPreferences: ProxyPropertyType.Function,
+    setSystemPreference: ProxyPropertyType.Function,
   },
 };
