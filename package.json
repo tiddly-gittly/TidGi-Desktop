@@ -236,8 +236,5 @@
     "webpack-node-externals": "^3.0.0",
     "webpack5-externals-plugin": "^1.0.4"
   },
-  "optionalDependencies": {
-    "@nut-tree/nut-js": "1.6.0"
-  },
   "private": false
 }

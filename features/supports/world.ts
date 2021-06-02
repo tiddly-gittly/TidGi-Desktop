@@ -2,7 +2,7 @@ import { setDefaultTimeout, World } from '@cucumber/cucumber';
 import path from 'path';
 import { delay } from 'bluebird';
 import { Application } from 'spectron';
-import { keyboard, Key } from '@nut-tree/nut-js';
+// import { keyboard, Key } from '@nut-tree/nut-js';
 
 setDefaultTimeout(30 * 1000);
 
@@ -69,21 +69,21 @@ export class TiddlyGitWorld extends World {
     this.context = this.context === undefined ? context : { ...this.context, ...context };
   }
 
-  public async type(input: string): Promise<void> {
-    await keyboard.type(input);
-  }
+  // public async type(input: string): Promise<void> {
+  //   await keyboard.type(input);
+  // }
 
-  public async hitKey(key: Key, modifier?: Key): Promise<void> {
-    if (modifier !== undefined) {
-      await keyboard.pressKey(modifier);
-      await keyboard.pressKey(key);
-      await keyboard.releaseKey(key);
-      await keyboard.releaseKey(modifier);
-    } else {
-      await keyboard.pressKey(key);
-      await keyboard.releaseKey(key);
-    }
-  }
+  // public async hitKey(key: Key, modifier?: Key): Promise<void> {
+  //   if (modifier !== undefined) {
+  //     await keyboard.pressKey(modifier);
+  //     await keyboard.pressKey(key);
+  //     await keyboard.releaseKey(key);
+  //     await keyboard.releaseKey(modifier);
+  //   } else {
+  //     await keyboard.pressKey(key);
+  //     await keyboard.releaseKey(key);
+  //   }
+  // }
 
   public async close(): Promise<void> {
     await this.app?.stop();
