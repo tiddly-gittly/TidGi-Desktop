@@ -3,6 +3,7 @@
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
 const CspHtmlWebpackPlugin = require('csp-html-webpack-plugin');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
+const _ = require('lodash');
 const path = require('path');
 const fs = require('fs-extra');
 const webpack = require('webpack');
@@ -11,21 +12,20 @@ const ThreadsPlugin = require('threads-plugin');
 const ExternalsPlugin = require('webpack5-externals-plugin');
 const EventHooksPlugin = require('event-hooks-webpack-plugin');
 
-exports.main = [
+exports.main = _.compact([
   // we only need one instance of TsChecker, it will check main and renderer all together
   new ForkTsCheckerWebpackPlugin(),
   new CopyPlugin({
     // to is relative to ./.webpack/main/
-    patterns: [
-      { from: 'localization', to: 'localization' },
-    ],
+    patterns: [{ from: 'localization', to: 'localization' }],
   }),
-  new EventHooksPlugin({
-    'afterEmit': (compilation, done) => {
-      console.log('Copying tiddlywiki dependency to dist');
-      void fs.copy('node_modules/@tiddlygit/tiddlywiki', './.webpack/node_modules/@tiddlygit/tiddlywiki', done);
-    },
-  }),
+  process.env.NODE_ENV === 'production' &&
+    new EventHooksPlugin({
+      afterEmit: (compilation, done) => {
+        console.log('Copying tiddlywiki dependency to dist');
+        void fs.copy('node_modules/@tiddlygit/tiddlywiki', './.webpack/node_modules/@tiddlygit/tiddlywiki', done);
+      },
+    }),
   new CircularDependencyPlugin({
     // exclude detection of files based on a RegExp
     exclude: /node_modules/,
@@ -48,7 +48,7 @@ exports.main = [
     target: 'electron-node-worker',
     plugins: ['ExternalsPlugin'],
   }),
-];
+]);
 
 exports.renderer = [
   new webpack.DefinePlugin({
