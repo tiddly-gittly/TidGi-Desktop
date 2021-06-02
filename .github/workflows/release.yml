@@ -47,7 +47,7 @@ jobs:
       run: npm ci
 
     - name: Build App
-      run: npm run dist
+      run: npm run make
       env:
         CI: true
         CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
@@ -84,7 +84,7 @@ jobs:
       run: npm ci
 
     - name: Build App
-      run: npm run dist-dev
+      run: npm run make
       env:
         CI: true
         CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
@@ -123,7 +123,7 @@ jobs:
       run: npm ci
 
     - name: Build App
-      run: npm run dist
+      run: npm run make
       env:
         CI: true
         CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
