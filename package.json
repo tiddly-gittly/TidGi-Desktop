@@ -22,7 +22,7 @@
   "config": {
     "forge": {
       "packagerConfig": {
-        "name": "TiddlyGit",
+        "name": "tiddly-git",
         "executableName": "TiddlyGit",
         "icon": "build-resources/icon.icns",
         "asar": {
