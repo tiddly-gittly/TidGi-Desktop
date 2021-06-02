@@ -461,6 +461,30 @@ export default function Preferences(): JSX.Element {
           </List>
         </Paper>
 
+        <SectionTitle ref={sections.system.ref}>{t('Preference.System')}</SectionTitle>
+        <Paper elevation={0}>
+          <List dense disablePadding>
+            <PopUpMenuItem
+              id="openAtLogin"
+              buttonElement={
+                <ListItem button>
+                  <ListItemText primary={t('Preference.OpenAtLogin')} secondary={getOpenAtLoginString(openAtLogin)} />
+                  <ChevronRightIcon color="action" />
+                </ListItem>
+              }>
+              <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'yes')}>
+                {t('Yes')}
+              </MenuItem>
+              <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'yes-hidden')}>
+                {t('Preference.OpenAtLoginMinimized')}
+              </MenuItem>
+              <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'no')}>
+                {t('No')}
+              </MenuItem>
+            </PopUpMenuItem>
+          </List>
+        </Paper>
+
         <SectionTitle ref={sections.notifications.ref}>{t('Preference.Notifications')}</SectionTitle>
         <Paper elevation={0}>
           <List dense disablePadding>
@@ -720,30 +744,6 @@ export default function Preferences(): JSX.Element {
               onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TiddlyGit-Desktop/blob/master/PrivacyPolicy.md')}>
               <ListItemText primary="Privacy Policy" />
             </ListItem>
-          </List>
-        </Paper>
-
-        <SectionTitle ref={sections.system.ref}>{t('Preference.System')}</SectionTitle>
-        <Paper elevation={0}>
-          <List dense disablePadding>
-            <PopUpMenuItem
-              id="openAtLogin"
-              buttonElement={
-                <ListItem button>
-                  <ListItemText primary={t('Preference.OpenAtLogin')} secondary={getOpenAtLoginString(openAtLogin)} />
-                  <ChevronRightIcon color="action" />
-                </ListItem>
-              }>
-              <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'yes')}>
-                {t('Yes')}
-              </MenuItem>
-              <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'yes-hidden')}>
-                {t('Preference.OpenAtLoginMinimized')}
-              </MenuItem>
-              <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'no')}>
-                {t('No')}
-              </MenuItem>
-            </PopUpMenuItem>
           </List>
         </Paper>
 

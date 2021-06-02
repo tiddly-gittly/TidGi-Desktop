@@ -46,6 +46,11 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
       Icon: WidgetsIcon,
       ref: useRef<SectionTitleElement>(null),
     },
+    [PreferenceSections.system]: {
+      text: t('Preference.System'),
+      Icon: BuildIcon,
+      ref: useRef<SectionTitleElement>(null),
+    },
     [PreferenceSections.notifications]: {
       text: t('Preference.Notifications'),
       Icon: NotificationsIcon,
@@ -69,11 +74,6 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
     [PreferenceSections.privacy]: {
       text: t('Preference.PrivacyAndSecurity'),
       Icon: SecurityIcon,
-      ref: useRef<SectionTitleElement>(null),
-    },
-    [PreferenceSections.system]: {
-      text: t('Preference.System'),
-      Icon: BuildIcon,
       ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.developers]: {
