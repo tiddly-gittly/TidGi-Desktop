@@ -23,7 +23,7 @@
     "forge": {
       "packagerConfig": {
         "name": "tiddly-git",
-        "executableName": "TiddlyGit",
+        "executableName": "tiddly-git",
         "icon": "build-resources/icon.icns",
         "asar": {
           "unpack": "**/.webpack/main/*.worker.*"
