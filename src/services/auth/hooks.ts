@@ -14,6 +14,7 @@ export function useStorageServiceUserInfo(serviceName: SupportedStorageServices)
   const [userInfo, userInfoSetter] = useState<IGitUserInfos | undefined>();
   useEffect(() => {
     void (async () => {
+      // TODO: should subscribe to update
       const newUserInfo = await window.service.auth.getStorageServiceUserInfo(serviceName);
       userInfoSetter(newUserInfo);
     })();
