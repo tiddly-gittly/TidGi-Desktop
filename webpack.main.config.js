@@ -35,6 +35,7 @@ module.exports = {
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.json'],
   },
   externals: [
+    // TODO: simply external things will make require can't find things. May need some other way.
     // nodeExternals({
     //   additionalModuleDirs: ['@tiddlygit/tiddlywiki'],
     //   allowlist: [/(threads-plugin)/],

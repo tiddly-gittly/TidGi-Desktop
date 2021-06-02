@@ -24,10 +24,10 @@
       "packagerConfig": {
         "icon": "build-resources/icon.icns",
         "asar": {
-          "unpack": "{**/.webpack/main/*.worker.*,**/node_modules/@tiddlygit/tiddlywiki/**/*}"
+          "unpack": "**/.webpack/main/*.worker.*"
         },
         "extraResource": [
-          ".webpack/main/node_modules",
+          "node_modules/@tiddlygit/tiddlywiki",
           "localization",
           "template/wiki",
           "build-resources/menubar@2x.png",
