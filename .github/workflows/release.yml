@@ -48,8 +48,14 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Build App
-      run: npm run make
+    - name: Make Linux (x64)
+      run: npm run make:linux-x64
+      env:
+        CI: true
+        CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Make Linux (arm64)
+      run: npm run make:linux-arm
       env:
         CI: true
         CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
@@ -87,13 +93,21 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Build App
-      run: npm run make
+    - name: Make macOS (x64)
+      run: npm run make:mac-x64
       env:
-        CI: true
-        CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
         APPLE_ID: ${{ secrets.APPLE_ID }}
         APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        CI: true
+        CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Make macOS (arm64)
+      run: npm run make:mac-arm
+      env:
+        APPLE_ID: ${{ secrets.APPLE_ID }}
+        APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+        CI: true
+        CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
     - name: Create Release
@@ -131,9 +145,19 @@ jobs:
     - name: Install dependencies
       run: npm ci
 
-    - name: Build App
-      run: npm run make
+    - name: Make Windows (x64)
+      run: npm run make:win-x64
       env:
+        CSC_LINK: ${{ secrets.WIN_CERT }}
+        CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASS }}
+        CI: true
+        CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+    - name: Make Windows (arm64)
+      run: npm run make:win-arm
+      env:
+        CSC_LINK: ${{ secrets.WIN_CERT }}
+        CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASS }}
         CI: true
         CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
