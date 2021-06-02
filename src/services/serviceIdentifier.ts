@@ -1,0 +1,18 @@
+export default {
+  Authentication: Symbol.for('Authentication'),
+  Git: Symbol.for('Git'),
+  Context: Symbol.for('Context'),
+  MenuService: Symbol.for('MenuService'),
+  NativeService: Symbol.for('NativeService'),
+  NotificationService: Symbol.for('NotificationService'),
+  Preference: Symbol.for('Preference'),
+  SystemPreference: Symbol.for('SystemPreference'),
+  ThemeService: Symbol.for('ThemeService'),
+  Updater: Symbol.for('Updater'),
+  View: Symbol.for('View'),
+  Wiki: Symbol.for('Wiki'),
+  WikiGitWorkspace: Symbol.for('WikiGitWorkspace'),
+  Window: Symbol.for('Window'),
+  Workspace: Symbol.for('Workspace'),
+  WorkspaceView: Symbol.for('WorkspaceView'),
+};

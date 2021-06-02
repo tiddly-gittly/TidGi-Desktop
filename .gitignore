@@ -56,3 +56,11 @@ template/wiki/tiddlers/$__StoryList.tid
 template/wiki/public-dist/
 template/wiki/output/
 template/wiki/settings/settings.json
+
+# web build
+.webpack
+out/
+
+# testing and dev temp folders
+settings-dev/
+.dccache

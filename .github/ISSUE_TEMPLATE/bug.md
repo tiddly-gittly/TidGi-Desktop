@@ -8,7 +8,6 @@ title: 'bug: '
 
 <!-- You can copy this from right click context menu → More → About  -->
 
-Version v
 
 Electron Version:
 

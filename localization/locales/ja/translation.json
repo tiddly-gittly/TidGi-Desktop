@@ -4,5 +4,19 @@
     "Add": "追加",
     "EditWorkspace": "ワークスペースを編集",
     "RemoveWorkspace": "ワークスペースを削除"
-  }
+  },
+  "Preference": {
+    "Reset": "本気ですか？すべての設定が元のデフォルトに復元されます。閲覧データは影響を受けません。このアクションは元に戻せません。",
+    "ResetNow": "今すぐリセット",
+    "ClearBrowsingDataMessage": "本気ですか？すべての閲覧データが消去されます。このアクションは元に戻せません。"
+  },
+  "AddWorkspace": {
+    "AddFileSystemPath": "サブウィキのFileSystemPathsを追加する"
+  },
+  "Dialog": {
+    "Later": "後で",
+    "RestartMessage": "この変更を有効にするには、アプリを再起動する必要があります。",
+    "RestartNow": "今すぐ再起動"
+  },
+  "Loading": "読み込み中"
 }

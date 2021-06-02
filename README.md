@@ -1,10 +1,14 @@
-# TiddlyGit [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
+# TiddlyGit 太记 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
 
 | macOS                                                                                                                                                                                                   | Linux                                                                                                                                                                                                   | Windows                                                                                                                                                                                                       |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | [![GitHub Actions macOS Build Status](https://github.com/tiddly-gittly/TiddlyGit-Desktop/workflows/macOS/badge.svg)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/actions?query=workflow%3AmacOS) | [![GitHub Actions Linux Build Status](https://github.com/tiddly-gittly/TiddlyGit-Desktop/workflows/Linux/badge.svg)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/actions?query=workflow%3ALinux) | [![GitHub Actions Windows Build Status](https://github.com/tiddly-gittly/TiddlyGit-Desktop/workflows/Windows/badge.svg)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/actions?query=workflow%3AWindows) |
 
 **TiddlyGit** - Customizable personal knowledge-base with Github as unlimited storage and blogging platform.
+
+注意，正在重构成 TS，版本一段时间内不会更新，新版会修复很多问题。[refactor TS](https://github.com/tiddly-gittly/TiddlyGit-Desktop/projects/7)
+
+Attention, It is in a process refactoring to ts, there won't be an update for a while. New version will fix various of things. [refactor TS](https://github.com/tiddly-gittly/TiddlyGit-Desktop/projects/7)
 
 [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TiddlyGit-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)
 
@@ -31,11 +35,20 @@ Click "OK" ↓
 
 </details>
 
-## About TiddlyGit-Desktop
+## About TiddlyGit-Desktop 关于「太记-桌面版」
 
-TiddlyGit is a cross-platform Note Taking & GTD & Fragment Knowledge Management desktop app powered by [nodejs-TiddlyWiki](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs) and Github, it ship with a lot of tiddlywiki plugins from the [TiddlyWiki community](https://groups.google.com/forum/#!forum/tiddlywiki).
+TiddlyGit is a cross-platform Note Taking & GTD & Fragment Knowledge Management desktop app powered by [nodejs-TiddlyWiki](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs), it ship with a lot of tiddlywiki plugins from the [TiddlyWiki community](https://groups.google.com/forum/#!forum/tiddlywiki).
+
+「太记」是一个跨平台的笔记软件、时间和任务管理工具、碎片化知识管理工具，此乃其桌面版。「太记」基于强大的 [NodeJS 版「太微（TiddlyWiki）」](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs) 构建，并带上了大量来自[太微社区（TiddlyWiki community）](https://groups.google.com/forum/#!forum/tiddlywiki)的插件。
 
 You can call it TG-Note, it is totally free and you own all your data. Code by the people, build for the people.
+
+「太记」来自 TiddlyWiki 的译名「太微」，以及 TiddlyGit 首字母的谐音。当然你也可以直接叫它 TGNote，镰锤☭笔记。
+
+为什么把 TiddlyWiki 翻译成「太微」？因为受到 @pimgeek 的启发：TiddlyWiki 可以干很多细致轻量的工作，但也从不限制用法，可以无限组合叠加。故以其首字母音译为「太微」，TiddlyWiki 可以称为「太微笔记」「太微万能抽屉」「太微卡片盒」……
+
+> 太微垣，三垣之一，按《步天歌》，太微垣為三垣的上垣。
+> 太微垣又名天庭，是政府的意思，也是貴族及大臣們居住的地方。 
 
 ![Screenshot of main-window](./docs/images/main-window.png)
 ![Screenshot of add-workspace](./docs/images/add-workspace.png)
@@ -82,18 +95,26 @@ cd TiddlyGit-Desktop
 # or GitKraken to clone this repo,
 # and open it in your favorite code editor and terminal app
 
+# switch to the nodejs version same as electron used version, other wise you may get
+# Error: The module '/Users/linonetwo/Desktop/repo/TiddlyGit-Desktop/node_modules/opencv4nodejs-prebuilt/build/Release/opencv4nodejs.node'
+# was compiled against a different Node.js version using
+# NODE_MODULE_VERSION 88. This version of Node.js requires
+# NODE_MODULE_VERSION 93. Please try re-compiling or re-installing
+# the module (for instance, using `npm rebuild` or `npm install`).
+# See https://github.com/justadudewhohacks/opencv4nodejs/issues/401#issuecomment-463434713 if you still have problem rebuild opencv for @nut-tree/nut-js
+nvm use
+
 # install the dependencies
 
 npm i
 
 # Run development mode
-
-npm run electron-dev
+# You can see webpack error messages in http://localhost:9000/
+npm start
 
 # Build for production
 
-npm run dist
-
+npm run package
 ```
 
 ### Publish
