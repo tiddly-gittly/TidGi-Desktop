@@ -149,7 +149,6 @@
     "@material-ui/icons": "5.0.0-alpha.27",
     "@material-ui/lab": "5.0.0-alpha.27",
     "@material-ui/styled-engine-sc": "5.0.0-alpha.26",
-    "@nut-tree/nut-js": "1.6.0",
     "@types/bluebird": "3.5.35",
     "@types/chai": "4.2.18",
     "@types/circular-dependency-plugin": "5.0.2",
@@ -236,6 +235,9 @@
     "typesync": "0.8.0",
     "webpack-node-externals": "^3.0.0",
     "webpack5-externals-plugin": "^1.0.4"
+  },
+  "optionalDependencies": {
+    "@nut-tree/nut-js": "1.6.0"
   },
   "private": false
 }
