@@ -141,10 +141,10 @@ export class Window implements IWindowService {
     const windowConfig: BrowserWindowConstructorOptions = {
       ...windowDimension[windowName],
       ...mainWindowConfig,
-      resizable: false,
-      maximizable: false,
-      minimizable: false,
-      fullscreenable: false,
+      resizable: true,
+      maximizable: true,
+      minimizable: true,
+      fullscreenable: true,
       autoHideMenuBar: false,
       titleBarStyle: titleBar ? 'default' : 'hidden',
       webPreferences: {
