@@ -48,6 +48,13 @@ const Root = styled.div`
   width: 100%;
   overflow: hidden;
   background-color: ${({ theme }) => theme.palette.background.default};
+
+  .simplebar-content {
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+  }
 `;
 
 const sideBarStyle = css`
@@ -83,7 +90,10 @@ const SidebarTop = styled.div<{ fullscreen?: boolean }>`
         `}
 `;
 
-const IconButton = styled(IconButtonRaw)``;
+const IconButton = styled(IconButtonRaw)`
+  aspect-ratio: 1;
+  width: 80%;
+`;
 
 const InnerContentRoot = styled.div`
   flex: 1;
@@ -151,6 +161,7 @@ const TipWithoutSidebar = styled.div`
 const SideBarEnd = styled.div`
   display: flex;
   flex-direction: column;
+  align-items: center;
 `;
 
 const HelperTextsList = styled.ul`

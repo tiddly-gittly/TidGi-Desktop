@@ -26,7 +26,7 @@ const Root = styled.div<{ hibernated?: boolean; active?: boolean }>`
   -webkit-app-region: no-drag;
   opacity: 0.8;
   position: relative;
-  border-left: 4px solid;
+  border: 0;
   border-color: transparent;
   ${({ hibernated }) =>
     hibernated === true &&
