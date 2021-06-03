@@ -1,5 +1,5 @@
 ---
-name: Feature Request
+name: Feature Request 提新功能
 about: Suggest an idea for this project
 title: 'feature: '
 ---
