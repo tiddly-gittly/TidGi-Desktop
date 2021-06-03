@@ -29,9 +29,9 @@ export class Authentication implements IAuthenticationService {
   }
 
   public async getStorageServiceUserInfo(serviceName: SupportedStorageServices): Promise<IGitUserInfos | undefined> {
-    const gitUserName = await this.get(`${serviceName}-userName` as ServiceUserNameTypes);
-    const email = await this.get(`${serviceName}-email` as ServiceEmailTypes);
-    const accessToken = await this.get(`${serviceName}-token` as ServiceTokenTypes);
+    const gitUserName = await this.get((serviceName + '-userName') as ServiceUserNameTypes);
+    const email = await this.get((serviceName + '-email') as ServiceEmailTypes);
+    const accessToken = await this.get((serviceName + '-token') as ServiceTokenTypes);
     if (gitUserName !== undefined && accessToken !== undefined) {
       return {
         gitUserName,
