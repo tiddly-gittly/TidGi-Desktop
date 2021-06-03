@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { usePromiseValue, usePromiseValueAndSetter } from '@/helpers/useServiceValue';
-import { useStorageServiceUserInfo } from '@services/auth/hooks';
+import { useStorageServiceUserInfoObservable } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
 import { ISubWikiPluginContent } from '@services/wiki/updatePluginContent';
 import { INewWorkspaceConfig, IWorkspace } from '@services/workspaces/interface';
@@ -51,7 +51,7 @@ export function useWikiWorkspaceForm() {
    * Set storage service used by this workspace, for example, Github.
    */
   const [storageProvider, storageProviderSetter] = useState<SupportedStorageServices>(SupportedStorageServices.local);
-  const gitUserInfo = useStorageServiceUserInfo(storageProvider);
+  const gitUserInfo = useStorageServiceUserInfoObservable(storageProvider);
 
   /**
    * Update tiddlywiki's editor user name when first time creating new workspace

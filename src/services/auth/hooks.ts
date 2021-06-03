@@ -10,14 +10,15 @@ export function useUserInfoObservable(): IUserInfos | undefined {
   return userInfo;
 }
 
-export function useStorageServiceUserInfo(serviceName: SupportedStorageServices): IGitUserInfos | undefined {
+export function useStorageServiceUserInfoObservable(serviceName: SupportedStorageServices): IGitUserInfos | undefined {
+  // we use this observable to trigger hook rerun
+  const fullUserInfo = useUserInfoObservable();
   const [userInfo, userInfoSetter] = useState<IGitUserInfos | undefined>();
   useEffect(() => {
     void (async () => {
-      // TODO: should subscribe to update
       const newUserInfo = await window.service.auth.getStorageServiceUserInfo(serviceName);
       userInfoSetter(newUserInfo);
     })();
-  }, [serviceName]);
+  }, [serviceName, fullUserInfo]);
   return userInfo;
 }
