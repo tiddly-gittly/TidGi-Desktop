@@ -8,7 +8,7 @@ title: 'feature: '
 
 <!-- You can copy this from right click context menu → More → About  -->
 
-Version v
+TG Version v
 
 Electron Version:
 
