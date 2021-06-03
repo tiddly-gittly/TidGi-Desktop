@@ -2,7 +2,7 @@ import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { WikiChannel } from '@/constants/channels';
 import { IWorkspace } from '@services/workspaces/interface';
 import { IGitUserInfos } from '@services/git/interface';
-import type { ISubWikiPluginContent } from './updatePluginContent';
+import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
 
 export type IWikiMessage = IWikiLogMessage | IWikiControlMessage;
 export interface IWikiLogMessage {

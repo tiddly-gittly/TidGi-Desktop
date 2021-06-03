@@ -9,6 +9,11 @@ const getPathPart = (folderToPlace: string): string => `addprefix[/]addprefix[${
 const getTagNameFromMatchPart = (matchPart: string): string => matchPart.replace('[!is[system]kin::to[', '').replace(/].*/, '');
 const getFolderNamePathPart = (pathPart: string): string => pathPart.replace(']addprefix[/]addprefix[subwiki]]', '').replace(/.+addprefix\[/, '');
 
+/**
+ * We have a tiddler in the sub-wiki plugin that overwrite the system tiddler $:/config/FileSystemPaths
+ * @param mainWikiPath subwiki's main wiki's absolute path.
+ * @returns
+ */
 function getFileSystemPathsTiddlerPath(mainWikiPath: string): string {
   const pluginPath = path.join(mainWikiPath, 'plugins', 'linonetwo', 'sub-wiki');
   return path.join(pluginPath, 'FileSystemPaths.tid');
@@ -75,10 +80,19 @@ export function updateSubWikiPluginContent(
   fs.writeFileSync(FileSystemPathsTiddlerPath, newFileSystemPathsFile);
 }
 
+/**
+ * "Sub-Wiki Plugin"'s content. Not about plugin content of a sub-wiki, sorry.
+ * This is about tag-subwiki pair, we put tiddler with certain tag into a subwiki according to these pairs.
+ */
 export interface ISubWikiPluginContent {
   tagName: string;
   folderName: string;
 }
+/**
+ * Get "Sub-Wiki Plugin"'s content
+ * @param mainWikiPath subwiki's main wiki's absolute path.
+ * @returns ISubWikiPluginContent
+ */
 export async function getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]> {
   if (mainWikiPath.length === 0) return [];
   const FileSystemPathsTiddlerPath = getFileSystemPathsTiddlerPath(mainWikiPath);

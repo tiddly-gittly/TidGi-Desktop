@@ -19,7 +19,7 @@ import {
 import { Autocomplete } from '@material-ui/lab';
 import defaultIcon from '../../images/default-icon.png';
 
-import type { ISubWikiPluginContent } from '@services/wiki/updatePluginContent';
+import type { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
 import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';

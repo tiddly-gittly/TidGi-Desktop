@@ -23,7 +23,7 @@ import { logger, wikiOutputToFile, refreshOutputFile } from '@services/libs/log'
 import i18n from '@services/libs/i18n';
 import { lazyInject } from '@services/container';
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@/constants/paths';
-import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './updatePluginContent';
+import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './plugin/subWikiPlugin';
 import { IWikiService, WikiControlActions } from './interface';
 import { WikiChannel } from '@/constants/channels';
 import { CopyWikiTemplateError, DoubleWikiInstanceError } from './error';

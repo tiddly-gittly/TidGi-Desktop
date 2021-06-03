@@ -8,7 +8,7 @@ import { useTranslation } from 'react-i18next';
 import { usePromiseValue, usePromiseValueAndSetter } from '@/helpers/useServiceValue';
 import { useStorageServiceUserInfoObservable } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
-import { ISubWikiPluginContent } from '@services/wiki/updatePluginContent';
+import { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
 import { INewWorkspaceConfig, IWorkspace } from '@services/workspaces/interface';
 
 export function useIsCreateMainWorkspace(): [boolean, React.Dispatch<React.SetStateAction<boolean>>] {
