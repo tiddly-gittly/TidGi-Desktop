@@ -65,6 +65,8 @@ export function ExistedWikiForm({
         />
         <LocationPickerButton
           onClick={async () => {
+            // first clear the text, so button will refresh
+            onLocationChange('');
             const filePaths = await window.service.native.pickDirectory(parentFolderLocation);
             if (filePaths?.length > 0) {
               onLocationChange(filePaths[0]);
@@ -100,7 +102,7 @@ export function ExistedWikiForm({
             }
             value={mainWikiToLinkIndex}
             onChange={(event) => {
-              const index = (event.target.value as unknown) as number;
+              const index = event.target.value as unknown as number;
               mainWikiToLinkSetter(mainWorkspaceList[index]);
             }}>
             {mainWorkspaceList.map((workspace, index) => (

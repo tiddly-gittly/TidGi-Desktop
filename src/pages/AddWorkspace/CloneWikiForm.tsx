@@ -40,6 +40,8 @@ export function CloneWikiForm({
         />
         <LocationPickerButton
           onClick={async () => {
+            // first clear the text, so button will refresh
+            onLocationChange('');
             const filePaths = await window.service.native.pickDirectory(form.parentFolderLocation);
             if (filePaths?.length > 0) {
               form.parentFolderLocationSetter(filePaths[0]);
@@ -83,7 +85,7 @@ export function CloneWikiForm({
             }
             value={form.mainWikiToLinkIndex}
             onChange={(event) => {
-              const index = (event.target.value as unknown) as number;
+              const index = event.target.value as unknown as number;
               form.mainWikiToLinkSetter(form.mainWorkspaceList[index]);
             }}>
             {form.mainWorkspaceList.map((workspace, index) => (
