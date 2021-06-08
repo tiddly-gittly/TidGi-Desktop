@@ -127,12 +127,12 @@
     "UserNameDetail": "The user name in the Wiki, this only take effect after restart, this will fill in the creator field of the newly created or edited tiddlers. This will override the global setting in the preference"
   },
   "Dialog": {
-    "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed! \nDo you want to remove the workspace?",
+    "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed, or there is no wiki in this folder! \nDo you want to remove the workspace?",
     "DoNotCare": "No, Never Mind",
     "NeedCorrectTiddlywikiFolderPath": "The correct path needs to be passed in, and this path cannot be recognized by TiddlyWiki.",
     "PathPassInCantUse": "The path passed in cannot be used",
     "RemoveWorkspace": "Remove workspace",
-    "WorkspaceFolderRemoved": "Workspace folder is moved",
+    "WorkspaceFolderRemoved": "Workspace folder is moved or is not a wiki folder",
     "StorageServiceUserInfoNoFound": "Your storage service's UserInfo No Found",
     "StorageServiceUserInfoNoFoundDetail": "Seems you haven't login to Your storage service, so we disable syncing for this wiki.",
     "RestartMessage": "You need to restart the app for this change to take affect.",

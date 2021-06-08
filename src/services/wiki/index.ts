@@ -267,8 +267,21 @@ export class Wiki implements IWikiService {
     if (!(await fs.pathExists(wikiPath))) {
       throw new Error(i18n.t('AddWorkspace.PathNotExist', { newFolderPath: wikiPath }));
     }
+    const wikiInfoPath = path.resolve(wikiPath, 'tiddlywiki.info');
+    if (!(await fs.pathExists(wikiInfoPath))) {
+      throw new Error(i18n.t('AddWorkspace.ThisPathIsNotAWikiFolder', { wikiPath, wikiInfoPath }));
+    }
     if (shouldBeMainWiki && !(await fs.pathExists(path.join(wikiPath, TIDDLERS_PATH)))) {
       throw new Error(i18n.t('AddWorkspace.ThisPathIsNotAWikiFolder', { wikiPath }));
+    }
+  }
+
+  public async checkWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<string | true> {
+    try {
+      await this.ensureWikiExist(wikiPath, shouldBeMainWiki);
+      return true;
+    } catch (error) {
+      return (error as Error).message;
     }
   }
 
@@ -396,8 +409,10 @@ export class Wiki implements IWikiService {
       }
       return;
     }
-    if (!fs.pathExistsSync(homePath)) {
-      const errorMessage = i18n.t('Dialog.CantFindWorkspaceFolderRemoveWorkspace') + homePath;
+
+    const checkResult = await this.checkWikiExist(homePath, true);
+    if (checkResult !== true) {
+      const errorMessage = `${i18n.t('Dialog.CantFindWorkspaceFolderRemoveWorkspace')} ${homePath} ${checkResult}`;
       logger.error(errorMessage);
       const mainWindow = this.windowService.get(WindowNames.main);
       if (mainWindow !== undefined) {

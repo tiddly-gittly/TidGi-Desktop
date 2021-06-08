@@ -39,6 +39,7 @@ export interface IWikiService {
   createSubWiki(newFolderPath: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
+  checkWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<string | true>;
   cloneWiki(parentFolderLocation: string, wikiFolderName: string, gitRepoUrl: string, gitUserInfo: IGitUserInfos): Promise<void>;
   cloneSubWiki(
     parentFolderLocation: string,
@@ -69,6 +70,7 @@ export const WikiServiceIPCDescriptor = {
     createSubWiki: ProxyPropertyType.Function,
     removeWiki: ProxyPropertyType.Function,
     ensureWikiExist: ProxyPropertyType.Function,
+    checkWikiExist: ProxyPropertyType.Function,
     cloneWiki: ProxyPropertyType.Function,
     cloneSubWiki: ProxyPropertyType.Function,
     wikiStartup: ProxyPropertyType.Function,

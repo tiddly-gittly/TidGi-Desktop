@@ -195,8 +195,8 @@
   },
   "Dialog": {
     "NeedCorrectTiddlywikiFolderPath": "需要传入正确的路径，而此路径无法被 TiddlyWiki 识别。",
-    "CantFindWorkspaceFolderRemoveWorkspace": "无法找到之前还在该处的工作区文件夹！本应存在于此处的文件夹可能被移走了！是否移除工作区？",
-    "WorkspaceFolderRemoved": "工作区文件夹被移走",
+    "CantFindWorkspaceFolderRemoveWorkspace": "无法找到之前还在该处的工作区Wiki文件夹！本应存在于此处的WIki文件夹可能被移走了，或该文件夹内没有Wiki！是否移除工作区？",
+    "WorkspaceFolderRemoved": "工作区文件夹被移走或该文件夹不是Wiki",
     "RemoveWorkspace": "移除工作区",
     "DoNotCare": "不管",
     "PathPassInCantUse": "传入的路径无法使用",
