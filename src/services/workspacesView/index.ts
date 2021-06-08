@@ -15,6 +15,7 @@ import { IPreferenceService } from '@services/preferences/interface';
 import { logger } from '@services/libs/log';
 import { IAuthenticationService } from '@services/auth/interface';
 import { IGitService } from '@services/git/interface';
+import { IWikiService } from '@services/wiki/interface';
 import { IWorkspaceViewService } from './interface';
 import { lazyInject } from '@services/container';
 import { SupportedStorageServices } from '@services/types';
@@ -24,6 +25,7 @@ export class WorkspaceView implements IWorkspaceViewService {
   @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
   @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
   @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;
+  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
   @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
@@ -52,6 +54,9 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
       if (!workspace.isSubWiki) {
         await this.viewService.addView(mainWindow, workspace);
+      }
+      if ((await this.wikiService.checkWikiExist(workspace.wikiFolderLocation, true)) === true) {
+        continue;
       }
       const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
       const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService } = workspace;
