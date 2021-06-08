@@ -52,6 +52,7 @@ module.exports = {
     'unicorn/prefer-module': 'off',
     '@typescript-eslint/no-empty-function': 'off',
     '@typescript-eslint/method-signature-style': 'off',
+    'unicorn/prefer-string-slice': 'off',
     'unicorn/no-array-reduce': 'off',
     '@typescript-eslint/member-delimiter-style': [
       'warn',
