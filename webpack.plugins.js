@@ -21,9 +21,10 @@ exports.main = _.compact([
   }),
   process.env.NODE_ENV === 'production' &&
     new EventHooksPlugin({
-      afterEmit: (compilation, done) => {
+      afterEmit: async (compilation, done) => {
         console.log('Copying tiddlywiki dependency to dist');
-        void fs.copy('node_modules/@tiddlygit/tiddlywiki', './.webpack/node_modules/@tiddlygit/tiddlywiki', done);
+        await fs.copy('node_modules/@tiddlygit/tiddlywiki', './.webpack/node_modules/@tiddlygit/tiddlywiki');
+        await fs.copy('node_modules/dugite/git', './.webpack/node_modules/dugite/git');
       },
     }),
   new CircularDependencyPlugin({
