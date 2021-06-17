@@ -16,7 +16,7 @@
   "ContextMenu": {
     "OpenTiddlyGit": "打开太记",
     "OpenLinkInNewWindow": "在新窗口中打开链接",
-    "Preferences": "设置…",
+    "Preferences": "设置...",
     "TiddlyGitSupport": "TiddlyGit 用户支持",
     "TiddlyGitWebsite": "TiddlyGit 官网",
     "Quit": "退出",
@@ -110,7 +110,7 @@
     "CreatePublicRepository": "创建公开仓库",
     "CreatePrivateRepository": "创建私有仓库",
     "Reload": "重新加载",
-    "Processing": "正在处理…",
+    "Processing": "正在处理...",
     "WaitForLogin": "等待登录",
     "CanNotLoadList": "无法加载仓库列表，网络不佳",
     "OmitMoreResult": "列表仅展示前 {{loadCount}} 个结果",

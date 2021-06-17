@@ -200,6 +200,7 @@ export default function Main(): JSX.Element {
   const { attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource, sidebarShortcutHints } = preferences;
   return (
     <OuterRoot>
+      <div id="test" data-usage="For spectron automating testing" />
       <Helmet>
         <title>{t('Menu.TiddlyGit')}</title>
       </Helmet>

@@ -160,6 +160,7 @@ export default function EditWorkspace(): JSX.Element {
   }
   return (
     <Root>
+      <div id="test" data-usage="For spectron automating testing" />
       <Helmet>
         <title>
           {t('WorkspaceSelector.EditWorkspace')} {String(workspace.order ?? 1)} {workspace.name}

@@ -81,6 +81,7 @@ export default function About(): JSX.Element {
 
   return (
     <DialogContent>
+      <div id="test" data-usage="For spectron automating testing" />
       <Helmet>
         <title>{t('ContextMenu.About')}</title>
       </Helmet>

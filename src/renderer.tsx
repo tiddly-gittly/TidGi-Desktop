@@ -30,7 +30,6 @@ function App(): JSX.Element {
           <CssBaseline />
           <React.Suspense fallback={<div />}>
             <I18nextProvider i18n={i18n}>
-              <div id="test" data-usage="For spectron automating testing" />
               <Pages />
             </I18nextProvider>
           </React.Suspense>

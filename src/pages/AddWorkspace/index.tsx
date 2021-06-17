@@ -75,6 +75,7 @@ export default function AddWorkspace(): JSX.Element {
 
   return (
     <TabContext value={currentTab}>
+      <div id="test" data-usage="For spectron automating testing" />
       <Helmet>
         <title>
           {t('AddWorkspace.AddWorkspace')} {wikiFolderName}

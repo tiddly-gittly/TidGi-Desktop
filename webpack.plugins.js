@@ -19,7 +19,7 @@ exports.main = _.compact([
     // to is relative to ./.webpack/main/
     patterns: [{ from: 'localization', to: 'localization' }],
   }),
-  process.env.NODE_ENV === 'production' &&
+  ['production', 'test'].includes(process.env.NODE_ENV) &&
     new EventHooksPlugin({
       afterEmit: async (compilation, done) => {
         console.log('Copying tiddlywiki dependency to dist');

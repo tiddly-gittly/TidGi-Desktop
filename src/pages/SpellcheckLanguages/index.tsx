@@ -53,6 +53,7 @@ export default function SpellcheckLanguages(): JSX.Element {
   }
   return (
     <Root>
+      <div id="test" data-usage="For spectron automating testing" />
       <Helmet>
         <title>{t('Preference.SpellCheckLanguages')}</title>
       </Helmet>
