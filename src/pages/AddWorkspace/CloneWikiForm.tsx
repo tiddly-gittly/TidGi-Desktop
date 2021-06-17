@@ -41,7 +41,7 @@ export function CloneWikiForm({
         <LocationPickerButton
           onClick={async () => {
             // first clear the text, so button will refresh
-            onLocationChange('');
+            form.parentFolderLocationSetter('');
             const filePaths = await window.service.native.pickDirectory(form.parentFolderLocation);
             if (filePaths?.length > 0) {
               form.parentFolderLocationSetter(filePaths[0]);
