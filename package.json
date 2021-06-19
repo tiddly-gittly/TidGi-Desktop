@@ -19,8 +19,7 @@
     "clean": "rimraf ./out ./settings-dev ./logs ./.webpack && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts",
     "lint": "eslint ./src --ext js",
     "lint:fix": "eslint ./src --ext js --fix",
-    "installType": "typesync",
-    "postinstall": "if-env CI=true && echo \"skip typesync\" || npm run installType"
+    "installType": "typesync"
   },
   "repository": "https://github.com/tiddly-gittly/TiddlyGit-Desktop",
   "author": "Lin Onetwo<linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
@@ -196,7 +195,7 @@
     "csp-html-webpack-plugin": "5.1.0",
     "css-loader": "5.2.6",
     "date-fns": "2.22.1",
-    "electron": "12.0.6",
+    "electron": "^13.1.2",
     "electron-rebuild": "2.3.5",
     "eslint": "7.27.0",
     "eslint-config-prettier": "8.3.0",
@@ -230,7 +229,7 @@
     "rimraf": "3.0.2",
     "simplebar": "6.0.0-beta.4",
     "simplebar-react": "3.0.0-beta.5",
-    "spectron": "14.0.0",
+    "spectron": "^15.0.0",
     "style-loader": "2.0.0",
     "styled-components": "5.3.0",
     "subscriptions-transport-ws": "0.9.18",
