@@ -104,7 +104,7 @@
     "@dnd-kit/modifiers": "1.0.2",
     "@dnd-kit/sortable": "1.0.2",
     "@dnd-kit/utilities": "1.0.2",
-    "@tiddlygit/tiddlywiki": "5.1.24-prerelease.20210608",
+    "@tiddlygit/tiddlywiki": "5.2.0-prerelease.20210623",
     "authing-js-sdk": "4.20.12",
     "beautiful-react-hooks": "0.35.0",
     "bluebird": "3.7.2",
