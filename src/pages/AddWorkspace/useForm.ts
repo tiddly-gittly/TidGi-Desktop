@@ -27,15 +27,7 @@ export function useIsCreateSyncedWorkspace(): [boolean, React.Dispatch<React.Set
   return [isCreateSyncedWorkspace, isCreateSyncedWorkspaceSetter];
 }
 
-export type IWikiWorkspaceForm = ReturnType<typeof useWikiWorkspaceForm>;
-export type IErrorInWhichComponent = Partial<Record<keyof IWikiWorkspaceForm, boolean>>;
-export interface IWikiWorkspaceFormProps {
-  form: IWikiWorkspaceForm;
-  isCreateMainWorkspace: boolean;
-  errorInWhichComponent: IErrorInWhichComponent;
-  errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void;
-}
-export function useWikiWorkspaceForm() {
+export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
   const { t } = useTranslation();
 
   const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList()) ?? [];
@@ -88,10 +80,6 @@ export function useWikiWorkspaceForm() {
     void window.service.wiki.getSubWikiPluginContent(mainWikiToLink.wikiFolderLocation).then(fileSystemPathsSetter);
   }, [mainWikiToLink]);
   /**
-   * For importing existed nodejs wiki into TiddlyGit, we use existedWikiFolderPath to determine which folder to import
-   */
-  const [existedWikiFolderPath, existedWikiFolderPathSetter] = useState<string>('');
-  /**
    * For creating new wiki, we use parentFolderLocation to determine in which folder we create the new wiki folder.
    * New folder will basically be created in `${parentFolderLocation}/${wikiFolderName}`
    */
@@ -101,28 +89,34 @@ export function useWikiWorkspaceForm() {
    */
   const [wikiFolderName, wikiFolderNameSetter] = useState('tiddlywiki');
 
+  /**
+   * Initialize a folder path for user
+   */
   useEffect(() => {
     void (async function getDefaultExistedWikiFolderPathEffect() {
       const desktopPathAsDefaultExistedWikiFolderPath = await window.service.context.get('DEFAULT_WIKI_FOLDER');
-      existedWikiFolderPathSetter(desktopPathAsDefaultExistedWikiFolderPath);
-      parentFolderLocationSetter(desktopPathAsDefaultExistedWikiFolderPath);
+      wikiFolderNameSetter(window.remote.getBaseName(desktopPathAsDefaultExistedWikiFolderPath) ?? 'Error');
+      parentFolderLocationSetter(window.remote.getDirectoryName(desktopPathAsDefaultExistedWikiFolderPath) ?? 'Error');
     })();
-  }, [mainWikiToLink]);
+  }, []);
   const [gitRepoUrl, gitRepoUrlSetter] = useState<string>('');
 
+  // derived values
+  const wikiFolderLocation = window.remote.joinPath(parentFolderLocation ?? t('Error') ?? 'Error', wikiFolderName);
+
+  /**
+   * For importing existed nodejs wiki into TiddlyGit, we parse git url from the folder to import
+   */
   useEffect(() => {
     void (async function getWorkspaceRemoteEffect(): Promise<void> {
-      if (existedWikiFolderPath !== undefined) {
-        const url = await window.service.git.getWorkspacesRemote(existedWikiFolderPath);
+      if (options?.fromExisted) {
+        const url = await window.service.git.getWorkspacesRemote(wikiFolderLocation);
         if (typeof url === 'string' && url.length > 0) {
           gitRepoUrlSetter(url);
         }
       }
     })();
-  }, [gitRepoUrlSetter, existedWikiFolderPath]);
-
-  // derived values
-  const wikiFolderLocation = `${parentFolderLocation ?? t('Error') ?? 'Error'}/${wikiFolderName}`;
+  }, [gitRepoUrlSetter, wikiFolderLocation, options?.fromExisted]);
 
   return {
     storageProvider,
@@ -139,8 +133,6 @@ export function useWikiWorkspaceForm() {
     fileSystemPathsSetter,
     gitRepoUrl,
     gitRepoUrlSetter,
-    existedWikiFolderPath,
-    existedWikiFolderPathSetter,
     parentFolderLocation,
     parentFolderLocationSetter,
     wikiFolderName,
@@ -151,6 +143,15 @@ export function useWikiWorkspaceForm() {
     mainWorkspaceList,
     mainWikiToLinkIndex,
   };
+}
+
+export type IWikiWorkspaceForm = ReturnType<typeof useWikiWorkspaceForm>;
+export type IErrorInWhichComponent = Partial<Record<keyof IWikiWorkspaceForm, boolean>>;
+export interface IWikiWorkspaceFormProps {
+  form: IWikiWorkspaceForm;
+  isCreateMainWorkspace: boolean;
+  errorInWhichComponent: IErrorInWhichComponent;
+  errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void;
 }
 
 export function workspaceConfigFromForm(form: IWikiWorkspaceForm, isCreateMainWorkspace: boolean, isCreateSyncedWorkspace: boolean): INewWorkspaceConfig {

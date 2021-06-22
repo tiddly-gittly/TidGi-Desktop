@@ -23,6 +23,9 @@ export const remoteMethods = {
   getDirectoryName: (pathString?: string): string | undefined => {
     if (typeof pathString === 'string') return path.dirname(pathString);
   },
+  joinPath: (...paths: string[]): string => {
+    return path.join(...paths);
+  },
   /**
    * an wrapper around setVisualZoomLevelLimits
    */

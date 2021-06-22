@@ -13,17 +13,9 @@ export function useValidateExistedWiki(
   const [wikiCreationMessage, wikiCreationMessageSetter] = useState<string | undefined>();
   const [hasError, hasErrorSetter] = useState<boolean>(false);
   useEffect(() => {
-    if (!form.existedWikiFolderPath) {
+    if (!form.wikiFolderLocation) {
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.ExistedWikiLocation')}`);
-      errorInWhichComponentSetter({ existedWikiFolderPath: true });
-      hasErrorSetter(true);
-    } else if (!isCreateMainWorkspace && !form.parentFolderLocation) {
-      wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.WorkspaceFolder')}`);
-      errorInWhichComponentSetter({ parentFolderLocation: true });
-      hasErrorSetter(true);
-    } else if (!form.wikiFolderName) {
-      wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.WorkspaceFolderNameToCreate')}`);
-      errorInWhichComponentSetter({ wikiFolderName: true });
+      errorInWhichComponentSetter({ wikiFolderLocation: true });
       hasErrorSetter(true);
     } else if (isCreateSyncedWorkspace && !form.gitRepoUrl) {
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.GitRepoUrl')}`);
@@ -50,13 +42,12 @@ export function useValidateExistedWiki(
     t,
     isCreateMainWorkspace,
     isCreateSyncedWorkspace,
-    form.parentFolderLocation,
+    form.wikiFolderLocation,
     form.wikiFolderName,
     form.gitRepoUrl,
     form.gitUserInfo,
     form.mainWikiToLink?.wikiFolderLocation,
     form.tagName,
-    form.existedWikiFolderPath,
     errorInWhichComponentSetter,
   ]);
   return [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter];
@@ -75,10 +66,10 @@ export function useExistedWiki(
     const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, isCreateSyncedWorkspace);
     try {
       if (isCreateMainWorkspace) {
-        await window.service.wiki.ensureWikiExist(form.existedWikiFolderPath, true);
+        await window.service.wiki.ensureWikiExist(form.wikiFolderLocation, true);
       } else {
-        const wikiFolderNameForExistedFolder = window.remote.getBaseName(form.existedWikiFolderPath);
-        const parentFolderLocationForExistedFolder = window.remote.getDirectoryName(form.existedWikiFolderPath);
+        const wikiFolderNameForExistedFolder = window.remote.getBaseName(form.wikiFolderLocation);
+        const parentFolderLocationForExistedFolder = window.remote.getDirectoryName(form.wikiFolderLocation);
         if (!wikiFolderNameForExistedFolder || !parentFolderLocationForExistedFolder) {
           throw new Error(
             `Undefined folder name: parentFolderLocationForExistedFolder: ${
@@ -86,7 +77,7 @@ export function useExistedWiki(
             }, parentFolderLocationForExistedFolder: ${parentFolderLocationForExistedFolder ?? '-'}`,
           );
         }
-        await window.service.wiki.ensureWikiExist(form.existedWikiFolderPath, false);
+        await window.service.wiki.ensureWikiExist(form.wikiFolderLocation, false);
         await window.service.wiki.createSubWiki(
           wikiFolderNameForExistedFolder,
           parentFolderLocationForExistedFolder,

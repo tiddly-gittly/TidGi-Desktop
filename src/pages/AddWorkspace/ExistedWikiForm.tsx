@@ -25,10 +25,10 @@ export function ExistedWikiForm({
 }: IWikiWorkspaceFormProps & { isCreateSyncedWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
   const {
-    existedWikiFolderPathSetter,
+    wikiFolderLocation,
     wikiFolderNameSetter,
-    existedWikiFolderPath,
     parentFolderLocation,
+    parentFolderLocationSetter,
     wikiPortSetter,
     wikiPort,
     mainWikiToLink,
@@ -44,24 +44,25 @@ export function ExistedWikiForm({
   const onLocationChange = useCallback(
     (newLocation: string) => {
       const folderName = window.remote.getBaseName(newLocation);
-      if (folderName !== undefined) {
-        existedWikiFolderPathSetter(newLocation);
+      const directoryName = window.remote.getDirectoryName(newLocation);
+      if (folderName !== undefined && directoryName !== undefined) {
         wikiFolderNameSetter(folderName);
+        parentFolderLocationSetter(directoryName);
       }
     },
-    [existedWikiFolderPathSetter, wikiFolderNameSetter],
+    [wikiFolderNameSetter, parentFolderLocationSetter],
   );
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
         <LocationPickerInput
-          error={errorInWhichComponent.existedWikiFolderPath}
+          error={errorInWhichComponent.wikiFolderLocation}
           onChange={(event) => {
             onLocationChange(event.target.value);
           }}
           label={t('AddWorkspace.WorkspaceFolder')}
-          helperText={`${t('AddWorkspace.ImportWiki')}${existedWikiFolderPath}`}
-          value={existedWikiFolderPath}
+          helperText={`${t('AddWorkspace.ImportWiki')}${wikiFolderLocation}`}
+          value={wikiFolderLocation}
         />
         <LocationPickerButton
           onClick={async () => {

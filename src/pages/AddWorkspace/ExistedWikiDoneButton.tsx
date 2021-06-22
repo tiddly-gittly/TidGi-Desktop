@@ -43,14 +43,14 @@ export function ExistedWikiDoneButton({
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.ImportWiki')}
           </Typography>
-          <WikiLocation>{form.existedWikiFolderPath}</WikiLocation>
+          <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
         </CloseButton>
       ) : (
         <CloseButton variant="contained" color="secondary" disabled={inProgressOrError} onClick={onSubmit}>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.ImportWiki')}
           </Typography>
-          <WikiLocation>{form.existedWikiFolderPath}</WikiLocation>
+          <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
           <Typography variant="body1" display="inline">
             {t('AddWorkspace.AndLinkToMainWorkspace')}
           </Typography>
