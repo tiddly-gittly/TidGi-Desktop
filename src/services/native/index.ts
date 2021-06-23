@@ -26,6 +26,9 @@ export class NativeService implements INativeService {
     if (!dialogResult.canceled && dialogResult.filePaths.length > 0) {
       return dialogResult.filePaths;
     }
+    if (dialogResult.canceled && defaultPath !== undefined) {
+      return [defaultPath];
+    }
     return [];
   }
 
