@@ -135,7 +135,7 @@ export class Workspace implements IWorkspaceService {
         },
       },
     ]);
-    await this.menuService.insertMenu('Workspaces', newMenuItems);
+    await this.menuService.insertMenu('Workspaces', newMenuItems, undefined, undefined, 'updateWorkspaceMenuItems');
   }
 
   /**
@@ -144,7 +144,7 @@ export class Workspace implements IWorkspaceService {
   getInitWorkspacesForCache = (): Record<string, IWorkspace> => {
     const workspacesFromDisk = settings.getSync(`workspaces`) ?? {};
     return typeof workspacesFromDisk === 'object' && !Array.isArray(workspacesFromDisk)
-      ? mapValues((pickBy(workspacesFromDisk, (value) => value !== null) as unknown) as Record<string, IWorkspace>, (workspace) =>
+      ? mapValues(pickBy(workspacesFromDisk, (value) => value !== null) as unknown as Record<string, IWorkspace>, (workspace) =>
           this.sanitizeWorkspace(workspace),
         )
       : {};

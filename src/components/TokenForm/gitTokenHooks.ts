@@ -31,8 +31,6 @@ export function useAuth(storageService: SupportedStorageServices): [() => Promis
     try {
       await authing.social.authorize(storageService, {
         onSuccess: async (user) => {
-          // DEBUG: console
-          console.log('user', user);
           const thirdPartyIdentity = user.identities?.find((identity) => identity?.provider === storageService);
           if (thirdPartyIdentity) {
             if (thirdPartyIdentity.accessToken) {

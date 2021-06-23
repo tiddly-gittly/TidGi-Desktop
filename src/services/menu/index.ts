@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
 import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, WebContents, MenuItem, ipcMain, app } from 'electron';
-import { debounce, take, drop, reverse, uniqBy, remove } from 'lodash';
+import { debounce, take, drop, reverse, remove, compact } from 'lodash';
 import { injectable } from 'inversify';
 import { IMenuService, DeferredMenuItemConstructorOptions, IOnContextMenuInfo } from './interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -34,6 +34,33 @@ export class MenuService implements IMenuService {
   }
 
   /**
+   * Record each menu part contains what menuItem, so we can delete these menuItem before insert new ones
+   * `{ [menuPartKey]: [menuID, menuItemID][] }`
+   * Menu part means "refresh part", that will be refresh upon insert new items.
+   */
+  private menuPartRecord: Record<string, Array<[string, string]>> = {};
+  /** check if menuItem with menuID and itemID belongs to a menuPartKey */
+  private belongsToPart(menuPartKey: string, menuID: string, itemID?: string): boolean {
+    // if menuItem only have role, it won't be refresh, so it won't belongs to a refresh part
+    if (itemID === undefined) {
+      return false;
+    }
+    const record = this.menuPartRecord[menuPartKey];
+    if (record !== undefined) {
+      return record.some(([currentMenuID, currentItemID]) => menuID === currentMenuID && itemID === currentItemID);
+    }
+    return false;
+  }
+
+  private updateMenuPartRecord(
+    menuPartKey: string,
+    menuID: string,
+    newSubMenuItems: Array<DeferredMenuItemConstructorOptions | MenuItemConstructorOptions>,
+  ): void {
+    this.menuPartRecord[menuPartKey] = newSubMenuItems.filter((item) => item.id !== undefined).map((item) => [menuID, item.id!] as [string, string]);
+  }
+
+  /**
    * Rebuild or create menubar from the latest menu template, will be call after some method change the menuTemplate
    * You don't need to call this after calling method like insertMenu, it will be call automatically.
    */
@@ -57,7 +84,8 @@ export class MenuService implements IMenuService {
         ...item,
         label: typeof item.label === 'function' ? item.label() : item.label,
         enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
-        submenu: item.submenu instanceof Menu ? item.submenu : await this.getCurrentMenuItemConstructorOptions(item.submenu),
+        submenu:
+          item.submenu instanceof Menu || item.submenu === undefined ? item.submenu : await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)),
       })),
     );
   }
@@ -201,23 +229,30 @@ export class MenuService implements IMenuService {
    * @param newSubMenuItems An array of menu item to insert or update, if some of item is already existed, it will be updated instead of inserted
    * @param afterSubMenu The `id` or `role` of a submenu you want your submenu insert after. `null` means inserted as first submenu item; `undefined` means inserted as last submenu item;
    * @param withSeparator Need to insert a separator first, before insert menu items
+   * @param menuPartKey When you update a part of menu, you can overwrite old menu part with same key
    */
   public async insertMenu(
     menuID: string,
     newSubMenuItems: Array<DeferredMenuItemConstructorOptions | MenuItemConstructorOptions>,
     afterSubMenu?: string | null,
     withSeparator = false,
+    menuPartKey?: string,
   ): Promise<void> {
     let foundMenuName = false;
+    const copyOfNewSubMenuItems = [...newSubMenuItems];
     // try insert menu into an existed menu's submenu
     for (const menu of this.menuTemplate) {
       // match top level menu
       if (menu.id === menuID) {
         foundMenuName = true;
         // heck some menu item existed, we update them and pop them out
-        const currentSubMenu = menu.submenu ?? [];
+        const currentSubMenu = compact(menu.submenu);
         // we push old and new content into this array, and assign back to menu.submenu later
         let filteredSubMenu: Array<DeferredMenuItemConstructorOptions | MenuItemConstructorOptions> = currentSubMenu;
+        // refresh menu part by delete previous menuItems that belongs to the same partKey
+        if (menuPartKey !== undefined) {
+          filteredSubMenu = filteredSubMenu.filter((currentSubMenuItem) => !this.belongsToPart(menuPartKey, menuID, currentSubMenuItem.id));
+        }
         for (const newSubMenuItem of newSubMenuItems) {
           const existedItemIndex = currentSubMenu.findIndex((existedItem) => MenuService.isMenuItemEqual(existedItem, newSubMenuItem));
           // replace existed item, and remove it from needed-to-add-items
@@ -258,6 +293,10 @@ export class MenuService implements IMenuService {
         label: menuID,
         submenu: newSubMenuItems,
       });
+    }
+    // update menuPartRecord
+    if (menuPartKey !== undefined) {
+      this.updateMenuPartRecord(menuPartKey, menuID, copyOfNewSubMenuItems);
     }
     await this.buildMenu();
   }
@@ -354,9 +393,9 @@ export class MenuService implements IMenuService {
     // add custom menu items
     if (template !== undefined && Array.isArray(template) && template.length > 0) {
       // if our menu item config is pass from the renderer process, we reconstruct callback from the ipc.on channel id.
-      const menuItems = ((typeof template?.[0]?.click === 'string'
+      const menuItems = (typeof template?.[0]?.click === 'string'
         ? mainMenuItemProxy(template as IpcSafeMenuItem[], webContents)
-        : template) as unknown) as MenuItemConstructorOptions[];
+        : template) as unknown as MenuItemConstructorOptions[];
       menu.insert(0, new MenuItem({ type: 'separator' }));
       // we are going to prepend items, so inverse first, so order will remain
       reverse(menuItems)

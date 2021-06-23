@@ -43,7 +43,13 @@ export interface IOnContextMenuInfo {
 export interface IMenuService {
   buildMenu(): Promise<void>;
   initContextMenuForWindowWebContents(webContents: WebContents): Promise<() => void>;
-  insertMenu(menuID: string, menuItems: DeferredMenuItemConstructorOptions[], afterSubMenu?: string | null, withSeparator?: boolean): Promise<void>;
+  insertMenu(
+    menuID: string,
+    menuItems: DeferredMenuItemConstructorOptions[],
+    afterSubMenu?: string | null,
+    withSeparator?: boolean,
+    menuPartKey?: string,
+  ): Promise<void>;
   buildContextMenuAndPopup(template: MenuItemConstructorOptions[] | IpcSafeMenuItem[], info: IOnContextMenuInfo, windowName?: WindowNames): Promise<void>;
 }
 export const MenuServiceIPCDescriptor = {
