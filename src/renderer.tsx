@@ -1,7 +1,5 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable promise/always-return */
-import 'source-map-support/register';
-import 'reflect-metadata';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import i18n from 'i18next';
