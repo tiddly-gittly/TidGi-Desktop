@@ -60,7 +60,7 @@ function commitAndSyncWiki(wikiFolderPath: string, remoteUrl: string, userInfo: 
   });
 }
 
-function cloneWiki(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Observable<IGitLogMessage> {
+function cloneWiki(repoFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
     void clone({
       dir: repoFolderPath,
