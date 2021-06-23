@@ -107,7 +107,8 @@ const ShortcutText = styled.p`
   font-size: 12px;
   font-weight: 500;
   display: inline-block;
-  word-break: break-all;
+  word-break: normal;
+  text-align: center;
 `;
 const Badge = styled(BadgeRaw)`
   line-height: 20px;
