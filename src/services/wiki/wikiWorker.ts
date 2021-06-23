@@ -1,3 +1,4 @@
+import 'source-map-support/register';
 import { expose } from 'threads/worker';
 import path from 'path';
 import tiddlywiki from '@tiddlygit/tiddlywiki';

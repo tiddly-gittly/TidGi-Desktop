@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
+import 'source-map-support/register';
 import { expose } from 'threads/worker';
 import { Observable } from 'rxjs';
 import { clone, commitAndSync, GitStep, ILoggerContext, initGit } from 'git-sync-js';
