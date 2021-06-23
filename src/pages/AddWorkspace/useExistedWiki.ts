@@ -86,7 +86,7 @@ export function useExistedWiki(
           true,
         );
       }
-      await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspaceConfig);
+      await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspaceConfig, form.gitUserInfo);
       // wait for wiki to start and close the window now.
       await window.remote.closeCurrentWindow();
     } catch (error) {

@@ -77,7 +77,7 @@ export function useNewWiki(
       } else {
         await window.service.wiki.createSubWiki(form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink?.wikiFolderLocation, form.tagName);
       }
-      await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspaceConfig);
+      await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspaceConfig, form.gitUserInfo);
       // wait for wiki to start and close the window now.
       await window.remote.closeCurrentWindow();
     } catch (error) {
