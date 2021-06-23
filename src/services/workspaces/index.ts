@@ -114,10 +114,10 @@ export class Workspace implements IWorkspaceService {
     const newMenuItems = (await this.getWorkspacesAsList()).flatMap((workspace, index) => [
       {
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        label: () => workspace.name || `Workspace ${index + 1}`,
+        label: (): string => workspace.name || `Workspace ${index + 1}`,
         id: workspace.id,
         type: 'checkbox' as const,
-        checked: workspace.active,
+        checked: () => workspace.active,
         click: async () => {
           await this.workspaceViewService.setActiveWorkspaceView(workspace.id);
           // manually update menu since we have alter the active workspace

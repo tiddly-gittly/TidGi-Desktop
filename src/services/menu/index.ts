@@ -83,6 +83,7 @@ export class MenuService implements IMenuService {
       submenu.map(async (item) => ({
         ...item,
         label: typeof item.label === 'function' ? item.label() : item.label,
+        checked: typeof item.checked === 'function' ? await item.checked() : item.checked,
         enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
         submenu:
           item.submenu instanceof Menu || item.submenu === undefined ? item.submenu : await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)),
