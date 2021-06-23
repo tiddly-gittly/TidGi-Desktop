@@ -56,6 +56,7 @@ export function CloneWikiForm({
       <LocationPickerContainer>
         <LocationPickerInput
           error={errorInWhichComponent.wikiFolderName}
+          onChange={(event) => form.wikiFolderNameSetter(event.target.value)}
           label={t('AddWorkspace.WorkspaceFolderNameToCreate')}
           helperText={`${t('AddWorkspace.CloneWiki')}${form.wikiFolderLocation}`}
           value={form.wikiFolderName}
