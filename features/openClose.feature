@@ -12,7 +12,7 @@ Feature: Open
     Given the app is launched
     Then the element "#add-workspace-button" is on the page
     Then click on this element
-    Then "添加工作区 tiddlywiki" window show up
+    Then "添加工作区 tiddlygit-dev" window show up
 
   Scenario: Opening Preferences Page
     Given the app is launched
