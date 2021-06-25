@@ -46,16 +46,6 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
   const gitUserInfo = useStorageServiceUserInfoObservable(storageProvider);
 
   /**
-   * Update tiddlywiki's editor user name when first time creating new workspace
-   */
-  const [userName, userNameSetter] = usePromiseValueAndSetter(
-    async () => await window.service.auth.get('userName'),
-    async (newUserName) => {
-      if (newUserName !== undefined) await window.service.auth.set('userName', newUserName);
-    },
-  );
-
-  /**
    * For sub-wiki, we need to link it to a main wiki's folder, so all wiki contents can be loaded together.
    */
   const mainWorkspaceList = workspaceList.filter((workspace) => !workspace.isSubWiki);
@@ -123,8 +113,6 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
     storageProviderSetter,
     wikiPort,
     wikiPortSetter,
-    userName,
-    userNameSetter,
     mainWikiToLink,
     mainWikiToLinkSetter,
     tagName,

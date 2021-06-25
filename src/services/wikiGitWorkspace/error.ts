@@ -1,3 +1,4 @@
+import { IGitUserInfos } from '@services/git/interface';
 import i18n from '@services/libs/i18n';
 
 export class InitWikiGitError extends Error {
@@ -13,5 +14,15 @@ export class InitWikiGitRevertError extends Error {
     super(extraMessage);
     this.name = i18n.t('Error.InitWikiGitRevertError');
     this.message = `${i18n.t('Error.InitWikiGitRevertErrorDescription')} ${extraMessage ?? ''}`;
+  }
+}
+
+export class InitWikiGitSyncedWikiNoGitUserInfoError extends Error {
+  constructor(gitUrl?: string | null, userInfo?: IGitUserInfos | null) {
+    super();
+    this.name = i18n.t('Error.InitWikiGitSyncedWikiNoGitUserInfoError');
+    this.message = `${i18n.t('Error.InitWikiGitSyncedWikiNoGitUserInfoErrorDescription')} gitUrl: ${gitUrl ?? 'undefined'} , userInfo: ${
+      userInfo === undefined ? JSON.stringify(userInfo) : 'undefined'
+    }`;
   }
 }

@@ -16,7 +16,7 @@ import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { IWikiGitWorkspaceService } from './interface';
 import { IMenuService } from '@services/menu/interface';
-import { InitWikiGitError, InitWikiGitRevertError } from './error';
+import { InitWikiGitError, InitWikiGitRevertError, InitWikiGitSyncedWikiNoGitUserInfoError } from './error';
 import { SupportedStorageServices } from '@services/types';
 import { hasGit } from 'git-sync-js';
 
@@ -42,9 +42,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           if (typeof gitUrl === 'string' && userInfo !== undefined) {
             await this.gitService.initWikiGit(wikiFolderLocation, isSyncedWiki, gitUrl, userInfo);
           } else {
-            throw new Error(
-              `E-1-1 SyncedWiki gitUrl is ${gitUrl ?? 'undefined'} , userInfo is ${userInfo === undefined ? JSON.stringify(userInfo) : 'undefined'}`,
-            );
+            throw new InitWikiGitSyncedWikiNoGitUserInfoError(gitUrl, userInfo);
           }
         } else {
           await this.gitService.initWikiGit(wikiFolderLocation, false);

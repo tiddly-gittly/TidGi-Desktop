@@ -105,7 +105,9 @@
     "GitEmailDescription": "Email used for Git commit, and is used to count daily activities on Github and other online git services",
     "GitUserNameDescription": "The account name used to log in to Git. Not the nickname",
     "LogoutToGetStorageServiceToken": "Log in to the online storage service to obtain latest credentials",
-    "AddWorkspace": "Add Workspace"
+    "AddWorkspace": "Add Workspace",
+    "WorkspaceUserName": "Workspace User Name",
+    "WorkspaceUserNameDetail": "The editor name used in the Wiki will be fill in the creator field when the Tiddler is created or edited. The editor name set in the workspace will override the global default editor name assigned in the preferences. This allows you to create Tiddlers with different identities in the same Wiki, with multiple workspace configed with different user name."
   },
   "EditWorkspace": {
     "Path": "Wiki Path",

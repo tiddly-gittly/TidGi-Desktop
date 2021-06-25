@@ -139,6 +139,8 @@ export default function EditWorkspace(): JSX.Element {
     isSubWiki,
     name,
     port,
+    order,
+    userName,
     tagName,
     transparentBackground,
     picturePath,
@@ -146,7 +148,7 @@ export default function EditWorkspace(): JSX.Element {
     disableAudio,
     disableNotifications,
     homeUrl,
-  } = ((workspace ?? {}) as unknown) as IWorkspace;
+  } = (workspace ?? {}) as unknown as IWorkspace;
   const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
     async () => (mainWikiToLink ? await window.service.wiki.getSubWikiPluginContent(mainWikiToLink) : []),
     [],
@@ -163,7 +165,7 @@ export default function EditWorkspace(): JSX.Element {
       <div id="test" data-usage="For spectron automating testing" />
       <Helmet>
         <title>
-          {t('WorkspaceSelector.EditWorkspace')} {String(workspace.order ?? 1)} {workspace.name}
+          {t('WorkspaceSelector.EditWorkspace')} {String(order ?? 1)} {name}
         </title>
       </Helmet>
       <FlexGrow>
@@ -174,6 +176,13 @@ export default function EditWorkspace(): JSX.Element {
           placeholder="Optional"
           value={name}
           onChange={(event) => workspaceSetter({ ...workspace, name: event.target.value })}
+        />
+        <TextField
+          helperText={t('AddWorkspace.WorkspaceUserNameDetail')}
+          fullWidth
+          onChange={(event) => workspaceSetter({ ...workspace, userName: event.target.value })}
+          label={t('AddWorkspace.WorkspaceUserName')}
+          value={userName}
         />
         {!isSubWiki && (
           <TextField
