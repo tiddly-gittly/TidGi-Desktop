@@ -99,7 +99,7 @@ export class Wiki implements IWikiService {
       });
       Thread.events(worker).subscribe((event: WorkerEvent) => {
         if (event.type === 'message') {
-          wikiOutputToFile(homePath, String(event.data));
+          wikiOutputToFile(homePath, `${JSON.stringify(event.data)}\n`);
           logger.debug(event.data, loggerMeta);
         } else if (event.type === 'termination') {
           delete this.wikiWorkers[homePath];
