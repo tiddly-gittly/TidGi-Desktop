@@ -366,7 +366,7 @@ export class Workspace implements IWorkspaceService {
     }
 
     const newWorkspace: IWorkspace = {
-      userName: (await this.authenticationService.get('userName')) ?? 'TiddlyGitUser',
+      userName: '',
       ...newWorkspaceConfig,
       active: false,
       hibernated: false,
