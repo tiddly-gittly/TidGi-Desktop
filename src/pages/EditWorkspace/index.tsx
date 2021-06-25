@@ -26,6 +26,8 @@ import { useWorkspaceObservable } from '@services/workspaces/hooks';
 import { useForm } from './useForm';
 import { IWorkspace } from '@services/workspaces/interface';
 
+import { useRestartSnackbar } from '@/components/RestartSnackbar';
+
 const Root = styled.div`
   height: 100%;
   width: 100%;
@@ -155,6 +157,9 @@ export default function EditWorkspace(): JSX.Element {
     [mainWikiToLink],
   ) as ISubWikiPluginContent[];
   const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName')) as string, '');
+
+  const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
+
   if (workspaceID === undefined) {
     return <Root>Error {workspaceID ?? '-'} not exists</Root>;
   }
@@ -164,6 +169,7 @@ export default function EditWorkspace(): JSX.Element {
   return (
     <Root>
       <div id="test" data-usage="For spectron automating testing" />
+      {RestartSnackbar}
       <Helmet>
         <title>
           {t('WorkspaceSelector.EditWorkspace')} {String(order ?? 1)} {name}
@@ -181,7 +187,10 @@ export default function EditWorkspace(): JSX.Element {
         <TextField
           helperText={t('AddWorkspace.WorkspaceUserNameDetail')}
           fullWidth
-          onChange={(event) => workspaceSetter({ ...workspace, userName: event.target.value })}
+          onChange={(event) => {
+            workspaceSetter({ ...workspace, userName: event.target.value });
+            requestRestartCountDown();
+          }}
           label={t('AddWorkspace.WorkspaceUserName')}
           placeholder={fallbackUserName}
           value={userName}

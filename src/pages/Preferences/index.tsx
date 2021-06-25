@@ -253,6 +253,7 @@ export default function Preferences(): JSX.Element {
                 fullWidth
                 onChange={async (event) => {
                   await window.service.auth.set('userName', event.target.value);
+                  requestRestartCountDown();
                 }}
                 label={t('Preference.DefaultUserName')}
                 value={userInfo?.userName}
