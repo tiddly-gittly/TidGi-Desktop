@@ -43,7 +43,7 @@ export class Preference implements IPreferenceService {
         .then(async ({ response }) => {
           if (response === 0) {
             await this.reset();
-            await this.windowService.requestShowRequireRestartDialog();
+            await this.windowService.requestRestart();
           }
         })
         .catch(console.error);

@@ -69,24 +69,9 @@ export class Window implements IWindowService {
     }
   }
 
-  public async requestShowRequireRestartDialog(): Promise<void> {
-    const availableWindowToShowDialog = this.get(WindowNames.preferences) ?? this.get(WindowNames.main);
-    if (availableWindowToShowDialog !== undefined) {
-      await dialog
-        .showMessageBox(availableWindowToShowDialog, {
-          type: 'question',
-          buttons: [i18n.t('Dialog.RestartNow'), i18n.t('Dialog.Later')],
-          message: i18n.t('Dialog.RestartMessage'),
-          cancelId: 1,
-        })
-        .then(({ response }) => {
-          if (response === 0) {
-            app.relaunch();
-            app.quit();
-          }
-        })
-        .catch(console.error);
-    }
+  public async requestRestart(): Promise<void> {
+    app.relaunch();
+    app.quit();
   }
 
   public get(windowName: WindowNames = WindowNames.main): BrowserWindow | undefined {

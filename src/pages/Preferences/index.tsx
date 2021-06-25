@@ -1,5 +1,4 @@
 import React, { useEffect } from 'react';
-import { useDebouncedFn } from 'beautiful-react-hooks';
 import styled, { keyframes } from 'styled-components';
 import { Helmet } from 'react-helmet';
 import semver from 'semver';
@@ -26,6 +25,7 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import TimePicker from '@material-ui/lab/TimePicker';
 
 import PopUpMenuItem from '@/components/PopUpMenuItem';
+import { useRestartSnackbar } from '@/components/RestartSnackbar';
 
 import { hunspellLanguagesMap } from '@/constants/hunspellLanguages';
 
@@ -159,8 +159,6 @@ export default function Preferences(): JSX.Element {
     sections[scrollTo].ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [sections]);
 
-  const debouncedRequestShowRequireRestartDialog = useDebouncedFn(async () => await window.service.window.requestShowRequireRestartDialog(), 2500);
-
   const [platform, oSVersion, LOG_FOLDER, SETTINGS_FOLDER] = usePromiseValue(
     async () =>
       await Promise.all([
@@ -174,6 +172,8 @@ export default function Preferences(): JSX.Element {
       }),
     [],
   );
+
+  const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
 
   const preference = usePreferenceObservable();
   const systemPreference = useSystemPreferenceObservable();
@@ -217,6 +217,8 @@ export default function Preferences(): JSX.Element {
   return (
     <Root>
       <div id="test" data-usage="For spectron automating testing" />
+      {RestartSnackbar}
+
       <Helmet>
         <title>{t('ContextMenu.Preferences')}</title>
       </Helmet>
@@ -281,7 +283,7 @@ export default function Preferences(): JSX.Element {
                     const timeWithoutDate = setDate(setMonth(setYear(date, 1970), 0), 1);
                     const utcTime = (timeWithoutDate.getTime() / 1000 - new Date().getTimezoneOffset() * 60) * 1000;
                     await window.service.preference.set('syncDebounceInterval', utcTime);
-                    await debouncedRequestShowRequireRestartDialog();
+                    requestRestartCountDown();
                   }}
                   onClose={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: false })}
                   onOpen={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true })}
@@ -303,7 +305,7 @@ export default function Preferences(): JSX.Element {
                   checked={rememberLastPageVisited}
                   onChange={async (event) => {
                     await window.service.preference.set('rememberLastPageVisited', event.target.checked);
-                    await debouncedRequestShowRequireRestartDialog();
+                    requestRestartCountDown();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -369,7 +371,7 @@ export default function Preferences(): JSX.Element {
                       onChange={async (event) => {
                         await window.service.preference.set('titleBar', event.target.checked);
                         await window.service.workspaceView.realignActiveWorkspace();
-                        await debouncedRequestShowRequireRestartDialog();
+                        requestRestartCountDown();
                       }}
                     />
                   </ListItemSecondaryAction>
@@ -388,7 +390,7 @@ export default function Preferences(): JSX.Element {
                       checked={hideMenuBar}
                       onChange={async (event) => {
                         await window.service.preference.set('hideMenuBar', event.target.checked);
-                        await debouncedRequestShowRequireRestartDialog();
+                        requestRestartCountDown();
                       }}
                     />
                   </ListItemSecondaryAction>
@@ -408,7 +410,7 @@ export default function Preferences(): JSX.Element {
                   checked={attachToMenubar}
                   onChange={async (event) => {
                     await window.service.preference.set('attachToMenubar', event.target.checked);
-                    await debouncedRequestShowRequireRestartDialog();
+                    requestRestartCountDown();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -452,7 +454,7 @@ export default function Preferences(): JSX.Element {
                       checked={swipeToNavigate}
                       onChange={async (event) => {
                         await window.service.preference.set('swipeToNavigate', event.target.checked);
-                        await debouncedRequestShowRequireRestartDialog();
+                        requestRestartCountDown();
                       }}
                     />
                   </ListItemSecondaryAction>
@@ -552,7 +554,7 @@ export default function Preferences(): JSX.Element {
                   checked={unreadCountBadge}
                   onChange={async (event) => {
                     await window.service.preference.set('unreadCountBadge', event.target.checked);
-                    await debouncedRequestShowRequireRestartDialog();
+                    requestRestartCountDown();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -623,7 +625,7 @@ export default function Preferences(): JSX.Element {
                   checked={spellcheck}
                   onChange={async (event) => {
                     await window.service.preference.set('spellcheck', event.target.checked);
-                    await debouncedRequestShowRequireRestartDialog();
+                    requestRestartCountDown();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -696,7 +698,7 @@ export default function Preferences(): JSX.Element {
                   checked={shareWorkspaceBrowsingData}
                   onChange={async (event) => {
                     await window.service.preference.set('shareWorkspaceBrowsingData', event.target.checked);
-                    await debouncedRequestShowRequireRestartDialog();
+                    requestRestartCountDown();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -729,7 +731,7 @@ export default function Preferences(): JSX.Element {
                   checked={ignoreCertificateErrors}
                   onChange={async (event) => {
                     await window.service.preference.set('ignoreCertificateErrors', event.target.checked);
-                    await debouncedRequestShowRequireRestartDialog();
+                    requestRestartCountDown();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -807,7 +809,7 @@ export default function Preferences(): JSX.Element {
                   checked={useHardwareAcceleration}
                   onChange={async (event) => {
                     await window.service.preference.set('useHardwareAcceleration', event.target.checked);
-                    await debouncedRequestShowRequireRestartDialog();
+                    requestRestartCountDown();
                   }}
                 />
               </ListItemSecondaryAction>
@@ -842,7 +844,7 @@ export default function Preferences(): JSX.Element {
                   checked={allowPrerelease}
                   onChange={async (event) => {
                     await window.service.preference.set('allowPrerelease', event.target.checked);
-                    await debouncedRequestShowRequireRestartDialog();
+                    requestRestartCountDown();
                   }}
                 />
               </ListItemSecondaryAction>
