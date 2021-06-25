@@ -154,6 +154,7 @@ export default function EditWorkspace(): JSX.Element {
     [],
     [mainWikiToLink],
   ) as ISubWikiPluginContent[];
+  const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName')) as string, '');
   if (workspaceID === undefined) {
     return <Root>Error {workspaceID ?? '-'} not exists</Root>;
   }
@@ -182,6 +183,7 @@ export default function EditWorkspace(): JSX.Element {
           fullWidth
           onChange={(event) => workspaceSetter({ ...workspace, userName: event.target.value })}
           label={t('AddWorkspace.WorkspaceUserName')}
+          placeholder={fallbackUserName}
           value={userName}
         />
         {!isSubWiki && (
