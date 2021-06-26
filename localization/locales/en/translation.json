@@ -10,7 +10,8 @@
     "EditCurrentWorkspace": "Edit Current Workspace",
     "RemoveCurrentWorkspace": "Remove Current Workspace",
     "HibernateWorkspace": "Hibernate Workspace",
-    "WakeUpWorkspace": "WakeUp Workspace"
+    "WakeUpWorkspace": "WakeUp Workspace",
+    "OpenWorkspaceFolder": "Open Folder"
   },
   "ContextMenu": {
     "OpenTiddlyGit": "Open TiddlyGit",
