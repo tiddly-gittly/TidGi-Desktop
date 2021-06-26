@@ -16,11 +16,11 @@ export interface ISortableItemProps {
 
 export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcutHints }: ISortableItemProps): JSX.Element {
   const { t } = useTranslation();
-  const { active, id, name, picturePath, hibernated, transparentBackground, isSubWiki, tagName } = workspace;
+  const { active, id, name, picturePath, hibernated, transparentBackground, isSubWiki, tagName, wikiFolderLocation } = workspace;
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition,
+    transition: transition ?? undefined,
   };
   return (
     <div
@@ -53,6 +53,10 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
           {
             label: t('WorkspaceSelector.RemoveWorkspace'),
             click: async () => await window.service.wikiGitWorkspace.removeWorkspace(id),
+          },
+          {
+            label: t('WorkspaceSelector.OpenWorkspaceFolder'),
+            click: async () => await window.service.native.open(wikiFolderLocation, true),
           },
         ];
 
