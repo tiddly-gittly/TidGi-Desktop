@@ -228,14 +228,16 @@ export default function Main(): JSX.Element {
                     await window.service.workspace.setWorkspaces(newWorkspaces);
                   }}>
                   <SortableContext items={workspaceIDs} strategy={verticalListSortingStrategy}>
-                    {workspacesList.map((workspace, index) => (
-                      <SortableWorkspaceSelector
-                        key={`item-${workspace.id}`}
-                        index={index}
-                        workspace={workspace}
-                        showSidebarShortcutHints={sidebarShortcutHints}
-                      />
-                    ))}
+                    {workspacesList
+                      .sort((a, b) => a.order - b.order)
+                      .map((workspace, index) => (
+                        <SortableWorkspaceSelector
+                          key={`item-${workspace.id}`}
+                          index={index}
+                          workspace={workspace}
+                          showSidebarShortcutHints={sidebarShortcutHints}
+                        />
+                      ))}
                   </SortableContext>
                 </DndContext>
               )}
