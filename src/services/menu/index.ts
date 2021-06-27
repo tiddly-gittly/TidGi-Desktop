@@ -8,7 +8,6 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
-import { IViewService } from '@services/view/interface';
 import { IPreferenceService } from '@services/preferences/interface';
 import i18next from '@services/libs/i18n';
 import ContextMenuBuilder from './contextMenuBuilder';
@@ -18,7 +17,6 @@ import { InsertMenuAfterSubMenuIndexError } from './error';
 @injectable()
 export class MenuService implements IMenuService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
 
   private _menuTemplate?: DeferredMenuItemConstructorOptions[];
