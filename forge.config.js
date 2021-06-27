@@ -22,7 +22,7 @@ module.exports = {
       platforms: ['win32'],
       config: (arch) => {
         return {
-          setupExe: `TiddlyGit-${arch}-setup.exe`,
+          setupExe: `TiddlyGit-Windows-${arch}-setup.exe`,
           setupIcon: 'build-resources/icon.ico',
         };
       },
