@@ -58,7 +58,9 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "setupIcon": "build-resources/icon.ico"}
+            "setupIcon": "build-resources/icon.ico",
+            "iconUrl": "build-resources/icon.ico"
+          }
         },
         {
           "name": "@electron-forge/maker-zip",
