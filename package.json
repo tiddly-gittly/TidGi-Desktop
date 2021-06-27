@@ -57,9 +57,7 @@
       "makers": [
         {
           "name": "@electron-forge/maker-squirrel",
-          "config": {
-            "name": "TiddlyGit"
-          }
+          "config": {}
         },
         {
           "name": "@electron-forge/maker-zip",
