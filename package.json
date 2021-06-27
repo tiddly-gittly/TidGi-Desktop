@@ -58,8 +58,7 @@
         {
           "name": "@electron-forge/maker-squirrel",
           "config": {
-            "setupIcon": "build-resources/icon.ico",
-            "iconUrl": "build-resources/icon.ico"
+            "setupIcon": "build-resources/icon.ico"
           }
         },
         {
@@ -112,6 +111,7 @@
     "chokidar": "3.5.2",
     "electron-is-packaged": "^1.0.2",
     "electron-settings": "4.0.2",
+    "electron-squirrel-startup": "^1.0.0",
     "electron-unhandled": "3.0.2",
     "electron-updater": "4.3.9",
     "electron-util": "0.16.0",
