@@ -43,6 +43,8 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
         }
       }}
       onContextMenu={(event) => {
+        event.preventDefault();
+        event.stopPropagation();
         const template = [
           {
             label: t('WorkspaceSelector.EditWorkspace'),
