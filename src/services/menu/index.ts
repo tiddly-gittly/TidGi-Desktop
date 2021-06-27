@@ -8,8 +8,8 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
-import { IViewService } from '@services/view/interface';
 import { IPreferenceService } from '@services/preferences/interface';
+import { logger } from '@services/libs/log';
 import i18next from '@services/libs/i18n';
 import ContextMenuBuilder from './contextMenuBuilder';
 import { IpcSafeMenuItem, mainMenuItemProxy } from './rendererMenuItemProxy';
@@ -18,15 +18,10 @@ import { InsertMenuAfterSubMenuIndexError } from './error';
 @injectable()
 export class MenuService implements IMenuService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
 
   private _menuTemplate?: DeferredMenuItemConstructorOptions[];
   private get menuTemplate(): DeferredMenuItemConstructorOptions[] {
-    // wait for translations to be initialized
-    // if (i18next.t('Menu.TiddlyGit') === undefined || i18next.t('Menu.TiddlyGit') === 'Menu.TiddlyGit') {
-    //   return [];
-    // }
     if (this._menuTemplate === undefined) {
       this.loadDefaultMenuTemplate();
     }
@@ -65,9 +60,13 @@ export class MenuService implements IMenuService {
    * You don't need to call this after calling method like insertMenu, it will be call automatically.
    */
   public async buildMenu(): Promise<void> {
-    const latestTemplate = (await this.getCurrentMenuItemConstructorOptions(this.menuTemplate)) ?? [];
-    const menu = Menu.buildFromTemplate(latestTemplate);
-    Menu.setApplicationMenu(menu);
+    try {
+      const latestTemplate = (await this.getCurrentMenuItemConstructorOptions(this.menuTemplate)) ?? [];
+      const menu = Menu.buildFromTemplate(latestTemplate);
+      Menu.setApplicationMenu(menu);
+    } catch (error) {
+      logger.error(`buildMenu() failed ${(error as Error).message} ${(error as Error).stack ?? ''}`);
+    }
   }
 
   /**

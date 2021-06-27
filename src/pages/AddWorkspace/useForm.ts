@@ -85,8 +85,8 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
   useEffect(() => {
     void (async function getDefaultExistedWikiFolderPathEffect() {
       const desktopPathAsDefaultExistedWikiFolderPath = await window.service.context.get('DEFAULT_WIKI_FOLDER');
-      wikiFolderNameSetter(window.remote.getBaseName(desktopPathAsDefaultExistedWikiFolderPath) ?? 'Error');
-      parentFolderLocationSetter(window.remote.getDirectoryName(desktopPathAsDefaultExistedWikiFolderPath) ?? 'Error');
+      wikiFolderNameSetter(mainWorkspaceList[mainWorkspaceList.length - 1]?.wikiFolderLocation ?? 'wiki');
+      parentFolderLocationSetter(desktopPathAsDefaultExistedWikiFolderPath);
     })();
   }, []);
   const [gitRepoUrl, gitRepoUrlSetter] = useState<string>('');
