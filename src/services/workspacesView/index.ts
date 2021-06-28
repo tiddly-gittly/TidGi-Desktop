@@ -42,8 +42,16 @@ export class WorkspaceView implements IWorkspaceViewService {
     const workspaces = await this.workspaceService.getWorkspaces();
     for (const workspaceID in workspaces) {
       const workspace = workspaces[workspaceID];
+      // skip view initialize if this is a sub wiki
+      if (workspace.isSubWiki) {
+        continue;
+      }
+      // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
+      if ((await this.wikiService.checkWikiExist(workspace.wikiFolderLocation, true)) !== true) {
+        continue;
+      }
       if (((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) && !workspace.active) {
-        if (!workspace.hibernated && !workspace.isSubWiki) {
+        if (!workspace.hibernated) {
           await this.workspaceService.update(workspaceID, { hibernated: true });
         }
         return;
@@ -52,12 +60,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       if (mainWindow === undefined) {
         throw new Error(i18n.t(`Error.MainWindowMissing`));
       }
-      if (!workspace.isSubWiki) {
-        await this.viewService.addView(mainWindow, workspace);
-      }
-      if ((await this.wikiService.checkWikiExist(workspace.wikiFolderLocation, true)) === true) {
-        continue;
-      }
+      await this.viewService.addView(mainWindow, workspace);
       const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
       const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService } = workspace;
       // wait for main wiki's watch-fs plugin to be fully initialized
@@ -66,17 +69,16 @@ export class WorkspaceView implements IWorkspaceViewService {
       let workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
       let loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
       // wait for main wiki webview loaded
-      if (!workspace.isSubWiki) {
-        while (workspaceMetadata.isLoading !== false) {
-          // eslint-disable-next-line no-await-in-loop
-          await delay(500);
-          workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
-        }
-        loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
-        if (loadFailed) {
-          throw new Error(workspaceMetadata.didFailLoadErrorMessage!);
-        }
+      while (workspaceMetadata.isLoading !== false) {
+        // eslint-disable-next-line no-await-in-loop
+        await delay(500);
+        workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
       }
+      loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
+      if (loadFailed) {
+        throw new Error(workspaceMetadata.didFailLoadErrorMessage!);
+      }
+      // get sync process ready
       try {
         if (storageService !== SupportedStorageServices.local) {
           // check synced wiki should have githubRepoUrl

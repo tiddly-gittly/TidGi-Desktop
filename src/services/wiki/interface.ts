@@ -39,6 +39,7 @@ export interface IWikiService {
   createSubWiki(newFolderPath: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
+  /** return true if wiki does existed, return error message (a string) if there is an error checking wiki existence */
   checkWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<string | true>;
   cloneWiki(parentFolderLocation: string, wikiFolderName: string, gitRepoUrl: string, gitUserInfo: IGitUserInfos): Promise<void>;
   cloneSubWiki(
