@@ -8,7 +8,6 @@ const nets = networkInterfaces();
  * ```js
  * { en0: [ '192.168.50.112' ] }
  * ```
- * node-ip sometimes gives wrong address, so we get address by ourself.
  * @docs https://stackoverflow.com/questions/3653065/get-local-ip-address-in-node-js
  */
 export const ipAddresses: Record<string, string[]> = {};
@@ -35,7 +34,7 @@ export function getAvailableIPAddress(): string | undefined {
  * @param originalUrl might be `"http://0.0.0.0:5212/"`
  */
 export function getLocalHostUrlWithActualIP(originalUrl: string): string {
-  const localHostUrlWithActualIP = originalUrl.replace(defaultServerIP, getAvailableIPAddress() ?? defaultServerIP);
+  const localHostUrlWithActualIP = originalUrl.replace(/(?:\d{1,3}\.){3}\d{1,3}/, getAvailableIPAddress() ?? defaultServerIP);
   logger.debug(
     `Current available address: ${JSON.stringify(ipAddresses, undefined, '  ')}\nand getAvailableIPAddress() returns ${getAvailableIPAddress() ?? 'undefined'}
     originalUrl: ${originalUrl} , localHostUrlWithActualIP ${localHostUrlWithActualIP}`,
