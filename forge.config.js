@@ -1,8 +1,22 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
-module.exports = {
+const packageJson = require('./package.json');
+
+const { version } = packageJson;
+
+const config = {
   packagerConfig: {
     name: 'TiddlyGit',
     executableName: 'TiddlyGit',
+    win32metadata: {
+      CompanyName: 'TiddlyWiki Community',
+      OriginalFilename: 'TiddlyGit Desktop',
+    },
+    protocols: [
+      {
+        name: 'TiddlyGit Launch Protocol',
+        schemes: ['tiddlygit'],
+      },
+    ],
     icon: 'build-resources/icon.icns',
     asar: {
       unpack: '**/.webpack/main/*.worker.*',
@@ -14,6 +28,7 @@ module.exports = {
       icon: 'build-resources/icon.icns',
       electronLanguages: ['zh_CN', 'en', 'ja'],
     },
+    appBundleId: 'com.tiddlygit',
     afterPrune: ['scripts/afterPack.js'],
   },
   makers: [
@@ -22,7 +37,7 @@ module.exports = {
       platforms: ['win32'],
       config: (arch) => {
         return {
-          setupExe: `TiddlyGit-Windows-${arch}-setup.exe`,
+          setupExe: `TiddlyGit-${version}-Windows-${arch}-setup.exe`,
           setupIcon: 'build-resources/icon.ico',
         };
       },
@@ -62,3 +77,5 @@ module.exports = {
     ],
   ],
 };
+
+module.exports = config;
