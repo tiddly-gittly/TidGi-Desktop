@@ -181,7 +181,7 @@ export default function Preferences(): JSX.Element {
   const updaterMetaData = useUpdaterObservable();
   const theme = useThemeObservable();
   if (preference === undefined || systemPreference === undefined || userInfo === undefined || updaterMetaData === undefined || theme === undefined) {
-    return <Root>Loading...</Root>;
+    return <Root>{t('Loading')}</Root>;
   }
 
   const {

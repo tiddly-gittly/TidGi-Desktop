@@ -78,7 +78,7 @@ export default function Notifications(): JSX.Element {
   const pauseNotificationsInfo = useNotificationInfoObservable();
   const [showDateTimePicker, showDateTimePickerSetter] = useState(false);
   if (preference === undefined) {
-    return <Root>Loading...</Root>;
+    return <Root>{t('Loading')}</Root>;
   }
 
   const renderList = (): JSX.Element => {

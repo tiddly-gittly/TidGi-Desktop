@@ -49,7 +49,7 @@ export default function SpellcheckLanguages(): JSX.Element {
   const { t } = useTranslation();
   const preference = usePreferenceObservable();
   if (preference === undefined) {
-    return <Root>Loading...</Root>;
+    return <Root>{t('Loading')}</Root>;
   }
   return (
     <Root>

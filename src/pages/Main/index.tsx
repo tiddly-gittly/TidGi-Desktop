@@ -196,7 +196,7 @@ export default function Main(): JSX.Element {
   const requestReload = useCallback(async (): Promise<void> => await window.service.window.reload(window.meta.windowName), []);
 
   const workspaceIDs = workspacesList?.map((workspace) => workspace.id) ?? [];
-  if (preferences === undefined) return <div>Loading...</div>;
+  if (preferences === undefined) return <div>{t('Loading')}</div>;
   const { attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource, sidebarShortcutHints } = preferences;
   return (
     <OuterRoot>
@@ -209,7 +209,7 @@ export default function Main(): JSX.Element {
           <SidebarContainer>
             <SidebarTop fullscreen={isFullScreen || titleBar || attachToMenubar}>
               {workspacesList === undefined ? (
-                <div>Loading...</div>
+                <div>{t('Loading')}</div>
               ) : (
                 <DndContext
                   modifiers={[restrictToVerticalAxis]}
@@ -315,7 +315,7 @@ export default function Main(): JSX.Element {
                 </div>
               )}
             {Array.isArray(workspacesList) && workspacesList.length > 0 && mainWorkspaceMetaData?.isLoading && (
-              <Typography color="textSecondary">Loading..</Typography>
+              <Typography color="textSecondary">{t('Loading')}</Typography>
             )}
             {Array.isArray(workspacesList) && workspacesList.length === 0 && (
               <div>

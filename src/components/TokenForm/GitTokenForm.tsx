@@ -29,7 +29,7 @@ export function GitTokenForm(props: {
 
   const userInfo = useUserInfoObservable();
   if (userInfo === undefined) {
-    return <div>Loading...</div>;
+    return <div>{t('Loading')}</div>;
   }
   return (
     <>

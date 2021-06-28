@@ -164,7 +164,7 @@ export default function EditWorkspace(): JSX.Element {
     return <Root>Error {workspaceID ?? '-'} not exists</Root>;
   }
   if (workspace === undefined) {
-    return <Root>Loading...</Root>;
+    return <Root>{t('Loading')}</Root>;
   }
   return (
     <Root>
