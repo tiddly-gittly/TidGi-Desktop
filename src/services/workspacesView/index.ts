@@ -77,7 +77,8 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
       loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
       if (loadFailed) {
-        throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, homeUrl);
+        const latestWorkspaceData = await this.workspaceService.get(workspaceID);
+        throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, latestWorkspaceData?.lastUrl ?? homeUrl);
       }
       // get sync process ready
       try {

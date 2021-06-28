@@ -99,15 +99,15 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     if (workspaceObject === undefined) {
       return;
     }
-    await workspaceService.updateMetaData(workspace.id, {
-      isLoading: false,
-    });
     const currentUrl = view.webContents.getURL();
     await workspaceService.update(workspace.id, {
       lastUrl: currentUrl,
     });
     // fix https://github.com/atomery/webcatalog/issues/870
     await workspaceViewService.realignActiveWorkspace();
+    await workspaceService.updateMetaData(workspace.id, {
+      isLoading: false,
+    });
   });
   // focus on initial load
   // https://github.com/atomery/webcatalog/issues/398
