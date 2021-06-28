@@ -174,7 +174,6 @@
     "SynchronizationFinish": "Synchronization complete",
     "UsingUrlAndUsername": "Using Git Url {{githubRepoUrl}} with username {{username}} and accessToken {{accessToken}}",
     "GitTokenMissing": "Git token missing",
-    "MainWindowMissing": "This program can't access main window data, can't run normally.",
     "AddingFiles": "Start Git Add your files that needs backed up",
     "AddComplete": "Git Add successful",
     "CheckingLocalGitRepoSanity": "Checking whether the local Git repository is properly initialized",
@@ -279,7 +278,10 @@
     "DoubleWikiInstanceError": "DoubleWikiInstanceError",
     "DoubleWikiInstanceErrorDescription": "E-4 You started the same Wiki twice. This may be caused by a bug in the program.",
     "InsertMenuAfterSubMenuIndexError": "InsertMenuAfterSubMenuIndexError",
-    "InsertMenuAfterSubMenuIndexErrorDescription": "E-5 You try to insert menu with afterSubMenu \"{afterSubMenu}\" in menu \"{menuID}\", but we can not found it in menu \"{menu}\", please specific a menuitem with correct id attribute"
+    "InsertMenuAfterSubMenuIndexErrorDescription": "E-5 You try to insert menu with afterSubMenu \"{afterSubMenu}\" in menu \"{menuID}\", but we can not found it in menu \"{menu}\", please specific a menuitem with correct id attribute",
+    "MainWindowMissing": "This program can't access main window data, can't run normally.",
+    "InitWikiGitSyncedWikiNoGitUserInfoError": "InitWikiGitSyncedWikiNoGitUserInfoErrorDescription",
+    "InitWikiGitSyncedWikiNoGitUserInfoErrorDescription": "E-6 Initializing the note repository synchronized to the cloud requires you to select a cloud git repository address and provide the certification credentials for the corresponding cloud service. However, this information is not currently available."
   },
   "Loading": "Loading",
   "Yes": "Yes",

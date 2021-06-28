@@ -50,7 +50,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
       const mainWindow = this.windowService.get(WindowNames.main);
       if (mainWindow === undefined) {
-        throw new Error(i18n.t(`Log.MainWindowMissing`));
+        throw new Error(i18n.t(`Error.MainWindowMissing`));
       }
       if (!workspace.isSubWiki) {
         await this.viewService.addView(mainWindow, workspace);
