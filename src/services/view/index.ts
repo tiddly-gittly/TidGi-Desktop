@@ -363,9 +363,12 @@ export class View implements IViewService {
     });
   }
 
-  public reloadViewsWebContents(): void {
+  public reloadViewsWebContents(workspaceID?: string): void {
     const workspaceMetaData = this.workspaceService.getAllMetaData();
     Object.keys(workspaceMetaData).forEach((id) => {
+      if (workspaceID !== undefined && id !== workspaceID) {
+        return;
+      }
       const view = this.getView(id);
       if (view !== undefined) {
         view.webContents.reload();
@@ -377,6 +380,13 @@ export class View implements IViewService {
     const workspace = await this.workspaceService.getActiveWorkspace();
     if (workspace !== undefined) {
       return this.getView(workspace.id);
+    }
+  }
+
+  public async reloadActiveBrowserView(): Promise<void> {
+    const view = await this.getActiveBrowserView();
+    if (view !== undefined) {
+      view.webContents.reload();
     }
   }
 

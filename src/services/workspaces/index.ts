@@ -89,6 +89,15 @@ export class Workspace implements IWorkspaceService {
         enabled: async () => (await this.countWorkspaces()) > 0,
       },
       {
+        label: () => i18n.t('WorkspaceSelector.ReloadCurrentWorkspace'),
+        click: async () => {
+          const currentActiveWorkspace = await this.getActiveWorkspace();
+          if (currentActiveWorkspace === undefined) return;
+          await this.viewService.reloadActiveBrowserView();
+        },
+        enabled: async () => (await this.countWorkspaces()) > 0,
+      },
+      {
         label: () => i18n.t('WorkspaceSelector.RemoveCurrentWorkspace'),
         click: async () => {
           const currentActiveWorkspace = await this.getActiveWorkspace();

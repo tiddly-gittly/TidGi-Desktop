@@ -17,7 +17,8 @@ export interface IViewService {
   setViewsNotificationsPref: (_shouldPauseNotifications?: boolean) => void;
   hibernateView: (id: string) => void;
   reloadViewsWebContentsIfDidFailLoad: () => Promise<void>;
-  reloadViewsWebContents: () => void;
+  reloadViewsWebContents: (workspaceID?: string) => void;
+  reloadActiveBrowserView: () => Promise<void>;
   getActiveBrowserView: () => Promise<BrowserView | undefined>;
   realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;
 }
@@ -34,6 +35,7 @@ export const ViewServiceIPCDescriptor = {
     hibernateView: ProxyPropertyType.Function,
     reloadViewsWebContentsIfDidFailLoad: ProxyPropertyType.Function,
     reloadViewsWebContents: ProxyPropertyType.Function,
+    reloadActiveBrowserView: ProxyPropertyType.Function,
     getActiveBrowserView: ProxyPropertyType.Function,
     realignActiveView: ProxyPropertyType.Function,
   },

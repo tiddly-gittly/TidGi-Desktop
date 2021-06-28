@@ -60,6 +60,10 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
             label: t('WorkspaceSelector.OpenWorkspaceFolder'),
             click: async () => await window.service.native.open(wikiFolderLocation, true),
           },
+          {
+            label: t('ContextMenu.Reload'),
+            click: async () => await window.service.view.reloadViewsWebContents(id),
+          },
         ];
 
         if (!active && !isSubWiki) {

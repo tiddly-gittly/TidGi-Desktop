@@ -17,7 +17,7 @@ import { IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/pr
 import { ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences/interface';
 import { IThemeService, ThemeServiceIPCDescriptor } from '@services/theme/interface';
 import { IUpdaterService, UpdaterServiceIPCDescriptor } from '@services/updater/interface';
-// import { IViewService, ViewServiceIPCDescriptor } from '@services/view/interface';
+import { IViewService, ViewServiceIPCDescriptor } from '@services/view/interface';
 import { IWikiService, WikiServiceIPCDescriptor } from '@services/wiki/interface';
 import { IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
 import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows/interface';
@@ -34,7 +34,7 @@ export const preference = createProxy<IPreferenceService>(PreferenceServiceIPCDe
 export const systemPreference = createProxy<ISystemPreferenceService>(SystemPreferenceServiceIPCDescriptor);
 export const theme = createProxy<IThemeService>(ThemeServiceIPCDescriptor);
 export const updater = createProxy<IUpdaterService>(UpdaterServiceIPCDescriptor);
-// export const view = createProxy<AsyncifyProxy<IViewService>>(ViewServiceIPCDescriptor); // view service is mostly internal
+export const view = createProxy<AsyncifyProxy<IViewService>>(ViewServiceIPCDescriptor);
 export const wiki = createProxy<IWikiService>(WikiServiceIPCDescriptor);
 export const wikiGitWorkspace = createProxy<IWikiGitWorkspaceService>(WikiGitWorkspaceServiceIPCDescriptor);
 export const window = createProxy<IWindowService>(WindowServiceIPCDescriptor);
@@ -52,7 +52,7 @@ export const descriptors = {
   systemPreference: SystemPreferenceServiceIPCDescriptor,
   theme: ThemeServiceIPCDescriptor,
   updater: UpdaterServiceIPCDescriptor,
-  // view: ViewServiceIPCDescriptor,
+  view: ViewServiceIPCDescriptor,
   wiki: WikiServiceIPCDescriptor,
   wikiGitWorkspace: WikiGitWorkspaceServiceIPCDescriptor,
   window: WindowServiceIPCDescriptor,
