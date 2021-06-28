@@ -1,5 +1,6 @@
 import { networkInterfaces } from 'os';
 import { defaultServerIP } from '@/constants/urls';
+import { logger } from './log';
 
 const nets = networkInterfaces();
 /**
@@ -34,5 +35,10 @@ export function getAvailableIPAddress(): string | undefined {
  * @param originalUrl might be `"http://0.0.0.0:5212/"`
  */
 export function getLocalHostUrlWithActualIP(originalUrl: string): string {
-  return originalUrl.replace(defaultServerIP, getAvailableIPAddress() ?? defaultServerIP);
+  const localHostUrlWithActualIP = originalUrl.replace(defaultServerIP, getAvailableIPAddress() ?? defaultServerIP);
+  logger.debug(
+    `Current available address: ${JSON.stringify(ipAddresses, undefined, '  ')}\nand getAvailableIPAddress() returns ${getAvailableIPAddress() ?? 'undefined'}
+    originalUrl: ${originalUrl} , localHostUrlWithActualIP ${localHostUrlWithActualIP}`,
+  );
+  return localHostUrlWithActualIP;
 }
