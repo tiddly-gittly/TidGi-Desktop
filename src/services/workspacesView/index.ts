@@ -19,6 +19,7 @@ import { IWikiService } from '@services/wiki/interface';
 import { IWorkspaceViewService } from './interface';
 import { lazyInject } from '@services/container';
 import { SupportedStorageServices } from '@services/types';
+import { WorkspaceFailedToLoadError } from './error';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
@@ -62,7 +63,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
       await this.viewService.addView(mainWindow, workspace);
       const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
-      const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService } = workspace;
+      const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService, homeUrl } = workspace;
       // wait for main wiki's watch-fs plugin to be fully initialized
       // and also wait for wiki BrowserView to be able to receive command
       // eslint-disable-next-line global-require
@@ -76,7 +77,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
       loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
       if (loadFailed) {
-        throw new Error(workspaceMetadata.didFailLoadErrorMessage!);
+        throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, homeUrl);
       }
       // get sync process ready
       try {

@@ -281,7 +281,9 @@
     "InsertMenuAfterSubMenuIndexErrorDescription": "E-5 You try to insert menu with afterSubMenu \"{afterSubMenu}\" in menu \"{menuID}\", but we can not found it in menu \"{menu}\", please specific a menuitem with correct id attribute",
     "MainWindowMissing": "This program can't access main window data, can't run normally.",
     "InitWikiGitSyncedWikiNoGitUserInfoError": "InitWikiGitSyncedWikiNoGitUserInfoErrorDescription",
-    "InitWikiGitSyncedWikiNoGitUserInfoErrorDescription": "E-6 Initializing the note repository synchronized to the cloud requires you to select a cloud git repository address and provide the certification credentials for the corresponding cloud service. However, this information is not currently available."
+    "InitWikiGitSyncedWikiNoGitUserInfoErrorDescription": "E-6 Initializing the note repository synchronized to the cloud requires you to select a cloud git repository address and provide the certification credentials for the corresponding cloud service. However, this information is not currently available.",
+    "WorkspaceFailedToLoadError": "WorkspaceFailedToLoadError",
+    "WorkspaceFailedToLoadErrorDescription": "The Wiki page corresponding to the workspace failed to load. There are many reasons, but it is basically because of program bugs."
   },
   "Loading": "Loading",
   "Yes": "Yes",

@@ -309,7 +309,9 @@
     "InsertMenuAfterSubMenuIndexErrorDescription": "E-5 你尝试插入目录，且 afterSubMenu \"{afterSubMenu}\" 在目录 menuID \"{menuID}\" 内，但我们无法在目录 \"{menu}\" 里找到它，请用正确的 menuID 指定一个目录。",
     "InitWikiGitSyncedWikiNoGitUserInfoError": "笔记仓库初始化失败因为没有提供Git信息错误",
     "InitWikiGitSyncedWikiNoGitUserInfoErrorDescription": "E-6 初始化同步到云端的笔记仓库需要你选择一个云端的 git 仓库地址，还有提供相应云服务的认证凭证，然而目前没有获得这些信息。",
-    "MainWindowMissing": "程序无法获取主窗口信息，无法正常运行。"
+    "MainWindowMissing": "程序无法获取主窗口信息，无法正常运行。",
+    "WorkspaceFailedToLoadError": "工作区加载失败错误",
+    "WorkspaceFailedToLoadErrorDescription": "工作区对应的Wiki网页加载失败了，原因有很多，但基本是因为程序Bug"
   },
   "Loading": "加载中",
   "Yes": "是的",
