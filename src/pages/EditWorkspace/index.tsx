@@ -199,7 +199,7 @@ export default function EditWorkspace(): JSX.Element {
           <TextField
             id="outlined-full-width"
             label={t('EditWorkspace.Port')}
-            helperText={`${t('EditWorkspace.URL')}: ${homeUrl}`}
+            helperText={`${t('EditWorkspace.URL')}: ${window.remote.getLocalHostUrlWithActualIP(homeUrl)}`}
             placeholder="Optional"
             value={port}
             onChange={(event) => {

@@ -3,6 +3,7 @@ import path from 'path';
 import { ViewChannel, WindowChannel } from '@/constants/channels';
 import { rendererMenuItemProxy } from '@services/menu/rendererMenuItemProxy';
 import { IOnContextMenuInfo } from '@services/menu/interface';
+import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 
 import * as service from './services';
 import { windowName } from './browserViewMetaData';
@@ -26,6 +27,7 @@ export const remoteMethods = {
   joinPath: (...paths: string[]): string => {
     return path.join(...paths);
   },
+  getLocalHostUrlWithActualIP,
   /**
    * an wrapper around setVisualZoomLevelLimits
    */
