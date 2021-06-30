@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null */
-import React from 'react';
+import React, { useMemo } from 'react';
 import styled, { css } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet';
@@ -15,6 +15,7 @@ import {
   ListItemSecondaryAction,
   Switch,
   Typography,
+  Link,
 } from '@material-ui/core';
 import { Autocomplete } from '@material-ui/lab';
 import defaultIcon from '../../images/default-icon.png';
@@ -160,12 +161,14 @@ export default function EditWorkspace(): JSX.Element {
 
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
 
+  const actualIP = useMemo(() => (homeUrl ? window.remote.getLocalHostUrlWithActualIP(homeUrl) : homeUrl), [homeUrl]);
   if (workspaceID === undefined) {
     return <Root>Error {workspaceID ?? '-'} not exists</Root>;
   }
   if (workspace === undefined) {
     return <Root>{t('Loading')}</Root>;
   }
+
   return (
     <Root>
       <div id="test" data-usage="For spectron automating testing" />
@@ -199,7 +202,14 @@ export default function EditWorkspace(): JSX.Element {
           <TextField
             id="outlined-full-width"
             label={t('EditWorkspace.Port')}
-            helperText={`${t('EditWorkspace.URL')}: ${window.remote.getLocalHostUrlWithActualIP(homeUrl)}`}
+            helperText={
+              <span>
+                {t('EditWorkspace.URL')}{' '}
+                <Link onClick={() => window.service.native.open(actualIP)} style={{ cursor: 'pointer' }}>
+                  {actualIP}
+                </Link>
+              </span>
+            }
             placeholder="Optional"
             value={port}
             onChange={(event) => {
