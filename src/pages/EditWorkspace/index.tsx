@@ -28,6 +28,7 @@ import { useForm } from './useForm';
 import { IWorkspace } from '@services/workspaces/interface';
 
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
+import { defaultServerIP } from '@/constants/urls';
 
 const Root = styled.div`
   height: 100%;
@@ -141,6 +142,7 @@ export default function EditWorkspace(): JSX.Element {
     mainWikiToLink,
     isSubWiki,
     name,
+    wikiFolderLocation,
     port,
     order,
     userName,
@@ -181,11 +183,20 @@ export default function EditWorkspace(): JSX.Element {
       <FlexGrow>
         <TextField
           id="outlined-full-width"
-          label={t('EditWorkspace.Path')}
-          helperText={t('EditWorkspace.PathDescription')}
+          label={t('EditWorkspace.Name')}
+          helperText={t('EditWorkspace.NameDescription')}
           placeholder="Optional"
           value={name}
           onChange={(event) => workspaceSetter({ ...workspace, name: event.target.value })}
+        />
+        <TextField
+          id="outlined-full-width"
+          label={t('EditWorkspace.Path')}
+          helperText={t('EditWorkspace.PathDescription')}
+          placeholder="Optional"
+          disabled
+          value={wikiFolderLocation}
+          onChange={(event) => workspaceSetter({ ...workspace, wikiFolderLocation: event.target.value })}
         />
         <TextField
           helperText={t('AddWorkspace.WorkspaceUserNameDetail')}
@@ -214,7 +225,12 @@ export default function EditWorkspace(): JSX.Element {
             value={port}
             onChange={(event) => {
               if (!Number.isNaN(Number.parseInt(event.target.value))) {
-                workspaceSetter({ ...workspace, port: Number(event.target.value), homeUrl: `http://localhost:${event.target.value}/` });
+                workspaceSetter({
+                  ...workspace,
+                  port: Number(event.target.value),
+                  homeUrl: window.remote.getLocalHostUrlWithActualIP(`http://${defaultServerIP}:${event.target.value}/`),
+                });
+                requestRestartCountDown();
               }
             }}
           />
@@ -224,7 +240,10 @@ export default function EditWorkspace(): JSX.Element {
             freeSolo
             options={fileSystemPaths?.map((fileSystemPath) => fileSystemPath.tagName)}
             value={tagName}
-            onInputChange={(_, value) => workspaceSetter({ ...workspace, tagName: value })}
+            onInputChange={(_, value) => {
+              workspaceSetter({ ...workspace, tagName: value });
+              requestRestartCountDown();
+            }}
             renderInput={(parameters) => <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
           />
         )}

@@ -126,7 +126,9 @@
     "NoRevert": "Caution! This operation can't be reverted.",
     "URL": "Wiki URL",
     "Port": "Local host server port",
-    "PathDescription": "Location of your local wiki folder."
+    "PathDescription": "Location of your local wiki folder.",
+    "Name": "Workspace Name",
+    "NameDescription": "The name of the workspace, which will be displayed on the sidebar, can be different from the actual folder name of the Git repository in the workspace"
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed, or there is no wiki in this folder! \nDo you want to remove the workspace?",

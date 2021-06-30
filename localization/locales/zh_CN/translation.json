@@ -154,7 +154,9 @@
     "NoRevert": "注意！这个操作无法撤销！",
     "URL": "本地服务器地址",
     "Port": "本地服务器端口",
-    "PathDescription": "本地维基文件夹的地址"
+    "PathDescription": "本地维基文件夹的地址",
+    "Name": "工作区名",
+    "NameDescription": "工作区的名字，将显示在侧边栏上，可以与工作区Git仓库的实际文件夹名不同"
   },
   "Log": {
     "StartGitInitialization": "开始初始化本地 Git 仓库",
