@@ -29,6 +29,8 @@ import { IWorkspace } from '@services/workspaces/interface';
 
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { defaultServerIP } from '@/constants/urls';
+import { SupportedStorageServices } from '@services/types';
+import { SyncedWikiDescription } from '../AddWorkspace/Description';
 
 const Root = styled.div`
   height: 100%;
@@ -153,6 +155,7 @@ export default function EditWorkspace(): JSX.Element {
     disableAudio,
     disableNotifications,
     homeUrl,
+    storageService,
   } = (workspace ?? {}) as unknown as IWorkspace;
   const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
     async () => (mainWikiToLink ? await window.service.wiki.getSubWikiPluginContent(mainWikiToLink) : []),
@@ -275,6 +278,13 @@ export default function EditWorkspace(): JSX.Element {
             </Tooltip>
           </AvatarRight>
         </AvatarFlex>
+        <SyncedWikiDescription
+          isCreateSyncedWorkspace={storageService !== SupportedStorageServices.local}
+          isCreateSyncedWorkspaceSetter={(isSynced: boolean) => {
+            workspaceSetter({ ...workspace, storageService: SupportedStorageServices.github });
+            requestRestartCountDown();
+          }}
+        />
         {!isSubWiki && (
           <List>
             <Divider />
