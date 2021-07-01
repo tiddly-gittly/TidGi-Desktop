@@ -63,7 +63,7 @@ const CREATE_REPO_MUTATION = `
 interface Props {
   githubWikiUrl: string;
   githubWikiUrlSetter: (value: string) => void;
-  wikiFolderNameSetter: (value: string) => void;
+  wikiFolderNameSetter?: (value: string) => void;
   isCreateMainWorkspace: boolean;
 }
 export default function SearchGithubRepo(props: Props): JSX.Element {
@@ -111,7 +111,7 @@ function SearchGithubRepoResultList({
   const onSelectRepo = useCallback(
     (url: string, name: string) => {
       githubWikiUrlSetter(url);
-      wikiFolderNameSetter(name);
+      typeof wikiFolderNameSetter === 'function' && wikiFolderNameSetter(name);
     },
     [githubWikiUrlSetter, wikiFolderNameSetter],
   );

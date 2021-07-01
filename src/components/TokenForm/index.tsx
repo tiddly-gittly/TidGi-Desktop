@@ -38,7 +38,7 @@ const Tab = styled(TabRaw)`
 
 interface Props {
   storageProvider?: SupportedStorageServices;
-  storageProviderSetter?: React.Dispatch<React.SetStateAction<SupportedStorageServices>>;
+  storageProviderSetter?: (next: SupportedStorageServices) => void;
 }
 /**
  * Create storage provider's token.
@@ -50,7 +50,7 @@ export function TokenForm({ storageProvider, storageProviderSetter }: Props): JS
   // use external controls if provided
   if (storageProvider !== undefined && typeof storageProviderSetter === 'function') {
     currentTab = storageProvider;
-    currentTabSetter = storageProviderSetter;
+    currentTabSetter = storageProviderSetter as unknown as React.Dispatch<React.SetStateAction<SupportedStorageServices>>;
   }
   // update storageProvider to be an online service, if this Component is opened
   useEffect(() => {

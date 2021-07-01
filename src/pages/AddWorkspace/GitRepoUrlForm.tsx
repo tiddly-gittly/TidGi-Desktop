@@ -6,15 +6,23 @@ import { SupportedStorageServices } from '@services/types';
 
 import SearchGithubRepo from '@/components/StorageService/SearchGithubRepo';
 import { CreateContainer, LocationPickerContainer, LocationPickerInput } from './FormComponents';
-import type { IWikiWorkspaceFormProps } from './useForm';
 
 export function GitRepoUrlForm({
-  form,
+  storageProvider,
+  gitRepoUrl,
+  gitRepoUrlSetter,
+  wikiFolderNameSetter,
   isCreateMainWorkspace,
   error,
-}: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean; error?: boolean }): JSX.Element {
+}: {
+  storageProvider: SupportedStorageServices;
+  gitRepoUrl: string;
+  gitRepoUrlSetter: (nextUrl: string) => void;
+  wikiFolderNameSetter?: (nextName: string) => void;
+  isCreateMainWorkspace: boolean;
+  error?: boolean;
+}): JSX.Element {
   const { t } = useTranslation();
-  const { storageProvider, gitRepoUrl, gitRepoUrlSetter, wikiFolderNameSetter } = form;
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>

@@ -31,6 +31,8 @@ import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { defaultServerIP } from '@/constants/urls';
 import { SupportedStorageServices } from '@services/types';
 import { SyncedWikiDescription } from '../AddWorkspace/Description';
+import { TokenForm } from '@/components/TokenForm';
+import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
 
 const Root = styled.div`
   height: 100%;
@@ -156,6 +158,7 @@ export default function EditWorkspace(): JSX.Element {
     disableNotifications,
     homeUrl,
     storageService,
+    gitUrl,
   } = (workspace ?? {}) as unknown as IWorkspace;
   const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
     async () => (mainWikiToLink ? await window.service.wiki.getSubWikiPluginContent(mainWikiToLink) : []),
@@ -173,7 +176,7 @@ export default function EditWorkspace(): JSX.Element {
   if (workspace === undefined) {
     return <Root>{t('Loading')}</Root>;
   }
-
+  const isCreateSyncedWorkspace = storageService !== SupportedStorageServices.local;
   return (
     <Root>
       <div id="test" data-usage="For spectron automating testing" />
@@ -279,12 +282,31 @@ export default function EditWorkspace(): JSX.Element {
           </AvatarRight>
         </AvatarFlex>
         <SyncedWikiDescription
-          isCreateSyncedWorkspace={storageService !== SupportedStorageServices.local}
+          isCreateSyncedWorkspace={isCreateSyncedWorkspace}
           isCreateSyncedWorkspaceSetter={(isSynced: boolean) => {
-            workspaceSetter({ ...workspace, storageService: SupportedStorageServices.github });
-            requestRestartCountDown();
+            workspaceSetter({ ...workspace, storageService: isSynced ? SupportedStorageServices.github : SupportedStorageServices.local });
+            // requestRestartCountDown();
           }}
         />
+        {isCreateSyncedWorkspace && (
+          <TokenForm
+            storageProvider={storageService}
+            storageProviderSetter={(nextStorageService: SupportedStorageServices) => {
+              workspaceSetter({ ...workspace, storageService: nextStorageService });
+              // requestRestartCountDown();
+            }}
+          />
+        )}
+        {storageService !== SupportedStorageServices.local && (
+          <GitRepoUrlForm
+            storageProvider={storageService}
+            gitRepoUrl={gitUrl ?? ''}
+            gitRepoUrlSetter={(nextGitUrl: string) => {
+              workspaceSetter({ ...workspace, gitUrl: nextGitUrl });
+            }}
+            isCreateMainWorkspace={!isSubWiki}
+          />
+        )}
         {!isSubWiki && (
           <List>
             <Divider />
@@ -331,7 +353,7 @@ export default function EditWorkspace(): JSX.Element {
           disableElevation
           onClick={async () => {
             await onSave();
-            await window.remote.closeCurrentWindow();
+            requestRestartCountDown();
           }}>
           {t('EditWorkspace.Save')}
         </Button>
