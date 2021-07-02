@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null */
-import React, { useMemo } from 'react';
+import React, { useMemo, useCallback } from 'react';
 import styled, { css } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet';
@@ -168,6 +168,10 @@ export default function EditWorkspace(): JSX.Element {
   const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName')) as string, '');
 
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
+  const requestSaveAndRestart = useCallback(async () => {
+    await onSave();
+    requestRestartCountDown();
+  }, [onSave, requestRestartCountDown]);
 
   const actualIP = useMemo(() => (homeUrl ? window.remote.getLocalHostUrlWithActualIP(homeUrl) : homeUrl), [homeUrl]);
   if (workspaceID === undefined) {
@@ -209,7 +213,7 @@ export default function EditWorkspace(): JSX.Element {
           fullWidth
           onChange={(event) => {
             workspaceSetter({ ...workspace, userName: event.target.value });
-            requestRestartCountDown();
+            void requestSaveAndRestart();
           }}
           label={t('AddWorkspace.WorkspaceUserName')}
           placeholder={fallbackUserName}
@@ -222,7 +226,7 @@ export default function EditWorkspace(): JSX.Element {
             helperText={
               <span>
                 {t('EditWorkspace.URL')}{' '}
-                <Link onClick={() => window.service.native.open(actualIP)} style={{ cursor: 'pointer' }}>
+                <Link onClick={async () => await window.service.native.open(actualIP)} style={{ cursor: 'pointer' }}>
                   {actualIP}
                 </Link>
               </span>
@@ -236,7 +240,7 @@ export default function EditWorkspace(): JSX.Element {
                   port: Number(event.target.value),
                   homeUrl: window.remote.getLocalHostUrlWithActualIP(`http://${defaultServerIP}:${event.target.value}/`),
                 });
-                requestRestartCountDown();
+                void requestSaveAndRestart();
               }
             }}
           />
@@ -248,7 +252,7 @@ export default function EditWorkspace(): JSX.Element {
             value={tagName}
             onInputChange={(_, value) => {
               workspaceSetter({ ...workspace, tagName: value });
-              requestRestartCountDown();
+              void requestSaveAndRestart();
             }}
             renderInput={(parameters) => <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
           />
@@ -347,14 +351,7 @@ export default function EditWorkspace(): JSX.Element {
         )}
       </FlexGrow>
       <div>
-        <Button
-          color="primary"
-          variant="contained"
-          disableElevation
-          onClick={async () => {
-            await onSave();
-            requestRestartCountDown();
-          }}>
+        <Button color="primary" variant="contained" disableElevation onClick={requestSaveAndRestart}>
           {t('EditWorkspace.Save')}
         </Button>
         <Button variant="contained" disableElevation onClick={() => void window.remote.closeCurrentWindow()}>
