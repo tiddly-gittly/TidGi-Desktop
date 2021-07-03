@@ -48,7 +48,8 @@
     "linonetwo/sub-wiki"
   ],
   "themes": [
-    "tiddlywiki/vanilla"
+    "tiddlywiki/vanilla",
+    "linonetwo/itonnote"
   ],
   "languages": [
     "zh-Hans"
