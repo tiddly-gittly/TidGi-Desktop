@@ -23,7 +23,7 @@ p > code, li > code {
 }
 
 .hljs {
-  background-color: white;
+  background-color: #fafafa;
   border: none;
   box-shadow: rgba(15, 15, 15, 0.1) 0px 0px 5px 1px, rgba(15, 15, 15, 0.1) 0px 2px 10px
 }
@@ -34,7 +34,7 @@ p > code, li > code {
 
 /** 背景 */
 body.tc-body {
-  background-color: white;
+  background-color: #fafafa;
 }
 /** 给卡片加上阴影 */
 .tc-tiddler-frame {
@@ -236,7 +236,7 @@ a.tc-tiddlylink.tc-tiddlylink-resolves.tc-plugin-info.tc-popup-handle.tc-popup-a
 
 @media (min-width: 960px) {
 	.tc-sidebar-scrollable {
-	  padding: 30px 10px 0px 15px;
+	  padding: 40px 10px 0px 15px;
 	}
 }
 
