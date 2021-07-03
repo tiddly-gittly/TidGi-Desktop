@@ -36,13 +36,16 @@
     "felixhayashi/hotzone",
     "felixhayashi/topstoryview",
     "mat/field-value-selector",
-    "linonetwo/opened-tiddlers-bar",
-    "linonetwo/sub-wiki",
-    "linonetwo/service-worker",
-    "linonetwo/github-external-image",
     "linonetwo/copy-on-select",
+    "linonetwo/github-external-image",
+    "linonetwo/inverse-link-and-folder",
+    "linonetwo/itonnote",
+    "linonetwo/opened-tiddlers-bar",
+    "linonetwo/prevent-edit",
+    "linonetwo/preview-glass",
+    "linonetwo/service-worker",
     "linonetwo/source-control-management",
-    "linonetwo/prevent-edit"
+    "linonetwo/sub-wiki"
   ],
   "themes": [
     "tiddlywiki/vanilla"
