@@ -1,0 +1,15 @@
+caption: 文件目录
+created: 20200408135222925
+creator: LinOnetwo
+description: 文件夹系统目录结构
+is-dropdown: yes
+tags: $:/tags/SideBar $:/tags/MenuBar
+title: $:/plugins/linonetwo/itonnote/Sidebar/FolderMenu
+type: text/vnd.tiddlywiki
+
+<$scrollable fallthrough="none" class="tc-popup-keep tc-menubar-dropdown-sidebar">
+
+<<locator-view baseTitle:"Index">>
+
+[[使用帮助|$:/plugins/linonetwo/itonnote/Help/TW-Locator基于标签生成的文件夹目录结构使用方法]]
+</$scrollable>

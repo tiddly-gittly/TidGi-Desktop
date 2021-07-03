@@ -1,0 +1,24 @@
+.hover-popup-preview-container {
+	backdrop-filter: blur(10px);
+	background: rgba(255, 255, 255, 0.3) !important;
+	transform: translateY(0px);
+}
+
+/**
+  Try added a triangle to it, but it seems work not so good with the backdrop-filter glass effect
+*/
+
+/**
+.hover-popup-preview-container::before {
+	content: "";
+	width: 0px;
+	height: 0px;
+	position: absolute;
+	border-left: 10px solid transparent;
+	border-right: 10px solid transparent;
+	border-top: 10px solid transparent;
+	border-bottom: 10px solid rgba(255, 255, 255, 0.5);
+	right: 95%;
+	top: -20.5px;
+}
+*/

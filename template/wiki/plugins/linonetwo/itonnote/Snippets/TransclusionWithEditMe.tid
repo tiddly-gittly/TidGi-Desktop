@@ -1,0 +1,8 @@
+caption: 带「编辑此块」的引用Transclusion
+created: 20200408132341855
+creator: LinOnetwo
+tags: $:/plugins/linonetwo/itonnote/Macros/TransclusionWithEditMe $:/tags/TextEditor/Snippet
+title: $:/plugins/linonetwo/itonnote/Snippets/TransclusionWithEditMe
+type: text/vnd.tiddlywiki
+
+<<reuse-tiddler "title">>

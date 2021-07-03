@@ -1,0 +1,11 @@
+caption: Kookma Plugin Library
+created: 20200306121057751
+modified: 20200410154132754
+tags: $:/tags/PluginLibrary
+title: $:/config/KookmaPluginLibrary
+type: text/vnd.tiddlywiki
+url: https://kookma.github.io/TW-PluginLibrary/library/index.html
+
+Kookma plugin library is a set of plugins, themes, and scripts, to extend functionality and add new features to Tiddlywiki. For detail information visit the library at [[GitHub|https://github.com/kookma]]. It is recommended to backup your data before installing any plugin, theme, or script. 
+
+To use in other wikis, drag and drop this link to those wikis: [[Kookma Plugin Library|$:/config/KookmaPluginLibrary]]

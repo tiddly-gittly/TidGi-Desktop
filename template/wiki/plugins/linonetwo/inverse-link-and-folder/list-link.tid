@@ -1,0 +1,20 @@
+created: 20200414150455988
+creator: LinOnetwo
+tags: $:/tags/Macro
+title: $:/plugins/linonetwo/inverse-link-and-folder/list-link
+type: text/vnd.tiddlywiki
+
+\define inverse-link-and-folder_list-links(filter,type:"ul",subtype:"li",class:"",emptyMessage)
+\whitespace trim
+  <$type$ class="$class$">
+    <$list filter="$filter$" emptyMessage=<<__emptyMessage__>>>
+      <$subtype$>
+        <$link to={{!!title}}>
+          <$transclude field="caption">
+            <$view field="title"/>
+          </$transclude>
+        </$link>
+      </$subtype$>
+    </$list>
+  </$type$>
+\end

@@ -1,0 +1,14 @@
+created: 20200413072141568
+creator: LinOnetwo
+title: $:/plugins/linonetwo/itonnote/Help/TW-Locator基于标签生成的文件夹目录结构使用方法
+type: text/vnd.tiddlywiki
+
+侧边栏的「目录结构」标签页里展示了[[通过标签系统自动生成|$:/plugins/linonetwo/itonnote/Help/在 TiddlyWiki 中使用虚拟文件夹]]的文件夹。
+
+* 打了 A 标签，即相当于将文件存储在文件夹 A 中，并以 A 的内容作为文件夹的 Readme
+* 在任意Tiddler中使用「创建一个标签为此条目名称的新条目」按钮，可以创建以当前Tiddler为文件夹的文件
+* 点击 `>` 按钮（使它变成 `v`）可以展开文件夹
+* 直接点击文件夹的名字可以查看这个文件夹的 Readme
+* 分割线上方是当前目录，再往上是上级目录，点击分割线上方的上级目录名左侧的 `>` 按钮可以回到上级目录
+* 当处在 A 文件夹内时，点击分割线下方的 `+` 可以在当前文件夹里创建新文件（即创建打了 A 标签的新 Tiddler）
+* 点击 Filter by fields 可以展开分面搜索工具，点击分面搜索工具内的 `+` 可以增加筛选条件，点击 `x` 㐓减少筛选条件。

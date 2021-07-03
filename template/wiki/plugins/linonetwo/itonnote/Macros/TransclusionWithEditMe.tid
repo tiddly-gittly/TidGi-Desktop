@@ -1,0 +1,45 @@
+created: 20200408094804792
+creator: LinOnetwo
+tags: $:/tags/Macro 自改TW
+title: $:/plugins/linonetwo/itonnote/Macros/TransclusionWithEditMe
+caption: 带有「编辑此块」的引用transclusion宏
+type: text/vnd.tiddlywiki
+
+\define reuse-pane(content)
+<style>
+.reuse-pane {
+	position: absolute;
+	right: 10px;
+	width: auto;
+	max-width: 4px;
+	height: 1.5em;
+	overflow: hidden;
+	border: 10px solid transparent;
+	border-top: 0;
+	box-sizing: content-box;
+	transition: max-width 0.5s;
+}
+.reuse-pane:hover {
+  max-width: 80vw;
+}
+.reuse-pane-content {
+	display: inline-block;
+	background-color: rgba(233, 233, 233, 0.9);
+	border-left: 4px solid rgba(0, 0, 0, 0.05);
+	padding: 0px 5px;
+	padding-bottom: 2px;
+}
+</style>
+<div class="reuse-pane">
+  <small class="reuse-pane-content">$content$</small>
+</div>
+\end
+
+\define reuse-tiddler(title)
+<$macrocall $name="reuse-pane" content="""
+查看引文：[[$title$]]
+""" />
+
+{{$title$}}
+
+\end

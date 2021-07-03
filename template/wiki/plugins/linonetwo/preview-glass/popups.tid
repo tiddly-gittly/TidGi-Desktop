@@ -1,0 +1,24 @@
+title: $:/plugins/linonetwo/preview-glass/popups
+tags: $:/tags/PageTemplate
+
+\define state(num)
+$:/temp/tobibeer/preview-$num$
+\end
+
+\define classes(num)
+tc-popup appear appear-block appear-reveal tc-preview-tiddler tc-preview-tiddler-$num$ $(default-classes)$
+\end
+
+\define level(num)
+<$reveal tag="div" type="popup" state=<<state $num$>> class=<<classes $num$>>>
+<$tiddler tiddler={{$:/temp/tobibeer/preview-$num$-tiddler}}>
+<$transclude tiddler={{$:/plugins/linonetwo/preview-glass/defaults/template}} mode="block"/>
+</$tiddler>
+</$reveal>
+\end
+
+<$vars default-classes={{$:/plugins/linonetwo/preview-glass/defaults/class}}>
+<$list filter="1 2 3 4 5 6 7 8 9">
+<$macrocall $name="level" num={{!!title}}/>
+</$list>
+</$vars>

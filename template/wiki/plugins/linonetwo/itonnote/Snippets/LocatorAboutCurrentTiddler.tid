@@ -1,0 +1,8 @@
+caption: 添加一个使用当前标题的 tw-Locator
+created: 20200408133348115
+creator: LinOnetwo
+tags: [[$:/plugins/linonetwo/itonnote/Help/在 TiddlyWiki 中使用虚拟文件夹]] $:/tags/TextEditor/Snippet
+title: $:/plugins/linonetwo/itonnote/Snippets/LocatorAboutCurrentTiddler
+type: text/vnd.tiddlywiki
+
+<$macrocall $name="locator-view" baseTitle=<<currentTiddler>> />

@@ -1,0 +1,5 @@
+created: 20200604080106170
+creator: LinOnetwo
+list: $:/plugins/linonetwo/omni-search-bar/ui/Buttons/search $:/core/ui/Buttons/home $:/core/ui/Buttons/close-all $:/core/ui/Buttons/fold-all $:/core/ui/Buttons/unfold-all $:/core/ui/Buttons/permaview $:/core/ui/Buttons/more-page-actions $:/core/ui/Buttons/new-tiddler $:/plugins/tiddlywiki/markdown/new-markdown-button $:/plugins/kookma/solution/buttons/pagecontrol $:/core/ui/Buttons/new-journal $:/core/ui/Buttons/new-image $:/core/ui/Buttons/import $:/core/ui/Buttons/export-page $:/core/ui/Buttons/control-panel $:/core/ui/Buttons/advanced-search $:/plugins/kookma/commander/buttons/pagecontrol $:/core/ui/Buttons/manager $:/core/ui/Buttons/tag-manager $:/core/ui/Buttons/language $:/core/ui/Buttons/palette $:/core/ui/Buttons/theme $:/core/ui/Buttons/storyview $:/core/ui/Buttons/encryption $:/core/ui/Buttons/timestamp $:/core/ui/Buttons/full-screen $:/core/ui/Buttons/print $:/core/ui/Buttons/refresh $:/plugins/kookma/utility/pagecontrol/view-fields-button $:/core/ui/Buttons/save-wiki $:/plugins/linonetwo/source-control-management/PageControlButton
+title: $:/tags/PageControls
+type: text/vnd.tiddlywiki

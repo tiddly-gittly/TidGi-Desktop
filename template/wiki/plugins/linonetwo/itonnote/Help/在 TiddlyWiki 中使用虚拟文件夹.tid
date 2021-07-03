@@ -1,0 +1,20 @@
+created: 20200410054027122
+creator: LinOnetwo
+title: $:/plugins/linonetwo/itonnote/Help/在 TiddlyWiki 中使用虚拟文件夹
+type: text/vnd.tiddlywiki
+
+!! Tag
+
+可以把 Tag 结构看做是文件夹目录结构，而且这个结构还带有软连接，可以形成图状结构，因为 Tag 关系本来就是很自由的，两个笔记可以互相为 tag，在文件夹结构里也就是互相为父目录了。
+
+使用 tw-locator 可以在侧边栏上创建一个「文件目录」tab，里面展示由 tag 生成的文件夹结构。具体方法写在[[$:/plugins/bimlas/locator/README/macros]]，而本插件应该已经将其预置在[[$:/plugins/linonetwo/itonnote/Sidebar/FolderMenu]]，可立即使用，也可修改覆盖。
+
+然后可以在 `$:/ControlPanel` -> 「设置」 -> 「默认侧边栏页签」 里，设置「文件目录」tab 默认展示，这样就可以把 TiddlyWiki 当做文件夹系统来用了。而本插件应该已经将其预配置完毕。
+
+!! 斜杠
+
+TiddlyWiki 自带的文件夹创建方法是在标题中使用斜杠。
+
+通过侧边栏的「更多」->「探索」就能看到各种系统自带的文件夹。
+
+如果使用 NodeJS 版的 TIddlyWiki ，则在真实的文件系统上，这些 tiddler 也会放进相应的文件夹内。

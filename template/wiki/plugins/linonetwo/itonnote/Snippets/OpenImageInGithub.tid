@@ -1,0 +1,8 @@
+caption: 图片：点击在新标签页打开大图
+created: 20200412041713662
+creator: LinOnetwo
+tags: $:/plugins/linonetwo/itonnote/Macros/OpenImageInGithub $:/tags/TextEditor/Snippet
+title: $:/plugins/linonetwo/itonnote/Snippets/OpenImageInGithub
+type: text/vnd.tiddlywiki
+
+<<view-big-image xxx.jpg>>

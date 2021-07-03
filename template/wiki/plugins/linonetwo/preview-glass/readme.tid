@@ -1,0 +1,34 @@
+title: $:/plugins/linonetwo/preview-glass/readme
+created: 20200414135748497
+modified: 20200602062349232
+type: text/vnd.tiddlywiki
+
+!! About
+
+Modification to the [[tobibeer/preview plugin|https://tobibeer.github.io/tw5-plugins/#preview]], make it auto close if mouse move out of the link (as discussed in the [[issue#1|https://github.com/tobibeer/tw5-preview/issues/1]]), and add custom style, make it like a glass.
+
+!! Prerequisit
+
+This plugin has three dependencies:
+
+# [[tobibeer/appear|http://tobibeer.github.io/tw5-plugins/#appear]] to make popup work
+# [[$:/plugins/ooktech/dynamic-tables]] to make fields table in the popup template
+# [[$:/plugins/linonetwo/inverse-link-and-folder]] to make bi-directional links in the popup template
+
+!! This Plugin is a Forked version
+
+Original source is located in [[https://github.com/tobibeer/tw5-preview]], which has version 0.5.6 at several years ago, so maybe this plugin can be 0.5.7?
+
+See [[document of tobibeer/preview|https://tobibeer.github.io/tw5-plugins/#preview]] to get more usage and explaination.
+
+This plugin provides some new template, which depends on some other plugin to work, see plugin.info for detail.
+
+- [[$:/plugins/linonetwo/preview-glass/preview-template.css]] new styles
+- [[$:/plugins/linonetwo/preview-glass/template]] new template
+
+And some overrides:
+
+- [[$:/plugins/tobibeer/preview/link.js]] is override by this plugin, by providing a new js with same title
+- [[$:/plugins/tobibeer/preview/defaults/not]] set some link to not have pop up.
+- [[$:/plugins/tobibeer/preview/defaults/class]] and [[$:/plugins/tobibeer/preview/defaults/template]] override the template and style settings
+- [[$:/plugins/tobibeer/preview/defaults/delay]] change the popup delay

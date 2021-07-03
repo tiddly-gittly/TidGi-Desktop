@@ -1,0 +1,23 @@
+created: 20200414150455988
+creator: LinOnetwo
+tags: $:/tags/ViewTemplate
+title: $:/plugins/linonetwo/inverse-link-and-folder/infobar
+type: text/vnd.tiddlywiki
+
+<$list filter="[all[current]backlinks[]first[]sort[title]]">
+	<label style="margin-left:auto;margin-right:auto;width:fit-content;display:block;">链入 (other)->(this)</label>
+</$list>
+
+<<inverse-link-and-folder_list-links filter:"[all[current]backlinks[]]" class:"horizontal-list-links" >>
+
+<$list filter="[all[current]tagging[]first[]]">
+	<label style="margin-left:auto;margin-right:auto;width:fit-content;display:block;">此文件夹中的文件</label>
+</$list>
+
+<<inverse-link-and-folder_list-links filter:"[all[current]tagging[]sort[title]]" class:"horizontal-list-links" >>
+
+<$list filter="[all[current]tags[]first[]]">
+	<label style="margin-left:auto;margin-right:auto;width:fit-content;display:block;">此文件所在的文件夹</label>
+</$list>
+
+<<inverse-link-and-folder_list-links filter:"[all[current]tags[]sort[title]]" class:"horizontal-list-links" >>

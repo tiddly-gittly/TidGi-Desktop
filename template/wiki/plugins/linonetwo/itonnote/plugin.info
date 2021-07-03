@@ -1,0 +1,10 @@
+{
+  "title": "$:/plugins/linonetwo/itonnote",
+  "name": "ItonNote",
+  "description": "Heavy lifting for new users to set up a powerful and opinionated knowledge management system.",
+  "author": "LinOnetwo",
+  "core-version": ">=5.1.22",
+  "plugin-type": "plugin",
+  "version": "0.2.0",
+  "list": "readme description"
+}

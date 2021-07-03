@@ -1,0 +1,20 @@
+title: $:/plugins/linonetwo/preview-glass/config
+
+\define default()
+<dt>$(defaults)$$(option)$</dt>
+<dd>
+//{{$:/plugins/linonetwo/preview-glass/lingo/$(option)$}}<$list
+filter="[[$(option)$]prefix[template]]">
+{{$(defaults)$$(option)$}}</$list>://<br>
+<$edit-text tag=input tiddler="$(defaults)$$(option)$"/>
+</dd>
+\end
+
+<dl class="preview-defaults">
+<$vars defaults="$:/plugins/linonetwo/preview-glass/defaults/">
+<$list filter="[all[tiddlers+shadows]removeprefix<defaults>sort[title]]" variable="option">
+<<default>>
+</$list>
+</$vars>
+</dl>
+<style>.preview-defaults input {width:90%;}</style>

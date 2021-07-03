@@ -1,0 +1,46 @@
+title: $:/plugins/linonetwo/itonnote/description
+type: text/vnd.tiddlywiki
+
+!!! TW-Locator
+
+根据[[$:/plugins/bimlas/locator/README/macros]]创建了下列文件：
+
+* [[$:/plugins/linonetwo/itonnote/Sidebar/Locator Fields]] 侧边栏的 Fields 标签页，用于查看含有各种字段的Tiddlers
+* [[$:/plugins/linonetwo/itonnote/Sidebar/SearchResultByFacets]] 搜索结果中的 Facets 标签页，用于分面搜索
+* [[$:/plugins/linonetwo/itonnote/Sidebar/SearchResultByFields]] 搜索结果中的 Fields 标签页，用于按字段进行精准搜索
+
+!!! macros
+
+!!!! TransclusionWithEditMe
+
+[[$:/plugins/linonetwo/itonnote/Macros/TransclusionWithEditMe]] Usage:
+
+使用普通的 [[Transclusion|https://tiddlywiki.com/#Transclusion]] 时，你没法得知源文件在哪里，如果想要修改内容，还得打开编辑模式、复制被引用的 Tiddler 的标题，然后搜索打开编辑，比较麻烦。
+
+使用此宏进行引用就很方便了：
+
+```tid
+<<reuse-tiddler "快速创建新笔记按钮">>
+```
+
+会直接在引用的区块旁边显示一个「查看引文」的小浮窗，带有指向源文件的链接，直接点开编辑即可。
+
+!!!! OpenImageInGithub
+
+[[$:/plugins/linonetwo/itonnote/Macros/OpenImageInGithub]] Usage:
+
+If you have `webcatalog-tiddlywiki-menu-app.jpg` in your Wiki, you normally can just `{{webcatalog-tiddlywiki-menu-app.jpg}}` to place it in your tiddler, but you can use this macro to make it clickable, and open large image in the new browser tab:
+
+```tid
+<<view-big-image webcatalog-tiddlywiki-menu-app.jpg>>
+```
+
+!!! snippets（文本片段）
+
+在编辑模式下，有一个图章按钮，点击后会列出一系列文本片段，可以一键添加预制内容，因而无需用脑记住这些复杂的文本片段了。
+
+本插件预置了一些文本片段，详见相应的 Macros 的介绍，或相应的插件的介绍：
+
+* [[$:/plugins/linonetwo/itonnote/Snippets/LocatorAboutCurrentTiddler]]
+* [[$:/plugins/linonetwo/itonnote/Snippets/OpenImageInGithub]]
+* [[$:/plugins/linonetwo/itonnote/Snippets/TransclusionWithEditMe]]

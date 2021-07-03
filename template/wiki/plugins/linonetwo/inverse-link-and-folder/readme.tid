@@ -1,0 +1,20 @@
+created: 20200602150455988
+creator: LinOnetwo
+type: text/vnd.tiddlywiki
+title: $:/plugins/linonetwo/inverse-link-and-folder/readme
+
+!! Features
+
+This plugin provides these additional info on the bottom of every tiddler:
+
+# other tiddler linking to this tiddler
+# tiddlers in this folder (tagged with this tiddler's title, see tw-locator's document for detail about the tag-based folder structure)
+# folders containing this tiddler (since tag-based folder structure is a Graph, so there may be many)
+
+You can change [[infobar.tid|$:/plugins/linonetwo/inverse-link-and-folder/infobar]] to add more info.
+
+[[list-link.tid|$:/plugins/linonetwo/inverse-link-and-folder/list-link]] and [[list-link.css|$:/plugins/linonetwo/inverse-link-and-folder/list-link.css]] are styles of that info bar.
+
+!! Credits
+
+This plugin is inspired by RoamResearch. list-link macro and filter in infobar is learnt from  copy&paste-ing of Jeremy's code and tutorials.

@@ -1,0 +1,8 @@
+created: 20200413014112868
+modified: 20200415101145651
+title: $:/plugins/linonetwo/preview-glass/template
+type: text/vnd.tiddlywiki
+
+{{||$:/plugins/linonetwo/inverse-link-and-folder/infobar}}
+
+<<ColumnTable "[<currentTiddler>]" "modified created">>
