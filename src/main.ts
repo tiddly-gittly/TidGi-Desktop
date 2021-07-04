@@ -177,8 +177,11 @@ if (!gotTheLock) {
     'before-quit',
     // eslint-disable-next-line @typescript-eslint/no-misused-promises
     async (): Promise<void> => {
+      logger.info('App before-quit');
       logger.info('Quitting worker threads and watcher.');
-      await Promise.all([wikiService.stopAllWiki(), wikiService.stopWatchAllWiki()]);
+      await Promise.all([wikiService.stopAllWiki(), wikiService.stopWatchAllWiki()]).catch((error) =>
+        logger.error(`Stop service failed: ${(error as Error).message ?? ''}`),
+      );
       logger.info('Worker threads and watchers all terminated.');
       logger.info('Quitting I18N server.');
       clearMainBindings();

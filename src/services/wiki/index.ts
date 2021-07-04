@@ -143,7 +143,7 @@ export class Wiki implements IWikiService {
   public async stopWiki(homePath: string): Promise<void> {
     const worker = this.wikiWorkers[homePath];
     if (worker === undefined) {
-      logger.warning(`No wiki watcher for ${homePath}. No running worker, means maybe tiddlywiki server in this workspace failed to start`, {
+      logger.warning(`No wiki for ${homePath}. No running worker, means maybe tiddlywiki server in this workspace failed to start`, {
         function: 'stopWiki',
       });
       return await Promise.resolve();
@@ -152,7 +152,7 @@ export class Wiki implements IWikiService {
       await Thread.terminate(worker);
       await delay(100);
     } catch (error) {
-      logger.info(`Wiki-worker have error ${(error as Error).message} when try to stop`, { function: 'stopWiki' });
+      logger.error(`Wiki-worker have error ${(error as Error).message} when try to stop`, { function: 'stopWiki' });
       // await worker.terminate();
     }
     // delete this.wikiWorkers[homePath];
