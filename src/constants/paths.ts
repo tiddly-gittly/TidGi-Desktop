@@ -1,7 +1,7 @@
 import path from 'path';
 import os from 'os';
 import { isDevelopmentOrTest } from './environment';
-import { developmentSettingFolderName, developmentWikiFolderName, localizationFolderName } from './fileNames';
+import { developmentWikiFolderName, localizationFolderName } from './fileNames';
 
 const isMac = process.platform === 'darwin';
 
@@ -31,7 +31,3 @@ export const LOCALIZATION_FOLDER = isDevelopmentOrTest
   ? path.resolve(sourcePath, '..', localizationFolderName)
   : path.resolve(process.resourcesPath, localizationFolderName);
 export const DEFAULT_WIKI_FOLDER = isDevelopmentOrTest ? path.resolve(os.tmpdir(), developmentWikiFolderName) : DESKTOP_PATH;
-export const SETTINGS_FOLDER = isDevelopmentOrTest
-  ? path.resolve(sourcePath, '..', developmentSettingFolderName)
-  : // eslint-disable-next-line @typescript-eslint/no-var-requires
-    path.resolve(require('electron').app.getPath('userData'), 'settings');

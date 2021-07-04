@@ -1,7 +1,8 @@
-import { After, Before, Status } from '@cucumber/cucumber';
+import { After, Before } from '@cucumber/cucumber';
 import fs from 'fs-extra';
 
-import { SETTINGS_FOLDER, DEFAULT_WIKI_FOLDER } from '../../src/constants/paths';
+import { DEFAULT_WIKI_FOLDER } from '../../src/constants/paths';
+import { SETTINGS_FOLDER } from '../../src/constants/appPaths';
 import { TiddlyGitWorld } from './world';
 
 Before(async function () {

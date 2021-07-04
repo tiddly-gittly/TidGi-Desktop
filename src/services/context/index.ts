@@ -7,10 +7,11 @@ import { injectable } from 'inversify';
 
 import { IContextService, IContext, IPaths, IConstants } from './interface';
 import * as paths from '@/constants/paths';
+import * as appPaths from '@/constants/appPaths';
 
 @injectable()
 export class ContextService implements IContextService {
-  private readonly pathConstants: IPaths = { ...paths, MAIN_WINDOW_WEBPACK_ENTRY: MAIN_WINDOW_WEBPACK_ENTRY };
+  private readonly pathConstants: IPaths = { ...paths, ...appPaths, MAIN_WINDOW_WEBPACK_ENTRY: MAIN_WINDOW_WEBPACK_ENTRY };
   private readonly constants: IConstants = {
     isDevelopment: isElectronDevelopment,
     platform: process.platform,
