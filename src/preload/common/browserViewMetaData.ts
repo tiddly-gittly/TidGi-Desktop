@@ -8,7 +8,9 @@ export let extraMeta: WindowMeta[WindowNames] = {};
 try {
   extraMeta = JSON.parse(extraMetaJSONString) as WindowMeta[WindowNames];
 } catch (error) {
-  console.error(`Failed to parse extraMeta. ${(error as Error).message} extraMeta is ${extraMetaJSONString} and process.argv is`, process.argv);
+  console.error(
+    `Failed to parse extraMeta. ${(error as Error).message} extraMeta is ${extraMetaJSONString} and process.argv is ${JSON.stringify(process.argv)}`,
+  );
 }
 
 export const browserViewMetaData = { windowName, ...extraMeta };
