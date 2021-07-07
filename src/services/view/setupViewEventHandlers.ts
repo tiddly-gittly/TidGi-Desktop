@@ -45,28 +45,6 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 
   view.webContents.once('did-stop-loading', () => {});
-  view.webContents.on('will-navigate', async (event, nextUrl) => {
-    // open external links in browser
-    // https://github.com/atomery/webcatalog/issues/849#issuecomment-629587264
-    // this behavior is likely to break many apps (eg Microsoft Teams)
-    // apply this rule only to github.com for now
-    let appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
-    const currentUrl = view.webContents.getURL();
-    if (appUrl !== undefined) {
-      appUrl = getLocalHostUrlWithActualIP(appUrl);
-      const appDomain = extractDomain(appUrl);
-      const currentDomain = extractDomain(currentUrl);
-      if (
-        appDomain !== undefined &&
-        currentDomain !== undefined &&
-        (appDomain.includes('github.com') || currentDomain.includes('github.com')) &&
-        !isInternalUrl(nextUrl, [appUrl, currentUrl])
-      ) {
-        event.preventDefault();
-        void shell.openExternal(nextUrl);
-      }
-    }
-  });
   view.webContents.on('did-start-loading', async () => {
     const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
