@@ -226,7 +226,6 @@ export class View implements IViewService {
       nativeWindowOpen: true,
       nodeIntegration: false,
       contextIsolation: true,
-      enableRemoteModule: false,
       webSecurity: true,
       allowRunningInsecureContent: false,
       session: sessionOfView,
