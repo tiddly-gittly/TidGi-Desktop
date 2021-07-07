@@ -271,9 +271,15 @@ async function handleNewWindow(
   _postBody: Electron.PostBody,
   newWindowContext: INewWindowContext,
 ): Promise<void> {
+  const nextDomain = extractDomain(nextUrl);
+  // open external url in browser
+  if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
+    event.preventDefault();
+    void shell.openExternal(nextUrl);
+    return;
+  }
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const { view, workspace, sharedWebPreferences } = newWindowContext;
-
   let appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
   if (appUrl === undefined) {
     throw new Error(`Workspace ${workspace.id} not existed, or don't have homeUrl setting`);
@@ -281,8 +287,6 @@ async function handleNewWindow(
   appUrl = getLocalHostUrlWithActualIP(appUrl);
   const appDomain = extractDomain(appUrl);
   const currentUrl = view.webContents.getURL();
-  const currentDomain = extractDomain(currentUrl);
-  const nextDomain = extractDomain(nextUrl);
   const openInNewWindow = (): void => {
     // https://gist.github.com/Gvozd/2cec0c8c510a707854e439fb15c561b0
     event.preventDefault();
@@ -345,34 +349,29 @@ async function handleNewWindow(
     return;
   }
   // load in same window
-  if (
-    // Google: Add account
-    nextDomain === 'accounts.google.com' ||
-    // Google: Switch account
-    (typeof nextDomain === 'string' &&
-      nextDomain.indexOf('google.com') > 0 &&
-      isInternalUrl(nextUrl, [appUrl, currentUrl]) &&
-      (nextUrl.includes('authuser=') || // https://drive.google.com/drive/u/1/priority?authuser=2 (has authuser query)
-        /\/u\/\d+\/{0,1}$/.test(nextUrl))) || // https://mail.google.com/mail/u/1/ (ends with /u/1/)
-    // https://github.com/atomery/webcatalog/issues/315
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
-    ((appDomain?.includes('asana.com') || currentDomain?.includes('asana.com')) && nextDomain?.includes('asana.com'))
-  ) {
-    event.preventDefault();
-    void view.webContents.loadURL(nextUrl);
-    return;
-  }
-  // open new window
-  if (isInternalUrl(nextUrl, [appUrl, currentUrl])) {
-    openInNewWindow();
-    return;
-  }
-  // open external url in browser
-  if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
-    event.preventDefault();
-    void shell.openExternal(nextUrl);
-    return;
-  }
+  // if (
+  //   // Google: Add account
+  //   nextDomain === 'accounts.google.com' ||
+  //   // Google: Switch account
+  //   (typeof nextDomain === 'string' &&
+  //     nextDomain.indexOf('google.com') > 0 &&
+  //     isInternalUrl(nextUrl, [appUrl, currentUrl]) &&
+  //     (nextUrl.includes('authuser=') || // https://drive.google.com/drive/u/1/priority?authuser=2 (has authuser query)
+  //       /\/u\/\d+\/{0,1}$/.test(nextUrl))) || // https://mail.google.com/mail/u/1/ (ends with /u/1/)
+  //   // https://github.com/atomery/webcatalog/issues/315
+  //   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
+  //   ((appDomain?.includes('asana.com') || currentDomain?.includes('asana.com')) && nextDomain?.includes('asana.com'))
+  // ) {
+  //   event.preventDefault();
+  //   void view.webContents.loadURL(nextUrl);
+  //   return;
+  // }
+  // // open new window
+  // if (isInternalUrl(nextUrl, [appUrl, currentUrl])) {
+  //   openInNewWindow();
+  //   return;
+  // }
+
   // App tries to open external link using JS
   // nextURL === 'about:blank' but then window will redirect to the external URL
   // https://github.com/quanglam2807/webcatalog/issues/467#issuecomment-569857721
