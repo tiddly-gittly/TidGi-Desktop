@@ -2,8 +2,11 @@ import { contextBridge, ipcRenderer } from 'electron';
 import { MetaDataChannel } from '@/constants/channels';
 import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
 
-const extraMetaJSONString = process.argv.pop() as string;
-export const windowName = process.argv.pop() as WindowNames;
+const metaDataArguments = process.argv
+  .filter((item) => item.startsWith(MetaDataChannel.browserViewMetaData))
+  .map((item) => item.replace(MetaDataChannel.browserViewMetaData, ''));
+export const windowName = metaDataArguments[0] as WindowNames;
+const extraMetaJSONString = metaDataArguments[1] ?? '{}';
 export let extraMeta: WindowMeta[WindowNames] = {};
 try {
   extraMeta = JSON.parse(extraMetaJSONString) as WindowMeta[WindowNames];

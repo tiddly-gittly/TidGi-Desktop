@@ -94,6 +94,7 @@ export enum I18NChannels {
 export enum MetaDataChannel {
   name = 'MetaDataChannel',
   getViewMetaData = 'getViewMetaData',
+  browserViewMetaData = 'browserViewMetaData',
 }
 
 export type Channels =
