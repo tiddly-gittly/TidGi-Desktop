@@ -110,22 +110,6 @@ module.exports = [
           outputPath: 'images/',
         },
       },
-      {
-        loader: 'image-webpack-loader',
-        options: {
-          query: {
-            mozjpeg: {
-              progressive: true,
-            },
-            gifsicle: {
-              interlaced: true,
-            },
-            optipng: {
-              optimizationLevel: 7,
-            },
-          },
-        },
-      },
     ],
   },
 ];

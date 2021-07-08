@@ -144,7 +144,6 @@
     "fork-ts-checker-webpack-plugin": "6.2.12",
     "graphql-hooks": "5.2.0",
     "if-env": "1.0.4",
-    "image-webpack-loader": "7.0.1",
     "node-loader": "2.0.0",
     "prettier": "2.3.2",
     "react": "17.0.2",
