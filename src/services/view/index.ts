@@ -231,9 +231,7 @@ export class View implements IViewService {
       session: sessionOfView,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       additionalArguments: [
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         `${MetaDataChannel.browserViewMetaData}${WindowNames.view}`,
-        // eslint-disable-next-line @typescript-eslint/restrict-template-expressions
         `${MetaDataChannel.browserViewMetaData}${JSON.stringify(browserViewMetaData)}`,
       ],
     };

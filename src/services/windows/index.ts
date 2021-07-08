@@ -139,7 +139,7 @@ export class Window implements IWindowService {
         allowRunningInsecureContent: false,
         contextIsolation: true,
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-        additionalArguments: [windowName, JSON.stringify(meta)],
+        additionalArguments: [`${MetaDataChannel.browserViewMetaData}${windowName}`, `${MetaDataChannel.browserViewMetaData}${JSON.stringify(meta)}`],
       },
       parent: isMainWindow || attachToMenubar ? undefined : this.get(WindowNames.main),
     };

@@ -16,7 +16,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
 import { container } from '@services/container';
-import { ViewChannel, WindowChannel } from '@/constants/channels';
+import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 
@@ -299,7 +299,10 @@ async function handleNewWindow(
       ...(JSON.parse(sharedWebPreferences?.additionalArguments?.[1] ?? '{}') as IBrowserViewMetaData),
     };
     const metadataConfig = {
-      additionalArguments: [WindowNames.newWindow, JSON.stringify(browserViewMetaData)],
+      additionalArguments: [
+        `${MetaDataChannel.browserViewMetaData}${WindowNames.newWindow}`,
+        `${MetaDataChannel.browserViewMetaData}${JSON.stringify(browserViewMetaData)}`,
+      ],
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     };
     const newOptions: BrowserWindowConstructorOptions = cmdClick
