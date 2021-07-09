@@ -5,9 +5,9 @@ import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
 const metaDataArguments = process.argv
   .filter((item) => item.startsWith(MetaDataChannel.browserViewMetaData))
   .map((item) => item.replace(MetaDataChannel.browserViewMetaData, ''));
-export const windowName = metaDataArguments[0] as WindowNames;
-const extraMetaJSONString = metaDataArguments[1] ?? '{}';
-export let extraMeta: WindowMeta[WindowNames] = {};
+export const windowName = (metaDataArguments[0] as WindowNames) ?? WindowNames.main;
+const extraMetaJSONString = decodeURIComponent(metaDataArguments[1] ?? '{}');
+let extraMeta: WindowMeta[WindowNames] = {};
 try {
   extraMeta = JSON.parse(extraMetaJSONString) as WindowMeta[WindowNames];
 } catch (error) {

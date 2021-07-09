@@ -135,11 +135,15 @@ export class Window implements IWindowService {
       webPreferences: {
         devTools: !isTest,
         nodeIntegration: false,
+        nativeWindowOpen: true,
         webSecurity: !isDevelopmentOrTest,
         allowRunningInsecureContent: false,
         contextIsolation: true,
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
-        additionalArguments: [`${MetaDataChannel.browserViewMetaData}${windowName}`, `${MetaDataChannel.browserViewMetaData}${JSON.stringify(meta)}`],
+        additionalArguments: [
+          `${MetaDataChannel.browserViewMetaData}${windowName}`,
+          `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(meta))}`,
+        ],
       },
       parent: isMainWindow || attachToMenubar ? undefined : this.get(WindowNames.main),
     };
