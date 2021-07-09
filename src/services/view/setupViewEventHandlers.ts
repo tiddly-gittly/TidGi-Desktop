@@ -296,12 +296,12 @@ async function handleNewWindow(
     const cmdClick = options === undefined;
     const browserViewMetaData: IBrowserViewMetaData = {
       isPopup: true,
-      ...(JSON.parse(sharedWebPreferences?.additionalArguments?.[1] ?? '{}') as IBrowserViewMetaData),
+      ...(JSON.parse(decodeURIComponent(sharedWebPreferences?.additionalArguments?.[1] ?? '{}')) as IBrowserViewMetaData),
     };
     const metadataConfig = {
       additionalArguments: [
         `${MetaDataChannel.browserViewMetaData}${WindowNames.newWindow}`,
-        `${MetaDataChannel.browserViewMetaData}${JSON.stringify(browserViewMetaData)}`,
+        `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(browserViewMetaData))}`,
       ],
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     };

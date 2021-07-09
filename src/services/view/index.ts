@@ -232,7 +232,7 @@ export class View implements IViewService {
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       additionalArguments: [
         `${MetaDataChannel.browserViewMetaData}${WindowNames.view}`,
-        `${MetaDataChannel.browserViewMetaData}${JSON.stringify(browserViewMetaData)}`,
+        `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(browserViewMetaData))}`,
       ],
     };
     const view = new BrowserView({
