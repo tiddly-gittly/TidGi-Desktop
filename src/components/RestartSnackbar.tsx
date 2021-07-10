@@ -1,11 +1,31 @@
 import React, { useCallback, useState, useRef } from 'react';
-import { delay } from 'bluebird';
+import styled, { keyframes } from 'styled-components';
 import { Snackbar, Button, IconButton, Tooltip } from '@material-ui/core';
 import { Close as CloseIcon } from '@material-ui/icons';
 import { useTranslation } from 'react-i18next';
 import { useDebouncedFn } from 'beautiful-react-hooks';
 
-export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart = 5000): [() => void, JSX.Element] {
+const progressAnimation = keyframes`
+  from {
+    width: 0%;
+  }
+
+  to {
+    width: 100%;
+  }
+`;
+const RestartButton = styled(Button)<{ currentWaitBeforeRestart: number }>`
+  .MuiButton-label {
+    z-index: 1;
+  }
+  .MuiTouchRipple-root {
+    z-index: 0;
+    background-color: white;
+    animation: ${progressAnimation} ${({ currentWaitBeforeRestart }) => currentWaitBeforeRestart}ms linear;
+  }
+`;
+
+export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart = 10000): [() => void, JSX.Element] {
   const { t } = useTranslation();
   const [opened, openedSetter] = useState(false);
   const [inCountDown, inCountDownSetter] = useState(false);
@@ -54,9 +74,14 @@ export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart
         autoHideDuration={currentWaitBeforeRestart}
         action={
           <>
-            <Button color="secondary" size="small" onClick={handleCloseAndRestart}>
+            <RestartButton
+              key={currentWaitBeforeRestart}
+              currentWaitBeforeRestart={currentWaitBeforeRestart}
+              color="secondary"
+              size="small"
+              onClick={handleCloseAndRestart}>
               {t('Dialog.RestartNow')}
-            </Button>
+            </RestartButton>
             <Tooltip title={<span>{t('Dialog.Later')}</span>}>
               <IconButton size="small" aria-label="close" color="inherit" onClick={handleCancelRestart}>
                 <CloseIcon fontSize="small" />
