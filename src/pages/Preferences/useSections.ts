@@ -20,7 +20,7 @@ import { SvgIconTypeMap } from '@material-ui/core';
 
 import { PreferenceSections } from '@services/preferences/interface';
 
-export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): Record<
+export type ISectionRecord<SectionTitleElement = HTMLSpanElement> = Record<
   PreferenceSections,
   {
     text: string;
@@ -28,7 +28,8 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
     ref: React.MutableRefObject<SectionTitleElement | null>;
     hidden?: boolean;
   }
-> {
+>;
+export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): ISectionRecord<SectionTitleElement> {
   const { t } = useTranslation();
   const sections = {
     [PreferenceSections.wiki]: {
@@ -104,4 +105,9 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
   };
 
   return sections;
+}
+
+export interface ISectionProps<SectionTitleElement = HTMLSpanElement> {
+  sections: ISectionRecord<SectionTitleElement>;
+  requestRestartCountDown?: () => void;
 }
