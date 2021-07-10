@@ -81,7 +81,9 @@ const animateMoveFromLeft = keyframes`
 `;
 
 const SideMenuListItem = styled(ListItem)<{ index: number }>`
+  opacity: 0;
   animation: ${animateMoveFromLeft} 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  animation-fill-mode: forwards;
   animation-delay: ${({ index }) => index * 0.05}s;
 `;
 
