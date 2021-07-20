@@ -29,7 +29,7 @@
     "@dnd-kit/modifiers": "3.0.0",
     "@dnd-kit/sortable": "4.0.0",
     "@dnd-kit/utilities": "2.0.0",
-    "@tiddlygit/tiddlywiki": "5.2.0-prerelease.20210718",
+    "@tiddlygit/tiddlywiki": "5.2.0-prerelease.20210720",
     "authing-js-sdk": "4.21.1",
     "beautiful-react-hooks": "0.35.0",
     "bluebird": "3.7.2",
