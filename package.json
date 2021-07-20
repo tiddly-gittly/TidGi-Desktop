@@ -2,7 +2,7 @@
   "name": "TiddlyGit",
   "productName": "TiddlyGit",
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
-  "version": "0.4.1-a16",
+  "version": "0.4.1-a17",
   "license": "MPL 2.0",
   "scripts": {
     "start": "npm run clean && npm run start-without-clean",
@@ -29,7 +29,7 @@
     "@dnd-kit/modifiers": "3.0.0",
     "@dnd-kit/sortable": "4.0.0",
     "@dnd-kit/utilities": "2.0.0",
-    "@tiddlygit/tiddlywiki": "5.2.0-prerelease.20210720",
+    "@tiddlygit/tiddlywiki": "^5.2.0-prerelease-2021072014",
     "authing-js-sdk": "4.21.1",
     "beautiful-react-hooks": "0.35.0",
     "bluebird": "3.7.2",
