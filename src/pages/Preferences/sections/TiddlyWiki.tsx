@@ -1,5 +1,6 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useDebouncedFn } from 'beautiful-react-hooks';
 
 import { List, ListItemText } from '@material-ui/core';
 
@@ -12,6 +13,16 @@ export function TiddlyWiki(props: Required<ISectionProps>): JSX.Element {
 
   const userInfo = useUserInfoObservable();
 
+  const [userName, userNameSetter] = useState('');
+  useEffect(() => {
+    if (userInfo?.userName !== undefined) {
+      userNameSetter(userInfo.userName);
+    }
+  }, [userInfo]);
+  const userNameTextFieldOnChange = useDebouncedFn(async (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+    await window.service.auth.set('userName', event.target.value);
+    props.requestRestartCountDown();
+  });
   return (
     <>
       <SectionTitle ref={props.sections.wiki.ref}>{t('Preference.TiddlyWiki')}</SectionTitle>
@@ -25,12 +36,12 @@ export function TiddlyWiki(props: Required<ISectionProps>): JSX.Element {
               <TextField
                 helperText={t('Preference.DefaultUserNameDetail')}
                 fullWidth
-                onChange={async (event) => {
-                  await window.service.auth.set('userName', event.target.value);
-                  props.requestRestartCountDown();
+                onChange={(event) => {
+                  userNameSetter(event.target.value);
+                  void userNameTextFieldOnChange(event);
                 }}
                 label={t('Preference.DefaultUserName')}
-                value={userInfo?.userName}
+                value={userName}
               />
             </ListItemVertical>
           )}
