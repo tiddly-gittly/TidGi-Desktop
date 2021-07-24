@@ -17,7 +17,7 @@ export interface IViewService {
   setViewsNotificationsPref: (_shouldPauseNotifications?: boolean) => void;
   hibernateView: (id: string) => void;
   reloadViewsWebContentsIfDidFailLoad: () => Promise<void>;
-  reloadViewsWebContents(workspaceID?: string | undefined): Promise<void>
+  reloadViewsWebContents(workspaceID?: string | undefined): Promise<void>;
   reloadActiveBrowserView: () => Promise<void>;
   getActiveBrowserView: () => Promise<BrowserView | undefined>;
   realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;

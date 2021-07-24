@@ -192,6 +192,8 @@
     "SyncFailedSystemError": "同步失败，同步系统可能出现问题",
     "PerformLastCheckBeforeSynchronizationFinish": "进行同步结束前最后的检查",
     "SynchronizationFinish": "同步完成",
+    "InitializeWikiGit": "正在初始化 Wiki 和 Git",
+    "InitializeWorkspaceView": "正在初始化工作区和浏览器窗口，并加载内容，请耐心等待",
     "PrepareCloneOnlineWiki": "准备克隆线上 Wiki",
     "StartFetchingFromGithubRemote": "正在拉取Github远端仓库的数据，需要的时间取决于网速和仓库大小，请耐心等待",
     "UsingUrlAndUsername": "使用 Git Url {{githubRepoUrl}} 和用户名 {{username}} 和 accessToken {{accessToken}}"

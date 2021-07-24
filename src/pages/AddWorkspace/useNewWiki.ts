@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { callWikiInitialization } from './useCallWikiInitialization';
 import { IErrorInWhichComponent, IWikiWorkspaceForm, workspaceConfigFromForm } from './useForm';
 
 export function useValidateNewWiki(
@@ -77,14 +78,7 @@ export function useNewWiki(
       } else {
         await window.service.wiki.createSubWiki(form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink?.wikiFolderLocation, form.tagName);
       }
-      const newWorkspace = await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspaceConfig, form.gitUserInfo);
-      if (newWorkspace === undefined) {
-        throw new Error('newWorkspace is undefined');
-      }
-      // start wiki on startup, or on sub-wiki creation
-      await window.service.workspaceView.initializeWorkspaceView(newWorkspace);
-      // wait for wiki to start and close the window now.
-      await window.remote.closeCurrentWindow();
+      await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo);
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
       hasErrorSetter(true);

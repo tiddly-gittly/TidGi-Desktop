@@ -180,7 +180,9 @@
     "AddComplete": "Git Add successful",
     "CheckingLocalGitRepoSanity": "Checking whether the local Git repository is properly initialized",
     "CheckingLocalSyncState": "Detecting whether the local state needs to be synchronized to the cloud",
-    "CheckingRebaseStatus": "Analyzing the rebase processing plan"
+    "CheckingRebaseStatus": "Analyzing the rebase processing plan",
+    "InitializeWikiGit": "Initializing Wiki and Git",
+    "InitializeWorkspaceView": "Initializing workspace and browser view, and loading the web content, please wait"
   },
   "Cancel": "Cancel",
   "Preference": {
