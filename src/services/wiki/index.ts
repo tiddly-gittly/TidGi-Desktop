@@ -276,12 +276,46 @@ export class Wiki implements IWikiService {
     }
   }
 
-  public async checkWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<string | true> {
+  public async checkWikiExist(workspace: IWorkspace, options: { shouldBeMainWiki?: boolean; showDialog?: boolean } = {}): Promise<string | true> {
+    const { wikiFolderLocation, id: workspaceID } = workspace;
+    const { shouldBeMainWiki, showDialog } = options;
     try {
-      await this.ensureWikiExist(wikiPath, shouldBeMainWiki);
+      if (typeof wikiFolderLocation !== 'string' || wikiFolderLocation.length === 0 || !path.isAbsolute(wikiFolderLocation)) {
+        const errorMessage = i18n.t('Dialog.NeedCorrectTiddlywikiFolderPath') + wikiFolderLocation;
+        logger.error(errorMessage);
+        const mainWindow = this.windowService.get(WindowNames.main);
+        if (mainWindow !== undefined && showDialog === true) {
+          await dialog.showMessageBox(mainWindow, {
+            title: i18n.t('Dialog.PathPassInCantUse'),
+            message: errorMessage,
+            buttons: ['OK'],
+            cancelId: 0,
+            defaultId: 0,
+          });
+        }
+        return errorMessage;
+      }
+      await this.ensureWikiExist(wikiFolderLocation, shouldBeMainWiki ?? false);
       return true;
     } catch (error) {
-      return (error as Error).message;
+      const checkResult = (error as Error).message;
+
+      const errorMessage = `${i18n.t('Dialog.CantFindWorkspaceFolderRemoveWorkspace')} ${wikiFolderLocation} ${checkResult}`;
+      logger.error(errorMessage);
+      const mainWindow = this.windowService.get(WindowNames.main);
+      if (mainWindow !== undefined && showDialog === true) {
+        const { response } = await dialog.showMessageBox(mainWindow, {
+          title: i18n.t('Dialog.WorkspaceFolderRemoved'),
+          message: errorMessage,
+          buttons: [i18n.t('Dialog.RemoveWorkspace'), i18n.t('Dialog.DoNotCare')],
+          cancelId: 1,
+          defaultId: 0,
+        });
+        if (response === 0) {
+          await this.workspaceViewService.removeWorkspaceView(workspaceID);
+        }
+      }
+      return errorMessage;
     }
   }
 
@@ -356,6 +390,7 @@ export class Wiki implements IWikiService {
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const userName = (workspace.userName || (await this.authService.get('userName'))) ?? '';
+    /** watch wiki change so we can trigger git sync */
     const tryWatchForSync = async (watchPath?: string): Promise<void> => {
       if (storageService !== SupportedStorageServices.local && typeof githubRepoUrl === 'string' && userInfo !== undefined) {
         await this.watchWikiForDebounceCommitAndSync(wikiFolderLocation, githubRepoUrl, userInfo, watchPath);
@@ -364,7 +399,7 @@ export class Wiki implements IWikiService {
     // if is main wiki
     if (!isSubWiki) {
       this.setWikiStarted(wikiFolderLocation);
-      await this.startNodeJSWiki(wikiFolderLocation, port, userName, id);
+      await this.startWiki(wikiFolderLocation, port, userName);
       // sync to cloud
       await tryWatchForSync(path.join(wikiFolderLocation, TIDDLERS_PATH));
     } else {
@@ -382,55 +417,6 @@ export class Wiki implements IWikiService {
       // sync to cloud
       await tryWatchForSync();
     }
-  }
-
-  /**
-   * Start nodejs version of TiddlyWiki, show error dialog is prerequisites missing
-   * start-nodejs-wiki.ts
-   * @param homePath
-   * @param port
-   * @param userName UserName of tiddlywiki editor, this is not the username for git or storage services
-   * @param workspaceID
-   * @returns
-   */
-  public async startNodeJSWiki(homePath: string, port: number, userName: string, workspaceID: string): Promise<void> {
-    if (typeof homePath !== 'string' || homePath.length === 0 || !path.isAbsolute(homePath)) {
-      const errorMessage = i18n.t('Dialog.NeedCorrectTiddlywikiFolderPath') + homePath;
-      logger.error(errorMessage);
-      const mainWindow = this.windowService.get(WindowNames.main);
-      if (mainWindow !== undefined) {
-        await dialog.showMessageBox(mainWindow, {
-          title: i18n.t('Dialog.PathPassInCantUse'),
-          message: errorMessage,
-          buttons: ['OK'],
-          cancelId: 0,
-          defaultId: 0,
-        });
-      }
-      return;
-    }
-
-    const checkResult = await this.checkWikiExist(homePath, true);
-    if (checkResult !== true) {
-      const errorMessage = `${i18n.t('Dialog.CantFindWorkspaceFolderRemoveWorkspace')} ${homePath} ${checkResult}`;
-      logger.error(errorMessage);
-      const mainWindow = this.windowService.get(WindowNames.main);
-      if (mainWindow !== undefined) {
-        const { response } = await dialog.showMessageBox(mainWindow, {
-          title: i18n.t('Dialog.WorkspaceFolderRemoved'),
-          message: errorMessage,
-          buttons: [i18n.t('Dialog.RemoveWorkspace'), i18n.t('Dialog.DoNotCare')],
-          cancelId: 1,
-          defaultId: 0,
-        });
-        if (response === 0) {
-          await this.workspaceViewService.removeWorkspaceView(workspaceID);
-        }
-        return;
-      }
-    }
-
-    await this.startWiki(homePath, port, userName);
   }
 
   // watch-wiki.ts

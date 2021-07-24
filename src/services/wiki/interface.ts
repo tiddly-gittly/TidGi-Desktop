@@ -27,6 +27,7 @@ export interface IWikiControlMessage {
  */
 export interface IWikiService {
   updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void>;
+  /** call wiki worker to actually start nodejs wiki */
   startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void>;
   stopWiki(homePath: string): Promise<void>;
   stopAllWiki(): Promise<void>;
@@ -40,7 +41,7 @@ export interface IWikiService {
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
   /** return true if wiki does existed, return error message (a string) if there is an error checking wiki existence */
-  checkWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<string | true>;
+  checkWikiExist(workspace: IWorkspace, options?: { shouldBeMainWiki?: boolean; showDialog?: boolean }): Promise<string | true>;
   cloneWiki(parentFolderLocation: string, wikiFolderName: string, gitRepoUrl: string, gitUserInfo: IGitUserInfos): Promise<void>;
   cloneSubWiki(
     parentFolderLocation: string,
@@ -50,8 +51,8 @@ export interface IWikiService {
     gitUserInfo: IGitUserInfos,
     tagName?: string,
   ): Promise<void>;
+  /** handle start/restart of wiki/subwiki */
   wikiStartup(workspace: IWorkspace): Promise<void>;
-  startNodeJSWiki(homePath: string, port: number, userName: string, workspaceID: string): Promise<void>;
   watchWikiForDebounceCommitAndSync(wikiRepoPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, wikiFolderPath?: string): Promise<void>;
   stopWatchWiki(wikiRepoPath: string): Promise<void>;
   stopWatchAllWiki(): Promise<void>;
@@ -75,7 +76,6 @@ export const WikiServiceIPCDescriptor = {
     cloneWiki: ProxyPropertyType.Function,
     cloneSubWiki: ProxyPropertyType.Function,
     wikiStartup: ProxyPropertyType.Function,
-    startNodeJSWiki: ProxyPropertyType.Function,
     watchWikiForDebounceCommitAndSync: ProxyPropertyType.Function,
     stopWatchWiki: ProxyPropertyType.Function,
     stopWatchAllWiki: ProxyPropertyType.Function,

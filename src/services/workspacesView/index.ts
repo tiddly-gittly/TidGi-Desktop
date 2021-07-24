@@ -48,7 +48,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         continue;
       }
       // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
-      if ((await this.wikiService.checkWikiExist(workspace.wikiFolderLocation, true)) !== true) {
+      if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: true, showDialog: true })) !== true) {
         continue;
       }
       if (((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) && !workspace.active) {
