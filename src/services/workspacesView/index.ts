@@ -59,6 +59,19 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (mainWindow === undefined) {
       throw new Error(i18n.t(`Error.MainWindowMissing`));
     }
+    if (workspace.storageService !== SupportedStorageServices.local) {
+      const userInfo = this.authService.getStorageServiceUserInfo(workspace.storageService);
+      if (userInfo === undefined) {
+        // user not login into Github or something else
+        void dialog.showMessageBox(mainWindow, {
+          title: i18n.t('Dialog.StorageServiceUserInfoNoFound'),
+          message: i18n.t('Dialog.StorageServiceUserInfoNoFoundDetail'),
+          buttons: ['OK'],
+          cancelId: 0,
+          defaultId: 0,
+        });
+      }
+    }
     await this.wikiService.wikiStartup(workspace);
 
     const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);

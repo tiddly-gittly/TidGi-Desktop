@@ -197,19 +197,6 @@ export class View implements IViewService {
     const { rememberLastPageVisited, shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = await this.preferenceService.getPreferences();
     // configure session, proxy & ad blocker
     const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
-    if (workspace.storageService !== SupportedStorageServices.local) {
-      const userInfo = this.authService.getStorageServiceUserInfo(workspace.storageService);
-      if (userInfo === undefined) {
-        // user not login into Github or something else
-        void dialog.showMessageBox(browserWindow, {
-          title: i18n.t('Dialog.StorageServiceUserInfoNoFound'),
-          message: i18n.t('Dialog.StorageServiceUserInfoNoFoundDetail'),
-          buttons: ['OK'],
-          cancelId: 0,
-          defaultId: 0,
-        });
-      }
-    }
     // prepare configs for start a BrowserView that loads wiki's web content
     // session
     const sessionOfView = session.fromPartition(partitionId);
