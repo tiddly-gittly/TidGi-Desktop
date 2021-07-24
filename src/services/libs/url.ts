@@ -15,3 +15,10 @@ export function getLocalHostUrlWithActualIP(originalUrl: string): string {
   );
   return localHostUrlWithActualIP;
 }
+
+/** Sometimes workspace port is corrupted, we want it be fixed to what user set in the workspace setting. */
+export function replaceUrlPortWithSettingPort(originalUrl: string, newPort: number): string {
+  const parsedUrl = new URL(originalUrl);
+  parsedUrl.port = String(newPort);
+  return parsedUrl.toString();
+}
