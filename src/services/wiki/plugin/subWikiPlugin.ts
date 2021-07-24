@@ -3,6 +3,7 @@ import fs from 'fs-extra';
 import { take, drop, compact } from 'lodash';
 import { logger } from '@services/libs/log';
 import { IWorkspace } from '@services/workspaces/interface';
+import { TIDDLERS_PATH } from '@/constants/paths';
 
 const getMatchPart = (tagToMatch: string): string => `[!is[system]kin::to[${tagToMatch}]`;
 const getPathPart = (folderToPlace: string): string => `addprefix[/]addprefix[${folderToPlace}]addprefix[/]addprefix[subwiki]]`;
@@ -15,8 +16,7 @@ const getFolderNamePathPart = (pathPart: string): string => pathPart.replace(']a
  * @returns
  */
 function getFileSystemPathsTiddlerPath(mainWikiPath: string): string {
-  const pluginPath = path.join(mainWikiPath, 'plugins', 'linonetwo', 'sub-wiki');
-  return path.join(pluginPath, 'FileSystemPaths.tid');
+  return path.join(mainWikiPath, TIDDLERS_PATH, 'FileSystemPaths.tid');
 }
 
 /**

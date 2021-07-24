@@ -5,7 +5,7 @@ type: text/vnd.tiddlywiki
 
 !! Usage
 
-Edit `plugins/linonetwo/sub-wiki/FileSystemPaths.tid` using VSCode or automatically updated by TiddlyGitDesktop (instead of edit it from the TiddlyWiki) to be something like:
+Edit [[`tiddlers/FileSystemPaths.tid`|FileSystemPaths.tid]] using VSCode or automatically updated by TiddlyGitDesktop (instead of edit it from the TiddlyWiki) to be something like:
 
 ```tid
 [!is[system]kin::to[APrivateContent]addprefix[subwiki/private-wiki/]]
