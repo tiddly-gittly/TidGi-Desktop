@@ -3,7 +3,7 @@ import { injectable } from 'inversify';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IPreferenceService } from '@services/preferences/interface';
-import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceMetaData, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
@@ -338,7 +338,7 @@ export class View implements IViewService {
   };
 
   public async reloadViewsWebContentsIfDidFailLoad(): Promise<void> {
-    const workspaceMetaData = await this.workspaceService.getAllMetaData();
+    const workspaceMetaData: Record<string, Partial<IWorkspaceMetaData>> = await this.workspaceService.getAllMetaData();
     Object.keys(workspaceMetaData).forEach((id) => {
       if (typeof workspaceMetaData[id].didFailLoadErrorMessage !== 'string') {
         return;
@@ -350,8 +350,8 @@ export class View implements IViewService {
     });
   }
 
-  public reloadViewsWebContents(workspaceID?: string): void {
-    const workspaceMetaData = this.workspaceService.getAllMetaData();
+  public async reloadViewsWebContents(workspaceID?: string): Promise<void> {
+    const workspaceMetaData = await this.workspaceService.getAllMetaData();
     Object.keys(workspaceMetaData).forEach((id) => {
       if (workspaceID !== undefined && id !== workspaceID) {
         return;
