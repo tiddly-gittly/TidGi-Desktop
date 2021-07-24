@@ -36,7 +36,7 @@ function startNodeJSWiki({
       wikiInstance.boot.argv = [
         '+plugins/tiddlywiki/filesystem',
         '+plugins/tiddlywiki/tiddlyweb',
-        '+plugins/linonetwo/watch-fs',
+        // '+plugins/linonetwo/watch-fs',
         homePath,
         '--listen',
         `anon-username=${userName}`,
