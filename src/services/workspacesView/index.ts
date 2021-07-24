@@ -43,12 +43,12 @@ export class WorkspaceView implements IWorkspaceViewService {
     const workspaces = await this.workspaceService.getWorkspaces();
     for (const workspaceID in workspaces) {
       const workspace = workspaces[workspaceID];
-      // skip view initialize if this is a sub wiki
-      if (workspace.isSubWiki) {
+      // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
+      if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {
         continue;
       }
-      // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
-      if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: true, showDialog: true })) !== true) {
+      // skip view initialize if this is a sub wiki
+      if (workspace.isSubWiki) {
         continue;
       }
       if (((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) && !workspace.active) {
