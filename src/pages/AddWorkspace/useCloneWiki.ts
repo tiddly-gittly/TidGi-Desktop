@@ -84,7 +84,7 @@ export function useCloneWiki(
         throw new Error('newWorkspace is undefined');
       }
       // start wiki on startup, or on sub-wiki creation
-      await window.service.wiki.wikiStartup(newWorkspace);
+      await window.service.workspaceView.initializeWorkspaceView(newWorkspace);
       // wait for wiki to start and close the window now.
       await window.remote.closeCurrentWindow();
     } catch (error) {
