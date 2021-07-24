@@ -118,7 +118,7 @@ export class Wiki implements IWikiService {
                 if (message.message !== undefined) {
                   logger.info(message.message, loggerMeta);
                 }
-                await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
+                await this.workspaceService.updateMetaData(workspaceID, { isLoading: false });
                 this.viewService.reloadViewsWebContents();
                 resolve();
               }, 100);
