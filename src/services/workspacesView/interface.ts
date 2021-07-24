@@ -7,6 +7,7 @@ import { IWorkspace, INewWorkspaceConfig } from '@services/workspaces/interface'
  * Deal with operations that needs to create a workspace and a browserView at once
  */
 export interface IWorkspaceViewService {
+  /** create workspace from workspaceService to store workspace configs, and create a BrowserView to actually display wiki web content from viewService */
   createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<IWorkspace>;
   initializeAllWorkspaceView(): Promise<void>;
   setWorkspaceView(id: string, workspaceOptions: IWorkspace): Promise<void>;
