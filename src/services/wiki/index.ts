@@ -224,18 +224,11 @@ export class Wiki implements IWikiService {
     this.logProgress(i18n.t('AddWorkspace.WikiTemplateCopyCompleted') + newWikiPath);
   }
 
-  /**
-   *
-   * @param newFolderPath
-   * @param folderName
-   * @param mainWikiToLink
-   * @param onlyLink not creating new subwiki folder, just link existed subwiki folder to main wiki folder
-   */
-  public async createSubWiki(newFolderPath: string, folderName: string, mainWikiPath: string, tagName = '', onlyLink = false): Promise<void> {
+  public async createSubWiki(parentFolderLocation: string, folderName: string, mainWikiPath: string, tagName = '', onlyLink = false): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCreatingSubWiki'));
-    const newWikiPath = path.join(newFolderPath, folderName);
-    if (!(await fs.pathExists(newFolderPath))) {
-      throw new Error(i18n.t('AddWorkspace.PathNotExist', { newFolderPath }));
+    const newWikiPath = path.join(parentFolderLocation, folderName);
+    if (!(await fs.pathExists(parentFolderLocation))) {
+      throw new Error(i18n.t('AddWorkspace.PathNotExist', { parentFolderLocation }));
     }
     if (!onlyLink) {
       if (await fs.pathExists(newWikiPath)) {

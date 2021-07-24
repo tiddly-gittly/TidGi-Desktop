@@ -37,7 +37,14 @@ export interface IWikiService {
   requestWikiSendActionMessage(actionMessage: string): Promise<void>;
   requestOpenTiddlerInWiki(tiddlerName: string): Promise<void>;
   linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
-  createSubWiki(newFolderPath: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
+  /**
+   * create sub wiki in a parent folder, and link to a main wiki, and set tagName to filesystemPath.tid
+   * @param parentFolderLocation
+   * @param folderName
+   * @param mainWikiToLink
+   * @param onlyLink not creating new subwiki folder, just link existed subwiki folder to main wiki folder
+   */
+  createSubWiki(parentFolderLocation: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
   /** return true if wiki does existed, return error message (a string) if there is an error checking wiki existence */
