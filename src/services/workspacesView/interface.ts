@@ -9,7 +9,14 @@ import { IWorkspace, INewWorkspaceConfig } from '@services/workspaces/interface'
 export interface IWorkspaceViewService {
   /** create workspace from workspaceService to store workspace configs, and create a BrowserView to actually display wiki web content from viewService */
   createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<IWorkspace>;
+  /**
+   * Prepare All workspaces on startup
+   */
   initializeAllWorkspaceView(): Promise<void>;
+  /**
+   * prepare view and wiki for a workspace, call by `initializeAllWorkspaceView()` for all workspaces.
+   */
+  initializeWorkspaceView(workspace: IWorkspace): Promise<void>;
   setWorkspaceView(id: string, workspaceOptions: IWorkspace): Promise<void>;
   setWorkspaceViews(workspaces: Record<string, IWorkspace>): Promise<void>;
   wakeUpWorkspaceView(id: string): Promise<void>;
@@ -30,6 +37,7 @@ export interface IWorkspaceViewService {
 export const WorkspaceViewServiceIPCDescriptor = {
   channel: WorkspaceViewChannel.name,
   properties: {
+    initializeWorkspaceView: ProxyPropertyType.Function,
     createWorkspaceView: ProxyPropertyType.Function,
     setWorkspaceView: ProxyPropertyType.Function,
     setWorkspaceViews: ProxyPropertyType.Function,

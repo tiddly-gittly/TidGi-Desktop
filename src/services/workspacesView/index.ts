@@ -36,70 +36,71 @@ export class WorkspaceView implements IWorkspaceViewService {
     void this.registerMenu();
   }
 
-  /**
-   * Prepare workspaces on startup
-   */
   public async initializeAllWorkspaceView(): Promise<void> {
     const workspaces = await this.workspaceService.getWorkspaces();
     for (const workspaceID in workspaces) {
       const workspace = workspaces[workspaceID];
-      // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
-      if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {
-        continue;
+      await this.initializeWorkspaceView(workspace);
+    }
+  }
+
+  public async initializeWorkspaceView(workspace: IWorkspace): Promise<void> {
+    // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
+    if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {
+      return;
+    }
+    if (((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) && !workspace.active) {
+      if (!workspace.hibernated) {
+        await this.workspaceService.update(workspace.id, { hibernated: true });
       }
-      if (((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) && !workspace.active) {
-        if (!workspace.hibernated) {
-          await this.workspaceService.update(workspaceID, { hibernated: true });
+      return;
+    }
+    const mainWindow = this.windowService.get(WindowNames.main);
+    if (mainWindow === undefined) {
+      throw new Error(i18n.t(`Error.MainWindowMissing`));
+    }
+    await this.wikiService.wikiStartup(workspace);
+
+    const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
+    const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService, homeUrl } = workspace;
+
+    // get sync process ready
+    try {
+      if (storageService !== SupportedStorageServices.local) {
+        // check synced wiki should have githubRepoUrl
+        if (typeof githubRepoUrl !== 'string') {
+          throw new TypeError(`githubRepoUrl is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
         }
-        return;
-      }
-      const mainWindow = this.windowService.get(WindowNames.main);
-      if (mainWindow === undefined) {
-        throw new Error(i18n.t(`Error.MainWindowMissing`));
-      }
-      await this.wikiService.wikiStartup(workspace);
-
-      const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
-      const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService, homeUrl } = workspace;
-
-      // get sync process ready
-      try {
-        if (storageService !== SupportedStorageServices.local) {
-          // check synced wiki should have githubRepoUrl
-          if (typeof githubRepoUrl !== 'string') {
-            throw new TypeError(`githubRepoUrl is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
-          }
-          if (userInfo === undefined) {
-            throw new TypeError(`userInfo is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
-          }
-          await this.gitService.commitAndSync(wikiFolderLocation, githubRepoUrl, userInfo);
+        if (userInfo === undefined) {
+          throw new TypeError(`userInfo is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
         }
-      } catch (error) {
-        logger.error(`Can't sync at wikiStartup(), ${(error as Error).message}\n${(error as Error).stack ?? 'no stack'}`);
+        await this.gitService.commitAndSync(wikiFolderLocation, githubRepoUrl, userInfo);
       }
+    } catch (error) {
+      logger.error(`Can't sync at wikiStartup(), ${(error as Error).message}\n${(error as Error).stack ?? 'no stack'}`);
+    }
 
-      // adding BrowserView for each workspace
-      // skip view initialize if this is a sub wiki
-      if (workspace.isSubWiki) {
-        continue;
-      }
-      // wait for main wiki's watch-fs plugin to be fully initialized
-      // and also wait for wiki BrowserView to be able to receive command
-      // eslint-disable-next-line global-require
-      let workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
-      await this.viewService.addView(mainWindow, workspace);
-      let loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
-      // wait for main wiki webview loaded
-      while (workspaceMetadata.isLoading !== false) {
-        // eslint-disable-next-line no-await-in-loop
-        await delay(500);
-        workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
-      }
-      loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
-      if (loadFailed) {
-        const latestWorkspaceData = await this.workspaceService.get(workspaceID);
-        throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, latestWorkspaceData?.lastUrl ?? homeUrl);
-      }
+    // adding BrowserView for each workspace
+    // skip view initialize if this is a sub wiki
+    if (workspace.isSubWiki) {
+      return;
+    }
+    // wait for main wiki's watch-fs plugin to be fully initialized
+    // and also wait for wiki BrowserView to be able to receive command
+    // eslint-disable-next-line global-require
+    let workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
+    await this.viewService.addView(mainWindow, workspace);
+    let loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
+    // wait for main wiki webview loaded
+    while (workspaceMetadata.isLoading !== false) {
+      // eslint-disable-next-line no-await-in-loop
+      await delay(500);
+      workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
+    }
+    loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
+    if (loadFailed) {
+      const latestWorkspaceData = await this.workspaceService.get(workspace.id);
+      throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, latestWorkspaceData?.lastUrl ?? homeUrl);
     }
   }
 
