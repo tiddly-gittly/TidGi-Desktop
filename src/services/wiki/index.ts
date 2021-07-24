@@ -268,7 +268,7 @@ export class Wiki implements IWikiService {
       throw new Error(i18n.t('AddWorkspace.PathNotExist', { newFolderPath: wikiPath }));
     }
     const wikiInfoPath = path.resolve(wikiPath, 'tiddlywiki.info');
-    if (!(await fs.pathExists(wikiInfoPath))) {
+    if (shouldBeMainWiki && !(await fs.pathExists(wikiInfoPath))) {
       throw new Error(i18n.t('AddWorkspace.ThisPathIsNotAWikiFolder', { wikiPath, wikiInfoPath }));
     }
     if (shouldBeMainWiki && !(await fs.pathExists(path.join(wikiPath, TIDDLERS_PATH)))) {
@@ -413,6 +413,7 @@ export class Wiki implements IWikiService {
         await this.stopWatchWiki(mainWikiToLink);
         await this.stopWiki(mainWikiToLink);
         await this.startWiki(mainWikiToLink, mainWorkspace.port, userName);
+        await tryWatchForSync(path.join(mainWikiToLink, TIDDLERS_PATH));
       }
       // sync to cloud
       await tryWatchForSync();
