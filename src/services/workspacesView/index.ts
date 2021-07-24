@@ -47,10 +47,6 @@ export class WorkspaceView implements IWorkspaceViewService {
       if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {
         continue;
       }
-      // skip view initialize if this is a sub wiki
-      if (workspace.isSubWiki) {
-        continue;
-      }
       if (((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) && !workspace.active) {
         if (!workspace.hibernated) {
           await this.workspaceService.update(workspaceID, { hibernated: true });
@@ -61,25 +57,11 @@ export class WorkspaceView implements IWorkspaceViewService {
       if (mainWindow === undefined) {
         throw new Error(i18n.t(`Error.MainWindowMissing`));
       }
-      await this.viewService.addView(mainWindow, workspace);
+      await this.wikiService.wikiStartup(workspace);
+
       const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
       const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService, homeUrl } = workspace;
-      // wait for main wiki's watch-fs plugin to be fully initialized
-      // and also wait for wiki BrowserView to be able to receive command
-      // eslint-disable-next-line global-require
-      let workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
-      let loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
-      // wait for main wiki webview loaded
-      while (workspaceMetadata.isLoading !== false) {
-        // eslint-disable-next-line no-await-in-loop
-        await delay(500);
-        workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
-      }
-      loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
-      if (loadFailed) {
-        const latestWorkspaceData = await this.workspaceService.get(workspaceID);
-        throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, latestWorkspaceData?.lastUrl ?? homeUrl);
-      }
+
       // get sync process ready
       try {
         if (storageService !== SupportedStorageServices.local) {
@@ -94,6 +76,29 @@ export class WorkspaceView implements IWorkspaceViewService {
         }
       } catch (error) {
         logger.error(`Can't sync at wikiStartup(), ${(error as Error).message}\n${(error as Error).stack ?? 'no stack'}`);
+      }
+
+      // adding BrowserView for each workspace
+      // skip view initialize if this is a sub wiki
+      if (workspace.isSubWiki) {
+        continue;
+      }
+      // wait for main wiki's watch-fs plugin to be fully initialized
+      // and also wait for wiki BrowserView to be able to receive command
+      // eslint-disable-next-line global-require
+      let workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
+      await this.viewService.addView(mainWindow, workspace);
+      let loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
+      // wait for main wiki webview loaded
+      while (workspaceMetadata.isLoading !== false) {
+        // eslint-disable-next-line no-await-in-loop
+        await delay(500);
+        workspaceMetadata = await this.workspaceService.getMetaData(workspaceID);
+      }
+      loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
+      if (loadFailed) {
+        const latestWorkspaceData = await this.workspaceService.get(workspaceID);
+        throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, latestWorkspaceData?.lastUrl ?? homeUrl);
       }
     }
   }

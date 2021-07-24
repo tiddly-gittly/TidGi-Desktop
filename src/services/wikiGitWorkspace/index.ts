@@ -5,7 +5,7 @@ import { injectable } from 'inversify';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
-import type { INewWorkspaceConfig, IWorkspaceService } from '@services/workspaces/interface';
+import type { INewWorkspaceConfig, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -30,7 +30,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
 
-  public initWikiGitTransaction = async (newWorkspaceConfig: INewWorkspaceConfig, userInfo?: IGitUserInfos): Promise<void> => {
+  public initWikiGitTransaction = async (newWorkspaceConfig: INewWorkspaceConfig, userInfo?: IGitUserInfos): Promise<IWorkspace | undefined> => {
     const newWorkspace = await this.workspaceViewService.createWorkspaceView(newWorkspaceConfig);
     const { gitUrl, storageService, wikiFolderLocation, isSubWiki, id: workspaceID, mainWikiToLink } = newWorkspace;
     const isSyncedWiki = storageService !== SupportedStorageServices.local;
@@ -48,6 +48,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           await this.gitService.initWikiGit(wikiFolderLocation, false);
         }
       }
+      return newWorkspace;
     } catch (error) {
       // prepare to rollback changes
       const errorMessage = `initWikiGitTransaction failed, ${(error as Error).message} ${(error as Error).stack ?? ''}`;

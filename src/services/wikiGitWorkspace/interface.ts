@@ -1,6 +1,6 @@
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { WikiGitWorkspaceChannel } from '@/constants/channels';
-import { INewWorkspaceConfig } from '@services/workspaces/interface';
+import { INewWorkspaceConfig, IWorkspace } from '@services/workspaces/interface';
 import { IGitUserInfos } from '@services/git/interface';
 
 /**
@@ -8,7 +8,7 @@ import { IGitUserInfos } from '@services/git/interface';
  */
 export interface IWikiGitWorkspaceService {
   /** Create a new workspace, and call git.initWikiGit , and rollback (delete created wiki folder) if it failed */
-  initWikiGitTransaction(newWorkspaceConfig: INewWorkspaceConfig, userInfo?: IGitUserInfos): Promise<void>;
+  initWikiGitTransaction(newWorkspaceConfig: INewWorkspaceConfig, userInfo?: IGitUserInfos): Promise<IWorkspace | undefined>;
   removeWorkspace: (id: string) => Promise<void>;
 }
 export const WikiGitWorkspaceServiceIPCDescriptor = {

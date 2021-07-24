@@ -77,7 +77,12 @@ export function useNewWiki(
       } else {
         await window.service.wiki.createSubWiki(form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink?.wikiFolderLocation, form.tagName);
       }
-      await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspaceConfig, form.gitUserInfo);
+      const newWorkspace = await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspaceConfig, form.gitUserInfo);
+      if (newWorkspace === undefined) {
+        throw new Error('newWorkspace is undefined');
+      }
+      // start wiki on startup, or on sub-wiki creation
+      await window.service.wiki.wikiStartup(newWorkspace);
       // wait for wiki to start and close the window now.
       await window.remote.closeCurrentWindow();
     } catch (error) {

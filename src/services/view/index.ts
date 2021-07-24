@@ -194,9 +194,6 @@ export class View implements IViewService {
     if (this.views[workspace.id] !== undefined) {
       return;
     }
-    if (workspace.isSubWiki) {
-      return;
-    }
     const { rememberLastPageVisited, shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = await this.preferenceService.getPreferences();
     // configure session, proxy & ad blocker
     const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
@@ -213,6 +210,7 @@ export class View implements IViewService {
         });
       }
     }
+    // prepare configs for start a BrowserView that loads wiki's web content
     // session
     const sessionOfView = session.fromPartition(partitionId);
     // spellchecker
@@ -266,8 +264,6 @@ export class View implements IViewService {
       replaceUrlPortWithSettingPort((rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl, workspace.port),
     );
     setupViewEventHandlers(view, browserWindow, { shouldPauseNotifications: this.shouldPauseNotifications, workspace, sharedWebPreferences });
-    // start wiki on startup, or on sub-wiki creation
-    await this.wikiService.wikiStartup(workspace);
     void view.webContents.loadURL(initialUrl);
     const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
     view.webContents.on('destroyed', () => {
