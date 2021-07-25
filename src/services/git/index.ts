@@ -29,6 +29,7 @@ import { Observer } from 'rxjs';
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import workerURL from 'threads-plugin/dist/loader?name=gitWorker!./gitWorker.ts';
+import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 
 @injectable()
 export class Git implements IGitService {
@@ -46,6 +47,7 @@ export class Git implements IGitService {
   }
 
   private async initWorker(): Promise<void> {
+    process.env.LOCAL_GIT_DIRECTORY = LOCAL_GIT_DIRECTORY;
     this.gitWorker = await spawn<GitWorker>(new Worker(workerURL));
   }
 
