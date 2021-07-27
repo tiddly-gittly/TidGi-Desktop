@@ -1,4 +1,4 @@
-import winston from 'winston';
+import winston, { format } from 'winston';
 import { LOG_FOLDER } from '@/constants/paths';
 import RendererTransport from './rendererTransport';
 import 'winston-daily-rotate-file';
@@ -50,6 +50,7 @@ const logger = (
             dirname: LOG_FOLDER,
           }),
         ],
+        format: format.combine(format.timestamp(), format.json()),
       })
 ) as winston.Logger;
 export { logger };
