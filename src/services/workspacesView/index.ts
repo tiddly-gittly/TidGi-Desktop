@@ -39,8 +39,14 @@ export class WorkspaceView implements IWorkspaceViewService {
   public async initializeAllWorkspaceView(): Promise<void> {
     const workspacesList = await this.workspaceService.getWorkspacesAsList();
     await Promise.all(
-      workspacesList.sort((a, b) => (a.isSubWiki && !b.isSubWiki ? 1 : -1)).map(async (workspace) => await this.initializeWorkspaceView(workspace)),
+      workspacesList
+        .sort((a, b) => (a.isSubWiki && !b.isSubWiki ? 1 : -1))
+        .map(async (workspace) => {
+          this.wikiService.setWikiStartLockOn(workspace.wikiFolderLocation);
+          await this.initializeWorkspaceView(workspace);
+        }),
     );
+    this.wikiService.setAllWikiStartLockOff();
   }
 
   public async initializeWorkspaceView(workspace: IWorkspace): Promise<void> {

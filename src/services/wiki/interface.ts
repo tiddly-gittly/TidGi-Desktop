@@ -63,6 +63,9 @@ export interface IWikiService {
   watchWikiForDebounceCommitAndSync(wikiRepoPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, wikiFolderPath?: string): Promise<void>;
   stopWatchWiki(wikiRepoPath: string): Promise<void>;
   stopWatchAllWiki(): Promise<void>;
+  setWikiStartLockOn(wikiFolderLocation: string): void;
+  setAllWikiStartLockOff(): void;
+  checkWikiStartLock(wikiFolderLocation: string): boolean;
 }
 export const WikiServiceIPCDescriptor = {
   channel: WikiChannel.name,

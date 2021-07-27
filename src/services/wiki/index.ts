@@ -365,13 +365,17 @@ export class Wiki implements IWikiService {
 
   // wiki-startup.ts
 
-  private readonly justStartedWiki: Record<string, boolean> = {};
-  private setWikiStartLockOn(wikiPath: string): void {
-    this.justStartedWiki[wikiPath] = true;
+  private justStartedWiki: Record<string, boolean> = {};
+  public setWikiStartLockOn(wikiFolderLocation: string): void {
+    this.justStartedWiki[wikiFolderLocation] = true;
   }
 
-  private setWikiStartLockOff(wikiPath: string): void {
-    delete this.justStartedWiki[wikiPath];
+  public setAllWikiStartLockOff(): void {
+    this.justStartedWiki = {};
+  }
+
+  public checkWikiStartLock(wikiFolderLocation: string): boolean {
+    return this.justStartedWiki[wikiFolderLocation] ?? false;
   }
 
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
@@ -396,15 +400,13 @@ export class Wiki implements IWikiService {
     };
     // if is main wiki
     if (!isSubWiki) {
-      this.setWikiStartLockOn(wikiFolderLocation);
       await this.startWiki(wikiFolderLocation, port, userName);
       // sync to cloud, do this in a non-blocking way
       void tryWatchForSync(path.join(wikiFolderLocation, TIDDLERS_PATH));
-      this.setWikiStartLockOff(wikiFolderLocation);
     } else {
       // if is private repo wiki
       // if we are creating a sub-wiki just now, restart the main wiki to load content from private wiki
-      if (typeof mainWikiToLink === 'string' && !this.justStartedWiki[mainWikiToLink]) {
+      if (typeof mainWikiToLink === 'string' && !this.checkWikiStartLock(mainWikiToLink)) {
         const mainWorkspace = await this.workspaceService.getByWikiFolderLocation(mainWikiToLink);
         if (mainWorkspace === undefined) {
           throw new Error(`mainWorkspace is undefined in wikiStartup() for mainWikiPath ${mainWikiToLink}`);
