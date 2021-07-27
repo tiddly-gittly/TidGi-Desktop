@@ -14,7 +14,7 @@ export interface IWorkspaceViewService {
    */
   initializeAllWorkspaceView(): Promise<void>;
   /**
-   * prepare view and wiki for a workspace, call by `initializeAllWorkspaceView()` for all workspaces.
+   * prepare view and wiki for a workspace, work for both public and private wiki, call by `initializeAllWorkspaceView()` for all workspaces.
    */
   initializeWorkspaceView(workspace: IWorkspace): Promise<void>;
   setWorkspaceView(id: string, workspaceOptions: IWorkspace): Promise<void>;

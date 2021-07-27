@@ -37,11 +37,10 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async initializeAllWorkspaceView(): Promise<void> {
-    const workspaces = await this.workspaceService.getWorkspaces();
-    for (const workspaceID in workspaces) {
-      const workspace = workspaces[workspaceID];
-      await this.initializeWorkspaceView(workspace);
-    }
+    const workspacesList = await this.workspaceService.getWorkspacesAsList();
+    await Promise.all(
+      workspacesList.sort((a, b) => (a.isSubWiki && !b.isSubWiki ? 1 : -1)).map(async (workspace) => await this.initializeWorkspaceView(workspace)),
+    );
   }
 
   public async initializeWorkspaceView(workspace: IWorkspace): Promise<void> {

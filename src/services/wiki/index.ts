@@ -366,15 +366,16 @@ export class Wiki implements IWikiService {
   // wiki-startup.ts
 
   private readonly justStartedWiki: Record<string, boolean> = {};
-  private setWikiStarted(wikiPath: string): void {
+  private setWikiStartLockOn(wikiPath: string): void {
     this.justStartedWiki[wikiPath] = true;
-    setTimeout(() => {
-      delete this.justStartedWiki[wikiPath];
-    }, 5000);
+  }
+
+  private setWikiStartLockOff(wikiPath: string): void {
+    delete this.justStartedWiki[wikiPath];
   }
 
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
-    const { wikiFolderLocation, gitUrl: githubRepoUrl, port, isSubWiki, id, mainWikiToLink, storageService } = workspace;
+    const { wikiFolderLocation, gitUrl: githubRepoUrl, port, isSubWiki, mainWikiToLink, storageService } = workspace;
 
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     try {
@@ -395,10 +396,11 @@ export class Wiki implements IWikiService {
     };
     // if is main wiki
     if (!isSubWiki) {
-      this.setWikiStarted(wikiFolderLocation);
+      this.setWikiStartLockOn(wikiFolderLocation);
       await this.startWiki(wikiFolderLocation, port, userName);
-      // sync to cloud
-      await tryWatchForSync(path.join(wikiFolderLocation, TIDDLERS_PATH));
+      // sync to cloud, do this in a non-blocking way
+      void tryWatchForSync(path.join(wikiFolderLocation, TIDDLERS_PATH));
+      this.setWikiStartLockOff(wikiFolderLocation);
     } else {
       // if is private repo wiki
       // if we are creating a sub-wiki just now, restart the main wiki to load content from private wiki
@@ -410,10 +412,11 @@ export class Wiki implements IWikiService {
         await this.stopWatchWiki(mainWikiToLink);
         await this.stopWiki(mainWikiToLink);
         await this.startWiki(mainWikiToLink, mainWorkspace.port, userName);
+        // sync main wiki to cloud, do this in a non-blocking way
         await tryWatchForSync(path.join(mainWikiToLink, TIDDLERS_PATH));
+        // sync self to cloud, subwiki's content is all in root folder path, do this in a non-blocking way
+        await tryWatchForSync();
       }
-      // sync to cloud
-      await tryWatchForSync();
     }
   }
 
