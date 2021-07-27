@@ -24,7 +24,7 @@ exports.main = _.compact([
       afterEmit: async (compilation, done) => {
         console.log('Copying tiddlywiki dependency to dist');
         await fs.copy('node_modules/@tiddlygit/tiddlywiki', './.webpack/node_modules/@tiddlygit/tiddlywiki');
-        await fs.copy('node_modules/dugite/git', './.webpack/node_modules/dugite/git');
+        await fs.copy('node_modules/dugite', './.webpack/node_modules/dugite');
       },
     }),
   new CircularDependencyPlugin({
