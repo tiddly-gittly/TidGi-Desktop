@@ -415,9 +415,9 @@ export class Wiki implements IWikiService {
         await this.stopWiki(mainWikiToLink);
         await this.startWiki(mainWikiToLink, mainWorkspace.port, userName);
         // sync main wiki to cloud, do this in a non-blocking way
-        await tryWatchForSync(path.join(mainWikiToLink, TIDDLERS_PATH));
+        void tryWatchForSync(path.join(mainWikiToLink, TIDDLERS_PATH));
         // sync self to cloud, subwiki's content is all in root folder path, do this in a non-blocking way
-        await tryWatchForSync();
+        void tryWatchForSync();
       }
     }
   }
