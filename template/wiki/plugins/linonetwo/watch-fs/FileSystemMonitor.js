@@ -178,7 +178,7 @@ function FileSystemMonitor() {
    * File remove & tiddler exist in wiki -> then remove tiddler using `$tw.syncadaptor.wiki.deleteTiddler`
    * File remove & tiddler not exist in wiki -> This change is caused by tiddlywiki itself, do noting here
    *
-   * @param {"update" | "remove"} changeType
+   * @param {"add" | "change" | "unlink"} changeType
    * @param {*} filePath changed file's relative path to the folder executing this watcher
    */
   const listener = (changeType, filePath) => {
