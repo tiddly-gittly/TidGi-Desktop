@@ -120,7 +120,6 @@ export class Wiki implements IWikiService {
                 }
                 // wiki server is booted, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
                 await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
-                await this.viewService.reloadViewsWebContents(workspaceID);
                 resolve();
               }, 100);
               break;
