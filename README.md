@@ -26,7 +26,7 @@ You can choose storage provider for your wiki workspace:
 
 ---
 
-|                                                                                                            最新版下载按钮                                                                                                            |
+|                                                                                                            [最新版下载按钮](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)                                                                                                            |
 | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TiddlyGit-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest) |
 
