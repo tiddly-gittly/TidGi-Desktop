@@ -383,7 +383,7 @@ export class Wiki implements IWikiService {
 
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     try {
-      fs.unlinkSync(path.resolve(wikiFolderLocation, 'tiddlers', '$__StoryList'));
+      await fs.unlink(path.resolve(wikiFolderLocation, 'tiddlers', '$__StoryList'));
     } catch {
       // do nothing
     }
