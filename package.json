@@ -169,7 +169,8 @@
     "typescript-plugin-styled-components": "1.6.0",
     "typesync": "0.8.0",
     "webpack-node-externals": "^3.0.0",
-    "webpack5-externals-plugin": "^1.0.4"
+    "webpack5-externals-plugin": "^1.0.4",
+    "webpackbar": "^5.0.0-3"
   },
   "private": false
 }

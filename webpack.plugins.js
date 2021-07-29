@@ -11,6 +11,7 @@ const CopyPlugin = require('copy-webpack-plugin');
 const ThreadsPlugin = require('threads-plugin');
 const ExternalsPlugin = require('webpack5-externals-plugin');
 const EventHooksPlugin = require('event-hooks-webpack-plugin');
+const WebpackBar = require('webpackbar');
 
 exports.main = _.compact([
   // we only need one instance of TsChecker, it will check main and renderer all together
@@ -49,6 +50,7 @@ exports.main = _.compact([
     target: 'electron-node-worker',
     plugins: ['ExternalsPlugin'],
   }),
+  new WebpackBar(),
 ]);
 
 exports.renderer = [
@@ -71,4 +73,5 @@ exports.renderer = [
       },
     },
   ),
+  new WebpackBar(),
 ];
