@@ -251,7 +251,7 @@ export class View implements IViewService {
       replaceUrlPortWithSettingPort((rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl, workspace.port),
     );
     setupViewEventHandlers(view, browserWindow, { shouldPauseNotifications: this.shouldPauseNotifications, workspace, sharedWebPreferences });
-    void view.webContents.loadURL(initialUrl);
+    await view.webContents.loadURL(initialUrl);
     const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
     view.webContents.on('destroyed', () => {
       unregisterContextMenu();

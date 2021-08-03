@@ -85,6 +85,7 @@ export class Wiki implements IWikiService {
       logger.error('Try to start wiki, but workspace not found', { homePath, workspace, workspaceID });
       return;
     }
+    // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
     const workerData = { homePath, userName, tiddlyWikiPort };
     const worker = await spawn<WikiWorker>(new Worker(workerURL));
@@ -105,6 +106,7 @@ export class Wiki implements IWikiService {
           delete this.wikiWorkers[homePath];
           const warningMessage = `NodeJSWiki ${homePath} Worker stopped (can be normal quit, or unexpected error, see other logs to determine)`;
           logger.info(warningMessage, loggerMeta);
+          logger.info(`startWiki() rejected with message.type === 'message' and event.type === 'termination'`, loggerMeta);
           resolve();
         }
       });
@@ -118,8 +120,7 @@ export class Wiki implements IWikiService {
                 if (message.message !== undefined) {
                   logger.info(message.message, loggerMeta);
                 }
-                // wiki server is booted, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
-                await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
+                logger.info(`startWiki() resolved with message.type === 'control' and WikiControlActions.booted`, loggerMeta);
                 resolve();
               }, 100);
               break;
@@ -133,6 +134,7 @@ export class Wiki implements IWikiService {
             case WikiControlActions.error: {
               const errorMessage = message.message ?? 'get WikiControlActions.error without message';
               logger.error(errorMessage, { ...loggerMeta, message });
+              logger.info(`startWiki() rejected with message.type === 'control' and  WikiControlActions.error`, loggerMeta);
               reject(new Error(errorMessage));
             }
           }
