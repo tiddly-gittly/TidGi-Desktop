@@ -219,9 +219,10 @@ export class Window implements IWindowService {
     });
     // Hide window instead closing on macos
     newWindow.on('close', async (event) => {
+      const windowMeta = await this.getWindowMeta(WindowNames.main);
       const mainWindow = this.get(WindowNames.main);
       if (mainWindow === undefined) return;
-      if (process.platform === 'darwin' && (await this.getWindowMeta(WindowNames.main))?.forceClose !== true) {
+      if (process.platform === 'darwin' && windowMeta?.forceClose !== true) {
         event.preventDefault();
         // https://github.com/electron/electron/issues/6033#issuecomment-242023295
         if (mainWindow.isFullScreen()) {
