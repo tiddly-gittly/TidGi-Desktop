@@ -49,10 +49,10 @@ async function runApp(): Promise<void> {
     document.addEventListener('keydown', (_event) => {
       void (async () => {
         const { preventClosingWindow } = (await window.service.window.getWindowMeta(WindowNames.preferences)) as IPreferenceWindowMeta;
-        if (window.meta.windowName === WindowNames.preferences && preventClosingWindow) {
+        if (window?.meta?.windowName === WindowNames.preferences && preventClosingWindow) {
           return;
         }
-        void window.remote.closeCurrentWindow();
+        void window?.remote?.closeCurrentWindow?.();
       })();
     });
   }
