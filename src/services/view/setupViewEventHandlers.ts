@@ -114,23 +114,29 @@ export default function setupViewEventHandlers(
       return;
     }
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {
+      // Fix nodejs wiki start slow on system startup, which cause `-102 ERR_CONNECTION_REFUSED` even if wiki said it is booted, we have to retry several times
+      if (
+        errorCode === -102 &&
+        view.webContents.getURL().length > 0 &&
+        workspaceObject.homeUrl.startsWith('http') &&
+        didFailLoadTimes < LOAD_VIEW_MAX_RETRIES
+      ) {
+        setTimeout(async () => {
+          await workspaceService.updateMetaData(workspace.id, {
+            didFailLoadTimes: didFailLoadTimes + 1,
+          });
+          await view.webContents.loadURL(initialUrl);
+        }, 200);
+        return;
+      }
       await workspaceService.updateMetaData(workspace.id, {
-        didFailLoadErrorMessage: `${errorCode} ${errorDesc}`,
+        didFailLoadErrorMessage: `${errorCode} ${errorDesc} , retryTimes: ${didFailLoadTimes}`,
       });
       if (workspaceObject.active && browserWindow !== undefined && !browserWindow.isDestroyed()) {
         // fix https://github.com/atomery/singlebox/issues/228
         const contentSize = browserWindow.getContentSize();
         view.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       }
-    }
-    // Fix nodejs wiki start slow on system startup, which cause `-102 ERR_CONNECTION_REFUSED` even if wiki said it is booted, we have to retry several times
-    if (errorCode === -102 && view.webContents.getURL().length > 0 && workspaceObject.homeUrl.startsWith('http') && didFailLoadTimes < LOAD_VIEW_MAX_RETRIES) {
-      setTimeout(async () => {
-        await workspaceService.updateMetaData(workspace.id, {
-          didFailLoadTimes: didFailLoadTimes + 1,
-        });
-        await view.webContents.loadURL(initialUrl);
-      }, 200);
     }
     // edge case to handle failed auth, use setTimeout to prevent infinite loop
     if (errorCode === -300 && view.webContents.getURL().length === 0 && workspaceObject.homeUrl.startsWith('http')) {
