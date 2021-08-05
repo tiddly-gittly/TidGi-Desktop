@@ -250,7 +250,7 @@ export class View implements IViewService {
       // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
       replaceUrlPortWithSettingPort((rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl, workspace.port),
     );
-    setupViewEventHandlers(view, browserWindow, { shouldPauseNotifications: this.shouldPauseNotifications, workspace, sharedWebPreferences });
+    setupViewEventHandlers(view, browserWindow, { shouldPauseNotifications: this.shouldPauseNotifications, workspace, sharedWebPreferences, initialUrl });
     await view.webContents.loadURL(initialUrl);
     const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
     view.webContents.on('destroyed', () => {

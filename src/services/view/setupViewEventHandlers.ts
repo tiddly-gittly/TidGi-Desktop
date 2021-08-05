@@ -19,11 +19,13 @@ import { container } from '@services/container';
 import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
+import { LOAD_VIEW_MAX_RETRIES } from '@/constants/parameters';
 
 export interface IViewContext {
   workspace: IWorkspace;
   shouldPauseNotifications: boolean;
   sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
+  initialUrl: string;
 }
 
 export interface IViewMeta {
@@ -33,7 +35,11 @@ export interface IViewMeta {
 /**
  * Bind workspace related event handler to view.webContent
  */
-export default function setupViewEventHandlers(view: BrowserView, browserWindow: BrowserWindow, { workspace, sharedWebPreferences }: IViewContext): void {
+export default function setupViewEventHandlers(
+  view: BrowserView,
+  browserWindow: BrowserWindow,
+  { workspace, sharedWebPreferences, initialUrl }: IViewContext,
+): void {
   // metadata and state about current BrowserView
   const viewMeta: IViewMeta = {
     forceNewWindow: false,
@@ -99,7 +105,8 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
   // https://electronjs.org/docs/api/web-contents#event-did-fail-load
   // https://github.com/webcatalog/neutron/blob/3d9e65c255792672c8bc6da025513a5404d98730/main-src/libs/views.js#L397
   view.webContents.on('did-fail-load', async (_event, errorCode, errorDesc, _validateUrl, isMainFrame) => {
-    const workspaceObject = await workspaceService.get(workspace.id);
+    const [workspaceObject, workspaceMetaData] = await Promise.all([workspaceService.get(workspace.id), workspaceService.getMetaData(workspace.id)]);
+    const didFailLoadTimes = workspaceMetaData.didFailLoadTimes ?? 0;
     // this event might be triggered
     // even after the workspace obj and BrowserView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
@@ -108,13 +115,22 @@ export default function setupViewEventHandlers(view: BrowserView, browserWindow:
     }
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {
       await workspaceService.updateMetaData(workspace.id, {
-        didFailLoadErrorMessage: errorDesc,
+        didFailLoadErrorMessage: `${errorCode} ${errorDesc}`,
       });
       if (workspaceObject.active && browserWindow !== undefined && !browserWindow.isDestroyed()) {
         // fix https://github.com/atomery/singlebox/issues/228
         const contentSize = browserWindow.getContentSize();
         view.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       }
+    }
+    // Fix nodejs wiki start slow on system startup, which cause `-102 ERR_CONNECTION_REFUSED` even if wiki said it is booted, we have to retry several times
+    if (errorCode === -102 && view.webContents.getURL().length > 0 && workspaceObject.homeUrl.startsWith('http') && didFailLoadTimes < LOAD_VIEW_MAX_RETRIES) {
+      setTimeout(async () => {
+        await workspaceService.updateMetaData(workspace.id, {
+          didFailLoadTimes: didFailLoadTimes + 1,
+        });
+        await view.webContents.loadURL(initialUrl);
+      }, 200);
     }
     // edge case to handle failed auth, use setTimeout to prevent infinite loop
     if (errorCode === -300 && view.webContents.getURL().length === 0 && workspaceObject.homeUrl.startsWith('http')) {
