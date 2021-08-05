@@ -2,7 +2,7 @@
 /* eslint-disable unicorn/consistent-destructuring */
 import { app, session, dialog } from 'electron';
 import { injectable } from 'inversify';
-import { delay } from 'bluebird';
+import { delay, mapSeries } from 'bluebird';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import i18n from '@services/libs/i18n';
@@ -38,13 +38,12 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async initializeAllWorkspaceView(): Promise<void> {
     const workspacesList = await this.workspaceService.getWorkspacesAsList();
-    await Promise.all(
-      workspacesList
-        .sort((a, b) => (a.isSubWiki && !b.isSubWiki ? 1 : -1))
-        .map(async (workspace) => {
-          this.wikiService.setWikiStartLockOn(workspace.wikiFolderLocation);
-          await this.initializeWorkspaceView(workspace);
-        }),
+    await mapSeries(
+      workspacesList.sort((a, b) => (a.isSubWiki && !b.isSubWiki ? 1 : -1)),
+      async (workspace) => {
+        this.wikiService.setWikiStartLockOn(workspace.wikiFolderLocation);
+        await this.initializeWorkspaceView(workspace);
+      },
     );
     this.wikiService.setAllWikiStartLockOff();
   }
