@@ -1,4 +1,3 @@
-/* eslint-disable */
 /**
  * fix https://github.com/electron/electron/issues/28176
  * We cannot pass Observable across contextBridge, so we have to add a hidden patch to the object on preload script, and use that patch to regenerate Observable on renderer side

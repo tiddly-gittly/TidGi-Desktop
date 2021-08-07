@@ -1,4 +1,4 @@
-import React, { useCallback, useState, useRef } from 'react';
+import React, { useCallback, useState } from 'react';
 import styled, { keyframes } from 'styled-components';
 import { Snackbar, Button, IconButton, Tooltip } from '@material-ui/core';
 import { Close as CloseIcon } from '@material-ui/icons';

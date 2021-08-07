@@ -88,6 +88,8 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
       wikiFolderNameSetter(mainWorkspaceList[mainWorkspaceList.length - 1]?.wikiFolderLocation ?? 'wiki');
       parentFolderLocationSetter(desktopPathAsDefaultExistedWikiFolderPath);
     })();
+    // we only do this on component init
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
   const [gitRepoUrl, gitRepoUrlSetter] = useState<string>('');
 

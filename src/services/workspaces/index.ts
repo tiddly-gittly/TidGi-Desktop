@@ -209,7 +209,6 @@ export class Workspace implements IWorkspaceService {
    * @param workspaceToSanitize User input workspace or loaded workspace, that may contains bad values
    */
   private sanitizeWorkspace(workspaceToSanitize: IWorkspace): IWorkspace {
-    const subWikiFolderLocation = path.basename(workspaceToSanitize.wikiFolderLocation);
     const defaultValues: Partial<IWorkspace> = {
       storageService: SupportedStorageServices.github,
     };

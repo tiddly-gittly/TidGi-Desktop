@@ -1,4 +1,4 @@
-import { BrowserView, BrowserWindow, session, dialog, ipcMain, WebPreferences } from 'electron';
+import { BrowserView, BrowserWindow, session, ipcMain, WebPreferences } from 'electron';
 import { injectable } from 'inversify';
 
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -19,7 +19,6 @@ import getFromRenderer from '@services/libs/getFromRenderer';
 import { ViewChannel, MetaDataChannel, WindowChannel } from '@/constants/channels';
 import { lazyInject } from '@services/container';
 import { IViewService } from './interface';
-import { SupportedStorageServices } from '@services/types';
 import { getLocalHostUrlWithActualIP, replaceUrlPortWithSettingPort } from '@services/libs/url';
 import { logger } from '@services/libs/log';
 import { ViewLoadUrlError } from './error';

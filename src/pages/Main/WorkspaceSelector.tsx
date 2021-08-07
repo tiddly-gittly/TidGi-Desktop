@@ -6,7 +6,6 @@ import styled, { css, keyframes } from 'styled-components';
 
 import defaultIcon from '../../images/default-icon.png';
 import { getAssetsFileUrl } from '@/helpers/url';
-import { Theme } from '@material-ui/core';
 
 Promise.config({ cancellation: true });
 

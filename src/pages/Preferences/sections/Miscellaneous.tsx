@@ -1,5 +1,4 @@
 import React from 'react';
-import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { Divider, List, ListItem, ListItemText } from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';

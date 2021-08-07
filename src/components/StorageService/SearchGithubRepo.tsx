@@ -152,10 +152,11 @@ function SearchGithubRepoResultList({
   const [createRepository] = useMutation(CREATE_REPO_MUTATION);
 
   const repositoryCount = data?.search?.repositoryCount;
-  let repoList: IGithubSearchNode[] = [];
-  if (data !== undefined && (repositoryCount ?? 0) > 0) {
-    repoList = data.search.edges.map(({ node }) => node);
-  }
+  const repoList: IGithubSearchNode[] = useMemo(
+    () => (data !== undefined && (repositoryCount ?? 0) > 0 ? data.search.edges.map(({ node }) => node) : []),
+    [data, repositoryCount],
+  );
+
   // auto select first one after first search
   useEffect(() => {
     if (githubWikiUrl?.length === 0 && repoList.length > 0) {

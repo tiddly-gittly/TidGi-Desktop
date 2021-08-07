@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
 import mergeDeep from 'lodash/merge';
-import { BrowserWindow, ipcMain, dialog, app, clipboard, BrowserWindowConstructorOptions, Tray, nativeImage, Menu } from 'electron';
+import { BrowserWindow, ipcMain, app, clipboard, BrowserWindowConstructorOptions, Tray, nativeImage, Menu } from 'electron';
 import { injectable } from 'inversify';
 import { menubar, Menubar } from 'menubar';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';

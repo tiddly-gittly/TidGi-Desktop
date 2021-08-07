@@ -49,7 +49,7 @@ export default class PopUpMenuItem extends React.Component<Props, State> {
                 },
               });
             }
-            // eslint-disable-next-line unicorn/no-array-method-this-argument
+            // eslint-disable-next-line unicorn/no-array-method-this-argument, unicorn/no-null
             return null;
           })}
         </Menu>
