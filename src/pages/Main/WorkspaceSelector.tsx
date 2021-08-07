@@ -12,7 +12,7 @@ Promise.config({ cancellation: true });
 
 const Root = styled.div<{ hibernated?: boolean; active?: boolean }>`
   height: fit-content;
-  width: 68px;
+  width: 58px;
   padding: 10px 0;
   display: flex;
   align-items: center;
@@ -107,7 +107,7 @@ const ShortcutText = styled.p`
   font-size: 12px;
   font-weight: 500;
   display: inline-block;
-  word-break: normal;
+  word-break: break-all;
   text-align: center;
 `;
 const Badge = styled(BadgeRaw)`

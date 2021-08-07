@@ -88,6 +88,7 @@ const SidebarTop = styled.div<{ fullscreen?: boolean }>`
       : css`
           padding-top: 30px;
         `}
+  padding-left: 10px;
 `;
 
 const IconButton = styled(IconButtonRaw)`
