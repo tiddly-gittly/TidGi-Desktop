@@ -10,9 +10,11 @@ relink titles within the body.
 "use strict";
 
 var defaultOperator = "text/vnd.tiddlywiki";
+var utils = require('$:/plugins/flibbles/relink/js/utils.js');
 
-var textOperators = Object.create(null);
-$tw.modules.applyMethods('relinktextoperator', textOperators);
+exports.name = 'text';
+
+var textOperators = utils.getModulesByTypeAsHashmap('relinktextoperator', 'type');
 
 // $:/DefaultTiddlers is a tiddler which has type "text/vnd.tiddlywiki",
 // but it lies. It doesn't contain wikitext. It contains a filter, so
@@ -22,12 +24,22 @@ var exceptions = {
 	"$:/DefaultTiddlers": "text/x-tiddler-filter"
 };
 
-exports['text'] = function(tiddler, fromTitle, toTitle, changes, options) {
+exports.report = function(tiddler, callback, options) {
 	var fields = tiddler.fields;
 	if (fields.text) {
 		var type = exceptions[fields.title] || fields.type || defaultOperator;
 		if (textOperators[type]) {
-			var entry = textOperators[type].call(this, tiddler, fromTitle, toTitle, options);
+			var entry = textOperators[type].report(tiddler, callback, options);
+		}
+	}
+};
+
+exports.relink = function(tiddler, fromTitle, toTitle, changes, options) {
+	var fields = tiddler.fields;
+	if (fields.text) {
+		var type = exceptions[fields.title] || fields.type || defaultOperator;
+		if (textOperators[type]) {
+			var entry = textOperators[type].relink(tiddler, fromTitle, toTitle, options);
 			if (entry) {
 				changes.text = entry;
 			}

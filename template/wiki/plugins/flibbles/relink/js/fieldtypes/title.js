@@ -7,11 +7,15 @@ simplest kind of field type. One title swaps out for the other.
 //                  alpha characters only.
 exports.name = 'title';
 
+exports.report = function(value, callback, options) {
+	callback(value);
+};
+
 /**Returns undefined if no change was made.
  */
 exports.relink = function(value, fromTitle, toTitle, options) {
 	if (value === fromTitle) {
-		return {name: "title", output: toTitle};
+		return {output: toTitle};
 	}
 	return undefined;
 };

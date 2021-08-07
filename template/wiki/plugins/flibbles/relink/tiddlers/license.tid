@@ -1,0 +1,6 @@
+title: $:/plugins/flibbles/relink/license
+type: text/vnd.tiddlywiki
+
+<a href={{$:/plugins/flibbles/relink!!demo}}>Relink Plugin</a> Copyright (c) 2019-<<now YYYY>> Cameron Fischer
+
+[[BSD 3-Clause License|https://raw.githubusercontent.com/flibbles/tw5-relink/master/LICENSE]]

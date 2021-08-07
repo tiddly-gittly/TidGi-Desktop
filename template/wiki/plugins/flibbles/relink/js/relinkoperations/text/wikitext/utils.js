@@ -5,6 +5,106 @@ Utility methods for the wikitext relink rules.
 
 \*/
 
+exports.makeWidget = function(parser, tag, attributes, body) {
+	if (!parser.context.allowWidgets()) {
+		return undefined;
+	}
+	var string = '<' + tag;
+	for (var attr in attributes) {
+		var value = attributes[attr];
+		if (value !== undefined) {
+			var quoted = exports.wrapAttributeValue(value);
+			if (!quoted) {
+				if (!parser.options.placeholder) {
+					// It's not possible to make this widget
+					return undefined;
+				}
+				var category = getPlaceholderCategory(parser.context, tag, attr);
+				quoted = '<<' + parser.placeholder.getPlaceholderFor(value, category) + '>>';
+			}
+			string += ' ' + attr + '=' + quoted;
+		}
+	}
+	if (body !== undefined) {
+		string += '>' + body + '</' + tag + '>';
+	} else {
+		string += '/>';
+	}
+	return string;
+};
+
+function getPlaceholderCategory(context, tag, attribute) {
+	var element = context.getAttribute(tag);
+	var rule = element && element[attribute];
+	// titles go to relink-\d
+	// plaintext goes to relink-plaintext-\d
+	// because titles are way more common, also legacy
+	if (rule === undefined) {
+		return 'plaintext';
+	} else {
+		rule = rule.fields.text;
+		if (rule === 'title') {
+			rule = undefined;
+		}
+		return rule;
+	}
+};
+
+exports.makePrettylink = function(parser, title, caption) {
+	var output;
+	if (parser.context.allowPrettylinks() && canBePrettylink(title, caption)) {
+		if (caption !== undefined) {
+			output = "[[" + caption + "|" + title + "]]";
+		} else {
+			output = "[[" + title + "]]";
+		}
+	} else if (caption !== undefined) {
+		var safeCaption = sanitizeCaption(parser, caption);
+		if (safeCaption !== undefined) {
+			output = exports.makeWidget(parser, '$link', {to: title}, safeCaption);
+		}
+	} else if (exports.shorthandPrettylinksSupported(parser.wiki)) {
+		output = exports.makeWidget(parser, '$link', {to: title});
+	} else if (parser.context.allowWidgets() && parser.placeholder) {
+		// If we don't have a caption, we must resort to
+		// placeholders anyway to prevent link/caption desync
+		// from later relinks.
+		// It doesn't matter whether the tiddler is quotable.
+		var ph = parser.placeholder.getPlaceholderFor(title);
+		output = "<$link to=<<"+ph+">>><$text text=<<"+ph+">>/></$link>";
+	}
+	return output;
+};
+
+/**In version 5.1.20, Tiddlywiki made it so <$link to"something" /> would
+ * use "something" as a caption. This is preferable. However, Relink works
+ * going back to 5.1.14, so we need to have different handling for both
+ * cases.
+ */
+var _supported;
+exports.shorthandPrettylinksSupported = function(wiki) {
+	if (_supported === undefined) {
+		var test = wiki.renderText("text/plain", "text/vnd.tiddlywiki", "<$link to=test/>");
+		_supported = (test === "test");
+	}
+	return _supported;
+};
+
+/**Return true if value can be used inside a prettylink.
+ */
+function canBePrettylink(value, customCaption) {
+	return value.indexOf("]]") < 0 && value[value.length-1] !== ']' && (customCaption !== undefined || value.indexOf('|') < 0);
+};
+
+function sanitizeCaption(parser, caption) {
+	var plaintext = parser.wiki.renderText("text/plain", "text/vnd.tiddlywiki", caption);
+	if (plaintext === caption && caption.indexOf("</$link>") <= 0) {
+		return caption;
+	} else {
+		return exports.makeWidget(parser, '$text', {text: caption});
+	}
+};
+
 /**Finds an appropriate quote mark for a given value.
  *
  *Tiddlywiki doesn't have escape characters for attribute values. Instead,
@@ -17,7 +117,7 @@ Utility methods for the wikitext relink rules.
 exports.wrapAttributeValue = function(value, preference) {
 	var whitelist = ["", "'", '"', '"""'];
 	var choices = {
-		"": function(v) {return !/([\/\s<>"'=])/.test(v); },
+		"": function(v) {return !/([\/\s<>"'=])/.test(v) && v.length > 0; },
 		"'": function(v) {return v.indexOf("'") < 0; },
 		'"': function(v) {return v.indexOf('"') < 0; },
 		'"""': function(v) {return v.indexOf('"""') < 0 && v[v.length-1] != '"';}
@@ -46,7 +146,7 @@ exports.wrapParameterValue = function(value, preference) {
 		"": function(v) {return !/([\s>"'=])/.test(v); },
 		"'": function(v) {return v.indexOf("'") < 0; },
 		'"': function(v) {return v.indexOf('"') < 0; },
-		"[[": exports.canBePrettyOperand,
+		"[[": canBePrettyOperand,
 		'"""': function(v) {return v.indexOf('"""') < 0 && v[v.length-1] != '"';}
 	};
 	if (choices[preference] && choices[preference](value)) {
@@ -78,7 +178,7 @@ function wrap(value, wrapper) {
 	}
 };
 
-exports.canBePrettyOperand = function(value) {
+function canBePrettyOperand(value) {
 	return value.indexOf(']') < 0;
 };
 

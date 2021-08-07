@@ -9,8 +9,14 @@ wikitext.
 /*global $tw: false */
 "use strict";
 
-var filterHandler = require("$:/plugins/flibbles/relink/js/settings").getType('filter');
+var filterHandler = require("$:/plugins/flibbles/relink/js/utils").getType('filter');
 
-exports['text/x-tiddler-filter'] = function(tiddler, fromTitle, toTitle, options) {
+exports.type = 'text/x-tiddler-filter';
+
+exports.report = function(tiddler, callback, options) {
+	return filterHandler.report(tiddler.fields.text, callback, options);
+};
+
+exports.relink = function(tiddler, fromTitle, toTitle, options) {
 	return filterHandler.relink(tiddler.fields.text, fromTitle, toTitle, options)
 };

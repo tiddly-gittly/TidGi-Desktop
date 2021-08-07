@@ -9,18 +9,19 @@ and tries to swap it out if it is.
 /*global $tw: false */
 "use strict";
 
-var type = 'text/vnd.tiddlywiki';
 var Placeholder = require("$:/plugins/flibbles/relink/js/utils/placeholder.js");
-var settings = require('$:/plugins/flibbles/relink/js/settings.js');
-var wikitextHandler = settings.getType('wikitext');
+var wikitextHandler = require('$:/plugins/flibbles/relink/js/utils.js').getType('wikitext');
 
-exports[type] = function(tiddler, fromTitle, toTitle, options) {
+exports.type = 'text/vnd.tiddlywiki';
+
+exports.report = function(tiddler, callback, options) {
+	wikitextHandler.report(tiddler.fields.text, callback, options);
+};
+
+exports.relink = function(tiddler, fromTitle, toTitle, options) {
 	var placeholder = new Placeholder();
-	var currentOptions = $tw.utils.extend(
-		{
-			currentTiddler: tiddler.fields.title,
-			placeholder: placeholder
-		}, options);
+	var currentOptions = Object.create(options);
+	currentOptions.placeholder = placeholder;
 	var entry = wikitextHandler.relink(tiddler.fields.text, fromTitle, toTitle, currentOptions);
 	if (entry && entry.output) {
 		// If there's output, we've also got to prepend any macros
@@ -29,4 +30,4 @@ exports[type] = function(tiddler, fromTitle, toTitle, options) {
 		entry.output = preamble + entry.output;
 	}
 	return entry;
-}
+};

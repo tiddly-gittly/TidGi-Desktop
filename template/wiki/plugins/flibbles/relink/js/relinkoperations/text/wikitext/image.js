@@ -11,46 +11,47 @@ Handles replacement in wiki text inline rules, like,
 
 var Rebuilder = require("$:/plugins/flibbles/relink/js/utils/rebuilder");
 var refHandler = require("$:/plugins/flibbles/relink/js/fieldtypes/reference");
-var filterHandler = require("$:/plugins/flibbles/relink/js/settings").getType('filter');
+var filterHandler = require("$:/plugins/flibbles/relink/js/utils").getType('filter');
 var macrocall = require("./macrocall.js");
 var utils = require("./utils.js");
-var EntryNode = require('$:/plugins/flibbles/relink/js/utils/entry');
 
 exports.name = "image";
 
-var ImageEntry = EntryNode.newCollection("image");
-
-ImageEntry.prototype.forEachChildReport = function(report, attribute, type) {
-	var value;
-	if (attribute === "source") {
-		if (this.tooltip) {
-			value = "[img[" + this.tooltip.value + "]]";
-		} else {
-			value = "[img[]]";
+exports.report = function(text, callback, options) {
+	var ptr = this.nextImage.start + 4; //[img
+	var inSource = false;
+	for (var attributeName in this.nextImage.attributes) {
+		var attr = this.nextImage.attributes[attributeName];
+		if (attributeName === "source" || attributeName === "tooltip") {
+			if (inSource) {
+				ptr = text.indexOf('|', ptr);
+			} else {
+				ptr = text.indexOf('[', ptr);
+				inSource = true;
+			}
+			ptr += 1;
 		}
-	} else {
-		if (type === "indirect") {
-			value = "{{" + report + "}}";
-		} else if (type === "filtered") {
-			value = "{{{" + report + "}}}";
-		} else if (type === "macro") {
-			// angle brackets already added...
-			value = report;
+		if (attributeName === "source") {
+			var tooltip = this.nextImage.attributes.tooltip;
+			var blurb = '[img[' + (tooltip ? tooltip.value : '') + ']]';
+			callback(attr.value, blurb);
+			ptr = text.indexOf(attr.value, ptr);
+			ptr = text.indexOf(']]', ptr) + 2;
+		} else if (attributeName !== "tooltip") {
+			ptr = reportAttribute(this.parser, attr, callback, options);
 		}
-		value = "[img " + attribute + "="+ value + "]";
 	}
-	return value;
+	this.parser.pos = ptr;
 };
 
 exports.relink = function(text, fromTitle, toTitle, options) {
-	var ptr = this.nextImage.start;
-	var builder = new Rebuilder(text, ptr);
-	var makeWidget = false;
-	var skipSource = false;
-	var imageEntry = new ImageEntry();
-	imageEntry.attributes = Object.create(null);
+	var ptr = this.nextImage.start,
+		builder = new Rebuilder(text, ptr),
+		makeWidget = false,
+		skipSource = false,
+		imageEntry;
 	if (this.nextImage.attributes.source.value === fromTitle && !canBePretty(toTitle, this.nextImage.attributes.tooltip)) {
-		if (!options.noWidgets && (utils.wrapAttributeValue(toTitle) || options.placeholder)) {
+		if (this.parser.context.allowWidgets() && (utils.wrapAttributeValue(toTitle) || options.placeholder)) {
 			makeWidget = true;
 			builder.add("<$image", ptr, ptr+4);
 		} else {
@@ -84,11 +85,10 @@ exports.relink = function(text, fromTitle, toTitle, options) {
 		if (attributeName === "source") {
 			ptr = text.indexOf(attr.value, ptr);
 			if (attr.value === fromTitle) {
-				var entry = {name: "title"};
 				if (makeWidget) {
 					var quotedValue = utils.wrapAttributeValue(toTitle);
 					if (quotedValue === undefined) {
-						var key = options.placeholder.getPlaceholderFor(toTitle, undefined, options);
+						var key = options.placeholder.getPlaceholderFor(toTitle);
 						builder.add("source=<<"+key+">>", ptr, ptr+fromTitle.length);
 					} else {
 						builder.add("source="+quotedValue, ptr, ptr+fromTitle.length);
@@ -96,9 +96,8 @@ exports.relink = function(text, fromTitle, toTitle, options) {
 				} else if (!skipSource) {
 					builder.add(toTitle, ptr, ptr+fromTitle.length);
 				} else {
-					entry.impossible = true;
+					builder.impossible = true;
 				}
-				imageEntry.addChild(entry, attributeName, "string");
 			}
 			ptr = text.indexOf(']]', ptr);
 			if (makeWidget) {
@@ -111,20 +110,55 @@ exports.relink = function(text, fromTitle, toTitle, options) {
 				var quotedValue = utils.wrapAttributeValue(attr.value);
 				builder.add("tooltip="+quotedValue, ptr, ptr+attr.value.length);
 			}
-			imageEntry.tooltip = this.nextImage.attributes.tooltip;
 		} else {
-			ptr = relinkAttribute(attr, builder, fromTitle, toTitle, imageEntry, options);
+			ptr = relinkAttribute(this.parser, attr, builder, fromTitle, toTitle, options);
 		}
 	}
 	this.parser.pos = ptr;
-	if (imageEntry.hasChildren()) {
-		imageEntry.output = builder.results(ptr);
-		return imageEntry;
+	if (builder.changed() || builder.impossible) {
+		imageEntry = {
+			output: builder.results(ptr),
+			impossible: builder.impossible };
 	}
-	return undefined;
+	return imageEntry;
 };
 
-function relinkAttribute(attribute, builder, fromTitle, toTitle, entry, options) {
+function reportAttribute(parser, attribute, callback, options) {
+	var text = parser.source;
+	var ptr = text.indexOf(attribute.name, attribute.start);
+	var end;
+	ptr += attribute.name.length;
+	ptr = text.indexOf('=', ptr);
+	if (attribute.type === "string") {
+		ptr = text.indexOf(attribute.value, ptr)
+		var quote = utils.determineQuote(text, attribute);
+		// ignore first quote. We already passed it
+		end = ptr + quote.length + attribute.value.length;
+	} else if (attribute.type === "indirect") {
+		ptr = text.indexOf('{{', ptr);
+		var end = ptr + attribute.textReference.length + 4;
+		refHandler.report(attribute.textReference, function(title, blurb) {
+			callback(title, '[img ' + attribute.name + '={{' + (blurb || '') + '}}]');
+		}, options);
+	} else if (attribute.type === "filtered") {
+		ptr = text.indexOf('{{{', ptr);
+		var end = ptr + attribute.filter.length + 6;
+		filterHandler.report(attribute.filter, function(title, blurb) {
+			callback(title, '[img ' + attribute.name + '={{{' + blurb + '}}}]');
+		}, options);
+	} else if (attribute.type === "macro") {
+		ptr = text.indexOf("<<", ptr);
+		var end = attribute.value.end;
+		var macro = attribute.value;
+		oldValue = attribute.value;
+		macrocall.reportAttribute(parser, macro, function(title, blurb) {
+			callback(title, '[img ' + attribute.name + '=' + blurb + ']');
+		}, options);
+	}
+	return end;
+};
+
+function relinkAttribute(parser, attribute, builder, fromTitle, toTitle, options) {
 	var text = builder.text;
 	var ptr = text.indexOf(attribute.name, attribute.start);
 	var end;
@@ -140,7 +174,9 @@ function relinkAttribute(attribute, builder, fromTitle, toTitle, entry, options)
 		var end = ptr + attribute.textReference.length + 4;
 		var ref = refHandler.relinkInBraces(attribute.textReference, fromTitle, toTitle, options);
 		if (ref) {
-			entry.addChild(ref, attribute.name, "indirect");
+			if (ref.impossible) {
+				builder.impossible = true;
+			}
 			if (ref.output) {
 				builder.add("{{"+ref.output+"}}", ptr, end);
 			}
@@ -150,7 +186,9 @@ function relinkAttribute(attribute, builder, fromTitle, toTitle, entry, options)
 		var end = ptr + attribute.filter.length + 6;
 		var filter = filterHandler.relinkInBraces(attribute.filter, fromTitle, toTitle, options);
 		if (filter !== undefined) {
-			entry.addChild(filter, attribute.name, "filtered");
+			if (filter.impossible) {
+				builder.impossible = true;
+			}
 			if (filter.output) {
 				var quoted = "{{{"+filter.output+"}}}";
 				builder.add(quoted, ptr, end);
@@ -161,9 +199,11 @@ function relinkAttribute(attribute, builder, fromTitle, toTitle, entry, options)
 		var end = attribute.value.end;
 		var macro = attribute.value;
 		oldValue = attribute.value;
-		var macroEntry = macrocall.relinkAttribute(macro, text, fromTitle, toTitle, options);
+		var macroEntry = macrocall.relinkAttribute(parser, macro, text, fromTitle, toTitle, options);
 		if (macroEntry !== undefined) {
-			entry.addChild(macroEntry, attribute.name, "macro");
+			if (macroEntry.impossible) {
+				builder.impossible = true;
+			}
 			if (macroEntry.output) {
 				builder.add(macroEntry.output, ptr, end);
 			}

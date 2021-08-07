@@ -14,6 +14,7 @@ way to ensure this runs after the old relinkTiddler method is applied.
 "use strict";
 
 var language = require('$:/plugins/flibbles/relink/js/language.js');
+var utils = require("$:/plugins/flibbles/relink/js/utils.js");
 
 exports.name = "redefine-relinkTiddler";
 exports.synchronous = true;
@@ -29,30 +30,39 @@ exports.startup = function() {
  *  This replaces the existing function in core Tiddlywiki.
  */
 function relinkTiddler(fromTitle, toTitle, options) {
-	var self = this;
+	options = options || {};
 	var failures = [];
-	var records = this.getRelinkReport(fromTitle, toTitle, options);
+	var indexer = utils.getIndexer(this);
+	var records = indexer.relinkLookup(fromTitle, toTitle, options);
 	for (var title in records) {
-		var entries = records[title];
-		var changes = Object.create(null);
-		var update = false;
+		var entries = records[title],
+			changes = Object.create(null),
+			update = false,
+			fails = false;
 		for (var field in entries) {
 			var entry = entries[field];
-			language.eachImpossible(entry, function() {
-				failures.push(title);
-			});
-			language.logAll(entry, title, fromTitle, toTitle, options);
-			if (entry && entry.output) {
+			fails = fails || entry.impossible;
+			if (entry.output) {
 				changes[field] = entry.output;
 				update = true;
 			}
 		}
+		if (fails) {
+			failures.push(title);
+		}
 		// If any fields changed, update tiddler
 		if (update) {
+			console.log("Renaming '"+fromTitle+"' to '"+toTitle+"' in '" + title + "'");
+
 			var tiddler = this.getTiddler(title);
-			var newTiddler = new $tw.Tiddler(tiddler,changes,self.getModificationFields())
+			var newTiddler = new $tw.Tiddler(tiddler,changes,this.getModificationFields())
 			newTiddler = $tw.hooks.invokeHook("th-relinking-tiddler",newTiddler,tiddler);
-			self.addTiddler(newTiddler);
+			this.addTiddler(newTiddler);
+			// If the title changed, we need to perform a nested rename
+			if (newTiddler.fields.title !== title) {
+				this.deleteTiddler(title);
+				this.relinkTiddler(title, newTiddler.fields.title,options);
+			}
 		}
 	};
 	if (failures.length > 0) {

@@ -10,35 +10,7 @@ Handles markdown links
 \*/
 
 var utils = require("$:/plugins/flibbles/relink/js/utils/markdown");
-var settings = require("$:/plugins/flibbles/relink/js/settings");
-var markdown = settings.getType('markdown');
-
-function LinkEntry() {};
-LinkEntry.prototype.name = "markdownlink";
-LinkEntry.prototype.report = function() {
-	var output = [];
-	var hash = '#';
-	if (this.prefix) {
-		hash = '';
-	}
-	if (this.captionEntry) {
-		var self = this;
-		$tw.utils.each(this.captionEntry.report(), function(report) {
-			output.push(self.prefix+"[" + (report || '') + "](" + hash + self.link + ")");
-		});
-	};
-	if (this.linkChanged) {
-		var safeCaption = utils.abridge(this.caption);
-		output.push(this.prefix+"[" + safeCaption + "](" + hash + ")");
-	}
-	return output;
-};
-
-LinkEntry.prototype.eachChild = function(method) {
-	if (this.captionEntry) {
-		method(this.captionEntry);
-	}
-};
+var markdown = require("$:/plugins/flibbles/relink/js/utils").getType('markdown');
 
 exports.name = "markdownlink";
 exports.types = {inline: true};
@@ -50,10 +22,6 @@ exports.init = function(parser) {
 exports.findNextMatch = function(startPos) {
 	this.endMatch = this.matchLink(this.parser.source, startPos);
 	return this.endMatch ? this.endMatch.index : undefined;
-};
-
-exports.survey = function(text) {
-	return this.matchLink(text, 0);
 };
 
 /**A zero side-effect method which returns a regexp which pretended to match
@@ -102,36 +70,64 @@ exports.matchLink = function(text, pos) {
 	return match;
 };
 
+exports.report = function(text, callback, options) {
+	var em = this.endMatch,
+		caption = em[2],
+		prefix = em[1],
+		isImage = (prefix === '!'),
+		link = em[4],
+		hash = '#';
+	if (prefix) {
+		hash = '';
+	}
+	this.parser.pos = em.index + em[1].length + caption.length + em[0].length + 2;
+	if (!isImage) {
+		markdown.report(caption, function(title, blurb) {
+			callback(title, prefix + '[' + (blurb || '') + '](' + hash + link + ')');
+		}, options);
+	}
+	if (isImage !== (em[3].lastIndexOf('#') >= 0)) {
+		var safeCaption = utils.abridge(caption);
+		try {
+			callback(decodeURIComponent(link), em[1] + '[' + safeCaption + '](' + hash + ')');
+		} catch (e) {
+			// It must be a malformed link. Not our problem.
+			// Just move on.
+		}
+	}
+};
+
 exports.relink = function(text, fromTitle, toTitle, options) {
-	var entry = new LinkEntry(),
+	var entry = {},
 		em = this.endMatch,
 		modified = false,
 		caption = em[2],
-		image = (em[1] === '!'),
+		isImage = (em[1] === '!'),
 		link = em[4];
 	this.parser.pos = em.index + em[1].length + caption.length + em[0].length + 2;
-	if (!image) {
+	if (!isImage) {
 		var newCaption = markdown.relink(caption, fromTitle, toTitle, options);
 		if (newCaption) {
-			modified = true;
-			entry.captionEntry = newCaption;
 			if (newCaption.output) {
 				if (this.canBeCaption(newCaption.output)) {
 					caption = newCaption.output;
+					modified = true;
 				} else {
-					newCaption.impossible = true;
+					entry.impossible = true;
 				}
+			}
+			if (newCaption.impossible) {
+				entry.impossible = true;
 			}
 		}
 	}
 	// I don't know why internal images links don't use the '#', but links
 	// do, but that's just how it is.
-	if (image !== (em[3].lastIndexOf('#') >=0)) {
+	if (isImage !== (em[3].lastIndexOf('#') >=0)) {
 		try {
 			if (decodeURIComponent(link) === fromTitle) {
-				modified = true;
-				entry.linkChanged = true;
 				link = utils.encodeLink(toTitle);
+				modified = true;
 			}
 		} catch (e) {
 			// It must be a malformed link. Not our problem.
@@ -139,11 +135,10 @@ exports.relink = function(text, fromTitle, toTitle, options) {
 		}
 	}
 	if (modified) {
-		entry.link = link;
-		entry.caption = caption;
-		entry.prefix = em[1];
 		// This way preserves whitespace
 		entry.output = em[1]+"["+caption+"]("+em[3]+link+em[5]+")";
+	}
+	if (modified || entry.impossible) {
 		return entry;
 	}
 	return undefined;

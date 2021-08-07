@@ -1,0 +1,11 @@
+title: $:/plugins/flibbles/relink-titles/readme
+
+Highly customizable relinking of tiddler titles //related// to the renamed tiddler.
+
+* Rename a hierarchy of subtiddlers when renaming a root tiddler.
+* Make custom filter rules to rename other tiddlers the way you want when Relinking.
+* Integrates with other plugins for plugin-specific rules.
+
+See <a href={{$:/plugins/flibbles/relink-titles!!source}}>the tw5-relink website</a> for more details and examples.
+
+{{$:/core/images/warning}} ''Warning:'' You must use //Relink// v1.10.2 or greater with this, or this plugin may delete some tiddler bodies while trying to relink titles.

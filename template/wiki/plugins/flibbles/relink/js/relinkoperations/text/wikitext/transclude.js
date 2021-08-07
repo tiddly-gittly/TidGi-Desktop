@@ -15,113 +15,101 @@ var utils = require("./utils.js");
 
 exports.name = ['transcludeinline', 'transcludeblock'];
 
-var TranscludeEntry = function() {};
-TranscludeEntry.prototype.name = "transclude";
-TranscludeEntry.prototype.report = function() {
-	var ref = this.reference || {};
-	var output = [];
-	if (this.referenceChanged) {
-		var suffix = "";
-		if (ref.field) {
-			suffix = "!!" + ref.field;
-		}
+exports.report = function(text, callback, options) {
+	var m = this.match,
+		refString = $tw.utils.trim(m[1]),
+		ref = parseTextReference(refString);
+		template = $tw.utils.trim(m[2]);
+	if (ref.title) {
+		var suffix = '';
 		if (ref.index) {
-			suffix = "##" + ref.index;
+			suffix = '##' + ref.index;
+		} else if (ref.field) {
+			suffix = '!!' + ref.field;
 		}
-		if (this.template) {
-			suffix = suffix + "||" + this.template;
+		if (template) {
+			suffix = suffix + '||' + template;
 		}
-		output.push("{{" + suffix + "}}");
+		callback(ref.title, '{{' + suffix + '}}')
 	}
-	if (this.templateChanged) {
-		// Must be template
-		var refString = refHandler.toString(ref);
-		output.push("{{" + refString + "||}}");
+	if (template) {
+		callback(template, '{{' + refString + '||}}');
 	}
-	return output;
+	this.parser.pos = this.matchRegExp.lastIndex;
 };
 
 exports.relink = function(text, fromTitle, toTitle, options) {
 	var m = this.match,
-		reference = $tw.utils.parseTextReference(m[1]),
+		reference = parseTextReference(m[1]),
 		template = m[2],
-		entry = new TranscludeEntry(),
+		entry = undefined,
 		modified = false;
 	this.parser.pos = this.matchRegExp.lastIndex;
 	if ($tw.utils.trim(reference.title) === fromTitle) {
 		// preserve user's whitespace
 		reference.title = reference.title.replace(fromTitle, toTitle);
 		modified = true;
-		entry.referenceChanged = true;
 	}
 	if ($tw.utils.trim(template) === fromTitle) {
 		template = template.replace(fromTitle, toTitle);
 		modified = true;
-		entry.templateChanged = true;
 	}
 	if (modified) {
-		entry.reference = reference;
-		entry.template = template;
-		var output = this.makeTransclude(reference, template, options);
+		var output = this.makeTransclude(this.parser, reference, template);
 		if (output) {
 			// Adding any newline that might have existed is
 			// what allows this relink method to work for both
 			// the block and inline filter wikitext rule.
-			output = output + utils.getEndingNewline(m[0]);
-			entry.output = output;
+			entry = {output: output + utils.getEndingNewline(m[0])};
 		} else {
-			entry.impossible = true;
+			entry = {impossible: true}
 		}
-		return entry;
 	}
-	return undefined;
+	return entry;
+};
+
+// I have my own because the core one is deficient for my needs.
+function parseTextReference(textRef) {
+	// Separate out the title, field name and/or JSON indices
+	var reTextRef = /^([\w\W]*?)(?:!!(\S[\w\W]*)|##(\S[\w\W]*))?$/g;
+		match = reTextRef.exec(textRef),
+		result = {};
+	if(match) {
+		// Return the parts
+		result.title = match[1];
+		result.field = match[2];
+		result.index = match[3];
+	} else {
+		// If we couldn't parse it
+		result.title = textRef
+	}
+	return result;
 };
 
 /** This converts a reference and a template into a string representation
  *  of a transclude.
  */
-exports.makeTransclude = function(reference, template, options) {
+exports.makeTransclude = function(parser, reference, template) {
 	var rtn;
 	if (!canBePrettyTemplate(template)) {
-		if (!options.noWidgets) {
-			var resultTemplate = wrap(template, options);
-			if (resultTemplate !== undefined) {
-				if (reference.title) {
-					var resultTitle = wrap(reference.title, options);
-					var attrs = transcludeAttributes(reference.field, reference.index, options);
-					if (resultTitle !== undefined && attrs !== undefined) {
-						rtn = "<$tiddler tiddler="+resultTitle+"><$transclude tiddler="+resultTemplate+attrs+"/></$tiddler>";
-					}
-				} else {
-					rtn = "<$transclude tiddler="+resultTemplate+"/>";
-				}
-			}
+		var widget = utils.makeWidget(parser, '$transclude', {
+			tiddler: $tw.utils.trim(template),
+			field: reference.field,
+			index: reference.index});
+		if (reference.title && widget !== undefined) {
+			rtn = utils.makeWidget(parser, '$tiddler', {tiddler: $tw.utils.trim(reference.title)}, widget);
+		} else {
+			rtn = widget;
 		}
 	} else if (!canBePrettyTitle(reference.title)) {
-		if (!options.noWidgets) {
-			// This block and the next account for the 1%...
-			var resultTitle = wrap(reference.title, options);
-			if (resultTitle !== undefined) {
-				var reducedRef = {field: reference.field, index: reference.index};
-				rtn = "<$tiddler tiddler="+resultTitle+">"+prettyTransclude(reducedRef, template)+"</$tiddler>";
-			}
-		}
+		// This block and the next account for the 1%...
+		var reducedRef = {field: reference.field, index: reference.index};
+		rtn = utils.makeWidget(parser, '$tiddler', {tiddler: $tw.utils.trim(reference.title)}, prettyTransclude(reducedRef, template));
 	} else {
 		// This block takes care of 99% of all cases
 		rtn = prettyTransclude(reference, template);
 	}
 	return rtn;
-};
-
-function wrap(tiddler, options) {
-	tiddler = $tw.utils.trim(tiddler);
-	var result = utils.wrapAttributeValue(tiddler);
-	if (result === undefined) {
-		if (options.placeholder) {
-			result = "<<" + options.placeholder.getPlaceholderFor(tiddler, undefined, options) + ">>";
-		}
-	}
-	return result;
 };
 
 function canBePrettyTitle(value) {
@@ -130,37 +118,6 @@ function canBePrettyTitle(value) {
 
 function canBePrettyTemplate(value) {
 	return !value || (value.indexOf('}') < 0 && value.indexOf('{') < 0 && value.indexOf('|') < 0);
-};
-
-/**Returns attributes for a transclude widget.
- * only field or index should be used, not both, but both will return
- * the intuitive (albeit useless) result.
- */
-function transcludeAttributes(field, index, options) {
-	var rtn = [
-		wrapAttribute("field", field, options),
-		wrapAttribute("index", index, options)
-	];
-	if (rtn[0] === undefined || rtn[1] === undefined) {
-		// This can only happen if the transclude is using an
-		// illegal key.
-		return undefined;
-	}
-	return rtn.join('');
-};
-
-function wrapAttribute(name, value, options) {
-	if (value) {
-		var wrappedValue = utils.wrapAttributeValue(value);
-		if (wrappedValue === undefined) {
-			if (!options.placeholder) {
-				return undefined;
-			}
-			wrappedValue = "<<"+options.placeholder.getPlaceholderFor(value, name, options)+">>";
-		}
-		return " "+name+"="+wrappedValue;
-	}
-	return '';
 };
 
 function prettyTransclude(textReference, template) {

@@ -3,7 +3,7 @@ tags: $:/tags/TiddlerInfo
 title: $:/plugins/flibbles/relink/ui/TiddlerInfo/References
 
 \define lingo-base() $:/plugins/flibbles/relink/language/TiddlerInfo/
-\define filter() [relink:references<currentTiddler>!title[$:/StoryList]!prefix[$:/temp/]sort[title]]
+\define filter() [all[current]relink:backreferences[]!title[$:/StoryList]!prefix[$:/temp/]sort[title]]
 <$list filter="[subfilter<filter>first[]]">
 
 <<lingo References/Description>>

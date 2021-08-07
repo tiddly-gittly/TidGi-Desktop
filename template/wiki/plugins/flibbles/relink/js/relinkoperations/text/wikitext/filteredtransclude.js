@@ -15,65 +15,57 @@ This renames both the list and the template field.
 
 exports.name = ['filteredtranscludeinline', 'filteredtranscludeblock'];
 
-var filterHandler = require("$:/plugins/flibbles/relink/js/settings").getType('filter');
+var filterHandler = require("$:/plugins/flibbles/relink/js/utils").getType('filter');
 var utils = require("./utils.js");
-var EntryNode = require('$:/plugins/flibbles/relink/js/utils/entry');
 
-var FilteredTranscludeEntry = EntryNode.newType("filteredtransclude");
-
-FilteredTranscludeEntry.prototype.report = function() {
-	var output = [];
-	var self = this;
-	$tw.utils.each(this.children, function(child) {
-		if (child.name === "filter") {
-			var append = "}}}";
-			if (self.template) {
-				append = "||" + self.template + append;
-			}
-			$tw.utils.each(child.report(), function(report) {
-				output.push("{{{" + report + append);
-			});
-		} else {
-			// Must be the template
-			output.push("{{{" + self.filter + "||}}}");
-		}
-	});
-	return output;
+exports.report = function(text, callback, options) {
+	var m = this.match,
+		filter = m[1],
+		template = $tw.utils.trim(m[3]),
+		append = template ? '||' + template + '}}}' : '}}}';
+	filterHandler.report(filter, function(title, blurb) {
+		callback(title, '{{{' + blurb + append);
+	}, options);
+	if (template) {
+		callback(template, '{{{' + $tw.utils.trim(filter).replace(/\r?\n/mg, ' ') + '||}}}');
+	}
+	this.parser.pos = this.matchRegExp.lastIndex;
 };
 
 exports.relink = function(text, fromTitle, toTitle, options) {
-	var m = this.match;
+	var m = this.match,
 		filter = m[1],
 		tooltip = m[2],
 		template = m[3],
 		style = m[4],
 		classes = m[5],
 		parser = this.parser,
-		entry = new FilteredTranscludeEntry();
+		entry = {};
 	parser.pos = this.matchRegExp.lastIndex;
 	var modified = false;
 
 	var filterEntry = filterHandler.relink(filter, fromTitle, toTitle, options);
 	if (filterEntry !== undefined) {
-		entry.add(filterEntry);
 		if (filterEntry.output) {
-			modified = true;
 			filter = filterEntry.output;
+			modified = true;
+		}
+		if (filterEntry.impossible) {
+			entry.impossible = true;
 		}
 	}
 
 	if ($tw.utils.trim(template) === fromTitle) {
 		// preserves user-inputted whitespace
 		template = template.replace(fromTitle, toTitle);
-		entry.add({name: "title", output: template});
 		modified = true;
 	}
 	if (!modified) {
-		if (entry.children.length <= 0) {
+		if (!entry.impossible) {
 			return undefined;
 		}
 	} else {
-		var output = this.makeFilteredtransclude(filter, tooltip, template, style, classes, options);
+		var output = this.makeFilteredtransclude(this.parser, filter, tooltip, template, style, classes);
 		if (output === undefined) {
 			entry.impossible = true;
 		} else {
@@ -82,19 +74,23 @@ exports.relink = function(text, fromTitle, toTitle, options) {
 			// both the inline and block rule
 			entry.output = output + utils.getEndingNewline(m[0]);
 		}
-		entry.filter = filter;
 	}
-	entry.template = template;
 	return entry;
 };
 
-exports.makeFilteredtransclude = function(filter, tooltip, template, style, classes, options) {
+exports.makeFilteredtransclude = function(parser, filter, tooltip, template, style, classes) {
 	if (canBePretty(filter) && canBePrettyTemplate(template)) {
 		return prettyList(filter, tooltip, template, style, classes);
-	} else if (!options.noWidgets) {
-		return widget(filter, tooltip, template, style, classes, options);
 	}
-	return undefined;
+	if (classes !== undefined) {
+		classes = classes.split('.').join(' ');
+	}
+	return utils.makeWidget(parser, '$list', {
+		filter: filter,
+		tooltip: tooltip,
+		template: template,
+		style: style || undefined,
+		itemClass: classes});
 };
 
 function prettyList(filter, tooltip, template, style, classes) {
@@ -115,43 +111,6 @@ function prettyList(filter, tooltip, template, style, classes) {
 	}
 	style = style || '';
 	return "{{{"+filter+tooltip+template+"}}"+style+"}"+classes;
-};
-
-/** Returns a filtered transclude as a string of a widget.
- */
-function widget(filter, tooltip, template, style, classes, options) {
-	var cannotDo = false;
-	if (classes !== undefined) {
-		classes = classes.split('.').join(' ');
-	}
-	function wrap(name, value, treatAsTitle) {
-		if (!value) {
-			return '';
-		}
-		var wrappedValue = utils.wrapAttributeValue(value);
-		if (wrappedValue === undefined) {
-			if (!options.placeholder) {
-				cannotDo = true;
-				return undefined;
-			}
-			var category = treatAsTitle ? undefined : name;
-			wrappedValue = "<<"+options.placeholder.getPlaceholderFor(value,category,options)+">>";
-		}
-		return " "+name+"="+wrappedValue;
-	};
-	var widget = [
-		"<$list",
-		wrap("filter", filter),
-		wrap("tooltip", tooltip),
-		wrap("template", template, true),
-		wrap("style", style),
-		wrap("itemClass", classes),
-		"/>"
-	];
-	if (cannotDo) {
-		return undefined;
-	}
-	return widget.join('');
 };
 
 function canBePretty(filter) {

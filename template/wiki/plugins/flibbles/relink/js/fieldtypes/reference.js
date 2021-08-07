@@ -9,19 +9,20 @@ tiddlerTitle##propertyIndex
 
 exports.name = "reference";
 
-function ReferenceEntry(reference) {
-	this.reference = reference;
-};
-ReferenceEntry.prototype.name = "reference";
-
-ReferenceEntry.prototype.report = function() {
-	if (this.reference.field) {
-		return ["!!" + this.reference.field];
+exports.report = function(value, callback, options) {
+	if (value) {
+		var reference = $tw.utils.parseTextReference(value),
+			title = reference.title,
+			blurb;
+		if (title) {
+			if (reference.field) {
+				blurb = '!!' + reference.field;
+			} else if (reference.index) {
+				blurb = '##' + reference.index;
+			}
+			callback(title, blurb);
+		}
 	}
-	if (this.reference.index) {
-		return ["##" + this.reference.index];
-	}
-	return [""];
 };
 
 exports.relink = function(value, fromTitle, toTitle, options) {
@@ -29,12 +30,11 @@ exports.relink = function(value, fromTitle, toTitle, options) {
 	if (value) {
 		var reference = $tw.utils.parseTextReference(value);
 		if (reference.title === fromTitle) {
-			entry = new ReferenceEntry(reference);
 			if (!exports.canBePretty(toTitle)) {
-				entry.impossible = true;
+				entry = {impossible: true};
 			} else {
 				reference.title = toTitle;
-				entry.output = exports.toString(reference);
+				entry = {output: exports.toString(reference)};
 			}
 		}
 	}

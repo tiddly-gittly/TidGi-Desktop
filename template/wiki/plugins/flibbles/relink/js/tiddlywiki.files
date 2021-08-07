@@ -76,14 +76,14 @@
 			}
 		},
 		{
-			"path": "./surveyors",
+			"path": "./contexts",
 			"filesRegExp": "^.*\\.js$",
 			"isTiddlerFile": true,
 			"fields": {
-				"module-type": "relinksurveyor",
+				"module-type": "relinkcontext",
 				"title": {
 					"source": "filename",
-					"prefix": "$:/plugins/flibbles/relink/js/surveyors/"
+					"prefix": "$:/plugins/flibbles/relink/js/contexts/"
 				},
 				"type": "application/javascript"
 			}

@@ -1,0 +1,26 @@
+caption: {{$:/plugins/flibbles/relink-titles/language/Caption}}
+tags: $:/tags/flibbles/relink/Configuration
+title: $:/plugins/flibbles/relink-titles/configuration
+
+\define lingo-base() $:/plugins/flibbles/relink-titles/language/
+\define prefix() $:/config/flibbles/relink-titles/relink/
+
+<<lingo Help>>
+
+<table>
+<tbody>
+<$list filter="[[relinktitlesrule]modules[]]">
+<tr>
+<td>
+<$checkbox
+	tiddler={{{ [all[current]addprefix<prefix>] }}}
+	field="text"
+	checked="enabled"
+	unchecked="disabled"
+	default="enabled"
+> ''{{!!caption}}''</$checkbox></td><td>
+
+<$transclude field='description' />
+
+</td></tr></$list>
+</tbody></table>

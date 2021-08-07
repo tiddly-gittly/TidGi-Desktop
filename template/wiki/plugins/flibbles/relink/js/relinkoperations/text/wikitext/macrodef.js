@@ -8,64 +8,96 @@ that we may have previously install.
 
 \*/
 
-var settings = require("$:/plugins/flibbles/relink/js/settings");
+var utils = require("$:/plugins/flibbles/relink/js/utils");
+var VariableContext = utils.getContext('variable');
 
 exports.name = "macrodef";
 
-function MacrodefEntry(macroName, bodyEntry) {
-	this.macro = macroName;
-	this.body = bodyEntry;
-};
-MacrodefEntry.prototype.name = "macrodef";
-MacrodefEntry.prototype.eachChild = function(block) { return block(this.body);};
-MacrodefEntry.prototype.report = function() {
-	var macroStr = "\\define " + this.macro + "()";
-	if (this.body.report) {
-		return this.body.report().map(function(report) {
-			return macroStr + " " + report;
-		});
-	} else {
-		return [macroStr];
+exports.report = function(text, callback, options) {
+	var setParseTreeNode = this.parse(),
+		m = this.match,
+		name = m[1];
+	this.parser.context = new VariableContext(this.parser.context, setParseTreeNode[0]);
+	// Parse set the pos pointer, but we don't want to skip the macro body.
+	this.parser.pos = this.matchRegExp.lastIndex;
+	var endMatch = getBodyMatch(text, this.parser.pos, m[3]);
+	if (endMatch) {
+		var value = endMatch[2],
+			handler = utils.getType(getActiveType(name, m[2]) || 'wikitext');
+		if (handler) {
+			var entry = handler.report(value, function(title, blurb) {
+				var macroStr = '\\define ' + name + '()';
+				if (blurb) {
+					macroStr += ' ' + blurb;
+				}
+				callback(title, macroStr);
+			}, options);
+		}
+		this.parser.pos = endMatch.index + endMatch[0].length;
 	}
 };
 
 exports.relink = function(text, fromTitle, toTitle, options) {
 	var setParseTreeNode = this.parse(),
-		macroEntry,
+		entry,
 		m = this.match,
-		whitespace;
-	options.settings.addMacroDefinition(setParseTreeNode[0]);
+		name = m[1],
+		params = m[2],
+		multiline = m[3];
+	this.parser.context = new VariableContext(this.parser.context, setParseTreeNode[0]);
 	// Parse set the pos pointer, but we don't want to skip the macro body.
 	this.parser.pos = this.matchRegExp.lastIndex;
-	// m[3] means it's a multiline macrodef
-	if (m[3]) {
+	var endMatch = getBodyMatch(text, this.parser.pos, multiline);
+	if (endMatch) {
+		var value = endMatch[2],
+			type = getActiveType(name, params),
+			handler = utils.getType(type || 'wikitext');
+		if (handler) {
+			// If this is an active relink placeholder, then let's remember it
+			if (type && options.placeholder) {
+				options.placeholder.registerExisting(name, value);
+			}
+			// Relink the contents
+			entry = handler.relink(value, fromTitle, toTitle, options);
+			if (entry && entry.output) {
+				entry.output = m[0] + endMatch[1] + entry.output + endMatch[0];
+			}
+		}
+		this.parser.pos = endMatch.index + endMatch[0].length;
+	}
+	return entry;
+};
+
+// Return another match for the body, but tooled uniquely
+// m[1] = whitespace before body
+// m[2] = body
+// m.index + m[0].length -> end of match
+function getBodyMatch(text, pos, isMultiline) {
+	var whitespace,
+		valueRegExp;
+	if (isMultiline) {
 		valueRegExp = /\r?\n\\end[^\S\n\r]*(?:\r?\n|$)/mg;
 		whitespace = '';
 	} else {
-		var newPos = $tw.utils.skipWhiteSpace(text, this.parser.pos);
 		valueRegExp = /(?:\r?\n|$)/mg;
-		whitespace = text.substring(this.parser.pos, newPos);
-		this.parser.pos = newPos;
+		var newPos = $tw.utils.skipWhiteSpace(text, pos);
+		whitespace = text.substring(pos, newPos);
+		pos = newPos;
 	}
-	var valueRegExp;
-	valueRegExp.lastIndex = this.parser.pos;
+	valueRegExp.lastIndex = pos;
 	var match = valueRegExp.exec(text);
 	if (match) {
-		var value = text.substring(this.parser.pos, match.index),
-			placeholder = /^relink-(?:(\w+)-)?(\d+)$/.exec(m[1]),
-		// normal macro or special placeholder?
-			type = (placeholder && m[2] === '')? placeholder[1] || 'title' : 'wikitext',
-			handler = settings.getType(type);
-		if (handler) {
-			var entry = handler.relink(value, fromTitle, toTitle, options);
-		}
-		if (entry !== undefined) {
-			macroEntry = new MacrodefEntry(m[1], entry);
-			if (entry.output) {
-				macroEntry.output = m[0] + whitespace + entry.output + match[0];
-			}
-		}
-		this.parser.pos = match.index + match[0].length;
+		match[1] = whitespace;
+		match[2] = text.substring(pos, match.index);
 	}
-	return macroEntry;
+	return match;
+};
+
+function getActiveType(macroName, parameters) {
+	var placeholder = /^relink-(?:(\w+)-)?\d+$/.exec(macroName);
+	// normal macro or special placeholder?
+	if (placeholder && parameters === '') {
+		return placeholder[1] || 'title';
+	}
+	return undefined;
 };

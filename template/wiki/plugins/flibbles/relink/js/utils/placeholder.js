@@ -5,19 +5,23 @@ the necessary supporting pragma when requested.
 
 \*/
 
+var utils = require('../utils');
+
 function Placeholder() {
 	this.placeholders = Object.create(null);
-	this.reverseMap = Object.create(null);
+	this.reverseMap = {};
+	this.used = Object.create(null);
 };
 
 module.exports = Placeholder;
 
-Placeholder.prototype.getPlaceholderFor = function(value, category, options) {
-	var placeholder = this.reverseMap[value];
-	var config = options.settings || options.wiki.getRelinkConfig();
+Placeholder.prototype.getPlaceholderFor = function(value, category) {
+	this.reverseMap[category] = this.reverseMap[category] || Object.create(null);
+	var placeholder = this.reverseMap[category][value];
 	if (placeholder) {
 		return placeholder;
 	}
+	var config = (this.parser && this.parser.context) || utils.getWikiContext(this.parser.wiki);
 	var number = 0;
 	var prefix = "relink-"
 	if (category && category !== "title") {
@@ -28,18 +32,29 @@ Placeholder.prototype.getPlaceholderFor = function(value, category, options) {
 	do {
 		number += 1;
 		placeholder = prefix + number;
-	} while (config.getMacroDefinition(placeholder));
-	config.reserveMacroName(placeholder);
+	} while (config.getMacroDefinition(placeholder) || this.used[placeholder]);
 	this.placeholders[placeholder] = value;
-	this.reverseMap[value] = placeholder;
+	this.reverseMap[category][value] = placeholder;
+	this.used[placeholder] = true;
 	return placeholder;
+};
+
+// For registering placeholders that already existed
+Placeholder.prototype.registerExisting = function(key, value) {
+	this.reverseMap[value] = key;
+	this.used[key] = true;
 };
 
 Placeholder.prototype.getPreamble = function() {
 	var results = [];
-	for (var name in this.placeholders) {
-		var val = this.placeholders[name];
-		results.push("\\define "+name+"() "+val+"\n");
+	var keys = Object.keys(this.placeholders);
+	if (keys.length > 0) {
+		keys.sort();
+		for (var i = 0; i < keys.length; i++) {
+			var name = keys[i];
+			var val = this.placeholders[name];
+			results.push("\\define "+name+"() "+val+"\n");
+		}
 	}
 	return results.join('');
 };

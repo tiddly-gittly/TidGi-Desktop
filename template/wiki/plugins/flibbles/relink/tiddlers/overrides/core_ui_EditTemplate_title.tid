@@ -5,6 +5,20 @@ title: $:/core/ui/EditTemplate/title
 
 <$reveal state="!!draft.title" type="nomatch" text={{!!draft.of}} tag="div">
 
+<$vars pattern="""[\|\[\]{}]""" bad-chars="""`| [ ] { }`""">
+
+<$list filter="[all[current]regexp:draft.title<pattern>]" variable="listItem">
+
+<div class="tc-message-box">
+
+{{$:/core/images/warning}} {{$:/language/EditTemplate/Title/BadCharacterWarning}}
+
+</div>
+
+</$list>
+
+</$vars>
+
 <$list filter="[{!!draft.title}!is[missing]]" variable="listItem">
 
 <div class="tc-message-box">
@@ -21,15 +35,15 @@ title: $:/core/ui/EditTemplate/title
 
 <$checkbox tiddler="$:/config/RelinkOnRename" field="text" checked="yes" unchecked="no" default="no"> {{$:/language/EditTemplate/Title/Relink/Prompt}}</$checkbox>
 
-<$list filter="[all[relinkable]relink:references<fromTitle>limit[1]]" variable="listItem">
+<$tiddler tiddler=<<fromTitle>> >
+
+<$list filter="[relink:wouldchange<toTitle>limit[1]]" variable="listItem">
 
 <$vars stateTiddler=<<qualify "$:/state/edit/references">> >
 
-<$tiddler tiddler=<<fromTitle>> >
-
 <$set
 	name="prompt"
-	filter="[all[relinkable]relink:impossible<toTitle>]"
+	filter="[relink:wouldchange<toTitle>relink:impossible<toTitle>]"
 	value="EditTemplate/Title/Impossibles/Prompt"
 	emptyValue="EditTemplate/Title/References/Prompt" >
 <$reveal type="nomatch" state=<<stateTiddler>> text="show">
@@ -45,14 +59,15 @@ title: $:/core/ui/EditTemplate/title
 </$set>
 
 <$reveal type="match" state=<<stateTiddler>> text="show">
-<$list variable="listItem" filter="[all[relinkable]!title[$:/StoryList]relink:references<fromTitle>sort[title]]" template="$:/plugins/flibbles/relink/ui/ListItemTemplate">
+<$list variable="listItem" filter="[relink:wouldchange<toTitle>!title[$:/StoryList]sort[title]]" template="$:/plugins/flibbles/relink/ui/ListItemTemplate">
 </$list>
 </$reveal>
-</$tiddler>
 
 </$vars>
 
 </$list>
+
+</$tiddler>
 
 </$vars>
 

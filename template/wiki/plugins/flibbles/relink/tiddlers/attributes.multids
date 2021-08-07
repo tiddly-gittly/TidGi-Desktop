@@ -22,6 +22,7 @@ $link/to: title
 $list/filter: filter
 $list/template: title
 $list/editTemplate: title
+$list/emptyMessage: wikitext
 $list/history: title
 $navigator/story: title
 $navigator/history: title

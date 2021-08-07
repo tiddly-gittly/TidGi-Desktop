@@ -1,3 +1,12 @@
+/*\
+
+Entries are deprecated. Don't use them. These classes are here just so that
+any 3rd party modules built for Relink V1 don't break.
+
+Just return an object like, {output: "string", impossible: true|undefined}
+
+\*/
+
 function EntryNode() {
 	this.children = [];
 };
@@ -8,36 +17,12 @@ module.exports = EntryNode;
  * EntryNode.prototype.report = function() -> ["string", ...]
  */
 
-EntryNode.newType = function(name) {
-	function NewEntry() {
-		EntryNode.apply(this, arguments);
-	};
-	NewEntry.prototype = Object.create(EntryNode.prototype);
-	NewEntry.prototype.name = name;
-	return NewEntry;
-};
-
-EntryNode.prototype.eachChild = function(method) {
-	if (this.children) {
-		for (var i = 0; i < this.children.length; i++) {
-			method(this.children[i]);
-		}
-	}
+EntryNode.newType = function() {
+	return EntryNode;
 };
 
 EntryNode.prototype.add = function(entry) {
 	this.children.push(entry);
-};
-
-EntryNode.prototype.report = function() {
-	var output = [];
-	$tw.utils.each(this.children, function(child) {
-		// All wikitext children should be able to report
-		$tw.utils.each(child.report(), function(report) {
-			output.push(report);
-		});
-	});
-	return output;
 };
 
 function EntryCollection() {
@@ -46,13 +31,20 @@ function EntryCollection() {
 };
 
 EntryNode.newCollection = function(name) {
-	function NewCollection() {
-		EntryCollection.apply(this, arguments);
-	};
-	NewCollection.prototype = Object.create(EntryCollection.prototype);
-	NewCollection.prototype.name = name;
-	return NewCollection;
+	return EntryCollection;
 };
+
+// Again. I reiterate. Don't use this. All this is just legacy support.
+Object.defineProperty(EntryCollection, 'impossible', {
+	get: function() {
+		var imp = this._impossible;
+		this.eachChild(function(child) { imp = imp || child.impossible; });
+		return imp;
+	},
+	set: function(impossible) {
+		this._impossible = true;
+	}
+});
 
 EntryCollection.prototype.eachChild = function(method) {
 	for (var child in this.children) {
@@ -63,24 +55,6 @@ EntryCollection.prototype.eachChild = function(method) {
 EntryCollection.prototype.addChild = function(child, name, type) {
 	this.children[name] = child;
 	this.types[name] = type;
-};
-
-EntryCollection.prototype.report = function() {
-	var output = [];
-	for (var name in this.children) {
-		var child = this.children[name];
-		var type = this.types[name];
-		if (child.report) {
-			var reports = child.report();
-			for (var i = 0; i < reports.length; i++) {
-				output.push(this.forEachChildReport(reports[i], name, type));
-			}
-		} else {
-			output.push(this.forEachChildReport('', name, type));
-
-		}
-	}
-	return output;
 };
 
 EntryCollection.prototype.hasChildren = function() {

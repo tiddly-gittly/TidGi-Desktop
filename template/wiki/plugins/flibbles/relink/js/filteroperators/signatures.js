@@ -8,7 +8,7 @@ relink configuration.
 
 \*/
 
-var settings = require('$:/plugins/flibbles/relink/js/settings.js');
+var utils = require('$:/plugins/flibbles/relink/js/utils.js');
 
 exports.signatures = function(source,operator,options) {
 	var plugin = operator.operand || null;
@@ -39,8 +39,8 @@ exports.type = function(source,operator,options) {
 };
 
 exports.types = function(source,operator,options) {
-	var def = settings.getDefaultType(options.wiki);
-	var types = Object.keys(settings.getTypes());
+	var def = utils.getDefaultType(options.wiki);
+	var types = Object.keys(utils.getTypes());
 	types.sort();
 	// move default to front
 	types.sort(function(x,y) { return x === def ? -1 : y === def ? 1 : 0; });
@@ -61,7 +61,7 @@ exports.source = function(source,operator,options) {
 
 function getSet(options) {
 	return options.wiki.getGlobalCache("relink-signatures", function() {
-		var config = options.wiki.getRelinkConfig();
+		var config = utils.getWikiContext(options.wiki);
 		var set = Object.create(null);
 		var categories = {
 			attributes: config.getAttributes(),

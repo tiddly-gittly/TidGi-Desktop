@@ -58,3 +58,5 @@ exports.relink = function() {
 	this.parser.pos = this.end;
 	return undefined;
 };
+
+exports.report = exports.relink;

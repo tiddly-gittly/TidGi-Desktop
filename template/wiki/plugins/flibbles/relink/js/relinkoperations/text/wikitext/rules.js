@@ -17,3 +17,6 @@ exports.relink = function() {
 	this.parse();
 	return undefined;
 };
+
+// Same deal
+exports.report = exports.relink;

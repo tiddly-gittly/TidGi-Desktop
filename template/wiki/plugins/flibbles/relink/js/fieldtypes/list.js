@@ -6,6 +6,13 @@ TiddlerA [[Tiddler with spaces]] [[Another Title]]
 
 exports.name = "list";
 
+exports.report = function(value, callback, options) {
+	var list = $tw.utils.parseStringArray(value);
+	for (var i = 0; i < list.length; i++) {
+		callback(list[i]);
+	}
+};
+
 /**Returns undefined if no change was made.
  * Parameter: value can literally be a list. This can happen for builtin
  *            types 'list' and 'tag'. In those cases, we also return list.

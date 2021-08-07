@@ -8,9 +8,8 @@ var type = 'text/vnd.tiddlywiki';
 
 var WikiParser = require("$:/core/modules/parsers/wikiparser/wikiparser.js")[type];
 var Rebuilder = require("$:/plugins/flibbles/relink/js/utils/rebuilder.js");
-var EntryNode = require('$:/plugins/flibbles/relink/js/utils/entry');
-
-var WikitextEntry = EntryNode.newType("wikitext");
+var utils = require('$:/plugins/flibbles/relink/js/utils');
+var WikitextContext = utils.getContext('wikitext');
 
 function collectRules() {
 	var rules = Object.create(null);
@@ -19,16 +18,16 @@ function collectRules() {
 		if (typeof names === "string") {
 			names = [names];
 		}
-		for (var i = 0; i < names.length; i++) {
-			rules[names[i]] = exports;
+		if (names !== undefined) {
+			for (var i = 0; i < names.length; i++) {
+				rules[names[i]] = exports;
+			}
 		}
 	});
 	return rules;
 }
 
-function WikiRelinker(type, text, fromTitle, toTitle, options) {
-	this.entry = new WikitextEntry();
-	this.builder = new Rebuilder(text);
+function WikiWalker(type, text, options) {
 	this.options = options;
 	if (!this.relinkMethodsInjected) {
 		var rules = collectRules();
@@ -40,16 +39,16 @@ function WikiRelinker(type, text, fromTitle, toTitle, options) {
 				}
 			}
 		});
-		WikiRelinker.prototype.relinkMethodsInjected = true;
+		WikiWalker.prototype.relinkMethodsInjected = true;
 	}
-	this.fromTitle = fromTitle;
-	this.toTitle = toTitle;
+	this.context = new WikitextContext(options.settings);
 	WikiParser.call(this, type, text, options);
 };
 
-WikiRelinker.prototype = Object.create(WikiParser.prototype);
+WikiWalker.prototype = Object.create(WikiParser.prototype);
 
-WikiRelinker.prototype.parsePragmas = function() {
+WikiWalker.prototype.parsePragmas = function() {
+	var entries = this.tree;
 	while (true) {
 		this.skipWhitespace();
 		if (this.pos >= this.sourceLength) {
@@ -59,24 +58,27 @@ WikiRelinker.prototype.parsePragmas = function() {
 		if (!nextMatch || nextMatch.matchIndex !== this.pos) {
 			break;
 		}
-		this.relinkRule(nextMatch);
+		entries.push.apply(entries, this.handleRule(nextMatch));
 	}
-	return [];
+	return entries;
 };
 
-WikiRelinker.prototype.parseInlineRunUnterminated = function(options) {
+WikiWalker.prototype.parseInlineRunUnterminated = function(options) {
+	var entries = [];
 	var nextMatch = this.findNextMatch(this.inlineRules, this.pos);
 	while (this.pos < this.sourceLength && nextMatch) {
 		if (nextMatch.matchIndex > this.pos) {
 			this.pos = nextMatch.matchIndex;
 		}
-		this.relinkRule(nextMatch);
+		entries.push.apply(entries, this.handleRule(nextMatch));
 		nextMatch = this.findNextMatch(this.inlineRules, this.pos);
 	}
 	this.pos = this.sourceLength;
+	return entries;
 };
 
-WikiRelinker.prototype.parseInlineRunTerminated = function(terminatorRegExp,options) {
+WikiWalker.prototype.parseInlineRunTerminated = function(terminatorRegExp,options) {
+	var entries = [];
 	options = options || {};
 	terminatorRegExp.lastIndex = this.pos;
 	var terminatorMatch = terminatorRegExp.exec(this.source);
@@ -88,25 +90,25 @@ WikiRelinker.prototype.parseInlineRunTerminated = function(terminatorRegExp,opti
 				if (options.eatTerminator) {
 					this.pos += terminatorMatch[0].length;
 				}
-				return [];
+				return entries;
 			}
 		}
 		if (inlineRuleMatch) {
 			if (inlineRuleMatch.matchIndex > this.pos) {
 				this.pos = inlineRuleMatch.matchIndex;
 			}
-			this.relinkRule(inlineRuleMatch);
+			entries.push.apply(entries, this.handleRule(inlineRuleMatch));
 			inlineRuleMatch = this.findNextMatch(this.inlineRules, this.pos);
 			terminatorRegExp.lastIndex = this.pos;
 			terminatorMatch = terminatorRegExp.exec(this.source);
 		}
 	}
 	this.pos = this.sourceLength;
-	return [];
+	return entries;
 
 };
 
-WikiRelinker.prototype.parseBlock = function(terminatorRegExp) {
+WikiWalker.prototype.parseBlock = function(terminatorRegExp) {
 	var terminatorRegExp = /(\r?\n\r?\n)/mg;
 	this.skipWhitespace();
 	if (this.pos >= this.sourceLength) {
@@ -114,20 +116,46 @@ WikiRelinker.prototype.parseBlock = function(terminatorRegExp) {
 	}
 	var nextMatch = this.findNextMatch(this.blockRules, this.pos);
 	if(nextMatch && nextMatch.matchIndex === this.pos) {
-		return this.relinkRule(nextMatch);
+		return this.handleRule(nextMatch);
 	}
 	return this.parseInlineRun(terminatorRegExp);
 };
 
-WikiRelinker.prototype.relinkRule = function(ruleInfo) {
-	if (ruleInfo.rule.relink) {
-		var newEntry = ruleInfo.rule.relink(this.source, this.fromTitle, this.toTitle, this.options);
-		if (newEntry !== undefined) {
-			this.entry.add(newEntry);
-			if (newEntry.output) {
-				this.builder.add(newEntry.output, ruleInfo.matchIndex, this.pos);
-			}
-		}
+WikiWalker.prototype.amendRules = function(type, names) {
+	var only;
+	WikiParser.prototype.amendRules.call(this, type, names);
+	if (type === "only") {
+		only = true;
+	} else if (type === "except") {
+		only = false;
+	} else {
+		return;
+	}
+	if (only !== (names.indexOf("macrodef") >= 0) && this.options.macrodefCanBeDisabled) {
+		this.options.placeholder = undefined
+	}
+	if (only !== (names.indexOf("html") >= 0)) {
+		this.context.allowWidgets = disabled;
+	}
+	if (only !== (names.indexOf("prettylink") >= 0)) {
+		this.context.allowPrettylinks = disabled;
+	}
+};
+
+function disabled() { return false; };
+
+/// Reporter
+
+function WikiReporter(type, text, callback, options) {
+	this.callback = callback;
+	WikiWalker.call(this, type, text, options);
+};
+
+WikiReporter.prototype = Object.create(WikiWalker.prototype);
+
+WikiReporter.prototype.handleRule = function(ruleInfo) {
+	if (ruleInfo.rule.report) {
+		ruleInfo.rule.report(this.source, this.callback, this.options);
 	} else {
 		if (ruleInfo.rule.matchRegExp !== undefined) {
 			this.pos = ruleInfo.rule.matchRegExp.lastIndex;
@@ -141,39 +169,68 @@ WikiRelinker.prototype.relinkRule = function(ruleInfo) {
 	}
 };
 
-WikiRelinker.prototype.amendRules = function(type, names) {
-	var only;
-	WikiParser.prototype.amendRules.call(this, type, names);
-	if (type === "only") {
-		only = true;
-	} else if (type === "except") {
-		only = false;
+exports.report = function(wikitext, callback, options) {
+	// Unfortunately it's the side-effect of creating this that reports.
+	new WikiReporter(options.type, wikitext, callback, options);
+};
+
+/// Relinker
+
+function WikiRelinker(type, text, fromTitle, toTitle, options) {
+	this.fromTitle = fromTitle;
+	this.toTitle = toTitle;
+	this.placeholder = options.placeholder;
+	if (this.placeholder) {
+		this.placeholder.parser = this;
+	}
+	WikiWalker.call(this, type, text, options);
+};
+
+WikiRelinker.prototype = Object.create(WikiWalker.prototype);
+
+WikiRelinker.prototype.handleRule = function(ruleInfo) {
+	if (ruleInfo.rule.relink) {
+		var start = ruleInfo.matchIndex;
+		var newEntry = ruleInfo.rule.relink(this.source, this.fromTitle, this.toTitle, this.options);
+		if (newEntry !== undefined) {
+			if (newEntry.output) {
+				newEntry.start = start;
+				newEntry.end = this.pos;
+			}
+			return [newEntry];
+		}
 	} else {
-		return;
+		if (ruleInfo.rule.matchRegExp !== undefined) {
+			this.pos = ruleInfo.rule.matchRegExp.lastIndex;
+		} else {
+			// We can't easily determine the end of this
+			// rule match. We'll "parse" it so that
+			// parser.pos gets updated, but we throw away
+			// the results.
+			ruleInfo.rule.parse();
+		}
 	}
-	if (only !== (names.indexOf("macrodef") >= 0)) {
-		this.options.placeholder = undefined
-	}
-	if (only !== (names.indexOf("html") >= 0)) {
-		this.options.noWidgets = true;
-	}
-	if (only !== (names.indexOf("prettylink") >= 0)) {
-		this.options.noPrettylinks = true;
-	}
+	return [];
 };
 
 exports.relink = function(wikitext, fromTitle, toTitle, options) {
-	// fromTitle doesn't even show up plaintext. No relinking to do.
-	if (!options.settings.survey(wikitext, fromTitle, options)) {
-		return undefined;
+	var parser = new WikiRelinker(options.type, wikitext, fromTitle, toTitle, options),
+		wikiEntry = undefined;
+	// Now that we have an array of entries, let's produce the wikiText entry
+	// containing them all.
+	if (parser.tree.length > 0) {
+		var builder = new Rebuilder(wikitext);
+		wikiEntry = {};
+		for (var i = 0; i < parser.tree.length; i++) {
+			var entry = parser.tree[i];
+			if (entry.impossible) {
+				wikiEntry.impossible = true;
+			}
+			if (entry.output) {
+				builder.add(entry.output, entry.start, entry.end);
+			}
+		}
+		wikiEntry.output = builder.results();
 	}
-	var matchingRule,
-		newOptions = $tw.utils.extend({}, options);
-	newOptions.settings = options.settings.createChildLibrary(options.currentTiddler);
-	var parser = new WikiRelinker(options.type, wikitext, fromTitle, toTitle, newOptions);
-	if (parser.entry.children.length > 0) {
-		parser.entry.output = parser.builder.results();
-		return parser.entry;
-	}
-	return undefined;
+	return wikiEntry;
 };

@@ -8,7 +8,7 @@ by the user. It's only used in Relink configuration.
 
 var Widget = require("$:/core/modules/widgets/widget.js").widget;
 var language = require('$:/plugins/flibbles/relink/js/language.js');
-var settings = require('$:/plugins/flibbles/relink/js/settings.js');
+var utils = require('$:/plugins/flibbles/relink/js/utils.js');
 
 var RelinkManglerWidget = function(parseTreeNode,options) {
 	this.initialise(parseTreeNode,options);
@@ -24,6 +24,11 @@ exports.relinkmangler = RelinkManglerWidget;
 
 RelinkManglerWidget.prototype = new Widget();
 
+// This wraps alert so it can be monkeypatched during testing.
+RelinkManglerWidget.prototype.alert = function(message) {
+	alert(message);
+};
+
 RelinkManglerWidget.prototype.handleAddFieldEvent = function(event) {
 	var param = event.paramObject;
 	if (typeof param !== "object" || !param.field) {
@@ -36,7 +41,7 @@ RelinkManglerWidget.prototype.handleAddFieldEvent = function(event) {
 		return true;
 	}
 	if(!$tw.utils.isValidFieldName(trimmedName)) {
-		language.alert($tw.language.getString(
+		this.alert($tw.language.getString(
 			"InvalidFieldName",
 			{variables:
 				{fieldName: trimmedName}
@@ -64,14 +69,14 @@ RelinkManglerWidget.prototype.handleAddParameterEvent = function(event) {
 	var param = event.paramObject;
 	if (param && param.macro && param.parameter) {
 		if (/\s/.test(param.macro.trim())) {
-			language.alert(language.getString(
+			this.alert(language.getString(
 				"Error/InvalidMacroName",
 				{ variables: {macroName: param.macro},
 				  wiki: this.wiki
 				}
 			));
 		} else if (/[ \/]/.test(param.parameter.trim())) {
-			language.alert(language.getString(
+			this.alert(language.getString(
 				"Error/InvalidParameterName",
 				{ variables: {parameterName: param.parameter},
 				  wiki: this.wiki
@@ -88,14 +93,14 @@ RelinkManglerWidget.prototype.handleAddAttributeEvent = function(event) {
 	var param = event.paramObject;
 	if (param && param.element && param.attribute) {
 		if (/[ \/]/.test(param.element.trim())) {
-			language.alert(language.getString(
+			this.alert(language.getString(
 				"Error/InvalidElementName",
 				{ variables: {elementName: param.element},
 				  wiki: this.wiki
 				}
 			));
 		} else if (/[ \/]/.test(param.attribute.trim())) {
-			language.alert(language.getString(
+			this.alert(language.getString(
 				"Error/InvalidAttributeName",
 				{ variables: {attributeName: param.attribute},
 				  wiki: this.wiki
@@ -118,6 +123,6 @@ function add(wiki, category/*, path parts*/) {
 		}
 		path = path + "/" + part;
 	}
-	var def = settings.getDefaultType(wiki);
+	var def = utils.getDefaultType(wiki);
 	wiki.addTiddler({title: path, text: def});
 };

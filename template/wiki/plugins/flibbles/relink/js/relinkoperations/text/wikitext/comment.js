@@ -10,7 +10,9 @@ ignore their contents.
 
 exports.name = ["commentinline", "commentblock"];
 
-exports.relink = function(text, fromTitle, toTitle, options) {
+exports.relink = function(text) {
 	this.parser.pos = this.endMatchRegExp.lastIndex;
 	return undefined;
 };
+
+exports.report = exports.relink;

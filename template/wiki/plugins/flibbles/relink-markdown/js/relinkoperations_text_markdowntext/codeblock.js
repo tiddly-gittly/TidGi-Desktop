@@ -31,3 +31,5 @@ exports.relink = function(text, fromTitle, toTitle, options) {
 	}
 	return undefined;
 };
+
+exports.report = exports.relink;
