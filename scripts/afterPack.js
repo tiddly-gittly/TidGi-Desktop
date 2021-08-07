@@ -22,10 +22,20 @@ const keepingLprojRegEx = /(en|zh_CN)\.lproj/g;
  */
 exports.default = async (buildPath, electronVersion, platform, arch, callback) => {
   const cwd = path.join(buildPath, '..');
+  const projectRoot = path.join(__dirname, '..');
+
+  /** delete useless lproj files to make it clean */
   const lproj = glob.sync('*.lproj', { cwd });
   const pathsToRemove = lproj.filter((dir) => !keepingLprojRegEx.test(dir)).map((dir) => path.join(cwd, dir));
   if (platform === 'darwin') {
     await Promise.all(pathsToRemove.map((dir) => fs.remove(dir)));
   }
+  /** copy npm packages with node-worker dependencies with binary or __filename usages, which can't be prepare properly by webpack */
+  if (['production', 'test'].includes(process.env.NODE_ENV)) {
+    console.log('Copying tiddlywiki dependency to dist');
+    await fs.copy(path.join(projectRoot, 'node_modules/@tiddlygit/tiddlywiki'), path.join(cwd, 'node_modules/@tiddlygit/tiddlywiki'));
+    await fs.copy(path.join(projectRoot, 'node_modules/dugite'), path.join(cwd, 'node_modules/dugite'));
+  }
+  /** complete this hook */
   callback();
 };

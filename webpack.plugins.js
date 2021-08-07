@@ -26,14 +26,6 @@ exports.main = _.compact([
     // to is relative to ./.webpack/main/
     patterns: [{ from: 'localization', to: 'localization' }],
   }),
-  ['production', 'test'].includes(process.env.NODE_ENV) &&
-    new EventHooksPlugin({
-      afterEmit: async (compilation, done) => {
-        console.log('Copying tiddlywiki dependency to dist');
-        await fs.copy('node_modules/@tiddlygit/tiddlywiki', './.webpack/node_modules/@tiddlygit/tiddlywiki');
-        await fs.copy('node_modules/dugite', './.webpack/node_modules/dugite');
-      },
-    }),
   new CircularDependencyPlugin({
     // exclude detection of files based on a RegExp
     exclude: /node_modules/,

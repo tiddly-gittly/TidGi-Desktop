@@ -21,7 +21,7 @@ const config = {
     asar: {
       unpack: '**/.webpack/main/*.worker.*',
     },
-    extraResource: ['.webpack/node_modules', 'localization', 'template/wiki', 'build-resources/menubar@2x.png', 'build-resources/menubarTemplate@2x.png'],
+    extraResource: ['localization', 'template/wiki', 'build-resources/menubar@2x.png', 'build-resources/menubarTemplate@2x.png'],
     mac: {
       category: 'productivity',
       target: 'dmg',
