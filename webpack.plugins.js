@@ -14,7 +14,10 @@ const EventHooksPlugin = require('event-hooks-webpack-plugin');
 const WebpackBar = require('webpackbar');
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
 
-const shared = [process.env.NODE_ENV === 'production' ? new BundleAnalyzerPlugin({ generateStatsFile: true, analyzerMode: 'disabled' }) : undefined];
+const shared = [
+  // this will generate 150M size of stats.json, and we have no way to ignore it (ignore option is not working for things inside `.webpack` folder)
+  // process.env.NODE_ENV === 'production' ? new BundleAnalyzerPlugin({ generateStatsFile: true, analyzerMode: 'disabled' }) : undefined
+];
 
 exports.main = _.compact([
   // we only need one instance of TsChecker, it will check main and renderer all together
