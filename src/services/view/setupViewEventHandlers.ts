@@ -22,10 +22,10 @@ import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 import { LOAD_VIEW_MAX_RETRIES } from '@/constants/parameters';
 
 export interface IViewContext {
-  workspace: IWorkspace;
-  shouldPauseNotifications: boolean;
-  sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
   loadInitialUrlWithCatch: () => Promise<void>;
+  sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
+  shouldPauseNotifications: boolean;
+  workspace: IWorkspace;
 }
 
 export interface IViewMeta {
@@ -273,10 +273,10 @@ export default function setupViewEventHandlers(
 }
 
 export interface INewWindowContext {
-  view: BrowserView;
   meta: IViewMeta;
-  workspace: IWorkspace;
   sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
+  view: BrowserView;
+  workspace: IWorkspace;
 }
 
 async function handleNewWindow(

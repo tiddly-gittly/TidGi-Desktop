@@ -136,10 +136,10 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
 export type IWikiWorkspaceForm = ReturnType<typeof useWikiWorkspaceForm>;
 export type IErrorInWhichComponent = Partial<Record<keyof IWikiWorkspaceForm, boolean>>;
 export interface IWikiWorkspaceFormProps {
-  form: IWikiWorkspaceForm;
-  isCreateMainWorkspace: boolean;
   errorInWhichComponent: IErrorInWhichComponent;
   errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void;
+  form: IWikiWorkspaceForm;
+  isCreateMainWorkspace: boolean;
 }
 
 export function workspaceConfigFromForm(form: IWikiWorkspaceForm, isCreateMainWorkspace: boolean, isCreateSyncedWorkspace: boolean): INewWorkspaceConfig {

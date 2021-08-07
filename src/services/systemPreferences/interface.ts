@@ -11,10 +11,10 @@ export interface IUsedElectionSettings {
  * It can be retrieved and changed using Electron APIs
  */
 export interface ISystemPreferenceService {
-  systemPreference$: BehaviorSubject<IUsedElectionSettings>;
   get<K extends keyof IUsedElectionSettings>(key: K): Promise<IUsedElectionSettings[K]>;
   getSystemPreferences(): Promise<IUsedElectionSettings>;
   setSystemPreference<K extends keyof IUsedElectionSettings>(key: K, value: IUsedElectionSettings[K]): Promise<void>;
+  systemPreference$: BehaviorSubject<IUsedElectionSettings>;
 }
 export const SystemPreferenceServiceIPCDescriptor = {
   channel: SystemPreferenceChannel.name,

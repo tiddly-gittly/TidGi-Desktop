@@ -85,8 +85,8 @@ export function updateSubWikiPluginContent(
  * This is about tag-subwiki pair, we put tiddler with certain tag into a subwiki according to these pairs.
  */
 export interface ISubWikiPluginContent {
-  tagName: string;
   folderName: string;
+  tagName: string;
 }
 /**
  * Get "Sub-Wiki Plugin"'s content

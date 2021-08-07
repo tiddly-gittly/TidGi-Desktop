@@ -1,22 +1,22 @@
 import { PreferenceSections } from '@services/preferences/interface';
 
 export enum WindowNames {
-  newWindow = 'newWindow',
-  main = 'main',
-  view = 'view',
-  addWorkspace = 'addWorkspace',
-  editWorkspace = 'editWorkspace',
-  preferences = 'preferences',
   about = 'about',
-  spellcheck = 'spellcheck',
+  addWorkspace = 'addWorkspace',
   auth = 'auth',
+  editWorkspace = 'editWorkspace',
+  main = 'main',
+  newWindow = 'newWindow',
   notifications = 'notifications',
+  preferences = 'preferences',
+  spellcheck = 'spellcheck',
+  view = 'view',
 }
 
 /**
  * Width height of windows
  */
-export const windowDimension: Record<WindowNames, { width?: number; height?: number }> = {
+export const windowDimension: Record<WindowNames, { height?: number; width?: number }> = {
   [WindowNames.main]: {
     width: 1200,
     height: 768,

@@ -9,71 +9,72 @@ export interface IWorkspace {
    * Is this workspace selected by user, and showing corresponding webview?
    */
   active: boolean;
+  disableAudio: boolean;
+  disableNotifications: boolean;
+  /**
+   * The online repo to back data up to
+   */
+  gitUrl: string | null;
+  hibernateWhenUnused: boolean;
   /**
    * Is this workspace hibernated
    */
   hibernated: boolean;
   /**
+   * Localhost server url to load in the electron webview
+   */
+  homeUrl: string;
+  id: string;
+  /**
    * Is this workspace a subwiki that link to a main wiki, and doesn't have its own webview?
    */
   isSubWiki: boolean;
-  /**
-   * Only useful when isSubWiki === true , this is the wiki repo that this subwiki's folder soft links to
-   */
-  mainWikiToLink: string | null;
   /**
    * Last visited url, used for rememberLastPageVisited in preferences
    */
   lastUrl: string | null;
   /**
-   * Localhost tiddlywiki server port
+   * Only useful when isSubWiki === true , this is the wiki repo that this subwiki's folder soft links to
    */
-  port: number;
-  /**
-   * Localhost server url to load in the electron webview
-   */
-  homeUrl: string;
-  /**
-   * The online repo to back data up to
-   */
-  gitUrl: string | null;
-  id: string;
+  mainWikiToLink: string | null;
   /**
    * Display name for this wiki workspace
    */
   name: string;
   /**
-   * folder path for this wiki workspace
-   */
-  wikiFolderLocation: string;
-  /**
    * You can drag workspaces to reorder them
    */
   order: number;
-  transparentBackground: boolean;
   /**
-   * Tag name in tiddlywiki's filesystemPath, tiddler with this tag will be save into this subwiki
+   * workspace icon's path in file system
    */
-  tagName: string | null;
+  picturePath: string | null;
+  /**
+   * Localhost tiddlywiki server port
+   */
+  port: number;
+  /**
+   * Storage service this workspace sync to
+   */
+  storageService: SupportedStorageServices;
   /**
    * We basically place sub-wiki in main wiki's `tiddlers/subwiki/` folder, but the `subwiki` part can be configured. Default is `subwiki`
    */
   subWikiFolderName: string;
   /**
-   * workspace icon's path in file system
+   * Tag name in tiddlywiki's filesystemPath, tiddler with this tag will be save into this subwiki
    */
-  picturePath: string | null;
-  disableNotifications: boolean;
-  disableAudio: boolean;
-  hibernateWhenUnused: boolean;
-  /**
-   * Storage service this workspace sync to
-   */
-  storageService: SupportedStorageServices;
+  tagName: string | null;
+  transparentBackground: boolean;
   userName: string;
+  /**
+   * folder path for this wiki workspace
+   */
+  wikiFolderLocation: string;
 }
 
 export interface IWorkspaceMetaData {
+  badgeCount?: number;
   /**
    * Error message if this workspace fails loading
    */
@@ -86,7 +87,6 @@ export interface IWorkspaceMetaData {
    * indicating server or webpage is still loading
    */
   isLoading?: boolean;
-  badgeCount?: number;
 }
 
 export type INewWorkspaceConfig = SetOptional<
@@ -98,28 +98,28 @@ export type INewWorkspaceConfig = SetOptional<
  * Manage workspace level preferences and workspace metadata.
  */
 export interface IWorkspaceService {
-  workspaces$: BehaviorSubject<Record<string, IWorkspace>>;
-  getWorkspacesAsList(): Promise<IWorkspace[]>;
+  countWorkspaces(): Promise<number>;
+  create(newWorkspaceConfig: INewWorkspaceConfig): Promise<IWorkspace>;
   get(id: string): Promise<IWorkspace | undefined>;
   get$(id: string): Observable<IWorkspace | undefined>;
-  create(newWorkspaceConfig: INewWorkspaceConfig): Promise<IWorkspace>;
-  getWorkspaces(): Promise<Record<string, IWorkspace>>;
-  countWorkspaces(): Promise<number>;
-  getMetaData: (id: string) => Promise<Partial<IWorkspaceMetaData>>;
+  getActiveWorkspace: () => Promise<IWorkspace | undefined>;
   getAllMetaData: () => Promise<Record<string, Partial<IWorkspaceMetaData>>>;
-  updateMetaData: (id: string, options: Partial<IWorkspaceMetaData>) => Promise<void>;
+  getByWikiFolderLocation(name: string): Promise<IWorkspace | undefined>;
+  getFirstWorkspace: () => Promise<IWorkspace | undefined>;
+  getMetaData: (id: string) => Promise<Partial<IWorkspaceMetaData>>;
+  getNextWorkspace: (id: string) => Promise<IWorkspace | undefined>;
+  getPreviousWorkspace: (id: string) => Promise<IWorkspace | undefined>;
+  getWorkspaces(): Promise<Record<string, IWorkspace>>;
+  getWorkspacesAsList(): Promise<IWorkspace[]>;
+  remove(id: string): Promise<void>;
+  removeWorkspacePicture(id: string): Promise<void>;
   set(id: string, workspace: IWorkspace): Promise<void>;
-  update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void>;
-  setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void>;
   setActiveWorkspace(id: string): Promise<void>;
   setWorkspacePicture(id: string, sourcePicturePath: string): Promise<void>;
-  removeWorkspacePicture(id: string): Promise<void>;
-  remove(id: string): Promise<void>;
-  getByWikiFolderLocation(name: string): Promise<IWorkspace | undefined>;
-  getPreviousWorkspace: (id: string) => Promise<IWorkspace | undefined>;
-  getNextWorkspace: (id: string) => Promise<IWorkspace | undefined>;
-  getActiveWorkspace: () => Promise<IWorkspace | undefined>;
-  getFirstWorkspace: () => Promise<IWorkspace | undefined>;
+  setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void>;
+  update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void>;
+  updateMetaData: (id: string, options: Partial<IWorkspaceMetaData>) => Promise<void>;
+  workspaces$: BehaviorSubject<Record<string, IWorkspace>>;
 }
 export const WorkspaceServiceIPCDescriptor = {
   channel: WorkspaceChannel.name,

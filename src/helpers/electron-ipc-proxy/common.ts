@@ -33,10 +33,10 @@ export type IServicesWithoutObservables<Services extends Record<string, Record<s
 
 /* Proxy Descriptor Types */
 export enum ProxyPropertyType {
-  Value = 'value',
-  Value$ = 'value$',
   Function = 'function',
   Function$ = 'function$',
+  Value = 'value',
+  Value$ = 'value$',
 }
 
 export interface ProxyDescriptor {
@@ -46,10 +46,10 @@ export interface ProxyDescriptor {
 
 /* Request Types */
 export enum RequestType {
-  Get = 'get',
   Apply = 'apply',
-  Subscribe = 'subscribe',
   ApplySubscribe = 'applySubscribe',
+  Get = 'get',
+  Subscribe = 'subscribe',
   Unsubscribe = 'unsubscribe',
 }
 
@@ -58,52 +58,52 @@ export interface UnknownRequest {
 }
 
 export interface GetRequest {
-  type: RequestType.Get;
   propKey: PropertyKey;
+  type: RequestType.Get;
 }
 
 export interface ApplyRequest {
-  type: RequestType.Apply;
-  propKey: string;
   args: unknown[];
+  propKey: string;
+  type: RequestType.Apply;
 }
 
 export interface SubscribeRequest {
-  type: RequestType.Subscribe;
   propKey: string;
   subscriptionId?: string;
+  type: RequestType.Subscribe;
 }
 
 export interface ApplySubscribeRequest {
-  type: RequestType.ApplySubscribe;
-  propKey: string;
   args: unknown[];
+  propKey: string;
   subscriptionId?: string;
+  type: RequestType.ApplySubscribe;
 }
 
 export interface UnsubscribeRequest {
-  type: RequestType.Unsubscribe;
   subscriptionId: string;
+  type: RequestType.Unsubscribe;
 }
 
 export type Request = UnknownRequest | GetRequest | ApplyRequest | SubscribeRequest | ApplySubscribeRequest | UnsubscribeRequest;
 
 /* Response Types */
 export enum ResponseType {
-  Result = 'result',
+  Complete = 'complete',
   Error = 'error',
   Next = 'next',
-  Complete = 'complete',
+  Result = 'result',
 }
 
 export interface ResultResponse {
-  type: ResponseType.Result;
   result: unknown;
+  type: ResponseType.Result;
 }
 
 export interface ErrorResponse {
-  type: ResponseType.Error;
   error: Error;
+  type: ResponseType.Error;
 }
 
 export interface NextResponse {

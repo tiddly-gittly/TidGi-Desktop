@@ -40,44 +40,44 @@ export enum ViewChannel {
   updateFindInPageMatches = 'update-find-in-page-matches',
 }
 export enum WikiChannel {
-  name = 'WikiChannel',
   addTiddler = 'wiki-add-tiddler',
   addTiddlerDone = 'wiki-add-tiddler-done',
-  getTiddlerText = 'wiki-get-tiddler-text',
-  getTiddlerTextDone = 'wiki-get-tiddler-text-done',
-  /** show message inside tiddlywiki to show git sync progress */
-  syncProgress = 'wiki-sync-progress',
-  generalNotification = 'wiki-notification-tiddly-git',
   /** used to show wiki creation messages in the TiddlyGit UI for user to read */
   createProgress = 'wiki-create-progress',
+  generalNotification = 'wiki-notification-tiddly-git',
+  getTiddlerText = 'wiki-get-tiddler-text',
+  getTiddlerTextDone = 'wiki-get-tiddler-text-done',
+  name = 'WikiChannel',
   openTiddler = 'wiki-open-tiddler',
   sendActionMessage = 'wiki-send-action-message',
+  /** show message inside tiddlywiki to show git sync progress */
+  syncProgress = 'wiki-sync-progress',
 }
 export enum WikiGitWorkspaceChannel {
   name = 'WikiGitWorkspaceChannel',
 }
 export enum WorkspaceChannel {
-  name = 'WorkspaceChannel',
   focusWorkspace = 'focus-workspace',
+  name = 'WorkspaceChannel',
 }
 export enum WorkspaceViewChannel {
   name = 'WorkspaceViewChannel',
 }
 
 export enum PreferenceChannel {
-  name = 'PreferenceChannel',
-  update = 'update',
   getPreference = 'get-preference',
   getPreferences = 'get-preferences',
+  name = 'PreferenceChannel',
+  update = 'update',
 }
 
 export enum WindowChannel {
+  closeFindInPage = 'close-find-in-page',
   name = 'WindowChannel',
+  openFindInPage = 'open-find-in-page',
   // TODO: add back the listener as https://github.com/webcatalog/neutron/blob/52a35f103761d82ae5a35e5f90fc39024830bc63/src/listeners/index.js#L80
   updateCanGoBack = 'update-can-go-back',
   updateCanGoForward = 'update-can-go-forward',
-  openFindInPage = 'open-find-in-page',
-  closeFindInPage = 'close-find-in-page',
 }
 
 export enum ThemeChannel {
@@ -85,18 +85,18 @@ export enum ThemeChannel {
 }
 
 export enum I18NChannels {
+  changeLanguageRequest = 'ChangeLanguage-Request',
   name = 'I18NChannels',
   readFileRequest = 'ReadFile-Request',
-  writeFileRequest = 'WriteFile-Request',
   readFileResponse = 'ReadFile-Response',
+  writeFileRequest = 'WriteFile-Request',
   writeFileResponse = 'WriteFile-Response',
-  changeLanguageRequest = 'ChangeLanguage-Request',
 }
 
 export enum MetaDataChannel {
-  name = 'MetaDataChannel',
-  getViewMetaData = 'getViewMetaData',
   browserViewMetaData = 'browserViewMetaData',
+  getViewMetaData = 'getViewMetaData',
+  name = 'MetaDataChannel',
 }
 
 export type Channels =

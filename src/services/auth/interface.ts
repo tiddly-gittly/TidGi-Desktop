@@ -31,16 +31,16 @@ export type IUserInfos = {
  * Handle login to Github GitLab Coding.net
  */
 export interface IAuthenticationService {
-  userInfo$: BehaviorSubject<IUserInfos>;
-  getStorageServiceUserInfo(serviceName: SupportedStorageServices): Promise<IGitUserInfos | undefined>;
+  get<K extends keyof IUserInfos>(key: K): Promise<IUserInfos[K] | undefined>;
   /**
    * Get a random storage info, useful for checking if user have any token in the storage
    */
-  getRandomStorageServiceUserInfo(): Promise<{ name: SupportedStorageServices; info: IGitUserInfos } | undefined>;
+  getRandomStorageServiceUserInfo(): Promise<{ info: IGitUserInfos; name: SupportedStorageServices } | undefined>;
+  getStorageServiceUserInfo(serviceName: SupportedStorageServices): Promise<IGitUserInfos | undefined>;
   getUserInfos: () => Promise<IUserInfos>;
-  get<K extends keyof IUserInfos>(key: K): Promise<IUserInfos[K] | undefined>;
-  set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): Promise<void>;
   reset(): Promise<void>;
+  set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): Promise<void>;
+  userInfo$: BehaviorSubject<IUserInfos>;
 }
 export const AuthenticationServiceIPCDescriptor = {
   channel: AuthenticationChannel.name,
@@ -56,36 +56,36 @@ export const AuthenticationServiceIPCDescriptor = {
 };
 
 export interface IGithubOAuthResult {
-  login: string;
-  id: number;
-  node_id: string;
   avatar_url: string;
-  gravatar_id: string;
-  url: string;
-  html_url: string;
+  bio: any;
+  blog: string;
+  company: any;
+  created_at: string;
+  email: any;
+  events_url: string;
+  followers: number;
   followers_url: string;
+  following: number;
   following_url: string;
   gists_url: string;
+  gravatar_id: string;
+  hireable: any;
+  html_url: string;
+  id: number;
+  location: any;
+  login: string;
+  name: any;
+  node_id: string;
+  organizations_url: string;
+  public_gists: number;
+  public_repos: number;
+  received_events_url: string;
+  repos_url: string;
+  site_admin: boolean;
   starred_url: string;
   subscriptions_url: string;
-  organizations_url: string;
-  repos_url: string;
-  events_url: string;
-  received_events_url: string;
-  type: string;
-  site_admin: boolean;
-  name: any;
-  company: any;
-  blog: string;
-  location: any;
-  email: any;
-  hireable: any;
-  bio: any;
   twitter_username: any;
-  public_repos: number;
-  public_gists: number;
-  followers: number;
-  following: number;
-  created_at: string;
+  type: string;
   updated_at: string;
+  url: string;
 }

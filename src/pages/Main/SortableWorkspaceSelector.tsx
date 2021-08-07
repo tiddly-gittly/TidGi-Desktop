@@ -11,8 +11,8 @@ import { WikiChannel } from '@/constants/channels';
 
 export interface ISortableItemProps {
   index: number;
-  workspace: IWorkspace;
   showSidebarShortcutHints: boolean;
+  workspace: IWorkspace;
 }
 
 export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcutHints }: ISortableItemProps): JSX.Element {

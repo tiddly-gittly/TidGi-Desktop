@@ -9,18 +9,18 @@ import { IWorkspace } from '@services/workspaces/interface';
  */
 export interface IViewService {
   addView: (browserWindow: BrowserWindow, workspace: IWorkspace) => Promise<void>;
-  getView: (id: string) => BrowserView;
   forEachView: (functionToRun: (view: BrowserView, id: string) => void) => void;
-  setActiveView: (browserWindow: BrowserWindow, id: string) => Promise<void>;
+  getActiveBrowserView: () => Promise<BrowserView | undefined>;
+  getView: (id: string) => BrowserView;
+  hibernateView: (id: string) => void;
+  realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;
+  reloadActiveBrowserView: () => Promise<void>;
+  reloadViewsWebContents(workspaceID?: string | undefined): Promise<void>;
+  reloadViewsWebContentsIfDidFailLoad: () => Promise<void>;
   removeView: (id: string) => void;
+  setActiveView: (browserWindow: BrowserWindow, id: string) => Promise<void>;
   setViewsAudioPref: (_shouldMuteAudio?: boolean) => void;
   setViewsNotificationsPref: (_shouldPauseNotifications?: boolean) => void;
-  hibernateView: (id: string) => void;
-  reloadViewsWebContentsIfDidFailLoad: () => Promise<void>;
-  reloadViewsWebContents(workspaceID?: string | undefined): Promise<void>;
-  reloadActiveBrowserView: () => Promise<void>;
-  getActiveBrowserView: () => Promise<BrowserView | undefined>;
-  realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;
 }
 export const ViewServiceIPCDescriptor = {
   channel: ViewChannel.name,

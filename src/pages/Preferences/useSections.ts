@@ -23,10 +23,10 @@ import { PreferenceSections } from '@services/preferences/interface';
 export type ISectionRecord<SectionTitleElement = HTMLSpanElement> = Record<
   PreferenceSections,
   {
-    text: string;
     Icon: OverridableComponent<SvgIconTypeMap<unknown, 'svg'>>;
-    ref: React.MutableRefObject<SectionTitleElement | null>;
     hidden?: boolean;
+    ref: React.MutableRefObject<SectionTitleElement | null>;
+    text: string;
   }
 >;
 export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): ISectionRecord<SectionTitleElement> {
@@ -108,6 +108,6 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
 }
 
 export interface ISectionProps<SectionTitleElement = HTMLSpanElement> {
-  sections: ISectionRecord<SectionTitleElement>;
   requestRestartCountDown?: () => void;
+  sections: ISectionRecord<SectionTitleElement>;
 }

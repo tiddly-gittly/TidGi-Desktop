@@ -25,21 +25,21 @@ export interface IGitLogMessage {
  * It can be retrieved and changed using Electron APIs
  */
 export interface IGitService {
+  clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void>;
+  commitAndSync(wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
   /**
    * Call commitAndSync every period of time. This cannot be used as promise, as said in https://github.com/lodash/lodash/issues/4700
    */
   debounceCommitAndSync: (wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos) => Promise<void> | undefined;
-  updateGitInfoTiddler(githubRepoName: string): Promise<void>;
   getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]>;
+  /** Inspect git's remote url from folder's .git config, return undefined if there is no initialized git */
+  getWorkspacesRemote(wikiFolderPath: string): Promise<string | undefined>;
+  initWikiGit(wikiFolderPath: string, isSyncedWiki?: false): Promise<void>;
   /**
    * Run git init in a folder, prepare remote origin if isSyncedWiki
    */
   initWikiGit(wikiFolderPath: string, isSyncedWiki: true, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
-  initWikiGit(wikiFolderPath: string, isSyncedWiki?: false): Promise<void>;
-  commitAndSync(wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
-  /** Inspect git's remote url from folder's .git config, return undefined if there is no initialized git */
-  getWorkspacesRemote(wikiFolderPath: string): Promise<string | undefined>;
-  clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void>;
+  updateGitInfoTiddler(githubRepoName: string): Promise<void>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,

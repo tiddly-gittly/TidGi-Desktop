@@ -28,8 +28,8 @@ declare module '*.svg' {
 }
 declare module '@authing/sso' {
   export interface ILoginInfo {
-    userInfo: UserInfo;
     urlParams: UrlParameters;
+    userInfo: UserInfo;
   }
   export interface ITrackSessionResultSuccess extends ILoginInfo {
     session: Session;
@@ -47,29 +47,29 @@ declare module '@authing/sso' {
 
   export interface UserInfo {
     _id: string;
-    email: string;
-    registerInClient: string;
-    token: string;
-    tokenExpiredAt: string;
-    photo: string;
     company: string;
+    email: string;
     nickname: string;
-    username: string;
     oauth?: string;
+    photo: string;
+    registerInClient: string;
     thirdPartyIdentity?: {
       accessToken?: string;
       provider?: string;
     };
+    token: string;
+    tokenExpiredAt: string;
+    username: string;
   }
 
   export interface UrlParameters {
+    access_token: string;
     code: string;
     id_token: string;
-    access_token: string;
   }
 
   export default class AuthingSSO {
-    constructor(options: { appId: string; appDomain: string; redirectUrl: string });
+    constructor(options: { appDomain: string; appId: string; redirectUrl: string });
     trackSession(): Promise<ITrackSessionResult>;
     logout(): Promise<{ code: number; message?: string }>;
     login(): Promise<void>;

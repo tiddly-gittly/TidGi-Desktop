@@ -41,7 +41,7 @@ export class Authentication implements IAuthenticationService {
     }
   }
 
-  public async getRandomStorageServiceUserInfo(): Promise<{ name: SupportedStorageServices; info: IGitUserInfos } | undefined> {
+  public async getRandomStorageServiceUserInfo(): Promise<{ info: IGitUserInfos; name: SupportedStorageServices } | undefined> {
     for (const serviceName of Object.values(SupportedStorageServices)) {
       const info = await this.getStorageServiceUserInfo(serviceName);
       if (info?.accessToken !== undefined && info.accessToken.length > 0 && info?.email !== undefined && info?.gitUserName !== undefined) {

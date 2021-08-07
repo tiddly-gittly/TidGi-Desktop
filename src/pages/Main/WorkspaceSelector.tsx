@@ -10,7 +10,7 @@ import { Theme } from '@material-ui/core';
 
 Promise.config({ cancellation: true });
 
-const Root = styled.div<{ hibernated?: boolean; active?: boolean }>`
+const Root = styled.div<{ active?: boolean; hibernated?: boolean }>`
   height: fit-content;
   width: 58px;
   padding: 10px 0;
@@ -45,10 +45,10 @@ from {background-color: #dddddd;}
   to {background-color: #eeeeee}
 `;
 interface IAvatarProps {
-  large?: boolean;
-  transparent?: boolean;
   addAvatar: boolean;
   highlightAdd: boolean;
+  large?: boolean;
+  transparent?: boolean;
 }
 const Avatar = styled.div<IAvatarProps>`
   height: 36px;
@@ -120,11 +120,11 @@ interface Props {
   hibernated?: boolean;
   id: string;
   index?: number;
+  onClick?: () => void;
   picturePath?: string | null;
   showSidebarShortcutHints?: boolean;
   transparentBackground?: boolean;
   workspaceName?: string;
-  onClick?: () => void;
 }
 export default function WorkspaceSelector({
   active = false,

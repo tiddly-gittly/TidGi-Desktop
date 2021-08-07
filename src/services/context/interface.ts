@@ -2,28 +2,28 @@ import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { ContextChannel } from '@/constants/channels';
 
 export interface IPaths {
-  MAIN_WINDOW_WEBPACK_ENTRY: string;
-  TIDDLYWIKI_TEMPLATE_FOLDER_PATH: string;
-  TIDDLERS_PATH: string;
-  MENUBAR_ICON_PATH: string;
   CHROME_ERROR_PATH: string;
-  LOGIN_REDIRECT_PATH: string;
-  DESKTOP_PATH: string;
-  LOG_FOLDER: string;
-  SETTINGS_FOLDER: string;
-  LOCALIZATION_FOLDER: string;
   DEFAULT_WIKI_FOLDER: string;
+  DESKTOP_PATH: string;
+  LOCALIZATION_FOLDER: string;
+  LOGIN_REDIRECT_PATH: string;
+  LOG_FOLDER: string;
+  MAIN_WINDOW_WEBPACK_ENTRY: string;
+  MENUBAR_ICON_PATH: string;
+  SETTINGS_FOLDER: string;
+  TIDDLERS_PATH: string;
+  TIDDLYWIKI_TEMPLATE_FOLDER_PATH: string;
 }
 /**
  * Available values about running environment
  */
 export interface IConstants {
-  isDevelopment: boolean;
-  platform: string;
-  appVersion: string;
   appName: string;
-  oSVersion: string;
+  appVersion: string;
   environmentVersions: NodeJS.ProcessVersions;
+  isDevelopment: boolean;
+  oSVersion: string;
+  platform: string;
 }
 
 export interface IContext extends IPaths, IConstants {}

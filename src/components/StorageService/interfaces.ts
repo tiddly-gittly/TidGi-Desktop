@@ -8,8 +8,8 @@ interface IGithubRepositoryOwner {
 }
 
 interface IGithubSearch {
-  repositoryCount: number;
   edges: IGithubSearchEdge[];
+  repositoryCount: number;
 }
 
 interface IGithubSearchEdge {

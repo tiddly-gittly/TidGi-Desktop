@@ -7,7 +7,7 @@ export default async function getViewBounds(
   findInPage = false,
   height?: number,
   width?: number,
-): Promise<{ x: number; y: number; height: number; width: number }> {
+): Promise<{ height: number; width: number; x: number; y: number }> {
   const preferencesService = container.get<IPreferenceService>(serviceIdentifier.Preference);
   const showSidebar = await preferencesService.get('sidebar');
 

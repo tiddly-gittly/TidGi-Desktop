@@ -16,9 +16,9 @@ contextBridge.exposeInMainWorld('service', service);
 
 declare global {
   interface Window {
-    service: IServicesWithoutObservables<typeof service>;
-    observables: IServicesWithOnlyObservables<typeof service>;
     meta: IPossibleWindowMeta;
+    observables: IServicesWithOnlyObservables<typeof service>;
+    service: IServicesWithoutObservables<typeof service>;
   }
 }
 

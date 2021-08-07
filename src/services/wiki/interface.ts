@@ -7,51 +7,29 @@ import { IWikiOperations } from './wikiOperations';
 
 export type IWikiMessage = IWikiLogMessage | IWikiControlMessage;
 export interface IWikiLogMessage {
-  type: 'stdout' | 'stderr';
   message: string;
+  type: 'stdout' | 'stderr';
 }
 export enum WikiControlActions {
-  /** means worker is just started */
-  start = 'start',
   /** wiki is booted */
   booted = 'booted',
   error = 'error',
+  /** means worker is just started */
+  start = 'start',
 }
 export interface IWikiControlMessage {
-  type: 'control';
   actions: WikiControlActions;
   message?: string;
+  type: 'control';
 }
 
 /**
  * Handle wiki worker startup and restart
  */
 export interface IWikiService {
-  updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void>;
-  /** call wiki worker to actually start nodejs wiki */
-  startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void>;
-  stopWiki(homePath: string): Promise<void>;
-  restartWiki(workspace: IWorkspace): Promise<void>;
-  stopAllWiki(): Promise<void>;
-  copyWikiTemplate(newFolderPath: string, folderName: string): Promise<void>;
-  getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
-  /** send tiddlywiki action message to current active wiki */
-  requestWikiSendActionMessage(actionMessage: string): Promise<void>;
-  requestOpenTiddlerInWiki(tiddlerName: string): Promise<void>;
-  linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
-  /**
-   * create sub wiki in a parent folder, and link to a main wiki, and set tagName to filesystemPath.tid
-   * @param parentFolderLocation
-   * @param folderName
-   * @param mainWikiToLink
-   * @param onlyLink not creating new subwiki folder, just link existed subwiki folder to main wiki folder
-   */
-  createSubWiki(parentFolderLocation: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
-  removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
-  ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
   /** return true if wiki does existed, return error message (a string) if there is an error checking wiki existence */
   checkWikiExist(workspace: IWorkspace, options?: { shouldBeMainWiki?: boolean; showDialog?: boolean }): Promise<string | true>;
-  cloneWiki(parentFolderLocation: string, wikiFolderName: string, gitRepoUrl: string, gitUserInfo: IGitUserInfos): Promise<void>;
+  checkWikiStartLock(wikiFolderLocation: string): boolean;
   cloneSubWiki(
     parentFolderLocation: string,
     wikiFolderName: string,
@@ -60,15 +38,37 @@ export interface IWikiService {
     gitUserInfo: IGitUserInfos,
     tagName?: string,
   ): Promise<void>;
+  cloneWiki(parentFolderLocation: string, wikiFolderName: string, gitRepoUrl: string, gitUserInfo: IGitUserInfos): Promise<void>;
+  copyWikiTemplate(newFolderPath: string, folderName: string): Promise<void>;
+  /**
+   * create sub wiki in a parent folder, and link to a main wiki, and set tagName to filesystemPath.tid
+   * @param parentFolderLocation
+   * @param folderName
+   * @param mainWikiToLink
+   * @param onlyLink not creating new subwiki folder, just link existed subwiki folder to main wiki folder
+   */
+  createSubWiki(parentFolderLocation: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
+  ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
+  getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
+  linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
+  removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
+  requestOpenTiddlerInWiki(tiddlerName: string): Promise<void>;
+  /** send tiddlywiki action message to current active wiki */
+  requestWikiSendActionMessage(actionMessage: string): Promise<void>;
+  restartWiki(workspace: IWorkspace): Promise<void>;
+  setAllWikiStartLockOff(): void;
+  setWikiStartLockOn(wikiFolderLocation: string): void;
+  /** call wiki worker to actually start nodejs wiki */
+  startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void>;
+  stopAllWiki(): Promise<void>;
+  stopWatchAllWiki(): Promise<void>;
+  stopWatchWiki(wikiRepoPath: string): Promise<void>;
+  stopWiki(homePath: string): Promise<void>;
+  updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void>;
+  watchWikiForDebounceCommitAndSync(wikiRepoPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, wikiFolderPath?: string): Promise<void>;
+  wikiOperation<OP extends keyof IWikiOperations>(operationType: OP, arguments_: Parameters<IWikiOperations[OP]>): undefined | ReturnType<IWikiOperations[OP]>;
   /** handle start/restart of wiki/subwiki */
   wikiStartup(workspace: IWorkspace): Promise<void>;
-  watchWikiForDebounceCommitAndSync(wikiRepoPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, wikiFolderPath?: string): Promise<void>;
-  stopWatchWiki(wikiRepoPath: string): Promise<void>;
-  stopWatchAllWiki(): Promise<void>;
-  setWikiStartLockOn(wikiFolderLocation: string): void;
-  setAllWikiStartLockOff(): void;
-  checkWikiStartLock(wikiFolderLocation: string): boolean;
-  wikiOperation<OP extends keyof IWikiOperations>(operationType: OP, arguments_: Parameters<IWikiOperations[OP]>): undefined | ReturnType<IWikiOperations[OP]>;
 }
 export const WikiServiceIPCDescriptor = {
   channel: WikiChannel.name,

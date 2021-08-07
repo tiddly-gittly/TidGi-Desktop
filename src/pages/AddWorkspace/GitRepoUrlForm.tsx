@@ -15,12 +15,12 @@ export function GitRepoUrlForm({
   isCreateMainWorkspace,
   error,
 }: {
-  storageProvider: SupportedStorageServices;
+  error?: boolean;
   gitRepoUrl: string;
   gitRepoUrlSetter: (nextUrl: string) => void;
-  wikiFolderNameSetter?: (nextName: string) => void;
   isCreateMainWorkspace: boolean;
-  error?: boolean;
+  storageProvider: SupportedStorageServices;
+  wikiFolderNameSetter?: (nextName: string) => void;
 }): JSX.Element {
   const { t } = useTranslation();
   return (

@@ -3,8 +3,8 @@ import { ipcRenderer, IpcRendererEvent, MenuItemConstructorOptions, WebContents 
 import { v4 as uuid } from 'uuid';
 
 export interface IpcSafeMenuItem {
-  label?: string;
   click: string;
+  label?: string;
 }
 
 /**

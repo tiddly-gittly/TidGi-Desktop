@@ -3,8 +3,8 @@ export interface IReadFileRequest {
   key: string;
 }
 export interface IWriteFileRequest {
-  filename: string;
   data: string;
+  filename: string;
   keys: string[];
 }
 export interface IReadWriteFileRequest extends IReadFileRequest, IWriteFileRequest {}

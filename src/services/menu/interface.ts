@@ -10,9 +10,9 @@ import type { IpcSafeMenuItem } from './rendererMenuItemProxy';
  * So these value can be determined at every build time (menu will be rebuilt every time the preferences change)
  */
 export interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstructorOptions, 'label' | 'enabled' | 'checked' | 'submenu'> {
-  label?: (() => string) | string;
-  enabled?: (() => boolean) | (() => Promise<boolean>) | boolean;
   checked?: (() => boolean) | (() => Promise<boolean>) | boolean;
+  enabled?: (() => boolean) | (() => Promise<boolean>) | boolean;
+  label?: (() => string) | string;
   submenu?: Array<MenuItemConstructorOptions | DeferredMenuItemConstructorOptions>;
 }
 
@@ -20,28 +20,29 @@ export interface DeferredMenuItemConstructorOptions extends Omit<MenuItemConstru
  * Basically Partial<ContextMenuParams>, but must fill in xy
  */
 export interface IOnContextMenuInfo {
-  x: number;
-  y: number;
-  linkURL?: string;
-  linkText?: string;
-  selectionText?: string;
-  misspelledWord?: string;
-  srcURL?: string;
-  hasImageContents?: boolean;
   dictionarySuggestions?: string[];
-  isEditable?: boolean;
-  inputFieldType?: string;
   editFlags?: {
-    canCut?: boolean;
     canCopy?: boolean;
+    canCut?: boolean;
     canPaste?: boolean;
   };
+  hasImageContents?: boolean;
+  inputFieldType?: string;
+  isEditable?: boolean;
+  linkText?: string;
+  linkURL?: string;
+  misspelledWord?: string;
+  selectionText?: string;
+  srcURL?: string;
+  x: number;
+  y: number;
 }
 
 /**
  * Handle creation of app menu, other services can register their menu tab and menu items here.
  */
 export interface IMenuService {
+  buildContextMenuAndPopup(template: MenuItemConstructorOptions[] | IpcSafeMenuItem[], info: IOnContextMenuInfo, windowName?: WindowNames): Promise<void>;
   buildMenu(): Promise<void>;
   initContextMenuForWindowWebContents(webContents: WebContents): Promise<() => void>;
   insertMenu(
@@ -51,7 +52,6 @@ export interface IMenuService {
     withSeparator?: boolean,
     menuPartKey?: string,
   ): Promise<void>;
-  buildContextMenuAndPopup(template: MenuItemConstructorOptions[] | IpcSafeMenuItem[], info: IOnContextMenuInfo, windowName?: WindowNames): Promise<void>;
 }
 export const MenuServiceIPCDescriptor = {
   channel: MenuChannel.name,

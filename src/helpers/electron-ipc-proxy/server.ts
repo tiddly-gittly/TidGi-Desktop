@@ -67,7 +67,7 @@ function unregisterProxy(channel: string, transport: IpcMain): void {
   transport.removeAllListeners(channel);
   const server = registrations[channel];
 
-  if (!server) {
+  if (server == undefined) {
     throw new IpcProxyError(`No proxy is registered on channel ${channel}`);
   }
 

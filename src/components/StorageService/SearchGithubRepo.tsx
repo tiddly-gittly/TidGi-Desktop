@@ -63,8 +63,8 @@ const CREATE_REPO_MUTATION = `
 interface Props {
   githubWikiUrl: string;
   githubWikiUrlSetter: (value: string) => void;
-  wikiFolderNameSetter?: (value: string) => void;
   isCreateMainWorkspace: boolean;
+  wikiFolderNameSetter?: (value: string) => void;
 }
 export default function SearchGithubRepo(props: Props): JSX.Element {
   const userInfos = useUserInfoObservable();
@@ -95,8 +95,8 @@ export default function SearchGithubRepo(props: Props): JSX.Element {
 }
 
 interface ITokens {
-  githubUsername: string;
   accessToken: string;
+  githubUsername: string;
 }
 function SearchGithubRepoResultList({
   githubWikiUrl,

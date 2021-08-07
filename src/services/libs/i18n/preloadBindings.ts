@@ -7,9 +7,9 @@ import { IReadWriteFileRequest } from './types';
  *  in order to set up the contextBridge api
  */
 export const preloadBindings = function (ipcRenderer: IpcRenderer): {
-  send: (channel: I18NChannels, readWriteFileArgs: IReadWriteFileRequest) => Promise<void>;
-  onReceive: (channel: I18NChannels, callback: (readWriteFileArgs: IReadWriteFileRequest) => void) => void;
   onLanguageChange: (callback: (language: { lng: string }) => unknown) => void;
+  onReceive: (channel: I18NChannels, callback: (readWriteFileArgs: IReadWriteFileRequest) => void) => void;
+  send: (channel: I18NChannels, readWriteFileArgs: IReadWriteFileRequest) => Promise<void>;
 } {
   return {
     send: async (channel: I18NChannels, readWriteFileArgs: IReadWriteFileRequest): Promise<void> => {
