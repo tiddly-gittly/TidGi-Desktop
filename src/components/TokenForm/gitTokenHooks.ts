@@ -1,9 +1,7 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { useCallback, useEffect, useMemo } from 'react';
-import AuthingSSO, { ITrackSessionResult } from '@authing/sso';
+import { useCallback, useMemo } from 'react';
 import { AuthenticationClient } from 'authing-js-sdk';
-import { ServiceTokenTypes, ServiceUserNameTypes, ServiceEmailTypes } from '@services/auth/interface';
-import { SupportedStorageServices, IAuthingUserInfo } from '@services/types';
+import { SupportedStorageServices } from '@services/types';
 import { APP_ID, APP_DOMAIN } from '@/constants/auth';
 
 export function useAuth(storageService: SupportedStorageServices): [() => Promise<void>, () => Promise<void>] {
@@ -34,13 +32,13 @@ export function useAuth(storageService: SupportedStorageServices): [() => Promis
           const thirdPartyIdentity = user.identities?.find((identity) => identity?.provider === storageService);
           if (thirdPartyIdentity) {
             if (thirdPartyIdentity.accessToken) {
-              await window.service.auth.set(`${storageService}-token` as ServiceTokenTypes, thirdPartyIdentity.accessToken);
+              await window.service.auth.set(`${storageService}-token`, thirdPartyIdentity.accessToken);
             }
             if (user.username) {
-              await window.service.auth.set(`${storageService}-userName` as ServiceUserNameTypes, user.username);
+              await window.service.auth.set(`${storageService}-userName`, user.username);
             }
             if (user.email) {
-              await window.service.auth.set(`${storageService}-email` as ServiceEmailTypes, user.email);
+              await window.service.auth.set(`${storageService}-email`, user.email);
             }
           }
         },

@@ -164,7 +164,7 @@ export class NotificationService implements INotificationService {
     const addTimeout = (d: Date): void => {
       const t = new Date(d).getTime() - Date.now();
       // https://github.com/nodejs/node-v0.x-archive/issues/8656
-      if (t > 0 && t < 2147483647) {
+      if (t > 0 && t < 2_147_483_647) {
         const newTimeout = setTimeout(() => {
           void this.updatePauseNotificationsInfo();
         }, t);

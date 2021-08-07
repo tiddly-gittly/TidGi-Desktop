@@ -71,6 +71,8 @@ module.exports = {
     'no-undef': 'off',
     'unicorn/no-array-for-each': 'off',
     'multiline-ternary': 'off',
+    'security/detect-object-injection': 'off',
+    'ecurity/detect-non-literal-fs-filename': 'off',
     'unicorn/filename-case': [
       0,
       {

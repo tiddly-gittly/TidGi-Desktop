@@ -25,7 +25,7 @@ const RestartButton = styled(Button)<{ currentWaitBeforeRestart: number }>`
   }
 `;
 
-export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart = 10000): [() => void, JSX.Element] {
+export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart = 10_000): [() => void, JSX.Element] {
   const { t } = useTranslation();
   const [opened, openedSetter] = useState(false);
   const [inCountDown, inCountDownSetter] = useState(false);

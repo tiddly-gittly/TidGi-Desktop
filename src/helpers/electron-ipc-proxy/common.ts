@@ -15,7 +15,7 @@ export type ProxyWithOutObservable<OriginalProxy> = Omit<OriginalProxy, ProxyObs
 export type AsyncifyProxy<
   OriginalProxy,
   ObservableKey extends ProxyObservableProperties<OriginalProxy> = ProxyObservableProperties<OriginalProxy>,
-  AsyncKey extends Exclude<ProxyAsyncProperties<OriginalProxy>, ObservableKey> = Exclude<ProxyAsyncProperties<OriginalProxy>, ObservableKey>
+  AsyncKey extends Exclude<ProxyAsyncProperties<OriginalProxy>, ObservableKey> = Exclude<ProxyAsyncProperties<OriginalProxy>, ObservableKey>,
 > = {
   [P in AsyncKey]: Asyncify<OriginalProxy[P]>;
 } &

@@ -8,10 +8,7 @@ export function useWorkspacesListObservable(): IWorkspace[] | undefined {
   // beware not pipe directly in the react hock, as it will re-pipe every time React reRenders, and every time regarded as new Observable, so it will re-subscribe
   // useMemo will solve this
   const workspacesList$ = useMemo(
-    () =>
-      window.observables.workspace.workspaces$.pipe(
-        map<Record<string, IWorkspace>, IWorkspace[]>((workspaces) => Object.values(workspaces)),
-      ),
+    () => window.observables.workspace.workspaces$.pipe(map<Record<string, IWorkspace>, IWorkspace[]>((workspaces) => Object.values(workspaces))),
     [],
   );
   useObservable<IWorkspace[] | undefined>(workspacesList$, workspacesSetter);

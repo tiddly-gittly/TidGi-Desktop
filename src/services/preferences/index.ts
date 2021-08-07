@@ -67,8 +67,8 @@ export class Preference implements IPreferenceService {
     const { syncDebounceInterval } = preferenceToSanitize;
     if (
       typeof syncDebounceInterval !== 'number' ||
-      syncDebounceInterval > 86400000 ||
-      syncDebounceInterval < -86400000 ||
+      syncDebounceInterval > 86_400_000 ||
+      syncDebounceInterval < -86_400_000 ||
       !Number.isInteger(syncDebounceInterval)
     ) {
       preferenceToSanitize.syncDebounceInterval = defaultPreferences.syncDebounceInterval;

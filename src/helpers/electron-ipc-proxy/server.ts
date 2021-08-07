@@ -1,4 +1,3 @@
-/* eslint-disable */
 import { Observable, Subscription, isObservable } from 'rxjs';
 import { ipcMain, IpcMain, WebContents, IpcMainEvent } from 'electron';
 import Errio from 'errio';
@@ -23,7 +22,7 @@ const registrations: { [channel: string]: ProxyServerHandler | null } = {};
 export function registerProxy<T>(target: T, descriptor: ProxyDescriptor, transport: IpcMain = ipcMain): VoidFunction {
   const { channel } = descriptor;
 
-  if (registrations[channel]) {
+  if (registrations[channel] !== null || registrations[channel] !== undefined) {
     throw new IpcProxyError(`Proxy object has already been registered on channel ${channel}`);
   }
 
@@ -40,20 +39,21 @@ export function registerProxy<T>(target: T, descriptor: ProxyDescriptor, transpo
     server
       .handleRequest(request, sender)
       .then((result) => {
-        if (sender) {
+        if (sender !== undefined) {
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
           sender.send(correlationId, { type: ResponseType.Result, result });
           sender.removeListener('destroyed', nullify);
         }
       })
       .catch((error) => {
-        if (sender) {
+        if (sender !== undefined) {
           let stringifiedRequest = '';
           try {
-            stringifiedRequest = request ? JSON.stringify(request) : '';
+            stringifiedRequest = request !== undefined ? JSON.stringify(request) : '';
           } catch {
             stringifiedRequest = request.type;
           }
-          logger.error(`E-0 IPC Error on ${channel} ${stringifiedRequest} ${error.message} ${error.stack}`);
+          logger.error(`E-0 IPC Error on ${channel} ${stringifiedRequest} ${(error as Error).message} ${(error as Error).stack ?? ''}`);
           sender.send(correlationId, { type: ResponseType.Error, error: Errio.stringify(error) });
           sender.removeListener('destroyed', nullify);
         }
@@ -63,7 +63,7 @@ export function registerProxy<T>(target: T, descriptor: ProxyDescriptor, transpo
   return () => unregisterProxy(channel, transport);
 }
 
-function unregisterProxy(channel: string, transport: IpcMain) {
+function unregisterProxy(channel: string, transport: IpcMain): void {
   transport.removeAllListeners(channel);
   const server = registrations[channel];
 

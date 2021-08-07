@@ -1,4 +1,4 @@
-import React, { useCallback } from 'react';
+import React from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 
@@ -6,7 +6,6 @@ import { TextField, Button } from '@material-ui/core';
 
 import { SupportedStorageServices } from '@services/types';
 import { useUserInfoObservable } from '@services/auth/hooks';
-import { ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from '@services/auth/interface';
 import { useAuth } from './gitTokenHooks';
 
 const AuthingLoginButton = styled(Button)`
@@ -37,23 +36,23 @@ export function GitTokenForm(props: {
       <GitTokenInput
         helperText={t('AddWorkspace.GitTokenDescription')}
         onChange={(event) => {
-          void window.service.auth.set(`${storageService}-token` as ServiceTokenTypes, event.target.value);
+          void window.service.auth.set(`${storageService}-token`, event.target.value);
         }}
-        value={userInfo[`${storageService}-token` as ServiceTokenTypes] ?? ''}
+        value={userInfo[`${storageService}-token`] ?? ''}
       />
       <GitTokenInput
         helperText={t('AddWorkspace.GitUserNameDescription')}
         onChange={(event) => {
-          void window.service.auth.set(`${storageService}-userName` as ServiceUserNameTypes, event.target.value);
+          void window.service.auth.set(`${storageService}-userName`, event.target.value);
         }}
-        value={userInfo[`${storageService}-userName` as ServiceUserNameTypes] ?? ''}
+        value={userInfo[`${storageService}-userName`] ?? ''}
       />
       <GitTokenInput
         helperText={t('AddWorkspace.GitEmailDescription')}
         onChange={(event) => {
-          void window.service.auth.set(`${storageService}-email` as ServiceEmailTypes, event.target.value);
+          void window.service.auth.set(`${storageService}-email`, event.target.value);
         }}
-        value={userInfo[`${storageService}-email` as ServiceEmailTypes] ?? ''}
+        value={userInfo[`${storageService}-email`] ?? ''}
       />
       {children}
     </>

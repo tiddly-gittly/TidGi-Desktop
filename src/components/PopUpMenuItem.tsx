@@ -16,7 +16,7 @@ export default class PopUpMenuItem extends React.Component<Props, State> {
     open: false,
   };
 
-  handleClick = (event: React.MouseEvent): void => {
+  onClick = (event: React.MouseEvent): void => {
     this.setState({ open: true, anchorEl: event.currentTarget });
   };
 
@@ -27,31 +27,31 @@ export default class PopUpMenuItem extends React.Component<Props, State> {
   render(): JSX.Element {
     const { buttonElement, children, id } = this.props;
     const { anchorEl, open } = this.state;
+    const { handleRequestClose, onClick } = this;
     return (
       <>
         {React.cloneElement(buttonElement, {
           'aria-owns': id,
           'aria-haspopup': true,
-          onClick: this.handleClick,
+          onClick,
         })}
-        <Menu id={id} anchorEl={anchorEl} open={open} onClose={this.handleRequestClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
-          {React.Children.map(
-            children,
-            (child) =>
-              child &&
-              typeof child === 'object' &&
-              'props' in child &&
-              React.cloneElement(child, {
+        <Menu id={id} anchorEl={anchorEl} open={open} onClose={handleRequestClose} anchorOrigin={{ vertical: 'top', horizontal: 'center' }}>
+          {React.Children.map(children, (child: React.ReactNode) => {
+            if (child && typeof child === 'object' && 'props' in child) {
+              return React.cloneElement(child, {
                 onClick: () => {
                   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
                   if (typeof child.props.onClick === 'function') {
                     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call
                     child.props.onClick();
                   }
-                  this.handleRequestClose();
+                  handleRequestClose();
                 },
-              }),
-          )}
+              });
+            }
+            // eslint-disable-next-line unicorn/no-array-method-this-argument
+            return null;
+          })}
         </Menu>
       </>
     );
