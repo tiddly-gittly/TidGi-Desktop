@@ -3,6 +3,7 @@ import { WikiChannel } from '@/constants/channels';
 import { IWorkspace } from '@services/workspaces/interface';
 import { IGitUserInfos } from '@services/git/interface';
 import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
+import { IWikiOperations } from './wikiOperations';
 
 export type IWikiMessage = IWikiLogMessage | IWikiControlMessage;
 export interface IWikiLogMessage {
@@ -30,6 +31,7 @@ export interface IWikiService {
   /** call wiki worker to actually start nodejs wiki */
   startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void>;
   stopWiki(homePath: string): Promise<void>;
+  restartWiki(workspace: IWorkspace): Promise<void>;
   stopAllWiki(): Promise<void>;
   copyWikiTemplate(newFolderPath: string, folderName: string): Promise<void>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
@@ -66,6 +68,7 @@ export interface IWikiService {
   setWikiStartLockOn(wikiFolderLocation: string): void;
   setAllWikiStartLockOff(): void;
   checkWikiStartLock(wikiFolderLocation: string): boolean;
+  wikiOperation<OP extends keyof IWikiOperations>(operationType: OP, arguments_: Parameters<IWikiOperations[OP]>): undefined | ReturnType<IWikiOperations[OP]>;
 }
 export const WikiServiceIPCDescriptor = {
   channel: WikiChannel.name,
@@ -73,6 +76,7 @@ export const WikiServiceIPCDescriptor = {
     updateSubWikiPluginContent: ProxyPropertyType.Function,
     startWiki: ProxyPropertyType.Function,
     stopWiki: ProxyPropertyType.Function,
+    restartWiki: ProxyPropertyType.Function,
     stopAllWiki: ProxyPropertyType.Function,
     copyWikiTemplate: ProxyPropertyType.Function,
     getSubWikiPluginContent: ProxyPropertyType.Function,
@@ -89,5 +93,6 @@ export const WikiServiceIPCDescriptor = {
     watchWikiForDebounceCommitAndSync: ProxyPropertyType.Function,
     stopWatchWiki: ProxyPropertyType.Function,
     stopWatchAllWiki: ProxyPropertyType.Function,
+    wikiOperation: ProxyPropertyType.Function,
   },
 };

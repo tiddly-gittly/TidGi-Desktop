@@ -47,6 +47,7 @@ export enum WikiChannel {
   getTiddlerTextDone = 'wiki-get-tiddler-text-done',
   /** show message inside tiddlywiki to show git sync progress */
   syncProgress = 'wiki-sync-progress',
+  generalNotification = 'wiki-notification-tiddly-git',
   /** used to show wiki creation messages in the TiddlyGit UI for user to read */
   createProgress = 'wiki-create-progress',
   openTiddler = 'wiki-open-tiddler',

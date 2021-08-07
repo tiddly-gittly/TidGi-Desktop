@@ -31,6 +31,12 @@ ipcRenderer.on(WikiChannel.syncProgress, async (event, message: string) => {
     $tw.notifier.display('$:/state/notification/${WikiChannel.syncProgress}');
   `);
 });
+ipcRenderer.on(WikiChannel.generalNotification, async (event, message: string) => {
+  await webFrame.executeJavaScript(`
+    $tw.wiki.addTiddler({ title: '$:/state/notification/${WikiChannel.generalNotification}', text: '${message}' });
+    $tw.notifier.display('$:/state/notification/${WikiChannel.generalNotification}');
+  `);
+});
 // open a tiddler
 ipcRenderer.on(WikiChannel.openTiddler, async (event, tiddlerName: string) => {
   await webFrame.executeJavaScript(`

@@ -33,6 +33,7 @@ import type { WikiWorker } from './wikiWorker';
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker.ts';
+import { IWikiOperations, wikiOperations } from './wikiOperations';
 
 @injectable()
 export class Wiki implements IWikiService {
@@ -379,8 +380,20 @@ export class Wiki implements IWikiService {
     return this.justStartedWiki[wikiFolderLocation] ?? false;
   }
 
+  /**
+   * Watch wiki change so we can trigger git sync
+   * Simply do some check before calling `this.watchWikiForDebounceCommitAndSync`
+   */
+  private async tryWatchForSync(workspace: IWorkspace, watchPath?: string): Promise<void> {
+    const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService } = workspace;
+    const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
+    if (storageService !== SupportedStorageServices.local && typeof githubRepoUrl === 'string' && userInfo !== undefined) {
+      await this.watchWikiForDebounceCommitAndSync(wikiFolderLocation, githubRepoUrl, userInfo, watchPath);
+    }
+  }
+
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
-    const { wikiFolderLocation, gitUrl: githubRepoUrl, port, isSubWiki, mainWikiToLink, storageService } = workspace;
+    const { wikiFolderLocation, port, isSubWiki, mainWikiToLink } = workspace;
 
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     try {
@@ -389,21 +402,15 @@ export class Wiki implements IWikiService {
       // do nothing
     }
 
-    const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const userName = (workspace.userName || (await this.authService.get('userName'))) ?? '';
-    /** watch wiki change so we can trigger git sync */
-    const tryWatchForSync = async (watchPath?: string): Promise<void> => {
-      if (storageService !== SupportedStorageServices.local && typeof githubRepoUrl === 'string' && userInfo !== undefined) {
-        await this.watchWikiForDebounceCommitAndSync(wikiFolderLocation, githubRepoUrl, userInfo, watchPath);
-      }
-    };
+
     // if is main wiki
     if (!isSubWiki) {
       await this.startWiki(wikiFolderLocation, port, userName);
       // sync to cloud, do this in a non-blocking way
-      void tryWatchForSync(path.join(wikiFolderLocation, TIDDLERS_PATH));
+      void this.tryWatchForSync(workspace, path.join(wikiFolderLocation, TIDDLERS_PATH));
     } else {
       // if is private repo wiki
       // if we are creating a sub-wiki just now, restart the main wiki to load content from private wiki
@@ -412,14 +419,30 @@ export class Wiki implements IWikiService {
         if (mainWorkspace === undefined) {
           throw new Error(`mainWorkspace is undefined in wikiStartup() for mainWikiPath ${mainWikiToLink}`);
         }
-        await this.stopWatchWiki(mainWikiToLink);
-        await this.stopWiki(mainWikiToLink);
-        await this.startWiki(mainWikiToLink, mainWorkspace.port, userName);
-        // sync main wiki to cloud, do this in a non-blocking way
-        void tryWatchForSync(path.join(mainWikiToLink, TIDDLERS_PATH));
+        await this.restartWiki(mainWorkspace);
         // sync self to cloud, subwiki's content is all in root folder path, do this in a non-blocking way
-        void tryWatchForSync();
+        void this.tryWatchForSync(workspace);
       }
+    }
+  }
+
+  public async restartWiki(workspace: IWorkspace): Promise<void> {
+    const { wikiFolderLocation, port, userName: workspaceUserName, isSubWiki } = workspace;
+    // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    const userName = (workspaceUserName || (await this.authService.get('userName'))) ?? '';
+
+    await this.stopWatchWiki(wikiFolderLocation);
+    if (!isSubWiki) {
+      await this.stopWiki(wikiFolderLocation);
+      await this.startWiki(wikiFolderLocation, port, userName);
+    }
+    if (isSubWiki) {
+      // sync sub wiki to cloud, do this in a non-blocking way
+      void this.tryWatchForSync(workspace, wikiFolderLocation);
+    } else {
+      // sync main wiki to cloud, do this in a non-blocking way
+      void this.tryWatchForSync(workspace, path.join(wikiFolderLocation, TIDDLERS_PATH));
     }
   }
 
@@ -511,5 +534,20 @@ export class Wiki implements IWikiService {
 
   public async updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void> {
     return updateSubWikiPluginContent(mainWikiPath, newConfig, oldConfig);
+  }
+
+  public wikiOperation<OP extends keyof IWikiOperations>(
+    operationType: OP,
+    arguments_: Parameters<IWikiOperations[OP]>,
+  ): undefined | ReturnType<IWikiOperations[OP]> {
+    if (typeof wikiOperations[operationType] !== 'function') {
+      throw new TypeError(`${operationType} gets no useful handler`);
+    }
+    if (!Array.isArray(arguments_)) {
+      // TODO: better type handling here
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/restrict-template-expressions
+      throw new TypeError(`${(arguments_ as any) ?? ''} (${typeof arguments_}) is not a good argument array for ${operationType}`);
+    }
+    return wikiOperations[operationType].apply(undefined, arguments_) as unknown as ReturnType<IWikiOperations[OP]>;
   }
 }

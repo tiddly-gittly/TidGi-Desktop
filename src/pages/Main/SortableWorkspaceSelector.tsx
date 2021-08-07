@@ -7,6 +7,7 @@ import WorkspaceSelector from './WorkspaceSelector';
 import { IWorkspace } from '@services/workspaces/interface';
 
 import defaultIcon from '@/images/default-icon.png';
+import { WikiChannel } from '@/constants/channels';
 
 export interface ISortableItemProps {
   index: number;
@@ -63,6 +64,17 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
           {
             label: t('ContextMenu.Reload'),
             click: async () => await window.service.view.reloadViewsWebContents(id),
+          },
+          {
+            label: t('ContextMenu.RestartService'),
+            click: async () => {
+              const workspaceToRestart = await window.service.workspace.get(id);
+              if (workspaceToRestart !== undefined) {
+                await window.service.wiki.restartWiki(workspaceToRestart);
+                await window.service.view.reloadViewsWebContents(id);
+                await window.service.wiki.wikiOperation(WikiChannel.generalNotification, [t('ContextMenu.RestartServiceComplete')]);
+              }
+            },
           },
         ];
 

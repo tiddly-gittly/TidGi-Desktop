@@ -1,31 +1,11 @@
 /* eslint-disable global-require */
 import Transport from 'winston-transport';
 
-import { container } from '@services/container';
-import type { IViewService } from '@services/view/interface';
-import type { IWindowService } from '@services/windows/interface';
-import serviceIdentifier from '@services/serviceIdentifier';
-import { WindowNames } from '@services/windows/WindowProperties';
-import { WikiChannel } from '@/constants/channels';
-
-const handlers = {
-  [WikiChannel.createProgress]: (message: string) => {
-    const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-    const createWorkspaceWindow = windowService.get(WindowNames.addWorkspace);
-    createWorkspaceWindow?.webContents?.send(WikiChannel.createProgress, message);
-  },
-  [WikiChannel.syncProgress]: async (message: string) => {
-    const viewService = container.get<IViewService>(serviceIdentifier.View);
-    const browserView = await viewService.getActiveBrowserView();
-    browserView?.webContents?.send(WikiChannel.syncProgress, message);
-  },
-};
-
-export type IHandlers = typeof handlers;
+import { IWikiOperations, wikiOperations } from '@services/wiki/wikiOperations';
 
 export interface IInfo {
   /** which method or handler function we are logging for */
-  handler: keyof IHandlers;
+  handler: keyof IWikiOperations;
   /** the detailed massage for debugging */
   message: string;
 }
@@ -40,8 +20,8 @@ export default class RendererTransport extends Transport {
     });
 
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (info.handler && info.handler in handlers) {
-      void handlers[info.handler](info.message);
+    if (info.handler && info.handler in wikiOperations) {
+      void wikiOperations[info.handler](info.message);
     }
 
     callback();
