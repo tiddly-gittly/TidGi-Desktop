@@ -45,26 +45,27 @@ module.exports = [
               camel2DashComponentName: false,
             }),
             // svg-icons
-            tsImportPluginFactory({
-              libraryDirectory: (importName) => {
-                const stringVec = importName
-                  .split(/([A-Z][a-z]+|\d*)/)
-                  .filter((s) => s.length)
-                  .map((s) => s.toLocaleLowerCase());
+            // FIXME: will cause `FolderIcon is not defined`, which cannot reproduce in MacOS and dev mode https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/88
+            // tsImportPluginFactory({
+            //   libraryDirectory: (importName) => {
+            //     const stringVec = importName
+            //       .split(/([A-Z][a-z]+|\d*)/)
+            //       .filter((s) => s.length)
+            //       .map((s) => s.toLocaleLowerCase());
 
-                return stringVec.reduce((accumulator, current, index) => {
-                  if (index > 1) {
-                    return `${accumulator}-${current}`;
-                  } else if (index === 1) {
-                    return `${accumulator}/${current}`;
-                  }
-                  return accumulator + current;
-                }, '');
-              },
-              libraryName: '@material-ui/icons',
-              style: false,
-              camel2DashComponentName: false,
-            }),
+            //     return stringVec.reduce((accumulator, current, index) => {
+            //       if (index > 1) {
+            //         return `${accumulator}-${current}`;
+            //       } else if (index === 1) {
+            //         return `${accumulator}/${current}`;
+            //       }
+            //       return accumulator + current;
+            //     }, '');
+            //   },
+            //   libraryName: '@material-ui/icons',
+            //   style: false,
+            //   camel2DashComponentName: false,
+            // }),
             // RXJS
             tsImportPluginFactory([
               {
