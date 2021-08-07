@@ -87,8 +87,11 @@ export default function setupViewEventHandlers(
     await workspaceService.update(workspace.id, {
       lastUrl: currentUrl,
     });
+  });
+  view.webContents.on('did-finish-load', async () => {
     // fix https://github.com/atomery/webcatalog/issues/870
     await workspaceViewService.realignActiveWorkspace();
+    // update isLoading to false when load succeed
     await workspaceService.updateMetaData(workspace.id, {
       isLoading: false,
     });
