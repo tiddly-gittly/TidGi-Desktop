@@ -25,7 +25,7 @@ export interface IViewContext {
   workspace: IWorkspace;
   shouldPauseNotifications: boolean;
   sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
-  initialUrl: string;
+  loadInitialUrlWithCatch: () => Promise<void>;
 }
 
 export interface IViewMeta {
@@ -38,7 +38,7 @@ export interface IViewMeta {
 export default function setupViewEventHandlers(
   view: BrowserView,
   browserWindow: BrowserWindow,
-  { workspace, sharedWebPreferences, initialUrl }: IViewContext,
+  { workspace, sharedWebPreferences, loadInitialUrlWithCatch }: IViewContext,
 ): void {
   // metadata and state about current BrowserView
   const viewMeta: IViewMeta = {
@@ -128,8 +128,8 @@ export default function setupViewEventHandlers(
           await workspaceService.updateMetaData(workspace.id, {
             didFailLoadTimes: didFailLoadTimes + 1,
           });
-          await view.webContents.loadURL(initialUrl);
-        }, 200);
+          await loadInitialUrlWithCatch();
+        }, 1000);
         return;
       }
       await workspaceService.updateMetaData(workspace.id, {
@@ -143,8 +143,8 @@ export default function setupViewEventHandlers(
     }
     // edge case to handle failed auth, use setTimeout to prevent infinite loop
     if (errorCode === -300 && view.webContents.getURL().length === 0 && workspaceObject.homeUrl.startsWith('http')) {
-      setTimeout(() => {
-        void view.webContents.loadURL(getLocalHostUrlWithActualIP(workspaceObject.homeUrl));
+      setTimeout(async () => {
+        await loadInitialUrlWithCatch();
       }, 1000);
     }
   });

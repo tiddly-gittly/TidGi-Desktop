@@ -1,1 +1,1 @@
-export const LOAD_VIEW_MAX_RETRIES = 3;
+export const LOAD_VIEW_MAX_RETRIES = 10;
