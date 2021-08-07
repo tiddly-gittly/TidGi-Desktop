@@ -22,7 +22,7 @@ const registrations: { [channel: string]: ProxyServerHandler | null } = {};
 export function registerProxy<T>(target: T, descriptor: ProxyDescriptor, transport: IpcMain = ipcMain): VoidFunction {
   const { channel } = descriptor;
 
-  if (registrations[channel] !== null || registrations[channel] !== undefined) {
+  if (registrations[channel] !== null && registrations[channel] !== undefined) {
     throw new IpcProxyError(`Proxy object has already been registered on channel ${channel}`);
   }
 
