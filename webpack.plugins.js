@@ -12,6 +12,9 @@ const ThreadsPlugin = require('threads-plugin');
 const ExternalsPlugin = require('webpack5-externals-plugin');
 const EventHooksPlugin = require('event-hooks-webpack-plugin');
 const WebpackBar = require('webpackbar');
+const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
+
+const shared = [process.env.NODE_ENV === 'production' ? new BundleAnalyzerPlugin({ generateStatsFile: true, analyzerMode: 'disabled' }) : undefined];
 
 exports.main = _.compact([
   // we only need one instance of TsChecker, it will check main and renderer all together
@@ -51,6 +54,7 @@ exports.main = _.compact([
     plugins: ['ExternalsPlugin'],
   }),
   new WebpackBar(),
+  ...shared,
 ]);
 
 exports.renderer = [
@@ -74,4 +78,5 @@ exports.renderer = [
     },
   ),
   new WebpackBar(),
+  ...shared,
 ];
