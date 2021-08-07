@@ -3,7 +3,6 @@
 import React from 'react';
 import ReactDOM from 'react-dom';
 import i18n from 'i18next';
-import LogRocket from 'logrocket';
 import { ThemeProvider } from 'styled-components';
 
 import StyledEngineProvider from '@material-ui/core/StyledEngineProvider';
@@ -40,8 +39,6 @@ function App(): JSX.Element {
 }
 
 async function runApp(): Promise<void> {
-  LogRocket.init('kkauk7/tiddlygit-desktop');
-
   void window.remote.setVisualZoomLevelLimits(1, 1);
 
   const attachToMenubar = await window.service.preference.get('attachToMenubar');
