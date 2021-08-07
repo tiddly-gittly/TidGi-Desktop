@@ -72,6 +72,7 @@ export enum PreferenceChannel {
 
 export enum WindowChannel {
   name = 'WindowChannel',
+  // TODO: add back the listener as https://github.com/webcatalog/neutron/blob/52a35f103761d82ae5a35e5f90fc39024830bc63/src/listeners/index.js#L80
   updateCanGoBack = 'update-can-go-back',
   updateCanGoForward = 'update-can-go-forward',
   openFindInPage = 'open-find-in-page',
