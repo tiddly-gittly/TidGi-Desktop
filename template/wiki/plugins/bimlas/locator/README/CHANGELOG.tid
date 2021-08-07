@@ -2,9 +2,11 @@ tags:
 title: $:/plugins/bimlas/locator/README/CHANGELOG
 type: text/vnd.tiddlywiki
 
-Unreleased
+!! 2.0.1
 
-[[See GitLab for detailed change history of this release|https://gitlab.com/bimlas/tw5-locator/compare/master...dev]]
+[[See GitLab for detailed change history of this release|https://gitlab.com/bimlas/tw5-locator/compare/v2.0.0...v2.0.1]]
+
+* Add MIT license
 
 !! 2.0.0
 
