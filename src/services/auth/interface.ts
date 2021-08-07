@@ -6,14 +6,17 @@ import { IGitUserInfos } from '@services/git/interface';
 import { SupportedStorageServices } from '@services/types';
 
 export type ServiceTokenTypes = `${SupportedStorageServices}-token`;
+export const getServiceTokenTypes = (serviceType: SupportedStorageServices): ServiceTokenTypes => `${serviceType}-token`;
 /** Git Login: token */
 type TokenRecord = Record<ServiceTokenTypes, string>;
 
 export type ServiceUserNameTypes = `${SupportedStorageServices}-userName`;
+export const getServiceUserNameTypes = (serviceType: SupportedStorageServices): ServiceUserNameTypes => `${serviceType}-userName`;
 /** Git Login: username , this is also used to filter user's repo when searching repo */
 type UserNameRecord = Record<ServiceUserNameTypes, string>;
 
 export type ServiceEmailTypes = `${SupportedStorageServices}-email`;
+export const getServiceEmailTypes = (serviceType: SupportedStorageServices): ServiceEmailTypes => `${serviceType}-email`;
 /** Git push: Git commit message email, you may use different email for different storage service */
 type EmailRecord = Record<ServiceEmailTypes, string>;
 
