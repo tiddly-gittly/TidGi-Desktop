@@ -60,12 +60,12 @@ export class MenuService implements IMenuService {
    * You don't need to call this after calling method like insertMenu, it will be call automatically.
    */
   public async buildMenu(): Promise<void> {
+    const latestTemplate = (await this.getCurrentMenuItemConstructorOptions(this.menuTemplate)) ?? [];
     try {
-      const latestTemplate = (await this.getCurrentMenuItemConstructorOptions(this.menuTemplate)) ?? [];
       const menu = Menu.buildFromTemplate(latestTemplate);
       Menu.setApplicationMenu(menu);
     } catch (error) {
-      logger.error(`buildMenu() failed ${(error as Error).message} ${(error as Error).stack ?? ''}`);
+      logger.error(`buildMenu() failed: ${(error as Error).message} ${(error as Error).stack ?? ''}\n${JSON.stringify(latestTemplate)}`);
     }
   }
 
@@ -81,7 +81,8 @@ export class MenuService implements IMenuService {
     return await Promise.all(
       submenu.map(async (item) => ({
         ...item,
-        label: typeof item.label === 'function' ? item.label() : item.label,
+        /** label sometimes is null, causing  */
+        label: typeof item.label === 'function' ? item.label() ?? undefined : item.label,
         checked: typeof item.checked === 'function' ? await item.checked() : item.checked,
         enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
         submenu:
