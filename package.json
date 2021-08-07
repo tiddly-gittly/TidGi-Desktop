@@ -136,6 +136,7 @@
     "eslint-plugin-react-hooks": "4.2.0",
     "eslint-plugin-security": "1.4.0",
     "eslint-plugin-security-node": "1.0.14",
+    "eslint-plugin-typescript-sort-keys": "^1.7.0",
     "eslint-plugin-unicorn": "35.0.0",
     "event-hooks-webpack-plugin": "^2.2.0",
     "file-loader": "6.2.0",
