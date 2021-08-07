@@ -21,6 +21,7 @@ import { lazyInject } from '@services/container';
 import { IViewService } from './interface';
 import { SupportedStorageServices } from '@services/types';
 import { getLocalHostUrlWithActualIP, replaceUrlPortWithSettingPort } from '@services/libs/url';
+import { logger } from '@services/libs/log';
 
 @injectable()
 export class View implements IViewService {
@@ -251,11 +252,17 @@ export class View implements IViewService {
       replaceUrlPortWithSettingPort((rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl, workspace.port),
     );
     setupViewEventHandlers(view, browserWindow, { shouldPauseNotifications: this.shouldPauseNotifications, workspace, sharedWebPreferences, initialUrl });
-    await view.webContents.loadURL(initialUrl);
-    const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
-    view.webContents.on('destroyed', () => {
-      unregisterContextMenu();
-    });
+    // try catch loadUrl, other wise it will throw unhandled promise rejection Error: ERR_CONNECTION_REFUSED (-102) loading 'http://localhost:5212/
+    // we will set `didFailLoadErrorMessage`, and `didFailLoadTimes < LOAD_VIEW_MAX_RETRIES` in `setupViewEventHandlers`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
+    try {
+      await view.webContents.loadURL(initialUrl);
+      const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
+      view.webContents.on('destroyed', () => {
+        unregisterContextMenu();
+      });
+    } catch (error) {
+      logger.error(`Initial view.webContents.loadURL("${initialUrl}") failed: ${error.message}, but may retry later`);
+    }
   }
 
   public getView = (id: string): BrowserView => this.views[id];
