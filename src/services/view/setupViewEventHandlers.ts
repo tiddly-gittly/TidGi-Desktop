@@ -153,12 +153,6 @@ export default function setupViewEventHandlers(
     if (workspaceObject === undefined) {
       return;
     }
-    // fix "Google Chat isn't supported on your current browser"
-    // https://github.com/atomery/webcatalog/issues/820
-    if (typeof url === 'string' && url.includes('error/browser-not-supported') && url.startsWith('https://chat.google.com')) {
-      const reference = new URL(url).searchParams.get('ref') ?? '';
-      void view.webContents.loadURL(`https://chat.google.com${reference}`);
-    }
     if (workspaceObject.active) {
       await windowService.sendToAllWindows(WindowChannel.updateCanGoBack, view.webContents.canGoBack());
       await windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.canGoForward());
