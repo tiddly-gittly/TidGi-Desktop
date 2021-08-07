@@ -47,7 +47,7 @@ exports.main = _.compact([
   new WebpackBar(),
 ]);
 
-exports.renderer = [
+exports.renderer = _.compact([
   new webpack.DefinePlugin({
     'process.env.NODE_ENV': `"${process.env.NODE_ENV ?? 'production'}"`,
     // global: {},
@@ -72,4 +72,4 @@ exports.renderer = [
     ? // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       new BundleAnalyzerPlugin({ generateStatsFile: true, analyzerMode: 'disabled', statsFilename: '../../out/webpack-stats-renderer.json' })
     : undefined,
-];
+]);
