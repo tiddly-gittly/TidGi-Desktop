@@ -9,6 +9,10 @@ caption: Layout
       field:"config.physics_mode"
       descr:"Set this to true if you want your nodes to freely
              swirl around.">>
+  <<tmap-row type:"input-checkbox"
+      title:"Filter nodes by edge types"
+      field:"config.filter_nodes_by_edge_types"
+      descr:"Only display nodes having edges matching the edge-type filter.">>
   <<tmap-row type:"input-text"
       title:"Background image"
       field:"config.background_image"
