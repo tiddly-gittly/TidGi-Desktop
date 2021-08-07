@@ -70,6 +70,12 @@ jobs:
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+    - name: Get Renderer Bundle Stats
+      uses: vio/bundle-stats-action@v1
+      with:
+        webpack-stats-path: 'out/webpack-stats-renderer.json'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
+
   MacOS:
     runs-on: macos-latest
 
@@ -118,6 +124,12 @@ jobs:
         files: out/make/**/*
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Get Renderer Bundle Stats
+      uses: vio/bundle-stats-action@v1
+      with:
+        webpack-stats-path: 'out/webpack-stats-renderer.json'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}
 
   Windows:
     runs-on: windows-latest
@@ -173,3 +185,9 @@ jobs:
         files: out/make/**/*.exe
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+    - name: Get Renderer Bundle Stats
+      uses: vio/bundle-stats-action@v1
+      with:
+        webpack-stats-path: 'out/webpack-stats-renderer.json'
+        repo-token: ${{ secrets.GITHUB_TOKEN }}

@@ -12,12 +12,8 @@ const ThreadsPlugin = require('threads-plugin');
 const ExternalsPlugin = require('webpack5-externals-plugin');
 const EventHooksPlugin = require('event-hooks-webpack-plugin');
 const WebpackBar = require('webpackbar');
+// eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
-
-const shared = [
-  // this will generate 150M size of stats.json, and we have no way to ignore it (ignore option is not working for things inside `.webpack` folder)
-  // process.env.NODE_ENV === 'production' ? new BundleAnalyzerPlugin({ generateStatsFile: true, analyzerMode: 'disabled' }) : undefined
-];
 
 exports.main = _.compact([
   // we only need one instance of TsChecker, it will check main and renderer all together
@@ -49,7 +45,6 @@ exports.main = _.compact([
     plugins: ['ExternalsPlugin'],
   }),
   new WebpackBar(),
-  ...shared,
 ]);
 
 exports.renderer = [
@@ -73,5 +68,8 @@ exports.renderer = [
     },
   ),
   new WebpackBar(),
-  ...shared,
+  process.env.NODE_ENV === 'production'
+    ? // eslint-disable-next-line @typescript-eslint/no-unsafe-call
+      new BundleAnalyzerPlugin({ generateStatsFile: true, analyzerMode: 'disabled', statsFilename: '../../out/webpack-stats-renderer.json' })
+    : undefined,
 ];
