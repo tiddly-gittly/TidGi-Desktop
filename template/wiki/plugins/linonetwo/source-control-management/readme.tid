@@ -9,3 +9,7 @@ type: text/vnd.tiddlywiki
 
 # 查看本地 NodeJS 版 TiddlyWiki 是否完全与 Github 备份云同步了
 # 一键同步本地和云端
+
+!! 用法
+
+当点开 SCM 标签页的时候，会进行一次 git 环境检查，因为使用的 git 库 dugite 比较卡，所以只进行一次检查，如果需要刷新，需要来回切换一下 tab。

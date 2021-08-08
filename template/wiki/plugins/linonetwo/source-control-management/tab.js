@@ -19,7 +19,6 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
       this.initialise(parseTreeNode, options);
       this.state = {
         needSetUp: false, // need to setup api, or just API missing
-        interval: 3000, // check interval
 
         /**
          * {
@@ -128,9 +127,10 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
         this.state.needSetUp = false;
         this.checkGitState();
       }
-      setTimeout(() => {
-        this.checkInLoop();
-      }, this.state.interval);
+      // TODO: only check when tab is just opened, wait for https://github.com/Jermolene/TiddlyWiki5/discussions/5945
+      // setTimeout(() => {
+      //   this.checkInLoop();
+      // }, this.state.interval);
     }
 
     /**
