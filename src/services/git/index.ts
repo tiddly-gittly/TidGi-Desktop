@@ -5,8 +5,6 @@ import {
   AssumeSyncError,
   CantSyncGitNotInitializedError,
   CantSyncInSpecialGitStateAutoFixFailed,
-  getModifiedFileList,
-  getRemoteUrl,
   GitPullPushError,
   GitStep,
   ModifiedFileList,
@@ -55,12 +53,13 @@ export class Git implements IGitService {
 
   public async getWorkspacesRemote(wikiFolderPath: string): Promise<string | undefined> {
     if (await hasGit(wikiFolderPath)) {
-      return await getRemoteUrl(wikiFolderPath);
+      return await this.gitWorker?.getRemoteUrl(wikiFolderPath);
     }
   }
 
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {
-    return await getModifiedFileList(wikiFolderPath);
+    const list = await this.gitWorker?.getModifiedFileList(wikiFolderPath);
+    return list ?? [];
   }
 
   /**

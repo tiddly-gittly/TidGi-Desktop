@@ -2,7 +2,7 @@
 import 'source-map-support/register';
 import { expose } from 'threads/worker';
 import { Observable } from 'rxjs';
-import { clone, commitAndSync, GitStep, ILoggerContext, initGit } from 'git-sync-js';
+import { clone, commitAndSync, GitStep, ILoggerContext, initGit, getModifiedFileList, getRemoteUrl } from 'git-sync-js';
 import { IGitLogMessage, IGitUserInfos } from './interface';
 import { defaultGitInfo } from './defaultGitInfo';
 import { WikiChannel } from '@/constants/channels';
@@ -81,6 +81,6 @@ function cloneWiki(repoFolderPath: string, remoteUrl: string, userInfo: IGitUser
   });
 }
 
-const gitWorker = { initWikiGit, commitAndSyncWiki, cloneWiki };
+const gitWorker = { initWikiGit, commitAndSyncWiki, cloneWiki, getModifiedFileList, getRemoteUrl };
 export type GitWorker = typeof gitWorker;
 expose(gitWorker);
