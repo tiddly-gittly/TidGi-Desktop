@@ -50,7 +50,7 @@ export function DeveloperTools(props: ISectionProps): JSX.Element {
                 <ChevronRightIcon color="action" />
               </ListItem>
               <Divider />
-              <ListItem button onClick={() => window.service.preference.resetWithConfirm()}>
+              <ListItem button onClick={async () => await window.service.preference.resetWithConfirm()}>
                 <ListItemText primary={t('Preference.RestorePreferences')} />
                 <ChevronRightIcon color="action" />
               </ListItem>

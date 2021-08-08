@@ -69,7 +69,7 @@ export function PrivacyAndSecurity(props: Required<ISectionProps>): JSX.Element 
                 </ListItemSecondaryAction>
               </ListItem>
               <Divider />
-              <ListItem button onClick={() => window.service.workspaceView.clearBrowsingDataWithConfirm()}>
+              <ListItem button onClick={async () => await window.service.workspaceView.clearBrowsingDataWithConfirm()}>
                 <ListItemText primary={t('Preference.ClearBrowsingData')} secondary={t('Preference.ClearBrowsingDataDescription')} />
                 <ChevronRightIcon color="action" />
               </ListItem>
