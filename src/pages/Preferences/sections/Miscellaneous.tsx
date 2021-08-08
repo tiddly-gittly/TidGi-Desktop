@@ -31,7 +31,7 @@ export function Miscellaneous(props: ISectionProps): JSX.Element {
             <ChevronRightIcon color="action" />
           </ListItem>
           <Divider />
-          <ListItem button onClick={window.service.native.quit}>
+          <ListItem button onClick={() => window.service.native.quit()}>
             <ListItemText primary={t('ContextMenu.Quit')} />
             <ChevronRightIcon color="action" />
           </ListItem>
