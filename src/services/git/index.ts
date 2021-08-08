@@ -194,7 +194,6 @@ export class Git implements IGitService {
       error.message = i18n.t('Log.CantSyncInSpecialGitStateAutoFixFailed');
     }
     logger.error('↑Translated→: ' + error?.message ?? error);
-    throw error;
   }
 
   private readonly getWorkerObserver = (resolve: () => void, reject: (error: Error) => void): Observer<IGitLogMessage> => ({
