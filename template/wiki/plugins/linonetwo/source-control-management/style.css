@@ -11,6 +11,8 @@ span.tiddlygit-scm-count {
   margin-left: 0.5em;
   padding-left: 0.25em;
   padding-top: 0.1em;
+  padding-right: 0.25em;
+  width: fit-content;
 }
 span.tiddlygit-scm-count-small {
   font-size: 0.6em;
