@@ -19,7 +19,7 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
       this.initialise(parseTreeNode, options);
       this.state = {
         needSetUp: false, // need to setup api, or just API missing
-        interval: 3000, // check interval
+        interval: 1000, // check interval
         count: 0, // things need to commit
         unsync: false, // need to push to github
         syncing: false, // a sync is in progress
@@ -109,8 +109,9 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
       this.domNodes.push(importButton);
     }
 
-    getFolderInfo() {
-      return window.git.getWorkspacesAsList().map(({ name: wikiPath, gitUrl }) => ({ wikiPath, gitUrl }));
+    async getFolderInfo() {
+      const list = await window.service.workspace.getWorkspacesAsList();
+      return list.map(({ wikiFolderLocation: wikiPath, gitUrl }) => ({ wikiPath, gitUrl }));
     }
 
     /**
@@ -123,14 +124,14 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
         try {
           const folderInfo = await this.getFolderInfo();
           const repoStatuses = await Promise.all(
-            folderInfo.map(({ wikiPath }) => window.git.getModifiedFileList(wikiPath))
+            folderInfo.map(({ wikiPath }) => window.service.git.getModifiedFileList(wikiPath))
           );
 
           const tasks = repoStatuses
             .filter((repoStatus) => repoStatus.length > 0)
             .map((repoStatus, index) => {
               const { wikiPath, gitUrl } = folderInfo[index];
-              window.git.commitAndSync(wikiPath, gitUrl);
+              window.service.git.commitAndSync(wikiPath, gitUrl);
             });
           await Promise.all(tasks);
         } catch (error) {
@@ -147,10 +148,10 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
     async checkInLoop() {
       // check if API from TiddlyGit is available, first time it is Server Side Rendening so window.xxx from the electron ContextBridge will be missing
       if (
-        !window.git ||
-        typeof window.git.commitAndSync !== 'function' ||
-        typeof window.git.getModifiedFileList !== 'function' ||
-        typeof window.git.getWorkspacesAsList !== 'function'
+        !window.service.git ||
+        typeof window.service.git.commitAndSync !== 'function' ||
+        typeof window.service.git.getModifiedFileList !== 'function' ||
+        typeof window.service.workspace.getWorkspacesAsList !== 'function'
       ) {
         this.state.needSetUp = true;
       } else {
@@ -167,9 +168,14 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
      */
     async checkGitState() {
       const folderInfo = await this.getFolderInfo();
-      const repoStatuses = await Promise.all(
-        folderInfo.map(({ wikiPath }) => window.git.getModifiedFileList(wikiPath))
-      );
+      const repoStatuses = [];
+      for (const folder of folderInfo) {
+        const modifiedListString = $tw.wiki.getTiddlerText(`$:/state/scm-modified-file-list/${folder.wikiPath}`);
+        if (modifiedListString !== undefined) {
+          const modifiedListJSON = JSON.parse(modifiedListString);
+          repoStatuses.push(modifiedListJSON);
+        }
+      }
 
       this.state.count = 0;
       this.state.unsync = false;

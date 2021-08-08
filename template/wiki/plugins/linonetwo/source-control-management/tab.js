@@ -10,7 +10,7 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
 
   const Widget = require('$:/core/modules/widgets/widget.js').widget;
 
-  class NodeJSGitSyncWidget extends Widget {
+  class NodeJSGitSyncSCMTabWidget extends Widget {
     /**
      * Lifecycle method: call this.initialise and super
      */
@@ -68,11 +68,13 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
           fileInfoContainer.className = 'file-info';
           const fileChangedTypeElement = this.document.createElement('span');
           fileChangedTypeElement.className = 'file-changed-type';
-          const fileNameElement = this.document.createElement('span');
-          fileNameElement.className = 'file-name';
-
           fileChangedTypeElement.innerText = this.mapChangeTypeToText(changedFileInfo.type);
-          fileNameElement.innerText = changedFileInfo.fileRelativePath;
+
+          const fileNameElement = this.document.createElement('a');
+          fileNameElement.className = 'file-name tc-tiddlylink tc-tiddlylink-resolves tc-popup-handle tc-popup-absolute';
+          const correctPath = this.getPathByTitle(changedFileInfo.fileRelativePath);
+          fileNameElement.innerText = correctPath;
+          fileNameElement.href = `#${correctPath}`;
 
           fileInfoContainer.appendChild(fileChangedTypeElement);
           fileInfoContainer.appendChild(fileNameElement);
@@ -86,8 +88,18 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
       this.domNodes.push(container);
     }
 
-    getFolderInfo() {
-      return window.git.getWorkspacesAsList().map(({ name: wikiPath, gitUrl }) => ({ wikiPath, gitUrl }));
+    getPathByTitle(fileRelativePath) {
+      if (fileRelativePath.startsWith('plugins')) {
+        return `$:/${fileRelativePath}`;
+      } else if (fileRelativePath.startsWith('tiddlers/')) {
+        return fileRelativePath.replace('tiddlers/', '').replace(/\.tid$/, '');
+      }
+      return fileRelativePath;
+    }
+
+    async getFolderInfo() {
+      const list = await window.service.workspace.getWorkspacesAsList();
+      return list.map(({ wikiFolderLocation: wikiPath, gitUrl }) => ({ wikiPath, gitUrl }));
     }
 
     mapChangeTypeToText(changedType) {
@@ -106,10 +118,10 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
     async checkInLoop() {
       // check if API from TiddlyGit is available, first time it is Server Side Rendening so window.xxx from the electron ContextBridge will be missing
       if (
-        !window.git ||
-        typeof window.git.commitAndSync !== 'function' ||
-        typeof window.git.getModifiedFileList !== 'function' ||
-        typeof window.git.getWorkspacesAsList !== 'function'
+        !window.service.git ||
+        typeof window.service.git.commitAndSync !== 'function' ||
+        typeof window.service.git.getModifiedFileList !== 'function' ||
+        typeof window.service.workspace.getWorkspacesAsList !== 'function'
       ) {
         this.state.needSetUp = true;
       } else {
@@ -130,19 +142,21 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
       this.state.repoInfo = {};
 
       const folderInfo = await this.getFolderInfo();
-      const repoStatuses = await Promise.all(
+      await Promise.all(
         folderInfo.map(async ({ wikiPath }) => {
-          this.state.repoInfo[wikiPath] = await window.git.getModifiedFileList(wikiPath);
-          this.state.repoInfo[wikiPath].sort(
-            (changedFileInfoA, changedFileInfoB) =>
-              changedFileInfoA.fileRelativePath > changedFileInfoB.fileRelativePath
-          );
-        })
+          const modifiedList = await window.service.git.getModifiedFileList(wikiPath);
+          modifiedList.sort((changedFileInfoA, changedFileInfoB) => changedFileInfoA.fileRelativePath > changedFileInfoB.fileRelativePath);
+          $tw.wiki.addTiddler({
+            title: `$:/state/scm-modified-file-list/${wikiPath}`,
+            text: JSON.stringify(modifiedList),
+          });
+          this.state.repoInfo[wikiPath] = modifiedList;
+        }),
       );
 
       return this.refreshSelf(); // method from super class, this is like React forceUpdate, we use it because it is not fully reactive on this.state change
     }
   }
 
-  exports['git-sync-scm-tab'] = NodeJSGitSyncWidget;
+  exports['git-sync-scm-tab'] = NodeJSGitSyncSCMTabWidget;
 })();
