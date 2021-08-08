@@ -94,6 +94,7 @@ export default function setupViewEventHandlers(
     // update isLoading to false when load succeed
     await workspaceService.updateMetaData(workspace.id, {
       isLoading: false,
+      didFailLoadTimes: 0,
     });
   });
   // focus on initial load
