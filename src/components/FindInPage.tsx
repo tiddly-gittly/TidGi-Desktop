@@ -82,6 +82,7 @@ export default function FindInPage(): JSX.Element | null {
           margin="dense"
           onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
             const value = event.target.value;
+            if (!value) return;
             textSetter(value);
             if (value.length > 0) {
               void window.service.window.findInPage(value, true);
@@ -91,6 +92,7 @@ export default function FindInPage(): JSX.Element | null {
           }}
           onInput={(event: React.FormEvent<HTMLInputElement>) => {
             const value = event.currentTarget.value;
+            if (!value) return;
             textSetter(value);
             if (value.length > 0) {
               void window.service.window.findInPage(value, true);
