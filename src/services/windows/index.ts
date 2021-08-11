@@ -399,7 +399,7 @@ export class Window implements IWindowService {
           enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
         },
         {
-          label: () => `${i18n.t('Preference.AlwaysOnTop`)} (${i18n.t(`Preference.RequireRestart')})`,
+          label: () => `${i18n.t('Preference.AlwaysOnTop')} (${i18n.t('Preference.RequireRestart')})`,
           checked: async () => await this.preferenceService.get('alwaysOnTop'),
           click: async () => {
             const alwaysOnTop = await this.preferenceService.get('alwaysOnTop');
