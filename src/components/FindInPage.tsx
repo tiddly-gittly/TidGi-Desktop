@@ -112,6 +112,9 @@ export default function FindInPage(): JSX.Element | null {
               void window.service.window.stopFindInPage(true);
               openSetter(false);
             }
+            if (event.key === 'Backspace' && (event.ctrlKey || event.metaKey)) {
+              textSetter('');
+            }
           }}
         />
       </div>
