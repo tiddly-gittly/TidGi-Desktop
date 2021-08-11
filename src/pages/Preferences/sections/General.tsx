@@ -159,6 +159,7 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                     checked={preference.alwaysOnTop}
                     onChange={async (event) => {
                       await window.service.preference.set('alwaysOnTop', event.target.checked);
+                      props.requestRestartCountDown();
                     }}
                   />
                 </ListItemSecondaryAction>

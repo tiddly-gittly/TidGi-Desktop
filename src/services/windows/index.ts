@@ -120,7 +120,6 @@ export class Window implements IWindowService {
         y: mainWindowState.y,
         width: mainWindowState.width,
         height: mainWindowState.height,
-        alwaysOnTop: await this.preferenceService.get('alwaysOnTop'),
       };
     }
     const windowConfig: BrowserWindowConstructorOptions = {
@@ -132,6 +131,7 @@ export class Window implements IWindowService {
       fullscreenable: true,
       autoHideMenuBar: false,
       titleBarStyle: titleBar ? 'default' : 'hidden',
+      alwaysOnTop: await this.preferenceService.get('alwaysOnTop'),
       webPreferences: {
         devTools: !isTest,
         nodeIntegration: false,
@@ -397,6 +397,15 @@ export class Window implements IWindowService {
             mainWindow?.webContents?.send('request-back-find-in-page', false);
           },
           enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
+        },
+        {
+          label: () => `${i18n.t('Preference.AlwaysOnTop`)} (${i18n.t(`Preference.RequireRestart')})`,
+          checked: async () => await this.preferenceService.get('alwaysOnTop'),
+          click: async () => {
+            const alwaysOnTop = await this.preferenceService.get('alwaysOnTop');
+            await this.preferenceService.set('alwaysOnTop', !alwaysOnTop);
+            await this.requestRestart();
+          },
         },
       ],
       // eslint-disable-next-line unicorn/no-null
