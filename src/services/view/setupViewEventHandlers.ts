@@ -103,6 +103,8 @@ export default function setupViewEventHandlers(
     view.webContents.once('did-stop-loading', () => {
       if (browserWindow.isFocused() && !view.webContents.isFocused()) {
         view.webContents.focus();
+        // try to fix sometimes new size is not correct https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/97
+        void workspaceViewService.realignActiveWorkspace();
       }
     });
   }
