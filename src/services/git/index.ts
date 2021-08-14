@@ -11,6 +11,7 @@ import {
   SyncParameterMissingError,
   SyncScriptIsInDeadLoopError,
   hasGit,
+  stepsAboutChange,
 } from 'git-sync-js';
 import { spawn, Worker, ModuleThread } from 'threads';
 
@@ -49,7 +50,7 @@ export class Git implements IGitService {
     this.gitWorker = await spawn<GitWorker>(new Worker(workerURL));
   }
 
-  public debounceCommitAndSync: (wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos) => Promise<void> | undefined;
+  public debounceCommitAndSync: (wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos) => Promise<boolean> | undefined;
 
   public async getWorkspacesRemote(wikiFolderPath: string): Promise<string | undefined> {
     if (await hasGit(wikiFolderPath)) {
@@ -196,31 +197,37 @@ export class Git implements IGitService {
     logger.error('↑Translated→: ' + error?.message ?? error);
   }
 
-  private readonly getWorkerObserver = (resolve: () => void, reject: (error: Error) => void): Observer<IGitLogMessage> => ({
-    next: (message) => {
-      logger.log(message.level, this.translateMessage(message.message), message.meta);
-    },
-    error: (error) => {
-      this.translateAndLogErrorMessage(error);
-      reject(error);
-    },
-    complete: () => resolve(),
-  });
+  private readonly getWorkerObserver = (resolve: (hasChange: boolean) => void, reject: (error: Error) => void): Observer<IGitLogMessage> => {
+    let hasChange = false;
+    return {
+      next: (message) => {
+        if (stepsAboutChange.includes(message.message as GitStep)) {
+          hasChange = true;
+        }
+        logger.log(message.level, this.translateMessage(message.message), message.meta);
+      },
+      error: (error) => {
+        this.translateAndLogErrorMessage(error);
+        reject(error);
+      },
+      complete: () => resolve(hasChange),
+    };
+  };
 
-  public async initWikiGit(wikiFolderPath: string, isSyncedWiki?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Promise<void> {
-    return await new Promise<void>((resolve, reject) => {
+  public async initWikiGit(wikiFolderPath: string, isSyncedWiki?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Promise<boolean> {
+    return await new Promise<boolean>((resolve, reject) => {
       this.gitWorker?.initWikiGit(wikiFolderPath, isSyncedWiki, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
     });
   }
 
-  public async commitAndSync(wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos): Promise<void> {
-    return await new Promise<void>((resolve, reject) => {
+  public async commitAndSync(wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos): Promise<boolean> {
+    return await new Promise<boolean>((resolve, reject) => {
       this.gitWorker?.commitAndSyncWiki(wikiFolderPath, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
     });
   }
 
-  public async clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void> {
-    return await new Promise<void>((resolve, reject) => {
+  public async clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<boolean> {
+    return await new Promise<boolean>((resolve, reject) => {
       this.gitWorker?.cloneWiki(repoFolderPath, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
     });
   }

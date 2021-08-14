@@ -427,20 +427,23 @@ export class Wiki implements IWikiService {
   }
 
   public async restartWiki(workspace: IWorkspace): Promise<void> {
-    const { wikiFolderLocation, port, userName: workspaceUserName, isSubWiki } = workspace;
+    const { wikiFolderLocation, port, userName: workspaceUserName, isSubWiki, mainWikiToLink } = workspace;
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const userName = (workspaceUserName || (await this.authService.get('userName'))) ?? '';
 
     await this.stopWatchWiki(wikiFolderLocation);
-    if (!isSubWiki) {
-      await this.stopWiki(wikiFolderLocation);
-      await this.startWiki(wikiFolderLocation, port, userName);
-    }
+
     if (isSubWiki) {
+      if (typeof mainWikiToLink === 'string') {
+        await this.stopWiki(mainWikiToLink);
+        await this.startWiki(mainWikiToLink, port, userName);
+      }
       // sync sub wiki to cloud, do this in a non-blocking way
       void this.tryWatchForSync(workspace, wikiFolderLocation);
     } else {
+      await this.stopWiki(wikiFolderLocation);
+      await this.startWiki(wikiFolderLocation, port, userName);
       // sync main wiki to cloud, do this in a non-blocking way
       void this.tryWatchForSync(workspace, path.join(wikiFolderLocation, TIDDLERS_PATH));
     }
