@@ -399,9 +399,9 @@ export class View implements IViewService {
     }
   }
 
-  public realignActiveView = async (browserWindow: BrowserWindow, activeId: string): Promise<void> => {
+  public realignActiveView = async (browserWindow: BrowserWindow, activeId: string, isRetry?: boolean): Promise<void> => {
     const view = browserWindow.getBrowserView();
-    if (view?.webContents !== null) {
+    if (view?.webContents !== null && view?.webContents !== undefined) {
       const contentSize = browserWindow.getContentSize();
       const didFailLoadErrorMessage = (await this.workspaceService.getMetaData(activeId)).didFailLoadErrorMessage;
       if (typeof didFailLoadErrorMessage === 'string' && didFailLoadErrorMessage.length > 0) {
@@ -409,6 +409,9 @@ export class View implements IViewService {
       } else {
         view?.setBounds(await getViewBounds(contentSize as [number, number]));
       }
+    } else if (isRetry !== true) {
+      // retry one time later if webContent is not ready yet
+      setTimeout(() => void this.realignActiveView(browserWindow, activeId, true), 1000);
     }
   };
 }
