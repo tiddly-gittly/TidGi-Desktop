@@ -8,25 +8,19 @@
 
 **太记** - 可定制性极强的个人知识管理系统，使用 Git 作为备份管理器和博客平台。
 
----
+|             Load NodeJS Wiki 加载 NodeJS 版维基             |
+| :---------------------------------------------------------: |
+| ![Screenshot of main-window](./docs/images/main-window.png) |
 
-You can choose storage provider for your wiki workspace:
+|                 Create Local Wiki 新建本地维基                  |                   Clone Online Wiki 下载云端维基                    |
+| :-------------------------------------------------------------: | :-----------------------------------------------------------------: |
+| ![Screenshot of add-workspace](./docs/images/add-workspace.png) | ![Screenshot of clone-workspace](./docs/images/clone-workspace.png) |
 
-1. "Github" as unlimited storage and gh-pages blogging platform.
-1. "Local" will create a local git repo for you, you can use [GithubDesktop](https://github.com/desktop/desktop) to sync manually.
-1. "Gitlab" and "Gitee" is on the way
+|       Translation, Preferences 多语言翻译和设置界面       |
+| :-------------------------------------------------------: |
+| ![Screenshot of preference](./docs/images/preference.png) |
 
----
-
-你可以选择你的 WIKI 工作区的存储服务提供商：
-
-1. 「Github」是一个无限存储空间、可以用 GH-Pages 部署博客的平台。
-1. 「本地」模式会创建一个本地仓库来备份你的 WIKI，你可以用 [GithubDesktop](https://github.com/desktop/desktop) 来手动同步内容到云端。
-1. 「Gitlab」和「码云」还待支持，不过架子已经搭好了。
-
----
-
-|                                                                                                            [最新版下载按钮](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)                                                                                                            |
+|                                                                         [最新版下载按钮](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)                                                                         |
 | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TiddlyGit-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest) |
 
@@ -72,21 +66,21 @@ You can call it TG-Note, it is totally free and you own all your data. Code by t
 > 太微垣，三垣之一，按《步天歌》，太微垣為三垣的上垣。
 > 太微垣又名天庭，是政府的意思，也是貴族及大臣們居住的地方。
 
+### Data Privacy Protection 数据隐私保护
+
+You can choose storage provider for your wiki workspace:
+
+1. "Github" as unlimited storage and gh-pages blogging platform.
+1. "Local" will create a local git repo for you, you can use [GithubDesktop](https://github.com/desktop/desktop) to sync manually.
+1. "Gitlab" and "Gitee" is on the way
+
 ---
 
-### Screenshots 截图
+你可以选择你的 WIKI 工作区的存储服务提供商：
 
-|             Load NodeJS Wiki 加载 NodeJS 版维基             |
-| :---------------------------------------------------------: |
-| ![Screenshot of main-window](./docs/images/main-window.png) |
-
-|                 Create Local Wiki 新建本地维基                  |                   Clone Online Wiki 下载云端维基                    |
-| :-------------------------------------------------------------: | :-----------------------------------------------------------------: |
-| ![Screenshot of add-workspace](./docs/images/add-workspace.png) | ![Screenshot of clone-workspace](./docs/images/clone-workspace.png) |
-
-|       Translation, Preferences 多语言翻译和设置界面       |
-| :-------------------------------------------------------: |
-| ![Screenshot of preference](./docs/images/preference.png) |
+1. 「Github」是一个无限存储空间、可以用 GH-Pages 部署博客的平台。
+1. 「本地」模式会创建一个本地仓库来备份你的 WIKI，你可以用 [GithubDesktop](https://github.com/desktop/desktop) 来手动同步内容到云端。
+1. 「Gitlab」和「码云」还待支持，不过架子已经搭好了。
 
 ### Differences from [TiddlyDesktop](https://github.com/Jermolene/TiddlyDesktop)? 与 [TiddlyDesktop](https://github.com/Jermolene/TiddlyDesktop) 的差别？
 
@@ -103,8 +97,6 @@ You can call it TG-Note, it is totally free and you own all your data. Code by t
 1. 使用 NodeJS wiki 时，我们可以有分离的 tiddler 文件，这些文件可以手工修改，也可以由其他程序修改（例如装了 [VSCode-TW5-Syntax](https://github.com/joshuafontany/VSCode-TW5-Syntax) 的 VSCode)，而且方便细粒度备份回滚
 1. 尽管 TiddlyDesktop 也可以加载由 nodejs 版太微生成的 wiki 文件夹，但太记还可以轻松地将该文件夹自动备份到 Github 上。
 1. 通过使用 Electron 技术，我们可以在太微中使用 `fs` 、 `git` 和许多其他 nodejs 的扩展接口，这大大扩展了插件可使用的能力。这种可扩展性也是我选择太微作为我日常知识管理工具的原因，太记进一步强化了它。
-
----
 
 ### Why Github?
 
@@ -125,8 +117,6 @@ Because Github is one of the best free civil level [BaaS](https://www.alibabaclo
 1. 它有 GraphQL API，允许我们以程序化的方式更新我们的 wiki。
 1. 它有免费的[CI](https://github.com/features/actions)来自动部署我们的太微博客。
 1. 它提供了无限数量的代码仓库，分为公共的和私有的，这使我们能够将私有内容存储到我们的太微中仅在本地查看，然后只把公开部分部署成博客。
-
----
 
 ### Download
 
