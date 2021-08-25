@@ -2,7 +2,10 @@
   "exclude": ["template/**/*.js"],
   "include": ["src", "features"],
   "ts-node": {
-    "files": true
+    "files": true,
+    "compilerOptions": {
+      "module": "commonjs"
+    }
   },
   "compilerOptions": {
     "baseUrl": "./",
