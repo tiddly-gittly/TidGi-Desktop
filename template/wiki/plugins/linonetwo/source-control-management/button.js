@@ -99,11 +99,6 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
       this.domNodes.push(importButton);
     }
 
-    async getFolderInfo() {
-      const list = await window.service.workspace.getWorkspacesAsList();
-      return list.map(({ wikiFolderLocation: wikiPath, gitUrl }) => ({ wikiPath, gitUrl }));
-    }
-
     /**
      * Event listener of button
      */
@@ -112,9 +107,10 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
         this.state.syncing = true;
         this.refreshSelf();
         try {
-          const folderInfo = await this.getFolderInfo();
-          const tasks = folderInfo.map(({ wikiPath, gitUrl }) => {
-            window.service.git.commitAndSync(wikiPath, gitUrl);
+          const workspaces = await window.service.workspace.getWorkspacesAsList();
+          const tasks = workspaces.map(({ wikiFolderLocation, gitUrl, storageService }) => {
+            const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
+            window.service.git.debounceCommitAndSync(wikiFolderLocation, gitUrl, userInfo);
           });
           await Promise.all(tasks);
         } catch (error) {
@@ -150,10 +146,10 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
      *  Check repo git sync state and count of uncommit things
      */
     async checkGitState() {
-      const folderInfo = await this.getFolderInfo();
+      const workspaces = await window.service.workspace.getWorkspacesAsList();
       const repoStatuses = [];
-      for (const folder of folderInfo) {
-        const modifiedListString = $tw.wiki.getTiddlerText(`$:/state/scm-modified-file-list/${folder.wikiPath}`);
+      for (const workspace of workspaces) {
+        const modifiedListString = $tw.wiki.getTiddlerText(`$:/state/scm-modified-file-list/${workspace.wikiFolderLocation}`);
         if (modifiedListString !== undefined) {
           const modifiedListJSON = JSON.parse(modifiedListString);
           repoStatuses.push(modifiedListJSON);
