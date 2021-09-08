@@ -167,6 +167,7 @@ const SideBarEnd = styled.div`
 const HelperTextsList = styled.ul`
   margin-top: 0;
   margin-bottom: 1.5rem;
+  max-width: 70vw;
 `;
 
 const SidebarContainer = ({ children }: { children: React.ReactNode }): JSX.Element => {
@@ -193,7 +194,15 @@ export default function Main(): JSX.Element {
     return { didFailLoadErrorMessage: 'No ActiveWorkspace' };
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   }, {} as AsyncReturnType<typeof window.service.workspace.getMetaData>);
-  const requestReload = useCallback(async (): Promise<void> => await window.service.window.reload(window.meta.windowName), []);
+  const requestReload = useCallback(async (): Promise<void> => {
+    const activeWorkspace = await window.service.workspace.getActiveWorkspace();
+    if (activeWorkspace !== undefined) {
+      await window.service.workspace.updateMetaData(activeWorkspace.id, {
+        didFailLoadTimes: 0,
+      });
+    }
+    await window.service.window.reload(window.meta.windowName);
+  }, []);
 
   const workspaceIDs = workspacesList?.map((workspace) => workspace.id) ?? [];
   if (preferences === undefined) return <div>{t('Loading')}</div>;
@@ -274,43 +283,45 @@ export default function Main(): JSX.Element {
               mainWorkspaceMetaData?.isLoading === false && (
                 <div>
                   <Typography align="left" variant="h5">
-                    Wiki is not started or not loaded
+                    {t('AddWorkspace.WikiNotStarted')}
                   </Typography>
                   <Typography align="left" variant="body2">
                     {mainWorkspaceMetaData.didFailLoadErrorMessage}
                   </Typography>
 
                   <br />
-                  <Typography align="left" variant="body2">
-                    <>
-                      Try:
-                      <HelperTextsList>
-                        <li>
-                          Click{' '}
-                          <b onClick={requestReload} onKeyPress={requestReload} role="button" tabIndex={0} style={{ cursor: 'pointer' }}>
-                            Reload
-                          </b>{' '}
-                          button below or press <b>CMD_or_Ctrl + R</b> to reload the page.
-                        </li>
-                        <li>
-                          Check the{' '}
-                          <b
-                            onClick={async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}
-                            onKeyPress={async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}
-                            role="button"
-                            tabIndex={0}
-                            style={{ cursor: 'pointer' }}>
-                            Log Folder
-                          </b>{' '}
-                          to see what happened.
-                        </li>
-                        <li>Backup your file, remove workspace and recreate one.</li>
-                      </HelperTextsList>
-                    </>
-                  </Typography>
+                  <Trans t={t} i18nKey="AddWorkspace.MainPageReloadTip">
+                    <Typography align="left" variant="body2">
+                      <>
+                        Try:
+                        <HelperTextsList>
+                          <li>
+                            Click{' '}
+                            <b onClick={requestReload} onKeyPress={requestReload} role="button" tabIndex={0} style={{ cursor: 'pointer' }}>
+                              Reload
+                            </b>{' '}
+                            button below or press <b>CMD_or_Ctrl + R</b> to reload the page.
+                          </li>
+                          <li>
+                            Check the{' '}
+                            <b
+                              onClick={async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}
+                              onKeyPress={async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}
+                              role="button"
+                              tabIndex={0}
+                              style={{ cursor: 'pointer' }}>
+                              Log Folder
+                            </b>{' '}
+                            to see what happened.
+                          </li>
+                          <li>Backup your file, remove workspace and recreate one.</li>
+                        </HelperTextsList>
+                      </>
+                    </Typography>
+                  </Trans>
 
                   <Button variant="outlined" onClick={requestReload}>
-                    Reload
+                    {t('AddWorkspace.Reload')}
                   </Button>
                 </div>
               )}

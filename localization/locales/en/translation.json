@@ -75,6 +75,7 @@
     "CreatePublicRepository": "Create a public repository",
     "OmitMoreResult": "The list only shows the first {{loadCount}} results",
     "Reload": "Reload",
+    "MainPageReloadTip": "<0><0>Try:<1><0>Click <2>Reload</2> button below or press <5>CMD_or_Ctrl + R</5> to reload the page.</0><1>Check the <2>Log Folder</2> to see what happened.</1><2>In the worst case you can still copy to backup the folder on your computer, right click on the workspace icon and select Delete Workspace, then re-import the folder on your computer (or import the previously backed up HTML version of the wiki by dragging the HTML in).</2></1></0></0>",
     "Processing": "Processing...",
     "SearchGithubRepoName": "Search Github repository name",
     "WaitForLogin": "Wait for Login",
@@ -111,7 +112,8 @@
     "LogoutToGetStorageServiceToken": "Log in to the online storage service to obtain latest credentials",
     "AddWorkspace": "Add Workspace",
     "WorkspaceUserName": "Workspace User Name",
-    "WorkspaceUserNameDetail": "The editor name used in the Wiki will be fill in the creator field when the Tiddler is created or edited. The editor name set in the workspace will override the global default editor name assigned in the preferences. This allows you to create Tiddlers with different identities in the same Wiki, with multiple workspace configed with different user name."
+    "WorkspaceUserNameDetail": "The editor name used in the Wiki will be fill in the creator field when the Tiddler is created or edited. The editor name set in the workspace will override the global default editor name assigned in the preferences. This allows you to create Tiddlers with different identities in the same Wiki, with multiple workspace configed with different user name.",
+    "WikiNotStarted": "Wiki is not started or not loaded"
   },
   "EditWorkspace": {
     "Path": "Wiki Path",

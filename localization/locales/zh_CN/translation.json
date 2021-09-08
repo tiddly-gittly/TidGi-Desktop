@@ -114,6 +114,7 @@
     "CreatePublicRepository": "创建公开仓库",
     "CreatePrivateRepository": "创建私有仓库",
     "Reload": "重新加载",
+    "MainPageReloadTip": "<0><0>请尝试：<1><0>点击下面的 <2>重新加载</2> 按钮，或用快捷键 <5>CMD/Ctrl + R</5> 来刷新页面。</0><1>或者打开 <2>Log文件夹</2> 来看看具体的错误原因。</1><2>最糟糕的情况下也可以复制备份你电脑上的文件夹，右键工作区图标选择删除工作区，然后重新导入电脑上的文件夹（或通过拖入 HTML 导入之前备份的 HTML 版 wiki。）</2></1></0></0>",
     "Processing": "正在处理...",
     "WaitForLogin": "等待登录",
     "CanNotLoadList": "无法加载仓库列表，网络不佳",
@@ -139,7 +140,8 @@
     "WorkspaceUserNameDetail": "在 Wiki 中使用的编辑者名，将在创建或编辑 Tiddler 时填入 creator 字段。工作区内设置的编辑者名，将覆盖设置里配的全局的默认编辑者名。这方便你通过创建多个配了不同编辑者名的工作区，在同一个 Wiki 里用不同的身份创建 Tiddler。",
     "TagName": "标签名",
     "TagNameHelp": "加上此标签的笔记将会自动被放入这个子知识库内（可先不填，之后右键点击这个工作区的图标选择编辑工作区修改）",
-    "NoGitInfoAlert": "你未选择在线Git仓库地址，或未成功登录在线Git存储服务账号（可能被墙）。点击创建按钮将创建一个不会自动同步到Github的本地仓库，请注意。"
+    "NoGitInfoAlert": "你未选择在线Git仓库地址，或未成功登录在线Git存储服务账号（可能被墙）。点击创建按钮将创建一个不会自动同步到Github的本地仓库，请注意。",
+    "WikiNotStarted": "Wiki 页面未成功启动或未成功加载"
   },
   "EditWorkspace": {
     "Path": "Wiki的位置",
