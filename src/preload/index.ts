@@ -5,7 +5,6 @@ import './common/test';
 import './common/i18n';
 import './common/log';
 import './common/remote';
-import './common/authingPostMessage';
 import * as service from './common/services';
 import { ViewChannel } from '@/constants/channels';
 import { WindowNames, IPossibleWindowMeta } from '@services/windows/WindowProperties';
@@ -24,6 +23,9 @@ declare global {
 
 if (windowName === WindowNames.view) {
   void import('./view');
+}
+if (![WindowNames.main, WindowNames.view].includes(windowName)) {
+  void import('./common/authingPostMessage');
 }
 if (browserViewMetaData.windowName === 'main') {
   // automatically reload page when wifi/network is connected
