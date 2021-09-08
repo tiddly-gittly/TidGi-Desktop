@@ -1,2 +1,0 @@
-title: $:/plugins/felixhayashi/tiddlymap/graph/views/Live View/filter/nodes
-filter: [field:title{$:/temp/tmap/currentTiddler}]

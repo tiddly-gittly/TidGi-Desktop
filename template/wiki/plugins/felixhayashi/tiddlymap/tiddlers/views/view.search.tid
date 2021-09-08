@@ -1,4 +1,0 @@
-title: $:/plugins/felixhayashi/tiddlymap/graph/views/Graph search
-config.refresh-triggers: $:/temp/search
-config.neighbourhood_scope: 1
-config.physics_mode: true

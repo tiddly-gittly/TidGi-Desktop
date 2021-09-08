@@ -1,6 +1,0 @@
-caption: Tag
-tags: $:/tags/bimlas/locator/field-templates
-title: $:/plugins/bimlas/locator/field-templates/tag
-type: text/vnd.tiddlywiki
-
-<<tag>>
