@@ -6,6 +6,7 @@
 import { ipcRenderer, webFrame } from 'electron';
 import { delay } from 'bluebird';
 import { WikiChannel } from '@/constants/channels';
+import { context } from './common/services';
 
 // add tiddler
 ipcRenderer.on(WikiChannel.addTiddler, async (event, title: string, text: string, meta: unknown) => {
@@ -39,8 +40,9 @@ ipcRenderer.on(WikiChannel.generalNotification, async (event, message: string) =
 });
 // open a tiddler
 ipcRenderer.on(WikiChannel.openTiddler, async (event, tiddlerName: string) => {
+  const newHref: string = await context.getLocalHostUrlWithActualIP(`http://localhost:5212/#${tiddlerName}`);
   await webFrame.executeJavaScript(`
-    window.location.href = "http://localhost:5212/#${tiddlerName}";
+    window.location.href = "${newHref}";
   `);
 });
 // send an action message

@@ -49,7 +49,9 @@ function startNodeJSWiki({
           observer.next({
             type: 'control',
             actions: WikiControlActions.booted,
-            message: `Tiddlywiki booted at http://localhost:${tiddlyWikiPort} with args ${wikiInstance.boot.argv.join(' ')}`,
+            message: `Tiddlywiki booted at http://${defaultServerIP}:${tiddlyWikiPort} (webview uri ip may be different, being getLocalHostUrlWithActualIP()) with args ${wikiInstance.boot.argv.join(
+              ' ',
+            )}`,
           }),
       });
     } catch (error) {

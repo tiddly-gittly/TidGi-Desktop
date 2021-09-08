@@ -8,6 +8,7 @@ import { injectable } from 'inversify';
 import { IContextService, IContext, IPaths, IConstants } from './interface';
 import * as paths from '@/constants/paths';
 import * as appPaths from '@/constants/appPaths';
+import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 
 @injectable()
 export class ContextService implements IContextService {
@@ -35,5 +36,9 @@ export class ContextService implements IContextService {
     }
 
     throw new Error(`${String(key)} not existed in ContextService`);
+  }
+
+  public async getLocalHostUrlWithActualIP(oldUrl: string): Promise<string> {
+    return getLocalHostUrlWithActualIP(oldUrl);
   }
 }
