@@ -219,7 +219,19 @@ export class Wiki implements IWikiService {
       throw new Error(i18n.t('AddWorkspace.WikiExisted', { newWikiPath }));
     }
     try {
-      await fs.copy(TIDDLYWIKI_TEMPLATE_FOLDER_PATH, newWikiPath);
+      await fs.copy(TIDDLYWIKI_TEMPLATE_FOLDER_PATH, newWikiPath, {
+        filter: (source: string, destination: string) => {
+          // xxx/template/wiki/.gitignore
+          // xxx/template/wiki/.github
+          // xxx/template/wiki/.git
+          // prevent copy git submodule's .git folder
+          if (source.endsWith('.git')) {
+            return false;
+          }
+          // it will be copied if return true
+          return true;
+        },
+      });
     } catch {
       throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
     }
