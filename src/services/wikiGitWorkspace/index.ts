@@ -99,6 +99,11 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
             await this.wikiService.removeWiki(wikiFolderLocation);
           }
           await this.workspaceViewService.removeWorkspaceView(workspaceID);
+          // switch to first workspace
+          const firstWorkspace = await this.workspaceService.getFirstWorkspace();
+          if (firstWorkspace !== undefined) {
+            await this.workspaceViewService.setActiveWorkspaceView(firstWorkspace.id);
+          }
         }
       } catch (error) {
         logger.error((error as Error).message, error);
