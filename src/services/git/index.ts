@@ -1,4 +1,4 @@
-import { ipcMain } from 'electron';
+import { ipcMain, dialog } from 'electron';
 import { injectable, inject } from 'inversify';
 import { debounce } from 'lodash';
 import {
@@ -28,15 +28,18 @@ import { Observer } from 'rxjs';
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import workerURL from 'threads-plugin/dist/loader?name=gitWorker!./gitWorker.ts';
 import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
+import { WindowNames } from '@services/windows/WindowProperties';
+import { lazyInject } from '@services/container';
+import { IWindowService } from '@services/windows/interface';
 
 @injectable()
 export class Git implements IGitService {
+  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
+
   private gitWorker?: ModuleThread<GitWorker>;
 
-  constructor(
-    @inject(serviceIdentifier.View) private readonly viewService: IViewService,
-    @inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService,
-  ) {
+  constructor(@inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService) {
     void this.initWorker();
     this.debounceCommitAndSync = this.commitAndSync.bind(this);
     void this.preferenceService.get('syncDebounceInterval').then((syncDebounceInterval) => {
@@ -196,9 +199,28 @@ export class Git implements IGitService {
     logger.error('↑Translated→: ' + error?.message ?? error);
   }
 
+  private popGitErrorNotificationToUser(step: GitStep, message: string): void {
+    if (step === GitStep.GitPushFailed && message.includes('403')) {
+      const mainWindow = this.windowService.get(WindowNames.main);
+      if (mainWindow !== undefined) {
+        void dialog.showMessageBox(mainWindow, {
+          title: i18n.t('Log.GitTokenMissing'),
+          message: `${i18n.t('Log.GitTokenExpireOrWrong')} (${message})`,
+          buttons: ['OK'],
+          cancelId: 0,
+          defaultId: 0,
+        });
+      }
+    }
+  }
+
   private readonly getWorkerObserver = (resolve: () => void, reject: (error: Error) => void): Observer<IGitLogMessage> => ({
-    next: (message) => {
-      logger.log(message.level, this.translateMessage(message.message), message.meta);
+    next: (messageObject) => {
+      const { message, meta, level } = messageObject;
+      if (typeof meta === 'object' && meta !== null && 'step' in meta) {
+        this.popGitErrorNotificationToUser((meta as { step: GitStep }).step, message);
+      }
+      logger.log(level, this.translateMessage(message), meta);
     },
     error: (error) => {
       this.translateAndLogErrorMessage(error);

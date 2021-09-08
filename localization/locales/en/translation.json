@@ -186,7 +186,8 @@
     "CheckingLocalSyncState": "Detecting whether the local state needs to be synchronized to the cloud",
     "CheckingRebaseStatus": "Analyzing the rebase processing plan",
     "InitializeWikiGit": "Initializing Wiki and Git",
-    "InitializeWorkspaceView": "Initializing workspace and browser view, and loading the web content, please wait"
+    "InitializeWorkspaceView": "Initializing workspace and browser view, and loading the web content, please wait",
+    "GitTokenExpireOrWrong": "The Git credential (Token) has expired and you need to log in again, or the credential does not correspond to the user name"
   },
   "Cancel": "Cancel",
   "Preference": {
@@ -274,7 +275,8 @@
     "ToggleMenuBar": "Toggle Menu Bar",
     "NoAttach": "Resume Window Mode",
     "AlwaysOnTop": "Always on top",
-    "AlwaysOnTopDetail": "Keep TiddlyGit’s main window always on top of other windows, and will not be covered by other windows"
+    "AlwaysOnTopDetail": "Keep TiddlyGit’s main window always on top of other windows, and will not be covered by other windows",
+    "RequireRestart": "Need to restart"
   },
   "Error": {
     "InitWikiGitError": "E-1 InitWikiGitError",
@@ -291,7 +293,9 @@
     "InitWikiGitSyncedWikiNoGitUserInfoErrorDescription": "E-6 Initializing the note repository synchronized to the cloud requires you to select a cloud git repository address and provide the certification credentials for the corresponding cloud service. However, this information is not currently available.",
     "MainWindowMissing": "E-7 This program can't access main window data, can't run normally.",
     "WorkspaceFailedToLoadError": "E-8 WorkspaceFailedToLoadError",
-    "WorkspaceFailedToLoadErrorDescription": "E-8 The Wiki page corresponding to the workspace failed to load. There are many reasons, but it is basically because of program bugs."
+    "WorkspaceFailedToLoadErrorDescription": "E-8 The Wiki page corresponding to the workspace failed to load. There are many reasons, but it is basically because of program bugs.",
+    "ViewLoadUrlError": "E-9 Failed to load the webpage error",
+    "ViewLoadUrlErrorDescription": "E-9 The Wiki page corresponding to the workspace failed to load, but we will try again soon"
   },
   "Loading": "Loading",
   "Yes": "Yes",
