@@ -1,0 +1,27 @@
+!! Realtime-hint when typing | 实时代码补全
+
+Real-time code completion hints like VSCode while typing (currently only ~WikiLink completion is implemented) and no need to activate with <kbd>Ctrl</kbd>+<kbd>Space</kbd>.
+
+无需<kbd>Ctrl</kbd>+<kbd>Space</kbd>，像VSCode一样，在输入时实时进行补全提示(现只支持~WikiLink)。
+
+: <$checkbox tiddler="$:/plugins/Gk0Wk/codemirror-mode-tiddlywiki5/config/realtime-hint" field="text" checked="true" unchecked="false" default="true"> <$reveal type="match" state="$:/plugins/Gk0Wk/codemirror-mode-tiddlywiki5/config/realtime-hint" text="true">Realtime-hint is on | 实时代码补全已开启</$reveal><$reveal type="nomatch" state="$:/plugins/Gk0Wk/codemirror-mode-tiddlywiki5/config/realtime-hint" text="true">Realtime-hint is off | 实时代码补全已关闭</$reveal></$checkbox>
+
+---
+
+!! Clickable links | 可点击的链接
+
+Whethere ~WikiLinks and URLs are clickable.
+
+~WikiLinks和URL是否可以点击。
+
+: <$checkbox tiddler="$:/plugins/Gk0Wk/codemirror-mode-tiddlywiki5/config/clickable-link" field="text" checked="true" unchecked="false" default="true"> <$reveal type="match" state="$:/plugins/Gk0Wk/codemirror-mode-tiddlywiki5/config/clickable-link" text="true">Clickable links is on | 可点击链接已开启</$reveal><$reveal type="nomatch" state="$:/plugins/Gk0Wk/codemirror-mode-tiddlywiki5/config/clickable-link" text="true">Clickable links is off | 可点击链接已关闭</$reveal></$checkbox>
+
+---
+
+!! Hint preview | 补全时预览
+
+When auto-completion is performed, a small document/preview box pops up to the right of the completion box based on the selected suggestion entry.
+
+自动补全时，根据所选建议条目，在补全框右侧弹出小的文档/预览框。
+
+: <$checkbox tiddler="$:/plugins/Gk0Wk/codemirror-mode-tiddlywiki5/config/hint-preview" field="text" checked="true" unchecked="false" default="true"> <$reveal type="match" state="$:/plugins/Gk0Wk/codemirror-mode-tiddlywiki5/config/hint-preview" text="true">Hint preview is on | 补全时预览已开启</$reveal><$reveal type="nomatch" state="$:/plugins/Gk0Wk/codemirror-mode-tiddlywiki5/config/hint-preview" text="true">Hint preview is off | 补全时预览已关闭</$reveal></$checkbox>
