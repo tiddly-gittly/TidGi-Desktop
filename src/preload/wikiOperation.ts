@@ -51,3 +51,17 @@ ipcRenderer.on(WikiChannel.sendActionMessage, async (event, actionMessage: strin
     $tw.rootWidget.dispatchEvent({ type: "${actionMessage}" });
   `);
 });
+
+ipcRenderer.on(WikiChannel.printTiddler, async (event, tiddlerName?: string) => {
+  const printer = await import('../services/libs/printer');
+  if (typeof tiddlerName !== 'string' || tiddlerName.length === 0) {
+    tiddlerName = await (webFrame.executeJavaScript(`
+    $tw.wiki.getTiddlerText('$:/temp/focussedTiddler');
+  `) as Promise<string>);
+  }
+  await webFrame.executeJavaScript(`
+    const page = (${printer.printTiddler.toString()})('${tiddlerName}');
+    page?.print?.();
+    page?.close?.();
+  `);
+});

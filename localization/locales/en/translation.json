@@ -322,6 +322,9 @@
     "ZoomIn": "Zoom In",
     "ZoomOut": "Zoom Out",
     "Close": "Close",
-    "FindMatches": "matches"
+    "FindMatches": "matches",
+    "PrintPage": "Print Page",
+    "PrintActiveTiddler": "Print Active Tiddler",
+    "Wiki": "Wiki"
   }
 }

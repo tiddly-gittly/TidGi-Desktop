@@ -70,7 +70,10 @@
     "ReportBugViaGithub": "通过 GitHub 反馈问题...",
     "RequestFeatureViaGithub": "通过 GitHub 提新需求...",
     "DeveloperToolsActiveWorkspace": "打开当前工作区的开发者工具",
-    "LearnMore": "了解更多..."
+    "LearnMore": "了解更多...",
+    "PrintPage": "打印页面",
+    "PrintActiveTiddler": "打印当前笔记",
+    "Wiki": "Wiki"
   },
   "AddWorkspace": {
     "AddWorkspace": "添加工作区",

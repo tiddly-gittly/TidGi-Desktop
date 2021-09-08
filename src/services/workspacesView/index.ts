@@ -20,6 +20,7 @@ import { IWorkspaceViewService } from './interface';
 import { lazyInject } from '@services/container';
 import { SupportedStorageServices } from '@services/types';
 import { WorkspaceFailedToLoadError } from './error';
+import { WikiChannel } from '@/constants/channels';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
@@ -136,6 +137,8 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   private async registerMenu(): Promise<void> {
+    const hasWorkspaces = async (): Promise<boolean> => (await this.workspaceService.countWorkspaces()) > 0;
+
     await this.menuService.insertMenu('Workspaces', [
       {
         label: () => i18n.t('Menu.DeveloperToolsActiveWorkspace'),
@@ -147,6 +150,32 @@ export class WorkspaceView implements IWorkspaceViewService {
         },
       },
     ]);
+    await this.menuService.insertMenu('Wiki', [
+      {
+        label: () => i18n.t('Menu.PrintPage'),
+        enabled: hasWorkspaces,
+        click: async () => {
+          const browserView = await this.viewService.getActiveBrowserView();
+          if (browserView !== undefined) {
+            void browserView.webContents.print();
+          }
+        },
+      },
+      {
+        label: () => i18n.t('Menu.PrintActiveTiddler'),
+        accelerator: 'CmdOrCtrl+Alt+Shift+P',
+        click: async () => {
+          await this.printTiddler();
+        },
+      },
+    ]);
+  }
+
+  public async printTiddler(tiddlerName?: string): Promise<void> {
+    const browserView = await this.viewService.getActiveBrowserView();
+    if (browserView !== undefined) {
+      browserView.webContents.send(WikiChannel.printTiddler, tiddlerName);
+    }
   }
 
   public async createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<IWorkspace> {

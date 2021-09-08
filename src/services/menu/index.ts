@@ -152,6 +152,11 @@ export class MenuService implements IMenuService {
         submenu: [],
       },
       {
+        label: () => i18next.t('Menu.Wiki'),
+        id: 'Workspaces',
+        submenu: [],
+      },
+      {
         label: () => i18next.t('Menu.Window'),
         role: 'windowMenu',
         id: 'Window',

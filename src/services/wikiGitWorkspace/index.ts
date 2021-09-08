@@ -9,13 +9,11 @@ import type { INewWorkspaceConfig, IWorkspace, IWorkspaceService } from '@servic
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { IWikiGitWorkspaceService } from './interface';
-import { IMenuService } from '@services/menu/interface';
 import { InitWikiGitError, InitWikiGitRevertError, InitWikiGitSyncedWikiNoGitUserInfoError } from './error';
 import { SupportedStorageServices } from '@services/types';
 import { hasGit } from 'git-sync-js';
@@ -27,8 +25,6 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
-  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
-  @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
 
   public initWikiGitTransaction = async (newWorkspaceConfig: INewWorkspaceConfig, userInfo?: IGitUserInfos): Promise<IWorkspace | undefined> => {
     const newWorkspace = await this.workspaceViewService.createWorkspaceView(newWorkspaceConfig);

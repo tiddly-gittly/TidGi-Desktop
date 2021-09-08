@@ -27,6 +27,7 @@ export interface IWorkspaceViewService {
    */
   loadURL(url: string, id?: string): Promise<void>;
   openUrlInWorkspace(url: string, id: string): Promise<void>;
+  printTiddler(tiddlerName?: string | undefined): Promise<void>;
   realignActiveWorkspace(): Promise<void>;
   removeWorkspaceView(id: string): Promise<void>;
   setActiveWorkspaceView(id: string): Promise<void>;
@@ -37,18 +38,19 @@ export interface IWorkspaceViewService {
 export const WorkspaceViewServiceIPCDescriptor = {
   channel: WorkspaceViewChannel.name,
   properties: {
-    initializeWorkspaceView: ProxyPropertyType.Function,
+    clearBrowsingData: ProxyPropertyType.Function,
+    clearBrowsingDataWithConfirm: ProxyPropertyType.Function,
     createWorkspaceView: ProxyPropertyType.Function,
+    hibernateWorkspaceView: ProxyPropertyType.Function,
+    initializeWorkspaceView: ProxyPropertyType.Function,
+    loadURL: ProxyPropertyType.Function,
+    openUrlInWorkspace: ProxyPropertyType.Function,
+    printTiddler: ProxyPropertyType.Function,
+    realignActiveWorkspace: ProxyPropertyType.Function,
+    removeWorkspaceView: ProxyPropertyType.Function,
+    setActiveWorkspaceView: ProxyPropertyType.Function,
     setWorkspaceView: ProxyPropertyType.Function,
     setWorkspaceViews: ProxyPropertyType.Function,
     wakeUpWorkspaceView: ProxyPropertyType.Function,
-    hibernateWorkspaceView: ProxyPropertyType.Function,
-    setActiveWorkspaceView: ProxyPropertyType.Function,
-    removeWorkspaceView: ProxyPropertyType.Function,
-    clearBrowsingData: ProxyPropertyType.Function,
-    clearBrowsingDataWithConfirm: ProxyPropertyType.Function,
-    loadURL: ProxyPropertyType.Function,
-    realignActiveWorkspace: ProxyPropertyType.Function,
-    openUrlInWorkspace: ProxyPropertyType.Function,
   },
 };
