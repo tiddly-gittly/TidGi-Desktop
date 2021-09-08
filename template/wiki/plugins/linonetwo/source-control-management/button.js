@@ -44,7 +44,6 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
       if (this.state.needSetUp) {
         // all commit and sync to cloud
         importButton.className += 'git-sync';
-        importButton.disabled = true;
         // tooltip
         const label = '需要配置TiddlyGit';
         importButton.title = label;
@@ -54,7 +53,6 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
       } else if (this.state.syncing) {
         // all commit and sync to cloud
         importButton.className += 'git-sync syncing';
-        importButton.disabled = true;
         // tooltip
         const label = '正在同步到云端';
         importButton.title = label;
@@ -64,7 +62,6 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
       } else if (this.state.count === 0 && !this.state.unsync) {
         // all commit and sync to cloud
         importButton.className += 'git-sync';
-        importButton.disabled = true;
         // tooltip
         const label = '已完全同步到云端';
         importButton.title = label;
@@ -108,7 +105,7 @@ Requires you are using TiddlyGit, and have install the "Inject JS" API with acce
         this.refreshSelf();
         try {
           const workspaces = await window.service.workspace.getWorkspacesAsList();
-          const tasks = workspaces.map(({ wikiFolderLocation, gitUrl, storageService }) => {
+          const tasks = workspaces.map(async ({ wikiFolderLocation, gitUrl, storageService }) => {
             const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
             window.service.git.debounceCommitAndSync(wikiFolderLocation, gitUrl, userInfo);
           });
