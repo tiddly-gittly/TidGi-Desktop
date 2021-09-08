@@ -9,7 +9,7 @@ type: text/vnd.tiddlywiki
 
 <$scrollable fallthrough="none" class="tc-popup-keep tc-menubar-dropdown-sidebar">
 
-<<locator-view baseTitle:"Index">>
+<$macrocall $name="locator-view" baseTitle={{$:/plugins/linonetwo/itonnote/Configs/SideBarFolderMenuBaseTitle}} />
 
 [[使用帮助|$:/plugins/linonetwo/itonnote/Help/TW-Locator基于标签生成的文件夹目录结构使用方法]]
 </$scrollable>

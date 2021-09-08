@@ -1,0 +1,16 @@
+title: $:/plugins/linonetwo/itonnote/ControlPanel
+type: text/vnd.tiddlywiki
+
+!! 设置 Settings
+
+!!! 作为文件目录中根文件夹的笔记的标题 Title of the notes as the root folder in the file tree
+
+以这个标题作为标签的其它笔记相当于放入了根文件夹中：
+
+Other notes with this title as a tag are equivalent to being placed in the root folder:
+
+<$edit-text
+	tiddler="$:/plugins/linonetwo/itonnote/Configs/SideBarFolderMenuBaseTitle"
+	tag="input"
+	default="Index"
+	placeholder="" />
