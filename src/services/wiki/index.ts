@@ -67,7 +67,7 @@ export class Wiki implements IWikiService {
     try {
       await this.createWiki(newFolderPath, folderName);
     } catch (error) {
-      throw new CopyWikiTemplateError((error as Error).message);
+      throw new CopyWikiTemplateError(`${(error as Error).message}, (${newFolderPath}, ${folderName})`);
     }
   }
 
