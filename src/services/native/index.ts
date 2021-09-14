@@ -1,17 +1,17 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { app, dialog, shell, MessageBoxOptions } from 'electron';
 import { injectable, inject } from 'inversify';
-import { spawn, Thread, Worker, ModuleThread } from 'threads';
+import { spawn, Worker } from 'threads';
 
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { INativeService } from './interface';
+import { INativeService, ZxWorkerControlActions } from './interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import workerURL from 'threads-plugin/dist/loader?name=zxWorker!./zxWorker.ts';
-import { ZxWorker } from './zxWorker';
+import type { ZxWorker } from './zxWorker';
 
 @injectable()
 export class NativeService implements INativeService {
@@ -19,7 +19,34 @@ export class NativeService implements INativeService {
 
   public async executeZxScript(zxWorkerArguments: { fileContent: string; fileName: string }): Promise<string> {
     const worker = await spawn<ZxWorker>(new Worker(workerURL));
-    return await worker.executeZxScript(zxWorkerArguments);
+    const observable = worker.executeZxScript(zxWorkerArguments);
+    return await new Promise((resolve, reject) => {
+      observable.subscribe((message) => {
+        if (message.type === 'control') {
+          switch (message.actions) {
+            case ZxWorkerControlActions.start: {
+              if (message.message !== undefined) {
+                console.log(message.message);
+              }
+              break;
+            }
+            case ZxWorkerControlActions.error: {
+              const errorMessage = message.message ?? 'get ZxWorkerControlActions.error without message';
+              console.error(errorMessage, { message });
+              reject(new Error(errorMessage));
+              break;
+            }
+            case ZxWorkerControlActions.ended: {
+              const endedMessage = message.message ?? 'get ZxWorkerControlActions.ended without message';
+              resolve(endedMessage);
+              break;
+            }
+          }
+        } else if (message.type === 'stderr' || message.type === 'stdout') {
+          console.log(message.message);
+        }
+      });
+    });
   }
 
   public async showElectronMessageBox(message: string, type: MessageBoxOptions['type'] = 'info', windowName = WindowNames.main): Promise<void> {

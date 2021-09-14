@@ -26,3 +26,20 @@ export const NativeServiceIPCDescriptor = {
     showElectronMessageBox: ProxyPropertyType.Function,
   },
 };
+
+export type IZxWorkerMessage = IZxWorkerLogMessage | IZxWorkerControlMessage;
+export interface IZxWorkerLogMessage {
+  message: string;
+  type: 'stdout' | 'stderr';
+}
+export enum ZxWorkerControlActions {
+  ended = 'ended',
+  error = 'error',
+  /** means worker is just started */
+  start = 'start',
+}
+export interface IZxWorkerControlMessage {
+  actions: ZxWorkerControlActions;
+  message?: string;
+  type: 'control';
+}
