@@ -1,7 +1,7 @@
 # TiddlyGit 太记 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
 
-| macOS                                                                                                                                                                                                   | Linux                                                                                                                                                                                                   | Windows                                                                                                                                                                                                       | Maintainer                                                                                                                  |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| macOS                                                                                                                                                                                                   | Linux                                                                                                                                                                                                   | Windows                                                                                                                                                                                                       | Maintainer                                                                                                                          |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | [![GitHub Actions macOS Build Status](https://github.com/tiddly-gittly/TiddlyGit-Desktop/workflows/macOS/badge.svg)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/actions?query=workflow%3AmacOS) | [![GitHub Actions Linux Build Status](https://github.com/tiddly-gittly/TiddlyGit-Desktop/workflows/Linux/badge.svg)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/actions?query=workflow%3ALinux) | [![GitHub Actions Windows Build Status](https://github.com/tiddly-gittly/TiddlyGit-Desktop/workflows/Windows/badge.svg)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/actions?query=workflow%3AWindows) | [<img alt="Maintainer: Lin Onetwo" src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" />](https://github.com/linonetwo) |
 
 **TiddlyGit** - Customizable personal knowledge-base with git as backup manager and blogging platform.
@@ -29,7 +29,11 @@
 
 Mac 使用者点击这里展开操作方法，我费劲办法也申请不到苹果开发者账号，所以你得手动信任这个应用 ◀</summary>
 
-Click "Cancel" ↓
+First of all, you need to drag this App into Applications folder! Otherwise there will be an error.
+
+首先你得把应用拖入「应用程序」文件夹才能使用！不然会弹一个报错框。
+
+Click "Cancel" 点击「取消」 ↓
 
 ![step00001](https://user-images.githubusercontent.com/3746270/87882506-eb1ddd80-ca32-11ea-942f-1f530767db02.png)
 
@@ -37,11 +41,11 @@ Click "Cancel" ↓
 
 ![step00003](https://user-images.githubusercontent.com/3746270/87882510-ed803780-ca32-11ea-8996-0f3c7060131a.png)
 
-Click "Open" ↓
+Click "Open" 点击「打开」 ↓
 
 ![step00004](https://user-images.githubusercontent.com/3746270/87882512-ee18ce00-ca32-11ea-8225-045ffc0a8b86.png)
 
-Click "OK" ↓
+Click "OK" 点击「允许」 ↓
 
 ![step00005](https://user-images.githubusercontent.com/3746270/87882514-eeb16480-ca32-11ea-9afd-cae6f2bea2db.png)
 
@@ -131,8 +135,9 @@ Development plan of TiddlyGit-Desktop is listed in these [Kanban](https://github
 Explanation of our code can be found in the [Wiki](https://github.com/tiddly-gittly/TiddlyGit-Desktop/wiki).
 
 <details>
+
 <summary>To contribute, fork this repo, then clone it and setup development environment</summary>
- 
+
 ```shell
 # First, clone the project:
 git clone https://github.com/YOUR_ACCOUNT/TiddlyGit-Desktop.git
@@ -170,7 +175,6 @@ npm start
 # Build for production
 
 npm run package
-
 ```
 
 ### Publish
@@ -181,6 +185,8 @@ After Github Action completed, you can open Releases to see the Draft release cr
 
 </details>
 
+### Developer FAQ And Code Tour
+
 [Developer FAQ and code explained](docs/Development.md)
 
 ## Credits
@@ -188,4 +194,3 @@ After Github Action completed, you can open Releases to see the Draft release cr
 The desktop app shell is based on [https://github.com/atomery/singlebox](atomery/singlebox) and [atomery/webcatalog](https://github.com/atomery/webcatalog), they provide lots of utils around website-generated-app, much powerful than generating app from website simply using Chrome. Also the independent developer @quanglam2807 behind these great tools helps me a lot when I develop TiddlyGit.
 
 Current Icon is download from [iconsdb](https://www.iconsdb.com/custom-color/github-11-icon.html) under Creative Commons Attribution-NoDerivs 3.0 , if you are a designer, please feel free to contribute your ICON if you have a better idea.
-```
