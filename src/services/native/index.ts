@@ -26,7 +26,7 @@ export class NativeService implements INativeService {
     this.zxWorker = worker;
   }
 
-  public executeZxScript(zxWorkerArguments: { fileContent: string; fileName: string }): Observable<string> {
+  public executeZxScript$(zxWorkerArguments: { fileContent: string; fileName: string }): Observable<string> {
     if (this.zxWorker === undefined) {
       return of('this.zxWorker not initialized');
     }

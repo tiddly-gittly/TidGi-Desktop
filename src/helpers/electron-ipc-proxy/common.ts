@@ -1,10 +1,10 @@
 import { Asyncify, ConditionalKeys } from 'type-fest';
 import { Observable } from 'rxjs';
 
-export type ProxyAsyncProperties<OriginalProxy> = ConditionalKeys<OriginalProxy, Function>;
+export type ProxyAsyncProperties<OriginalProxy> = ConditionalKeys<OriginalProxy, (..._arguments: never) => any>;
 export type ProxyObservableProperties<OriginalProxy> =
   | ConditionalKeys<OriginalProxy, Observable<unknown>>
-  | ConditionalKeys<OriginalProxy, (id: string) => Observable<unknown>>;
+  | ConditionalKeys<OriginalProxy, (..._arguments: never) => Observable<unknown>>;
 export type ProxyWithOnlyObservable<OriginalProxy> = Pick<OriginalProxy, ProxyObservableProperties<OriginalProxy>>;
 export type ProxyWithOutObservable<OriginalProxy> = Omit<OriginalProxy, ProxyObservableProperties<OriginalProxy>>;
 
