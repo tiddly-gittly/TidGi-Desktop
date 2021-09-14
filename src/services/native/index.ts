@@ -1,15 +1,26 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { app, dialog, shell, MessageBoxOptions } from 'electron';
 import { injectable, inject } from 'inversify';
+import { spawn, Thread, Worker, ModuleThread } from 'threads';
 
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { INativeService } from './interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 
+// @ts-expect-error it don't want .ts
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import workerURL from 'threads-plugin/dist/loader?name=zxWorker!./zxWorker.ts';
+import { ZxWorker } from './zxWorker';
+
 @injectable()
 export class NativeService implements INativeService {
   constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {}
+
+  public async executeZxScript(zxWorkerArguments: { fileContent: string; fileName: string }): Promise<string> {
+    const worker = await spawn<ZxWorker>(new Worker(workerURL));
+    return await worker.executeZxScript(zxWorkerArguments);
+  }
 
   public async showElectronMessageBox(message: string, type: MessageBoxOptions['type'] = 'info', windowName = WindowNames.main): Promise<void> {
     const window = this.windowService.get(windowName);
