@@ -1,3 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unsafe-return */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
 /**
  * fix https://github.com/electron/electron/issues/28176
  * We cannot pass Observable across contextBridge, so we have to add a hidden patch to the object on preload script, and use that patch to regenerate Observable on renderer side
@@ -35,7 +40,7 @@ export function ipcProxyFixContextIsolation<T extends Record<string, any>>(name:
     }
     // create (id: string) => Observable
     if (ProxyPropertyType.Function$ === descriptor.properties[key] && !(key in service) && getSubscriptionKey(key) in service) {
-      const subscribingObservable = (...arguments_: any[]) =>
+      const subscribingObservable = (...arguments_: any[]): T[keyof T] =>
         new Observable((observer) => {
           service[getSubscriptionKey(key)](...arguments_)((value: any) => observer.next(value));
         }) as T[keyof T];
