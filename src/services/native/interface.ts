@@ -1,4 +1,5 @@
 import { MessageBoxOptions } from 'electron';
+import { Observable } from 'rxjs';
 
 import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
 import { NativeChannel } from '@/constants/channels';
@@ -8,7 +9,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
  * Wrap call to electron api, so we won't need remote module in renderer process
  */
 export interface INativeService {
-  executeZxScript(zxWorkerArguments: { fileContent: string; fileName: string }): Promise<string>;
+  executeZxScript$(zxWorkerArguments: { fileContent: string; fileName: string }): Observable<string>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   pickDirectory(defaultPath?: string): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;
@@ -18,7 +19,7 @@ export interface INativeService {
 export const NativeServiceIPCDescriptor = {
   channel: NativeChannel.name,
   properties: {
-    executeZxScript: ProxyPropertyType.Function,
+    executeZxScript$: ProxyPropertyType.Function$,
     open: ProxyPropertyType.Function,
     pickDirectory: ProxyPropertyType.Function,
     pickFile: ProxyPropertyType.Function,

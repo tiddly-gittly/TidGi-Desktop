@@ -30,9 +30,8 @@ function executeZxScript({ fileContent, fileName }: { fileContent: string; fileN
         execution.on('close', function (code) {
           observer.next({ type: 'control', actions: ZxWorkerControlActions.ended, message: `child process exited with code ${String(code)}` });
         });
-        execution.stdout?.on('data', (stdout: string) => {
-          console.log(stdout);
-          observer.next({ type: 'stdout', message: `child process stdout ${stdout}` });
+        execution.stdout?.on('data', (stdout: Buffer) => {
+          observer.next({ type: 'stdout', message: String(stdout) });
         });
       } catch (error) {
         const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;

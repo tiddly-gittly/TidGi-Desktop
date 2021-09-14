@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { app, dialog, shell, MessageBoxOptions } from 'electron';
 import { injectable, inject } from 'inversify';
-import { spawn, Worker } from 'threads';
+import { ModuleThread, spawn, Worker } from 'threads';
+import { Observable, of } from 'rxjs';
 
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -15,35 +16,45 @@ import type { ZxWorker } from './zxWorker';
 
 @injectable()
 export class NativeService implements INativeService {
-  constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {}
+  zxWorker: ModuleThread<ZxWorker> | undefined;
+  constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {
+    void this.initialize();
+  }
 
-  public async executeZxScript(zxWorkerArguments: { fileContent: string; fileName: string }): Promise<string> {
+  private async initialize(): Promise<void> {
     const worker = await spawn<ZxWorker>(new Worker(workerURL));
-    const observable = worker.executeZxScript(zxWorkerArguments);
-    return await new Promise((resolve, reject) => {
+    this.zxWorker = worker;
+  }
+
+  public executeZxScript(zxWorkerArguments: { fileContent: string; fileName: string }): Observable<string> {
+    if (this.zxWorker === undefined) {
+      return of('this.zxWorker not initialized');
+    }
+    const observable = this.zxWorker.executeZxScript(zxWorkerArguments);
+    return new Observable((observer) => {
       observable.subscribe((message) => {
         if (message.type === 'control') {
           switch (message.actions) {
             case ZxWorkerControlActions.start: {
               if (message.message !== undefined) {
-                console.log(message.message);
+                observer.next(message.message);
               }
               break;
             }
             case ZxWorkerControlActions.error: {
               const errorMessage = message.message ?? 'get ZxWorkerControlActions.error without message';
               console.error(errorMessage, { message });
-              reject(new Error(errorMessage));
+              observer.next(errorMessage);
               break;
             }
             case ZxWorkerControlActions.ended: {
               const endedMessage = message.message ?? 'get ZxWorkerControlActions.ended without message';
-              resolve(endedMessage);
+              observer.next(endedMessage);
               break;
             }
           }
         } else if (message.type === 'stderr' || message.type === 'stdout') {
-          console.log(message.message);
+          observer.next(message.message);
         }
       });
     });
