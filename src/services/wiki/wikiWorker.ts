@@ -36,6 +36,7 @@ function startNodeJSWiki({
       wikiInstance.boot.argv = [
         '+plugins/tiddlywiki/filesystem',
         '+plugins/tiddlywiki/tiddlyweb',
+        '+plugins/linonetwo/zx-script',
         // '+plugins/linonetwo/watch-fs',
         homePath,
         '--listen',
