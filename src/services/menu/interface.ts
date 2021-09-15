@@ -1,6 +1,6 @@
 import { MenuItemConstructorOptions, WebContents } from 'electron';
 
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { MenuChannel } from '@/constants/channels';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IpcSafeMenuItem } from './rendererMenuItemProxy';

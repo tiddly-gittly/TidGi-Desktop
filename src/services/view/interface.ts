@@ -1,7 +1,7 @@
 import { BrowserWindow, BrowserView } from 'electron';
 
 import { ViewChannel } from '@/constants/channels';
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { IWorkspace } from '@services/workspaces/interface';
 
 /**

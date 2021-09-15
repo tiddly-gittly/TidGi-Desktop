@@ -8,7 +8,7 @@ import './common/remote';
 import * as service from './common/services';
 import { ViewChannel } from '@/constants/channels';
 import { WindowNames, IPossibleWindowMeta } from '@services/windows/WindowProperties';
-import { IServicesWithoutObservables, IServicesWithOnlyObservables } from '@/helpers/electron-ipc-proxy/common';
+import { IServicesWithoutObservables, IServicesWithOnlyObservables } from 'electron-ipc-cat/common';
 import { windowName, browserViewMetaData } from './common/browserViewMetaData';
 
 contextBridge.exposeInMainWorld('service', service);

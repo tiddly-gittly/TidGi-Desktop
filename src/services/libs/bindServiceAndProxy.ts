@@ -1,7 +1,7 @@
 /**
  * Don't forget to edit src/preload/common/services.ts to export service to renderer process
  */
-import { registerProxy } from '@/helpers/electron-ipc-proxy/server';
+import { registerProxy } from 'electron-ipc-cat/server';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';

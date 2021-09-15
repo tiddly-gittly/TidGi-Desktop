@@ -1,5 +1,5 @@
 import { Channels, WindowChannel } from '@/constants/channels';
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { BrowserWindow } from 'electron';
 import { WindowNames, WindowMeta } from './WindowProperties';
 

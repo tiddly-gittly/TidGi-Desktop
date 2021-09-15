@@ -16,7 +16,7 @@ import { WindowNames, IPreferenceWindowMeta } from '@services/windows/WindowProp
 import { useThemeObservable } from '@services/theme/hooks';
 import { darkTheme, lightTheme } from '@services/theme/defaultTheme';
 import { initI18N } from './i18n';
-import './helpers/electron-ipc-proxy/fixContextIsolation';
+import 'electron-ipc-cat/fixContextIsolation';
 import { Pages } from './pages';
 
 function App(): JSX.Element {

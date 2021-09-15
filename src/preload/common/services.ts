@@ -4,8 +4,8 @@
  * This file should be required by BrowserView's preload script to work
  */
 
-import { createProxy } from '@/helpers/electron-ipc-proxy/client';
-import { AsyncifyProxy } from '@/helpers/electron-ipc-proxy/common';
+import { createProxy } from 'electron-ipc-cat/client';
+import { AsyncifyProxy } from 'electron-ipc-cat/common';
 
 import { IAuthenticationService, AuthenticationServiceIPCDescriptor } from '@services/auth/interface';
 import { IContextService, ContextServiceIPCDescriptor } from '@services/context/interface';

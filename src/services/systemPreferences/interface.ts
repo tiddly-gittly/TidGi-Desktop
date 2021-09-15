@@ -1,5 +1,5 @@
 import { SystemPreferenceChannel } from '@/constants/channels';
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { BehaviorSubject } from 'rxjs';
 
 export interface IUsedElectionSettings {

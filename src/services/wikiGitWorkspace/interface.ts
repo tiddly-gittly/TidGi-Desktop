@@ -1,4 +1,4 @@
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { WikiGitWorkspaceChannel } from '@/constants/channels';
 import { INewWorkspaceConfig, IWorkspace } from '@services/workspaces/interface';
 import { IGitUserInfos } from '@services/git/interface';

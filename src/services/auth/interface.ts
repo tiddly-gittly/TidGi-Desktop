@@ -1,5 +1,5 @@
 /* eslint-disable unicorn/no-null */
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { AuthenticationChannel } from '@/constants/channels';
 import { BehaviorSubject } from 'rxjs';
 import { IGitUserInfos } from '@services/git/interface';

@@ -1,5 +1,5 @@
 import { BehaviorSubject } from 'rxjs';
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { ThemeChannel } from '@/constants/channels';
 
 export interface ITheme {

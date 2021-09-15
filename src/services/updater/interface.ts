@@ -1,6 +1,6 @@
 import type { UpdateInfo } from 'electron-updater';
 import type { ProgressInfo } from 'builder-util-runtime';
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { UpdaterChannel } from '@/constants/channels';
 import { BehaviorSubject } from 'rxjs';
 

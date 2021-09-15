@@ -1,4 +1,4 @@
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { GitChannel } from '@/constants/channels';
 import { ModifiedFileList } from 'git-sync-js';
 

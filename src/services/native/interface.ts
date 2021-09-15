@@ -1,7 +1,7 @@
 import { MessageBoxOptions } from 'electron';
 import { Observable } from 'rxjs';
 
-import { ProxyPropertyType } from '@/helpers/electron-ipc-proxy/common';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { NativeChannel } from '@/constants/channels';
 import { WindowNames } from '@services/windows/WindowProperties';
 
