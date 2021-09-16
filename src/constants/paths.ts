@@ -27,6 +27,9 @@ export const LOG_FOLDER = isDevelopmentOrTest
   : isMac
   ? path.resolve(process.resourcesPath, '..', 'logs')
   : path.resolve(os.homedir(), '.tg-note', 'logs');
+export const ZX_FOLDER = isDevelopmentOrTest
+  ? path.resolve(__dirname, '..', '..', 'node_modules', 'zx', 'zx.mjs')
+  : path.resolve(process.resourcesPath, 'node_modules', 'zx', 'zx.mjs');
 export const LOCALIZATION_FOLDER = isDevelopmentOrTest
   ? path.resolve(sourcePath, '..', localizationFolderName)
   : path.resolve(process.resourcesPath, localizationFolderName);

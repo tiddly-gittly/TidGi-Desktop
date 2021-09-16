@@ -8,7 +8,7 @@ import { Observable } from 'rxjs';
 import intercept from 'intercept-stdout';
 import { IZxWorkerMessage, ZxWorkerControlActions } from './interface';
 
-function executeZxScript({ fileContent, fileName }: { fileContent: string; fileName: string }): Observable<IZxWorkerMessage> {
+function executeZxScript({ fileContent, fileName }: { fileContent: string; fileName: string }, zxPath: string): Observable<IZxWorkerMessage> {
   return new Observable<IZxWorkerMessage>((observer) => {
     observer.next({ type: 'control', actions: ZxWorkerControlActions.start });
     intercept(
@@ -25,7 +25,7 @@ function executeZxScript({ fileContent, fileName }: { fileContent: string; fileN
         const temporaryDirectory = await mkdtemp(`${tmpdir()}${path.sep}`);
         const temporaryScriptFile = path.join(temporaryDirectory, fileName);
         await writeFile(temporaryScriptFile, fileContent);
-        const execution = fork('node_modules/zx/zx.mjs', [temporaryScriptFile], { silent: true });
+        const execution = fork(zxPath, [temporaryScriptFile], { silent: true });
 
         execution.on('close', function (code) {
           observer.next({ type: 'control', actions: ZxWorkerControlActions.ended, message: `child process exited with code ${String(code)}` });
@@ -34,9 +34,8 @@ function executeZxScript({ fileContent, fileName }: { fileContent: string; fileN
           observer.next({ type: 'stdout', message: String(stdout) });
         });
       } catch (error) {
-        const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+        const message = `zx script's executeZxScriptIIFE() failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
         observer.next({ type: 'control', actions: ZxWorkerControlActions.error, message });
-        throw new Error(message);
       }
     })();
   });

@@ -13,6 +13,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import workerURL from 'threads-plugin/dist/loader?name=zxWorker!./zxWorker.ts';
 import type { ZxWorker } from './zxWorker';
+import { ZX_FOLDER } from '@/constants/paths';
+import { logger } from '@services/libs/log';
 
 @injectable()
 export class NativeService implements INativeService {
@@ -22,15 +24,21 @@ export class NativeService implements INativeService {
   }
 
   private async initialize(): Promise<void> {
-    const worker = await spawn<ZxWorker>(new Worker(workerURL));
-    this.zxWorker = worker;
+    try {
+      const worker = await spawn<ZxWorker>(new Worker(workerURL));
+      this.zxWorker = worker;
+      logger.info('zxWorker initialized');
+    } catch (error) {
+      logger.error(`zxWorker init error ${(error as Error).message} ${(error as Error).stack ?? ''}`);
+    }
   }
 
   public executeZxScript$(zxWorkerArguments: { fileContent: string; fileName: string }): Observable<string> {
     if (this.zxWorker === undefined) {
       return of('this.zxWorker not initialized');
     }
-    const observable = this.zxWorker.executeZxScript(zxWorkerArguments);
+    logger.info('zxWorker execute', { zxWorkerArguments, ZX_FOLDER });
+    const observable = this.zxWorker.executeZxScript(zxWorkerArguments, ZX_FOLDER);
     return new Observable((observer) => {
       observable.subscribe((message) => {
         if (message.type === 'control') {
@@ -43,7 +51,7 @@ export class NativeService implements INativeService {
             }
             case ZxWorkerControlActions.error: {
               const errorMessage = message.message ?? 'get ZxWorkerControlActions.error without message';
-              console.error(errorMessage, { message });
+              logger.error(`zxWorker execute failed with error ${errorMessage}`, { message });
               observer.next(errorMessage);
               break;
             }
