@@ -6,6 +6,8 @@
 const path = require('path');
 const glob = require('glob');
 const fs = require('fs-extra');
+const util = require('util');
+const exec = util.promisify(require('child_process').exec);
 
 /**
  * Specific which lproj you want to keep
@@ -36,6 +38,8 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
     await fs.copy(path.join(projectRoot, 'node_modules/@tiddlygit/tiddlywiki'), path.join(cwd, 'node_modules/@tiddlygit/tiddlywiki'));
     await fs.copy(path.join(projectRoot, 'node_modules/dugite'), path.join(cwd, 'node_modules/dugite'));
     await fs.copy(path.join(projectRoot, 'node_modules/zx'), path.join(cwd, 'node_modules/zx'));
+    await exec(`cd node_modules/zx && npm i --legacy-building`, { cwd });
+    await exec(`cd node_modules/zx/node_modules/globby && npm i --legacy-building`, { cwd });
   }
   /** complete this hook */
   callback();
