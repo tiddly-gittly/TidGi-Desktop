@@ -33,6 +33,9 @@ function executeZxScript({ fileContent, fileName }: { fileContent: string; fileN
         execution.stdout?.on('data', (stdout: Buffer) => {
           observer.next({ type: 'stdout', message: String(stdout) });
         });
+        execution.stderr?.on('data', (stdout: Buffer) => {
+          observer.next({ type: 'stderr', message: String(stdout) });
+        });
       } catch (error) {
         const message = `zx script's executeZxScriptIIFE() failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
         observer.next({ type: 'control', actions: ZxWorkerControlActions.error, message });
