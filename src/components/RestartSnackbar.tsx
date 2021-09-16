@@ -69,7 +69,18 @@ export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart
       <Snackbar
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         open={opened}
-        onClose={handleCloseAndRestart}
+        onClose={(event, reason) => {
+          switch (reason) {
+            case 'timeout': {
+              handleCloseAndRestart();
+              break;
+            }
+            case 'clickaway': {
+              handleCancelRestart();
+              break;
+            }
+          }
+        }}
         message={t('Dialog.RestartMessage')}
         autoHideDuration={currentWaitBeforeRestart}
         action={
