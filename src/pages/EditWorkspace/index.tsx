@@ -33,6 +33,7 @@ import { SupportedStorageServices } from '@services/types';
 import { SyncedWikiDescription } from '../AddWorkspace/Description';
 import { TokenForm } from '@/components/TokenForm';
 import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
+import { isEqual } from 'lodash';
 
 const Root = styled.div`
   height: 100%;
@@ -169,9 +170,11 @@ export default function EditWorkspace(): JSX.Element {
 
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
   const requestSaveAndRestart = useCallback(async () => {
-    await onSave();
-    requestRestartCountDown();
-  }, [onSave, requestRestartCountDown]);
+    if (!isEqual(workspace, originalWorkspace)) {
+      await onSave();
+      requestRestartCountDown();
+    }
+  }, [onSave, requestRestartCountDown, workspace, originalWorkspace]);
 
   const actualIP = useMemo(() => (homeUrl ? window.remote.getLocalHostUrlWithActualIP(homeUrl) : homeUrl), [homeUrl]);
   if (workspaceID === undefined) {
