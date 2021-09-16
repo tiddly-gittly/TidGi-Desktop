@@ -33,12 +33,12 @@ export class NativeService implements INativeService {
     }
   }
 
-  public executeZxScript$(zxWorkerArguments: { fileContent: string; fileName: string }): Observable<string> {
+  public executeZxScript$(filePath: string): Observable<string> {
     if (this.zxWorker === undefined) {
       return of('this.zxWorker not initialized');
     }
-    logger.info('zxWorker execute', { zxWorkerArguments, ZX_FOLDER });
-    const observable = this.zxWorker.executeZxScript(zxWorkerArguments, ZX_FOLDER);
+    logger.info('zxWorker execute', { filePath, ZX_FOLDER });
+    const observable = this.zxWorker.executeZxScript(filePath, ZX_FOLDER);
     return new Observable((observer) => {
       observable.subscribe((message) => {
         if (message.type === 'control') {
