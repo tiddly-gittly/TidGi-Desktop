@@ -64,7 +64,7 @@ exports.renderer = _.compact([
       'style-src': ["'self' 'unsafe-inline'"],
       'frame-src': ["'none'"],
       'worker-src': ["'none'"],
-      'connect-src': ['https://api.github.com ws://localhost:3000'],
+      'connect-src': ['https://api.github.com https://tiddlygit-desktop.authing.cn ws://localhost:3000'],
     },
     {
       nonceEnabled: {
