@@ -6,7 +6,11 @@ import { mkdtemp, writeFile } from 'fs-extra';
 import path from 'path';
 import { Observable } from 'rxjs';
 import intercept from 'intercept-stdout';
+
+import { fixPath } from '@services/libs/fixPath';
 import { IZxWorkerMessage, ZxWorkerControlActions } from './interface';
+
+fixPath();
 
 function executeZxScript({ fileContent, fileName }: { fileContent: string; fileName: string }, zxPath: string): Observable<IZxWorkerMessage> {
   return new Observable<IZxWorkerMessage>((observer) => {
