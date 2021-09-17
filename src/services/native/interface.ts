@@ -4,12 +4,13 @@ import { Observable } from 'rxjs';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { NativeChannel } from '@/constants/channels';
 import { WindowNames } from '@services/windows/WindowProperties';
+import { IZxFileInput } from './zxWorker';
 
 /**
  * Wrap call to electron api, so we won't need remote module in renderer process
  */
 export interface INativeService {
-  executeZxScript$(zxWorkerArguments: { fileContent: string; fileName: string }): Observable<string>;
+  executeZxScript$(zxWorkerArguments: IZxFileInput): Observable<string>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   pickDirectory(defaultPath?: string): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;

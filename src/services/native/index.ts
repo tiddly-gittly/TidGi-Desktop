@@ -12,7 +12,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import workerURL from 'threads-plugin/dist/loader?name=zxWorker!./zxWorker.ts';
-import type { ZxWorker } from './zxWorker';
+import type { IZxFileInput, ZxWorker } from './zxWorker';
 import { ZX_FOLDER } from '@/constants/paths';
 import { logger } from '@services/libs/log';
 
@@ -33,7 +33,7 @@ export class NativeService implements INativeService {
     }
   }
 
-  public executeZxScript$(zxWorkerArguments: { fileContent: string; fileName: string }): Observable<string> {
+  public executeZxScript$(zxWorkerArguments: IZxFileInput): Observable<string> {
     if (this.zxWorker === undefined) {
       return of('this.zxWorker not initialized');
     }

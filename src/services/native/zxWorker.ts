@@ -12,7 +12,8 @@ import { IZxWorkerMessage, ZxWorkerControlActions } from './interface';
 
 fixPath();
 
-function executeZxScript({ fileContent, fileName }: { fileContent: string; fileName: string }, zxPath: string): Observable<IZxWorkerMessage> {
+export type IZxFileInput = { fileContent: string; fileName: string } | { filePath: string };
+function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWorkerMessage> {
   return new Observable<IZxWorkerMessage>((observer) => {
     observer.next({ type: 'control', actions: ZxWorkerControlActions.start });
     intercept(
@@ -26,10 +27,15 @@ function executeZxScript({ fileContent, fileName }: { fileContent: string; fileN
 
     void (async function executeZxScriptIIFE() {
       try {
-        const temporaryDirectory = await mkdtemp(`${tmpdir()}${path.sep}`);
-        const temporaryScriptFile = path.join(temporaryDirectory, fileName);
-        await writeFile(temporaryScriptFile, fileContent);
-        const execution = fork(zxPath, [temporaryScriptFile], { silent: true });
+        let filePathToExecute = '';
+        if ('fileName' in file) {
+          const temporaryDirectory = await mkdtemp(`${tmpdir()}${path.sep}`);
+          filePathToExecute = path.join(temporaryDirectory, file.fileName);
+          await writeFile(filePathToExecute, file.fileContent);
+        } else if ('filePath' in file) {
+          filePathToExecute = file.filePath;
+        }
+        const execution = fork(zxPath, [filePathToExecute], { silent: true });
 
         execution.on('close', function (code) {
           observer.next({ type: 'control', actions: ZxWorkerControlActions.ended, message: `child process exited with code ${String(code)}` });
