@@ -11,14 +11,6 @@ import { SupportedStorageServices } from '@services/types';
 import { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
 import { INewWorkspaceConfig, IWorkspace } from '@services/workspaces/interface';
 
-export function useIsCreateMainWorkspace(): [boolean, React.Dispatch<React.SetStateAction<boolean>>] {
-  const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(false);
-  useEffect(() => {
-    void window.service.workspace.countWorkspaces().then((workspaceCount) => isCreateMainWorkspaceSetter(workspaceCount === 0));
-  }, []);
-  return [isCreateMainWorkspace, isCreateMainWorkspaceSetter];
-}
-
 export function useIsCreateSyncedWorkspace(): [boolean, React.Dispatch<React.SetStateAction<boolean>>] {
   const [isCreateSyncedWorkspace, isCreateSyncedWorkspaceSetter] = useState(false);
   useEffect(() => {

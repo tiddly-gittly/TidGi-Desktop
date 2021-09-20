@@ -16,7 +16,7 @@ import { ExistedWikiForm } from './ExistedWikiForm';
 import { ExistedWikiDoneButton } from './ExistedWikiDoneButton';
 import { CloneWikiForm } from './CloneWikiForm';
 import { CloneWikiDoneButton } from './CloneWikiDoneButton';
-import { IErrorInWhichComponent, useIsCreateMainWorkspace, useIsCreateSyncedWorkspace, useWikiWorkspaceForm } from './useForm';
+import { IErrorInWhichComponent, useIsCreateSyncedWorkspace, useWikiWorkspaceForm } from './useForm';
 
 import { TokenForm } from '@/components/TokenForm';
 // import { useAuthing, useTokenFromAuthingRedirect } from '@/components/TokenForm/gitTokenHooks';
@@ -57,7 +57,7 @@ export default function AddWorkspace(): JSX.Element {
   const { t } = useTranslation();
   const [currentTab, currentTabSetter] = useState<CreateWorkspaceTabs>(CreateWorkspaceTabs.CreateNewWiki);
   const [isCreateSyncedWorkspace, isCreateSyncedWorkspaceSetter] = useIsCreateSyncedWorkspace();
-  const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useIsCreateMainWorkspace();
+  const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(true);
   const form = useWikiWorkspaceForm();
   const [errorInWhichComponent, errorInWhichComponentSetter] = useState<IErrorInWhichComponent>({});
 
