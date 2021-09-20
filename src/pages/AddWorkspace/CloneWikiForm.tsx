@@ -62,18 +62,6 @@ export function CloneWikiForm({
           value={form.wikiFolderName}
         />
       </LocationPickerContainer>
-      {isCreateMainWorkspace && (
-        <LocationPickerContainer>
-          <LocationPickerInput
-            error={errorInWhichComponent.wikiPort}
-            onChange={(event) => {
-              form.wikiPortSetter(Number(event.target.value));
-            }}
-            label={t('AddWorkspace.WikiServerPort')}
-            value={form.wikiPort}
-          />
-        </LocationPickerContainer>
-      )}
       {!isCreateMainWorkspace && (
         <>
           <SoftLinkToMainWikiSelect

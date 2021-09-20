@@ -79,18 +79,6 @@ export function ExistedWikiForm({
           </Typography>
         </LocationPickerButton>
       </LocationPickerContainer>
-      {isCreateMainWorkspace && (
-        <LocationPickerContainer>
-          <LocationPickerInput
-            error={errorInWhichComponent.wikiPort}
-            onChange={(event) => {
-              wikiPortSetter(Number(event.target.value));
-            }}
-            label={t('AddWorkspace.WikiServerPort')}
-            value={wikiPort}
-          />
-        </LocationPickerContainer>
-      )}
       {!isCreateMainWorkspace && (
         <>
           <SoftLinkToMainWikiSelect

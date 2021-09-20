@@ -14,10 +14,7 @@ const Switch = styled(SwitchRaw)`
   }
 `;
 
-const Container = styled(Paper)`
-  margin-top: 10px;
-  padding: 10px;
-`;
+const Container = styled(Paper)``;
 
 /**
  * Introduce difference between main and sub wiki.

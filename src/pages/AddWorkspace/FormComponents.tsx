@@ -3,6 +3,7 @@ import { Paper, Button, TextField, Autocomplete, Typography } from '@material-ui
 
 export const CreateContainer = styled(Paper)`
   padding: 10px;
+  margin-top: 10px；
 `;
 export const LocationPickerContainer = styled.div`
   display: flex;
