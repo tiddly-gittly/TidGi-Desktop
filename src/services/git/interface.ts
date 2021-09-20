@@ -38,7 +38,7 @@ export interface IGitService {
   /**
    * Run git init in a folder, prepare remote origin if isSyncedWiki
    */
-  initWikiGit(wikiFolderPath: string, isSyncedWiki: true, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
+  initWikiGit(wikiFolderPath: string, isSyncedWiki: true, isMainWiki: boolean, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
   updateGitInfoTiddler(githubRepoName: string): Promise<void>;
 }
 export const GitServiceIPCDescriptor = {

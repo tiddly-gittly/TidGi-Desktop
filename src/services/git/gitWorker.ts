@@ -7,12 +7,12 @@ import { IGitLogMessage, IGitUserInfos } from './interface';
 import { defaultGitInfo } from './defaultGitInfo';
 import { WikiChannel } from '@/constants/channels';
 
-function initWikiGit(wikiFolderPath: string, isSyncedWiki?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Observable<IGitLogMessage> {
+function initWikiGit(wikiFolderPath: string, syncImmediately?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
     void initGit({
       dir: wikiFolderPath,
       remoteUrl,
-      syncImmediately: isSyncedWiki,
+      syncImmediately,
       userInfo,
       defaultGitInfo,
       logger: {

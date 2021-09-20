@@ -36,7 +36,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
       } else {
         if (isSyncedWiki) {
           if (typeof gitUrl === 'string' && userInfo !== undefined) {
-            await this.gitService.initWikiGit(wikiFolderLocation, isSyncedWiki, gitUrl, userInfo);
+            await this.gitService.initWikiGit(wikiFolderLocation, isSyncedWiki, !isSubWiki, gitUrl, userInfo);
           } else {
             throw new InitWikiGitSyncedWikiNoGitUserInfoError(gitUrl, userInfo);
           }

@@ -229,9 +229,11 @@ export class Git implements IGitService {
     complete: () => resolve(),
   });
 
-  public async initWikiGit(wikiFolderPath: string, isSyncedWiki?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Promise<void> {
+  public async initWikiGit(wikiFolderPath: string, isSyncedWiki?: boolean, isMainWiki?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    const syncImmediately = !!isSyncedWiki && !!isMainWiki;
     return await new Promise<void>((resolve, reject) => {
-      this.gitWorker?.initWikiGit(wikiFolderPath, isSyncedWiki, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
+      this.gitWorker?.initWikiGit(wikiFolderPath, syncImmediately, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
     });
   }
 
