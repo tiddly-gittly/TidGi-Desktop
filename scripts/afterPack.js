@@ -35,11 +35,11 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
   /** copy npm packages with node-worker dependencies with binary or __filename usages, which can't be prepare properly by webpack */
   if (['production', 'test'].includes(process.env.NODE_ENV)) {
     console.log('Copying tiddlywiki dependency to dist');
-    await fs.copy(path.join(projectRoot, 'node_modules/@tiddlygit/tiddlywiki'), path.join(cwd, 'node_modules/@tiddlygit/tiddlywiki'));
-    await fs.copy(path.join(projectRoot, 'node_modules/dugite'), path.join(cwd, 'node_modules/dugite'));
-    await fs.copy(path.join(projectRoot, 'node_modules/zx'), path.join(cwd, 'node_modules/zx'));
-    await exec(`cd node_modules/zx && npm i --legacy-building`, { cwd });
-    await exec(`cd node_modules/zx/node_modules/globby && npm i --legacy-building`, { cwd });
+    await fs.copy(path.join(projectRoot, 'node_modules', '@tiddlygit', 'tiddlywiki'), path.join(cwd, 'node_modules', '@tiddlygit', 'tiddlywiki'));
+    await fs.copy(path.join(projectRoot, 'node_modules', 'dugite'), path.join(cwd, 'node_modules', 'dugite'));
+    await fs.copy(path.join(projectRoot, 'node_modules', 'zx'), path.join(cwd, 'node_modules', 'zx'));
+    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx') });
+    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'globby') });
   }
   /** complete this hook */
   callback();
