@@ -44,7 +44,7 @@ exports.main = _.compact([
     target: 'electron-node-worker',
     plugins: ['ExternalsPlugin'],
   }),
-  new WebpackBar(),
+  process.env.NODE_ENV === 'production' ? undefined : new WebpackBar(),
   process.env.NODE_ENV === 'production'
     ? // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       new BundleAnalyzerPlugin({ generateStatsFile: true, analyzerMode: 'disabled', statsFilename: '../../out/webpack-stats-main.json' })
@@ -72,7 +72,7 @@ exports.renderer = _.compact([
       },
     },
   ),
-  new WebpackBar(),
+  process.env.NODE_ENV === 'production' ? undefined : new WebpackBar(),
   process.env.NODE_ENV === 'production'
     ? // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       new BundleAnalyzerPlugin({ generateStatsFile: true, analyzerMode: 'disabled', statsFilename: '../../out/webpack-stats-renderer.json' })
