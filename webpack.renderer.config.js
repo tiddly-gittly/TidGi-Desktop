@@ -16,4 +16,10 @@ module.exports = {
     fallback: { crypto: false },
   },
   output: { chunkFilename: 'main_window/[name].chunk.js', publicPath: '../' },
+  cache: {
+    type: 'filesystem',
+    buildDependencies: {
+      config: [__filename],
+    },
+  },
 };
