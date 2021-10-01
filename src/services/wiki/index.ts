@@ -512,6 +512,7 @@ export class Wiki implements IWikiService {
       awaitWriteFinish: true,
       ignoreInitial: true,
       followSymlinks: false,
+      disableGlobbing: true,
     });
     watcher.on('add', onChange);
     watcher.on('change', onChange);
