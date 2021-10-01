@@ -382,14 +382,16 @@ export default function EditWorkspace(): JSX.Element {
           </List>
         )}
       </FlexGrow>
-      <div>
-        <Button color="primary" variant="contained" disableElevation onClick={requestSaveAndRestart}>
-          {t('EditWorkspace.Save')}
-        </Button>
-        <Button variant="contained" disableElevation onClick={() => void window.remote.closeCurrentWindow()}>
-          {t('EditWorkspace.Cancel')}
-        </Button>
-      </div>
+      {!isEqual(workspace, originalWorkspace) && (
+        <div>
+          <Button color="primary" variant="contained" disableElevation onClick={requestSaveAndRestart}>
+            {t('EditWorkspace.Save')}
+          </Button>
+          <Button variant="contained" disableElevation onClick={() => void window.remote.closeCurrentWindow()}>
+            {t('EditWorkspace.Cancel')}
+          </Button>
+        </div>
+      )}
     </Root>
   );
 }
