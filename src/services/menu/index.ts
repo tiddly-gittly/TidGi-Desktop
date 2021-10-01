@@ -86,12 +86,7 @@ export class MenuService implements IMenuService {
         label: typeof item.label === 'function' ? item.label() ?? undefined : item.label,
         checked: typeof item.checked === 'function' ? await item.checked() : item.checked,
         enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
-        submenu:
-          item.submenu instanceof Electron.Menu || item.submenu instanceof Menu
-            ? item.submenu
-            : item.submenu === undefined
-            ? undefined
-            : await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)),
+        submenu: !Array.isArray(item.submenu) ? item.submenu : await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)),
       })),
     );
   }
