@@ -144,22 +144,24 @@ export default function EditWorkspace(): JSX.Element {
   const originalWorkspace = useWorkspaceObservable(workspaceID);
   const [workspace, workspaceSetter, onSave] = useForm(originalWorkspace);
   const {
-    mainWikiToLink,
-    isSubWiki,
-    name,
-    wikiFolderLocation,
-    port,
-    order,
-    userName,
-    tagName,
-    transparentBackground,
-    picturePath,
-    hibernateWhenUnused,
     disableAudio,
     disableNotifications,
-    homeUrl,
-    storageService,
     gitUrl,
+    hibernateWhenUnused,
+    homeUrl,
+    isSubWiki,
+    mainWikiToLink,
+    name,
+    order,
+    picturePath,
+    port,
+    storageService,
+    syncOnInterval,
+    syncOnIntervalDebounced,
+    tagName,
+    transparentBackground,
+    userName,
+    wikiFolderLocation,
   } = (workspace ?? {}) as unknown as IWorkspace;
   const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
     async () => (mainWikiToLink ? await window.service.wiki.getSubWikiPluginContent(mainWikiToLink) : []),
@@ -313,6 +315,33 @@ export default function EditWorkspace(): JSX.Element {
             }}
             isCreateMainWorkspace={!isSubWiki}
           />
+        )}
+        {storageService !== SupportedStorageServices.local && (
+          <List>
+            <Divider />
+            <ListItem disableGutters>
+              <ListItemText primary={t('EditWorkspace.SyncOnInterval')} secondary={t('EditWorkspace.SyncOnIntervalDescription')} />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={syncOnInterval}
+                  onChange={(event) => workspaceSetter({ ...workspace, syncOnInterval: event.target.checked })}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+            <ListItem disableGutters>
+              <ListItemText primary={t('EditWorkspace.SyncOnIntervalDebounced')} secondary={t('EditWorkspace.SyncOnIntervalDebouncedDescription')} />
+              <ListItemSecondaryAction>
+                <Switch
+                  edge="end"
+                  color="primary"
+                  checked={syncOnIntervalDebounced}
+                  onChange={(event) => workspaceSetter({ ...workspace, syncOnIntervalDebounced: event.target.checked })}
+                />
+              </ListItemSecondaryAction>
+            </ListItem>
+          </List>
         )}
         {!isSubWiki && (
           <List>

@@ -405,7 +405,7 @@ export class Wiki implements IWikiService {
   }
 
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
-    const { wikiFolderLocation, port, isSubWiki, mainWikiToLink } = workspace;
+    const { wikiFolderLocation, port, isSubWiki, mainWikiToLink, syncOnIntervalDebounced, syncOnInterval } = workspace;
 
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     try {
@@ -422,7 +422,9 @@ export class Wiki implements IWikiService {
     if (!isSubWiki) {
       await this.startWiki(wikiFolderLocation, port, userName);
       // sync to cloud, do this in a non-blocking way
-      void this.tryWatchForSync(workspace, path.join(wikiFolderLocation, TIDDLERS_PATH));
+      if (syncOnInterval && syncOnIntervalDebounced) {
+        void this.tryWatchForSync(workspace, path.join(wikiFolderLocation, TIDDLERS_PATH));
+      }
     } else {
       // if is private repo wiki
       // if we are creating a sub-wiki just now, restart the main wiki to load content from private wiki
@@ -433,13 +435,15 @@ export class Wiki implements IWikiService {
         }
         await this.restartWiki(mainWorkspace);
         // sync self to cloud, subwiki's content is all in root folder path, do this in a non-blocking way
-        void this.tryWatchForSync(workspace);
+        if (syncOnInterval && syncOnIntervalDebounced) {
+          void this.tryWatchForSync(workspace);
+        }
       }
     }
   }
 
   public async restartWiki(workspace: IWorkspace): Promise<void> {
-    const { wikiFolderLocation, port, userName: workspaceUserName, isSubWiki } = workspace;
+    const { wikiFolderLocation, port, userName: workspaceUserName, isSubWiki, syncOnIntervalDebounced, syncOnInterval } = workspace;
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const userName = (workspaceUserName || (await this.authService.get('userName'))) ?? '';
@@ -449,12 +453,14 @@ export class Wiki implements IWikiService {
       await this.stopWiki(wikiFolderLocation);
       await this.startWiki(wikiFolderLocation, port, userName);
     }
-    if (isSubWiki) {
-      // sync sub wiki to cloud, do this in a non-blocking way
-      void this.tryWatchForSync(workspace, wikiFolderLocation);
-    } else {
-      // sync main wiki to cloud, do this in a non-blocking way
-      void this.tryWatchForSync(workspace, path.join(wikiFolderLocation, TIDDLERS_PATH));
+    if (syncOnInterval && syncOnIntervalDebounced) {
+      if (isSubWiki) {
+        // sync sub wiki to cloud, do this in a non-blocking way
+        void this.tryWatchForSync(workspace, wikiFolderLocation);
+      } else {
+        // sync main wiki to cloud, do this in a non-blocking way
+        void this.tryWatchForSync(workspace, path.join(wikiFolderLocation, TIDDLERS_PATH));
+      }
     }
   }
 

@@ -62,6 +62,15 @@ export interface IWorkspace {
    */
   subWikiFolderName: string;
   /**
+   * Sync wiki every interval.
+   * If this is false (false by default to save the CPU usage from chokidar watch), then sync will only happen if user manually trigger by click sync button in the wiki, or sync at the app open.
+   */
+  syncOnInterval: boolean;
+  /**
+   * Reset interval countdown on file change, this makes sure it won't commit while you are editing.
+   */
+  syncOnIntervalDebounced: boolean;
+  /**
    * Tag name in tiddlywiki's filesystemPath, tiddler with this tag will be save into this subwiki
    */
   tagName: string | null;

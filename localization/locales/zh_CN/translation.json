@@ -163,6 +163,10 @@
     "URL": "本地服务器地址",
     "Port": "本地服务器端口",
     "PathDescription": "本地维基文件夹的地址",
+    "SyncOnInterval": "定时自动同步",
+    "SyncOnIntervalDescription": "如果关闭，则只有在应用程序打开时会有一次自动同步，还有当用户通过点击维基中的同步按钮手动触发同步。开启后会根据全局设置里的时间间隔自动同步（默认关闭以节省文件变动监听带来的CPU占用），并且依然会在启动时自动同步，点击按钮也可以手动同步。",
+    "SyncOnIntervalDebounced": "自动同步防抖",
+    "SyncOnIntervalDebouncedDescription": "在有文件发生更改时，会重置间隔倒计时，重新等待下一次自动同步，这可以确保在你编辑到一半时不会突然来一次自动提交。",
     "Name": "工作区名",
     "NameDescription": "工作区的名字，将显示在侧边栏上，可以与工作区Git仓库的实际文件夹名不同"
   },

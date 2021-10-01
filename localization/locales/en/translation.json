@@ -132,6 +132,10 @@
     "URL": "Wiki URL",
     "Port": "Local host server port",
     "PathDescription": "Location of your local wiki folder.",
+    "SyncOnInterval": "Sync On Interval",
+    "SyncOnIntervalDescription": "If turned off, there is only one automatic sync when the application is opened, and one manual sync when the user triggers it by clicking the sync button in the wiki. When on, it will automatically sync according to the time interval in the global settings (off by default to save CPU usage from file change listening), and will still automatically sync on startup, or manually by clicking the button.",
+    "SyncOnIntervalDebounced": "Sync On Interval Debounced",
+    "SyncOnIntervalDebouncedDescription": "When a file is changed, it resets the interval countdown and waits again for the next auto-sync, which ensures that an auto-commit doesn't suddenly come when you're halfway through an edit.",
     "Name": "Workspace Name",
     "NameDescription": "The name of the workspace, which will be displayed on the sidebar, can be different from the actual folder name of the Git repository in the workspace"
   },
