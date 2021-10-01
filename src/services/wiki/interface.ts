@@ -57,6 +57,9 @@ export interface IWikiService {
   requestWikiSendActionMessage(actionMessage: string): Promise<void>;
   restartWiki(workspace: IWorkspace): Promise<void>;
   setAllWikiStartLockOff(): void;
+  /**
+   * Lock to prevent some process ask a wiki to start and restart frequently.
+   * For example, start main wiki then start sub-wiki, and sub-wiki will try to start its main wiki. */
   setWikiStartLockOn(wikiFolderLocation: string): void;
   /** call wiki worker to actually start nodejs wiki */
   startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void>;
