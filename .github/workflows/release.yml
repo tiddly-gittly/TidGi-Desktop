@@ -25,7 +25,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        submodules: 'true'
   
     - name: Install Snapcraft
       uses: samuelmeuli/action-snapcraft@v1
@@ -87,7 +90,10 @@ jobs:
     runs-on: macos-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        submodules: 'true'
 
     - name: Set up Node.js
       uses: actions/setup-node@v2
@@ -149,7 +155,10 @@ jobs:
     runs-on: windows-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout repository
+      uses: actions/checkout@v2
+      with:
+        submodules: 'true'
 
     - name: Set up CV dependency for pngquant-bin
       uses: ilammy/msvc-dev-cmd@v1
