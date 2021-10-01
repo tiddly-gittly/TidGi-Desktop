@@ -98,8 +98,11 @@ export interface IWorkspaceMetaData {
   isLoading?: boolean;
 }
 
+/**
+ * Ignore some field that will assign default value in workspaceService.create, these field don't require to be filled in AddWorkspace form
+ */
 export type INewWorkspaceConfig = SetOptional<
-  Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order' | 'lastUrl'>,
+  Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order' | 'lastUrl' | 'syncOnInterval' | 'syncOnIntervalDebounced'>,
   'homeUrl' | 'transparentBackground' | 'picturePath' | 'disableNotifications' | 'disableAudio' | 'hibernateWhenUnused' | 'subWikiFolderName' | 'userName'
 >;
 
