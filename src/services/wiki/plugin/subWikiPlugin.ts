@@ -104,7 +104,7 @@ export async function getSubWikiPluginContent(mainWikiPath: string): Promise<ISu
       folderName: getFolderNamePathPart(line),
     })).filter((item) => item.folderName.length > 0 && item.tagName.length > 0);
   } catch (error) {
-    logger.error(error, { function: 'getSubWikiPluginContent' });
+    logger.error((error as Error)?.message, { function: 'getSubWikiPluginContent' });
     return [];
   }
 }

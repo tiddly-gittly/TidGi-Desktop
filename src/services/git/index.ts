@@ -30,7 +30,7 @@ import workerURL from 'threads-plugin/dist/loader?name=gitWorker!./gitWorker.ts'
 import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
-import { IWindowService } from '@services/windows/interface';
+import type { IWindowService } from '@services/windows/interface';
 
 @injectable()
 export class Git implements IGitService {

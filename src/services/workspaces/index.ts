@@ -18,11 +18,11 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IAuthenticationService } from '@services/auth/interface';
-import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
+import type { IAuthenticationService } from '@services/auth/interface';
+import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import { SupportedStorageServices } from '@services/types';
 import { lazyInject } from '@services/container';
-import { IWorkspaceService, IWorkspace, IWorkspaceMetaData, INewWorkspaceConfig } from './interface';
+import type { IWorkspaceService, IWorkspace, IWorkspaceMetaData, INewWorkspaceConfig } from './interface';
 import i18n from '@services/libs/i18n';
 import { defaultServerIP } from '@/constants/urls';
 

@@ -3,12 +3,13 @@
 import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, WebContents, MenuItem, ipcMain, app } from 'electron';
 import { debounce, take, drop, reverse, remove, compact } from 'lodash';
 import { injectable } from 'inversify';
-import { IMenuService, DeferredMenuItemConstructorOptions, IOnContextMenuInfo } from './interface';
+import type { IMenuService, IOnContextMenuInfo } from './interface';
+import { DeferredMenuItemConstructorOptions } from './interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWindowService } from '@services/windows/interface';
-import { IPreferenceService } from '@services/preferences/interface';
+import type { IWindowService } from '@services/windows/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import { logger } from '@services/libs/log';
 import i18next from '@services/libs/i18n';
 import ContextMenuBuilder from './contextMenuBuilder';
@@ -86,7 +87,11 @@ export class MenuService implements IMenuService {
         checked: typeof item.checked === 'function' ? await item.checked() : item.checked,
         enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
         submenu:
-          item.submenu instanceof Menu || item.submenu === undefined ? item.submenu : await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)),
+          item.submenu instanceof Electron.Menu || item.submenu instanceof Menu
+            ? item.submenu
+            : item.submenu === undefined
+            ? undefined
+            : await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)),
       })),
     );
   }

@@ -45,7 +45,7 @@ export function useAuth(storageService: SupportedStorageServices): [() => Promis
         onError: (code, message) => onFailure(new Error(message + String(code))),
       });
     } catch (error) {
-      onFailure(error);
+      onFailure(error as Error);
     }
   }, [authing.social, onFailure, storageService]);
 

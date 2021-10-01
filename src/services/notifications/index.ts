@@ -5,8 +5,8 @@ import { lazyInject } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { IViewService } from '@services/view/interface';
-import { INotificationService, IPauseNotificationsInfo } from './interface';
-import { IWindowService } from '@services/windows/interface';
+import type { INotificationService, IPauseNotificationsInfo } from './interface';
+import type { IWindowService } from '@services/windows/interface';
 import { BehaviorSubject } from 'rxjs';
 
 @injectable()

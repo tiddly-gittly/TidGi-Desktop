@@ -11,12 +11,12 @@ import type { IWorkspaceService, IWorkspace, INewWorkspaceConfig } from '@servic
 import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IPreferenceService } from '@services/preferences/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import { logger } from '@services/libs/log';
-import { IAuthenticationService } from '@services/auth/interface';
-import { IGitService } from '@services/git/interface';
-import { IWikiService } from '@services/wiki/interface';
-import { IWorkspaceViewService } from './interface';
+import type { IAuthenticationService } from '@services/auth/interface';
+import type { IGitService } from '@services/git/interface';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IWorkspaceViewService } from './interface';
 import { lazyInject } from '@services/container';
 import { SupportedStorageServices } from '@services/types';
 import { WorkspaceFailedToLoadError } from './error';

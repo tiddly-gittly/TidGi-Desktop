@@ -119,7 +119,7 @@ export class Backend implements BackendModule {
         try {
           result = JSON.parse(arguments_.data);
         } catch (parseError) {
-          parseError.message = `Error parsing '${arguments_.filename}'. Message: '${parseError}'.`;
+          (parseError as Error).message = `Error parsing '${arguments_.filename}'. Message: '${parseError}'.`;
           callback = this.readCallbacks[arguments_.key].callback;
           delete this.readCallbacks[arguments_.key];
           if (callback !== null && typeof callback === 'function') {

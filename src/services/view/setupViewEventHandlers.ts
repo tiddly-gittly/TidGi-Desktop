@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable unicorn/consistent-destructuring */
-import { app, BrowserView, shell, NativeImage, BrowserWindowConstructorOptions, BrowserWindow } from 'electron';
+import { app, BrowserView, shell, nativeImage, BrowserWindowConstructorOptions, BrowserWindow } from 'electron';
 import path from 'path';
 import fsExtra from 'fs-extra';
 
@@ -251,7 +251,7 @@ export default function setupViewEventHandlers(
         app.badgeCount = count;
         if (process.platform === 'win32') {
           if (count > 0) {
-            const icon = NativeImage.createFromPath(path.resolve(buildResourcePath, 'overlay-icon.png'));
+            const icon = nativeImage.createFromPath(path.resolve(buildResourcePath, 'overlay-icon.png'));
             browserWindow.setOverlayIcon(icon, `You have ${count} new messages.`);
           } else {
             // eslint-disable-next-line unicorn/no-null

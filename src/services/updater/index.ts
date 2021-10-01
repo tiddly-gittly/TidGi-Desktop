@@ -10,8 +10,8 @@ import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 import { MainChannel } from '@/constants/channels';
-import { IUpdaterService, IUpdaterMetaData } from './interface';
-import { IMenuService } from '@services/menu/interface';
+import type { IUpdaterService, IUpdaterMetaData } from './interface';
+import type { IMenuService } from '@services/menu/interface';
 import { logger } from '@services/libs/log';
 import { BehaviorSubject } from 'rxjs';
 
