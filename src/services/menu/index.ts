@@ -355,13 +355,19 @@ export class MenuService implements IMenuService {
       menu.append(
         new MenuItem({
           label: i18next.t('Menu.Workspaces'),
-          submenu: workspaces.map((workspace) => {
-            const workspaceContextMenuTemplate = getWorkspaceMenuTemplate(workspace, i18next.t.bind(i18next), services);
-            return {
-              label: workspace.name,
-              submenu: workspaceContextMenuTemplate,
-            };
-          }),
+          submenu: [
+            ...workspaces.map((workspace) => {
+              const workspaceContextMenuTemplate = getWorkspaceMenuTemplate(workspace, i18next.t.bind(i18next), services);
+              return {
+                label: workspace.name,
+                submenu: workspaceContextMenuTemplate,
+              };
+            }),
+            {
+              label: i18next.t('WorkspaceSelector.Add'),
+              click: async () => await this.windowService.open(WindowNames.addWorkspace),
+            },
+          ],
         }),
       );
     }
