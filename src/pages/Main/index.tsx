@@ -158,6 +158,10 @@ const TipWithoutSidebar = styled.div`
   user-select: none;
 `;
 
+const AddWorkspaceGuideInfoContainer = styled.div`
+  cursor: pointer;
+`;
+
 const SideBarEnd = styled.div`
   display: flex;
   flex-direction: column;
@@ -329,7 +333,7 @@ export default function Main(): JSX.Element {
               <Typography color="textSecondary">{t('Loading')}</Typography>
             )}
             {Array.isArray(workspacesList) && workspacesList.length === 0 && (
-              <div>
+              <AddWorkspaceGuideInfoContainer onClick={async () => await window.service.window.open(WindowNames.addWorkspace)}>
                 {sidebar ? (
                   <>
                     <Arrow image={themeSource === 'dark' ? arrowWhite : arrowBlack} />
@@ -347,12 +351,14 @@ export default function Main(): JSX.Element {
                       <Trans t={t} i18nKey="AddWorkspace.MainPageTipWithoutSidebar">
                         <span>Click </span>
                         <strong>Workspaces &gt; Add Workspace</strong>
+                        <span>Or </span>
+                        <strong>Click Here</strong>
                         <span> to get started!</span>
                       </Trans>
                     </Tip2Text>
                   </TipWithoutSidebar>
                 )}
-              </div>
+              </AddWorkspaceGuideInfoContainer>
             )}
           </InnerContentRoot>
         </ContentRoot>
