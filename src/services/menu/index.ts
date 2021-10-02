@@ -8,9 +8,15 @@ import { DeferredMenuItemConstructorOptions } from './interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IWindowService } from '@services/windows/interface';
+import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
+import type { IViewService } from '@services/view/interface';
+import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IWindowService } from '@services/windows/interface';
+import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import { getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
 import { logger } from '@services/libs/log';
 import i18next from '@services/libs/i18n';
 import ContextMenuBuilder from './contextMenuBuilder';
@@ -19,8 +25,13 @@ import { InsertMenuAfterSubMenuIndexError } from './error';
 
 @injectable()
 export class MenuService implements IMenuService {
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.NativeService) private readonly nativeService!: INativeService;
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
+  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
+  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
+  @lazyInject(serviceIdentifier.WikiGitWorkspace) private readonly wikiGitWorkspaceService!: IWikiGitWorkspaceService;
+  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
   @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
 
   private _menuTemplate?: DeferredMenuItemConstructorOptions[];
@@ -328,6 +339,32 @@ export class MenuService implements IMenuService {
     const sidebar = await this.preferenceService.get('sidebar');
     const contextMenuBuilder = new ContextMenuBuilder(webContents);
     const menu = contextMenuBuilder.buildMenuForElement(info);
+    // show workspace menu to manipulate workspaces if sidebar is not open
+    if (!sidebar) {
+      menu.append(new MenuItem({ type: 'separator' }));
+      const workspaces = await this.workspaceService.getWorkspacesAsList();
+      const services = {
+        native: this.nativeService,
+        view: this.viewService,
+        wiki: this.wikiService,
+        wikiGitWorkspace: this.wikiGitWorkspaceService,
+        window: this.windowService,
+        workspace: this.workspaceService,
+        workspaceView: this.workspaceViewService,
+      };
+      menu.append(
+        new MenuItem({
+          label: i18next.t('Menu.Workspaces'),
+          submenu: workspaces.map((workspace) => {
+            const workspaceContextMenuTemplate = getWorkspaceMenuTemplate(workspace, i18next.t.bind(i18next), services);
+            return {
+              label: workspace.name,
+              submenu: workspaceContextMenuTemplate,
+            };
+          }),
+        }),
+      );
+    }
     menu.append(
       new MenuItem({
         label: i18next.t('ContextMenu.Back'),

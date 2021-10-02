@@ -5,9 +5,9 @@ import { CSS } from '@dnd-kit/utilities';
 import { WindowNames } from '@services/windows/WindowProperties';
 import WorkspaceSelector from './WorkspaceSelector';
 import { IWorkspace } from '@services/workspaces/interface';
+import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/workspaces/getWorkspaceMenuTemplate';
 
 import defaultIcon from '@/images/default-icon.png';
-import { WikiChannel } from '@/constants/channels';
 
 export interface ISortableItemProps {
   index: number;
@@ -29,68 +29,12 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
       style={style}
       {...attributes}
       {...listeners}
-      onClick={async () => {
-        if (isSubWiki) {
-          if (typeof tagName === 'string') {
-            await window.service.wiki.requestOpenTiddlerInWiki(tagName);
-          }
-        } else {
-          const activeWorkspace = await window.service.workspace.getActiveWorkspace();
-          if (activeWorkspace?.id === id) {
-            await window.service.wiki.requestWikiSendActionMessage('tm-home');
-          } else {
-            await window.service.workspaceView.setActiveWorkspaceView(id);
-          }
-        }
-      }}
+      onClick={async () => await openWorkspaceTagTiddler(workspace, window.service)}
       onContextMenu={(event) => {
         event.preventDefault();
         event.stopPropagation();
-        const template = [
-          {
-            label: t('WorkspaceSelector.EditWorkspace'),
-            click: async () => {
-              await window.service.window.open(WindowNames.editWorkspace, { workspaceID: id });
-            },
-          },
-          {
-            label: t('WorkspaceSelector.RemoveWorkspace'),
-            click: async () => await window.service.wikiGitWorkspace.removeWorkspace(id),
-          },
-          {
-            label: t('WorkspaceSelector.OpenWorkspaceFolder'),
-            click: async () => await window.service.native.open(wikiFolderLocation, true),
-          },
-          {
-            label: t('ContextMenu.Reload'),
-            click: async () => await window.service.view.reloadViewsWebContents(id),
-          },
-          {
-            label: t('ContextMenu.RestartService'),
-            click: async () => {
-              const workspaceToRestart = await window.service.workspace.get(id);
-              if (workspaceToRestart !== undefined) {
-                await window.service.wiki.restartWiki(workspaceToRestart);
-                await window.service.view.reloadViewsWebContents(id);
-                await window.service.wiki.wikiOperation(WikiChannel.generalNotification, [t('ContextMenu.RestartServiceComplete')]);
-              }
-            },
-          },
-        ];
-
-        if (!active && !isSubWiki) {
-          template.splice(1, 0, {
-            label: hibernated ? t('WorkspaceSelector.WakeUpWorkspace') : t('WorkspaceSelector.HibernateWorkspace'),
-            click: async () => {
-              if (hibernated) {
-                return await window.service.workspaceView.wakeUpWorkspaceView(id);
-              }
-              return await window.service.workspaceView.hibernateWorkspaceView(id);
-            },
-          });
-        }
-
-        void window.remote.buildContextMenuAndPopup(template, { x: event.clientX, y: event.clientY, editFlags: { canCopy: false } });
+        const workspaceContextMenuTemplate = getWorkspaceMenuTemplate(workspace, t, window.service);
+        void window.remote.buildContextMenuAndPopup(workspaceContextMenuTemplate, { x: event.clientX, y: event.clientY, editFlags: { canCopy: false } });
       }}>
       <WorkspaceSelector
         active={active}

@@ -3,6 +3,7 @@
   "LinOnetwo": "林一二",
   "WorkspaceSelector": {
     "Add": "添加",
+    "OpenWorkspaceTagTiddler": "打开 {{tagName}}",
     "EditWorkspace": "编辑工作区",
     "EditCurrentWorkspace": "编辑当前工作区",
     "ReloadCurrentWorkspace": "刷新当前工作区",
@@ -326,7 +327,7 @@
     "DoubleWikiInstanceError": "E-4 重复启动维基错误",
     "DoubleWikiInstanceErrorDescription": "E-4 你启动了同一个Wiki两次，这可能是程序bug导致的。",
     "InsertMenuAfterSubMenuIndexError": "E-5 插入目录模板到现有目录后错误",
-    "InsertMenuAfterSubMenuIndexErrorDescription": "E-5 你尝试插入目录，且 afterSubMenu \"{afterSubMenu}\" 在目录 menuID \"{menuID}\" 内，但我们无法在目录 \"{menu}\" 里找到它，请用正确的 menuID 指定一个目录。",
+    "InsertMenuAfterSubMenuIndexErrorDescription": "E-5 你尝试插入目录，且 afterSubMenu \"{{afterSubMenu}}\" 在目录 menuID \"{{menuID}}\" 内，但我们无法在目录 \"{{menu}}\" 里找到它，请用正确的 menuID 指定一个目录。",
     "InitWikiGitSyncedWikiNoGitUserInfoError": "E-6 笔记仓库初始化失败因为没有提供Git信息错误",
     "InitWikiGitSyncedWikiNoGitUserInfoErrorDescription": "E-6 初始化同步到云端的笔记仓库需要你选择一个云端的 git 仓库地址，还有提供相应云服务的认证凭证，然而目前没有获得这些信息。",
     "MainWindowMissing": "E-7 程序无法获取主窗口信息，无法正常运行。",

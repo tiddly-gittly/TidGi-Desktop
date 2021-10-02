@@ -141,6 +141,7 @@ export function workspaceConfigFromForm(form: IWikiWorkspaceForm, isCreateMainWo
     gitUrl: isCreateSyncedWorkspace ? form.gitRepoUrl : null,
     isSubWiki: !isCreateMainWorkspace,
     mainWikiToLink: !isCreateMainWorkspace ? form.mainWikiToLink.wikiFolderLocation : null,
+    mainWikiID: !isCreateMainWorkspace ? form.mainWikiToLink.id : null,
     name: form.wikiFolderName,
     storageService: form.storageProvider,
     tagName: !isCreateMainWorkspace ? form.tagName : null,

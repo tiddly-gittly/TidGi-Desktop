@@ -34,7 +34,11 @@ export interface IWorkspace {
    */
   lastUrl: string | null;
   /**
-   * Only useful when isSubWiki === true , this is the wiki repo that this subwiki's folder soft links to
+   * ID of main wiki of the sub-wiki. Only useful when isSubWiki === true
+   */
+  mainWikiID: string | null;
+  /**
+   * Absolute path of main wiki of the sub-wiki. Only useful when isSubWiki === true , this is the wiki repo that this subwiki's folder soft links to
    */
   mainWikiToLink: string | null;
   /**

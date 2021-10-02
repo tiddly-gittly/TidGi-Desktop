@@ -18,7 +18,6 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import type { IAuthenticationService } from '@services/auth/interface';
 import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import { SupportedStorageServices } from '@services/types';
 import { lazyInject } from '@services/container';
@@ -40,7 +39,6 @@ export class Workspace implements IWorkspaceService {
   @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
   @lazyInject(serviceIdentifier.WikiGitWorkspace) private readonly wikiGitWorkspaceService!: IWikiGitWorkspaceService;
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
-  @lazyInject(serviceIdentifier.Authentication) private readonly authenticationService!: IAuthenticationService;
 
   constructor() {
     this.workspaces = this.getInitWorkspacesForCache();

@@ -2,6 +2,7 @@
   "Hello": "Hello",
   "WorkspaceSelector": {
     "Add": "Add",
+    "OpenWorkspaceTagTiddler": "Open {{tagName}}",
     "EditWorkspace": "Edit Workspace",
     "RemoveWorkspace": "Remove Workspace",
     "AreYouSure": "Are you sure you want to remove this workspace? \nRemoving the workspace will delete the workspace in this application, but will not delete the folders from the hard drive. \nBut, if you choose to delete the Wiki folder as well, all contents will be deleted.",
@@ -295,7 +296,7 @@
     "DoubleWikiInstanceError": "E-4 DoubleWikiInstanceError",
     "DoubleWikiInstanceErrorDescription": "E-4 You started the same Wiki twice. This may be caused by a bug in the program.",
     "InsertMenuAfterSubMenuIndexError": "E-5 InsertMenuAfterSubMenuIndexError",
-    "InsertMenuAfterSubMenuIndexErrorDescription": "E-5 You try to insert menu with afterSubMenu \"{afterSubMenu}\" in menu \"{menuID}\", but we can not found it in menu \"{menu}\", please specific a menuitem with correct id attribute",
+    "InsertMenuAfterSubMenuIndexErrorDescription": "E-5 You try to insert menu with afterSubMenu \"{{afterSubMenu}}\" in menu \"{{menuID}}\", but we can not found it in menu \"{{menu}}\", please specific a menuitem with correct id attribute",
     "InitWikiGitSyncedWikiNoGitUserInfoError": "E-6 InitWikiGitSyncedWikiNoGitUserInfoErrorDescription",
     "InitWikiGitSyncedWikiNoGitUserInfoErrorDescription": "E-6 Initializing the note repository synchronized to the cloud requires you to select a cloud git repository address and provide the certification credentials for the corresponding cloud service. However, this information is not currently available.",
     "MainWindowMissing": "E-7 This program can't access main window data, can't run normally.",
