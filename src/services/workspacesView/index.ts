@@ -49,12 +49,13 @@ export class WorkspaceView implements IWorkspaceViewService {
     this.wikiService.setAllWikiStartLockOff();
   }
 
-  public async initializeWorkspaceView(workspace: IWorkspace): Promise<void> {
+  public async initializeWorkspaceView(workspace: IWorkspace, options?: { checkHibernated?: boolean; syncImmediately?: boolean }): Promise<void> {
+    const { checkHibernated = true, syncImmediately = true } = options ?? {};
     // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
     if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {
       return;
     }
-    if (((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) && !workspace.active) {
+    if (checkHibernated && ((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) && !workspace.active) {
       if (!workspace.hibernated) {
         await this.workspaceService.update(workspace.id, { hibernated: true });
       }
@@ -228,14 +229,26 @@ export class WorkspaceView implements IWorkspaceViewService {
   public async setActiveWorkspaceView(id: string): Promise<void> {
     const mainWindow = this.windowService.get(WindowNames.main);
     const oldActiveWorkspace = await this.workspaceService.getActiveWorkspace();
+    const newWorkspace = await this.workspaceService.get(id);
+    if (newWorkspace === undefined) {
+      throw new Error(`Workspace id ${id} does not exist. When setActiveWorkspaceView().`);
+    }
 
     if (mainWindow !== undefined && oldActiveWorkspace !== undefined) {
       await this.workspaceService.setActiveWorkspace(id);
       await this.viewService.setActiveView(mainWindow, id);
 
-      // hibernate old view
-      if (oldActiveWorkspace?.hibernateWhenUnused && oldActiveWorkspace.id !== id) {
-        await this.hibernateWorkspaceView(oldActiveWorkspace.id);
+      // if we are switching to a new workspace, we hibernate old view, and activate new view
+      if (oldActiveWorkspace.id !== id) {
+        if (oldActiveWorkspace.hibernateWhenUnused) {
+          await this.hibernateWorkspaceView(oldActiveWorkspace.id);
+        }
+        if (newWorkspace.hibernateWhenUnused) {
+          const workspaceToActivate = await this.workspaceService.get(id);
+          if (workspaceToActivate !== undefined) {
+            await this.initializeWorkspaceView(workspaceToActivate, { checkHibernated: false, syncImmediately: false });
+          }
+        }
       }
     }
     await this.realignActiveWorkspace();

@@ -359,7 +359,7 @@ export default function EditWorkspace(): JSX.Element {
           <List>
             <Divider />
             <ListItem disableGutters>
-              <ListItemText primary={t('EditWorkspace.HibernateTitle')} secondary={t('EditWorkspace.Hibernate')} />
+              <ListItemText primary={t('EditWorkspace.HibernateTitle')} secondary={t('EditWorkspace.HibernateDescription')} />
               <ListItemSecondaryAction>
                 <Switch
                   edge="end"

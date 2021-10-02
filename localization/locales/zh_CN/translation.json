@@ -155,7 +155,7 @@
     "HibernateTitle": "开启休眠",
     "DisableAudioTitle": "关闭声音",
     "DisableNotificationTitle": "关闭提醒",
-    "Hibernate": "在工作区未使用时休眠以节省 CPU 和内存消耗并省电",
+    "HibernateDescription": "在工作区未使用时休眠以节省 CPU 和内存消耗并省电，这会关闭所有自动同步功能，需要手动同步备份数据。",
     "DisableAudio": "阻止工作区中的声音播放",
     "DisableNotification": "阻止工作区的消息提醒",
     "SelectLocal": "选择本地图片...",

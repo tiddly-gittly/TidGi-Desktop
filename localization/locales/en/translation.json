@@ -126,7 +126,7 @@
     "DisableAudio": "Prevent workspace from playing audio.",
     "DisableNotification": "Prevent workspace from sending notifications.",
     "HibernateTitle": "Hibernate when not used",
-    "Hibernate": "Save CPU usage, memory and battery.",
+    "HibernateDescription": "Save CPU usage, memory and battery. This will disable auto sync, you need to manually commit and sync to backup data.",
     "SelectLocal": "Select Local Image...",
     "ResetDefaultIcon": "Reset Default Icon",
     "NoRevert": "Caution! This operation can't be reverted.",
