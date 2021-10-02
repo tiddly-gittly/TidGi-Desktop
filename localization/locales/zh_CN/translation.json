@@ -334,7 +334,13 @@
     "WorkspaceFailedToLoadError": "E-8 工作区加载失败错误",
     "WorkspaceFailedToLoadErrorDescription": "E-8 工作区对应的Wiki网页加载失败了，原因有很多，但基本是因为程序Bug",
     "ViewLoadUrlError": "E-9 网页加载失败错误",
-    "ViewLoadUrlErrorDescription": "E-9 工作区对应的Wiki网页加载失败了，但即将重试"
+    "ViewLoadUrlErrorDescription": "E-9 工作区对应的Wiki网页加载失败了，但即将重试",
+    "ZxNotInitializedError": "E-10 Zx 代码执行服务未初始化错误",
+    "ZxNotInitializedErrorDescription": "E-10 Zx 代码执行服务未成功初始化，将自动尝试初始化。",
+    "ZxInitializationRetryFailedError": "E-11 Zx 代码执行服务初始化重试错误",
+    "ZxInitializationRetryFailedErrorDescription": "E-11 Zx 代码执行服务初始化出错，重试多次依然失败错误，请上传 log 文件提交 issue 报告错误以便修复。",
+    "ZxInitializationError": "E-12 Zx 代码执行服务初始化错误",
+    "ZxInitializationErrorDescription": "E-12 Zx 代码执行服务初始化错误，原因请查看 log 文件，并上传提交 issue 以便修复。"
   },
   "Loading": "加载中",
   "Yes": "是的",

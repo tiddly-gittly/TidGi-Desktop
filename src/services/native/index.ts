@@ -15,27 +15,49 @@ import workerURL from 'threads-plugin/dist/loader?name=zxWorker!./zxWorker.ts';
 import type { IZxFileInput, ZxWorker } from './zxWorker';
 import { ZX_FOLDER } from '@/constants/paths';
 import { logger } from '@services/libs/log';
+import { ZxInitializationError, ZxInitializationRetryFailedError, ZxNotInitializedError } from './error';
 
 @injectable()
 export class NativeService implements INativeService {
   zxWorker: ModuleThread<ZxWorker> | undefined;
+  startRetryCount = 0;
+
   constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {
-    void this.initialize();
+    void this.initialize().catch((error) => {
+      logger.error((error as Error).message);
+    });
   }
 
   private async initialize(): Promise<void> {
+    if (this.startRetryCount >= 3) {
+      throw new ZxInitializationRetryFailedError();
+    }
     try {
       const worker = await spawn<ZxWorker>(new Worker(workerURL));
       this.zxWorker = worker;
       logger.info('zxWorker initialized');
     } catch (error) {
-      logger.error(`zxWorker init error ${(error as Error).message} ${(error as Error).stack ?? ''}`);
+      this.startRetryCount += 1;
+      throw new ZxInitializationError(` ${(error as Error).message} ${(error as Error).stack ?? ''}`);
     }
   }
 
   public executeZxScript$(zxWorkerArguments: IZxFileInput): Observable<string> {
     if (this.zxWorker === undefined) {
-      return of('this.zxWorker not initialized');
+      const error = new ZxNotInitializedError();
+      return new Observable<string>((observer) => {
+        logger.error(error.message, zxWorkerArguments);
+        observer.next(`${error.message}\n`);
+        void this.initialize()
+          .catch((error_) => {
+            logger.error((error_ as Error).message);
+            observer.next(`${(error_ as Error).message}\n`);
+          })
+          .then(() => {
+            const retryExecuteZxObservable = this.executeZxScript$(zxWorkerArguments);
+            retryExecuteZxObservable.subscribe(observer);
+          });
+      });
     }
     logger.info('zxWorker execute', { zxWorkerArguments, ZX_FOLDER });
     const observable = this.zxWorker.executeZxScript(zxWorkerArguments, ZX_FOLDER);
