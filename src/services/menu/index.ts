@@ -10,6 +10,7 @@ import { lazyInject } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { logger } from '@services/libs/log';
 import i18next from '@services/libs/i18n';
 import ContextMenuBuilder from './contextMenuBuilder';
@@ -20,6 +21,7 @@ import { InsertMenuAfterSubMenuIndexError } from './error';
 export class MenuService implements IMenuService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
+  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
 
   private _menuTemplate?: DeferredMenuItemConstructorOptions[];
   private get menuTemplate(): DeferredMenuItemConstructorOptions[] {
@@ -357,6 +359,7 @@ export class MenuService implements IMenuService {
         label: sidebar ? i18next.t('Preference.HideSideBar') : i18next.t('Preference.ShowSideBar'),
         click: async () => {
           await this.preferenceService.set('sidebar', !sidebar);
+          await this.workspaceViewService.realignActiveWorkspace();
         },
       }),
     );

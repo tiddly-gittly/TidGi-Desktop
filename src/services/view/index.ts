@@ -26,10 +26,8 @@ import { ViewLoadUrlError } from './error';
 @injectable()
 export class View implements IViewService {
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
-  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
-  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
   @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
 
