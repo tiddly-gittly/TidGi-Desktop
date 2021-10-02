@@ -347,16 +347,6 @@ export class View implements IViewService {
     }
   };
 
-  public hibernateView = (id: string): void => {
-    if (this.getView(id) !== undefined) {
-      // currently use workaround https://github.com/electron/electron/issues/10096
-      // @ts-expect-error Property 'destroy' does not exist on type 'WebContents'.ts(2339)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      this.getView(id).webContents.destroy();
-      this.removeView(id);
-    }
-  };
-
   public async reloadViewsWebContentsIfDidFailLoad(): Promise<void> {
     const workspaceMetaData: Record<string, Partial<IWorkspaceMetaData>> = await this.workspaceService.getAllMetaData();
     Object.keys(workspaceMetaData).forEach((id) => {

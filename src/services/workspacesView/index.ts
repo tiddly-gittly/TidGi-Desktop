@@ -219,7 +219,7 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async hibernateWorkspaceView(id: string): Promise<void> {
     if ((await this.workspaceService.get(id))?.active !== true) {
-      this.viewService.hibernateView(id);
+      this.viewService.removeView(id);
       await this.workspaceService.update(id, {
         hibernated: true,
       });
@@ -233,21 +233,19 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (newWorkspace === undefined) {
       throw new Error(`Workspace id ${id} does not exist. When setActiveWorkspaceView().`);
     }
-
     if (mainWindow !== undefined && oldActiveWorkspace !== undefined) {
       await this.workspaceService.setActiveWorkspace(id);
       await this.viewService.setActiveView(mainWindow, id);
-
       // if we are switching to a new workspace, we hibernate old view, and activate new view
       if (oldActiveWorkspace.id !== id) {
         if (oldActiveWorkspace.hibernateWhenUnused) {
           await this.hibernateWorkspaceView(oldActiveWorkspace.id);
         }
         if (newWorkspace.hibernateWhenUnused) {
-          const workspaceToActivate = await this.workspaceService.get(id);
-          if (workspaceToActivate !== undefined) {
-            await this.initializeWorkspaceView(workspaceToActivate, { checkHibernated: false, syncImmediately: false });
-          }
+          await this.initializeWorkspaceView(newWorkspace, { checkHibernated: false, syncImmediately: false });
+          await this.workspaceService.update(id, {
+            hibernated: false,
+          });
         }
       }
       await this.realignActiveWorkspace();

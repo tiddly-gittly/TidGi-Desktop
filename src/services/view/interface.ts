@@ -12,7 +12,6 @@ export interface IViewService {
   forEachView: (functionToRun: (view: BrowserView, id: string) => void) => void;
   getActiveBrowserView: () => Promise<BrowserView | undefined>;
   getView: (id: string) => BrowserView;
-  hibernateView: (id: string) => void;
   realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;
   reloadActiveBrowserView: () => Promise<void>;
   reloadViewsWebContents(workspaceID?: string | undefined): Promise<void>;
@@ -32,7 +31,6 @@ export const ViewServiceIPCDescriptor = {
     removeView: ProxyPropertyType.Function,
     setViewsAudioPref: ProxyPropertyType.Function,
     setViewsNotificationsPref: ProxyPropertyType.Function,
-    hibernateView: ProxyPropertyType.Function,
     reloadViewsWebContentsIfDidFailLoad: ProxyPropertyType.Function,
     reloadViewsWebContents: ProxyPropertyType.Function,
     reloadActiveBrowserView: ProxyPropertyType.Function,
