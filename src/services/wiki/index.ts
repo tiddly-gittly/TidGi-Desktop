@@ -57,9 +57,7 @@ export class Wiki implements IWikiService {
 
   public async requestWikiSendActionMessage(actionMessage: string): Promise<void> {
     const browserView = await this.viewService.getActiveBrowserView();
-    if (browserView !== undefined) {
-      browserView.webContents.send(WikiChannel.sendActionMessage, actionMessage);
-    }
+    browserView?.webContents?.send?.(WikiChannel.sendActionMessage, actionMessage);
   }
 
   // handlers
