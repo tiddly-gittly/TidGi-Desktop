@@ -250,8 +250,8 @@ export class WorkspaceView implements IWorkspaceViewService {
           }
         }
       }
+      await this.realignActiveWorkspace();
     }
-    await this.realignActiveWorkspace();
   }
 
   public async removeWorkspaceView(id: string): Promise<void> {
