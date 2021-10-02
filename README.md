@@ -8,6 +8,10 @@
 
 **太记** - 可定制性极强的个人知识管理系统，使用 Git 作为备份管理器和博客平台。
 
+|                                                                         [最新版下载按钮 Download](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)                                                                         |
+| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TiddlyGit-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest) |
+
 |             Load NodeJS Wiki 加载 NodeJS 版维基             |
 | :---------------------------------------------------------: |
 | ![Screenshot of main-window](./docs/images/main-window.png) |
@@ -24,7 +28,7 @@
 
 
 
-|                                                                         [最新版下载按钮](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)                                                                         |
+|                                                                         [最新版下载按钮 Download](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)                                                                         |
 | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TiddlyGit-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest) |
 
