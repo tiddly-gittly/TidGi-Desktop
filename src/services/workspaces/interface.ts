@@ -71,6 +71,10 @@ export interface IWorkspace {
    */
   syncOnIntervalDebounced: boolean;
   /**
+   * Commit and Sync when App starts.
+   */
+  syncOnStartup: boolean;
+  /**
    * Tag name in tiddlywiki's filesystemPath, tiddler with this tag will be save into this subwiki
    */
   tagName: string | null;
@@ -102,7 +106,7 @@ export interface IWorkspaceMetaData {
  * Ignore some field that will assign default value in workspaceService.create, these field don't require to be filled in AddWorkspace form
  */
 export type INewWorkspaceConfig = SetOptional<
-  Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order' | 'lastUrl' | 'syncOnInterval' | 'syncOnIntervalDebounced'>,
+  Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order' | 'lastUrl' | 'syncOnInterval' | 'syncOnIntervalDebounced' | 'syncOnStartup'>,
   'homeUrl' | 'transparentBackground' | 'picturePath' | 'disableNotifications' | 'disableAudio' | 'hibernateWhenUnused' | 'subWikiFolderName' | 'userName'
 >;
 

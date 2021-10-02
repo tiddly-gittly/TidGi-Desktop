@@ -115,6 +115,7 @@ if (!gotTheLock) {
       app.quit();
     }
     await windowService.open(WindowNames.main);
+    // perform wiki startup and git sync for each workspace
     await workspaceViewService.initializeAllWorkspaceView();
     buildLanguageMenu();
 

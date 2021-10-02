@@ -389,6 +389,7 @@ export class Workspace implements IWorkspaceService {
       subWikiFolderName: 'subwiki',
       syncOnInterval: false,
       syncOnIntervalDebounced: false,
+      syncOnStartup: true,
       transparentBackground: false,
     };
 
