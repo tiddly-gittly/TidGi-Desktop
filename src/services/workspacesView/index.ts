@@ -218,11 +218,15 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async hibernateWorkspaceView(id: string): Promise<void> {
-    if ((await this.workspaceService.get(id))?.active !== true) {
-      this.viewService.removeView(id);
-      await this.workspaceService.update(id, {
-        hibernated: true,
-      });
+    const workspace = await this.workspaceService.get(id);
+    if (workspace !== undefined && !workspace.active) {
+      await Promise.all([
+        this.wikiService.stopWiki(workspace.wikiFolderLocation),
+        this.viewService.removeView(id),
+        this.workspaceService.update(id, {
+          hibernated: true,
+        }),
+      ]);
     }
   }
 
