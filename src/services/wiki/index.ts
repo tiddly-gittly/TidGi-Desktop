@@ -159,7 +159,8 @@ export class Wiki implements IWikiService {
       logger.error(`Wiki-worker have error ${(error as Error).message} when try to stop`, { function: 'stopWiki' });
       // await worker.terminate();
     }
-    // delete this.wikiWorkers[homePath];
+    (this.wikiWorkers[homePath] as any) = undefined;
+    await this.stopWatchWiki(homePath);
     logger.info(`Wiki-worker for ${homePath} stopped`, { function: 'stopWiki' });
   }
 
