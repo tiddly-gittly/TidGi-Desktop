@@ -6,7 +6,7 @@ import { IGitUserInfos } from '@services/git/interface';
 
 export function useUserInfoObservable(): IUserInfos | undefined {
   const [userInfo, userInfoSetter] = useState<IUserInfos | undefined>();
-  useObservable<IUserInfos | undefined>(window.observables.auth.userInfo$, userInfoSetter);
+  useObservable(window.observables.auth.userInfo$, userInfoSetter as any);
   return userInfo;
 }
 

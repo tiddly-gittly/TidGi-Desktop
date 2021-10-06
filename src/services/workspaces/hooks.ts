@@ -11,13 +11,13 @@ export function useWorkspacesListObservable(): IWorkspace[] | undefined {
     () => window.observables.workspace.workspaces$.pipe(map<Record<string, IWorkspace>, IWorkspace[]>((workspaces) => Object.values(workspaces))),
     [],
   );
-  useObservable<IWorkspace[] | undefined>(workspacesList$, workspacesSetter);
+  useObservable(workspacesList$, workspacesSetter as any);
   return workspaces;
 }
 
 export function useWorkspaceObservable(id: string): IWorkspace | undefined {
   const [workspace, workspaceSetter] = useState<IWorkspace | undefined>();
   const workspace$ = useMemo(() => window.observables.workspace.get$(id), [id]);
-  useObservable<IWorkspace | undefined>(workspace$, workspaceSetter);
+  useObservable(workspace$, workspaceSetter as any);
   return workspace;
 }
