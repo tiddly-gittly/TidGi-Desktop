@@ -70,6 +70,9 @@ const sideBarStyle = css`
   box-sizing: border-box;
   overflow-y: auto;
   overflow-x: hidden;
+  &::-webkit-scrollbar {
+    width: 0;
+  }
 `;
 const SidebarRoot = styled.div`
   ${sideBarStyle}
