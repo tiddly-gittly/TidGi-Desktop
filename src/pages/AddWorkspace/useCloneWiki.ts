@@ -29,10 +29,6 @@ export function useValidateCloneWiki(
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.MainWorkspace')}`);
       errorInWhichComponentSetter({ mainWikiToLink: true });
       hasErrorSetter(true);
-    } else if (!isCreateMainWorkspace && !form.tagName) {
-      wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.TagName')}`);
-      errorInWhichComponentSetter({ tagName: true });
-      hasErrorSetter(true);
     } else if (form.gitUserInfo === undefined || !(form.gitUserInfo.accessToken?.length > 0)) {
       wikiCreationMessageSetter(t('AddWorkspace.NotLoggedIn'));
       errorInWhichComponentSetter({ gitUserInfo: true });
