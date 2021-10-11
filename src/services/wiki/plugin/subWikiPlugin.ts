@@ -5,9 +5,11 @@ import { logger } from '@services/libs/log';
 import { IWorkspace } from '@services/workspaces/interface';
 import { TIDDLERS_PATH } from '@/constants/paths';
 
-const getMatchPart = (tagToMatch: string): string => `[!is[system]kin::to[${tagToMatch}]`;
-const getPathPart = (folderToPlace: string): string => `addprefix[/]addprefix[${folderToPlace}]addprefix[/]addprefix[subwiki]]`;
-const getTagNameFromMatchPart = (matchPart: string): string => matchPart.replace('[!is[system]kin::to[', '').replace(/].*/, '');
+const REPLACE_SYSTEM_TIDDLER_SYMBOL = 'search-replace:g[/],[_]search-replace:g[:],[_]';
+const getMatchPart = (tagToMatch: string): string => `kin::to[${tagToMatch}]`;
+const getPathPart = (folderToPlace: string): string => `${REPLACE_SYSTEM_TIDDLER_SYMBOL}addprefix[/]addprefix[${folderToPlace}]addprefix[/]addprefix[subwiki]]`;
+const getTagNameFromMatchPart = (matchPart: string): string =>
+  matchPart.replace(/(\[!is\[system])?kin::to\[/, '').replace(/](search-replace:g\[\/],\[_]search-replace:g\[:],\[_])?.*/, '');
 const getFolderNamePathPart = (pathPart: string): string => pathPart.replace(']addprefix[/]addprefix[subwiki]]', '').replace(/.+addprefix\[/, '');
 
 /**
