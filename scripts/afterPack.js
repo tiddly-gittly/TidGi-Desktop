@@ -40,6 +40,7 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
     await fs.copy(path.join(projectRoot, 'node_modules', 'zx'), path.join(cwd, 'node_modules', 'zx'));
     await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx') });
     await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'globby') });
+    await exec(`npm i --legacy-building --ignore-scripts`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'node-fetch') });
   }
   /** complete this hook */
   callback();
