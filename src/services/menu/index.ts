@@ -93,14 +93,16 @@ export class MenuService implements IMenuService {
   ): Promise<MenuItemConstructorOptions[] | undefined> {
     if (submenu === undefined) return;
     return await Promise.all(
-      submenu.map(async (item) => ({
-        ...item,
-        /** label sometimes is null, causing  */
-        label: typeof item.label === 'function' ? item.label() ?? undefined : item.label,
-        checked: typeof item.checked === 'function' ? await item.checked() : item.checked,
-        enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
-        submenu: !Array.isArray(item.submenu) ? item.submenu : await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)),
-      })),
+      submenu
+        .filter((item) => Object.keys(item).length > 0)
+        .map(async (item) => ({
+          ...item,
+          /** label sometimes is null, causing  */
+          label: typeof item.label === 'function' ? item.label() ?? undefined : item.label,
+          checked: typeof item.checked === 'function' ? await item.checked() : item.checked,
+          enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
+          submenu: !Array.isArray(item.submenu) ? item.submenu : await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)),
+        })),
     );
   }
 
