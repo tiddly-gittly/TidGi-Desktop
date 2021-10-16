@@ -13,7 +13,8 @@
     "HibernateWorkspace": "Hibernate Workspace",
     "WakeUpWorkspace": "WakeUp Workspace",
     "OpenWorkspaceFolder": "Open Folder",
-    "ReloadCurrentWorkspace": "Reload Current Workspace"
+    "ReloadCurrentWorkspace": "Reload Current Workspace",
+    "OpenWorkspaceFolderInEditor": "Open Folder In External Editor"
   },
   "ContextMenu": {
     "OpenTiddlyGit": "Open TiddlyGit",

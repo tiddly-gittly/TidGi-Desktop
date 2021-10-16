@@ -16,6 +16,7 @@ import type { IZxFileInput, ZxWorker } from './zxWorker';
 import { ZX_FOLDER } from '@/constants/paths';
 import { logger } from '@services/libs/log';
 import { ZxInitializationError, ZxInitializationRetryFailedError, ZxNotInitializedError } from './error';
+import { findEditorOrDefault, launchExternalEditor } from './externalApp';
 
 @injectable()
 export class NativeService implements INativeService {
@@ -39,6 +40,13 @@ export class NativeService implements INativeService {
     } catch (error) {
       this.startRetryCount += 1;
       throw new ZxInitializationError(` ${(error as Error).message} ${(error as Error).stack ?? ''}`);
+    }
+  }
+
+  public async openInEditor(filePath: string, editorName?: string): Promise<void> {
+    const defaultEditor = await findEditorOrDefault(editorName);
+    if (defaultEditor !== null) {
+      await launchExternalEditor(filePath, defaultEditor);
     }
   }
 

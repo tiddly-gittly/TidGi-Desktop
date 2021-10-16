@@ -14,7 +14,8 @@
     "RemoveWorkspaceAndDelete": "移除工作区并删除Wiki文件夹",
     "AreYouSure": "你确定要移除这个工作区吗？移除工作区会删除本应用中的工作区，但不会删除硬盘上的文件夹。如果你选择一并删除Wiki文件夹，则所有内容都会被被删除。",
     "BadWorkspacePath": "工作区路径有问题",
-    "OpenWorkspaceFolder": "打开文件夹"
+    "OpenWorkspaceFolder": "打开文件夹",
+    "OpenWorkspaceFolderInEditor": "用外部编辑器打开文件夹"
   },
   "ContextMenu": {
     "OpenTiddlyGit": "打开太记",
