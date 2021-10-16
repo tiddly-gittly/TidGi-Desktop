@@ -1,6 +1,7 @@
 import { pathExists } from 'fs-extra';
 import { IFoundEditor } from './found-editor';
 import appPath from 'app-path';
+import { logger } from '@services/libs/log';
 
 /** Represents an external editor on macOS */
 interface IDarwinExternalEditor {
@@ -117,6 +118,17 @@ const editors: IDarwinExternalEditor[] = [
   },
 ];
 
+/**
+ * This list contains all the external git GUI app supported on macOS. Add a new
+ * entry here to add support for your favorite git GUI app.
+ **/
+const gitGUIApp: IDarwinExternalEditor[] = [
+  {
+    name: 'GitHub Desktop',
+    bundleIdentifiers: ['com.github.GitHubClient'],
+  },
+];
+
 async function findApplication(editor: IDarwinExternalEditor): Promise<string | null> {
   for (const identifier of editor.bundleIdentifiers) {
     try {
@@ -135,9 +147,9 @@ async function findApplication(editor: IDarwinExternalEditor): Promise<string | 
         return installPath;
       }
 
-      log.debug(`App installation for ${editor.name} not found at '${installPath}'`);
+      logger.debug(`App installation for ${editor.name} not found at '${installPath}'`);
     } catch (error) {
-      log.debug(`Unable to locate ${editor.name} installation`, error);
+      logger.debug(`Unable to locate ${editor.name} installation`, error);
     }
   }
 
@@ -156,6 +168,24 @@ export async function getAvailableEditors(): Promise<ReadonlyArray<IFoundEditor<
 
     if (path) {
       results.push({ editor: editor.name, path });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Lookup known external git GUI app using the bundle ID that each uses
+ * to register itself on a user's machine when installing.
+ */
+export async function getAvailableGitGUIApps(): Promise<ReadonlyArray<IFoundEditor<string>>> {
+  const results: Array<IFoundEditor<string>> = [];
+
+  for (const guiApp of gitGUIApp) {
+    const path = await findApplication(guiApp);
+
+    if (path) {
+      results.push({ editor: guiApp.name, path });
     }
   }
 

@@ -16,7 +16,7 @@ import type { IZxFileInput, ZxWorker } from './zxWorker';
 import { ZX_FOLDER } from '@/constants/paths';
 import { logger } from '@services/libs/log';
 import { ZxInitializationError, ZxInitializationRetryFailedError, ZxNotInitializedError } from './error';
-import { findEditorOrDefault, launchExternalEditor } from './externalApp';
+import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
 
 @injectable()
 export class NativeService implements INativeService {
@@ -45,7 +45,14 @@ export class NativeService implements INativeService {
 
   public async openInEditor(filePath: string, editorName?: string): Promise<void> {
     const defaultEditor = await findEditorOrDefault(editorName);
-    if (defaultEditor !== null) {
+    if (defaultEditor !== undefined) {
+      await launchExternalEditor(filePath, defaultEditor);
+    }
+  }
+
+  public async openInGitGuiApp(filePath: string, editorName?: string): Promise<void> {
+    const defaultEditor = await findGitGUIAppOrDefault(editorName);
+    if (defaultEditor !== undefined) {
       await launchExternalEditor(filePath, defaultEditor);
     }
   }

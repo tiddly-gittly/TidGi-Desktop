@@ -13,6 +13,7 @@ export interface INativeService {
   executeZxScript$(zxWorkerArguments: IZxFileInput): Observable<string>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   openInEditor(filePath: string, editorName?: string | undefined): Promise<void>;
+  openInGitGuiApp(filePath: string, editorName?: string | undefined): Promise<void>;
   pickDirectory(defaultPath?: string): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;
   quit(): void;
@@ -24,6 +25,7 @@ export const NativeServiceIPCDescriptor = {
     executeZxScript$: ProxyPropertyType.Function$,
     open: ProxyPropertyType.Function,
     openInEditor: ProxyPropertyType.Function,
+    openInGitGuiApp: ProxyPropertyType.Function,
     pickDirectory: ProxyPropertyType.Function,
     pickFile: ProxyPropertyType.Function,
     quit: ProxyPropertyType.Function,

@@ -4,6 +4,7 @@ import { enumerateValues, HKEY, RegistryValue, RegistryValueType } from 'registr
 
 import { pathExists } from 'fs-extra';
 import { IFoundEditor } from './found-editor';
+import { logger } from '@services/libs/log';
 
 interface IWindowsAppInformation {
   displayName: string;
@@ -317,6 +318,20 @@ const editors: WindowsExternalEditor[] = [
   },
 ];
 
+/**
+ * This list contains all the external git GUI app supported on Windows. Add a new
+ * entry here to add support for your favorite git GUI app.
+ **/
+const gitGUIApp: WindowsExternalEditor[] = [
+  {
+    name: 'GitHub Desktop',
+    registryKeys: [CurrentUserUninstallKey('desktop')],
+    executableShimPaths: [['bin', 'desktop.cmd']],
+    displayNamePrefix: 'Desktop',
+    publisher: 'GitHub Inc.',
+  },
+];
+
 function getKeyOrEmpty(keys: readonly RegistryValue[], key: string): string {
   const entry = keys.find((k) => k.name === key);
   return entry && entry.type === RegistryValueType.REG_SZ ? entry.data : '';
@@ -339,7 +354,7 @@ async function findApplication(editor: WindowsExternalEditor) {
     const { displayName, publisher, installLocation } = getAppInfo(editor, keys);
 
     if (!displayName.startsWith(editor.displayNamePrefix) || publisher !== editor.publisher) {
-      log.debug(`Unexpected registry entries for ${editor.name}`);
+      logger.debug(`Unexpected registry entries for ${editor.name}`);
       continue;
     }
 
@@ -352,7 +367,7 @@ async function findApplication(editor: WindowsExternalEditor) {
         return path;
       }
 
-      log.debug(`Executable for ${editor.name} not found at '${path}'`);
+      logger.debug(`Executable for ${editor.name} not found at '${path}'`);
     }
   }
 
@@ -372,6 +387,28 @@ export async function getAvailableEditors(): Promise<ReadonlyArray<IFoundEditor<
     if (path) {
       results.push({
         editor: editor.name,
+        path,
+        usesShell: path.endsWith('.cmd'),
+      });
+    }
+  }
+
+  return results;
+}
+
+/**
+ * Lookup known external git GUI app using the Windows registry to find installed
+ * applications and their location on disk for Desktop to launch.
+ */
+export async function getAvailableGitGUIApps(): Promise<ReadonlyArray<IFoundEditor<string>>> {
+  const results: Array<IFoundEditor<string>> = [];
+
+  for (const guiApp of gitGUIApp) {
+    const path = await findApplication(guiApp);
+
+    if (path) {
+      results.push({
+        editor: guiApp.name,
         path,
         usesShell: path.endsWith('.cmd'),
       });

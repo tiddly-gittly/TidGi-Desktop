@@ -10,7 +10,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 
 interface IWorkspaceMenuRequiredServices {
-  native: Pick<INativeService, 'open' | 'openInEditor'>;
+  native: Pick<INativeService, 'open' | 'openInEditor' | 'openInGitGuiApp'>;
   view: Pick<IViewService, 'reloadViewsWebContents'>;
   wiki: Pick<IWikiService, 'requestOpenTiddlerInWiki' | 'requestWikiSendActionMessage'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
@@ -66,6 +66,10 @@ export function getWorkspaceMenuTemplate(workspace: IWorkspace, t: TFunction, se
     {
       label: t('WorkspaceSelector.OpenWorkspaceFolderInEditor'),
       click: async () => await service.native.openInEditor(wikiFolderLocation),
+    },
+    {
+      label: t('WorkspaceSelector.OpenWorkspaceFolderInGitGUI'),
+      click: async () => await service.native.openInGitGuiApp(wikiFolderLocation),
     },
     {
       label: t('ContextMenu.Reload'),

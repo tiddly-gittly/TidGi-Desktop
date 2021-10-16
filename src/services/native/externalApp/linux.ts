@@ -56,6 +56,17 @@ const editors: ILinuxExternalEditor[] = [
   },
 ];
 
+/**
+ * This list contains all the external git GUI app supported on Linux. Add a new
+ * entry here to add support for your favorite git GUI app.
+ **/
+const gitGUIApp: ILinuxExternalEditor[] = [
+  {
+    name: 'GitHub Desktop',
+    paths: ['/snap/bin/desktop', '/usr/bin/desktop'],
+  },
+];
+
 async function getAvailablePath(paths: string[]): Promise<string | null> {
   for (const path of paths) {
     if (await pathExists(path)) {
@@ -73,6 +84,19 @@ export async function getAvailableEditors(): Promise<ReadonlyArray<IFoundEditor<
     const path = await getAvailablePath(editor.paths);
     if (path) {
       results.push({ editor: editor.name, path });
+    }
+  }
+
+  return results;
+}
+
+export async function getAvailableGitGUIApps(): Promise<ReadonlyArray<IFoundEditor<string>>> {
+  const results: Array<IFoundEditor<string>> = [];
+
+  for (const guiApp of gitGUIApp) {
+    const path = await getAvailablePath(guiApp.paths);
+    if (path) {
+      results.push({ editor: guiApp.name, path });
     }
   }
 

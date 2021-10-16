@@ -14,7 +14,8 @@
     "WakeUpWorkspace": "WakeUp Workspace",
     "OpenWorkspaceFolder": "Open Folder",
     "ReloadCurrentWorkspace": "Reload Current Workspace",
-    "OpenWorkspaceFolderInEditor": "Open Folder In External Editor"
+    "OpenWorkspaceFolderInEditor": "Open Folder In External Editor",
+    "OpenWorkspaceFolderInGitGUI": "Open in Git GUI"
   },
   "ContextMenu": {
     "OpenTiddlyGit": "Open TiddlyGit",
