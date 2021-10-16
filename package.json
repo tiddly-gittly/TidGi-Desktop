@@ -27,6 +27,7 @@
   "main": ".webpack/main",
   "dependencies": {
     "@tiddlygit/tiddlywiki": "^5.2.1-prerelease.20211006",
+    "app-path": "^4.0.0",
     "bluebird": "3.7.2",
     "chokidar": "3.5.2",
     "electron-ipc-cat": "^1.0.5",
@@ -52,6 +53,7 @@
     "menubar": "9.0.5",
     "node-fetch": "3.0.0",
     "reflect-metadata": "0.1.13",
+    "registry-js": "^1.15.1",
     "rxjs": "7.3.1",
     "semver": "7.3.5",
     "threads": "1.7.0",
