@@ -276,6 +276,15 @@ export class WorkspaceView implements IWorkspaceViewService {
     this.viewService.removeView(id);
   }
 
+  public async restartWorkspaceViewService(id?: string): Promise<void> {
+    const workspaceToRestart = id !== undefined ? await this.workspaceService.get(id) : await this.workspaceService.getActiveWorkspace();
+    if (workspaceToRestart !== undefined) {
+      await this.wikiService.restartWiki(workspaceToRestart);
+      await this.viewService.reloadViewsWebContents(workspaceToRestart.id);
+      await this.wikiService.wikiOperation(WikiChannel.generalNotification, [i18n.t('ContextMenu.RestartServiceComplete')]);
+    }
+  }
+
   public async clearBrowsingDataWithConfirm(): Promise<void> {
     const availableWindowToShowDialog = this.windowService.get(WindowNames.preferences) ?? this.windowService.get(WindowNames.main);
     if (availableWindowToShowDialog !== undefined) {

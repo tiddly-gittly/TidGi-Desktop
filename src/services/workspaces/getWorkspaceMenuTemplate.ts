@@ -1,6 +1,5 @@
 import type { TFunction } from 'i18next';
 import type { MenuItemConstructorOptions } from 'electron';
-import { WikiChannel } from '@/constants/channels';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
@@ -13,11 +12,11 @@ import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interf
 interface IWorkspaceMenuRequiredServices {
   native: Pick<INativeService, 'open'>;
   view: Pick<IViewService, 'reloadViewsWebContents'>;
-  wiki: Pick<IWikiService, 'restartWiki' | 'wikiOperation' | 'requestOpenTiddlerInWiki' | 'requestWikiSendActionMessage'>;
+  wiki: Pick<IWikiService, 'requestOpenTiddlerInWiki' | 'requestWikiSendActionMessage'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open'>;
-  workspace: Pick<IWorkspaceService, 'get' | 'getActiveWorkspace'>;
-  workspaceView: Pick<IWorkspaceViewService, 'wakeUpWorkspaceView' | 'hibernateWorkspaceView' | 'setActiveWorkspaceView'>;
+  workspace: Pick<IWorkspaceService, 'getActiveWorkspace'>;
+  workspaceView: Pick<IWorkspaceViewService, 'wakeUpWorkspaceView' | 'hibernateWorkspaceView' | 'setActiveWorkspaceView' | 'restartWorkspaceViewService'>;
 }
 
 export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IWorkspaceMenuRequiredServices): Promise<void> {
@@ -70,14 +69,7 @@ export function getWorkspaceMenuTemplate(workspace: IWorkspace, t: TFunction, se
     },
     {
       label: t('ContextMenu.RestartService'),
-      click: async () => {
-        const workspaceToRestart = await service.workspace.get(id);
-        if (workspaceToRestart !== undefined) {
-          await service.wiki.restartWiki(workspaceToRestart);
-          await service.view.reloadViewsWebContents(id);
-          await service.wiki.wikiOperation(WikiChannel.generalNotification, [t('ContextMenu.RestartServiceComplete')]);
-        }
-      },
+      click: async () => await service.workspaceView.restartWorkspaceViewService(id),
     },
   ];
 

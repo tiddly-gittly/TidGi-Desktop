@@ -30,6 +30,7 @@ export interface IWorkspaceViewService {
   printTiddler(tiddlerName?: string | undefined): Promise<void>;
   realignActiveWorkspace(): Promise<void>;
   removeWorkspaceView(id: string): Promise<void>;
+  restartWorkspaceViewService(id?: string | undefined): Promise<void>;
   setActiveWorkspaceView(id: string): Promise<void>;
   setWorkspaceView(id: string, workspaceOptions: IWorkspace): Promise<void>;
   setWorkspaceViews(workspaces: Record<string, IWorkspace>): Promise<void>;
@@ -48,6 +49,7 @@ export const WorkspaceViewServiceIPCDescriptor = {
     printTiddler: ProxyPropertyType.Function,
     realignActiveWorkspace: ProxyPropertyType.Function,
     removeWorkspaceView: ProxyPropertyType.Function,
+    restartWorkspaceViewService: ProxyPropertyType.Function,
     setActiveWorkspaceView: ProxyPropertyType.Function,
     setWorkspaceView: ProxyPropertyType.Function,
     setWorkspaceViews: ProxyPropertyType.Function,

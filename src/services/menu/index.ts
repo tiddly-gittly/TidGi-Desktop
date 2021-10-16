@@ -401,6 +401,12 @@ export class MenuService implements IMenuService {
     );
     menu.append(
       new MenuItem({
+        label: i18next.t('ContextMenu.RestartService'),
+        click: async () => await this.workspaceViewService.restartWorkspaceViewService(),
+      }),
+    );
+    menu.append(
+      new MenuItem({
         label: sidebar ? i18next.t('Preference.HideSideBar') : i18next.t('Preference.ShowSideBar'),
         click: async () => {
           await this.preferenceService.set('sidebar', !sidebar);
