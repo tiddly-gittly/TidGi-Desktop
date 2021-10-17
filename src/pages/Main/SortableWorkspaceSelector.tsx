@@ -30,10 +30,10 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
       {...attributes}
       {...listeners}
       onClick={async () => await openWorkspaceTagTiddler(workspace, window.service)}
-      onContextMenu={(event) => {
+      onContextMenu={async (event) => {
         event.preventDefault();
         event.stopPropagation();
-        const workspaceContextMenuTemplate = getWorkspaceMenuTemplate(workspace, t, window.service);
+        const workspaceContextMenuTemplate = await getWorkspaceMenuTemplate(workspace, t, window.service);
         void window.remote.buildContextMenuAndPopup(workspaceContextMenuTemplate, { x: event.clientX, y: event.clientY, editFlags: { canCopy: false } });
       }}>
       <WorkspaceSelector

@@ -8,6 +8,9 @@ import { DeferredMenuItemConstructorOptions } from './interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
+import type { IAuthenticationService } from '@services/auth/interface';
+import type { IContextService } from '@services/context/interface';
+import type { IGitService } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { IViewService } from '@services/view/interface';
@@ -25,6 +28,9 @@ import { InsertMenuAfterSubMenuIndexError } from './error';
 
 @injectable()
 export class MenuService implements IMenuService {
+  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
+  @lazyInject(serviceIdentifier.Context) private readonly contextService!: IContextService;
+  @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;
   @lazyInject(serviceIdentifier.NativeService) private readonly nativeService!: INativeService;
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
   @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
@@ -346,6 +352,9 @@ export class MenuService implements IMenuService {
       menu.append(new MenuItem({ type: 'separator' }));
       const workspaces = await this.workspaceService.getWorkspacesAsList();
       const services = {
+        auth: this.authService,
+        context: this.contextService,
+        git: this.gitService,
         native: this.nativeService,
         view: this.viewService,
         wiki: this.wikiService,
@@ -358,13 +367,15 @@ export class MenuService implements IMenuService {
         new MenuItem({
           label: i18next.t('Menu.Workspaces'),
           submenu: [
-            ...workspaces.map((workspace) => {
-              const workspaceContextMenuTemplate = getWorkspaceMenuTemplate(workspace, i18next.t.bind(i18next), services);
-              return {
-                label: workspace.name,
-                submenu: workspaceContextMenuTemplate,
-              };
-            }),
+            ...(await Promise.all(
+              workspaces.map(async (workspace) => {
+                const workspaceContextMenuTemplate = await getWorkspaceMenuTemplate(workspace, i18next.t.bind(i18next), services);
+                return {
+                  label: workspace.name,
+                  submenu: workspaceContextMenuTemplate,
+                };
+              }),
+            )),
             {
               label: i18next.t('WorkspaceSelector.Add'),
               click: async () => await this.windowService.open(WindowNames.addWorkspace),

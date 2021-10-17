@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/require-await */
-import { app } from 'electron';
+import { app, net } from 'electron';
 import process from 'process';
 import os from 'os';
 import { isElectronDevelopment } from '@/constants/isElectronDevelopment';
@@ -40,5 +40,9 @@ export class ContextService implements IContextService {
 
   public async getLocalHostUrlWithActualIP(oldUrl: string): Promise<string> {
     return getLocalHostUrlWithActualIP(oldUrl);
+  }
+
+  public async isOnline(): Promise<boolean> {
+    return net.isOnline();
   }
 }

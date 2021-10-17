@@ -2,14 +2,21 @@ import type { TFunction } from 'i18next';
 import type { MenuItemConstructorOptions } from 'electron';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWindowService } from '@services/windows/interface';
+import type { IAuthenticationService } from '@services/auth/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWorkspace, IWorkspaceService } from './interface';
 import type { INativeService } from '@services/native/interface';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
+import { IContextService } from '@services/context/interface';
+import { IGitService } from '@services/git/interface';
+import { SupportedStorageServices } from '@services/types';
 
 interface IWorkspaceMenuRequiredServices {
+  auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
+  context: Pick<IContextService, 'isOnline'>;
+  git: Pick<IGitService, 'debounceCommitAndSync'>;
   native: Pick<INativeService, 'open' | 'openInEditor' | 'openInGitGuiApp'>;
   view: Pick<IViewService, 'reloadViewsWebContents'>;
   wiki: Pick<IWikiService, 'requestOpenTiddlerInWiki' | 'requestWikiSendActionMessage'>;
@@ -39,10 +46,13 @@ export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IW
   }
 }
 
-export function getWorkspaceMenuTemplate(workspace: IWorkspace, t: TFunction, service: IWorkspaceMenuRequiredServices): MenuItemConstructorOptions[] {
-  const { active, id, hibernated, tagName, isSubWiki, wikiFolderLocation } = workspace;
-
-  const template = [
+export async function getWorkspaceMenuTemplate(
+  workspace: IWorkspace,
+  t: TFunction,
+  service: IWorkspaceMenuRequiredServices,
+): Promise<MenuItemConstructorOptions[]> {
+  const { active, id, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService } = workspace;
+  const template: MenuItemConstructorOptions[] = [
     {
       label: t('WorkspaceSelector.OpenWorkspaceTagTiddler', { tagName }),
       click: async () => {
@@ -80,6 +90,18 @@ export function getWorkspaceMenuTemplate(workspace: IWorkspace, t: TFunction, se
       click: async () => await service.workspaceView.restartWorkspaceViewService(id),
     },
   ];
+
+  if (gitUrl !== null && gitUrl.length > 0 && storageService !== SupportedStorageServices.local) {
+    const userInfo = await service.auth.getStorageServiceUserInfo(storageService);
+    if (userInfo !== undefined) {
+      const isOnline = await service.context.isOnline();
+      template.push({
+        label: t('ContextMenu.SyncNow') + (isOnline ? '' : `(${t('ContextMenu.NoNetworkConnection')})`),
+        enabled: isOnline,
+        click: async () => await service.git.debounceCommitAndSync(wikiFolderLocation, gitUrl, userInfo),
+      });
+    }
+  }
 
   if (!active && !isSubWiki) {
     template.splice(1, 0, {

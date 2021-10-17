@@ -34,11 +34,13 @@ export interface IContext extends IPaths, IConstants {}
 export interface IContextService {
   get<K extends keyof IContext>(key: K): Promise<IContext[K]>;
   getLocalHostUrlWithActualIP(oldUrl: string): Promise<string>;
+  isOnline(): Promise<boolean>;
 }
 export const ContextServiceIPCDescriptor = {
   channel: ContextChannel.name,
   properties: {
     get: ProxyPropertyType.Function,
     getLocalHostUrlWithActualIP: ProxyPropertyType.Function,
+    isOnline: ProxyPropertyType.Function,
   },
 };

@@ -46,7 +46,9 @@
     "Paste": "粘贴",
     "SearchWithGoogle": "用 Google 搜索",
     "RestartService": "重启服务",
-    "RestartServiceComplete": "重启服务成功"
+    "RestartServiceComplete": "重启服务成功",
+    "SyncNow": "立即同步云端",
+    "NoNetworkConnection": "无网络连接"
   },
   "Menu": {
     "TiddlyGit": "太记",
