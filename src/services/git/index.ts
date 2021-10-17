@@ -1,4 +1,4 @@
-import { ipcMain, dialog } from 'electron';
+import { ipcMain, dialog, net } from 'electron';
 import { injectable, inject } from 'inversify';
 import { debounce } from 'lodash';
 import {
@@ -223,8 +223,8 @@ export class Git implements IGitService {
       logger.log(level, this.translateMessage(message), meta);
     },
     error: (error) => {
-      this.translateAndLogErrorMessage(error);
-      reject(error);
+      this.translateAndLogErrorMessage(error as Error);
+      reject(error as Error);
     },
     complete: () => resolve(),
   });
@@ -238,6 +238,9 @@ export class Git implements IGitService {
   }
 
   public async commitAndSync(wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos): Promise<void> {
+    if (!net.isOnline()) {
+      return;
+    }
     return await new Promise<void>((resolve, reject) => {
       this.gitWorker?.commitAndSyncWiki(wikiFolderPath, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
     });

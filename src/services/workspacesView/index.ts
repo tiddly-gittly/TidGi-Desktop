@@ -85,7 +85,7 @@ export class WorkspaceView implements IWorkspaceViewService {
 
     // get sync process ready
     try {
-      if (workspace.syncOnStartup && storageService !== SupportedStorageServices.local) {
+      if (workspace.syncOnStartup && storageService !== SupportedStorageServices.local && syncImmediately) {
         // check synced wiki should have githubRepoUrl
         if (typeof githubRepoUrl !== 'string') {
           throw new TypeError(`githubRepoUrl is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
