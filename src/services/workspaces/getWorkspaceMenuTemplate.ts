@@ -16,7 +16,7 @@ import { SupportedStorageServices } from '@services/types';
 interface IWorkspaceMenuRequiredServices {
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
   context: Pick<IContextService, 'isOnline'>;
-  git: Pick<IGitService, 'debounceCommitAndSync'>;
+  git: Pick<IGitService, 'commitAndSync'>;
   native: Pick<INativeService, 'open' | 'openInEditor' | 'openInGitGuiApp'>;
   view: Pick<IViewService, 'reloadViewsWebContents'>;
   wiki: Pick<IWikiService, 'requestOpenTiddlerInWiki' | 'requestWikiSendActionMessage'>;
@@ -98,7 +98,7 @@ export async function getWorkspaceMenuTemplate(
       template.push({
         label: t('ContextMenu.SyncNow') + (isOnline ? '' : `(${t('ContextMenu.NoNetworkConnection')})`),
         enabled: isOnline,
-        click: async () => await service.git.debounceCommitAndSync(wikiFolderLocation, gitUrl, userInfo),
+        click: async () => await service.git.commitAndSync(wikiFolderLocation, gitUrl, userInfo),
       });
     }
   }

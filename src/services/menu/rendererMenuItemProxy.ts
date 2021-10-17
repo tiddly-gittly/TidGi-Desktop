@@ -35,7 +35,7 @@ export function rendererMenuItemProxy(menus: MenuItemConstructorOptions[]): [Ipc
       ipcCallbackIdMap[id] = ipcCallback;
       ipcRenderer.on(id, ipcCallback);
       newMenus.push({
-        label: menuItem.label,
+        ...menuItem,
         click: id,
       });
     }
