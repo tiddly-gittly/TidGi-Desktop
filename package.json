@@ -40,7 +40,7 @@
     "electron-window-state": "5.0.3",
     "errio": "1.2.2",
     "fs-extra": "10.0.0",
-    "git-sync-js": "0.4.4",
+    "git-sync-js": "^0.4.5",
     "i18next": "21.3.2",
     "i18next-electron-fs-backend": "2.0.0",
     "i18next-fs-backend": "1.1.1",
