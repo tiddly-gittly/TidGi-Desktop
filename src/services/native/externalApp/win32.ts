@@ -378,10 +378,10 @@ async function findApplication(editor: WindowsExternalEditor) {
  * Lookup known external editors using the Windows registry to find installed
  * applications and their location on disk for Desktop to launch.
  */
-export async function getAvailableEditors(): Promise<ReadonlyArray<IFoundEditor<string>>> {
+export async function getAvailableEditors(editorName?: string): Promise<ReadonlyArray<IFoundEditor<string>>> {
   const results: Array<IFoundEditor<string>> = [];
 
-  for (const editor of editors) {
+  for (const editor of editors.filter((editor) => editorName === undefined || editor.name === editorName)) {
     const path = await findApplication(editor);
 
     if (path) {

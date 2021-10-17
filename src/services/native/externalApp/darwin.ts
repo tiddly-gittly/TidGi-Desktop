@@ -160,10 +160,10 @@ async function findApplication(editor: IDarwinExternalEditor): Promise<string | 
  * Lookup known external editors using the bundle ID that each uses
  * to register itself on a user's machine when installing.
  */
-export async function getAvailableEditors(): Promise<ReadonlyArray<IFoundEditor<string>>> {
+export async function getAvailableEditors(editorName?: string): Promise<ReadonlyArray<IFoundEditor<string>>> {
   const results: Array<IFoundEditor<string>> = [];
 
-  for (const editor of editors) {
+  for (const editor of editors.filter((editor) => editorName === undefined || editor.name === editorName)) {
     const path = await findApplication(editor);
 
     if (path) {

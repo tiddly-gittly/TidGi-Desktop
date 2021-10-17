@@ -7,29 +7,51 @@ import { logger } from '@services/libs/log';
 
 let editorCache: ReadonlyArray<IFoundEditor<string>> | undefined;
 let gitGUIAppCache: ReadonlyArray<IFoundEditor<string>> | undefined;
+/** sometimes we only search for one editor, so cache is not the full list */
+let didFullSearch = false;
 
 /**
  * Resolve a list of installed editors on the user's machine, using the known
  * install identifiers that each OS supports.
  */
-export async function getAvailableEditors(): Promise<ReadonlyArray<IFoundEditor<string>>> {
+export async function getAvailableEditors(editorName?: string): Promise<ReadonlyArray<IFoundEditor<string>>> {
+  // if we have cache, try cache first
   if (editorCache !== undefined && editorCache.length > 0) {
-    return editorCache;
+    if (editorName !== undefined && editorCache.some((item) => item.editor === editorName)) {
+      return editorCache;
+    }
+    // if we are asking for a full list (editorName === undefined), we try return the full cache
+    if (didFullSearch) {
+      return editorCache;
+    }
+  }
+
+  if (editorName === undefined) {
+    didFullSearch = true;
   }
 
   if (process.platform === 'darwin') {
-    editorCache = await getAvailableEditorsDarwin();
-    return editorCache;
+    const editorResult = await getAvailableEditorsDarwin(editorName);
+    if (editorName === undefined) {
+      editorCache = editorResult;
+    }
+    return editorResult;
   }
 
   if (process.platform === 'win32') {
-    editorCache = await getAvailableEditorsWindows();
-    return editorCache;
+    const editorResult = await getAvailableEditorsWindows(editorName);
+    if (editorName === undefined) {
+      editorCache = editorResult;
+    }
+    return editorResult;
   }
 
   if (process.platform === 'linux') {
-    editorCache = await getAvailableEditorsLinux();
-    return editorCache;
+    const editorResult = await getAvailableEditorsLinux(editorName);
+    if (editorName === undefined) {
+      editorCache = editorResult;
+    }
+    return editorResult;
   }
 
   logger.warn(`Platform not currently supported for resolving editors: ${process.platform}`);
@@ -44,17 +66,17 @@ export async function getAvailableEditors(): Promise<ReadonlyArray<IFoundEditor<
  * Will throw an error if no editors are found, or if the editor name cannot
  * be found (i.e. it has been removed).
  */
-export async function findEditorOrDefault(name?: string): Promise<IFoundEditor<string> | undefined> {
-  const editors = await getAvailableEditors();
+export async function findEditorOrDefault(editorName?: string): Promise<IFoundEditor<string> | undefined> {
+  const editors = await getAvailableEditors(editorName);
   if (editors.length === 0) {
     return;
   }
 
-  if (name !== undefined) {
-    const match = editors.find((p) => p.editor === name);
+  if (editorName !== undefined) {
+    const match = editors.find((p) => p.editor === editorName);
     if (match === undefined) {
       const menuItemName = process.platform === 'darwin' ? 'Preferences' : 'Options';
-      const message = `The editor '${name}' could not be found. Please open ${menuItemName} and choose an available editor.`;
+      const message = `The editor '${editorName}' could not be found. Please open ${menuItemName} and choose an available editor.`;
 
       throw new ExternalEditorError(message, { openPreferences: true });
     }

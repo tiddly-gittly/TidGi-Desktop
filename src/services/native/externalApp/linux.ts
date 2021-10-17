@@ -77,10 +77,10 @@ async function getAvailablePath(paths: string[]): Promise<string | null> {
   return null;
 }
 
-export async function getAvailableEditors(): Promise<ReadonlyArray<IFoundEditor<string>>> {
+export async function getAvailableEditors(editorName?: string): Promise<ReadonlyArray<IFoundEditor<string>>> {
   const results: Array<IFoundEditor<string>> = [];
 
-  for (const editor of editors) {
+  for (const editor of editors.filter((editor) => editorName === undefined || editor.name === editorName)) {
     const path = await getAvailablePath(editor.paths);
     if (path) {
       results.push({ editor: editor.name, path });
