@@ -132,12 +132,14 @@ const gitGUIApp: IDarwinExternalEditor[] = [
 async function findApplication(editor: IDarwinExternalEditor): Promise<string | null> {
   for (const identifier of editor.bundleIdentifiers) {
     try {
+      logger.info(`Try getting path of ${identifier} in darwin.findApplication`);
       // app-path not finding the app isn't an error, it just means the
       // bundle isn't registered on the machine.
       // https://github.com/sindresorhus/app-path/blob/0e776d4e132676976b4a64e09b5e5a4c6e99fcba/index.js#L7-L13
       const installPath = await appPath(identifier).catch(async (error) =>
         error.message === "Couldn't find the app" ? await Promise.resolve(null) : await Promise.reject(error),
       );
+      logger.info(`Path of ${identifier} is ${String(installPath)} in darwin.findApplication`);
 
       if (installPath === null) {
         return null;
