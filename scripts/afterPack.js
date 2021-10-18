@@ -37,6 +37,7 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
     console.log('Copying tiddlywiki dependency to dist');
     await fs.copy(path.join(projectRoot, 'node_modules', '@tiddlygit', 'tiddlywiki'), path.join(cwd, 'node_modules', '@tiddlygit', 'tiddlywiki'));
     await fs.copy(path.join(projectRoot, 'node_modules', 'dugite'), path.join(cwd, 'node_modules', 'dugite'));
+    await fs.copy(path.join(projectRoot, 'node_modules', 'app-path'), path.join(cwd, 'node_modules', 'app-path'));
     await fs.copy(path.join(projectRoot, 'node_modules', 'zx'), path.join(cwd, 'node_modules', 'zx'));
     await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx') });
     await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'globby') });

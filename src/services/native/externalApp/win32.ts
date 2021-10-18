@@ -354,7 +354,7 @@ async function findApplication(editor: WindowsExternalEditor) {
     const { displayName, publisher, installLocation } = getAppInfo(editor, keys);
 
     if (!displayName.startsWith(editor.displayNamePrefix) || publisher !== editor.publisher) {
-      logger.debug(`Unexpected registry entries for ${editor.name}`);
+      logger.info(`Unexpected registry entries for ${editor.name}`);
       continue;
     }
 
@@ -367,7 +367,7 @@ async function findApplication(editor: WindowsExternalEditor) {
         return path;
       }
 
-      logger.debug(`Executable for ${editor.name} not found at '${path}'`);
+      logger.info(`Executable for ${editor.name} not found at '${path}'`);
     }
   }
 

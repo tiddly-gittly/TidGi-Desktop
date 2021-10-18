@@ -149,9 +149,9 @@ async function findApplication(editor: IDarwinExternalEditor): Promise<string | 
         return installPath;
       }
 
-      logger.debug(`App installation for ${editor.name} not found at '${installPath}'`);
+      logger.info(`App installation for ${editor.name} not found at '${installPath}'`);
     } catch (error) {
-      logger.debug(`Unable to locate ${editor.name} installation`, error);
+      logger.info(`Unable to locate ${editor.name} installation ${(error as Error).message}`);
     }
   }
 
