@@ -20,7 +20,7 @@ module.exports = {
         test: /\.(m?js|node)$/,
         parser: { amd: true },
         use: {
-          loader: '@zeit/webpack-asset-relocator-loader',
+          loader: '@vercel/webpack-asset-relocator-loader',
           options: {
             outputAssetBase: 'native_modules',
             emitDirnameAll: true,
