@@ -42,11 +42,10 @@ jobs:
     - name: Get npm cache directory
       uses: actions/cache@v2
       with:
-        path: ~/.npm
+        path: |
+          ~/.npm
+          **/node_modules
         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-        restore-keys: |
-          ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          ${{ runner.os }}-node-
 
     - name: Install dependencies
       run: npm ci
