@@ -16,17 +16,17 @@ module.exports = {
   module: {
     rules: [
       ...require('./webpack.rules'),
-      // {
-      //   test: /\.(m?js|node)$/,
-      //   parser: { amd: true },
-      //   use: {
-      //     loader: '@vercel/webpack-asset-relocator-loader',
-      //     options: {
-      //       outputAssetBase: 'native_modules',
-      //       emitDirnameAll: true,
-      //     },
-      //   },
-      // },
+      {
+        test: /\.(m?js|node)$/,
+        parser: { amd: false },
+        use: {
+          loader: '@vercel/webpack-asset-relocator-loader',
+          options: {
+            outputAssetBase: 'native_modules',
+            // emitDirnameAll: true,
+          },
+        },
+      },
     ],
   },
   plugins: plugins.main,
