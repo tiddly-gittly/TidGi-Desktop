@@ -3,7 +3,7 @@ import styled, { css } from 'styled-components';
 import { useTranslation, Trans } from 'react-i18next';
 import { Helmet } from 'react-helmet';
 import { AsyncReturnType } from 'type-fest';
-import { DndContext } from '@dnd-kit/core';
+import { DndContext, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
@@ -211,6 +211,14 @@ export default function Main(): JSX.Element {
     await window.service.window.reload(window.meta.windowName);
   }, []);
 
+  const dndSensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 5,
+      },
+    }),
+  );
+
   const workspaceIDs = workspacesList?.map((workspace) => workspace.id) ?? [];
   if (preferences === undefined) return <div>{t('Loading')}</div>;
   const { attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource, sidebarShortcutHints } = preferences;
@@ -228,6 +236,7 @@ export default function Main(): JSX.Element {
                 <div>{t('Loading')}</div>
               ) : (
                 <DndContext
+                  sensors={dndSensors}
                   modifiers={[restrictToVerticalAxis]}
                   onDragEnd={async ({ active, over }) => {
                     if (over === null || active.id === over.id) return;

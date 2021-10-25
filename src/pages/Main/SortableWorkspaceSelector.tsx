@@ -1,4 +1,4 @@
-import React from 'react';
+import { useCallback, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -23,20 +23,22 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
     transform: CSS.Transform.toString(transform),
     transition: transition ?? undefined,
   };
+  const onWorkspaceClick = useCallback(async () => {
+    await openWorkspaceTagTiddler(workspace, window.service);
+  }, [workspace]);
+  const onWorkspaceContextMenu = useCallback(
+    async (event: MouseEvent<HTMLDivElement>) => {
+      event.preventDefault();
+      event.stopPropagation();
+      const workspaceContextMenuTemplate = await getWorkspaceMenuTemplate(workspace, t, window.service);
+      void window.remote.buildContextMenuAndPopup(workspaceContextMenuTemplate, { x: event.clientX, y: event.clientY, editFlags: { canCopy: false } });
+    },
+    [workspace],
+  );
   return (
-    <div
-      ref={setNodeRef}
-      style={style}
-      {...attributes}
-      {...listeners}
-      onClick={async () => await openWorkspaceTagTiddler(workspace, window.service)}
-      onContextMenu={async (event) => {
-        event.preventDefault();
-        event.stopPropagation();
-        const workspaceContextMenuTemplate = await getWorkspaceMenuTemplate(workspace, t, window.service);
-        void window.remote.buildContextMenuAndPopup(workspaceContextMenuTemplate, { x: event.clientX, y: event.clientY, editFlags: { canCopy: false } });
-      }}>
+    <div ref={setNodeRef} style={style} {...attributes} {...listeners} onContextMenu={onWorkspaceContextMenu}>
       <WorkspaceSelector
+        onClick={onWorkspaceClick}
         active={active}
         id={id}
         key={id}
