@@ -114,6 +114,7 @@ export class Window implements IWindowService {
     let mainWindowState: windowStateKeeperState | undefined;
     if (isMainWindow) {
       mainWindowState = windowStateKeeper({
+        file: windowName === WindowNames.main ? undefined : 'window-state-menubar.json',
         defaultWidth: windowDimension[WindowNames.main].width,
         defaultHeight: windowDimension[WindowNames.main].height,
       });
@@ -151,6 +152,9 @@ export class Window implements IWindowService {
     };
     if (windowName === WindowNames.menuBar) {
       this.mainWindowMenuBar = await this.handleAttachToMenuBar(windowConfig);
+      if (this.mainWindowMenuBar.window !== undefined) {
+        mainWindowState?.manage(this.mainWindowMenuBar.window);
+      }
       // mini window don't need following setup, they are for the big one.
       return;
     }
@@ -485,12 +489,6 @@ export class Window implements IWindowService {
   }
 
   private async handleAttachToMenuBar(windowConfig: BrowserWindowConstructorOptions): Promise<Menubar> {
-    const menubarWindowState = windowStateKeeper({
-      file: 'window-state-menubar.json',
-      defaultWidth: 400,
-      defaultHeight: 400,
-    });
-
     // setImage after Tray instance is created to avoid
     // "Segmentation fault (core dumped)" bug on Linux
     // https://github.com/electron/electron/issues/22137#issuecomment-586105622
@@ -506,10 +504,6 @@ export class Window implements IWindowService {
       tooltip: i18n.t('Menu.TiddlyGit'),
       browserWindow: mergeDeep(windowConfig, {
         show: false,
-        x: menubarWindowState.x,
-        y: menubarWindowState.y,
-        width: menubarWindowState.width,
-        height: menubarWindowState.height,
         minHeight: 100,
         minWidth: 250,
       }),
@@ -517,8 +511,6 @@ export class Window implements IWindowService {
 
     menuBar.on('after-create-window', () => {
       if (menuBar.window !== undefined) {
-        menubarWindowState.manage(menuBar.window);
-
         menuBar.window.on('focus', () => {
           const view = menuBar.window?.getBrowserView();
           if (view?.webContents !== undefined) {
