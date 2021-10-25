@@ -56,6 +56,7 @@ const config = {
     },
   ],
   plugins: [
+    ['@electron-forge/plugin-auto-unpack-natives'],
     [
       '@electron-forge/plugin-webpack',
       {
