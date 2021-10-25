@@ -19,12 +19,11 @@ module.exports = {
       ...require('./webpack.rules'),
       {
         test: /\.(m?js|node)$/,
-        parser: { amd: true },
+        parser: { amd: false },
         use: {
-          loader: '@vercel/webpack-asset-relocator-loader',
+          loader: '@timfish/webpack-asset-relocator-loader',
           options: {
             outputAssetBase: 'native_modules',
-            emitDirnameAll: true,
           },
         },
       },
