@@ -189,10 +189,14 @@ export class View implements IViewService {
   private shouldMuteAudio = false;
   private shouldPauseNotifications = false;
 
-  public async addView(browserWindow: BrowserWindow, workspace: IWorkspace): Promise<void> {
-    if (this.views[workspace.id] !== undefined) {
+  public async addView(windowName: WindowNames, workspace: IWorkspace): Promise<void> {
+    // we assume each window will only have one view, so get view by window name + workspace
+    const existedView = this.views[windowName + workspace.id];
+    const browserWindow = this.windowService.get(windowName);
+    if (existedView !== undefined || browserWindow === undefined) {
       return;
     }
+    // create a new BrowserView
     const { rememberLastPageVisited, shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = await this.preferenceService.getPreferences();
     // configure session, proxy & ad blocker
     const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
@@ -284,7 +288,11 @@ export class View implements IViewService {
     Object.keys(this.views).forEach((id) => functionToRun(this.getView(id), id));
   }
 
-  public async setActiveView(browserWindow: BrowserWindow, id: string): Promise<void> {
+  public async setActiveView(windowName: WindowNames, id: string): Promise<void> {
+    const browserWindow = this.windowService.get(windowName);
+    if (browserWindow === undefined) {
+      return;
+    }
     // stop find in page when switching workspaces
     const currentView = browserWindow.getBrowserView();
     if (currentView !== null) {
@@ -293,7 +301,7 @@ export class View implements IViewService {
     }
     const workspace = await this.workspaceService.get(id);
     if (this.getView(id) === undefined && workspace !== undefined) {
-      return await this.addView(browserWindow, workspace);
+      return await this.addView(windowName, workspace);
     } else {
       const view = this.getView(id);
       browserWindow.setBrowserView(view);

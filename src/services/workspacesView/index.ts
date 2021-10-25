@@ -193,11 +193,11 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<IWorkspace> {
     const newWorkspace = await this.workspaceService.create(workspaceOptions);
-    const mainWindow = this.windowService.get(WindowNames.main);
-    if (mainWindow !== undefined && !workspaceOptions.isSubWiki) {
+    if (!workspaceOptions.isSubWiki) {
       await this.workspaceService.setActiveWorkspace(newWorkspace.id);
-      await this.viewService.addView(mainWindow, newWorkspace);
-      await this.viewService.setActiveView(mainWindow, newWorkspace.id);
+      await this.viewService.addView(WindowNames.main, newWorkspace);
+      await this.viewService.addView(WindowNames.menuBar, newWorkspace);
+      await this.viewService.setActiveView(WindowNames.main, newWorkspace.id);
     }
 
     if (typeof workspaceOptions.picturePath === 'string') {
