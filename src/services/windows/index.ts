@@ -75,8 +75,8 @@ export class Window implements IWindowService {
   }
 
   public get(windowName: WindowNames = WindowNames.main): BrowserWindow | undefined {
-    if (windowName === WindowNames.main && this.mainWindowMenuBar?.window !== undefined) {
-      return this.mainWindowMenuBar.window;
+    if (windowName === WindowNames.menuBar) {
+      return this.mainWindowMenuBar?.window;
     }
     return this.windows[windowName];
   }
@@ -88,15 +88,17 @@ export class Window implements IWindowService {
   public async open<N extends WindowNames>(
     windowName: N,
     meta: WindowMeta[N] = {} as WindowMeta[N],
-    recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean),
+    config?: {
+      recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean);
+    },
   ): Promise<void> {
+    const { recreate = false } = config ?? {};
     const existedWindow = this.get(windowName);
     // update window meta
     await this.setWindowMeta(windowName, meta);
     const existedWindowMeta = await this.getWindowMeta(windowName);
-    const attachToMenubar: boolean = await this.preferenceService.get('attachToMenubar');
     const titleBar: boolean = await this.preferenceService.get('titleBar');
-    const isMainWindow = windowName === WindowNames.main;
+    const isMainWindow = windowName === WindowNames.main || windowName === WindowNames.menuBar;
 
     // handle existed window, bring existed window to the front and return.
     if (existedWindow !== undefined) {
@@ -145,10 +147,11 @@ export class Window implements IWindowService {
           `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(meta))}`,
         ],
       },
-      parent: isMainWindow || attachToMenubar ? undefined : this.get(WindowNames.main),
+      parent: isMainWindow ? undefined : this.get(WindowNames.main),
     };
-    if (isMainWindow && attachToMenubar) {
+    if (windowName === WindowNames.menuBar) {
       this.mainWindowMenuBar = await this.handleAttachToMenuBar(windowConfig);
+      // mini window don't need following setup, they are for the big one.
       return;
     }
 
@@ -534,14 +537,6 @@ export class Window implements IWindowService {
             {
               label: i18n.t('ContextMenu.OpenTiddlyGit'),
               click: async () => await menuBar.showWindow(),
-            },
-            {
-              label: i18n.t('Preference.NoAttach'),
-              click: async () => {
-                await this.preferenceService.set('attachToMenubar', false);
-                app.relaunch();
-                app.quit();
-              },
             },
             {
               type: 'separator',

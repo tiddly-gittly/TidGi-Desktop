@@ -250,7 +250,7 @@
     "OpenMetaDataFolder": "打开太记工作区元信息文件夹",
     "OpenMetaDataFolderDetail": "太微的数据和太记的工作区数据是分开存放的，太记的数据包含工作区的设置等，它们以 JSON 形式存放在这个文件夹里。",
     "AttachToMenuBar": "附加到菜单栏",
-    "AttachToMenuBarTip": "让太记变成点击菜单栏/任务栏图标会弹出的一个小弹出窗口，而不显示大的主窗口。提示：右键单击小图标以访问上下文菜单。",
+    "AttachToMenuBarTip": "创建一个点击菜单栏/任务栏图标会弹出的小太记窗口。提示：右键单击小图标以访问上下文菜单。",
     "AttachToTaskbar": "附加到任务栏",
     "NoAttach": "恢复窗口模式",
     "ToggleMenuBar": "切换显隐菜单栏",

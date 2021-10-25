@@ -18,7 +18,13 @@ export interface IWindowService {
   goHome(windowName: WindowNames): Promise<void>;
   isFullScreen(windowName?: WindowNames): Promise<boolean | undefined>;
   loadURL(windowName: WindowNames, newUrl?: string): Promise<void>;
-  open<N extends WindowNames>(windowName: N, meta?: WindowMeta[N], recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean)): Promise<void>;
+  open<N extends WindowNames>(
+    windowName: N,
+    meta?: WindowMeta[N],
+    config?: {
+      recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean);
+    },
+  ): Promise<void>;
   reload(windowName: WindowNames): Promise<void>;
   requestRestart(): Promise<void>;
   sendToAllWindows: (channel: Channels, ...arguments_: unknown[]) => Promise<void>;

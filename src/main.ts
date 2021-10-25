@@ -114,7 +114,14 @@ if (!gotTheLock) {
       logger.error('Failed to registerFileProtocol file:///');
       app.quit();
     }
-    await windowService.open(WindowNames.main);
+    // if user want a menubar, we create a new window for that
+    await Promise.all([
+      windowService.open(WindowNames.main),
+      preferenceService.get('attachToMenubar').then((attachToMenubar) => {
+        attachToMenubar && windowService.open(WindowNames.menuBar);
+      }),
+    ]);
+
     // perform wiki startup and git sync for each workspace
     await workspaceViewService.initializeAllWorkspaceView();
     buildLanguageMenu();
