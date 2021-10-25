@@ -114,7 +114,7 @@ export class Window implements IWindowService {
     let mainWindowState: windowStateKeeperState | undefined;
     if (isMainWindow) {
       mainWindowState = windowStateKeeper({
-        file: windowName === WindowNames.main ? undefined : 'window-state-menubar.json',
+        file: windowName === WindowNames.main ? 'window-state-window.json' : 'window-state-menubar.json',
         defaultWidth: windowDimension[WindowNames.main].width,
         defaultHeight: windowDimension[WindowNames.main].height,
       });
