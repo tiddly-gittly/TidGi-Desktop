@@ -98,7 +98,7 @@ export class Window implements IWindowService {
     await this.setWindowMeta(windowName, meta);
     const existedWindowMeta = await this.getWindowMeta(windowName);
     const titleBar: boolean = await this.preferenceService.get('titleBar');
-    const isMainWindow = windowName === WindowNames.main || windowName === WindowNames.menuBar;
+    const isWindowWithBrowserView = windowName === WindowNames.main || windowName === WindowNames.menuBar;
 
     // handle existed window, bring existed window to the front and return.
     if (existedWindow !== undefined) {
@@ -110,31 +110,33 @@ export class Window implements IWindowService {
     }
 
     // create new window
-    let mainWindowConfig: Partial<BrowserWindowConstructorOptions> = {};
-    let mainWindowState: windowStateKeeperState | undefined;
-    if (isMainWindow) {
-      mainWindowState = windowStateKeeper({
-        file: windowName === WindowNames.main ? 'window-state-window.json' : 'window-state-menubar.json',
+    let windowWithBrowserViewConfig: Partial<BrowserWindowConstructorOptions> = {};
+    let windowWithBrowserViewState: windowStateKeeperState | undefined;
+    if (isWindowWithBrowserView) {
+      windowWithBrowserViewState = windowStateKeeper({
+        file: windowName === WindowNames.main ? 'window-state-main-window.json' : 'window-state-menubar.json',
         defaultWidth: windowDimension[WindowNames.main].width,
         defaultHeight: windowDimension[WindowNames.main].height,
       });
-      mainWindowConfig = {
-        x: mainWindowState.x,
-        y: mainWindowState.y,
-        width: mainWindowState.width,
-        height: mainWindowState.height,
+      // DEBUG: console
+      console.log(`windowWithBrowserViewState`, windowName, windowWithBrowserViewState);
+      windowWithBrowserViewConfig = {
+        x: windowWithBrowserViewState.x,
+        y: windowWithBrowserViewState.y,
+        width: windowWithBrowserViewState.width,
+        height: windowWithBrowserViewState.height,
       };
     }
     const windowConfig: BrowserWindowConstructorOptions = {
       ...windowDimension[windowName],
-      ...mainWindowConfig,
+      ...windowWithBrowserViewConfig,
       resizable: true,
       maximizable: true,
       minimizable: true,
       fullscreenable: true,
       autoHideMenuBar: false,
       titleBarStyle: titleBar ? 'default' : 'hidden',
-      alwaysOnTop: await this.preferenceService.get('alwaysOnTop'),
+      alwaysOnTop: windowName === WindowNames.menuBar || (await this.preferenceService.get('alwaysOnTop')),
       webPreferences: {
         devTools: !isTest,
         nodeIntegration: false,
@@ -148,33 +150,38 @@ export class Window implements IWindowService {
           `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(meta))}`,
         ],
       },
-      parent: isMainWindow ? undefined : this.get(WindowNames.main),
+      parent: isWindowWithBrowserView ? undefined : this.get(WindowNames.main),
     };
+    let newWindow: BrowserWindow;
     if (windowName === WindowNames.menuBar) {
       this.mainWindowMenuBar = await this.handleAttachToMenuBar(windowConfig);
-      if (this.mainWindowMenuBar.window !== undefined) {
-        mainWindowState?.manage(this.mainWindowMenuBar.window);
+      if (this.mainWindowMenuBar.window === undefined) {
+        throw new Error('MenuBar failed to create window.');
       }
-      // mini window don't need following setup, they are for the big one.
-      return;
+      newWindow = this.mainWindowMenuBar.window;
+    } else {
+      newWindow = await this.handleCreateBasicWindow(windowName, windowConfig);
+      if (isWindowWithBrowserView) {
+        this.registerMainWindowListeners(newWindow);
+      } else {
+        newWindow.setMenuBarVisibility(false);
+      }
     }
+    windowWithBrowserViewState?.manage(newWindow);
+  }
 
+  private async handleCreateBasicWindow(windowName: WindowNames, windowConfig: BrowserWindowConstructorOptions): Promise<BrowserWindow> {
     const newWindow = new BrowserWindow(windowConfig);
 
     this.windows[windowName] = newWindow;
-    if (isMainWindow) {
-      mainWindowState?.manage(newWindow);
-      this.registerMainWindowListeners(newWindow);
-    } else {
-      newWindow.setMenuBarVisibility(false);
-    }
+
     const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(newWindow.webContents);
     newWindow.on('closed', () => {
       this.windows[windowName] = undefined;
       unregisterContextMenu();
     });
     let webContentLoadingPromise: Promise<void> | undefined;
-    if (isMainWindow) {
+    if (windowName === WindowNames.main) {
       // handle window show and Webview/browserView show
       webContentLoadingPromise = new Promise<void>((resolve) => {
         newWindow.once('ready-to-show', async () => {
@@ -203,6 +210,7 @@ export class Window implements IWindowService {
     // This loading will wait for a while
     await newWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
     await webContentLoadingPromise;
+    return newWindow;
   }
 
   private registerMainWindowListeners(newWindow: BrowserWindow): void {
@@ -518,6 +526,10 @@ export class Window implements IWindowService {
           }
         });
       }
+    });
+    // https://github.com/maxogden/menubar/issues/120
+    menuBar.on('after-hide', () => {
+      menuBar.app.hide();
     });
 
     return await new Promise<Menubar>((resolve) => {

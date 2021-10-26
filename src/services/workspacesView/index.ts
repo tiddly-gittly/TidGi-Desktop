@@ -113,12 +113,14 @@ export class WorkspaceView implements IWorkspaceViewService {
     await Promise.all([
       this.viewService.addView(workspace, WindowNames.main),
       this.preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
+        // check preference for attachToMenubar first
         if (attachToMenubar) {
+          // TODO: check menuBar window for sure now, maybe this step can be omitted
           const menuBarWindow = this.windowService.get(WindowNames.menuBar);
           if (menuBarWindow === undefined) {
             throw new Error(i18n.t(`Error.MainWindowMissing`) + '(MenuBar)');
           }
-          await this.viewService.addView(workspace, WindowNames.main);
+          await this.viewService.addView(workspace, WindowNames.menuBar);
         }
       }),
     ]);
