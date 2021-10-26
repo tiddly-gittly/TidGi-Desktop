@@ -38,6 +38,7 @@ if (!gotTheLock) {
 } else {
   settings.configure({
     dir: SETTINGS_FOLDER,
+    atomicSave: process.platform !== 'win32',
   });
   protocol.registerSchemesAsPrivileged([
     { scheme: 'http', privileges: { standard: true } },
