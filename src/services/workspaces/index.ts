@@ -137,8 +137,10 @@ export class Workspace implements IWorkspaceService {
         label: () => i18n.t('ContextMenu.DeveloperTools') + (workspace.name || `Workspace ${index + 1}`),
         id: `${workspace.id}-devtool`,
         click: async () => {
-          const view = this.viewService.getView(workspace.id);
-          view.webContents.toggleDevTools();
+          const view = this.viewService.getView(workspace.id, WindowNames.main);
+          if (view !== undefined) {
+            view.webContents.toggleDevTools();
+          }
         },
       },
     ]);

@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/require-await */
+/* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { BrowserView, BrowserWindow, session, ipcMain, WebPreferences } from 'electron';
 import { injectable } from 'inversify';
 
@@ -5,8 +7,6 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { IWorkspaceMetaData, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import type { IWikiService } from '@services/wiki/interface';
-import type { IAuthenticationService } from '@services/auth/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 
@@ -185,13 +185,29 @@ export class View implements IViewService {
     ]);
   }
 
-  private views: Record<string, BrowserView> = {};
+  /**
+   * Record<workspaceID, Record<windowName, BrowserView>>
+   *
+   * Each workspace can have several windows to render its view (main window and menu bar)
+   */
+  private views: Record<string, Record<WindowNames, BrowserView> | undefined> = {};
+  public getView = (workspaceID: string, windowName: WindowNames): BrowserView | undefined => this.views[workspaceID]?.[windowName];
+  public getAllViewOfWorkspace = (workspaceID: string): BrowserView[] => Object.values(this.views[workspaceID] ?? {});
+  public setView = (workspaceID: string, windowName: WindowNames, newView: BrowserView): void => {
+    const workspaceOwnedViews = this.views[workspaceID];
+    if (workspaceOwnedViews === undefined) {
+      this.views[workspaceID] = { [windowName]: newView } as Record<WindowNames, BrowserView>;
+    } else {
+      workspaceOwnedViews[windowName] = newView;
+    }
+  };
+
   private shouldMuteAudio = false;
   private shouldPauseNotifications = false;
 
-  public async addView(windowName: WindowNames, workspace: IWorkspace): Promise<void> {
+  public async addView(workspace: IWorkspace, windowName: WindowNames): Promise<void> {
     // we assume each window will only have one view, so get view by window name + workspace
-    const existedView = this.views[windowName + workspace.id];
+    const existedView = this.getView(workspace.id, windowName);
     const browserWindow = this.windowService.get(windowName);
     if (existedView !== undefined || browserWindow === undefined) {
       return;
@@ -239,7 +255,7 @@ export class View implements IViewService {
     if (this.shouldMuteAudio !== undefined) {
       view.webContents.audioMuted = this.shouldMuteAudio;
     }
-    this.views[workspace.id] = view;
+    this.setView(workspace.id, windowName, view);
     if (workspace.active) {
       browserWindow.setBrowserView(view);
       const contentSize = browserWindow.getContentSize();
@@ -282,13 +298,21 @@ export class View implements IViewService {
     await loadInitialUrlWithCatch();
   }
 
-  public getView = (id: string): BrowserView => this.views[id];
-
-  public forEachView(functionToRun: (view: BrowserView, id: string) => void): void {
-    Object.keys(this.views).forEach((id) => functionToRun(this.getView(id), id));
+  public forEachView(functionToRun: (view: BrowserView, workspaceID: string, windowName: WindowNames) => unknown): void {
+    Object.keys(this.views).forEach((id) => {
+      const workspaceOwnedViews = this.views[id];
+      if (workspaceOwnedViews !== undefined) {
+        (Object.keys(workspaceOwnedViews) as WindowNames[]).forEach((name) => {
+          const view = this.getView(id, name);
+          if (view !== undefined) {
+            functionToRun(view, id, name);
+          }
+        });
+      }
+    });
   }
 
-  public async setActiveView(windowName: WindowNames, id: string): Promise<void> {
+  public async setActiveView(workspaceID: string, windowName: WindowNames): Promise<void> {
     const browserWindow = this.windowService.get(windowName);
     if (browserWindow === undefined) {
       return;
@@ -299,14 +323,18 @@ export class View implements IViewService {
       currentView.webContents.stopFindInPage('clearSelection');
       currentView.webContents.send(WindowChannel.closeFindInPage);
     }
-    const workspace = await this.workspaceService.get(id);
-    if (this.getView(id) === undefined && workspace !== undefined) {
-      return await this.addView(windowName, workspace);
+    const workspace = await this.workspaceService.get(workspaceID);
+    const view = this.getView(workspaceID, windowName);
+    if (view === undefined) {
+      if (workspace !== undefined) {
+        return await this.addView(workspace, windowName);
+      } else {
+        logger.error(`workspace is undefined when setActiveView(${windowName}, ${workspaceID})`);
+      }
     } else {
-      const view = this.getView(id);
       browserWindow.setBrowserView(view);
       const contentSize = browserWindow.getContentSize();
-      if (typeof (await this.workspaceService.getMetaData(id)).didFailLoadErrorMessage !== 'string') {
+      if (typeof (await this.workspaceService.getMetaData(workspaceID)).didFailLoadErrorMessage !== 'string') {
         view.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       } else {
         view.setBounds(await getViewBounds(contentSize as [number, number]));
@@ -322,9 +350,9 @@ export class View implements IViewService {
     }
   }
 
-  public removeView = (id: string): void => {
-    const view = this.getView(id);
-    void session.fromPartition(`persist:${id}`).clearStorageData();
+  public removeView = (workspaceID: string, windowName: WindowNames): void => {
+    const view = this.getView(workspaceID, windowName);
+    void session.fromPartition(`persist:${workspaceID}`).clearStorageData();
     if (view !== undefined) {
       // currently use workaround https://github.com/electron/electron/issues/10096
       // @ts-expect-error Property 'destroy' does not exist on type 'WebContents'.ts(2339)
@@ -332,16 +360,17 @@ export class View implements IViewService {
       view.webContents.destroy();
     }
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-    delete this.views[id];
+    delete this.views[workspaceID]![windowName];
   };
+
+  public removeAllViewOfWorkspace = (workspaceID: string): void => {};
 
   public setViewsAudioPref = (_shouldMuteAudio?: boolean): void => {
     if (_shouldMuteAudio !== undefined) {
       this.shouldMuteAudio = _shouldMuteAudio;
     }
-    // eslint-disable-next-line @typescript-eslint/no-misused-promises
-    void Object.keys(this.views).forEach(async (id) => {
-      const view = this.getView(id);
+
+    this.forEachView(async (view, id, name) => {
       const workspace = await this.workspaceService.get(id);
       if (view !== undefined && workspace !== undefined) {
         view.webContents.audioMuted = workspace.disableAudio || this.shouldMuteAudio;
@@ -357,34 +386,27 @@ export class View implements IViewService {
 
   public async reloadViewsWebContentsIfDidFailLoad(): Promise<void> {
     const workspaceMetaData: Record<string, Partial<IWorkspaceMetaData>> = await this.workspaceService.getAllMetaData();
-    Object.keys(workspaceMetaData).forEach((id) => {
+    this.forEachView((view, id, name) => {
       if (typeof workspaceMetaData[id].didFailLoadErrorMessage !== 'string') {
         return;
       }
-      const view = this.getView(id);
-      if (view !== undefined) {
-        view.webContents.reload();
-      }
+      view.webContents.reload();
     });
   }
 
   public async reloadViewsWebContents(workspaceID?: string): Promise<void> {
-    const workspaceMetaData = await this.workspaceService.getAllMetaData();
-    Object.keys(workspaceMetaData).forEach((id) => {
+    this.forEachView((view, id, name) => {
       if (workspaceID !== undefined && id !== workspaceID) {
         return;
       }
-      const view = this.getView(id);
-      if (view !== undefined) {
-        view.webContents.reload();
-      }
+      view.webContents.reload();
     });
   }
 
   public async getActiveBrowserView(): Promise<BrowserView | undefined> {
     const workspace = await this.workspaceService.getActiveWorkspace();
     if (workspace !== undefined) {
-      return this.getView(workspace.id);
+      return this.getView(workspace.id, WindowNames.main);
     }
   }
 
