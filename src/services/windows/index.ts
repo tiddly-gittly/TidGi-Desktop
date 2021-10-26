@@ -101,8 +101,6 @@ export class Window implements IWindowService {
     // update window meta
     await this.setWindowMeta(windowName, meta);
     const existedWindowMeta = await this.getWindowMeta(windowName);
-    const titleBar: boolean = await this.preferenceService.get('titleBar');
-    const isWindowWithBrowserView = windowName === WindowNames.main || windowName === WindowNames.menuBar;
 
     // handle existed window, bring existed window to the front and return.
     if (existedWindow !== undefined) {
@@ -116,6 +114,7 @@ export class Window implements IWindowService {
     // create new window
     let windowWithBrowserViewConfig: Partial<BrowserWindowConstructorOptions> = {};
     let windowWithBrowserViewState: windowStateKeeperState | undefined;
+    const isWindowWithBrowserView = windowName === WindowNames.main || windowName === WindowNames.menuBar;
     if (isWindowWithBrowserView) {
       windowWithBrowserViewState = windowStateKeeper({
         file: windowName === WindowNames.main ? 'window-state-main-window.json' : 'window-state-menubar.json',
@@ -138,7 +137,7 @@ export class Window implements IWindowService {
       minimizable: true,
       fullscreenable: true,
       autoHideMenuBar: false,
-      titleBarStyle: titleBar ? 'default' : 'hidden',
+      titleBarStyle: (await this.preferenceService.get('titleBar')) ? 'default' : 'hidden',
       alwaysOnTop:
         windowName === WindowNames.menuBar ? await this.preferenceService.get('menuBarAlwaysOnTop') : await this.preferenceService.get('alwaysOnTop'),
       webPreferences: {
