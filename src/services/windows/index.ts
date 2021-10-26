@@ -24,6 +24,7 @@ import { IWindowService } from './interface';
 import { isDevelopmentOrTest, isTest } from '@/constants/environment';
 import { MENUBAR_ICON_PATH } from '@/constants/paths';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
+import { SETTINGS_FOLDER } from '@/constants/appPaths';
 
 @injectable()
 export class Window implements IWindowService {
@@ -118,6 +119,7 @@ export class Window implements IWindowService {
     if (isWindowWithBrowserView) {
       windowWithBrowserViewState = windowStateKeeper({
         file: windowName === WindowNames.main ? 'window-state-main-window.json' : 'window-state-menubar.json',
+        path: SETTINGS_FOLDER,
         defaultWidth: windowDimension[WindowNames.main].width,
         defaultHeight: windowDimension[WindowNames.main].height,
       });
