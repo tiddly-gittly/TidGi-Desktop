@@ -118,8 +118,6 @@ export class Window implements IWindowService {
         defaultWidth: windowDimension[WindowNames.main].width,
         defaultHeight: windowDimension[WindowNames.main].height,
       });
-      // DEBUG: console
-      console.log(`windowWithBrowserViewState`, windowName, windowWithBrowserViewState);
       windowWithBrowserViewConfig = {
         x: windowWithBrowserViewState.x,
         y: windowWithBrowserViewState.y,
@@ -541,6 +539,10 @@ export class Window implements IWindowService {
           const contextMenu = Menu.buildFromTemplate([
             {
               label: i18n.t('ContextMenu.OpenTiddlyGit'),
+              click: async () => await this.open(WindowNames.main),
+            },
+            {
+              label: i18n.t('ContextMenu.OpenTiddlyGitMenuBar'),
               click: async () => await menuBar.showWindow(),
             },
             {

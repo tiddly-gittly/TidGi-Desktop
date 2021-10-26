@@ -19,6 +19,7 @@
   },
   "ContextMenu": {
     "OpenTiddlyGit": "Open TiddlyGit",
+    "OpenTiddlyGitMenuBar": "Open TiddlyGit MenuBar",
     "OpenLinkInNewWindow": "Open Link in New Window",
     "Preferences": "Preferences...",
     "TiddlyGitSupport": "TiddlyGit Support",
