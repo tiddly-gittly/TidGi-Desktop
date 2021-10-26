@@ -83,6 +83,9 @@ export class Window implements IWindowService {
 
   public async close(windowName: WindowNames): Promise<void> {
     this.get(windowName)?.close();
+    if (windowName === WindowNames.menuBar) {
+      this.mainWindowMenuBar?.app?.hide?.();
+    }
   }
 
   public async open<N extends WindowNames>(
@@ -515,6 +518,7 @@ export class Window implements IWindowService {
         minWidth: 250,
       }),
     });
+    menuBar.app.commandLine.appendSwitch('disable-backgrounding-occluded-windows', 'true');
 
     menuBar.on('after-create-window', () => {
       if (menuBar.window !== undefined) {
