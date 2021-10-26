@@ -14,6 +14,7 @@ export interface IPreferences {
   hideMenuBar: boolean;
   ignoreCertificateErrors: boolean;
   language: string;
+  menuBarAlwaysOnTop: boolean;
   pauseNotifications: string | undefined;
   pauseNotificationsBySchedule: boolean;
   pauseNotificationsByScheduleFrom: string;

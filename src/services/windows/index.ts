@@ -136,7 +136,8 @@ export class Window implements IWindowService {
       fullscreenable: true,
       autoHideMenuBar: false,
       titleBarStyle: titleBar ? 'default' : 'hidden',
-      alwaysOnTop: windowName === WindowNames.menuBar || (await this.preferenceService.get('alwaysOnTop')),
+      alwaysOnTop:
+        windowName === WindowNames.menuBar ? await this.preferenceService.get('menuBarAlwaysOnTop') : await this.preferenceService.get('alwaysOnTop'),
       webPreferences: {
         devTools: !isTest,
         nodeIntegration: false,
