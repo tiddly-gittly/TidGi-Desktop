@@ -3,6 +3,7 @@ import 'source-map-support/register';
 import 'reflect-metadata';
 import './helpers/singleInstance';
 import './helpers/configSetting';
+import './helpers/opencv-hack';
 import fs from 'fs-extra';
 import path from 'path';
 import { ipcMain, protocol, powerMonitor, app } from 'electron';
