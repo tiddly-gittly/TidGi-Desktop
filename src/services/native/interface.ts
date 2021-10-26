@@ -10,6 +10,7 @@ import { IZxFileInput } from './zxWorker';
  * Wrap call to electron api, so we won't need remote module in renderer process
  */
 export interface INativeService {
+  tryNut(): Promise<void>;
   executeZxScript$(zxWorkerArguments: IZxFileInput): Observable<string>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   openInEditor(filePath: string, editorName?: string | undefined): Promise<void>;
@@ -22,6 +23,7 @@ export interface INativeService {
 export const NativeServiceIPCDescriptor = {
   channel: NativeChannel.name,
   properties: {
+    tryNut: ProxyPropertyType.Function,
     executeZxScript$: ProxyPropertyType.Function$,
     open: ProxyPropertyType.Function,
     openInEditor: ProxyPropertyType.Function,

@@ -3,6 +3,7 @@ import { app, dialog, shell, MessageBoxOptions } from 'electron';
 import { injectable, inject } from 'inversify';
 import { ModuleThread, spawn, Worker } from 'threads';
 import { Observable, of } from 'rxjs';
+import { mouse, left, right, up, down } from '@nut-tree/nut-js';
 
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -41,6 +42,13 @@ export class NativeService implements INativeService {
       this.startRetryCount += 1;
       throw new ZxInitializationError(` ${(error as Error).message} ${(error as Error).stack ?? ''}`);
     }
+  }
+
+  public async tryNut(): Promise<void>{
+    await mouse.move(left(500));
+    await mouse.move(up(500));
+    await mouse.move(right(500));
+    await mouse.move(down(500));
   }
 
   public async openInEditor(filePath: string, editorName?: string): Promise<void> {
