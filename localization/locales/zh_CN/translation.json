@@ -306,7 +306,7 @@
     "RememberLastVisitState": "记住上次访问的页面，恢复打开时的上次访问状态",
     "RestartToApplyUpdates": "重新启动以使改动生效",
     "RestorePreferences": "将所有设置都恢复为其原始默认值",
-    "ShareBrowsingData": "在工作区之间共享浏览数据",
+    "ShareBrowsingData": "在工作区之间共享浏览器数据（cookies、缓存等），关闭后可以每个工作区登不同的第三方服务账号。",
     "SpellCheck": "拼写检查",
     "SpellCheckLanguages": "首选拼写检查语言",
     "Support": "支持",
