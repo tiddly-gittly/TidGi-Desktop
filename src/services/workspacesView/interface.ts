@@ -25,16 +25,19 @@ export interface IWorkspaceViewService {
    * @param url url to load
    * @param id workspace id, if omit, will load url in active workspace if existed
    */
-  loadURL(url: string, id?: string): Promise<void>;
-  openUrlInWorkspace(url: string, id: string): Promise<void>;
+  loadURL(url: string, workspaceID?: string): Promise<void>;
+  openUrlInWorkspace(url: string, workspaceID: string): Promise<void>;
   printTiddler(tiddlerName?: string | undefined): Promise<void>;
   realignActiveWorkspace(): Promise<void>;
-  removeWorkspaceView(id: string): Promise<void>;
-  restartWorkspaceViewService(id?: string | undefined): Promise<void>;
-  setActiveWorkspaceView(id: string): Promise<void>;
-  setWorkspaceView(id: string, workspaceOptions: IWorkspace): Promise<void>;
+  /**
+   * Remove workspace metadata and its view (if it is started and have a browser view)
+   */
+  removeWorkspaceView(workspaceID: string): Promise<void>;
+  restartWorkspaceViewService(workspaceID?: string | undefined): Promise<void>;
+  setActiveWorkspaceView(workspaceID: string): Promise<void>;
+  setWorkspaceView(workspaceID: string, workspaceOptions: IWorkspace): Promise<void>;
   setWorkspaceViews(workspaces: Record<string, IWorkspace>): Promise<void>;
-  wakeUpWorkspaceView(id: string): Promise<void>;
+  wakeUpWorkspaceView(workspaceID: string): Promise<void>;
 }
 export const WorkspaceViewServiceIPCDescriptor = {
   channel: WorkspaceViewChannel.name,

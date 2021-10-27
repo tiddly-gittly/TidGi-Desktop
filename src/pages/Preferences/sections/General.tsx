@@ -134,6 +134,21 @@ export function General(props: Required<ISectionProps>): JSX.Element {
               )}
               <Divider />
               <ListItem>
+                <ListItemText primary={t('Preference.AlwaysOnTop')} secondary={t('Preference.AlwaysOnTopDetail')} />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    color="primary"
+                    checked={preference.alwaysOnTop}
+                    onChange={async (event) => {
+                      await window.service.preference.set('alwaysOnTop', event.target.checked);
+                      props.requestRestartCountDown();
+                    }}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
+              <Divider />
+              <ListItem>
                 <ListItemText
                   primary={platform === 'win32' ? t('Preference.AttachToTaskbar') : t('Preference.AttachToMenuBar')}
                   secondary={platform !== 'linux' ? t('Preference.AttachToMenuBarTip') : undefined}
@@ -151,14 +166,14 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                 </ListItemSecondaryAction>
               </ListItem>
               <ListItem>
-                <ListItemText primary={t('Preference.AlwaysOnTop')} secondary={t('Preference.AlwaysOnTopDetail')} />
+                <ListItemText primary={t('Preference.MenubarAlwaysOnTop')} secondary={t('Preference.MenubarAlwaysOnTopDetail')} />
                 <ListItemSecondaryAction>
                   <Switch
                     edge="end"
                     color="primary"
-                    checked={preference.alwaysOnTop}
+                    checked={preference.menuBarAlwaysOnTop}
                     onChange={async (event) => {
-                      await window.service.preference.set('alwaysOnTop', event.target.checked);
+                      await window.service.preference.set('menuBarAlwaysOnTop', event.target.checked);
                       props.requestRestartCountDown();
                     }}
                   />

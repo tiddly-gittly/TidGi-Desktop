@@ -105,7 +105,13 @@ const commonInit = async (): Promise<void> => {
     logger.error('Failed to registerFileProtocol file:///');
     app.quit();
   }
-  await windowService.open(WindowNames.main);
+  // if user want a menubar, we create a new window for that
+  await Promise.all([
+    windowService.open(WindowNames.main),
+    preferenceService.get('attachToMenubar').then((attachToMenubar) => {
+      attachToMenubar && windowService.open(WindowNames.menuBar);
+    }),
+  ]);
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();
   buildLanguageMenu();
@@ -230,4 +236,6 @@ ${debugInfo()}
 }
 
 // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-if (require('electron-squirrel-startup')) app.quit();
+if (require('electron-squirrel-startup')) {
+  app.quit();
+}

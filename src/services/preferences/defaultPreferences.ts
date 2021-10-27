@@ -5,14 +5,15 @@ import { IPreferences } from './interface';
 
 export const defaultPreferences: IPreferences = {
   allowPrerelease: Boolean(semver.prerelease(app.getVersion())),
+  alwaysOnTop: false,
   askForDownloadPath: true,
   attachToMenubar: false,
-  // default Dark Reader settings from its Chrome extension
   downloadPath: getDefaultDownloadsPath(),
   hibernateUnusedWorkspacesAtLaunch: false,
   hideMenuBar: false,
   ignoreCertificateErrors: false,
   language: 'zh_CN',
+  menuBarAlwaysOnTop: false,
   pauseNotifications: '',
   pauseNotificationsBySchedule: false,
   pauseNotificationsByScheduleFrom: getDefaultPauseNotificationsByScheduleFrom(),
@@ -30,7 +31,6 @@ export const defaultPreferences: IPreferences = {
   titleBar: true,
   unreadCountBadge: true,
   useHardwareAcceleration: true,
-  alwaysOnTop: false,
 };
 
 function getDefaultDownloadsPath(): string {

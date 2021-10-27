@@ -109,7 +109,16 @@ export class WorkspaceView implements IWorkspaceViewService {
     // and also wait for wiki BrowserView to be able to receive command
     // eslint-disable-next-line global-require
     let workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
-    await this.viewService.addView(mainWindow, workspace);
+    // if user want a menubar, we create a new window for that
+    await Promise.all([
+      this.viewService.addView(workspace, WindowNames.main),
+      this.preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
+        // check preference for attachToMenubar first
+        if (attachToMenubar) {
+          await this.viewService.addView(workspace, WindowNames.menuBar);
+        }
+      }),
+    ]);
     let loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
     // wait for main wiki webview loaded
     while (workspaceMetadata.isLoading !== false) {
@@ -181,11 +190,11 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<IWorkspace> {
     const newWorkspace = await this.workspaceService.create(workspaceOptions);
-    const mainWindow = this.windowService.get(WindowNames.main);
-    if (mainWindow !== undefined && !workspaceOptions.isSubWiki) {
+    if (!workspaceOptions.isSubWiki) {
       await this.workspaceService.setActiveWorkspace(newWorkspace.id);
-      await this.viewService.addView(mainWindow, newWorkspace);
-      await this.viewService.setActiveView(mainWindow, newWorkspace.id);
+      await this.viewService.addView(newWorkspace, WindowNames.main);
+      await this.viewService.addView(newWorkspace, WindowNames.menuBar);
+      await this.viewService.setActiveView(newWorkspace.id, WindowNames.main);
     }
 
     if (typeof workspaceOptions.picturePath === 'string') {
@@ -194,8 +203,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     return newWorkspace;
   }
 
-  public async setWorkspaceView(id: string, workspaceOptions: IWorkspace): Promise<void> {
-    await this.workspaceService.set(id, workspaceOptions);
+  public async setWorkspaceView(workspaceID: string, workspaceOptions: IWorkspace): Promise<void> {
+    await this.workspaceService.set(workspaceID, workspaceOptions);
     this.viewService.setViewsAudioPref();
     this.viewService.setViewsNotificationsPref();
   }
@@ -206,48 +215,48 @@ export class WorkspaceView implements IWorkspaceViewService {
     this.viewService.setViewsNotificationsPref();
   }
 
-  public async wakeUpWorkspaceView(id: string): Promise<void> {
+  public async wakeUpWorkspaceView(workspaceID: string): Promise<void> {
     const mainWindow = this.windowService.get(WindowNames.main);
-    const workspace = await this.workspaceService.get(id);
+    const workspace = await this.workspaceService.get(workspaceID);
     if (mainWindow !== undefined && workspace !== undefined) {
-      await this.viewService.addView(mainWindow, workspace);
-      await this.workspaceService.update(id, {
+      await this.viewService.addView(workspace, WindowNames.main);
+      await this.workspaceService.update(workspaceID, {
         hibernated: false,
       });
     }
   }
 
-  public async hibernateWorkspaceView(id: string): Promise<void> {
-    const workspace = await this.workspaceService.get(id);
+  public async hibernateWorkspaceView(workspaceID: string): Promise<void> {
+    const workspace = await this.workspaceService.get(workspaceID);
     if (workspace !== undefined && !workspace.active) {
       await Promise.all([
         this.wikiService.stopWiki(workspace.wikiFolderLocation),
-        this.viewService.removeView(id),
-        this.workspaceService.update(id, {
+        this.viewService.removeAllViewOfWorkspace(workspaceID),
+        this.workspaceService.update(workspaceID, {
           hibernated: true,
         }),
       ]);
     }
   }
 
-  public async setActiveWorkspaceView(id: string): Promise<void> {
+  public async setActiveWorkspaceView(workspaceID: string): Promise<void> {
     const mainWindow = this.windowService.get(WindowNames.main);
     const oldActiveWorkspace = await this.workspaceService.getActiveWorkspace();
-    const newWorkspace = await this.workspaceService.get(id);
+    const newWorkspace = await this.workspaceService.get(workspaceID);
     if (newWorkspace === undefined) {
-      throw new Error(`Workspace id ${id} does not exist. When setActiveWorkspaceView().`);
+      throw new Error(`Workspace id ${workspaceID} does not exist. When setActiveWorkspaceView().`);
     }
     if (mainWindow !== undefined && oldActiveWorkspace !== undefined) {
-      await this.workspaceService.setActiveWorkspace(id);
-      await this.viewService.setActiveView(mainWindow, id);
+      await this.workspaceService.setActiveWorkspace(workspaceID);
+      await this.viewService.setActiveView(workspaceID, WindowNames.main);
       // if we are switching to a new workspace, we hibernate old view, and activate new view
-      if (oldActiveWorkspace.id !== id) {
+      if (oldActiveWorkspace.id !== workspaceID) {
         if (oldActiveWorkspace.hibernateWhenUnused) {
           await this.hibernateWorkspaceView(oldActiveWorkspace.id);
         }
         if (newWorkspace.hibernateWhenUnused) {
           await this.initializeWorkspaceView(newWorkspace, { checkHibernated: false, syncImmediately: false });
-          await this.workspaceService.update(id, {
+          await this.workspaceService.update(workspaceID, {
             hibernated: false,
           });
         }
@@ -256,7 +265,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
   }
 
-  public async removeWorkspaceView(id: string): Promise<void> {
+  public async removeWorkspaceView(workspaceID: string): Promise<void> {
     const mainWindow = this.windowService.get(WindowNames.main);
     // if there's only one workspace left, clear all
     if ((await this.workspaceService.countWorkspaces()) === 1) {
@@ -265,15 +274,15 @@ export class WorkspaceView implements IWorkspaceViewService {
         mainWindow.setBrowserView(null);
         mainWindow.setTitle(app.name);
       }
-    } else if ((await this.workspaceService.countWorkspaces()) > 1 && (await this.workspaceService.get(id))?.active === true) {
-      const previousWorkspace = await this.workspaceService.getPreviousWorkspace(id);
+    } else if ((await this.workspaceService.countWorkspaces()) > 1 && (await this.workspaceService.get(workspaceID))?.active === true) {
+      const previousWorkspace = await this.workspaceService.getPreviousWorkspace(workspaceID);
       if (previousWorkspace !== undefined) {
         await this.setActiveWorkspaceView(previousWorkspace.id);
       }
     }
 
-    await this.workspaceService.remove(id);
-    this.viewService.removeView(id);
+    await this.workspaceService.remove(workspaceID);
+    this.viewService.removeAllViewOfWorkspace(workspaceID);
   }
 
   public async restartWorkspaceViewService(id?: string): Promise<void> {
@@ -315,10 +324,10 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async loadURL(url: string, id: string | undefined): Promise<void> {
     const mainWindow = this.windowService.get(WindowNames.main);
-    const activeID = id ?? (await this.workspaceService.getActiveWorkspace())?.id;
-    if (mainWindow !== undefined && activeID !== undefined) {
-      await this.workspaceService.setActiveWorkspace(activeID);
-      await this.viewService.setActiveView(mainWindow, activeID);
+    const activeWorkspaceID = id ?? (await this.workspaceService.getActiveWorkspace())?.id;
+    if (mainWindow !== undefined && activeWorkspaceID !== undefined) {
+      await this.workspaceService.setActiveWorkspace(activeWorkspaceID);
+      await this.viewService.setActiveView(activeWorkspaceID, WindowNames.main);
 
       const browserView = mainWindow.getBrowserView();
       if (browserView !== null) {
@@ -342,8 +351,10 @@ export class WorkspaceView implements IWorkspaceViewService {
   private async realignActiveWorkspaceView(): Promise<void> {
     const activeWorkspace = await this.workspaceService.getActiveWorkspace();
     const mainWindow = this.windowService.get(WindowNames.main);
-    if (activeWorkspace !== undefined && mainWindow !== undefined) {
-      void this.viewService.realignActiveView(mainWindow, activeWorkspace.id);
+    const menuBarWindow = this.windowService.get(WindowNames.menuBar);
+    if (activeWorkspace !== undefined) {
+      mainWindow !== undefined && void this.viewService.realignActiveView(mainWindow, activeWorkspace.id);
+      menuBarWindow !== undefined && void this.viewService.realignActiveView(menuBarWindow, activeWorkspace.id);
     }
   }
 }

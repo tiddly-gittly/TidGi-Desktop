@@ -19,6 +19,7 @@
   },
   "ContextMenu": {
     "OpenTiddlyGit": "Open TiddlyGit",
+    "OpenTiddlyGitMenuBar": "Open TiddlyGit MenuBar",
     "OpenLinkInNewWindow": "Open Link in New Window",
     "Preferences": "Preferences...",
     "TiddlyGitSupport": "TiddlyGit Support",
@@ -220,7 +221,7 @@
     "HideMenuBarDetail": "Hide the menu bar unless the Alt+M is pressed.",
     "AttachToTaskbar": "Attach to taskbar",
     "AttachToMenuBar": "Attach to menu bar",
-    "AttachToMenuBarTip": "Make TiddlyGit a small popup window that pop when you click appbar mini icon, and hide the main window. Tip: Right-click on mini app icon to access context menu.",
+    "AttachToMenuBarTip": "Make  a small TiddlyGit popup window that pop when you click appbar mini icon. Tip: Right-click on mini app icon to access context menu.",
     "OpenLogFolder": "Open the Log folder",
     "OpenLogFolderDetail": "When reporting a problem, please open the latest .log file in the folder and send its content to the developer, or paste it to pastebin.com and then paste the URL into the Github Issue",
     "SystemDefalutTheme": "System Defalut Theme",
@@ -286,6 +287,8 @@
     "HideTitleBar": "Hide Title Bar",
     "ToggleMenuBar": "Toggle Menu Bar",
     "NoAttach": "Resume Window Mode",
+    "MenubarAlwaysOnTop": "Menubar Always on top",
+    "MenubarAlwaysOnTopDetail": "Keep TiddlyGit’s Menubar always on top of other windows, and will not be covered by other windows",
     "AlwaysOnTop": "Always on top",
     "AlwaysOnTopDetail": "Keep TiddlyGit’s main window always on top of other windows, and will not be covered by other windows",
     "RequireRestart": "Need to restart"
@@ -326,6 +329,7 @@
     "LearnMore": "Learn More...",
     "Edit": "Edit",
     "TiddlyGit": "TiddlyGit",
+    "TiddlyGitMenuBar": "TiddlyGit MenuBar",
     "View": "View",
     "SelectPreviousWorkspace": "Select Previous Workspace",
     "SelectNextWorkspace": "Select Next Workspace",

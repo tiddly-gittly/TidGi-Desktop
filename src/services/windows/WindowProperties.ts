@@ -6,6 +6,7 @@ export enum WindowNames {
   auth = 'auth',
   editWorkspace = 'editWorkspace',
   main = 'main',
+  menuBar = 'menuBar',
   newWindow = 'newWindow',
   notifications = 'notifications',
   preferences = 'preferences',
@@ -20,6 +21,10 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
   [WindowNames.main]: {
     width: 1200,
     height: 768,
+  },
+  [WindowNames.menuBar]: {
+    width: 400,
+    height: 500,
   },
   [WindowNames.about]: {
     width: 400,
@@ -71,6 +76,7 @@ export interface IPreferenceWindowMeta {
 export interface WindowMeta {
   [WindowNames.editWorkspace]: { workspaceID?: string };
   [WindowNames.main]: { forceClose?: boolean };
+  [WindowNames.menuBar]: undefined;
   [WindowNames.preferences]: IPreferenceWindowMeta;
   [WindowNames.about]: undefined;
   [WindowNames.auth]: undefined;
