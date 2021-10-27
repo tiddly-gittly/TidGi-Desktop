@@ -103,7 +103,7 @@
     "SwitchCreateNewOrOpenExisted": "切换创建新的还是打开现有的WIKI",
     "ExistedWikiLocation": "现有的WIKI的位置",
     "CreateNewWiki": "创建新WIKI",
-    "OpenLocalWiki": "打开本地WIKI",
+    "OpenLocalWiki": "导入本地WIKI",
     "CloneOnlineWiki": "导入线上WIKI",
     "MainWorkspace": "主知识库",
     "SubWorkspace": "子知识库",
