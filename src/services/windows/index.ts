@@ -537,7 +537,9 @@ export class Window implements IWindowService {
     });
     // https://github.com/maxogden/menubar/issues/120
     menuBar.on('after-hide', () => {
-      menuBar.app.hide();
+      if (process.platform === 'darwin') {
+        menuBar.app.hide();
+      }
     });
 
     return await new Promise<Menubar>((resolve) => {
