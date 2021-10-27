@@ -53,6 +53,7 @@
   },
   "Menu": {
     "TiddlyGit": "太记",
+    "TiddlyGitMenuBar": "太记小窗",
     "Edit": "编辑",
     "View": "查看",
     "Find": "查找",

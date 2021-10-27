@@ -512,7 +512,7 @@ export class Window implements IWindowService {
       index: MAIN_WINDOW_WEBPACK_ENTRY,
       tray,
       preloadWindow: true,
-      tooltip: i18n.t('Menu.TiddlyGit'),
+      tooltip: i18n.t('Menu.TiddlyGitMenuBar'),
       browserWindow: mergeDeep(windowConfig, {
         show: false,
         minHeight: 100,
