@@ -142,6 +142,9 @@ const commonInit = async (): Promise<void> => {
       mainWindow.on('maximize', handleMaximize);
       mainWindow.on('unmaximize', handleMaximize);
     }
+    // trigger whenTrulyReady
+    ipcMain.emit(MainChannel.commonInitFinished);
+  }
 };
 
 app.on('ready', async () => {
@@ -233,4 +236,6 @@ ${debugInfo()}
 }
 
 // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-if (require('electron-squirrel-startup')) app.quit();
+if (require('electron-squirrel-startup')) {
+  app.quit();
+}
