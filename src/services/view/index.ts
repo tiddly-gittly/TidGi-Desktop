@@ -205,6 +205,15 @@ export class View implements IViewService {
   private shouldMuteAudio = false;
   private shouldPauseNotifications = false;
 
+  public async addViewForAllBrowserViews(workspace: IWorkspace): Promise<void> {
+    await Promise.all([
+      this.addView(workspace, WindowNames.main),
+      this.preferenceService.get('attachToMenubar').then((attachToMenubar) => {
+        attachToMenubar && this.addView(workspace, WindowNames.menuBar);
+      }),
+    ]);
+  }
+
   public async addView(workspace: IWorkspace, windowName: WindowNames): Promise<void> {
     // we assume each window will only have one view, so get view by window name + workspace
     const existedView = this.getView(workspace.id, windowName);
@@ -310,6 +319,15 @@ export class View implements IViewService {
         });
       }
     });
+  }
+
+  public async setActiveViewForAllBrowserViews(workspaceID: string): Promise<void> {
+    await Promise.all([
+      this.setActiveView(workspaceID, WindowNames.main),
+      this.preferenceService.get('attachToMenubar').then((attachToMenubar) => {
+        attachToMenubar && this.setActiveView(workspaceID, WindowNames.menuBar);
+      }),
+    ]);
   }
 
   public async setActiveView(workspaceID: string, windowName: WindowNames): Promise<void> {

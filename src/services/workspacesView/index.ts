@@ -110,15 +110,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     // eslint-disable-next-line global-require
     let workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
     // if user want a menubar, we create a new window for that
-    await Promise.all([
-      this.viewService.addView(workspace, WindowNames.main),
-      this.preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
-        // check preference for attachToMenubar first
-        if (attachToMenubar) {
-          await this.viewService.addView(workspace, WindowNames.menuBar);
-        }
-      }),
-    ]);
+    await this.viewService.addViewForAllBrowserViews(workspace);
     let loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
     // wait for main wiki webview loaded
     while (workspaceMetadata.isLoading !== false) {
@@ -192,9 +184,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     const newWorkspace = await this.workspaceService.create(workspaceOptions);
     if (!workspaceOptions.isSubWiki) {
       await this.workspaceService.setActiveWorkspace(newWorkspace.id);
-      await this.viewService.addView(newWorkspace, WindowNames.main);
-      await this.viewService.addView(newWorkspace, WindowNames.menuBar);
-      await this.viewService.setActiveView(newWorkspace.id, WindowNames.main);
+      await this.viewService.addViewForAllBrowserViews(newWorkspace);
+      await this.viewService.setActiveViewForAllBrowserViews(newWorkspace.id);
     }
 
     if (typeof workspaceOptions.picturePath === 'string') {
@@ -216,10 +207,9 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async wakeUpWorkspaceView(workspaceID: string): Promise<void> {
-    const mainWindow = this.windowService.get(WindowNames.main);
     const workspace = await this.workspaceService.get(workspaceID);
-    if (mainWindow !== undefined && workspace !== undefined) {
-      await this.viewService.addView(workspace, WindowNames.main);
+    if (workspace !== undefined) {
+      await this.viewService.addViewForAllBrowserViews(workspace);
       await this.workspaceService.update(workspaceID, {
         hibernated: false,
       });
@@ -248,7 +238,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
     if (mainWindow !== undefined && oldActiveWorkspace !== undefined) {
       await this.workspaceService.setActiveWorkspace(workspaceID);
-      await this.viewService.setActiveView(workspaceID, WindowNames.main);
+      await this.viewService.setActiveViewForAllBrowserViews(workspaceID);
       // if we are switching to a new workspace, we hibernate old view, and activate new view
       if (oldActiveWorkspace.id !== workspaceID) {
         if (oldActiveWorkspace.hibernateWhenUnused) {
@@ -327,7 +317,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     const activeWorkspaceID = id ?? (await this.workspaceService.getActiveWorkspace())?.id;
     if (mainWindow !== undefined && activeWorkspaceID !== undefined) {
       await this.workspaceService.setActiveWorkspace(activeWorkspaceID);
-      await this.viewService.setActiveView(activeWorkspaceID, WindowNames.main);
+      await this.viewService.setActiveViewForAllBrowserViews(activeWorkspaceID);
 
       const browserView = mainWindow.getBrowserView();
       if (browserView !== null) {

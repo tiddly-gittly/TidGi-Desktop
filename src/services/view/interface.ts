@@ -10,6 +10,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
  */
 export interface IViewService {
   addView: (workspace: IWorkspace, windowName: WindowNames) => Promise<void>;
+  addViewForAllBrowserViews(workspace: IWorkspace): Promise<void>;
   forEachView: (functionToRun: (view: BrowserView, workspaceID: string, windowName: WindowNames) => void) => void;
   /**
    * Get active workspace's main window browser view.
@@ -24,6 +25,7 @@ export interface IViewService {
   removeAllViewOfWorkspace: (workspaceID: string) => void;
   removeView: (workspaceID: string, windowName: WindowNames) => void;
   setActiveView: (workspaceID: string, windowName: WindowNames) => Promise<void>;
+  setActiveViewForAllBrowserViews(workspaceID: string): Promise<void>;
   setViewsAudioPref: (_shouldMuteAudio?: boolean) => void;
   setViewsNotificationsPref: (_shouldPauseNotifications?: boolean) => void;
 }
@@ -31,6 +33,7 @@ export const ViewServiceIPCDescriptor = {
   channel: ViewChannel.name,
   properties: {
     addView: ProxyPropertyType.Function,
+    addViewForAllBrowserViews: ProxyPropertyType.Function,
     forEachView: ProxyPropertyType.Function,
     getActiveBrowserView: ProxyPropertyType.Function,
     getAllViewOfWorkspace: ProxyPropertyType.Function,
@@ -42,6 +45,7 @@ export const ViewServiceIPCDescriptor = {
     removeAllViewOfWorkspace: ProxyPropertyType.Function,
     removeView: ProxyPropertyType.Function,
     setActiveView: ProxyPropertyType.Function,
+    setActiveViewForAllBrowserViews: ProxyPropertyType.Function,
     setViewsAudioPref: ProxyPropertyType.Function,
     setViewsNotificationsPref: ProxyPropertyType.Function,
   },
