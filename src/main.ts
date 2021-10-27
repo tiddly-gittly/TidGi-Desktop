@@ -105,7 +105,13 @@ const commonInit = async (): Promise<void> => {
     logger.error('Failed to registerFileProtocol file:///');
     app.quit();
   }
-  await windowService.open(WindowNames.main);
+  // if user want a menubar, we create a new window for that
+  await Promise.all([
+    windowService.open(WindowNames.main),
+    preferenceService.get('attachToMenubar').then((attachToMenubar) => {
+      attachToMenubar && windowService.open(WindowNames.menuBar);
+    }),
+  ]);
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();
   buildLanguageMenu();
@@ -136,30 +142,6 @@ const commonInit = async (): Promise<void> => {
       mainWindow.on('maximize', handleMaximize);
       mainWindow.on('unmaximize', handleMaximize);
     }
-    // if user want a menubar, we create a new window for that
-    await Promise.all([
-      windowService.open(WindowNames.main),
-      preferenceService.get('attachToMenubar').then((attachToMenubar) => {
-        attachToMenubar && windowService.open(WindowNames.menuBar);
-      }),
-    ]);
-
-    // perform wiki startup and git sync for each workspace
-    await workspaceViewService.initializeAllWorkspaceView();
-    buildLanguageMenu();
-
-    ipcMain.emit('request-update-pause-notifications-info');
-    // Fix webview is not resized automatically
-    // when window is maximized on Linux
-    // https://github.com/atomery/webcatalog/issues/561
-    // run it here not in mainWindow.createAsync()
-    // because if the `mainWindow` is maximized or minimized
-    // before the workspaces's BrowserView fully loaded
-    // error will occur
-    // see https://github.com/atomery/webcatalog/issues/637
-  }
-  // trigger whenTrulyReady
-  ipcMain.emit(MainChannel.commonInitFinished);
 };
 
 app.on('ready', async () => {
