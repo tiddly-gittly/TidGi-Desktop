@@ -102,7 +102,6 @@ export class Window implements IWindowService {
     await this.setWindowMeta(windowName, meta);
     const existedWindowMeta = await this.getWindowMeta(windowName);
 
-    // handle existed window, bring existed window to the front and return.
     if (existedWindow !== undefined) {
       if (recreate === true || (typeof recreate === 'function' && existedWindowMeta !== undefined && recreate(existedWindowMeta))) {
         existedWindow.close();
@@ -520,7 +519,6 @@ export class Window implements IWindowService {
         minWidth: 250,
       }),
     });
-    menuBar.app.commandLine.appendSwitch('disable-backgrounding-occluded-windows', 'true');
 
     menuBar.on('after-create-window', () => {
       if (menuBar.window !== undefined) {
@@ -529,6 +527,11 @@ export class Window implements IWindowService {
           if (view?.webContents !== undefined) {
             view.webContents.focus();
           }
+        });
+        menuBar.window.removeAllListeners('close');
+        menuBar.window.on('close', (event) => {
+          event.preventDefault();
+          menuBar.hideWindow();
         });
       }
     });

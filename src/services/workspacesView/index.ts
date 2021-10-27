@@ -230,13 +230,12 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async setActiveWorkspaceView(workspaceID: string): Promise<void> {
-    const mainWindow = this.windowService.get(WindowNames.main);
     const oldActiveWorkspace = await this.workspaceService.getActiveWorkspace();
     const newWorkspace = await this.workspaceService.get(workspaceID);
     if (newWorkspace === undefined) {
       throw new Error(`Workspace id ${workspaceID} does not exist. When setActiveWorkspaceView().`);
     }
-    if (mainWindow !== undefined && oldActiveWorkspace !== undefined) {
+    if (oldActiveWorkspace !== undefined) {
       await this.workspaceService.setActiveWorkspace(workspaceID);
       await this.viewService.setActiveViewForAllBrowserViews(workspaceID);
       // if we are switching to a new workspace, we hibernate old view, and activate new view
