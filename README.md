@@ -158,16 +158,12 @@ cd TiddlyGit-Desktop
 # or GitKraken to clone this repo,
 # and open it in your favorite code editor and terminal app
 
-# switch to the nodejs version same as electron used version, other wise you may get
+# !! Switch to the nodejs version same as electron used version, other wise you may get this error:
 
 # Error: The module '/Users/linonetwo/Desktop/repo/TiddlyGit-Desktop/node_modules/opencv4nodejs-prebuilt/build/Release/opencv4nodejs.node'
-
 # was compiled against a different Node.js version using
-
-# NODE_MODULE_VERSION 88. This version of Node.js requires
-
-# NODE_MODULE_VERSION 93. Please try re-compiling or re-installing
-
+# NODE_MODULE_VERSION 93. This version of Node.js requires
+# NODE_MODULE_VERSION 98. Please try re-compiling or re-installing
 # the module (for instance, using `npm rebuild` or `npm install`).
 
 # See https://github.com/justadudewhohacks/opencv4nodejs/issues/401#issuecomment-463434713 if you still have problem rebuild opencv for @nut-tree/nut-js
