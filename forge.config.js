@@ -37,8 +37,8 @@ const config = {
       platforms: ['win32'],
       config: (arch) => {
         return {
-          setupExe: `TiddlyGit-${version}-Windows-${arch}-setup.exe`,
-          setupIcon: 'build-resources/icon.ico',
+          setupExe: `Install-TiddlyGit-${version}-Windows-${arch}.exe`,
+          setupIcon: 'build-resources/icon-installer.ico',
         };
       },
     },
