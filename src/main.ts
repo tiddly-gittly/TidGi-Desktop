@@ -142,9 +142,9 @@ const commonInit = async (): Promise<void> => {
       mainWindow.on('maximize', handleMaximize);
       mainWindow.on('unmaximize', handleMaximize);
     }
-    // trigger whenTrulyReady
-    ipcMain.emit(MainChannel.commonInitFinished);
   }
+  // trigger whenTrulyReady
+  ipcMain.emit(MainChannel.commonInitFinished);
 };
 
 app.on('ready', async () => {
