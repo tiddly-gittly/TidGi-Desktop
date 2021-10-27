@@ -511,6 +511,7 @@ export class Window implements IWindowService {
     const menuBar = menubar({
       index: MAIN_WINDOW_WEBPACK_ENTRY,
       tray,
+      activateWithApp: false,
       preloadWindow: true,
       tooltip: i18n.t('Menu.TiddlyGitMenuBar'),
       browserWindow: mergeDeep(windowConfig, {
