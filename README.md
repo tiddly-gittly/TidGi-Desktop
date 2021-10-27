@@ -32,6 +32,10 @@
 | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TiddlyGit-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest) |
 
+<center>相关介绍</center>
+
+[用TiddlyWiki替代Notion和EverNote作为个人知识管理系统(Chinese)](https://zhuanlan.zhihu.com/p/140473235)
+
 <details>
 <summary>For mac users, since I haven't buy Apple developer key yet, so you have to entrust App to open it, click here to expand details.
 
