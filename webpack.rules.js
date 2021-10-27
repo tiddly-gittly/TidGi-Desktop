@@ -11,11 +11,6 @@ const tsImportPluginFactory = require('ts-import-plugin');
 const styledComponentsTransformerFactory = require('typescript-plugin-styled-components').default;
 
 module.exports = [
-  // Add support for native node modules
-  {
-    test: /\.node$/,
-    use: 'node-loader',
-  },
   {
     // used to load css from npm package, we use styled-components
     test: /\.css$/,
