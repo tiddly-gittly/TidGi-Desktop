@@ -1,6 +1,6 @@
 import fs from 'fs-extra';
 import settings from 'electron-settings';
-import bestEffortJsonParser from 'best-effort-json-parser';
+import { parse as bestEffortJsonParser } from 'best-effort-json-parser';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { logger } from '@services/libs/log';
 
@@ -19,7 +19,7 @@ if (fs.existsSync(settings.file())) {
     const jsonContent = fs.readFileSync(settings.file(), 'utf-8');
     logger.info('Try to fix JSON content.');
     try {
-      const repaired = bestEffortJsonParser.parse(jsonContent) as Record<string, unknown>;
+      const repaired = bestEffortJsonParser(jsonContent) as Record<string, unknown>;
       logger.info('Fix JSON content done, writing it.');
       fs.writeJSONSync(settings.file(), repaired);
       logger.info('Fix JSON content done, saved', { repaired });
