@@ -212,7 +212,18 @@ export class Workspace implements IWorkspaceService {
     const defaultValues: Partial<IWorkspace> = {
       storageService: SupportedStorageServices.github,
     };
-    return { ...defaultValues, ...workspaceToSanitize };
+    const fixingValues: Partial<IWorkspace> = {};
+    // we add mainWikiID in creation, we fix this value for old existed workspaces
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    if (workspaceToSanitize.isSubWiki && !workspaceToSanitize.mainWikiID) {
+      const mainWorkspace = (this.getWorkspacesAsList() as unknown as IWorkspace[]).find(
+        (workspaceToSearch) => workspaceToSanitize.mainWikiToLink === workspaceToSearch.wikiFolderLocation,
+      );
+      if (mainWorkspace !== undefined) {
+        fixingValues.mainWikiID = mainWorkspace.id;
+      }
+    }
+    return { ...defaultValues, ...workspaceToSanitize, ...fixingValues };
   }
 
   /**

@@ -34,14 +34,14 @@ export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IW
     if (typeof tagName === 'string') {
       await service.wiki.requestOpenTiddlerInWiki(tagName);
     }
-    if (mainWikiID === null) {
+    if (mainWikiID === null || idToActive === undefined) {
       return;
     }
     idToActive = mainWikiID;
   } else {
     await service.wiki.requestWikiSendActionMessage('tm-home');
   }
-  if (idToActive !== null && activeWorkspace?.id !== idToActive) {
+  if (idToActive !== null && idToActive !== undefined && activeWorkspace?.id !== idToActive) {
     await service.workspaceView.setActiveWorkspaceView(idToActive);
   }
 }
