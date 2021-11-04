@@ -46,27 +46,31 @@ export function buildLanguageMenu(): void {
           lng: language,
         });
         // change tiddlywiki language
-        await new Promise<void>((resolve, reject) => {
+        await new Promise<void>((resolve) => {
           let inProgressCounter = 0;
           // we don't wait more than 10s
           const twLanguageUpdateTimeout = 10_000;
           const tiddlywikiLanguageName = tiddlywikiLanguagesMap[language];
           if (tiddlywikiLanguageName !== undefined) {
-            viewService.forEachView((view) => {
-              inProgressCounter += 1;
-              ipcMain.once(WikiChannel.setTiddlerTextDone, () => {
-                inProgressCounter -= 1;
-                if (inProgressCounter === 0) {
-                  resolve();
-                }
-              });
-              view.webContents.send(WikiChannel.setTiddlerText, '$:/language', tiddlywikiLanguageName);
-            });
-            setTimeout(() => {
+            const onTimeout = (): void => {
+              ipcMain.removeListener(WikiChannel.setTiddlerTextDone, onDone);
               logger.error(
                 `When click language menu "${language}", language "${tiddlywikiLanguageName}" is too slow to update, inProgressCounter is ${inProgressCounter} after ${twLanguageUpdateTimeout}ms.`,
               );
-            }, twLanguageUpdateTimeout);
+            };
+            const timeoutHandle = setTimeout(onTimeout, twLanguageUpdateTimeout);
+            const onDone = (): void => {
+              inProgressCounter -= 1;
+              if (inProgressCounter === 0) {
+                clearTimeout(timeoutHandle);
+                resolve();
+              }
+            };
+            viewService.forEachView((view) => {
+              inProgressCounter += 1;
+              ipcMain.once(WikiChannel.setTiddlerTextDone, onDone);
+              view.webContents.send(WikiChannel.setTiddlerText, '$:/language', tiddlywikiLanguageName);
+            });
           } else {
             logger.error(`When click language menu "${language}", there is no corresponding tiddlywiki language registered`, {
               supportedLanguagesMap,

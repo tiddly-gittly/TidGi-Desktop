@@ -27,10 +27,10 @@ ipcRenderer.on(WikiChannel.getTiddlerText, async (event, title: string) => {
 });
 // set tiddler text
 ipcRenderer.on(WikiChannel.setTiddlerText, async (event, title: string, value: string) => {
-  const tiddlerText: string = await (webFrame.executeJavaScript(`
+  await (webFrame.executeJavaScript(`
     $tw.wiki.setText('${title}', 'text', undefined, \`${value}\`);
   `) as Promise<string>);
-  await ipcRenderer.invoke(WikiChannel.setTiddlerTextDone, tiddlerText);
+  ipcRenderer.send(WikiChannel.setTiddlerTextDone);
 });
 // add snackbar to notify user
 ipcRenderer.on(WikiChannel.syncProgress, async (event, message: string) => {
