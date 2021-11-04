@@ -51,6 +51,8 @@ export enum WikiChannel {
   openTiddler = 'wiki-open-tiddler',
   printTiddler = 'print-tiddler',
   sendActionMessage = 'wiki-send-action-message',
+  setTiddlerText = 'wiki-set-tiddler-text',
+  setTiddlerTextDone = 'wiki-set-tiddler-text-done',
   /** show message inside tiddlywiki to show git sync progress */
   syncProgress = 'wiki-sync-progress',
 }
