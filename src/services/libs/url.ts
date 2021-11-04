@@ -1,4 +1,4 @@
-import { address } from 'ip';
+import { internalIpV4Sync } from 'internal-ip';
 import { defaultServerIP } from '@/constants/urls';
 import { logger } from './log';
 
@@ -8,9 +8,10 @@ import { logger } from './log';
  * @param originalUrl might be `"http://0.0.0.0:5212/"`
  */
 export function getLocalHostUrlWithActualIP(originalUrl: string): string {
-  const localHostUrlWithActualIP = originalUrl.replace(/((?:\d{1,3}\.){3}\d{1,3}|localhost)/, address('public') ?? defaultServerIP);
+  const internalIp = internalIpV4Sync();
+  const localHostUrlWithActualIP = originalUrl.replace(/((?:\d{1,3}\.){3}\d{1,3}|localhost)/, internalIp ?? defaultServerIP);
   logger.debug(
-    `Current available address: address() returns ${address('public') ?? 'undefined'}
+    `Current available address: address() returns ${internalIp ?? 'undefined'}
     originalUrl: ${originalUrl} , localHostUrlWithActualIP ${localHostUrlWithActualIP}`,
   );
   return localHostUrlWithActualIP;
