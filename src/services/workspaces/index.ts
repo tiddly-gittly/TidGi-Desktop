@@ -169,8 +169,17 @@ export class Workspace implements IWorkspaceService {
 
   /**
    * Get sorted workspace list
+   * Async so proxy type is async
    */
   public async getWorkspacesAsList(): Promise<IWorkspace[]> {
+    return Object.values(this.workspaces).sort((a, b) => a.order - b.order);
+  }
+
+  /**
+   * Get sorted workspace list
+   * Sync for internal use
+   */
+  private getWorkspacesAsListSync(): IWorkspace[] {
     return Object.values(this.workspaces).sort((a, b) => a.order - b.order);
   }
 
@@ -216,7 +225,7 @@ export class Workspace implements IWorkspaceService {
     // we add mainWikiID in creation, we fix this value for old existed workspaces
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (workspaceToSanitize.isSubWiki && !workspaceToSanitize.mainWikiID) {
-      const mainWorkspace = (this.getWorkspacesAsList() as unknown as IWorkspace[]).find(
+      const mainWorkspace = (this.getWorkspacesAsListSync() ?? []).find(
         (workspaceToSearch) => workspaceToSanitize.mainWikiToLink === workspaceToSearch.wikiFolderLocation,
       );
       if (mainWorkspace !== undefined) {
