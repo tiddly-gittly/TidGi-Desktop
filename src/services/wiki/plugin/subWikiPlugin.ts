@@ -9,7 +9,7 @@ const REPLACE_SYSTEM_TIDDLER_SYMBOL = 'search-replace:g[/],[_]search-replace:g[:
 const getMatchPart = (tagToMatch: string): string => `kin::to[${tagToMatch}]`;
 const getPathPart = (folderToPlace: string): string => `${REPLACE_SYSTEM_TIDDLER_SYMBOL}addprefix[/]addprefix[${folderToPlace}]addprefix[/]addprefix[subwiki]]`;
 const getTagNameFromMatchPart = (matchPart: string): string =>
-  matchPart.replace(/(\[!is\[system])?kin::to\[/, '').replace(/](search-replace:g\[\/],\[_]search-replace:g\[:],\[_])?.*/, '');
+  matchPart.replace(/\[(!is\[system]\s*)?kin::to\[/, '').replace(/](search-replace:g\[\/],\[_]search-replace:g\[:],\[_])?.*/, '');
 const getFolderNamePathPart = (pathPart: string): string => pathPart.replace(']addprefix[/]addprefix[subwiki]]', '').replace(/.+addprefix\[/, '');
 
 /**
@@ -62,7 +62,7 @@ export function updateSubWikiPluginContent(
       return;
     }
     // prepare new line
-    const newConfigLine = getMatchPart(tagName) + getPathPart(subWikiFolderName);
+    const newConfigLine = '[' + getMatchPart(tagName) + getPathPart(subWikiFolderName);
     // if we are just to add a new config, just append it to the end of the file
     const oldConfigTagName = oldConfig?.tagName;
     if (oldConfig !== undefined && typeof oldConfigTagName === 'string') {
