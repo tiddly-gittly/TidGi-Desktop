@@ -16,13 +16,21 @@ export const wikiOperations = {
   },
   [WikiChannel.syncProgress]: async (message: string): Promise<void> => {
     const viewService = container.get<IViewService>(serviceIdentifier.View);
-    const browserView = await viewService.getActiveBrowserView();
-    browserView?.webContents?.send(WikiChannel.syncProgress, message);
+    const browserViews = await viewService.getActiveBrowserViews();
+    browserViews.forEach((browserView) => {
+      if (browserView !== undefined) {
+        browserView.webContents.send(WikiChannel.syncProgress, message);
+      }
+    });
   },
   [WikiChannel.generalNotification]: async (message: string): Promise<void> => {
     const viewService = container.get<IViewService>(serviceIdentifier.View);
-    const browserView = await viewService.getActiveBrowserView();
-    browserView?.webContents?.send(WikiChannel.generalNotification, message);
+    const browserViews = await viewService.getActiveBrowserViews();
+    browserViews.forEach((browserView) => {
+      if (browserView !== undefined) {
+        browserView.webContents.send(WikiChannel.generalNotification, message);
+      }
+    });
   },
   // TODO: add more operations here from `src/preload/wikiOperation.ts`
 };

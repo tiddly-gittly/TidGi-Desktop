@@ -49,15 +49,21 @@ export class Wiki implements IWikiService {
   }
 
   public async requestOpenTiddlerInWiki(tiddlerName: string): Promise<void> {
-    const browserView = await this.viewService.getActiveBrowserView();
-    if (browserView !== undefined) {
-      browserView.webContents.send(WikiChannel.openTiddler, tiddlerName);
-    }
+    const browserViews = await this.viewService.getActiveBrowserViews();
+    browserViews.forEach((browserView) => {
+      if (browserView !== undefined) {
+        browserView.webContents.send(WikiChannel.openTiddler, tiddlerName);
+      }
+    });
   }
 
   public async requestWikiSendActionMessage(actionMessage: string): Promise<void> {
-    const browserView = await this.viewService.getActiveBrowserView();
-    browserView?.webContents?.send?.(WikiChannel.sendActionMessage, actionMessage);
+    const browserViews = await this.viewService.getActiveBrowserViews();
+    browserViews.forEach((browserView) => {
+      if (browserView !== undefined) {
+        browserView.webContents.send(WikiChannel.sendActionMessage, actionMessage);
+      }
+    });
   }
 
   // handlers
@@ -87,7 +93,7 @@ export class Wiki implements IWikiService {
     // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
     const workerData = { homePath, userName, tiddlyWikiPort };
-    const worker = await spawn<WikiWorker>(new Worker(workerURL));
+    const worker = await spawn<WikiWorker>(new Worker(workerURL as string));
     this.wikiWorkers[homePath] = worker;
     refreshOutputFile(homePath);
     const loggerMeta = { worker: 'NodeJSWiki', homePath };
@@ -100,7 +106,7 @@ export class Wiki implements IWikiService {
       Thread.events(worker).subscribe((event: WorkerEvent) => {
         if (event.type === 'message') {
           wikiOutputToFile(homePath, `${JSON.stringify(event.data)}\n`);
-          logger.debug(event.data, loggerMeta);
+          logger.debug(String(event.data), loggerMeta);
         } else if (event.type === 'termination') {
           delete this.wikiWorkers[homePath];
           const warningMessage = `NodeJSWiki ${homePath} Worker stopped (can be normal quit, or unexpected error, see other logs to determine)`;

@@ -423,16 +423,31 @@ export class View implements IViewService {
 
   public async getActiveBrowserView(): Promise<BrowserView | undefined> {
     const workspace = await this.workspaceService.getActiveWorkspace();
+    const isMenubarOpen = await this.windowService.isMenubarOpen();
     if (workspace !== undefined) {
-      return this.getView(workspace.id, WindowNames.main);
+      if (isMenubarOpen) {
+        return this.getView(workspace.id, WindowNames.menuBar);
+      } else {
+        return this.getView(workspace.id, WindowNames.main);
+      }
     }
   }
 
-  public async reloadActiveBrowserView(): Promise<void> {
-    const view = await this.getActiveBrowserView();
-    if (view !== undefined) {
-      view.webContents.reload();
+  public async getActiveBrowserViews(): Promise<Array<BrowserView | undefined>> {
+    const workspace = await this.workspaceService.getActiveWorkspace();
+    if (workspace !== undefined) {
+      return [this.getView(workspace.id, WindowNames.main), this.getView(workspace.id, WindowNames.menuBar)];
     }
+    return [];
+  }
+
+  public async reloadActiveBrowserView(): Promise<void> {
+    const views = await this.getActiveBrowserViews();
+    views.forEach((view) => {
+      if (view !== undefined) {
+        view.webContents.reload();
+      }
+    });
   }
 
   public realignActiveView = async (browserWindow: BrowserWindow, activeId: string, isRetry?: boolean): Promise<void> => {

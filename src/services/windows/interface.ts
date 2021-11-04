@@ -17,6 +17,7 @@ export interface IWindowService {
   goForward(windowName: WindowNames): Promise<void>;
   goHome(windowName: WindowNames): Promise<void>;
   isFullScreen(windowName?: WindowNames): Promise<boolean | undefined>;
+  isMenubarOpen(): Promise<boolean>;
   loadURL(windowName: WindowNames, newUrl?: string): Promise<void>;
   open<N extends WindowNames>(
     windowName: N,
@@ -35,22 +36,23 @@ export interface IWindowService {
 export const WindowServiceIPCDescriptor = {
   channel: WindowChannel.name,
   properties: {
-    get: ProxyPropertyType.Function,
-    open: ProxyPropertyType.Function,
+    clearStorageData: ProxyPropertyType.Function,
     close: ProxyPropertyType.Function,
-    setWindowMeta: ProxyPropertyType.Function,
-    updateWindowMeta: ProxyPropertyType.Function,
+    findInPage: ProxyPropertyType.Function,
+    get: ProxyPropertyType.Function,
     getWindowMeta: ProxyPropertyType.Function,
-    requestRestart: ProxyPropertyType.Function,
-    sendToAllWindows: ProxyPropertyType.Function,
-    isFullScreen: ProxyPropertyType.Function,
-    goHome: ProxyPropertyType.Function,
     goBack: ProxyPropertyType.Function,
     goForward: ProxyPropertyType.Function,
-    reload: ProxyPropertyType.Function,
+    goHome: ProxyPropertyType.Function,
+    isFullScreen: ProxyPropertyType.Function,
+    isMenubarOpen: ProxyPropertyType.Function,
     loadURL: ProxyPropertyType.Function,
-    clearStorageData: ProxyPropertyType.Function,
-    findInPage: ProxyPropertyType.Function,
+    open: ProxyPropertyType.Function,
+    reload: ProxyPropertyType.Function,
+    requestRestart: ProxyPropertyType.Function,
+    sendToAllWindows: ProxyPropertyType.Function,
+    setWindowMeta: ProxyPropertyType.Function,
     stopFindInPage: ProxyPropertyType.Function,
+    updateWindowMeta: ProxyPropertyType.Function,
   },
 };

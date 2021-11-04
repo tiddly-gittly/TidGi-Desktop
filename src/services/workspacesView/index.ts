@@ -61,11 +61,11 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
       return;
     }
-    const mainWindow = this.windowService.get(WindowNames.main);
-    if (mainWindow === undefined) {
-      throw new Error(i18n.t(`Error.MainWindowMissing`));
-    }
     if (workspace.storageService !== SupportedStorageServices.local) {
+      const mainWindow = this.windowService.get(WindowNames.main);
+      if (mainWindow === undefined) {
+        throw new Error(i18n.t(`Error.MainWindowMissing`));
+      }
       const userInfo = this.authService.getStorageServiceUserInfo(workspace.storageService);
       if (userInfo === undefined) {
         // user not login into Github or something else
@@ -157,10 +157,12 @@ export class WorkspaceView implements IWorkspaceViewService {
         label: () => i18n.t('Menu.PrintPage'),
         enabled: hasWorkspaces,
         click: async () => {
-          const browserView = await this.viewService.getActiveBrowserView();
-          if (browserView !== undefined) {
-            void browserView.webContents.print();
-          }
+          const browserViews = await this.viewService.getActiveBrowserViews();
+          browserViews.forEach((browserView) => {
+            if (browserView !== undefined) {
+              void browserView.webContents.print();
+            }
+          });
         },
       },
       {
@@ -174,10 +176,12 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async printTiddler(tiddlerName?: string): Promise<void> {
-    const browserView = await this.viewService.getActiveBrowserView();
-    if (browserView !== undefined) {
-      browserView.webContents.send(WikiChannel.printTiddler, tiddlerName);
-    }
+    const browserViews = await this.viewService.getActiveBrowserViews();
+    browserViews.forEach((browserView) => {
+      if (browserView !== undefined) {
+        browserView.webContents.send(WikiChannel.printTiddler, tiddlerName);
+      }
+    });
   }
 
   public async createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<IWorkspace> {
@@ -239,16 +243,14 @@ export class WorkspaceView implements IWorkspaceViewService {
       await this.workspaceService.setActiveWorkspace(workspaceID);
       await this.viewService.setActiveViewForAllBrowserViews(workspaceID);
       // if we are switching to a new workspace, we hibernate old view, and activate new view
-      if (oldActiveWorkspace.id !== workspaceID) {
-        if (oldActiveWorkspace.hibernateWhenUnused) {
-          await this.hibernateWorkspaceView(oldActiveWorkspace.id);
-        }
-        if (newWorkspace.hibernateWhenUnused) {
-          await this.initializeWorkspaceView(newWorkspace, { checkHibernated: false, syncImmediately: false });
-          await this.workspaceService.update(workspaceID, {
-            hibernated: false,
-          });
-        }
+      if (oldActiveWorkspace.id !== workspaceID && oldActiveWorkspace.hibernateWhenUnused) {
+        await this.hibernateWorkspaceView(oldActiveWorkspace.id);
+      }
+      if (newWorkspace.hibernated) {
+        await this.initializeWorkspaceView(newWorkspace, { checkHibernated: false, syncImmediately: false });
+        await this.workspaceService.update(workspaceID, {
+          hibernated: false,
+        });
       }
       await this.realignActiveWorkspace();
     }

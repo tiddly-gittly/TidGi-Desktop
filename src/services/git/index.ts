@@ -1,6 +1,6 @@
 import { ipcMain, dialog, net } from 'electron';
 import { injectable, inject } from 'inversify';
-import { debounce } from 'lodash';
+import { compact, debounce } from 'lodash';
 import {
   AssumeSyncError,
   CantSyncGitNotInitializedError,
@@ -71,23 +71,29 @@ export class Git implements IGitService {
    * @param {string} githubRepoName similar to "linonetwo/wiki", string after "https://com/"
    */
   public async updateGitInfoTiddler(githubRepoName: string): Promise<void> {
-    const browserView = await this.viewService.getActiveBrowserView();
-    if (browserView !== undefined) {
-      const tiddlerText = await new Promise((resolve) => {
-        browserView.webContents.send(WikiChannel.getTiddlerText, '$:/GitHub/Repo');
-        ipcMain.once(WikiChannel.getTiddlerTextDone, (_event, value) => resolve(value));
-      });
-      if (tiddlerText !== githubRepoName) {
-        await new Promise<void>((resolve) => {
-          browserView.webContents.send(WikiChannel.addTiddler, '$:/GitHub/Repo', githubRepoName, {
-            type: 'text/vnd.tiddlywiki',
-          });
-          ipcMain.once(WikiChannel.addTiddlerDone, () => resolve());
-        });
-      }
+    const browserViews = await this.viewService.getActiveBrowserViews();
+    if (compact(browserViews).length === 0) {
+      logger.error('no browserView in updateGitInfoTiddler');
       return;
     }
-    logger.error('no browserView in updateGitInfoTiddler');
+    await Promise.all(
+      browserViews.map(async (browserView) => {
+        if (browserView !== undefined) {
+          const tiddlerText = await new Promise((resolve) => {
+            browserView.webContents.send(WikiChannel.getTiddlerText, '$:/GitHub/Repo');
+            ipcMain.once(WikiChannel.getTiddlerTextDone, (_event, value) => resolve(value));
+          });
+          if (tiddlerText !== githubRepoName) {
+            await new Promise<void>((resolve) => {
+              browserView.webContents.send(WikiChannel.addTiddler, '$:/GitHub/Repo', githubRepoName, {
+                type: 'text/vnd.tiddlywiki',
+              });
+              ipcMain.once(WikiChannel.addTiddlerDone, () => resolve());
+            });
+          }
+        }
+      }),
+    );
   }
 
   private translateMessage(message: string): string {

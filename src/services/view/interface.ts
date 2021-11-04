@@ -13,9 +13,13 @@ export interface IViewService {
   addViewForAllBrowserViews(workspace: IWorkspace): Promise<void>;
   forEachView: (functionToRun: (view: BrowserView, workspaceID: string, windowName: WindowNames) => void) => void;
   /**
-   * Get active workspace's main window browser view.
+   * If menubar is open, we get menubar browser view, else we get main window browser view
    */
   getActiveBrowserView: () => Promise<BrowserView | undefined>;
+  /**
+   * Get active workspace's main window and menubar browser view.
+   */
+  getActiveBrowserViews: () => Promise<Array<BrowserView | undefined>>;
   getAllViewOfWorkspace: (workspaceID: string) => BrowserView[];
   getView: (workspaceID: string, windowName: WindowNames) => BrowserView | undefined;
   realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;

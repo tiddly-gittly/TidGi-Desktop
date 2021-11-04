@@ -89,6 +89,10 @@ export class Window implements IWindowService {
     }
   }
 
+  public async isMenubarOpen(): Promise<boolean> {
+    return this.mainWindowMenuBar?.window?.isFocused?.() ?? false;
+  }
+
   public async open<N extends WindowNames>(
     windowName: N,
     meta: WindowMeta[N] = {} as WindowMeta[N],
