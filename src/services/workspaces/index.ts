@@ -134,7 +134,7 @@ export class Workspace implements IWorkspaceService {
       },
       {
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        label: () => i18n.t('ContextMenu.DeveloperTools') + (workspace.name || `Workspace ${index + 1}`),
+        label: () => `${workspace.name || `Workspace ${index + 1}`} ${i18n.t('ContextMenu.DeveloperTools')}`,
         id: `${workspace.id}-devtool`,
         click: async () => {
           const view = this.viewService.getView(workspace.id, WindowNames.main);

@@ -174,7 +174,7 @@ export class MenuService implements IMenuService {
       },
       {
         label: () => i18next.t('Menu.Wiki'),
-        id: 'Workspaces',
+        id: 'Wiki',
         submenu: [],
       },
       {
