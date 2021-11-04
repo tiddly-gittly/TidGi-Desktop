@@ -38,6 +38,9 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
     await fs.copy(path.join(projectRoot, 'node_modules', '@tiddlygit', 'tiddlywiki'), path.join(cwd, 'node_modules', '@tiddlygit', 'tiddlywiki'));
     await fs.copy(path.join(projectRoot, 'node_modules', 'dugite'), path.join(cwd, 'node_modules', 'dugite'));
     await fs.copy(path.join(projectRoot, 'node_modules', 'app-path'), path.join(cwd, 'node_modules', 'app-path'));
+    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'app-path') });
+    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'app-path', 'node_modules', 'cross-spawn') });
+    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'app-path', 'node_modules', 'get-stream') });
     await fs.copy(path.join(projectRoot, 'node_modules', 'zx'), path.join(cwd, 'node_modules', 'zx'));
     await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx') });
     await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'globby') });

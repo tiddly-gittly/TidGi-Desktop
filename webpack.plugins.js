@@ -40,6 +40,10 @@ exports.main = _.compact([
     type: 'commonjs',
     include: path.join(__dirname, 'node_modules', '@tiddlygit', 'tiddlywiki'),
   }),
+  new ExternalsPlugin({
+    type: 'commonjs',
+    include: path.join(__dirname, 'node_modules', 'app-path'),
+  }),
   new ThreadsPlugin({
     target: 'electron-node-worker',
     plugins: ['ExternalsPlugin'],
