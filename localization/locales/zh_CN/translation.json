@@ -4,6 +4,7 @@
   "WorkspaceSelector": {
     "Add": "添加",
     "OpenWorkspaceTagTiddler": "打开 {{tagName}}",
+    "OpenWorkspaceMenuName": "打开工作区",
     "EditWorkspace": "编辑工作区",
     "EditCurrentWorkspace": "编辑当前工作区",
     "ReloadCurrentWorkspace": "刷新当前工作区",

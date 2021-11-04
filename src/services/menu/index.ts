@@ -19,7 +19,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
+import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/workspaces/getWorkspaceMenuTemplate';
 import { logger } from '@services/libs/log';
 import i18next from '@services/libs/i18n';
 import ContextMenuBuilder from './contextMenuBuilder';
@@ -381,6 +381,17 @@ export class MenuService implements IMenuService {
               click: async () => await this.windowService.open(WindowNames.addWorkspace),
             },
           ],
+        }),
+      );
+      menu.append(
+        new MenuItem({
+          label: i18next.t('WorkspaceSelector.OpenWorkspaceMenuName'),
+          submenu: workspaces.map((workspace) => ({
+            label: i18next.t('WorkspaceSelector.OpenWorkspaceTagTiddler', { tagName: workspace.tagName ?? workspace.name }),
+            click: async () => {
+              await openWorkspaceTagTiddler(workspace, services);
+            },
+          })),
         }),
       );
     }

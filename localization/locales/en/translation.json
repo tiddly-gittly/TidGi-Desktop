@@ -3,6 +3,7 @@
   "WorkspaceSelector": {
     "Add": "Add",
     "OpenWorkspaceTagTiddler": "Open {{tagName}}",
+    "OpenWorkspaceMenuName": "Open Workspace",
     "EditWorkspace": "Edit Workspace",
     "RemoveWorkspace": "Remove Workspace",
     "AreYouSure": "Are you sure you want to remove this workspace? \nRemoving the workspace will delete the workspace in this application, but will not delete the folders from the hard drive. \nBut, if you choose to delete the Wiki folder as well, all contents will be deleted.",
