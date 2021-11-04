@@ -136,9 +136,13 @@ async function findApplication(editor: IDarwinExternalEditor): Promise<string | 
       // app-path not finding the app isn't an error, it just means the
       // bundle isn't registered on the machine.
       // https://github.com/sindresorhus/app-path/blob/0e776d4e132676976b4a64e09b5e5a4c6e99fcba/index.js#L7-L13
-      const installPath = await appPath(identifier).catch(async (error) =>
-        error.message === "Couldn't find the app" ? await Promise.resolve(null) : await Promise.reject(error),
-      );
+      const installPath = await appPath(identifier).catch(async (error: Error) => {
+        logger.info(`findApplication() gets appPath Error: ${error?.message ?? String(error)}`);
+        if (error?.message === "Couldn't find the app") {
+          return await Promise.resolve(null);
+        }
+        return await Promise.reject(error);
+      });
       logger.info(`Path of ${identifier} is ${String(installPath)} in darwin.findApplication`);
 
       if (installPath === null) {
@@ -151,7 +155,7 @@ async function findApplication(editor: IDarwinExternalEditor): Promise<string | 
 
       logger.info(`App installation for ${editor.name} not found at '${installPath}'`);
     } catch (error) {
-      logger.info(`Unable to locate ${editor.name} installation ${(error as Error).message}`);
+      logger.info(`findApplication() Unable to locate ${editor.name} installation. Error: ${(error as Error).message}`);
     }
   }
 
