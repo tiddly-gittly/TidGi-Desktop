@@ -114,7 +114,7 @@ const commonInit = async (): Promise<void> => {
   ]);
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();
-  buildLanguageMenu();
+
 
   ipcMain.emit('request-update-pause-notifications-info');
   // Fix webview is not resized automatically
@@ -153,6 +153,7 @@ app.on('ready', async () => {
   whenCommonInitFinished()
     // eslint-disable-next-line promise/always-return
     .then(() => {
+      buildLanguageMenu();
       ipcMain.emit('request-check-for-updates', undefined, true);
     })
     .catch((error) => console.error(error));
