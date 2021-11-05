@@ -16,7 +16,6 @@ module.exports = {
   // Put your normal webpack config below here
   module: {
     rules: [
-      ...require('./webpack.rules'),
       {
         // We're specifying native_modules in the test because the asset relocator loader generates a
         // "fake" .node file which is really a cjs file.
@@ -33,6 +32,7 @@ module.exports = {
           },
         },
       },
+      ...require('./webpack.rules'),
     ],
   },
   plugins: plugins.main,
