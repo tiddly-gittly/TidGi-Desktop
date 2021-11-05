@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/no-useless-undefined */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null */
 import React, { useMemo, useCallback } from 'react';
@@ -179,7 +180,11 @@ export default function EditWorkspace(): JSX.Element {
     }
   }, [onSave, requestRestartCountDown, workspace, originalWorkspace]);
 
-  const actualIP = useMemo(() => (homeUrl ? window.remote.getLocalHostUrlWithActualIP(homeUrl) : homeUrl), [homeUrl]);
+  const actualIP = usePromiseValue<string | undefined>(
+    async () => (homeUrl ? await window.remote.getLocalHostUrlWithActualIP(homeUrl) : await Promise.resolve(undefined)),
+    undefined,
+    [homeUrl],
+  );
   if (workspaceID === undefined) {
     return <Root>Error {workspaceID ?? '-'} not exists</Root>;
   }
@@ -232,19 +237,19 @@ export default function EditWorkspace(): JSX.Element {
             helperText={
               <span>
                 {t('EditWorkspace.URL')}{' '}
-                <Link onClick={async () => await window.service.native.open(actualIP)} style={{ cursor: 'pointer' }}>
+                <Link onClick={async () => actualIP && (await window.service.native.open(actualIP))} style={{ cursor: 'pointer' }}>
                   {actualIP}
                 </Link>
               </span>
             }
             placeholder="Optional"
             value={port}
-            onChange={(event) => {
+            onChange={async (event) => {
               if (!Number.isNaN(Number.parseInt(event.target.value))) {
                 workspaceSetter({
                   ...workspace,
                   port: Number(event.target.value),
-                  homeUrl: window.remote.getLocalHostUrlWithActualIP(`http://${defaultServerIP}:${event.target.value}/`),
+                  homeUrl: await window.remote.getLocalHostUrlWithActualIP(`http://${defaultServerIP}:${event.target.value}/`),
                 });
                 void requestSaveAndRestart();
               }

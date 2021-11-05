@@ -34,6 +34,7 @@ import type { WikiWorker } from './wikiWorker';
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker.ts';
 import { IWikiOperations, wikiOperations } from './wikiOperations';
+import { defaultServerIP } from '@/constants/urls';
 
 @injectable()
 export class Wiki implements IWikiService {
@@ -92,7 +93,7 @@ export class Wiki implements IWikiService {
     }
     // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
-    const workerData = { homePath, userName, tiddlyWikiPort };
+    const workerData = { homePath, userName, tiddlyWikiPort, tiddlyWikiHost: defaultServerIP };
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string));
     this.wikiWorkers[homePath] = worker;
     refreshOutputFile(homePath);

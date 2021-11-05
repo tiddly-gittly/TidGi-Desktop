@@ -39,7 +39,7 @@ export class ContextService implements IContextService {
   }
 
   public async getLocalHostUrlWithActualIP(oldUrl: string): Promise<string> {
-    return getLocalHostUrlWithActualIP(oldUrl);
+    return await getLocalHostUrlWithActualIP(oldUrl);
   }
 
   public async isOnline(): Promise<boolean> {

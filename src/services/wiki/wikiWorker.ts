@@ -10,10 +10,12 @@ import { defaultServerIP } from '@/constants/urls';
 
 function startNodeJSWiki({
   homePath,
+  tiddlyWikiHost = defaultServerIP,
   tiddlyWikiPort = 5112,
   userName,
 }: {
   homePath: string;
+  tiddlyWikiHost: string;
   tiddlyWikiPort: number;
   userName: string;
 }): Observable<IWikiMessage> {
@@ -41,7 +43,7 @@ function startNodeJSWiki({
         '--listen',
         `anon-username=${userName}`,
         `port=${tiddlyWikiPort}`,
-        `host=${defaultServerIP}`,
+        `host=${tiddlyWikiHost}`,
         'root-tiddler=$:/core/save/lazy-images',
       ];
       wikiInstance.boot.startup({
@@ -49,7 +51,7 @@ function startNodeJSWiki({
           observer.next({
             type: 'control',
             actions: WikiControlActions.booted,
-            message: `Tiddlywiki booted at http://${defaultServerIP}:${tiddlyWikiPort} (webview uri ip may be different, being getLocalHostUrlWithActualIP()) with args ${wikiInstance.boot.argv.join(
+            message: `Tiddlywiki booted at http://${tiddlyWikiHost}:${tiddlyWikiPort} (webview uri ip may be different, being getLocalHostUrlWithActualIP()) with args ${wikiInstance.boot.argv.join(
               ' ',
             )}`,
           }),

@@ -306,7 +306,7 @@ async function handleNewWindow(
   if (appUrl === undefined) {
     throw new Error(`Workspace ${workspace.id} not existed, or don't have homeUrl setting`);
   }
-  appUrl = getLocalHostUrlWithActualIP(appUrl);
+  appUrl = await getLocalHostUrlWithActualIP(appUrl);
   const appDomain = extractDomain(appUrl);
   const currentUrl = view.webContents.getURL();
   const openInNewWindow = (): void => {

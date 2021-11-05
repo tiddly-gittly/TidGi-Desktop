@@ -36,7 +36,7 @@ const logger = (
             maxSize: '20mb',
             maxFiles: '14d',
             dirname: LOG_FOLDER,
-            level: 'info',
+            level: 'debug',
           }),
           new RendererTransport(),
         ],

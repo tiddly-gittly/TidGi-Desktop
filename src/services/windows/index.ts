@@ -315,7 +315,7 @@ export class Window implements IWindowService {
     const contents = win?.getBrowserView()?.webContents;
     const activeWorkspace = await this.workspaceService.getActiveWorkspace();
     if (contents !== undefined && activeWorkspace !== undefined && win !== undefined) {
-      await contents.loadURL(getLocalHostUrlWithActualIP(activeWorkspace.homeUrl));
+      await contents.loadURL(await getLocalHostUrlWithActualIP(activeWorkspace.homeUrl));
       contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
       contents.send(WindowChannel.updateCanGoForward, contents.canGoForward());
     }

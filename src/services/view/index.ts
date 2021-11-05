@@ -274,10 +274,11 @@ export class View implements IViewService {
         height: true,
       });
     }
-    const initialUrl = getLocalHostUrlWithActualIP(
-      // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-      replaceUrlPortWithSettingPort((rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl, workspace.port),
-    );
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+    const urlToReplace = (rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl;
+    const replacedUrl = replaceUrlPortWithSettingPort(urlToReplace, workspace.port);
+    const initialUrl = await getLocalHostUrlWithActualIP(replacedUrl);
+    logger.debug(`Load initialUrl: ${initialUrl} for windowName ${windowName} for workspace ${workspace.name}`, { urlToReplace, replacedUrl });
     /**
      * Try catch loadUrl, other wise it will throw unhandled promise rejection Error: ERR_CONNECTION_REFUSED (-102) loading 'http://localhost:5212/
      * We will set `didFailLoadErrorMessage`, and `didFailLoadTimes < LOAD_VIEW_MAX_RETRIES` in `setupViewEventHandlers`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
