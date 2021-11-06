@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-inferrable-types */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /**
  * Call tiddlywiki api from electron
@@ -25,12 +26,12 @@ ipcRenderer.on(WikiChannel.getTiddlerText, async (event, title: string) => {
   `) as Promise<string>);
   await ipcRenderer.invoke(WikiChannel.getTiddlerTextDone, tiddlerText);
 });
-// set tiddler text
-ipcRenderer.on(WikiChannel.setTiddlerText, async (event, title: string, value: string) => {
+// set tiddler text, we use workspaceID as callback id
+ipcRenderer.on(WikiChannel.setTiddlerText, async (event, title: string, value: string, workspaceID: string = '') => {
   await (webFrame.executeJavaScript(`
     $tw.wiki.setText('${title}', 'text', undefined, \`${value}\`);
   `) as Promise<string>);
-  ipcRenderer.send(WikiChannel.setTiddlerTextDone);
+  ipcRenderer.send(`${WikiChannel.setTiddlerTextDone}${workspaceID}`);
 });
 // add snackbar to notify user
 ipcRenderer.on(WikiChannel.syncProgress, async (event, message: string) => {

@@ -7,7 +7,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { spawn, Thread, Worker, ModuleThread } from 'threads';
 import type { WorkerEvent } from 'threads/dist/types/master';
-import { dialog } from 'electron';
+import { BrowserView, dialog, ipcMain } from 'electron';
 import chokidar from 'chokidar';
 import { trim, compact, debounce } from 'lodash';
 
@@ -574,5 +574,31 @@ export class Wiki implements IWikiService {
       throw new TypeError(`${(arguments_ as any) ?? ''} (${typeof arguments_}) is not a good argument array for ${operationType}`);
     }
     return wikiOperations[operationType].apply(undefined, arguments_) as unknown as ReturnType<IWikiOperations[OP]>;
+  }
+
+  public async setWikiLanguage(view: BrowserView, workspaceID: string, tiddlywikiLanguageName: string): Promise<void> {
+    const twLanguageUpdateTimeout = 15_000;
+    const retryTime = 2000;
+    return await new Promise<void>((resolve, reject) => {
+      const onRetryOrDo = (): void => {
+        view.webContents.send(WikiChannel.setTiddlerText, '$:/language', tiddlywikiLanguageName, workspaceID);
+      };
+      const intervalHandle = setInterval(onRetryOrDo, retryTime);
+      const onTimeout = (): void => {
+        ipcMain.removeListener(WikiChannel.setTiddlerTextDone + workspaceID, onDone);
+        clearInterval(intervalHandle);
+        const errorMessage = `setWikiLanguage("${tiddlywikiLanguageName}"), language "${tiddlywikiLanguageName}" in workspaceID ${workspaceID} is too slow to update after ${twLanguageUpdateTimeout}ms.`;
+        logger.error(errorMessage);
+        reject(new Error(errorMessage));
+      };
+      const timeoutHandle = setTimeout(onTimeout, twLanguageUpdateTimeout);
+      const onDone = (): void => {
+        clearTimeout(timeoutHandle);
+        clearInterval(intervalHandle);
+        resolve();
+      };
+      ipcMain.once(WikiChannel.setTiddlerTextDone + workspaceID, onDone);
+      onRetryOrDo();
+    });
   }
 }

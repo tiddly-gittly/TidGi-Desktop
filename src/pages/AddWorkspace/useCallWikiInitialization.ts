@@ -15,7 +15,7 @@ export async function callWikiInitialization(
   }
   // start wiki on startup, or on sub-wiki creation
   wikiCreationMessageSetter(t('Log.InitializeWorkspaceView'));
-  await window.service.workspaceView.initializeWorkspaceView(newWorkspace);
+  await window.service.workspaceView.initializeWorkspaceView(newWorkspace, { isNew: true });
   // wait for wiki to start and close the window now.
   await window.remote.closeCurrentWindow();
 }

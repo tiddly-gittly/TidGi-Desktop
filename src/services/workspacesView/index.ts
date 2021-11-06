@@ -16,11 +16,12 @@ import { logger } from '@services/libs/log';
 import type { IAuthenticationService } from '@services/auth/interface';
 import type { IGitService } from '@services/git/interface';
 import type { IWikiService } from '@services/wiki/interface';
-import type { IWorkspaceViewService } from './interface';
+import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
 import { lazyInject } from '@services/container';
 import { SupportedStorageServices } from '@services/types';
 import { WorkspaceFailedToLoadError } from './error';
 import { WikiChannel } from '@/constants/channels';
+import { tiddlywikiLanguagesMap } from '@/constants/languages';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
@@ -49,8 +50,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     this.wikiService.setAllWikiStartLockOff();
   }
 
-  public async initializeWorkspaceView(workspace: IWorkspace, options?: { checkHibernated?: boolean; syncImmediately?: boolean }): Promise<void> {
-    const { checkHibernated = true, syncImmediately = true } = options ?? {};
+  public async initializeWorkspaceView(workspace: IWorkspace, options?: IInitializeWorkspaceOptions): Promise<void> {
+    const { checkHibernated = true, syncImmediately = true, isNew = false } = options ?? {};
     // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
     if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {
       return;
@@ -122,6 +123,22 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (loadFailed) {
       const latestWorkspaceData = await this.workspaceService.get(workspace.id);
       throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, latestWorkspaceData?.lastUrl ?? homeUrl);
+    } else if (isNew) {
+      const view = this.viewService.getView(workspace.id, WindowNames.main);
+      if (view !== undefined) {
+        // if is newly created wiki, we set the language as user preference
+        const currentLanguage = await this.preferenceService.get('language');
+        const tiddlywikiLanguageName = tiddlywikiLanguagesMap[currentLanguage];
+        if (tiddlywikiLanguageName !== undefined) {
+          logger.debug(`Setting wiki language to ${currentLanguage} (${tiddlywikiLanguageName}) on init`);
+          await this.wikiService.setWikiLanguage(view, workspace.id, tiddlywikiLanguageName);
+        } else {
+          const errorMessage = `When creating new wiki, and switch to language "${currentLanguage}", there is no corresponding tiddlywiki language registered`;
+          logger.error(errorMessage, {
+            tiddlywikiLanguagesMap,
+          });
+        }
+      }
     }
   }
 

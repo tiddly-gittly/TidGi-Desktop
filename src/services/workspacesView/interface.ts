@@ -3,6 +3,11 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { WorkspaceViewChannel } from '@/constants/channels';
 import { IWorkspace, INewWorkspaceConfig } from '@services/workspaces/interface';
 
+export interface IInitializeWorkspaceOptions {
+  checkHibernated?: boolean;
+  isNew?: boolean;
+  syncImmediately?: boolean;
+}
 /**
  * Deal with operations that needs to create a workspace and a browserView at once
  */
@@ -19,7 +24,7 @@ export interface IWorkspaceViewService {
   /**
    * prepare view and wiki for a workspace, work for both public and private wiki, call by `initializeAllWorkspaceView()` for all workspaces.
    */
-  initializeWorkspaceView(workspace: IWorkspace): Promise<void>;
+  initializeWorkspaceView(workspace: IWorkspace, options?: IInitializeWorkspaceOptions): Promise<void>;
   /**
    * Try load url, if no id or no active workspace, then nothing will happened
    * @param url url to load

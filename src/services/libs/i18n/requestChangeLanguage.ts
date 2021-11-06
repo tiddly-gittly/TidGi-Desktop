@@ -1,8 +1,8 @@
-import { ipcMain } from 'electron';
 import type { IWindowService } from '@services/windows/interface';
 import type { IViewService } from '@services/view/interface';
 import type { IMenuService } from '@services/menu/interface';
-import { I18NChannels, WikiChannel } from '@/constants/channels';
+import type { IWikiService } from '@services/wiki/interface';
+import { I18NChannels } from '@/constants/channels';
 import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { tiddlywikiLanguagesMap, supportedLanguagesMap } from '@/constants/languages';
@@ -12,6 +12,7 @@ import i18n from '.';
 export async function requestChangeLanguage(newLanguage: string): Promise<void> {
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const viewService = container.get<IViewService>(serviceIdentifier.View);
+  const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
   const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
   const viewCount = await viewService.getViewCount();
 
@@ -28,41 +29,24 @@ export async function requestChangeLanguage(newLanguage: string): Promise<void> 
 
   await Promise.all([
     // change tiddlywiki language
-    new Promise<void>((resolve) => {
-      let inProgressCounter = 0;
-      // we don't wait more than 10s
-      const twLanguageUpdateTimeout = 10_000;
+    new Promise<unknown>((resolve, reject) => {
       const tiddlywikiLanguageName = tiddlywikiLanguagesMap[newLanguage];
       if (tiddlywikiLanguageName !== undefined) {
         if (viewCount === 0) {
           return;
         }
-        const onTimeout = (): void => {
-          ipcMain.removeListener(WikiChannel.setTiddlerTextDone, onDone);
-          logger.error(
-            `When click language menu "${newLanguage}", language "${tiddlywikiLanguageName}" is too slow to update, inProgressCounter is ${inProgressCounter} after ${twLanguageUpdateTimeout}ms.`,
-          );
-          resolve();
-        };
-        const timeoutHandle = setTimeout(onTimeout, twLanguageUpdateTimeout);
-        const onDone = (): void => {
-          inProgressCounter -= 1;
-          if (inProgressCounter === 0) {
-            clearTimeout(timeoutHandle);
-            resolve();
-          }
-        };
-        viewService.forEachView((view) => {
-          inProgressCounter += 1;
-          ipcMain.once(WikiChannel.setTiddlerTextDone, onDone);
-          view.webContents.send(WikiChannel.setTiddlerText, '$:/language', tiddlywikiLanguageName);
+        const tasks: Array<Promise<void>> = [];
+        viewService.forEachView((view, workspaceID) => {
+          tasks.push(wikiService.setWikiLanguage(view, workspaceID, tiddlywikiLanguageName));
         });
+        void Promise.all(tasks).then(resolve, reject);
       } else {
-        logger.error(`When click language menu "${newLanguage}", there is no corresponding tiddlywiki language registered`, {
+        const errorMessage = `When click language menu "${newLanguage}", there is no corresponding tiddlywiki language registered`;
+        logger.error(errorMessage, {
           supportedLanguagesMap,
           tiddlywikiLanguagesMap,
         });
-        resolve();
+        reject(new Error(errorMessage));
       }
     }),
     // update menu
