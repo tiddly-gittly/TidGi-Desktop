@@ -16,8 +16,8 @@ function initWikiGit(wikiFolderPath: string, syncImmediately?: boolean, remoteUr
       userInfo,
       defaultGitInfo,
       logger: {
-        log: (message: string, context: ILoggerContext): unknown =>
-          observer.next({ message, level: 'log', meta: { callerFunction: 'initWikiGit', ...context } }),
+        debug: (message: string, context: ILoggerContext): unknown =>
+          observer.next({ message, level: 'debug', meta: { callerFunction: 'initWikiGit', ...context } }),
         warn: (message: string, context: ILoggerContext): unknown =>
           observer.next({ message, level: 'warn', meta: { callerFunction: 'initWikiGit', ...context } }),
         info: (message: GitStep, context: ILoggerContext): void => {
@@ -45,8 +45,8 @@ function commitAndSyncWiki(wikiFolderPath: string, remoteUrl: string, userInfo: 
       userInfo,
       defaultGitInfo,
       logger: {
-        log: (message: string, context: ILoggerContext): unknown =>
-          observer.next({ message, level: 'log', meta: { callerFunction: 'commitAndSync', ...context } }),
+        debug: (message: string, context: ILoggerContext): unknown =>
+          observer.next({ message, level: 'debug', meta: { callerFunction: 'commitAndSync', ...context } }),
         warn: (message: string, context: ILoggerContext): unknown =>
           observer.next({ message, level: 'warn', meta: { callerFunction: 'commitAndSync', ...context } }),
         info: (message: GitStep, context: ILoggerContext): void => {
@@ -68,7 +68,7 @@ function cloneWiki(repoFolderPath: string, remoteUrl: string, userInfo: IGitUser
       userInfo,
       defaultGitInfo,
       logger: {
-        log: (message: string, context: ILoggerContext): unknown => observer.next({ message, level: 'log', meta: { callerFunction: 'clone', ...context } }),
+        debug: (message: string, context: ILoggerContext): unknown => observer.next({ message, level: 'debug', meta: { callerFunction: 'clone', ...context } }),
         warn: (message: string, context: ILoggerContext): unknown => observer.next({ message, level: 'warn', meta: { callerFunction: 'clone', ...context } }),
         info: (message: GitStep, context: ILoggerContext): void => {
           observer.next({ message, level: 'notice', meta: { handler: WikiChannel.createProgress, callerFunction: 'clone', ...context } });

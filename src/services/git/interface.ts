@@ -15,7 +15,7 @@ export interface IGitUserInfosWithoutToken {
 }
 
 export interface IGitLogMessage {
-  level: 'log' | 'warn' | 'notice';
+  level: 'debug' | 'warn' | 'notice';
   message: string;
   meta: unknown;
 }
