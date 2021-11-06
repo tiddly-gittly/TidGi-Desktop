@@ -10,13 +10,8 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
 
-import Button from '@material-ui/core/Button';
-import IconButtonRaw from '@material-ui/core/IconButton';
-import Typography from '@material-ui/core/Typography';
-
-import NotificationsIcon from '@material-ui/icons/Notifications';
-import NotificationsPausedIcon from '@material-ui/icons/NotificationsPaused';
-import SettingsIcon from '@material-ui/icons/Settings';
+import { Button, Typography, Tooltip, IconButton as IconButtonRaw } from '@material-ui/core';
+import { Notifications as NotificationsIcon, NotificationsPaused as NotificationsPausedIcon, Settings as SettingsIcon } from '@material-ui/icons';
 
 import { WindowNames } from '@services/windows/WindowProperties';
 
@@ -31,6 +26,7 @@ import { SortableWorkspaceSelector } from './SortableWorkspaceSelector';
 import { IWorkspace } from '@services/workspaces/interface';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
+import { CommandPaletteIcon } from '@/components/icon/CommandPaletteSVG';
 
 const OuterRoot = styled.div`
   display: flex;
@@ -274,17 +270,33 @@ export default function Main(): JSX.Element {
               />
             </SidebarTop>
             <SideBarEnd>
+              {(workspacesList?.length ?? 0) > 0 && (
+                <>
+                  <IconButton
+                    id="open-command-palette-button"
+                    aria-label={t('SideBar.CommandPalette')}
+                    onClick={async () => await window.service.wiki.requestWikiSendActionMessage('open-command-palette')}>
+                    <Tooltip title={<span>{t('SideBar.CommandPalette')}</span>} placement="top">
+                      <CommandPaletteIcon />
+                    </Tooltip>
+                  </IconButton>
+                </>
+              )}
               <IconButton
                 id="open-notification-settings-button"
-                aria-label={t('Preference.Notifications')}
+                aria-label={t('SideBar.Notifications')}
                 onClick={async () => await window.service.window.open(WindowNames.notifications)}>
-                {typeof pauseNotifications === 'string' && pauseNotifications.length > 0 ? <NotificationsPausedIcon /> : <NotificationsIcon />}
+                <Tooltip title={<span>{t('SideBar.Notifications')}</span>} placement="top">
+                  {typeof pauseNotifications === 'string' && pauseNotifications.length > 0 ? <NotificationsPausedIcon /> : <NotificationsIcon />}
+                </Tooltip>
               </IconButton>
               <IconButton
                 id="open-preferences-button"
-                aria-label={t('ContextMenu.Preferences')}
+                aria-label={t('SideBar.Preferences')}
                 onClick={async () => await window.service.window.open(WindowNames.preferences)}>
-                <SettingsIcon />
+                <Tooltip title={<span>{t('SideBar.Preferences')}</span>} placement="top">
+                  <SettingsIcon />
+                </Tooltip>
               </IconButton>
             </SideBarEnd>
           </SidebarContainer>

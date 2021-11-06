@@ -19,9 +19,15 @@
     "OpenWorkspaceFolderInEditor": "用外部编辑器打开文件夹",
     "OpenWorkspaceFolderInGitGUI": "用可视化Git工具打开"
   },
+  "SideBar": {
+    "CommandPalette": "搜索/命令",
+    "Notifications": "消息管理",
+    "Preferences": "设置..."
+  },
   "ContextMenu": {
     "OpenTiddlyGit": "打开太记",
     "OpenTiddlyGitMenuBar": "打开太记小窗口",
+    "OpenCommandPalette": "打开搜索与命令面板",
     "OpenLinkInNewWindow": "在新窗口中打开链接",
     "Preferences": "设置...",
     "TiddlyGitSupport": "TiddlyGit 用户支持",
