@@ -22,11 +22,10 @@ export async function requestChangeLanguage(newLanguage: string): Promise<void> 
     });
   });
   // change tiddlygit language
-  if (viewCount > 0) {
-    await windowService.sendToAllWindows(I18NChannels.changeLanguageRequest, {
-      lng: newLanguage,
-    });
-  }
+  await windowService.sendToAllWindows(I18NChannels.changeLanguageRequest, {
+    lng: newLanguage,
+  });
+
   await Promise.all([
     // change tiddlywiki language
     new Promise<void>((resolve) => {
