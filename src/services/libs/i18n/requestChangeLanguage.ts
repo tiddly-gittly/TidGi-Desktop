@@ -33,7 +33,10 @@ export async function requestChangeLanguage(newLanguage: string): Promise<void> 
       // we don't wait more than 10s
       const twLanguageUpdateTimeout = 10_000;
       const tiddlywikiLanguageName = tiddlywikiLanguagesMap[newLanguage];
-      if (tiddlywikiLanguageName !== undefined && viewCount > 0) {
+      if (tiddlywikiLanguageName !== undefined) {
+        if (viewCount === 0) {
+          return;
+        }
         const onTimeout = (): void => {
           ipcMain.removeListener(WikiChannel.setTiddlerTextDone, onDone);
           logger.error(
