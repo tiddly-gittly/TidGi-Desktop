@@ -191,6 +191,11 @@ export class View implements IViewService {
    * Each workspace can have several windows to render its view (main window and menu bar)
    */
   private views: Record<string, Record<WindowNames, BrowserView> | undefined> = {};
+  public async getViewCount(): Promise<number> {
+    // eslint-disable-next-line @typescript-eslint/return-await
+    return await Promise.resolve(Object.keys(this.views).length);
+  }
+
   public getView = (workspaceID: string, windowName: WindowNames): BrowserView | undefined => this.views[workspaceID]?.[windowName];
   public getAllViewOfWorkspace = (workspaceID: string): BrowserView[] => Object.values(this.views[workspaceID] ?? {});
   public setView = (workspaceID: string, windowName: WindowNames, newView: BrowserView): void => {

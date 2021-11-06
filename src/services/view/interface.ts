@@ -22,6 +22,7 @@ export interface IViewService {
   getActiveBrowserViews: () => Promise<Array<BrowserView | undefined>>;
   getAllViewOfWorkspace: (workspaceID: string) => BrowserView[];
   getView: (workspaceID: string, windowName: WindowNames) => BrowserView | undefined;
+  getViewCount(): Promise<number>;
   realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;
   reloadActiveBrowserView: () => Promise<void>;
   reloadViewsWebContents(workspaceID?: string | undefined): Promise<void>;
@@ -42,6 +43,7 @@ export const ViewServiceIPCDescriptor = {
     getActiveBrowserView: ProxyPropertyType.Function,
     getAllViewOfWorkspace: ProxyPropertyType.Function,
     getView: ProxyPropertyType.Function,
+    getViewCount: ProxyPropertyType.Function,
     realignActiveView: ProxyPropertyType.Function,
     reloadActiveBrowserView: ProxyPropertyType.Function,
     reloadViewsWebContents: ProxyPropertyType.Function,

@@ -24,6 +24,8 @@ export interface IConstants {
   isDevelopment: boolean;
   oSVersion: string;
   platform: string;
+  supportedLanguagesMap: Record<string, string>;
+  tiddlywikiLanguagesMap: Record<string, string | undefined>;
 }
 
 export interface IContext extends IPaths, IConstants {}

@@ -9,57 +9,74 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { hunspellLanguagesMap } from '@/constants/hunspellLanguages';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 
-export function Languages(props: Required<ISectionProps>): JSX.Element {
+export function Languages(props: Partial<ISectionProps> & { languageSelectorOnly?: boolean }): JSX.Element {
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();
-  const platform = usePromiseValue(async () => await window.service.context.get('platform'));
+  const [platform, supportedLanguagesMap]: [string | undefined, Record<string, string> | undefined] = usePromiseValue(
+    async (): Promise<[string | undefined, Record<string, string> | undefined]> =>
+      await Promise.all([window.service.context.get('platform'), window.service.context.get('supportedLanguagesMap')]),
+    [undefined, undefined],
+  );
 
   return (
     <>
-      <SectionTitle ref={props.sections.languages.ref}>{t('Preference.Languages')}</SectionTitle>
+      <SectionTitle ref={props.sections?.languages?.ref}>{t('Preference.Languages')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
-          {preference === undefined || platform === undefined ? (
+          {preference === undefined || platform === undefined || supportedLanguagesMap === undefined || preference.language === undefined ? (
             <ListItem>{t('Loading')}</ListItem>
           ) : (
             <>
-              <ListItem>
+              <ListItem sx={{ justifyContent: 'space-between' }}>
                 <ListItemText primary={t('Preference.ChooseLanguage')} />
-                <ListItemSecondaryAction>
-                  <InputLabel id="demo-simple-select-label">{t('Preference.Languages')}</InputLabel>
-                  <Select labelId="demo-simple-select-label" id="demo-simple-select" value={age} label="Age" onChange={handleChange}>
-                    <MenuItem value={10}>Ten</MenuItem>
-                    <MenuItem value={20}>Twenty</MenuItem>
-                    <MenuItem value={30}>Thirty</MenuItem>
-                  </Select>
-                </ListItemSecondaryAction>
+                <InputLabel sx={{ flex: 1 }} id="demo-simple-select-label">
+                  {t('Preference.Languages')}
+                </InputLabel>
+                <Select
+                  sx={{ flex: 2 }}
+                  labelId="demo-simple-select-label"
+                  value={preference.language}
+                  onChange={async (event) => {
+                    await window.service.preference.set('language', event.target.value);
+                  }}
+                  autoWidth>
+                  {Object.keys(supportedLanguagesMap).map((languageID) => (
+                    <MenuItem value={languageID} key={languageID}>
+                      {supportedLanguagesMap[languageID]}
+                    </MenuItem>
+                  ))}
+                </Select>
               </ListItem>
-              <Divider />
-              <ListItem>
-                <ListItemText primary={t('Preference.SpellCheck')} />
-                <ListItemSecondaryAction>
-                  <Switch
-                    edge="end"
-                    color="primary"
-                    checked={preference.spellcheck}
-                    onChange={async (event) => {
-                      await window.service.preference.set('spellcheck', event.target.checked);
-                      props.requestRestartCountDown();
-                    }}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-              {platform !== 'darwin' && (
+              {props.languageSelectorOnly !== true && (
                 <>
                   <Divider />
-                  <ListItem button onClick={async () => await window.service.window.open(WindowNames.spellcheck)}>
-                    <ListItemText
-                      primary={t('Preference.SpellCheckLanguages')}
-                      secondary={preference.spellcheckLanguages.map((code) => hunspellLanguagesMap[code]).join(' | ')}
-                    />
-                    <ChevronRightIcon color="action" />
+                  <ListItem>
+                    <ListItemText primary={t('Preference.SpellCheck')} />
+                    <ListItemSecondaryAction>
+                      <Switch
+                        edge="end"
+                        color="primary"
+                        checked={preference.spellcheck}
+                        onChange={async (event) => {
+                          await window.service.preference.set('spellcheck', event.target.checked);
+                          props?.requestRestartCountDown?.();
+                        }}
+                      />
+                    </ListItemSecondaryAction>
                   </ListItem>
+                  {platform !== 'darwin' && (
+                    <>
+                      <Divider />
+                      <ListItem button onClick={async () => await window.service.window.open(WindowNames.spellcheck)}>
+                        <ListItemText
+                          primary={t('Preference.SpellCheckLanguages')}
+                          secondary={preference.spellcheckLanguages.map((code) => hunspellLanguagesMap[code]).join(' | ')}
+                        />
+                        <ChevronRightIcon color="action" />
+                      </ListItem>
+                    </>
+                  )}
                 </>
               )}
             </>

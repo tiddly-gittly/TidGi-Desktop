@@ -12,6 +12,7 @@ import i18n from '@services/libs/i18n';
 import { IPreferences, IPreferenceService } from './interface';
 import { defaultPreferences } from './defaultPreferences';
 import { lazyInject } from '@services/container';
+import { requestChangeLanguage } from '@services/libs/i18n/requestChangeLanguage';
 
 @injectable()
 export class Preference implements IPreferenceService {
@@ -80,24 +81,27 @@ export class Preference implements IPreferenceService {
     this.cachedPreferences[key] = value;
     this.cachedPreferences = { ...this.cachedPreferences, ...this.sanitizePreference(this.cachedPreferences) };
 
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
     await settings.set(`preferences.${key}`, this.cachedPreferences[key] as any);
-
-    this.reactWhenPreferencesChanged(key, value);
     this.updatePreferenceSubject();
+
+    await this.reactWhenPreferencesChanged(key, value);
   }
 
   /**
    * Do some side effect when config change, update other services or filesystem
    * @param preference new preference settings
    */
-  private reactWhenPreferencesChanged<K extends keyof IPreferences>(key: K, value: IPreferences[K]): void {
+  private async reactWhenPreferencesChanged<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void> {
     // maybe pauseNotificationsBySchedule or pauseNotifications or ...
     if (key.startsWith('pauseNotifications')) {
-      void this.notificationService.updatePauseNotificationsInfo();
+      await this.notificationService.updatePauseNotificationsInfo();
     }
     if (key === 'themeSource') {
       nativeTheme.themeSource = value as IPreferences['themeSource'];
+    }
+    if (key === 'language') {
+      await requestChangeLanguage(value as string);
     }
   }
 
@@ -106,7 +110,7 @@ export class Preference implements IPreferenceService {
    */
   private async setPreferences(newPreferences: IPreferences): Promise<void> {
     this.cachedPreferences = newPreferences;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
     await settings.set(`preferences`, { ...newPreferences } as any);
     this.updatePreferenceSubject();
   }

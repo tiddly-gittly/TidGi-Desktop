@@ -27,7 +27,7 @@ import { IWorkspace } from '@services/workspaces/interface';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { CommandPaletteIcon } from '@/components/icon/CommandPaletteSVG';
-import { AddWorkspace } from '../AddWorkspace';
+import { Languages } from '../Preferences/sections/Languages';
 
 const OuterRoot = styled.div`
   display: flex;
@@ -386,6 +386,7 @@ export default function Main(): JSX.Element {
               </AddWorkspaceGuideInfoContainer>
             )}
           </InnerContentRoot>
+          <Languages languageSelectorOnly />
         </ContentRoot>
       </Root>
     </OuterRoot>

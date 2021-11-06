@@ -8,6 +8,7 @@ import { injectable } from 'inversify';
 import { IContextService, IContext, IPaths, IConstants } from './interface';
 import * as paths from '@/constants/paths';
 import * as appPaths from '@/constants/appPaths';
+import { tiddlywikiLanguagesMap, supportedLanguagesMap } from '@/constants/languages';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 
 @injectable()
@@ -20,6 +21,8 @@ export class ContextService implements IContextService {
     appName: app.name,
     oSVersion: os.release(),
     environmentVersions: process.versions,
+    tiddlywikiLanguagesMap,
+    supportedLanguagesMap,
   };
 
   private readonly context: IContext;
