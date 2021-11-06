@@ -274,18 +274,22 @@ export class View implements IViewService {
         height: true,
       });
     }
+    // fix some case that local ip can't be load
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const urlToReplace = (rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl;
-    const replacedUrl = replaceUrlPortWithSettingPort(urlToReplace, workspace.port);
-    const initialUrl = await getLocalHostUrlWithActualIP(replacedUrl);
-    logger.debug(`Load initialUrl: ${initialUrl} for windowName ${windowName} for workspace ${workspace.name}`, { urlToReplace, replacedUrl });
+    const portReplacedUrl = replaceUrlPortWithSettingPort(urlToReplace, workspace.port);
+    const hostReplacedUrl = await getLocalHostUrlWithActualIP(portReplacedUrl);
+    logger.debug(`Load initialUrl: ${hostReplacedUrl} for windowName ${windowName} for workspace ${workspace.name}`, {
+      urlToReplace,
+      replacedUrl: portReplacedUrl,
+    });
     /**
      * Try catch loadUrl, other wise it will throw unhandled promise rejection Error: ERR_CONNECTION_REFUSED (-102) loading 'http://localhost:5212/
      * We will set `didFailLoadErrorMessage`, and `didFailLoadTimes < LOAD_VIEW_MAX_RETRIES` in `setupViewEventHandlers`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
      */
     const loadInitialUrlWithCatch = async (): Promise<void> => {
       try {
-        await view.webContents.loadURL(initialUrl);
+        await view.webContents.loadURL(hostReplacedUrl);
         const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
         view.webContents.on('destroyed', () => {
           unregisterContextMenu();
@@ -296,7 +300,7 @@ export class View implements IViewService {
           const workspaceMetaData = await this.workspaceService.getMetaData(workspace.id);
           didFailLoadTimes = workspaceMetaData.didFailLoadTimes ?? 0;
         } catch {}
-        logger.error(new ViewLoadUrlError(initialUrl, didFailLoadTimes, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
+        logger.error(new ViewLoadUrlError(hostReplacedUrl, didFailLoadTimes, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
       }
     };
     setupViewEventHandlers(view, browserWindow, {

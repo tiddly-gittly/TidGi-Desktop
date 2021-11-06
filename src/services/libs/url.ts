@@ -1,5 +1,5 @@
-import { internalIpV4 } from 'internal-ip';
 import { defaultServerIP } from '@/constants/urls';
+import { internalIpV4 } from '@/helpers/ip';
 import { logger } from './log';
 
 /**
@@ -14,6 +14,9 @@ export async function getLocalHostUrlWithActualIP(originalUrl: string): Promise<
     `Current available address: address() returns ${internalIp ?? 'undefined'}
     originalUrl: ${originalUrl} , localHostUrlWithActualIP ${localHostUrlWithActualIP}`,
   );
+  if (internalIp === undefined) {
+    logger.warn('internalIp is undefined');
+  }
   return localHostUrlWithActualIP;
 }
 

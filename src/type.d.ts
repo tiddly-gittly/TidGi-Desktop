@@ -75,3 +75,32 @@ declare module '@authing/sso' {
     login(): Promise<void>;
   }
 }
+
+interface IDefaultGatewayInfo {
+  gateway: string;
+  interface: 'WLAN';
+}
+declare module 'default-gateway/ibmi' {
+  export function v4(): Promise<IDefaultGatewayInfo>;
+}
+declare module 'default-gateway/android' {
+  export function v4(): Promise<IDefaultGatewayInfo>;
+}
+declare module 'default-gateway/darwin' {
+  export function v4(): Promise<IDefaultGatewayInfo>;
+}
+declare module 'default-gateway/freebsd' {
+  export function v4(): Promise<IDefaultGatewayInfo>;
+}
+declare module 'default-gateway/linux' {
+  export function v4(): Promise<IDefaultGatewayInfo>;
+}
+declare module 'default-gateway/openbsd' {
+  export function v4(): Promise<IDefaultGatewayInfo>;
+}
+declare module 'default-gateway/sunos' {
+  export function v4(): Promise<IDefaultGatewayInfo>;
+}
+declare module 'default-gateway/win32' {
+  export function v4(): Promise<IDefaultGatewayInfo>;
+}
