@@ -365,6 +365,15 @@ export class MenuService implements IMenuService {
       };
       menu.append(
         new MenuItem({
+          label: i18next.t('ContextMenu.OpenCommandPalette'),
+          enabled: workspaces.length > 0,
+          click: () => {
+            void this.wikiService.requestWikiSendActionMessage('open-command-palette');
+          },
+        }),
+      );
+      menu.append(
+        new MenuItem({
           label: i18next.t('Menu.Workspaces'),
           submenu: [
             ...(await Promise.all(
