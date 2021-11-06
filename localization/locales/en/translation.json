@@ -247,7 +247,7 @@
     "NotificationsMuteAudio": "Mute audio when notifications are paused",
     "TestNotification": "Test notifications",
     "ItIsWorking": "It is working!",
-    "Languages": "Languages",
+    "Languages": "Lang/语言",
     "SpellCheck": "Spell check",
     "SpellCheckLanguages": "Preferred spell checking languages",
     "Downloads": "Downloads",
@@ -298,7 +298,8 @@
     "MenubarAlwaysOnTopDetail": "Keep TiddlyGit’s Menubar always on top of other windows, and will not be covered by other windows",
     "AlwaysOnTop": "Always on top",
     "AlwaysOnTopDetail": "Keep TiddlyGit’s main window always on top of other windows, and will not be covered by other windows",
-    "RequireRestart": "Need to restart"
+    "RequireRestart": "Need to restart",
+    "ChooseLanguage": "Choose Language 选择语言"
   },
   "Error": {
     "InitWikiGitError": "E-1 InitWikiGitError",

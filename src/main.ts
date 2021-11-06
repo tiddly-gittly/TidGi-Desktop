@@ -12,7 +12,7 @@ import unhandled from 'electron-unhandled';
 import { openNewGitHubIssue, debugInfo } from 'electron-util';
 
 import { clearMainBindings } from '@services/libs/i18n/i18nMainBindings';
-import { buildLanguageMenu } from '@services/libs/i18n/buildLanguageMenu';
+import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
 import { MainChannel } from '@/constants/channels';
 import { isTest } from '@/constants/environment';
 import { container } from '@services/container';

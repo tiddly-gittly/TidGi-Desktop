@@ -33,8 +33,8 @@ export function buildLanguageMenu(): void {
     subMenu.push({
       label: supportedLanguagesMap[language],
       click: async () => {
-        const i18n = (await import('./')).default;
-        const { logger } = await import('../log');
+        const i18n = (await import('../libs/i18n')).default;
+        const { logger } = await import('../libs/log');
         await Promise.all([preferenceService.set('language', language), i18n.changeLanguage(language)]);
         viewService.forEachView((view) => {
           view.webContents.send(I18NChannels.changeLanguageRequest, {

@@ -1,6 +1,5 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { Divider, List, ListItem, ListItemSecondaryAction, ListItemText, Switch } from '@material-ui/core';
+import { Divider, InputLabel, List, ListItem, ListItemSecondaryAction, ListItemText, MenuItem, Select, Switch } from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 import type { ISectionProps } from '../useSections';
@@ -25,6 +24,18 @@ export function Languages(props: Required<ISectionProps>): JSX.Element {
             <ListItem>{t('Loading')}</ListItem>
           ) : (
             <>
+              <ListItem>
+                <ListItemText primary={t('Preference.ChooseLanguage')} />
+                <ListItemSecondaryAction>
+                  <InputLabel id="demo-simple-select-label">{t('Preference.Languages')}</InputLabel>
+                  <Select labelId="demo-simple-select-label" id="demo-simple-select" value={age} label="Age" onChange={handleChange}>
+                    <MenuItem value={10}>Ten</MenuItem>
+                    <MenuItem value={20}>Twenty</MenuItem>
+                    <MenuItem value={30}>Thirty</MenuItem>
+                  </Select>
+                </ListItemSecondaryAction>
+              </ListItem>
+              <Divider />
               <ListItem>
                 <ListItemText primary={t('Preference.SpellCheck')} />
                 <ListItemSecondaryAction>

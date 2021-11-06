@@ -293,7 +293,7 @@
     "WebCatalogEngineIntro": "「网站目录App」是TiddlyGit的最初代码的来源，我们重用了来自开源的「网站目录App」的许多重要代码，这要感谢「网站目录App」及其作者 Quang Lam",
     "WebCatalogIntro": "神奇地将任何网站变成跨平台的应用程序。\n让你更加高效地工作，而无需在浏览器上来回切换浏览器Tab。",
     "hardwareAcceleration": "使用硬件加速",
-    "Languages": "语言",
+    "Languages": "语言/Lang",
     "Performance": "性能",
     "PrivacyAndSecurity": "隐私和安全",
     "AskDownloadLocation": "下载前询问每个文件的保存位置",
@@ -330,7 +330,8 @@
     "MenubarAlwaysOnTop": "保持菜单栏小窗口在其他窗口上方",
     "MenubarAlwaysOnTopDetail": "让太记的菜单栏小窗口永远保持在其它窗口上方，不会被其他窗口覆盖",
     "AlwaysOnTop": "保持窗口在其他窗口上方",
-    "AlwaysOnTopDetail": "让太记的主窗口永远保持在其它窗口上方，不会被其他窗口覆盖"
+    "AlwaysOnTopDetail": "让太记的主窗口永远保持在其它窗口上方，不会被其他窗口覆盖",
+    "ChooseLanguage": "选择语言 Choose Language"
   },
   "Error": {
     "InitWikiGitError": "E-1 笔记仓库初始化失败错误",

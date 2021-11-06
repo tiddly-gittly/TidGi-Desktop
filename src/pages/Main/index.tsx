@@ -27,6 +27,7 @@ import { IWorkspace } from '@services/workspaces/interface';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { CommandPaletteIcon } from '@/components/icon/CommandPaletteSVG';
+import { AddWorkspace } from '../AddWorkspace';
 
 const OuterRoot = styled.div`
   display: flex;

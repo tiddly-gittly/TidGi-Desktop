@@ -53,7 +53,7 @@ const AdvancedSettingsAccordionSummary = styled(AccordionSummary)`
   margin-top: 10px;
 `;
 
-export default function AddWorkspace(): JSX.Element {
+export function AddWorkspace(): JSX.Element {
   const { t } = useTranslation();
   const [currentTab, currentTabSetter] = useState<CreateWorkspaceTabs>(CreateWorkspaceTabs.CreateNewWiki);
   const [isCreateSyncedWorkspace, isCreateSyncedWorkspaceSetter] = useIsCreateSyncedWorkspace();

@@ -22,8 +22,8 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/workspaces/getWorkspaceMenuTemplate';
 import { logger } from '@services/libs/log';
 import i18next from '@services/libs/i18n';
-import ContextMenuBuilder from '../libs/contextMenuBuilder';
-import { IpcSafeMenuItem, mainMenuItemProxy } from './rendererMenuItemProxy';
+import ContextMenuBuilder from '../libs/menu/contextMenuBuilder';
+import { IpcSafeMenuItem, mainMenuItemProxy } from '../libs/menu/rendererMenuItemProxy';
 import { InsertMenuAfterSubMenuIndexError } from './error';
 
 @injectable()

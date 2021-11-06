@@ -3,7 +3,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 
 import Main from './Main';
 import AboutPage from './About';
-import DialogAddWorkspace from './AddWorkspace';
+import { AddWorkspace as DialogAddWorkspace } from './AddWorkspace';
 import EditWorkspace from './EditWorkspace';
 import DialogNotifications from './Notifications';
 import DialogPreferences from './Preferences';
