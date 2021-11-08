@@ -147,8 +147,8 @@ export class Window implements IWindowService {
         devTools: !isTest,
         nodeIntegration: false,
         nativeWindowOpen: true,
-        webSecurity: !isDevelopmentOrTest,
-        allowRunningInsecureContent: false,
+        webSecurity: false,
+        allowRunningInsecureContent: true,
         contextIsolation: true,
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
         additionalArguments: [

@@ -60,22 +60,22 @@ exports.renderer = _.compact([
     'process.env.NODE_ENV': `"${process.env.NODE_ENV ?? 'production'}"`,
     // global: {},
   }),
-  new CspHtmlWebpackPlugin(
-    {
-      'base-uri': ["'self'"],
-      'object-src': ["'none'"],
-      'script-src': ["'self' 'unsafe-eval'"],
-      'style-src': ["'self' 'unsafe-inline'"],
-      'frame-src': ["'none'"],
-      'worker-src': ["'none'"],
-      'connect-src': ['https://api.github.com https://tiddlygit-desktop.authing.cn ws://localhost:3000'],
-    },
-    {
-      nonceEnabled: {
-        'style-src': false,
-      },
-    },
-  ),
+  // new CspHtmlWebpackPlugin(
+  //   {
+  //     'base-uri': ["'self'"],
+  //     'object-src': ["'none'"],
+  //     'script-src': ["'self' 'unsafe-eval'"],
+  //     'style-src': ["'self' 'unsafe-inline'"],
+  //     'frame-src': ["'none'"],
+  //     'worker-src': ["'none'"],
+  //     'connect-src': ['https://api.github.com https://tiddlygit-desktop.authing.cn ws://localhost:3000'],
+  //   },
+  //   {
+  //     nonceEnabled: {
+  //       'style-src': false,
+  //     },
+  //   },
+  // ),
   process.env.NODE_ENV === 'production' ? undefined : new WebpackBar(),
   process.env.NODE_ENV === 'production'
     ? // eslint-disable-next-line @typescript-eslint/no-unsafe-call
