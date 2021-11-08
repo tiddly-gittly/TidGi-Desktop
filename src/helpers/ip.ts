@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { platform, type, networkInterfaces } from 'os';
 import ip from 'ipaddr.js';
+import { logger } from '@services/libs/log';
 
 /**
  * Copy from https://github.com/sindresorhus/internal-ip, to fi xsilverwind/default-gateway 's bug
@@ -29,10 +30,15 @@ function findIp(gateway: string): string | undefined {
 export async function internalIpV4(): Promise<string | undefined> {
   try {
     const defaultGatewayResult = await defaultGatewayV4();
+    try {
+      logger.debug(`in internalIpV4() defaultGatewayResult is ${defaultGatewayResult ? JSON.stringify(defaultGatewayResult) : 'undefined'}`);
+    } catch {}
     if (defaultGatewayResult?.gateway) {
       return findIp(defaultGatewayResult.gateway);
     }
   } catch {}
+  logger.warn('In internalIpV4() using fallback');
+  return 'localhost';
 }
 
 const supportedPlatforms = new Set(['aix', 'android', 'darwin', 'freebsd', 'linux', 'openbsd', 'sunos', 'win32']);
@@ -45,12 +51,14 @@ async function defaultGatewayV4(): Promise<IDefaultGatewayInfo | undefined> {
   const plat = platform();
 
   if (supportedPlatforms.has(plat)) {
-    let gatewayQueryerFileName: NodeJS.Platform | 'ibmi' = plat;
+    let gatewayQueryFileName: NodeJS.Platform | 'ibmi' = plat;
     if (plat === 'aix') {
-      gatewayQueryerFileName = type() === 'OS400' ? 'ibmi' : 'sunos'; // AIX `netstat` output is compatible with Solaris
+      gatewayQueryFileName = type() === 'OS400' ? 'ibmi' : 'sunos'; // AIX `netstat` output is compatible with Solaris
     }
 
-    switch (gatewayQueryerFileName) {
+    logger.debug(`in defaultGatewayV4() plat is ${plat} , so gatewayQueryFileName is ${gatewayQueryFileName}`);
+
+    switch (gatewayQueryFileName) {
       case 'ibmi': {
         const defaultGateway = await import('default-gateway/ibmi');
         return await defaultGateway.v4();
