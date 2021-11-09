@@ -30,6 +30,7 @@ import { IWorkspaceViewService } from './services/workspacesView/interface';
 
 logger.info('App booting');
 
+app.commandLine.appendSwitch('--disable-web-security');
 protocol.registerSchemesAsPrivileged([
   { scheme: 'http', privileges: { standard: true } },
   { scheme: 'https', privileges: { standard: true } },
@@ -114,7 +115,6 @@ const commonInit = async (): Promise<void> => {
   ]);
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();
-
 
   ipcMain.emit('request-update-pause-notifications-info');
   // Fix webview is not resized automatically
