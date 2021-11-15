@@ -106,7 +106,7 @@
     "GitRepoUrl": "Git仓库线上网址",
     "GitTokenDescription": "用于登录Git的凭证，一定时间后会过期",
     "GitEmailDescription": "用于Git提交记录的Email，用于在Github等服务上统计每日提交量",
-    "GitUserNameDescription": "用于登录Git的账户名，注意不是昵称",
+    "GitUserNameDescription": "用于登录Git的账户名，注意是你的仓库网址中你的名字部分",
     "SwitchCreateNewOrOpenExisted": "切换创建新的还是打开现有的WIKI",
     "ExistedWikiLocation": "现有的WIKI的位置",
     "CreateNewWiki": "创建新WIKI",
