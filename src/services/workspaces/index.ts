@@ -3,7 +3,7 @@
 import { injectable } from 'inversify';
 import { app } from 'electron';
 import settings from 'electron-settings';
-import { pickBy, mapValues } from 'lodash';
+import { pickBy, mapValues, debounce } from 'lodash';
 import { v4 as uuid } from 'uuid';
 import path from 'path';
 import fsExtra from 'fs-extra';
@@ -24,6 +24,8 @@ import { lazyInject } from '@services/container';
 import type { IWorkspaceService, IWorkspace, IWorkspaceMetaData, INewWorkspaceConfig } from './interface';
 import i18n from '@services/libs/i18n';
 import { defaultServerIP } from '@/constants/urls';
+
+const debouncedSetSettingFile = debounce(async (id: string, workspace: IWorkspace) => await settings.set(`workspaces.${id}`, { ...workspace }), 500);
 
 @injectable()
 export class Workspace implements IWorkspaceService {
@@ -194,7 +196,7 @@ export class Workspace implements IWorkspaceService {
   public async set(id: string, workspace: IWorkspace): Promise<void> {
     this.workspaces[id] = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspace);
-    await settings.set(`workspaces.${id}`, { ...workspace });
+    await debouncedSetSettingFile(id, workspace);
     await this.updateWorkspaceSubject();
     await this.updateWorkspaceMenuItems();
   }
