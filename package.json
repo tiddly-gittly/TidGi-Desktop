@@ -23,7 +23,7 @@
     "installType": "typesync"
   },
   "repository": "https://github.com/tiddly-gittly/TiddlyGit-Desktop",
-  "author": "Lin Onetwo<linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
+  "author": "Lin Onetwo <linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
   "main": ".webpack/main",
   "dependencies": {
     "@tiddlygit/tiddlywiki": "5.2.1-prerelease-2021-10-17",

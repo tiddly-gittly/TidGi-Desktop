@@ -48,11 +48,15 @@ const config = {
     },
     {
       name: '@electron-forge/maker-deb',
-      config: {},
+      config: {
+        maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
+      },
     },
     {
       name: '@electron-forge/maker-rpm',
-      config: {},
+      config: {
+        maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
+      },
     },
   ],
   plugins: [
