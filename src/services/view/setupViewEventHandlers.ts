@@ -190,24 +190,17 @@ export default function setupViewEventHandlers(
     }
   });
 
-  view.webContents.on(
-    'new-window',
-    async (
-      _event: Electron.NewWindowWebContentsEvent,
-      nextUrl: string,
-      _frameName: string,
-      disposition: 'default' | 'new-window' | 'foreground-tab' | 'background-tab' | 'save-to-disk' | 'other',
-      options: BrowserWindowConstructorOptions,
-      _additionalFeatures: string[],
-      _referrer: Electron.Referrer,
-      _postBody: Electron.PostBody,
-    ) =>
-      await handleNewWindow(_event, nextUrl, _frameName, disposition, options, _additionalFeatures, _referrer, _postBody, {
+  view.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) =>
+    handleNewWindow(
+      details.url,
+      {
         workspace,
         sharedWebPreferences,
         view,
         meta: viewMeta,
-      }),
+      },
+      details.disposition,
+    ),
   );
   // Handle downloads
   // https://electronjs.org/docs/api/download-item
@@ -282,46 +275,49 @@ export interface INewWindowContext {
   workspace: IWorkspace;
 }
 
-async function handleNewWindow(
-  event: Electron.NewWindowWebContentsEvent,
+function handleNewWindow(
   nextUrl: string,
-  _frameName: string,
-  disposition: 'default' | 'new-window' | 'foreground-tab' | 'background-tab' | 'save-to-disk' | 'other',
-  options: BrowserWindowConstructorOptions,
-  _additionalFeatures: string[],
-  _referrer: Electron.Referrer,
-  _postBody: Electron.PostBody,
   newWindowContext: INewWindowContext,
-): Promise<void> {
+  disposition: 'default' | 'new-window' | 'foreground-tab' | 'background-tab' | 'save-to-disk' | 'other',
+):
+  | {
+      action: 'deny';
+    }
+  | {
+      action: 'allow';
+      overrideBrowserWindowOptions?: Electron.BrowserWindowConstructorOptions | undefined;
+    } {
   const nextDomain = extractDomain(nextUrl);
   // open external url in browser
   if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
-    event.preventDefault();
+    logger.debug('handleNewWindow() openExternal', { nextDomain, disposition });
     void shell.openExternal(nextUrl);
-    return;
+    return {
+      action: 'deny',
+    };
   }
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+  logger.debug('handleNewWindow()', { newWindowContext });
   const { view, workspace, sharedWebPreferences } = newWindowContext;
-  let appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
-  if (appUrl === undefined) {
-    throw new Error(`Workspace ${workspace.id} not existed, or don't have homeUrl setting`);
-  }
-  appUrl = await getLocalHostUrlWithActualIP(appUrl);
-  const appDomain = extractDomain(appUrl);
   const currentUrl = view.webContents.getURL();
-  const openInNewWindow = (): void => {
+  // Conditions are listed by order of priority
+  // if global.forceNewWindow = true
+  // or regular new-window event
+  // or if in Google Drive app, open Google Docs files internally https://github.com/atomery/webcatalog/issues/800
+  // the next external link request will be opened in new window
+  if (newWindowContext.meta.forceNewWindow || disposition === 'new-window' || disposition === 'default') {
     // https://gist.github.com/Gvozd/2cec0c8c510a707854e439fb15c561b0
-    event.preventDefault();
     // if 'new-window' is triggered with Cmd+Click
     // options is undefined
     // https://github.com/atomery/webcatalog/issues/842
-    const cmdClick = options === undefined;
     const browserViewMetaData: IBrowserViewMetaData = {
       isPopup: true,
       ...(JSON.parse(
         decodeURIComponent(sharedWebPreferences?.additionalArguments?.[1]?.replace(MetaDataChannel.browserViewMetaData, '') ?? '{}'),
       ) as IBrowserViewMetaData),
     };
+    logger.debug(`handleNewWindow() ${newWindowContext.meta.forceNewWindow ? 'forceNewWindow' : 'disposition'}`, { browserViewMetaData, disposition });
+    newWindowContext.meta.forceNewWindow = false;
     const metadataConfig = {
       additionalArguments: [
         `${MetaDataChannel.browserViewMetaData}${WindowNames.newWindow}`,
@@ -329,111 +325,44 @@ async function handleNewWindow(
       ],
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     };
-    const newOptions: BrowserWindowConstructorOptions = cmdClick
-      ? {
-          show: true,
-          width: 1200,
-          height: 800,
-          webPreferences: { ...sharedWebPreferences, ...metadataConfig },
-        }
-      : { ...options, width: 1200, height: 800, webPreferences: metadataConfig };
-    const popupWin = new BrowserWindow(newOptions);
-    popupWin.setMenuBarVisibility(false);
-    popupWin.webContents.on(
-      'new-window',
-      async (
-        _event: Electron.NewWindowWebContentsEvent,
-        nextUrl: string,
-        _frameName: string,
-        disposition: 'default' | 'new-window' | 'foreground-tab' | 'background-tab' | 'save-to-disk' | 'other',
-        options: BrowserWindowConstructorOptions,
-        _additionalFeatures: string[],
-        _referrer: Electron.Referrer,
-        _postBody: Electron.PostBody,
-      ) => await handleNewWindow(_event, nextUrl, _frameName, disposition, options, _additionalFeatures, _referrer, _postBody, newWindowContext),
-    );
-    // if 'new-window' is triggered with Cmd+Click
-    // url is not loaded automatically
-    // https://github.com/atomery/webcatalog/issues/842
-    if (cmdClick) {
-      void popupWin.loadURL(nextUrl);
-    }
-    event.newGuest = popupWin;
-  };
-  // Conditions are listed by order of priority
-  // if global.forceNewWindow = true
-  // or regular new-window event
-  // or if in Google Drive app, open Google Docs files internally https://github.com/atomery/webcatalog/issues/800
-  // the next external link request will be opened in new window
-  if (
-    newWindowContext.meta.forceNewWindow ||
-    disposition === 'new-window' ||
-    disposition === 'default' ||
-    (appDomain === 'drive.google.com' && nextDomain === 'docs.google.com')
-  ) {
-    newWindowContext.meta.forceNewWindow = false;
-    openInNewWindow();
-    return;
+    const newOptions: BrowserWindowConstructorOptions = { width: 1200, height: 800, webPreferences: metadataConfig };
+    return {
+      action: 'allow',
+      overrideBrowserWindowOptions: newOptions,
+    };
   }
-  // load in same window
-  // if (
-  //   // Google: Add account
-  //   nextDomain === 'accounts.google.com' ||
-  //   // Google: Switch account
-  //   (typeof nextDomain === 'string' &&
-  //     nextDomain.indexOf('google.com') > 0 &&
-  //     isInternalUrl(nextUrl, [appUrl, currentUrl]) &&
-  //     (nextUrl.includes('authuser=') || // https://drive.google.com/drive/u/1/priority?authuser=2 (has authuser query)
-  //       /\/u\/\d+\/{0,1}$/.test(nextUrl))) || // https://mail.google.com/mail/u/1/ (ends with /u/1/)
-  //   // https://github.com/atomery/webcatalog/issues/315
-  //   // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
-  //   ((appDomain?.includes('asana.com') || currentDomain?.includes('asana.com')) && nextDomain?.includes('asana.com'))
-  // ) {
-  //   event.preventDefault();
-  //   void view.webContents.loadURL(nextUrl);
-  //   return;
-  // }
-  // // open new window
-  // if (isInternalUrl(nextUrl, [appUrl, currentUrl])) {
-  //   openInNewWindow();
-  //   return;
-  // }
 
   // App tries to open external link using JS
   // nextURL === 'about:blank' but then window will redirect to the external URL
   // https://github.com/quanglam2807/webcatalog/issues/467#issuecomment-569857721
   if (nextDomain === null && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
-    event.preventDefault();
     const newOptions = {
-      ...options,
       show: false,
     };
+    logger.debug('handleNewWindow() external link using JS', { newOptions });
     const popupWin = new BrowserWindow(newOptions);
     popupWin.setMenuBarVisibility(false);
-    popupWin.webContents.on(
-      'new-window',
-      async (
-        _event: Electron.NewWindowWebContentsEvent,
-        nextUrl: string,
-        _frameName: string,
-        disposition: 'default' | 'new-window' | 'foreground-tab' | 'background-tab' | 'save-to-disk' | 'other',
-        options: BrowserWindowConstructorOptions,
-        _additionalFeatures: string[],
-        _referrer: Electron.Referrer,
-        _postBody: Electron.PostBody,
-      ) => await handleNewWindow(_event, nextUrl, _frameName, disposition, options, _additionalFeatures, _referrer, _postBody, newWindowContext),
-    );
-    popupWin.webContents.once('will-navigate', (_event, url) => {
+    popupWin.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) => handleNewWindow(details.url, newWindowContext, details.disposition));
+    popupWin.webContents.once('will-navigate', async (_event, url) => {
       // if the window is used for the current app, then use default behavior
+      let appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
+      if (appUrl === undefined) {
+        throw new Error(`Workspace ${workspace.id} not existed, or don't have homeUrl setting`);
+      }
+      appUrl = await getLocalHostUrlWithActualIP(appUrl);
       if (isInternalUrl(url, [appUrl, currentUrl])) {
         popupWin.show();
       } else {
         // if not, open in browser
-        event.preventDefault();
+        _event.preventDefault();
         void shell.openExternal(url);
         popupWin.close();
       }
     });
-    event.newGuest = popupWin;
+    return {
+      action: 'deny',
+    };
   }
+
+  return { action: 'allow' };
 }
