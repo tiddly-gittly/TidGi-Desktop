@@ -86,10 +86,7 @@ export default function setupViewEventHandlers(
     if (workspaceObject === undefined) {
       return;
     }
-    const currentUrl = view.webContents.getURL();
-    await workspaceService.update(workspace.id, {
-      lastUrl: currentUrl,
-    });
+    await workspaceViewService.updateLastUrl(workspace.id);
   });
   view.webContents.on('did-finish-load', async () => {
     // fix https://github.com/atomery/webcatalog/issues/870

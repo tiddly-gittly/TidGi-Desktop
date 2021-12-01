@@ -142,6 +142,16 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
   }
 
+  public async updateLastUrl(workspaceID: string): Promise<void> {
+    const view = this.viewService.getView(workspaceID, WindowNames.main);
+    if (view !== undefined) {
+      const currentUrl = view.webContents.getURL();
+      await this.workspaceService.update(workspaceID, {
+        lastUrl: currentUrl,
+      });
+    }
+  }
+
   public async openUrlInWorkspace(url: string, id: string): Promise<void> {
     if (typeof id === 'string' && id.length > 0) {
       // if id is defined, switch to that workspace
@@ -296,6 +306,7 @@ export class WorkspaceView implements IWorkspaceViewService {
   public async restartWorkspaceViewService(id?: string): Promise<void> {
     const workspaceToRestart = id !== undefined ? await this.workspaceService.get(id) : await this.workspaceService.getActiveWorkspace();
     if (workspaceToRestart !== undefined) {
+      await this.updateLastUrl(workspaceToRestart.id);
       await this.wikiService.restartWiki(workspaceToRestart);
       await this.viewService.reloadViewsWebContents(workspaceToRestart.id);
       await this.wikiService.wikiOperation(WikiChannel.generalNotification, [i18n.t('ContextMenu.RestartServiceComplete')]);
