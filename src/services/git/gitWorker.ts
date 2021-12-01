@@ -53,6 +53,7 @@ function commitAndSyncWiki(wikiFolderPath: string, remoteUrl: string, userInfo: 
           observer.next({ message, level: 'notice', meta: { handler: WikiChannel.syncProgress, callerFunction: 'commitAndSync', ...context } });
         },
       },
+      filesToIgnore: ['.DS_Store'],
     }).then(
       () => observer.complete(),
       (error) => observer.error(error),
