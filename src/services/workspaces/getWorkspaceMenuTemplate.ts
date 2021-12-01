@@ -100,7 +100,10 @@ export async function getWorkspaceMenuTemplate(
       template.push({
         label: t('ContextMenu.SyncNow') + (isOnline ? '' : `(${t('ContextMenu.NoNetworkConnection')})`),
         enabled: isOnline,
-        click: async () => await service.git.commitAndSync(wikiFolderLocation, gitUrl, userInfo),
+        click: async () => {
+          await service.git.commitAndSync(wikiFolderLocation, gitUrl, userInfo);
+          await service.view.reloadViewsWebContents(id);
+        },
       });
     }
   }
