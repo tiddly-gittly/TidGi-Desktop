@@ -102,6 +102,7 @@ export async function getWorkspaceMenuTemplate(
         enabled: isOnline,
         click: async () => {
           await service.git.commitAndSync(wikiFolderLocation, gitUrl, userInfo);
+          await service.workspaceView.restartWorkspaceViewService(id);
           await service.view.reloadViewsWebContents(id);
         },
       });
