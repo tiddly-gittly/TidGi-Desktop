@@ -3,6 +3,7 @@
 import { app, BrowserView, shell, nativeImage, BrowserWindowConstructorOptions, BrowserWindow } from 'electron';
 import path from 'path';
 import fsExtra from 'fs-extra';
+import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
 
 import { IWorkspace } from '@services/workspaces/interface';
 import getViewBounds from '@services/libs/getViewBounds';
@@ -14,12 +15,14 @@ import type { IPreferenceService } from '@services/preferences/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
-import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
+import { WindowNames, IBrowserViewMetaData, windowDimension } from '@services/windows/WindowProperties';
 import { container } from '@services/container';
 import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 import { LOAD_VIEW_MAX_RETRIES } from '@/constants/parameters';
+import { SETTINGS_FOLDER } from '@/constants/appPaths';
+import { IMenuService } from '@services/menu/interface';
 
 export interface IViewContext {
   loadInitialUrlWithCatch: () => Promise<void>;
@@ -200,6 +203,7 @@ export default function setupViewEventHandlers(
         meta: viewMeta,
       },
       details.disposition,
+      view.webContents,
     ),
   );
   // Handle downloads
@@ -279,6 +283,7 @@ function handleNewWindow(
   nextUrl: string,
   newWindowContext: INewWindowContext,
   disposition: 'default' | 'new-window' | 'foreground-tab' | 'background-tab' | 'save-to-disk' | 'other',
+  parentWebContents: Electron.WebContents,
 ):
   | {
       action: 'deny';
@@ -300,12 +305,17 @@ function handleNewWindow(
   logger.debug('handleNewWindow()', { newWindowContext });
   const { view, workspace, sharedWebPreferences } = newWindowContext;
   const currentUrl = view.webContents.getURL();
-  // Conditions are listed by order of priority
-  // if global.forceNewWindow = true
-  // or regular new-window event
-  // or if in Google Drive app, open Google Docs files internally https://github.com/atomery/webcatalog/issues/800
-  // the next external link request will be opened in new window
-  if (newWindowContext.meta.forceNewWindow || disposition === 'new-window' || disposition === 'default') {
+  /** Conditions are listed by order of priority
+  if global.forceNewWindow = true
+  or regular new-window event
+  or if in Google Drive app, open Google Docs files internally https://github.com/atomery/webcatalog/issues/800
+  the next external link request will be opened in new window */
+  const clickOpenNewWindow = newWindowContext.meta.forceNewWindow || disposition === 'new-window' || disposition === 'default';
+  /** App tries to open external link using JS
+  nextURL === 'about:blank' but then window will redirect to the external URL
+  https://github.com/quanglam2807/webcatalog/issues/467#issuecomment-569857721 */
+  const isExternalLinkUsingJS = nextDomain === null && (disposition === 'foreground-tab' || disposition === 'background-tab');
+  if (clickOpenNewWindow || isExternalLinkUsingJS) {
     // https://gist.github.com/Gvozd/2cec0c8c510a707854e439fb15c561b0
     // if 'new-window' is triggered with Cmd+Click
     // options is undefined
@@ -316,7 +326,12 @@ function handleNewWindow(
         decodeURIComponent(sharedWebPreferences?.additionalArguments?.[1]?.replace(MetaDataChannel.browserViewMetaData, '') ?? '{}'),
       ) as IBrowserViewMetaData),
     };
-    logger.debug(`handleNewWindow() ${newWindowContext.meta.forceNewWindow ? 'forceNewWindow' : 'disposition'}`, { browserViewMetaData, disposition });
+    logger.debug(`handleNewWindow() ${newWindowContext.meta.forceNewWindow ? 'forceNewWindow' : 'disposition'}`, {
+      browserViewMetaData,
+      disposition,
+      nextUrl,
+      nextDomain,
+    });
     newWindowContext.meta.forceNewWindow = false;
     const metadataConfig = {
       additionalArguments: [
@@ -325,42 +340,56 @@ function handleNewWindow(
       ],
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
     };
-    const newOptions: BrowserWindowConstructorOptions = { width: 1200, height: 800, webPreferences: metadataConfig };
+    const windowWithBrowserViewState = windowStateKeeper({
+      file: 'window-state-open-in-new-window.json',
+      path: SETTINGS_FOLDER,
+      defaultWidth: windowDimension[WindowNames.main].width,
+      defaultHeight: windowDimension[WindowNames.main].height,
+    });
+    let newOptions: BrowserWindowConstructorOptions = {
+      x: windowWithBrowserViewState.x,
+      y: windowWithBrowserViewState.y,
+      width: windowWithBrowserViewState.width,
+      height: windowWithBrowserViewState.height,
+      webPreferences: metadataConfig,
+      autoHideMenuBar: true,
+    };
+
+    if (isExternalLinkUsingJS) {
+      newOptions = { ...newOptions, show: false };
+    }
+    parentWebContents.once('did-create-window', (childWindow) => {
+      childWindow.setMenuBarVisibility(false);
+      childWindow.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) =>
+        handleNewWindow(details.url, newWindowContext, details.disposition, parentWebContents),
+      );
+      childWindow.webContents.once('will-navigate', async (_event, url) => {
+        // if the window is used for the current app, then use default behavior
+        let appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
+        if (appUrl === undefined) {
+          throw new Error(`Workspace ${workspace.id} not existed, or don't have homeUrl setting`);
+        }
+        appUrl = await getLocalHostUrlWithActualIP(appUrl);
+        if (isInternalUrl(url, [appUrl, currentUrl])) {
+          childWindow.show();
+        } else {
+          // if not, open in browser
+          _event.preventDefault();
+          void shell.openExternal(url);
+          childWindow.close();
+        }
+      });
+      windowWithBrowserViewState.manage(childWindow);
+      const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
+      void menuService.initContextMenuForWindowWebContents(view.webContents).then((unregisterContextMenu) => {
+        childWindow.webContents.on('destroyed', () => {
+          unregisterContextMenu();
+        });
+      });
+    });
     return {
       action: 'allow',
       overrideBrowserWindowOptions: newOptions,
-    };
-  }
-
-  // App tries to open external link using JS
-  // nextURL === 'about:blank' but then window will redirect to the external URL
-  // https://github.com/quanglam2807/webcatalog/issues/467#issuecomment-569857721
-  if (nextDomain === null && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
-    const newOptions = {
-      show: false,
-    };
-    logger.debug('handleNewWindow() external link using JS', { newOptions });
-    const popupWin = new BrowserWindow(newOptions);
-    popupWin.setMenuBarVisibility(false);
-    popupWin.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) => handleNewWindow(details.url, newWindowContext, details.disposition));
-    popupWin.webContents.once('will-navigate', async (_event, url) => {
-      // if the window is used for the current app, then use default behavior
-      let appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
-      if (appUrl === undefined) {
-        throw new Error(`Workspace ${workspace.id} not existed, or don't have homeUrl setting`);
-      }
-      appUrl = await getLocalHostUrlWithActualIP(appUrl);
-      if (isInternalUrl(url, [appUrl, currentUrl])) {
-        popupWin.show();
-      } else {
-        // if not, open in browser
-        _event.preventDefault();
-        void shell.openExternal(url);
-        popupWin.close();
-      }
-    });
-    return {
-      action: 'deny',
     };
   }
 
