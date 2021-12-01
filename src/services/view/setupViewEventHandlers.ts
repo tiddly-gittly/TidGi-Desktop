@@ -3,7 +3,7 @@
 import { app, BrowserView, shell, nativeImage, BrowserWindowConstructorOptions, BrowserWindow } from 'electron';
 import path from 'path';
 import fsExtra from 'fs-extra';
-import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
+import windowStateKeeper from 'electron-window-state';
 
 import { IWorkspace } from '@services/workspaces/interface';
 import getViewBounds from '@services/libs/getViewBounds';
@@ -14,6 +14,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import { IMenuService } from '@services/menu/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames, IBrowserViewMetaData, windowDimension } from '@services/windows/WindowProperties';
 import { container } from '@services/container';
@@ -22,7 +23,6 @@ import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 import { LOAD_VIEW_MAX_RETRIES } from '@/constants/parameters';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
-import { IMenuService } from '@services/menu/interface';
 
 export interface IViewContext {
   loadInitialUrlWithCatch: () => Promise<void>;
