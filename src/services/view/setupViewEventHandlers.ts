@@ -318,7 +318,9 @@ async function handleNewWindow(
     const cmdClick = options === undefined;
     const browserViewMetaData: IBrowserViewMetaData = {
       isPopup: true,
-      ...(JSON.parse(decodeURIComponent(sharedWebPreferences?.additionalArguments?.[1] ?? '{}')) as IBrowserViewMetaData),
+      ...(JSON.parse(
+        decodeURIComponent(sharedWebPreferences?.additionalArguments?.[1]?.replace(MetaDataChannel.browserViewMetaData, '') ?? '{}'),
+      ) as IBrowserViewMetaData),
     };
     const metadataConfig = {
       additionalArguments: [
