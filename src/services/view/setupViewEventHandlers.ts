@@ -79,13 +79,6 @@ export default function setupViewEventHandlers(
     });
   });
   view.webContents.on('did-stop-loading', async () => {
-    const workspaceObject = await workspaceService.get(workspace.id);
-    // this event might be triggered
-    // even after the workspace obj and BrowserView
-    // are destroyed. See https://github.com/atomery/webcatalog/issues/836
-    if (workspaceObject === undefined) {
-      return;
-    }
     await workspaceViewService.updateLastUrl(workspace.id);
   });
   view.webContents.on('did-finish-load', async () => {
