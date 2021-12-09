@@ -149,6 +149,8 @@ export class WorkspaceView implements IWorkspaceViewService {
       await this.workspaceService.update(workspaceID, {
         lastUrl: currentUrl,
       });
+    } else {
+      logger.warn(`Can't update lastUrl for workspace ${workspaceID}, view is not found`);
     }
   }
 
@@ -306,10 +308,13 @@ export class WorkspaceView implements IWorkspaceViewService {
   public async restartWorkspaceViewService(id?: string): Promise<void> {
     const workspaceToRestart = id !== undefined ? await this.workspaceService.get(id) : await this.workspaceService.getActiveWorkspace();
     if (workspaceToRestart !== undefined) {
+      logger.info(`Restarting workspace ${workspaceToRestart.id}`);
       await this.updateLastUrl(workspaceToRestart.id);
       await this.wikiService.restartWiki(workspaceToRestart);
       await this.viewService.reloadViewsWebContents(workspaceToRestart.id);
       await this.wikiService.wikiOperation(WikiChannel.generalNotification, [i18n.t('ContextMenu.RestartServiceComplete')]);
+    } else {
+      logger.warn(`restartWorkspaceViewService: no workspace ${id ?? 'id undefined'} to restart`);
     }
   }
 
