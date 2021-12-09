@@ -24,6 +24,7 @@ import { lazyInject } from '@services/container';
 import type { IWorkspaceService, IWorkspace, IWorkspaceMetaData, INewWorkspaceConfig } from './interface';
 import i18n from '@services/libs/i18n';
 import { defaultServerIP } from '@/constants/urls';
+import { logger } from '@services/libs/log';
 
 const debouncedSetSettingFile = debounce(async (id: string, workspace: IWorkspace) => await settings.set(`workspaces.${id}`, { ...workspace }), 500);
 
@@ -193,20 +194,25 @@ export class Workspace implements IWorkspaceService {
     return this.workspaces$.pipe(map((workspaces) => workspaces[id]));
   }
 
-  public async set(id: string, workspace: IWorkspace): Promise<void> {
+  public async set(id: string, workspace: IWorkspace, immediate?: boolean): Promise<void> {
     this.workspaces[id] = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspace);
-    await debouncedSetSettingFile(id, workspace);
+    if (immediate === true) {
+      await settings.set(`workspaces.${id}`, { ...workspace });
+    } else {
+      await debouncedSetSettingFile(id, workspace);
+    }
     await this.updateWorkspaceSubject();
     await this.updateWorkspaceMenuItems();
   }
 
-  public async update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void> {
+  public async update(id: string, workspaceSetting: Partial<IWorkspace>, immediate?: boolean): Promise<void> {
     const workspace = await this.get(id);
     if (workspace === undefined) {
+      logger.error(`Could not update workspace ${id} because it does not exist`);
       return;
     }
-    await this.set(id, { ...workspace, ...workspaceSetting });
+    await this.set(id, { ...workspace, ...workspaceSetting }, immediate);
   }
 
   public async setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void> {

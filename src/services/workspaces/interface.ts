@@ -133,11 +133,11 @@ export interface IWorkspaceService {
   getWorkspacesAsList(): Promise<IWorkspace[]>;
   remove(id: string): Promise<void>;
   removeWorkspacePicture(id: string): Promise<void>;
-  set(id: string, workspace: IWorkspace): Promise<void>;
+  set(id: string, workspace: IWorkspace, immediate?: boolean): Promise<void>;
   setActiveWorkspace(id: string): Promise<void>;
   setWorkspacePicture(id: string, sourcePicturePath: string): Promise<void>;
   setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void>;
-  update(id: string, workspaceSetting: Partial<IWorkspace>): Promise<void>;
+  update(id: string, workspaceSetting: Partial<IWorkspace>, immediate?: boolean): Promise<void>;
   updateMetaData: (id: string, options: Partial<IWorkspaceMetaData>) => Promise<void>;
   workspaces$: BehaviorSubject<Record<string, IWorkspace>>;
 }
