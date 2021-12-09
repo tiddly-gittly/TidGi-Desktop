@@ -9,6 +9,12 @@ declare module '@tiddlygit/tiddlywiki' {
   }
   export function TiddlyWiki(): I$TW;
 }
+declare module 'tiddlywiki' {
+  export interface I$TW {
+    boot: { argv: string[]; startup: (options: { callback: () => unknown }) => void };
+  }
+  export function TiddlyWiki(): I$TW;
+}
 
 declare module 'threads-plugin' {
   const value: any;
