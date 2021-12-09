@@ -1,7 +1,7 @@
 import 'source-map-support/register';
 import { expose } from 'threads/worker';
 import path from 'path';
-import tiddlywiki from 'tiddlywiki';
+import tiddlywiki from '@tiddlygit/tiddlywiki';
 import { Observable } from 'rxjs';
 import intercept from 'intercept-stdout';
 
