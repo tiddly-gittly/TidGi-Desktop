@@ -42,7 +42,8 @@ export interface IWorkspaceViewService {
   setActiveWorkspaceView(workspaceID: string): Promise<void>;
   setWorkspaceView(workspaceID: string, workspaceOptions: IWorkspace): Promise<void>;
   setWorkspaceViews(workspaces: Record<string, IWorkspace>): Promise<void>;
-  updateLastUrl(workspaceID: string): Promise<void>;
+  /** get view's current url, store into the workspace. Can provide a designated view to operate  */
+  updateLastUrl(workspaceID: string, view?: Electron.CrossProcessExports.BrowserView | undefined): Promise<void>;
   wakeUpWorkspaceView(workspaceID: string): Promise<void>;
 }
 export const WorkspaceViewServiceIPCDescriptor = {

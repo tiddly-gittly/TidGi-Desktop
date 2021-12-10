@@ -142,8 +142,10 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
   }
 
-  public async updateLastUrl(workspaceID: string): Promise<void> {
-    const view = this.viewService.getView(workspaceID, WindowNames.main);
+  public async updateLastUrl(
+    workspaceID: string,
+    view: Electron.CrossProcessExports.BrowserView | undefined = this.viewService.getView(workspaceID, WindowNames.main),
+  ): Promise<void> {
     if (view !== undefined) {
       const currentUrl = view.webContents.getURL();
       logger.debug(`Updating lastUrl for workspace ${workspaceID} to ${currentUrl}`);

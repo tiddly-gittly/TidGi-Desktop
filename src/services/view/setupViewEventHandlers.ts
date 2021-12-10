@@ -78,8 +78,8 @@ export default function setupViewEventHandlers(
       isLoading: true,
     });
   });
-  view.webContents.on('did-stop-loading', async () => {
-    await workspaceViewService.updateLastUrl(workspace.id);
+  view.webContents.on('did-navigate', async () => {
+    await workspaceViewService.updateLastUrl(workspace.id, view);
   });
   view.webContents.on('did-finish-load', async () => {
     // fix https://github.com/atomery/webcatalog/issues/870
