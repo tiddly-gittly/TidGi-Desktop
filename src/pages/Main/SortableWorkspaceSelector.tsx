@@ -2,7 +2,6 @@ import { useCallback, MouseEvent } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { WindowNames } from '@services/windows/WindowProperties';
 import WorkspaceSelector from './WorkspaceSelector';
 import { IWorkspace } from '@services/workspaces/interface';
 import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/workspaces/getWorkspaceMenuTemplate';
@@ -24,7 +23,13 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
     transition: transition ?? undefined,
   };
   const onWorkspaceClick = useCallback(async () => {
-    await openWorkspaceTagTiddler(workspace, window.service);
+    try {
+      await openWorkspaceTagTiddler(workspace, window.service);
+    } catch (error) {
+      if (error instanceof Error) {
+        window.service.native.log('error', error.message);
+      }
+    }
   }, [workspace]);
   const onWorkspaceContextMenu = useCallback(
     async (event: MouseEvent<HTMLDivElement>) => {

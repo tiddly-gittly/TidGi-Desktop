@@ -34,7 +34,7 @@ export class NativeService implements INativeService {
       throw new ZxInitializationRetryFailedError();
     }
     try {
-      const worker = await spawn<ZxWorker>(new Worker(workerURL));
+      const worker = await spawn<ZxWorker>(new Worker(workerURL as string));
       this.zxWorker = worker;
       logger.info('zxWorker initialized');
     } catch (error) {
@@ -147,5 +147,9 @@ export class NativeService implements INativeService {
 
   public async quit(): Promise<void> {
     app.quit();
+  }
+
+  public async log(level: string, message: string, meta?: Record<string, unknown>): Promise<void> {
+    logger.log(level, message, meta);
   }
 }

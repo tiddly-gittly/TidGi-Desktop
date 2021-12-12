@@ -11,6 +11,7 @@ import { IZxFileInput } from './zxWorker';
  */
 export interface INativeService {
   executeZxScript$(zxWorkerArguments: IZxFileInput): Observable<string>;
+  log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   openInEditor(filePath: string, editorName?: string | undefined): Promise<void>;
   openInGitGuiApp(filePath: string, editorName?: string | undefined): Promise<void>;
@@ -23,6 +24,7 @@ export const NativeServiceIPCDescriptor = {
   channel: NativeChannel.name,
   properties: {
     executeZxScript$: ProxyPropertyType.Function$,
+    log: ProxyPropertyType.Function,
     open: ProxyPropertyType.Function,
     openInEditor: ProxyPropertyType.Function,
     openInGitGuiApp: ProxyPropertyType.Function,
