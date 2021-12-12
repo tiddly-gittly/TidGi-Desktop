@@ -106,8 +106,9 @@ export class Wiki implements IWikiService {
       });
       Thread.events(worker).subscribe((event: WorkerEvent) => {
         if (event.type === 'message') {
-          wikiOutputToFile(homePath, `${JSON.stringify(event.data)}\n`);
-          logger.debug(String(event.data), loggerMeta);
+          const messageString = JSON.stringify(event.data);
+          wikiOutputToFile(homePath, `${messageString}\n`);
+          logger.debug('wiki message', { ...event.data, ...loggerMeta });
         } else if (event.type === 'termination') {
           delete this.wikiWorkers[homePath];
           const warningMessage = `NodeJSWiki ${homePath} Worker stopped (can be normal quit, or unexpected error, see other logs to determine)`;
@@ -124,7 +125,7 @@ export class Wiki implements IWikiService {
             case WikiControlActions.booted: {
               setTimeout(async () => {
                 if (message.message !== undefined) {
-                  logger.info(message.message, loggerMeta);
+                  logger.info('WikiControlActions.booted', { 'message.message': message.message, ...loggerMeta });
                 }
                 logger.info(`startWiki() resolved with message.type === 'control' and WikiControlActions.booted`, loggerMeta);
                 resolve();
@@ -133,7 +134,7 @@ export class Wiki implements IWikiService {
             }
             case WikiControlActions.start: {
               if (message.message !== undefined) {
-                logger.debug(message.message, loggerMeta);
+                logger.debug('WikiControlActions.start', { 'message.message': message.message, ...loggerMeta });
               }
               break;
             }

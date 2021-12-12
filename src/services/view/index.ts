@@ -300,7 +300,7 @@ export class View implements IViewService {
           unregisterContextMenu();
         });
       } catch (error) {
-        logger.error(new ViewLoadUrlError(hostReplacedUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
+        logger.warn(new ViewLoadUrlError(hostReplacedUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
       }
     };
     setupViewEventHandlers(view, browserWindow, {
