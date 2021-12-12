@@ -26,7 +26,8 @@ import i18n from '@services/libs/i18n';
 import { defaultServerIP } from '@/constants/urls';
 import { logger } from '@services/libs/log';
 
-const debouncedSetSettingFile = debounce(async (id: string, workspace: IWorkspace) => await settings.set(`workspaces.${id}`, { ...workspace }), 500);
+// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+const debouncedSetSettingFile = debounce(async (workspaces: Record<string, IWorkspace>) => await settings.set(`workspaces`, workspaces as any), 500);
 
 @injectable()
 export class Workspace implements IWorkspaceService {
@@ -200,7 +201,7 @@ export class Workspace implements IWorkspaceService {
     if (immediate === true) {
       await settings.set(`workspaces.${id}`, { ...workspace });
     } else {
-      await debouncedSetSettingFile(id, workspace);
+      void debouncedSetSettingFile(this.workspaces);
     }
     await this.updateWorkspaceSubject();
     await this.updateWorkspaceMenuItems();
