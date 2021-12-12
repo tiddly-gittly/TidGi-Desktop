@@ -310,16 +310,16 @@ export class Workspace implements IWorkspaceService {
   };
 
   public async setActiveWorkspace(id: string): Promise<void> {
-    const currentActiveWorkspace = await this.getActiveWorkspace();
-    if (currentActiveWorkspace !== undefined) {
-      if (currentActiveWorkspace.id === id) {
-        return;
-      }
-      // de-active the current one
-      await this.set(currentActiveWorkspace.id, { ...currentActiveWorkspace, active: false });
-    }
     // active new one
-    await this.set(id, { ...this.workspaces[id], active: true, hibernated: false });
+    await this.update(id, { active: true, hibernated: false });
+    // de-active the other one
+    await Promise.all(
+      this.getWorkspacesAsListSync()
+        .filter((workspace) => workspace.id !== id)
+        .map(async (workspace) => {
+          await this.update(workspace.id, { active: false });
+        }),
+    );
   }
 
   /**
