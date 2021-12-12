@@ -32,8 +32,9 @@ export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IW
   const oldActiveWorkspace = await service.workspace.getActiveWorkspace();
   // if is a new main workspace, active its browser view first
   if (!isSubWiki && idToActive !== null && idToActive !== undefined && oldActiveWorkspace?.id !== idToActive) {
-    await service.workspaceView.setActiveWorkspaceView(idToActive);
+    return await service.workspaceView.setActiveWorkspaceView(idToActive);
   }
+  // is not a new main workspace
   // open tiddler in the active view
   if (isSubWiki) {
     if (typeof tagName === 'string') {
