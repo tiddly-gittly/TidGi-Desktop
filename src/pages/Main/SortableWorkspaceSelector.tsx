@@ -1,4 +1,4 @@
-import { useCallback, MouseEvent } from 'react';
+import { useCallback, MouseEvent, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
@@ -22,7 +22,9 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
     transform: CSS.Transform.toString(transform),
     transition: transition ?? undefined,
   };
+  const [workspaceClickedLoading, workspaceClickedLoadingSetter] = useState(false);
   const onWorkspaceClick = useCallback(async () => {
+    workspaceClickedLoadingSetter(true);
     try {
       await openWorkspaceTagTiddler(workspace, window.service);
     } catch (error) {
@@ -30,6 +32,7 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
         window.service.native.log('error', error.message);
       }
     }
+    workspaceClickedLoadingSetter(false);
   }, [workspace]);
   const onWorkspaceContextMenu = useCallback(
     async (event: MouseEvent<HTMLDivElement>) => {
@@ -43,6 +46,7 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} onContextMenu={onWorkspaceContextMenu}>
       <WorkspaceSelector
+        workspaceClickedLoading={workspaceClickedLoading}
         onClick={onWorkspaceClick}
         active={active}
         id={id}

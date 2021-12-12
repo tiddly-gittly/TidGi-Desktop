@@ -9,7 +9,7 @@ import { getAssetsFileUrl } from '@/helpers/url';
 
 Promise.config({ cancellation: true });
 
-const Root = styled.div<{ active?: boolean; hibernated?: boolean }>`
+const Root = styled.div<{ active?: boolean; hibernated?: boolean; loading?: boolean }>`
   height: fit-content;
   width: 58px;
   padding: 10px 0;
@@ -36,6 +36,11 @@ const Root = styled.div<{ active?: boolean; hibernated?: boolean }>`
     active === true &&
     css`
       opacity: 1;
+    `}
+  ${({ loading }) =>
+    loading === true &&
+    css`
+      cursor: wait;
     `}
 `;
 
@@ -123,6 +128,7 @@ interface Props {
   picturePath?: string | null;
   showSidebarShortcutHints?: boolean;
   transparentBackground?: boolean;
+  workspaceClickedLoading: boolean;
   workspaceName?: string;
 }
 export default function WorkspaceSelector({
@@ -135,6 +141,7 @@ export default function WorkspaceSelector({
   showSidebarShortcutHints = false,
   transparentBackground = false,
   workspaceName,
+  workspaceClickedLoading,
   onClick = () => {},
 }: Props): JSX.Element {
   const { t } = useTranslation();
@@ -144,7 +151,7 @@ export default function WorkspaceSelector({
     shortWorkspaceNameSetter(baseName !== undefined ? baseName : t('WorkspaceSelector.BadWorkspacePath'));
   }, [workspaceName, t]);
   return (
-    <Root hibernated={hibernated} active={active} onClick={onClick}>
+    <Root hibernated={hibernated} active={active} onClick={workspaceClickedLoading ? () => {} : onClick} loading={workspaceClickedLoading}>
       <Badge color="secondary" badgeContent={badgeCount} max={99}>
         <Avatar
           large={!showSidebarShortcutHints}
