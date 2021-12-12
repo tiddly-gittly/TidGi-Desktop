@@ -40,7 +40,9 @@ const Root = styled.div<{ active?: boolean; hibernated?: boolean; loading?: bool
   ${({ loading }) =>
     loading === true &&
     css`
-      cursor: wait;
+      &:hover {
+        cursor: wait;
+      }
     `}
 `;
 
