@@ -50,13 +50,17 @@ export class WorkspaceView implements IWorkspaceViewService {
     this.wikiService.setAllWikiStartLockOff();
   }
 
-  public async initializeWorkspaceView(workspace: IWorkspace, options?: IInitializeWorkspaceOptions): Promise<void> {
-    const { checkHibernated = true, syncImmediately = true, isNew = false } = options ?? {};
+  public async initializeWorkspaceView(workspace: IWorkspace, options: IInitializeWorkspaceOptions = {}): Promise<void> {
+    const { followHibernateSettingWhenInit = true, syncImmediately = true, isNew = false } = options;
     // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
     if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {
       return;
     }
-    if (checkHibernated && ((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) && !workspace.active) {
+    if (
+      followHibernateSettingWhenInit &&
+      ((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) &&
+      !workspace.active
+    ) {
       if (!workspace.hibernated) {
         await this.workspaceService.update(workspace.id, { hibernated: true });
       }
@@ -283,7 +287,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         await this.hibernateWorkspaceView(oldActiveWorkspace.id);
       }
       if (newWorkspace.hibernated) {
-        await this.initializeWorkspaceView(newWorkspace, { checkHibernated: false, syncImmediately: false });
+        await this.initializeWorkspaceView(newWorkspace, { followHibernateSettingWhenInit: false, syncImmediately: false });
         await this.workspaceService.update(workspaceID, {
           hibernated: false,
         });

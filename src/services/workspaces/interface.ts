@@ -15,9 +15,12 @@ export interface IWorkspace {
    * The online repo to back data up to
    */
   gitUrl: string | null;
+  /**
+   * Hibernate workspace on startup and when switch to another workspace.
+   */
   hibernateWhenUnused: boolean;
   /**
-   * Is this workspace hibernated
+   * Is this workspace hibernated. You can hibernate workspace manually, without setting its hibernateWhenUnused. So we record this field in workspace.
    */
   hibernated: boolean;
   /**

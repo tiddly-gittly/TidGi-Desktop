@@ -4,7 +4,11 @@ import { WorkspaceViewChannel } from '@/constants/channels';
 import { IWorkspace, INewWorkspaceConfig } from '@services/workspaces/interface';
 
 export interface IInitializeWorkspaceOptions {
-  checkHibernated?: boolean;
+  /**
+   * When initialize workspace view, check its hibernate setting, if if true then hibernate it.
+   * Close this if you want to initialize workspace view without hibernate it, regardless of its setting (for example, when you want to wake up a hibernated workspace).
+   */
+  followHibernateSettingWhenInit?: boolean;
   isNew?: boolean;
   syncImmediately?: boolean;
 }
