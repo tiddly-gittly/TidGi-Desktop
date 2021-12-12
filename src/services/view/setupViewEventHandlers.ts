@@ -87,7 +87,6 @@ export default function setupViewEventHandlers(
     // update isLoading to false when load succeed
     await workspaceService.updateMetaData(workspace.id, {
       isLoading: false,
-      didFailLoadTimes: 0,
     });
   });
   // focus on initial load
@@ -105,7 +104,6 @@ export default function setupViewEventHandlers(
   // https://github.com/webcatalog/neutron/blob/3d9e65c255792672c8bc6da025513a5404d98730/main-src/libs/views.js#L397
   view.webContents.on('did-fail-load', async (_event, errorCode, errorDesc, _validateUrl, isMainFrame) => {
     const [workspaceObject, workspaceMetaData] = await Promise.all([workspaceService.get(workspace.id), workspaceService.getMetaData(workspace.id)]);
-    const didFailLoadTimes = workspaceMetaData.didFailLoadTimes ?? 0;
     // this event might be triggered
     // even after the workspace obj and BrowserView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
@@ -114,22 +112,14 @@ export default function setupViewEventHandlers(
     }
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {
       // Fix nodejs wiki start slow on system startup, which cause `-102 ERR_CONNECTION_REFUSED` even if wiki said it is booted, we have to retry several times
-      if (
-        errorCode === -102 &&
-        view.webContents.getURL().length > 0 &&
-        workspaceObject.homeUrl.startsWith('http') &&
-        didFailLoadTimes < LOAD_VIEW_MAX_RETRIES
-      ) {
+      if (errorCode === -102 && view.webContents.getURL().length > 0 && workspaceObject.homeUrl.startsWith('http')) {
         setTimeout(async () => {
-          await workspaceService.updateMetaData(workspace.id, {
-            didFailLoadTimes: didFailLoadTimes + 1,
-          });
           await loadInitialUrlWithCatch();
         }, 1000);
         return;
       }
       await workspaceService.updateMetaData(workspace.id, {
-        didFailLoadErrorMessage: `${errorCode} ${errorDesc} , retryTimes: ${didFailLoadTimes}`,
+        didFailLoadErrorMessage: `${errorCode} ${errorDesc}`,
       });
       if (workspaceObject.active && browserWindow !== undefined && !browserWindow.isDestroyed()) {
         // fix https://github.com/atomery/singlebox/issues/228

@@ -97,10 +97,6 @@ export interface IWorkspaceMetaData {
    */
   didFailLoadErrorMessage: string | null | undefined;
   /**
-   * How many times did we retry failed
-   */
-  didFailLoadTimes?: number;
-  /**
    * indicating server or webpage is still loading
    */
   isLoading?: boolean;

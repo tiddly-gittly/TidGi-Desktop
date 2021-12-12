@@ -290,7 +290,7 @@ export class View implements IViewService {
     });
     /**
      * Try catch loadUrl, other wise it will throw unhandled promise rejection Error: ERR_CONNECTION_REFUSED (-102) loading 'http://localhost:5212/
-     * We will set `didFailLoadErrorMessage`, and `didFailLoadTimes < LOAD_VIEW_MAX_RETRIES` in `setupViewEventHandlers`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
+     * We will set `didFailLoadErrorMessage`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
      */
     const loadInitialUrlWithCatch = async (): Promise<void> => {
       try {
@@ -300,12 +300,7 @@ export class View implements IViewService {
           unregisterContextMenu();
         });
       } catch (error) {
-        let didFailLoadTimes = 0;
-        try {
-          const workspaceMetaData = await this.workspaceService.getMetaData(workspace.id);
-          didFailLoadTimes = workspaceMetaData.didFailLoadTimes ?? 0;
-        } catch {}
-        logger.error(new ViewLoadUrlError(hostReplacedUrl, didFailLoadTimes, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
+        logger.error(new ViewLoadUrlError(hostReplacedUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
       }
     };
     setupViewEventHandlers(view, browserWindow, {

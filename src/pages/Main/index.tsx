@@ -199,12 +199,6 @@ export default function Main(): JSX.Element {
     // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
   }, {} as AsyncReturnType<typeof window.service.workspace.getMetaData>);
   const requestReload = useCallback(async (): Promise<void> => {
-    const activeWorkspace = await window.service.workspace.getActiveWorkspace();
-    if (activeWorkspace !== undefined) {
-      await window.service.workspace.updateMetaData(activeWorkspace.id, {
-        didFailLoadTimes: 0,
-      });
-    }
     await window.service.window.reload(window.meta.windowName);
   }, []);
 
