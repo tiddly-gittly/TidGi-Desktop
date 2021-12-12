@@ -305,6 +305,7 @@ export class View implements IViewService {
           }`,
         );
         await view.webContents.loadURL(hostReplacedUrl);
+        logger.debug('loadInitialUrlWithCatch() await loadURL() done');
         const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
         view.webContents.on('destroyed', () => {
           unregisterContextMenu();

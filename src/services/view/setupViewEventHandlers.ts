@@ -23,6 +23,7 @@ import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 import { LOAD_VIEW_MAX_RETRIES } from '@/constants/parameters';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
+import { throttle } from 'lodash';
 
 export interface IViewContext {
   loadInitialUrlWithCatch: () => Promise<void>;
@@ -53,7 +54,6 @@ export default function setupViewEventHandlers(
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 
-  view.webContents.once('did-stop-loading', () => {});
   view.webContents.on('did-start-loading', async () => {
     const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
@@ -81,29 +81,38 @@ export default function setupViewEventHandlers(
   view.webContents.on('did-navigate-in-page', async () => {
     await workspaceViewService.updateLastUrl(workspace.id, view);
   });
-  view.webContents.on('did-finish-load', async () => {
+
+  const throttledDidFinishedLoad = throttle(async () => {
+    logger.debug(`throttledDidFinishedLoad() workspace.id: ${workspace.id}, now workspaceViewService.realignActiveWorkspace() then set isLoading to false`);
+    // focus on initial load
+    // https://github.com/atomery/webcatalog/issues/398
+    if (workspace.active && browserWindow.isFocused() && !view.webContents.isFocused()) {
+      view.webContents.focus();
+    }
     // fix https://github.com/atomery/webcatalog/issues/870
     await workspaceViewService.realignActiveWorkspace();
     // update isLoading to false when load succeed
     await workspaceService.updateMetaData(workspace.id, {
       isLoading: false,
     });
+  }, 2000);
+  view.webContents.on('did-finish-load', () => {
+    logger.debug('did-finish-load called');
+    void throttledDidFinishedLoad();
   });
-  // focus on initial load
-  // https://github.com/atomery/webcatalog/issues/398
-  if (workspace.active) {
-    view.webContents.once('did-stop-loading', () => {
-      if (browserWindow.isFocused() && !view.webContents.isFocused()) {
-        view.webContents.focus();
-        // try to fix sometimes new size is not correct https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/97
-        void workspaceViewService.realignActiveWorkspace();
-      }
-    });
-  }
+  view.webContents.on('did-stop-loading', () => {
+    logger.debug('did-stop-loading called');
+    void throttledDidFinishedLoad();
+  });
+  view.webContents.on('dom-ready', () => {
+    logger.debug('dom-ready called');
+    void throttledDidFinishedLoad();
+  });
+
   // https://electronjs.org/docs/api/web-contents#event-did-fail-load
   // https://github.com/webcatalog/neutron/blob/3d9e65c255792672c8bc6da025513a5404d98730/main-src/libs/views.js#L397
   view.webContents.on('did-fail-load', async (_event, errorCode, errorDesc, _validateUrl, isMainFrame) => {
-    const [workspaceObject, workspaceMetaData] = await Promise.all([workspaceService.get(workspace.id), workspaceService.getMetaData(workspace.id)]);
+    const [workspaceObject] = await Promise.all([workspaceService.get(workspace.id), workspaceService.getMetaData(workspace.id)]);
     // this event might be triggered
     // even after the workspace obj and BrowserView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
