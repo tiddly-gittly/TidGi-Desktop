@@ -128,7 +128,7 @@ interface Props {
   picturePath?: string | null;
   showSidebarShortcutHints?: boolean;
   transparentBackground?: boolean;
-  workspaceClickedLoading: boolean;
+  workspaceClickedLoading?: boolean;
   workspaceName?: string;
 }
 export default function WorkspaceSelector({
@@ -141,7 +141,7 @@ export default function WorkspaceSelector({
   showSidebarShortcutHints = false,
   transparentBackground = false,
   workspaceName,
-  workspaceClickedLoading,
+  workspaceClickedLoading = false,
   onClick = () => {},
 }: Props): JSX.Element {
   const { t } = useTranslation();
