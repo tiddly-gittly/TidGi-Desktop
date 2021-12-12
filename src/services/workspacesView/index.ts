@@ -273,25 +273,29 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
   }
 
-  public async setActiveWorkspaceView(workspaceID: string): Promise<void> {
+  public async setActiveWorkspaceView(nextWorkspaceID: string): Promise<void> {
     const oldActiveWorkspace = await this.workspaceService.getActiveWorkspace();
-    const newWorkspace = await this.workspaceService.get(workspaceID);
+    const newWorkspace = await this.workspaceService.get(nextWorkspaceID);
     if (newWorkspace === undefined) {
-      throw new Error(`Workspace id ${workspaceID} does not exist. When setActiveWorkspaceView().`);
+      throw new Error(`Workspace id ${nextWorkspaceID} does not exist. When setActiveWorkspaceView().`);
     }
     if (oldActiveWorkspace !== undefined) {
-      await this.workspaceService.setActiveWorkspace(workspaceID);
-      await this.viewService.setActiveViewForAllBrowserViews(workspaceID);
+      const asyncTasks: Array<Promise<unknown>> = [];
+      // switch view first, so user fell app is responding to the click, this will failed loading for the first time, just let it retry loading view
+      asyncTasks.push(this.workspaceService.setActiveWorkspace(nextWorkspaceID), this.viewService.setActiveViewForAllBrowserViews(nextWorkspaceID));
       // if we are switching to a new workspace, we hibernate old view, and activate new view
-      if (oldActiveWorkspace.id !== workspaceID && oldActiveWorkspace.hibernateWhenUnused) {
-        await this.hibernateWorkspaceView(oldActiveWorkspace.id);
+      if (oldActiveWorkspace.id !== nextWorkspaceID && oldActiveWorkspace.hibernateWhenUnused) {
+        asyncTasks.push(this.hibernateWorkspaceView(oldActiveWorkspace.id));
       }
       if (newWorkspace.hibernated) {
-        await this.initializeWorkspaceView(newWorkspace, { followHibernateSettingWhenInit: false, syncImmediately: false });
-        await this.workspaceService.update(workspaceID, {
-          hibernated: false,
-        });
+        asyncTasks.push(
+          this.initializeWorkspaceView(newWorkspace, { followHibernateSettingWhenInit: false, syncImmediately: false }),
+          this.workspaceService.update(nextWorkspaceID, {
+            hibernated: false,
+          }),
+        );
       }
+      await Promise.all(asyncTasks);
       await this.realignActiveWorkspace();
     }
   }
