@@ -381,12 +381,15 @@ export class View implements IViewService {
 
   public removeView = (workspaceID: string, windowName: WindowNames): void => {
     const view = this.getView(workspaceID, windowName);
-    void session.fromPartition(`persist:${workspaceID}`).clearStorageData();
-    if (view !== undefined) {
+    const browserWindow = this.windowService.get(windowName);
+    if (view !== undefined && browserWindow !== undefined) {
+      void session.fromPartition(`persist:${workspaceID}`).clearStorageData();
       // stop find in page when switching workspaces
       view.webContents.stopFindInPage('clearSelection');
       view.webContents.send(WindowChannel.closeFindInPage);
       // currently use workaround https://github.com/electron/electron/issues/10096
+      // eslint-disable-next-line unicorn/no-null
+      browserWindow.setBrowserView(null);
       // @ts-expect-error Property 'destroy' does not exist on type 'WebContents'.ts(2339)
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       view.webContents.destroy();
