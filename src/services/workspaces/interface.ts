@@ -133,6 +133,10 @@ export interface IWorkspaceService {
   remove(id: string): Promise<void>;
   removeWorkspacePicture(id: string): Promise<void>;
   set(id: string, workspace: IWorkspace, immediate?: boolean): Promise<void>;
+  /**
+   * Set new workspace to active, and make the old active workspace inactive
+   * @param id id to active
+   */
   setActiveWorkspace(id: string): Promise<void>;
   setWorkspacePicture(id: string, sourcePicturePath: string): Promise<void>;
   setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void>;

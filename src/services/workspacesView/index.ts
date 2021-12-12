@@ -56,6 +56,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {
       return;
     }
+    logger.debug(`initializeWorkspaceView() Initializing workspace ${workspace.id}, ${JSON.stringify(options)}`);
     if (
       followHibernateSettingWhenInit &&
       ((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) &&
@@ -262,6 +263,7 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async hibernateWorkspaceView(workspaceID: string): Promise<void> {
     const workspace = await this.workspaceService.get(workspaceID);
+    logger.debug(`Hibernating workspace ${workspaceID}, workspace.active: ${String(workspace?.active)}`);
     if (workspace !== undefined && !workspace.active) {
       await Promise.all([
         this.wikiService.stopWiki(workspace.wikiFolderLocation),
@@ -279,24 +281,33 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (newWorkspace === undefined) {
       throw new Error(`Workspace id ${nextWorkspaceID} does not exist. When setActiveWorkspaceView().`);
     }
-    if (oldActiveWorkspace !== undefined) {
-      const asyncTasks: Array<Promise<unknown>> = [];
-      // switch view first, so user fell app is responding to the click, this will failed loading for the first time, just let it retry loading view
-      asyncTasks.push(this.workspaceService.setActiveWorkspace(nextWorkspaceID), this.viewService.setActiveViewForAllBrowserViews(nextWorkspaceID));
-      // if we are switching to a new workspace, we hibernate old view, and activate new view
-      if (oldActiveWorkspace.id !== nextWorkspaceID && oldActiveWorkspace.hibernateWhenUnused) {
-        asyncTasks.push(this.hibernateWorkspaceView(oldActiveWorkspace.id));
-      }
-      if (newWorkspace.hibernated) {
-        asyncTasks.push(
-          this.initializeWorkspaceView(newWorkspace, { followHibernateSettingWhenInit: false, syncImmediately: false }),
-          this.workspaceService.update(nextWorkspaceID, {
-            hibernated: false,
-          }),
-        );
-      }
-      await Promise.all(asyncTasks);
+    logger.debug(`Set active workspace oldActiveWorkspace.id: ${oldActiveWorkspace?.id ?? 'undefined'} nextWorkspaceID: ${nextWorkspaceID}`);
+    // later process will use the current active workspace
+    await this.workspaceService.setActiveWorkspace(nextWorkspaceID);
+    const asyncTasks: Array<Promise<unknown>> = [];
+    // if we are switching to a new workspace, we hibernate old view, and activate new view
+    if (
+      oldActiveWorkspace !== undefined &&
+      oldActiveWorkspace.id !== nextWorkspaceID &&
+      (oldActiveWorkspace.hibernateWhenUnused || (await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')))
+    ) {
+      asyncTasks.push(this.hibernateWorkspaceView(oldActiveWorkspace.id));
+    }
+    if (newWorkspace.hibernated) {
+      asyncTasks.push(
+        this.initializeWorkspaceView(newWorkspace, { followHibernateSettingWhenInit: false, syncImmediately: false }),
+        this.workspaceService.update(nextWorkspaceID, {
+          hibernated: false,
+        }),
+      );
+    }
+    await Promise.all(asyncTasks);
+    try {
+      await this.viewService.setActiveViewForAllBrowserViews(nextWorkspaceID);
       await this.realignActiveWorkspace();
+    } catch (error) {
+      logger.error(`Error while setActiveWorkspaceView(): ${(error as Error).message}`, error);
+      throw error;
     }
   }
 
@@ -384,16 +395,27 @@ export class WorkspaceView implements IWorkspaceViewService {
     // do not attempt to recall browserView.webContents.focus()
     // as it breaks page focus (cursor, scroll bar not visible)
     await this.realignActiveWorkspaceView();
-    await this.menuService.buildMenu();
+    try {
+      await this.menuService.buildMenu();
+    } catch (error) {
+      logger.error(`Error buildMenu() while realignActiveWorkspace(): ${(error as Error).message}`, error);
+      throw error;
+    }
   }
 
   private async realignActiveWorkspaceView(): Promise<void> {
     const activeWorkspace = await this.workspaceService.getActiveWorkspace();
+    logger.debug(`realignActiveWorkspaceView() activeWorkspace.id: ${activeWorkspace?.id ?? 'undefined'}`);
     const mainWindow = this.windowService.get(WindowNames.main);
     const menuBarWindow = this.windowService.get(WindowNames.menuBar);
     if (activeWorkspace !== undefined) {
+      if (mainWindow === undefined && menuBarWindow === undefined) {
+        logger.warn('realignActiveWorkspaceView: no active window');
+      }
       mainWindow !== undefined && void this.viewService.realignActiveView(mainWindow, activeWorkspace.id);
       menuBarWindow !== undefined && void this.viewService.realignActiveView(menuBarWindow, activeWorkspace.id);
+    } else {
+      logger.warn('realignActiveWorkspaceView: no active workspace');
     }
   }
 }

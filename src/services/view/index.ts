@@ -223,7 +223,12 @@ export class View implements IViewService {
     // we assume each window will only have one view, so get view by window name + workspace
     const existedView = this.getView(workspace.id, windowName);
     const browserWindow = this.windowService.get(windowName);
-    if (existedView !== undefined || browserWindow === undefined) {
+    if (existedView !== undefined) {
+      logger.warn(`BrowserViewService.addView: ${workspace.id} 's view already exists`);
+      return;
+    }
+    if (browserWindow === undefined) {
+      logger.warn(`BrowserViewService.addView: ${workspace.id} 's browser window is not ready`);
       return;
     }
     // create a new BrowserView
@@ -294,6 +299,11 @@ export class View implements IViewService {
      */
     const loadInitialUrlWithCatch = async (): Promise<void> => {
       try {
+        logger.debug(
+          `loadInitialUrlWithCatch(): view.webContents: ${String(view.webContents)} ${hostReplacedUrl} for windowName ${windowName} for workspace ${
+            workspace.name
+          }`,
+        );
         await view.webContents.loadURL(hostReplacedUrl);
         const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
         view.webContents.on('destroyed', () => {
@@ -337,18 +347,14 @@ export class View implements IViewService {
 
   public async setActiveView(workspaceID: string, windowName: WindowNames): Promise<void> {
     const browserWindow = this.windowService.get(windowName);
+    logger.debug(`setActiveView(): ${workspaceID} ${windowName} browserWindow: ${String(browserWindow !== undefined)}`);
     if (browserWindow === undefined) {
       return;
     }
-    // stop find in page when switching workspaces
-    const currentView = browserWindow.getBrowserView();
-    if (currentView !== null) {
-      currentView.webContents.stopFindInPage('clearSelection');
-      currentView.webContents.send(WindowChannel.closeFindInPage);
-    }
     const workspace = await this.workspaceService.get(workspaceID);
     const view = this.getView(workspaceID, windowName);
-    if (view === undefined) {
+    logger.debug(`setActiveView(): view: ${String(view !== undefined && view !== null)} workspace: ${String(workspace !== undefined)}`);
+    if (view === undefined || view === null) {
       if (workspace !== undefined) {
         return await this.addView(workspace, windowName);
       } else {
@@ -377,6 +383,9 @@ export class View implements IViewService {
     const view = this.getView(workspaceID, windowName);
     void session.fromPartition(`persist:${workspaceID}`).clearStorageData();
     if (view !== undefined) {
+      // stop find in page when switching workspaces
+      view.webContents.stopFindInPage('clearSelection');
+      view.webContents.send(WindowChannel.closeFindInPage);
       // currently use workaround https://github.com/electron/electron/issues/10096
       // @ts-expect-error Property 'destroy' does not exist on type 'WebContents'.ts(2339)
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
@@ -386,7 +395,15 @@ export class View implements IViewService {
     delete this.views[workspaceID]![windowName];
   };
 
-  public removeAllViewOfWorkspace = (workspaceID: string): void => {};
+  public removeAllViewOfWorkspace = (workspaceID: string): void => {
+    const views = this.views[workspaceID];
+    if (views !== undefined) {
+      Object.keys(views).forEach((name) => {
+        this.removeView(workspaceID, name as WindowNames);
+      });
+    }
+    this.views[workspaceID] = undefined;
+  };
 
   public setViewsAudioPref = (_shouldMuteAudio?: boolean): void => {
     if (_shouldMuteAudio !== undefined) {
@@ -461,6 +478,7 @@ export class View implements IViewService {
       const contentSize = browserWindow.getContentSize();
       const didFailLoadErrorMessage = (await this.workspaceService.getMetaData(activeId)).didFailLoadErrorMessage;
       if (typeof didFailLoadErrorMessage === 'string' && didFailLoadErrorMessage.length > 0) {
+        logger.warn(`realignActiveView() hide because didFailLoadErrorMessage: ${didFailLoadErrorMessage}`);
         view?.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       } else {
         view?.setBounds(await getViewBounds(contentSize as [number, number]));
@@ -468,6 +486,8 @@ export class View implements IViewService {
     } else if (isRetry !== true) {
       // retry one time later if webContent is not ready yet
       setTimeout(() => void this.realignActiveView(browserWindow, activeId, true), 1000);
+    } else {
+      logger.error(`realignActiveView() failed view?.webContents is ${String(view?.webContents)} and isRetry is ${String(isRetry)}`);
     }
   };
 }
