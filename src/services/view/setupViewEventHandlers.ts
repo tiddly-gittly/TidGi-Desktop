@@ -78,7 +78,7 @@ export default function setupViewEventHandlers(
       isLoading: true,
     });
   });
-  view.webContents.on('did-navigate', async () => {
+  view.webContents.on('did-navigate-in-page', async () => {
     await workspaceViewService.updateLastUrl(workspace.id, view);
   });
   view.webContents.on('did-finish-load', async () => {
