@@ -9,7 +9,7 @@ import { getAssetsFileUrl } from '@/helpers/url';
 
 Promise.config({ cancellation: true });
 
-const Root = styled.div<{ active?: boolean; hibernated?: boolean; loading?: boolean }>`
+const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClickedLoading?: boolean }>`
   height: fit-content;
   width: 58px;
   padding: 10px 0;
@@ -37,8 +37,8 @@ const Root = styled.div<{ active?: boolean; hibernated?: boolean; loading?: bool
     css`
       opacity: 1;
     `}
-  ${({ loading }) =>
-    loading === true &&
+  ${({ workspaceClickedLoading }) =>
+    workspaceClickedLoading === true &&
     css`
       &:hover {
         cursor: wait;
@@ -153,7 +153,7 @@ export default function WorkspaceSelector({
     shortWorkspaceNameSetter(baseName !== undefined ? baseName : t('WorkspaceSelector.BadWorkspacePath'));
   }, [workspaceName, t]);
   return (
-    <Root hibernated={hibernated} active={active} onClick={workspaceClickedLoading ? () => {} : onClick} loading={workspaceClickedLoading}>
+    <Root hibernated={hibernated} active={active} onClick={workspaceClickedLoading ? () => {} : onClick} workspaceClickedLoading={workspaceClickedLoading}>
       <Badge color="secondary" badgeContent={badgeCount} max={99}>
         <Avatar
           large={!showSidebarShortcutHints}
