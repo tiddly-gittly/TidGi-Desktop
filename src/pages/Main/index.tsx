@@ -188,16 +188,6 @@ export default function Main(): JSX.Element {
   const workspacesList = useWorkspacesListObservable();
   const preferences = usePreferenceObservable();
   const isFullScreen = usePromiseValue<boolean | undefined>(window.service.window.isFullScreen, false)!;
-
-  const mainWorkspaceMetaData = usePromiseValue(async () => {
-    const activeWorkspace = await window.service.workspace.getActiveWorkspace();
-    if (activeWorkspace !== undefined) {
-      const metadata = await window.service.workspace.getMetaData(activeWorkspace.id);
-      return metadata;
-    }
-    return { didFailLoadErrorMessage: 'No ActiveWorkspace' };
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-  }, {} as AsyncReturnType<typeof window.service.workspace.getMetaData>);
   const requestReload = useCallback(async (): Promise<void> => {
     await window.service.window.reload(window.meta.windowName);
   }, []);
@@ -211,7 +201,13 @@ export default function Main(): JSX.Element {
   );
 
   const workspaceIDs = workspacesList?.map((workspace) => workspace.id) ?? [];
+  const activeWorkspaceMetadata = workspacesList
+    ?.map((workspace) => ({ active: workspace.active, ...workspace.metadata }))
+    ?.find((workspace) => workspace.active);
   if (preferences === undefined) return <div>{t('Loading')}</div>;
+
+  // DEBUG: console
+  console.log(`activeWorkspaceMetadata`, activeWorkspaceMetadata);
   const { attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource, sidebarShortcutHints } = preferences;
   return (
     <OuterRoot>
@@ -301,15 +297,15 @@ export default function Main(): JSX.Element {
           <InnerContentRoot>
             {Array.isArray(workspacesList) &&
               workspacesList.length > 0 &&
-              typeof mainWorkspaceMetaData?.didFailLoadErrorMessage === 'string' &&
-              mainWorkspaceMetaData?.didFailLoadErrorMessage.length > 0 &&
-              mainWorkspaceMetaData?.isLoading === false && (
+              typeof activeWorkspaceMetadata?.didFailLoadErrorMessage === 'string' &&
+              activeWorkspaceMetadata?.didFailLoadErrorMessage.length > 0 &&
+              activeWorkspaceMetadata?.isLoading === false && (
                 <div>
                   <Typography align="left" variant="h5">
                     {t('AddWorkspace.WikiNotStarted')}
                   </Typography>
                   <Typography align="left" variant="body2">
-                    {mainWorkspaceMetaData.didFailLoadErrorMessage}
+                    {activeWorkspaceMetadata.didFailLoadErrorMessage}
                   </Typography>
 
                   <br />
@@ -348,7 +344,7 @@ export default function Main(): JSX.Element {
                   </Button>
                 </div>
               )}
-            {Array.isArray(workspacesList) && workspacesList.length > 0 && mainWorkspaceMetaData?.isLoading && (
+            {Array.isArray(workspacesList) && workspacesList.length > 0 && activeWorkspaceMetadata?.isLoading && (
               <Typography color="textSecondary">{t('Loading')}</Typography>
             )}
             {Array.isArray(workspacesList) && workspacesList.length === 0 && (

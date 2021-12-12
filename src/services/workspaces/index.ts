@@ -21,7 +21,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import { SupportedStorageServices } from '@services/types';
 import { lazyInject } from '@services/container';
-import type { IWorkspaceService, IWorkspace, IWorkspaceMetaData, INewWorkspaceConfig } from './interface';
+import type { IWorkspaceService, IWorkspace, IWorkspaceMetaData, INewWorkspaceConfig, IWorkspaceWithMetadata } from './interface';
 import i18n from '@services/libs/i18n';
 import { defaultServerIP } from '@/constants/urls';
 import { logger } from '@services/libs/log';
@@ -35,7 +35,7 @@ export class Workspace implements IWorkspaceService {
    * Record from workspace id to workspace settings
    */
   private workspaces: Record<string, IWorkspace> = {};
-  public workspaces$: BehaviorSubject<Record<string, IWorkspace>>;
+  public workspaces$: BehaviorSubject<Record<string, IWorkspaceWithMetadata>>;
 
   @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
@@ -47,11 +47,15 @@ export class Workspace implements IWorkspaceService {
   constructor() {
     this.workspaces = this.getInitWorkspacesForCache();
     void this.registerMenu();
-    this.workspaces$ = new BehaviorSubject<Record<string, IWorkspace>>(this.workspaces);
+    this.workspaces$ = new BehaviorSubject<Record<string, IWorkspaceWithMetadata>>(this.getWorkspacesWithMetadata());
+  }
+
+  private getWorkspacesWithMetadata(): Record<string, IWorkspaceWithMetadata> {
+    return mapValues(this.getWorkspacesSync(), (workspace: IWorkspace, id): IWorkspaceWithMetadata => ({ ...workspace, metadata: this.getMetaDataSync(id) }));
   }
 
   private async updateWorkspaceSubject(): Promise<void> {
-    this.workspaces$.next(await this.getWorkspaces());
+    this.workspaces$.next(this.getWorkspacesWithMetadata());
   }
 
   private async registerMenu(): Promise<void> {
@@ -164,6 +168,10 @@ export class Workspace implements IWorkspaceService {
   };
 
   public async getWorkspaces(): Promise<Record<string, IWorkspace>> {
+    return this.getWorkspacesSync();
+  }
+
+  private getWorkspacesSync(): Record<string, IWorkspace> {
     return this.workspaces;
   }
 
@@ -433,7 +441,8 @@ export class Workspace implements IWorkspaceService {
    */
   private metaData: Record<string, Partial<IWorkspaceMetaData>> = {};
 
-  public getMetaData = async (id: string): Promise<Partial<IWorkspaceMetaData>> => this.metaData[id] ?? {};
+  public getMetaData = async (id: string): Promise<Partial<IWorkspaceMetaData>> => this.getMetaDataSync(id);
+  private readonly getMetaDataSync = (id: string): Partial<IWorkspaceMetaData> => this.metaData[id] ?? {};
 
   public getAllMetaData = async (): Promise<Record<string, Partial<IWorkspaceMetaData>>> => this.metaData;
 

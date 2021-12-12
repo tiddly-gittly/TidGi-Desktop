@@ -98,11 +98,15 @@ export interface IWorkspaceMetaData {
   /**
    * Error message if this workspace fails loading
    */
-  didFailLoadErrorMessage: string | null | undefined;
+  didFailLoadErrorMessage?: string | null | undefined;
   /**
    * indicating server or webpage is still loading
    */
   isLoading?: boolean;
+}
+
+export interface IWorkspaceWithMetadata extends IWorkspace {
+  metadata: IWorkspaceMetaData;
 }
 
 /**
@@ -142,7 +146,7 @@ export interface IWorkspaceService {
   setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void>;
   update(id: string, workspaceSetting: Partial<IWorkspace>, immediate?: boolean): Promise<void>;
   updateMetaData: (id: string, options: Partial<IWorkspaceMetaData>) => Promise<void>;
-  workspaces$: BehaviorSubject<Record<string, IWorkspace>>;
+  workspaces$: BehaviorSubject<Record<string, IWorkspaceWithMetadata>>;
 }
 export const WorkspaceServiceIPCDescriptor = {
   channel: WorkspaceChannel.name,
