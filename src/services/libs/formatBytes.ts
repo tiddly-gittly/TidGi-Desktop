@@ -1,4 +1,5 @@
 /**
+ * Used to be in updater to show download progress.
  * https://stackoverflow.com/a/18650828
  */
 export default function formatBytes(bytes: number, decimals = 2): string {
