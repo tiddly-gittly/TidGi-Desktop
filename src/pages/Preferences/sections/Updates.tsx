@@ -1,4 +1,3 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Divider, List, ListItem, ListItemSecondaryAction, ListItemText, Switch } from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
@@ -6,7 +5,8 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import type { ISectionProps } from '../useSections';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import { usePreferenceObservable } from '@services/preferences/hooks';
-import { getUpdaterDesc, useUpdaterObservable } from '@services/updater/hooks';
+import { useUpdaterObservable, getUpdaterMessage } from '@services/updater/hooks';
+import { IUpdaterStatus } from '@services/updater/interface';
 
 export function Updates(props: Required<ISectionProps>): JSX.Element {
   const { t } = useTranslation();
@@ -25,16 +25,14 @@ export function Updates(props: Required<ISectionProps>): JSX.Element {
             <>
               <ListItem
                 button
-                onClick={async () => await window.service.updater.checkForUpdates(false)}
-                disabled={
-                  updaterMetaData.status === 'checking-for-update' ||
-                  updaterMetaData.status === 'download-progress' ||
-                  updaterMetaData.status === 'update-available'
-                }>
-                <ListItemText
-                  primary={updaterMetaData.status === 'update-downloaded' ? t('Preference.RestartToApplyUpdates') : t('ContextMenu.CheckForUpdates')}
-                  secondary={getUpdaterDesc(updaterMetaData.status, updaterMetaData.info)}
-                />
+                onClick={async () => await window.service.updater.checkForUpdates()}
+                disabled={updaterMetaData.status === IUpdaterStatus.checkingForUpdate || updaterMetaData.status === IUpdaterStatus.downloadProgress}>
+                {updaterMetaData.status !== undefined && (
+                  <ListItemText
+                    primary={t(`Updater.${updaterMetaData.status}`)}
+                    secondary={getUpdaterMessage(updaterMetaData.status, updaterMetaData.info, t)}
+                  />
+                )}
                 <ChevronRightIcon color="action" />
               </ListItem>
               <Divider />

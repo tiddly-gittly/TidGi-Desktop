@@ -370,5 +370,6 @@
     "PrintPage": "Print Page",
     "PrintActiveTiddler": "Print Active Tiddler",
     "Wiki": "Wiki"
-  }
+  },
+  "ErrorMessage": "Error message"
 }

@@ -60,7 +60,7 @@ export class Updater implements IUpdaterService {
       latestVersion = latestReleaseData.tag_name.replace('v', '');
     } catch (fetchError) {
       logger.error('Fetching latest release failed', { fetchError });
-      this.setMetaData({ status: IUpdaterStatus.checkingFailed });
+      this.setMetaData({ status: IUpdaterStatus.checkingFailed, info: { errorMessage: (fetchError as Error).message } });
       await this.menuService.insertMenu('TidGi', [
         {
           id: 'update',
@@ -75,7 +75,7 @@ export class Updater implements IUpdaterService {
     const isLatestRelease = semver.gt(latestVersion, currentVersion);
     logger.debug('Compare version', { currentVersion, isLatestRelease });
     if (isLatestRelease) {
-      this.setMetaData({ status: IUpdaterStatus.updateAvailable });
+      this.setMetaData({ status: IUpdaterStatus.updateAvailable, info: { version: latestVersion } });
       await this.menuService.insertMenu('TidGi', [
         {
           id: 'update',
@@ -84,7 +84,7 @@ export class Updater implements IUpdaterService {
         },
       ]);
     } else {
-      this.setMetaData({ status: IUpdaterStatus.updateNotAvailable });
+      this.setMetaData({ status: IUpdaterStatus.updateNotAvailable, info: { version: latestVersion } });
       await this.menuService.insertMenu('TidGi', [
         {
           id: 'update',
