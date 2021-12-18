@@ -1,4 +1,3 @@
-import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import semver from 'semver';
 
@@ -16,13 +15,13 @@ export function Notifications(props: Required<ISectionProps>): JSX.Element {
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();
-  const [platform, oSVersion] = usePromiseValue(
+  const [platform, oSVersion] = usePromiseValue<[string | undefined, string | undefined], [string | undefined, string | undefined]>(
     async () =>
       await Promise.all([window.service.context.get('platform'), window.service.context.get('oSVersion')]).catch((error) => {
         console.error(error);
-        return [];
+        return [undefined, undefined];
       }),
-    [],
+    [undefined, undefined],
   );
 
   return (
