@@ -34,7 +34,6 @@
     "Notifications": "Notifications...",
     "More": "More",
     "About": "About",
-    "CheckForUpdates": "Check for Updates",
     "Reload": "Reload",
     "Forward": "Forward→",
     "Back": "Back←",
@@ -56,6 +55,17 @@
     "SyncNow": "Sync To Cloud",
     "NoNetworkConnection": "No Network Connection",
     "OpenCommandPalette": "Open CommandPalette"
+  },
+  "Updater": {
+    "CheckingFailed": "Checking Failed (Network Error)",
+    "CheckUpdate": "Check Update",
+    "CheckingForUpdate": "Checking For Update...",
+    "DownloadProgress": "Download Progress",
+    "UpdateError": "Update Error",
+    "UpdateAvailable": "Update Available!",
+    "UpdateCancelled": "Update Cancelled",
+    "UpdateDownloaded": "Update Downloaded",
+    "UpdateNotAvailable": "You have latest version"
   },
   "AddWorkspace": {
     "MainPageTipWithoutSidebar": "<0>Click </0><strong>Workspaces > Add Workspace</strong><0> on the menu, or </0><strong> Click Here</strong><2> to start using TiddlyWiki!</2>",

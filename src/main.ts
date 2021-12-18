@@ -7,7 +7,6 @@ import fs from 'fs-extra';
 import path from 'path';
 import { ipcMain, protocol, powerMonitor, app } from 'electron';
 import settings from 'electron-settings';
-import { autoUpdater } from 'electron-updater';
 import unhandled from 'electron-unhandled';
 import { openNewGitHubIssue, debugInfo } from 'electron-util';
 
@@ -23,10 +22,11 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 
-import { IPreferenceService } from './services/preferences/interface';
-import { IWikiService } from './services/wiki/interface';
-import { IWindowService } from './services/windows/interface';
-import { IWorkspaceViewService } from './services/workspacesView/interface';
+import type { IPreferenceService } from './services/preferences/interface';
+import type { IWikiService } from './services/wiki/interface';
+import type { IWindowService } from './services/windows/interface';
+import type { IWorkspaceViewService } from './services/workspacesView/interface';
+import type { IUpdaterService } from '@services/updater/interface';
 
 logger.info('App booting');
 
@@ -40,6 +40,7 @@ bindServiceAndProxy();
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 app.on('second-instance', () => {
   // Someone tried to run a second instance, we should focus our window.
@@ -148,13 +149,11 @@ const commonInit = async (): Promise<void> => {
 };
 
 app.on('ready', async () => {
-  autoUpdater.allowPrerelease = await preferenceService.get('allowPrerelease');
-  autoUpdater.logger = logger;
   whenCommonInitFinished()
     // eslint-disable-next-line promise/always-return
-    .then(() => {
+    .then(async () => {
       buildLanguageMenu();
-      ipcMain.emit('request-check-for-updates', undefined, true);
+      await updaterService.checkForUpdates();
     })
     .catch((error) => console.error(error));
   powerMonitor.on('shutdown', () => {

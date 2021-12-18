@@ -19,6 +19,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { IUpdaterService } from '@services/updater/interface';
 import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/workspaces/getWorkspaceMenuTemplate';
 import { logger } from '@services/libs/log';
 import i18next from '@services/libs/i18n';
@@ -33,6 +34,7 @@ export class MenuService implements IMenuService {
   @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;
   @lazyInject(serviceIdentifier.NativeService) private readonly nativeService!: INativeService;
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
+  @lazyInject(serviceIdentifier.Updater) private readonly updaterService!: IUpdaterService;
   @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
   @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
   @lazyInject(serviceIdentifier.WikiGitWorkspace) private readonly wikiGitWorkspaceService!: IWikiGitWorkspaceService;
@@ -127,8 +129,9 @@ export class MenuService implements IMenuService {
           },
           { type: 'separator' },
           {
-            label: () => i18next.t('ContextMenu.CheckForUpdates'),
-            click: () => ipcMain.emit('request-check-for-updates'),
+            id: 'update',
+            label: () => i18next.t('Updater.CheckUpdate'),
+            click: async () => await this.updaterService.checkForUpdates(),
           },
           {
             label: () => i18next.t('ContextMenu.Preferences'),
@@ -451,19 +454,14 @@ export class MenuService implements IMenuService {
         label: i18next.t('ContextMenu.More'),
         submenu: [
           {
-            label: i18next.t('ContextMenu.About'),
-            click: async () => await this.windowService.open(WindowNames.about),
-          },
-          { type: 'separator' },
-          {
-            label: i18next.t('ContextMenu.CheckForUpdates'),
-            click: () => ipcMain.emit('request-check-for-updates'),
-          },
-          {
             label: i18next.t('ContextMenu.Preferences'),
             click: async () => await this.windowService.open(WindowNames.preferences),
           },
           { type: 'separator' },
+          {
+            label: i18next.t('ContextMenu.About'),
+            click: async () => await this.windowService.open(WindowNames.about),
+          },
           {
             label: i18next.t('ContextMenu.TidGiSupport'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-Desktop/issues/new/choose'),

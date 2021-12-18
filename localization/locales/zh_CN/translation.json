@@ -36,7 +36,6 @@
     "More": "更多",
     "About": "关于",
     "Notifications": "消息管理...",
-    "CheckForUpdates": "检查更新",
     "Reload": "刷新",
     "Forward": "向前→",
     "Back": "向后←",
@@ -57,6 +56,17 @@
     "RestartServiceComplete": "重启服务成功",
     "SyncNow": "立即同步云端",
     "NoNetworkConnection": "无网络连接"
+  },
+  "Updater": {
+    "CheckingFailed": "检查更新失败（网络错误）",
+    "CheckUpdate": "检查更新",
+    "CheckingForUpdate": "检查更新中…",
+    "DownloadProgress": "更新下载中",
+    "UpdateError": "更新出错",
+    "UpdateAvailable": "有新版本可用！",
+    "UpdateCancelled": "更新取消",
+    "UpdateDownloaded": "更新已下载",
+    "UpdateNotAvailable": "目前已是最新版"
   },
   "Menu": {
     "TidGi": "太记",
