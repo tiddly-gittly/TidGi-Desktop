@@ -261,7 +261,7 @@
     "Sync": "同步",
     "SyncInterval": "同步间隔",
     "SyncIntervalDescription": "超过这段长度的时间没有新的改动后，就会自动开始备份到 Github（重启后生效）",
-    "General": "常用",
+    "General": "界面和交互",
     "ShowSideBarDetail": "侧边栏让你可以在工作区之间快速切换",
     "ShowSideBarShortcut": "展示侧边栏的快捷方式",
     "OpenLogFolder": "打开Log文件夹",

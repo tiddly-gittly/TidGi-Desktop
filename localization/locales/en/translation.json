@@ -222,7 +222,7 @@
   "Cancel": "Cancel",
   "Preference": {
     "ClearBrowsingData": "Clear Browsing Data (git isn't affected)",
-    "General": "General",
+    "General": "UI & Interact",
     "Sync": "Sync",
     "SyncInterval": "Sync Interval",
     "SyncIntervalDescription": "After there is no new change for more than this length of time, it will automatically start backing up to Github (take effect after restart app)",
