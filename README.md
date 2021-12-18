@@ -2,15 +2,15 @@
 
 | macOS                                                                                                                                                                                                   | Linux                                                                                                                                                                                                   | Windows                                                                                                                                                                                                       | Maintainer                                                                                                                          |
 | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
-| [![GitHub Actions macOS Build Status](https://github.com/tiddly-gittly/TiddlyGit-Desktop/workflows/macOS/badge.svg)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/actions?query=workflow%3AmacOS) | [![GitHub Actions Linux Build Status](https://github.com/tiddly-gittly/TiddlyGit-Desktop/workflows/Linux/badge.svg)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/actions?query=workflow%3ALinux) | [![GitHub Actions Windows Build Status](https://github.com/tiddly-gittly/TiddlyGit-Desktop/workflows/Windows/badge.svg)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/actions?query=workflow%3AWindows) | [<img alt="Maintainer: Lin Onetwo" src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" />](https://github.com/linonetwo) |
+| [![GitHub Actions macOS Build Status](https://github.com/tiddly-gittly/TidGi-Desktop/workflows/macOS/badge.svg)](https://github.com/tiddly-gittly/TidGi-Desktop/actions?query=workflow%3AmacOS) | [![GitHub Actions Linux Build Status](https://github.com/tiddly-gittly/TidGi-Desktop/workflows/Linux/badge.svg)](https://github.com/tiddly-gittly/TidGi-Desktop/actions?query=workflow%3ALinux) | [![GitHub Actions Windows Build Status](https://github.com/tiddly-gittly/TidGi-Desktop/workflows/Windows/badge.svg)](https://github.com/tiddly-gittly/TidGi-Desktop/actions?query=workflow%3AWindows) | [<img alt="Maintainer: Lin Onetwo" src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" />](https://github.com/linonetwo) |
 
 **TidGi** - Customizable personal knowledge-base with git as backup manager and blogging platform. （Used to be TiddlyGit)
 
 **太记** - 可定制性极强的个人知识管理系统，使用 Git 作为备份管理器和博客平台。
 
-|                                                                         [最新版下载按钮 Download](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)                                                                         |
+|                                                                         [最新版下载按钮 Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                         |
 | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TiddlyGit-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest) |
+| [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
 
 |             Load NodeJS Wiki 加载 NodeJS 版维基             |
 | :---------------------------------------------------------: |
@@ -28,9 +28,9 @@
 
 
 
-|                                                                         [最新版下载按钮 Download](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)                                                                         |
+|                                                                         [最新版下载按钮 Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                         |
 | :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TiddlyGit-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest) |
+| [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
 
 <center>相关介绍</center>
 
@@ -63,19 +63,19 @@ Click "OK" 点击「允许」 ↓
 
 </details>
 
-## About TiddlyGit-Desktop 关于「太记-桌面版」
+## About TidGi-Desktop 关于「太记-桌面版」
 
 ---
 
-TiddlyGit is a cross-platform Note Taking & GTD & Fragment Knowledge Management desktop app powered by [nodejs-TiddlyWiki](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs), it ship with a lot of tiddlywiki plugins from the [TiddlyWiki community](https://groups.google.com/forum/#!forum/tiddlywiki).
+TidGi is a cross-platform Note Taking & GTD & Fragment Knowledge Management desktop app powered by [nodejs-TiddlyWiki](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs), it ship with a lot of tiddlywiki plugins from the [TiddlyWiki community](https://groups.google.com/forum/#!forum/tiddlywiki).
 
-You can call it TG-Note, it is totally free and you own all your data. Code by the people, build for the people.
+You can call it [TG-Note](https://github.com/tiddly-gittly/TGNote), it is totally free and you own all your data. Code by the people, build for the people.
 
 ---
 
 「太记」是一个跨平台的笔记软件、时间和任务管理工具、碎片化知识管理工具，此乃其桌面版。「太记」基于强大的 [NodeJS 版「太微（TiddlyWiki）」](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs) 构建，并带上了大量来自[太微社区（TiddlyWiki community）](https://groups.google.com/forum/#!forum/tiddlywiki)的插件。
 
-「太记」来自 TiddlyWiki 的译名「太微」，以及 TiddlyGit 首字母的谐音。当然你也可以直接叫它 TGNote，镰锤 ☭ 笔记。
+「太记」来自 TiddlyWiki 的译名「太微」，以及曾用名 TiddlyGit 首字母的谐音（后来我们又根据中文谐音把英文名改成了 TidGi）。当然你也可以直接叫它 [TGNote](https://github.com/tiddly-gittly/TGNote)，镰锤 ☭ 笔记。
 
 为什么把 TiddlyWiki 翻译成「太微」？因为受到 @pimgeek 的启发：TiddlyWiki 可以干很多细致轻量的工作，但也从不限制用法，可以无限组合叠加。故以其首字母音译为「太微」，TiddlyWiki 可以称为「太微笔记」「太微万能抽屉」「太微卡片盒」……
 
@@ -136,15 +136,15 @@ Because Github is one of the best free civil level [BaaS](https://www.alibabaclo
 
 ### Download
 
-Just download it from Github Release [Free Download](https://github.com/tiddly-gittly/TiddlyGit-Desktop/releases/latest)
+Just download it from Github Release [Free Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)
 
 You can also find changelog in the Release.
 
 ## Development
 
-Development plan of TiddlyGit-Desktop is listed in these [Kanban](https://github.com/tiddly-gittly/TiddlyGit-Desktop/projects).
+Development plan of TidGi-Desktop is listed in these [Kanban](https://github.com/tiddly-gittly/TidGi-Desktop/projects).
 
-Explanation of our code can be found in the [Wiki](https://github.com/tiddly-gittly/TiddlyGit-Desktop/wiki).
+Explanation of our code can be found in the [Wiki](https://github.com/tiddly-gittly/TidGi-Desktop/wiki).
 
 <details>
 
@@ -152,15 +152,15 @@ Explanation of our code can be found in the [Wiki](https://github.com/tiddly-git
 
 ```shell
 # First, clone the project:
-git clone https://github.com/YOUR_ACCOUNT/TiddlyGit-Desktop.git
-cd TiddlyGit-Desktop
+git clone https://github.com/YOUR_ACCOUNT/TidGi-Desktop.git
+cd TidGi-Desktop
 # Or maybe you are just using Github Desktop
 # or GitKraken to clone this repo,
 # and open it in your favorite code editor and terminal app
 
 # switch to the nodejs version same as electron used version, other wise you may get
 
-# Error: The module '/Users/linonetwo/Desktop/repo/TiddlyGit-Desktop/node_modules/opencv4nodejs-prebuilt/build/Release/opencv4nodejs.node'
+# Error: The module '/Users/linonetwo/Desktop/repo/TidGi-Desktop/node_modules/opencv4nodejs-prebuilt/build/Release/opencv4nodejs.node'
 
 # was compiled against a different Node.js version using
 
@@ -203,6 +203,6 @@ After Github Action completed, you can open Releases to see the Draft release cr
 
 ## Credits
 
-The desktop app shell is based on [https://github.com/atomery/singlebox](atomery/singlebox) and [atomery/webcatalog](https://github.com/atomery/webcatalog), they provide lots of utils around website-generated-app, much powerful than generating app from website simply using Chrome. Also the independent developer @quanglam2807 behind these great tools helps me a lot when I develop TiddlyGit.
+The desktop app shell is based on [https://github.com/atomery/singlebox](atomery/singlebox) and [atomery/webcatalog](https://github.com/atomery/webcatalog), they provide lots of utils around website-generated-app, much powerful than generating app from website simply using Chrome. Also the independent developer @quanglam2807 behind these great tools helps me a lot when I develop TidGi.
 
 Current Icon is download from [iconsdb](https://www.iconsdb.com/custom-color/github-11-icon.html) under Creative Commons Attribution-NoDerivs 3.0 , if you are a designer, please feel free to contribute your ICON if you have a better idea.
