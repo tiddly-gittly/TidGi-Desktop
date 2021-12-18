@@ -10,12 +10,7 @@ import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
 
 import { Button, Typography, Tooltip, IconButton as IconButtonRaw } from '@material-ui/core';
-import {
-  Notifications as NotificationsIcon,
-  NotificationsPaused as NotificationsPausedIcon,
-  Settings as SettingsIcon,
-  Upgrade as UpgradeIcon,
-} from '@material-ui/icons';
+import { Settings as SettingsIcon, Upgrade as UpgradeIcon } from '@material-ui/icons';
 
 import { WindowNames } from '@services/windows/WindowProperties';
 
@@ -215,7 +210,7 @@ export default function Main(): JSX.Element {
     ?.find((workspace) => workspace.active);
   if (preferences === undefined) return <div>{t('Loading')}</div>;
 
-  const { attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource, sidebarShortcutHints } = preferences;
+  const { attachToMenubar, titleBar, sidebar, themeSource, sidebarShortcutHints } = preferences;
   return (
     <OuterRoot>
       <div id="test" data-usage="For spectron automating testing" />
@@ -286,14 +281,6 @@ export default function Main(): JSX.Element {
                 onClick={async () => await window.service.native.open(latestUpdateUrl)}>
                 <Tooltip title={<span>{t('Updater.UpdateAvailable')}</span>} placement="top">
                   <UpgradeIcon />
-                </Tooltip>
-              </IconButton>
-              <IconButton
-                id="open-notification-settings-button"
-                aria-label={t('SideBar.Notifications')}
-                onClick={async () => await window.service.window.open(WindowNames.notifications)}>
-                <Tooltip title={<span>{t('SideBar.Notifications')}</span>} placement="top">
-                  {typeof pauseNotifications === 'string' && pauseNotifications.length > 0 ? <NotificationsPausedIcon /> : <NotificationsIcon />}
                 </Tooltip>
               </IconButton>
               <IconButton
