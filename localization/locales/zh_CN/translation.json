@@ -21,7 +21,7 @@
   },
   "SideBar": {
     "CommandPalette": "搜索/命令",
-    "Notifications": "消息管理",
+    "UpdateAvailable": "有新版本！",
     "Preferences": "设置..."
   },
   "ContextMenu": {
@@ -317,7 +317,7 @@
     "ItIsWorking": "好使的！",
     "Network": "网络",
     "Notifications": "通知",
-    "NotificationsDetail": "控制通知功能",
+    "NotificationsDetail": "设置通知暂停时间",
     "NotificationsDisableSchedule": "按时间自动禁用通知：",
     "NotificationsMuteAudio": "暂停通知时也同时静音工作区",
     "OpenAtLogin": "开机自启",

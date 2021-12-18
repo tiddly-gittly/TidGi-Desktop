@@ -277,9 +277,9 @@ export default function Main(): JSX.Element {
               )}
               <IconButton
                 id="update-available"
-                aria-label={t('Updater.UpdateAvailable')}
+                aria-label={t('SideBar.UpdateAvailable')}
                 onClick={async () => await window.service.native.open(latestUpdateUrl)}>
-                <Tooltip title={<span>{t('Updater.UpdateAvailable')}</span>} placement="top">
+                <Tooltip title={<span>{t('SideBar.UpdateAvailable')}</span>} placement="top">
                   <UpgradeIcon />
                 </Tooltip>
               </IconButton>

@@ -20,7 +20,7 @@
   },
   "SideBar": {
     "CommandPalette": "CmdPal",
-    "Notifications": "Notif...",
+    "UpdateAvailable": "Update!",
     "Preferences": "Pref..."
   },
   "ContextMenu": {
@@ -252,7 +252,7 @@
     "ResetNow": "Reset Now",
     "ClearBrowsingDataMessage": "Are you sure? All browsing data will be cleared. This action cannot be undone.",
     "Notifications": "Notifications",
-    "NotificationsDetail": "Control notifications",
+    "NotificationsDetail": "Control notifications pause time",
     "NotificationsDisableSchedule": "Automatically disable notifications by schedule:",
     "NotificationsMuteAudio": "Mute audio when notifications are paused",
     "TestNotification": "Test notifications",
