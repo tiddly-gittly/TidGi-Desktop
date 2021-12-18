@@ -30,7 +30,7 @@ const logger = (
         transports: [
           new winston.transports.Console(),
           new winston.transports.DailyRotateFile({
-            filename: 'TiddlyGit-%DATE%.log',
+            filename: 'TidGi-%DATE%.log',
             datePattern: 'YYYY-MM-DD',
             zippedArchive: false,
             maxSize: '20mb',
@@ -42,7 +42,7 @@ const logger = (
         ],
         exceptionHandlers: [
           new winston.transports.DailyRotateFile({
-            filename: 'TiddlyGit-Exception-%DATE%.log',
+            filename: 'TidGi-Exception-%DATE%.log',
             datePattern: 'YYYY-MM-DD',
             zippedArchive: false,
             maxSize: '20mb',

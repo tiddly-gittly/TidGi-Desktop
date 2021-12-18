@@ -76,7 +76,7 @@ export function PrivacyAndSecurity(props: Required<ISectionProps>): JSX.Element 
               <Divider />
               <ListItem
                 button
-                onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TiddlyGit-Desktop/blob/master/PrivacyPolicy.md')}>
+                onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TidGi-Desktop/blob/master/PrivacyPolicy.md')}>
                 <ListItemText primary="Privacy Policy" />
               </ListItem>
             </>

@@ -5,16 +5,16 @@ const { version } = packageJson;
 
 const config = {
   packagerConfig: {
-    name: 'TiddlyGit',
-    executableName: 'TiddlyGit',
+    name: 'TidGi',
+    executableName: 'TidGi',
     win32metadata: {
       CompanyName: 'TiddlyWiki Community',
-      OriginalFilename: 'TiddlyGit Desktop',
+      OriginalFilename: 'TidGi Desktop',
     },
     protocols: [
       {
-        name: 'TiddlyGit Launch Protocol',
-        schemes: ['tiddlygit'],
+        name: 'TidGi Launch Protocol',
+        schemes: ['tidgi'],
       },
     ],
     icon: 'build-resources/icon.icns',
@@ -28,7 +28,7 @@ const config = {
       icon: 'build-resources/icon.icns',
       electronLanguages: ['zh_CN', 'en', 'ja'],
     },
-    appBundleId: 'com.tiddlygit',
+    appBundleId: 'com.tidgi',
     afterPrune: ['scripts/afterPack.js'],
   },
   makers: [
@@ -37,7 +37,7 @@ const config = {
       platforms: ['win32'],
       config: (arch) => {
         return {
-          setupExe: `Install-TiddlyGit-${version}-Windows-${arch}.exe`,
+          setupExe: `Install-TidGi-${version}-Windows-${arch}.exe`,
           setupIcon: 'build-resources/icon-installer.ico',
         };
       },

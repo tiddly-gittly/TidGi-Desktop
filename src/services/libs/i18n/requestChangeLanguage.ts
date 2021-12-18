@@ -22,7 +22,7 @@ export async function requestChangeLanguage(newLanguage: string): Promise<void> 
       lng: newLanguage,
     });
   });
-  // change tiddlygit language
+  // change tidgi language
   await windowService.sendToAllWindows(I18NChannels.changeLanguageRequest, {
     lng: newLanguage,
   });

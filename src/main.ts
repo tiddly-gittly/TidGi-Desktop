@@ -207,7 +207,7 @@ if (!isTest) {
     reportButton: (error) => {
       openNewGitHubIssue({
         user: 'tiddly-gittly',
-        repo: 'TiddlyGit-Desktop',
+        repo: 'TidGi-Desktop',
         template: 'bug.md',
         title: `bug: ${(error.message ?? '').substring(0, 100)}`,
         body: `## Environment

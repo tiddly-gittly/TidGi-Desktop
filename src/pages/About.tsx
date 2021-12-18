@@ -25,7 +25,7 @@ const Title = styled.h6`
   margin-top: 10px;
 `;
 
-const TiddlyGitVersion = styled.p`
+const TidGiVersion = styled.p`
   margin-top: 0;
   margin-bottom: 20px;
   text-align: center;
@@ -85,9 +85,9 @@ export default function About(): JSX.Element {
       <Helmet>
         <title>{t('ContextMenu.About')}</title>
       </Helmet>
-      <Icon src={iconPath} alt="TiddlyGit" />
-      <Title>TiddlyGit ({platform ?? 'Unknown Platform'})</Title>
-      <TiddlyGitVersion>{`Version v${appVersion ?? ' - '}.`}</TiddlyGitVersion>
+      <Icon src={iconPath} alt="TidGi" />
+      <Title>TidGi ({platform ?? 'Unknown Platform'})</Title>
+      <TidGiVersion>{`Version v${appVersion ?? ' - '}.`}</TidGiVersion>
       <DependenciesVersionsContainer>
         {versions?.map(({ name, version }) => (
           <DependenciesVersions key={name}>
@@ -97,10 +97,10 @@ export default function About(): JSX.Element {
       </DependenciesVersionsContainer>
 
       <ButtonContainer>
-        <GoToTheWebsiteButton onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TiddlyGit-Desktop')}>
+        <GoToTheWebsiteButton onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TidGi-Desktop')}>
           Website
         </GoToTheWebsiteButton>
-        <GoToTheWebsiteButton onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose')}>
+        <GoToTheWebsiteButton onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TidGi-Desktop/issues/new/choose')}>
           Support
         </GoToTheWebsiteButton>
       </ButtonContainer>
@@ -127,12 +127,12 @@ export default function About(): JSX.Element {
         </Link>
         <span> && </span>
         <Link
-          onClick={async () => await window.service.native.open('https://webcatalog.app/?utm_source=tiddlygit_app')}
+          onClick={async () => await window.service.native.open('https://webcatalog.app/?utm_source=tidgi_app')}
           onKeyDown={async (event) => {
             if (event.key !== 'Enter') {
               return;
             }
-            await window.service.native.open('https://webcatalog.app/?utm_source=tiddlygit_app');
+            await window.service.native.open('https://webcatalog.app/?utm_source=tidgi_app');
           }}
           role="link"
           tabIndex={0}>

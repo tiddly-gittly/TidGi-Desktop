@@ -7,15 +7,15 @@ import { Application } from 'spectron';
 setDefaultTimeout(30 * 1000);
 
 const projectRoot = path.join(__dirname, '..', '..');
-const packageName = process.env.npm_product_name ?? 'TiddlyGit';
+const packageName = process.env.npm_product_name ?? 'TidGi';
 
 interface IContext {
   previousElement?: WebdriverIO.Element;
 }
 /**
- * Execution environment for TiddlyGit in cucumber-js
+ * Execution environment for TidGi in cucumber-js
  */
-export class TiddlyGitWorld extends World {
+export class TidGiWorld extends World {
   /** our electron app instance created by spectron */
   public app?: Application;
   /** store selected element and other things, so subsequent cucumber statement can get context */

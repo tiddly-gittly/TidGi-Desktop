@@ -516,7 +516,7 @@ export class Window implements IWindowService {
       tray,
       activateWithApp: false,
       preloadWindow: true,
-      tooltip: i18n.t('Menu.TiddlyGitMenuBar'),
+      tooltip: i18n.t('Menu.TidGiMenuBar'),
       browserWindow: mergeDeep(windowConfig, {
         show: false,
         minHeight: 100,
@@ -553,11 +553,11 @@ export class Window implements IWindowService {
           // TODO: restore updater options here
           const contextMenu = Menu.buildFromTemplate([
             {
-              label: i18n.t('ContextMenu.OpenTiddlyGit'),
+              label: i18n.t('ContextMenu.OpenTidGi'),
               click: async () => await this.open(WindowNames.main),
             },
             {
-              label: i18n.t('ContextMenu.OpenTiddlyGitMenuBar'),
+              label: i18n.t('ContextMenu.OpenTidGiMenuBar'),
               click: async () => await menuBar.showWindow(),
             },
             {

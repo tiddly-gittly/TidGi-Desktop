@@ -118,8 +118,8 @@ export class MenuService implements IMenuService {
   private loadDefaultMenuTemplate(): void {
     this._menuTemplate = [
       {
-        label: () => i18next.t('Menu.TiddlyGit'),
-        id: 'TiddlyGit',
+        label: () => i18next.t('Menu.TidGi'),
+        id: 'TidGi',
         submenu: [
           {
             label: () => i18next.t('ContextMenu.About'),
@@ -147,7 +147,7 @@ export class MenuService implements IMenuService {
           { role: 'hide' },
           { role: 'hideOthers' },
           { role: 'unhide' },
-          { label: () => i18next.t('ContextMenu.Quit') + i18next.t('Menu.TiddlyGit'), role: 'quit' },
+          { label: () => i18next.t('ContextMenu.Quit') + i18next.t('Menu.TidGi'), role: 'quit' },
         ],
       },
       {
@@ -188,20 +188,20 @@ export class MenuService implements IMenuService {
         id: 'help',
         submenu: [
           {
-            label: () => i18next.t('ContextMenu.TiddlyGitSupport'),
-            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues'),
+            label: () => i18next.t('ContextMenu.TidGiSupport'),
+            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues'),
           },
           {
             label: () => i18next.t('Menu.ReportBugViaGithub'),
-            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues'),
+            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues'),
           },
           {
             label: () => i18next.t('Menu.RequestFeatureViaGithub'),
-            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/issues/new?template=feature.md&title=feature%3A+'),
+            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues/new?template=feature.md&title=feature%3A+'),
           },
           {
             label: () => i18next.t('Menu.LearnMore'),
-            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/tiddlygit-desktop/'),
+            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/'),
           },
         ],
       },
@@ -465,12 +465,12 @@ export class MenuService implements IMenuService {
           },
           { type: 'separator' },
           {
-            label: i18next.t('ContextMenu.TiddlyGitSupport'),
-            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/new/choose'),
+            label: i18next.t('ContextMenu.TidGiSupport'),
+            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-Desktop/issues/new/choose'),
           },
           {
-            label: i18next.t('ContextMenu.TiddlyGitWebsite'),
-            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TiddlyGit-Desktop'),
+            label: i18next.t('ContextMenu.TidGiWebsite'),
+            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-Desktop'),
           },
           { type: 'separator' },
           {

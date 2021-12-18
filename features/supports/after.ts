@@ -3,7 +3,7 @@ import fs from 'fs-extra';
 
 import { DEFAULT_WIKI_FOLDER } from '../../src/constants/paths';
 import { SETTINGS_FOLDER } from '../../src/constants/appPaths';
-import { TiddlyGitWorld } from './world';
+import { TidGiWorld } from './world';
 
 Before(async function () {
   // clear setting folder
@@ -11,7 +11,7 @@ Before(async function () {
   await fs.remove(DEFAULT_WIKI_FOLDER);
 });
 
-After(async function (this: TiddlyGitWorld, testCase) {
+After(async function (this: TidGiWorld, testCase) {
   // print logs if test failed
   // if (this.app !== undefined && testCase.result?.status === Status.FAILED) {
   //   console.log('main:\n---\n');

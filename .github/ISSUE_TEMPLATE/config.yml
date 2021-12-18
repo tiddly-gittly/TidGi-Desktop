@@ -1,7 +1,7 @@
 blank_issues_enabled: true
 contact_links:
   - name: Discuss features Or Ask Questions 讨论现有功能或问问题
-    url: https://github.com/tiddly-gittly/TiddlyGit-Desktop/discussions
+    url: https://github.com/tiddly-gittly/TidGi-Desktop/discussions
     about: Question belongs to Discussion. 使用上的问题就不要发在 issue 了，发到 Discussion 吧
   - name: Email
     url: mailto:linonetwo012@gmail.com

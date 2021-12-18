@@ -9,7 +9,7 @@ import { BehaviorSubject } from 'rxjs';
 import { IGitUserInfos } from '@services/git/interface';
 
 const defaultUserInfos = {
-  userName: 'TiddlyGitUser',
+  userName: 'TidGiUser',
   authing: undefined as IAuthingUserInfo | undefined,
 };
 

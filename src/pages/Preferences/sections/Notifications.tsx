@@ -120,7 +120,7 @@ export function Notifications(props: Required<ISectionProps>): JSX.Element {
                         <Trans t={t} i18nKey="Preference.TestNotificationDescription">
                           <span>
                             If notifications dont show up, make sure you enable notifications in
-                            <b>macOS Preferences → Notifications → TiddlyGit</b>.
+                            <b>macOS Preferences → Notifications → TidGi</b>.
                           </span>
                         </Trans>
                       );
@@ -135,7 +135,7 @@ export function Notifications(props: Required<ISectionProps>): JSX.Element {
                   secondary={
                     <Trans t={t} i18nKey="Preference.HowToEnableNotifications">
                       <span>
-                        TiddlyGit supports notifications out of the box. But for some cases, to receive notifications, you will need to manually configure
+                        TidGi supports notifications out of the box. But for some cases, to receive notifications, you will need to manually configure
                         additional web app settings.
                       </span>
                       <Link

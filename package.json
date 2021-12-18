@@ -1,6 +1,6 @@
 {
-  "name": "TiddlyGit",
-  "productName": "TiddlyGit",
+  "name": "TidGi",
+  "productName": "TidGi",
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
   "version": "0.6.6",
   "license": "MPL 2.0",
@@ -22,7 +22,7 @@
     "lint:fix": "eslint ./src --ext js,ts,tsx,json --fix",
     "installType": "typesync"
   },
-  "repository": "https://github.com/tiddly-gittly/TiddlyGit-Desktop",
+  "repository": "https://github.com/tiddly-gittly/TidGi-Desktop",
   "author": "Lin Onetwo <linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
   "main": ".webpack/main",
   "dependencies": {

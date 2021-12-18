@@ -40,7 +40,7 @@ module.exports = [
               camel2DashComponentName: false,
             }),
             // svg-icons
-            // FIXME: will cause `FolderIcon is not defined`, which cannot reproduce in MacOS and dev mode https://github.com/tiddly-gittly/TiddlyGit-Desktop/issues/88
+            // FIXME: will cause `FolderIcon is not defined`, which cannot reproduce in MacOS and dev mode https://github.com/tiddly-gittly/TidGi-Desktop/issues/88
             // tsImportPluginFactory({
             //   libraryDirectory: (importName) => {
             //     const stringVec = importName

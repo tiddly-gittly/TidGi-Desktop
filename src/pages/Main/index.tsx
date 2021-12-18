@@ -213,7 +213,7 @@ export default function Main(): JSX.Element {
     <OuterRoot>
       <div id="test" data-usage="For spectron automating testing" />
       <Helmet>
-        <title>{t('Menu.TiddlyGit')}</title>
+        <title>{t('Menu.TidGi')}</title>
       </Helmet>
       <Root>
         {sidebar && (

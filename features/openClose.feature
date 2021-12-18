@@ -1,9 +1,9 @@
 Feature: Open
-  As a user of TiddlyGit
+  As a user of TidGi
   I want to open the app
   So I can be more productive
 
-  Scenario: Opening TiddlyGit
+  Scenario: Opening TidGi
     Given the app is launched
     Then the element "#new-user-tip" is on the page
     Then the element "#add-workspace-button" is on the page
@@ -12,7 +12,7 @@ Feature: Open
     Given the app is launched
     Then the element "#add-workspace-button" is on the page
     Then click on this element
-    Then "添加工作区 tiddlygit-dev" window show up
+    Then "添加工作区 tidgi-dev" window show up
 
   Scenario: Opening Preferences Page
     Given the app is launched

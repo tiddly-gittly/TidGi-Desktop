@@ -45,7 +45,7 @@ const CREATE_REPO_MUTATION = `
   mutation CreateRepository($repoName: String!, $homepageUrl: URI, $ownerId: ID!, $visibility: RepositoryVisibility!) {
     createRepository (input: {
       name: $repoName,
-      description: "A non-linear Wiki created using TiddlyGit-Desktop.",
+      description: "A non-linear Wiki created using TidGi-Desktop.",
       hasIssuesEnabled: true,
       hasWikiEnabled: false,
       homepageUrl: $homepageUrl,

@@ -27,12 +27,12 @@ export function FriendLinks(props: ISectionProps): JSX.Element {
             <ChevronRightIcon color="action" />
           </ListItem>
           <Divider />
-          <ListItem button onClick={async () => await window.service.native.open('https://webcatalogapp.com?utm_source=tiddlygit_app')}>
+          <ListItem button onClick={async () => await window.service.native.open('https://webcatalogapp.com?utm_source=tidgi_app')}>
             <ListItemText primary={<Logo src={webcatalogLogo} alt={t('Preference.WebCatalog')} />} secondary={t('Preference.WebCatalogIntro')} />
             <ChevronRightIcon color="action" />
           </ListItem>
           <Divider />
-          <ListItem button onClick={async () => await window.service.native.open('https://translatiumapp.com?utm_source=tiddlygit_app')}>
+          <ListItem button onClick={async () => await window.service.native.open('https://translatiumapp.com?utm_source=tidgi_app')}>
             <ListItemText primary={<Logo src={translatiumLogo} alt={t('Preference.Translatium')} />} secondary={t('Preference.TranslatiumIntro')} />
             <ChevronRightIcon color="action" />
           </ListItem>

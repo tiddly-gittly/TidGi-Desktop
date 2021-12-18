@@ -89,7 +89,7 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
   const wikiFolderLocation = window.remote.joinPath(parentFolderLocation ?? t('Error') ?? 'Error', wikiFolderName);
 
   /**
-   * For importing existed nodejs wiki into TiddlyGit, we parse git url from the folder to import
+   * For importing existed nodejs wiki into TidGi, we parse git url from the folder to import
    */
   useEffect(() => {
     void (async function getWorkspaceRemoteEffect(): Promise<void> {

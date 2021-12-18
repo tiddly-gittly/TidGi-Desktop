@@ -1,6 +1,6 @@
 # Privacy Policy
 
-TiddlyGit respects your privacy and does not track or log anything from you.
+TidGi respects your privacy and does not track or log anything from you.
 
 Still, the app does use third party services that may collect information used to identify you.
 

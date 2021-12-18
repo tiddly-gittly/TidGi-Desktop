@@ -21,12 +21,12 @@ export function Miscellaneous(props: ISectionProps): JSX.Element {
             <ChevronRightIcon color="action" />
           </ListItem>
           <Divider />
-          <ListItem button onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/tiddlygit-desktop/')}>
+          <ListItem button onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TidGi-desktop/')}>
             <ListItemText primary={t('Preference.WebSite')} />
             <ChevronRightIcon color="action" />
           </ListItem>
           <Divider />
-          <ListItem button onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/tiddlygit-desktop/issues')}>
+          <ListItem button onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TidGi-desktop/issues')}>
             <ListItemText primary={t('Preference.Support')} />
             <ChevronRightIcon color="action" />
           </ListItem>
