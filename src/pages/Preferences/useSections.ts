@@ -37,6 +37,11 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
       Icon: MenuBookIcon,
       ref: useRef<SectionTitleElement>(null),
     },
+    [PreferenceSections.notifications]: {
+      text: t('Preference.Notifications'),
+      Icon: NotificationsIcon,
+      ref: useRef<SectionTitleElement>(null),
+    },
     [PreferenceSections.sync]: {
       text: t('Preference.Sync'),
       Icon: GitHubIcon,
@@ -50,11 +55,6 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
     [PreferenceSections.system]: {
       text: t('Preference.System'),
       Icon: BuildIcon,
-      ref: useRef<SectionTitleElement>(null),
-    },
-    [PreferenceSections.notifications]: {
-      text: t('Preference.Notifications'),
-      Icon: NotificationsIcon,
       ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.languages]: {

@@ -63,10 +63,10 @@ export default function Preferences(): JSX.Element {
       <SectionSideBar sections={sections} />
       <Inner>
         <TiddlyWiki sections={sections} requestRestartCountDown={requestRestartCountDown} />
+        <Notifications sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <Sync sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <General sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <System sections={sections} />
-        <Notifications sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <Languages sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <Downloads sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <Network sections={sections} />
