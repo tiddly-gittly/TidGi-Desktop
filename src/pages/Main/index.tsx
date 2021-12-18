@@ -2,7 +2,6 @@ import React, { useCallback } from 'react';
 import styled, { css } from 'styled-components';
 import { useTranslation, Trans } from 'react-i18next';
 import { Helmet } from 'react-helmet';
-import { AsyncReturnType } from 'type-fest';
 import { DndContext, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
@@ -11,7 +10,12 @@ import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
 
 import { Button, Typography, Tooltip, IconButton as IconButtonRaw } from '@material-ui/core';
-import { Notifications as NotificationsIcon, NotificationsPaused as NotificationsPausedIcon, Settings as SettingsIcon } from '@material-ui/icons';
+import {
+  Notifications as NotificationsIcon,
+  NotificationsPaused as NotificationsPausedIcon,
+  Settings as SettingsIcon,
+  Upgrade as UpgradeIcon,
+} from '@material-ui/icons';
 
 import { WindowNames } from '@services/windows/WindowProperties';
 
@@ -19,6 +23,7 @@ import { usePromiseValue } from '@/helpers/useServiceValue';
 
 import WorkspaceSelector from './WorkspaceSelector';
 import FindInPage from '../../components/FindInPage';
+import { latestUpdateUrl } from '@/constants/urls';
 
 import arrowWhite from '@/images/arrow-white.png';
 import arrowBlack from '@/images/arrow-black.png';
@@ -79,6 +84,10 @@ const SidebarWithStyle = styled(SimpleBar)`
 `;
 
 const SidebarTop = styled.div<{ fullscreen?: boolean }>`
+  overflow-y: scroll;
+  &::-webkit-scrollbar {
+    width: 0;
+  }
   flex: 1;
   ${({ fullscreen }) =>
     fullscreen === true
@@ -206,8 +215,6 @@ export default function Main(): JSX.Element {
     ?.find((workspace) => workspace.active);
   if (preferences === undefined) return <div>{t('Loading')}</div>;
 
-  // DEBUG: console
-  console.log(`activeWorkspaceMetadata`, activeWorkspaceMetadata);
   const { attachToMenubar, titleBar, sidebar, pauseNotifications, themeSource, sidebarShortcutHints } = preferences;
   return (
     <OuterRoot>
@@ -273,6 +280,14 @@ export default function Main(): JSX.Element {
                   </IconButton>
                 </>
               )}
+              <IconButton
+                id="update-available"
+                aria-label={t('Updater.UpdateAvailable')}
+                onClick={async () => await window.service.native.open(latestUpdateUrl)}>
+                <Tooltip title={<span>{t('Updater.UpdateAvailable')}</span>} placement="top">
+                  <UpgradeIcon />
+                </Tooltip>
+              </IconButton>
               <IconButton
                 id="open-notification-settings-button"
                 aria-label={t('SideBar.Notifications')}

@@ -7,6 +7,7 @@ import { Paper, SectionTitle } from '../PreferenceComponents';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useUpdaterObservable, getUpdaterMessage } from '@services/updater/hooks';
 import { IUpdaterStatus } from '@services/updater/interface';
+import { latestUpdateUrl } from '@/constants/urls';
 
 export function Updates(props: Required<ISectionProps>): JSX.Element {
   const { t } = useTranslation();
@@ -25,7 +26,11 @@ export function Updates(props: Required<ISectionProps>): JSX.Element {
             <>
               <ListItem
                 button
-                onClick={async () => await window.service.updater.checkForUpdates()}
+                onClick={
+                  updaterMetaData.status === IUpdaterStatus.updateAvailable
+                    ? async () => await window.service.native.open(latestUpdateUrl)
+                    : async () => await window.service.updater.checkForUpdates()
+                }
                 disabled={updaterMetaData.status === IUpdaterStatus.checkingForUpdate || updaterMetaData.status === IUpdaterStatus.downloadProgress}>
                 {updaterMetaData.status !== undefined && (
                   <ListItemText

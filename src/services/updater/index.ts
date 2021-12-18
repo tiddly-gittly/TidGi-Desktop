@@ -14,6 +14,7 @@ import { lazyInject } from '@services/container';
 import { IUpdaterService, IUpdaterMetaData, IGithubReleaseData, IUpdaterStatus } from './interface';
 import type { IMenuService } from '@services/menu/interface';
 import { logger } from '@services/libs/log';
+import { latestUpdateUrl } from '@/constants/urls';
 
 // TODO: use electron-forge 's auto update solution， maybe see https://headspring.com/2020/09/24/building-signing-and-publishing-electron-forge-applications-for-windows/
 @injectable()
@@ -80,7 +81,7 @@ export class Updater implements IUpdaterService {
         {
           id: 'update',
           label: () => i18next.t('Updater.UpdateAvailable'),
-          click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest'),
+          click: async () => await shell.openExternal(latestUpdateUrl),
         },
       ]);
     } else {
