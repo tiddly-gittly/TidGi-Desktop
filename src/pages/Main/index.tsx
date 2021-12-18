@@ -13,8 +13,10 @@ import { Button, Typography, Tooltip, IconButton as IconButtonRaw } from '@mater
 import { Settings as SettingsIcon, Upgrade as UpgradeIcon } from '@material-ui/icons';
 
 import { WindowNames } from '@services/windows/WindowProperties';
+import { IUpdaterStatus } from '@services/updater/interface';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import { useUpdaterObservable } from '@services/updater/hooks';
 
 import WorkspaceSelector from './WorkspaceSelector';
 import FindInPage from '../../components/FindInPage';
@@ -208,6 +210,7 @@ export default function Main(): JSX.Element {
   const activeWorkspaceMetadata = workspacesList
     ?.map((workspace) => ({ active: workspace.active, ...workspace.metadata }))
     ?.find((workspace) => workspace.active);
+  const updaterMetaData = useUpdaterObservable();
   if (preferences === undefined) return <div>{t('Loading')}</div>;
 
   const { attachToMenubar, titleBar, sidebar, themeSource, sidebarShortcutHints } = preferences;
@@ -275,14 +278,16 @@ export default function Main(): JSX.Element {
                   </IconButton>
                 </>
               )}
-              <IconButton
-                id="update-available"
-                aria-label={t('SideBar.UpdateAvailable')}
-                onClick={async () => await window.service.native.open(latestUpdateUrl)}>
-                <Tooltip title={<span>{t('SideBar.UpdateAvailable')}</span>} placement="top">
-                  <UpgradeIcon />
-                </Tooltip>
-              </IconButton>
+              {updaterMetaData?.status === IUpdaterStatus.updateAvailable && (
+                <IconButton
+                  id="update-available"
+                  aria-label={t('SideBar.UpdateAvailable')}
+                  onClick={async () => await window.service.native.open(latestUpdateUrl)}>
+                  <Tooltip title={<span>{t('SideBar.UpdateAvailable')}</span>} placement="top">
+                    <UpgradeIcon />
+                  </Tooltip>
+                </IconButton>
+              )}
               <IconButton
                 id="open-preferences-button"
                 aria-label={t('SideBar.Preferences')}
