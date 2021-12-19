@@ -32,7 +32,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
     const isSyncedWiki = storageService !== SupportedStorageServices.local;
     try {
       if (await hasGit(wikiFolderLocation)) {
-        logger.warn('Skip git init because it already has a git setup.');
+        logger.warn('Skip git init because it already has a git setup.', { wikiFolderLocation });
       } else {
         if (isSyncedWiki) {
           if (typeof gitUrl === 'string' && userInfo !== undefined) {
