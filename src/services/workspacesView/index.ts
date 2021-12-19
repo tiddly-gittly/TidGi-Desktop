@@ -40,13 +40,15 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async initializeAllWorkspaceView(): Promise<void> {
     const workspacesList = await this.workspaceService.getWorkspacesAsList();
-    await mapSeries(
-      workspacesList.sort((a, b) => (a.isSubWiki && !b.isSubWiki ? 1 : -1)),
-      async (workspace) => {
-        this.wikiService.setWikiStartLockOn(workspace.wikiFolderLocation);
-        await this.initializeWorkspaceView(workspace);
-      },
-    );
+    // sorting (-1 will make a in the front, b in the back)
+    const sortedList = workspacesList
+      .sort((a, b) => a.order - b.order) // sort by order, 1-2<0, so first will be the first
+      .sort((a, b) => (a.isSubWiki && !b.isSubWiki ? 1 : 0)) // put subwiki on bottom, they have nothing to really do, deal with them later
+      .sort((a, b) => (a.active && !b.active ? -1 : 0)); // put active wiki first
+    await mapSeries(sortedList, async (workspace) => {
+      this.wikiService.setWikiStartLockOn(workspace.wikiFolderLocation);
+      await this.initializeWorkspaceView(workspace);
+    });
     this.wikiService.setAllWikiStartLockOff();
   }
 
