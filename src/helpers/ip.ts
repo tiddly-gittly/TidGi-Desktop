@@ -56,7 +56,7 @@ async function defaultGatewayV4(): Promise<IDefaultGatewayInfo | undefined> {
       gatewayQueryFileName = type() === 'OS400' ? 'ibmi' : 'sunos'; // AIX `netstat` output is compatible with Solaris
     }
 
-    logger.debug(`in defaultGatewayV4() plat is ${plat} , so gatewayQueryFileName is ${gatewayQueryFileName}`);
+    logger.debug(`in defaultGatewayV4() plat is ${plat} , so gatewayQueryFileName is ${gatewayQueryFileName}`, { stack: new Error().stack });
 
     switch (gatewayQueryFileName) {
       case 'ibmi': {

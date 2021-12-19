@@ -27,7 +27,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
 
   public initWikiGitTransaction = async (newWorkspaceConfig: INewWorkspaceConfig, userInfo?: IGitUserInfos): Promise<IWorkspace | undefined> => {
-    const newWorkspace = await this.workspaceViewService.createWorkspaceView(newWorkspaceConfig);
+    const newWorkspace = await this.workspaceService.create(newWorkspaceConfig);
     const { gitUrl, storageService, wikiFolderLocation, isSubWiki, id: workspaceID, mainWikiToLink } = newWorkspace;
     const isSyncedWiki = storageService !== SupportedStorageServices.local;
     try {

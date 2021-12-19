@@ -442,6 +442,7 @@ export class Wiki implements IWikiService {
     if (!isSubWiki) {
       try {
         await this.startWiki(wikiFolderLocation, port, userName);
+        logger.debug('startWiki() done');
       } catch (error) {
         if (error instanceof WikiRuntimeError && error.retry) {
           logger.warn('Get startWiki() error, retrying...');

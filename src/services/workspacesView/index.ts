@@ -51,6 +51,7 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async initializeWorkspaceView(workspace: IWorkspace, options: IInitializeWorkspaceOptions = {}): Promise<void> {
+    logger.info(i18n.t('Log.InitializeWorkspaceView'));
     const { followHibernateSettingWhenInit = true, syncImmediately = true, isNew = false } = options;
     // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
     if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {
@@ -223,20 +224,6 @@ export class WorkspaceView implements IWorkspaceViewService {
         browserView.webContents.send(WikiChannel.printTiddler, tiddlerName);
       }
     });
-  }
-
-  public async createWorkspaceView(workspaceOptions: INewWorkspaceConfig): Promise<IWorkspace> {
-    const newWorkspace = await this.workspaceService.create(workspaceOptions);
-    if (!workspaceOptions.isSubWiki) {
-      await this.workspaceService.setActiveWorkspace(newWorkspace.id);
-      await this.viewService.addViewForAllBrowserViews(newWorkspace);
-      await this.viewService.setActiveViewForAllBrowserViews(newWorkspace.id);
-    }
-
-    if (typeof workspaceOptions.picturePath === 'string') {
-      await this.workspaceService.setWorkspacePicture(newWorkspace.id, workspaceOptions.picturePath);
-    }
-    return newWorkspace;
   }
 
   public async setWorkspaceView(workspaceID: string, workspaceOptions: IWorkspace): Promise<void> {
