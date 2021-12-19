@@ -5,7 +5,8 @@ declare module 'errio' {
 }
 declare module '@tiddlygit/tiddlywiki' {
   export interface I$TW {
-    boot: { argv: string[]; startup: (options: { callback: () => unknown }) => void };
+    boot: { argv: string[]; startup: (options: { callback?: () => unknown }) => void };
+    hooks: { addHook: (hookName: string, callback: (...arguments_: any[]) => unknown) => void };
   }
   export function TiddlyWiki(): I$TW;
 }

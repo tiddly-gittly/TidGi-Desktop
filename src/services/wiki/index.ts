@@ -26,7 +26,7 @@ import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@/constants/path
 import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './plugin/subWikiPlugin';
 import { IWikiService, WikiControlActions } from './interface';
 import { WikiChannel } from '@/constants/channels';
-import { CopyWikiTemplateError, DoubleWikiInstanceError } from './error';
+import { CopyWikiTemplateError, DoubleWikiInstanceError, WikiRuntimeError } from './error';
 import { SupportedStorageServices } from '@services/types';
 import type { WikiWorker } from './wikiWorker';
 
@@ -100,9 +100,10 @@ export class Wiki implements IWikiService {
     const loggerMeta = { worker: 'NodeJSWiki', homePath };
     return await new Promise<void>((resolve, reject) => {
       // handle native messages
-      Thread.errors(worker).subscribe((error) => {
+      Thread.errors(worker).subscribe(async (error) => {
         logger.error(error.message, { ...loggerMeta, ...error });
-        reject(error);
+        wikiOutputToFile(homePath, error.message);
+        reject(new WikiRuntimeError(error, homePath, false));
       });
       Thread.events(worker).subscribe((event: WorkerEvent) => {
         if (event.type === 'message') {
@@ -119,7 +120,7 @@ export class Wiki implements IWikiService {
       });
 
       // subscribe to the Observable that startNodeJSWiki returns, handle messages send by our code
-      worker.startNodeJSWiki(workerData).subscribe((message) => {
+      worker.startNodeJSWiki(workerData).subscribe(async (message) => {
         if (message.type === 'control') {
           switch (message.actions) {
             case WikiControlActions.booted: {
@@ -142,7 +143,19 @@ export class Wiki implements IWikiService {
               const errorMessage = message.message ?? 'get WikiControlActions.error without message';
               logger.error(errorMessage, { ...loggerMeta, message });
               logger.info(`startWiki() rejected with message.type === 'control' and  WikiControlActions.error`, loggerMeta);
-              reject(new Error(errorMessage));
+              // fix "message":"listen EADDRINUSE: address already in use 0.0.0.0:5212"
+              if (errorMessage.includes('EADDRINUSE')) {
+                const portChange = {
+                  port: tiddlyWikiPort + 1,
+                  homeUrl: workspace.homeUrl.replace(`:${tiddlyWikiPort}`, `:${tiddlyWikiPort + 1}`),
+                  // eslint-disable-next-line unicorn/no-null
+                  lastUrl: workspace.lastUrl?.replace?.(`:${tiddlyWikiPort}`, `:${tiddlyWikiPort + 1}`) ?? null,
+                };
+                const newWorkspace = { ...workspace, ...portChange };
+                await this.workspaceService.update(workspaceID, portChange, true);
+                return reject(new WikiRuntimeError(new Error(message.message), homePath, true, newWorkspace));
+              }
+              reject(new WikiRuntimeError(new Error(message.message), homePath, false));
             }
           }
         } else if (message.type === 'stderr' || message.type === 'stdout') {
@@ -412,7 +425,7 @@ export class Wiki implements IWikiService {
   }
 
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
-    const { wikiFolderLocation, port, isSubWiki, mainWikiToLink, syncOnIntervalDebounced, syncOnInterval } = workspace;
+    const { wikiFolderLocation, port, isSubWiki, mainWikiToLink, syncOnIntervalDebounced, syncOnInterval, id } = workspace;
 
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     try {
@@ -427,7 +440,16 @@ export class Wiki implements IWikiService {
 
     // if is main wiki
     if (!isSubWiki) {
-      await this.startWiki(wikiFolderLocation, port, userName);
+      try {
+        await this.startWiki(wikiFolderLocation, port, userName);
+      } catch (error) {
+        if (error instanceof WikiRuntimeError && error.retry) {
+          logger.warn('Get startWiki() error, retrying...');
+          // don't want it to throw here again, so no await here.
+          // eslint-disable-next-line @typescript-eslint/return-await
+          return this.workspaceViewService.restartWorkspaceViewService(id);
+        }
+      }
       // sync to cloud, do this in a non-blocking way
       if (syncOnInterval && syncOnIntervalDebounced) {
         void this.tryWatchForSync(workspace, path.join(wikiFolderLocation, TIDDLERS_PATH));
