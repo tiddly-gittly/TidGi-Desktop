@@ -453,4 +453,9 @@ export class Workspace implements IWorkspaceService {
       ...options,
     };
   };
+
+  public async workspaceDidFailLoad(id: string): Promise<boolean> {
+    const workspaceMetaData = this.getMetaDataSync(id);
+    return typeof workspaceMetaData?.didFailLoadErrorMessage === 'string' && workspaceMetaData.didFailLoadErrorMessage.length > 0;
+  }
 }

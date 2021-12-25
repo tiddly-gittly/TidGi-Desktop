@@ -118,7 +118,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     // and also wait for wiki BrowserView to be able to receive command
     // eslint-disable-next-line global-require
     let workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
-    let loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
+    let loadFailed = await this.workspaceService.workspaceDidFailLoad(workspace.id);
     // if wikiStartup cause load failed, we skip the view creation
     if (loadFailed) {
       logger.info(`Exit initializeWorkspaceView() because loadFailed`, { workspace, workspaceMetadata });
@@ -132,7 +132,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       await delay(500);
       workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
     }
-    loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
+    loadFailed = await this.workspaceService.workspaceDidFailLoad(workspace.id);
     if (loadFailed) {
       const latestWorkspaceData = await this.workspaceService.get(workspace.id);
       throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, latestWorkspaceData?.lastUrl ?? homeUrl);

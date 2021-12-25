@@ -62,13 +62,8 @@ export default function setupViewEventHandlers(
     if (workspaceObject === undefined) {
       return;
     }
-    if (
-      workspaceObject.active &&
-      typeof (await workspaceService.getMetaData(workspace.id)).didFailLoadErrorMessage === 'string' &&
-      browserWindow !== undefined &&
-      !browserWindow.isDestroyed()
-    ) {
-      // fix https://github.com/atomery/singlebox/issues/228
+    if (workspaceObject.active && (await workspaceService.workspaceDidFailLoad(workspace.id)) && browserWindow !== undefined && !browserWindow.isDestroyed()) {
+      // fix https://github.com/webcatalog/singlebox-legacy/issues/228
       const contentSize = browserWindow.getContentSize();
       view.setBounds(await getViewBounds(contentSize as [number, number]));
     }
@@ -83,6 +78,10 @@ export default function setupViewEventHandlers(
   });
 
   const throttledDidFinishedLoad = throttle(async () => {
+    // if have error, don't realignActiveWorkspace, which will hide the error message
+    if (await workspaceService.workspaceDidFailLoad(workspace.id)) {
+      return;
+    }
     logger.debug(`throttledDidFinishedLoad() workspace.id: ${workspace.id}, now workspaceViewService.realignActiveWorkspace() then set isLoading to false`);
     // focus on initial load
     // https://github.com/atomery/webcatalog/issues/398
@@ -112,14 +111,17 @@ export default function setupViewEventHandlers(
   // https://electronjs.org/docs/api/web-contents#event-did-fail-load
   // https://github.com/webcatalog/neutron/blob/3d9e65c255792672c8bc6da025513a5404d98730/main-src/libs/views.js#L397
   view.webContents.on('did-fail-load', async (_event, errorCode, errorDesc, _validateUrl, isMainFrame) => {
-    const [workspaceObject, workspaceMetaData] = await Promise.all([workspaceService.get(workspace.id), workspaceService.getMetaData(workspace.id)]);
+    const [workspaceObject, workspaceDidFailLoad] = await Promise.all([
+      workspaceService.get(workspace.id),
+      workspaceService.workspaceDidFailLoad(workspace.id),
+    ]);
     // this event might be triggered
     // even after the workspace obj and BrowserView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
     if (workspaceObject === undefined) {
       return;
     }
-    if (typeof workspaceMetaData.didFailLoadErrorMessage === 'string' && workspaceMetaData.didFailLoadErrorMessage.length > 0) {
+    if (workspaceDidFailLoad) {
       return;
     }
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {

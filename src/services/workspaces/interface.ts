@@ -146,32 +146,34 @@ export interface IWorkspaceService {
   setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void>;
   update(id: string, workspaceSetting: Partial<IWorkspace>, immediate?: boolean): Promise<void>;
   updateMetaData: (id: string, options: Partial<IWorkspaceMetaData>) => Promise<void>;
+  workspaceDidFailLoad(id: string): Promise<boolean>;
   workspaces$: BehaviorSubject<Record<string, IWorkspaceWithMetadata>>;
 }
 export const WorkspaceServiceIPCDescriptor = {
   channel: WorkspaceChannel.name,
   properties: {
-    workspaces$: ProxyPropertyType.Value$,
-    getWorkspacesAsList: ProxyPropertyType.Function,
+    countWorkspaces: ProxyPropertyType.Function,
+    create: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,
     get$: ProxyPropertyType.Function$,
-    create: ProxyPropertyType.Function,
-    getWorkspaces: ProxyPropertyType.Function,
-    countWorkspaces: ProxyPropertyType.Function,
-    getMetaData: ProxyPropertyType.Function,
+    getActiveWorkspace: ProxyPropertyType.Function,
     getAllMetaData: ProxyPropertyType.Function,
-    updateMetaData: ProxyPropertyType.Function,
+    getByName: ProxyPropertyType.Function,
+    getFirstWorkspace: ProxyPropertyType.Function,
+    getMetaData: ProxyPropertyType.Function,
+    getNextWorkspace: ProxyPropertyType.Function,
+    getPreviousWorkspace: ProxyPropertyType.Function,
+    getWorkspaces: ProxyPropertyType.Function,
+    getWorkspacesAsList: ProxyPropertyType.Function,
+    remove: ProxyPropertyType.Function,
+    removeWorkspacePicture: ProxyPropertyType.Function,
     set: ProxyPropertyType.Function,
-    update: ProxyPropertyType.Function,
-    setWorkspaces: ProxyPropertyType.Function,
     setActiveWorkspace: ProxyPropertyType.Function,
     setWorkspacePicture: ProxyPropertyType.Function,
-    removeWorkspacePicture: ProxyPropertyType.Function,
-    remove: ProxyPropertyType.Function,
-    getByName: ProxyPropertyType.Function,
-    getPreviousWorkspace: ProxyPropertyType.Function,
-    getNextWorkspace: ProxyPropertyType.Function,
-    getActiveWorkspace: ProxyPropertyType.Function,
-    getFirstWorkspace: ProxyPropertyType.Function,
+    setWorkspaces: ProxyPropertyType.Function,
+    update: ProxyPropertyType.Function,
+    updateMetaData: ProxyPropertyType.Function,
+    workspaceDidFailLoad: ProxyPropertyType.Function,
+    workspaces$: ProxyPropertyType.Value$,
   },
 };

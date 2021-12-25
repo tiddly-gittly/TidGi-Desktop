@@ -303,7 +303,11 @@ export class View implements IViewService {
           `loadInitialUrlWithCatch(): view.webContents: ${String(view.webContents)} ${hostReplacedUrl} for windowName ${windowName} for workspace ${
             workspace.name
           }`,
+          { stack: new Error('debug error, not a real error').stack },
         );
+        if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
+          return;
+        }
         // will set again in view.webContents.on('did-start-loading'), but that one sometimes is too late to block services that wait for `isLoading`
         await this.workspaceService.updateMetaData(workspace.id, {
           // eslint-disable-next-line unicorn/no-null
@@ -370,7 +374,7 @@ export class View implements IViewService {
     } else {
       browserWindow.setBrowserView(view);
       const contentSize = browserWindow.getContentSize();
-      if (typeof (await this.workspaceService.getMetaData(workspaceID)).didFailLoadErrorMessage !== 'string') {
+      if (workspace !== undefined && (await this.workspaceService.workspaceDidFailLoad(workspace.id))) {
         view.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       } else {
         view.setBounds(await getViewBounds(contentSize as [number, number]));
@@ -435,12 +439,10 @@ export class View implements IViewService {
   };
 
   public async reloadViewsWebContentsIfDidFailLoad(): Promise<void> {
-    const workspaceMetaData: Record<string, Partial<IWorkspaceMetaData>> = await this.workspaceService.getAllMetaData();
-    this.forEachView((view, id, name) => {
-      if (typeof workspaceMetaData[id].didFailLoadErrorMessage !== 'string') {
-        return;
+    this.forEachView(async (view, id, name) => {
+      if (await this.workspaceService.workspaceDidFailLoad(id)) {
+        view.webContents.reload();
       }
-      view.webContents.reload();
     });
   }
 
@@ -486,9 +488,8 @@ export class View implements IViewService {
     const view = browserWindow.getBrowserView();
     if (view?.webContents !== null && view?.webContents !== undefined) {
       const contentSize = browserWindow.getContentSize();
-      const didFailLoadErrorMessage = (await this.workspaceService.getMetaData(activeId)).didFailLoadErrorMessage;
-      if (typeof didFailLoadErrorMessage === 'string' && didFailLoadErrorMessage.length > 0) {
-        logger.warn(`realignActiveView() hide because didFailLoadErrorMessage: ${didFailLoadErrorMessage}`);
+      if (await this.workspaceService.workspaceDidFailLoad(activeId)) {
+        logger.warn(`realignActiveView() hide because didFailLoad`);
         view?.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       } else {
         view?.setBounds(await getViewBounds(contentSize as [number, number]));
