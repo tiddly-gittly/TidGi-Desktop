@@ -453,6 +453,7 @@ export class Workspace implements IWorkspaceService {
       ...this.metaData[id],
       ...options,
     };
+    await this.updateWorkspaceSubject();
   };
 
   public async workspaceDidFailLoad(id: string): Promise<boolean> {
