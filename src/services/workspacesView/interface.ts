@@ -35,7 +35,7 @@ export interface IWorkspaceViewService {
   loadURL(url: string, workspaceID?: string): Promise<void>;
   openUrlInWorkspace(url: string, workspaceID: string): Promise<void>;
   printTiddler(tiddlerName?: string | undefined): Promise<void>;
-  realignActiveWorkspace(): Promise<void>;
+  realignActiveWorkspace(id?: string): Promise<void>;
   /**
    * Remove workspace metadata and its view (if it is started and have a browser view)
    */

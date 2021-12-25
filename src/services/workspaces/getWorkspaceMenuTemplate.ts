@@ -23,7 +23,10 @@ interface IWorkspaceMenuRequiredServices {
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open'>;
   workspace: Pick<IWorkspaceService, 'getActiveWorkspace'>;
-  workspaceView: Pick<IWorkspaceViewService, 'wakeUpWorkspaceView' | 'hibernateWorkspaceView' | 'setActiveWorkspaceView' | 'restartWorkspaceViewService'>;
+  workspaceView: Pick<
+    IWorkspaceViewService,
+    'wakeUpWorkspaceView' | 'hibernateWorkspaceView' | 'setActiveWorkspaceView' | 'restartWorkspaceViewService' | 'realignActiveWorkspace'
+  >;
 }
 
 export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IWorkspaceMenuRequiredServices): Promise<void> {
@@ -90,7 +93,10 @@ export async function getWorkspaceMenuTemplate(
     },
     {
       label: t('ContextMenu.RestartService'),
-      click: async () => await service.workspaceView.restartWorkspaceViewService(id),
+      click: async () => {
+        await service.workspaceView.restartWorkspaceViewService(id);
+        await service.workspaceView.realignActiveWorkspace(id);
+      },
     },
   ];
 

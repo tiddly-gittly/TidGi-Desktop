@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/no-null */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/consistent-destructuring */
 import { app, session, dialog } from 'electron';
@@ -330,7 +331,9 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (workspaceToRestart !== undefined) {
       logger.info(`Restarting workspace ${workspaceToRestart.id}`);
       await this.updateLastUrl(workspaceToRestart.id);
-      await this.wikiService.restartWiki(workspaceToRestart);
+      await this.workspaceService.updateMetaData(workspaceToRestart.id, { didFailLoadErrorMessage: null, isLoading: false });
+      await this.wikiService.stopWiki(workspaceToRestart.wikiFolderLocation);
+      await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
       await this.viewService.reloadViewsWebContents(workspaceToRestart.id);
       await this.wikiService.wikiOperation(WikiChannel.generalNotification, [i18n.t('ContextMenu.RestartServiceComplete')]);
     } else {
@@ -384,11 +387,11 @@ export class WorkspaceView implements IWorkspaceViewService {
   /**
    * Seems this is for relocating BrowserView in the electron window
    */
-  public async realignActiveWorkspace(): Promise<void> {
+  public async realignActiveWorkspace(id?: string): Promise<void> {
     // this function only call browserView.setBounds
     // do not attempt to recall browserView.webContents.focus()
     // as it breaks page focus (cursor, scroll bar not visible)
-    await this.realignActiveWorkspaceView();
+    await this.realignActiveWorkspaceView(id);
     try {
       await this.menuService.buildMenu();
     } catch (error) {
@@ -397,17 +400,17 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
   }
 
-  private async realignActiveWorkspaceView(): Promise<void> {
-    const activeWorkspace = await this.workspaceService.getActiveWorkspace();
-    logger.debug(`realignActiveWorkspaceView() activeWorkspace.id: ${activeWorkspace?.id ?? 'undefined'}`);
+  private async realignActiveWorkspaceView(id?: string): Promise<void> {
+    const workspaceToRealign = id !== undefined ? await this.workspaceService.get(id) : await this.workspaceService.getActiveWorkspace();
+    logger.debug(`realignActiveWorkspaceView() activeWorkspace.id: ${workspaceToRealign?.id ?? 'undefined'}`);
     const mainWindow = this.windowService.get(WindowNames.main);
     const menuBarWindow = this.windowService.get(WindowNames.menuBar);
-    if (activeWorkspace !== undefined) {
+    if (workspaceToRealign !== undefined) {
       if (mainWindow === undefined && menuBarWindow === undefined) {
         logger.warn('realignActiveWorkspaceView: no active window');
       }
-      mainWindow !== undefined && void this.viewService.realignActiveView(mainWindow, activeWorkspace.id);
-      menuBarWindow !== undefined && void this.viewService.realignActiveView(menuBarWindow, activeWorkspace.id);
+      mainWindow !== undefined && void this.viewService.realignActiveView(mainWindow, workspaceToRealign.id);
+      menuBarWindow !== undefined && void this.viewService.realignActiveView(menuBarWindow, workspaceToRealign.id);
     } else {
       logger.warn('realignActiveWorkspaceView: no active workspace');
     }
