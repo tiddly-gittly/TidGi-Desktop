@@ -21,6 +21,8 @@ export enum WikiControlActions {
 export interface IWikiControlMessage {
   actions: WikiControlActions;
   message?: string;
+  /** where this bug rise, helps debug */
+  source?: string;
   type: 'control';
 }
 

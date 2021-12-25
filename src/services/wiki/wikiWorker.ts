@@ -29,7 +29,7 @@ function startNodeJSWiki({
         observer.next({ type: 'stdout', message: newStdOut });
       },
       (newStdError: string) => {
-        observer.next({ type: 'control', actions: WikiControlActions.error, message: newStdError });
+        observer.next({ type: 'control', source: 'intercept', actions: WikiControlActions.error, message: newStdError });
       },
     );
 
@@ -66,7 +66,7 @@ function startNodeJSWiki({
       wikiInstance.boot.startup({});
     } catch (error) {
       const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
-      observer.next({ type: 'control', actions: WikiControlActions.error, message });
+      observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message });
     }
   });
 }

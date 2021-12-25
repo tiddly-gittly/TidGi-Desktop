@@ -143,6 +143,7 @@ export class Wiki implements IWikiService {
               const errorMessage = message.message ?? 'get WikiControlActions.error without message';
               logger.error(errorMessage, { ...loggerMeta, message });
               logger.info(`startWiki() rejected with message.type === 'control' and  WikiControlActions.error`, loggerMeta);
+              await this.workspaceService.updateMetaData(workspaceID, { isLoading: false, didFailLoadErrorMessage: errorMessage });
               // fix "message":"listen EADDRINUSE: address already in use 0.0.0.0:5212"
               if (errorMessage.includes('EADDRINUSE')) {
                 const portChange = {
@@ -151,9 +152,8 @@ export class Wiki implements IWikiService {
                   // eslint-disable-next-line unicorn/no-null
                   lastUrl: workspace.lastUrl?.replace?.(`:${tiddlyWikiPort}`, `:${tiddlyWikiPort + 1}`) ?? null,
                 };
-                const newWorkspace = { ...workspace, ...portChange };
                 await this.workspaceService.update(workspaceID, portChange, true);
-                return reject(new WikiRuntimeError(new Error(message.message), homePath, true, newWorkspace));
+                return reject(new WikiRuntimeError(new Error(message.message), homePath, true, { ...workspace, ...portChange }));
               }
               reject(new WikiRuntimeError(new Error(message.message), homePath, false));
             }

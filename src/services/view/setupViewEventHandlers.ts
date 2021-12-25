@@ -112,11 +112,14 @@ export default function setupViewEventHandlers(
   // https://electronjs.org/docs/api/web-contents#event-did-fail-load
   // https://github.com/webcatalog/neutron/blob/3d9e65c255792672c8bc6da025513a5404d98730/main-src/libs/views.js#L397
   view.webContents.on('did-fail-load', async (_event, errorCode, errorDesc, _validateUrl, isMainFrame) => {
-    const [workspaceObject] = await Promise.all([workspaceService.get(workspace.id), workspaceService.getMetaData(workspace.id)]);
+    const [workspaceObject, workspaceMetaData] = await Promise.all([workspaceService.get(workspace.id), workspaceService.getMetaData(workspace.id)]);
     // this event might be triggered
     // even after the workspace obj and BrowserView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
     if (workspaceObject === undefined) {
+      return;
+    }
+    if (typeof workspaceMetaData.didFailLoadErrorMessage === 'string' && workspaceMetaData.didFailLoadErrorMessage.length > 0) {
       return;
     }
     if (isMainFrame && errorCode < 0 && errorCode !== -3) {

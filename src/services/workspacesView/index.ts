@@ -118,9 +118,14 @@ export class WorkspaceView implements IWorkspaceViewService {
     // and also wait for wiki BrowserView to be able to receive command
     // eslint-disable-next-line global-require
     let workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
-    // if user want a menubar, we create a new window for that
-    await this.viewService.addViewForAllBrowserViews(workspace);
     let loadFailed = typeof workspaceMetadata.didFailLoadErrorMessage === 'string' && workspaceMetadata.didFailLoadErrorMessage.length > 0;
+    // if wikiStartup cause load failed, we skip the view creation
+    if (loadFailed) {
+      logger.info(`Exit initializeWorkspaceView() because loadFailed`, { workspace, workspaceMetadata });
+      return;
+    }
+    // Create browserView, and if user want a menubar, we also create a new window for that
+    await this.viewService.addViewForAllBrowserViews(workspace);
     // wait for main wiki webview loaded
     while (workspaceMetadata.isLoading !== false) {
       // eslint-disable-next-line no-await-in-loop
