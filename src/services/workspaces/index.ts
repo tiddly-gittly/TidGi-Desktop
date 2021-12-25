@@ -25,6 +25,7 @@ import type { IWorkspaceService, IWorkspace, IWorkspaceMetaData, INewWorkspaceCo
 import i18n from '@services/libs/i18n';
 import { defaultServerIP } from '@/constants/urls';
 import { logger } from '@services/libs/log';
+import { workspaceSorter } from './utils';
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 const debouncedSetSettingFile = debounce(async (workspaces: Record<string, IWorkspace>) => await settings.set(`workspaces`, workspaces as any), 500);
@@ -184,7 +185,7 @@ export class Workspace implements IWorkspaceService {
    * Async so proxy type is async
    */
   public async getWorkspacesAsList(): Promise<IWorkspace[]> {
-    return Object.values(this.workspaces).sort((a, b) => a.order - b.order);
+    return Object.values(this.workspaces).sort(workspaceSorter);
   }
 
   /**
@@ -192,7 +193,7 @@ export class Workspace implements IWorkspaceService {
    * Sync for internal use
    */
   private getWorkspacesAsListSync(): IWorkspace[] {
-    return Object.values(this.workspaces).sort((a, b) => a.order - b.order);
+    return Object.values(this.workspaces).sort(workspaceSorter);
   }
 
   public async get(id: string): Promise<IWorkspace | undefined> {
