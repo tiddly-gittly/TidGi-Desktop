@@ -56,9 +56,11 @@ const Root = styled.div`
   }
 `;
 
+const sidebarWidth = 68;
 const sideBarStyle = css`
   height: 100%;
-  width: 68px;
+  width: ${sidebarWidth}px;
+  min-width: ${sidebarWidth}px;
   background-color: ${({ theme }) => theme.palette.background.default};
   -webkit-app-region: drag;
   user-select: none;
@@ -104,16 +106,23 @@ const IconButton = styled(IconButtonRaw)`
 const InnerContentRoot = styled.div`
   flex: 1;
   display: flex;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   padding: 10px;
+  width: 100%;
+  height: 100%;
 `;
 
 const ContentRoot = styled.div`
   flex: 1;
   display: flex;
   flex-direction: column;
-  width: 100%;
+
+  padding-right: 20px;
+  width: calc(100% - ${sidebarWidth}px);
+  max-width: calc(100% - ${sidebarWidth}px);
+  height: 100%;
 `;
 
 const SideBarEnd = styled.div`

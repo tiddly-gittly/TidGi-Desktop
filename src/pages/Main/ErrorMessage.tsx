@@ -1,16 +1,29 @@
 import { useCallback } from 'react';
-import Button from '@material-ui/core/Button';
+import { Button, Accordion, AccordionSummary, AccordionDetails } from '@material-ui/core';
 import { Trans, useTranslation } from 'react-i18next';
 import styled from 'styled-components';
+import { Typography } from '@material-ui/core';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IWorkspaceWithMetadata, IWorkspaceMetaData } from '@services/workspaces/interface';
-import { Typography } from '@material-ui/core';
+import { ReportErrorButton } from '../AddWorkspace/FormComponents';
 
 const HelperTextsList = styled.ul`
   margin-top: 0;
   margin-bottom: 1.5rem;
   max-width: 70vw;
+`;
+
+const WikiErrorMessagesContainer = styled.article`
+  width: 100%;
+  margin-bottom: 20px;
+
+  & pre,
+  & code {
+    white-space: pre-wrap;
+  }
+  overflow-y: auto;
+  max-height: 80%;
 `;
 
 interface IWikiErrorMessagesProps {
@@ -22,18 +35,42 @@ export function WikiErrorMessages(props: IWikiErrorMessagesProps): JSX.Element {
   const wikiLogs = usePromiseValue(async () => await window.service.wiki.getWikiLogs(props.activeWorkspace.wikiFolderLocation));
   if (wikiLogs !== undefined) {
     return (
-      <div>
-        <Button onClick={async () => await window.service.native.open(wikiLogs.filePath)}>{t('Preference.OpenLogFolder')}</Button>
-        <div>
-          <pre>
-            <code>{wikiLogs.content}</code>
-          </pre>
-        </div>
-      </div>
+      <WikiErrorMessagesContainer>
+        <Accordion>
+          <AccordionSummary>
+            <Typography align="left" variant="h5">
+              {t('Error.WikiRuntimeError')} {t('ClickForDetails')}
+            </Typography>
+          </AccordionSummary>
+          <AccordionDetails>
+            <Typography align="left" variant="body2">
+              {t('Error.WikiRuntimeErrorDescription')}
+            </Typography>
+            <Button variant="outlined" onClick={async () => await window.service.native.open(wikiLogs.filePath, true)}>
+              {t('Preference.OpenLogFolder')}
+            </Button>
+
+            <div>
+              <pre>
+                <code>{wikiLogs.content}</code>
+              </pre>
+            </div>
+          </AccordionDetails>
+        </Accordion>
+      </WikiErrorMessagesContainer>
     );
   }
   return <div />;
 }
+
+const ButtonGroup = styled.div`
+  display: flex;
+  flex-direction: row;
+  justify-content: flex-start;
+  & > button {
+    margin-right: 10px;
+  }
+`;
 
 interface IViewLoadErrorMessagesProps {
   activeWorkspaceMetadata: IWorkspaceMetaData;
@@ -46,7 +83,7 @@ export function ViewLoadErrorMessages(props: IViewLoadErrorMessagesProps): JSX.E
   }, []);
 
   return (
-    <div>
+    <WikiErrorMessagesContainer>
       <Typography align="left" variant="h5">
         {t('AddWorkspace.WikiNotStarted')}
       </Typography>
@@ -56,7 +93,7 @@ export function ViewLoadErrorMessages(props: IViewLoadErrorMessagesProps): JSX.E
 
       <br />
       <Trans t={t} i18nKey="AddWorkspace.MainPageReloadTip">
-        <Typography align="left" variant="body2">
+        <Typography align="left" variant="body2" component="div">
           <>
             Try:
             <HelperTextsList>
@@ -85,9 +122,14 @@ export function ViewLoadErrorMessages(props: IViewLoadErrorMessagesProps): JSX.E
         </Typography>
       </Trans>
 
-      <Button variant="outlined" onClick={requestReload}>
-        {t('AddWorkspace.Reload')}
-      </Button>
-    </div>
+      <ButtonGroup>
+        <Button variant="outlined" onClick={requestReload}>
+          {t('AddWorkspace.Reload')}
+        </Button>
+        {typeof props.activeWorkspaceMetadata.didFailLoadErrorMessage === 'string' && (
+          <ReportErrorButton message={props.activeWorkspaceMetadata.didFailLoadErrorMessage} />
+        )}
+      </ButtonGroup>
+    </WikiErrorMessagesContainer>
   );
 }

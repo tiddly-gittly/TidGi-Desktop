@@ -374,5 +374,6 @@
     "PrintActiveTiddler": "Print Active Tiddler",
     "Wiki": "Wiki"
   },
-  "ErrorMessage": "Error message"
+  "ErrorMessage": "Error message",
+  "ClickForDetails": "Click For Details"
 }
