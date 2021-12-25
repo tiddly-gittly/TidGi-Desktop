@@ -334,6 +334,9 @@ export class WorkspaceView implements IWorkspaceViewService {
       await this.workspaceService.updateMetaData(workspaceToRestart.id, { didFailLoadErrorMessage: null, isLoading: false });
       await this.wikiService.stopWiki(workspaceToRestart.wikiFolderLocation);
       await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
+      if (await this.workspaceService.workspaceDidFailLoad(workspaceToRestart.id)) {
+        return;
+      }
       await this.viewService.reloadViewsWebContents(workspaceToRestart.id);
       await this.wikiService.wikiOperation(WikiChannel.generalNotification, [i18n.t('ContextMenu.RestartServiceComplete')]);
     } else {
