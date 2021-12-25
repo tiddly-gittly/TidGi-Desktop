@@ -52,6 +52,12 @@ export interface IWikiService {
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
   linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
+  /**
+   * Open image or PDF in OS native viewer or some else usage like this.
+   * @param homePath Workspace home path, used to locate wiki worker
+   * @param title tiddler title to open
+   */
+  openTiddlerInExternal(homePath: string, title: string): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   requestOpenTiddlerInWiki(tiddlerName: string): Promise<void>;
   /** send tiddlywiki action message to current active wiki */
@@ -78,27 +84,28 @@ export interface IWikiService {
 export const WikiServiceIPCDescriptor = {
   channel: WikiChannel.name,
   properties: {
-    updateSubWikiPluginContent: ProxyPropertyType.Function,
-    startWiki: ProxyPropertyType.Function,
-    stopWiki: ProxyPropertyType.Function,
-    restartWiki: ProxyPropertyType.Function,
-    stopAllWiki: ProxyPropertyType.Function,
-    copyWikiTemplate: ProxyPropertyType.Function,
-    getSubWikiPluginContent: ProxyPropertyType.Function,
-    requestWikiSendActionMessage: ProxyPropertyType.Function,
-    requestOpenTiddlerInWiki: ProxyPropertyType.Function,
-    linkWiki: ProxyPropertyType.Function,
-    createSubWiki: ProxyPropertyType.Function,
-    removeWiki: ProxyPropertyType.Function,
-    ensureWikiExist: ProxyPropertyType.Function,
     checkWikiExist: ProxyPropertyType.Function,
-    cloneWiki: ProxyPropertyType.Function,
     cloneSubWiki: ProxyPropertyType.Function,
-    wikiStartup: ProxyPropertyType.Function,
-    watchWikiForDebounceCommitAndSync: ProxyPropertyType.Function,
+    cloneWiki: ProxyPropertyType.Function,
+    copyWikiTemplate: ProxyPropertyType.Function,
+    createSubWiki: ProxyPropertyType.Function,
+    ensureWikiExist: ProxyPropertyType.Function,
+    getSubWikiPluginContent: ProxyPropertyType.Function,
+    linkWiki: ProxyPropertyType.Function,
+    openTiddlerInExternal: ProxyPropertyType.Function,
+    removeWiki: ProxyPropertyType.Function,
+    requestOpenTiddlerInWiki: ProxyPropertyType.Function,
+    requestWikiSendActionMessage: ProxyPropertyType.Function,
+    restartWiki: ProxyPropertyType.Function,
     setWikiLanguage: ProxyPropertyType.Function,
-    stopWatchWiki: ProxyPropertyType.Function,
+    startWiki: ProxyPropertyType.Function,
+    stopAllWiki: ProxyPropertyType.Function,
     stopWatchAllWiki: ProxyPropertyType.Function,
+    stopWatchWiki: ProxyPropertyType.Function,
+    stopWiki: ProxyPropertyType.Function,
+    updateSubWikiPluginContent: ProxyPropertyType.Function,
+    watchWikiForDebounceCommitAndSync: ProxyPropertyType.Function,
     wikiOperation: ProxyPropertyType.Function,
+    wikiStartup: ProxyPropertyType.Function,
   },
 };

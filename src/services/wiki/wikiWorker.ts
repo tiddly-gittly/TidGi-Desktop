@@ -1,13 +1,16 @@
 import 'source-map-support/register';
 import { expose } from 'threads/worker';
 import path from 'path';
-import tiddlywiki from '@tiddlygit/tiddlywiki';
+import tiddlywiki, { I$TW } from '@tiddlygit/tiddlywiki';
 import { Observable } from 'rxjs';
 import intercept from 'intercept-stdout';
 import { Server } from 'http';
+import { shell } from 'electron';
 
 import { IWikiMessage, WikiControlActions } from './interface';
 import { defaultServerIP } from '@/constants/urls';
+
+let wikiInstance: I$TW | undefined;
 
 function startNodeJSWiki({
   homePath,
@@ -32,7 +35,7 @@ function startNodeJSWiki({
     );
 
     try {
-      const wikiInstance = tiddlywiki.TiddlyWiki();
+      wikiInstance = tiddlywiki.TiddlyWiki();
       process.env.TIDDLYWIKI_PLUGIN_PATH = path.resolve(homePath, 'plugins');
       process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
       // add tiddly filesystem back https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416
@@ -55,9 +58,9 @@ function startNodeJSWiki({
           observer.next({
             type: 'control',
             actions: WikiControlActions.booted,
-            message: `Tiddlywiki booted at http://${tiddlyWikiHost}:${tiddlyWikiPort} (webview uri ip may be different, being getLocalHostUrlWithActualIP()) with args ${wikiInstance.boot.argv.join(
-              ' ',
-            )}`,
+            message: `Tiddlywiki booted at http://${tiddlyWikiHost}:${tiddlyWikiPort} (webview uri ip may be different, being getLocalHostUrlWithActualIP()) with args ${
+              wikiInstance !== undefined ? wikiInstance.boot.argv.join(' ') : '(wikiInstance is undefined)'
+            }`,
           });
         });
       });
@@ -69,6 +72,6 @@ function startNodeJSWiki({
   });
 }
 
-const wikiWorker = { startNodeJSWiki };
+const wikiWorker = { startNodeJSWiki, getTiddlerFileMetadata: (tiddlerTitle: string) => wikiInstance?.boot?.files?.[tiddlerTitle] };
 export type WikiWorker = typeof wikiWorker;
 expose(wikiWorker);

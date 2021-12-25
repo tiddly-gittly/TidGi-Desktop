@@ -7,7 +7,7 @@ import fs from 'fs-extra';
 import path from 'path';
 import { spawn, Thread, Worker, ModuleThread } from 'threads';
 import type { WorkerEvent } from 'threads/dist/types/master';
-import { BrowserView, dialog, ipcMain } from 'electron';
+import { BrowserView, dialog, ipcMain, shell } from 'electron';
 import chokidar from 'chokidar';
 import { trim, compact, debounce } from 'lodash';
 
@@ -624,5 +624,16 @@ export class Wiki implements IWikiService {
       ipcMain.once(WikiChannel.setTiddlerTextDone + workspaceID, onDone);
       onRetryOrDo();
     });
+  }
+
+  public async openTiddlerInExternal(title: string, homePath?: string): Promise<void> {
+    const wikiWorker = this.wikiWorkers[homePath ?? (await this.workspaceService.getActiveWorkspace())?.wikiFolderLocation ?? ''];
+    if (wikiWorker !== undefined) {
+      const tiddlerFileMetadata = await wikiWorker.getTiddlerFileMetadata(title);
+      if (tiddlerFileMetadata?.filepath !== undefined) {
+        logger.debug(`openTiddlerInExternal() Opening ${tiddlerFileMetadata.filepath}`);
+        await shell.openPath(tiddlerFileMetadata.filepath);
+      }
+    }
   }
 }
