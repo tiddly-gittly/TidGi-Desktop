@@ -51,6 +51,7 @@ export interface IWikiService {
   createSubWiki(parentFolderLocation: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
+  getWikiLogs(homePath: string): Promise<{ content: string; filePath: string }>;
   linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
   /**
    * Open image or PDF in OS native viewer or some else usage like this.
@@ -91,6 +92,7 @@ export const WikiServiceIPCDescriptor = {
     createSubWiki: ProxyPropertyType.Function,
     ensureWikiExist: ProxyPropertyType.Function,
     getSubWikiPluginContent: ProxyPropertyType.Function,
+    getWikiLogs: ProxyPropertyType.Function,
     linkWiki: ProxyPropertyType.Function,
     openTiddlerInExternal: ProxyPropertyType.Function,
     removeWiki: ProxyPropertyType.Function,

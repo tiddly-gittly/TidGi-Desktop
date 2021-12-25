@@ -1,6 +1,6 @@
 import React, { useCallback } from 'react';
 import styled, { css } from 'styled-components';
-import { useTranslation, Trans } from 'react-i18next';
+import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet';
 import { DndContext, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
 import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
@@ -9,7 +9,7 @@ import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
 
-import { Button, Typography, Tooltip, IconButton as IconButtonRaw } from '@material-ui/core';
+import { Typography, Tooltip, IconButton as IconButtonRaw } from '@material-ui/core';
 import { Settings as SettingsIcon, Upgrade as UpgradeIcon } from '@material-ui/icons';
 
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -22,14 +22,14 @@ import WorkspaceSelector from './WorkspaceSelector';
 import FindInPage from '../../components/FindInPage';
 import { latestUpdateUrl } from '@/constants/urls';
 
-import arrowWhite from '@/images/arrow-white.png';
-import arrowBlack from '@/images/arrow-black.png';
 import { SortableWorkspaceSelector } from './SortableWorkspaceSelector';
 import { IWorkspace } from '@services/workspaces/interface';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { CommandPaletteIcon } from '@/components/icon/CommandPaletteSVG';
 import { Languages } from '../Preferences/sections/Languages';
+import { NewUserMessage } from './NewUserMessage';
+import { WikiErrorMessages, ViewLoadErrorMessages } from './ErrorMessage';
 
 const OuterRoot = styled.div`
   display: flex;
@@ -116,68 +116,10 @@ const ContentRoot = styled.div`
   width: 100%;
 `;
 
-const Arrow = styled.div<{ image: string }>`
-  height: 202px;
-  width: 150px;
-  position: absolute;
-  top: 50px;
-  left: 72px;
-
-  background-image: url(${({ image }) => image});
-  background-size: 150px 202px;
-`;
-
-const Avatar = styled.div`
-  display: inline-block;
-  height: 32px;
-  width: 32px;
-  /** // TODO: dark theme  */
-  /* background: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black; */
-  border-radius: 4;
-  /** // TODO: dark theme  */
-  /* color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.white: theme.palette.common.black); */
-  line-height: 32px;
-  text-align: center;
-  font-weight: 500;
-  text-transform: uppercase;
-  margin-left: 10px;
-  margin-right: 10px;
-  /** // TODO: dark theme  */
-  /* border: theme.palette.type === 'dark' ? 'none' : 1px solid rgba(0, 0, 0, 0.12); */
-`;
-
-const Tip2Text = styled.span`
-  display: inline-block;
-  font-size: 18px;
-  /** // TODO: dark theme  */
-  /* color: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black; */
-`;
-
-const TipWithSidebar = styled.div`
-  position: absolute;
-  top: 112px;
-  left: 180px;
-  user-select: none;
-`;
-
-const TipWithoutSidebar = styled.div`
-  user-select: none;
-`;
-
-const AddWorkspaceGuideInfoContainer = styled.div`
-  cursor: pointer;
-`;
-
 const SideBarEnd = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-`;
-
-const HelperTextsList = styled.ul`
-  margin-top: 0;
-  margin-bottom: 1.5rem;
-  max-width: 70vw;
 `;
 
 const SidebarContainer = ({ children }: { children: React.ReactNode }): JSX.Element => {
@@ -194,9 +136,6 @@ export default function Main(): JSX.Element {
   const workspacesList = useWorkspacesListObservable();
   const preferences = usePreferenceObservable();
   const isFullScreen = usePromiseValue<boolean | undefined>(window.service.window.isFullScreen, false)!;
-  const requestReload = useCallback(async (): Promise<void> => {
-    await window.service.window.reload(window.meta.windowName);
-  }, []);
 
   const dndSensors = useSensors(
     useSensor(PointerSensor, {
@@ -210,6 +149,7 @@ export default function Main(): JSX.Element {
   const activeWorkspaceMetadata = workspacesList
     ?.map((workspace) => ({ active: workspace.active, ...workspace.metadata }))
     ?.find((workspace) => workspace.active);
+  const activeWorkspace = workspacesList?.find((workspace) => workspace.active);
   const updaterMetaData = useUpdaterObservable();
   if (preferences === undefined) return <div>{t('Loading')}</div>;
 
@@ -302,86 +242,16 @@ export default function Main(): JSX.Element {
         <ContentRoot>
           <FindInPage />
           <InnerContentRoot>
+            {activeWorkspace !== undefined && <WikiErrorMessages activeWorkspace={activeWorkspace} />}
             {Array.isArray(workspacesList) &&
               workspacesList.length > 0 &&
               typeof activeWorkspaceMetadata?.didFailLoadErrorMessage === 'string' &&
               activeWorkspaceMetadata?.didFailLoadErrorMessage.length > 0 &&
-              activeWorkspaceMetadata?.isLoading === false && (
-                <div>
-                  <Typography align="left" variant="h5">
-                    {t('AddWorkspace.WikiNotStarted')}
-                  </Typography>
-                  <Typography align="left" variant="body2">
-                    {activeWorkspaceMetadata.didFailLoadErrorMessage}
-                  </Typography>
-
-                  <br />
-                  <Trans t={t} i18nKey="AddWorkspace.MainPageReloadTip">
-                    <Typography align="left" variant="body2">
-                      <>
-                        Try:
-                        <HelperTextsList>
-                          <li>
-                            Click{' '}
-                            <b onClick={requestReload} onKeyPress={requestReload} role="button" tabIndex={0} style={{ cursor: 'pointer' }}>
-                              Reload
-                            </b>{' '}
-                            button below or press <b>CMD_or_Ctrl + R</b> to reload the page.
-                          </li>
-                          <li>
-                            Check the{' '}
-                            <b
-                              onClick={async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}
-                              onKeyPress={async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}
-                              role="button"
-                              tabIndex={0}
-                              style={{ cursor: 'pointer' }}>
-                              Log Folder
-                            </b>{' '}
-                            to see what happened.
-                          </li>
-                          <li>Backup your file, remove workspace and recreate one.</li>
-                        </HelperTextsList>
-                      </>
-                    </Typography>
-                  </Trans>
-
-                  <Button variant="outlined" onClick={requestReload}>
-                    {t('AddWorkspace.Reload')}
-                  </Button>
-                </div>
-              )}
+              activeWorkspaceMetadata?.isLoading === false && <ViewLoadErrorMessages activeWorkspaceMetadata={activeWorkspaceMetadata} />}
             {Array.isArray(workspacesList) && workspacesList.length > 0 && activeWorkspaceMetadata?.isLoading && (
               <Typography color="textSecondary">{t('Loading')}</Typography>
             )}
-            {Array.isArray(workspacesList) && workspacesList.length === 0 && (
-              <AddWorkspaceGuideInfoContainer onClick={async () => await window.service.window.open(WindowNames.addWorkspace)}>
-                {sidebar ? (
-                  <>
-                    <Arrow image={themeSource === 'dark' ? arrowWhite : arrowBlack} />
-                    <TipWithSidebar id="new-user-tip">
-                      <Trans t={t} i18nKey="AddWorkspace.MainPageTipWithSidebar">
-                        <Tip2Text>Click</Tip2Text>
-                        <Avatar>+</Avatar>
-                        <Tip2Text>to get started!</Tip2Text>
-                      </Trans>
-                    </TipWithSidebar>
-                  </>
-                ) : (
-                  <TipWithoutSidebar id="new-user-tip">
-                    <Tip2Text>
-                      <Trans t={t} i18nKey="AddWorkspace.MainPageTipWithoutSidebar">
-                        <span>Click </span>
-                        <strong>Workspaces &gt; Add Workspace</strong>
-                        <span>Or </span>
-                        <strong>Click Here</strong>
-                        <span> to get started!</span>
-                      </Trans>
-                    </Tip2Text>
-                  </TipWithoutSidebar>
-                )}
-              </AddWorkspaceGuideInfoContainer>
-            )}
+            {Array.isArray(workspacesList) && workspacesList.length === 0 && <NewUserMessage sidebar={sidebar} themeSource={themeSource} />}
           </InnerContentRoot>
           <Languages languageSelectorOnly />
         </ContentRoot>

@@ -304,6 +304,12 @@ export class View implements IViewService {
             workspace.name
           }`,
         );
+        // will set again in view.webContents.on('did-start-loading'), but that one sometimes is too late to block services that wait for `isLoading`
+        await this.workspaceService.updateMetaData(workspace.id, {
+          // eslint-disable-next-line unicorn/no-null
+          didFailLoadErrorMessage: null,
+          isLoading: true,
+        });
         await view.webContents.loadURL(hostReplacedUrl);
         logger.debug('loadInitialUrlWithCatch() await loadURL() done');
         const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);

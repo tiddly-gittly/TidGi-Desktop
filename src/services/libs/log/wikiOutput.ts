@@ -3,7 +3,7 @@ import fs from 'fs-extra';
 
 import { LOG_FOLDER } from '@/constants/paths';
 
-function getWikiLogFilePath(wikiName: string): string {
+export function getWikiLogFilePath(wikiName: string): string {
   const logFileName = wikiName.replace(/["*/:<>?\\|]/g, '_');
   const logFilePath = path.join(LOG_FOLDER, `${logFileName}.log`);
   return logFilePath;

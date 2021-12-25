@@ -19,7 +19,7 @@ import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interfa
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { logger, wikiOutputToFile, refreshOutputFile } from '@services/libs/log';
+import { logger, wikiOutputToFile, refreshOutputFile, getWikiLogFilePath } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { lazyInject } from '@services/container';
 import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@/constants/paths';
@@ -635,5 +635,14 @@ export class Wiki implements IWikiService {
         await shell.openPath(tiddlerFileMetadata.filepath);
       }
     }
+  }
+
+  public async getWikiLogs(homePath: string): Promise<{ content: string; filePath: string }> {
+    const filePath = getWikiLogFilePath(homePath);
+    const content = await fs.readFile(filePath, 'utf-8');
+    return {
+      content,
+      filePath,
+    };
   }
 }

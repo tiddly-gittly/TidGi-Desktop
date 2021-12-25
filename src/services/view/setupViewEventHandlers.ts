@@ -128,6 +128,7 @@ export default function setupViewEventHandlers(
         return;
       }
       await workspaceService.updateMetaData(workspace.id, {
+        isLoading: false,
         didFailLoadErrorMessage: `${errorCode} ${errorDesc}`,
       });
       if (workspaceObject.active && browserWindow !== undefined && !browserWindow.isDestroyed()) {

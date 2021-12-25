@@ -5,7 +5,6 @@ import tiddlywiki, { I$TW } from '@tiddlygit/tiddlywiki';
 import { Observable } from 'rxjs';
 import intercept from 'intercept-stdout';
 import { Server } from 'http';
-import { shell } from 'electron';
 
 import { IWikiMessage, WikiControlActions } from './interface';
 import { defaultServerIP } from '@/constants/urls';
