@@ -1,15 +1,15 @@
 # TidGi 太记 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
 
-| macOS                                                                                                                                                                                                   | Linux                                                                                                                                                                                                   | Windows                                                                                                                                                                                                       | Maintainer                                                                                                                          |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| macOS                                                                                                                                                                                           | Linux                                                                                                                                                                                           | Windows                                                                                                                                                                                               | Maintainer                                                                                                                          |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | [![GitHub Actions macOS Build Status](https://github.com/tiddly-gittly/TidGi-Desktop/workflows/macOS/badge.svg)](https://github.com/tiddly-gittly/TidGi-Desktop/actions?query=workflow%3AmacOS) | [![GitHub Actions Linux Build Status](https://github.com/tiddly-gittly/TidGi-Desktop/workflows/Linux/badge.svg)](https://github.com/tiddly-gittly/TidGi-Desktop/actions?query=workflow%3ALinux) | [![GitHub Actions Windows Build Status](https://github.com/tiddly-gittly/TidGi-Desktop/workflows/Windows/badge.svg)](https://github.com/tiddly-gittly/TidGi-Desktop/actions?query=workflow%3AWindows) | [<img alt="Maintainer: Lin Onetwo" src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" />](https://github.com/linonetwo) |
 
 **TidGi** - Customizable personal knowledge-base with git as backup manager and blogging platform. （Used to be TiddlyGit)
 
 **太记** - 可定制性极强的个人知识管理系统，使用 Git 作为备份管理器和博客平台。
 
-|                                                                         [最新版下载按钮 Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                         |
-| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                                                                  [最新版下载按钮 Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                   |
+| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
 
 |             Load NodeJS Wiki 加载 NodeJS 版维基             |
@@ -20,21 +20,19 @@
 | :-------------------------------------------------------------: | :-----------------------------------------------------------------: |
 | ![Screenshot of add-workspace](./docs/images/add-workspace.png) | ![Screenshot of clone-workspace](./docs/images/clone-workspace.png) |
 
-|       Translation, Preferences 多语言翻译和设置界面       |
-| :-------------------------------------------------------: |
-| ![Screenshot of preference](./docs/images/preference.png) |
-|                                                        Interactive code 交互式代码执行                                                        |
+|                                            Translation, Preferences 多语言翻译和设置界面                                             |
+| :----------------------------------------------------------------------------------------------------------------------------------: |
+|                                      ![Screenshot of preference](./docs/images/preference.png)                                       |
+|                                                   Interactive code 交互式代码执行                                                    |
 | ![屏幕录制2021-09-18 01 37 42](https://user-images.githubusercontent.com/3746270/133831500-ae91164c-7948-4de4-9a81-7017ed3b65c9.gif) |
 
-
-
-|                                                                         [最新版下载按钮 Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                         |
-| :----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                                                                  [最新版下载按钮 Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                   |
+| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
 
 <center>相关介绍</center>
 
-[用TiddlyWiki替代Notion和EverNote作为个人知识管理系统(Chinese)](https://zhuanlan.zhihu.com/p/140473235)
+[用 TiddlyWiki 替代 Notion 和 EverNote 作为个人知识管理系统(Chinese)](https://zhuanlan.zhihu.com/p/140473235)
 
 <details>
 <summary>For mac users, since I haven't buy Apple developer key yet, so you have to entrust App to open it, click here to expand details.
@@ -139,6 +137,12 @@ Because Github is one of the best free civil level [BaaS](https://www.alibabaclo
 Just download it from Github Release [Free Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)
 
 You can also find changelog in the Release.
+
+### Stargazers over time
+
+Please give a star if you like it!
+
+[![Stargazers over time](https://starchart.cc/tiddly-gittly/TidGi-Desktop.svg)](https://starchart.cc/tiddly-gittly/TidGi-Desktop)
 
 ## Development
 
