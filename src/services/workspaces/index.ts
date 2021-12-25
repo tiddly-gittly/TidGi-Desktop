@@ -448,6 +448,7 @@ export class Workspace implements IWorkspaceService {
   public getAllMetaData = async (): Promise<Record<string, Partial<IWorkspaceMetaData>>> => this.metaData;
 
   public updateMetaData = async (id: string, options: Partial<IWorkspaceMetaData>): Promise<void> => {
+    logger.debug(`updateMetaData(${id})`, options);
     this.metaData[id] = {
       ...this.metaData[id],
       ...options,

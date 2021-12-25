@@ -163,6 +163,10 @@ export default function Main(): JSX.Element {
   if (preferences === undefined) return <div>{t('Loading')}</div>;
 
   const { attachToMenubar, titleBar, sidebar, themeSource, sidebarShortcutHints } = preferences;
+  const hasError =
+    typeof activeWorkspaceMetadata?.didFailLoadErrorMessage === 'string' &&
+    activeWorkspaceMetadata?.didFailLoadErrorMessage.length > 0 &&
+    activeWorkspaceMetadata?.isLoading === false;
   return (
     <OuterRoot>
       <div id="test" data-usage="For spectron automating testing" />
@@ -251,12 +255,10 @@ export default function Main(): JSX.Element {
         <ContentRoot>
           <FindInPage />
           <InnerContentRoot>
-            {activeWorkspace !== undefined && <WikiErrorMessages activeWorkspace={activeWorkspace} />}
-            {Array.isArray(workspacesList) &&
-              workspacesList.length > 0 &&
-              typeof activeWorkspaceMetadata?.didFailLoadErrorMessage === 'string' &&
-              activeWorkspaceMetadata?.didFailLoadErrorMessage.length > 0 &&
-              activeWorkspaceMetadata?.isLoading === false && <ViewLoadErrorMessages activeWorkspaceMetadata={activeWorkspaceMetadata} />}
+            {activeWorkspace !== undefined && hasError && <WikiErrorMessages activeWorkspace={activeWorkspace} />}
+            {Array.isArray(workspacesList) && activeWorkspace !== undefined && workspacesList.length > 0 && hasError && (
+              <ViewLoadErrorMessages activeWorkspace={activeWorkspace} activeWorkspaceMetadata={activeWorkspaceMetadata} />
+            )}
             {Array.isArray(workspacesList) && workspacesList.length > 0 && activeWorkspaceMetadata?.isLoading && (
               <Typography color="textSecondary">{t('Loading')}</Typography>
             )}

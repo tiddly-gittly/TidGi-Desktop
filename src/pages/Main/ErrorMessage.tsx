@@ -73,13 +73,18 @@ const ButtonGroup = styled.div`
 `;
 
 interface IViewLoadErrorMessagesProps {
+  activeWorkspace: IWorkspaceWithMetadata;
   activeWorkspaceMetadata: IWorkspaceMetaData;
 }
 
 export function ViewLoadErrorMessages(props: IViewLoadErrorMessagesProps): JSX.Element {
   const { t } = useTranslation();
   const requestReload = useCallback(async (): Promise<void> => {
+    await window.service.workspace.updateMetaData(props.activeWorkspace.id, { didFailLoadErrorMessage: null, isLoading: false });
     await window.service.window.reload(window.meta.windowName);
+    await window.service.view.removeAllViewOfWorkspace(props.activeWorkspace.id);
+    await window.service.wiki.stopWiki(props.activeWorkspace.wikiFolderLocation);
+    await window.service.workspaceView.initializeWorkspaceView(props.activeWorkspace);
   }, []);
 
   return (
