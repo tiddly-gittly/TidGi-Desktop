@@ -1,4 +1,3 @@
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Typography, LinearProgress, Snackbar } from '@material-ui/core';
@@ -7,7 +6,7 @@ import Alert from '@material-ui/lab/Alert';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateExistedWiki, useExistedWiki } from './useExistedWiki';
 import { useWikiCreationProgress } from './useIndicator';
-import { WikiLocation, CloseButton } from './FormComponents';
+import { WikiLocation, CloseButton, ReportErrorButton } from './FormComponents';
 
 export function ExistedWikiDoneButton({
   form,
@@ -26,9 +25,12 @@ export function ExistedWikiDoneButton({
   const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {
     return (
-      <CloseButton variant="contained" disabled>
-        {wikiCreationMessage}
-      </CloseButton>
+      <>
+        <CloseButton variant="contained" disabled>
+          {wikiCreationMessage}
+        </CloseButton>
+        {wikiCreationMessage !== undefined && <ReportErrorButton message={wikiCreationMessage} />}
+      </>
     );
   }
   return (

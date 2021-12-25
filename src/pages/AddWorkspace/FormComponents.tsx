@@ -1,5 +1,6 @@
 import styled, { css } from 'styled-components';
 import { Paper, Button, TextField, Autocomplete, Typography } from '@material-ui/core';
+import { useTranslation } from 'react-i18next';
 
 export const CreateContainer = styled(Paper)`
   padding: 10px;
@@ -47,3 +48,19 @@ export const WikiLocation = styled(Typography)`
   margin-right: 5px;
 `;
 WikiLocation.defaultProps = { variant: 'body2', noWrap: true, display: 'inline', align: 'center' };
+
+export function ReportErrorButton(props: { message: string }): JSX.Element {
+  const { t } = useTranslation();
+  return (
+    <Button
+      variant="contained"
+      color="secondary"
+      onClick={() => {
+        const error = new Error(props.message);
+        error.stack = 'ReportErrorButton';
+        void window.service.native.openNewGitHubIssue(error);
+      }}>
+      {t('Dialog.ReportBug')}
+    </Button>
+  );
+}

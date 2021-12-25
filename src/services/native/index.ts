@@ -2,7 +2,8 @@
 import { app, dialog, shell, MessageBoxOptions } from 'electron';
 import { injectable, inject } from 'inversify';
 import { ModuleThread, spawn, Worker } from 'threads';
-import { Observable, of } from 'rxjs';
+import { Observable } from 'rxjs';
+import { openNewGitHubIssue } from 'electron-util';
 
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -17,6 +18,7 @@ import { ZX_FOLDER } from '@/constants/paths';
 import { logger } from '@services/libs/log';
 import { ZxInitializationError, ZxInitializationRetryFailedError, ZxNotInitializedError } from './error';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
+import { reportErrorToGithubWithTemplates } from './reportError';
 
 @injectable()
 export class NativeService implements INativeService {
@@ -151,5 +153,9 @@ export class NativeService implements INativeService {
 
   public async log(level: string, message: string, meta?: Record<string, unknown>): Promise<void> {
     logger.log(level, message, meta);
+  }
+
+  public async openNewGitHubIssue(error: Error): Promise<void> {
+    reportErrorToGithubWithTemplates(error);
   }
 }

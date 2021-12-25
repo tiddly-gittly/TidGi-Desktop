@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Typography, LinearProgress, Snackbar } from '@material-ui/core';
@@ -8,7 +7,7 @@ import Alert from '@material-ui/lab/Alert';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateCloneWiki, useCloneWiki } from './useCloneWiki';
 import { useWikiCreationProgress } from './useIndicator';
-import { WikiLocation, CloseButton } from './FormComponents';
+import { WikiLocation, CloseButton, ReportErrorButton } from './FormComponents';
 
 export function CloneWikiDoneButton({ form, isCreateMainWorkspace, errorInWhichComponentSetter }: IWikiWorkspaceFormProps): JSX.Element {
   const { t } = useTranslation();
@@ -21,9 +20,12 @@ export function CloneWikiDoneButton({ form, isCreateMainWorkspace, errorInWhichC
   const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {
     return (
-      <CloseButton variant="contained" disabled>
-        {wikiCreationMessage}
-      </CloseButton>
+      <>
+        <CloseButton variant="contained" disabled>
+          {wikiCreationMessage}
+        </CloseButton>
+        {wikiCreationMessage !== undefined && <ReportErrorButton message={wikiCreationMessage} />},
+      </>
     );
   }
   return (

@@ -176,7 +176,8 @@
     "RestartMessage": "You need to restart the app for this change to take affect.",
     "Later": "Later",
     "RestartNow": "Restart Now",
-    "MadeWithLove": "<0>Made with </0><1>❤</1><2> by </2>"
+    "MadeWithLove": "<0>Made with </0><1>❤</1><2> by </2>",
+    "ReportBug": "Report Bug"
   },
   "Log": {
     "CantSyncGitNotInitialized": "Unable to sync, this folder is not initialized as a Git repository",
@@ -334,7 +335,9 @@
     "ZxNotInitializedError": "E-11 Zx code execution service is not initialized error",
     "ZxNotInitializedErrorDescription": "E-11 The Zx code execution service is not successfully initialized and will automatically try to initialize.",
     "ZxInitializationError": "E-12 Zx code execution service initialization error",
-    "ZxInitializationErrorDescription": "E-12 Zx code execution service initialization error, please check the log file for the reason, and upload and submit the issue for repair."
+    "ZxInitializationErrorDescription": "E-12 Zx code execution service initialization error, please check the log file for the reason, and upload and submit the issue for repair.",
+    "WikiRuntimeError": "E-13 Wiki Runtime Error",
+    "WikiRuntimeErrorDescription": "E-13 There is an error while running the wiki. Please check the log file for the reason, and upload and submit an issue for repair."
   },
   "Loading": "Loading",
   "Yes": "Yes",

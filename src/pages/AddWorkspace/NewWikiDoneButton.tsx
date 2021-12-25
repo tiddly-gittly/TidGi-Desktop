@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Typography, LinearProgress, Snackbar } from '@material-ui/core';
@@ -8,7 +7,7 @@ import Alert from '@material-ui/lab/Alert';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateNewWiki, useNewWiki } from './useNewWiki';
 import { useWikiCreationProgress } from './useIndicator';
-import { WikiLocation, CloseButton } from './FormComponents';
+import { WikiLocation, CloseButton, ReportErrorButton } from './FormComponents';
 
 export function NewWikiDoneButton({
   form,
@@ -27,9 +26,12 @@ export function NewWikiDoneButton({
   const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {
     return (
-      <CloseButton variant="contained" disabled={true}>
-        {wikiCreationMessage}
-      </CloseButton>
+      <>
+        <CloseButton variant="contained" disabled={true}>
+          {wikiCreationMessage}
+        </CloseButton>
+        {wikiCreationMessage !== undefined && <ReportErrorButton message={wikiCreationMessage} />}
+      </>
     );
   }
   return (
