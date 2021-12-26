@@ -441,7 +441,6 @@ export class MenuService implements IMenuService {
           if (workspace !== undefined) {
             await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
             await this.workspaceViewService.realignActiveWorkspace(workspace.id);
-            await this.viewService.reloadViewsWebContents(workspace.id);
           }
         },
       }),
