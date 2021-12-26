@@ -11,6 +11,10 @@ import { WindowNames } from '@services/windows/WindowProperties';
 export interface IViewService {
   addView: (workspace: IWorkspace, windowName: WindowNames) => Promise<void>;
   addViewForAllBrowserViews(workspace: IWorkspace): Promise<void>;
+  /**
+   * Check if we can skip the addView() for a workspace
+   */
+  alreadyHaveView(workspace: IWorkspace): Promise<boolean>;
   forEachView: (functionToRun: (view: BrowserView, workspaceID: string, windowName: WindowNames) => void) => void;
   /**
    * If menubar is open, we get menubar browser view, else we get main window browser view
@@ -39,6 +43,7 @@ export const ViewServiceIPCDescriptor = {
   properties: {
     addView: ProxyPropertyType.Function,
     addViewForAllBrowserViews: ProxyPropertyType.Function,
+    alreadyHaveView: ProxyPropertyType.Function,
     forEachView: ProxyPropertyType.Function,
     getActiveBrowserView: ProxyPropertyType.Function,
     getAllViewOfWorkspace: ProxyPropertyType.Function,

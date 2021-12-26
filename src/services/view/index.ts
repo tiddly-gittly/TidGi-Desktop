@@ -219,6 +219,18 @@ export class View implements IViewService {
     ]);
   }
 
+  public async alreadyHaveView(workspace: IWorkspace): Promise<boolean> {
+    const checkNotExist = (workspaceToCheck: IWorkspace, windowName: WindowNames): boolean => {
+      const existedView = this.getView(workspaceToCheck.id, windowName);
+      return existedView === undefined;
+    };
+    const checkNotExistResult = await Promise.all([
+      checkNotExist(workspace, WindowNames.main),
+      this.preferenceService.get('attachToMenubar').then((attachToMenubar) => attachToMenubar && checkNotExist(workspace, WindowNames.menuBar)),
+    ]);
+    return checkNotExistResult.every((result) => !result);
+  }
+
   public async addView(workspace: IWorkspace, windowName: WindowNames): Promise<void> {
     // we assume each window will only have one view, so get view by window name + workspace
     const existedView = this.getView(workspace.id, windowName);

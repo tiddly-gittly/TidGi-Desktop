@@ -125,6 +125,11 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.info(`Exit initializeWorkspaceView() because loadFailed`, { workspace, workspaceMetadata });
       return;
     }
+    // if we run this due to RestartService, then skip the view adding and the while loop, because the workspaceMetadata.isLoading will be false, because addViewForAllBrowserViews will return before it run loadInitialUrlWithCatch
+    if (await this.viewService.alreadyHaveView(workspace)) {
+      logger.debug('Skip initializeWorkspaceView() because alreadyHaveView');
+      return;
+    }
     // Create browserView, and if user want a menubar, we also create a new window for that
     await this.viewService.addViewForAllBrowserViews(workspace);
     // wait for main wiki webview loaded
@@ -335,6 +340,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       await this.wikiService.stopWiki(workspaceToRestart.wikiFolderLocation);
       await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
       if (await this.workspaceService.workspaceDidFailLoad(workspaceToRestart.id)) {
+        logger.warn('restartWorkspaceViewService() skip because workspaceDidFailLoad');
         return;
       }
       await this.viewService.reloadViewsWebContents(workspaceToRestart.id);
