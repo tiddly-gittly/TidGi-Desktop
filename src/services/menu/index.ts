@@ -436,7 +436,14 @@ export class MenuService implements IMenuService {
     menu.append(
       new MenuItem({
         label: i18next.t('ContextMenu.RestartService'),
-        click: async () => await this.workspaceViewService.restartWorkspaceViewService(),
+        click: async () => {
+          const workspace = await this.workspaceService.getActiveWorkspace();
+          if (workspace !== undefined) {
+            await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
+            await this.workspaceViewService.realignActiveWorkspace(workspace.id);
+            await this.viewService.reloadViewsWebContents(workspace.id);
+          }
+        },
       }),
     );
     menu.append(

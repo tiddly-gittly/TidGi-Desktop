@@ -96,6 +96,7 @@ export async function getWorkspaceMenuTemplate(
       click: async () => {
         await service.workspaceView.restartWorkspaceViewService(id);
         await service.workspaceView.realignActiveWorkspace(id);
+        await service.view.reloadViewsWebContents(id);
       },
     },
   ];
