@@ -22,6 +22,7 @@ import { TokenForm } from '@/components/TokenForm';
 // import { useAuthing, useTokenFromAuthingRedirect } from '@/components/TokenForm/gitTokenHooks';
 import { GitRepoUrlForm } from './GitRepoUrlForm';
 import { LocationPickerContainer, LocationPickerInput } from './FormComponents';
+import { usePromiseValue } from '@/helpers/useServiceValue';
 
 enum CreateWorkspaceTabs {
   CloneOnlineWiki = 'CloneOnlineWiki',
@@ -60,6 +61,7 @@ export function AddWorkspace(): JSX.Element {
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(true);
   const form = useWikiWorkspaceForm();
   const [errorInWhichComponent, errorInWhichComponentSetter] = useState<IErrorInWhichComponent>({});
+  const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList()) ?? [];
 
   // update storageProviderSetter to local based on isCreateSyncedWorkspace. Other services value will be changed by TokenForm
   const { storageProvider, storageProviderSetter, wikiFolderName, wikiPort } = form;
@@ -100,7 +102,8 @@ export function AddWorkspace(): JSX.Element {
         </Paper>
       </AppBar>
 
-      <Accordion>
+      {/* show advanced options if user have already created a workspace */}
+      <Accordion defaultExpanded={workspaceList.length > 0}>
         <AdvancedSettingsAccordionSummary expandIcon={<ExpandMoreIcon />}>{t('AddWorkspace.Advanced')}</AdvancedSettingsAccordionSummary>
         <AccordionDetails>
           <SyncedWikiDescription isCreateSyncedWorkspace={isCreateSyncedWorkspace} isCreateSyncedWorkspaceSetter={isCreateSyncedWorkspaceSetter} />
