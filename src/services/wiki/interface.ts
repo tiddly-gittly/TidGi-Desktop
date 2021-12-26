@@ -5,26 +5,8 @@ import { IWorkspace } from '@services/workspaces/interface';
 import { IGitUserInfos } from '@services/git/interface';
 import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
 import { IWikiOperations } from './wikiOperations';
-
-export type IWikiMessage = IWikiLogMessage | IWikiControlMessage;
-export interface IWikiLogMessage {
-  message: string;
-  type: 'stdout' | 'stderr';
-}
-export enum WikiControlActions {
-  /** wiki is booted */
-  booted = 'booted',
-  error = 'error',
-  /** means worker is just started */
-  start = 'start',
-}
-export interface IWikiControlMessage {
-  actions: WikiControlActions;
-  message?: string;
-  /** where this bug rise, helps debug */
-  source?: string;
-  type: 'control';
-}
+import { ModuleThread } from 'threads';
+import type { WikiWorker } from './wikiWorker';
 
 /**
  * Handle wiki worker startup and restart
@@ -54,6 +36,11 @@ export interface IWikiService {
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
   getWikiLogs(homePath: string): Promise<{ content: string; filePath: string }>;
+  /**
+   * Get wiki worker, and you can call its methods. Only meant to be used in TidGi's services internally.
+   * @param wikiFolderLocation You can get this from active workspace
+   */
+  getWorker(wikiFolderLocation: string): ModuleThread<WikiWorker> | undefined;
   linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
   /**
    * Open image or PDF in OS native viewer or some else usage like this.
@@ -113,3 +100,42 @@ export const WikiServiceIPCDescriptor = {
     wikiStartup: ProxyPropertyType.Function,
   },
 };
+
+// Workers
+
+export type IWikiMessage = IWikiLogMessage | IWikiControlMessage;
+export interface IWikiLogMessage {
+  message: string;
+  type: 'stdout' | 'stderr';
+}
+export enum WikiControlActions {
+  /** wiki is booted */
+  booted = 'tw-booted',
+  error = 'tw-error',
+  /** means worker is just started */
+  start = 'tw-start',
+}
+export interface IWikiControlMessage {
+  actions: WikiControlActions;
+  message?: string;
+  /** where this bug rise, helps debug */
+  source?: string;
+  type: 'control';
+}
+
+export type IZxWorkerMessage = IZxWorkerLogMessage | IZxWorkerControlMessage;
+export interface IZxWorkerLogMessage {
+  message: string;
+  type: 'stdout' | 'stderr';
+}
+export enum ZxWorkerControlActions {
+  ended = 'zx-ended',
+  error = 'zx-error',
+  /** means worker is just started */
+  start = 'zx-start',
+}
+export interface IZxWorkerControlMessage {
+  actions: ZxWorkerControlActions;
+  message?: string;
+  type: 'control';
+}

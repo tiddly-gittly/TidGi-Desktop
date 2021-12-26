@@ -8,7 +8,7 @@ import { delay, mapSeries } from 'bluebird';
 import serviceIdentifier from '@services/serviceIdentifier';
 import i18n from '@services/libs/i18n';
 import type { IViewService } from '@services/view/interface';
-import type { IWorkspaceService, IWorkspace, INewWorkspaceConfig } from '@services/workspaces/interface';
+import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { WindowNames } from '@services/windows/WindowProperties';

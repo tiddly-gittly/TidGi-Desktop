@@ -78,41 +78,44 @@ export class Wiki implements IWikiService {
 
   // key is same to workspace wikiFolderLocation, so we can get this worker by workspace wikiFolderLocation
   // { [wikiFolderLocation: string]: ArbitraryThreadType }
-  private wikiWorkers: Record<string, ModuleThread<WikiWorker>> = {};
+  private wikiWorkers: Partial<Record<string, ModuleThread<WikiWorker>>> = {};
+  public getWorker(wikiFolderLocation: string): ModuleThread<WikiWorker> | undefined {
+    return this.wikiWorkers[wikiFolderLocation];
+  }
 
-  public async startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void> {
-    if (this.wikiWorkers[homePath] !== undefined) {
-      throw new DoubleWikiInstanceError(homePath);
+  public async startWiki(wikiFolderLocation: string, tiddlyWikiPort: number, userName: string): Promise<void> {
+    if (this.getWorker(wikiFolderLocation) !== undefined) {
+      throw new DoubleWikiInstanceError(wikiFolderLocation);
     }
     // use Promise to handle worker callbacks
-    const workspace = await this.workspaceService.getByWikiFolderLocation(homePath);
+    const workspace = await this.workspaceService.getByWikiFolderLocation(wikiFolderLocation);
     const workspaceID = workspace?.id;
     if (workspace === undefined || workspaceID === undefined) {
-      logger.error('Try to start wiki, but workspace not found', { homePath, workspace, workspaceID });
+      logger.error('Try to start wiki, but workspace not found', { homePath: wikiFolderLocation, workspace, workspaceID });
       return;
     }
     // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
-    const workerData = { homePath, userName, tiddlyWikiPort, tiddlyWikiHost: defaultServerIP };
+    const workerData = { homePath: wikiFolderLocation, userName, tiddlyWikiPort, tiddlyWikiHost: defaultServerIP };
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string));
-    this.wikiWorkers[homePath] = worker;
-    refreshOutputFile(homePath);
-    const loggerMeta = { worker: 'NodeJSWiki', homePath };
+    this.wikiWorkers[wikiFolderLocation] = worker;
+    refreshOutputFile(wikiFolderLocation);
+    const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation };
     return await new Promise<void>((resolve, reject) => {
       // handle native messages
       Thread.errors(worker).subscribe(async (error) => {
         logger.error(error.message, { ...loggerMeta, ...error });
-        wikiOutputToFile(homePath, error.message);
-        reject(new WikiRuntimeError(error, homePath, false));
+        wikiOutputToFile(wikiFolderLocation, error.message);
+        reject(new WikiRuntimeError(error, wikiFolderLocation, false));
       });
       Thread.events(worker).subscribe((event: WorkerEvent) => {
         if (event.type === 'message') {
           const messageString = JSON.stringify(event.data);
-          wikiOutputToFile(homePath, `${messageString}\n`);
+          wikiOutputToFile(wikiFolderLocation, `${messageString}\n`);
           logger.debug('wiki message', { ...event.data, ...loggerMeta });
         } else if (event.type === 'termination') {
-          delete this.wikiWorkers[homePath];
-          const warningMessage = `NodeJSWiki ${homePath} Worker stopped (can be normal quit, or unexpected error, see other logs to determine)`;
+          delete this.wikiWorkers[wikiFolderLocation];
+          const warningMessage = `NodeJSWiki ${wikiFolderLocation} Worker stopped (can be normal quit, or unexpected error, see other logs to determine)`;
           logger.info(warningMessage, loggerMeta);
           logger.info(`startWiki() rejected with message.type === 'message' and event.type === 'termination'`, loggerMeta);
           resolve();
@@ -153,22 +156,22 @@ export class Wiki implements IWikiService {
                   lastUrl: workspace.lastUrl?.replace?.(`:${tiddlyWikiPort}`, `:${tiddlyWikiPort + 1}`) ?? null,
                 };
                 await this.workspaceService.update(workspaceID, portChange, true);
-                return reject(new WikiRuntimeError(new Error(message.message), homePath, true, { ...workspace, ...portChange }));
+                return reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
               }
-              reject(new WikiRuntimeError(new Error(message.message), homePath, false));
+              reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, false));
             }
           }
         } else if (message.type === 'stderr' || message.type === 'stdout') {
-          wikiOutputToFile(homePath, message.message);
+          wikiOutputToFile(wikiFolderLocation, message.message);
         }
       });
     });
   }
 
-  public async stopWiki(homePath: string): Promise<void> {
-    const worker = this.wikiWorkers[homePath];
+  public async stopWiki(wikiFolderLocation: string): Promise<void> {
+    const worker = this.getWorker(wikiFolderLocation);
     if (worker === undefined) {
-      logger.warning(`No wiki for ${homePath}. No running worker, means maybe tiddlywiki server in this workspace failed to start`, {
+      logger.warning(`No wiki for ${wikiFolderLocation}. No running worker, means maybe tiddlywiki server in this workspace failed to start`, {
         function: 'stopWiki',
       });
       return await Promise.resolve();
@@ -180,9 +183,9 @@ export class Wiki implements IWikiService {
       logger.error(`Wiki-worker have error ${(error as Error).message} when try to stop`, { function: 'stopWiki' });
       // await worker.terminate();
     }
-    (this.wikiWorkers[homePath] as any) = undefined;
-    await this.stopWatchWiki(homePath);
-    logger.info(`Wiki-worker for ${homePath} stopped`, { function: 'stopWiki' });
+    (this.wikiWorkers[wikiFolderLocation] as any) = undefined;
+    await this.stopWatchWiki(wikiFolderLocation);
+    logger.info(`Wiki-worker for ${wikiFolderLocation} stopped`, { function: 'stopWiki' });
   }
 
   /**
@@ -626,8 +629,8 @@ export class Wiki implements IWikiService {
     });
   }
 
-  public async openTiddlerInExternal(title: string, homePath?: string): Promise<void> {
-    const wikiWorker = this.wikiWorkers[homePath ?? (await this.workspaceService.getActiveWorkspace())?.wikiFolderLocation ?? ''];
+  public async openTiddlerInExternal(title: string, wikiFolderLocation?: string): Promise<void> {
+    const wikiWorker = this.getWorker(wikiFolderLocation ?? (await this.workspaceService.getActiveWorkspace())?.wikiFolderLocation ?? '');
     if (wikiWorker !== undefined) {
       const tiddlerFileMetadata = await wikiWorker.getTiddlerFileMetadata(title);
       if (tiddlerFileMetadata?.filepath !== undefined) {

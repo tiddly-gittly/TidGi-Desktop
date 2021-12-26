@@ -1,49 +1,28 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { app, dialog, shell, MessageBoxOptions } from 'electron';
 import { injectable, inject } from 'inversify';
-import { ModuleThread, spawn, Worker } from 'threads';
 import { Observable } from 'rxjs';
-import { openNewGitHubIssue } from 'electron-util';
 
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { INativeService, ZxWorkerControlActions } from './interface';
+import { INativeService } from './interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-
-// @ts-expect-error it don't want .ts
-// eslint-disable-next-line import/no-webpack-loader-syntax
-import workerURL from 'threads-plugin/dist/loader?name=zxWorker!./zxWorker.ts';
-import type { IZxFileInput, ZxWorker } from './zxWorker';
+import { IWikiService, ZxWorkerControlActions } from '@services/wiki/interface';
+import { IWorkspaceService } from '@services/workspaces/interface';
 import { ZX_FOLDER } from '@/constants/paths';
 import { logger } from '@services/libs/log';
-import { ZxInitializationError, ZxInitializationRetryFailedError, ZxNotInitializedError } from './error';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
 import { reportErrorToGithubWithTemplates } from './reportError';
+import { IZxFileInput } from '@services/wiki/wikiWorker';
+import { ZxNotInitializedError } from './error';
+import { lazyInject } from '@services/container';
 
 @injectable()
 export class NativeService implements INativeService {
-  zxWorker: ModuleThread<ZxWorker> | undefined;
-  startRetryCount = 0;
+  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
+  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
 
-  constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {
-    void this.initialize().catch((error) => {
-      logger.error((error as Error).message);
-    });
-  }
-
-  private async initialize(): Promise<void> {
-    if (this.startRetryCount >= 3) {
-      throw new ZxInitializationRetryFailedError();
-    }
-    try {
-      const worker = await spawn<ZxWorker>(new Worker(workerURL as string));
-      this.zxWorker = worker;
-      logger.info('zxWorker initialized');
-    } catch (error) {
-      this.startRetryCount += 1;
-      throw new ZxInitializationError(` ${(error as Error).message} ${(error as Error).stack ?? ''}`);
-    }
-  }
+  constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {}
 
   public async openInEditor(filePath: string, editorName?: string): Promise<void> {
     // TODO: open vscode by default to speed up, support choose favorite editor later
@@ -63,25 +42,17 @@ export class NativeService implements INativeService {
     }
   }
 
-  public executeZxScript$(zxWorkerArguments: IZxFileInput): Observable<string> {
-    if (this.zxWorker === undefined) {
+  public executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string> {
+    const zxWorker = this.wikiService.getWorker(wikiFolderLocation ?? this.workspaceService.getActiveWorkspaceSync()?.wikiFolderLocation ?? '');
+    if (zxWorker === undefined) {
       const error = new ZxNotInitializedError();
       return new Observable<string>((observer) => {
         logger.error(error.message, zxWorkerArguments);
         observer.next(`${error.message}\n`);
-        void this.initialize()
-          .catch((error_) => {
-            logger.error((error_ as Error).message);
-            observer.next(`${(error_ as Error).message}\n`);
-          })
-          .then(() => {
-            const retryExecuteZxObservable = this.executeZxScript$(zxWorkerArguments);
-            retryExecuteZxObservable.subscribe(observer);
-          });
       });
     }
     logger.info('zxWorker execute', { zxWorkerArguments, ZX_FOLDER });
-    const observable = this.zxWorker.executeZxScript(zxWorkerArguments, ZX_FOLDER);
+    const observable = zxWorker.executeZxScript(zxWorkerArguments, ZX_FOLDER);
     return new Observable((observer) => {
       observable.subscribe((message) => {
         if (message.type === 'control') {

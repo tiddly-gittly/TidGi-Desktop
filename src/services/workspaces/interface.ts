@@ -126,6 +126,10 @@ export interface IWorkspaceService {
   get(id: string): Promise<IWorkspace | undefined>;
   get$(id: string): Observable<IWorkspace | undefined>;
   getActiveWorkspace: () => Promise<IWorkspace | undefined>;
+  /**
+   * Only meant to be used in TidGi's services internally.
+   */
+  getActiveWorkspaceSync: () => IWorkspace | undefined;
   getAllMetaData: () => Promise<Record<string, Partial<IWorkspaceMetaData>>>;
   getByWikiFolderLocation(name: string): Promise<IWorkspace | undefined>;
   getFirstWorkspace: () => Promise<IWorkspace | undefined>;

@@ -4,13 +4,18 @@ import { Observable } from 'rxjs';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { NativeChannel } from '@/constants/channels';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IZxFileInput } from './zxWorker';
+import { IZxFileInput } from '@services/wiki/wikiWorker';
 
 /**
  * Wrap call to electron api, so we won't need remote module in renderer process
  */
 export interface INativeService {
-  executeZxScript$(zxWorkerArguments: IZxFileInput): Observable<string>;
+  /**
+   * Execute zx script in a wiki worker and get result.
+   * @param zxWorkerArguments
+   * @param wikiFolderLocation Each wiki has its own worker, we use wiki's folder path to determine which worker to use. If not provided, will use current active workspace's wiki's path
+   */
+  executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   openInEditor(filePath: string, editorName?: string | undefined): Promise<void>;
@@ -36,20 +41,3 @@ export const NativeServiceIPCDescriptor = {
     showElectronMessageBox: ProxyPropertyType.Function,
   },
 };
-
-export type IZxWorkerMessage = IZxWorkerLogMessage | IZxWorkerControlMessage;
-export interface IZxWorkerLogMessage {
-  message: string;
-  type: 'stdout' | 'stderr';
-}
-export enum ZxWorkerControlActions {
-  ended = 'ended',
-  error = 'error',
-  /** means worker is just started */
-  start = 'start',
-}
-export interface IZxWorkerControlMessage {
-  actions: ZxWorkerControlActions;
-  message?: string;
-  type: 'control';
-}

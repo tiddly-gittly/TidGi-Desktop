@@ -5,10 +5,15 @@ import tiddlywiki, { I$TW } from '@tiddlygit/tiddlywiki';
 import { Observable } from 'rxjs';
 import intercept from 'intercept-stdout';
 import { Server } from 'http';
+import { fork } from 'child_process';
+import { tmpdir } from 'os';
+import { mkdtemp, writeFile } from 'fs-extra';
 
-import { IWikiMessage, WikiControlActions } from './interface';
+import { fixPath } from '@services/libs/fixPath';
+import { IWikiMessage, WikiControlActions, ZxWorkerControlActions, IZxWorkerMessage } from './interface';
 import { defaultServerIP } from '@/constants/urls';
 
+fixPath();
 let wikiInstance: I$TW | undefined;
 
 function startNodeJSWiki({
@@ -71,6 +76,43 @@ function startNodeJSWiki({
   });
 }
 
-const wikiWorker = { startNodeJSWiki, getTiddlerFileMetadata: (tiddlerTitle: string) => wikiInstance?.boot?.files?.[tiddlerTitle] };
+export type IZxFileInput = { fileContent: string; fileName: string } | { filePath: string };
+function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWorkerMessage> {
+  return new Observable<IZxWorkerMessage>((observer) => {
+    observer.next({ type: 'control', actions: ZxWorkerControlActions.start });
+
+    void (async function executeZxScriptIIFE() {
+      try {
+        let filePathToExecute = '';
+        if ('fileName' in file) {
+          const temporaryDirectory = await mkdtemp(`${tmpdir()}${path.sep}`);
+          filePathToExecute = path.join(temporaryDirectory, file.fileName);
+          await writeFile(filePathToExecute, file.fileContent);
+        } else if ('filePath' in file) {
+          filePathToExecute = file.filePath;
+        }
+        const execution = fork(zxPath, [filePathToExecute], { silent: true });
+
+        execution.on('close', function (code) {
+          observer.next({ type: 'control', actions: ZxWorkerControlActions.ended, message: `child process exited with code ${String(code)}` });
+        });
+        execution.stdout?.on('data', (stdout: Buffer) => {
+          observer.next({ type: 'stdout', message: String(stdout) });
+        });
+        execution.stderr?.on('data', (stdout: Buffer) => {
+          observer.next({ type: 'stderr', message: String(stdout) });
+        });
+        execution.on('error', (error) => {
+          observer.next({ type: 'stderr', message: `${error.message} ${error.stack ?? ''}` });
+        });
+      } catch (error) {
+        const message = `zx script's executeZxScriptIIFE() failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+        observer.next({ type: 'control', actions: ZxWorkerControlActions.error, message });
+      }
+    })();
+  });
+}
+
+const wikiWorker = { startNodeJSWiki, getTiddlerFileMetadata: (tiddlerTitle: string) => wikiInstance?.boot?.files?.[tiddlerTitle], executeZxScript };
 export type WikiWorker = typeof wikiWorker;
 expose(wikiWorker);
