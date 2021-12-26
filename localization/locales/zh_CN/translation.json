@@ -196,6 +196,9 @@
     "Name": "工作区名",
     "NameDescription": "工作区的名字，将显示在侧边栏上，可以与工作区Git仓库的实际文件夹名不同"
   },
+  "Scripting": {
+    "ExecutingScript": "正在执行脚本"
+  },
   "Log": {
     "StartGitInitialization": "开始初始化本地 Git 仓库",
     "StartConfiguringGithubRemoteRepository": "仓库初始化完毕，开始配置 Git 云端仓库",

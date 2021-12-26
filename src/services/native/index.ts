@@ -16,6 +16,7 @@ import { reportErrorToGithubWithTemplates } from './reportError';
 import { IZxFileInput } from '@services/wiki/wikiWorker';
 import { ZxNotInitializedError } from './error';
 import { lazyInject } from '@services/container';
+import i18next from 'i18next';
 
 @injectable()
 export class NativeService implements INativeService {
@@ -55,28 +56,48 @@ export class NativeService implements INativeService {
     const observable = zxWorker.executeZxScript(zxWorkerArguments, ZX_FOLDER);
     return new Observable((observer) => {
       observable.subscribe((message) => {
-        if (message.type === 'control') {
-          switch (message.actions) {
-            case ZxWorkerControlActions.start: {
-              if (message.message !== undefined) {
-                observer.next(message.message);
+        switch (message.type) {
+          case 'control': {
+            switch (message.actions) {
+              case ZxWorkerControlActions.start: {
+                if (message.message !== undefined) {
+                  observer.next(message.message);
+                }
+                break;
               }
-              break;
+              case ZxWorkerControlActions.error: {
+                const errorMessage = message.message ?? 'get ZxWorkerControlActions.error without message';
+                logger.error(`zxWorker execute failed with error ${errorMessage}`, { message });
+                observer.next(errorMessage);
+                break;
+              }
+              case ZxWorkerControlActions.ended: {
+                const endedMessage = message.message ?? 'get ZxWorkerControlActions.ended without message';
+                observer.next(endedMessage);
+                break;
+              }
             }
-            case ZxWorkerControlActions.error: {
-              const errorMessage = message.message ?? 'get ZxWorkerControlActions.error without message';
-              logger.error(`zxWorker execute failed with error ${errorMessage}`, { message });
-              observer.next(errorMessage);
-              break;
-            }
-            case ZxWorkerControlActions.ended: {
-              const endedMessage = message.message ?? 'get ZxWorkerControlActions.ended without message';
-              observer.next(endedMessage);
-              break;
-            }
+
+            break;
           }
-        } else if (message.type === 'stderr' || message.type === 'stdout') {
-          observer.next(message.message);
+          case 'stderr':
+          case 'stdout': {
+            observer.next(message.message);
+
+            break;
+          }
+          case 'execution': {
+            observer.next(`${i18next.t('Scripting.ExecutingScript')}
+
+\`\`\`js
+${message.message}
+\`\`\`
+
+`);
+
+            break;
+          }
+          // No default
         }
       });
     });

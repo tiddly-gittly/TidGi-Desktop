@@ -375,5 +375,8 @@
     "Wiki": "Wiki"
   },
   "ErrorMessage": "Error message",
-  "ClickForDetails": "Click For Details"
+  "ClickForDetails": "Click For Details",
+  "Scripting": {
+    "ExecutingScript": "Executing Script"
+  }
 }

@@ -12,6 +12,7 @@ import { mkdtemp, writeFile } from 'fs-extra';
 import { fixPath } from '@services/libs/fixPath';
 import { IWikiMessage, WikiControlActions, ZxWorkerControlActions, IZxWorkerMessage } from './interface';
 import { defaultServerIP } from '@/constants/urls';
+import { executeScriptInTWContext, extractTWContextScripts, getTWVmContext, TW_SCRIPT_SEPARATOR } from './plugin/zxPlugin';
 
 fixPath();
 let wikiInstance: I$TW | undefined;
@@ -78,6 +79,7 @@ function startNodeJSWiki({
 
 export type IZxFileInput = { fileContent: string; fileName: string } | { filePath: string };
 function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWorkerMessage> {
+  /** this will be observed in src/services/native/index.ts */
   return new Observable<IZxWorkerMessage>((observer) => {
     observer.next({ type: 'control', actions: ZxWorkerControlActions.start });
 
@@ -97,7 +99,24 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
           observer.next({ type: 'control', actions: ZxWorkerControlActions.ended, message: `child process exited with code ${String(code)}` });
         });
         execution.stdout?.on('data', (stdout: Buffer) => {
-          observer.next({ type: 'stdout', message: String(stdout) });
+          // if there are multiple console.log, their output will be concatenated into this stdout. And some of them are not intended to be executed. We use TW_SCRIPT_SEPARATOR to allow user determine the range they want to execute in the $tw context.
+          const message = String(stdout);
+          const zxConsoleLogMessages = extractTWContextScripts(message);
+          // log and execute each different console.log result.
+          zxConsoleLogMessages.forEach(({ messageType, content }) => {
+            if (messageType === 'script') {
+              observer.next({ type: 'execution', message: content });
+              if (wikiInstance === undefined) {
+                observer.next({ type: 'stderr', message: `Error in executeZxScript(): $tw is undefined` });
+              } else {
+                const context = getTWVmContext(wikiInstance);
+                const twExecutionResult = executeScriptInTWContext(content, context);
+                observer.next({ type: 'stdout', message: twExecutionResult.join('\n\n') });
+              }
+            } else {
+              observer.next({ type: 'stdout', message: content });
+            }
+          });
         });
         execution.stderr?.on('data', (stdout: Buffer) => {
           observer.next({ type: 'stderr', message: String(stdout) });

@@ -126,7 +126,7 @@ export interface IWikiControlMessage {
 export type IZxWorkerMessage = IZxWorkerLogMessage | IZxWorkerControlMessage;
 export interface IZxWorkerLogMessage {
   message: string;
-  type: 'stdout' | 'stderr';
+  type: 'stdout' | 'stderr' | 'execution';
 }
 export enum ZxWorkerControlActions {
   ended = 'zx-ended',
