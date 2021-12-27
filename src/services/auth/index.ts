@@ -4,7 +4,7 @@ import { debounce } from 'lodash';
 import { injectable } from 'inversify';
 import settings from 'electron-settings';
 import { IAuthingUserInfo, SupportedStorageServices } from '@services/types';
-import { IAuthenticationService, IUserInfos, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
+import { IAuthenticationService, IUserInfos, ServiceBranchTypes, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
 import { BehaviorSubject } from 'rxjs';
 import { IGitUserInfos } from '@services/git/interface';
 
@@ -32,11 +32,13 @@ export class Authentication implements IAuthenticationService {
     const gitUserName = await this.get((serviceName + '-userName') as ServiceUserNameTypes);
     const email = await this.get((serviceName + '-email') as ServiceEmailTypes);
     const accessToken = await this.get((serviceName + '-token') as ServiceTokenTypes);
+    const branch = (await this.get((serviceName + '-branch') as ServiceBranchTypes)) ?? 'main';
     if (gitUserName !== undefined && accessToken !== undefined) {
       return {
         gitUserName,
         email,
         accessToken,
+        branch,
       };
     }
   }
@@ -60,7 +62,7 @@ export class Authentication implements IAuthenticationService {
   };
 
   private sanitizeUserInfo(info: Partial<IUserInfos>): Partial<IUserInfos> {
-    return info;
+    return { ...info, 'github-branch': info['github-branch'] ?? 'main' };
   }
 
   /**

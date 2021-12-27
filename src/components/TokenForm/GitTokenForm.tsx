@@ -6,7 +6,7 @@ import { TextField, Button } from '@material-ui/core';
 import { SupportedStorageServices } from '@services/types';
 import { useUserInfoObservable } from '@services/auth/hooks';
 import { useAuth } from './gitTokenHooks';
-import { getServiceEmailTypes, getServiceTokenTypes, getServiceUserNameTypes } from '@services/auth/interface';
+import { getServiceBranchTypes, getServiceEmailTypes, getServiceTokenTypes, getServiceUserNameTypes } from '@services/auth/interface';
 
 const AuthingLoginButton = styled(Button)`
   width: 100%;
@@ -53,6 +53,13 @@ export function GitTokenForm(props: {
           void window.service.auth.set(`${storageService}-email`, event.target.value);
         }}
         value={userInfo[getServiceEmailTypes(storageService)] ?? ''}
+      />
+      <GitTokenInput
+        helperText={t('AddWorkspace.GitDefaultBranchDescription')}
+        onChange={(event) => {
+          void window.service.auth.set(`${storageService}-branch`, event.target.value);
+        }}
+        value={userInfo[getServiceBranchTypes(storageService)] ?? ''}
       />
       {children}
     </>

@@ -5,6 +5,7 @@ import { ModifiedFileList } from 'git-sync-js';
 export interface IGitUserInfos extends IGitUserInfosWithoutToken {
   /** Github Login: token */
   accessToken: string;
+  branch: string;
 }
 
 export interface IGitUserInfosWithoutToken {

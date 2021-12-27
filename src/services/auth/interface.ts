@@ -20,12 +20,18 @@ export const getServiceEmailTypes = (serviceType: SupportedStorageServices): Ser
 /** Git push: Git commit message email, you may use different email for different storage service */
 type EmailRecord = Record<ServiceEmailTypes, string>;
 
+export type ServiceBranchTypes = `${SupportedStorageServices}-branch`;
+export const getServiceBranchTypes = (serviceType: SupportedStorageServices): ServiceBranchTypes => `${serviceType}-branch`;
+/** Git push: Git commit message branch, you may use different branch for different storage service */
+type BranchRecord = Record<ServiceBranchTypes, string>;
+
 export type IUserInfos = {
   /** Default UserName in TiddlyWiki, each wiki can have different username, but fallback to this if not specific on */
   userName: string;
 } & Partial<TokenRecord> &
   Partial<UserNameRecord> &
-  Partial<EmailRecord>;
+  Partial<EmailRecord> &
+  Partial<BranchRecord>;
 
 /**
  * Handle login to Github GitLab Coding.net
