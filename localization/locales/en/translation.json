@@ -137,7 +137,9 @@
     "WorkspaceUserName": "Workspace User Name",
     "WorkspaceUserNameDetail": "The editor name used in the Wiki will be fill in the creator field when the Tiddler is created or edited. The editor name set in the workspace will override the global default editor name assigned in the preferences. This allows you to create Tiddlers with different identities in the same Wiki, with multiple workspace configed with different user name.",
     "WikiNotStarted": "Wiki is not started or not loaded",
-    "Advanced": "Advanced Settings"
+    "Advanced": "Advanced Settings",
+    "GitDefaultBranch": "Git Default Branch",
+    "GitDefaultBranchDescription": "The default branch of your Git, Github changed it from master to main after that event"
   },
   "EditWorkspace": {
     "Path": "Wiki Path",
