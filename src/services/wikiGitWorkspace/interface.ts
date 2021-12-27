@@ -9,6 +9,8 @@ import { IGitUserInfos } from '@services/git/interface';
 export interface IWikiGitWorkspaceService {
   /** Create a new workspace, and call git.initWikiGit , and rollback (delete created wiki folder) if it failed */
   initWikiGitTransaction(newWorkspaceConfig: INewWorkspaceConfig, userInfo?: IGitUserInfos): Promise<IWorkspace | undefined>;
+  /** register this in main.ts if syncBeforeShutdown in preference is true */
+  registerSyncBeforeShutdown(): void;
   removeWorkspace: (id: string) => Promise<void>;
 }
 export const WikiGitWorkspaceServiceIPCDescriptor = {

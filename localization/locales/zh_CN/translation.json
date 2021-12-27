@@ -345,7 +345,9 @@
     "MenubarAlwaysOnTopDetail": "让太记的菜单栏小窗口永远保持在其它窗口上方，不会被其他窗口覆盖",
     "AlwaysOnTop": "保持窗口在其他窗口上方",
     "AlwaysOnTopDetail": "让太记的主窗口永远保持在其它窗口上方，不会被其他窗口覆盖",
-    "ChooseLanguage": "选择语言 Choose Language"
+    "ChooseLanguage": "选择语言 Choose Language",
+    "SyncBeforeShutdown": "在关机前自动同步",
+    "SyncBeforeShutdownDescription": "关电脑前自动同步数据，注意手动退出应用不会触发同步，以防应用出错时将错误数据同步上去。Windows 系统不支持此功能。"
   },
   "Error": {
     "InitWikiGitError": "E-1 笔记仓库初始化失败错误",

@@ -27,6 +27,7 @@ export interface IPreferences {
   spellcheck: boolean;
   spellcheckLanguages: HunspellLanguages[];
   swipeToNavigate: boolean;
+  syncBeforeShutdown: boolean;
   syncDebounceInterval: number;
   themeSource: 'system' | 'light' | 'dark';
   titleBar: boolean;

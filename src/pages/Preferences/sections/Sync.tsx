@@ -5,7 +5,7 @@ import setYear from 'date-fns/setYear';
 import setMonth from 'date-fns/setMonth';
 import setDate from 'date-fns/setDate';
 import TimePicker from '@material-ui/lab/TimePicker';
-import { List, ListItem, ListItemText } from '@material-ui/core';
+import { Divider, List, ListItem, ListItemSecondaryAction, ListItemText, Switch } from '@material-ui/core';
 
 import { TokenForm } from '../../../components/TokenForm';
 
@@ -31,6 +31,22 @@ export function Sync(props: Required<ISectionProps>): JSX.Element {
               <ListItem>
                 <TokenForm />
               </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText primary={`${t('Preference.SyncBeforeShutdown')} (Mac/Linux)`} secondary={t('Preference.SyncBeforeShutdownDescription')} />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    color="primary"
+                    checked={preference.syncBeforeShutdown}
+                    onChange={async (event) => {
+                      await window.service.preference.set('syncBeforeShutdown', event.target.checked);
+                      props.requestRestartCountDown();
+                    }}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
+              <Divider />
               <ListItem>
                 <ListItemText primary={t('Preference.SyncInterval')} secondary={t('Preference.SyncIntervalDescription')} />
                 <TimePickerContainer>

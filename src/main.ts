@@ -27,6 +27,7 @@ import type { IWindowService } from './services/windows/interface';
 import type { IWorkspaceViewService } from './services/workspacesView/interface';
 import type { IUpdaterService } from '@services/updater/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
+import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 
 logger.info('App booting');
 
@@ -41,6 +42,7 @@ const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Pr
 const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater);
+const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 app.on('second-instance', () => {
   // Someone tried to run a second instance, we should focus our window.
@@ -153,6 +155,9 @@ app.on('ready', async () => {
     // eslint-disable-next-line promise/always-return
     .then(async () => {
       buildLanguageMenu();
+      if (await preferenceService.get('syncBeforeShutdown')) {
+        wikiGitWorkspaceService.registerSyncBeforeShutdown();
+      }
       await updaterService.checkForUpdates();
     })
     .catch((error) => console.error(error));

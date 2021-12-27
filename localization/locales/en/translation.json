@@ -310,7 +310,9 @@
     "AlwaysOnTop": "Always on top",
     "AlwaysOnTopDetail": "Keep TidGi’s main window always on top of other windows, and will not be covered by other windows",
     "RequireRestart": "Need to restart",
-    "ChooseLanguage": "Choose Language 选择语言"
+    "ChooseLanguage": "Choose Language 选择语言",
+    "SyncBeforeShutdown": "Sync Before Shutdown",
+    "SyncBeforeShutdownDescription": "Automatically synchronize data before turning off the computer. Note that manually exiting the application will not trigger the synchronization, so as to prevent the wrong data from being synchronized when the application makes an error. \nWindows system does not support this function."
   },
   "Error": {
     "InitWikiGitError": "E-1 InitWikiGitError",

@@ -1,5 +1,5 @@
 import path from 'path';
-import { dialog } from 'electron';
+import { app, dialog, powerMonitor } from 'electron';
 import { injectable } from 'inversify';
 
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -8,6 +8,7 @@ import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import type { INewWorkspaceConfig, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
+import type { IAuthenticationService } from '@services/auth/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 
@@ -20,11 +21,35 @@ import { hasGit } from 'git-sync-js';
 
 @injectable()
 export class WikiGitWorkspace implements IWikiGitWorkspaceService {
+  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
   @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
   @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;
   @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
+
+  public registerSyncBeforeShutdown(): void {
+    const listener = async (event: Event): Promise<void> => {
+      event.preventDefault();
+      try {
+        const workspaces = await this.workspaceService.getWorkspacesAsList();
+        const workspacesToSync = workspaces.filter((workspace) => workspace.storageService !== SupportedStorageServices.local);
+        await Promise.allSettled(
+          workspacesToSync.map(async (workspace) => {
+            const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
+            if (userInfo !== undefined && workspace.gitUrl !== null) {
+              await this.gitService.commitAndSync(workspace.wikiFolderLocation, workspace.gitUrl, userInfo);
+            }
+          }),
+        );
+      } catch (error) {
+        logger.error(`SyncBeforeShutdown failed`, { error });
+      } finally {
+        app.quit();
+      }
+    };
+    powerMonitor.addListener('shutdown', listener);
+  }
 
   public initWikiGitTransaction = async (newWorkspaceConfig: INewWorkspaceConfig, userInfo?: IGitUserInfos): Promise<IWorkspace | undefined> => {
     const newWorkspace = await this.workspaceService.create(newWorkspaceConfig);
