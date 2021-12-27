@@ -2,6 +2,7 @@
 import { BehaviorSubject } from 'rxjs';
 import { injectable } from 'inversify';
 import { dialog, nativeTheme } from 'electron';
+import { debounce } from 'lodash';
 import settings from 'electron-settings';
 
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -13,6 +14,9 @@ import { IPreferences, IPreferenceService } from './interface';
 import { defaultPreferences } from './defaultPreferences';
 import { lazyInject } from '@services/container';
 import { requestChangeLanguage } from '@services/libs/i18n/requestChangeLanguage';
+
+// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+const debouncedSetPreferenceFile = debounce(async (newPreferences: IPreferences) => await settings.set(`preferences`, { ...newPreferences } as any), 500);
 
 @injectable()
 export class Preference implements IPreferenceService {
@@ -79,12 +83,7 @@ export class Preference implements IPreferenceService {
 
   public async set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void> {
     this.cachedPreferences[key] = value;
-    this.cachedPreferences = { ...this.cachedPreferences, ...this.sanitizePreference(this.cachedPreferences) };
-
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-    await settings.set(`preferences.${key}`, this.cachedPreferences[key] as any);
-    this.updatePreferenceSubject();
-
+    await this.setPreferences({ ...this.cachedPreferences, ...this.sanitizePreference(this.cachedPreferences) });
     await this.reactWhenPreferencesChanged(key, value);
   }
 
@@ -111,7 +110,7 @@ export class Preference implements IPreferenceService {
   private async setPreferences(newPreferences: IPreferences): Promise<void> {
     this.cachedPreferences = newPreferences;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-    await settings.set(`preferences`, { ...newPreferences } as any);
+    await debouncedSetPreferenceFile(newPreferences);
     this.updatePreferenceSubject();
   }
 

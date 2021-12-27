@@ -168,13 +168,9 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (view !== undefined) {
       const currentUrl = view.webContents.getURL();
       logger.debug(`Updating lastUrl for workspace ${workspaceID} to ${currentUrl}`);
-      await this.workspaceService.update(
-        workspaceID,
-        {
-          lastUrl: currentUrl,
-        },
-        true,
-      );
+      await this.workspaceService.update(workspaceID, {
+        lastUrl: currentUrl,
+      });
     } else {
       logger.warn(`Can't update lastUrl for workspace ${workspaceID}, view is not found`);
     }

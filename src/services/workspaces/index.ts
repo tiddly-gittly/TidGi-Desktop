@@ -197,6 +197,10 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async get(id: string): Promise<IWorkspace | undefined> {
+    return this.getSync(id);
+  }
+
+  private getSync(id: string): IWorkspace {
     return this.workspaces[id];
   }
 
@@ -217,7 +221,7 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async update(id: string, workspaceSetting: Partial<IWorkspace>, immediate?: boolean): Promise<void> {
-    const workspace = await this.get(id);
+    const workspace = this.getSync(id);
     if (workspace === undefined) {
       logger.error(`Could not update workspace ${id} because it does not exist`);
       return;
@@ -342,7 +346,7 @@ export class Workspace implements IWorkspaceService {
    * @param sourcePicturePath image path, could be an image in app's resource folder or temp folder, we will copy it into app data folder
    */
   public async setWorkspacePicture(id: string, sourcePicturePath: string): Promise<void> {
-    const workspace = await this.get(id);
+    const workspace = this.getSync(id);
     if (workspace === undefined) {
       throw new Error(`Try to setWorkspacePicture() but this workspace is not existed ${id}`);
     }
@@ -358,7 +362,7 @@ export class Workspace implements IWorkspaceService {
     await new Promise((resolve) => {
       newImage.clone().resize(128, 128).quality(100).write(destinationPicturePath, resolve);
     });
-    const currentPicturePath = (await this.get(id))?.picturePath;
+    const currentPicturePath = this.getSync(id)?.picturePath;
     await this.update(id, {
       picturePath: destinationPicturePath,
     });
@@ -373,7 +377,7 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async removeWorkspacePicture(id: string): Promise<void> {
-    const workspace = await this.get(id);
+    const workspace = this.getSync(id);
     if (workspace === undefined) {
       throw new Error(`Try to removeWorkspacePicture() but this workspace is not existed ${id}`);
     }
