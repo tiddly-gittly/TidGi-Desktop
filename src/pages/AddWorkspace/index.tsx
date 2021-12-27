@@ -61,7 +61,7 @@ export function AddWorkspace(): JSX.Element {
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(true);
   const form = useWikiWorkspaceForm();
   const [errorInWhichComponent, errorInWhichComponentSetter] = useState<IErrorInWhichComponent>({});
-  const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList()) ?? [];
+  const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList());
 
   // update storageProviderSetter to local based on isCreateSyncedWorkspace. Other services value will be changed by TokenForm
   const { storageProvider, storageProviderSetter, wikiFolderName, wikiPort } = form;
@@ -79,6 +79,10 @@ export function AddWorkspace(): JSX.Element {
     errorInWhichComponent: errorInWhichComponent,
     errorInWhichComponentSetter: errorInWhichComponentSetter,
   };
+
+  if (workspaceList === undefined) {
+    return <Container>{t('Loading')}</Container>;
+  }
 
   return (
     <TabContext value={currentTab}>
