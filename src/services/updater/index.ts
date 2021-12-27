@@ -15,13 +15,14 @@ import { IUpdaterService, IUpdaterMetaData, IGithubReleaseData, IUpdaterStatus }
 import type { IMenuService } from '@services/menu/interface';
 import { logger } from '@services/libs/log';
 import { latestUpdateUrl } from '@/constants/urls';
+import { IPreferenceService } from '@services/preferences/interface';
 
 // TODO: use electron-forge 's auto update solution， maybe see https://headspring.com/2020/09/24/building-signing-and-publishing-electron-forge-applications-for-windows/
 @injectable()
 export class Updater implements IUpdaterService {
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
   @lazyInject(serviceIdentifier.Context) private readonly contextService!: IContextService;
+  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
 
   private updaterMetaData = {} as IUpdaterMetaData;
   public updaterMetaData$: BehaviorSubject<IUpdaterMetaData>;
@@ -54,10 +55,15 @@ export class Updater implements IUpdaterService {
       },
     ]);
     let latestVersion: string;
+    const allowPrerelease = await this.preferenceService.get('allowPrerelease');
     try {
-      const latestReleaseData = await fetch('https://api.github.com/repos/tiddly-gittly/TidGi-Desktop/releases/latest').then(
-        async (response) => await (response.json() as Promise<IGithubReleaseData>),
-      );
+      const latestReleaseData = await (allowPrerelease
+        ? fetch('https://api.github.com/repos/tiddly-gittly/TidGi-Desktop/releases?per_page=1')
+            .then(async (response) => await (response.json() as Promise<IGithubReleaseData[]>))
+            .then((json) => json[0])
+        : fetch('https://api.github.com/repos/tiddly-gittly/TidGi-Desktop/releases/latest').then(
+            async (response) => await (response.json() as Promise<IGithubReleaseData>),
+          ));
       latestVersion = latestReleaseData.tag_name.replace('v', '');
     } catch (fetchError) {
       logger.error('Fetching latest release failed', { fetchError });
