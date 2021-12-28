@@ -1,6 +1,20 @@
+import { LOG_FOLDER } from '@/constants/paths';
+import serviceIdentifier from '@services/serviceIdentifier';
 import { openNewGitHubIssue, debugInfo } from 'electron-util';
+import { INativeService } from './interface';
 
 export function reportErrorToGithubWithTemplates(error: Error): void {
+  void import('@services/container')
+    // eslint-disable-next-line @typescript-eslint/promise-function-async
+    .then(({ container }) => {
+      const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
+      return nativeService.open(LOG_FOLDER, true);
+    })
+    .catch(async (error) => {
+      await import('@services/libs/log').then(({ logger }) => {
+        logger.error(`Failed to open LOG_FOLDER in reportErrorToGithubWithTemplates`, error);
+      });
+    });
   openNewGitHubIssue({
     user: 'tiddly-gittly',
     repo: 'TidGi-Desktop',
@@ -12,7 +26,7 @@ ${debugInfo()}
 
 ## Description:
 
-<!-- Describe how the bug manifests and what the behavior would be without the bug. 描述该错误是如何表现出来的，以及在正常情况下应该有什么样的行为 -->
+<!-- Upload log file, Describe how the bug manifests and what the behavior would be without the bug. 上传 log 文件，描述该错误是如何表现出来的，以及在正常情况下应该有什么样的行为 -->
 
 ## Steps to Reproduce:
 
