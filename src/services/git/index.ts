@@ -1,4 +1,4 @@
-import { ipcMain, dialog, net } from 'electron';
+import { ipcMain, dialog, net, shell } from 'electron';
 import { injectable, inject } from 'inversify';
 import { compact, debounce } from 'lodash';
 import {
@@ -17,6 +17,8 @@ import { spawn, Worker, ModuleThread } from 'threads';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IViewService } from '@services/view/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
+import type { IWindowService } from '@services/windows/interface';
+import type { INativeService } from '@services/native/interface';
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { IGitLogMessage, IGitService, IGitUserInfos } from './interface';
@@ -30,12 +32,13 @@ import workerURL from 'threads-plugin/dist/loader?name=gitWorker!./gitWorker.ts'
 import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
-import type { IWindowService } from '@services/windows/interface';
+import { githubDesktopUrl } from '@/constants/urls';
 
 @injectable()
 export class Git implements IGitService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
+  @lazyInject(serviceIdentifier.NativeService) private readonly nativeService!: INativeService;
 
   private gitWorker?: ModuleThread<GitWorker>;
 
@@ -236,6 +239,33 @@ export class Git implements IGitService {
     complete: () => resolve(),
   });
 
+  private createFailedDialog(message: string, wikiFolderPath: string): void {
+    const mainWindow = this.windowService.get(WindowNames.main);
+    if (mainWindow !== undefined) {
+      void dialog
+        .showMessageBox(mainWindow, {
+          title: i18n.t('Log.SynchronizationFailed'),
+          message,
+          buttons: ['OK', 'Github Desktop'],
+          cancelId: 0,
+          defaultId: 1,
+        })
+        .then(async ({ response }) => {
+          if (response === 1) {
+            try {
+              const result = await this.nativeService.openInGitGuiApp(wikiFolderPath);
+              if (!result) {
+                throw new Error('open download site');
+              }
+            } catch {
+              await shell.openExternal(githubDesktopUrl);
+            }
+          }
+        })
+        .catch((error) => logger.error('createFailedDialog failed', error));
+    }
+  }
+
   public async initWikiGit(wikiFolderPath: string, isSyncedWiki?: boolean, isMainWiki?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const syncImmediately = !!isSyncedWiki && !!isMainWiki;
@@ -248,9 +278,13 @@ export class Git implements IGitService {
     if (!net.isOnline()) {
       return;
     }
-    return await new Promise<void>((resolve, reject) => {
-      this.gitWorker?.commitAndSyncWiki(wikiFolderPath, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
-    });
+    try {
+      return await new Promise<void>((resolve, reject) => {
+        this.gitWorker?.commitAndSyncWiki(wikiFolderPath, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
+      });
+    } catch (error) {
+      this.createFailedDialog((error as Error).message, wikiFolderPath);
+    }
   }
 
   public async clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void> {

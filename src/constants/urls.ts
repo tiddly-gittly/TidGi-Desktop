@@ -3,3 +3,4 @@
  */
 export const defaultServerIP = '0.0.0.0';
 export const latestUpdateUrl = 'https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest';
+export const githubDesktopUrl = 'https://desktop.github.com/';

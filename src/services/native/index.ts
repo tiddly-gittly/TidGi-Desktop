@@ -25,7 +25,7 @@ export class NativeService implements INativeService {
 
   constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {}
 
-  public async openInEditor(filePath: string, editorName?: string): Promise<void> {
+  public async openInEditor(filePath: string, editorName?: string): Promise<boolean> {
     // TODO: open vscode by default to speed up, support choose favorite editor later
     let defaultEditor = await findEditorOrDefault('Visual Studio Code').catch(() => {});
     if (defaultEditor === undefined) {
@@ -33,14 +33,18 @@ export class NativeService implements INativeService {
     }
     if (defaultEditor !== undefined) {
       await launchExternalEditor(filePath, defaultEditor);
+      return true;
     }
+    return false;
   }
 
-  public async openInGitGuiApp(filePath: string, editorName?: string): Promise<void> {
+  public async openInGitGuiApp(filePath: string, editorName?: string): Promise<boolean> {
     const defaultEditor = await findGitGUIAppOrDefault(editorName);
     if (defaultEditor !== undefined) {
       await launchExternalEditor(filePath, defaultEditor);
+      return true;
     }
+    return false;
   }
 
   public executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string> {

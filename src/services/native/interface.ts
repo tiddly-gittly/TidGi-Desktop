@@ -18,8 +18,8 @@ export interface INativeService {
   executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
-  openInEditor(filePath: string, editorName?: string | undefined): Promise<void>;
-  openInGitGuiApp(filePath: string, editorName?: string | undefined): Promise<void>;
+  openInEditor(filePath: string, editorName?: string | undefined): Promise<boolean>;
+  openInGitGuiApp(filePath: string, editorName?: string | undefined): Promise<boolean>;
   openNewGitHubIssue(error: Error): Promise<void>;
   pickDirectory(defaultPath?: string): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;
