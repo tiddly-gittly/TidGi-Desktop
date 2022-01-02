@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/no-null */
 import { injectable } from 'inversify';
@@ -26,9 +27,18 @@ import i18n from '@services/libs/i18n';
 import { defaultServerIP } from '@/constants/urls';
 import { logger } from '@services/libs/log';
 import { workspaceSorter } from './utils';
+import { fixSettingFileWhenError } from '@/helpers/configSetting';
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-const debouncedSetSettingFile = debounce(async (workspaces: Record<string, IWorkspace>) => await settings.set(`workspaces`, workspaces as any), 500);
+const debouncedSetSettingFile = debounce(async (workspaces: Record<string, IWorkspace>) => {
+  try {
+    await settings.set(`workspaces`, workspaces as any);
+  } catch (error) {
+    logger.error('Setting file format bad in debouncedSetSettingFile, will try again', { workspaces });
+    fixSettingFileWhenError(error as Error);
+    await settings.set(`workspaces`, workspaces as any);
+  }
+}, 500);
 
 @injectable()
 export class Workspace implements IWorkspaceService {
@@ -212,7 +222,13 @@ export class Workspace implements IWorkspaceService {
     this.workspaces[id] = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspace);
     if (immediate === true) {
-      await settings.set(`workspaces.${id}`, { ...workspace });
+      try {
+        await settings.set(`workspaces.${id}`, { ...workspace });
+      } catch (error) {
+        logger.error('Setting file format bad in public async set, will try again', { workspace });
+        fixSettingFileWhenError(error as Error);
+        await settings.set(`workspaces.${id}`, { ...workspace });
+      }
     } else {
       void debouncedSetSettingFile(this.workspaces);
     }
