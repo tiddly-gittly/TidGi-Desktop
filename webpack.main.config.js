@@ -53,10 +53,13 @@ module.exports = {
     __filename: true,
     __dirname: true,
   },
-  cache: {
-    type: 'filesystem',
-    buildDependencies: {
-      config: [__filename],
-    },
-  },
+  cache:
+    process.platform === 'darwin'
+      ? {
+          type: 'filesystem',
+          buildDependencies: {
+            config: [__filename],
+          },
+        }
+      : undefined,
 };
