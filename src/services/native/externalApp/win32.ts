@@ -326,7 +326,7 @@ const gitGUIApp: WindowsExternalEditor[] = [
   {
     name: 'GitHub Desktop',
     registryKeys: [CurrentUserUninstallKey('GithubDesktop')],
-    executableShimPaths: [['bin', 'desktop.cmd']],
+    executableShimPaths: [['bin', 'github.bat']],
     displayNamePrefix: 'GitHub',
     publisher: 'GitHub, Inc.',
   },
