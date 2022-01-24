@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-unsafe-argument */
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable unicorn/prefer-module */
@@ -39,6 +41,11 @@ module.exports = {
   resolve: {
     alias: webpackAlias,
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.json'],
+  },
+  output: {
+    devtoolModuleFilenameTemplate: (info) => {
+      return `file:///${encodeURI(info.absoluteResourcePath)}`;
+    },
   },
   externals: [
     // TODO: simply external things will make require can't find things. May need some other way.
