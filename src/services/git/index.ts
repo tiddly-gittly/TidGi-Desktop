@@ -33,6 +33,7 @@ import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 import { githubDesktopUrl } from '@/constants/urls';
+import { defaultGitInfo } from './defaultGitInfo';
 
 @injectable()
 export class Git implements IGitService {
@@ -60,7 +61,7 @@ export class Git implements IGitService {
 
   public async getWorkspacesRemote(wikiFolderPath: string): Promise<string | undefined> {
     if (await hasGit(wikiFolderPath)) {
-      return await this.gitWorker?.getRemoteUrl(wikiFolderPath);
+      return await this.gitWorker?.getRemoteUrl(wikiFolderPath, defaultGitInfo.remote);
     }
   }
 
@@ -196,7 +197,7 @@ export class Git implements IGitService {
     if (error instanceof AssumeSyncError) {
       error.message = i18n.t('Log.SynchronizationFailed');
     } else if (error instanceof SyncParameterMissingError) {
-      error.message = i18n.t('Log.GitTokenMissing') + error.parameterName;
+      error.message = i18n.t('Log.GitTokenMissing') + (error as SyncParameterMissingError).parameterName;
     } else if (error instanceof GitPullPushError) {
       error.message = i18n.t('Log.SyncFailedSystemError');
     } else if (error instanceof CantSyncGitNotInitializedError) {

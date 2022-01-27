@@ -26,7 +26,7 @@
   "author": "Lin Onetwo <linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
   "main": ".webpack/main",
   "dependencies": {
-    "@tiddlygit/tiddlywiki": "5.2.2-prerelease-2021-12-10",
+    "@tiddlygit/tiddlywiki": "5.2.2-prerelease-2022-01-28",
     "app-path": "^3.3.0",
     "best-effort-json-parser": "0.1.1",
     "bluebird": "3.7.2",
@@ -41,7 +41,7 @@
     "electron-window-state": "5.0.3",
     "errio": "1.2.2",
     "fs-extra": "10.0.0",
-    "git-sync-js": "^0.6.0",
+    "git-sync-js": "1.0.1",
     "i18next": "21.3.3",
     "i18next-electron-fs-backend": "2.0.0",
     "i18next-fs-backend": "1.1.1",

@@ -2,29 +2,55 @@
 import 'source-map-support/register';
 import { expose } from 'threads/worker';
 import { Observable } from 'rxjs';
-import { clone, commitAndSync, GitStep, ILoggerContext, initGit, getModifiedFileList, getRemoteUrl } from 'git-sync-js';
+import { clone, commitAndSync, GitStep, ILoggerContext, initGit, getModifiedFileList, getRemoteUrl, SyncParameterMissingError } from 'git-sync-js';
 import { IGitLogMessage, IGitUserInfos } from './interface';
 import { defaultGitInfo } from './defaultGitInfo';
 import { WikiChannel } from '@/constants/channels';
 
 function initWikiGit(wikiFolderPath: string, syncImmediately?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
-    void initGit({
-      dir: wikiFolderPath,
-      remoteUrl,
-      syncImmediately,
-      userInfo,
-      defaultGitInfo,
-      logger: {
-        debug: (message: string, context: ILoggerContext): unknown =>
-          observer.next({ message, level: 'debug', meta: { callerFunction: 'initWikiGit', ...context } }),
-        warn: (message: string, context: ILoggerContext): unknown =>
-          observer.next({ message, level: 'warn', meta: { callerFunction: 'initWikiGit', ...context } }),
-        info: (message: GitStep, context: ILoggerContext): void => {
-          observer.next({ message, level: 'notice', meta: { handler: WikiChannel.createProgress, callerFunction: 'initWikiGit', ...context } });
+    let task: Promise<void>;
+    if (syncImmediately) {
+      if (remoteUrl === undefined) {
+        throw new SyncParameterMissingError('remoteUrl');
+      }
+      if (userInfo === undefined) {
+        throw new SyncParameterMissingError('userInfo');
+      }
+      task = initGit({
+        dir: wikiFolderPath,
+        remoteUrl,
+        syncImmediately,
+        userInfo,
+        defaultGitInfo,
+        logger: {
+          debug: (message: string, context: ILoggerContext): unknown =>
+            observer.next({ message, level: 'debug', meta: { callerFunction: 'initWikiGit', ...context } }),
+          warn: (message: string, context: ILoggerContext): unknown =>
+            observer.next({ message, level: 'warn', meta: { callerFunction: 'initWikiGit', ...context } }),
+          info: (message: GitStep, context: ILoggerContext): void => {
+            observer.next({ message, level: 'notice', meta: { handler: WikiChannel.createProgress, callerFunction: 'initWikiGit', ...context } });
+          },
         },
-      },
-    }).then(
+      });
+    } else {
+      task = initGit({
+        dir: wikiFolderPath,
+        syncImmediately,
+        userInfo,
+        defaultGitInfo,
+        logger: {
+          debug: (message: string, context: ILoggerContext): unknown =>
+            observer.next({ message, level: 'debug', meta: { callerFunction: 'initWikiGit', ...context } }),
+          warn: (message: string, context: ILoggerContext): unknown =>
+            observer.next({ message, level: 'warn', meta: { callerFunction: 'initWikiGit', ...context } }),
+          info: (message: GitStep, context: ILoggerContext): void => {
+            observer.next({ message, level: 'notice', meta: { handler: WikiChannel.createProgress, callerFunction: 'initWikiGit', ...context } });
+          },
+        },
+      });
+    }
+    void task.then(
       () => observer.complete(),
       (error) => observer.error(error),
     );
