@@ -32,7 +32,7 @@
     "bluebird": "3.7.2",
     "chokidar": "3.5.3",
     "default-gateway": "6.0.3",
-    "electron-ipc-cat": "1.2.5",
+    "electron-ipc-cat": "1.2.6",
     "electron-is-packaged": "1.0.2",
     "electron-settings": "4.0.2",
     "electron-squirrel-startup": "1.0.0",
