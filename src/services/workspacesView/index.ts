@@ -307,11 +307,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       throw error;
     }
     // if we are switching to a new workspace, we hibernate old view, and activate new view
-    if (
-      oldActiveWorkspace !== undefined &&
-      oldActiveWorkspace.id !== nextWorkspaceID &&
-      (oldActiveWorkspace.hibernateWhenUnused || (await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')))
-    ) {
+    if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID && oldActiveWorkspace.hibernateWhenUnused) {
       await this.hibernateWorkspaceView(oldActiveWorkspace.id);
     }
   }
