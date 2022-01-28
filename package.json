@@ -122,7 +122,7 @@
     "copy-webpack-plugin": "10.2.2",
     "cross-env": "7.0.3",
     "csp-html-webpack-plugin": "5.1.0",
-    "css-loader": "5.2.6",
+    "css-loader": "6.5.1",
     "date-fns": "2.28.0",
     "electron": "15.3.0",
     "electron-rebuild": "3.2.7",
