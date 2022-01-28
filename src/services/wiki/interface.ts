@@ -12,7 +12,7 @@ import type { WikiWorker } from './wikiWorker';
  * Handle wiki worker startup and restart
  */
 export interface IWikiService {
-  /** return true if wiki does existed, return error message (a string) if there is an error checking wiki existence */
+  /** return true if wiki does existed and folder is a valid tiddlywiki folder, return error message (a string) if there is an error checking wiki existence */
   checkWikiExist(workspace: IWorkspace, options?: { shouldBeMainWiki?: boolean; showDialog?: boolean }): Promise<string | true>;
   checkWikiStartLock(wikiFolderLocation: string): boolean;
   cloneSubWiki(
