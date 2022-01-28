@@ -59,11 +59,11 @@
     "semver": "7.3.5",
     "source-map-support": "0.5.21",
     "threads": "1.7.0",
-    "type-fest": "2.5.1",
+    "type-fest": "2.11.0",
     "uuid": "8.3.2",
-    "winston": "3.3.3",
-    "winston-daily-rotate-file": "4.5.5",
-    "winston-transport": "4.4.0",
+    "winston": "3.5.0",
+    "winston-daily-rotate-file": "4.6.0",
+    "winston-transport": "4.4.2",
     "zx": "4.3.0"
   },
   "devDependencies": {
