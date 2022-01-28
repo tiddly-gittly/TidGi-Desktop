@@ -510,7 +510,9 @@ export class View implements IViewService {
       // retry one time later if webContent is not ready yet
       setTimeout(() => void this.realignActiveView(browserWindow, activeId, true), 1000);
     } else {
-      logger.error(`realignActiveView() failed view?.webContents is ${String(view?.webContents)} and isRetry is ${String(isRetry)}`);
+      logger.error(
+        `realignActiveView() failed view?.webContents is ${String(view?.webContents)} and isRetry is ${String(isRetry)} stack: ${new Error().stack}`,
+      );
     }
   };
 }
