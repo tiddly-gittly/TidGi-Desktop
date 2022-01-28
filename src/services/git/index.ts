@@ -271,7 +271,7 @@ export class Git implements IGitService {
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const syncImmediately = !!isSyncedWiki && !!isMainWiki;
     return await new Promise<void>((resolve, reject) => {
-      this.gitWorker?.initWikiGit(wikiFolderPath, syncImmediately, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
+      this.gitWorker?.initWikiGit(wikiFolderPath, syncImmediately && net.isOnline(), remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
     });
   }
 
@@ -289,6 +289,9 @@ export class Git implements IGitService {
   }
 
   public async clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void> {
+    if (!net.isOnline()) {
+      return;
+    }
     return await new Promise<void>((resolve, reject) => {
       this.gitWorker?.cloneWiki(repoFolderPath, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
     });
