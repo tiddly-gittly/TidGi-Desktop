@@ -383,9 +383,6 @@ export class WorkspaceView implements IWorkspaceViewService {
     const mainWindow = this.windowService.get(WindowNames.main);
     const activeWorkspaceID = id ?? (await this.workspaceService.getActiveWorkspace())?.id;
     if (mainWindow !== undefined && activeWorkspaceID !== undefined) {
-      await this.workspaceService.setActiveWorkspace(activeWorkspaceID);
-      await this.viewService.setActiveViewForAllBrowserViews(activeWorkspaceID);
-
       const browserView = mainWindow.getBrowserView();
       if (browserView !== null) {
         browserView.webContents.focus();
