@@ -58,18 +58,26 @@ export class WorkspaceView implements IWorkspaceViewService {
     const { followHibernateSettingWhenInit = true, syncImmediately = true, isNew = false } = options;
     // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
     if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {
+      logger.warn(`initializeWorkspaceView() checkWikiExist found workspace ${workspace.id} don't have a valid wiki, and showDialog.`);
       return;
     }
     logger.debug(`initializeWorkspaceView() Initializing workspace ${workspace.id}, ${JSON.stringify(options)}`);
-    if (
-      followHibernateSettingWhenInit &&
-      ((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) &&
-      !workspace.active
-    ) {
-      if (!workspace.hibernated) {
-        await this.workspaceService.update(workspace.id, { hibernated: true });
+    if (followHibernateSettingWhenInit) {
+      const hibernateUnusedWorkspacesAtLaunch = await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch');
+      if ((hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) && !workspace.active) {
+        logger.debug(
+          `initializeWorkspaceView() quit because ${JSON.stringify({
+            followHibernateSettingWhenInit,
+            'workspace.hibernateWhenUnused': workspace.hibernateWhenUnused,
+            'workspace.active': workspace.active,
+            hibernateUnusedWorkspacesAtLaunch,
+          })}`,
+        );
+        if (!workspace.hibernated) {
+          await this.workspaceService.update(workspace.id, { hibernated: true });
+        }
+        return;
       }
-      return;
     }
     if (workspace.storageService !== SupportedStorageServices.local) {
       const mainWindow = this.windowService.get(WindowNames.main);
@@ -88,6 +96,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         });
       }
     }
+    logger.debug(`initializeWorkspaceView() calling wikiStartup()`);
     await this.wikiService.wikiStartup(workspace);
 
     const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);

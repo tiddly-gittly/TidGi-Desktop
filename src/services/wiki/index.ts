@@ -444,6 +444,7 @@ export class Wiki implements IWikiService {
     // if is main wiki
     if (!isSubWiki) {
       try {
+        logger.debug('startWiki() calling startWiki');
         await this.startWiki(wikiFolderLocation, port, userName);
         logger.debug('startWiki() done');
       } catch (error) {
