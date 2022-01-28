@@ -288,7 +288,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
     logger.debug(`Set active workspace oldActiveWorkspace.id: ${oldActiveWorkspace?.id ?? 'undefined'} nextWorkspaceID: ${nextWorkspaceID}`);
     // later process will use the current active workspace
-    await this.workspaceService.setActiveWorkspace(nextWorkspaceID);
+    await this.workspaceService.setActiveWorkspace(nextWorkspaceID, oldActiveWorkspace?.id);
     const asyncTasks: Array<Promise<unknown>> = [];
     if (newWorkspace.hibernated) {
       asyncTasks.push(

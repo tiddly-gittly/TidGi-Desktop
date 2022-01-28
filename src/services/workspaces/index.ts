@@ -280,6 +280,7 @@ export class Workspace implements IWorkspaceService {
    */
   private async reactBeforeWorkspaceChanged(newWorkspaceConfig: IWorkspace): Promise<void> {
     const { id, tagName } = newWorkspaceConfig;
+    // when update tagName of subWiki
     if (this.workspaces[id]?.isSubWiki && typeof tagName === 'string' && tagName.length > 0 && this.workspaces[id].tagName !== tagName) {
       const { mainWikiToLink } = this.workspaces[id];
       if (typeof mainWikiToLink !== 'string') {
@@ -343,17 +344,13 @@ export class Workspace implements IWorkspaceService {
     return (await this.getWorkspacesAsList())[0];
   };
 
-  public async setActiveWorkspace(id: string): Promise<void> {
+  public async setActiveWorkspace(id: string, oldActiveWorkspaceID: string | undefined): Promise<void> {
     // active new one
     await this.update(id, { active: true, hibernated: false });
     // de-active the other one
-    await Promise.all(
-      this.getWorkspacesAsListSync()
-        .filter((workspace) => workspace.id !== id)
-        .map(async (workspace) => {
-          await this.update(workspace.id, { active: false });
-        }),
-    );
+    if (typeof oldActiveWorkspaceID === 'string' && oldActiveWorkspaceID !== id) {
+      await this.update(oldActiveWorkspaceID, { active: false });
+    }
   }
 
   /**

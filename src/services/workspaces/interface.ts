@@ -145,7 +145,7 @@ export interface IWorkspaceService {
    * Set new workspace to active, and make the old active workspace inactive
    * @param id id to active
    */
-  setActiveWorkspace(id: string): Promise<void>;
+  setActiveWorkspace(id: string, oldActiveWorkspaceID: string | undefined): Promise<void>;
   setWorkspacePicture(id: string, sourcePicturePath: string): Promise<void>;
   setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void>;
   update(id: string, workspaceSetting: Partial<IWorkspace>, immediate?: boolean): Promise<void>;
