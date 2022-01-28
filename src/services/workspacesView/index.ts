@@ -272,7 +272,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (workspace !== undefined && !workspace.active) {
       await Promise.all([
         this.wikiService.stopWiki(workspace.wikiFolderLocation),
-        this.viewService.removeAllViewOfWorkspace(workspaceID),
+        // TODO: seems a window can only have a browser view, and is shared between workspaces
+        // this.viewService.removeAllViewOfWorkspace(workspaceID),
         this.workspaceService.update(workspaceID, {
           hibernated: true,
         }),
@@ -301,7 +302,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     await Promise.all(asyncTasks);
     try {
       await this.viewService.setActiveViewForAllBrowserViews(nextWorkspaceID);
-      await this.realignActiveWorkspace();
+      await this.realignActiveWorkspace(nextWorkspaceID);
     } catch (error) {
       logger.error(`Error while setActiveWorkspaceView(): ${(error as Error).message}`, error);
       throw error;
@@ -329,7 +330,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
 
     await this.workspaceService.remove(workspaceID);
-    this.viewService.removeAllViewOfWorkspace(workspaceID);
+    // TODO: seems a window can only have a browser view, and is shared between workspaces
+    // this.viewService.removeAllViewOfWorkspace(workspaceID);
   }
 
   public async restartWorkspaceViewService(id?: string): Promise<void> {
@@ -412,12 +414,17 @@ export class WorkspaceView implements IWorkspaceViewService {
     logger.debug(`realignActiveWorkspaceView() activeWorkspace.id: ${workspaceToRealign?.id ?? 'undefined'}`);
     const mainWindow = this.windowService.get(WindowNames.main);
     const menuBarWindow = this.windowService.get(WindowNames.menuBar);
+    const mainBrowserViewWebContent = mainWindow?.getBrowserView()?.webContents;
+    const menuBarBrowserViewWebContent = menuBarWindow?.getBrowserView()?.webContents;
+    logger.info(
+      `realignActiveWorkspaceView: id ${workspaceToRealign?.id} mainWindow: ${!!mainBrowserViewWebContent} menuBarWindow: ${!!menuBarBrowserViewWebContent}`,
+    );
     if (workspaceToRealign !== undefined) {
       if (mainWindow === undefined && menuBarWindow === undefined) {
         logger.warn('realignActiveWorkspaceView: no active window');
       }
-      mainWindow !== undefined && void this.viewService.realignActiveView(mainWindow, workspaceToRealign.id);
-      menuBarWindow !== undefined && void this.viewService.realignActiveView(menuBarWindow, workspaceToRealign.id);
+      mainBrowserViewWebContent && void this.viewService.realignActiveView(mainWindow, workspaceToRealign.id);
+      menuBarBrowserViewWebContent && void this.viewService.realignActiveView(menuBarWindow, workspaceToRealign.id);
     } else {
       logger.warn('realignActiveWorkspaceView: no active workspace');
     }
