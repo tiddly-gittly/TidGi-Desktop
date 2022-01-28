@@ -290,14 +290,6 @@ export class WorkspaceView implements IWorkspaceViewService {
     // later process will use the current active workspace
     await this.workspaceService.setActiveWorkspace(nextWorkspaceID);
     const asyncTasks: Array<Promise<unknown>> = [];
-    // if we are switching to a new workspace, we hibernate old view, and activate new view
-    if (
-      oldActiveWorkspace !== undefined &&
-      oldActiveWorkspace.id !== nextWorkspaceID &&
-      (oldActiveWorkspace.hibernateWhenUnused || (await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')))
-    ) {
-      asyncTasks.push(this.hibernateWorkspaceView(oldActiveWorkspace.id));
-    }
     if (newWorkspace.hibernated) {
       asyncTasks.push(
         this.initializeWorkspaceView(newWorkspace, { followHibernateSettingWhenInit: false, syncImmediately: false }),
@@ -313,6 +305,14 @@ export class WorkspaceView implements IWorkspaceViewService {
     } catch (error) {
       logger.error(`Error while setActiveWorkspaceView(): ${(error as Error).message}`, error);
       throw error;
+    }
+    // if we are switching to a new workspace, we hibernate old view, and activate new view
+    if (
+      oldActiveWorkspace !== undefined &&
+      oldActiveWorkspace.id !== nextWorkspaceID &&
+      (oldActiveWorkspace.hibernateWhenUnused || (await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')))
+    ) {
+      await this.hibernateWorkspaceView(oldActiveWorkspace.id);
     }
   }
 
