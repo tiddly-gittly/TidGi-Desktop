@@ -10,7 +10,7 @@ import { WikiChannel } from '@/constants/channels';
 function initWikiGit(wikiFolderPath: string, syncImmediately?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
     let task: Promise<void>;
-    if (syncImmediately) {
+    if (syncImmediately === true) {
       if (remoteUrl === undefined) {
         throw new SyncParameterMissingError('remoteUrl');
       }
