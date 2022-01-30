@@ -50,7 +50,7 @@ export function Updates(props: Required<ISectionProps>): JSX.Element {
                     checked={preference.allowPrerelease}
                     onChange={async (event) => {
                       await window.service.preference.set('allowPrerelease', event.target.checked);
-                      props.requestRestartCountDown();
+                      await window.service.updater.checkForUpdates();
                     }}
                   />
                 </ListItemSecondaryAction>
