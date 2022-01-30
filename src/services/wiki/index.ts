@@ -448,12 +448,15 @@ export class Wiki implements IWikiService {
         await this.startWiki(wikiFolderLocation, port, userName);
         logger.debug('startWiki() done');
       } catch (error) {
+        logger.warn(`Get startWiki() error: ${(error as Error)?.message}`);
         if (error instanceof WikiRuntimeError && error.retry) {
-          logger.warn('Get startWiki() error, retrying...');
+          logger.warn('Get startWiki() WikiRuntimeError, retrying...');
           // don't want it to throw here again, so no await here.
           // eslint-disable-next-line @typescript-eslint/return-await
           return this.workspaceViewService.restartWorkspaceViewService(id);
         }
+        logger.warn('Get startWiki() unexpected error, throw it');
+        throw error;
       }
       // sync to cloud, do this in a non-blocking way
       if (syncOnInterval && syncOnIntervalDebounced) {
