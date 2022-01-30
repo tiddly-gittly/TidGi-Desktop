@@ -58,18 +58,26 @@ export class WorkspaceView implements IWorkspaceViewService {
     const { followHibernateSettingWhenInit = true, syncImmediately = true, isNew = false } = options;
     // skip if workspace don't contains a valid tiddlywiki setup, this allows user to delete workspace later
     if ((await this.wikiService.checkWikiExist(workspace, { shouldBeMainWiki: !workspace.isSubWiki, showDialog: true })) !== true) {
+      logger.warn(`initializeWorkspaceView() checkWikiExist found workspace ${workspace.id} don't have a valid wiki, and showDialog.`);
       return;
     }
     logger.debug(`initializeWorkspaceView() Initializing workspace ${workspace.id}, ${JSON.stringify(options)}`);
-    if (
-      followHibernateSettingWhenInit &&
-      ((await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')) || workspace.hibernateWhenUnused) &&
-      !workspace.active
-    ) {
-      if (!workspace.hibernated) {
-        await this.workspaceService.update(workspace.id, { hibernated: true });
+    if (followHibernateSettingWhenInit) {
+      const hibernateUnusedWorkspacesAtLaunch = await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch');
+      if ((hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) && !workspace.active) {
+        logger.debug(
+          `initializeWorkspaceView() quit because ${JSON.stringify({
+            followHibernateSettingWhenInit,
+            'workspace.hibernateWhenUnused': workspace.hibernateWhenUnused,
+            'workspace.active': workspace.active,
+            hibernateUnusedWorkspacesAtLaunch,
+          })}`,
+        );
+        if (!workspace.hibernated) {
+          await this.workspaceService.update(workspace.id, { hibernated: true });
+        }
+        return;
       }
-      return;
     }
     if (workspace.storageService !== SupportedStorageServices.local) {
       const mainWindow = this.windowService.get(WindowNames.main);
@@ -88,6 +96,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         });
       }
     }
+    logger.debug(`initializeWorkspaceView() calling wikiStartup()`);
     await this.wikiService.wikiStartup(workspace);
 
     const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
@@ -263,7 +272,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (workspace !== undefined && !workspace.active) {
       await Promise.all([
         this.wikiService.stopWiki(workspace.wikiFolderLocation),
-        this.viewService.removeAllViewOfWorkspace(workspaceID),
+        // TODO: seems a window can only have a browser view, and is shared between workspaces
+        // this.viewService.removeAllViewOfWorkspace(workspaceID),
         this.workspaceService.update(workspaceID, {
           hibernated: true,
         }),
@@ -279,16 +289,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
     logger.debug(`Set active workspace oldActiveWorkspace.id: ${oldActiveWorkspace?.id ?? 'undefined'} nextWorkspaceID: ${nextWorkspaceID}`);
     // later process will use the current active workspace
-    await this.workspaceService.setActiveWorkspace(nextWorkspaceID);
+    await this.workspaceService.setActiveWorkspace(nextWorkspaceID, oldActiveWorkspace?.id);
     const asyncTasks: Array<Promise<unknown>> = [];
-    // if we are switching to a new workspace, we hibernate old view, and activate new view
-    if (
-      oldActiveWorkspace !== undefined &&
-      oldActiveWorkspace.id !== nextWorkspaceID &&
-      (oldActiveWorkspace.hibernateWhenUnused || (await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch')))
-    ) {
-      asyncTasks.push(this.hibernateWorkspaceView(oldActiveWorkspace.id));
-    }
     if (newWorkspace.hibernated) {
       asyncTasks.push(
         this.initializeWorkspaceView(newWorkspace, { followHibernateSettingWhenInit: false, syncImmediately: false }),
@@ -300,10 +302,14 @@ export class WorkspaceView implements IWorkspaceViewService {
     await Promise.all(asyncTasks);
     try {
       await this.viewService.setActiveViewForAllBrowserViews(nextWorkspaceID);
-      await this.realignActiveWorkspace();
+      await this.realignActiveWorkspace(nextWorkspaceID);
     } catch (error) {
       logger.error(`Error while setActiveWorkspaceView(): ${(error as Error).message}`, error);
       throw error;
+    }
+    // if we are switching to a new workspace, we hibernate old view, and activate new view
+    if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID && oldActiveWorkspace.hibernateWhenUnused) {
+      await this.hibernateWorkspaceView(oldActiveWorkspace.id);
     }
   }
 
@@ -324,7 +330,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
 
     await this.workspaceService.remove(workspaceID);
-    this.viewService.removeAllViewOfWorkspace(workspaceID);
+    // TODO: seems a window can only have a browser view, and is shared between workspaces
+    // this.viewService.removeAllViewOfWorkspace(workspaceID);
   }
 
   public async restartWorkspaceViewService(id?: string): Promise<void> {
@@ -378,9 +385,6 @@ export class WorkspaceView implements IWorkspaceViewService {
     const mainWindow = this.windowService.get(WindowNames.main);
     const activeWorkspaceID = id ?? (await this.workspaceService.getActiveWorkspace())?.id;
     if (mainWindow !== undefined && activeWorkspaceID !== undefined) {
-      await this.workspaceService.setActiveWorkspace(activeWorkspaceID);
-      await this.viewService.setActiveViewForAllBrowserViews(activeWorkspaceID);
-
       const browserView = mainWindow.getBrowserView();
       if (browserView !== null) {
         browserView.webContents.focus();
@@ -410,12 +414,17 @@ export class WorkspaceView implements IWorkspaceViewService {
     logger.debug(`realignActiveWorkspaceView() activeWorkspace.id: ${workspaceToRealign?.id ?? 'undefined'}`);
     const mainWindow = this.windowService.get(WindowNames.main);
     const menuBarWindow = this.windowService.get(WindowNames.menuBar);
+    const mainBrowserViewWebContent = mainWindow?.getBrowserView()?.webContents;
+    const menuBarBrowserViewWebContent = menuBarWindow?.getBrowserView()?.webContents;
+    logger.info(
+      `realignActiveWorkspaceView: id ${workspaceToRealign?.id} mainWindow: ${!!mainBrowserViewWebContent} menuBarWindow: ${!!menuBarBrowserViewWebContent}`,
+    );
     if (workspaceToRealign !== undefined) {
       if (mainWindow === undefined && menuBarWindow === undefined) {
         logger.warn('realignActiveWorkspaceView: no active window');
       }
-      mainWindow !== undefined && void this.viewService.realignActiveView(mainWindow, workspaceToRealign.id);
-      menuBarWindow !== undefined && void this.viewService.realignActiveView(menuBarWindow, workspaceToRealign.id);
+      mainBrowserViewWebContent && void this.viewService.realignActiveView(mainWindow, workspaceToRealign.id);
+      menuBarBrowserViewWebContent && void this.viewService.realignActiveView(menuBarWindow, workspaceToRealign.id);
     } else {
       logger.warn('realignActiveWorkspaceView: no active workspace');
     }

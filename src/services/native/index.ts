@@ -17,6 +17,7 @@ import { IZxFileInput } from '@services/wiki/wikiWorker';
 import { ZxNotInitializedError } from './error';
 import { lazyInject } from '@services/container';
 import i18next from 'i18next';
+import winston from 'winston';
 
 @injectable()
 export class NativeService implements INativeService {
@@ -147,7 +148,7 @@ ${message.message}
     app.quit();
   }
 
-  public async log(level: string, message: string, meta?: Record<string, unknown>): Promise<void> {
+  public async log(level: winston.level, message: string, meta?: Record<string, unknown>): Promise<void> {
     logger.log(level, message, meta);
   }
 
