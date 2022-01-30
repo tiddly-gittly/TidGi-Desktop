@@ -20,7 +20,7 @@ import { useUpdaterObservable } from '@services/updater/hooks';
 
 import WorkspaceSelector from './WorkspaceSelector';
 import FindInPage from '../../components/FindInPage';
-import { latestUpdateUrl } from '@/constants/urls';
+import { latestStableUpdateUrl } from '@/constants/urls';
 
 import { SortableWorkspaceSelector } from './SortableWorkspaceSelector';
 import { IWorkspace } from '@services/workspaces/interface';
@@ -235,7 +235,7 @@ export default function Main(): JSX.Element {
                 <IconButton
                   id="update-available"
                   aria-label={t('SideBar.UpdateAvailable')}
-                  onClick={async () => await window.service.native.open(latestUpdateUrl)}>
+                  onClick={async () => await window.service.native.open(updaterMetaData.info?.latestReleasePageUrl ?? latestStableUpdateUrl)}>
                   <Tooltip title={<span>{t('SideBar.UpdateAvailable')}</span>} placement="top">
                     <UpgradeIcon />
                   </Tooltip>

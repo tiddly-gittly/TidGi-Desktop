@@ -8,13 +8,11 @@ import { shell } from 'electron';
 import fetch from 'node-fetch';
 
 import serviceIdentifier from '@services/serviceIdentifier';
-import type { IWindowService } from '@services/windows/interface';
 import { IContextService } from '@services/context/interface';
 import { lazyInject } from '@services/container';
 import { IUpdaterService, IUpdaterMetaData, IGithubReleaseData, IUpdaterStatus } from './interface';
 import type { IMenuService } from '@services/menu/interface';
 import { logger } from '@services/libs/log';
-import { latestUpdateUrl } from '@/constants/urls';
 import { IPreferenceService } from '@services/preferences/interface';
 
 // TODO: use electron-forge 's auto update solution， maybe see https://headspring.com/2020/09/24/building-signing-and-publishing-electron-forge-applications-for-windows/
@@ -55,6 +53,7 @@ export class Updater implements IUpdaterService {
       },
     ]);
     let latestVersion: string;
+    let latestReleasePageUrl: string;
     const allowPrerelease = await this.preferenceService.get('allowPrerelease');
     try {
       const latestReleaseData = await (allowPrerelease
@@ -65,6 +64,7 @@ export class Updater implements IUpdaterService {
             async (response) => await (response.json() as Promise<IGithubReleaseData>),
           ));
       latestVersion = latestReleaseData.tag_name.replace('v', '');
+      latestReleasePageUrl = latestReleaseData.html_url;
     } catch (fetchError) {
       logger.error('Fetching latest release failed', { fetchError });
       this.setMetaData({ status: IUpdaterStatus.checkingFailed, info: { errorMessage: (fetchError as Error).message } });
@@ -82,12 +82,12 @@ export class Updater implements IUpdaterService {
     const isLatestRelease = semver.gt(latestVersion, currentVersion);
     logger.debug('Compare version', { currentVersion, isLatestRelease });
     if (isLatestRelease) {
-      this.setMetaData({ status: IUpdaterStatus.updateAvailable, info: { version: latestVersion } });
+      this.setMetaData({ status: IUpdaterStatus.updateAvailable, info: { version: latestVersion, latestReleasePageUrl } });
       await this.menuService.insertMenu('TidGi', [
         {
           id: 'update',
           label: () => i18next.t('Updater.UpdateAvailable'),
-          click: async () => await shell.openExternal(latestUpdateUrl),
+          click: async () => await shell.openExternal(latestReleasePageUrl),
         },
       ]);
     } else {

@@ -18,6 +18,7 @@ export interface IUpdaterMetaData {
   status?: IUpdaterStatus;
   info?: {
     version?: string;
+    latestReleasePageUrl?: string;
     errorMessage?: string;
   };
 }
