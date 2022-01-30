@@ -100,6 +100,7 @@ const SidebarTop = styled.div<{ fullscreen?: boolean }>`
 
 const IconButton = styled(IconButtonRaw)`
   aspect-ratio: 1;
+  overflow: hidden;
   width: 80%;
 `;
 
