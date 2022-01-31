@@ -7,7 +7,7 @@ import Alert from '@material-ui/lab/Alert';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateCloneWiki, useCloneWiki } from './useCloneWiki';
 import { useWikiCreationProgress } from './useIndicator';
-import { WikiLocation, CloseButton, ReportErrorButton } from './FormComponents';
+import { WikiLocation, CloseButton, ReportErrorFabButton } from './FormComponents';
 
 export function CloneWikiDoneButton({ form, isCreateMainWorkspace, errorInWhichComponentSetter }: IWikiWorkspaceFormProps): JSX.Element {
   const { t } = useTranslation();
@@ -16,7 +16,7 @@ export function CloneWikiDoneButton({ form, isCreateMainWorkspace, errorInWhichC
     form,
     errorInWhichComponentSetter,
   );
-  const onSubmit = useCloneWiki(isCreateMainWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
+  const onSubmit = useCloneWiki(isCreateMainWorkspace, form, wikiCreationMessageSetter, hasErrorSetter, errorInWhichComponentSetter);
   const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {
     return (
@@ -24,7 +24,7 @@ export function CloneWikiDoneButton({ form, isCreateMainWorkspace, errorInWhichC
         <CloseButton variant="contained" disabled>
           {wikiCreationMessage}
         </CloseButton>
-        {wikiCreationMessage !== undefined && <ReportErrorButton message={wikiCreationMessage} />},
+        {wikiCreationMessage !== undefined && <ReportErrorFabButton message={wikiCreationMessage} />}
       </>
     );
   }

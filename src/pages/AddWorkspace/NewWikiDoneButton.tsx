@@ -22,7 +22,7 @@ export function NewWikiDoneButton({
     form,
     errorInWhichComponentSetter,
   );
-  const onSubmit = useNewWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
+  const onSubmit = useNewWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, wikiCreationMessageSetter, hasErrorSetter, errorInWhichComponentSetter);
   const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {
     return (

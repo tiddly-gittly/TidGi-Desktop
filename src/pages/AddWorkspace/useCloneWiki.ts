@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { callWikiInitialization } from './useCallWikiInitialization';
 import { IErrorInWhichComponent, IWikiWorkspaceForm, workspaceConfigFromForm } from './useForm';
+import { updateErrorInWhichComponentSetterByErrorMessage } from './useIndicator';
 
 export function useValidateCloneWiki(
   isCreateMainWorkspace: boolean,
@@ -57,6 +58,7 @@ export function useCloneWiki(
   form: IWikiWorkspaceForm,
   wikiCreationMessageSetter: (m: string) => void,
   hasErrorSetter: (m: boolean) => void,
+  errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void,
 ): () => Promise<void> {
   const { t } = useTranslation();
 
@@ -79,9 +81,10 @@ export function useCloneWiki(
       await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo);
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
+      updateErrorInWhichComponentSetterByErrorMessage(t, (error as Error).message, errorInWhichComponentSetter);
       hasErrorSetter(true);
     }
-  }, [form, wikiCreationMessageSetter, t, isCreateMainWorkspace, hasErrorSetter]);
+  }, [wikiCreationMessageSetter, t, form, isCreateMainWorkspace, errorInWhichComponentSetter, hasErrorSetter]);
 
   return onSubmit;
 }

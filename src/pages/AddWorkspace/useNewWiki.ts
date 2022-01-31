@@ -3,6 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { callWikiInitialization } from './useCallWikiInitialization';
 import { IErrorInWhichComponent, IWikiWorkspaceForm, workspaceConfigFromForm } from './useForm';
+import { updateErrorInWhichComponentSetterByErrorMessage } from './useIndicator';
 
 export function useValidateNewWiki(
   isCreateMainWorkspace: boolean,
@@ -61,6 +62,7 @@ export function useNewWiki(
   form: IWikiWorkspaceForm,
   wikiCreationMessageSetter: (m: string) => void,
   hasErrorSetter: (m: boolean) => void,
+  errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void,
 ): () => Promise<void> {
   const { t } = useTranslation();
 
@@ -77,9 +79,10 @@ export function useNewWiki(
       await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo);
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
+      updateErrorInWhichComponentSetterByErrorMessage(t, (error as Error).message, errorInWhichComponentSetter);
       hasErrorSetter(true);
     }
-  }, [form, wikiCreationMessageSetter, t, hasErrorSetter, isCreateMainWorkspace, isCreateSyncedWorkspace]);
+  }, [wikiCreationMessageSetter, t, hasErrorSetter, form, isCreateMainWorkspace, isCreateSyncedWorkspace, errorInWhichComponentSetter]);
 
   return onSubmit;
 }

@@ -6,7 +6,7 @@ import Alert from '@material-ui/lab/Alert';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateExistedWiki, useExistedWiki } from './useExistedWiki';
 import { useWikiCreationProgress } from './useIndicator';
-import { WikiLocation, CloseButton, ReportErrorButton } from './FormComponents';
+import { WikiLocation, CloseButton, ReportErrorFabButton } from './FormComponents';
 
 export function ExistedWikiDoneButton({
   form,
@@ -21,7 +21,7 @@ export function ExistedWikiDoneButton({
     form,
     errorInWhichComponentSetter,
   );
-  const onSubmit = useExistedWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, wikiCreationMessageSetter, hasErrorSetter);
+  const onSubmit = useExistedWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, wikiCreationMessageSetter, hasErrorSetter, errorInWhichComponentSetter);
   const [logPanelOpened, logPanelSetter, inProgressOrError] = useWikiCreationProgress(wikiCreationMessageSetter, wikiCreationMessage, hasError);
   if (hasError) {
     return (
@@ -29,7 +29,7 @@ export function ExistedWikiDoneButton({
         <CloseButton variant="contained" disabled>
           {wikiCreationMessage}
         </CloseButton>
-        {wikiCreationMessage !== undefined && <ReportErrorButton message={wikiCreationMessage} />}
+        {wikiCreationMessage !== undefined && <ReportErrorFabButton message={wikiCreationMessage} />}
       </>
     );
   }

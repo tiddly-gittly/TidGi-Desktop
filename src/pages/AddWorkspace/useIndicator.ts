@@ -1,4 +1,6 @@
 import { useState, useEffect } from 'react';
+import { TFunction } from 'react-i18next';
+import { IErrorInWhichComponent } from './useForm';
 
 export function useWikiCreationProgress(
   wikiCreationMessageSetter: (message: string) => void,
@@ -29,4 +31,23 @@ export function useWikiCreationProgress(
     return unregister;
   }, [wikiCreationMessageSetter]);
   return [logPanelOpened, logPanelSetter, inProgressOrError];
+}
+
+export function updateErrorInWhichComponentSetterByErrorMessage(
+  t: TFunction<'translation', undefined>,
+  message: string,
+  errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void,
+): void {
+  if (message.includes(t('AddWorkspace.PathNotExist').replace(/".*"/, ''))) {
+    errorInWhichComponentSetter({ parentFolderLocation: true, wikiFolderLocation: true });
+  }
+  if (message.includes(t('AddWorkspace.CantCreateFolderHere').replace(/".*"/, ''))) {
+    errorInWhichComponentSetter({ parentFolderLocation: true });
+  }
+  if (message.includes(t('AddWorkspace.WikiExisted').replace(/".*"/, ''))) {
+    errorInWhichComponentSetter({ wikiFolderName: true });
+  }
+  if (message.includes(t('AddWorkspace.ThisPathIsNotAWikiFolder').replace(/".*"/, ''))) {
+    errorInWhichComponentSetter({ wikiFolderName: true, wikiFolderLocation: true });
+  }
 }

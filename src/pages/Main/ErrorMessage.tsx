@@ -1,8 +1,8 @@
+/* eslint-disable unicorn/no-null */
 import { useCallback } from 'react';
-import { Button, Accordion, AccordionSummary, AccordionDetails } from '@material-ui/core';
+import { Button, Accordion, AccordionSummary, AccordionDetails, Typography } from '@material-ui/core';
 import { Trans, useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { Typography } from '@material-ui/core';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IWorkspaceWithMetadata, IWorkspaceMetaData } from '@services/workspaces/interface';
