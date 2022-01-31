@@ -383,7 +383,8 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async loadURL(url: string, id: string | undefined): Promise<void> {
     const mainWindow = this.windowService.get(WindowNames.main);
-    const activeWorkspaceID = id ?? (await this.workspaceService.getActiveWorkspace())?.id;
+    const activeWorkspace = await this.workspaceService.getActiveWorkspace();
+    const activeWorkspaceID = id ?? activeWorkspace?.id;
     if (mainWindow !== undefined && activeWorkspaceID !== undefined) {
       const browserView = mainWindow.getBrowserView();
       if (browserView !== null) {
