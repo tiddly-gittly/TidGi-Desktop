@@ -7,7 +7,7 @@ import Alert from '@material-ui/lab/Alert';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateNewWiki, useNewWiki } from './useNewWiki';
 import { useWikiCreationProgress } from './useIndicator';
-import { WikiLocation, CloseButton, ReportErrorButton } from './FormComponents';
+import { WikiLocation, CloseButton, ReportErrorFabButton } from './FormComponents';
 
 export function NewWikiDoneButton({
   form,
@@ -30,7 +30,7 @@ export function NewWikiDoneButton({
         <CloseButton variant="contained" disabled={true}>
           {wikiCreationMessage}
         </CloseButton>
-        {wikiCreationMessage !== undefined && <ReportErrorButton message={wikiCreationMessage} />}
+        {wikiCreationMessage !== undefined && <ReportErrorFabButton message={wikiCreationMessage} />}
       </>
     );
   }

@@ -179,7 +179,8 @@
     "Later": "Later",
     "RestartNow": "Restart Now",
     "MadeWithLove": "<0>Made with </0><1>❤</1><2> by </2>",
-    "ReportBug": "Report Bug"
+    "ReportBug": "Report Bug",
+    "ReportBugDetail": "If you have read the tutorial, and carefully read the error output text, and wisely check your input, you can click on the button."
   },
   "Log": {
     "CantSyncGitNotInitialized": "Unable to sync, this folder is not initialized as a Git repository",
@@ -322,7 +323,7 @@
     "InitWikiGitRevertError": "E-2 InitWikiGitRevertError",
     "InitWikiGitRevertErrorDescription": "E-2 Not only did the initialization of the note warehouse fail, but also the revocation failed. This is a serious problem, and you need to manually clean up the new folder generated in this location.",
     "CopyWikiTemplateError": "E-3 CopyWikiTemplateError",
-    "CopyWikiTemplateErrorDescription": "E-3 Attempt to copy or overwrite the latest wiki template to the corresponding location, but failed. This should be caused by a bug.",
+    "CopyWikiTemplateErrorDescription": "E-3 Attempt to copy or overwrite the latest wiki template to the corresponding location, but failed. This should be caused by your input.",
     "DoubleWikiInstanceError": "E-4 DoubleWikiInstanceError",
     "DoubleWikiInstanceErrorDescription": "E-4 You started the same Wiki twice. This may be caused by a bug in the program.",
     "InsertMenuAfterSubMenuIndexError": "E-5 InsertMenuAfterSubMenuIndexError",

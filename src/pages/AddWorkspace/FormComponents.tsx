@@ -1,5 +1,5 @@
 import styled, { css } from 'styled-components';
-import { Paper, Button, TextField, Autocomplete, Typography } from '@material-ui/core';
+import { Paper, Button, TextField, Autocomplete, Typography, Fab, Tooltip } from '@material-ui/core';
 import { useTranslation } from 'react-i18next';
 
 export const CreateContainer = styled(Paper)`
@@ -52,15 +52,40 @@ WikiLocation.defaultProps = { variant: 'body2', noWrap: true, display: 'inline',
 export function ReportErrorButton(props: { message: string }): JSX.Element {
   const { t } = useTranslation();
   return (
-    <Button
-      variant="contained"
-      color="secondary"
-      onClick={() => {
-        const error = new Error(props.message);
-        error.stack = 'ReportErrorButton';
-        void window.service.native.openNewGitHubIssue(error);
-      }}>
-      {t('Dialog.ReportBug')}
-    </Button>
+    <Tooltip title={(t('Dialog.ReportBugDetail') ?? '') + (t('Menu.ReportBugViaGithub') ?? '')}>
+      <Button
+        color="secondary"
+        onClick={() => {
+          const error = new Error(props.message);
+          error.stack = 'ReportErrorButton';
+          void window.service.native.openNewGitHubIssue(error);
+        }}>
+        {t('Dialog.ReportBug')}
+      </Button>
+    </Tooltip>
+  );
+}
+
+const AbsoluteFab = styled(Fab)`
+  position: absolute;
+  right: 10px;
+  bottom: 10px;
+  color: rgba(0, 0, 0, 0.2);
+  font-size: 10px;
+`;
+export function ReportErrorFabButton(props: { message: string }): JSX.Element {
+  const { t } = useTranslation();
+  return (
+    <Tooltip title={(t('Dialog.ReportBugDetail') ?? '') + (t('Menu.ReportBugViaGithub') ?? '')}>
+      <AbsoluteFab
+        color="default"
+        onClick={() => {
+          const error = new Error(props.message);
+          error.stack = 'ReportErrorButton';
+          void window.service.native.openNewGitHubIssue(error);
+        }}>
+        {t('Dialog.ReportBug')}
+      </AbsoluteFab>
+    </Tooltip>
   );
 }
