@@ -1,4 +1,4 @@
-import { LOG_FOLDER } from '@/constants/paths';
+import { LOG_FOLDER } from '@/constants/appPaths';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { openNewGitHubIssue, debugInfo } from 'electron-util';
 import { INativeService } from './interface';

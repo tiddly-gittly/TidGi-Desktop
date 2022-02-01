@@ -1,5 +1,5 @@
 import winston, { format } from 'winston';
-import { LOG_FOLDER } from '@/constants/paths';
+import { LOG_FOLDER } from '@/constants/appPaths';
 import RendererTransport from './rendererTransport';
 import 'winston-daily-rotate-file';
 

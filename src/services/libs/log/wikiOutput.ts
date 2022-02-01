@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs-extra';
 
-import { LOG_FOLDER } from '@/constants/paths';
+import { LOG_FOLDER } from '@/constants/appPaths';
 
 export function getWikiLogFilePath(wikiName: string): string {
   const logFileName = wikiName.replace(/["*/:<>?\\|]/g, '_');

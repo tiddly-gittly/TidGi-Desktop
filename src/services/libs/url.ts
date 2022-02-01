@@ -1,6 +1,5 @@
 import { defaultServerIP } from '@/constants/urls';
 import { internalIpV4 } from '@/helpers/ip';
-import { logger } from './log';
 
 /**
  * get wiki address with local machine ip, so QR code will be correct, instead of get `0.0.0.0`
@@ -10,13 +9,6 @@ import { logger } from './log';
 export async function getLocalHostUrlWithActualIP(originalUrl: string): Promise<string> {
   const internalIp = await internalIpV4();
   const localHostUrlWithActualIP = originalUrl.replace(/((?:\d{1,3}\.){3}\d{1,3}|localhost)/, internalIp ?? defaultServerIP);
-  logger.debug(
-    `Current available address: address() returns ${internalIp ?? 'undefined'}
-    originalUrl: ${originalUrl} , localHostUrlWithActualIP ${localHostUrlWithActualIP}`,
-  );
-  if (internalIp === undefined) {
-    logger.warn('internalIp is undefined');
-  }
   return localHostUrlWithActualIP;
 }
 

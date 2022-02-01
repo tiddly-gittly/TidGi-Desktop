@@ -3,8 +3,6 @@ import os from 'os';
 import { isDevelopmentOrTest } from './environment';
 import { developmentWikiFolderName, localizationFolderName } from './fileNames';
 
-const isMac = process.platform === 'darwin';
-
 /** src folder */
 export const sourcePath = path.resolve(__dirname, '..');
 export const buildResourcePath = path.resolve(sourcePath, '..', 'build-resources');
@@ -22,11 +20,6 @@ export const MENUBAR_ICON_PATH = path.resolve(isDevelopmentOrTest ? buildResourc
 export const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';
 export const LOGIN_REDIRECT_PATH = 'http://localhost:3000/?code=';
 export const DESKTOP_PATH = path.join(os.homedir(), 'Desktop');
-export const LOG_FOLDER = isDevelopmentOrTest
-  ? path.resolve(sourcePath, '..', 'logs')
-  : isMac
-  ? path.resolve(process.resourcesPath, '..', 'logs')
-  : path.resolve(os.homedir(), '.tg-note', 'logs');
 export const ZX_FOLDER = isDevelopmentOrTest
   ? path.resolve(__dirname, '..', '..', 'node_modules', 'zx', 'zx.mjs')
   : path.resolve(process.resourcesPath, 'node_modules', 'zx', 'zx.mjs');

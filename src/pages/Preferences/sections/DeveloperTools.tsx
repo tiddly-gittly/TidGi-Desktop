@@ -14,10 +14,10 @@ export function DeveloperTools(props: ISectionProps): JSX.Element {
     async () =>
       await Promise.all([window.service.context.get('LOG_FOLDER'), window.service.context.get('SETTINGS_FOLDER')]).catch((error) => {
         console.error(error);
-        return [];
+        return [undefined, undefined];
       }),
-    [],
-  );
+    [undefined, undefined],
+  ) as [string | undefined, string | undefined];
 
   return (
     <>

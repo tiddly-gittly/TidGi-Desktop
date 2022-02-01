@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { platform, type, networkInterfaces } from 'os';
 import ip from 'ipaddr.js';
-import { logger } from '@services/libs/log';
 
 /**
  * Copy from https://github.com/sindresorhus/internal-ip, to fi xsilverwind/default-gateway 's bug
@@ -30,14 +29,10 @@ function findIp(gateway: string): string | undefined {
 export async function internalIpV4(): Promise<string | undefined> {
   try {
     const defaultGatewayResult = await defaultGatewayV4();
-    try {
-      logger.debug(`in internalIpV4() defaultGatewayResult is ${defaultGatewayResult ? JSON.stringify(defaultGatewayResult) : 'undefined'}`);
-    } catch {}
     if (defaultGatewayResult?.gateway) {
       return findIp(defaultGatewayResult.gateway);
     }
   } catch {}
-  logger.warn('In internalIpV4() using fallback');
   return 'localhost';
 }
 
@@ -55,8 +50,6 @@ async function defaultGatewayV4(): Promise<IDefaultGatewayInfo | undefined> {
     if (plat === 'aix') {
       gatewayQueryFileName = type() === 'OS400' ? 'ibmi' : 'sunos'; // AIX `netstat` output is compatible with Solaris
     }
-
-    logger.debug(`in defaultGatewayV4() plat is ${plat} , so gatewayQueryFileName is ${gatewayQueryFileName}`, { stack: new Error().stack });
 
     switch (gatewayQueryFileName) {
       case 'ibmi': {
