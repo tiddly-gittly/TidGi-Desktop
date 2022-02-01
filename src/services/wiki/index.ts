@@ -97,7 +97,7 @@ export class Wiki implements IWikiService {
     // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
     const workerData = { homePath: wikiFolderLocation, userName, tiddlyWikiPort, tiddlyWikiHost: defaultServerIP };
-    const worker = await spawn<WikiWorker>(new Worker(workerURL as string));
+    const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
     this.wikiWorkers[wikiFolderLocation] = worker;
     refreshOutputFile(wikiFolderLocation);
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation };

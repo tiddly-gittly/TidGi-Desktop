@@ -54,7 +54,7 @@ export class Git implements IGitService {
   private async initWorker(): Promise<void> {
     process.env.LOCAL_GIT_DIRECTORY = LOCAL_GIT_DIRECTORY;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    this.gitWorker = await spawn<GitWorker>(new Worker(workerURL));
+    this.gitWorker = await spawn<GitWorker>(new Worker(workerURL), { timeout: 1000 * 60 });
   }
 
   public debounceCommitAndSync: (wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos) => Promise<void> | undefined;
