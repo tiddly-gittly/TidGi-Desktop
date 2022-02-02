@@ -169,6 +169,11 @@ export class Window implements IWindowService {
       newWindow = await this.handleCreateBasicWindow(windowName, windowConfig);
       if (isWindowWithBrowserView) {
         this.registerMainWindowListeners(newWindow);
+        // calling this to redundantly setBounds BrowserView
+        // after the UI is fully loaded
+        // if not, BrowserView mouseover event won't work correctly
+        // https://github.com/atomery/webcatalog/issues/812
+        await this.workspaceViewService.realignActiveWorkspace();
       } else {
         newWindow.setMenuBarVisibility(false);
       }
@@ -197,11 +202,6 @@ export class Window implements IWindowService {
           if (!wasOpenedAsHidden) {
             mainWindow.show();
           }
-          // calling this to redundantly setBounds BrowserView
-          // after the UI is fully loaded
-          // if not, BrowserView mouseover event won't work correctly
-          // https://github.com/atomery/webcatalog/issues/812
-          await this.workspaceViewService.realignActiveWorkspace();
           // ensure redux is loaded first
           // if not, redux might not be able catch changes sent from ipcMain
           if (!mainWindow.webContents.isLoading()) {
