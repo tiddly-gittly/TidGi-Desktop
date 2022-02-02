@@ -40,20 +40,6 @@ function App(): JSX.Element {
 
 async function runApp(): Promise<void> {
   void window.remote.setVisualZoomLevelLimits(1, 1);
-
-  const attachToMenubar = await window.service.preference.get('attachToMenubar');
-  if (window.meta.windowName !== WindowNames.main && attachToMenubar) {
-    document.addEventListener('keydown', (_event) => {
-      void (async () => {
-        const { preventClosingWindow } = (await window.service.window.getWindowMeta(WindowNames.preferences)) as IPreferenceWindowMeta;
-        if (window?.meta?.windowName === WindowNames.preferences && preventClosingWindow) {
-          return;
-        }
-        void window?.remote?.closeCurrentWindow?.();
-      })();
-    });
-  }
-
   ReactDOM.render(<App />, document.querySelector('#app'));
 
   await initI18N();
