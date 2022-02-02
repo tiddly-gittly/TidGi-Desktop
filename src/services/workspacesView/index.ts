@@ -417,8 +417,11 @@ export class WorkspaceView implements IWorkspaceViewService {
     const menuBarWindow = this.windowService.get(WindowNames.menuBar);
     const mainBrowserViewWebContent = mainWindow?.getBrowserView()?.webContents;
     const menuBarBrowserViewWebContent = menuBarWindow?.getBrowserView()?.webContents;
+    /* eslint-disable @typescript-eslint/strict-boolean-expressions */
     logger.info(
-      `realignActiveWorkspaceView: id ${workspaceToRealign?.id} mainWindow: ${!!mainBrowserViewWebContent} menuBarWindow: ${!!menuBarBrowserViewWebContent}`,
+      `realignActiveWorkspaceView: id ${workspaceToRealign?.id ?? 'undefined'} mainWindow: ${String(!!mainBrowserViewWebContent)} menuBarWindow: ${String(
+        !!menuBarBrowserViewWebContent,
+      )}`,
     );
     if (workspaceToRealign !== undefined) {
       if (mainWindow === undefined && menuBarWindow === undefined) {
@@ -429,5 +432,6 @@ export class WorkspaceView implements IWorkspaceViewService {
     } else {
       logger.warn('realignActiveWorkspaceView: no active workspace');
     }
+    /* eslint-enable @typescript-eslint/strict-boolean-expressions */
   }
 }
