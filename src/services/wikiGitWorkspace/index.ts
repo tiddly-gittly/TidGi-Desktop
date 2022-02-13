@@ -18,22 +18,27 @@ import { IWikiGitWorkspaceService } from './interface';
 import { InitWikiGitError, InitWikiGitRevertError, InitWikiGitSyncedWikiNoGitUserInfoError } from './error';
 import { SupportedStorageServices } from '@services/types';
 import { hasGit } from 'git-sync-js';
+import { IContextService } from '@services/context/interface';
 
 @injectable()
 export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
   @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
   @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;
+  @lazyInject(serviceIdentifier.Context) private readonly contextService!: IContextService;
   @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
 
   public registerSyncBeforeShutdown(): void {
     const listener = async (event: Event): Promise<void> => {
+      if (!(await this.contextService.isOnline())) {
+        return;
+      }
       event.preventDefault();
       try {
         const workspaces = await this.workspaceService.getWorkspacesAsList();
-        const workspacesToSync = workspaces.filter((workspace) => workspace.storageService !== SupportedStorageServices.local);
+        const workspacesToSync = workspaces.filter((workspace) => workspace.storageService !== SupportedStorageServices.local && !workspace.hibernated);
         await Promise.allSettled(
           workspacesToSync.map(async (workspace) => {
             const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);

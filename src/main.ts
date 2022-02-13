@@ -181,19 +181,11 @@ app.on(
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   async (): Promise<void> => {
     logger.info('App before-quit');
-    logger.info('Quitting worker threads and watcher.');
-    await Promise.all([wikiService.stopAllWiki(), wikiService.clearAllSyncIntervals()]).catch((error) =>
-      logger.error(`Stop service failed: ${(error as Error).message ?? ''}`),
-    );
-    logger.info('Worker threads and watchers all terminated.');
-    logger.info('Quitting I18N server.');
-    clearMainBindings();
-    logger.info('Quitted I18N server.');
     // https://github.com/atom/electron/issues/444#issuecomment-76492576
     if (process.platform === 'darwin') {
       const mainWindow = windowService.get(WindowNames.main);
       if (mainWindow !== undefined) {
-        logger.info('App force quit on MacOS');
+        logger.info('App force quit on MacOS, ask window not preventDefault');
         await windowService.updateWindowMeta(WindowNames.main, { forceClose: true });
       }
     }
