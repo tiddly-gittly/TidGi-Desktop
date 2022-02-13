@@ -43,7 +43,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           workspacesToSync.map(async (workspace) => {
             const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
             if (userInfo !== undefined && workspace.gitUrl !== null) {
-              await this.gitService.commitAndSync(workspace.wikiFolderLocation, workspace.gitUrl, userInfo);
+              await this.gitService.commitAndSync(workspace, workspace.gitUrl, userInfo);
             }
           }),
         );

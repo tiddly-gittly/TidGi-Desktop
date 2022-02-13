@@ -28,7 +28,7 @@ export interface IGitLogMessage {
  */
 export interface IGitService {
   clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void>;
-  commitAndSync(wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
+  commitAndSync(workspace: IWorkspace, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
   getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]>;
   /** Inspect git's remote url from folder's .git config, return undefined if there is no initialized git */
   getWorkspacesRemote(wikiFolderPath: string): Promise<string | undefined>;

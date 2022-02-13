@@ -6,6 +6,8 @@ import { IWikiOperations, wikiOperations } from '@services/wiki/wikiOperations';
 export interface IInfo {
   /** which method or handler function we are logging for */
   handler: keyof IWikiOperations;
+  /** workspace id */
+  id: string;
   /** the detailed massage for debugging */
   message: string;
 }
@@ -21,7 +23,7 @@ export default class RendererTransport extends Transport {
 
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (info.handler && info.handler in wikiOperations) {
-      void wikiOperations[info.handler](info.message);
+      void wikiOperations[info.handler](info.id, info.message);
     }
 
     callback();

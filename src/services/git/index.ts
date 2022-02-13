@@ -272,16 +272,16 @@ export class Git implements IGitService {
     });
   }
 
-  public async commitAndSync(wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos): Promise<void> {
+  public async commitAndSync(workspace: IWorkspace, remoteUrl: string, userInfo: IGitUserInfos): Promise<void> {
     if (!net.isOnline()) {
       return;
     }
     try {
       return await new Promise<void>((resolve, reject) => {
-        this.gitWorker?.commitAndSyncWiki(wikiFolderPath, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
+        this.gitWorker?.commitAndSyncWiki(workspace, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
       });
     } catch (error) {
-      this.createFailedDialog((error as Error).message, wikiFolderPath);
+      this.createFailedDialog((error as Error).message, workspace.wikiFolderLocation);
     }
   }
 

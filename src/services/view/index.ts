@@ -403,7 +403,7 @@ export class View implements IViewService {
   }
 
   public removeView = (workspaceID: string, windowName: WindowNames): void => {
-    logger.debug(`Remove view for workspaceID ${workspaceID} via ${new Error().stack}`);
+    logger.debug(`Remove view for workspaceID ${workspaceID} via ${new Error('stack').stack ?? 'no stack'}`);
     const view = this.getView(workspaceID, windowName);
     const browserWindow = this.windowService.get(windowName);
     if (view !== undefined && browserWindow !== undefined) {
@@ -512,7 +512,9 @@ export class View implements IViewService {
       setTimeout(() => void this.realignActiveView(browserWindow, activeId, true), 1000);
     } else {
       logger.error(
-        `realignActiveView() ${activeId} failed view?.webContents is ${String(view?.webContents)} and isRetry is ${String(isRetry)} stack: ${new Error().stack}`,
+        `realignActiveView() ${activeId} failed view?.webContents is ${String(view?.webContents)} and isRetry is ${String(isRetry)} stack: ${
+          new Error('stack').stack ?? 'no stack'
+        }`,
       );
     }
   };

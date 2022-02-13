@@ -113,7 +113,7 @@ export class WorkspaceView implements IWorkspaceViewService {
           throw new TypeError(`userInfo is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
         }
         // sync in non-blocking way
-        void this.gitService.commitAndSync(wikiFolderLocation, githubRepoUrl, userInfo);
+        void this.gitService.commitAndSync(workspace, githubRepoUrl, userInfo);
       }
     } catch (error) {
       logger.error(`Can't sync at wikiStartup(), ${(error as Error).message}\n${(error as Error).stack ?? 'no stack'}`);
@@ -347,7 +347,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         return;
       }
       await this.viewService.reloadViewsWebContents(workspaceToRestart.id);
-      await this.wikiService.wikiOperation(WikiChannel.generalNotification, [i18n.t('ContextMenu.RestartServiceComplete')]);
+      this.wikiService.wikiOperation(WikiChannel.generalNotification, [workspaceToRestart.id, i18n.t('ContextMenu.RestartServiceComplete')]);
     } else {
       logger.warn(`restartWorkspaceViewService: no workspace ${id ?? 'id undefined'} to restart`);
     }

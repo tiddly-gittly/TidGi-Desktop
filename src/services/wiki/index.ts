@@ -478,7 +478,7 @@ export class Wiki implements IWikiService {
           return;
         }
       }
-      await this.gitService.commitAndSync(wikiFolderLocation, githubRepoUrl, userInfo);
+      await this.gitService.commitAndSync(workspace, githubRepoUrl, userInfo);
     }
   }
 

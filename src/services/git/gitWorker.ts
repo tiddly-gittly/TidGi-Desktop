@@ -6,6 +6,7 @@ import { clone, commitAndSync, GitStep, ILoggerContext, initGit, getModifiedFile
 import { IGitLogMessage, IGitUserInfos } from './interface';
 import { defaultGitInfo } from './defaultGitInfo';
 import { WikiChannel } from '@/constants/channels';
+import type { IWorkspace } from '@services/workspaces/interface';
 
 function initWikiGit(wikiFolderPath: string, syncImmediately?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
@@ -63,10 +64,10 @@ function initWikiGit(wikiFolderPath: string, syncImmediately?: boolean, remoteUr
  * @param {string} remoteUrl
  * @param {{ login: string, email: string, accessToken: string }} userInfo
  */
-function commitAndSyncWiki(wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos): Observable<IGitLogMessage> {
+function commitAndSyncWiki(workspace: IWorkspace, remoteUrl: string, userInfo: IGitUserInfos): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
     void commitAndSync({
-      dir: wikiFolderPath,
+      dir: workspace.wikiFolderLocation,
       remoteUrl,
       userInfo,
       defaultGitInfo,
@@ -76,7 +77,7 @@ function commitAndSyncWiki(wikiFolderPath: string, remoteUrl: string, userInfo: 
         warn: (message: string, context: ILoggerContext): unknown =>
           observer.next({ message, level: 'warn', meta: { callerFunction: 'commitAndSync', ...context } }),
         info: (message: GitStep, context: ILoggerContext): void => {
-          observer.next({ message, level: 'info', meta: { handler: WikiChannel.syncProgress, callerFunction: 'commitAndSync', ...context } });
+          observer.next({ message, level: 'info', meta: { handler: WikiChannel.syncProgress, id: workspace.id, callerFunction: 'commitAndSync', ...context } });
         },
       },
       filesToIgnore: ['.DS_Store'],
