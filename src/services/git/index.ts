@@ -20,6 +20,8 @@ import type { IViewService } from '@services/view/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { INativeService } from '@services/native/interface';
+import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
+import type { IWikiService } from '@services/wiki/interface';
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
 import { IGitLogMessage, IGitService, IGitUserInfos } from './interface';
@@ -34,11 +36,12 @@ import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 import { githubDesktopUrl } from '@/constants/urls';
-import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
+import { IWorkspace } from '@services/workspaces/interface';
 
 @injectable()
 export class Git implements IGitService {
   @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
+  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
   @lazyInject(serviceIdentifier.NativeService) private readonly nativeService!: INativeService;
@@ -71,7 +74,7 @@ export class Git implements IGitService {
    *
    * @param {string} githubRepoName similar to "linonetwo/wiki", string after "https://com/"
    */
-  public async updateGitInfoTiddler(githubRepoName: string): Promise<void> {
+  public async updateGitInfoTiddler(workspace: IWorkspace, githubRepoName: string): Promise<void> {
     const browserViews = await this.viewService.getActiveBrowserViews();
     if (compact(browserViews).length === 0) {
       logger.error('no browserView in updateGitInfoTiddler');
@@ -80,10 +83,7 @@ export class Git implements IGitService {
     await Promise.all(
       browserViews.map(async (browserView) => {
         if (browserView !== undefined) {
-          const tiddlerText = await new Promise((resolve) => {
-            browserView.webContents.send(WikiChannel.getTiddlerText, '$:/GitHub/Repo');
-            ipcMain.once(WikiChannel.getTiddlerTextDone, (_event, value) => resolve(value));
-          });
+          const tiddlerText = await this.wikiService.getTiddlerText(workspace, '$:/GitHub/Repo');
           if (tiddlerText !== githubRepoName) {
             await new Promise<void>((resolve) => {
               browserView.webContents.send(WikiChannel.addTiddler, '$:/GitHub/Repo', githubRepoName, {

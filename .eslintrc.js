@@ -52,6 +52,7 @@ module.exports = {
     'unicorn/prefer-node-protocol': 'off',
     'unicorn/prefer-module': 'off',
     '@typescript-eslint/no-empty-function': 'off',
+    'security-node/detect-insecure-randomness': 'off',
     '@typescript-eslint/method-signature-style': 'off',
     'unicorn/prefer-string-slice': 'off',
     'unicorn/no-array-reduce': 'off',

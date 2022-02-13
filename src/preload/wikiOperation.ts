@@ -20,17 +20,17 @@ ipcRenderer.on(WikiChannel.addTiddler, async (event, title: string, text: string
   await ipcRenderer.invoke(WikiChannel.addTiddlerDone);
 });
 // get tiddler text
-ipcRenderer.on(WikiChannel.getTiddlerText, async (event, title: string) => {
+ipcRenderer.on(WikiChannel.getTiddlerText, async (event, nonceReceived: number, title: string) => {
   const tiddlerText: string = await (webFrame.executeJavaScript(`
     $tw.wiki.getTiddlerText('${title}');
   `) as Promise<string>);
-  await ipcRenderer.invoke(WikiChannel.getTiddlerTextDone, tiddlerText);
+  ipcRenderer.send(WikiChannel.getTiddlerTextDone, nonceReceived, tiddlerText);
 });
-ipcRenderer.on(WikiChannel.runFilter, async (event, filter: string) => {
+ipcRenderer.on(WikiChannel.runFilter, async (event, nonceReceived: number, filter: string) => {
   const filterResult: string[] = await (webFrame.executeJavaScript(`
     $tw.wiki.compileFilter('${filter}')()
   `) as Promise<string[]>);
-  await ipcRenderer.invoke(WikiChannel.runFilterDone, filterResult);
+  ipcRenderer.send(WikiChannel.runFilterDone, nonceReceived, filterResult);
 });
 // set tiddler text, we use workspaceID as callback id
 ipcRenderer.on(WikiChannel.setTiddlerText, async (event, title: string, value: string, workspaceID: string = '') => {

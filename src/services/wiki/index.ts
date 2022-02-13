@@ -421,11 +421,45 @@ export class Wiki implements IWikiService {
       logger.error(`browserView is undefined in runFilterOnWiki ${workspace.id} when running filter ${filter}`);
       return;
     }
+    // await service.wiki.runFilterOnWiki(await service.workspace.getActiveWorkspace(), '[is[draft]]')
     const filterResult: string[] = await new Promise((resolve) => {
-      browserView.webContents.send(WikiChannel.runFilter, '$:/GitHub/Repo');
-      ipcMain.once(WikiChannel.runFilterDone, (_event, value: string[]) => resolve(value));
+      /**
+       * Use nonce to prevent data racing
+       */
+      const nonce = Math.random();
+      const listener = (_event: Electron.IpcMainEvent, nonceReceived: number, value: string[]): void => {
+        if (nonce === nonceReceived) {
+          ipcMain.removeListener(WikiChannel.runFilterDone, listener);
+          resolve(value);
+        }
+      };
+      ipcMain.on(WikiChannel.runFilterDone, listener);
+      browserView.webContents.send(WikiChannel.runFilter, nonce, filter);
     });
     return filterResult;
+  }
+
+  public async getTiddlerText(workspace: IWorkspace, title: string): Promise<string | undefined> {
+    const browserView = this.viewService.getView(workspace.id, WindowNames.main);
+    if (browserView === undefined) {
+      logger.error(`browserView is undefined in getTiddlerText ${workspace.id} when running title ${title}`);
+      return;
+    }
+    const textResult: string = await new Promise((resolve) => {
+      /**
+       * Use nonce to prevent data racing
+       */
+      const nonce = Math.random();
+      const listener = (_event: Electron.IpcMainEvent, nonceReceived: number, value: string): void => {
+        if (nonce === nonceReceived) {
+          ipcMain.removeListener(WikiChannel.getTiddlerTextDone, listener);
+          resolve(value);
+        }
+      };
+      ipcMain.on(WikiChannel.getTiddlerTextDone, listener);
+      browserView.webContents.send(WikiChannel.getTiddlerText, nonce, title);
+    });
+    return textResult;
   }
 
   /**

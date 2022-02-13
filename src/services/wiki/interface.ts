@@ -36,6 +36,7 @@ export interface IWikiService {
   createSubWiki(parentFolderLocation: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
+  getTiddlerText(workspace: IWorkspace, title: string): Promise<string | undefined>;
   getWikiLogs(homePath: string): Promise<{ content: string; filePath: string }>;
   /**
    * Get wiki worker, and you can call its methods. Only meant to be used in TidGi's services internally.
@@ -54,6 +55,7 @@ export interface IWikiService {
   /** send tiddlywiki action message to current active wiki */
   requestWikiSendActionMessage(actionMessage: string): Promise<void>;
   restartWiki(workspace: IWorkspace): Promise<void>;
+  runFilterOnWiki(workspace: IWorkspace, filter: string): Promise<string[] | undefined>;
   setAllWikiStartLockOff(): void;
   setWikiLanguage(view: BrowserView, workspaceID: string, tiddlywikiLanguageName: string): Promise<void>;
   /**
@@ -73,13 +75,14 @@ export const WikiServiceIPCDescriptor = {
   channel: WikiChannel.name,
   properties: {
     checkWikiExist: ProxyPropertyType.Function,
-    cloneSubWiki: ProxyPropertyType.Function,
     clearAllSyncIntervals: ProxyPropertyType.Function,
+    cloneSubWiki: ProxyPropertyType.Function,
     cloneWiki: ProxyPropertyType.Function,
     copyWikiTemplate: ProxyPropertyType.Function,
     createSubWiki: ProxyPropertyType.Function,
     ensureWikiExist: ProxyPropertyType.Function,
     getSubWikiPluginContent: ProxyPropertyType.Function,
+    getTiddlerText: ProxyPropertyType.Function,
     getWikiLogs: ProxyPropertyType.Function,
     linkWiki: ProxyPropertyType.Function,
     openTiddlerInExternal: ProxyPropertyType.Function,
@@ -87,6 +90,7 @@ export const WikiServiceIPCDescriptor = {
     requestOpenTiddlerInWiki: ProxyPropertyType.Function,
     requestWikiSendActionMessage: ProxyPropertyType.Function,
     restartWiki: ProxyPropertyType.Function,
+    runFilterOnWiki: ProxyPropertyType.Function,
     setWikiLanguage: ProxyPropertyType.Function,
     startWiki: ProxyPropertyType.Function,
     stopAllWiki: ProxyPropertyType.Function,

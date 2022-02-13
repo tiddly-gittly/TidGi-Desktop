@@ -1,6 +1,7 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { GitChannel } from '@/constants/channels';
 import { ModifiedFileList } from 'git-sync-js';
+import type { IWorkspace } from '@services/workspaces/interface';
 
 export interface IGitUserInfos extends IGitUserInfosWithoutToken {
   /** Github Login: token */
@@ -36,7 +37,7 @@ export interface IGitService {
    * Run git init in a folder, prepare remote origin if isSyncedWiki
    */
   initWikiGit(wikiFolderPath: string, isSyncedWiki: true, isMainWiki: boolean, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
-  updateGitInfoTiddler(githubRepoName: string): Promise<void>;
+  updateGitInfoTiddler(workspace: IWorkspace, githubRepoName: string): Promise<void>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,
