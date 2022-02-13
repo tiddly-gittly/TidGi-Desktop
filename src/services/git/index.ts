@@ -1,6 +1,6 @@
 import { ipcMain, dialog, net, shell } from 'electron';
 import { injectable, inject } from 'inversify';
-import { compact, debounce } from 'lodash';
+import { compact } from 'lodash';
 import {
   AssumeSyncError,
   CantSyncGitNotInitializedError,
@@ -10,7 +10,8 @@ import {
   ModifiedFileList,
   SyncParameterMissingError,
   SyncScriptIsInDeadLoopError,
-  hasGit,
+  getRemoteName,
+  getRemoteUrl,
 } from 'git-sync-js';
 import { spawn, Worker, ModuleThread } from 'threads';
 
@@ -33,10 +34,11 @@ import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 import { githubDesktopUrl } from '@/constants/urls';
-import { defaultGitInfo } from './defaultGitInfo';
+import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
 
 @injectable()
 export class Git implements IGitService {
+  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
   @lazyInject(serviceIdentifier.NativeService) private readonly nativeService!: INativeService;
@@ -56,6 +58,13 @@ export class Git implements IGitService {
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {
     const list = await this.gitWorker?.getModifiedFileList(wikiFolderPath);
     return list ?? [];
+  }
+
+  public async getWorkspacesRemote(wikiFolderPath: string): Promise<string | undefined> {
+    const branch = (await this.authService.get('git-branch' as ServiceBranchTypes)) ?? 'main';
+    const defaultRemoteName = (await getRemoteName(wikiFolderPath, branch)) ?? 'origin';
+    const remoteUrl = await getRemoteUrl(wikiFolderPath, defaultRemoteName);
+    return remoteUrl;
   }
 
   /**
