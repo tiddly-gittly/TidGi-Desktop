@@ -194,7 +194,7 @@ export class Git implements IGitService {
     if (error instanceof AssumeSyncError) {
       error.message = i18n.t('Log.SynchronizationFailed');
     } else if (error instanceof SyncParameterMissingError) {
-      error.message = i18n.t('Log.GitTokenMissing') + (error as SyncParameterMissingError).parameterName;
+      error.message = i18n.t('Log.GitTokenMissing') + error.parameterName;
     } else if (error instanceof GitPullPushError) {
       error.message = i18n.t('Log.SyncFailedSystemError');
     } else if (error instanceof CantSyncGitNotInitializedError) {
