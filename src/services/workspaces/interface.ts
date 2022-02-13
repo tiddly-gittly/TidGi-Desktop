@@ -74,10 +74,6 @@ export interface IWorkspace {
    */
   syncOnInterval: boolean;
   /**
-   * Reset interval countdown on file change, this makes sure it won't commit while you are editing.
-   */
-  syncOnIntervalDebounced: boolean;
-  /**
    * Commit and Sync when App starts.
    */
   syncOnStartup: boolean;
@@ -113,7 +109,7 @@ export interface IWorkspaceWithMetadata extends IWorkspace {
  * Ignore some field that will assign default value in workspaceService.create, these field don't require to be filled in AddWorkspace form
  */
 export type INewWorkspaceConfig = SetOptional<
-  Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order' | 'lastUrl' | 'syncOnInterval' | 'syncOnIntervalDebounced' | 'syncOnStartup'>,
+  Omit<IWorkspace, 'active' | 'hibernated' | 'id' | 'order' | 'lastUrl' | 'syncOnInterval' | 'syncOnStartup'>,
   'homeUrl' | 'transparentBackground' | 'picturePath' | 'disableNotifications' | 'disableAudio' | 'hibernateWhenUnused' | 'subWikiFolderName' | 'userName'
 >;
 

@@ -158,7 +158,6 @@ export default function EditWorkspace(): JSX.Element {
     port,
     storageService,
     syncOnInterval,
-    syncOnIntervalDebounced,
     syncOnStartup,
     tagName,
     transparentBackground,
@@ -333,17 +332,6 @@ export default function EditWorkspace(): JSX.Element {
                   color="primary"
                   checked={syncOnInterval}
                   onChange={(event) => workspaceSetter({ ...workspace, syncOnInterval: event.target.checked })}
-                />
-              </ListItemSecondaryAction>
-            </ListItem>
-            <ListItem disableGutters>
-              <ListItemText primary={t('EditWorkspace.SyncOnIntervalDebounced')} secondary={t('EditWorkspace.SyncOnIntervalDebouncedDescription')} />
-              <ListItemSecondaryAction>
-                <Switch
-                  edge="end"
-                  color="primary"
-                  checked={syncOnIntervalDebounced}
-                  onChange={(event) => workspaceSetter({ ...workspace, syncOnIntervalDebounced: event.target.checked })}
                 />
               </ListItemSecondaryAction>
             </ListItem>

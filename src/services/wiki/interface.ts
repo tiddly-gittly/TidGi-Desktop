@@ -15,6 +15,7 @@ export interface IWikiService {
   /** return true if wiki does existed and folder is a valid tiddlywiki folder, return error message (a string) if there is an error checking wiki existence */
   checkWikiExist(workspace: IWorkspace, options?: { shouldBeMainWiki?: boolean; showDialog?: boolean }): Promise<string | true>;
   checkWikiStartLock(wikiFolderLocation: string): boolean;
+  clearAllSyncIntervals(): void;
   cloneSubWiki(
     parentFolderLocation: string,
     wikiFolderName: string,
@@ -62,13 +63,10 @@ export interface IWikiService {
   /** call wiki worker to actually start nodejs wiki */
   startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void>;
   stopAllWiki(): Promise<void>;
-  stopWatchAllWiki(): Promise<void>;
-  stopWatchWiki(wikiRepoPath: string): Promise<void>;
   stopWiki(homePath: string): Promise<void>;
   updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void>;
-  watchWikiForDebounceCommitAndSync(wikiRepoPath: string, githubRepoUrl: string, userInfo: IGitUserInfos, wikiFolderPath?: string): Promise<void>;
   wikiOperation<OP extends keyof IWikiOperations>(operationType: OP, arguments_: Parameters<IWikiOperations[OP]>): undefined | ReturnType<IWikiOperations[OP]>;
-  /** handle start/restart of wiki/subwiki */
+  /** handle start/restart of wiki/subwiki, will handle wiki sync too */
   wikiStartup(workspace: IWorkspace): Promise<void>;
 }
 export const WikiServiceIPCDescriptor = {
@@ -76,6 +74,7 @@ export const WikiServiceIPCDescriptor = {
   properties: {
     checkWikiExist: ProxyPropertyType.Function,
     cloneSubWiki: ProxyPropertyType.Function,
+    clearAllSyncIntervals: ProxyPropertyType.Function,
     cloneWiki: ProxyPropertyType.Function,
     copyWikiTemplate: ProxyPropertyType.Function,
     createSubWiki: ProxyPropertyType.Function,
@@ -91,11 +90,8 @@ export const WikiServiceIPCDescriptor = {
     setWikiLanguage: ProxyPropertyType.Function,
     startWiki: ProxyPropertyType.Function,
     stopAllWiki: ProxyPropertyType.Function,
-    stopWatchAllWiki: ProxyPropertyType.Function,
-    stopWatchWiki: ProxyPropertyType.Function,
     stopWiki: ProxyPropertyType.Function,
     updateSubWikiPluginContent: ProxyPropertyType.Function,
-    watchWikiForDebounceCommitAndSync: ProxyPropertyType.Function,
     wikiOperation: ProxyPropertyType.Function,
     wikiStartup: ProxyPropertyType.Function,
   },

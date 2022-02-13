@@ -182,7 +182,7 @@ app.on(
   async (): Promise<void> => {
     logger.info('App before-quit');
     logger.info('Quitting worker threads and watcher.');
-    await Promise.all([wikiService.stopAllWiki(), wikiService.stopWatchAllWiki()]).catch((error) =>
+    await Promise.all([wikiService.stopAllWiki(), wikiService.clearAllSyncIntervals()]).catch((error) =>
       logger.error(`Stop service failed: ${(error as Error).message ?? ''}`),
     );
     logger.info('Worker threads and watchers all terminated.');

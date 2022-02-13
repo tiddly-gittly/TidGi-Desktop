@@ -8,8 +8,6 @@ import path from 'path';
 import { spawn, Thread, Worker, ModuleThread } from 'threads';
 import type { WorkerEvent } from 'threads/dist/types/master';
 import { BrowserView, dialog, ipcMain, shell } from 'electron';
-import chokidar from 'chokidar';
-import { trim, compact, debounce } from 'lodash';
 
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IAuthenticationService } from '@services/auth/interface';
@@ -35,9 +33,11 @@ import type { WikiWorker } from './wikiWorker';
 import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker.ts';
 import { IWikiOperations, wikiOperations } from './wikiOperations';
 import { defaultServerIP } from '@/constants/urls';
+import { IPreferenceService } from '@services/preferences/interface';
 
 @injectable()
 export class Wiki implements IWikiService {
+  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
   @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;
@@ -184,7 +184,6 @@ export class Wiki implements IWikiService {
       // await worker.terminate();
     }
     (this.wikiWorkers[wikiFolderLocation] as any) = undefined;
-    await this.stopWatchWiki(wikiFolderLocation);
     logger.info(`Wiki-worker for ${wikiFolderLocation} stopped`, { function: 'stopWiki' });
   }
 
@@ -415,20 +414,72 @@ export class Wiki implements IWikiService {
     return this.justStartedWiki[wikiFolderLocation] ?? false;
   }
 
+  public async runFilterOnWiki(workspace: IWorkspace, filter: string): Promise<string[] | undefined> {
+    const browserView = this.viewService.getView(workspace.id, WindowNames.main);
+    if (browserView === undefined) {
+      logger.error(`browserView is undefined in runFilterOnWiki ${workspace.id} when running filter ${filter}`);
+      return;
+    }
+    const filterResult: string[] = await new Promise((resolve) => {
+      browserView.webContents.send(WikiChannel.runFilter, '$:/GitHub/Repo');
+      ipcMain.once(WikiChannel.runFilterDone, (_event, value: string[]) => resolve(value));
+    });
+    return filterResult;
+  }
+
   /**
-   * Watch wiki change so we can trigger git sync
-   * Simply do some check before calling `this.watchWikiForDebounceCommitAndSync`
+   * Trigger git sync
+   * Simply do some check before calling `gitService.commitAndSync`
    */
-  private async tryWatchForSync(workspace: IWorkspace, watchPath?: string): Promise<void> {
+  private async syncWikiIfNeeded(workspace: IWorkspace): Promise<void> {
     const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
     if (storageService !== SupportedStorageServices.local && typeof githubRepoUrl === 'string' && userInfo !== undefined) {
-      await this.watchWikiForDebounceCommitAndSync(wikiFolderLocation, githubRepoUrl, userInfo, watchPath);
+      const syncOnlyWhenNoDraft = await this.preferenceService.get('syncOnlyWhenNoDraft');
+      if (syncOnlyWhenNoDraft) {
+        const draftTitles = await this.runFilterOnWiki(workspace, '[is[draft]]');
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        if (draftTitles && draftTitles.length > 0) {
+          return;
+        }
+      }
+      await this.gitService.commitAndSync(wikiFolderLocation, githubRepoUrl, userInfo);
     }
   }
 
+  /**
+   * Record<wikiFolderLocation, returnValue<setInterval>>
+   * Set this in wikiStartup, and clear it when wiki is down.
+   */
+  private wikiSyncIntervals: Record<string, NodeJS.Timer> = {};
+  /**
+   * Trigger git sync interval if needed in config
+   */
+  private async startIntervalSyncIfNeeded(workspace: IWorkspace): Promise<void> {
+    const { syncOnInterval, wikiFolderLocation } = workspace;
+    if (syncOnInterval) {
+      const syncDebounceInterval = await this.preferenceService.get('syncDebounceInterval');
+      this.wikiSyncIntervals[wikiFolderLocation] = setInterval(async () => {
+        await this.syncWikiIfNeeded(workspace);
+      }, syncDebounceInterval);
+    }
+  }
+
+  private stopIntervalSync(workspace: IWorkspace): void {
+    const { wikiFolderLocation } = workspace;
+    if (typeof this.wikiSyncIntervals[wikiFolderLocation] === 'number') {
+      clearInterval(this.wikiSyncIntervals[wikiFolderLocation]);
+    }
+  }
+
+  public clearAllSyncIntervals(): void {
+    Object.values(this.wikiSyncIntervals).forEach((interval) => {
+      clearInterval(interval);
+    });
+  }
+
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
-    const { wikiFolderLocation, port, isSubWiki, mainWikiToLink, syncOnIntervalDebounced, syncOnInterval, id } = workspace;
+    const { wikiFolderLocation, port, isSubWiki, mainWikiToLink, id } = workspace;
 
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     try {
@@ -458,10 +509,6 @@ export class Wiki implements IWikiService {
         logger.warn('Get startWiki() unexpected error, throw it');
         throw error;
       }
-      // sync to cloud, do this in a non-blocking way
-      if (syncOnInterval && syncOnIntervalDebounced) {
-        void this.tryWatchForSync(workspace, path.join(wikiFolderLocation, TIDDLERS_PATH));
-      }
     } else {
       // if is private repo wiki
       // if we are creating a sub-wiki just now, restart the main wiki to load content from private wiki
@@ -471,121 +518,23 @@ export class Wiki implements IWikiService {
           throw new Error(`mainWorkspace is undefined in wikiStartup() for mainWikiPath ${mainWikiToLink}`);
         }
         await this.restartWiki(mainWorkspace);
-        // sync self to cloud, subwiki's content is all in root folder path, do this in a non-blocking way
-        if (syncOnInterval && syncOnIntervalDebounced) {
-          void this.tryWatchForSync(workspace);
-        }
       }
     }
+    await this.startIntervalSyncIfNeeded(workspace);
   }
 
   public async restartWiki(workspace: IWorkspace): Promise<void> {
-    const { wikiFolderLocation, port, userName: workspaceUserName, isSubWiki, syncOnIntervalDebounced, syncOnInterval } = workspace;
+    const { wikiFolderLocation, port, userName: workspaceUserName, isSubWiki, syncOnInterval } = workspace;
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const userName = (workspaceUserName || (await this.authService.get('userName'))) ?? '';
 
-    await this.stopWatchWiki(wikiFolderLocation);
+    this.stopIntervalSync(workspace);
     if (!isSubWiki) {
       await this.stopWiki(wikiFolderLocation);
       await this.startWiki(wikiFolderLocation, port, userName);
     }
-    if (syncOnInterval && syncOnIntervalDebounced) {
-      if (isSubWiki) {
-        // sync sub wiki to cloud, do this in a non-blocking way
-        void this.tryWatchForSync(workspace, wikiFolderLocation);
-      } else {
-        // sync main wiki to cloud, do this in a non-blocking way
-        void this.tryWatchForSync(workspace, path.join(wikiFolderLocation, TIDDLERS_PATH));
-      }
-    }
-  }
-
-  // watch-wiki.ts
-  private readonly frequentlyChangedFileThatShouldBeIgnoredFromWatch = ['output', /\$__StoryList/];
-  private readonly topLevelFoldersToIgnored = ['node_modules', '.git'];
-
-  // key is same to workspace wikiFolderLocation, so we can get this watcher by workspace wikiFolderLocation
-  // { [wikiFolderLocation: string]: Watcher }
-  private readonly wikiWatchers: Record<string, chokidar.FSWatcher> = {};
-
-  /**
-   * watch wiki change and reset git sync count down
-   */
-  public async watchWikiForDebounceCommitAndSync(
-    wikiRepoPath: string,
-    githubRepoUrl: string,
-    userInfo: IGitUserInfos,
-    wikiFolderPath = wikiRepoPath,
-  ): Promise<void> {
-    if (!fs.existsSync(wikiRepoPath)) {
-      logger.error('Folder not exist in watchFolder()', { wikiRepoPath, wikiFolderPath, githubRepoUrl });
-      return;
-    }
-    // simple lock to prevent running two instance of commit task
-    let lock = false;
-    const onChange = debounce((fileName: string): void => {
-      if (lock) {
-        logger.info(`${fileName} changed, but lock is on, so skip`);
-        return;
-      }
-      logger.info(`${fileName} changed`);
-      lock = true;
-      // TODO: handle this promise, it might be undefined, need some test
-      void this.gitService.debounceCommitAndSync(wikiRepoPath, githubRepoUrl, userInfo)?.then(() => {
-        lock = false;
-      });
-    }, 1000);
-    // load ignore config from .gitignore located in the wiki repo folder
-    const gitIgnoreFilePath = path.join(wikiRepoPath, '.gitignore');
-    let gitignoreFile = '';
-    try {
-      gitignoreFile = fs.readFileSync(gitIgnoreFilePath, 'utf-8') ?? '';
-    } catch {
-      logger.info(`Fail to load .gitignore from ${gitIgnoreFilePath}, this is ok if you don't need a .gitignore in the subwiki.`, {
-        wikiRepoPath,
-        wikiFolderPath,
-        githubRepoUrl,
-      });
-    }
-    const filesToIgnoreFromGitIgnore = compact(gitignoreFile.split('\n').filter((line) => !trim(line).startsWith('#')));
-    const watcher = chokidar.watch(wikiFolderPath, {
-      ignored: [...filesToIgnoreFromGitIgnore, ...this.topLevelFoldersToIgnored, ...this.frequentlyChangedFileThatShouldBeIgnoredFromWatch],
-      cwd: wikiFolderPath,
-      awaitWriteFinish: true,
-      ignoreInitial: true,
-      followSymlinks: false,
-      disableGlobbing: true,
-    });
-    watcher.on('add', onChange);
-    watcher.on('change', onChange);
-    watcher.on('unlink', onChange);
-    await new Promise<void>((resolve) => {
-      watcher.on('ready', () => {
-        logger.info(`wiki Github syncer is watching ${wikiFolderPath} now`, { wikiRepoPath, wikiFolderPath, githubRepoUrl });
-        this.wikiWatchers[wikiRepoPath] = watcher;
-        resolve();
-      });
-    });
-  }
-
-  public async stopWatchWiki(wikiRepoPath: string): Promise<void> {
-    const watcher = this.wikiWatchers[wikiRepoPath];
-    if (watcher !== undefined) {
-      await watcher.close();
-      logger.info(`Wiki watcher for ${wikiRepoPath} stopped`, { function: 'stopWatchWiki' });
-    } else {
-      logger.warning(`No wiki watcher for ${wikiRepoPath}`, { function: 'stopWatchWiki' });
-    }
-  }
-
-  public async stopWatchAllWiki(): Promise<void> {
-    const tasks = [];
-    for (const homePath of Object.keys(this.wikiWatchers)) {
-      tasks.push(this.stopWatchWiki(homePath));
-    }
-    await Promise.all(tasks);
-    logger.info('All wiki watcher is stopped', { function: 'stopWatchAllWiki' });
+    await this.startIntervalSyncIfNeeded(workspace);
   }
 
   public async updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void> {

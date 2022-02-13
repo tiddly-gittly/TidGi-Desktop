@@ -45,24 +45,12 @@ export class Git implements IGitService {
 
   constructor(@inject(serviceIdentifier.Preference) private readonly preferenceService: IPreferenceService) {
     void this.initWorker();
-    this.debounceCommitAndSync = this.commitAndSync.bind(this);
-    void this.preferenceService.get('syncDebounceInterval').then((syncDebounceInterval) => {
-      this.debounceCommitAndSync = debounce(this.commitAndSync.bind(this), syncDebounceInterval);
-    });
   }
 
   private async initWorker(): Promise<void> {
     process.env.LOCAL_GIT_DIRECTORY = LOCAL_GIT_DIRECTORY;
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     this.gitWorker = await spawn<GitWorker>(new Worker(workerURL), { timeout: 1000 * 60 });
-  }
-
-  public debounceCommitAndSync: (wikiFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos) => Promise<void> | undefined;
-
-  public async getWorkspacesRemote(wikiFolderPath: string): Promise<string | undefined> {
-    if (await hasGit(wikiFolderPath)) {
-      return await this.gitWorker?.getRemoteUrl(wikiFolderPath, defaultGitInfo.remote);
-    }
   }
 
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {
