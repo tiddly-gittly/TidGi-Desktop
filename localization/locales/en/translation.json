@@ -80,7 +80,7 @@
     "LogoutGithubAccount": "Log out of Github account",
     "MainWorkspaceDescription": "Contains TiddlyWiki's configuration files and public content when published as a blog.",
     "NotLoggedIn": "Not logged in",
-    "SubWorkspaceDescription": "It must be attached to a main repository, which can be used to store private content, synchronized to a private Github repository, and can only be read and written by itself. \nThe sub-knowledge base takes effect by creating a soft link (shortcut) to the main knowledge base. After the link is created, the content in the sub-knowledge base can be seen in the main knowledge base.",
+    "SubWorkspaceDescription": "It must be attached to a main repository, which can be used to store private content, Note two points: the sub-knowledge base cannot be placed in the main knowledge base folder; the sub-knowledge base is generally used to synchronize data to a private Github repository, which can only be read and written by me, so the repository address cannot be the same as the main knowledge base.\nThe sub-knowledge base takes effect by creating a soft link (shortcut) to the main knowledge base. After the link is created, the content in the sub-knowledge base can be seen in the main knowledge base.",
     "CloneOnlineWiki": "Import Online Wiki",
     "CreateNewWiki": "Create New Wiki",
     "ExistedWikiLocation": "Existed Wiki Location",
