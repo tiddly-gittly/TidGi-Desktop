@@ -415,7 +415,6 @@ export class Workspace implements IWorkspaceService {
     }
     // call wiki service
     await this.wikiService.stopWiki(wikiFolderLocation);
-    await this.wikiService.stopWatchWiki(wikiFolderLocation);
     await this.updateWorkspaceMenuItems();
     await this.updateWorkspaceSubject();
   }

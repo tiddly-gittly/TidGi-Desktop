@@ -104,7 +104,6 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
             throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
           }
           const { isSubWiki, mainWikiToLink, wikiFolderLocation } = workspace;
-          await this.wikiService.stopWatchWiki(wikiFolderLocation).catch((error: Error) => logger.error(error.message, error));
           await this.wikiService.stopWiki(wikiFolderLocation).catch((error: Error) => logger.error(error.message, error));
           if (isSubWiki) {
             if (mainWikiToLink === null) {

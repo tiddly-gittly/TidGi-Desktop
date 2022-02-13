@@ -176,6 +176,7 @@ export class Wiki implements IWikiService {
       });
       return await Promise.resolve();
     }
+    clearInterval(this.wikiSyncIntervals[wikiFolderLocation]);
     try {
       await Thread.terminate(worker);
       await delay(100);
