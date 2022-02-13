@@ -483,8 +483,9 @@ export class Wiki implements IWikiService {
     const { wikiFolderLocation, port, isSubWiki, mainWikiToLink, id } = workspace;
 
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
+    // and it will leak private sub-wiki's opened tiddler title
     try {
-      await fs.unlink(path.resolve(wikiFolderLocation, 'tiddlers', '$__StoryList'));
+      void fs.unlink(path.resolve(wikiFolderLocation, 'tiddlers', '$__StoryList')).catch(() => {});
     } catch {
       // do nothing
     }
