@@ -27,6 +27,7 @@ export const defaultPreferences: IPreferences = {
   spellcheckLanguages: ['en-US'],
   swipeToNavigate: true,
   syncBeforeShutdown: false,
+  syncOnlyWhenNoDraft: true,
   syncDebounceInterval: 1000 * 60 * 30,
   themeSource: 'system' as 'system' | 'light' | 'dark',
   titleBar: true,

@@ -315,7 +315,11 @@
     "RequireRestart": "Need to restart",
     "ChooseLanguage": "Choose Language 选择语言",
     "SyncBeforeShutdown": "Sync Before Shutdown",
-    "SyncBeforeShutdownDescription": "Automatically synchronize data before turning off the computer. Note that manually exiting the application will not trigger the synchronization, so as to prevent the wrong data from being synchronized when the application makes an error. \nWindows system does not support this function."
+    "SyncBeforeShutdownDescription": "Automatically synchronize data before turning off the computer. Note that manually exiting the application will not trigger the synchronization, so as to prevent the wrong data from being synchronized when the application makes an error. \nWindows system does not support this function.",
+    "SyncOnlyWhenNoDraft": "Sync only when there are no drafts",
+    "SyncOnlyWhenNoDraftDescription": "Check if there are drafts before synchronizing, if so, it will not be synchronized this time, preventing the drafts from being synchronized to your blog. \n(Not working for sync-before-shutdown, for you may want to bring drafts from one computer to another to continue editing)",
+    "MoreWorkspaceSyncSettingsDescription": "Please right-click the workspace icon, open its workspace setting by click on \"Edit Workspace\" context menu item, and configure its independent synchronization settings in it.",
+    "MoreWorkspaceSyncSettings": "More Workspace Sync Settings"
   },
   "Error": {
     "InitWikiGitError": "E-1 InitWikiGitError",

@@ -29,6 +29,10 @@ export interface IPreferences {
   swipeToNavigate: boolean;
   syncBeforeShutdown: boolean;
   syncDebounceInterval: number;
+  /**
+   * Only start a sync when there are no draft (prevent your blog has a draft tiddler)
+   */
+  syncOnlyWhenNoDraft: boolean;
   themeSource: 'system' | 'light' | 'dark';
   titleBar: boolean;
   unreadCountBadge: boolean;

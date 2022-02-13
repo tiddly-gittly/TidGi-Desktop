@@ -26,6 +26,12 @@ ipcRenderer.on(WikiChannel.getTiddlerText, async (event, title: string) => {
   `) as Promise<string>);
   await ipcRenderer.invoke(WikiChannel.getTiddlerTextDone, tiddlerText);
 });
+ipcRenderer.on(WikiChannel.runFilter, async (event, filter: string) => {
+  const filterResult: string[] = await (webFrame.executeJavaScript(`
+    $tw.wiki.compileFilter('${filter}')()
+  `) as Promise<string[]>);
+  await ipcRenderer.invoke(WikiChannel.runFilterDone, filterResult);
+});
 // set tiddler text, we use workspaceID as callback id
 ipcRenderer.on(WikiChannel.setTiddlerText, async (event, title: string, value: string, workspaceID: string = '') => {
   await (webFrame.executeJavaScript(`

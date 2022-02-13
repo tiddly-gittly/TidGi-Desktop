@@ -46,6 +46,20 @@ export function Sync(props: Required<ISectionProps>): JSX.Element {
                   />
                 </ListItemSecondaryAction>
               </ListItem>
+              <ListItem>
+                <ListItemText primary={`${t('Preference.SyncBeforeShutdown')} (Mac/Linux)`} secondary={t('Preference.SyncBeforeShutdownDescription')} />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    color="primary"
+                    checked={preference.syncOnlyWhenNoDraft}
+                    onChange={async (event) => {
+                      await window.service.preference.set('syncOnlyWhenNoDraft', event.target.checked);
+                      props.requestRestartCountDown();
+                    }}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
               <Divider />
               <ListItem>
                 <ListItemText primary={t('Preference.SyncInterval')} secondary={t('Preference.SyncIntervalDescription')} />
@@ -69,6 +83,12 @@ export function Sync(props: Required<ISectionProps>): JSX.Element {
                     onOpen={async () => await window.service.window.updateWindowMeta(WindowNames.preferences, { preventClosingWindow: true })}
                   />
                 </TimePickerContainer>
+              </ListItem>
+              <ListItem>
+                <ListItemText
+                  primary={`${t('Preference.MoreWorkspaceSyncSettings')} (Mac/Linux)`}
+                  secondary={t('Preference.MoreWorkspaceSyncSettingsDescription')}
+                />
               </ListItem>
             </>
           )}

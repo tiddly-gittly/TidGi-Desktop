@@ -50,6 +50,8 @@ export enum WikiChannel {
   name = 'WikiChannel',
   openTiddler = 'wiki-open-tiddler',
   printTiddler = 'print-tiddler',
+  runFilter = 'wiki-run-filter',
+  runFilterDone = 'wiki-run-filter-done',
   sendActionMessage = 'wiki-send-action-message',
   setTiddlerText = 'wiki-set-tiddler-text',
   setTiddlerTextDone = 'wiki-set-tiddler-text-done',
