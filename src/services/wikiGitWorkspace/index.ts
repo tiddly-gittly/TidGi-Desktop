@@ -20,6 +20,7 @@ import { InitWikiGitError, InitWikiGitRevertError, InitWikiGitSyncedWikiNoGitUse
 import { SupportedStorageServices } from '@services/types';
 import { hasGit } from 'git-sync-js';
 import { IContextService } from '@services/context/interface';
+import { updateGhConfig } from '@services/wiki/plugin/ghPages';
 
 @injectable()
 export class WikiGitWorkspace implements IWikiGitWorkspaceService {
@@ -69,6 +70,10 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         if (isSyncedWiki) {
           if (typeof gitUrl === 'string' && userInfo !== undefined) {
             await this.gitService.initWikiGit(wikiFolderLocation, isSyncedWiki, !isSubWiki, gitUrl, userInfo);
+            const branch = await this.authService.get(`${storageService}-branch`);
+            if (branch !== undefined) {
+              await updateGhConfig(wikiFolderLocation, { branch });
+            }
           } else {
             throw new InitWikiGitSyncedWikiNoGitUserInfoError(gitUrl, userInfo);
           }
