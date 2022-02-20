@@ -47,7 +47,7 @@ export function Sync(props: Required<ISectionProps>): JSX.Element {
                 </ListItemSecondaryAction>
               </ListItem>
               <ListItem>
-                <ListItemText primary={`${t('Preference.SyncBeforeShutdown')} (Mac/Linux)`} secondary={t('Preference.SyncBeforeShutdownDescription')} />
+                <ListItemText primary={`${t('Preference.SyncOnlyWhenNoDraft')}`} secondary={t('Preference.SyncOnlyWhenNoDraftDescription')} />
                 <ListItemSecondaryAction>
                   <Switch
                     edge="end"
@@ -55,7 +55,6 @@ export function Sync(props: Required<ISectionProps>): JSX.Element {
                     checked={preference.syncOnlyWhenNoDraft}
                     onChange={async (event) => {
                       await window.service.preference.set('syncOnlyWhenNoDraft', event.target.checked);
-                      props.requestRestartCountDown();
                     }}
                   />
                 </ListItemSecondaryAction>
