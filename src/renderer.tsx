@@ -12,7 +12,6 @@ import CssBaseline from '@material-ui/core/CssBaseline';
 import { I18nextProvider } from 'react-i18next';
 import 'typeface-roboto/index.css';
 
-import { WindowNames, IPreferenceWindowMeta } from '@services/windows/WindowProperties';
 import { useThemeObservable } from '@services/theme/hooks';
 import { darkTheme, lightTheme } from '@services/theme/defaultTheme';
 import { initI18N } from './i18n';

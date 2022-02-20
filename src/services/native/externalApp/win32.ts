@@ -334,7 +334,7 @@ const gitGUIApp: WindowsExternalEditor[] = [
 
 function getKeyOrEmpty(keys: readonly RegistryValue[], key: string): string {
   const entry = keys.find((k) => k.name === key);
-  return entry && entry.type === RegistryValueType.REG_SZ ? entry.data : '';
+  return entry !== undefined && entry.type === RegistryValueType.REG_SZ ? entry.data : '';
 }
 
 function getAppInfo(editor: WindowsExternalEditor, keys: readonly RegistryValue[]): IWindowsAppInformation {

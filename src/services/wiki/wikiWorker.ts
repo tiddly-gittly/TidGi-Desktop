@@ -13,7 +13,7 @@ import { mkdtemp, writeFile } from 'fs-extra';
 import { fixPath } from '@services/libs/fixPath';
 import { IWikiMessage, WikiControlActions, ZxWorkerControlActions, IZxWorkerMessage } from './interface';
 import { defaultServerIP } from '@/constants/urls';
-import { executeScriptInTWContext, extractTWContextScripts, getTWVmContext, TW_SCRIPT_SEPARATOR } from './plugin/zxPlugin';
+import { executeScriptInTWContext, extractTWContextScripts, getTWVmContext } from './plugin/zxPlugin';
 
 fixPath();
 let wikiInstance: I$TW | undefined;

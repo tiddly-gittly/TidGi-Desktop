@@ -21,7 +21,7 @@ import getViewBounds from '@services/libs/getViewBounds';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import { lazyInject } from '@services/container';
 import { IWindowService } from './interface';
-import { isDevelopmentOrTest, isTest } from '@/constants/environment';
+import { isTest } from '@/constants/environment';
 import { MENUBAR_ICON_PATH } from '@/constants/paths';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';

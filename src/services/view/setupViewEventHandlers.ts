@@ -21,7 +21,6 @@ import { container } from '@services/container';
 import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
-import { LOAD_VIEW_MAX_RETRIES } from '@/constants/parameters';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { throttle } from 'lodash';
 

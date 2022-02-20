@@ -1,7 +1,7 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 import { WorkspaceViewChannel } from '@/constants/channels';
-import { IWorkspace, INewWorkspaceConfig } from '@services/workspaces/interface';
+import { IWorkspace } from '@services/workspaces/interface';
 
 export interface IInitializeWorkspaceOptions {
   /**

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-unused-expressions */
-import { setWorldConstructor, Given, Then, When } from '@cucumber/cucumber';
+import { setWorldConstructor, Given, Then } from '@cucumber/cucumber';
 import { delay } from 'bluebird';
 import { expect } from 'chai';
 import { TidGiWorld } from '../supports/world';

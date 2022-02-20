@@ -9,7 +9,6 @@ import { ipcMain, protocol, powerMonitor, app } from 'electron';
 import settings from 'electron-settings';
 import unhandled from 'electron-unhandled';
 
-import { clearMainBindings } from '@services/libs/i18n/i18nMainBindings';
 import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
 import { MainChannel } from '@/constants/channels';
 import { isTest } from '@/constants/environment';

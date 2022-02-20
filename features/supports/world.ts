@@ -1,6 +1,5 @@
 import { setDefaultTimeout, World } from '@cucumber/cucumber';
 import path from 'path';
-import { delay } from 'bluebird';
 import { Application } from 'spectron';
 // import { keyboard, Key } from '@nut-tree/nut-js';
 

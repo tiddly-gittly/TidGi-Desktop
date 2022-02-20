@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
-import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, WebContents, MenuItem, ipcMain, app } from 'electron';
+import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, WebContents, MenuItem, app } from 'electron';
 import { debounce, take, drop, reverse, remove, compact } from 'lodash';
 import { injectable } from 'inversify';
 import type { IMenuService, IOnContextMenuInfo } from './interface';

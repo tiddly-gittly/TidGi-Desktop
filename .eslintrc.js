@@ -49,6 +49,7 @@ module.exports = {
       },
     ],
     'react/react-in-jsx-scope': 'off',
+    'security-node/detect-unhandled-async-errors': 'off',
     'unicorn/prefer-node-protocol': 'off',
     'unicorn/prefer-module': 'off',
     '@typescript-eslint/no-empty-function': 'off',
@@ -90,6 +91,8 @@ module.exports = {
     semi: [0],
     'no-use-before-define': [0],
     '@typescript-eslint/no-use-before-define': [1],
+    'unused-imports/no-unused-imports': 'error',
+    'unused-imports/no-unused-vars': ['warn', { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' }],
   },
   extends: [
     'eslint:recommended',
@@ -121,6 +124,8 @@ module.exports = {
     'react-hooks',
     'security',
     'security-node',
+    'autofix',
+    'unused-imports',
   ],
   env: {
     browser: true,
