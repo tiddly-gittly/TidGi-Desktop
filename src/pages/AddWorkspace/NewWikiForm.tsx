@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { Typography, MenuItem } from '@material-ui/core';
 import { Folder as FolderIcon } from '@material-ui/icons';

@@ -67,7 +67,7 @@ export function ReportErrorButton(props: { message: string }): JSX.Element {
 }
 
 const AbsoluteFab = styled(Fab)`
-  position: absolute;
+  position: fixed;
   right: 10px;
   bottom: 10px;
   color: rgba(0, 0, 0, 0.2);
