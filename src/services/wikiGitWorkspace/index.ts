@@ -9,6 +9,7 @@ import type { INewWorkspaceConfig, IWorkspace, IWorkspaceService } from '@servic
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IWindowService } from '@services/windows/interface';
 import type { IAuthenticationService } from '@services/auth/interface';
+import type { INotificationService } from '@services/notifications/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 
@@ -29,6 +30,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
+  @lazyInject(serviceIdentifier.NotificationService) private readonly notificationService!: INotificationService;
 
   public registerSyncBeforeShutdown(): void {
     const listener = async (event: Event): Promise<void> => {
@@ -37,14 +39,15 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         if (await this.contextService.isOnline()) {
           const workspaces = await this.workspaceService.getWorkspacesAsList();
           const workspacesToSync = workspaces.filter((workspace) => workspace.storageService !== SupportedStorageServices.local && !workspace.hibernated);
-          await Promise.allSettled(
-            workspacesToSync.map(async (workspace) => {
+          await Promise.allSettled([
+            this.notificationService.show({ title: i18n.t('Preference.SyncBeforeShutdown') }),
+            ...workspacesToSync.map(async (workspace) => {
               const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
               if (userInfo !== undefined && workspace.gitUrl !== null) {
                 await this.gitService.commitAndSync(workspace, workspace.gitUrl, userInfo);
               }
             }),
-          );
+          ]);
         }
       } catch (error) {
         logger.error(`SyncBeforeShutdown failed`, { error });
