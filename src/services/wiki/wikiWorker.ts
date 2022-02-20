@@ -1,8 +1,7 @@
 import 'source-map-support/register';
 import { expose } from 'threads/worker';
 import path from 'path';
-import type { I$TW } from 'tiddlywiki';
-import tiddlywiki from '@tiddlygit/tiddlywiki';
+import { TiddlyWiki, type ITiddlyWiki } from '@tiddlygit/tiddlywiki';
 import { Observable } from 'rxjs';
 import intercept from 'intercept-stdout';
 import { Server } from 'http';
@@ -16,7 +15,7 @@ import { defaultServerIP } from '@/constants/urls';
 import { executeScriptInTWContext, extractTWContextScripts, getTWVmContext } from './plugin/zxPlugin';
 
 fixPath();
-let wikiInstance: I$TW | undefined;
+let wikiInstance: ITiddlyWiki | undefined;
 
 function startNodeJSWiki({
   homePath,
@@ -41,7 +40,7 @@ function startNodeJSWiki({
     );
 
     try {
-      wikiInstance = tiddlywiki.TiddlyWiki();
+      wikiInstance = TiddlyWiki();
       process.env.TIDDLYWIKI_PLUGIN_PATH = path.resolve(homePath, 'plugins');
       process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
       // add tiddly filesystem back https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416

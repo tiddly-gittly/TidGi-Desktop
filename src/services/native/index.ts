@@ -10,14 +10,13 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService, ZxWorkerControlActions } from '@services/wiki/interface';
 import { IWorkspaceService } from '@services/workspaces/interface';
 import { ZX_FOLDER } from '@/constants/paths';
-import { logger } from '@services/libs/log';
+import { ILogLevels, logger } from '@services/libs/log';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
 import { reportErrorToGithubWithTemplates } from './reportError';
 import { IZxFileInput } from '@services/wiki/wikiWorker';
 import { ZxNotInitializedError } from './error';
 import { lazyInject } from '@services/container';
 import i18next from 'i18next';
-import winston from 'winston';
 
 @injectable()
 export class NativeService implements INativeService {
@@ -148,7 +147,7 @@ ${message.message}
     app.quit();
   }
 
-  public async log(level: winston.level, message: string, meta?: Record<string, unknown>): Promise<void> {
+  public async log(level: ILogLevels, message: string, meta?: Record<string, unknown>): Promise<void> {
     logger.log(level, message, meta);
   }
 

@@ -5,6 +5,18 @@ import 'winston-daily-rotate-file';
 
 export * from './wikiOutput';
 
+const levels = {
+  emerg: 0,
+  alert: 1,
+  crit: 2,
+  error: 3,
+  warning: 4,
+  warn: 5,
+  notice: 6,
+  info: 7,
+  debug: 8,
+};
+export type ILogLevels = keyof typeof levels;
 const logger = (
   process.env.NODE_ENV === 'test'
     ? Object.assign(console, {
@@ -16,17 +28,7 @@ const logger = (
         debug: console.log.bind(console),
       })
     : winston.createLogger({
-        levels: {
-          emerg: 0,
-          alert: 1,
-          crit: 2,
-          error: 3,
-          warning: 4,
-          warn: 5,
-          notice: 6,
-          info: 7,
-          debug: 8,
-        },
+        levels,
         transports: [
           new winston.transports.Console(),
           new winston.transports.DailyRotateFile({

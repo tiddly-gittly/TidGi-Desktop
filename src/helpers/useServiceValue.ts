@@ -45,9 +45,8 @@ export function usePromiseValueAndSetter<T, DefaultValueType = T | undefined>(
         void asyncSetter(value);
       }
     },
-    300,
-    undefined,
     [asyncValue, asyncSetter],
+    300,
   );
 
   const setter = useCallback(

@@ -1,4 +1,4 @@
-import type { I$TW } from '@tiddlygit/tiddlywiki';
+import type { ITiddlyWiki } from '@tiddlygit/tiddlywiki';
 import vm, { Context } from 'vm';
 import _ from 'lodash';
 
@@ -41,7 +41,7 @@ export interface ITWVMContext {
  * Get context that has global variables like `console` and `$tw`, and a result output buffer that contains result from the `console`.
  * @returns
  */
-export function getTWVmContext(wikiInstance: I$TW): ITWVMContext {
+export function getTWVmContext(wikiInstance: ITiddlyWiki): ITWVMContext {
   const executionResults: string[] = [];
   const proxyConsole = new Proxy(
     {},

@@ -47,9 +47,9 @@ export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart
       inCountDownSetter(true);
       openedSetter(true);
     },
+    [openedSetter, inCountDown, inCountDownSetter],
     waitBeforeCountDown,
     { leading: false },
-    [openedSetter, inCountDown, inCountDownSetter],
   );
 
   const requestRestartCountDown = useCallback(() => {

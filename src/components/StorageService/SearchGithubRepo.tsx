@@ -126,7 +126,7 @@ function SearchGithubRepoResultList({
     },
     skipCache: true,
   });
-  const refetchDebounced = useDebouncedCallback(refetch, 300);
+  const refetchDebounced = useDebouncedCallback(refetch, [], 300);
   // clear list on logout, which will cause accessToken change
   useEffect(() => {
     const timeoutHandle = setTimeout(async () => {
