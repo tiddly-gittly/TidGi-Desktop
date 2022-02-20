@@ -32,21 +32,20 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
 
   public registerSyncBeforeShutdown(): void {
     const listener = async (event: Event): Promise<void> => {
-      if (!(await this.contextService.isOnline())) {
-        return;
-      }
       event.preventDefault();
       try {
-        const workspaces = await this.workspaceService.getWorkspacesAsList();
-        const workspacesToSync = workspaces.filter((workspace) => workspace.storageService !== SupportedStorageServices.local && !workspace.hibernated);
-        await Promise.allSettled(
-          workspacesToSync.map(async (workspace) => {
-            const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
-            if (userInfo !== undefined && workspace.gitUrl !== null) {
-              await this.gitService.commitAndSync(workspace, workspace.gitUrl, userInfo);
-            }
-          }),
-        );
+        if (await this.contextService.isOnline()) {
+          const workspaces = await this.workspaceService.getWorkspacesAsList();
+          const workspacesToSync = workspaces.filter((workspace) => workspace.storageService !== SupportedStorageServices.local && !workspace.hibernated);
+          await Promise.allSettled(
+            workspacesToSync.map(async (workspace) => {
+              const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
+              if (userInfo !== undefined && workspace.gitUrl !== null) {
+                await this.gitService.commitAndSync(workspace, workspace.gitUrl, userInfo);
+              }
+            }),
+          );
+        }
       } catch (error) {
         logger.error(`SyncBeforeShutdown failed`, { error });
       } finally {
