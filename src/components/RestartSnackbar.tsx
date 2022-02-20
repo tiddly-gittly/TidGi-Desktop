@@ -3,7 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import { Snackbar, Button, IconButton, Tooltip } from '@material-ui/core';
 import { Close as CloseIcon } from '@material-ui/icons';
 import { useTranslation } from 'react-i18next';
-import { useDebouncedFn } from 'beautiful-react-hooks';
+import { useDebouncedCallback } from 'beautiful-react-hooks';
 
 const progressAnimation = keyframes`
   from {
@@ -42,7 +42,7 @@ export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart
     inCountDownSetter(false);
   }, [openedSetter]);
 
-  const startRestartCountDown = useDebouncedFn(
+  const startRestartCountDown = useDebouncedCallback(
     () => {
       inCountDownSetter(true);
       openedSetter(true);

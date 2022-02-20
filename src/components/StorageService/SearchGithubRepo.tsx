@@ -5,7 +5,7 @@ import styled from 'styled-components';
 import { useQuery, useMutation, GraphQLClient, ClientContext } from 'graphql-hooks';
 import { trim } from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { useDebouncedFn } from 'beautiful-react-hooks';
+import { useDebouncedCallback } from 'beautiful-react-hooks';
 
 import { TextField, LinearProgress, List, ListItem, ListItemIcon, ListItemText, Button } from '@material-ui/core';
 import { Folder as FolderIcon, Cached as CachedIcon, CreateNewFolder as CreateNewFolderIcon } from '@material-ui/icons';
@@ -126,7 +126,7 @@ function SearchGithubRepoResultList({
     },
     skipCache: true,
   });
-  const refetchDebounced = useDebouncedFn(refetch, 300);
+  const refetchDebounced = useDebouncedCallback(refetch, 300);
   // clear list on logout, which will cause accessToken change
   useEffect(() => {
     const timeoutHandle = setTimeout(async () => {

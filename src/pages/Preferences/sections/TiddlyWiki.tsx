@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDebouncedFn } from 'beautiful-react-hooks';
+import { useDebouncedCallback } from 'beautiful-react-hooks';
 
 import { List, ListItemText } from '@material-ui/core';
 
@@ -19,7 +19,7 @@ export function TiddlyWiki(props: Required<ISectionProps>): JSX.Element {
       userNameSetter(userInfo.userName);
     }
   }, [userInfo]);
-  const userNameTextFieldOnChange = useDebouncedFn(async (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
+  const userNameTextFieldOnChange = useDebouncedCallback(async (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
     await window.service.auth.set('userName', event.target.value);
     props.requestRestartCountDown();
   });

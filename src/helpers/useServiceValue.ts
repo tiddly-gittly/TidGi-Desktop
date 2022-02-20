@@ -1,6 +1,6 @@
 import { useEffect, useState, useCallback } from 'react';
 import { AsyncReturnType } from 'type-fest';
-import { useDebouncedFn } from 'beautiful-react-hooks';
+import { useDebouncedCallback } from 'beautiful-react-hooks';
 
 /**
  * Use value from service, especially constant value that never changes
@@ -38,7 +38,7 @@ export function usePromiseValueAndSetter<T, DefaultValueType = T | undefined>(
     })();
   }, [asyncValue]);
   // update remote value on change
-  const updateRemoteValue = useDebouncedFn(
+  const updateRemoteValue = useDebouncedCallback(
     async (newValue: T | DefaultValueType) => {
       const previousValue = await asyncValue();
       if (value !== previousValue) {
