@@ -2,7 +2,7 @@
   "name": "TidGi",
   "productName": "TidGi",
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
-  "version": "0.7.6-prerelease1",
+  "version": "0.7.6-prerelease2",
   "license": "MPL 2.0",
   "scripts": {
     "start": "npm run clean && npm run start-without-clean",
@@ -26,7 +26,7 @@
   "author": "Lin Onetwo <linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
   "main": ".webpack/main",
   "dependencies": {
-    "@tiddlygit/tiddlywiki": "5.2.2-prerelease-2022-01-28",
+    "@tiddlygit/tiddlywiki": "^5.2.2-prerelease-2022-02-25",
     "app-path": "3.3.0",
     "best-effort-json-parser": "0.1.1",
     "bluebird": "3.7.2",
