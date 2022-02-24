@@ -74,7 +74,7 @@ ipcRenderer.on(WikiChannel.printTiddler, async (event, tiddlerName?: string) => 
   `) as Promise<string>);
   }
   await webFrame.executeJavaScript(`
-    const page = (${printer.printTiddler.toString()})('${tiddlerName}');
+    var page = (${printer.printTiddler.toString()})('${tiddlerName}');
     page?.print?.();
     page?.close?.();
   `);
