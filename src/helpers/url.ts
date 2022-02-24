@@ -1,5 +1,5 @@
 export function extractDomain(fullUrl: string | undefined): string | undefined {
-  const matches = /^https?:\/\/([^#/?]+)(?:[#/?]|$)/i.exec(fullUrl ?? '');
+  const matches = /^([a-zA-Z\-]+):\/\/([^#/?]+)(?:[#/?]|$)/i.exec(fullUrl ?? '');
   const domain = matches !== null ? matches[1] : undefined;
   // https://stackoverflow.com/a/9928725
   return typeof domain === 'string' ? domain.replace(/^(www\.)/, '') : undefined;

@@ -290,7 +290,7 @@ function handleNewWindow(
   // open external url in browser
   if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
     logger.debug('handleNewWindow() openExternal', { nextDomain, disposition });
-    void shell.openExternal(nextUrl);
+    void shell.openExternal(nextUrl).catch(error => logger.error(error));
     return {
       action: 'deny',
     };
