@@ -48,18 +48,21 @@ const config = {
     },
     {
       name: '@electron-forge/maker-deb',
+      platforms: ['linux'],
       config: {
         maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
       },
     },
     {
       name: '@electron-forge/maker-rpm',
+      platforms: ['linux'],
       config: {
         maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
       },
     },
     {
       name: 'electron-forge-maker-appimage',
+      platforms: ['linux'],
       config: {
         maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
       },
