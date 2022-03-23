@@ -24,7 +24,9 @@
 | :----------------------------------------------------------------------------------------------------------------------------------: |
 |                                      ![Screenshot of preference](./docs/images/preference.png)                                       |
 |                                                   Interactive code 交互式代码执行                                                    |
-| ![屏幕录制2021-09-18 01 37 42](https://user-images.githubusercontent.com/3746270/133831500-ae91164c-7948-4de4-9a81-7017ed3b65c9.gif) |
+| ![Screen recording of zx-script in tiddlywiki](https://user-images.githubusercontent.com/3746270/133831500-ae91164c-7948-4de4-9a81-7017ed3b65c9.gif) |
+|                                                   Community Plugin Library 社区插件源                                                    |
+| ![Screenshot of add-workspace](./docs/images/community-plugin-library.png) |
 
 |                                                                  [最新版下载按钮 Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                   |
 | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
