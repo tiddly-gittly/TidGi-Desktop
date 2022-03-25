@@ -1,0 +1,35 @@
+name: Bug Report 报错问题
+description: Create a report to help us improve 有报错或者有Bug就发在这
+title: 'bug: '
+labels: ['bug']
+assignees:
+  - linonetwo
+body:
+  - type: textarea
+    id: Environment
+    attributes:
+      label: Environment
+      description: You can copy this from right click context menu → More → About
+    validations:
+      required: false
+  - type: textarea
+    id: Description
+    attributes:
+      label: Description 描述
+      description: Describe how the bug manifests and what the behavior would be without the bug.
+      placeholder: Tell us what you see!
+    validations:
+      required: false
+  - type: textarea
+    id: Reproduce
+    attributes:
+      label: Steps to Reproduce 复现方式
+      description: Please explain the steps required to duplicate the issue, especially if you are able to provide a sample application.
+      placeholder: Help developer to debug 帮助开发者高效debug
+    validations:
+      required: true
+  - type: textarea
+    id: Context
+    attributes:
+      label: Additional Context
+      description: List any other information that is relevant to your issue. Stack traces, related issues, suggestions on how to add, use case, forum links, screenshots, OS if applicable, etc.
