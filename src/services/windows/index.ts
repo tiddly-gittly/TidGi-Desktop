@@ -146,7 +146,6 @@ export class Window implements IWindowService {
       webPreferences: {
         devTools: !isTest,
         nodeIntegration: false,
-        nativeWindowOpen: true,
         webSecurity: false,
         allowRunningInsecureContent: true,
         contextIsolation: true,

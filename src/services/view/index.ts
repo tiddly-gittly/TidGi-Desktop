@@ -49,6 +49,8 @@ export class View implements IViewService {
     const hasWorkspaces = (await this.workspaceService.countWorkspaces()) > 0;
     const sidebar = await this.preferenceService.get('sidebar');
     const titleBar = await this.preferenceService.get('titleBar');
+    // electron type forget that click can be async function
+    /* eslint-disable @typescript-eslint/no-misused-promises */
     await this.menuService.insertMenu('View', [
       {
         label: () => (sidebar ? i18n.t('Preference.HideSideBar') : i18n.t('Preference.ShowSideBar')),
@@ -183,6 +185,7 @@ export class View implements IViewService {
         enabled: hasWorkspaces,
       },
     ]);
+    /* eslint-enable @typescript-eslint/no-misused-promises */
   }
 
   /**
@@ -258,7 +261,6 @@ export class View implements IViewService {
     const sharedWebPreferences: WebPreferences = {
       devTools: true,
       spellcheck,
-      nativeWindowOpen: true,
       nodeIntegration: false,
       contextIsolation: true,
       webSecurity: true,

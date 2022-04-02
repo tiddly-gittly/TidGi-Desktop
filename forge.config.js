@@ -60,13 +60,13 @@ const config = {
         maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
       },
     },
-    {
-      name: 'electron-forge-maker-appimage',
-      platforms: ['linux'],
-      config: {
-        maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
-      },
-    },
+    // {
+    //   name: '@electron-forge/maker-appimage',
+    //   platforms: ['linux'],
+    //   config: {
+    //     maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
+    //   },
+    // },
   ],
   plugins: [
     ['@electron-forge/plugin-auto-unpack-natives'],

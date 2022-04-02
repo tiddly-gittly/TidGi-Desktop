@@ -4,7 +4,6 @@ import path from 'path';
 import { TiddlyWiki, type ITiddlyWiki } from '@tiddlygit/tiddlywiki';
 import { Observable } from 'rxjs';
 import intercept from 'intercept-stdout';
-import { Server } from 'http';
 import { fork } from 'child_process';
 import { tmpdir } from 'os';
 import { mkdtemp, writeFile } from 'fs-extra';
@@ -55,8 +54,8 @@ function startNodeJSWiki({
         `host=${tiddlyWikiHost}`,
         'root-tiddler=$:/core/save/lazy-images',
       ];
-      wikiInstance.hooks.addHook('th-server-command-post-start', function (listenCommand, server: Server) {
-        server.on('error', function (error) {
+      wikiInstance.hooks.addHook('th-server-command-post-start', function (listenCommand, server) {
+        server.on('error', function (error: Error) {
           observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message });
         });
         server.on('listening', function () {
