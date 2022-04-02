@@ -60,13 +60,25 @@ const config = {
         maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
       },
     },
-    // {
-    //   name: '@electron-forge/maker-appimage',
-    //   platforms: ['linux'],
-    //   config: {
-    //     maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
-    //   },
-    // },
+    {
+      name: '@electron-forge/maker-flatpak',
+      config: {
+        options: {
+          categories: ['Productivity'],
+        },
+      },
+    },
+    {
+      name: '@electron-forge/maker-snap',
+      config: {
+        features: {
+          audio: true,
+          mpris: 'org.tiddlywiki.tidgi',
+          webgl: true,
+        },
+        summary: 'Customizable personal knowledge-base with git as backup manager and blogging platform.',
+      },
+    },
   ],
   plugins: [
     ['@electron-forge/plugin-auto-unpack-natives'],
