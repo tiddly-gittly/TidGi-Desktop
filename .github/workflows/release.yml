@@ -30,6 +30,8 @@ jobs:
       with:
         submodules: 'true'
   
+    - name: Install native dependencies
+      run: apt-get install flatpak-builder eu-strip
     - name: Install Snapcraft
       uses: samuelmeuli/action-snapcraft@v1
       with:
