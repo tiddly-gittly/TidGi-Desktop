@@ -51,7 +51,7 @@ const config = {
         ui: {
           chooseDirectory: true,
         },
-        appIconPath: 'build-resources/icon.png',
+        appIconPath: 'build-resources/icon-installer.ico',
         // WiX distributables do not handle prerelease information in the app version, removing it from the MSI (-prerelease3.4)
         version: version.replace(/-.+/, ''),
       },
@@ -87,9 +87,9 @@ const config = {
             at maybeClose (internal/child_process.js:1058:16)
             at Process.ChildProcess._handle.onexit (internal/child_process.js:293:5)
      */
-    {
-      name: '@electron-forge/maker-flatpak',
-    },
+    // {
+    //   name: '@electron-forge/maker-flatpak',
+    // },
     {
       name: '@electron-forge/maker-snap',
       config: {

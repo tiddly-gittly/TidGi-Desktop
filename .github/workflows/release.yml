@@ -30,8 +30,8 @@ jobs:
         with:
           submodules: 'true'
 
-      - name: Install native dependencies for flatpack
-        run: sudo apt-get install -y flatpak-builder elfutils
+      # - name: Install native dependencies for flatpack
+      #   run: sudo apt-get install -y flatpak-builder elfutils
       - name: Install Snapcraft
         uses: samuelmeuli/action-snapcraft@v1
         with:
