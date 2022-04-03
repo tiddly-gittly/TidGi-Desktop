@@ -37,7 +37,7 @@ jobs:
         repo-token: ${{ secrets.GITHUB_TOKEN }}
   
     - name: Install native dependencies
-      run: apt-get install flatpak-builder eu-strip
+      run: sudo apt-get install -y flatpak-builder eu-strip
     - name: Install Snapcraft
       uses: samuelmeuli/action-snapcraft@v1
       with:
