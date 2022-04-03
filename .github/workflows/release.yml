@@ -185,10 +185,11 @@ jobs:
         run: npm ci
 
       - name: Add msi to path
-        run: |
-          echo "${env:path};${env:wix}bin"
-          echo "${env:path};${env:wix}bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
-          echo "${env:path};${env:wix}bin"
+        run: echo "${env:path}"
+      - name: Add msi to path
+        run: echo "${env:path};${env:wix}bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8
+      - name: Add msi to path
+        run: echo "${env:path}"
 
       - name: Make Windows (ia32)
         run: npm run make:win-ia32
