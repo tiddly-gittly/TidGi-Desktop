@@ -48,7 +48,8 @@ const config = {
         return {
           language: 1033,
           manufacturer: 'tiddlywiki.org',
-          name: `Install-TidGi-${version}-Windows-${arch}`,
+          exe: `Install-TidGi-${version}-Windows-${arch}`,
+          name: 'TidGi',
           ui: {
             chooseDirectory: true,
           },
