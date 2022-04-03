@@ -32,9 +32,10 @@ jobs:
 
     - uses: pocket-apps/action-update-version@v1
       with:
-        files: 'package.json, package-lock.json'
+        files: 'package.json'
         version-regexp: '\d+.\d+.\d+(\S+)?'
         repo-token: ${{ secrets.GITHUB_TOKEN }}
+        GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
   
     - name: Install native dependencies
       run: sudo apt-get install -y flatpak-builder eu-strip
