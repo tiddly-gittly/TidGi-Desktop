@@ -43,6 +43,18 @@ const config = {
       },
     },
     {
+      name: '@electron-forge/maker-wix',
+      config: {
+        language: 1033,
+        manufacturer: 'tiddlywiki.org',
+        name: 'TidGi',
+        ui: {
+          chooseDirectory: true,
+        },
+        version,
+      },
+    },
+    {
       name: '@electron-forge/maker-zip',
       platforms: ['darwin'],
     },
