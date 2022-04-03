@@ -181,6 +181,9 @@ jobs:
             ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
             ${{ runner.os }}-node-
 
+      - name: Install msi dependencies
+        run: $env:PATH += ";$env:WIX\bin"
+
       - name: Install dependencies
         run: npm ci
 
