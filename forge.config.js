@@ -85,14 +85,9 @@ const config = {
             at maybeClose (internal/child_process.js:1058:16)
             at Process.ChildProcess._handle.onexit (internal/child_process.js:293:5)
      */
-    // {
-    //   name: '@electron-forge/maker-flatpak',
-    //   config: {
-    //     options: {
-    //       categories: ['Productivity'],
-    //     },
-    //   },
-    // },
+    {
+      name: '@electron-forge/maker-flatpak',
+    },
     {
       name: '@electron-forge/maker-snap',
       config: {
