@@ -51,7 +51,9 @@ const config = {
         ui: {
           chooseDirectory: true,
         },
-        version,
+        appIconPath: 'build-resources/icon.png',
+        // WiX distributables do not handle prerelease information in the app version, removing it from the MSI (-prerelease3.4)
+        version: version.replace(/-.+/, ''),
       },
     },
     {
@@ -96,7 +98,7 @@ const config = {
           mpris: 'org.tiddlywiki.tidgi',
           webgl: true,
         },
-        summary: 'Customizable personal knowledge-base with git as backup manager and blogging platform.',
+        summary: 'Personal knowledge-base note app with git and REST API.',
       },
     },
   ],
