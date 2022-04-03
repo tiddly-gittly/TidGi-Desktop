@@ -90,17 +90,27 @@ const config = {
     // {
     //   name: '@electron-forge/maker-flatpak',
     // },
-    {
-      name: '@electron-forge/maker-snap',
-      config: {
-        features: {
-          audio: true,
-          mpris: 'org.tiddlywiki.tidgi',
-          webgl: true,
-        },
-        summary: 'Personal knowledge-base note app with git and REST API.',
-      },
-    },
+    /**
+     * ✖ Making for target: snap - On platform: linux - For arch: x64
+
+        An unhandled error has occurred inside Forge:
+        An error occured while making for target: snap
+        Command failed with a non-zero return code (2):
+        /snap/bin/snapcraft snap --target-arch=amd64 --output=/home/runner/work/TidGi-Desktop/TidGi-Desktop/out/make/snap/x64/tidgi_0.7.6-prerelease3.4_amd64.snap
+        Error: Command failed with a non-zero return code (2):
+        /snap/bin/snapcraft snap --target-arch=amd64 --output=/home/runner/work/TidGi-Desktop/TidGi-Desktop/out/make/snap/x64/tidgi_0.7.6-prerelease3.4_amd64.snap
+     */
+    // {
+    //   name: '@electron-forge/maker-snap',
+    //   config: {
+    //     features: {
+    //       audio: true,
+    //       mpris: 'org.tiddlywiki.tidgi',
+    //       webgl: true,
+    //     },
+    //     summary: 'Personal knowledge-base note app with git and REST API.',
+    //   },
+    // },
   ],
   plugins: [
     ['@electron-forge/plugin-auto-unpack-natives'],
