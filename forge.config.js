@@ -72,14 +72,27 @@ const config = {
         maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
       },
     },
-    {
-      name: '@electron-forge/maker-flatpak',
-      config: {
-        options: {
-          categories: ['Productivity'],
-        },
-      },
-    },
+    /**
+     * ✖ Making for target: flatpak - On platform: linux - For arch: x64
+
+        An unhandled error has occurred inside Forge:
+        An error occured while making for target: flatpak
+        flatpak failed with status code 1
+        Error: flatpak failed with status code 1
+            at ChildProcess.<anonymous> (/home/runner/work/TidGi-Desktop/TidGi-Desktop/node_modules/@malept/flatpak-bundler/index.js:71:16)
+            at ChildProcess.emit (events.js:400:28)
+            at ChildProcess.emit (domain.js:475:12)
+            at maybeClose (internal/child_process.js:1058:16)
+            at Process.ChildProcess._handle.onexit (internal/child_process.js:293:5)
+     */
+    // {
+    //   name: '@electron-forge/maker-flatpak',
+    //   config: {
+    //     options: {
+    //       categories: ['Productivity'],
+    //     },
+    //   },
+    // },
     {
       name: '@electron-forge/maker-snap',
       config: {
