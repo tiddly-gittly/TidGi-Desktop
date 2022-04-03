@@ -44,16 +44,18 @@ const config = {
     },
     {
       name: '@electron-forge/maker-wix',
-      config: {
-        language: 1033,
-        manufacturer: 'tiddlywiki.org',
-        name: 'TidGi',
-        ui: {
-          chooseDirectory: true,
-        },
-        appIconPath: 'build-resources/icon-installer.ico',
-        // WiX distributables do not handle prerelease information in the app version, removing it from the MSI (-prerelease3.4)
-        version: version.replace(/-.+/, ''),
+      config: (arch) => {
+        return {
+          language: 1033,
+          manufacturer: 'tiddlywiki.org',
+          name: `Install-TidGi-${version}-Windows-${arch}`,
+          ui: {
+            chooseDirectory: true,
+          },
+          appIconPath: 'build-resources/icon-installer.ico',
+          // WiX distributables do not handle prerelease information in the app version, removing it from the MSI (-prerelease3.4)
+          version: version.replace(/-.+/, ''),
+        };
       },
     },
     {
