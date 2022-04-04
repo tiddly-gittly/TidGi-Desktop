@@ -467,19 +467,29 @@ export class Wiki implements IWikiService {
    * Simply do some check before calling `gitService.commitAndSync`
    */
   private async syncWikiIfNeeded(workspace: IWorkspace): Promise<void> {
-    const { gitUrl: githubRepoUrl, storageService } = workspace;
-    const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
-    if (storageService !== SupportedStorageServices.local && typeof githubRepoUrl === 'string' && userInfo !== undefined) {
+    const checkCanSyncDueToNoDraft = async (workspace: IWorkspace): Promise<boolean> => {
       const syncOnlyWhenNoDraft = await this.preferenceService.get('syncOnlyWhenNoDraft');
-      if (syncOnlyWhenNoDraft) {
-        const draftTitles = await this.runFilterOnWiki(workspace, '[is[draft]]');
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        if (draftTitles && draftTitles.length > 0) {
-          return;
-        }
+      if (!syncOnlyWhenNoDraft) {
+        return true;
       }
+      const draftTitles = await this.runFilterOnWiki(workspace, '[is[draft]]');
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      if (draftTitles && draftTitles.length > 0) {
+        return false;
+      }
+      return true;
+    };
+    const { gitUrl: githubRepoUrl, storageService, backupOnInterval } = workspace;
+    const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
+
+    if (
+      storageService !== SupportedStorageServices.local &&
+      typeof githubRepoUrl === 'string' &&
+      userInfo !== undefined &&
+      (await checkCanSyncDueToNoDraft(workspace))
+    ) {
       await this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo });
-    } else if (workspace.backupOnInterval) {
+    } else if (backupOnInterval && (await checkCanSyncDueToNoDraft(workspace))) {
       await this.gitService.commitAndSync(workspace, { commitOnly: true });
     }
   }
