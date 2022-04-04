@@ -37,7 +37,7 @@ const config = {
       platforms: ['win32'],
       config: (arch) => {
         return {
-          setupExe: `Install-TidGi-${version}-Windows-${arch}.exe`,
+          setupExe: `Install-TidGi-Windows-${arch}.exe`,
           setupIcon: 'build-resources/icon-installer.ico',
         };
       },
@@ -51,7 +51,7 @@ const config = {
           programFilesFolderName: 'TiddlyWiki',
           shortcutFolderName: 'TiddlyWiki',
           description,
-          exe: `Install-TidGi-${version}-Windows-${arch}`,
+          exe: 'TidGi',
           name: 'TidGi',
           ui: {
             chooseDirectory: true,
