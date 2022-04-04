@@ -3,7 +3,7 @@ import 'source-map-support/register';
 import { expose } from 'threads/worker';
 import { Observable } from 'rxjs';
 import { clone, commitAndSync, GitStep, ILoggerContext, initGit, getModifiedFileList, getRemoteUrl, SyncParameterMissingError } from 'git-sync-js';
-import { IGitLogMessage, IGitUserInfos } from './interface';
+import type { ICommitAndSyncConfigs, IGitLogMessage, IGitUserInfos } from './interface';
 import { defaultGitInfo } from './defaultGitInfo';
 import { WikiChannel } from '@/constants/channels';
 import type { IWorkspace } from '@services/workspaces/interface';
@@ -64,12 +64,11 @@ function initWikiGit(wikiFolderPath: string, syncImmediately?: boolean, remoteUr
  * @param {string} remoteUrl
  * @param {{ login: string, email: string, accessToken: string }} userInfo
  */
-function commitAndSyncWiki(workspace: IWorkspace, remoteUrl: string, userInfo: IGitUserInfos): Observable<IGitLogMessage> {
+function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
     void commitAndSync({
       dir: workspace.wikiFolderLocation,
-      remoteUrl,
-      userInfo,
+      ...configs,
       defaultGitInfo,
       logger: {
         debug: (message: string, context: ILoggerContext): unknown =>

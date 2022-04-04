@@ -113,7 +113,7 @@ export class WorkspaceView implements IWorkspaceViewService {
           throw new TypeError(`userInfo is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
         }
         // sync in non-blocking way
-        void this.gitService.commitAndSync(workspace, githubRepoUrl, userInfo);
+        void this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo });
       }
     } catch (error) {
       logger.error(`Can't sync at wikiStartup(), ${(error as Error).message}\n${(error as Error).stack ?? 'no stack'}`);

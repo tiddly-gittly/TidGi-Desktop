@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable unicorn/no-useless-undefined */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null */
@@ -145,6 +146,7 @@ export default function EditWorkspace(): JSX.Element {
   const originalWorkspace = useWorkspaceObservable(workspaceID);
   const [workspace, workspaceSetter, onSave] = useForm(originalWorkspace);
   const {
+    backupOnInterval,
     disableAudio,
     disableNotifications,
     gitUrl,
@@ -322,31 +324,52 @@ export default function EditWorkspace(): JSX.Element {
           />
         )}
         {storageService !== SupportedStorageServices.local && (
-          <List>
+          <>
             <Divider />
-            <ListItem disableGutters>
-              <ListItemText primary={t('EditWorkspace.SyncOnInterval')} secondary={t('EditWorkspace.SyncOnIntervalDescription')} />
-              <ListItemSecondaryAction>
-                <Switch
-                  edge="end"
-                  color="primary"
-                  checked={syncOnInterval}
-                  onChange={(event) => workspaceSetter({ ...workspace, syncOnInterval: event.target.checked })}
-                />
-              </ListItemSecondaryAction>
-            </ListItem>
-            <ListItem disableGutters>
-              <ListItemText primary={t('EditWorkspace.SyncOnStartup')} secondary={t('EditWorkspace.SyncOnStartupDescription')} />
-              <ListItemSecondaryAction>
-                <Switch
-                  edge="end"
-                  color="primary"
-                  checked={syncOnStartup}
-                  onChange={(event) => workspaceSetter({ ...workspace, syncOnStartup: event.target.checked })}
-                />
-              </ListItemSecondaryAction>
-            </ListItem>
-          </List>
+            <List>
+              <ListItem disableGutters>
+                <ListItemText primary={t('EditWorkspace.SyncOnInterval')} secondary={t('EditWorkspace.SyncOnIntervalDescription')} />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    color="primary"
+                    checked={syncOnInterval}
+                    onChange={(event) => workspaceSetter({ ...workspace, syncOnInterval: event.target.checked })}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
+              <ListItem disableGutters>
+                <ListItemText primary={t('EditWorkspace.SyncOnStartup')} secondary={t('EditWorkspace.SyncOnStartupDescription')} />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    color="primary"
+                    checked={syncOnStartup}
+                    onChange={(event) => workspaceSetter({ ...workspace, syncOnStartup: event.target.checked })}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
+            </List>
+          </>
+        )}
+        {storageService === SupportedStorageServices.local && (
+          <>
+            <Divider />
+            <List>
+              <Divider />
+              <ListItem disableGutters>
+                <ListItemText primary={t('EditWorkspace.BackupOnInterval')} secondary={t('EditWorkspace.BackupOnIntervalDescription')} />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    color="primary"
+                    checked={backupOnInterval}
+                    onChange={(event) => workspaceSetter({ ...workspace, backupOnInterval: event.target.checked })}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
+            </List>
+          </>
         )}
         {!isSubWiki && (
           <List>

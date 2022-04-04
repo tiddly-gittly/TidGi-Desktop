@@ -147,5 +147,6 @@ export function workspaceConfigFromForm(form: IWikiWorkspaceForm, isCreateMainWo
     tagName: !isCreateMainWorkspace ? form.tagName : null,
     port: form.wikiPort,
     wikiFolderLocation: form.wikiFolderLocation,
+    backupOnInterval: true,
   };
 }

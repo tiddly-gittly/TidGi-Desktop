@@ -54,7 +54,8 @@
     "RestartServiceComplete": "Restart Service Complete",
     "SyncNow": "Sync To Cloud",
     "NoNetworkConnection": "No Network Connection",
-    "OpenCommandPalette": "Open CommandPalette"
+    "OpenCommandPalette": "Open CommandPalette",
+    "BackupNow": "Git Backup Locally"
   },
   "Updater": {
     "CheckingFailed": "Checking Failed (Network Error)",
@@ -158,11 +159,13 @@
     "Port": "Local host server port",
     "PathDescription": "Location of your local wiki folder.",
     "SyncOnInterval": "Sync On Interval",
-    "SyncOnIntervalDescription": "If turned off, there is only one automatic sync when the application is opened, and one manual sync when the user triggers it by clicking the sync button in the wiki. When on, it will automatically sync according to the time interval in the global settings (off by default to save CPU usage from file change listening), and will still automatically sync on startup, or manually by clicking the button.",
+    "SyncOnIntervalDescription": "When on, it will automatically sync according to the time interval in the global settings, and will still automatically sync on startup, or manually by clicking the button. Will auto backup data to local git before sync. If turned off, there is only one automatic sync when the application is opened, and one manual sync when the user triggers it by clicking the sync button in the wiki. ",
     "SyncOnStartup": "Sync On App Start",
     "SyncOnStartupDescription": "Commit and Sync once the app cold start.",
     "Name": "Workspace Name",
-    "NameDescription": "The name of the workspace, which will be displayed on the sidebar, can be different from the actual folder name of the Git repository in the workspace"
+    "NameDescription": "The name of the workspace, which will be displayed on the sidebar, can be different from the actual folder name of the Git repository in the workspace",
+    "BackupOnInterval": "Backup On Interval",
+    "BackupOnIntervalDescription": "When enabled, data will be automatically backed up with local Git at regular intervals (interval in global settings), so that even if no cloud git synchronization address is configured, it will be automatically backed up locally."
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed, or there is no wiki in this folder! \nDo you want to remove the workspace?",
@@ -226,8 +229,8 @@
     "ClearBrowsingData": "Clear Browsing Data (git isn't affected)",
     "General": "UI & Interact",
     "Sync": "Sync",
-    "SyncInterval": "Sync Interval",
-    "SyncIntervalDescription": "After there is no new change for more than this length of time, it will automatically start backing up to Github (take effect after restart app)",
+    "SyncInterval": "Sync/Backup Interval",
+    "SyncIntervalDescription": "After this length of time, it will automatically start backing up to Github, if is a local workspace it will create a local git backup (take effect after restart app)",
     "DefaultUserName": "User Name",
     "DefaultUserNameDetail": "The user name in the Wiki, this only take effect after restart, this will fill in the creator field of the newly created or edited tiddlers. Can be override by user name set in the workspace setting.",
     "ShowSideBarDetail": "Sidebar lets you switch easily between workspaces.",

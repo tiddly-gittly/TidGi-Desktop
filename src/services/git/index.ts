@@ -24,7 +24,7 @@ import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/
 import type { IWikiService } from '@services/wiki/interface';
 import { logger } from '@services/libs/log';
 import i18n from '@services/libs/i18n';
-import { IGitLogMessage, IGitService, IGitUserInfos } from './interface';
+import { ICommitAndSyncConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
 import { WikiChannel } from '@/constants/channels';
 import { GitWorker } from './gitWorker';
 import { Observer } from 'rxjs';
@@ -272,13 +272,13 @@ export class Git implements IGitService {
     });
   }
 
-  public async commitAndSync(workspace: IWorkspace, remoteUrl: string, userInfo: IGitUserInfos): Promise<void> {
+  public async commitAndSync(workspace: IWorkspace, config: ICommitAndSyncConfigs): Promise<void> {
     if (!net.isOnline()) {
       return;
     }
     try {
       return await new Promise<void>((resolve, reject) => {
-        this.gitWorker?.commitAndSyncWiki(workspace, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
+        this.gitWorker?.commitAndSyncWiki(workspace, config).subscribe(this.getWorkerObserver(resolve, reject));
       });
     } catch (error) {
       this.createFailedDialog((error as Error).message, workspace.wikiFolderLocation);

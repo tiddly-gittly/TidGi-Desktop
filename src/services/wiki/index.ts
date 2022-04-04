@@ -467,7 +467,7 @@ export class Wiki implements IWikiService {
    * Simply do some check before calling `gitService.commitAndSync`
    */
   private async syncWikiIfNeeded(workspace: IWorkspace): Promise<void> {
-    const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService } = workspace;
+    const { gitUrl: githubRepoUrl, storageService } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
     if (storageService !== SupportedStorageServices.local && typeof githubRepoUrl === 'string' && userInfo !== undefined) {
       const syncOnlyWhenNoDraft = await this.preferenceService.get('syncOnlyWhenNoDraft');
@@ -478,7 +478,9 @@ export class Wiki implements IWikiService {
           return;
         }
       }
-      await this.gitService.commitAndSync(workspace, githubRepoUrl, userInfo);
+      await this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo });
+    } else if (workspace.backupOnInterval) {
+      await this.gitService.commitAndSync(workspace, { commitOnly: true });
     }
   }
 
@@ -491,8 +493,8 @@ export class Wiki implements IWikiService {
    * Trigger git sync interval if needed in config
    */
   private async startIntervalSyncIfNeeded(workspace: IWorkspace): Promise<void> {
-    const { syncOnInterval, wikiFolderLocation } = workspace;
-    if (syncOnInterval) {
+    const { syncOnInterval, backupOnInterval, wikiFolderLocation } = workspace;
+    if (syncOnInterval || backupOnInterval) {
       const syncDebounceInterval = await this.preferenceService.get('syncDebounceInterval');
       this.wikiSyncIntervals[wikiFolderLocation] = setInterval(async () => {
         await this.syncWikiIfNeeded(workspace);

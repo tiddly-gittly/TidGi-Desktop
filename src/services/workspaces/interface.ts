@@ -9,6 +9,10 @@ export interface IWorkspace {
    * Is this workspace selected by user, and showing corresponding webview?
    */
   active: boolean;
+  /**
+   * When this workspace is a local workspace, we can still use local git to backup
+   */
+  backupOnInterval: boolean;
   disableAudio: boolean;
   disableNotifications: boolean;
   /**

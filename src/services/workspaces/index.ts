@@ -70,6 +70,7 @@ export class Workspace implements IWorkspaceService {
   }
 
   private async registerMenu(): Promise<void> {
+    /* eslint-disable @typescript-eslint/no-misused-promises */
     await this.menuService.insertMenu('Workspaces', [
       {
         label: () => i18n.t('Menu.SelectNextWorkspace'),
@@ -163,6 +164,7 @@ export class Workspace implements IWorkspaceService {
         },
       },
     ]);
+    /* eslint-enable @typescript-eslint/no-misused-promises */
     await this.menuService.insertMenu('Workspaces', newMenuItems, undefined, undefined, 'updateWorkspaceMenuItems');
   }
 
@@ -258,6 +260,7 @@ export class Workspace implements IWorkspaceService {
   private sanitizeWorkspace(workspaceToSanitize: IWorkspace): IWorkspace {
     const defaultValues: Partial<IWorkspace> = {
       storageService: SupportedStorageServices.github,
+      backupOnInterval: true,
     };
     const fixingValues: Partial<IWorkspace> = {};
     // we add mainWikiID in creation, we fix this value for old existed workspaces
