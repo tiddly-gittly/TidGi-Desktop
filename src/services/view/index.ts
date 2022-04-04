@@ -263,8 +263,9 @@ export class View implements IViewService {
       spellcheck,
       nodeIntegration: false,
       contextIsolation: true,
-      webSecurity: true,
-      allowRunningInsecureContent: false,
+      // allow loading pictures from the localhost network, you may want to setup img host services in your local network, set this to true will cause CORS
+      webSecurity: false,
+      allowRunningInsecureContent: true,
       session: sessionOfView,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
       additionalArguments: [
