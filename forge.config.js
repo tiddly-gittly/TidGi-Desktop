@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 const packageJson = require('./package.json');
 
-const { version } = packageJson;
+const { version, description } = packageJson;
 
 const config = {
   packagerConfig: {
@@ -48,14 +48,18 @@ const config = {
         return {
           language: 1033,
           manufacturer: 'tiddlywiki.org',
+          programFilesFolderName: 'TiddlyWiki',
+          shortcutFolderName: 'TiddlyWiki',
+          description,
           exe: `Install-TidGi-${version}-Windows-${arch}`,
           name: 'TidGi',
           ui: {
             chooseDirectory: true,
           },
-          appIconPath: 'build-resources/icon-installer.ico',
+          appIconPath: 'build-resources/icon.ico',
           // WiX distributables do not handle prerelease information in the app version, removing it from the MSI (-prerelease3.4)
-          version: version.replace(/-.+/, ''),
+          // and https://github.com/felixrieseberg/electron-wix-msi/issues/110 ask use to use fixed number
+          version: '1.0.0',
         };
       },
     },
