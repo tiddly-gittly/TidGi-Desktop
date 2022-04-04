@@ -289,8 +289,8 @@ function handleNewWindow(
   const nextDomain = extractDomain(nextUrl);
   // open external url in browser
   if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
-    logger.debug('handleNewWindow() openExternal', { nextDomain, disposition });
-    void shell.openExternal(nextUrl).catch(error => logger.error(error));
+    logger.debug('handleNewWindow() openExternal', { nextUrl, nextDomain, disposition });
+    void shell.openExternal(nextUrl).catch((error) => logger.error(`handleNewWindow() openExternal error ${(error as Error).message}`, error));
     return {
       action: 'deny',
     };
