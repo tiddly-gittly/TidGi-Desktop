@@ -21,139 +21,139 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # Linux:
-  #   runs-on: ubuntu-latest
+  Linux:
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v2
-  #       with:
-  #         submodules: 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          submodules: 'true'
 
-  #     # - name: Install native dependencies for flatpack
-  #     #   run: sudo apt-get install -y flatpak-builder elfutils
-  #     - name: Install Snapcraft
-  #       uses: samuelmeuli/action-snapcraft@v1
-  #       with:
-  #         snapcraft_token: ${{ secrets.SNAP_TOKEN }}
-  #     - name: Set up Node.js
-  #       uses: actions/setup-node@v2
-  #       with:
-  #         node-version: 16.x
+      # - name: Install native dependencies for flatpack
+      #   run: sudo apt-get install -y flatpak-builder elfutils
+      - name: Install Snapcraft
+        uses: samuelmeuli/action-snapcraft@v1
+        with:
+          snapcraft_token: ${{ secrets.SNAP_TOKEN }}
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
 
-  #     - name: Get npm cache directory
-  #       uses: actions/cache@v3
-  #       id: cache
-  #       with:
-  #         path: |
-  #           ~/.npm
-  #         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-node-
+      - name: Get npm cache directory
+        uses: actions/cache@v3
+        id: cache
+        with:
+          path: |
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
-  #     - name: Install dependencies
-  #       run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-  #     - name: Make Linux (x64)
-  #       run: npm run make:linux-x64
-  #       env:
-  #         CI: true
-  #         CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #     - name: Make Linux (arm64)
-  #       run: npm run make:linux-arm
-  #       env:
-  #         CI: true
-  #         CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make Linux (x64)
+        run: npm run make:linux-x64
+        env:
+          CI: true
+          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make Linux (arm64)
+        run: npm run make:linux-arm
+        env:
+          CI: true
+          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Create Release
-  #       uses: softprops/action-gh-release@v1
-  #       if: startsWith(github.ref, 'refs/tags/')
-  #       with:
-  #         draft: true
-  #         files: out/make/**/*
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          draft: true
+          files: out/make/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Get Renderer Bundle Stats
-  #       uses: vio/bundle-stats-action@v1.3.0
-  #       with:
-  #         id: renderer
-  #         webpack-stats-path: 'out/webpack-stats-renderer.json'
-  #         repo-token: ${{ secrets.GITHUB_TOKEN }}
-  #     - name: Get Main Bundle Stats
-  #       uses: vio/bundle-stats-action@v1.3.0
-  #       with:
-  #         id: main
-  #         webpack-stats-path: 'out/webpack-stats-main.json'
-  #         repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get Renderer Bundle Stats
+        uses: vio/bundle-stats-action@v1.3.0
+        with:
+          id: renderer
+          webpack-stats-path: 'out/webpack-stats-renderer.json'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get Main Bundle Stats
+        uses: vio/bundle-stats-action@v1.3.0
+        with:
+          id: main
+          webpack-stats-path: 'out/webpack-stats-main.json'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
-  # MacOS:
-  #   runs-on: macos-latest
+  MacOS:
+    runs-on: macos-latest
 
-  #   steps:
-  #     - name: Checkout repository
-  #       uses: actions/checkout@v2
-  #       with:
-  #         submodules: 'true'
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v2
+        with:
+          submodules: 'true'
 
-  #     - name: Set up Node.js
-  #       uses: actions/setup-node@v2
-  #       with:
-  #         node-version: 16.x
+      - name: Set up Node.js
+        uses: actions/setup-node@v2
+        with:
+          node-version: 16.x
 
-  #     - name: Get npm cache directory
-  #       uses: actions/cache@v3
-  #       id: cache
-  #       with:
-  #         path: |
-  #           ~/.npm
-  #         key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-node-
+      - name: Get npm cache directory
+        uses: actions/cache@v3
+        id: cache
+        with:
+          path: |
+            ~/.npm
+          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-node-
 
-  #     - name: Install dependencies
-  #       run: npm ci
+      - name: Install dependencies
+        run: npm ci
 
-  #     - name: Make macOS (x64)
-  #       run: npm run make:mac-x64
-  #       env:
-  #         APPLE_ID: ${{ secrets.APPLE_ID }}
-  #         APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-  #         CI: true
-  #         CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-  #     - name: Make macOS (arm64)
-  #       run: npm run make:mac-arm
-  #       env:
-  #         APPLE_ID: ${{ secrets.APPLE_ID }}
-  #         APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-  #         CI: true
-  #         CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-  #         GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make macOS (x64)
+        run: npm run make:mac-x64
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          CI: true
+          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make macOS (arm64)
+        run: npm run make:mac-arm
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          CI: true
+          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Create Release
-  #       uses: softprops/action-gh-release@v1
-  #       if: startsWith(github.ref, 'refs/tags/')
-  #       with:
-  #         draft: true
-  #         files: out/make/**/*
-  #       env:
-  #         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Create Release
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          draft: true
+          files: out/make/**/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-  #     - name: Get Renderer Bundle Stats
-  #       uses: vio/bundle-stats-action@v1.3.0
-  #       with:
-  #         id: renderer
-  #         webpack-stats-path: 'out/webpack-stats-renderer.json'
-  #         repo-token: ${{ secrets.GITHUB_TOKEN }}
-  #     - name: Get Main Bundle Stats
-  #       uses: vio/bundle-stats-action@v1.3.0
-  #       with:
-  #         id: main
-  #         webpack-stats-path: 'out/webpack-stats-main.json'
-  #         repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get Renderer Bundle Stats
+        uses: vio/bundle-stats-action@v1.3.0
+        with:
+          id: renderer
+          webpack-stats-path: 'out/webpack-stats-renderer.json'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Get Main Bundle Stats
+        uses: vio/bundle-stats-action@v1.3.0
+        with:
+          id: main
+          webpack-stats-path: 'out/webpack-stats-main.json'
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
 
   Windows:
     runs-on: windows-latest
@@ -190,14 +190,18 @@ jobs:
       - name: Add msi to path
         run: echo "${env:wix}bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
-      # - name: Make Windows (ia32)
-      #   run: npm run make:win-ia32
-      #   env:
-      #     CSC_LINK: ${{ secrets.WIN_CERT }}
-      #     CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASS }}
-      #     CI: true
-      #     CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make Windows (ia32)
+        run: npm run make:win-ia32
+        env:
+          CSC_LINK: ${{ secrets.WIN_CERT }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASS }}
+          CI: true
+          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Rename (ia32)
+        run: |
+          Get-ChildItem out/make/wix/ia32
+          Rename-Item -Path "out/make/wix/ia32/TidGi.msi" -NewName "Install-TidGi-Windows-ia32.msi"
       - name: Make Windows (x64)
         run: npm run make:win-x64
         env:
@@ -210,14 +214,18 @@ jobs:
         run: |
           Get-ChildItem out/make/wix/x64
           Rename-Item -Path "out/make/wix/x64/TidGi.msi" -NewName "Install-TidGi-Windows-x64.msi"
-      # - name: Make Windows (arm64)
-      #   run: npm run make:win-arm
-      #   env:
-      #     CSC_LINK: ${{ secrets.WIN_CERT }}
-      #     CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASS }}
-      #     CI: true
-      #     CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make Windows (arm64)
+        run: npm run make:win-arm
+        env:
+          CSC_LINK: ${{ secrets.WIN_CERT }}
+          CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASS }}
+          CI: true
+          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Rename (arm64)
+        run: |
+          Get-ChildItem out/make/wix/arm64
+          Rename-Item -Path "out/make/wix/arm64/TidGi.msi" -NewName "Install-TidGi-Windows-arm64.msi"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
