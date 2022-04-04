@@ -208,8 +208,8 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Rename (x64)
         run: |
-          Get-ChildItem out/make/wix
-          Rename-Item -Path "out/make/wix/TidGi.msi" -NewName "Install-TidGi-Windows-x64.msi"
+          Get-ChildItem out/make/wix/x64
+          Rename-Item -Path "out/make/wix/x64/TidGi.msi" -NewName "Install-TidGi-Windows-x64.msi"
       # - name: Make Windows (arm64)
       #   run: npm run make:win-arm
       #   env:
