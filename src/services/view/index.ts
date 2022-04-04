@@ -264,6 +264,7 @@ export class View implements IViewService {
       nodeIntegration: false,
       contextIsolation: true,
       // allow loading pictures from the localhost network, you may want to setup img host services in your local network, set this to true will cause CORS
+      // TODO: make this a setting in security preference
       webSecurity: false,
       allowRunningInsecureContent: true,
       session: sessionOfView,
