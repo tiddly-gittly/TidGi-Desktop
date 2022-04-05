@@ -9,10 +9,38 @@ import { delay } from 'bluebird';
 import { WikiChannel } from '@/constants/channels';
 import { context } from './common/services';
 
+/**
+ * Execute statement with $tw when idle, so there won't be significant lagging.
+ * Will retry till $tw is not undefined.
+ * @param script js statement to be executed, nothing will be returned
+ */
+async function executeTWJavaScriptWhenIdle(script: string): Promise<void> {
+  await webFrame.executeJavaScript(`
+    new Promise((resolve, reject) => {
+      const handler = () => {
+        requestIdleCallback(() => {
+          if (typeof $tw !== 'undefined') {
+            try {
+              ${script}
+              resolve();
+            } catch (error) {
+              reject(error);
+            }
+          } else {
+            // wait till $tw is not undefined.
+            setTimeout(handler, 500);
+          }
+        });
+      };
+      handler();
+    })
+  `);
+}
+
 // add tiddler
 ipcRenderer.on(WikiChannel.addTiddler, async (event, title: string, text: string, meta: unknown) => {
   const extraMeta = typeof meta === 'object' ? JSON.stringify(meta) : '{}';
-  await webFrame.executeJavaScript(`
+  await executeTWJavaScriptWhenIdle(`
     $tw.wiki.addTiddler({ title: '${title}', text: '${text}', ...${extraMeta} });
   `);
   // wait for fs to be settle
@@ -34,20 +62,20 @@ ipcRenderer.on(WikiChannel.runFilter, async (event, nonceReceived: number, filte
 });
 // set tiddler text, we use workspaceID as callback id
 ipcRenderer.on(WikiChannel.setTiddlerText, async (event, title: string, value: string, workspaceID: string = '') => {
-  await (webFrame.executeJavaScript(`
+  await executeTWJavaScriptWhenIdle(`
     $tw.wiki.setText('${title}', 'text', undefined, \`${value}\`);
-  `) as Promise<string>);
+  `);
   ipcRenderer.send(`${WikiChannel.setTiddlerTextDone}${workspaceID}`);
 });
 // add snackbar to notify user
 ipcRenderer.on(WikiChannel.syncProgress, async (event, message: string) => {
-  await webFrame.executeJavaScript(`
+  await executeTWJavaScriptWhenIdle(`
     $tw.wiki.addTiddler({ title: '$:/state/notification/${WikiChannel.syncProgress}', text: '${message}' });
     $tw.notifier.display('$:/state/notification/${WikiChannel.syncProgress}');
   `);
 });
 ipcRenderer.on(WikiChannel.generalNotification, async (event, message: string) => {
-  await webFrame.executeJavaScript(`
+  await executeTWJavaScriptWhenIdle(`
     $tw.wiki.addTiddler({ title: '$:/state/notification/${WikiChannel.generalNotification}', text: '${message}' });
     $tw.notifier.display('$:/state/notification/${WikiChannel.generalNotification}');
   `);
@@ -55,13 +83,13 @@ ipcRenderer.on(WikiChannel.generalNotification, async (event, message: string) =
 // open a tiddler
 ipcRenderer.on(WikiChannel.openTiddler, async (event, tiddlerName: string) => {
   const newHref: string = await context.getLocalHostUrlWithActualIP(`http://localhost:5212/#${tiddlerName}`);
-  await webFrame.executeJavaScript(`
+  await executeTWJavaScriptWhenIdle(`
     window.location.href = "${newHref}";
   `);
 });
 // send an action message
 ipcRenderer.on(WikiChannel.sendActionMessage, async (event, actionMessage: string) => {
-  await webFrame.executeJavaScript(`
+  await executeTWJavaScriptWhenIdle(`
     $tw.rootWidget.dispatchEvent({ type: "${actionMessage}" });
   `);
 });
@@ -73,7 +101,7 @@ ipcRenderer.on(WikiChannel.printTiddler, async (event, tiddlerName?: string) => 
     $tw.wiki.getTiddlerText('$:/temp/focussedTiddler');
   `) as Promise<string>);
   }
-  await webFrame.executeJavaScript(`
+  await executeTWJavaScriptWhenIdle(`
     var page = (${printer.printTiddler.toString()})('${tiddlerName}');
     page?.print?.();
     page?.close?.();
