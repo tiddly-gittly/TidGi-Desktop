@@ -39,7 +39,7 @@ export async function internalIpV4(): Promise<string | undefined> {
 const supportedPlatforms = new Set(['aix', 'android', 'darwin', 'freebsd', 'linux', 'openbsd', 'sunos', 'win32']);
 
 /**
- * Copy from https://github.com/silverwind/default-gateway 's index.js, to fix its weird behavior on windows. Its require statement will always require
+ * Copy from https://github.com/silverwind/default-gateway 's index.js, to fix its weird behavior on windows. Its require statement will always require sunos
  * @returns
  */
 async function defaultGatewayV4(): Promise<IDefaultGatewayInfo | undefined> {
