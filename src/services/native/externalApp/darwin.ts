@@ -1,6 +1,7 @@
+/* eslint-disable unicorn/no-null */
 import { pathExists } from 'fs-extra';
 import { IFoundEditor } from './found-editor';
-import appPath from 'app-path';
+import appPath from './app-path';
 import { logger } from '@services/libs/log';
 
 /** Represents an external editor on macOS */
@@ -172,7 +173,7 @@ export async function getAvailableEditors(editorName?: string): Promise<Readonly
   for (const editor of editors.filter((editor) => editorName === undefined || editor.name === editorName)) {
     const path = await findApplication(editor);
 
-    if (path) {
+    if (path !== null) {
       results.push({ editor: editor.name, path });
     }
   }
