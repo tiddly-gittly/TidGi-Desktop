@@ -58,6 +58,7 @@ export async function getWorkspaceMenuTemplate(
   service: IWorkspaceMenuRequiredServices,
 ): Promise<MenuItemConstructorOptions[]> {
   const { active, id, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService } = workspace;
+  /* eslint-disable @typescript-eslint/no-misused-promises */
   const template: MenuItemConstructorOptions[] = [
     {
       label: t('WorkspaceSelector.OpenWorkspaceTagTiddler', { tagName }),
@@ -113,14 +114,15 @@ export async function getWorkspaceMenuTemplate(
           await service.view.reloadViewsWebContents(id);
         },
       });
-    } else {
-      template.push({
-        label: t('ContextMenu.BackupNow'),
-        click: async () => {
-          await service.git.commitAndSync(workspace, { commitOnly: true });
-        },
-      });
     }
+  }
+  if (storageService === SupportedStorageServices.local) {
+    template.push({
+      label: t('ContextMenu.BackupNow'),
+      click: async () => {
+        await service.git.commitAndSync(workspace, { commitOnly: true });
+      },
+    });
   }
 
   if (!active && !isSubWiki) {
@@ -134,6 +136,7 @@ export async function getWorkspaceMenuTemplate(
       },
     });
   }
+  /* eslint-enable @typescript-eslint/no-misused-promises */
 
   return template;
 }
