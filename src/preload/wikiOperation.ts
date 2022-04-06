@@ -14,7 +14,14 @@ import { context } from './common/services';
  * Will retry till $tw is not undefined.
  * @param script js statement to be executed, nothing will be returned
  */
-async function executeTWJavaScriptWhenIdle(script: string): Promise<void> {
+async function executeTWJavaScriptWhenIdle(script: string, options?: { onlyWhenVisible?: boolean }): Promise<void> {
+  const executeHandlerCode =
+    options?.onlyWhenVisible === true
+      ? `
+        if (document.visibilityState === 'visible') {
+          handler();
+        }`
+      : `handler();`;
   await webFrame.executeJavaScript(`
     new Promise((resolve, reject) => {
       const handler = () => {
@@ -32,7 +39,7 @@ async function executeTWJavaScriptWhenIdle(script: string): Promise<void> {
           }
         });
       };
-      handler();
+      ${executeHandlerCode}
     })
   `);
 }
@@ -69,10 +76,15 @@ ipcRenderer.on(WikiChannel.setTiddlerText, async (event, title: string, value: s
 });
 // add snackbar to notify user
 ipcRenderer.on(WikiChannel.syncProgress, async (event, message: string) => {
-  await executeTWJavaScriptWhenIdle(`
+  await executeTWJavaScriptWhenIdle(
+    `
     $tw.wiki.addTiddler({ title: '$:/state/notification/${WikiChannel.syncProgress}', text: '${message}' });
     $tw.notifier.display('$:/state/notification/${WikiChannel.syncProgress}');
-  `);
+  `,
+    // requestIdleCallback seem to only execute when app page is visible. So there will be tons of scheduled sync when user open the app, unless we set `onlyWhenVisible: true`
+    // other generalNotification should be stacked
+    { onlyWhenVisible: true },
+  );
 });
 ipcRenderer.on(WikiChannel.generalNotification, async (event, message: string) => {
   await executeTWJavaScriptWhenIdle(`
