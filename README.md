@@ -140,6 +140,10 @@ Just download it from Github Release [Free Download](https://github.com/tiddly-g
 
 You can also find changelog in the Release.
 
+#### Mobile App
+
+See [Tiddloid](https://github.com/donmor/Tiddloid) for Android App developed by donmor.
+
 ### Stargazers over time
 
 Please give a star if you like it!
