@@ -61,8 +61,11 @@ export class Updater implements IUpdaterService {
             .then(async (response) => await (response.json() as Promise<IGithubReleaseData[]>))
             .then((json) => json[0])
         : fetch('https://api.github.com/repos/tiddly-gittly/TidGi-Desktop/releases/latest').then(
-            async (response) => await (response.json() as Promise<IGithubReleaseData>),
+            async (response) => await (response.json() as Promise<IGithubReleaseData | undefined>),
           ));
+      if (latestReleaseData === undefined) {
+        throw new Error('No release data, latestReleaseData === undefined');
+      }
       latestVersion = latestReleaseData.tag_name.replace('v', '');
       latestReleasePageUrl = latestReleaseData.html_url;
     } catch (fetchError) {
