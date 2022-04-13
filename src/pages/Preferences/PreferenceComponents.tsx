@@ -1,10 +1,13 @@
 import styled, { keyframes } from 'styled-components';
 import { Paper as PaperRaw, Typography, ListItem, TextField as TextFieldRaw } from '@material-ui/core';
 
-export const Paper = styled(PaperRaw)<{ dark?: 0 | 1 }>`
+export const Paper = styled(PaperRaw)`
   margin-top: 5px;
   margin-bottom: 30px;
-  border: ${({ dark }) => (dark === 1 ? 'none' : '1px solid rgba(0, 0, 0, 0.12)')};
+  border: 1px solid rgba(0, 0, 0, 0.12);
+  border-color: ${({ theme }) => theme.palette.divider};
+  background: ${({ theme }) => theme.palette.background.paper};
+  color: ${({ theme }) => theme.palette.text.primary};
 `;
 
 const animateMoveFromRight = keyframes`
@@ -26,12 +29,14 @@ SectionTitle.defaultProps = {
   variant: 'subtitle2',
 };
 
-export const TextField = styled(TextFieldRaw)``;
+export const TextField = styled(TextFieldRaw)`
+  color: ${({ theme }) => theme.palette.text.primary};
+`;
 TextField.defaultProps = {
   variant: 'standard',
 };
 
-export const ListItemVertical = styled(ListItem)`
+export const ListItemVertical: typeof ListItem = styled(ListItem)`
   flex-direction: column;
   align-items: flex-start;
   padding-bottom: 10px;
@@ -39,7 +44,7 @@ export const ListItemVertical = styled(ListItem)`
   & ${TextField} {
     margin-top: 20px;
   }
-` as typeof ListItem;
+`;
 
 export const TimePickerContainer = styled.div`
   margin-top: 10px;

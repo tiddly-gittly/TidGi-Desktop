@@ -11,7 +11,7 @@ const Root = styled.div`
   padding: 0 4px;
   z-index: 1;
   height: 41px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.2);
+  border-bottom: 1px solid ${({ theme }) => theme.palette.divider};
   width: 100%;
 `;
 const InfoContainer = styled.div`

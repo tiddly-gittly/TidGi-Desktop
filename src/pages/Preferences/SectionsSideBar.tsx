@@ -1,6 +1,6 @@
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Divider, List, ListItem, ListItemIcon, ListItemText } from '@material-ui/core';
+import { Divider as DividerRaw, List, ListItem, ListItemIcon as ListItemIconRaw, ListItemText } from '@material-ui/core';
 
 import { ISectionProps } from './useSections';
 import { PreferenceSections } from '@services/preferences/interface';
@@ -8,7 +8,14 @@ import { PreferenceSections } from '@services/preferences/interface';
 const SideBar = styled.div`
   position: fixed;
   width: 200px;
-  color: #666;
+  background-color: ${({ theme }) => theme.palette.background.default};
+  color: ${({ theme }) => theme.palette.text.primary};
+`;
+const ListItemIcon = styled(ListItemIconRaw)`
+  color: ${({ theme }) => theme.palette.text.primary};
+`;
+const Divider = styled(DividerRaw)`
+  border-color: ${({ theme }) => theme.palette.divider};
 `;
 
 const animateMoveFromLeft = keyframes`

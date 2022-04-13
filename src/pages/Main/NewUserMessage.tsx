@@ -22,11 +22,9 @@ const Avatar = styled.div`
   display: inline-block;
   height: 32px;
   width: 32px;
-  /** // TODO: dark theme  */
-  /* background: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black; */
+  background-color: ${({ theme }) => theme.palette.background.default};
   border-radius: 4;
-  /** // TODO: dark theme  */
-  /* color: theme.palette.getContrastText(theme.palette.type === 'dark' ? theme.palette.common.white: theme.palette.common.black); */
+  color: ${({ theme }) => theme.palette.text.primary};
   line-height: 32px;
   text-align: center;
   font-weight: 500;
@@ -40,8 +38,7 @@ const Avatar = styled.div`
 const Tip2Text = styled.span`
   display: inline-block;
   font-size: 18px;
-  /** // TODO: dark theme  */
-  /* color: theme.palette.type === 'dark' ? theme.palette.common.white : theme.palette.common.black; */
+  color: ${({ theme }) => theme.palette.text.primary};
 `;
 
 const TipWithSidebar = styled.div`

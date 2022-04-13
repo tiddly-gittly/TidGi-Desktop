@@ -47,6 +47,7 @@ const Root = styled.div`
   width: 100%;
   overflow: hidden;
   background-color: ${({ theme }) => theme.palette.background.default};
+  color: ${({ theme }) => theme.palette.text.primary};
 
   .simplebar-content {
     height: 100%;
@@ -102,6 +103,7 @@ const IconButton = styled(IconButtonRaw)`
   aspect-ratio: 1;
   overflow: hidden;
   width: 80%;
+  color: ${({ theme }) => theme.palette.action.active};
 `;
 
 const InnerContentRoot = styled.div`

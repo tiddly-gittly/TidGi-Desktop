@@ -7,9 +7,7 @@ import { useRestartSnackbar } from '@/components/RestartSnackbar';
 
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { usePreferenceSections } from './useSections';
-import { useThemeObservable } from '@services/theme/hooks';
 import { SectionSideBar } from './SectionsSideBar';
-import { Paper } from './PreferenceComponents';
 import { TiddlyWiki } from './sections/TiddlyWiki';
 import { Sync } from './sections/Sync';
 import { General } from './sections/General';
@@ -47,9 +45,6 @@ export default function Preferences(): JSX.Element {
     if (scrollTo === undefined) return;
     sections[scrollTo].ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [sections]);
-
-  const theme = useThemeObservable();
-  Paper.defaultProps = { dark: theme?.shouldUseDarkColors === true ? 1 : 0 };
 
   return (
     <Root>

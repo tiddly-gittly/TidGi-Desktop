@@ -29,7 +29,7 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
       await openWorkspaceTagTiddler(workspace, window.service);
     } catch (error) {
       if (error instanceof Error) {
-        window.service.native.log('error', error.message);
+        await window.service.native.log('error', error.message);
       }
     }
     workspaceClickedLoadingSetter(false);
@@ -41,7 +41,7 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
       const workspaceContextMenuTemplate = await getWorkspaceMenuTemplate(workspace, t, window.service);
       void window.remote.buildContextMenuAndPopup(workspaceContextMenuTemplate, { x: event.clientX, y: event.clientY, editFlags: { canCopy: false } });
     },
-    [workspace],
+    [t, workspace],
   );
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} onContextMenu={onWorkspaceContextMenu}>

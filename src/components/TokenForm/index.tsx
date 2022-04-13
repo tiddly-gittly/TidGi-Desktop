@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/explicit-function-return-type */
 import React, { useEffect, useState } from 'react';
-import styled, { keyframes } from 'styled-components';
+import styled, { DefaultTheme, keyframes } from 'styled-components';
 import { Tab as TabRaw, ListItemText } from '@material-ui/core';
 import { TabPanel as TabPanelRaw, TabContext, TabList as TabListRaw } from '@material-ui/lab';
 import { SupportedStorageServices } from '@services/types';
@@ -25,12 +26,12 @@ const TabsContainer = styled.div`
     min-width: 160px;
   }
 `;
-const backgroundColorShift = keyframes`
-from {background-color: #fdfdfd;}
-  to {background-color: #fff;}
+const backgroundColorShift = ({ theme }: { theme: DefaultTheme }) => keyframes`
+from {background-color: ${theme.palette.background.default};}
+  to {background-color: ${theme.palette.background.default};}
 `;
 const Tab = styled(TabRaw)`
-  background-color: #999;
+  background-color: ${({ theme }) => theme.palette.background.default};
   animation: ${backgroundColorShift} 5s infinite;
   animation-direction: alternate;
   animation-timing-function: cubic-bezier(0.4, 0, 1, 1);

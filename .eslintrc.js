@@ -48,6 +48,15 @@ module.exports = {
         },
       },
     ],
+    '@typescript-eslint/no-misused-promises': [
+      'error',
+      {
+        checksVoidReturn: {
+          arguments: false,
+          attributes: false,
+        },
+      },
+    ],
     'react/react-in-jsx-scope': 'off',
     'security-node/detect-unhandled-async-errors': 'off',
     'unicorn/prefer-node-protocol': 'off',
