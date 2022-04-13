@@ -2,11 +2,11 @@ import { Trans, useTranslation } from 'react-i18next';
 import semver from 'semver';
 
 import TimePicker from '@material-ui/lab/TimePicker';
-import { Divider, List, ListItem, ListItemSecondaryAction, ListItemText, Switch } from '@material-ui/core';
+import { Divider, List, ListItemSecondaryAction, Switch } from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 import type { ISectionProps } from '../useSections';
-import { Link, ListItemVertical, Paper, SectionTitle, TextField, TimePickerContainer } from '../PreferenceComponents';
+import { Link, ListItem, ListItemVertical, ListItemText, Paper, SectionTitle, TextField, TimePickerContainer } from '../PreferenceComponents';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { usePromiseValue } from '@/helpers/useServiceValue';

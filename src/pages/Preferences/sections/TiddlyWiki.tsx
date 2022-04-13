@@ -2,11 +2,11 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useDebouncedCallback } from 'beautiful-react-hooks';
 
-import { List, ListItemText } from '@material-ui/core';
+import { List } from '@material-ui/core';
 
 import type { ISectionProps } from '../useSections';
 import { useUserInfoObservable } from '@services/auth/hooks';
-import { ListItemVertical, Paper, SectionTitle, TextField } from '../PreferenceComponents';
+import { ListItemText, ListItemVertical, Paper, SectionTitle, TextField } from '../PreferenceComponents';
 
 export function TiddlyWiki(props: Required<ISectionProps>): JSX.Element {
   const { t } = useTranslation();

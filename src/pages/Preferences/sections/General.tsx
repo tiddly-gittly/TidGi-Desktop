@@ -1,10 +1,10 @@
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import { Divider, Switch, List, ListItem, ListItemSecondaryAction, ListItemText, MenuItem } from '@material-ui/core';
+import { Divider, Switch, List, ListItemSecondaryAction, MenuItem } from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 import type { ISectionProps } from '../useSections';
-import { Paper, SectionTitle } from '../PreferenceComponents';
+import { Paper, SectionTitle, ListItem, ListItemText } from '../PreferenceComponents';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import PopUpMenuItem from '@/components/PopUpMenuItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';

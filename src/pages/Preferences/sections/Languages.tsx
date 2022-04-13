@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
-import { Divider, InputLabel, List, ListItem, ListItemSecondaryAction, ListItemText, MenuItem, Select, Switch } from '@material-ui/core';
+import { Divider, List, ListItemSecondaryAction, MenuItem, Select, Switch } from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 import type { ISectionProps } from '../useSections';
-import { Paper, SectionTitle } from '../PreferenceComponents';
+import { Paper, SectionTitle, ListItem, ListItemText, InputLabel } from '../PreferenceComponents';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { hunspellLanguagesMap } from '@/constants/hunspellLanguages';

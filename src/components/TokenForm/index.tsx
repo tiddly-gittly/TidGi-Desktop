@@ -19,6 +19,8 @@ const TabPanel = styled(TabPanelRaw)`
 `;
 const TabList = styled(TabListRaw)``;
 const TabsContainer = styled.div`
+  background-color: ${({ theme }) => theme.palette.background.default};
+  color: ${({ theme }) => theme.palette.text.primary};
   display: flex;
   padding: 15px 0;
   flex-direction: row;
@@ -31,7 +33,8 @@ from {background-color: ${theme.palette.background.default};}
   to {background-color: ${theme.palette.background.default};}
 `;
 const Tab = styled(TabRaw)`
-  background-color: ${({ theme }) => theme.palette.background.default};
+  background-color: ${({ theme }) => theme.palette.action.active};
+  color: ${({ theme }) => theme.palette.text.secondary};
   animation: ${backgroundColorShift} 5s infinite;
   animation-direction: alternate;
   animation-timing-function: cubic-bezier(0.4, 0, 1, 1);

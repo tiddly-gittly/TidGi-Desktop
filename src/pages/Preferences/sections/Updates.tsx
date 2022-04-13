@@ -1,9 +1,9 @@
 import { useTranslation } from 'react-i18next';
-import { Divider, List, ListItem, ListItemSecondaryAction, ListItemText, Switch } from '@material-ui/core';
+import { Divider, List, ListItemSecondaryAction, Switch } from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 import type { ISectionProps } from '../useSections';
-import { Paper, SectionTitle } from '../PreferenceComponents';
+import { Paper, SectionTitle, ListItem, ListItemText } from '../PreferenceComponents';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useUpdaterObservable, getUpdaterMessage } from '@services/updater/hooks';
 import { IUpdaterStatus } from '@services/updater/interface';

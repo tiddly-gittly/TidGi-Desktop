@@ -1,5 +1,12 @@
 import styled, { keyframes } from 'styled-components';
-import { Paper as PaperRaw, Typography, ListItem, TextField as TextFieldRaw } from '@material-ui/core';
+import {
+  Paper as PaperRaw,
+  Typography,
+  TextField as TextFieldRaw,
+  ListItem as ListItemRaw,
+  ListItemText as ListItemTextRaw,
+  InputLabel as InputLabelRaw,
+} from '@material-ui/core';
 
 export const Paper = styled(PaperRaw)`
   margin-top: 5px;
@@ -31,12 +38,44 @@ SectionTitle.defaultProps = {
 
 export const TextField = styled(TextFieldRaw)`
   color: ${({ theme }) => theme.palette.text.primary};
+  input {
+    color: ${({ theme }) => theme.palette.text.primary};
+  }
+  p,
+  label {
+    color: ${({ theme }) => theme.palette.text.secondary};
+  }
 `;
 TextField.defaultProps = {
   variant: 'standard',
 };
 
-export const ListItemVertical: typeof ListItem = styled(ListItem)`
+export const InputLabel: typeof InputLabelRaw = styled(InputLabelRaw)`
+  color: ${({ theme }) => theme.palette.text.primary};
+`;
+export const ListItemText: typeof ListItemTextRaw = styled(ListItemTextRaw)`
+  color: ${({ theme }) => theme.palette.text.primary};
+  input {
+    color: ${({ theme }) => theme.palette.text.primary};
+  }
+  p,
+  label {
+    color: ${({ theme }) => theme.palette.text.secondary};
+  }
+`;
+export const ListItem: typeof ListItemRaw = styled(ListItemRaw)`
+  svg {
+    color: ${({ theme }) => theme.palette.action.active};
+  }
+  p,
+  label {
+    color: ${({ theme }) => theme.palette.text.secondary};
+  }
+  div[role=button] {
+    color: ${({ theme }) => theme.palette.text.primary};
+  }
+`;
+export const ListItemVertical: typeof ListItemRaw = styled(ListItemRaw)`
   flex-direction: column;
   align-items: flex-start;
   padding-bottom: 10px;

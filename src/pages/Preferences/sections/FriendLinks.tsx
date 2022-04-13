@@ -1,11 +1,11 @@
 import React from 'react';
 import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
-import { Divider, List, ListItem, ListItemText } from '@material-ui/core';
+import { Divider, List } from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 import type { ISectionProps } from '../useSections';
-import { Paper, SectionTitle } from '../PreferenceComponents';
+import { Paper, SectionTitle, ListItem, ListItemText } from '../PreferenceComponents';
 
 import webcatalogLogo from '@/images/webcatalog-logo.svg';
 import translatiumLogo from '@/images/translatium-logo.svg';

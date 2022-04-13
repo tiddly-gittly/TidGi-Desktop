@@ -10,7 +10,7 @@ export const darkTheme = merge(
         background: {
           default: '#212121',
         },
-        text: { primary: 'rgba(255, 255, 255, 0.87)', secondary: 'rgb(155, 155, 155)', disabled: 'rgba(255, 255, 255, 0.35)' },
+        text: { primary: 'rgba(255, 255, 255, 0.87)', secondary: 'rgba(255, 255, 255, 0.6)', disabled: 'rgba(255, 255, 255, 0.35)' },
       },
     }),
   ),

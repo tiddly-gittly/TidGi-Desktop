@@ -5,12 +5,12 @@ import setYear from 'date-fns/setYear';
 import setMonth from 'date-fns/setMonth';
 import setDate from 'date-fns/setDate';
 import TimePicker from '@material-ui/lab/TimePicker';
-import { Divider, List, ListItem, ListItemSecondaryAction, ListItemText, Switch } from '@material-ui/core';
+import { Divider, List, ListItemSecondaryAction, Switch } from '@material-ui/core';
 
 import { TokenForm } from '../../../components/TokenForm';
 
 import type { ISectionProps } from '../useSections';
-import { Paper, SectionTitle, TextField, TimePickerContainer } from '../PreferenceComponents';
+import { Paper, SectionTitle, TextField, TimePickerContainer, ListItem, ListItemText } from '../PreferenceComponents';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
 

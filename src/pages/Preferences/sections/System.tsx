@@ -1,12 +1,12 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
-import { List, ListItem, ListItemText, MenuItem } from '@material-ui/core';
+import { List, MenuItem } from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
 import PopUpMenuItem from '@/components/PopUpMenuItem';
 import { getOpenAtLoginString, useSystemPreferenceObservable } from '@services/systemPreferences/hooks';
 import type { ISectionProps } from '../useSections';
-import { Paper, SectionTitle } from '../PreferenceComponents';
+import { Paper, SectionTitle, ListItem, ListItemText } from '../PreferenceComponents';
 
 export function System(props: ISectionProps): JSX.Element {
   const { t } = useTranslation();
