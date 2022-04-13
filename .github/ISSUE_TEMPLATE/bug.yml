@@ -8,15 +8,15 @@ body:
   - type: textarea
     id: Environment
     attributes:
-      label: Environment
-      description: You can copy this from right click context menu → More → About
+      label: Environment 环境信息
+      description: You can copy this from Menu → About 你可以从 菜单 → 关于 里面复制出来
     validations:
       required: false
   - type: textarea
     id: Description
     attributes:
       label: Description 描述
-      description: Describe how the bug manifests and what the behavior would be without the bug.
+      description: Describe how the bug manifests and what the behavior would be without the bug. 描述缺陷的行为，也可以说说本应该咋样
       placeholder: Tell us what you see!
     validations:
       required: false
@@ -24,12 +24,12 @@ body:
     id: Reproduce
     attributes:
       label: Steps to Reproduce 复现方式
-      description: Please explain the steps required to duplicate the issue, especially if you are able to provide a sample application.
+      description: Please explain the steps required to duplicate the issue. 精确的复现方法，需要能稳定复现
       placeholder: Help developer to debug 帮助开发者高效debug
     validations:
       required: true
   - type: textarea
     id: Context
     attributes:
-      label: Additional Context
+      label: Additional Context 额外上下文
       description: List any other information that is relevant to your issue. Stack traces, related issues, suggestions on how to add, use case, forum links, screenshots, OS if applicable, etc.
