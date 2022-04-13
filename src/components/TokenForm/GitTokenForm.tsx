@@ -11,7 +11,16 @@ import { getServiceBranchTypes, getServiceEmailTypes, getServiceTokenTypes, getS
 const AuthingLoginButton = styled(Button)`
   width: 100%;
 `;
-const GitTokenInput = styled(TextField)``;
+const GitTokenInput = styled(TextField)`
+  color: ${({ theme }) => theme.palette.text.primary};
+  input {
+    color: ${({ theme }) => theme.palette.text.primary};
+  }
+  p,
+  label {
+    color: ${({ theme }) => theme.palette.text.secondary};
+  }
+`;
 GitTokenInput.defaultProps = {
   fullWidth: true,
   variant: 'standard',

@@ -15,3 +15,5 @@ export const darkTheme = merge(
     }),
   ),
 ) as Theme;
+// DEBUG: console
+console.warn(`darkTheme`, JSON.stringify(darkTheme, null, '  '));

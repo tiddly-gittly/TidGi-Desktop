@@ -14,7 +14,10 @@ const Switch = styled(SwitchRaw)`
   }
 `;
 
-const Container = styled(Paper)``;
+const Container = styled(Paper)`
+  background-color: ${({ theme }) => theme.palette.background.paper};
+  color: ${({ theme }) => theme.palette.text.primary};
+`;
 
 /**
  * Introduce difference between main and sub wiki.

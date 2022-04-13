@@ -12,12 +12,13 @@ import {
   TextField as TextFieldRaw,
   Divider,
   List as ListRaw,
-  ListItem,
-  ListItemText,
+  ListItem as ListItemRaw,
+  ListItemText as ListItemTextRaw,
   ListItemSecondaryAction,
   Switch,
   Typography,
   Link,
+  Paper,
 } from '@material-ui/core';
 import { Autocomplete } from '@material-ui/lab';
 import defaultIcon from '../../images/default-icon.png';
@@ -37,12 +38,13 @@ import { TokenForm } from '@/components/TokenForm';
 import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
 import { isEqual } from 'lodash';
 
-const Root = styled.div`
+const Root = styled(Paper)`
   height: 100%;
   width: 100%;
   padding: 20px;
   display: flex;
   flex-direction: column;
+  background: ${({ theme }) => theme.palette.background.paper};
 `;
 const FlexGrow = styled.div`
   flex: 1;
@@ -128,6 +130,28 @@ const List = styled(ListRaw)`
   & > li > div {
     padding-top: 0;
     padding-bottom: 0;
+  }
+`;
+export const ListItem: typeof ListItemRaw = styled(ListItemRaw)`
+  svg {
+    color: ${({ theme }) => theme.palette.action.active};
+  }
+  p,
+  label {
+    color: ${({ theme }) => theme.palette.text.secondary};
+  }
+  div[role='button'] {
+    color: ${({ theme }) => theme.palette.text.primary};
+  }
+`;
+export const ListItemText: typeof ListItemTextRaw = styled(ListItemTextRaw)`
+  color: ${({ theme }) => theme.palette.text.primary};
+  input {
+    color: ${({ theme }) => theme.palette.text.primary};
+  }
+  p,
+  label {
+    color: ${({ theme }) => theme.palette.text.secondary};
   }
 `;
 

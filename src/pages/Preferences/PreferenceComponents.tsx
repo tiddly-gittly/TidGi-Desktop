@@ -71,7 +71,7 @@ export const ListItem: typeof ListItemRaw = styled(ListItemRaw)`
   label {
     color: ${({ theme }) => theme.palette.text.secondary};
   }
-  div[role=button] {
+  div[role='button'] {
     color: ${({ theme }) => theme.palette.text.primary};
   }
 `;

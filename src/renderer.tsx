@@ -17,6 +17,7 @@ import { darkTheme, lightTheme } from '@services/theme/defaultTheme';
 import { initI18N } from './i18n';
 import 'electron-ipc-cat/fixContextIsolation';
 import { Pages } from './pages';
+import { RootStyle } from './components/RootStyle';
 
 function App(): JSX.Element {
   const theme = useThemeObservable();
@@ -28,7 +29,9 @@ function App(): JSX.Element {
           <CssBaseline />
           <React.Suspense fallback={<div />}>
             <I18nextProvider i18n={i18n}>
-              <Pages />
+              <RootStyle>
+                <Pages />
+              </RootStyle>
             </I18nextProvider>
           </React.Suspense>
         </LocalizationProvider>

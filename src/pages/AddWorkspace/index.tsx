@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet';
-import { Accordion, AccordionSummary, AccordionDetails, AppBar, Paper, Tab } from '@material-ui/core';
-import { TabPanel as TabPanelRaw, TabContext, TabList } from '@material-ui/lab';
+import { Accordion as AccordionRaw, AccordionSummary, AccordionDetails, AppBar, Paper as PaperRaw, Tab as TabRaw } from '@material-ui/core';
+import { TabPanel as TabPanelRaw, TabContext, TabList as TabListRaw } from '@material-ui/lab';
 import { ExpandMore as ExpandMoreIcon } from '@material-ui/icons';
 
 import { SupportedStorageServices } from '@services/types';
@@ -30,6 +30,16 @@ enum CreateWorkspaceTabs {
   OpenLocalWiki = 'OpenLocalWiki',
 }
 
+export const Paper = styled(PaperRaw)`
+  border-color: ${({ theme }) => theme.palette.divider};
+  background: ${({ theme }) => theme.palette.background.paper};
+  color: ${({ theme }) => theme.palette.text.primary};
+`;
+export const Accordion = styled(AccordionRaw)`
+  border-color: ${({ theme }) => theme.palette.divider};
+  background: ${({ theme }) => theme.palette.background.paper};
+  color: ${({ theme }) => theme.palette.text.primary};
+`;
 const Container = styled.main`
   display: flex;
   flex-direction: column;
@@ -41,11 +51,21 @@ const Container = styled.main`
 const TokenFormContainer = styled(Paper)`
   margin: 10px 0;
   padding: 5px 10px;
+  background-color: ${({ theme }) => theme.palette.background.paper};
+  color: ${({ theme }) => theme.palette.text.primary};
 `;
 TokenFormContainer.defaultProps = {
   square: true,
   elevation: 2,
 };
+const TabList = styled(TabListRaw)`
+  background: ${({ theme }) => theme.palette.background.paper};
+  color: ${({ theme }) => theme.palette.text.secondary};
+`;
+const Tab = styled(TabRaw)`
+  background: ${({ theme }) => theme.palette.background.paper};
+  color: ${({ theme }) => theme.palette.text.secondary};
+`;
 const TabPanel = styled(TabPanelRaw)`
   margin-bottom: 10px;
   padding: 0 !important;

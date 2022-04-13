@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 import React, { useEffect, useState } from 'react';
 import styled, { DefaultTheme, keyframes } from 'styled-components';
-import { Tab as TabRaw, ListItemText } from '@material-ui/core';
+import { Tab as TabRaw, ListItemText as ListItemTextRaw } from '@material-ui/core';
 import { TabPanel as TabPanelRaw, TabContext, TabList as TabListRaw } from '@material-ui/lab';
 import { SupportedStorageServices } from '@services/types';
 import { useTranslation } from 'react-i18next';
@@ -12,14 +12,31 @@ const Container = styled.div`
   width: 100%;
   display: flex;
   flex-direction: column;
+  background-color: ${({ theme }) => theme.palette.background.paper};
+`;
+export const ListItemText: typeof ListItemTextRaw = styled(ListItemTextRaw)`
+  color: ${({ theme }) => theme.palette.text.primary};
+  input {
+    color: ${({ theme }) => theme.palette.text.primary};
+  }
+  p,
+  label {
+    color: ${({ theme }) => theme.palette.text.secondary};
+  }
 `;
 const TabPanel = styled(TabPanelRaw)`
   padding: 5px 0 !important;
   padding-left: 16px !important;
+  background-color: ${({ theme }) => theme.palette.background.paper};
 `;
-const TabList = styled(TabListRaw)``;
+const TabList = styled(TabListRaw)`
+  background-color: ${({ theme }) => theme.palette.background.paper};
+  & button {
+    background-color: ${({ theme }) => theme.palette.background.paper} !important;
+  }
+`;
 const TabsContainer = styled.div`
-  background-color: ${({ theme }) => theme.palette.background.default};
+  background-color: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.primary};
   display: flex;
   padding: 15px 0;

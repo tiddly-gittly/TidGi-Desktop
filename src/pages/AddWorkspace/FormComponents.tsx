@@ -5,13 +5,19 @@ import { useTranslation } from 'react-i18next';
 export const CreateContainer = styled(Paper)`
   padding: 10px;
   margin-top: 10px;
+  background-color: ${({ theme }) => theme.palette.background.paper};
+  color: ${({ theme }) => theme.palette.text.primary};
 `;
 export const LocationPickerContainer = styled.div`
   display: flex;
   flex-direction: row;
   margin-bottom: 10px;
+  background-color: ${({ theme }) => theme.palette.background.paper};
+  color: ${({ theme }) => theme.palette.text.primary};
 `;
-export const LocationPickerInput = styled(TextField)``;
+export const LocationPickerInput = styled(TextField)`
+  background-color: ${({ theme }) => theme.palette.background.paper};
+`;
 LocationPickerInput.defaultProps = {
   fullWidth: true,
   variant: 'standard',
@@ -28,6 +34,7 @@ export const CloseButton = styled(Button)`
           white-space: nowrap;
         `}
   width: 100%;
+  background-color: ${({ theme }) => theme.palette.secondary[theme.palette.mode]};
 `;
 LocationPickerButton.defaultProps = {
   variant: 'contained',

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 
@@ -25,7 +25,6 @@ import { Miscellaneous } from './sections/Miscellaneous';
 
 const Root = styled.div`
   padding: 20px;
-  /* background: theme.palette.background.default; */
 `;
 
 const Inner = styled.div`
