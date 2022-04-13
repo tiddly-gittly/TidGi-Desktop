@@ -25,6 +25,7 @@ import { isTest } from '@/constants/environment';
 import { MENUBAR_ICON_PATH } from '@/constants/paths';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
+import { IThemeService } from '@services/theme/interface';
 
 @injectable()
 export class Window implements IWindowService {
@@ -37,6 +38,7 @@ export class Window implements IWindowService {
   @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
   @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
+  @lazyInject(serviceIdentifier.ThemeService) private readonly themeService!: IThemeService;
 
   constructor() {
     void this.registerMenu();
@@ -212,6 +214,7 @@ export class Window implements IWindowService {
         });
       });
     }
+    await this.updateWindowBackground(newWindow);
     // This loading will wait for a while
     await newWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
     await webContentLoadingPromise;
@@ -598,5 +601,11 @@ export class Window implements IWindowService {
         resolve(menuBar);
       });
     });
+  }
+
+  private async updateWindowBackground(newWindow: BrowserWindow): Promise<void> {
+    if (await this.themeService.shouldUseDarkColors()) {
+      newWindow.setBackgroundColor('#000000');
+    }
   }
 }

@@ -10,6 +10,7 @@ export interface ITheme {
  * Wrap call to electron api, so we won't need remote module in renderer process
  */
 export interface IThemeService {
+  shouldUseDarkColors(): Promise<boolean>;
   theme$: BehaviorSubject<ITheme>;
 }
 export const ThemeServiceIPCDescriptor = {

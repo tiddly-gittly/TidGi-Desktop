@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { BehaviorSubject } from 'rxjs';
 import { nativeTheme } from 'electron';
 import { injectable } from 'inversify';
@@ -14,7 +15,7 @@ export class ThemeService implements IThemeService {
 
   constructor() {
     void this.init();
-    this.theme$ = new BehaviorSubject<ITheme>({ shouldUseDarkColors: this.shouldUseDarkColors() });
+    this.theme$ = new BehaviorSubject<ITheme>({ shouldUseDarkColors: this.shouldUseDarkColorsSync() });
   }
 
   private updateThemeSubject(newTheme: ITheme): void {
@@ -26,11 +27,15 @@ export class ThemeService implements IThemeService {
     // apply theme
     nativeTheme.themeSource = themeSource;
     nativeTheme.addListener('updated', () => {
-      this.updateThemeSubject({ shouldUseDarkColors: this.shouldUseDarkColors() });
+      this.updateThemeSubject({ shouldUseDarkColors: this.shouldUseDarkColorsSync() });
     });
   }
 
-  private shouldUseDarkColors(): boolean {
+  private shouldUseDarkColorsSync(): boolean {
     return nativeTheme.shouldUseDarkColors;
+  }
+
+  public async shouldUseDarkColors(): Promise<boolean> {
+    return this.shouldUseDarkColorsSync();
   }
 }
