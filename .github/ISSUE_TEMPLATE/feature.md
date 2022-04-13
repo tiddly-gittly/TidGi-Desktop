@@ -1,27 +1,20 @@
----
 name: Feature Request 提新功能
-about: Suggest an idea for this project
+description: Suggest an idea for this project 提出新的功能建议
 title: 'feature: '
----
-
-## Environment
-
-<!-- You can copy this from right click context menu → More → About  -->
-
-TG Version v
-
-Electron Version:
-
-Node Version:
-
-Chromium Version:
-
-OS (macOS, Windows, Linux) and Version:
-
-## Description:
-
-<!-- A clear and concise description of what the feature request is. Please include if your feature request is related to a problem. Additionally, feel free to to include any alternative solutions or features you've considered. -->
-
-## Additional Context
-
-<!-- List any other information that is relevant to your issue. Stack traces, related issues, suggestions on how to add, use case, forum links, screenshots, OS if applicable, etc. -->
+labels: ['feature']
+assignees:
+  - linonetwo
+body:
+  - type: textarea
+    id: Description
+    attributes:
+      label: Description 描述
+      description: Describe what the behavior would be. 描述新功能应该咋样
+      placeholder: Tell us what you want!
+    validations:
+      required: true
+  - type: textarea
+    id: Context
+    attributes:
+      label: Additional Context 额外上下文
+      description: List any other information that is relevant to your issue. Stack traces, related issues, suggestions on how to add, use case, forum links, screenshots, OS if applicable, etc.
