@@ -472,6 +472,18 @@ export class View implements IViewService {
     });
   }
 
+  public async getViewCurrentUrl(workspaceID?: string): Promise<string | undefined> {
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    if (!workspaceID) {
+      return;
+    }
+    const view = this.getView(workspaceID, WindowNames.main);
+    if (view === undefined) {
+      return;
+    }
+    return view.webContents.getURL();
+  }
+
   public async getActiveBrowserView(): Promise<BrowserView | undefined> {
     const workspace = await this.workspaceService.getActiveWorkspace();
     const isMenubarOpen = await this.windowService.isMenubarOpen();

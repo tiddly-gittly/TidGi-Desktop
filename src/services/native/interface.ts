@@ -16,6 +16,7 @@ export interface INativeService {
    * @param wikiFolderLocation Each wiki has its own worker, we use wiki's folder path to determine which worker to use. If not provided, will use current active workspace's wiki's path
    */
   executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string>;
+  getLocalHostUrlWithActualIP(url: string): Promise<string>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   openInEditor(filePath: string, editorName?: string | undefined): Promise<boolean>;
@@ -30,6 +31,7 @@ export const NativeServiceIPCDescriptor = {
   channel: NativeChannel.name,
   properties: {
     executeZxScript$: ProxyPropertyType.Function$,
+    getLocalHostUrlWithActualIP: ProxyPropertyType.Function,
     log: ProxyPropertyType.Function,
     open: ProxyPropertyType.Function,
     openInEditor: ProxyPropertyType.Function,

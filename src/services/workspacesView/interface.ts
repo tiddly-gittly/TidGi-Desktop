@@ -33,6 +33,11 @@ export interface IWorkspaceViewService {
    * @param id workspace id, if omit, will load url in active workspace if existed
    */
   loadURL(url: string, workspaceID?: string): Promise<void>;
+  /**
+   * Open url, and if id is valid, we will switch to that workspace first
+   * @param url
+   * @param workspaceID
+   */
   openUrlInWorkspace(url: string, workspaceID: string): Promise<void>;
   printTiddler(tiddlerName?: string | undefined): Promise<void>;
   realignActiveWorkspace(id?: string): Promise<void>;

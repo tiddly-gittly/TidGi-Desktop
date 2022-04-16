@@ -17,6 +17,7 @@ import { IZxFileInput } from '@services/wiki/wikiWorker';
 import { ZxNotInitializedError } from './error';
 import { lazyInject } from '@services/container';
 import i18next from 'i18next';
+import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 
 @injectable()
 export class NativeService implements INativeService {
@@ -153,5 +154,9 @@ ${message.message}
 
   public async openNewGitHubIssue(error: Error): Promise<void> {
     reportErrorToGithubWithTemplates(error);
+  }
+
+  public async getLocalHostUrlWithActualIP(url: string): Promise<string> {
+    return await getLocalHostUrlWithActualIP(url);
   }
 }

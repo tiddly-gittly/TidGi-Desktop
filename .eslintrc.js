@@ -51,10 +51,7 @@ module.exports = {
     '@typescript-eslint/no-misused-promises': [
       'error',
       {
-        checksVoidReturn: {
-          arguments: false,
-          attributes: false,
-        },
+        checksVoidReturn: false,
       },
     ],
     'react/react-in-jsx-scope': 'off',

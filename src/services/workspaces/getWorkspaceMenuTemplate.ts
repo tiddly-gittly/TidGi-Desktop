@@ -17,15 +17,20 @@ interface IWorkspaceMenuRequiredServices {
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
   context: Pick<IContextService, 'isOnline'>;
   git: Pick<IGitService, 'commitAndSync'>;
-  native: Pick<INativeService, 'open' | 'openInEditor' | 'openInGitGuiApp'>;
-  view: Pick<IViewService, 'reloadViewsWebContents' | 'enterSafeModeForViewsWebContents'>;
+  native: Pick<INativeService, 'open' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualIP'>;
+  view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
   wiki: Pick<IWikiService, 'requestOpenTiddlerInWiki' | 'requestWikiSendActionMessage'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open'>;
   workspace: Pick<IWorkspaceService, 'getActiveWorkspace'>;
   workspaceView: Pick<
     IWorkspaceViewService,
-    'wakeUpWorkspaceView' | 'hibernateWorkspaceView' | 'setActiveWorkspaceView' | 'restartWorkspaceViewService' | 'realignActiveWorkspace'
+    | 'wakeUpWorkspaceView'
+    | 'hibernateWorkspaceView'
+    | 'setActiveWorkspaceView'
+    | 'restartWorkspaceViewService'
+    | 'realignActiveWorkspace'
+    | 'openUrlInWorkspace'
   >;
 }
 
