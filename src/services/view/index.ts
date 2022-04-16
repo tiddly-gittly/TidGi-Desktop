@@ -456,7 +456,7 @@ export class View implements IViewService {
   };
 
   public async reloadViewsWebContentsIfDidFailLoad(): Promise<void> {
-    this.forEachView(async (view, id, name) => {
+    this.forEachView(async (view, id, _name) => {
       if (await this.workspaceService.workspaceDidFailLoad(id)) {
         view.webContents.reload();
       }
@@ -464,11 +464,11 @@ export class View implements IViewService {
   }
 
   public async reloadViewsWebContents(workspaceID?: string): Promise<void> {
-    this.forEachView((view, id, name) => {
-      if (workspaceID !== undefined && id !== workspaceID) {
-        return;
+    this.forEachView((view, id, _name) => {
+      /** if workspaceID not passed means reload all views. */
+      if (workspaceID === undefined || id === workspaceID) {
+        view.webContents.reload();
       }
-      view.webContents.reload();
     });
   }
 
