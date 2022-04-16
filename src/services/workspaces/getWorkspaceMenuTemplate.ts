@@ -18,7 +18,7 @@ interface IWorkspaceMenuRequiredServices {
   context: Pick<IContextService, 'isOnline'>;
   git: Pick<IGitService, 'commitAndSync'>;
   native: Pick<INativeService, 'open' | 'openInEditor' | 'openInGitGuiApp'>;
-  view: Pick<IViewService, 'reloadViewsWebContents'>;
+  view: Pick<IViewService, 'reloadViewsWebContents' | 'enterSafeModeForViewsWebContents'>;
   wiki: Pick<IWikiService, 'requestOpenTiddlerInWiki' | 'requestWikiSendActionMessage'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open'>;
@@ -88,17 +88,6 @@ export async function getWorkspaceMenuTemplate(
       label: t('WorkspaceSelector.OpenWorkspaceFolderInGitGUI'),
       click: async () => await service.native.openInGitGuiApp(wikiFolderLocation),
     },
-    {
-      label: t('ContextMenu.Reload'),
-      click: async () => await service.view.reloadViewsWebContents(id),
-    },
-    {
-      label: t('ContextMenu.RestartService'),
-      click: async () => {
-        await service.workspaceView.restartWorkspaceViewService(id);
-        await service.workspaceView.realignActiveWorkspace(id);
-      },
-    },
   ];
 
   if (gitUrl !== null && gitUrl.length > 0 && storageService !== SupportedStorageServices.local) {
@@ -123,6 +112,22 @@ export async function getWorkspaceMenuTemplate(
         await service.git.commitAndSync(workspace, { commitOnly: true });
       },
     });
+  }
+
+  if (!isSubWiki) {
+    template.push(
+      {
+        label: t('ContextMenu.RestartService'),
+        click: async () => {
+          await service.workspaceView.restartWorkspaceViewService(id);
+          await service.workspaceView.realignActiveWorkspace(id);
+        },
+      },
+      {
+        label: t('ContextMenu.Reload'),
+        click: async () => await service.view.reloadViewsWebContents(id),
+      },
+    );
   }
 
   if (!active && !isSubWiki) {
