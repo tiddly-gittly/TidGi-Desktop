@@ -23,8 +23,8 @@ import type { IUpdaterService } from '@services/updater/interface';
 import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/workspaces/getWorkspaceMenuTemplate';
 import { logger } from '@services/libs/log';
 import i18next from '@services/libs/i18n';
-import ContextMenuBuilder from '../libs/menu/contextMenuBuilder';
-import { IpcSafeMenuItem, mainMenuItemProxy } from '../libs/menu/rendererMenuItemProxy';
+import ContextMenuBuilder from './contextMenu/contextMenuBuilder';
+import { IpcSafeMenuItem, mainMenuItemProxy } from './contextMenu/rendererMenuItemProxy';
 import { InsertMenuAfterSubMenuIndexError } from './error';
 
 @injectable()

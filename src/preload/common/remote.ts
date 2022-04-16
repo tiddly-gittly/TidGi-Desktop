@@ -1,7 +1,7 @@
 import { contextBridge, ipcRenderer, MenuItemConstructorOptions, webFrame } from 'electron';
 import path from 'path';
 import { ViewChannel, WindowChannel } from '@/constants/channels';
-import { rendererMenuItemProxy } from '@services/libs/menu/rendererMenuItemProxy';
+import { rendererMenuItemProxy } from '@services/menu/contextMenu/rendererMenuItemProxy';
 import { IOnContextMenuInfo } from '@services/menu/interface';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 

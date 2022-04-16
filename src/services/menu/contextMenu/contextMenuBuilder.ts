@@ -6,7 +6,7 @@
 /* eslint-disable no-param-reassign */
 import { clipboard, shell, Menu, MenuItem, WebContents } from 'electron';
 import i18next from 'i18next';
-import { IOnContextMenuInfo } from '../../menu/interface';
+import { IOnContextMenuInfo } from '../interface';
 
 /**
  * Truncates a string to a max length of 25. Will split on a word boundary and
