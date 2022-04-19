@@ -36,6 +36,8 @@
 
 [用 TiddlyWiki 替代 Notion 和 EverNote 作为个人知识管理系统(Chinese)](https://zhuanlan.zhihu.com/p/140473235)
 
+[墨屉-先进的间隔重复和渐进阅读解决方案](https://live.bilibili.com/23806126)
+
 <details>
 <summary>For mac users, since I haven't buy Apple developer key yet, so you have to entrust App to open it, click here to expand details.
 
