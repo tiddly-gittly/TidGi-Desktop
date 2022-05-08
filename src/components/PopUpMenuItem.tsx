@@ -4,6 +4,7 @@ import Menu from '@material-ui/core/Menu';
 
 interface Props {
   buttonElement: React.ReactElement;
+  children: React.ReactNode[];
   id: string;
 }
 interface State {

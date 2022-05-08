@@ -9,7 +9,6 @@ export function printTiddler(tiddlerTitle: string): Window | undefined {
   page.document.write('<h1>' + tiddlerTitle + '</h1>');
   /* eslint-disable @typescript-eslint/no-unsafe-call */
   /* eslint-disable @typescript-eslint/no-unsafe-member-access */
-  // @ts-expect-error Cannot find name '$tw'.ts(2304)
   page.document.write($tw.wiki.renderTiddler('text/html', tiddlerTitle));
   /* eslint-enable @typescript-eslint/no-unsafe-call */
   /* eslint-enable @typescript-eslint/no-unsafe-member-access */
