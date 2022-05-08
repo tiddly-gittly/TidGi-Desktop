@@ -50,6 +50,10 @@ export class NativeService implements INativeService {
   }
 
   public async openPath(filePath: string): Promise<void> {
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    if (!filePath.trim()) {
+      return;
+    }
     logger.debug(`NativeService.openPath() Opening ${filePath}`);
     // TODO: add a switch that tell user these are dangerous features, use at own risk.
     if (path.isAbsolute(filePath)) {
