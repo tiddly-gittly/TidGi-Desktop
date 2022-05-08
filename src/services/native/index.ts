@@ -2,6 +2,7 @@
 import { app, dialog, shell, MessageBoxOptions } from 'electron';
 import { injectable, inject } from 'inversify';
 import { Observable } from 'rxjs';
+import path from 'path';
 
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -50,7 +51,16 @@ export class NativeService implements INativeService {
 
   public async openPath(filePath: string): Promise<void> {
     logger.debug(`NativeService.openPath() Opening ${filePath}`);
-    await shell.openPath(filePath);
+    // TODO: add a switch that tell user these are dangerous features, use at own risk.
+    if (path.isAbsolute(filePath)) {
+      await shell.openPath(filePath);
+    } else {
+      const activeWorkspace = this.workspaceService.getActiveWorkspaceSync();
+      if (activeWorkspace?.wikiFolderLocation !== undefined) {
+        const absolutePath = path.resolve(path.join(activeWorkspace.wikiFolderLocation, filePath));
+        await shell.openPath(absolutePath);
+      }
+    }
   }
 
   public executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string> {
