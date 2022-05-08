@@ -22,6 +22,7 @@ export interface INativeService {
   openInEditor(filePath: string, editorName?: string | undefined): Promise<boolean>;
   openInGitGuiApp(filePath: string, editorName?: string | undefined): Promise<boolean>;
   openNewGitHubIssue(error: Error): Promise<void>;
+  openPath(filePath: string): Promise<void>;
   pickDirectory(defaultPath?: string): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;
   quit(): void;
@@ -37,6 +38,7 @@ export const NativeServiceIPCDescriptor = {
     openInEditor: ProxyPropertyType.Function,
     openInGitGuiApp: ProxyPropertyType.Function,
     openNewGitHubIssue: ProxyPropertyType.Function,
+    openPath: ProxyPropertyType.Function,
     pickDirectory: ProxyPropertyType.Function,
     pickFile: ProxyPropertyType.Function,
     quit: ProxyPropertyType.Function,

@@ -48,6 +48,11 @@ export class NativeService implements INativeService {
     return false;
   }
 
+  public async openPath(filePath: string): Promise<void> {
+    logger.debug(`NativeService.openPath() Opening ${filePath}`);
+    await shell.openPath(filePath);
+  }
+
   public executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string> {
     const zxWorker = this.wikiService.getWorker(wikiFolderLocation ?? this.workspaceService.getActiveWorkspaceSync()?.wikiFolderLocation ?? '');
     if (zxWorker === undefined) {
