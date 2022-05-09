@@ -553,9 +553,15 @@ export class Wiki implements IWikiService {
           // don't want it to throw here again, so no await here.
           // eslint-disable-next-line @typescript-eslint/return-await
           return this.workspaceViewService.restartWorkspaceViewService(id);
+        } else if ((error as Error).message.includes('Did not receive an init message from worker after')) {
+          // https://github.com/andywer/threads.js/issues/426
+          // wait some time and restart the wiki will solve this
+          logger.warn(`Get startWiki() handle "${(error as Error)?.message}", will try restart wiki.`);
+          await this.restartWiki(workspace);
+        } else {
+          logger.warn('Get startWiki() unexpected error, throw it');
+          throw error;
         }
-        logger.warn('Get startWiki() unexpected error, throw it');
-        throw error;
       }
     } else {
       // if is private repo wiki
@@ -572,7 +578,7 @@ export class Wiki implements IWikiService {
   }
 
   public async restartWiki(workspace: IWorkspace): Promise<void> {
-    const { wikiFolderLocation, port, userName: workspaceUserName, isSubWiki, syncOnInterval } = workspace;
+    const { wikiFolderLocation, port, userName: workspaceUserName, isSubWiki } = workspace;
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const userName = (workspaceUserName || (await this.authService.get('userName'))) ?? '';
