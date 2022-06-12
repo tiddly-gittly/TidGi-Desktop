@@ -613,7 +613,8 @@ export class Wiki implements IWikiService {
   public async setWikiLanguage(view: BrowserView, workspaceID: string, tiddlywikiLanguageName: string): Promise<void> {
     const twLanguageUpdateTimeout = 15_000;
     const retryTime = 2000;
-    return await new Promise<void>((resolve, reject) => {
+    // no need to wait setting wiki language, this sometimes cause slow PC to fail on this step
+    void new Promise<void>((resolve, reject) => {
       const onRetryOrDo = (): void => {
         view.webContents.send(WikiChannel.setTiddlerText, '$:/language', tiddlywikiLanguageName, workspaceID);
       };
