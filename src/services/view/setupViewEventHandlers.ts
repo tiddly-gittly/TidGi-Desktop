@@ -286,7 +286,33 @@ function handleNewWindow(
       action: 'allow';
       overrideBrowserWindowOptions?: Electron.BrowserWindowConstructorOptions | undefined;
     } {
+  // don't show useless blank page
+  if (nextUrl.startsWith('about:blank')) {
+    return { action: 'deny' };
+  }
+  const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const nextDomain = extractDomain(nextUrl);
+  // handle file opening
+  // `file://` will resulted in `nextDomain` being `about:blank#blocked`, so we use `open://` instead
+  if (nextUrl.startsWith('open://')) {
+    const filePath = nextUrl.replace('open://', '');
+    if (fsExtra.existsSync(filePath)) {
+      void shell.openPath(filePath);
+    } else {
+      // try find file relative to workspace folder
+      void workspaceService.getActiveWorkspace().then((workspace) => {
+        if (workspace !== undefined) {
+          const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, filePath);
+          if (fsExtra.existsSync(filePathInWorkspaceFolder)) {
+            void shell.openPath(filePathInWorkspaceFolder);
+          }
+        }
+      });
+    }
+    return {
+      action: 'deny',
+    };
+  }
   // open external url in browser
   if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
     logger.debug('handleNewWindow() openExternal', { nextUrl, nextDomain, disposition });
@@ -295,7 +321,6 @@ function handleNewWindow(
       action: 'deny',
     };
   }
-  const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   logger.debug('handleNewWindow()', { newWindowContext });
   const { view, workspace, sharedWebPreferences } = newWindowContext;
   const currentUrl = view.webContents.getURL();
