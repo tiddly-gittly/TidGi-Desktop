@@ -118,6 +118,10 @@ Because Github is one of the best free civil level [BaaS](https://www.alibabaclo
 
 ## Download
 
+<a href="https://repology.org/project/tidgi/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/tidgi.svg" alt="Packaging status">
+</a>
+
 Just download it from Github Release [Free Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)
 
 For arch user, use `yay tidgi` or `yay tidgi-bin`
