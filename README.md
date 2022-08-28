@@ -122,19 +122,27 @@ Because Github is one of the best free civil level [BaaS](https://www.alibabaclo
     <img src="https://repology.org/badge/vertical-allrepos/tidgi.svg" alt="Packaging status">
 </a>
 
-Just download it from Github Release [Free Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)
+> For arch user
 
-For arch user, use `yay tidgi` or `yay tidgi-bin`
+```bash
+yay tidgi
+```
 
-You can also find changelog in the Release.
+> For MacOs user
 
-## ShowCases
+```bash
+brew install TidGi` # Not tested
+```
 
-<details>
+> For Windows user,
 
 |                                                                  [最新版下载按钮 Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                   |
 | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
+
+## ShowCases
+
+<details>
 
 |             Load NodeJS Wiki 加载 NodeJS 版维基             |
 | :---------------------------------------------------------: |
