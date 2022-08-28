@@ -131,7 +131,7 @@ yay tidgi
 > For MacOs user
 
 ```bash
-brew install TidGi` # Not tested
+brew install TidGi # Not tested
 ```
 
 > For Windows user,
