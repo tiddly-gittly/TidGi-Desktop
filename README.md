@@ -17,17 +17,17 @@
 
 - [相关介绍](#%E7%9B%B8%E5%85%B3%E4%BB%8B%E7%BB%8D)
 - [About TidGi-Desktop 关于「太记-桌面版」](#about-tidgi-desktop-%E5%85%B3%E4%BA%8E%E5%A4%AA%E8%AE%B0-%E6%A1%8C%E9%9D%A2%E7%89%88)
+- [Download 下载](#download-%E4%B8%8B%E8%BD%BD)
+- [ShowCases 产品截图](#showcases-产品截图)
+- [Mobile App 移动端应用](#mobile-app-移动端应用)
 - [Data Privacy Protection 数据隐私保护](#data-privacy-protection-%E6%95%B0%E6%8D%AE%E9%9A%90%E7%A7%81%E4%BF%9D%E6%8A%A4)
 - [Differences](#differences)
 - [Why Github?](#why-github)
-- [Download](#download)
-- [ShowCases](#showcases)
-- [Mobile App](#mobile-app)
-  * [Stargazers over time](#stargazers-over-time)
 - [Development](#development)
   * [Publish](#publish)
   * [Developer FAQ And Code Tour](#developer-faq-and-code-tour)
-- [Credits](#credits)
+- [Credits 鸣谢](#credits-鸣谢)
+  * [Stargazers over time 点个星星⭐️吧](#stargazers-over-time-点个星星%EF%B8%8F吧)
 
 <!-- tocstop -->
 
@@ -61,6 +61,83 @@ You can call it [TG-Note](https://github.com/tiddly-gittly/TGNote), it is totall
 
 > 太微垣，三垣之一，按《步天歌》，太微垣為三垣的上垣。
 > 太微垣又名天庭，是政府的意思，也是貴族及大臣們居住的地方。
+
+## Download 下载 
+
+<a href="https://repology.org/project/tidgi/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/tidgi.svg" alt="Packaging status">
+</a>
+
+> For Windows MacOS normal user, Win和Mac的普通用户直接下载App
+
+|                                                                  [最新版下载按钮 Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                   |
+| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
+ 
+ > For arch user
+
+```bash
+yay tidgi
+```
+
+> For MacOS CLI user Mac命令行用户
+
+```bash
+brew install TidGi # Not tested
+```
+
+## ShowCases 产品截图
+
+<details>
+
+|             Load NodeJS Wiki 加载 NodeJS 版维基             |
+| :---------------------------------------------------------: |
+| ![Screenshot of main-window](./docs/images/main-window.png) |
+
+|                 Create Local Wiki 新建本地维基                  |                   Clone Online Wiki 下载云端维基                    |
+| :-------------------------------------------------------------: | :-----------------------------------------------------------------: |
+| ![Screenshot of add-workspace](./docs/images/add-workspace.png) | ![Screenshot of clone-workspace](./docs/images/clone-workspace.png) |
+
+|                                                    Translation, Preferences 多语言翻译和设置界面                                                     |
+| :--------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                                              ![Screenshot of preference](./docs/images/preference.png)                                               |
+|                                                           Interactive code 交互式代码执行                                                            |
+| ![Screen recording of zx-script in tiddlywiki](https://user-images.githubusercontent.com/3746270/133831500-ae91164c-7948-4de4-9a81-7017ed3b65c9.gif) |
+|                                                         Community Plugin Library 社区插件源                                                          |
+|                                      ![Screenshot of add-workspace](./docs/images/community-plugin-library.png)                                      |
+
+</details>
+
+<details>
+<summary>For mac users, since I haven't buy Apple developer key yet, so you have to entrust App to open it, click here to expand details.
+
+Mac 使用者点击这里展开操作方法，我费劲办法也申请不到苹果开发者账号，所以你得手动信任这个应用 ◀</summary>
+
+First of all, you need to drag this App into Applications folder! Otherwise there will be an error.
+
+首先你得把应用拖入「应用程序」文件夹才能使用！不然会弹一个报错框。
+
+Click "Cancel" 点击「取消」 ↓
+
+![step00001](https://user-images.githubusercontent.com/3746270/87882506-eb1ddd80-ca32-11ea-942f-1f530767db02.png)
+
+![step00002](https://user-images.githubusercontent.com/3746270/87882509-ece7a100-ca32-11ea-8d29-a4977201090d.png)
+
+![step00003](https://user-images.githubusercontent.com/3746270/87882510-ed803780-ca32-11ea-8996-0f3c7060131a.png)
+
+Click "Open" 点击「打开」 ↓
+
+![step00004](https://user-images.githubusercontent.com/3746270/87882512-ee18ce00-ca32-11ea-8225-045ffc0a8b86.png)
+
+Click "OK" 点击「允许」 ↓
+
+![step00005](https://user-images.githubusercontent.com/3746270/87882514-eeb16480-ca32-11ea-9afd-cae6f2bea2db.png)
+
+</details>
+
+## Mobile App 移动端应用
+
+See [Tiddloid](https://github.com/donmor/Tiddloid) for Android App developed by donmor.
 
 ## Data Privacy Protection 数据隐私保护
 
@@ -115,89 +192,6 @@ Because Github is one of the best free civil level [BaaS](https://www.alibabaclo
 1. 它有 GraphQL API，允许我们以程序化的方式更新我们的 wiki。
 1. 它有免费的[CI](https://github.com/features/actions)来自动部署我们的太微博客。
 1. 它提供了无限数量的代码仓库，分为公共的和私有的，这使我们能够将私有内容存储到我们的太微中仅在本地查看，然后只把公开部分部署成博客。
-
-## Download
-
-<a href="https://repology.org/project/tidgi/versions">
-    <img src="https://repology.org/badge/vertical-allrepos/tidgi.svg" alt="Packaging status">
-</a>
-
-> For arch user
-
-```bash
-yay tidgi
-```
-
-> For MacOs user
-
-```bash
-brew install TidGi # Not tested
-```
-
-> For Windows user,
-
-|                                                                  [最新版下载按钮 Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                   |
-| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
-
-## ShowCases
-
-<details>
-
-|             Load NodeJS Wiki 加载 NodeJS 版维基             |
-| :---------------------------------------------------------: |
-| ![Screenshot of main-window](./docs/images/main-window.png) |
-
-|                 Create Local Wiki 新建本地维基                  |                   Clone Online Wiki 下载云端维基                    |
-| :-------------------------------------------------------------: | :-----------------------------------------------------------------: |
-| ![Screenshot of add-workspace](./docs/images/add-workspace.png) | ![Screenshot of clone-workspace](./docs/images/clone-workspace.png) |
-
-|                                                    Translation, Preferences 多语言翻译和设置界面                                                     |
-| :--------------------------------------------------------------------------------------------------------------------------------------------------: |
-|                                              ![Screenshot of preference](./docs/images/preference.png)                                               |
-|                                                           Interactive code 交互式代码执行                                                            |
-| ![Screen recording of zx-script in tiddlywiki](https://user-images.githubusercontent.com/3746270/133831500-ae91164c-7948-4de4-9a81-7017ed3b65c9.gif) |
-|                                                         Community Plugin Library 社区插件源                                                          |
-|                                      ![Screenshot of add-workspace](./docs/images/community-plugin-library.png)                                      |
-
-</details>
-
-<details>
-<summary>For mac users, since I haven't buy Apple developer key yet, so you have to entrust App to open it, click here to expand details.
-
-Mac 使用者点击这里展开操作方法，我费劲办法也申请不到苹果开发者账号，所以你得手动信任这个应用 ◀</summary>
-
-First of all, you need to drag this App into Applications folder! Otherwise there will be an error.
-
-首先你得把应用拖入「应用程序」文件夹才能使用！不然会弹一个报错框。
-
-Click "Cancel" 点击「取消」 ↓
-
-![step00001](https://user-images.githubusercontent.com/3746270/87882506-eb1ddd80-ca32-11ea-942f-1f530767db02.png)
-
-![step00002](https://user-images.githubusercontent.com/3746270/87882509-ece7a100-ca32-11ea-8d29-a4977201090d.png)
-
-![step00003](https://user-images.githubusercontent.com/3746270/87882510-ed803780-ca32-11ea-8996-0f3c7060131a.png)
-
-Click "Open" 点击「打开」 ↓
-
-![step00004](https://user-images.githubusercontent.com/3746270/87882512-ee18ce00-ca32-11ea-8225-045ffc0a8b86.png)
-
-Click "OK" 点击「允许」 ↓
-
-![step00005](https://user-images.githubusercontent.com/3746270/87882514-eeb16480-ca32-11ea-9afd-cae6f2bea2db.png)
-
-</details>
-
-## Mobile App
-
-See [Tiddloid](https://github.com/donmor/Tiddloid) for Android App developed by donmor.
-
-### Stargazers over time
-
-Please give a star if you like it!
-
-[![Stargazers over time](https://starchart.cc/tiddly-gittly/TidGi-Desktop.svg)](https://starchart.cc/tiddly-gittly/TidGi-Desktop)
 
 ## Development
 
@@ -260,8 +254,15 @@ After Github Action completed, you can open Releases to see the Draft release cr
 
 [Developer FAQ and code explained](docs/Development.md)
 
-## Credits
+## Credits 鸣谢
 
 The desktop app shell is based on [https://github.com/atomery/singlebox](atomery/singlebox) and [atomery/webcatalog](https://github.com/atomery/webcatalog), they provide lots of utils around website-generated-app, much powerful than generating app from website simply using Chrome. Also the independent developer @quanglam2807 behind these great tools helps me a lot when I develop TidGi.
 
 Current Icon is download from [iconsdb](https://www.iconsdb.com/custom-color/github-11-icon.html) under Creative Commons Attribution-NoDerivs 3.0 , if you are a designer, please feel free to contribute your ICON if you have a better idea.
+ 
+
+### Stargazers over time 点个星星⭐️吧
+
+Please give a star if you like it!
+
+[![Stargazers over time](https://starchart.cc/tiddly-gittly/TidGi-Desktop.svg)](https://starchart.cc/tiddly-gittly/TidGi-Desktop)
