@@ -11,7 +11,7 @@ Promise.config({ cancellation: true });
 
 const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClickedLoading?: boolean; workspaceCount: number }>`
   height: fit-content;
-  width: 58px;
+  width: auto;
   padding: 10px 0;
   display: flex;
   align-items: center;
