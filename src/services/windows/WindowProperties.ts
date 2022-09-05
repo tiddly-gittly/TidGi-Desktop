@@ -1,4 +1,4 @@
-import { PreferenceSections } from '@services/preferences/interface';
+import type { PreferenceSections } from '@services/preferences/interface';
 
 export enum WindowNames {
   about = 'about',

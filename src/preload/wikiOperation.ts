@@ -5,7 +5,6 @@
  * This file should be required by view.ts preload script to work
  */
 import { ipcRenderer, webFrame } from 'electron';
-import { delay } from 'bluebird';
 import { WikiChannel } from '@/constants/channels';
 import { native } from './common/services';
 
@@ -51,8 +50,9 @@ ipcRenderer.on(WikiChannel.addTiddler, async (event, title: string, text: string
     $tw.wiki.addTiddler({ title: '${title}', text: '${text}', ...${extraMeta} });
   `);
   // wait for fs to be settle
-  await delay(1000);
-  await ipcRenderer.invoke(WikiChannel.addTiddlerDone);
+  setTimeout(() => {
+    ipcRenderer.invoke(WikiChannel.addTiddlerDone);
+  }, 1000);
 });
 // get tiddler text
 ipcRenderer.on(WikiChannel.getTiddlerText, async (event, nonceReceived: number, title: string) => {
