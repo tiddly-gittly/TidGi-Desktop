@@ -624,7 +624,8 @@ export class Wiki implements IWikiService {
         clearInterval(intervalHandle);
         const errorMessage = `setWikiLanguage("${tiddlywikiLanguageName}"), language "${tiddlywikiLanguageName}" in workspaceID ${workspaceID} is too slow to update after ${twLanguageUpdateTimeout}ms.`;
         logger.error(errorMessage);
-        reject(new Error(errorMessage));
+        // no need to reject and show error dialog, otherwise user will rise issue. This happens too frequent.
+        // reject(new Error(errorMessage));
       };
       const timeoutHandle = setTimeout(onTimeout, twLanguageUpdateTimeout);
       const onDone = (): void => {
