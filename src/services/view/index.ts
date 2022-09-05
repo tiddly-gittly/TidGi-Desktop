@@ -22,6 +22,7 @@ import { IViewService } from './interface';
 import { getLocalHostUrlWithActualIP, replaceUrlPortWithSettingPort } from '@services/libs/url';
 import { logger } from '@services/libs/log';
 import { ViewLoadUrlError } from './error';
+import { isMac, isWin } from '@/helpers/system';
 
 @injectable()
 export class View implements IViewService {
@@ -64,8 +65,8 @@ export class View implements IViewService {
       {
         label: () => (titleBar ? i18n.t('Preference.HideTitleBar') : i18n.t('Preference.ShowTitleBar')),
         accelerator: 'CmdOrCtrl+Alt+T',
-        enabled: process.platform === 'darwin',
-        visible: process.platform === 'darwin',
+        enabled: isMac,
+        visible: isMac,
         click: async () => {
           const titleBarLatest = await this.preferenceService.get('titleBar');
           void this.preferenceService.set('titleBar', !titleBarLatest);
@@ -78,7 +79,7 @@ export class View implements IViewService {
         label: () => i18n.t('Preference.ToggleMenuBar'),
         visible: false,
         accelerator: 'Alt+M',
-        enabled: process.platform === 'win32',
+        enabled: isWin,
         click: async (_menuItem, browserWindow) => {
           // if back is called in popup window
           // open menu bar in the popup window instead
@@ -254,7 +255,7 @@ export class View implements IViewService {
     // session
     const sessionOfView = session.fromPartition(partitionId);
     // spellchecker
-    if (spellcheck && process.platform !== 'darwin') {
+    if (spellcheck && !isMac) {
       sessionOfView.setSpellCheckerLanguages(spellcheckLanguages);
     }
     const browserViewMetaData: IBrowserViewMetaData = { workspaceID: workspace.id };
@@ -294,6 +295,8 @@ export class View implements IViewService {
     if (workspace.active) {
       browserWindow.setBrowserView(view);
       const contentSize = browserWindow.getContentSize();
+      // DEBUG: console
+      console.log(`contentSize`, contentSize);
       view.setBounds(await getViewBounds(contentSize as [number, number]));
       view.setAutoResize({
         width: true,

@@ -2,6 +2,7 @@ import path from 'path';
 import os from 'os';
 import { isDevelopmentOrTest } from './environment';
 import { developmentWikiFolderName, localizationFolderName } from './fileNames';
+import { isMac } from '@/helpers/system';
 
 /** src folder */
 export const sourcePath = path.resolve(__dirname, '..');
@@ -14,7 +15,7 @@ export const TIDDLYWIKI_TEMPLATE_FOLDER_PATH = isDevelopmentOrTest
   : path.resolve(process.resourcesPath, 'wiki');
 export const TIDDLERS_PATH = 'tiddlers';
 
-const menuBarIconFileName = process.platform === 'darwin' ? 'menubarTemplate@2x.png' : 'menubar@2x.png';
+const menuBarIconFileName = isMac ? 'menubarTemplate@2x.png' : 'menubar@2x.png';
 export const MENUBAR_ICON_PATH = path.resolve(isDevelopmentOrTest ? buildResourcePath : process.resourcesPath, menuBarIconFileName);
 
 export const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';

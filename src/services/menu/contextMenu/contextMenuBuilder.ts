@@ -4,6 +4,7 @@
  */
 /* eslint-disable class-methods-use-this */
 /* eslint-disable no-param-reassign */
+import { isMac } from '@/helpers/system';
 import { clipboard, shell, Menu, MenuItem, WebContents } from 'electron';
 import i18next from 'i18next';
 import { IOnContextMenuInfo } from '../interface';
@@ -236,7 +237,7 @@ export default class ContextMenuBuilder {
     if (match === null || match.length === 0) {
       return menu;
     }
-    if (process.platform === 'darwin') {
+    if (isMac) {
       const lookUpDefinition = new MenuItem({
         label: this.stringTable.lookUpDefinition({ word: truncateString(menuInfo.selectionText) }),
         click: () => this.webContents.showDefinitionForSelection(),

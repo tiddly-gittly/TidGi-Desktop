@@ -4,6 +4,7 @@ import { getAvailableEditors as getAvailableEditorsDarwin, getAvailableGitGUIApp
 import { getAvailableEditors as getAvailableEditorsWindows, getAvailableGitGUIApps as getAvailableGitGUIAppsWindows } from './win32';
 import { getAvailableEditors as getAvailableEditorsLinux, getAvailableGitGUIApps as getAvailableGitGUIAppsLinux } from './linux';
 import { logger } from '@services/libs/log';
+import { isLinux, isMac, isWin } from '@/helpers/system';
 
 let editorCache: ReadonlyArray<IFoundEditor<string>> | undefined;
 let gitGUIAppCache: ReadonlyArray<IFoundEditor<string>> | undefined;
@@ -30,7 +31,7 @@ export async function getAvailableEditors(editorName?: string): Promise<Readonly
     didFullSearch = true;
   }
 
-  if (process.platform === 'darwin') {
+  if (isMac) {
     const editorResult = await getAvailableEditorsDarwin(editorName);
     if (editorName === undefined) {
       editorCache = editorResult;
@@ -38,7 +39,7 @@ export async function getAvailableEditors(editorName?: string): Promise<Readonly
     return editorResult;
   }
 
-  if (process.platform === 'win32') {
+  if (isWin) {
     const editorResult = await getAvailableEditorsWindows(editorName);
     if (editorName === undefined) {
       editorCache = editorResult;
@@ -46,7 +47,7 @@ export async function getAvailableEditors(editorName?: string): Promise<Readonly
     return editorResult;
   }
 
-  if (process.platform === 'linux') {
+  if (isLinux) {
     const editorResult = await getAvailableEditorsLinux(editorName);
     if (editorName === undefined) {
       editorCache = editorResult;
@@ -75,7 +76,7 @@ export async function findEditorOrDefault(editorName?: string): Promise<IFoundEd
   if (editorName !== undefined) {
     const match = editors.find((p) => p.editor === editorName);
     if (match === undefined) {
-      const menuItemName = process.platform === 'darwin' ? 'Preferences' : 'Options';
+      const menuItemName = isMac ? 'Preferences' : 'Options';
       const message = `The editor '${editorName}' could not be found. Please open ${menuItemName} and choose an available editor.`;
 
       throw new ExternalEditorError(message, { openPreferences: true });
@@ -96,17 +97,17 @@ export async function getAvailableGitGUIApps(): Promise<ReadonlyArray<IFoundEdit
     return gitGUIAppCache;
   }
 
-  if (process.platform === 'darwin') {
+  if (isMac) {
     gitGUIAppCache = await getAvailableGitGUIAppsDarwin();
     return gitGUIAppCache;
   }
 
-  if (process.platform === 'win32') {
+  if (isWin) {
     gitGUIAppCache = await getAvailableGitGUIAppsWindows();
     return gitGUIAppCache;
   }
 
-  if (process.platform === 'linux') {
+  if (isLinux) {
     gitGUIAppCache = await getAvailableGitGUIAppsLinux();
     return gitGUIAppCache;
   }
@@ -132,7 +133,7 @@ export async function findGitGUIAppOrDefault(name?: string): Promise<IFoundEdito
   if (name !== undefined) {
     const match = gitGUIApps.find((p) => p.editor === name);
     if (match === undefined) {
-      const menuItemName = process.platform === 'darwin' ? 'Preferences' : 'Options';
+      const menuItemName = isMac ? 'Preferences' : 'Options';
       const message = `The gitGUIApp '${name}' could not be found. Please open ${menuItemName} and choose an available gitGUIApp.`;
 
       throw new ExternalEditorError(message, { openPreferences: true });

@@ -26,6 +26,7 @@ import { MENUBAR_ICON_PATH } from '@/constants/paths';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { IThemeService } from '@services/theme/interface';
+import { isMac } from '@/helpers/system';
 
 @injectable()
 export class Window implements IWindowService {
@@ -245,7 +246,7 @@ export class Window implements IWindowService {
       const windowMeta = await this.getWindowMeta(WindowNames.main);
       const mainWindow = this.get(WindowNames.main);
       if (mainWindow === undefined) return;
-      if (process.platform === 'darwin' && windowMeta?.forceClose !== true) {
+      if (isMac && windowMeta?.forceClose !== true) {
         event.preventDefault();
         // https://github.com/electron/electron/issues/6033#issuecomment-242023295
         if (mainWindow.isFullScreen()) {
@@ -367,7 +368,7 @@ export class Window implements IWindowService {
       { role: 'reload' },
       { role: 'forceReload' },
       // `role: 'zoom'` is only supported on macOS
-      process.platform === 'darwin'
+      isMac
         ? {
             role: 'zoom',
           }
@@ -543,7 +544,7 @@ export class Window implements IWindowService {
     });
     // https://github.com/maxogden/menubar/issues/120
     menuBar.on('after-hide', () => {
-      if (process.platform === 'darwin') {
+      if (isMac) {
         menuBar.app.hide();
       }
     });

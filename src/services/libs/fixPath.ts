@@ -1,3 +1,4 @@
+import { isWin } from '@/helpers/system';
 import { execSync } from 'child_process';
 import { userInfo } from 'os';
 import process from 'process';
@@ -42,7 +43,7 @@ const parseEnvironment = (environment_: string): Record<string, string> => {
 };
 
 export function shellEnvironmentSync(shell?: string): NodeJS.ProcessEnv {
-  if (process.platform === 'win32') {
+  if (isWin) {
     return process.env;
   }
 
@@ -64,7 +65,7 @@ export function shellPathSync(): string | undefined {
 }
 
 export function fixPath(): void {
-  if (process.platform === 'win32') {
+  if (isWin) {
     return;
   }
   process.env.PATH = shellPathSync() ?? ['./node_modules/.bin', '/.nodebrew/current/bin', '/usr/local/bin', process.env.PATH].join(':');

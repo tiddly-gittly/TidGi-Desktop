@@ -1,3 +1,4 @@
+import { isMac } from '@/helpers/system';
 import { container } from '@services/container';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -12,14 +13,15 @@ export default async function getViewBounds(
   const showSidebar = await preferencesService.get('sidebar');
 
   const x = showSidebar ? 68 : 0;
-  const y = 0;
+  /** add title bar height, move down 28px https://github.com/electron/electron/pull/34713 */
+  const y = isMac ? 28 : 0;
 
   if (findInPage) {
     const FIND_IN_PAGE_HEIGHT = 42;
     return {
       x,
       y: y + FIND_IN_PAGE_HEIGHT,
-      height: height !== undefined ? height : contentSize[1] - y - FIND_IN_PAGE_HEIGHT,
+      height: height !== undefined ? height : contentSize[1] - FIND_IN_PAGE_HEIGHT,
       width: width !== undefined ? width : contentSize[0] - x,
     };
   }
@@ -27,7 +29,7 @@ export default async function getViewBounds(
   return {
     x,
     y,
-    height: height !== undefined ? height : contentSize[1] - y,
+    height: height !== undefined ? height : contentSize[1],
     width: width !== undefined ? width : contentSize[0] - x,
   };
 }

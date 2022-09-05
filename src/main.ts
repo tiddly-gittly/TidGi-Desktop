@@ -27,6 +27,7 @@ import type { IWorkspaceViewService } from './services/workspacesView/interface'
 import type { IUpdaterService } from '@services/updater/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
+import { isLinux, isMac } from './helpers/system';
 
 logger.info('App booting');
 
@@ -128,7 +129,7 @@ const commonInit = async (): Promise<void> => {
   // error will occur
   // see https://github.com/atomery/webcatalog/issues/637
   // eslint-disable-next-line promise/always-return
-  if (process.platform === 'linux') {
+  if (isLinux) {
     const mainWindow = windowService.get(WindowNames.main);
     if (mainWindow !== undefined) {
       const handleMaximize = (): void => {
@@ -168,7 +169,7 @@ app.on('ready', async () => {
 });
 app.on(MainChannel.windowAllClosed, () => {
   // prevent quit on MacOS. But also quit if we are in test.
-  if (process.platform !== 'darwin' || isTest) {
+  if (!isMac || isTest) {
     app.quit();
   }
 });
@@ -181,7 +182,7 @@ app.on(
   async (): Promise<void> => {
     logger.info('App before-quit');
     // https://github.com/atom/electron/issues/444#issuecomment-76492576
-    if (process.platform === 'darwin') {
+    if (isMac) {
       const mainWindow = windowService.get(WindowNames.main);
       if (mainWindow !== undefined) {
         logger.info('App force quit on MacOS, ask window not preventDefault');

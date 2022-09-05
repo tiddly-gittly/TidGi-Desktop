@@ -23,6 +23,7 @@ import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { throttle } from 'lodash';
+import { isWin } from '@/helpers/system';
 
 export interface IViewContext {
   loadInitialUrlWithCatch: () => Promise<void>;
@@ -240,7 +241,7 @@ export default function setupViewEventHandlers(
           }
         });
         app.badgeCount = count;
-        if (process.platform === 'win32') {
+        if (isWin) {
           if (count > 0) {
             const icon = nativeImage.createFromPath(path.resolve(buildResourcePath, 'overlay-icon.png'));
             browserWindow.setOverlayIcon(icon, `You have ${count} new messages.`);
