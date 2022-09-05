@@ -33,6 +33,12 @@ module.exports = [
               libraryDirectory: null,
               camel2DashComponentName: false,
             }),
+            tsImportPluginFactory({
+              style: false,
+              libraryName: 'beautiful-react-hooks',
+              libraryDirectory: null,
+              camel2DashComponentName: false,
+            }),
             // material-ui
             tsImportPluginFactory({
               libraryName: '@material-ui/core',
