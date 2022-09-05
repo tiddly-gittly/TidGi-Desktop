@@ -178,4 +178,20 @@ ${message.message}
   public async getLocalHostUrlWithActualIP(url: string): Promise<string> {
     return await getLocalHostUrlWithActualIP(url);
   }
+
+  public async path(method: 'basename' | 'dirname' | 'join', pathString: string | undefined, ...paths: string[]): Promise<string | undefined> {
+    switch (method) {
+      case 'basename':
+        if (typeof pathString === 'string') return path.basename(pathString);
+        break;
+      case 'dirname':
+        if (typeof pathString === 'string') return path.dirname(pathString);
+        break;
+      case 'join':
+        if (typeof pathString === 'string') return path.join(pathString, ...paths);
+        break;
+      default:
+        break;
+    }
+  }
 }

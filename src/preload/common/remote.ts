@@ -1,9 +1,7 @@
 import { contextBridge, ipcRenderer, MenuItemConstructorOptions, webFrame } from 'electron';
-import path from 'path';
 import { ViewChannel, WindowChannel } from '@/constants/channels';
 import { rendererMenuItemProxy } from '@services/menu/contextMenu/rendererMenuItemProxy';
 import { IOnContextMenuInfo } from '@services/menu/interface';
-import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 
 import * as service from './services';
 import { windowName } from './browserViewMetaData';
@@ -17,17 +15,6 @@ export const remoteMethods = {
   closeCurrentWindow: async (): Promise<void> => {
     await service.window.close(windowName);
   },
-  /** call NodeJS.path */
-  getBaseName: (pathString?: string): string | undefined => {
-    if (typeof pathString === 'string') return path.basename(pathString);
-  },
-  getDirectoryName: (pathString?: string): string | undefined => {
-    if (typeof pathString === 'string') return path.dirname(pathString);
-  },
-  joinPath: (...paths: string[]): string => {
-    return path.join(...paths);
-  },
-  getLocalHostUrlWithActualIP,
   /**
    * an wrapper around setVisualZoomLevelLimits
    */

@@ -149,8 +149,9 @@ export default function WorkspaceSelector({
   const { t } = useTranslation();
   const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {
-    const baseName = window.remote.getBaseName(workspaceName);
-    shortWorkspaceNameSetter(baseName !== undefined ? baseName : t('WorkspaceSelector.BadWorkspacePath'));
+    void window.service.native.path('basename', workspaceName).then((baseName) => {
+      shortWorkspaceNameSetter(baseName !== undefined ? baseName : t('WorkspaceSelector.BadWorkspacePath'));
+    });
   }, [workspaceName, t]);
   return (
     <Root hibernated={hibernated} active={active} onClick={workspaceClickedLoading ? () => {} : onClick} workspaceClickedLoading={workspaceClickedLoading}>

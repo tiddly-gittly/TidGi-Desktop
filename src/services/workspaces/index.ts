@@ -5,7 +5,7 @@ import { injectable } from 'inversify';
 import { app } from 'electron';
 import settings from 'electron-settings';
 import { pickBy, mapValues, debounce } from 'lodash';
-import { v4 as uuid } from 'uuid';
+import { nanoid } from 'nanoid'
 import path from 'path';
 import fsExtra from 'fs-extra';
 import Jimp from 'jimp';
@@ -366,7 +366,7 @@ export class Workspace implements IWorkspaceService {
     if (workspace === undefined) {
       throw new Error(`Try to setWorkspacePicture() but this workspace is not existed ${id}`);
     }
-    const pictureID = uuid();
+    const pictureID = nanoid();
 
     if (workspace.picturePath === sourcePicturePath) {
       return;
@@ -423,7 +423,7 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async create(newWorkspaceConfig: INewWorkspaceConfig): Promise<IWorkspace> {
-    const newID = uuid();
+    const newID = nanoid();
 
     // find largest order
     const workspaceLst = await this.getWorkspacesAsList();

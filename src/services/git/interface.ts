@@ -33,7 +33,7 @@ export interface IGitService {
   commitAndSync(workspace: IWorkspace, config: ICommitAndSyncConfigs): Promise<void>;
   getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]>;
   /** Inspect git's remote url from folder's .git config, return undefined if there is no initialized git */
-  getWorkspacesRemote(wikiFolderPath: string): Promise<string | undefined>;
+  getWorkspacesRemote(wikiFolderPath?: string): Promise<string | undefined>;
   initWikiGit(wikiFolderPath: string, isSyncedWiki?: false): Promise<void>;
   /**
    * Run git init in a folder, prepare remote origin if isSyncedWiki

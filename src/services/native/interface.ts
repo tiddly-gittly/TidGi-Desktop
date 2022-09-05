@@ -26,6 +26,7 @@ export interface INativeService {
   pickDirectory(defaultPath?: string): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;
   quit(): void;
+  path(method: 'basename' | 'dirname' | 'join', pathString: string | undefined, ...paths: string[]): Promise<string | undefined>;
   showElectronMessageBox(message: string, type: MessageBoxOptions['type'], WindowName?: WindowNames): Promise<void>;
 }
 export const NativeServiceIPCDescriptor = {

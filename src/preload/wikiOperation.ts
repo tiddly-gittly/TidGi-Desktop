@@ -7,7 +7,7 @@
 import { ipcRenderer, webFrame } from 'electron';
 import { delay } from 'bluebird';
 import { WikiChannel } from '@/constants/channels';
-import { context } from './common/services';
+import { native } from './common/services';
 
 /**
  * Execute statement with $tw when idle, so there won't be significant lagging.
@@ -94,7 +94,7 @@ ipcRenderer.on(WikiChannel.generalNotification, async (event, message: string) =
 });
 // open a tiddler
 ipcRenderer.on(WikiChannel.openTiddler, async (event, tiddlerName: string) => {
-  const newHref: string = await context.getLocalHostUrlWithActualIP(`http://localhost:5212/#${tiddlerName}`);
+  const newHref: string = await native.getLocalHostUrlWithActualIP(`http://localhost:5212/#${tiddlerName}`);
   await executeTWJavaScriptWhenIdle(`
     window.location.href = "${newHref}";
   `);

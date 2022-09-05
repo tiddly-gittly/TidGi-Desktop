@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
 import { ipcRenderer, IpcRendererEvent, MenuItemConstructorOptions, WebContents } from 'electron';
-import { v4 as uuid } from 'uuid';
 
 export interface IpcSafeMenuItem {
   click: string;
@@ -25,7 +24,7 @@ export function rendererMenuItemProxy(menus: MenuItemConstructorOptions[]): [Ipc
   const newMenus: IpcSafeMenuItem[] = [];
   for (const menuItem of menus) {
     if (menuItem.click !== undefined) {
-      const id = uuid();
+      const id = String(Math.random());
       // store callback into map, and use id instead. And we ipc.on that id.
       originalCallbackIdMap[id] = menuItem.click as () => void;
       const ipcCallback = (_event: IpcRendererEvent): void => {

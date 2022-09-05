@@ -2,7 +2,6 @@
 /* eslint-disable unicorn/prevent-abbreviations */
 import { BackendModule } from 'i18next';
 import { cloneDeep, merge, Object } from 'lodash';
-import { v4 as uuid } from 'uuid';
 import { I18NChannels } from '@/constants/channels';
 
 // CONFIGS
@@ -186,7 +185,7 @@ export class Backend implements BackendModule {
             // into the existing translation data
             data = mergeNestedI18NObject(data, element.values[index].key, this.i18nextOptions.keySeparator, element.values[index].fallbackValue);
           }
-          const writeKey = uuid();
+          const writeKey = String(Math.random());
           if (element.values[index].callback) {
             this.writeCallbacks[writeKey] = {
               callback: element.values[index].callback,
@@ -212,7 +211,7 @@ export class Backend implements BackendModule {
     // Save the callback for this request so we
     // can execute once the ipcRender process returns
     // with a value from the ipcMain process
-    const key = uuid();
+    const key = String(Math.random());
     this.readCallbacks[key] = {
       callback,
     };

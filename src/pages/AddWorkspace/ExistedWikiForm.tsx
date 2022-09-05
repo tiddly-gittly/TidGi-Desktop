@@ -42,9 +42,9 @@ export function ExistedWikiForm({
   } = form;
   useValidateExistedWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, errorInWhichComponentSetter);
   const onLocationChange = useCallback(
-    (newLocation: string) => {
-      const folderName = window.remote.getBaseName(newLocation);
-      const directoryName = window.remote.getDirectoryName(newLocation);
+    async (newLocation: string) => {
+      const folderName = await window.service.native.path('basename', newLocation);
+      const directoryName = await window.service.native.path('dirname', newLocation);
       if (folderName !== undefined && directoryName !== undefined) {
         wikiFolderNameSetter(folderName);
         parentFolderLocationSetter(directoryName);

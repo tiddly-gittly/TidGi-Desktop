@@ -63,7 +63,8 @@ export class Git implements IGitService {
     return list ?? [];
   }
 
-  public async getWorkspacesRemote(wikiFolderPath: string): Promise<string | undefined> {
+  public async getWorkspacesRemote(wikiFolderPath?: string): Promise<string | undefined> {
+    if (!wikiFolderPath) return;
     const branch = (await this.authService.get('git-branch' as ServiceBranchTypes)) ?? 'main';
     const defaultRemoteName = (await getRemoteName(wikiFolderPath, branch)) ?? 'origin';
     const remoteUrl = await getRemoteUrl(wikiFolderPath, defaultRemoteName);

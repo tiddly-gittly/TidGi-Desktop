@@ -86,7 +86,11 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
   const [gitRepoUrl, gitRepoUrlSetter] = useState<string>('');
 
   // derived values
-  const wikiFolderLocation = window.remote.joinPath(parentFolderLocation ?? t('Error') ?? 'Error', wikiFolderName);
+
+  const wikiFolderLocation = usePromiseValue(() => window.service.native.path('join', parentFolderLocation ?? t('Error') ?? 'Error', wikiFolderName), 'Error', [
+    parentFolderLocation,
+    wikiFolderName,
+  ]);
 
   /**
    * For importing existed nodejs wiki into TidGi, we parse git url from the folder to import
@@ -146,7 +150,7 @@ export function workspaceConfigFromForm(form: IWikiWorkspaceForm, isCreateMainWo
     storageService: form.storageProvider,
     tagName: !isCreateMainWorkspace ? form.tagName : null,
     port: form.wikiPort,
-    wikiFolderLocation: form.wikiFolderLocation,
+    wikiFolderLocation: form.wikiFolderLocation!,
     backupOnInterval: true,
   };
 }

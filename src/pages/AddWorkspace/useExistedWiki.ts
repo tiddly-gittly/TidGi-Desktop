@@ -63,12 +63,15 @@ export function useExistedWiki(
   const onSubmit = useCallback(async () => {
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, isCreateSyncedWorkspace);
+    if (!form.wikiFolderLocation) {
+      throw new Error(t('AddWorkspace.MainWorkspaceLocation') + t('AddWorkspace.NotFilled'));
+    }
     try {
       if (isCreateMainWorkspace) {
         await window.service.wiki.ensureWikiExist(form.wikiFolderLocation, true);
       } else {
-        const wikiFolderNameForExistedFolder = window.remote.getBaseName(form.wikiFolderLocation);
-        const parentFolderLocationForExistedFolder = window.remote.getDirectoryName(form.wikiFolderLocation);
+        const wikiFolderNameForExistedFolder = await window.service.native.path('basename', form.wikiFolderLocation);
+        const parentFolderLocationForExistedFolder = await window.service.native.path('dirname', form.wikiFolderLocation);
         if (!wikiFolderNameForExistedFolder || !parentFolderLocationForExistedFolder) {
           throw new Error(
             `Undefined folder name: parentFolderLocationForExistedFolder: ${

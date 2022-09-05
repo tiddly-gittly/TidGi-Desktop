@@ -206,7 +206,7 @@ export default function EditWorkspace(): JSX.Element {
   }, [onSave, requestRestartCountDown, workspace, originalWorkspace]);
 
   const actualIP = usePromiseValue<string | undefined>(
-    async () => (homeUrl ? await window.remote.getLocalHostUrlWithActualIP(homeUrl) : await Promise.resolve(undefined)),
+    async () => (homeUrl ? await window.service.native.getLocalHostUrlWithActualIP(homeUrl) : await Promise.resolve(undefined)),
     undefined,
     [homeUrl],
   );
@@ -274,7 +274,7 @@ export default function EditWorkspace(): JSX.Element {
                 workspaceSetter({
                   ...workspace,
                   port: Number(event.target.value),
-                  homeUrl: await window.remote.getLocalHostUrlWithActualIP(`http://${defaultServerIP}:${event.target.value}/`),
+                  homeUrl: await window.service.native.getLocalHostUrlWithActualIP(`http://${defaultServerIP}:${event.target.value}/`),
                 });
                 void requestSaveAndRestart();
               }
