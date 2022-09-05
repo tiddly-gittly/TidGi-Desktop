@@ -2,6 +2,7 @@
 // this happens when we are redirected by OAuth login
 import { context, window as windowService } from './services';
 import { windowName } from './browserViewMetaData';
+import { WindowNames } from '@services/windows/WindowProperties';
 
 const CHECK_LOADED_INTERVAL = 500;
 let CHROME_ERROR_PATH: string | undefined;
@@ -30,7 +31,6 @@ async function refresh(): Promise<void> {
     setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);
   }
 }
-setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);
 
 interface IAuthingPostMessageEvent {
   code?: number;
@@ -39,16 +39,20 @@ interface IAuthingPostMessageEvent {
   };
   from?: string;
 }
-// Only passing message that Authing needs to the window https://github.com/Authing/Guard/blob/db9df517c00a5eb51e406377ee4d7bb097054b68/src/views/login/SocialButtonsList.vue#L82-L89
-// https://stackoverflow.com/questions/55544936/communication-between-preload-and-client-given-context-isolation-in-electron
-window.addEventListener(
-  'message',
-  (event: MessageEvent<IAuthingPostMessageEvent>) => {
-    if (typeof event?.data?.code === 'number' && typeof event?.data?.data?.token === 'string' && event?.data.from !== 'preload') {
-      // This message will be catch by this handler again, so we add a 'from' to indicate that it is re-send by ourself
-      // we re-send this, so authing in this window can catch it
-      window.postMessage({ ...event.data, from: 'preload' }, '*');
-    }
-  },
-  false,
-);
+
+if (![WindowNames.main, WindowNames.view].includes(windowName)) {
+  setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);
+  // Only passing message that Authing needs to the window https://github.com/Authing/Guard/blob/db9df517c00a5eb51e406377ee4d7bb097054b68/src/views/login/SocialButtonsList.vue#L82-L89
+  // https://stackoverflow.com/questions/55544936/communication-between-preload-and-client-given-context-isolation-in-electron
+  window.addEventListener(
+    'message',
+    (event: MessageEvent<IAuthingPostMessageEvent>) => {
+      if (typeof event?.data?.code === 'number' && typeof event?.data?.data?.token === 'string' && event?.data.from !== 'preload') {
+        // This message will be catch by this handler again, so we add a 'from' to indicate that it is re-send by ourself
+        // we re-send this, so authing in this window can catch it
+        window.postMessage({ ...event.data, from: 'preload' }, '*');
+      }
+    },
+    false,
+  );
+}

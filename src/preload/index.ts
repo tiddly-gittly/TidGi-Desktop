@@ -1,5 +1,6 @@
 import 'reflect-metadata';
 import { contextBridge, ipcRenderer } from 'electron';
+import { IServicesWithoutObservables, IServicesWithOnlyObservables } from 'electron-ipc-cat/common';
 
 import './common/test';
 import './common/i18n';
@@ -7,9 +8,10 @@ import './common/log';
 import './common/remote';
 import * as service from './common/services';
 import { ViewChannel } from '@/constants/channels';
-import { WindowNames, IPossibleWindowMeta } from '@services/windows/WindowProperties';
-import { IServicesWithoutObservables, IServicesWithOnlyObservables } from 'electron-ipc-cat/common';
-import { windowName, browserViewMetaData } from './common/browserViewMetaData';
+import { IPossibleWindowMeta } from '@services/windows/WindowProperties';
+import { browserViewMetaData } from './common/browserViewMetaData';
+import './common/authingPostMessage';
+import './view';
 
 contextBridge.exposeInMainWorld('service', service);
 
@@ -21,12 +23,6 @@ declare global {
   }
 }
 
-if (windowName === WindowNames.view) {
-  void import('./view');
-}
-if (![WindowNames.main, WindowNames.view].includes(windowName)) {
-  void import('./common/authingPostMessage');
-}
 if (browserViewMetaData.windowName === 'main') {
   // automatically reload page when wifi/network is connected
   // https://www.electronjs.org/docs/tutorial/online-offline-events

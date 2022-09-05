@@ -4,7 +4,7 @@ import { WorkspaceChannel, Channels } from '@/constants/channels';
 import './wikiOperation';
 import { preference, workspace, workspaceView, menu } from './common/services';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
-import { browserViewMetaData } from './common/browserViewMetaData';
+import { browserViewMetaData, windowName } from './common/browserViewMetaData';
 
 let handled = false;
 const handleLoaded = (event: string): void => {
@@ -18,23 +18,6 @@ const handleLoaded = (event: string): void => {
   console.log('Preload script is loaded...');
   handled = true;
 };
-
-// try to load as soon as dom is loaded
-document.addEventListener('DOMContentLoaded', () => handleLoaded('document.on("DOMContentLoaded")'));
-// if user navigates between the same website
-// DOMContentLoaded might not be triggered so double check with 'onload'
-// https://github.com/atomery/webcatalog/issues/797
-window.addEventListener('load', () => handleLoaded('window.on("onload")'));
-window.addEventListener('message', async (event?: MessageEvent<{ type?: Channels; workspaceID?: string } | undefined>) => {
-  // set workspace to active when its notification is clicked
-  if (event?.data?.type === WorkspaceChannel.focusWorkspace) {
-    const id = event.data.workspaceID;
-    if (id !== undefined && (await workspace.get(id)) !== undefined) {
-      await workspaceView.setActiveWorkspaceView(id);
-      await menu.buildMenu();
-    }
-  }
-});
 
 async function executeJavaScriptInBrowserView(): Promise<void> {
   // Fix Can't show file list of Google Drive
@@ -77,4 +60,23 @@ async function executeJavaScriptInBrowserView(): Promise<void> {
   } catch (error) {
     console.error(error);
   }
+}
+
+if (windowName === WindowNames.view) {
+  // try to load as soon as dom is loaded
+  document.addEventListener('DOMContentLoaded', () => handleLoaded('document.on("DOMContentLoaded")'));
+  // if user navigates between the same website
+  // DOMContentLoaded might not be triggered so double check with 'onload'
+  // https://github.com/atomery/webcatalog/issues/797
+  window.addEventListener('load', () => handleLoaded('window.on("onload")'));
+  window.addEventListener('message', async (event?: MessageEvent<{ type?: Channels; workspaceID?: string } | undefined>) => {
+    // set workspace to active when its notification is clicked
+    if (event?.data?.type === WorkspaceChannel.focusWorkspace) {
+      const id = event.data.workspaceID;
+      if (id !== undefined && (await workspace.get(id)) !== undefined) {
+        await workspaceView.setActiveWorkspaceView(id);
+        await menu.buildMenu();
+      }
+    }
+  });
 }
