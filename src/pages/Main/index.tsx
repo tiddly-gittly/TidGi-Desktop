@@ -89,6 +89,7 @@ const SidebarTop = styled.div<{ fullscreen?: boolean }>`
     width: 0;
   }
   flex: 1;
+  width: 100%;
   ${({ fullscreen }) =>
     fullscreen === true
       ? css`
@@ -209,6 +210,7 @@ export default function Main(): JSX.Element {
                           index={index}
                           workspace={workspace}
                           showSidebarShortcutHints={sidebarShortcutHints}
+                          workspaceCount={workspaceIDs.length}
                         />
                       ))}
                   </SortableContext>

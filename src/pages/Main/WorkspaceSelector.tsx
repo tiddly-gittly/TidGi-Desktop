@@ -9,7 +9,7 @@ import { getAssetsFileUrl } from '@/helpers/url';
 
 Promise.config({ cancellation: true });
 
-const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClickedLoading?: boolean }>`
+const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClickedLoading?: boolean; workspaceCount: number }>`
   height: fit-content;
   width: 58px;
   padding: 10px 0;
@@ -23,7 +23,7 @@ const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClick
     opacity: 1;
   }
   -webkit-app-region: no-drag;
-  opacity: 0.8;
+  opacity: 0.7;
   position: relative;
   border: 0;
   border-color: transparent;
@@ -32,10 +32,13 @@ const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClick
     css`
       opacity: 0.4;
     `}
-  ${({ active }) =>
+  ${({ active, workspaceCount }) =>
     active === true &&
+    workspaceCount > 1 &&
     css`
       opacity: 1;
+      border-left: 3px solid ${({ theme }) => theme.palette.divider};
+      box-sizing: border-box;
     `}
   ${({ workspaceClickedLoading }) =>
     workspaceClickedLoading === true &&
@@ -132,6 +135,7 @@ interface Props {
   transparentBackground?: boolean;
   workspaceClickedLoading?: boolean;
   workspaceName?: string;
+  workspaceCount?: number;
 }
 export default function WorkspaceSelector({
   active = false,
@@ -145,6 +149,7 @@ export default function WorkspaceSelector({
   workspaceName,
   workspaceClickedLoading = false,
   onClick = () => {},
+  workspaceCount = 0,
 }: Props): JSX.Element {
   const { t } = useTranslation();
   const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
@@ -154,7 +159,12 @@ export default function WorkspaceSelector({
     });
   }, [workspaceName, t]);
   return (
-    <Root hibernated={hibernated} active={active} onClick={workspaceClickedLoading ? () => {} : onClick} workspaceClickedLoading={workspaceClickedLoading}>
+    <Root
+      hibernated={hibernated}
+      active={active}
+      onClick={workspaceClickedLoading ? () => {} : onClick}
+      workspaceClickedLoading={workspaceClickedLoading}
+      workspaceCount={workspaceCount}>
       <Badge color="secondary" badgeContent={badgeCount} max={99}>
         <Avatar
           large={!showSidebarShortcutHints}
