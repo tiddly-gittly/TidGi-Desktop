@@ -2,7 +2,7 @@ import path from 'path';
 import os from 'os';
 import { isDevelopmentOrTest } from './environment';
 import { developmentWikiFolderName, localizationFolderName } from './fileNames';
-import { isMac } from '@/helpers/system';
+import { isMac } from '../helpers/system';
 
 /** src folder */
 export const sourcePath = path.resolve(__dirname, '..');
