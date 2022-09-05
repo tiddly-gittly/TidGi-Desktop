@@ -32,14 +32,14 @@ const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClick
     css`
       opacity: 0.4;
     `}
-  ${({ active, workspaceCount }) =>
+  ${({ active }) =>
     active === true &&
-    workspaceCount > 1 &&
     css`
       opacity: 1;
-      border-left: 3px solid ${({ theme }) => theme.palette.divider};
-      box-sizing: border-box;
     `}
+      box-sizing: border-box;
+  border-left: ${({ workspaceCount }) => (workspaceCount > 1 ? '3px' : '0')} solid
+    ${({ active, theme }) => (active ? theme.palette.text.primary : 'transparent')};
   ${({ workspaceClickedLoading }) =>
     workspaceClickedLoading === true &&
     css`
