@@ -4,6 +4,7 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import i18n from 'i18next';
 import { ThemeProvider } from 'styled-components';
+import { createRoot } from 'react-dom/client';
 
 import StyledEngineProvider from '@material-ui/core/StyledEngineProvider';
 import DateFnsUtils from '@material-ui/lab/AdapterDateFns';
@@ -40,11 +41,9 @@ function App(): JSX.Element {
   );
 }
 
-async function runApp(): Promise<void> {
-  void window.remote.setVisualZoomLevelLimits(1, 1);
-  ReactDOM.render(<App />, document.querySelector('#app'));
+void window.remote.setVisualZoomLevelLimits(1, 1);
+const container = document.getElementById('app');
+const root = createRoot(container!);
+root.render(<App />);
 
-  await initI18N();
-}
-
-void runApp();
+void initI18N();

@@ -43,6 +43,7 @@ export const NativeServiceIPCDescriptor = {
     pickDirectory: ProxyPropertyType.Function,
     pickFile: ProxyPropertyType.Function,
     quit: ProxyPropertyType.Function,
+    path: ProxyPropertyType.Function,
     showElectronMessageBox: ProxyPropertyType.Function,
   },
 };
