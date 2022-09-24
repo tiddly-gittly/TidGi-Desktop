@@ -62,7 +62,7 @@ export async function getWorkspaceMenuTemplate(
   t: TFunction,
   service: IWorkspaceMenuRequiredServices,
 ): Promise<MenuItemConstructorOptions[]> {
-  const { active, id, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService } = workspace;
+  const { active, id, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, homeUrl } = workspace;
   /* eslint-disable @typescript-eslint/no-misused-promises */
   const template: MenuItemConstructorOptions[] = [
     {
@@ -92,6 +92,13 @@ export async function getWorkspaceMenuTemplate(
     {
       label: t('WorkspaceSelector.OpenWorkspaceFolderInGitGUI'),
       click: async () => await service.native.openInGitGuiApp(wikiFolderLocation),
+    },
+    {
+      label: t('WorkspaceSelector.OpenInBrowser'),
+      click: async () => {
+        const actualIP = await window.service.native.getLocalHostUrlWithActualIP(homeUrl);
+        await window.service.native.open(actualIP);
+      },
     },
   ];
 

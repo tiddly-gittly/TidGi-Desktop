@@ -37,6 +37,7 @@ import { SyncedWikiDescription } from '../AddWorkspace/Description';
 import { TokenForm } from '@/components/TokenForm';
 import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
 import { isEqual } from 'lodash';
+import { useActualIp } from '@services/native/hooks';
 
 const Root = styled(Paper)`
   height: 100%;
@@ -205,11 +206,7 @@ export default function EditWorkspace(): JSX.Element {
     }
   }, [onSave, requestRestartCountDown, workspace, originalWorkspace]);
 
-  const actualIP = usePromiseValue<string | undefined>(
-    async () => (homeUrl ? await window.service.native.getLocalHostUrlWithActualIP(homeUrl) : await Promise.resolve(undefined)),
-    undefined,
-    [homeUrl],
-  );
+  const actualIP = useActualIp(homeUrl);
   if (workspaceID === undefined) {
     return <Root>Error {workspaceID ?? '-'} not exists</Root>;
   }

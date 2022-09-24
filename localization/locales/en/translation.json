@@ -16,7 +16,8 @@
     "OpenWorkspaceFolder": "Open Folder",
     "ReloadCurrentWorkspace": "Reload Current Workspace",
     "OpenWorkspaceFolderInEditor": "Open Folder In External Editor",
-    "OpenWorkspaceFolderInGitGUI": "Open in Git GUI"
+    "OpenWorkspaceFolderInGitGUI": "Open in Git GUI",
+    "OpenInBrowser": "Open in browser"
   },
   "SideBar": {
     "CommandPalette": "CmdPal",

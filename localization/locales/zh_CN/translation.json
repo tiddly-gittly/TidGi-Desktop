@@ -17,7 +17,8 @@
     "BadWorkspacePath": "工作区路径有问题",
     "OpenWorkspaceFolder": "打开文件夹",
     "OpenWorkspaceFolderInEditor": "用外部编辑器打开文件夹",
-    "OpenWorkspaceFolderInGitGUI": "用可视化Git工具打开"
+    "OpenWorkspaceFolderInGitGUI": "用可视化Git工具打开",
+    "OpenInBrowser": "用浏览器打开"
   },
   "SideBar": {
     "CommandPalette": "搜索/命令",

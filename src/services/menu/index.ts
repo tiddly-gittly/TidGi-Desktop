@@ -350,22 +350,23 @@ export class MenuService implements IMenuService {
     const sidebar = await this.preferenceService.get('sidebar');
     const contextMenuBuilder = new ContextMenuBuilder(webContents);
     const menu = contextMenuBuilder.buildMenuForElement(info);
+    const workspaces = await this.workspaceService.getWorkspacesAsList();
+    const activeWorkspace = await this.workspaceService.getActiveWorkspace();
+    const services = {
+      auth: this.authService,
+      context: this.contextService,
+      git: this.gitService,
+      native: this.nativeService,
+      view: this.viewService,
+      wiki: this.wikiService,
+      wikiGitWorkspace: this.wikiGitWorkspaceService,
+      window: this.windowService,
+      workspace: this.workspaceService,
+      workspaceView: this.workspaceViewService,
+    };
     // show workspace menu to manipulate workspaces if sidebar is not open
     if (!sidebar) {
       menu.append(new MenuItem({ type: 'separator' }));
-      const workspaces = await this.workspaceService.getWorkspacesAsList();
-      const services = {
-        auth: this.authService,
-        context: this.contextService,
-        git: this.gitService,
-        native: this.nativeService,
-        view: this.viewService,
-        wiki: this.wikiService,
-        wikiGitWorkspace: this.wikiGitWorkspaceService,
-        window: this.windowService,
-        workspace: this.workspaceService,
-        workspaceView: this.workspaceViewService,
-      };
       menu.append(
         new MenuItem({
           label: i18next.t('ContextMenu.OpenCommandPalette'),
@@ -406,6 +407,16 @@ export class MenuService implements IMenuService {
           })),
         }),
       );
+    } else {
+      // when sidebar is showing, only show current workspace's operations
+      if (activeWorkspace !== undefined) {
+        menu.append(
+          new MenuItem({
+            label: i18next.t('Menu.Workspaces'),
+            submenu: await getWorkspaceMenuTemplate(activeWorkspace, i18next.t.bind(i18next), services),
+          }),
+        );
+      }
     }
     menu.append(
       new MenuItem({
