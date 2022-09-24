@@ -374,12 +374,7 @@ export class Window implements IWindowService {
           }
         : {
             label: 'Zoom',
-            click: () => {
-              const mainWindow = this.get(WindowNames.main);
-              if (mainWindow !== undefined) {
-                mainWindow.maximize();
-              }
-            },
+            click: async () => await this.maximize(),
           },
       { role: 'resetZoom' },
       { role: 'togglefullscreen' },
@@ -607,6 +602,17 @@ export class Window implements IWindowService {
   private async updateWindowBackground(newWindow: BrowserWindow): Promise<void> {
     if (await this.themeService.shouldUseDarkColors()) {
       newWindow.setBackgroundColor('#000000');
+    }
+  }
+
+  public async maximize(): Promise<void> {
+    const mainWindow = this.get(WindowNames.main);
+    if (mainWindow !== undefined) {
+      if (mainWindow.isMaximized()) {
+        mainWindow.maximize();
+      } else {
+        mainWindow.unmaximize();
+      }
     }
   }
 }

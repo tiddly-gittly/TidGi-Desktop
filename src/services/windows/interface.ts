@@ -19,6 +19,7 @@ export interface IWindowService {
   isFullScreen(windowName?: WindowNames): Promise<boolean | undefined>;
   isMenubarOpen(): Promise<boolean>;
   loadURL(windowName: WindowNames, newUrl?: string): Promise<void>;
+  maximize(): Promise<void>;
   open<N extends WindowNames>(
     windowName: N,
     meta?: WindowMeta[N],
@@ -47,6 +48,7 @@ export const WindowServiceIPCDescriptor = {
     isFullScreen: ProxyPropertyType.Function,
     isMenubarOpen: ProxyPropertyType.Function,
     loadURL: ProxyPropertyType.Function,
+    maximize: ProxyPropertyType.Function,
     open: ProxyPropertyType.Function,
     reload: ProxyPropertyType.Function,
     requestRestart: ProxyPropertyType.Function,
