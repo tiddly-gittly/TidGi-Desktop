@@ -144,7 +144,7 @@ export class Window implements IWindowService {
       fullscreenable: true,
       autoHideMenuBar: false,
       // hide titleBar should not take effect on setting window
-      titleBarStyle: [WindowNames.main, WindowNames.menuBar].includes(windowName) && (await this.preferenceService.get('titleBar')) ? 'default' : 'hidden',
+      titleBarStyle: ![WindowNames.main, WindowNames.menuBar].includes(windowName) || (await this.preferenceService.get('titleBar')) ? 'default' : 'hidden',
       alwaysOnTop:
         windowName === WindowNames.menuBar ? await this.preferenceService.get('menuBarAlwaysOnTop') : await this.preferenceService.get('alwaysOnTop'),
       webPreferences: {
