@@ -105,7 +105,8 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                         checked={preference.titleBar}
                         onChange={async (event) => {
                           await window.service.preference.set('titleBar', event.target.checked);
-                          await window.service.workspaceView.realignActiveWorkspace();
+                          // no need to realignActiveWorkspace -> realignActiveView , otherwise view will reload bound, and move down by height of titlebar, while titlebar change is not taking effect yet
+                          // await window.service.workspaceView.realignActiveWorkspace();
                           props.requestRestartCountDown();
                         }}
                       />

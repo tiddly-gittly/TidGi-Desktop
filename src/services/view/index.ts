@@ -295,8 +295,6 @@ export class View implements IViewService {
     if (workspace.active) {
       browserWindow.setBrowserView(view);
       const contentSize = browserWindow.getContentSize();
-      // DEBUG: console
-      console.log(`contentSize`, contentSize);
       view.setBounds(await getViewBounds(contentSize as [number, number]));
       view.setAutoResize({
         width: true,
