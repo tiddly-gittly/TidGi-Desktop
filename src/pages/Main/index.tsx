@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/promise-function-async */
 import React from 'react';
 import styled, { css } from 'styled-components';
 import { useTranslation } from 'react-i18next';
@@ -78,15 +79,15 @@ const SidebarWithStyle = styled(SimpleBar)`
   ${sideBarStyle}
 `;
 
-const SidebarTop = styled.div<{ fullscreen?: boolean }>`
+const SidebarTop = styled.div<{ titleBar?: boolean }>`
   overflow-y: scroll;
   &::-webkit-scrollbar {
     width: 0;
   }
   flex: 1;
   width: 100%;
-  ${({ fullscreen }) =>
-    fullscreen === true
+  ${({ titleBar }) =>
+    titleBar === true
       ? css`
           padding-top: 0;
         `
@@ -143,7 +144,8 @@ export default function Main(): JSX.Element {
   const { t } = useTranslation();
   const workspacesList = useWorkspacesListObservable();
   const preferences = usePreferenceObservable();
-  const isFullScreen = usePromiseValue<boolean | undefined>(window.service.window.isFullScreen, false)!;
+  /** is title bar on. This only take effect after reload, so we don't want to get this preference from observable */
+  const titleBar = usePromiseValue<boolean>(() => window.service.preference.get('titleBar'), false)!;
 
   const activeWorkspaceMetadata = workspacesList
     ?.map((workspace) => ({ active: workspace.active, ...workspace.metadata }))
@@ -152,7 +154,7 @@ export default function Main(): JSX.Element {
   const updaterMetaData = useUpdaterObservable();
   if (preferences === undefined) return <div>{t('Loading')}</div>;
 
-  const { attachToMenubar, titleBar, sidebar, themeSource, sidebarShortcutHints } = preferences;
+  const { sidebar, themeSource, sidebarShortcutHints } = preferences;
   const hasError =
     typeof activeWorkspaceMetadata?.didFailLoadErrorMessage === 'string' &&
     activeWorkspaceMetadata?.didFailLoadErrorMessage.length > 0 &&
@@ -166,7 +168,7 @@ export default function Main(): JSX.Element {
       <Root>
         {sidebar && (
           <SidebarContainer>
-            <SidebarTop fullscreen={isFullScreen || titleBar || attachToMenubar}>
+            <SidebarTop titleBar={titleBar}>
               {workspacesList === undefined ? (
                 <div>{t('Loading')}</div>
               ) : (
