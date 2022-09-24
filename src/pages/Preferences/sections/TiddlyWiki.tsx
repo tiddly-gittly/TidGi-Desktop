@@ -8,7 +8,7 @@ import type { ISectionProps } from '../useSections';
 import { useUserInfoObservable } from '@services/auth/hooks';
 import { ListItemText, ListItemVertical, Paper, SectionTitle, TextField } from '../PreferenceComponents';
 
-export function TiddlyWiki(props: Required<ISectionProps>): JSX.Element {
+export function TiddlyWiki(props: Partial<ISectionProps>): JSX.Element {
   const { t } = useTranslation();
 
   const userInfo = useUserInfoObservable();
@@ -21,11 +21,11 @@ export function TiddlyWiki(props: Required<ISectionProps>): JSX.Element {
   }, [userInfo]);
   const userNameTextFieldOnChange = useDebouncedCallback(async (event: React.ChangeEvent<HTMLTextAreaElement | HTMLInputElement>) => {
     await window.service.auth.set('userName', event.target.value);
-    props.requestRestartCountDown();
+    props?.requestRestartCountDown?.();
   });
   return (
     <>
-      <SectionTitle ref={props.sections.wiki.ref}>{t('Preference.TiddlyWiki')}</SectionTitle>
+      <SectionTitle ref={props.sections?.wiki?.ref}>{t('Preference.TiddlyWiki')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           {userInfo === undefined ? (

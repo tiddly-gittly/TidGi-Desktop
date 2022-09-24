@@ -24,6 +24,7 @@ import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { CommandPaletteIcon } from '@/components/icon/CommandPaletteSVG';
 import { Languages } from '../Preferences/sections/Languages';
+import { TiddlyWiki } from '../Preferences/sections/TiddlyWiki';
 import { NewUserMessage } from './NewUserMessage';
 import { WikiErrorMessages, ViewLoadErrorMessages } from './ErrorMessage';
 
@@ -228,6 +229,7 @@ export default function Main(): JSX.Element {
             {Array.isArray(workspacesList) && workspacesList.length === 0 && <NewUserMessage sidebar={sidebar} themeSource={themeSource} />}
           </InnerContentRoot>
           <Languages languageSelectorOnly />
+          <TiddlyWiki />
         </ContentRoot>
       </Root>
     </OuterRoot>
