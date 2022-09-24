@@ -39,7 +39,7 @@ const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClick
     `}
       box-sizing: border-box;
   border-left: ${({ workspaceCount }) => (workspaceCount > 1 ? '3px' : '0')} solid
-    ${({ active, theme }) => (active ? theme.palette.text.primary : 'transparent')};
+    ${({ active, theme }) => (active === true ? theme.palette.text.primary : 'transparent')};
   ${({ workspaceClickedLoading }) =>
     workspaceClickedLoading === true &&
     css`
@@ -134,10 +134,10 @@ interface Props {
   showSidebarShortcutHints?: boolean;
   transparentBackground?: boolean;
   workspaceClickedLoading?: boolean;
-  workspaceName?: string;
   workspaceCount?: number;
+  workspaceName?: string;
 }
-export default function WorkspaceSelector({
+export function WorkspaceSelector({
   active = false,
   badgeCount = 0,
   hibernated = false,

@@ -2,9 +2,6 @@ import React from 'react';
 import styled, { css } from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet';
-import { DndContext, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
-import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 
 import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
@@ -18,12 +15,10 @@ import { IUpdaterStatus } from '@services/updater/interface';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useUpdaterObservable } from '@services/updater/hooks';
 
-import WorkspaceSelector from './WorkspaceSelector';
 import FindInPage from '../../components/FindInPage';
 import { latestStableUpdateUrl } from '@/constants/urls';
 
-import { SortableWorkspaceSelector } from './SortableWorkspaceSelector';
-import { IWorkspace } from '@services/workspaces/interface';
+import { WorkspaceSelector, SortableWorkspaceSelectorList } from '@/components/WorkspaceIcon';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { CommandPaletteIcon } from '@/components/icon/CommandPaletteSVG';
@@ -150,15 +145,6 @@ export default function Main(): JSX.Element {
   const preferences = usePreferenceObservable();
   const isFullScreen = usePromiseValue<boolean | undefined>(window.service.window.isFullScreen, false)!;
 
-  const dndSensors = useSensors(
-    useSensor(PointerSensor, {
-      activationConstraint: {
-        distance: 5,
-      },
-    }),
-  );
-
-  const workspaceIDs = workspacesList?.map((workspace) => workspace.id) ?? [];
   const activeWorkspaceMetadata = workspacesList
     ?.map((workspace) => ({ active: workspace.active, ...workspace.metadata }))
     ?.find((workspace) => workspace.active);
@@ -184,37 +170,7 @@ export default function Main(): JSX.Element {
               {workspacesList === undefined ? (
                 <div>{t('Loading')}</div>
               ) : (
-                <DndContext
-                  sensors={dndSensors}
-                  modifiers={[restrictToVerticalAxis]}
-                  onDragEnd={async ({ active, over }) => {
-                    if (over === null || active.id === over.id) return;
-                    const oldIndex = workspaceIDs.indexOf(active.id);
-                    const newIndex = workspaceIDs.indexOf(over.id);
-
-                    const newWorkspacesList = arrayMove(workspacesList, oldIndex, newIndex);
-                    const newWorkspaces: Record<string, IWorkspace> = {};
-                    newWorkspacesList.forEach((workspace, index) => {
-                      newWorkspaces[workspace.id] = workspace;
-                      newWorkspaces[workspace.id].order = index;
-                    });
-
-                    await window.service.workspace.setWorkspaces(newWorkspaces);
-                  }}>
-                  <SortableContext items={workspaceIDs} strategy={verticalListSortingStrategy}>
-                    {workspacesList
-                      .sort((a, b) => a.order - b.order)
-                      .map((workspace, index) => (
-                        <SortableWorkspaceSelector
-                          key={`item-${workspace.id}`}
-                          index={index}
-                          workspace={workspace}
-                          showSidebarShortcutHints={sidebarShortcutHints}
-                          workspaceCount={workspaceIDs.length}
-                        />
-                      ))}
-                  </SortableContext>
-                </DndContext>
+                <SortableWorkspaceSelectorList sidebarShortcutHints={sidebarShortcutHints} workspacesList={workspacesList} />
               )}
               <WorkspaceSelector
                 id="add"
