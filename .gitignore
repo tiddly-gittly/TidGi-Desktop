@@ -64,3 +64,5 @@ out/
 # testing and dev temp folders
 settings-dev/
 .dccache
+.cache/
+.deb2appimage_cache/
