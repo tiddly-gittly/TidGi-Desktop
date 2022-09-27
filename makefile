@@ -4,6 +4,7 @@
 # status: deb2appimage WIP(test)
 # appimagehub: https://github.com/AppImage/appimage.github.io#how-to-submit-appimages-to-the-catalog
 # byhand manage this file
+# TODO: fix tiddly desktop cache not founded to speedup, update package-locl.json file
 appimage_cachedir="./.deb2appimage_cache"
 appimage_address="https://github.com/simoniz0r/deb2appimage/releases/download/v0.0.5/deb2appimage-0.0.5-x86_64.AppImage"
 bin="$(appimage_cachedir)/deb2appimage.appimage"
@@ -16,3 +17,4 @@ build-appimage:
 	@chmod +x ${bin}
 	@$(bin) -j $(config_file) -o $(appimage_cachedir)
 	@cp $(appimage_cachedir/tidig*.Appimage) $(target_dir)
+	@echo "✔ 🎉 appimage generated"
