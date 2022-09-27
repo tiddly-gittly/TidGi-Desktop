@@ -3,6 +3,7 @@
 # note: tidgi.deb(on debt2appimage.json) path must use ~/.cache/deb2appimage/debs/, don't modify it
 # status: deb2appimage WIP(test)
 # appimagehub: https://github.com/AppImage/appimage.github.io#how-to-submit-appimages-to-the-catalog
+# byhand manage this file
 appimage_cachedir="./.deb2appimage_cache"
 appimage_address="https://github.com/simoniz0r/deb2appimage/releases/download/v0.0.5/deb2appimage-0.0.5-x86_64.AppImage"
 bin="$(appimage_cachedir)/deb2appimage.appimage"
