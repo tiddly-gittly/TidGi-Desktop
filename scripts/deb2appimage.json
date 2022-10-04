@@ -9,7 +9,7 @@
       "deps": "",
       "repoarch": "amd64",
       "distrorepo": "Debian",
-      "repoversion": "jessie-backports,jessie,jessie",
+      "repoversion": "",
       "binarypath": "/usr/bin/tidgi",
       "desktoppath": null,
       "iconpath": null,
@@ -36,13 +36,8 @@
   "authors": [
     {
       "type": "Author",
-      "author": "parsecgaming",
-      "url": "https://parsecgaming.com"
-    },
-    {
-      "type": "AppImage Maintainer",
-      "author": "E5ten",
-      "url": "https://github.com/E5ten"
+      "author": "",
+      "url": ""
     }
   ]
 }

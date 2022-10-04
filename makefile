@@ -9,12 +9,12 @@ appimage_cachedir="./.deb2appimage_cache"
 appimage_address="https://github.com/simoniz0r/deb2appimage/releases/download/v0.0.5/deb2appimage-0.0.5-x86_64.AppImage"
 bin="$(appimage_cachedir)/deb2appimage.appimage"
 config_file="./scripts/deb2appimage.json"
-target_dir="./out/make"
+target_dir="./out/"
 
 build-appimage:
 	@rm -rf $(appimage_cachedir); mkdir $(appimage_cachedir)
 	@wget $(appimage_address) -O ${bin}
 	@chmod +x ${bin}
 	@$(bin) -j $(config_file) -o $(appimage_cachedir)
-	# @cp $(appimage_cachedir/tidig*.Appimage) $(target_dir)
-	# @echo "✔ 🎉 appimage generated"
+	@cp $(appimage_cachedir/tidig*.Appimage) $(target_dir)
+	@echo "✔ 🎉 appimage generated"
