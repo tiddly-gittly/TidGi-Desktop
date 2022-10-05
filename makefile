@@ -16,5 +16,5 @@ build-appimage:
 	@wget $(appimage_address) -O ${bin}
 	@chmod +x ${bin}
 	@$(bin) -j $(config_file) -o $(appimage_cachedir)
-	@cp $(appimage_cachedir/tidig*.Appimage) $(target_dir)
+	# @cp $(appimage_cachedir/tidig*.Appimage) $(target_dir)
 	@echo "✔ 🎉 appimage generated"
