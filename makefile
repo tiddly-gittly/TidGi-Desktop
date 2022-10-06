@@ -10,9 +10,10 @@ appimage_address="https://github.com/simoniz0r/deb2appimage/releases/download/v0
 bin="$(appimage_cachedir)/deb2appimage.appimage"
 config_file="./scripts/deb2appimage.json"
 # this filename for deb2appimage not support Underline char
+# maybe need delete ~/.cache/deb2appimage/
 updated_config_file="deb2appimage$(shell date +"%Y%m%d%H%M%S").json"
 target_dir="./out/"
-version = $(shell node -e "console.log(require('./package.json').version);")
+version = $(shell node -p "require('./package.json').version")
 
 build-appimage:
 	@make clean
@@ -24,6 +25,9 @@ build-appimage:
 	@$(bin) -j $(updated_config_file) -o $(appimage_cachedir)
 	# @cp $(appimage_cachedir/tidig*.Appimage) $(target_dir)
 	@echo "✔ 🎉 appimage generated"
+
+print-version:
+	@echo ${version}
 
 download_bin:
 	@wget $(appimage_address) -O ${bin}
