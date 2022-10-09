@@ -12,7 +12,7 @@ config_file="./scripts/deb2appimage.json"
 # this filename for deb2appimage not support Underline char
 # maybe need delete ~/.cache/deb2appimage/
 updated_config_file="deb2appimage$(shell date +"%Y%m%d%H%M%S").json"
-target_dir="./out/"
+target_dir="./out/make"
 version = $(shell node -p "require('./package.json').version")
 
 build-appimage:
