@@ -23,7 +23,7 @@ build-appimage:
 	@make download_bin
 	@chmod +x ${bin}
 	@$(bin) -j $(updated_config_file) -o $(appimage_cachedir)
-	@cp $(appimage_cachedir/tidig*.Appimage) $(target_dir)
+	@cp $(appimage_cachedir)/tidig*.Appimage $(target_dir)
 	@echo "✔ 🎉 appimage generated"
 
 print-version:
