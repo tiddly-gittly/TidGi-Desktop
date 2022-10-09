@@ -5,14 +5,14 @@
 # appimagehub: https://github.com/AppImage/appimage.github.io#how-to-submit-appimages-to-the-catalog
 # byhand manage this file
 # TODO: fix tiddly desktop cache not founded to speedup, update package-locl.json file
-appimage_cachedir="./.deb2appimage_cache"
+appimage_cachedir="deb2appimage_cache"
 appimage_address="https://github.com/simoniz0r/deb2appimage/releases/download/v0.0.5/deb2appimage-0.0.5-x86_64.AppImage"
 bin="$(appimage_cachedir)/deb2appimage.appimage"
 config_file="./scripts/deb2appimage.json"
 # this filename for deb2appimage not support Underline char
 # maybe need delete ~/.cache/deb2appimage/
 updated_config_file="deb2appimage$(shell date +"%Y%m%d%H%M%S").json"
-target_dir="./out/make"
+target_dir="out/make"
 version = $(shell node -p "require('./package.json').version")
 
 build-appimage:
@@ -23,7 +23,7 @@ build-appimage:
 	@make download_bin
 	@chmod +x ${bin}
 	@$(bin) -j $(updated_config_file) -o $(appimage_cachedir)
-	@cp $(appimage_cachedir)/tidig*.Appimage $(target_dir)
+	@cp $(appimage_cachedir)/*.Appimage $(target_dir)
 	@echo "✔ 🎉 appimage generated"
 
 print-version:
