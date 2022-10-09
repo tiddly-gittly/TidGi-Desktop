@@ -8,10 +8,10 @@
 appimage_cachedir="deb2appimage_cache"
 appimage_address="https://github.com/simoniz0r/deb2appimage/releases/download/v0.0.5/deb2appimage-0.0.5-x86_64.AppImage"
 bin="$(appimage_cachedir)/deb2appimage.appimage"
-config_file="./scripts/deb2appimage.json"
+config_file="scripts/deb2appimage.json"
 # this filename for deb2appimage not support Underline char
 # maybe need delete ~/.cache/deb2appimage/
-updated_config_file="deb2appimage$(shell date +"%Y%m%d%H%M%S").json"
+updated_config_file="deb2appimage_$(shell date +"%Y%m%d%H%M%S").json"
 target_dir="out/make"
 version = $(shell node -p "require('./package.json').version")
 
