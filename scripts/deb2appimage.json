@@ -1,0 +1,43 @@
+{
+  "buildinfo": [
+    {
+      "prerun": [
+        "curl -sL https://github.com/tiddly-gittly/TidGi-Desktop/releases/download/vAPP_VERSION/tidgi_APP_VERSION_amd64.deb -o ~/.cache/deb2appimage/debs/tidgi.deb"
+      ],
+      "name": "tidgi",
+      "version": "linux",
+      "deps": "",
+      "repoarch": "amd64",
+      "distrorepo": "Debian",
+      "repoversion": "",
+      "binarypath": "/usr/bin/tidgi",
+      "desktoppath": null,
+      "iconpath": null,
+      "usewrapper": "true",
+      "postrun": [
+        null
+      ]
+    }
+  ],
+  "apprunconf": [
+    {
+      "setpath": "true",
+      "setlibpath": "true",
+      "setpythonpath": "false",
+      "setpythonhome": "false",
+      "setpythondontwritebytecode": "false",
+      "setxdgdatadirs": "false",
+      "setperllib": "false",
+      "setgsettingsschemadir": "false",
+      "setqtpluginpath": "false",
+      "exec": "/usr/bin/tidgi"
+    }
+  ],
+  "authors": [
+    {
+      "type": "Author",
+      "author": "",
+      "url": ""
+    }
+  ]
+}
