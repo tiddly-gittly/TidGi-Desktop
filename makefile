@@ -12,6 +12,7 @@ bin="$(appimage_cachedir)/deb2appimage.appimage"
 config_file="deb2appimage.json"
 # this filename for deb2appimage not support Underline char
 # maybe need delete ~/.cache/deb2appimage/
+# in github workflow, use cp deb
 target_dir="out/make"
 version = $(shell node -p "require('./package.json').version")
 
@@ -27,7 +28,7 @@ download_bin:
 	@wget $(appimage_address) -O ${bin}
 
 update_version:
-	@sed -i "s#download/v[0-9\.]*\/tidgi_[0-9\.]*_#download/v$(version)\/tidgi_$(version)_#" $(config_file)
+	@sed -i "s#download/v[0-9.-]*\/tidgi_[0-9.-]*_#download/v$(version)\/tidgi_$(version)_#" $(config_file)
 
 .PHONY: clean
 clean:
