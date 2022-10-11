@@ -23,9 +23,6 @@ build-appimage:
 	@cp $(appimage_cachedir)/*.AppImage $(target_dir)
 	@echo "✔ 🎉 appimage generated"
 
-print-version:
-	@echo ${version}
-
 download_bin:
 	@wget $(appimage_address) -O ${bin}
 
