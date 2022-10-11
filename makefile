@@ -9,21 +9,17 @@
 appimage_cachedir="deb2appimage_cache"
 appimage_address="https://github.com/simoniz0r/deb2appimage/releases/download/v0.0.5/deb2appimage-0.0.5-x86_64.AppImage"
 bin="$(appimage_cachedir)/deb2appimage.appimage"
-config_file="scripts/deb2appimage.json"
+config_file="deb2appimage.json"
 # this filename for deb2appimage not support Underline char
 # maybe need delete ~/.cache/deb2appimage/
-updated_config_file="deb2appimage_$(shell date +"%Y%m%d%H%M%S").json"
 target_dir="out/make"
 version = $(shell node -p "require('./package.json').version")
 
 build-appimage:
-	@make clean
-	@cp ${config_file} ${updated_config_file}
-	@sed -i "s#APP_VERSION#$(version)#g" $(updated_config_file)
 	@rm -rf $(appimage_cachedir); mkdir $(appimage_cachedir)
 	@make download_bin
 	@chmod +x ${bin}
-	@$(bin) -j $(updated_config_file) -o $(appimage_cachedir)
+	@make update_version; $(bin) -j $(config_file) -o $(appimage_cachedir)
 	@cp $(appimage_cachedir)/*.AppImage $(target_dir)
 	@echo "✔ 🎉 appimage generated"
 
@@ -33,6 +29,9 @@ print-version:
 download_bin:
 	@wget $(appimage_address) -O ${bin}
 
+update_version:
+	@sed -i "s#download/v[0-9\.]*\/tidgi_[0-9\.]*_#download/v$(version)\/tidgi_$(version)_#" $(config_file)
+
 .PHONY: clean
 clean:
-	@rm -rf deb2appimage*.json
+	# @rm -rf deb2appimage*.json
