@@ -28,6 +28,7 @@ download_bin:
 	@wget $(appimage_address) -O ${bin}
 
 update_version:
+	@cp scripts/deb2appimage-template.json $(config_file)
 	@sed -i "s#download/v[0-9\.\-]*\/tidgi_[0-9\.\-]*_#download/v$(version)\/tidgi_$(version)_#" $(config_file)
 
 .PHONY: clean
