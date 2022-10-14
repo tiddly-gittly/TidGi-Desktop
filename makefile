@@ -29,7 +29,7 @@ download_bin:
 
 update_version:
 	@cp scripts/deb2appimage-template.json $(config_file)
-	@sed -i "s#download/v[0-9\.\-]*\/tidgi_[0-9\.\-]*_#download/v$(version)\/tidgi_$(version)_#" $(config_file)
+	@sed -i "s#VERSION#$(version)#g" $(config_file)
 
 .PHONY: clean
 clean:

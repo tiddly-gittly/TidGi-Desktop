@@ -2,7 +2,7 @@
   "buildinfo": [
     {
       "prerun": [
-        "curl -sL https://github.com/tiddly-gittly/TidGi-Desktop/releases/download/v/tidgi__amd64.deb -o ~/.cache/deb2appimage/debs/tidgi.deb"
+        "curl -sL https://github.com/tiddly-gittly/TidGi-Desktop/releases/download/vVERSION/tidgi_VERSION_amd64.deb -o ~/.cache/deb2appimage/debs/tidgi.deb"
       ],
       "name": "tidgi",
       "version": "linux",
