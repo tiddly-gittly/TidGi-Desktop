@@ -68,7 +68,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Make Linux (appimage)
-        run: make build-appimage
+        run: npx zx scripts/buildAppImage.mjs
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
