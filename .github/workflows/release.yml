@@ -177,17 +177,18 @@ jobs:
         with:
           node-version: 16.x
 
-      - name: Get npm cache directory
-        id: npm-cache
-        run: |
-          echo "DIR=$(npm config get cache)" >> $GITHUB_OUTPUT
-      - uses: actions/cache@v3
-        id: cache
-        with:
-          path: ${{ steps.npm-cache.outputs.DIR }}
-          key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-node-
+      # wait for https://github.com/actions/cache/issues/988
+      # - name: Get npm cache directory
+      #   id: npm-cache
+      #   run: |
+      #     echo "DIR=$(npm config get cache)" >> $GITHUB_OUTPUT
+      # - uses: actions/cache@v3
+      #   id: cache
+      #   with:
+      #     path: ${{ steps.npm-cache.outputs.DIR }}
+      #     key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-node-
 
       - name: Install dependencies
         run: npm ci --legacy-peer-deps
