@@ -23,7 +23,7 @@ import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interf
 import { SupportedStorageServices } from '@services/types';
 import { lazyInject } from '@services/container';
 import type { IWorkspaceService, IWorkspace, IWorkspaceMetaData, INewWorkspaceConfig, IWorkspaceWithMetadata } from './interface';
-import i18n from '@services/libs/i18n';
+import { i18n } from '@services/libs/i18n';
 import { defaultServerIP } from '@/constants/urls';
 import { logger } from '@services/libs/log';
 import { workspaceSorter } from './utils';

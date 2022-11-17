@@ -1,4 +1,4 @@
-import i18n from '@services/libs/i18n';
+import { i18n } from '@services/libs/i18n';
 import { IWorkspace } from '@services/workspaces/interface';
 
 export class CopyWikiTemplateError extends Error {

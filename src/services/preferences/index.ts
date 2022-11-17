@@ -9,7 +9,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
 import type { INotificationService } from '@services/notifications/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import i18n from '@services/libs/i18n';
+import { i18n } from '@services/libs/i18n';
 import { IPreferences, IPreferenceService } from './interface';
 import { defaultPreferences } from './defaultPreferences';
 import { lazyInject } from '@services/container';

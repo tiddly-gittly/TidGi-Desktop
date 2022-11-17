@@ -16,7 +16,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IMenuService } from '@services/menu/interface';
 import { Channels, WindowChannel, MetaDataChannel, ViewChannel } from '@/constants/channels';
 
-import i18n from '@services/libs/i18n';
+import { i18n } from '@services/libs/i18n';
 import getViewBounds from '@services/libs/getViewBounds';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import { lazyInject } from '@services/container';

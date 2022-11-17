@@ -1,4 +1,4 @@
-import i18n from '@services/libs/i18n';
+import { i18n } from '@services/libs/i18n';
 
 export class WorkspaceFailedToLoadError extends Error {
   constructor(extraMessage?: string, url?: string) {

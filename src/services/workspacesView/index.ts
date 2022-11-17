@@ -6,7 +6,7 @@ import { injectable } from 'inversify';
 import { delay, mapSeries } from 'bluebird';
 
 import serviceIdentifier from '@services/serviceIdentifier';
-import i18n from '@services/libs/i18n';
+import { i18n } from '@services/libs/i18n';
 import type { IViewService } from '@services/view/interface';
 import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interface';
 import type { IWindowService } from '@services/windows/interface';
@@ -82,13 +82,13 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (workspace.storageService !== SupportedStorageServices.local) {
       const mainWindow = this.windowService.get(WindowNames.main);
       if (mainWindow === undefined) {
-        throw new Error(i18n.t(`Error.MainWindowMissing`));
+        throw new Error(i18n.t(`Error.MainWindowMissing`) ?? `Error.MainWindowMissing`);
       }
       const userInfo = this.authService.getStorageServiceUserInfo(workspace.storageService);
       if (userInfo === undefined) {
         // user not login into Github or something else
         void dialog.showMessageBox(mainWindow, {
-          title: i18n.t('Dialog.StorageServiceUserInfoNoFound'),
+          title: i18n.t('Dialog.StorageServiceUserInfoNoFound') ?? 'Dialog.StorageServiceUserInfoNoFound',
           message: i18n.t('Dialog.StorageServiceUserInfoNoFoundDetail'),
           buttons: ['OK'],
           cancelId: 0,

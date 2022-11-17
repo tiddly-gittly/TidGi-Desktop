@@ -22,7 +22,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { IUpdaterService } from '@services/updater/interface';
 import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/workspaces/getWorkspaceMenuTemplate';
 import { logger } from '@services/libs/log';
-import i18next from '@services/libs/i18n';
+import { i18n } from '@services/libs/i18n';
 import ContextMenuBuilder from './contextMenu/contextMenuBuilder';
 import { IpcSafeMenuItem, mainMenuItemProxy } from './contextMenu/rendererMenuItemProxy';
 import { InsertMenuAfterSubMenuIndexError } from './error';
@@ -120,27 +120,27 @@ export class MenuService implements IMenuService {
   private loadDefaultMenuTemplate(): void {
     this._menuTemplate = [
       {
-        label: () => i18next.t('Menu.TidGi'),
+        label: () => i18n.t('Menu.TidGi'),
         id: 'TidGi',
         submenu: [
           {
-            label: () => i18next.t('ContextMenu.About'),
+            label: () => i18n.t('ContextMenu.About'),
             click: async () => await this.windowService.open(WindowNames.about),
           },
           { type: 'separator' },
           {
             id: 'update',
-            label: () => i18next.t('Updater.CheckUpdate'),
+            label: () => i18n.t('Updater.CheckUpdate'),
             click: async () => await this.updaterService.checkForUpdates(),
           },
           {
-            label: () => i18next.t('ContextMenu.Preferences'),
+            label: () => i18n.t('ContextMenu.Preferences'),
             accelerator: 'CmdOrCtrl+,',
             click: async () => await this.windowService.open(WindowNames.preferences),
           },
           { type: 'separator' },
           {
-            label: () => i18next.t('Preference.Notifications'),
+            label: () => i18n.t('Preference.Notifications'),
             click: async () => await this.windowService.open(WindowNames.notifications),
             accelerator: 'CmdOrCtrl+Shift+N',
           },
@@ -150,60 +150,60 @@ export class MenuService implements IMenuService {
           { role: 'hide' },
           { role: 'hideOthers' },
           { role: 'unhide' },
-          { label: () => i18next.t('ContextMenu.Quit') + i18next.t('Menu.TidGi'), role: 'quit' },
+          { label: () => i18n.t('ContextMenu.Quit') + i18n.t('Menu.TidGi'), role: 'quit' },
         ],
       },
       {
-        label: () => i18next.t('Menu.Edit'),
+        label: () => i18n.t('Menu.Edit'),
         id: 'Edit',
         role: 'editMenu',
       },
       {
-        label: () => i18next.t('Menu.View'),
+        label: () => i18n.t('Menu.View'),
         id: 'View',
       },
       {
-        label: () => i18next.t('Menu.Language'),
+        label: () => i18n.t('Menu.Language'),
         id: 'Language',
       },
       {
-        label: () => i18next.t('Menu.History'),
+        label: () => i18n.t('Menu.History'),
         id: 'History',
       },
       {
-        label: () => i18next.t('Menu.Workspaces'),
+        label: () => i18n.t('Menu.Workspaces'),
         id: 'Workspaces',
         submenu: [],
       },
       {
-        label: () => i18next.t('Menu.Wiki'),
+        label: () => i18n.t('Menu.Wiki'),
         id: 'Wiki',
         submenu: [],
       },
       {
-        label: () => i18next.t('Menu.Window'),
+        label: () => i18n.t('Menu.Window'),
         role: 'windowMenu',
         id: 'Window',
       },
       {
-        label: () => i18next.t('Menu.Help'),
+        label: () => i18n.t('Menu.Help'),
         role: 'help',
         id: 'help',
         submenu: [
           {
-            label: () => i18next.t('ContextMenu.TidGiSupport'),
+            label: () => i18n.t('ContextMenu.TidGiSupport'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues'),
           },
           {
-            label: () => i18next.t('Menu.ReportBugViaGithub'),
+            label: () => i18n.t('Menu.ReportBugViaGithub'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues'),
           },
           {
-            label: () => i18next.t('Menu.RequestFeatureViaGithub'),
+            label: () => i18n.t('Menu.RequestFeatureViaGithub'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues/new?template=feature.md&title=feature%3A+'),
           },
           {
-            label: () => i18next.t('Menu.LearnMore'),
+            label: () => i18n.t('Menu.LearnMore'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/'),
           },
         ],
@@ -369,7 +369,7 @@ export class MenuService implements IMenuService {
       menu.append(new MenuItem({ type: 'separator' }));
       menu.append(
         new MenuItem({
-          label: i18next.t('ContextMenu.OpenCommandPalette'),
+          label: i18n.t('ContextMenu.OpenCommandPalette'),
           enabled: workspaces.length > 0,
           click: () => {
             void this.wikiService.requestWikiSendActionMessage('open-command-palette');
@@ -378,11 +378,11 @@ export class MenuService implements IMenuService {
       );
       menu.append(
         new MenuItem({
-          label: i18next.t('Menu.Workspaces'),
+          label: i18n.t('Menu.Workspaces'),
           submenu: [
             ...(await Promise.all(
               workspaces.map(async (workspace) => {
-                const workspaceContextMenuTemplate = await getWorkspaceMenuTemplate(workspace, i18next.t.bind(i18next), services);
+                const workspaceContextMenuTemplate = await getWorkspaceMenuTemplate(workspace, i18n.t.bind(i18n), services);
                 return {
                   label: workspace.name,
                   submenu: workspaceContextMenuTemplate,
@@ -390,7 +390,7 @@ export class MenuService implements IMenuService {
               }),
             )),
             {
-              label: i18next.t('WorkspaceSelector.Add'),
+              label: i18n.t('WorkspaceSelector.Add'),
               click: async () => await this.windowService.open(WindowNames.addWorkspace),
             },
           ],
@@ -398,9 +398,9 @@ export class MenuService implements IMenuService {
       );
       menu.append(
         new MenuItem({
-          label: i18next.t('WorkspaceSelector.OpenWorkspaceMenuName'),
+          label: i18n.t('WorkspaceSelector.OpenWorkspaceMenuName'),
           submenu: workspaces.map((workspace) => ({
-            label: i18next.t('WorkspaceSelector.OpenWorkspaceTagTiddler', { tagName: workspace.tagName ?? workspace.name }),
+            label: i18n.t('WorkspaceSelector.OpenWorkspaceTagTiddler', { tagName: workspace.tagName ?? workspace.name }),
             click: async () => {
               await openWorkspaceTagTiddler(workspace, services);
             },
@@ -412,15 +412,15 @@ export class MenuService implements IMenuService {
       if (activeWorkspace !== undefined) {
         menu.append(
           new MenuItem({
-            label: i18next.t('Menu.Workspaces'),
-            submenu: await getWorkspaceMenuTemplate(activeWorkspace, i18next.t.bind(i18next), services),
+            label: i18n.t('Menu.Workspaces'),
+            submenu: await getWorkspaceMenuTemplate(activeWorkspace, i18n.t.bind(i18n), services),
           }),
         );
       }
     }
     menu.append(
       new MenuItem({
-        label: i18next.t('ContextMenu.Back'),
+        label: i18n.t('ContextMenu.Back'),
         enabled: webContents.canGoBack(),
         click: () => {
           webContents.goBack();
@@ -429,7 +429,7 @@ export class MenuService implements IMenuService {
     );
     menu.append(
       new MenuItem({
-        label: i18next.t('ContextMenu.Forward'),
+        label: i18n.t('ContextMenu.Forward'),
         enabled: webContents.canGoForward(),
         click: () => {
           webContents.goForward();
@@ -438,7 +438,7 @@ export class MenuService implements IMenuService {
     );
     menu.append(
       new MenuItem({
-        label: i18next.t('ContextMenu.Reload'),
+        label: i18n.t('ContextMenu.Reload'),
         click: () => {
           webContents.reload();
         },
@@ -446,7 +446,7 @@ export class MenuService implements IMenuService {
     );
     menu.append(
       new MenuItem({
-        label: i18next.t('ContextMenu.RestartService'),
+        label: i18n.t('ContextMenu.RestartService'),
         click: async () => {
           const workspace = await this.workspaceService.getActiveWorkspace();
           if (workspace !== undefined) {
@@ -458,7 +458,7 @@ export class MenuService implements IMenuService {
     );
     menu.append(
       new MenuItem({
-        label: sidebar ? i18next.t('Preference.HideSideBar') : i18next.t('Preference.ShowSideBar'),
+        label: sidebar ? i18n.t('Preference.HideSideBar') : i18n.t('Preference.ShowSideBar'),
         click: async () => {
           await this.preferenceService.set('sidebar', !sidebar);
           await this.workspaceViewService.realignActiveWorkspace();
@@ -468,28 +468,28 @@ export class MenuService implements IMenuService {
     menu.append(new MenuItem({ type: 'separator' }));
     menu.append(
       new MenuItem({
-        label: i18next.t('ContextMenu.More'),
+        label: i18n.t('ContextMenu.More'),
         submenu: [
           {
-            label: i18next.t('ContextMenu.Preferences'),
+            label: i18n.t('ContextMenu.Preferences'),
             click: async () => await this.windowService.open(WindowNames.preferences),
           },
           { type: 'separator' },
           {
-            label: i18next.t('ContextMenu.About'),
+            label: i18n.t('ContextMenu.About'),
             click: async () => await this.windowService.open(WindowNames.about),
           },
           {
-            label: i18next.t('ContextMenu.TidGiSupport'),
+            label: i18n.t('ContextMenu.TidGiSupport'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-Desktop/issues/new/choose'),
           },
           {
-            label: i18next.t('ContextMenu.TidGiWebsite'),
+            label: i18n.t('ContextMenu.TidGiWebsite'),
             click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-Desktop'),
           },
           { type: 'separator' },
           {
-            label: i18next.t('ContextMenu.Quit'),
+            label: i18n.t('ContextMenu.Quit'),
             click: () => app.quit(),
           },
         ],

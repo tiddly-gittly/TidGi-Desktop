@@ -23,7 +23,7 @@ import type { INativeService } from '@services/native/interface';
 import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import { logger } from '@services/libs/log';
-import i18n from '@services/libs/i18n';
+import { i18n } from '@services/libs/i18n';
 import { ICommitAndSyncConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
 import { WikiChannel } from '@/constants/channels';
 import { GitWorker } from './gitWorker';

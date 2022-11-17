@@ -11,7 +11,7 @@ import type { IWindowService } from '@services/windows/interface';
 import type { IMenuService } from '@services/menu/interface';
 
 import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
-import i18n from '@services/libs/i18n';
+import { i18n } from '@services/libs/i18n';
 import getViewBounds from '@services/libs/getViewBounds';
 import { IWorkspace } from '@services/workspaces/interface';
 import setupViewEventHandlers from './setupViewEventHandlers';

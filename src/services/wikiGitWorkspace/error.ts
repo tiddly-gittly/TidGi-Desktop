@@ -1,5 +1,5 @@
 import { IGitUserInfos } from '@services/git/interface';
-import i18n from '@services/libs/i18n';
+import { i18n } from '@services/libs/i18n';
 
 export class InitWikiGitError extends Error {
   constructor(extraMessage?: string) {

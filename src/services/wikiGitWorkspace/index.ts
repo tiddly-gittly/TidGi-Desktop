@@ -14,7 +14,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 
 import { logger } from '@services/libs/log';
-import i18n from '@services/libs/i18n';
+import { i18n } from '@services/libs/i18n';
 import { IWikiGitWorkspaceService } from './interface';
 import { InitWikiGitError, InitWikiGitRevertError, InitWikiGitSyncedWikiNoGitUserInfoError } from './error';
 import { SupportedStorageServices } from '@services/types';
