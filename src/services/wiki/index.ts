@@ -27,6 +27,7 @@ import { WikiChannel } from '@/constants/channels';
 import { CopyWikiTemplateError, DoubleWikiInstanceError, WikiRuntimeError } from './error';
 import { SupportedStorageServices } from '@services/types';
 import type { WikiWorker } from './wikiWorker';
+import { TiddlyWiki } from '@tiddlygit/tiddlywiki';
 
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
