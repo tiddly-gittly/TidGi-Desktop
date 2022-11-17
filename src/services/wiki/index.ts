@@ -168,6 +168,57 @@ export class Wiki implements IWikiService {
     });
   }
 
+  public async extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<boolean> {
+    var extractState = false;
+    // tiddlywiki --load ./mywiki.html --savewikifolder ./mywikifolder
+    // --savewikifolder <wikifolderpath> [<filter>]
+    // ./mywikifolder 是指的保存tiddlder、plugins两个文件夹的路径
+    // hope saveWikiFolderPath = ParentFolderPath +wikifolderPath 
+    // await fs.remove(saveWikiFolderPath);删除转换失败的文件夹函数。
+    // 我们希望保存WIKI的文件夹为空，希望输入的htmlWiki是一个HTML文件即使是非wikiHTML文件。否则程序会异常退出。
+    const reg = RegExp(/(?:html|htm|Html|HTML|HTM)$/);
+    var isHtmlWiki = reg.test(htmlWikiPath);
+    if (!isHtmlWiki) {
+      console.error("请输入tiddlywiki.html文件路径 ");
+      return extractState;
+    } else {
+      try {
+        const wikiInstance = TiddlyWiki();
+        wikiInstance.boot.argv = [
+          "--load",
+          htmlWikiPath,
+          "--savewikifolder",
+          saveWikiFolderPath,
+        ];
+        wikiInstance.boot.boot();
+        extractState = true;
+      } catch (error) {
+        const message = `Tiddlywiki extractWikiHTML with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+        console.error(message);
+      }
+    }
+    return extractState;
+  }
+
+  public async packetHTMLFromWikiFolder(folderWikiPath: string, saveWikiHtmlFolder: string): Promise<void> {
+    // tiddlywiki ./mywikifolder --rendertiddler '$:/core/save/all' mywiki.html text/plain
+    // ./mywikifolder 是指的wiki文件夹的路径，一般包含tiddlder、plugins两个目录
+    try {
+      const wikiInstance = TiddlyWiki();
+      wikiInstance.boot.argv = [
+        folderWikiPath,
+        '--rendertiddler',
+        '$:/core/save/all',
+        saveWikiHtmlFolder,
+        'text/plain',
+      ];
+      wikiInstance.boot.boot();
+    } catch (error) {
+      const message = `Tiddlywiki packetHTMLFromWikiFolder with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+      console.error(message);
+    }
+  }
+  
   public async stopWiki(wikiFolderLocation: string): Promise<void> {
     const worker = this.getWorker(wikiFolderLocation);
     if (worker === undefined) {
