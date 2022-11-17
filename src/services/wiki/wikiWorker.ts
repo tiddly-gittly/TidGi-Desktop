@@ -16,6 +16,7 @@ import { executeScriptInTWContext, extractTWContextScripts, getTWVmContext } fro
 fixPath();
 let wikiInstance: ITiddlyWiki | undefined;
 
+
 function startNodeJSWiki({
   homePath,
   tiddlyWikiHost = defaultServerIP,
