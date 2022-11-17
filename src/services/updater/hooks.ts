@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useObservable } from 'beautiful-react-hooks';
-import type { TFunction } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 import { IUpdaterMetaData, IUpdaterStatus } from './interface';
 

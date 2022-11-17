@@ -7,7 +7,7 @@ import { container } from '@services/container';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { tiddlywikiLanguagesMap, supportedLanguagesMap } from '@/constants/languages';
 import { logger } from '../log';
-import i18n from '.';
+import { i18n } from '.';
 
 export async function requestChangeLanguage(newLanguage: string): Promise<void> {
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);

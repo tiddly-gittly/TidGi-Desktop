@@ -1,6 +1,6 @@
 import { IGitUserInfos } from '@services/git/interface';
 import { INewWorkspaceConfig } from '@services/workspaces/interface';
-import { TFunction } from 'react-i18next';
+import type { TFunction } from 'i18next';
 
 export async function callWikiInitialization(
   newWorkspaceConfig: INewWorkspaceConfig,

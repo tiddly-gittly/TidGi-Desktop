@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { TFunction } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { IErrorInWhichComponent } from './useForm';
 
 export function useWikiCreationProgress(

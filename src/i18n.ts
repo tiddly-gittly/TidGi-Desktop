@@ -1,3 +1,4 @@
+/* eslint-disable import/no-named-as-default-member */
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import { Backend as ElectronFsBackend } from './services/libs/i18n/i18next-electron-fs-backend';
@@ -9,10 +10,10 @@ export async function initI18N(): Promise<void> {
     .use(ElectronFsBackend)
     .use(initReactI18next)
     .init({
+      // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       backend: {
         loadPath: 'locales/{{lng}}/{{ns}}.json',
         addPath: 'locales/{{lng}}/{{ns}}.missing.json',
-        ipcRenderer: window.i18n.i18nextElectronBackend,
       },
       debug: isDevelopment,
       interpolation: { escapeValue: false },
