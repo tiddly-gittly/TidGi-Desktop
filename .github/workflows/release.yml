@@ -69,6 +69,7 @@ jobs:
 
       - name: Make Linux (appimage)
         run: npx zx scripts/buildAppImage.mjs
+        continue-on-error: true
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
