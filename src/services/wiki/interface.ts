@@ -70,6 +70,9 @@ export interface IWikiService {
   wikiOperation<OP extends keyof IWikiOperations>(operationType: OP, arguments_: Parameters<IWikiOperations[OP]>): undefined | ReturnType<IWikiOperations[OP]>;
   /** handle start/restart of wiki/subwiki, will handle wiki sync too */
   wikiStartup(workspace: IWorkspace): Promise<void>;
+  // 在这里注册解压打包wikiHTML函数
+  extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<boolean>;
+  packetHTMLFromWikiFolder(folderWikiPath: string, saveWikiHtmlFolder: string): Promise<void>;
 }
 export const WikiServiceIPCDescriptor = {
   channel: WikiChannel.name,
@@ -98,6 +101,9 @@ export const WikiServiceIPCDescriptor = {
     updateSubWikiPluginContent: ProxyPropertyType.Function,
     wikiOperation: ProxyPropertyType.Function,
     wikiStartup: ProxyPropertyType.Function,
+    // 在这里注册解压打包wikiHTML函数
+    extractWikiHTML:ProxyPropertyType.Function,
+    packetHTMLFromWikiFolder:ProxyPropertyType.Function,
   },
 };
 
