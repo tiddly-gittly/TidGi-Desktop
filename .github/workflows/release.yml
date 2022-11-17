@@ -180,11 +180,11 @@ jobs:
       - name: Get npm cache directory
         id: npm-cache
         run: |
-          echo "dir=$(npm config get cache)" >> $GITHUB_OUTPUT
+          echo "DIR=$(npm config get cache)" >> $GITHUB_OUTPUT
       - uses: actions/cache@v3
         id: cache
         with:
-          path: ${{ steps.npm-cache.outputs.dir }}
+          path: ${{ steps.npm-cache.outputs.DIR }}
           key: ${{ runner.os }}-node-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-node-
