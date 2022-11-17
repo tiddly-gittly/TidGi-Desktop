@@ -9,7 +9,7 @@
 const appimage_cachedir = 'deb2appimage_cache';
 const appimage_address = 'https://github.com/simoniz0r/deb2appimage/releases/download/v0.0.5/deb2appimage-0.0.5-x86_64.AppImage';
 const bin = `${appimage_cachedir}/deb2appimage.appimage`;
-const config_file = 'scripts/deb2appimage.json';
+const config_file = path.join(__dirname, 'deb2appimage.json');
 // this filename for deb2appimage not support Underline char
 // maybe need delete ~/.cache/deb2appimage/
 const updated_config_file = `deb2appimage_${String(new Date())}.json`;
