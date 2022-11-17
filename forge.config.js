@@ -120,10 +120,10 @@ const config = {
     // },
   ],
   plugins: [
-    ['@electron-forge/plugin-auto-unpack-natives'],
-    [
-      '@electron-forge/plugin-webpack',
-      {
+    { name: '@electron-forge/plugin-auto-unpack-natives', config: {} },
+    {
+      name: '@electron-forge/plugin-webpack',
+      config: {
         mainConfig: './webpack.main.config.js',
         renderer: {
           config: './webpack.renderer.config.js',
@@ -139,7 +139,7 @@ const config = {
           ],
         },
       },
-    ],
+    },
   ],
 };
 
