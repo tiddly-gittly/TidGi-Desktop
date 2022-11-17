@@ -22,8 +22,8 @@ export const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';
 export const LOGIN_REDIRECT_PATH = 'http://localhost:3000/?code=';
 export const DESKTOP_PATH = path.join(os.homedir(), 'Desktop');
 export const ZX_FOLDER = isDevelopmentOrTest
-  ? path.resolve(__dirname, '..', '..', 'node_modules', 'zx', 'zx.mjs')
-  : path.resolve(process.resourcesPath, 'node_modules', 'zx', 'zx.mjs');
+  ? path.resolve(__dirname, '..', '..', 'node_modules', 'zx', 'build', 'cli.js')
+  : path.resolve(process.resourcesPath, 'node_modules', 'zx', 'build', 'cli.js');
 export const LOCALIZATION_FOLDER = isDevelopmentOrTest
   ? path.resolve(sourcePath, '..', localizationFolderName)
   : path.resolve(process.resourcesPath, localizationFolderName);
