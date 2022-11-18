@@ -173,17 +173,18 @@ export class Wiki implements IWikiService {
     var extractState = false;
     // tiddlywiki --load ./mywiki.html --savewikifolder ./mywikifolder
     // --savewikifolder <wikifolderpath> [<filter>]
-    // ./mywikifolder 是指的保存tiddlder、plugins两个文件夹的路径
+    // . /mywikifolder is the path where the tiddlder and plugins folders are stored
     // hope saveWikiFolderPath = ParentFolderPath +wikifolderPath 
-    // await fs.remove(saveWikiFolderPath);删除转换失败的文件夹函数。
-    // 我们希望保存WIKI的文件夹为空，希望输入的htmlWiki是一个HTML文件即使是非wikiHTML文件。否则程序会异常退出。
+    // await fs.remove(saveWikiFolderPath); removes the folder function that failed to convert.
+    // We want the folder where the WIKI is saved to be empty, and we want the input htmlWiki to be an HTML file even if it is a non-wikiHTML file. Otherwise the program will exit abnormally.
     const reg = RegExp(/(?:html|htm|Html|HTML|HTM)$/);
-    var isHtmlWiki = reg.test(htmlWikiPath);
+    let isHtmlWiki = reg.test(htmlWikiPath);
     if (!isHtmlWiki) {
-      console.error("请输入tiddlywiki.html文件路径 ");
+      console.error("Please enter the path to the tiddlywiki.html file ");
       return extractState;
     } else {
       try {
+        work
         const wikiInstance = TiddlyWiki();
         wikiInstance.boot.argv = [
           "--load",
@@ -203,7 +204,7 @@ export class Wiki implements IWikiService {
 
   public async packetHTMLFromWikiFolder(folderWikiPath: string, saveWikiHtmlFolder: string): Promise<void> {
     // tiddlywiki ./mywikifolder --rendertiddler '$:/core/save/all' mywiki.html text/plain
-    // ./mywikifolder 是指的wiki文件夹的路径，一般包含tiddlder、plugins两个目录
+    // . /mywikifolder is the path to the wiki folder, which generally contains the tiddlder and plugins directories
     try {
       const wikiInstance = TiddlyWiki();
       wikiInstance.boot.argv = [
