@@ -78,10 +78,10 @@ export function useImportHtmlWiki(
     try {
       // 如果是HTML文件，即使转换错误，删掉在执行一次也不会出错。
       // 我希望判断用户输入的是否是HTML文件，如果不是就不予执行。然后在判断如果失败了就删除这个数据并且提示错误信息。如果输入的是html类型的文件是不会出错的，即使是非wiki类型的文件。如果输出的目录非空，那么会导致异常闪退。
-      // 我还希望，可以创建一个与HTML文件名一样的文件夹，这样的话就可以在父文件夹中解压出一个HTML文件名一样的文件夹而不只是wiki数据。
+      // 我希望，可以创建一个与HTML文件名一样的文件夹，这样的话就可以在父文件夹中解压出一个HTML文件名一样的文件夹而不只是wiki数据。
       // 我希望信息可以显示在log面板。当出现解压错误后就提示用户。
       const extractState = await window.service.wiki.extractWikiHTML(form.wikiHtmlPath, form.extractWikiHtmlParentFolder);
-      // var extractState用于接收执行是否解压是否成功。但是在index.ts中不能获取到worker的返回值。待解决。
+      // 待解决： var extractState用于接收执行是否解压是否成功。但是接收不到window.service.wiki.extractWikiHTML函数的返回值，并且在该函数上下打log都未显示。
       // 我希望在解压成功后设置好工作区的信息，执行打开解压后的wiki文件夹的操作。
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
