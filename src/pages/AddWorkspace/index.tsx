@@ -23,11 +23,14 @@ import { TokenForm } from '@/components/TokenForm';
 import { GitRepoUrlForm } from './GitRepoUrlForm';
 import { LocationPickerContainer, LocationPickerInput } from './FormComponents';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import { ImportHtmlWikiForm } from './ImportHtmlWikiForm';
+import { ImportHtmlWikiDoneButton } from './ImportHtmlWikiDoneButton';
 
 enum CreateWorkspaceTabs {
   CloneOnlineWiki = 'CloneOnlineWiki',
   CreateNewWiki = 'CreateNewWiki',
   OpenLocalWiki = 'OpenLocalWiki',
+  OpenLocalWikiFromHtml = 'OpenLocalWikiFromHtml',
 }
 
 export const Paper = styled(PaperRaw)`
@@ -122,6 +125,7 @@ export function AddWorkspace(): JSX.Element {
             <Tab label={t('AddWorkspace.CreateNewWiki')} value={CreateWorkspaceTabs.CreateNewWiki} />
             <Tab label={t(`AddWorkspace.CloneOnlineWiki`)} value={CreateWorkspaceTabs.CloneOnlineWiki} />
             <Tab label={t('AddWorkspace.OpenLocalWiki')} value={CreateWorkspaceTabs.OpenLocalWiki} />
+            <Tab label={t('AddWorkspace.OpenLocalWikiFromHTML')} value={CreateWorkspaceTabs.OpenLocalWikiFromHtml} />
           </TabList>
         </Paper>
       </AppBar>
@@ -170,6 +174,12 @@ export function AddWorkspace(): JSX.Element {
         <Container>
           <ExistedWikiForm {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
           <ExistedWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+        </Container>
+      </TabPanel>
+      <TabPanel value={CreateWorkspaceTabs.OpenLocalWikiFromHtml}>
+        <Container>
+          <ImportHtmlWikiForm {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
+          <ImportHtmlWikiDoneButton {...formProps} isCreateSyncedWorkspace={isCreateSyncedWorkspace} />
         </Container>
       </TabPanel>
     </TabContext>

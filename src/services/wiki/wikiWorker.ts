@@ -131,6 +131,52 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
   });
 }
 
-const wikiWorker = { startNodeJSWiki, getTiddlerFileMetadata: (tiddlerTitle: string) => wikiInstance?.boot?.files?.[tiddlerTitle], executeZxScript };
+function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): boolean {
+  // tiddlywiki --load ./mywiki.html --savewikifolder ./mywikifolder
+  // --savewikifolder <wikifolderpath> [<filter>]
+  // . /mywikifolder is the path where the tiddlder and plugins folders are stored
+  let extractState = false;
+  // eslint-disable-next-line prefer-regex-literals
+  const reg = new RegExp(/(?:html|htm|Html|HTML|HTM)$/);
+  const isHtmlWiki = reg.test(htmlWikiPath);
+  if (!isHtmlWiki) {
+    console.error('Please enter the path to the tiddlywiki.html file. But the current path is: ' + htmlWikiPath);
+    return extractState;
+  } else {
+    try {
+      const wikiInstance = TiddlyWiki();
+      wikiInstance.boot.argv = ['--load', htmlWikiPath, '--savewikifolder', saveWikiFolderPath];
+      wikiInstance.boot.startup({});
+      // eslint-disable-next-line security-node/detect-crlf
+      console.log('Extract Wiki Html Successful: ' + saveWikiFolderPath);
+      extractState = true;
+    } catch (error) {
+      const message = `Tiddlywiki extractWikiHTML with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+      console.error(message);
+    }
+  }
+  return extractState;
+}
+
+function packetHTMLFromWikiFolder(folderWikiPath: string, saveWikiHtmlFolder: string): void {
+  // tiddlywiki ./mywikifolder --rendertiddler '$:/core/save/all' mywiki.html text/plain
+  // . /mywikifolder is the path to the wiki folder, which generally contains the tiddlder and plugins directories
+  try {
+    const wikiInstance = TiddlyWiki();
+    wikiInstance.boot.argv = [folderWikiPath, '--rendertiddler', '$:/core/save/all', saveWikiHtmlFolder, 'text/plain'];
+    wikiInstance.boot.startup({});
+  } catch (error) {
+    const message = `Tiddlywiki packetHTMLFromWikiFolder with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+    console.error(message);
+  }
+}
+
+const wikiWorker = {
+  startNodeJSWiki,
+  getTiddlerFileMetadata: (tiddlerTitle: string) => wikiInstance?.boot?.files?.[tiddlerTitle],
+  executeZxScript,
+  ExtractWikiHTMLAndGetExtractState: (htmlWikiPath: string, saveWikiFolderPath: string) => extractWikiHTML(htmlWikiPath, saveWikiFolderPath),
+  packetHTMLFromWikiFolder,
+};
 export type WikiWorker = typeof wikiWorker;
 expose(wikiWorker);

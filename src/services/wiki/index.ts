@@ -168,6 +168,22 @@ export class Wiki implements IWikiService {
     });
   }
 
+  public async extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<boolean> {
+    // hope saveWikiFolderPath = ParentFolderPath + wikifolderPath
+    // await fs.remove(saveWikiFolderPath); removes the folder function that failed to convert.
+    // We want the folder where the WIKI is saved to be empty, and we want the input htmlWiki to be an HTML file even if it is a non-wikiHTML file. Otherwise the program will exit abnormally.
+    // this.wikiWorkers[saveWikiFolderPath] = worker;
+    // Then, you can use this.getWorker (saveWikiFolderPath) method to call this wikiWorker that belongs to the HTMLWIKI after decompression
+    const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
+    const result = await worker.ExtractWikiHTMLAndGetExtractState(htmlWikiPath, saveWikiFolderPath);
+    return result;
+  }
+
+  public async packetHTMLFromWikiFolder(folderWikiPath: string, saveWikiHtmlFolder: string): Promise<void> {
+    const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
+    await worker.packetHTMLFromWikiFolder(folderWikiPath, saveWikiHtmlFolder);
+  }
+
   public async stopWiki(wikiFolderLocation: string): Promise<void> {
     const worker = this.getWorker(wikiFolderLocation);
     if (worker === undefined) {
