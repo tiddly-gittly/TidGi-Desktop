@@ -63,9 +63,8 @@ function startNodeJSWiki({
           observer.next({
             type: 'control',
             actions: WikiControlActions.booted,
-            message: `Tiddlywiki booted at http://${tiddlyWikiHost}:${tiddlyWikiPort} (webview uri ip may be different, being getLocalHostUrlWithActualIP()) with args ${
-              wikiInstance !== undefined ? wikiInstance.boot.argv.join(' ') : '(wikiInstance is undefined)'
-            }`,
+            message: `Tiddlywiki booted at http://${tiddlyWikiHost}:${tiddlyWikiPort} (webview uri ip may be different, being getLocalHostUrlWithActualIP()) with args ${wikiInstance !== undefined ? wikiInstance.boot.argv.join(' ') : '(wikiInstance is undefined)'
+              }`,
           });
         });
       });
@@ -132,6 +131,77 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
   });
 }
 
-const wikiWorker = { startNodeJSWiki, getTiddlerFileMetadata: (tiddlerTitle: string) => wikiInstance?.boot?.files?.[tiddlerTitle], executeZxScript };
+
+function extractWikiHTML({
+  htmlWikiPath,
+  saveWikiFolderPath,
+}: {
+  htmlWikiPath: string;
+  saveWikiFolderPath: string;
+}) {
+  // tiddlywiki --load ./mywiki.html --savewikifolder ./mywikifolder
+  // --savewikifolder <wikifolderpath> [<filter>]
+  // . /mywikifolder is the path where the tiddlder and plugins folders are stored
+  let extractState = false;
+  console.error('wikiworker : ' + htmlWikiPath);
+  console.error('wikiworker : ' + saveWikiFolderPath);
+
+
+  const reg = RegExp(/(?:html|htm|Html|HTML|HTM)$/);
+  let isHtmlWiki = reg.test(htmlWikiPath);
+  if (!isHtmlWiki) {
+    console.error("Please enter the path to the tiddlywiki.html file. But the current path is: " + htmlWikiPath);
+    return extractState;
+  } else {
+    try {
+      const wikiInstance = TiddlyWiki();
+      wikiInstance.boot.argv = [
+        "--load",
+        htmlWikiPath,
+        "--savewikifolder",
+        saveWikiFolderPath,
+      ];
+      wikiInstance.boot.boot();
+      extractState = true;
+    } catch (error) {
+      const message = `Tiddlywiki extractWikiHTML with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+      console.error(message);
+    }
+  }
+  return extractState;
+}
+
+function packetHTMLFromWikiFolder({
+  folderWikiPath,
+  saveWikiHtmlFolder,
+}: {
+  folderWikiPath: string;
+  saveWikiHtmlFolder: string
+}) {
+  // tiddlywiki ./mywikifolder --rendertiddler '$:/core/save/all' mywiki.html text/plain
+  // . /mywikifolder is the path to the wiki folder, which generally contains the tiddlder and plugins directories
+  try {
+    const wikiInstance = TiddlyWiki();
+    wikiInstance.boot.argv = [
+      folderWikiPath,
+      '--rendertiddler',
+      '$:/core/save/all',
+      saveWikiHtmlFolder,
+      'text/plain',
+    ];
+    wikiInstance.boot.boot();
+  } catch (error) {
+    const message = `Tiddlywiki packetHTMLFromWikiFolder with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+    console.error(message);
+  }
+}
+
+const wikiWorker = {
+  startNodeJSWiki,
+  getTiddlerFileMetadata: (tiddlerTitle: string) => wikiInstance?.boot?.files?.[tiddlerTitle],
+  executeZxScript,
+  extractWikiHTML,
+  packetHTMLFromWikiFolder,
+};
 export type WikiWorker = typeof wikiWorker;
 expose(wikiWorker);

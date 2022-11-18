@@ -106,6 +106,27 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
     })();
   }, [gitRepoUrlSetter, wikiFolderLocation, options?.fromExisted]);
 
+  /*
+   * 对于wikiHTML,我们使用两个状态保存文件与文件夹路径,并设置默认的kiki文件夹保存位置.
+   * wikiHtmlPath,
+   * wikiHtmlPathSetter,
+   * extractWikiHtmlParentFolder,
+   * extractWikiHtmlParentFolderSetter,
+   *
+   */
+  const [wikiHtmlPath, wikiHtmlPathSetter] = useState<string>('');
+  useEffect(() => {
+    void (async function getDefaultWikiHtmlPathEffect() {})();
+  }, []);
+
+  const [extractWikiHtmlParentFolder, extractWikiHtmlParentFolderSetter] = useState<string>('');
+  useEffect(() => {
+    void (async function getDefaultExtractWikiHtmlFolderPathEffect() {
+      const desktopPathAsDefaultExtractWikiHtmlParentFolderPath = await window.service.context.get('DEFAULT_WIKI_FOLDER');
+      extractWikiHtmlParentFolderSetter(desktopPathAsDefaultExtractWikiHtmlParentFolderPath);
+    })();
+  }, []);
+
   return {
     storageProvider,
     storageProviderSetter,
@@ -128,6 +149,10 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
     workspaceList,
     mainWorkspaceList,
     mainWikiToLinkIndex,
+    wikiHtmlPath,
+    wikiHtmlPathSetter,
+    extractWikiHtmlParentFolder,
+    extractWikiHtmlParentFolderSetter,
   };
 }
 

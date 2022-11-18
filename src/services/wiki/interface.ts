@@ -35,7 +35,7 @@ export interface IWikiService {
    */
   createSubWiki(parentFolderLocation: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
-  extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<void>;
+  extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<boolean>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
   getTiddlerText(workspace: IWorkspace, title: string): Promise<string | undefined>;
   getWikiLogs(homePath: string): Promise<{ content: string; filePath: string }>;
@@ -100,7 +100,7 @@ export const WikiServiceIPCDescriptor = {
     updateSubWikiPluginContent: ProxyPropertyType.Function,
     wikiOperation: ProxyPropertyType.Function,
     wikiStartup: ProxyPropertyType.Function,
-    // 在这里注册解压打包wikiHTML函数
+    // Register here to unpack and package wikiHTML functions
     extractWikiHTML: ProxyPropertyType.Function,
     packetHTMLFromWikiFolder: ProxyPropertyType.Function,
   },

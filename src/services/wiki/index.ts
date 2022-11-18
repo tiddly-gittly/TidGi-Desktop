@@ -124,6 +124,7 @@ export class Wiki implements IWikiService {
       });
 
       // subscribe to the Observable that startNodeJSWiki returns, handle messages send by our code
+      // 订阅startNodeJSWiki返回的Observable，处理我们代码发送的信息
       worker.startNodeJSWiki(workerData).subscribe(async (message) => {
         if (message.type === 'control') {
           switch (message.actions) {
@@ -170,57 +171,29 @@ export class Wiki implements IWikiService {
   }
 
   public async extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<boolean> {
-    var extractState = false;
-    // tiddlywiki --load ./mywiki.html --savewikifolder ./mywikifolder
-    // --savewikifolder <wikifolderpath> [<filter>]
-    // . /mywikifolder is the path where the tiddlder and plugins folders are stored
     // hope saveWikiFolderPath = ParentFolderPath +wikifolderPath 
     // await fs.remove(saveWikiFolderPath); removes the folder function that failed to convert.
     // We want the folder where the WIKI is saved to be empty, and we want the input htmlWiki to be an HTML file even if it is a non-wikiHTML file. Otherwise the program will exit abnormally.
-    const reg = RegExp(/(?:html|htm|Html|HTML|HTM)$/);
-    let isHtmlWiki = reg.test(htmlWikiPath);
-    if (!isHtmlWiki) {
-      console.error("Please enter the path to the tiddlywiki.html file ");
-      return extractState;
-    } else {
-      try {
-        work
-        const wikiInstance = TiddlyWiki();
-        wikiInstance.boot.argv = [
-          "--load",
-          htmlWikiPath,
-          "--savewikifolder",
-          saveWikiFolderPath,
-        ];
-        wikiInstance.boot.boot();
-        extractState = true;
-      } catch (error) {
-        const message = `Tiddlywiki extractWikiHTML with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
-        console.error(message);
-      }
-    }
-    return extractState;
+    const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
+    // this.wikiWorkers[saveWikiFolderPath] = worker;  
+    // Then, you can use this.getWorker (saveWikiFolderPath) method to call this wikiWorker that belongs to the HTMLWIKI after decompression
+
+ 
+    logger.error('htmlWikiPath' + htmlWikiPath);
+    logger.error('saveWikiFolderPath'+saveWikiFolderPath);
+    let extractData = {htmlWikiPath: htmlWikiPath,saveWikiFolderPath: saveWikiFolderPath}
+    worker.extractWikiHTML(extractData).subscribe(async (message) => {
+
+    });
+    // logger.error('extractWikiHTML + index call worker' + worker +' result '+result);
+    let result;
+    return result = false;
   }
 
   public async packetHTMLFromWikiFolder(folderWikiPath: string, saveWikiHtmlFolder: string): Promise<void> {
-    // tiddlywiki ./mywikifolder --rendertiddler '$:/core/save/all' mywiki.html text/plain
-    // . /mywikifolder is the path to the wiki folder, which generally contains the tiddlder and plugins directories
-    try {
-      const wikiInstance = TiddlyWiki();
-      wikiInstance.boot.argv = [
-        folderWikiPath,
-        '--rendertiddler',
-        '$:/core/save/all',
-        saveWikiHtmlFolder,
-        'text/plain',
-      ];
-      wikiInstance.boot.boot();
-    } catch (error) {
-      const message = `Tiddlywiki packetHTMLFromWikiFolder with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
-      console.error(message);
-    }
+    
   }
-  
+
   public async stopWiki(wikiFolderLocation: string): Promise<void> {
     const worker = this.getWorker(wikiFolderLocation);
     if (worker === undefined) {
@@ -274,7 +247,7 @@ export class Wiki implements IWikiService {
     try {
       try {
         await fs.remove(mainWikiTiddlersFolderPath);
-      } catch {}
+      } catch { }
       await fs.createSymlink(subWikiPath, mainWikiTiddlersFolderPath, 'junction');
       this.logProgress(i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiSucceed'));
     } catch (error: unknown) {
@@ -584,7 +557,7 @@ export class Wiki implements IWikiService {
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     // and it will leak private sub-wiki's opened tiddler title
     try {
-      void fs.unlink(path.resolve(wikiFolderLocation, 'tiddlers', '$__StoryList')).catch(() => {});
+      void fs.unlink(path.resolve(wikiFolderLocation, 'tiddlers', '$__StoryList')).catch(() => { });
     } catch {
       // do nothing
     }
