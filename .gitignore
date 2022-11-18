@@ -65,5 +65,5 @@ out/
 settings-dev/
 .dccache
 .cache/
-.deb2appimage_cache/
-deb2appimage*.json
+deb2appimage_cache/
+deb2appimage.json
