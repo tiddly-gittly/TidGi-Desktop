@@ -21,6 +21,11 @@ function getFileSystemPathsTiddlerPath(mainWikiPath: string): string {
   return path.join(mainWikiPath, TIDDLERS_PATH, 'FileSystemPaths.tid');
 }
 
+const emptyFileSystemPathsTiddler = `tags: $:/plugins/linonetwo/sub-wiki/readme
+title: $:/config/FileSystemPaths
+type: text/vnd.tiddlywiki
+`;
+
 /**
  * update $:/config/FileSystemPaths programmatically to make private tiddlers goto the sub-wiki
  * @param {string} mainWikiPath main wiki's location path
@@ -34,7 +39,7 @@ export function updateSubWikiPluginContent(
 ): void {
   const FileSystemPathsTiddlerPath = getFileSystemPathsTiddlerPath(mainWikiPath);
 
-  const FileSystemPathsFile = fs.readFileSync(FileSystemPathsTiddlerPath, 'utf-8');
+  const FileSystemPathsFile = fs.existsSync(FileSystemPathsTiddlerPath) ? fs.readFileSync(FileSystemPathsTiddlerPath, 'utf8') : emptyFileSystemPathsTiddler;
   let newFileSystemPathsFile = '';
   // ignore the tags, title and type, 3 lines, and an empty line
   const header = take(FileSystemPathsFile.split('\n'), 3);
@@ -99,7 +104,7 @@ export async function getSubWikiPluginContent(mainWikiPath: string): Promise<ISu
   if (mainWikiPath.length === 0) return [];
   const FileSystemPathsTiddlerPath = getFileSystemPathsTiddlerPath(mainWikiPath);
   try {
-    const FileSystemPathsFile = await fs.readFile(FileSystemPathsTiddlerPath, 'utf-8');
+    const FileSystemPathsFile = await fs.readFile(FileSystemPathsTiddlerPath, 'utf8');
     const FileSystemPaths = compact(drop(FileSystemPathsFile.split('\n'), 3));
     return FileSystemPaths.map((line) => ({
       tagName: getTagNameFromMatchPart(line),
