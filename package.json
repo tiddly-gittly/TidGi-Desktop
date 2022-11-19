@@ -85,6 +85,7 @@
     "@material-ui/icons": "5.0.0-alpha.27",
     "@material-ui/lab": "5.0.0-alpha.27",
     "@material-ui/styled-engine-sc": "5.0.0-alpha.26",
+    "@reforged/maker-appimage": "^2.1.0",
     "@types/bluebird": "3.5.37",
     "@types/chai": "4.3.4",
     "@types/circular-dependency-plugin": "5.0.5",

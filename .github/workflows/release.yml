@@ -67,10 +67,6 @@ jobs:
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Make Linux (appimage)
-        run: npx zx scripts/buildAppImage.mjs
-        continue-on-error: true
-
       - name: Create Release
         uses: softprops/action-gh-release@v1
         if: startsWith(github.ref, 'refs/tags/')

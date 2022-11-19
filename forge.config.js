@@ -81,6 +81,17 @@ const config = {
         maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
       },
     },
+    {
+      name: '@reforged/maker-appimage',
+      platforms: ['linux'],
+      config: {
+        options: {
+          maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
+          homepage: 'https://github.com/tiddly-gittly/TidGi-Desktop',
+          icon: 'build-resources/icon.ico',
+        },
+      },
+    },
     /**
      * ✖ Making for target: flatpak - On platform: linux - For arch: x64
 
