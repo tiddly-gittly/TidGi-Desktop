@@ -168,20 +168,31 @@ export class Wiki implements IWikiService {
     });
   }
 
-  public async extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<boolean> {
+  public async extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<boolean | string> {
     // hope saveWikiFolderPath = ParentFolderPath + wikifolderPath
-    // await fs.remove(saveWikiFolderPath); removes the folder function that failed to convert.
     // We want the folder where the WIKI is saved to be empty, and we want the input htmlWiki to be an HTML file even if it is a non-wikiHTML file. Otherwise the program will exit abnormally.
-    // this.wikiWorkers[saveWikiFolderPath] = worker;
-    // Then, you can use this.getWorker (saveWikiFolderPath) method to call this wikiWorker that belongs to the HTMLWIKI after decompression
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
-    const result = await worker.ExtractWikiHTMLAndGetExtractState(htmlWikiPath, saveWikiFolderPath);
+    let result: boolean | string = false;
+    try {
+      result = await worker.extractWikiHTML(htmlWikiPath, saveWikiFolderPath);
+    } catch (error) {
+      result = (error as Error).message;
+      logger.error(result, { worker: 'NodeJSWiki', method: 'extractWikiHTML', htmlWikiPath, saveWikiFolderPath });
+      // removes the folder function that failed to convert.
+      try {
+        await fs.remove(saveWikiFolderPath);
+      } catch {}
+    }
+    // this worker is only for one time use. we will spawn a new one for starting wiki later.
+    await Thread.terminate(worker);
     return result;
   }
 
   public async packetHTMLFromWikiFolder(folderWikiPath: string, saveWikiHtmlFolder: string): Promise<void> {
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
     await worker.packetHTMLFromWikiFolder(folderWikiPath, saveWikiHtmlFolder);
+    // this worker is only for one time use. we will spawn a new one for starting wiki later.
+    await Thread.terminate(worker);
   }
 
   public async stopWiki(wikiFolderLocation: string): Promise<void> {
@@ -667,7 +678,7 @@ export class Wiki implements IWikiService {
 
   public async getWikiLogs(homePath: string): Promise<{ content: string; filePath: string }> {
     const filePath = getWikiLogFilePath(homePath);
-    const content = await fs.readFile(filePath, 'utf-8');
+    const content = await fs.readFile(filePath, 'utf8');
     return {
       content,
       filePath,

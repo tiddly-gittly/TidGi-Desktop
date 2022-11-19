@@ -50,4 +50,7 @@ export function updateErrorInWhichComponentSetterByErrorMessage(
   if (message.includes(t('AddWorkspace.ThisPathIsNotAWikiFolder').replace(/".*"/, ''))) {
     errorInWhichComponentSetter({ wikiFolderName: true, wikiFolderLocation: true });
   }
+  if (message.includes('The unpackwiki command requires that the output wiki folder be empty')) {
+    errorInWhichComponentSetter({ wikiFolderName: true, wikiFolderLocation: true });
+  }
 }

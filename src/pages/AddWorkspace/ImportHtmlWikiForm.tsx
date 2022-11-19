@@ -39,11 +39,9 @@ export function ImportHtmlWikiForm({
             if (filePaths?.length > 0) {
               wikiHtmlPathSetter(filePaths[0]);
               const fileName = await window.service.native.path('basename', filePaths[0]);
-              // DEBUG: console
-              console.log(`fileName`, filePaths, fileName);
               if (fileName !== undefined) {
                 // use html file name as default wiki name
-                wikiFolderNameSetter(fileName);
+                wikiFolderNameSetter(fileName.split('.')[0]);
               }
             }
           }}

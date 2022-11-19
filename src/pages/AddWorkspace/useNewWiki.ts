@@ -63,6 +63,7 @@ export function useNewWiki(
   wikiCreationMessageSetter: (m: string) => void,
   hasErrorSetter: (m: boolean) => void,
   errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void,
+  options?: { noCopyTemplate?: boolean },
 ): () => Promise<void> {
   const { t } = useTranslation();
 
@@ -72,7 +73,9 @@ export function useNewWiki(
     try {
       const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, isCreateSyncedWorkspace);
       if (isCreateMainWorkspace) {
-        await window.service.wiki.copyWikiTemplate(form.parentFolderLocation, form.wikiFolderName);
+        if (options?.noCopyTemplate !== true) {
+          await window.service.wiki.copyWikiTemplate(form.parentFolderLocation, form.wikiFolderName);
+        }
       } else {
         await window.service.wiki.createSubWiki(form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink?.wikiFolderLocation, form.tagName);
       }
@@ -82,7 +85,16 @@ export function useNewWiki(
       updateErrorInWhichComponentSetterByErrorMessage(t, (error as Error).message, errorInWhichComponentSetter);
       hasErrorSetter(true);
     }
-  }, [wikiCreationMessageSetter, t, hasErrorSetter, form, isCreateMainWorkspace, isCreateSyncedWorkspace, errorInWhichComponentSetter]);
+  }, [
+    wikiCreationMessageSetter,
+    t,
+    hasErrorSetter,
+    form,
+    isCreateMainWorkspace,
+    isCreateSyncedWorkspace,
+    options?.noCopyTemplate,
+    errorInWhichComponentSetter,
+  ]);
 
   return onSubmit;
 }

@@ -2,6 +2,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IErrorInWhichComponent, IWikiWorkspaceForm } from './useForm';
+import { updateErrorInWhichComponentSetterByErrorMessage } from './useIndicator';
 import { useValidateNewWiki, useNewWiki } from './useNewWiki';
 
 export function useValidateHtmlWiki(
@@ -16,17 +17,15 @@ export function useValidateHtmlWiki(
   useValidateNewWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, errorInWhichComponentSetter);
   useEffect(() => {
     if (!form.wikiHtmlPath) {
-      // 判断wikiHtmlPath是否存在
       wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.LocalWikiHtml')}`);
       errorInWhichComponentSetter({ wikiHtmlPath: true });
       hasErrorSetter(true);
+    } else {
+      wikiCreationMessageSetter('');
+      errorInWhichComponentSetter({});
+      hasErrorSetter(false);
     }
-  }, [
-    t,
-    // 监听wikiHtmlPath，如果不存在就在提示用户。
-    form.wikiHtmlPath,
-    errorInWhichComponentSetter,
-  ]);
+  }, [t, form.wikiHtmlPath, form.parentFolderLocation, form.wikiFolderName, errorInWhichComponentSetter]);
 
   return [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter];
 }
@@ -48,6 +47,7 @@ export function useImportHtmlWiki(
     wikiCreationMessageSetter,
     hasErrorSetter,
     errorInWhichComponentSetter,
+    { noCopyTemplate: true },
   );
 
   const onSubmit = useCallback(async () => {
@@ -60,16 +60,15 @@ export function useImportHtmlWiki(
     }
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     try {
-      // 如果是HTML文件，即使转换错误，删掉在执行一次也不会出错。
-      // 我希望判断用户输入的是否是HTML文件，如果不是就不予执行。然后在判断如果失败了就删除这个数据并且提示错误信息。如果输入的是html类型的文件是不会出错的，即使是非wiki类型的文件。如果输出的目录非空，那么会导致异常闪退。
-      const extractState = await window.service.wiki.extractWikiHTML(wikiHtmlPath, wikiFolderLocation);
-      if (!extractState) {
+      const extractSuccess = await window.service.wiki.extractWikiHTML(wikiHtmlPath, wikiFolderLocation);
+      if (extractSuccess === false) {
         hasErrorSetter(true);
         wikiCreationMessageSetter(t('AddWorkspace.BadWikiHtml'));
         errorInWhichComponentSetter({ wikiHtmlPath: true });
         return;
+      } else if (typeof extractSuccess === 'string') {
+        updateErrorInWhichComponentSetterByErrorMessage(t, extractSuccess, errorInWhichComponentSetter);
       }
-      // 我希望在解压成功后设置好工作区的信息，执行打开解压后的wiki文件夹的操作。
     } catch (error) {
       wikiCreationMessageSetter(`${t('AddWorkspace.BadWikiHtml')}${(error as Error).message}`);
       errorInWhichComponentSetter({ wikiHtmlPath: true });
