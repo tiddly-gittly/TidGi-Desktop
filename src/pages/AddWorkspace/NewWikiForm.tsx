@@ -53,7 +53,7 @@ export function NewWikiForm({
           error={errorInWhichComponent.wikiFolderName}
           onChange={(event) => form.wikiFolderNameSetter(event.target.value)}
           label={t('AddWorkspace.WorkspaceFolderNameToCreate')}
-          helperText={`${t('AddWorkspace.CreateWiki')}${form.wikiFolderLocation}`}
+          helperText={`${t('AddWorkspace.CreateWiki')}${form.wikiFolderLocation ?? ''}`}
           value={form.wikiFolderName}
         />
       </LocationPickerContainer>

@@ -1,6 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import React, { useCallback } from 'react';
-
 import { useTranslation } from 'react-i18next';
 import { Typography } from '@material-ui/core';
 import { Folder as FolderIcon } from '@material-ui/icons';
@@ -18,37 +15,20 @@ export function ImportHtmlWikiForm({
   errorInWhichComponentSetter,
 }: IWikiWorkspaceFormProps & { isCreateSyncedWorkspace: boolean }): JSX.Element {
   const { t } = useTranslation();
-  const { wikiHtmlPathSetter, extractWikiHtmlParentFolderSetter } = form;
+  const { wikiHtmlPathSetter, wikiFolderLocation, wikiFolderName, wikiHtmlPath, parentFolderLocation, wikiFolderNameSetter } = form;
 
   useValidateHtmlWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, errorInWhichComponentSetter);
-
-  const onWikiLocationChange = useCallback(
-    async (newLocation: string) => {
-      if (newLocation !== undefined) {
-        wikiHtmlPathSetter(newLocation);
-      }
-    },
-    [wikiHtmlPathSetter],
-  );
-  const onSaveLocationChange = useCallback(
-    async (newLocation: string) => {
-      if (newLocation !== undefined) {
-        extractWikiHtmlParentFolderSetter(newLocation);
-      }
-    },
-    [extractWikiHtmlParentFolderSetter],
-  );
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
         <LocationPickerInput
-          error={errorInWhichComponent.extractWikiHtmlParentFolder}
+          error={errorInWhichComponent.wikiHtmlPath}
           onChange={(event) => {
             // https://zh-hans.reactjs.org/docs/events.html#clipboard-events
-            onWikiLocationChange(event.target.value);
+            wikiHtmlPathSetter(event.target.value);
           }}
           label={t('AddWorkspace.LocalWikiHtml')}
-          value={form.wikiHtmlPath}
+          value={wikiHtmlPath}
         />
         <LocationPickerButton
           // 第一个输入框的选择文件夹按钮。
@@ -58,6 +38,13 @@ export function ImportHtmlWikiForm({
             const filePaths = await window.service.native.pickFile([{ name: 'html文件', extensions: ['html', 'htm'] }]);
             if (filePaths?.length > 0) {
               wikiHtmlPathSetter(filePaths[0]);
+              const fileName = await window.service.native.path('basename', filePaths[0]);
+              // DEBUG: console
+              console.log(`fileName`, filePaths, fileName);
+              if (fileName !== undefined) {
+                // use html file name as default wiki name
+                wikiFolderNameSetter(fileName);
+              }
             }
           }}
           endIcon={<FolderIcon />}>
@@ -68,21 +55,18 @@ export function ImportHtmlWikiForm({
       </LocationPickerContainer>
       <LocationPickerContainer>
         <LocationPickerInput
-          error={errorInWhichComponent.extractWikiHtmlParentFolder}
-          onChange={(event) => {
-            onSaveLocationChange(event.target.value);
-          }}
-          label={t('AddWorkspace.StoreWikiFolderLocation')}
-          value={form.extractWikiHtmlParentFolder}
+          error={errorInWhichComponent.parentFolderLocation}
+          onChange={(event) => form.parentFolderLocationSetter(event.target.value)}
+          label={t('AddWorkspace.WorkspaceParentFolder')}
+          value={parentFolderLocation}
         />
         <LocationPickerButton
-          // 第二个输入框的选择文件夹按钮。
           onClick={async () => {
             // first clear the text, so button will refresh
-            extractWikiHtmlParentFolderSetter('');
-            const filePaths = await window.service.native.pickDirectory(form.wikiFolderLocation);
+            form.parentFolderLocationSetter('');
+            const filePaths = await window.service.native.pickDirectory(parentFolderLocation);
             if (filePaths?.length > 0) {
-              extractWikiHtmlParentFolderSetter(filePaths[0]);
+              form.parentFolderLocationSetter(filePaths[0]);
             }
           }}
           endIcon={<FolderIcon />}>
@@ -90,6 +74,15 @@ export function ImportHtmlWikiForm({
             {t('AddWorkspace.Choose')}
           </Typography>
         </LocationPickerButton>
+      </LocationPickerContainer>
+      <LocationPickerContainer>
+        <LocationPickerInput
+          error={errorInWhichComponent.wikiFolderName}
+          onChange={(event) => wikiFolderNameSetter(event.target.value)}
+          label={t('AddWorkspace.ExtractedWikiFolderName')}
+          helperText={`${t('AddWorkspace.CreateWiki')}${wikiFolderLocation ?? ''}`}
+          value={wikiFolderName}
+        />
       </LocationPickerContainer>
     </CreateContainer>
   );

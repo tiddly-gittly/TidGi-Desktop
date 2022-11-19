@@ -87,10 +87,12 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
 
   // derived values
 
-  const wikiFolderLocation = usePromiseValue(() => window.service.native.path('join', parentFolderLocation ?? t('Error') ?? 'Error', wikiFolderName), 'Error', [
-    parentFolderLocation,
-    wikiFolderName,
-  ]);
+  /** full path of created wiki folder */
+  const wikiFolderLocation = usePromiseValue(
+    async () => await window.service.native.path('join', parentFolderLocation ?? t('Error') ?? 'Error', wikiFolderName),
+    'Error',
+    [parentFolderLocation, wikiFolderName],
+  );
 
   /**
    * For importing existed nodejs wiki into TidGi, we parse git url from the folder to import
@@ -106,23 +108,13 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
     })();
   }, [gitRepoUrlSetter, wikiFolderLocation, options?.fromExisted]);
 
-   /*
-   * 对于wikiHTML,我们使用两个状态保存文件与wiki解压父文件夹路径,并设置默认的wiki文件夹保存位置.
-   * wikiHtmlPath、wikiHtmlPathSetter、extractWikiHtmlParentFolder、extractWikiHtmlParentFolderSetter,
+  /*
+   * For wikiHTML
    */
-   const [wikiHtmlPath, wikiHtmlPathSetter] = useState<string>('');
-   useEffect(() => {
-     void (async function getDefaultWikiHtmlPathEffect() {})();
-   }, []);
- 
-   const [extractWikiHtmlParentFolder, extractWikiHtmlParentFolderSetter] = useState<string>('');
-   useEffect(() => {
-     void (async function getDefaultExtractWikiHtmlFolderPathEffect() {
-       const desktopPathAsDefaultExtractWikiHtmlParentFolderPath = await window.service.context.get('DEFAULT_WIKI_FOLDER');
-       extractWikiHtmlParentFolderSetter(desktopPathAsDefaultExtractWikiHtmlParentFolderPath);
-     })();
-   }, []);
-
+  const [wikiHtmlPath, wikiHtmlPathSetter] = useState<string>('');
+  useEffect(() => {
+    void (async function getDefaultWikiHtmlPathEffect() {})();
+  }, []);
   return {
     storageProvider,
     storageProviderSetter,
@@ -147,8 +139,6 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
     mainWikiToLinkIndex,
     wikiHtmlPath,
     wikiHtmlPathSetter,
-    extractWikiHtmlParentFolder,
-    extractWikiHtmlParentFolderSetter,
   };
 }
 

@@ -181,17 +181,21 @@ ${message.message}
 
   public async path(method: 'basename' | 'dirname' | 'join', pathString: string | undefined, ...paths: string[]): Promise<string | undefined> {
     switch (method) {
-      case 'basename':
+      case 'basename': {
         if (typeof pathString === 'string') return path.basename(pathString);
         break;
-      case 'dirname':
+      }
+      case 'dirname': {
         if (typeof pathString === 'string') return path.dirname(pathString);
         break;
-      case 'join':
+      }
+      case 'join': {
         if (typeof pathString === 'string') return path.join(pathString, ...paths);
         break;
-      default:
+      }
+      default: {
         break;
+      }
     }
   }
 }

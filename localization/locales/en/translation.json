@@ -141,7 +141,11 @@
     "WikiNotStarted": "Wiki is not started or not loaded",
     "Advanced": "Advanced Settings",
     "GitDefaultBranch": "Git Default Branch",
-    "GitDefaultBranchDescription": "The default branch of your Git, Github changed it from master to main after that event"
+    "GitDefaultBranchDescription": "The default branch of your Git, Github changed it from master to main after that event",
+    "LocalWikiHtml": "path to html file",
+    "OpenLocalWikiFromHTML": "import wiki.html",
+    "ExtractedWikiFolderName": "Converted WIKI folder name",
+    "BadWikiHtml": "Failed to create a wiki from this HTML file "
   },
   "EditWorkspace": {
     "Path": "Wiki Path",
