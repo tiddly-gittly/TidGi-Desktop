@@ -12,6 +12,7 @@ import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interf
 import { IContextService } from '@services/context/interface';
 import { IGitService } from '@services/git/interface';
 import { SupportedStorageServices } from '@services/types';
+import { WikiChannel } from '@/constants/channels';
 
 interface IWorkspaceMenuRequiredServices {
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
@@ -19,7 +20,7 @@ interface IWorkspaceMenuRequiredServices {
   git: Pick<IGitService, 'commitAndSync'>;
   native: Pick<INativeService, 'open' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualIP'>;
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
-  wiki: Pick<IWikiService, 'requestOpenTiddlerInWiki' | 'requestWikiSendActionMessage'>;
+  wiki: Pick<IWikiService, 'wikiOperation' | 'requestWikiSendActionMessage'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open'>;
   workspace: Pick<IWorkspaceService, 'getActiveWorkspace'>;
@@ -45,12 +46,10 @@ export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IW
   // is not a new main workspace
   // open tiddler in the active view
   if (isSubWiki) {
-    if (typeof tagName === 'string') {
-      await service.wiki.requestOpenTiddlerInWiki(tagName);
-    }
-    if (mainWikiID === null || idToActive === undefined) {
+    if (mainWikiID === null || idToActive === undefined || tagName === null) {
       return;
     }
+    service.wiki.wikiOperation(WikiChannel.openTiddler, [mainWikiID, tagName]);
     idToActive = mainWikiID;
   } else {
     await service.wiki.requestWikiSendActionMessage('tm-home');

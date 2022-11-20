@@ -53,7 +53,6 @@ export interface IWikiService {
   openTiddlerInExternal(homePath: string, title: string): Promise<void>;
   packetHTMLFromWikiFolder(folderWikiPath: string, saveWikiHtmlfolder: string): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
-  requestOpenTiddlerInWiki(tiddlerName: string): Promise<void>;
   /** send tiddlywiki action message to current active wiki */
   requestWikiSendActionMessage(actionMessage: string): Promise<void>;
   restartWiki(workspace: IWorkspace): Promise<void>;
@@ -89,7 +88,6 @@ export const WikiServiceIPCDescriptor = {
     linkWiki: ProxyPropertyType.Function,
     openTiddlerInExternal: ProxyPropertyType.Function,
     removeWiki: ProxyPropertyType.Function,
-    requestOpenTiddlerInWiki: ProxyPropertyType.Function,
     requestWikiSendActionMessage: ProxyPropertyType.Function,
     restartWiki: ProxyPropertyType.Function,
     runFilterOnWiki: ProxyPropertyType.Function,

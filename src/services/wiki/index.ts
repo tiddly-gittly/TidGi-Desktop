@@ -49,15 +49,6 @@ export class Wiki implements IWikiService {
     return await getSubWikiPluginContent(mainWikiPath);
   }
 
-  public async requestOpenTiddlerInWiki(tiddlerName: string): Promise<void> {
-    const browserViews = await this.viewService.getActiveBrowserViews();
-    browserViews.forEach((browserView) => {
-      if (browserView !== undefined) {
-        browserView.webContents.send(WikiChannel.openTiddler, tiddlerName);
-      }
-    });
-  }
-
   public async requestWikiSendActionMessage(actionMessage: string): Promise<void> {
     const browserViews = await this.viewService.getActiveBrowserViews();
     browserViews.forEach((browserView) => {
