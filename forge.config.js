@@ -81,7 +81,15 @@ const config = {
         maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
       },
     },
-    {
+    /**
+     * [STARTED] Making a AppImage distributable for linux/x64
+        [FAILED] An error occured while making for target: AppImage
+        [FAILED] An error occured while making for target: AppImage
+
+        An unhandled rejection has occurred inside Forge:
+        [object Object]
+     */
+    /*     {
       name: '@reforged/maker-appimage',
       platforms: ['linux'],
       config: {
@@ -91,7 +99,7 @@ const config = {
           icon: 'build-resources/icon.ico',
         },
       },
-    },
+    }, */
     /**
      * ✖ Making for target: flatpak - On platform: linux - For arch: x64
 
