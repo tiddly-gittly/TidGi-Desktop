@@ -15,10 +15,10 @@
 
 <!-- toc -->
 
+- [ShowCases 产品截图](#showcases-产品截图)
 - [相关介绍](#%E7%9B%B8%E5%85%B3%E4%BB%8B%E7%BB%8D)
 - [About TidGi-Desktop 关于「太记-桌面版」](#about-tidgi-desktop-%E5%85%B3%E4%BA%8E%E5%A4%AA%E8%AE%B0-%E6%A1%8C%E9%9D%A2%E7%89%88)
 - [Download 下载](#download-%E4%B8%8B%E8%BD%BD)
-- [ShowCases 产品截图](#showcases-产品截图)
 - [Mobile App 移动端应用](#mobile-app-移动端应用)
 - [Data Privacy Protection 数据隐私保护](#data-privacy-protection-%E6%95%B0%E6%8D%AE%E9%9A%90%E7%A7%81%E4%BF%9D%E6%8A%A4)
 - [Differences](#differences)
@@ -37,54 +37,6 @@
 
 **太记** - 可定制性极强的个人知识管理系统，使用 Git 作为备份管理器和博客平台。
 
-## 相关介绍
-
-[用 TiddlyWiki 替代 Notion 和 EverNote 作为个人知识管理系统(Chinese)](https://zhuanlan.zhihu.com/p/140473235)
-
-[墨屉-先进的间隔重复和渐进阅读解决方案](https://live.bilibili.com/23806126)
-
-## About TidGi-Desktop 关于「太记-桌面版」
-
----
-
-TidGi is a cross-platform Note Taking & GTD & Fragment Knowledge Management desktop app powered by [nodejs-TiddlyWiki](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs), it ship with a lot of tiddlywiki plugins from the [TiddlyWiki community](https://groups.google.com/forum/#!forum/tiddlywiki).
-
-You can call it [TG-Note](https://github.com/tiddly-gittly/TGNote), it is totally free and you own all your data. Code by the people, build for the people.
-
----
-
-「太记」是一个跨平台的笔记软件、时间和任务管理工具、碎片化知识管理工具，此乃其桌面版。「太记」基于强大的 [NodeJS 版「太微（TiddlyWiki）」](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs) 构建，并带上了大量来自[太微社区（TiddlyWiki community）](https://groups.google.com/forum/#!forum/tiddlywiki)的插件。
-
-「太记」来自 TiddlyWiki 的译名「太微」，以及曾用名 TiddlyGit 首字母的谐音（后来我们又根据中文谐音把英文名改成了 TidGi）。当然你也可以直接叫它 [TGNote](https://github.com/tiddly-gittly/TGNote)，镰锤 ☭ 笔记。
-
-为什么把 TiddlyWiki 翻译成「太微」？因为受到 @pimgeek 的启发：TiddlyWiki 可以干很多细致轻量的工作，但也从不限制用法，可以无限组合叠加。故以其首字母音译为「太微」，TiddlyWiki 可以称为「太微笔记」「太微万能抽屉」「太微卡片盒」……
-
-> 太微垣，三垣之一，按《步天歌》，太微垣為三垣的上垣。
-> 太微垣又名天庭，是政府的意思，也是貴族及大臣們居住的地方。
-
-## Download 下载 
-
-<a href="https://repology.org/project/tidgi/versions">
-    <img src="https://repology.org/badge/vertical-allrepos/tidgi.svg" alt="Packaging status">
-</a>
-
-> For Windows MacOS normal user, Win和Mac的普通用户直接下载App
-
-|                                                                  [最新版下载按钮 Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                   |
-| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
-| [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
- 
- > For arch user
-
-```bash
-yay tidgi
-```
-
-> For MacOS CLI user Mac命令行用户
-
-```bash
-brew install TidGi # Not tested
-```
 
 ## ShowCases 产品截图
 
@@ -134,6 +86,55 @@ Click "OK" 点击「允许」 ↓
 ![step00005](https://user-images.githubusercontent.com/3746270/87882514-eeb16480-ca32-11ea-9afd-cae6f2bea2db.png)
 
 </details>
+
+## 相关介绍
+
+[用 TiddlyWiki 替代 Notion 和 EverNote 作为个人知识管理系统(Chinese)](https://zhuanlan.zhihu.com/p/140473235)
+
+[墨屉-先进的间隔重复和渐进阅读解决方案](https://live.bilibili.com/23806126)
+
+## About TidGi-Desktop 关于「太记-桌面版」
+
+---
+
+TidGi is a cross-platform Note Taking & GTD & Fragment Knowledge Management desktop app powered by [nodejs-TiddlyWiki](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs), it ship with a lot of tiddlywiki plugins from the [TiddlyWiki community](https://groups.google.com/forum/#!forum/tiddlywiki).
+
+You can call it [TG-Note](https://github.com/tiddly-gittly/TGNote), it is totally free and you own all your data. Code by the people, build for the people.
+
+---
+
+「太记」是一个跨平台的笔记软件、时间和任务管理工具、碎片化知识管理工具，此乃其桌面版。「太记」基于强大的 [NodeJS 版「太微（TiddlyWiki）」](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs) 构建，并带上了大量来自[太微社区（TiddlyWiki community）](https://groups.google.com/forum/#!forum/tiddlywiki)的插件。
+
+「太记」来自 TiddlyWiki 的译名「太微」，以及曾用名 TiddlyGit 首字母的谐音（后来我们又根据中文谐音把英文名改成了 TidGi）。当然你也可以直接叫它 [TGNote](https://github.com/tiddly-gittly/TGNote)，镰锤 ☭ 笔记。
+
+为什么把 TiddlyWiki 翻译成「太微」？因为受到 @pimgeek 的启发：TiddlyWiki 可以干很多细致轻量的工作，但也从不限制用法，可以无限组合叠加。故以其首字母音译为「太微」，TiddlyWiki 可以称为「太微笔记」「太微万能抽屉」「太微卡片盒」……
+
+> 太微垣，三垣之一，按《步天歌》，太微垣為三垣的上垣。
+> 太微垣又名天庭，是政府的意思，也是貴族及大臣們居住的地方。
+
+## Download 下载 
+
+<a href="https://repology.org/project/tidgi/versions">
+    <img src="https://repology.org/badge/vertical-allrepos/tidgi.svg" alt="Packaging status">
+</a>
+
+> For Windows MacOS normal user, Win和Mac的普通用户直接下载App
+
+|                                                                  [最新版下载按钮 Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                   |
+| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+| [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
+ 
+ > For arch user
+
+```bash
+yay tidgi
+```
+
+> For MacOS CLI user Mac命令行用户
+
+```bash
+brew install TidGi # Not tested
+```
 
 ## Mobile App 移动端应用
 
