@@ -51,7 +51,7 @@ ipcRenderer.on(WikiChannel.addTiddler, async (event, title: string, text: string
   `);
   // wait for fs to be settle
   setTimeout(() => {
-    ipcRenderer.invoke(WikiChannel.addTiddlerDone);
+    void ipcRenderer.invoke(WikiChannel.addTiddlerDone);
   }, 1000);
 });
 // get tiddler text

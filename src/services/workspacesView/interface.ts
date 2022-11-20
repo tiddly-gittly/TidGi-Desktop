@@ -46,6 +46,10 @@ export interface IWorkspaceViewService {
    */
   removeWorkspaceView(workspaceID: string): Promise<void>;
   restartWorkspaceViewService(workspaceID?: string | undefined): Promise<void>;
+  /**
+   * If is main workspace, set workspace to active and load the url.
+   * If is sub workspace, just load url with #tag for its main workspace.
+   */
   setActiveWorkspaceView(workspaceID: string): Promise<void>;
   setWorkspaceView(workspaceID: string, workspaceOptions: IWorkspace): Promise<void>;
   setWorkspaceViews(workspaces: Record<string, IWorkspace>): Promise<void>;

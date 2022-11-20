@@ -287,7 +287,19 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (newWorkspace === undefined) {
       throw new Error(`Workspace id ${nextWorkspaceID} does not exist. When setActiveWorkspaceView().`);
     }
-    logger.debug(`Set active workspace oldActiveWorkspace.id: ${oldActiveWorkspace?.id ?? 'undefined'} nextWorkspaceID: ${nextWorkspaceID}`);
+    logger.debug(
+      `Set active workspace oldActiveWorkspace.id: ${oldActiveWorkspace?.id ?? 'undefined'} nextWorkspaceID: ${nextWorkspaceID} newWorkspace.isSubWiki ${String(
+        newWorkspace.isSubWiki,
+      )}`,
+    );
+    if (newWorkspace.isSubWiki && typeof newWorkspace.mainWikiID === 'string') {
+      logger.debug(`${nextWorkspaceID} is a subwiki, set its main wiki ${newWorkspace.mainWikiID} to active instead.`);
+      await this.setActiveWorkspaceView(newWorkspace.mainWikiID);
+      if (typeof newWorkspace.tagName === 'string') {
+        this.wikiService.wikiOperation(WikiChannel.openTiddler, newWorkspace.mainWikiID, newWorkspace.tagName);
+      }
+      return;
+    }
     // later process will use the current active workspace
     await this.workspaceService.setActiveWorkspace(nextWorkspaceID, oldActiveWorkspace?.id);
     const asyncTasks: Array<Promise<unknown>> = [];

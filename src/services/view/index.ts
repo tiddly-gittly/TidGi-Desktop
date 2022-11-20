@@ -303,7 +303,7 @@ export class View implements IViewService {
     }
     // fix some case that local ip can't be load
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-    const urlToReplace = (rememberLastPageVisited && workspace.lastUrl) || workspace.homeUrl;
+    const urlToReplace = rememberLastPageVisited ? workspace.lastUrl ?? workspace.homeUrl : workspace.homeUrl;
     const portReplacedUrl = replaceUrlPortWithSettingPort(urlToReplace, workspace.port);
     const hostReplacedUrl = await getLocalHostUrlWithActualIP(portReplacedUrl);
     logger.debug(`Load initialUrl: ${hostReplacedUrl} for windowName ${windowName} for workspace ${workspace.name}`, {

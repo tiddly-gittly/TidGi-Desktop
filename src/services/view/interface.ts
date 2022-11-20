@@ -9,6 +9,9 @@ import { WindowNames } from '@services/windows/WindowProperties';
  * BrowserView related things, the BrowserView is the webview like frame that renders our wiki website.
  */
 export interface IViewService {
+  /**
+   * Add a new browserView and load the url
+   */
   addView: (workspace: IWorkspace, windowName: WindowNames) => Promise<void>;
   addViewForAllBrowserViews(workspace: IWorkspace): Promise<void>;
   /**
@@ -34,6 +37,12 @@ export interface IViewService {
   reloadViewsWebContentsIfDidFailLoad: () => Promise<void>;
   removeAllViewOfWorkspace: (workspaceID: string) => void;
   removeView: (workspaceID: string, windowName: WindowNames) => void;
+  /**
+   * Bring an already created view to the front. If it happened to not created, will call `addView()` to create one.
+   * @param workspaceID id, can only be main workspace id, because only main workspace will have view created.
+   * @param windowName you can control main window or menubar window to have this view.
+   * @returns
+   */
   setActiveView: (workspaceID: string, windowName: WindowNames) => Promise<void>;
   setActiveViewForAllBrowserViews(workspaceID: string): Promise<void>;
   setViewsAudioPref: (_shouldMuteAudio?: boolean) => void;
