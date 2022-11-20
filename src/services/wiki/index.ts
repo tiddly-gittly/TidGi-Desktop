@@ -244,15 +244,17 @@ export class Wiki implements IWikiService {
    * @param {string} newWikiPath sub-wiki's folder path
    */
   public async linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void> {
-    const mainWikiTiddlersFolderPath = path.join(mainWikiPath, TIDDLERS_PATH, this.folderToContainSymlinks, folderName);
+    const mainWikiTiddlersFolderSubWikisPath = path.join(mainWikiPath, TIDDLERS_PATH, this.folderToContainSymlinks);
+    const subwikiSymlinkPath = path.join(mainWikiTiddlersFolderSubWikisPath, folderName);
     try {
       try {
-        await fs.remove(mainWikiTiddlersFolderPath);
+        await fs.remove(subwikiSymlinkPath);
       } catch {}
-      await fs.createSymlink(subWikiPath, mainWikiTiddlersFolderPath, 'junction');
+      await fs.mkdirp(mainWikiTiddlersFolderSubWikisPath);
+      await fs.createSymlink(subWikiPath, subwikiSymlinkPath, 'junction');
       this.logProgress(i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiSucceed'));
     } catch (error: unknown) {
-      throw new Error(i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiFailed', { subWikiPath, mainWikiTiddlersFolderPath, error }));
+      throw new Error(i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiFailed', { subWikiPath, mainWikiTiddlersFolderPath: subwikiSymlinkPath, error }));
     }
   }
 
