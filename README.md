@@ -2,9 +2,7 @@
 <h1> TidGi 太记 </h1>
 
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
-[![GitHub Actions macOS Build Status](https://github.com/tiddly-gittly/TidGi-Desktop/workflows/macOS/badge.svg)](https://github.com/tiddly-gittly/TidGi-Desktop/actions?query=workflow%3AmacOS)
-[![GitHub Actions Linux Build Status](https://github.com/tiddly-gittly/TidGi-Desktop/workflows/Linux/badge.svg)](https://github.com/tiddly-gittly/TidGi-Desktop/actions?query=workflow%3ALinux)
-[![GitHub Actions Windows Build Status](https://github.com/tiddly-gittly/TidGi-Desktop/workflows/Windows/badge.svg)](https://github.com/tiddly-gittly/TidGi-Desktop/actions?query=workflow%3AWindows)
+[![GitHub Actions Build Status](https://github.com/tiddly-gittly/TidGi-Desktop/actions/workflows/release.yml/badge.svg)
 [![Lin Onetwo!](https://img.shields.io/github/followers/linonetwo)](https://github.com/linonetwo)
 
 </div
