@@ -68,10 +68,11 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           draft: true
+          generate_release_notes: true
           files: out/make/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -135,10 +136,11 @@ jobs:
       #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           draft: true
+          generate_release_notes: true
           files: out/make/**/*
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -230,10 +232,11 @@ jobs:
           Rename-Item -Path "out/make/wix/arm64/TidGi.msi" -NewName "Install-TidGi-Windows-arm64.msi"
 
       - name: Create Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           draft: true
+          generate_release_notes: true
           files: |
             out/make/**/*.exe
             out/make/**/*.msi
