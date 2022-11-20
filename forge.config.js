@@ -135,6 +135,7 @@ const config = {
     {
       name: '@electron-forge/plugin-webpack',
       config: {
+        port: 3012, // default is 3000, may collide with other
         mainConfig: './webpack.main.config.js',
         renderer: {
           config: './webpack.renderer.config.js',

@@ -19,7 +19,7 @@ const menuBarIconFileName = isMac ? 'menubarTemplate@2x.png' : 'menubar@2x.png';
 export const MENUBAR_ICON_PATH = path.resolve(isDevelopmentOrTest ? buildResourcePath : process.resourcesPath, menuBarIconFileName);
 
 export const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';
-export const LOGIN_REDIRECT_PATH = 'http://localhost:3000/?code=';
+export const LOGIN_REDIRECT_PATH = 'http://localhost:3012/?code=';
 export const DESKTOP_PATH = path.join(os.homedir(), 'Desktop');
 export const ZX_FOLDER = isDevelopmentOrTest
   ? path.resolve(__dirname, '..', '..', 'node_modules', 'zx', 'build', 'cli.js')

@@ -296,7 +296,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.debug(`${nextWorkspaceID} is a subwiki, set its main wiki ${newWorkspace.mainWikiID} to active instead.`);
       await this.setActiveWorkspaceView(newWorkspace.mainWikiID);
       if (typeof newWorkspace.tagName === 'string') {
-        this.wikiService.wikiOperation(WikiChannel.openTiddler, newWorkspace.mainWikiID, newWorkspace.tagName);
+        this.wikiService.wikiOperation(WikiChannel.openTiddler, [newWorkspace.mainWikiID, newWorkspace.tagName]);
       }
       return;
     }

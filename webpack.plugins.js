@@ -68,7 +68,7 @@ exports.renderer = _.compact([
   //     'style-src': ["'self' 'unsafe-inline'"],
   //     'frame-src': ["'none'"],
   //     'worker-src': ["'none'"],
-  //     'connect-src': ['https://api.github.com https://tidgi-desktop.authing.cn ws://localhost:3000'],
+  //     'connect-src': ['https://api.github.com https://tidgi-desktop.authing.cn ws://localhost:3012'],
   //   },
   //   {
   //     nonceEnabled: {

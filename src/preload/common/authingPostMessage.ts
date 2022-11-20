@@ -1,4 +1,4 @@
-// on production build, if we try to redirect to http://localhost:3000 , we will reach chrome-error://chromewebdata/ , but we can easily get back
+// on production build, if we try to redirect to http://localhost:3012 , we will reach chrome-error://chromewebdata/ , but we can easily get back
 // this happens when we are redirected by OAuth login
 import { context, window as windowService } from './services';
 import { windowName } from './browserViewMetaData';

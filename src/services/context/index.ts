@@ -12,7 +12,8 @@ import { tiddlywikiLanguagesMap, supportedLanguagesMap } from '@/constants/langu
 
 @injectable()
 export class ContextService implements IContextService {
-  private readonly pathConstants: IPaths = { ...paths, ...appPaths, MAIN_WINDOW_WEBPACK_ENTRY: MAIN_WINDOW_WEBPACK_ENTRY };
+  // @ts-expect-error Property 'MAIN_WINDOW_WEBPACK_ENTRY' is missing, esbuild will make it `pathConstants = { ..._constants_paths__WEBPACK_IMPORTED_MODULE_4__, ..._constants_appPaths__WEBPACK_IMPORTED_MODULE_5__, 'http://localhost:3012/main_window' };`
+  private readonly pathConstants: IPaths = { ...paths, ...appPaths };
   private readonly constants: IConstants = {
     isDevelopment: isElectronDevelopment,
     platform: process.platform,
@@ -26,6 +27,7 @@ export class ContextService implements IContextService {
 
   private readonly context: IContext;
   constructor() {
+    this.pathConstants.MAIN_WINDOW_WEBPACK_ENTRY = MAIN_WINDOW_WEBPACK_ENTRY;
     this.context = {
       ...this.pathConstants,
       ...this.constants,
