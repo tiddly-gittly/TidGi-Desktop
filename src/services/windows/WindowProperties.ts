@@ -5,14 +5,20 @@ export enum WindowNames {
   addWorkspace = 'addWorkspace',
   auth = 'auth',
   editWorkspace = 'editWorkspace',
-  /** Window with workspace list and new wiki button on left side bar */
+  /**
+   * Window with workspace list and new wiki button on left side bar
+   * We only have a single instance of main window, that is the app window.
+   */
   main = 'main',
   menuBar = 'menuBar',
   newWindow = 'newWindow',
   notifications = 'notifications',
   preferences = 'preferences',
   spellcheck = 'spellcheck',
-  /** browserView that loads the wiki webpage */
+  /**
+   * browserView that loads the wiki webpage
+   * We will have multiple view window, each main workspace will have one.
+   */
   view = 'view',
 }
 
