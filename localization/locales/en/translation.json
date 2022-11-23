@@ -3,6 +3,7 @@
   "WorkspaceSelector": {
     "Add": "Add",
     "OpenWorkspaceTagTiddler": "Open {{tagName}}",
+    "DefaultTiddlers": "Default Tiddlers",
     "OpenWorkspaceMenuName": "Open Workspace",
     "EditWorkspace": "Edit Workspace",
     "RemoveWorkspace": "Remove Workspace",
@@ -373,6 +374,7 @@
     "Language": "Language",
     "Window": "Window",
     "Workspaces": "Workspaces",
+    "CurrentWorkspace": "Current Workspace",
     "Back": "Back",
     "Find": "Find",
     "FindNext": "Find Next",

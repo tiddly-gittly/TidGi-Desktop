@@ -4,6 +4,7 @@
   "WorkspaceSelector": {
     "Add": "添加",
     "OpenWorkspaceTagTiddler": "打开 {{tagName}}",
+    "DefaultTiddlers": "默认条目",
     "OpenWorkspaceMenuName": "打开工作区",
     "EditWorkspace": "编辑工作区",
     "EditCurrentWorkspace": "编辑当前工作区",
@@ -87,7 +88,8 @@
     "SelectNextWorkspace": "选择下一个工作区",
     "Language": "语言/Lang",
     "History": "历史",
-    "Workspaces": "工作区",
+    "Workspaces": "工作区列表",
+    "CurrentWorkspace": "当前工作区",
     "Window": "窗口",
     "Help": "帮助",
     "ActualSize": "正常大小",

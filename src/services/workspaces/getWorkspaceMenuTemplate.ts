@@ -61,11 +61,13 @@ export async function getWorkspaceMenuTemplate(
   t: TFunction,
   service: IWorkspaceMenuRequiredServices,
 ): Promise<MenuItemConstructorOptions[]> {
-  const { active, id, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, homeUrl } = workspace;
+  const { active, id, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, homeUrl, name } = workspace;
   /* eslint-disable @typescript-eslint/no-misused-promises */
   const template: MenuItemConstructorOptions[] = [
     {
-      label: t('WorkspaceSelector.OpenWorkspaceTagTiddler', { tagName }),
+      label: t('WorkspaceSelector.OpenWorkspaceTagTiddler', {
+        tagName: tagName ?? (isSubWiki ? name : `${name} ${t('WorkspaceSelector.DefaultTiddlers')}`),
+      }),
       click: async () => {
         await openWorkspaceTagTiddler(workspace, service);
       },

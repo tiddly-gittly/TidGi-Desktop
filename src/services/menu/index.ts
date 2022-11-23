@@ -364,9 +364,10 @@ export class MenuService implements IMenuService {
       workspace: this.workspaceService,
       workspaceView: this.workspaceViewService,
     };
+    // workspace menus
+    menu.append(new MenuItem({ type: 'separator' }));
     // show workspace menu to manipulate workspaces if sidebar is not open
     if (!sidebar) {
-      menu.append(new MenuItem({ type: 'separator' }));
       menu.append(
         new MenuItem({
           label: i18n.t('ContextMenu.OpenCommandPalette'),
@@ -376,6 +377,12 @@ export class MenuService implements IMenuService {
           },
         }),
       );
+      if (activeWorkspace !== undefined) {
+        const currentWorkspaceContextMenuTemplate = await getWorkspaceMenuTemplate(activeWorkspace, i18n.t.bind(i18n), services);
+        currentWorkspaceContextMenuTemplate.forEach((menuItem) => {
+          menu.append(new MenuItem(menuItem));
+        });
+      }
       menu.append(
         new MenuItem({
           label: i18n.t('Menu.Workspaces'),
@@ -400,7 +407,9 @@ export class MenuService implements IMenuService {
         new MenuItem({
           label: i18n.t('WorkspaceSelector.OpenWorkspaceMenuName'),
           submenu: workspaces.map((workspace) => ({
-            label: i18n.t('WorkspaceSelector.OpenWorkspaceTagTiddler', { tagName: workspace.tagName ?? workspace.name }),
+            label: i18n.t('WorkspaceSelector.OpenWorkspaceTagTiddler', {
+              tagName: workspace.tagName ?? (workspace.isSubWiki ? workspace.name : i18n.t('WorkspaceSelector.DefaultTiddlers')),
+            }),
             click: async () => {
               await openWorkspaceTagTiddler(workspace, services);
             },
@@ -417,7 +426,28 @@ export class MenuService implements IMenuService {
           }),
         );
       }
+      menu.append(
+        new MenuItem({
+          label: i18n.t('ContextMenu.RestartService'),
+          click: async () => {
+            const workspace = await this.workspaceService.getActiveWorkspace();
+            if (workspace !== undefined) {
+              await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
+              await this.workspaceViewService.realignActiveWorkspace(workspace.id);
+            }
+          },
+        }),
+      );
+      menu.append(
+        new MenuItem({
+          label: i18n.t('ContextMenu.Reload'),
+          click: () => {
+            webContents.reload();
+          },
+        }),
+      );
     }
+    menu.append(new MenuItem({ type: 'separator' }));
     menu.append(
       new MenuItem({
         label: i18n.t('ContextMenu.Back'),
@@ -433,26 +463,6 @@ export class MenuService implements IMenuService {
         enabled: webContents.canGoForward(),
         click: () => {
           webContents.goForward();
-        },
-      }),
-    );
-    menu.append(
-      new MenuItem({
-        label: i18n.t('ContextMenu.Reload'),
-        click: () => {
-          webContents.reload();
-        },
-      }),
-    );
-    menu.append(
-      new MenuItem({
-        label: i18n.t('ContextMenu.RestartService'),
-        click: async () => {
-          const workspace = await this.workspaceService.getActiveWorkspace();
-          if (workspace !== undefined) {
-            await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
-            await this.workspaceViewService.realignActiveWorkspace(workspace.id);
-          }
         },
       }),
     );

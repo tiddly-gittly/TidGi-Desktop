@@ -21,7 +21,6 @@ declare module 'i18next' {
 // init i18n is async, but our usage is basically await the electron app to start, so this is basically ok
 // eslint-disable-next-line import/no-named-as-default-member
 export const i18n = i18next.use(Backend);
-export const t = (key: string): string => i18n.t(key) ?? key;
 
 export async function initRendererI18NHandler(): Promise<void> {
   await i18n.init({
