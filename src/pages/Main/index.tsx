@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/promise-function-async */
 import React from 'react';
 import styled, { css } from 'styled-components';
+import is, { isNot } from 'typescript-styled-is';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet';
 
@@ -121,8 +122,14 @@ const ContentRoot = styled.div`
   flex-direction: column;
 
   padding-right: 20px;
-  width: calc(100% - ${sidebarWidth}px);
-  max-width: calc(100% - ${sidebarWidth}px);
+  ${is('sidebar')`
+    width: calc(100% - ${String(sidebarWidth)}px);
+    max-width: calc(100% - ${String(sidebarWidth)}px);
+  `}
+  ${isNot('sidebar')`
+    width: 100%;
+    padding-left: 20px;
+  `}
   height: 100%;
 `;
 
@@ -216,14 +223,14 @@ export default function Main(): JSX.Element {
             </SideBarEnd>
           </SidebarContainer>
         )}
-        <ContentRoot>
+        <ContentRoot sidebar={sidebar}>
           <FindInPage />
           <InnerContentRoot>
             {activeWorkspace !== undefined && hasError && <WikiErrorMessages activeWorkspace={activeWorkspace} />}
             {Array.isArray(workspacesList) && activeWorkspace !== undefined && workspacesList.length > 0 && hasError && (
               <ViewLoadErrorMessages activeWorkspace={activeWorkspace} activeWorkspaceMetadata={activeWorkspaceMetadata} />
             )}
-            {Array.isArray(workspacesList) && workspacesList.length > 0 && activeWorkspaceMetadata?.isLoading && (
+            {Array.isArray(workspacesList) && workspacesList.length > 0 && activeWorkspaceMetadata?.isLoading === true && (
               <Typography color="textSecondary">{t('Loading')}</Typography>
             )}
             {Array.isArray(workspacesList) && workspacesList.length === 0 && <NewUserMessage sidebar={sidebar} themeSource={themeSource} />}
