@@ -97,8 +97,8 @@ export async function getWorkspaceMenuTemplate(
     {
       label: t('WorkspaceSelector.OpenInBrowser'),
       click: async () => {
-        const actualIP = await window.service.native.getLocalHostUrlWithActualIP(homeUrl);
-        await window.service.native.open(actualIP);
+        const actualIP = await service.native.getLocalHostUrlWithActualIP(homeUrl);
+        await service.native.open(actualIP);
       },
     },
   ];
