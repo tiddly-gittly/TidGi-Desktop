@@ -8,8 +8,6 @@ import { internalIpV4 } from '@/helpers/ip';
  */
 export async function getLocalHostUrlWithActualIP(originalUrl: string): Promise<string> {
   const internalIp = await internalIpV4();
-  // DEBUG: console
-  console.log(`internalIp`, internalIp);
   const localHostUrlWithActualIP = originalUrl.replace(/((?:\d{1,3}\.){3}\d{1,3}|localhost)/, internalIp ?? defaultServerIP);
   return localHostUrlWithActualIP;
 }
