@@ -365,6 +365,22 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
   }
 
+  public async restartAllWorkspaceView(): Promise<void> {
+    const workspaces = await this.workspaceService.getWorkspacesAsList();
+    await Promise.all(
+      workspaces.map(async (workspace) => {
+        await Promise.all(
+          [WindowNames.main, WindowNames.menuBar].map(async (windowName) => {
+            const view = this.viewService.getView(workspace.id, windowName);
+            if (view !== undefined) {
+              await this.viewService.loadUrlForView(workspace, view, windowName);
+            }
+          }),
+        );
+      }),
+    );
+  }
+
   public async clearBrowsingDataWithConfirm(): Promise<void> {
     const availableWindowToShowDialog = this.windowService.get(WindowNames.preferences) ?? this.windowService.get(WindowNames.main);
     if (availableWindowToShowDialog !== undefined) {

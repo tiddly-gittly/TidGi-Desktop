@@ -31,6 +31,11 @@ export interface IViewService {
   getView: (workspaceID: string, windowName: WindowNames) => BrowserView | undefined;
   getViewCount(): Promise<number>;
   getViewCurrentUrl(workspaceID?: string): Promise<string | undefined>;
+  /**
+   * Try catch loadUrl, other wise it will throw unhandled promise rejection Error: ERR_CONNECTION_REFUSED (-102) loading 'http://localhost:5212/
+   * We will set `didFailLoadErrorMessage`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
+   */
+  loadUrlForView(workspace: IWorkspace, view: BrowserView, windowName: WindowNames): Promise<void>;
   realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;
   reloadActiveBrowserView: () => Promise<void>;
   reloadViewsWebContents(workspaceID?: string | undefined): Promise<void>;

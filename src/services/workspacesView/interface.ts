@@ -45,6 +45,10 @@ export interface IWorkspaceViewService {
    * Remove workspace metadata and its view (if it is started and have a browser view)
    */
   removeWorkspaceView(workspaceID: string): Promise<void>;
+  restartAllWorkspaceView(): Promise<void>;
+  /**
+   * Restart nodejs wiki and reload the view
+   */
   restartWorkspaceViewService(workspaceID?: string | undefined): Promise<void>;
   /**
    * If is main workspace, set workspace to active and load the url.
@@ -69,6 +73,7 @@ export const WorkspaceViewServiceIPCDescriptor = {
     printTiddler: ProxyPropertyType.Function,
     realignActiveWorkspace: ProxyPropertyType.Function,
     removeWorkspaceView: ProxyPropertyType.Function,
+    restartAllWorkspaceView: ProxyPropertyType.Function,
     restartWorkspaceViewService: ProxyPropertyType.Function,
     setActiveWorkspaceView: ProxyPropertyType.Function,
     setWorkspaceView: ProxyPropertyType.Function,

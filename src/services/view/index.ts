@@ -38,31 +38,16 @@ export class View implements IViewService {
   }
 
   private initIPCHandlers(): void {
-    /**
-     * try to fix when network changed cause old local ip not accessible, need to generate a new ip and reload the view
-     * Do this for all workspace and all views...
-     */
-    const fixLocalIpNotAccessible = async (): Promise<void> => {
-      const workspaces = await this.workspaceService.getWorkspacesAsList();
-      await Promise.all(
-        workspaces.map(async (workspace) => {
-          await Promise.all(
-            [WindowNames.main, WindowNames.menuBar].map(async (windowName) => {
-              const view = this.getView(workspace.id, windowName);
-              if (view !== undefined) {
-                await this.loadUrlForView(workspace, view, windowName);
-              }
-            }),
-          );
-        }),
-      );
-    };
     ipcMain.handle(ViewChannel.onlineStatusChanged, async (_event, online: boolean) => {
       // try to fix when wifi status changed when wiki startup, causing wiki not loaded properly.
       if (online) {
         await this.reloadViewsWebContentsIfDidFailLoad();
       }
-      await fixLocalIpNotAccessible();
+      /**
+       * fixLocalIpNotAccessible. try to fix when network changed cause old local ip not accessible, need to generate a new ip and reload the view
+       * Do this for all workspace and all views...
+       */
+      await this.workspaceViewService.restartAllWorkspaceView();
     });
   }
 
@@ -330,11 +315,7 @@ export class View implements IViewService {
     await this.loadUrlForView(workspace, view, windowName);
   }
 
-  /**
-   * Try catch loadUrl, other wise it will throw unhandled promise rejection Error: ERR_CONNECTION_REFUSED (-102) loading 'http://localhost:5212/
-   * We will set `didFailLoadErrorMessage`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
-   */
-  private async loadUrlForView(workspace: IWorkspace, view: BrowserView, windowName: WindowNames): Promise<void> {
+  public async loadUrlForView(workspace: IWorkspace, view: BrowserView, windowName: WindowNames): Promise<void> {
     const { rememberLastPageVisited } = await this.preferenceService.getPreferences();
     // fix some case that local ip can't be load
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
