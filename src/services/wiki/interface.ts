@@ -68,7 +68,10 @@ export interface IWikiService {
   stopAllWiki(): Promise<void>;
   stopWiki(homePath: string): Promise<void>;
   updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void>;
-  wikiOperation<OP extends keyof IWikiOperations>(operationType: OP, arguments_: Parameters<IWikiOperations[OP]>): undefined | ReturnType<IWikiOperations[OP]>;
+  wikiOperation<OP extends keyof IWikiOperations>(
+    operationType: OP,
+    ...arguments_: Parameters<IWikiOperations[OP]>
+  ): undefined | ReturnType<IWikiOperations[OP]>;
   /** handle start/restart of wiki/subwiki, will handle wiki sync too */
   wikiStartup(workspace: IWorkspace): Promise<void>;
 }

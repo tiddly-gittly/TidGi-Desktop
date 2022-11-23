@@ -49,7 +49,7 @@ export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IW
     if (mainWikiID === null || idToActive === undefined || tagName === null) {
       return;
     }
-    service.wiki.wikiOperation(WikiChannel.openTiddler, [mainWikiID, tagName]);
+    service.wiki.wikiOperation(WikiChannel.openTiddler, mainWikiID, tagName);
     idToActive = mainWikiID;
   } else {
     await service.wiki.requestWikiSendActionMessage('tm-home');

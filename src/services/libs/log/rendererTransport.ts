@@ -1,11 +1,12 @@
 /* eslint-disable global-require */
 import Transport from 'winston-transport';
 
-import { IWikiOperations, wikiOperations } from '@services/wiki/wikiOperations';
+import { wikiOperations } from '@services/wiki/wikiOperations';
+import { WikiChannel } from '@/constants/channels';
 
 export interface IInfo {
   /** which method or handler function we are logging for */
-  handler: keyof IWikiOperations;
+  handler: WikiChannel.createProgress | WikiChannel.generalNotification | WikiChannel.syncProgress;
   /** workspace id */
   id: string;
   /** the detailed massage for debugging */

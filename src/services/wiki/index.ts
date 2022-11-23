@@ -617,7 +617,7 @@ export class Wiki implements IWikiService {
 
   public wikiOperation<OP extends keyof IWikiOperations>(
     operationType: OP,
-    arguments_: Parameters<IWikiOperations[OP]>,
+    ...arguments_: Parameters<IWikiOperations[OP]>
   ): undefined | ReturnType<IWikiOperations[OP]> {
     if (typeof wikiOperations[operationType] !== 'function') {
       throw new TypeError(`${operationType} gets no useful handler`);
@@ -627,7 +627,9 @@ export class Wiki implements IWikiService {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/restrict-template-expressions
       throw new TypeError(`${(arguments_ as any) ?? ''} (${typeof arguments_}) is not a good argument array for ${operationType}`);
     }
-    return wikiOperations[operationType].apply(undefined, arguments_) as unknown as ReturnType<IWikiOperations[OP]>;
+    // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556) this maybe a bug of ts... try remove this comment after upgrade ts. And the result become void is weird too.
+    const callResult = wikiOperations[operationType](...arguments_);
+    return callResult as unknown as ReturnType<IWikiOperations[OP]>;
   }
 
   public async setWikiLanguage(view: BrowserView, workspaceID: string, tiddlywikiLanguageName: string): Promise<void> {

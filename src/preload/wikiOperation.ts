@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/promise-function-async */
 /* eslint-disable @typescript-eslint/no-inferrable-types */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /**
@@ -8,6 +9,16 @@
  */
 import { ipcRenderer, webFrame } from 'electron';
 import { WikiChannel } from '@/constants/channels';
+
+export const wikiOperations = {
+  [WikiChannel.setState]: async (stateKey: string, content: string) => {
+    await executeTWJavaScriptWhenIdle(
+      `
+      $tw.wiki.addTiddler({ title: '$:/state/${stateKey}', text: '${content}' });
+    `,
+    );
+  },
+};
 
 /**
  * Execute statement with $tw when idle, so there won't be significant lagging.
@@ -87,13 +98,9 @@ ipcRenderer.on(WikiChannel.syncProgress, async (event, message: string) => {
     { onlyWhenVisible: true },
   );
 });
-ipcRenderer.on(WikiChannel.setState, async (event, stateKey: string, content: string) => {
-  await executeTWJavaScriptWhenIdle(
-    `
-    $tw.wiki.addTiddler({ title: '$:/state/${stateKey}', text: '${content}' });
-  `,
-  );
-});
+ipcRenderer.on(WikiChannel.setState, (_event: Electron.IpcRendererEvent, ...rest: Parameters<typeof wikiOperations[WikiChannel.setState]>) =>
+  wikiOperations[WikiChannel.setState](...rest),
+);
 ipcRenderer.on(WikiChannel.generalNotification, async (event, message: string) => {
   await executeTWJavaScriptWhenIdle(`
     $tw.wiki.addTiddler({ title: '$:/state/notification/${WikiChannel.generalNotification}', text: '${message}' });

@@ -111,21 +111,6 @@ export class Preference implements IPreferenceService {
         await requestChangeLanguage(value as string);
         break;
       }
-      case 'titleBar': {
-        /**
-         * Tell wiki titleBar is on/off, so opened-tiddlers-bar plugin can react to it.
-         * This also happened in reactWhenSetActiveWorkspaceView in src/services/workspacesView/index.ts
-         */
-        const activeWorkspaceID = this.workspaceService.getActiveWorkspaceSync()?.id;
-        if (activeWorkspaceID !== undefined) {
-          this.wikiService.wikiOperation(WikiChannel.setState, [
-            activeWorkspaceID,
-            WikiStateKey.titleBarOpened,
-            (value as IPreferences['titleBar']) ? 'yes' : 'no',
-          ]);
-        }
-        break;
-      }
     }
   }
 

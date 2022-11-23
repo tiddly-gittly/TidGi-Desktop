@@ -12,6 +12,7 @@ import { IPossibleWindowMeta } from '@services/windows/WindowProperties';
 import { browserViewMetaData } from './common/browserViewMetaData';
 import './common/authingPostMessage';
 import './view';
+import { syncTidgiStateWhenWikiLoads } from './appState';
 
 contextBridge.exposeInMainWorld('service', service);
 
@@ -31,4 +32,6 @@ if (browserViewMetaData.windowName === 'main') {
   };
   window.addEventListener('online', handleOnlineOffline);
   window.addEventListener('offline', handleOnlineOffline);
+
+  void syncTidgiStateWhenWikiLoads();
 }

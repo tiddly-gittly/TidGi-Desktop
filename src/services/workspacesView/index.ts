@@ -23,7 +23,6 @@ import { SupportedStorageServices } from '@services/types';
 import { WorkspaceFailedToLoadError } from './error';
 import { WikiChannel } from '@/constants/channels';
 import { tiddlywikiLanguagesMap } from '@/constants/languages';
-import { WikiStateKey } from '@/constants/wiki';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
@@ -297,7 +296,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.debug(`${nextWorkspaceID} is a subwiki, set its main wiki ${newWorkspace.mainWikiID} to active instead.`);
       await this.setActiveWorkspaceView(newWorkspace.mainWikiID);
       if (typeof newWorkspace.tagName === 'string') {
-        this.wikiService.wikiOperation(WikiChannel.openTiddler, [newWorkspace.mainWikiID, newWorkspace.tagName]);
+        this.wikiService.wikiOperation(WikiChannel.openTiddler, newWorkspace.mainWikiID, newWorkspace.tagName);
       }
       return;
     }
@@ -324,19 +323,6 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID && oldActiveWorkspace.hibernateWhenUnused) {
       await this.hibernateWorkspaceView(oldActiveWorkspace.id);
     }
-    await this.reactWhenSetActiveWorkspaceView(newWorkspace);
-  }
-
-  /**
-   * Apply things to active workspace's view when workspace become active
-   */
-  private async reactWhenSetActiveWorkspaceView(newWorkspace: IWorkspace): Promise<void> {
-    /**
-     * Tell wiki titleBar is on/off, so opened-tiddlers-bar plugin can react to it.
-     * This also happened in reactWhenPreferencesChanged in src/services/preferences/index.ts
-     */
-    const titleBar = await this.preferenceService.get('titleBar');
-    this.wikiService.wikiOperation(WikiChannel.setState, [newWorkspace.id, WikiStateKey.titleBarOpened, titleBar ? 'yes' : 'no']);
   }
 
   public async removeWorkspaceView(workspaceID: string): Promise<void> {
@@ -373,7 +359,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         return;
       }
       await this.viewService.reloadViewsWebContents(workspaceToRestart.id);
-      this.wikiService.wikiOperation(WikiChannel.generalNotification, [workspaceToRestart.id, i18n.t('ContextMenu.RestartServiceComplete')]);
+      this.wikiService.wikiOperation(WikiChannel.generalNotification, workspaceToRestart.id, i18n.t('ContextMenu.RestartServiceComplete'));
     } else {
       logger.warn(`restartWorkspaceViewService: no workspace ${id ?? 'id undefined'} to restart`);
     }
