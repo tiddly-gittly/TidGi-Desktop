@@ -38,11 +38,31 @@ export class View implements IViewService {
   }
 
   private initIPCHandlers(): void {
-    // https://www.electronjs.org/docs/tutorial/online-offline-events
+    /**
+     * try to fix when network changed cause old local ip not accessible, need to generate a new ip and reload the view
+     * Do this for all workspace and all views...
+     */
+    const fixLocalIpNotAccessible = async (): Promise<void> => {
+      const workspaces = await this.workspaceService.getWorkspacesAsList();
+      await Promise.all(
+        workspaces.map(async (workspace) => {
+          await Promise.all(
+            [WindowNames.main, WindowNames.menuBar].map(async (windowName) => {
+              const view = this.getView(workspace.id, windowName);
+              if (view !== undefined) {
+                await this.loadUrlForView(workspace, view, windowName);
+              }
+            }),
+          );
+        }),
+      );
+    };
     ipcMain.handle(ViewChannel.onlineStatusChanged, async (_event, online: boolean) => {
+      // try to fix when wifi status changed when wiki startup, causing wiki not loaded properly.
       if (online) {
         await this.reloadViewsWebContentsIfDidFailLoad();
       }
+      await fixLocalIpNotAccessible();
     });
   }
 
@@ -248,7 +268,7 @@ export class View implements IViewService {
       return;
     }
     // create a new BrowserView
-    const { rememberLastPageVisited, shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = await this.preferenceService.getPreferences();
+    const { shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = await this.preferenceService.getPreferences();
     // configure session, proxy & ad blocker
     const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
     // prepare configs for start a BrowserView that loads wiki's web content
@@ -301,6 +321,21 @@ export class View implements IViewService {
         height: true,
       });
     }
+    setupViewEventHandlers(view, browserWindow, {
+      shouldPauseNotifications: this.shouldPauseNotifications,
+      workspace,
+      sharedWebPreferences,
+      loadInitialUrlWithCatch: async () => await this.loadUrlForView(workspace, view, windowName),
+    });
+    await this.loadUrlForView(workspace, view, windowName);
+  }
+
+  /**
+   * Try catch loadUrl, other wise it will throw unhandled promise rejection Error: ERR_CONNECTION_REFUSED (-102) loading 'http://localhost:5212/
+   * We will set `didFailLoadErrorMessage`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
+   */
+  private async loadUrlForView(workspace: IWorkspace, view: BrowserView, windowName: WindowNames): Promise<void> {
+    const { rememberLastPageVisited } = await this.preferenceService.getPreferences();
     // fix some case that local ip can't be load
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const urlToReplace = rememberLastPageVisited ? workspace.lastUrl ?? workspace.homeUrl : workspace.homeUrl;
@@ -310,44 +345,31 @@ export class View implements IViewService {
       urlToReplace,
       replacedUrl: portReplacedUrl,
     });
-    /**
-     * Try catch loadUrl, other wise it will throw unhandled promise rejection Error: ERR_CONNECTION_REFUSED (-102) loading 'http://localhost:5212/
-     * We will set `didFailLoadErrorMessage`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
-     */
-    const loadInitialUrlWithCatch = async (): Promise<void> => {
-      try {
-        logger.debug(
-          `loadInitialUrlWithCatch(): view.webContents: ${String(view.webContents)} ${hostReplacedUrl} for windowName ${windowName} for workspace ${
-            workspace.name
-          }`,
-          { stack: new Error('debug error, not a real error').stack },
-        );
-        if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
-          return;
-        }
-        // will set again in view.webContents.on('did-start-loading'), but that one sometimes is too late to block services that wait for `isLoading`
-        await this.workspaceService.updateMetaData(workspace.id, {
-          // eslint-disable-next-line unicorn/no-null
-          didFailLoadErrorMessage: null,
-          isLoading: true,
-        });
-        await view.webContents.loadURL(hostReplacedUrl);
-        logger.debug('loadInitialUrlWithCatch() await loadURL() done');
-        const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
-        view.webContents.on('destroyed', () => {
-          unregisterContextMenu();
-        });
-      } catch (error) {
-        logger.warn(new ViewLoadUrlError(hostReplacedUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
+    try {
+      logger.debug(
+        `loadInitialUrlWithCatch(): view.webContents: ${String(view.webContents)} ${hostReplacedUrl} for windowName ${windowName} for workspace ${
+          workspace.name
+        }`,
+        { stack: new Error('debug error, not a real error').stack },
+      );
+      if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
+        return;
       }
-    };
-    setupViewEventHandlers(view, browserWindow, {
-      shouldPauseNotifications: this.shouldPauseNotifications,
-      workspace,
-      sharedWebPreferences,
-      loadInitialUrlWithCatch,
-    });
-    await loadInitialUrlWithCatch();
+      // will set again in view.webContents.on('did-start-loading'), but that one sometimes is too late to block services that wait for `isLoading`
+      await this.workspaceService.updateMetaData(workspace.id, {
+        // eslint-disable-next-line unicorn/no-null
+        didFailLoadErrorMessage: null,
+        isLoading: true,
+      });
+      await view.webContents.loadURL(hostReplacedUrl);
+      logger.debug('loadInitialUrlWithCatch() await loadURL() done');
+      const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
+      view.webContents.on('destroyed', () => {
+        unregisterContextMenu();
+      });
+    } catch (error) {
+      logger.warn(new ViewLoadUrlError(hostReplacedUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
+    }
   }
 
   public forEachView(functionToRun: (view: BrowserView, workspaceID: string, windowName: WindowNames) => unknown): void {
