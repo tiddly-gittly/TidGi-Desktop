@@ -24,14 +24,21 @@ declare global {
   }
 }
 
-if (browserViewMetaData.windowName === WindowNames.view) {
-  // automatically reload page when wifi/network is connected
-  // https://www.electronjs.org/docs/latest/tutorial/online-offline-events
-  const handleOnlineOffline = (): void => {
-    void ipcRenderer.invoke(ViewChannel.onlineStatusChanged, window.navigator.onLine);
-  };
-  window.addEventListener('online', handleOnlineOffline);
-  window.addEventListener('offline', handleOnlineOffline);
-
-  void syncTidgiStateWhenWikiLoads();
+switch (browserViewMetaData.windowName) {
+  case WindowNames.main: {
+    /**
+     * automatically reload page/wiki when wifi/network is re-connected to a different one, which may cause local ip changed. Or wifi status changed when wiki startup, causing wiki not loaded properly.
+     * @url https://www.electronjs.org/docs/latest/tutorial/online-offline-events
+     */
+    const handleOnlineOffline = (): void => {
+      void ipcRenderer.invoke(ViewChannel.onlineStatusChanged, window.navigator.onLine);
+    };
+    window.addEventListener('online', handleOnlineOffline);
+    window.addEventListener('offline', handleOnlineOffline);
+    break;
+  }
+  case WindowNames.view: {
+    void syncTidgiStateWhenWikiLoads();
+    break;
+  }
 }
