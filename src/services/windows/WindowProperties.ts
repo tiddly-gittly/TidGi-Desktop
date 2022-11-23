@@ -5,12 +5,14 @@ export enum WindowNames {
   addWorkspace = 'addWorkspace',
   auth = 'auth',
   editWorkspace = 'editWorkspace',
+  /** Window with workspace list and new wiki button on left side bar */
   main = 'main',
   menuBar = 'menuBar',
   newWindow = 'newWindow',
   notifications = 'notifications',
   preferences = 'preferences',
   spellcheck = 'spellcheck',
+  /** browserView that loads the wiki webpage */
   view = 'view',
 }
 
