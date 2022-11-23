@@ -57,6 +57,7 @@ export enum WikiChannel {
   setTiddlerTextDone = 'wiki-set-tiddler-text-done',
   /** show message inside tiddlywiki to show git sync progress */
   syncProgress = 'wiki-sync-progress',
+  setState = "setState"
 }
 export enum WikiGitWorkspaceChannel {
   name = 'WikiGitWorkspaceChannel',

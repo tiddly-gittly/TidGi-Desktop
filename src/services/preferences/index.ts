@@ -14,6 +14,10 @@ import { IPreferences, IPreferenceService } from './interface';
 import { defaultPreferences } from './defaultPreferences';
 import { lazyInject } from '@services/container';
 import { requestChangeLanguage } from '@services/libs/i18n/requestChangeLanguage';
+import { IWikiService } from '@services/wiki/interface';
+import { IWorkspaceService } from '@services/workspaces/interface';
+import { WikiChannel } from '@/constants/channels';
+import { WikiStateKey } from '@/constants/wiki';
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 const debouncedSetPreferenceFile = debounce(async (newPreferences: IPreferences) => await settings.set(`preferences`, { ...newPreferences } as any), 500);
@@ -22,6 +26,8 @@ const debouncedSetPreferenceFile = debounce(async (newPreferences: IPreferences)
 export class Preference implements IPreferenceService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.NotificationService) private readonly notificationService!: INotificationService;
+  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
+  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
 
   private cachedPreferences: IPreferences;
   public preference$: BehaviorSubject<IPreferences>;
@@ -96,11 +102,30 @@ export class Preference implements IPreferenceService {
     if (key.startsWith('pauseNotifications')) {
       await this.notificationService.updatePauseNotificationsInfo();
     }
-    if (key === 'themeSource') {
-      nativeTheme.themeSource = value as IPreferences['themeSource'];
-    }
-    if (key === 'language') {
-      await requestChangeLanguage(value as string);
+    switch (key) {
+      case 'themeSource': {
+        nativeTheme.themeSource = value as IPreferences['themeSource'];
+        break;
+      }
+      case 'language': {
+        await requestChangeLanguage(value as string);
+        break;
+      }
+      case 'titleBar': {
+        /**
+         * Tell wiki titleBar is on/off, so opened-tiddlers-bar plugin can react to it.
+         * This also happened in reactWhenSetActiveWorkspaceView in src/services/workspacesView/index.ts
+         */
+        const activeWorkspaceID = this.workspaceService.getActiveWorkspaceSync()?.id;
+        if (activeWorkspaceID !== undefined) {
+          this.wikiService.wikiOperation(WikiChannel.setState, [
+            activeWorkspaceID,
+            WikiStateKey.titleBarOpened,
+            (value as IPreferences['titleBar']) ? 'yes' : 'no',
+          ]);
+        }
+        break;
+      }
     }
   }
 

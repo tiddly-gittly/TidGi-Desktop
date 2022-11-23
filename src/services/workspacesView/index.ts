@@ -23,6 +23,7 @@ import { SupportedStorageServices } from '@services/types';
 import { WorkspaceFailedToLoadError } from './error';
 import { WikiChannel } from '@/constants/channels';
 import { tiddlywikiLanguagesMap } from '@/constants/languages';
+import { WikiStateKey } from '@/constants/wiki';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
@@ -323,6 +324,19 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (oldActiveWorkspace !== undefined && oldActiveWorkspace.id !== nextWorkspaceID && oldActiveWorkspace.hibernateWhenUnused) {
       await this.hibernateWorkspaceView(oldActiveWorkspace.id);
     }
+    await this.reactWhenSetActiveWorkspaceView(newWorkspace);
+  }
+
+  /**
+   * Apply things to active workspace's view when workspace become active
+   */
+  private async reactWhenSetActiveWorkspaceView(newWorkspace: IWorkspace): Promise<void> {
+    /**
+     * Tell wiki titleBar is on/off, so opened-tiddlers-bar plugin can react to it.
+     * This also happened in reactWhenPreferencesChanged in src/services/preferences/index.ts
+     */
+    const titleBar = await this.preferenceService.get('titleBar');
+    this.wikiService.wikiOperation(WikiChannel.setState, [newWorkspace.id, WikiStateKey.titleBarOpened, titleBar ? 'yes' : 'no']);
   }
 
   public async removeWorkspaceView(workspaceID: string): Promise<void> {

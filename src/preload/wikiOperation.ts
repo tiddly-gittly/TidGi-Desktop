@@ -3,10 +3,11 @@
 /**
  * Call tiddlywiki api from electron
  * This file should be required by view.ts preload script to work
+ *
+ * You can use wrapped method in `services/wiki/index.ts` 's `wikiOperation()` instead. Available operations are registered in `src/services/wiki/wikiOperations.ts`
  */
 import { ipcRenderer, webFrame } from 'electron';
 import { WikiChannel } from '@/constants/channels';
-import { native } from './common/services';
 
 /**
  * Execute statement with $tw when idle, so there won't be significant lagging.
@@ -84,6 +85,13 @@ ipcRenderer.on(WikiChannel.syncProgress, async (event, message: string) => {
     // requestIdleCallback seem to only execute when app page is visible. So there will be tons of scheduled sync when user open the app, unless we set `onlyWhenVisible: true`
     // other generalNotification should be stacked
     { onlyWhenVisible: true },
+  );
+});
+ipcRenderer.on(WikiChannel.setState, async (event, stateKey: string, content: string) => {
+  await executeTWJavaScriptWhenIdle(
+    `
+    $tw.wiki.addTiddler({ title: '$:/state/${stateKey}', text: '${content}' });
+  `,
   );
 });
 ipcRenderer.on(WikiChannel.generalNotification, async (event, message: string) => {
