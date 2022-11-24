@@ -88,11 +88,9 @@ Click "OK" ↓
 
 ## Related Posts About TidGi
 
-No English posts yet...
+No English posts yet...Please help sharing!
 
 ## About TidGi-Desktop
-
----
 
 TidGi is a cross-platform Note Taking & GTD & Fragment Knowledge Management desktop app powered by [nodejs-TiddlyWiki](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs), it ship with a lot of tiddlywiki plugins from the [TiddlyWiki community](https://groups.google.com/forum/#!forum/tiddlywiki).
 
@@ -138,9 +136,7 @@ You can choose storage provider for your wiki workspace:
 
 ## Differences
 
-Differences from [TiddlyDesktop](https://github.com/Jermolene/TiddlyDesktop)? 与 [TiddlyDesktop](https://github.com/Jermolene/TiddlyDesktop) 的差别？
-
----
+### Differences from [TiddlyDesktop](https://github.com/Jermolene/TiddlyDesktop)?
 
 1. NodeJS version of TiddlyWiki have seamless auto-save experience, which is taking the advantage of SyncAdaptor instead of Saver, TG have better support for NodeJS wiki
 2. Using NodeJS wiki, We can have separated tiddler files, which can be modified by hand, or by other programs (e.g. VSCode with [VSCode-TW5-Syntax](https://github.com/joshuafontany/VSCode-TW5-Syntax))
@@ -148,8 +144,6 @@ Differences from [TiddlyDesktop](https://github.com/Jermolene/TiddlyDesktop)? �
 4. With the Electron technology, we can use `fs`, `git` and many other nodejs things within TiddlyWiki, which greatly extend the hackability, which is the reason why I choose TiddlyWiki as my daily KM tool
 
 ## Why Github?
-
----
 
 Because Github is one of the best free civil level [BaaS](https://www.alibabacloud.com/blog/backend-as-a-service-baas-for-efficient-software-development_519851):
 
