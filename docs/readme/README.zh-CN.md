@@ -34,7 +34,11 @@
 
 ## 产品截图及试用
 
+### 试用
+
 [在线网页版博客 Demo](https://tiddly-gittly.github.io/Tiddlywiki-NodeJS-Github-Template/) [太微官网](https://tiddlywiki.com/)
+
+### 截图
 
 ![Screenshot of main-window](../images/main-window-hide-bar.png)
 

@@ -34,8 +34,12 @@
 
 ## ShowCases And Demo
 
-- [Demo Online Web Blog Page Demo](https://tiddly-gittly.github.io/Tiddlywiki-NodeJS-Github-Template/)
+### Demo
+
+- [Demo Online Web Blog Page](https://tiddly-gittly.github.io/Tiddlywiki-NodeJS-Github-Template/)
 - [TiddlyWiki Official Website](https://tiddlywiki.com/)
+
+### Screenshot
 
 ![Screenshot of main-window](./docs/images/main-window-hide-bar.png)
 
