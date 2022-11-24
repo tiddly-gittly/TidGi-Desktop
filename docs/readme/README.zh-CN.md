@@ -36,7 +36,7 @@
 
 [在线网页版博客 Demo](https://tiddly-gittly.github.io/Tiddlywiki-NodeJS-Github-Template/) [太微官网](https://tiddlywiki.com/)
 
-![Screenshot of main-window](./docs/images/main-window-hide-bar.png)
+![Screenshot of main-window](../images/main-window-hide-bar.png)
 
 <details>
 
