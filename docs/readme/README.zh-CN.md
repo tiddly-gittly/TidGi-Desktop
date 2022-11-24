@@ -36,7 +36,8 @@
 
 ### 试用
 
-[在线网页版博客 Demo](https://tiddly-gittly.github.io/Tiddlywiki-NodeJS-Github-Template/) [太微官网](https://tiddlywiki.com/)
+- [在线网页版博客 Demo](https://tiddly-gittly.github.io/Tiddlywiki-NodeJS-Github-Template/)
+- [太微官网](https://tiddlywiki.com/)
 
 ### 截图
 
