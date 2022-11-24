@@ -42,19 +42,19 @@
 
 |                     加载 NodeJS 版维基                      |
 | :---------------------------------------------------------: |
-| ![Screenshot of main-window](./docs/images/main-window.png) |
+| ![Screenshot of main-window](../image/main-window.png) |
 
 |                          新建本地维基                           |                            下载云端维基                             |
 | :-------------------------------------------------------------: | :-----------------------------------------------------------------: |
-| ![Screenshot of add-workspace](./docs/images/add-workspace.png) | ![Screenshot of clone-workspace](./docs/images/clone-workspace.png) |
+| ![Screenshot of add-workspace](../image/add-workspace.png) | ![Screenshot of clone-workspace](../image/clone-workspace.png) |
 
 |                                                                 多语言翻译和设置界面                                                                 |
 | :--------------------------------------------------------------------------------------------------------------------------------------------------: |
-|                                              ![Screenshot of preference](./docs/images/preference.png)                                               |
+|                                              ![Screenshot of preference](../image/preference.png)                                               |
 |                                                                    交互式代码执行                                                                    |
 | ![Screen recording of zx-script in tiddlywiki](https://user-images.githubusercontent.com/3746270/133831500-ae91164c-7948-4de4-9a81-7017ed3b65c9.gif) |
 |                                                                      社区插件源                                                                      |
-|                                      ![Screenshot of add-workspace](./docs/images/community-plugin-library.png)                                      |
+|                                      ![Screenshot of add-workspace](../image/community-plugin-library.png)                                      |
 
 </details>
 
