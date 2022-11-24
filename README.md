@@ -1,73 +1,70 @@
 <div align="center">
-<h1> TidGi 太记 </h1>
+<h1> TidGi </h1>
+<p> Customizable personal knowledge-base with git as backup manager and blogging platform. </p>
 
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
 [![GitHub Actions Build Status](https://github.com/tiddly-gittly/TidGi-Desktop/actions/workflows/release.yml/badge.svg)](https://github.com/tiddly-gittly/TidGi-Desktop/actions)
 [![Lin Onetwo!](https://img.shields.io/github/followers/linonetwo)](https://github.com/linonetwo)
 
-</div
+</div>
 
 <hr>
 
 # TOC
 
+[中文](docs/readme/README_zh.md)
+
 <!-- toc -->
 
-- [ShowCases 产品截图](#showcases-产品截图)
-- [相关介绍](#%E7%9B%B8%E5%85%B3%E4%BB%8B%E7%BB%8D)
-- [About TidGi-Desktop 关于「太记-桌面版」](#about-tidgi-desktop-%E5%85%B3%E4%BA%8E%E5%A4%AA%E8%AE%B0-%E6%A1%8C%E9%9D%A2%E7%89%88)
-- [Download 下载](#download-%E4%B8%8B%E8%BD%BD)
-- [Mobile App 移动端应用](#mobile-app-移动端应用)
-- [Data Privacy Protection 数据隐私保护](#data-privacy-protection-%E6%95%B0%E6%8D%AE%E9%9A%90%E7%A7%81%E4%BF%9D%E6%8A%A4)
+- [ShowCases And Demo](#showcases-and-demo)
+- [Related Posts About TidGi](#related-posts-about-tidgi)
+- [About TidGi-Desktop](#about-tidgi-desktop)
+- [Download](#download)
+- [Mobile App](#mobile-app)
+- [Data Privacy Protection](#data-privacy-protection)
 - [Differences](#differences)
 - [Why Github?](#why-github)
 - [Development](#development)
-  * [Publish](#publish)
-  * [Developer FAQ And Code Tour](#developer-faq-and-code-tour)
-- [Credits 鸣谢](#credits-鸣谢)
-  * [Stargazers over time 点个星星⭐️吧](#stargazers-over-time-点个星星%EF%B8%8F吧)
+- [Credits](#credits)
+  - [Stargazers over time](#stargazers-over-time)
 
 <!-- tocstop -->
 
 ---
 
-**TidGi** - Customizable personal knowledge-base with git as backup manager and blogging platform. （Used to be TiddlyGit)
+## ShowCases And Demo
 
-**太记** - 可定制性极强的个人知识管理系统，使用 Git 作为备份管理器和博客平台。
+- [Demo Online Web Blog Page Demo](https://tiddly-gittly.github.io/Tiddlywiki-NodeJS-Github-Template/)
+- [TiddlyWiki Official Website](https://tiddlywiki.com/)
 
-
-## ShowCases 产品截图
+![Screenshot of main-window](./docs/images/main-window-hide-bar.png)
 
 <details>
 
-|             Load NodeJS Wiki 加载 NodeJS 版维基             |
+|                      Load NodeJS Wiki                       |
 | :---------------------------------------------------------: |
 | ![Screenshot of main-window](./docs/images/main-window.png) |
 
-|                 Create Local Wiki 新建本地维基                  |                   Clone Online Wiki 下载云端维基                    |
+|                        Create Local Wiki                        |                          Clone Online Wiki                          |
 | :-------------------------------------------------------------: | :-----------------------------------------------------------------: |
 | ![Screenshot of add-workspace](./docs/images/add-workspace.png) | ![Screenshot of clone-workspace](./docs/images/clone-workspace.png) |
 
-|                                                    Translation, Preferences 多语言翻译和设置界面                                                     |
+|                                                               Translation, Preferences                                                               |
 | :--------------------------------------------------------------------------------------------------------------------------------------------------: |
 |                                              ![Screenshot of preference](./docs/images/preference.png)                                               |
-|                                                           Interactive code 交互式代码执行                                                            |
+|                                                                   Interactive code                                                                   |
 | ![Screen recording of zx-script in tiddlywiki](https://user-images.githubusercontent.com/3746270/133831500-ae91164c-7948-4de4-9a81-7017ed3b65c9.gif) |
-|                                                         Community Plugin Library 社区插件源                                                          |
+|                                                               Community Plugin Library                                                               |
 |                                      ![Screenshot of add-workspace](./docs/images/community-plugin-library.png)                                      |
 
 </details>
 
 <details>
-<summary>For mac users, since I haven't buy Apple developer key yet, so you have to entrust App to open it, click here to expand details.
-
-Mac 使用者点击这里展开操作方法，我费劲办法也申请不到苹果开发者账号，所以你得手动信任这个应用 ◀</summary>
+<summary>For mac users, since I haven't buy Apple developer key yet, so you have to entrust App to open it, click here to expand details.◀</summary>
 
 First of all, you need to drag this App into Applications folder! Otherwise there will be an error.
 
-首先你得把应用拖入「应用程序」文件夹才能使用！不然会弹一个报错框。
-
-Click "Cancel" 点击「取消」 ↓
+Click "Cancel" ↓
 
 ![step00001](https://user-images.githubusercontent.com/3746270/87882506-eb1ddd80-ca32-11ea-942f-1f530767db02.png)
 
@@ -75,23 +72,21 @@ Click "Cancel" 点击「取消」 ↓
 
 ![step00003](https://user-images.githubusercontent.com/3746270/87882510-ed803780-ca32-11ea-8996-0f3c7060131a.png)
 
-Click "Open" 点击「打开」 ↓
+Click "Open" ↓
 
 ![step00004](https://user-images.githubusercontent.com/3746270/87882512-ee18ce00-ca32-11ea-8225-045ffc0a8b86.png)
 
-Click "OK" 点击「允许」 ↓
+Click "OK" ↓
 
 ![step00005](https://user-images.githubusercontent.com/3746270/87882514-eeb16480-ca32-11ea-9afd-cae6f2bea2db.png)
 
 </details>
 
-## 相关介绍
+## Related Posts About TidGi
 
-[用 TiddlyWiki 替代 Notion 和 EverNote 作为个人知识管理系统(Chinese)](https://zhuanlan.zhihu.com/p/140473235)
+No English posts yet...
 
-[墨屉-先进的间隔重复和渐进阅读解决方案](https://live.bilibili.com/23806126)
-
-## About TidGi-Desktop 关于「太记-桌面版」
+## About TidGi-Desktop
 
 ---
 
@@ -99,60 +94,43 @@ TidGi is a cross-platform Note Taking & GTD & Fragment Knowledge Management desk
 
 You can call it [TG-Note](https://github.com/tiddly-gittly/TGNote), it is totally free and you own all your data. Code by the people, build for the people.
 
----
+It used to named TiddlyGit, means TiddlyWiki with easy Git backup, short for TidGi now.
 
-「太记」是一个跨平台的笔记软件、时间和任务管理工具、碎片化知识管理工具，此乃其桌面版。「太记」基于强大的 [NodeJS 版「太微（TiddlyWiki）」](https://github.com/Jermolene/TiddlyWiki5#installing-tiddlywiki-on-nodejs) 构建，并带上了大量来自[太微社区（TiddlyWiki community）](https://groups.google.com/forum/#!forum/tiddlywiki)的插件。
-
-「太记」来自 TiddlyWiki 的译名「太微」，以及曾用名 TiddlyGit 首字母的谐音（后来我们又根据中文谐音把英文名改成了 TidGi）。当然你也可以直接叫它 [TGNote](https://github.com/tiddly-gittly/TGNote)，镰锤 ☭ 笔记。
-
-为什么把 TiddlyWiki 翻译成「太微」？因为受到 @pimgeek 的启发：TiddlyWiki 可以干很多细致轻量的工作，但也从不限制用法，可以无限组合叠加。故以其首字母音译为「太微」，TiddlyWiki 可以称为「太微笔记」「太微万能抽屉」「太微卡片盒」……
-
-> 太微垣，三垣之一，按《步天歌》，太微垣為三垣的上垣。
-> 太微垣又名天庭，是政府的意思，也是貴族及大臣們居住的地方。
-
-## Download 下载 
+## Download
 
 <a href="https://repology.org/project/tidgi/versions">
-    <img src="https://repology.org/badge/vertical-allrepos/tidgi.svg" alt="Packaging status">
+  <img src="https://repology.org/badge/vertical-allrepos/tidgi.svg" alt="Packaging status">
 </a>
 
-> For Windows MacOS normal user, Win和Mac的普通用户直接下载App
+> For Windows MacOS normal user
 
-|                                                                  [最新版下载按钮 Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                   |
+|                                                                          [Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                          |
 | :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
- 
- > For arch user
+
+> For arch user
 
 ```bash
 yay tidgi
 ```
 
-> For MacOS CLI user Mac命令行用户
+> For MacOS CLI user
 
 ```bash
 brew install TidGi # Not tested
 ```
 
-## Mobile App 移动端应用
+## Mobile App
 
 See [Tiddloid](https://github.com/donmor/Tiddloid) for Android App developed by donmor.
 
-## Data Privacy Protection 数据隐私保护
+## Data Privacy Protection
 
 You can choose storage provider for your wiki workspace:
 
 1. "Github" as unlimited storage and gh-pages blogging platform.
 1. "Local" will create a local git repo for you, you can use [GithubDesktop](https://github.com/desktop/desktop) to sync manually.
 1. "Gitlab" and "Gitee" is on the way
-
----
-
-你可以选择你的 WIKI 工作区的存储服务提供商：
-
-1. 「Github」是一个无限存储空间、可以用 GH-Pages 部署博客的平台。
-1. 「本地」模式会创建一个本地仓库来备份你的 WIKI，你可以用 [GithubDesktop](https://github.com/desktop/desktop) 来手动同步内容到云端。
-1. 「Gitlab」和「码云」还待支持，不过架子已经搭好了。
 
 ## Differences
 
@@ -165,13 +143,6 @@ Differences from [TiddlyDesktop](https://github.com/Jermolene/TiddlyDesktop)? �
 1. Though TiddlyDesktop can also load wiki folder generated by nodejs-TiddlyWiki, TG can backup that folder to the Github easily
 1. With the Electron technology, we can use `fs`, `git` and many other nodejs things within TiddlyWiki, which greatly extend the hackability, which is the reason why I choose TiddlyWiki as my daily KM tool
 
----
-
-1. 太微的 NodeJS 版本有无缝的自动保存体验，这是利用 SyncAdaptor 技术（而不是 Saver ）带来的的优势，太记对 NodeJS wiki 有更好的支持，而 TD 主要支持 HTML 版单文件 WIKI，各有优势。
-1. 使用 NodeJS wiki 时，我们可以有分离的 tiddler 文件，这些文件可以手工修改，也可以由其他程序修改（例如装了 [VSCode-TW5-Syntax](https://github.com/joshuafontany/VSCode-TW5-Syntax) 的 VSCode)，而且方便细粒度备份回滚
-1. 尽管 TiddlyDesktop 也可以加载由 nodejs 版太微生成的 wiki 文件夹，但太记还可以轻松地将该文件夹自动备份到 Github 上。
-1. 通过使用 Electron 技术，我们可以在太微中使用 `fs` 、 `git` 和许多其他 nodejs 的扩展接口，这大大扩展了插件可使用的能力。这种可扩展性也是我选择太微作为我日常知识管理工具的原因，太记进一步强化了它。
-
 ## Why Github?
 
 ---
@@ -183,84 +154,17 @@ Because Github is one of the best free civil level [BaaS](https://www.alibabaclo
 1. It has free [CI](https://github.com/features/actions) to automatically deploy our TiddlyWiki blog
 1. It provides unlimited repository, public and private, which enables us to store private content into our TiddlyWiki
 
----
-
-因为 Github 是最好的免费民用级[存储即服务（BaaS）](https://www.alibabacloud.com/blog/backend-as-a-service-baas-for-efficient-software-development_519851)之一。
-
-1. 它的存储基本上是免费的，允许我们存储无限的图像和 PDF 文件，这些文件可以有永久的 URI 供公众下载。
-1. 它有 GraphQL API，允许我们以程序化的方式更新我们的 wiki。
-1. 它有免费的[CI](https://github.com/features/actions)来自动部署我们的太微博客。
-1. 它提供了无限数量的代码仓库，分为公共的和私有的，这使我们能够将私有内容存储到我们的太微中仅在本地查看，然后只把公开部分部署成博客。
-
 ## Development
 
-Development plan of TidGi-Desktop is listed in these [Kanban](https://github.com/tiddly-gittly/TidGi-Desktop/projects).
+Read [Dev doc](docs/Development.md) for details.
 
-Explanation of our code can be found in the [Wiki](https://github.com/tiddly-gittly/TidGi-Desktop/wiki).
-
-<details>
-
-<summary>To contribute, fork this repo, then clone it and setup development environment</summary>
-
-```shell
-# First, clone the project:
-git clone https://github.com/YOUR_ACCOUNT/TidGi-Desktop.git
-cd TidGi-Desktop
-# Or maybe you are just using Github Desktop
-# or GitKraken to clone this repo,
-# and open it in your favorite code editor and terminal app
-
-# switch to the nodejs version same as electron used version, other wise you may get
-
-# Error: The module '/Users/linonetwo/Desktop/repo/TidGi-Desktop/node_modules/opencv4nodejs-prebuilt/build/Release/opencv4nodejs.node'
-
-# was compiled against a different Node.js version using
-
-# NODE_MODULE_VERSION 88. This version of Node.js requires
-
-# NODE_MODULE_VERSION 93. Please try re-compiling or re-installing
-
-# the module (for instance, using `npm rebuild` or `npm install`).
-
-# See https://github.com/justadudewhohacks/opencv4nodejs/issues/401#issuecomment-463434713 if you still have problem rebuild opencv for @nut-tree/nut-js
-
-nvm use
-
-# install the dependencies
-
-npm i
-
-# Run development mode
-
-# You can see webpack error messages in http://localhost:9000/
-
-npm start
-
-# Build for production
-
-npm run package
-```
-
-### Publish
-
-Add a tag like `vx.x.x` to a commit, and push it to the origin, Github will start building App for all three platforms.
-
-After Github Action completed, you can open Releases to see the Draft release created by Github, add some comment and publish it.
-
-</details>
-
-### Developer FAQ And Code Tour
-
-[Developer FAQ and code explained](docs/Development.md)
-
-## Credits 鸣谢
+## Credits
 
 The desktop app shell is based on [https://github.com/atomery/singlebox](atomery/singlebox) and [atomery/webcatalog](https://github.com/atomery/webcatalog), they provide lots of utils around website-generated-app, much powerful than generating app from website simply using Chrome. Also the independent developer @quanglam2807 behind these great tools helps me a lot when I develop TidGi.
 
 Current Icon is download from [iconsdb](https://www.iconsdb.com/custom-color/github-11-icon.html) under Creative Commons Attribution-NoDerivs 3.0 , if you are a designer, please feel free to contribute your ICON if you have a better idea.
- 
 
-### Stargazers over time 点个星星⭐️吧
+### Stargazers over time
 
 Please give a star if you like it!
 
