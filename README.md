@@ -12,7 +12,7 @@
 
 # TOC
 
-[中文](docs/readme/README_zh.md)
+🇬🇧 English | <a href="https://github.com/tiddly-gittly/TidGi-Desktop/blob/master/docs/readme/README.zh-CN.md">🇨🇳 简体中文</a>
 
 <!-- toc -->
 
@@ -41,20 +41,20 @@
 
 <details>
 
-|                      Load NodeJS Wiki                       |
-| :---------------------------------------------------------: |
+|                     Load NodeJS Wiki                     |
+| :-------------------------------------------------------: |
 | ![Screenshot of main-window](./docs/images/main-window.png) |
 
-|                        Create Local Wiki                        |                          Clone Online Wiki                          |
-| :-------------------------------------------------------------: | :-----------------------------------------------------------------: |
+|                       Create Local Wiki                       |                         Clone Online Wiki                         |
+| :-----------------------------------------------------------: | :---------------------------------------------------------------: |
 | ![Screenshot of add-workspace](./docs/images/add-workspace.png) | ![Screenshot of clone-workspace](./docs/images/clone-workspace.png) |
 
-|                                                               Translation, Preferences                                                               |
-| :--------------------------------------------------------------------------------------------------------------------------------------------------: |
-|                                              ![Screenshot of preference](./docs/images/preference.png)                                               |
-|                                                                   Interactive code                                                                   |
+|                                                              Translation, Preferences                                                              |
+| :------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                                              ![Screenshot of preference](./docs/images/preference.png)                                              |
+|                                                                  Interactive code                                                                  |
 | ![Screen recording of zx-script in tiddlywiki](https://user-images.githubusercontent.com/3746270/133831500-ae91164c-7948-4de4-9a81-7017ed3b65c9.gif) |
-|                                                               Community Plugin Library                                                               |
+|                                                              Community Plugin Library                                                              |
 |                                      ![Screenshot of add-workspace](./docs/images/community-plugin-library.png)                                      |
 
 </details>
@@ -104,8 +104,8 @@ It used to named TiddlyGit, means TiddlyWiki with easy Git backup, short for Tid
 
 > For Windows MacOS normal user
 
-|                                                                          [Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                          |
-| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                                                                         [Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                         |
+| :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
 
 > For arch user
@@ -129,8 +129,8 @@ See [Tiddloid](https://github.com/donmor/Tiddloid) for Android App developed by 
 You can choose storage provider for your wiki workspace:
 
 1. "Github" as unlimited storage and gh-pages blogging platform.
-1. "Local" will create a local git repo for you, you can use [GithubDesktop](https://github.com/desktop/desktop) to sync manually.
-1. "Gitlab" and "Gitee" is on the way
+2. "Local" will create a local git repo for you, you can use [GithubDesktop](https://github.com/desktop/desktop) to sync manually.
+3. "Gitlab" and "Gitee" is on the way
 
 ## Differences
 
@@ -139,9 +139,9 @@ Differences from [TiddlyDesktop](https://github.com/Jermolene/TiddlyDesktop)? �
 ---
 
 1. NodeJS version of TiddlyWiki have seamless auto-save experience, which is taking the advantage of SyncAdaptor instead of Saver, TG have better support for NodeJS wiki
-1. Using NodeJS wiki, We can have separated tiddler files, which can be modified by hand, or by other programs (e.g. VSCode with [VSCode-TW5-Syntax](https://github.com/joshuafontany/VSCode-TW5-Syntax))
-1. Though TiddlyDesktop can also load wiki folder generated by nodejs-TiddlyWiki, TG can backup that folder to the Github easily
-1. With the Electron technology, we can use `fs`, `git` and many other nodejs things within TiddlyWiki, which greatly extend the hackability, which is the reason why I choose TiddlyWiki as my daily KM tool
+2. Using NodeJS wiki, We can have separated tiddler files, which can be modified by hand, or by other programs (e.g. VSCode with [VSCode-TW5-Syntax](https://github.com/joshuafontany/VSCode-TW5-Syntax))
+3. Though TiddlyDesktop can also load wiki folder generated by nodejs-TiddlyWiki, TG can backup that folder to the Github easily
+4. With the Electron technology, we can use `fs`, `git` and many other nodejs things within TiddlyWiki, which greatly extend the hackability, which is the reason why I choose TiddlyWiki as my daily KM tool
 
 ## Why Github?
 
@@ -150,9 +150,9 @@ Differences from [TiddlyDesktop](https://github.com/Jermolene/TiddlyDesktop)? �
 Because Github is one of the best free civil level [BaaS](https://www.alibabacloud.com/blog/backend-as-a-service-baas-for-efficient-software-development_519851):
 
 1. Its storage is basically free, allow us to store unlimited images and PDF files, which can have permanent URIs for public download
-1. It has GraphQL API that allow us programmatically update our wiki
-1. It has free [CI](https://github.com/features/actions) to automatically deploy our TiddlyWiki blog
-1. It provides unlimited repository, public and private, which enables us to store private content into our TiddlyWiki
+2. It has GraphQL API that allow us programmatically update our wiki
+3. It has free [CI](https://github.com/features/actions) to automatically deploy our TiddlyWiki blog
+4. It provides unlimited repository, public and private, which enables us to store private content into our TiddlyWiki
 
 ## Development
 

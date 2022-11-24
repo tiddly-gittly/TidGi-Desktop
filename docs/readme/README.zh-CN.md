@@ -12,7 +12,7 @@
 
 # TOC
 
-[English](../../README.md)
+<a href="https://github.com/tiddly-gittly/TidGi-Desktop/">🇬🇧 English</a> | 🇨🇳 简体中文
 
 <!-- toc -->
 
@@ -143,7 +143,7 @@ See [Tiddloid](https://github.com/donmor/Tiddloid) for Android App developed by 
 1. 尽管 TiddlyDesktop 也可以加载由 nodejs 版太微生成的 wiki 文件夹，但太记还可以轻松地将该文件夹自动备份到 Github 上。
 1. 通过使用 Electron 技术，我们可以在太微中使用 `fs` 、 `git` 和许多其他 nodejs 的扩展接口，这大大扩展了插件可使用的能力。这种可扩展性也是我选择太微作为我日常知识管理工具的原因，太记进一步强化了它。
 
-## 为什么使用Github存储
+## 为什么使用 Github 存储
 
 因为 Github 是最好的免费民用级[存储即服务（BaaS）](https://www.alibabacloud.com/blog/backend-as-a-service-baas-for-efficient-software-development_519851)之一。
 
@@ -162,7 +162,7 @@ The desktop app shell is based on [https://github.com/atomery/singlebox](atomery
 
 Current Icon is download from [iconsdb](https://www.iconsdb.com/custom-color/github-11-icon.html) under Creative Commons Attribution-NoDerivs 3.0 , if you are a designer, please feel free to contribute your ICON if you have a better idea.
 
-### 点个星星⭐️吧
+### 点个星星 ⭐️ 吧
 
 Please give a star if you like it!
 
