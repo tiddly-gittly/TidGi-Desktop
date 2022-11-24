@@ -51,7 +51,7 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     height: undefined,
   },
   [WindowNames.addWorkspace]: {
-    width: 600,
+    width: 690,
     height: 800,
   },
   [WindowNames.editWorkspace]: {
