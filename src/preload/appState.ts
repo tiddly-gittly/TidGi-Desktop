@@ -11,6 +11,9 @@ export async function syncTidgiStateWhenWikiLoads(): Promise<void> {
   /**
    * Tell wiki titleBar is on/off, so opened-tiddlers-bar plugin can react to it.
    */
-  const titleBar = await preference.get('titleBar');
-  await wikiOperations[WikiChannel.setState](WikiStateKey.titleBarOpened, titleBar ? 'yes' : 'no');
+  const [titleBar, sidebar] = await Promise.all([preference.get('titleBar'), preference.get('sidebar')]);
+  await Promise.all([
+    wikiOperations[WikiChannel.setState](WikiStateKey.titleBarOpened, titleBar ? 'yes' : 'no'),
+    wikiOperations[WikiChannel.setState](WikiStateKey.sideBarOpened, sidebar ? 'yes' : 'no'),
+  ]);
 }

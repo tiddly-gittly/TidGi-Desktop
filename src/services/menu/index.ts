@@ -421,7 +421,7 @@ export class MenuService implements IMenuService {
       if (activeWorkspace !== undefined) {
         menu.append(
           new MenuItem({
-            label: i18n.t('Menu.Workspaces'),
+            label: i18n.t('Menu.CurrentWorkspace'),
             submenu: await getWorkspaceMenuTemplate(activeWorkspace, i18n.t.bind(i18n), services),
           }),
         );
