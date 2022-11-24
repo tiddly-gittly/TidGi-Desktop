@@ -16,4 +16,10 @@ export async function syncTidgiStateWhenWikiLoads(): Promise<void> {
     wikiOperations[WikiChannel.setState](WikiStateKey.titleBarOpened, titleBar ? 'yes' : 'no'),
     wikiOperations[WikiChannel.setState](WikiStateKey.sideBarOpened, sidebar ? 'yes' : 'no'),
   ]);
+  // listen on changes that needs immediate update
+  preference.preference$.subscribe({
+    next: async ({ sidebar }) => {
+      await wikiOperations[WikiChannel.setState](WikiStateKey.sideBarOpened, sidebar ? 'yes' : 'no');
+    },
+  });
 }
