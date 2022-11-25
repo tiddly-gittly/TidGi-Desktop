@@ -273,7 +273,7 @@
     "DefaultUserName": "默认编辑者名",
     "Token": "Git身份凭证",
     "TokenDescription": "用于向Git服务器验证身份并同步内容的凭证，可通过登录在线存储服务（如Github）来取得，也可以手动获取「Personal Access Token」后填到这里。",
-    "Sync": "同步",
+    "Sync": "同步和备份",
     "SyncInterval": "同步/备份间隔",
     "SyncIntervalDescription": "每经过这段长度的时间后，就会自动开始备份到 Github，如果工作区是本地工作区则会创建本地备份（重启后生效）",
     "General": "界面和交互",

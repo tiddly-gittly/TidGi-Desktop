@@ -234,7 +234,7 @@
   "Preference": {
     "ClearBrowsingData": "Clear Browsing Data (git isn't affected)",
     "General": "UI & Interact",
-    "Sync": "Sync",
+    "Sync": "Sync & Backup",
     "SyncInterval": "Sync/Backup Interval",
     "SyncIntervalDescription": "After this length of time, it will automatically start backing up to Github, if is a local workspace it will create a local git backup (take effect after restart app)",
     "DefaultUserName": "User Name",
