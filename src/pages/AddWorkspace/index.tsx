@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import styled, { css } from 'styled-components';
+import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet';
 import { Accordion as AccordionRaw, AccordionSummary, AccordionDetails, AppBar, Paper as PaperRaw, Tab as TabRaw } from '@material-ui/core';
@@ -19,7 +19,6 @@ import { CloneWikiDoneButton } from './CloneWikiDoneButton';
 import { IErrorInWhichComponent, useIsCreateSyncedWorkspace, useWikiWorkspaceForm } from './useForm';
 
 import { TokenForm } from '@/components/TokenForm';
-// import { useAuthing, useTokenFromAuthingRedirect } from '@/components/TokenForm/gitTokenHooks';
 import { GitRepoUrlForm } from './GitRepoUrlForm';
 import { LocationPickerContainer, LocationPickerInput } from './FormComponents';
 import { usePromiseValue } from '@/helpers/useServiceValue';
@@ -80,7 +79,7 @@ const AdvancedSettingsAccordionSummary = styled(AccordionSummary)`
 export function AddWorkspace(): JSX.Element {
   const { t } = useTranslation();
   const [currentTab, currentTabSetter] = useState<CreateWorkspaceTabs>(CreateWorkspaceTabs.CreateNewWiki);
-  const [isCreateSyncedWorkspace, isCreateSyncedWorkspaceSetter] = useIsCreateSyncedWorkspace();
+  const isCreateSyncedWorkspace = currentTab === CreateWorkspaceTabs.CloneOnlineWiki;
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(true);
   const form = useWikiWorkspaceForm();
   const [errorInWhichComponent, errorInWhichComponentSetter] = useState<IErrorInWhichComponent>({});
@@ -97,10 +96,10 @@ export function AddWorkspace(): JSX.Element {
   // const [onClickLogin] = useAuth(storageService);
 
   const formProps = {
-    form: form,
-    isCreateMainWorkspace: isCreateMainWorkspace,
-    errorInWhichComponent: errorInWhichComponent,
-    errorInWhichComponentSetter: errorInWhichComponentSetter,
+    form,
+    isCreateMainWorkspace,
+    errorInWhichComponent,
+    errorInWhichComponentSetter,
   };
 
   if (workspaceList === undefined) {
@@ -134,7 +133,8 @@ export function AddWorkspace(): JSX.Element {
       <Accordion defaultExpanded={workspaceList.length > 0}>
         <AdvancedSettingsAccordionSummary expandIcon={<ExpandMoreIcon />}>{t('AddWorkspace.Advanced')}</AdvancedSettingsAccordionSummary>
         <AccordionDetails>
-          <SyncedWikiDescription isCreateSyncedWorkspace={isCreateSyncedWorkspace} isCreateSyncedWorkspaceSetter={isCreateSyncedWorkspaceSetter} />
+          {/* Force it only show sync option when clone online wiki, because many user encounter sync problem here. Recommend them create local first and sync later. */}
+          {isCreateSyncedWorkspace && <SyncedWikiDescription isCreateSyncedWorkspace={isCreateSyncedWorkspace} isCreateSyncedWorkspaceSetter={() => {}} />}
           <MainSubWikiDescription isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
           {isCreateMainWorkspace && (
             <LocationPickerContainer>
@@ -166,7 +166,7 @@ export function AddWorkspace(): JSX.Element {
       </TabPanel>
       <TabPanel value={CreateWorkspaceTabs.CloneOnlineWiki}>
         <Container>
-          <CloneWikiForm {...formProps} isCreateSyncedWorkspaceSetter={isCreateSyncedWorkspaceSetter} />
+          <CloneWikiForm {...formProps} />
           <CloneWikiDoneButton {...formProps} />
         </Container>
       </TabPanel>
