@@ -125,15 +125,14 @@ jobs:
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      # Seems M1 can use x64 package, but arm package will show its broken
-      # - name: Make macOS (arm64)
-      #   run: npm run make:mac-arm
-      #   env:
-      #     APPLE_ID: ${{ secrets.APPLE_ID }}
-      #     APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
-      #     CI: true
-      #     CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
-      #     GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Make macOS (arm64)
+        run: npm run make:mac-arm
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          CI: true
+          CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create Release
         uses: softprops/action-gh-release@v1

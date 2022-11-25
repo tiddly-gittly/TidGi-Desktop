@@ -23,8 +23,10 @@ const keepingLprojRegEx = /(en|zh_CN)\.lproj/g;
  * @returns
  */
 exports.default = async (buildPath, electronVersion, platform, arch, callback) => {
-  const cwd = path.join(buildPath, '..');
-  const projectRoot = path.join(__dirname, '..');
+  const cwd = path.resolve(buildPath, '..');
+  const projectRoot = path.resolve(__dirname, '..');
+  const appParentPath = path.resolve(buildPath, '..', '..', '..', '..');
+  const appPath = path.join(appParentPath, 'Electron.app');
 
   /** delete useless lproj files to make it clean */
   const lproj = glob.sync('*.lproj', { cwd });
@@ -47,6 +49,10 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
     await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx') });
     await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'globby') });
     await exec(`npm i --legacy-building --ignore-scripts`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'node-fetch') });
+  }
+  /** sign it for mac m1 https://www.zhihu.com/question/431722091/answer/1592339574 */
+  if (platform === 'darwin') {
+    await exec(`xattr -rd com.apple.quarantine ${appPath}`, { cwd: appParentPath });
   }
   /** complete this hook */
   callback();
