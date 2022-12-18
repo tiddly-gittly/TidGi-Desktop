@@ -46,13 +46,15 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
     // await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'app-path', 'node_modules', 'cross-spawn') });
     // await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'app-path', 'node_modules', 'get-stream') });
     await fs.copy(path.join(projectRoot, 'node_modules', 'zx'), path.join(cwd, 'node_modules', 'zx'));
-    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx'), shell });
-    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'globby'), shell });
-    await exec(`npm i --legacy-building --ignore-scripts`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'node-fetch'), shell });
+    // not using pnpm, because after using it, it always causing problem here, causing `Error: spawn /bin/sh ENOENT` in github actions
+    // it can probably being "working directory didn't exist" in  https://github.com/nodejs/node/issues/9644#issuecomment-282060923  
+    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx') });
+    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'globby') });
+    await exec(`npm i --legacy-building --ignore-scripts`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'node-fetch') });
   }
   /** sign it for mac m1 https://www.zhihu.com/question/431722091/answer/1592339574 */
   if (platform === 'darwin') {
-    await exec(`xattr -rd com.apple.quarantine ${appPath}`, { cwd: appParentPath, shell });
+    await exec(`xattr -rd com.apple.quarantine ${appPath}`, { cwd: appParentPath });
   }
   /** complete this hook */
   callback();
