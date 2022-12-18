@@ -32,6 +32,7 @@
     "best-effort-json-parser": "1.0.0",
     "bluebird": "3.7.2",
     "default-gateway": "6.0.3",
+    "dugite": "^2.1.0",
     "electron-ipc-cat": "1.2.9",
     "electron-is-packaged": "1.0.2",
     "electron-settings": "4.0.2",
