@@ -499,7 +499,7 @@ export class Wiki implements IWikiService {
       }
       return true;
     };
-    const { gitUrl: githubRepoUrl, storageService, backupOnInterval } = workspace;
+    const { gitUrl: githubRepoUrl, storageService, backupOnInterval, id } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
 
     if (
@@ -509,6 +509,8 @@ export class Wiki implements IWikiService {
       (await checkCanSyncDueToNoDraft(workspace))
     ) {
       await this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo });
+      await this.workspaceViewService.restartWorkspaceViewService(id);
+      await this.viewService.reloadViewsWebContents(id);
     } else if (backupOnInterval && (await checkCanSyncDueToNoDraft(workspace))) {
       await this.gitService.commitAndSync(workspace, { commitOnly: true });
     }

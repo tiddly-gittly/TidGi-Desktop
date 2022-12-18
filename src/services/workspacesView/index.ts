@@ -34,6 +34,7 @@ export class WorkspaceView implements IWorkspaceViewService {
   @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
   @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
   @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
+  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
 
   constructor() {
     void this.registerMenu();
@@ -113,7 +114,10 @@ export class WorkspaceView implements IWorkspaceViewService {
           throw new TypeError(`userInfo is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
         }
         // sync in non-blocking way
-        void this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo });
+        void this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo }).then(async () => {
+          await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
+          await this.viewService.reloadViewsWebContents(workspace.id);
+        });
       }
     } catch (error) {
       logger.error(`Can't sync at wikiStartup(), ${(error as Error).message}\n${(error as Error).stack ?? 'no stack'}`);
