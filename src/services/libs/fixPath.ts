@@ -32,9 +32,7 @@ const parseEnvironment = (environment_: string): Record<string, string> => {
   environment_ = environment_.split('_SHELL_ENV_DELIMITER_')[1];
   const returnValue: Record<string, string> = {};
 
-  for (const line of stripAnsi(environment_)
-    .split('\n')
-    .filter((line) => Boolean(line))) {
+  for (const line of stripAnsi(environment_).split('\n').filter(Boolean)) {
     const [key, ...values] = line.split('=');
     returnValue[key] = values.join('=');
   }
@@ -51,10 +49,10 @@ export function shellEnvironmentSync(shell?: string): NodeJS.ProcessEnv {
     const stdout = execSync(`${shell ?? defaultShell} ${arguments_.join(' ')}`, { env: environment });
     return parseEnvironment(String(stdout));
   } catch (error) {
-    if (shell !== undefined) {
-      throw error;
-    } else {
+    if (shell === undefined) {
       return process.env;
+    } else {
+      throw error;
     }
   }
 }

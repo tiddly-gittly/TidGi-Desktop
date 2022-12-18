@@ -13,6 +13,7 @@ import { fixPath } from '@services/libs/fixPath';
 import { IWikiMessage, WikiControlActions, ZxWorkerControlActions, IZxWorkerMessage } from './interface';
 import { defaultServerIP } from '@/constants/urls';
 import { executeScriptInTWContext, extractTWContextScripts, getTWVmContext } from './plugin/zxPlugin';
+import { TIDDLYWIKI_PACKAGE_FOLDER } from '@/constants/paths';
 
 fixPath();
 let wikiInstance: ITiddlyWiki | undefined;
@@ -64,12 +65,12 @@ function startNodeJSWiki({
             type: 'control',
             actions: WikiControlActions.booted,
             message: `Tiddlywiki booted at http://${tiddlyWikiHost}:${tiddlyWikiPort} (webview uri ip may be different, being getLocalHostUrlWithActualIP()) with args ${
-              wikiInstance !== undefined ? wikiInstance.boot.argv.join(' ') : '(wikiInstance is undefined)'
+              wikiInstance === undefined ? '(wikiInstance is undefined)' : wikiInstance.boot.argv.join(' ')
             }`,
           });
         });
       });
-      wikiInstance.boot.startup({});
+      wikiInstance.boot.startup({ bootPath: TIDDLYWIKI_PACKAGE_FOLDER });
     } catch (error) {
       const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
       observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message });

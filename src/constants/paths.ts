@@ -24,6 +24,9 @@ export const DESKTOP_PATH = path.join(os.homedir(), 'Desktop');
 export const ZX_FOLDER = isDevelopmentOrTest
   ? path.resolve(__dirname, '..', '..', 'node_modules', 'zx', 'build', 'cli.js')
   : path.resolve(process.resourcesPath, 'node_modules', 'zx', 'build', 'cli.js');
+export const TIDDLYWIKI_PACKAGE_FOLDER = isDevelopmentOrTest
+  ? path.resolve(__dirname, '..', '..', 'node_modules', '@tiddlygit', 'tiddlywiki', 'boot')
+  : path.resolve(process.resourcesPath, 'node_modules', '@tiddlygit', 'tiddlywiki', 'boot');
 export const LOCALIZATION_FOLDER = isDevelopmentOrTest
   ? path.resolve(sourcePath, '..', localizationFolderName)
   : path.resolve(process.resourcesPath, localizationFolderName);
