@@ -44,7 +44,6 @@ specifiers:
   '@types/react-helmet': 6.1.6
   '@types/rimraf': 3.0.2
   '@types/semver': 7.3.13
-  '@types/simplebar': 5.3.3
   '@types/source-map-support': 0.5.6
   '@types/styled-components': 5.1.26
   '@types/webpack-bundle-analyzer': 4.6.0
@@ -244,7 +243,6 @@ devDependencies:
   '@types/react-helmet': 6.1.6
   '@types/rimraf': 3.0.2
   '@types/semver': 7.3.13
-  '@types/simplebar': 5.3.3
   '@types/source-map-support': 0.5.6
   '@types/styled-components': 5.1.26
   '@types/webpack-bundle-analyzer': 4.6.0
@@ -1723,10 +1721,6 @@ packages:
       '@jridgewell/sourcemap-codec': 1.4.14
     dev: true
 
-  /@juggle/resize-observer/3.4.0:
-    resolution: {integrity: sha512-dfLbk+PwWvFzSxwk3n5ySL0hfBog779o8h68wK/7/APo/7cgyWp5jcXockbxdk5kFRkbeXWm4Fbi9FrdN381sA==}
-    dev: true
-
   /@leichtgewicht/ip-codec/2.0.4:
     resolution: {integrity: sha512-Hcv+nVC0kZnQ3tD9GVu5xSMR4VVYOteQIr/hwFPVEvPdlXqgGEuRjiheChHgdM+JyqdgNcmzZOX/tnl0JOiI7A==}
     dev: true
@@ -2481,13 +2475,6 @@ packages:
     dependencies:
       '@types/mime': 3.0.1
       '@types/node': 18.11.16
-    dev: true
-
-  /@types/simplebar/5.3.3:
-    resolution: {integrity: sha512-0RbZBLnc1Iwr5TxDZY3LYgcxmK2LasZWZMoPIWm6f6mOjdUYbw3HMgM4NIBXpSk8oJSlLxbSrxT8JluygCqilA==}
-    deprecated: This is a stub types definition. simplebar provides its own type definitions, so you do not need this installed.
-    dependencies:
-      simplebar: 5.3.9
     dev: true
 
   /@types/sockjs/0.3.33:
@@ -7728,10 +7715,6 @@ packages:
       lodash.isarray: 3.0.4
     dev: false
 
-  /lodash.memoize/4.1.2:
-    resolution: {integrity: sha512-t7j+NzmgnQzTAYXcsHYLgimltOV1MXHtlOWf6GjL9Kj8GK5FInw5JotxvbOs+IvV1/Dzo04/fCGfLVs7aXb4Ag==}
-    dev: true
-
   /lodash.merge/4.6.2:
     resolution: {integrity: sha512-0KpjqXRVvrYyCsX1swR/XTK0va6VQkQM6MNo7PqW77ByjAhoARA8EfrP1N4+KlKj8YS0ZUCtRT/YUuhyYDujIQ==}
 
@@ -9822,17 +9805,6 @@ packages:
       react: 18.2.0
       react-dom: 18.2.0_react@18.2.0
       simplebar-core: 1.0.7
-    dev: true
-
-  /simplebar/5.3.9:
-    resolution: {integrity: sha512-1vIIpjDvY9sVH14e0LGeiCiTFU3ILqAghzO6OI9axeG+mvU/vMSrvXeAXkBolqFFz3XYaY8n5ahH9MeP3sp2Ag==}
-    dependencies:
-      '@juggle/resize-observer': 3.4.0
-      can-use-dom: 0.1.0
-      core-js: 3.26.1
-      lodash.debounce: 4.0.8
-      lodash.memoize: 4.1.2
-      lodash.throttle: 4.1.1
     dev: true
 
   /simplebar/6.0.0-beta.4:
