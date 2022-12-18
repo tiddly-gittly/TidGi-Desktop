@@ -29,7 +29,7 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
   const duplicatedLocalization = glob.sync('**/.webpack/main/localization/**', { cwd });
   const duplicatedElectronDist = glob.sync('**/.webpack/main/native_modules/dist/**', { cwd });
   const pathsToRemove = [...duplicatedLocalization, ...duplicatedElectronDist].map((directory) => path.join(cwd, directory));
-  await Promise.all(pathsToRemove.map((directory) => fs.remove(directory)));
+  await Promise.all(pathsToRemove.map((directory) => fs.remove(directory).catch((error) => console.error(error))));
 
   /** complete this hook */
   callback();
