@@ -114,9 +114,11 @@ export class WorkspaceView implements IWorkspaceViewService {
           throw new TypeError(`userInfo is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
         }
         // sync in non-blocking way
-        void this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo }).then(async () => {
-          await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
-          await this.viewService.reloadViewsWebContents(workspace.id);
+        void this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo }).then(async (hasChanges) => {
+          if (hasChanges) {
+            await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
+            await this.viewService.reloadViewsWebContents(workspace.id);
+          }
         });
       }
     } catch (error) {
@@ -161,14 +163,14 @@ export class WorkspaceView implements IWorkspaceViewService {
         // if is newly created wiki, we set the language as user preference
         const currentLanguage = await this.preferenceService.get('language');
         const tiddlywikiLanguageName = tiddlywikiLanguagesMap[currentLanguage];
-        if (tiddlywikiLanguageName !== undefined) {
-          logger.debug(`Setting wiki language to ${currentLanguage} (${tiddlywikiLanguageName}) on init`);
-          await this.wikiService.setWikiLanguage(view, workspace.id, tiddlywikiLanguageName);
-        } else {
+        if (tiddlywikiLanguageName === undefined) {
           const errorMessage = `When creating new wiki, and switch to language "${currentLanguage}", there is no corresponding tiddlywiki language registered`;
           logger.error(errorMessage, {
             tiddlywikiLanguagesMap,
           });
+        } else {
+          logger.debug(`Setting wiki language to ${currentLanguage} (${tiddlywikiLanguageName}) on init`);
+          await this.wikiService.setWikiLanguage(view, workspace.id, tiddlywikiLanguageName);
         }
       }
     }
@@ -178,14 +180,14 @@ export class WorkspaceView implements IWorkspaceViewService {
     workspaceID: string,
     view: Electron.CrossProcessExports.BrowserView | undefined = this.viewService.getView(workspaceID, WindowNames.main),
   ): Promise<void> {
-    if (view !== undefined) {
+    if (view === undefined) {
+      logger.warn(`Can't update lastUrl for workspace ${workspaceID}, view is not found`);
+    } else {
       const currentUrl = view.webContents.getURL();
       logger.debug(`Updating lastUrl for workspace ${workspaceID} to ${currentUrl}`);
       await this.workspaceService.update(workspaceID, {
         lastUrl: currentUrl,
       });
-    } else {
-      logger.warn(`Can't update lastUrl for workspace ${workspaceID}, view is not found`);
     }
   }
 
@@ -351,8 +353,10 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async restartWorkspaceViewService(id?: string): Promise<void> {
-    const workspaceToRestart = id !== undefined ? await this.workspaceService.get(id) : await this.workspaceService.getActiveWorkspace();
-    if (workspaceToRestart !== undefined) {
+    const workspaceToRestart = id === undefined ? await this.workspaceService.getActiveWorkspace() : await this.workspaceService.get(id);
+    if (workspaceToRestart === undefined) {
+      logger.warn(`restartWorkspaceViewService: no workspace ${id ?? 'id undefined'} to restart`);
+    } else {
       logger.info(`Restarting workspace ${workspaceToRestart.id}`);
       await this.updateLastUrl(workspaceToRestart.id);
       await this.workspaceService.updateMetaData(workspaceToRestart.id, { didFailLoadErrorMessage: null, isLoading: false });
@@ -364,8 +368,6 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
       await this.viewService.reloadViewsWebContents(workspaceToRestart.id);
       this.wikiService.wikiOperation(WikiChannel.generalNotification, workspaceToRestart.id, i18n.t('ContextMenu.RestartServiceComplete'));
-    } else {
-      logger.warn(`restartWorkspaceViewService: no workspace ${id ?? 'id undefined'} to restart`);
     }
   }
 
@@ -443,7 +445,7 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   private async realignActiveWorkspaceView(id?: string): Promise<void> {
-    const workspaceToRealign = id !== undefined ? await this.workspaceService.get(id) : await this.workspaceService.getActiveWorkspace();
+    const workspaceToRealign = id === undefined ? await this.workspaceService.getActiveWorkspace() : await this.workspaceService.get(id);
     logger.debug(`realignActiveWorkspaceView() activeWorkspace.id: ${workspaceToRealign?.id ?? 'undefined'}`);
     const mainWindow = this.windowService.get(WindowNames.main);
     const menuBarWindow = this.windowService.get(WindowNames.menuBar);
@@ -455,14 +457,14 @@ export class WorkspaceView implements IWorkspaceViewService {
         !!menuBarBrowserViewWebContent,
       )}`,
     );
-    if (workspaceToRealign !== undefined) {
+    if (workspaceToRealign === undefined) {
+      logger.warn('realignActiveWorkspaceView: no active workspace');
+    } else {
       if (mainWindow === undefined && menuBarWindow === undefined) {
         logger.warn('realignActiveWorkspaceView: no active window');
       }
       mainBrowserViewWebContent && void this.viewService.realignActiveView(mainWindow, workspaceToRealign.id);
       menuBarBrowserViewWebContent && void this.viewService.realignActiveView(menuBarWindow, workspaceToRealign.id);
-    } else {
-      logger.warn('realignActiveWorkspaceView: no active workspace');
     }
     /* eslint-enable @typescript-eslint/strict-boolean-expressions */
   }

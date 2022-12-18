@@ -37,6 +37,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { lazyInject } from '@services/container';
 import { githubDesktopUrl } from '@/constants/urls';
 import { IWorkspace } from '@services/workspaces/interface';
+import { stepWithChanges } from './stepWithChanges';
 
 @injectable()
 export class Git implements IGitService {
@@ -223,7 +224,7 @@ export class Git implements IGitService {
     }
   }
 
-  private readonly getWorkerObserver = (resolve: () => void, reject: (error: Error) => void): Observer<IGitLogMessage> => ({
+  private readonly getWorkerMessageObserver = (resolve: () => void, reject: (error: Error) => void): Observer<IGitLogMessage> => ({
     next: (messageObject) => {
       const { message, meta, level } = messageObject;
       if (typeof meta === 'object' && meta !== null && 'step' in meta) {
@@ -269,20 +270,35 @@ export class Git implements IGitService {
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const syncImmediately = !!isSyncedWiki && !!isMainWiki;
     return await new Promise<void>((resolve, reject) => {
-      this.gitWorker?.initWikiGit(wikiFolderPath, syncImmediately && net.isOnline(), remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
+      this.gitWorker
+        ?.initWikiGit(wikiFolderPath, syncImmediately && net.isOnline(), remoteUrl, userInfo)
+        .subscribe(this.getWorkerMessageObserver(resolve, reject));
     });
   }
 
-  public async commitAndSync(workspace: IWorkspace, config: ICommitAndSyncConfigs): Promise<void> {
+  public async commitAndSync(workspace: IWorkspace, config: ICommitAndSyncConfigs): Promise<boolean> {
     if (!net.isOnline()) {
-      return;
+      return false;
     }
     try {
-      return await new Promise<void>((resolve, reject) => {
-        this.gitWorker?.commitAndSyncWiki(workspace, config).subscribe(this.getWorkerObserver(resolve, reject));
+      return await new Promise<boolean>((resolve, reject) => {
+        const observable = this.gitWorker?.commitAndSyncWiki(workspace, config);
+        observable?.subscribe(this.getWorkerMessageObserver(() => {}, reject));
+        let hasChanges = false;
+        observable?.subscribe({
+          next: (messageObject) => {
+            const { meta } = messageObject;
+            if (typeof meta === 'object' && meta !== null && 'step' in meta && stepWithChanges.includes((meta as { step: GitStep }).step)) {
+              hasChanges = true;
+            }
+          },
+          complete: () => resolve(hasChanges),
+        });
+        return true;
       });
     } catch (error) {
       this.createFailedDialog((error as Error).message, workspace.wikiFolderLocation);
+      return true;
     }
   }
 
@@ -291,7 +307,7 @@ export class Git implements IGitService {
       return;
     }
     return await new Promise<void>((resolve, reject) => {
-      this.gitWorker?.cloneWiki(repoFolderPath, remoteUrl, userInfo).subscribe(this.getWorkerObserver(resolve, reject));
+      this.gitWorker?.cloneWiki(repoFolderPath, remoteUrl, userInfo).subscribe(this.getWorkerMessageObserver(resolve, reject));
     });
   }
 }

@@ -508,9 +508,11 @@ export class Wiki implements IWikiService {
       userInfo !== undefined &&
       (await checkCanSyncDueToNoDraft(workspace))
     ) {
-      await this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo });
-      await this.workspaceViewService.restartWorkspaceViewService(id);
-      await this.viewService.reloadViewsWebContents(id);
+      const hasChanges = await this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo });
+      if (hasChanges) {
+        await this.workspaceViewService.restartWorkspaceViewService(id);
+        await this.viewService.reloadViewsWebContents(id);
+      }
     } else if (backupOnInterval && (await checkCanSyncDueToNoDraft(workspace))) {
       await this.gitService.commitAndSync(workspace, { commitOnly: true });
     }
@@ -563,7 +565,17 @@ export class Wiki implements IWikiService {
     const userName = (workspace.userName || (await this.authService.get('userName'))) ?? '';
 
     // if is main wiki
-    if (!isSubWiki) {
+    if (isSubWiki) {
+      // if is private repo wiki
+      // if we are creating a sub-wiki just now, restart the main wiki to load content from private wiki
+      if (typeof mainWikiToLink === 'string' && !this.checkWikiStartLock(mainWikiToLink)) {
+        const mainWorkspace = await this.workspaceService.getByWikiFolderLocation(mainWikiToLink);
+        if (mainWorkspace === undefined) {
+          throw new Error(`mainWorkspace is undefined in wikiStartup() for mainWikiPath ${mainWikiToLink}`);
+        }
+        await this.restartWiki(mainWorkspace);
+      }
+    } else {
       try {
         logger.debug('startWiki() calling startWiki');
         await this.startWiki(wikiFolderLocation, port, userName);
@@ -584,16 +596,6 @@ export class Wiki implements IWikiService {
           logger.warn('Get startWiki() unexpected error, throw it');
           throw error;
         }
-      }
-    } else {
-      // if is private repo wiki
-      // if we are creating a sub-wiki just now, restart the main wiki to load content from private wiki
-      if (typeof mainWikiToLink === 'string' && !this.checkWikiStartLock(mainWikiToLink)) {
-        const mainWorkspace = await this.workspaceService.getByWikiFolderLocation(mainWikiToLink);
-        if (mainWorkspace === undefined) {
-          throw new Error(`mainWorkspace is undefined in wikiStartup() for mainWikiPath ${mainWikiToLink}`);
-        }
-        await this.restartWiki(mainWorkspace);
       }
     }
     await this.startIntervalSyncIfNeeded(workspace);

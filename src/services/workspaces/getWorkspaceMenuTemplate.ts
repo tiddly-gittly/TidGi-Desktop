@@ -111,9 +111,11 @@ export async function getWorkspaceMenuTemplate(
         label: t('ContextMenu.SyncNow') + (isOnline ? '' : `(${t('ContextMenu.NoNetworkConnection')})`),
         enabled: isOnline,
         click: async () => {
-          await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
-          await service.workspaceView.restartWorkspaceViewService(id);
-          await service.view.reloadViewsWebContents(id);
+          const hasChanges = await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
+          if (hasChanges) {
+            await service.workspaceView.restartWorkspaceViewService(id);
+            await service.view.reloadViewsWebContents(id);
+          }
         },
       });
     }

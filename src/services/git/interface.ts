@@ -22,7 +22,11 @@ export interface IGitLogMessage {
   meta: unknown;
 }
 
-export interface ICommitAndSyncConfigs { commitOnly?: boolean; remoteUrl?: string; userInfo?: IGitUserInfos }
+export interface ICommitAndSyncConfigs {
+  commitOnly?: boolean;
+  remoteUrl?: string;
+  userInfo?: IGitUserInfos;
+}
 
 /**
  * System Preferences are not stored in storage but stored in macOS Preferences.
@@ -30,7 +34,10 @@ export interface ICommitAndSyncConfigs { commitOnly?: boolean; remoteUrl?: strin
  */
 export interface IGitService {
   clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void>;
-  commitAndSync(workspace: IWorkspace, config: ICommitAndSyncConfigs): Promise<void>;
+  /**
+   * Return true if this function's execution causes local changes. Return false if is only push or nothing changed.
+   */
+  commitAndSync(workspace: IWorkspace, config: ICommitAndSyncConfigs): Promise<boolean>;
   getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]>;
   /** Inspect git's remote url from folder's .git config, return undefined if there is no initialized git */
   getWorkspacesRemote(wikiFolderPath?: string): Promise<string | undefined>;
