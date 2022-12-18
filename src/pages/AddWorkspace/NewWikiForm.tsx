@@ -63,9 +63,10 @@ export function NewWikiForm({
             error={errorInWhichComponent.mainWikiToLink}
             label={t('AddWorkspace.MainWorkspaceLocation')}
             helperText={
+              // text here should have the same text as `folderToContainSymlinks` in src/services/wiki/index.ts
               form.mainWikiToLink.wikiFolderLocation &&
               `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
-                    ${form.mainWikiToLink.wikiFolderLocation}/tiddlers/${form.wikiFolderName}`
+                    ${form.mainWikiToLink.wikiFolderLocation}/tiddlers/subwiki/${form.wikiFolderName}`
             }
             value={form.mainWikiToLinkIndex}
             onChange={(event) => {
