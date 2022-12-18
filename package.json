@@ -59,6 +59,7 @@
     "rxjs": "7.8.0",
     "semver": "7.3.8",
     "source-map-support": "0.5.21",
+    "strip-ansi": "^7.0.1",
     "threads": "1.7.0",
     "type-fest": "3.4.0",
     "typescript-styled-is": "^2.1.0",
