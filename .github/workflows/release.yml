@@ -30,6 +30,7 @@ jobs:
         with:
           submodules: 'true'
 
+      - uses: pnpm/action-setup@v2
       # - name: Install native dependencies for flatpack
       #   run: sudo apt-get install -y flatpak-builder elfutils
       - name: Install Snapcraft
@@ -52,7 +53,7 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm i
 
       - name: Make Linux (x64)
         run: npm run make:linux-x64
@@ -115,7 +116,7 @@ jobs:
             ${{ runner.os }}-node-
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm i
 
       - name: Make macOS (x64)
         run: npm run make:mac-x64
@@ -188,7 +189,7 @@ jobs:
       #       ${{ runner.os }}-node-
 
       - name: Install dependencies
-        run: npm ci --legacy-peer-deps
+        run: pnpm i
 
       - name: Add msi to path
         run: echo "${env:wix}bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
