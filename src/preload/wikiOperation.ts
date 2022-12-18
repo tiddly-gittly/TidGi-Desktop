@@ -109,12 +109,13 @@ ipcRenderer.on(WikiChannel.generalNotification, async (event, message: string) =
 });
 // open a tiddler
 ipcRenderer.on(WikiChannel.openTiddler, async (event, tiddlerName: string) => {
+  const trimmedTiddlerName = tiddlerName.replaceAll('\n', '');
   // iterate until we find NavigatorWidget, this normally needs to be Widget > Widget > ElementWidget > TranscludeWidget > TranscludeWidget > ImportVariablesWidget > VarsWidget > ElementWidget > NavigatorWidget
   await executeTWJavaScriptWhenIdle(`
     let currentHandlerWidget = $tw.rootWidget
     let handled = false;
     while (currentHandlerWidget && !handled) {
-      const bubbled = currentHandlerWidget.dispatchEvent({ type: "tm-navigate", navigateTo: "${tiddlerName}", param: "${tiddlerName}" });
+      const bubbled = currentHandlerWidget.dispatchEvent({ type: "tm-navigate", navigateTo: "${trimmedTiddlerName}", param: "${trimmedTiddlerName}" });
       handled = !bubbled;
       currentHandlerWidget = currentHandlerWidget.children?.[0]
     }

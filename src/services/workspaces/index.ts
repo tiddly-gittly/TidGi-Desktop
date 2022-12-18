@@ -5,7 +5,7 @@ import { injectable } from 'inversify';
 import { app } from 'electron';
 import settings from 'electron-settings';
 import { pickBy, mapValues, debounce } from 'lodash';
-import { nanoid } from 'nanoid'
+import { nanoid } from 'nanoid';
 import path from 'path';
 import fsExtra from 'fs-extra';
 import Jimp from 'jimp';
@@ -272,6 +272,10 @@ export class Workspace implements IWorkspaceService {
       if (mainWorkspace !== undefined) {
         fixingValues.mainWikiID = mainWorkspace.id;
       }
+    }
+    // fix WikiChannel.openTiddler in src/preload/wikiOperation.ts have \n on the end
+    if (workspaceToSanitize.tagName?.endsWith('\n') === true) {
+      fixingValues.tagName = workspaceToSanitize.tagName.replaceAll('\n', '');
     }
     return { ...defaultValues, ...workspaceToSanitize, ...fixingValues };
   }
