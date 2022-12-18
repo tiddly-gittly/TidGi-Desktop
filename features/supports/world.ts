@@ -9,7 +9,6 @@ const projectRoot = path.join(__dirname, '..', '..');
 const packageName = process.env.npm_product_name ?? 'TidGi';
 
 interface IContext {
-  // @ts-expect-error Namespace 'global.WebdriverIO' has no exported member 'Element'.ts(2694)
   previousElement?: WebdriverIO.Element;
 }
 /**
@@ -44,7 +43,6 @@ export class TidGiWorld extends World {
     await this.waitReactReady();
   }
 
-  // @ts-expect-error Namespace 'global.WebdriverIO' has no exported member 'Element'.ts(2694)
   public async getElement(selector: string): Promise<WebdriverIO.Element | undefined> {
     const element = await this.app?.client?.$?.(selector);
     // sometimes element exist, but has an error field
