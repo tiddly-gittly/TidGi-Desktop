@@ -13,7 +13,9 @@ const exec = util.promisify(require('child_process').exec);
  * Specific which lproj you want to keep
  */
 const keepingLprojRegEx = /(en|zh_CN)\.lproj/g;
-
+const shell = process.platform === 'win32' ? true : '/bin/bash';
+// DEBUG: console
+console.log(`process.platform`, process.platform);
 /**
  *
  * @param {*} buildPath /var/folders/qj/7j0zx32d0l75zmnrl1w3m3b80000gn/T/electron-packager/darwin-x64/TidGi-darwin-x64/Electron.app/Contents/Resources/app
@@ -46,13 +48,13 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
     // await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'app-path', 'node_modules', 'cross-spawn') });
     // await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'app-path', 'node_modules', 'get-stream') });
     await fs.copy(path.join(projectRoot, 'node_modules', 'zx'), path.join(cwd, 'node_modules', 'zx'));
-    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx'), shell: true });
-    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'globby'), shell: true });
-    await exec(`npm i --legacy-building --ignore-scripts`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'node-fetch'), shell: true });
+    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx'), shell });
+    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'globby'), shell });
+    await exec(`npm i --legacy-building --ignore-scripts`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'node-fetch'), shell });
   }
   /** sign it for mac m1 https://www.zhihu.com/question/431722091/answer/1592339574 */
   if (platform === 'darwin') {
-    await exec(`xattr -rd com.apple.quarantine ${appPath}`, { cwd: appParentPath, shell: true });
+    await exec(`xattr -rd com.apple.quarantine ${appPath}`, { cwd: appParentPath, shell });
   }
   /** complete this hook */
   callback();
