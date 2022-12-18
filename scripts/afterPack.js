@@ -13,7 +13,6 @@ const exec = util.promisify(require('child_process').exec);
  * Specific which lproj you want to keep
  */
 const keepingLprojRegEx = /(en|zh_CN)\.lproj/g;
-const shell = process.platform === 'win32' ? true : process.platform === 'darwin' ? '/bin/zsh' : '/bin/bash';
 /**
  *
  * @param {*} buildPath /var/folders/qj/7j0zx32d0l75zmnrl1w3m3b80000gn/T/electron-packager/darwin-x64/TidGi-darwin-x64/Electron.app/Contents/Resources/app

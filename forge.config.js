@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 const packageJson = require('./package.json');
+const beforeAsar = require('./scripts/beforeAsar')
 
 const { version, description } = packageJson;
 
@@ -30,6 +31,7 @@ const config = {
     },
     appBundleId: 'com.tidgi',
     afterPrune: ['scripts/afterPack.js'],
+    beforeAsar: [beforeAsar.default],
   },
   makers: [
     {
