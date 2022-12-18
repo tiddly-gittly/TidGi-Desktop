@@ -16,6 +16,7 @@ specifiers:
   '@electron-forge/maker-zip': 6.0.4
   '@electron-forge/plugin-auto-unpack-natives': 6.0.4
   '@electron-forge/plugin-webpack': 6.0.4
+  '@electron/rebuild': ^3.2.10
   '@material-ui/core': 5.0.0-alpha.27
   '@material-ui/icons': 5.0.0-alpha.27
   '@material-ui/lab': 5.0.0-alpha.27
@@ -68,7 +69,6 @@ specifiers:
   electron: 22.0.0
   electron-ipc-cat: 1.2.9
   electron-is-packaged: 1.0.2
-  electron-rebuild: 3.2.9
   electron-settings: 4.0.2
   electron-squirrel-startup: 1.0.0
   electron-unhandled: 4.0.1
@@ -140,7 +140,7 @@ specifiers:
   ts-import-plugin: 2.0.0
   ts-loader: 9.4.2
   ts-node: 10.9.1
-  tw5-typed: ^0.2.14
+  tw5-typed: ^0.2.15
   type-fest: 3.4.0
   typeface-roboto: 1.1.13
   typescript: 4.9.4
@@ -217,6 +217,7 @@ devDependencies:
   '@electron-forge/maker-zip': 6.0.4_bluebird@3.7.2
   '@electron-forge/plugin-auto-unpack-natives': 6.0.4_bluebird@3.7.2
   '@electron-forge/plugin-webpack': 6.0.4_bluebird@3.7.2
+  '@electron/rebuild': 3.2.10_bluebird@3.7.2
   '@material-ui/core': 5.0.0-alpha.27_ib3m5ricvtkl2cll7qpr2f6lvq
   '@material-ui/icons': 5.0.0-alpha.27_mdjxc37lugawprw2plukgjqm5q
   '@material-ui/lab': 5.0.0-alpha.27_6xf7hicf2sgxagnoiluljoivry
@@ -261,7 +262,6 @@ devDependencies:
   css-loader: 6.7.3
   date-fns: 2.29.3
   electron: 22.0.0
-  electron-rebuild: 3.2.9_bluebird@3.7.2
   electron-wix-msi: 5.0.0
   esbuild-loader: 2.20.0
   eslint: 8.30.0
@@ -306,7 +306,7 @@ devDependencies:
   ts-import-plugin: 2.0.0_typescript@4.9.4
   ts-loader: 9.4.2_typescript@4.9.4
   ts-node: 10.9.1_rmyookn2hbqnnqjamditnjqvjq
-  tw5-typed: 0.2.14
+  tw5-typed: 0.2.15
   typeface-roboto: 1.1.13
   typescript: 4.9.4
   typescript-plugin-styled-components: 2.0.0_typescript@4.9.4
@@ -4795,31 +4795,6 @@ packages:
   /electron-positioner/4.1.0:
     resolution: {integrity: sha512-726DfbI9ZNoCg+Fcu6XLuTKTnzf+6nFqv7h+K/V6Ug7IbaPMI7s9S8URnGtWFCy5N5PL4HSzRFF2mXuinftDdg==}
     dev: false
-
-  /electron-rebuild/3.2.9_bluebird@3.7.2:
-    resolution: {integrity: sha512-FkEZNFViUem3P0RLYbZkUjC8LUFIK+wKq09GHoOITSJjfDAVQv964hwaNseTTWt58sITQX3/5fHNYcTefqaCWw==}
-    engines: {node: '>=12.13.0'}
-    deprecated: Please use @electron/rebuild moving forward.  There is no API change, just a package name change
-    hasBin: true
-    dependencies:
-      '@malept/cross-spawn-promise': 2.0.0
-      chalk: 4.1.2
-      debug: 4.3.4
-      detect-libc: 2.0.1
-      fs-extra: 10.1.0
-      got: 11.8.6
-      lzma-native: 8.0.6
-      node-abi: 3.30.0
-      node-api-version: 0.1.4
-      node-gyp: 9.3.0_bluebird@3.7.2
-      ora: 5.4.1
-      semver: 7.3.8
-      tar: 6.1.13
-      yargs: 17.6.2
-    transitivePeerDependencies:
-      - bluebird
-      - supports-color
-    dev: true
 
   /electron-settings/4.0.2_electron@22.0.0:
     resolution: {integrity: sha512-WnUlrnBsO784oXcag0ym+A3ySoIwonz5GhYFsWroMHVzslzmsP+81f/Fof41T9UrRUxuPPKiZPZMwGO+yvWChg==}
@@ -10609,8 +10584,8 @@ packages:
     dev: true
     optional: true
 
-  /tw5-typed/0.2.14:
-    resolution: {integrity: sha512-8kFjnk1oKM533qmD6dwfkAlKWOR27N0gQ+tVKE226lUHigSNCCaBCpahdLWvLjT7sq8/MEkfF7xH+AHhYUvLJQ==}
+  /tw5-typed/0.2.15:
+    resolution: {integrity: sha512-R0mqdMlvn9a3/zANN04nFPDeCo0ZXjx47xo5y14rArDZete1uipcnklqnpstQQvas9CFWSrjokWvAYsNdDxv2Q==}
     dev: true
 
   /type-check/0.4.0:
