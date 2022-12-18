@@ -30,7 +30,6 @@ jobs:
         with:
           submodules: 'true'
 
-      - uses: pnpm/action-setup@v2
       # - name: Install native dependencies for flatpack
       #   run: sudo apt-get install -y flatpak-builder elfutils
       - name: Install Snapcraft
@@ -41,6 +40,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16.x
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
 
       - name: Get npm cache directory
         uses: actions/cache@v3
@@ -103,7 +105,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16.x
-
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
       - name: Get npm cache directory
         uses: actions/cache@v3
         id: cache
@@ -172,7 +176,9 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: 16.x
-
+      - uses: pnpm/action-setup@v2
+        with:
+          version: latest
       # wait for https://github.com/actions/cache/issues/988
       # - name: Get npm cache directory
       #   id: npm-cache
