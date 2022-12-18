@@ -17,6 +17,14 @@ export class DoubleWikiInstanceError extends Error {
   }
 }
 
+export class SubWikiSMainWikiNotExistError extends Error {
+  constructor(subWiki?: string, mainWiki?: string | null) {
+    super(subWiki);
+    this.name = i18n.t('Error.SubWikiSMainWikiNotExistError');
+    this.message = `${i18n.t('Error.SubWikiSMainWikiNotExistErrorDescription')} Sub: ${mainWiki ?? '-'} Main: ${mainWiki ?? '-'}`;
+  }
+}
+
 export class WikiRuntimeError extends Error {
   retry = false;
   newWorkspace: IWorkspace | undefined;

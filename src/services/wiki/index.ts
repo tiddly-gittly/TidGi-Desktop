@@ -24,7 +24,7 @@ import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@/constants/path
 import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './plugin/subWikiPlugin';
 import { IWikiService, WikiControlActions } from './interface';
 import { WikiChannel } from '@/constants/channels';
-import { CopyWikiTemplateError, DoubleWikiInstanceError, WikiRuntimeError } from './error';
+import { CopyWikiTemplateError, DoubleWikiInstanceError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
 import { SupportedStorageServices } from '@services/types';
 import type { WikiWorker } from './wikiWorker';
 
@@ -550,7 +550,7 @@ export class Wiki implements IWikiService {
   }
 
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
-    const { wikiFolderLocation, port, isSubWiki, mainWikiToLink, id } = workspace;
+    const { wikiFolderLocation, port, isSubWiki, mainWikiToLink, id, name, mainWikiID } = workspace;
 
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     // and it will leak private sub-wiki's opened tiddler title
@@ -571,7 +571,7 @@ export class Wiki implements IWikiService {
       if (typeof mainWikiToLink === 'string' && !this.checkWikiStartLock(mainWikiToLink)) {
         const mainWorkspace = await this.workspaceService.getByWikiFolderLocation(mainWikiToLink);
         if (mainWorkspace === undefined) {
-          throw new Error(`mainWorkspace is undefined in wikiStartup() for mainWikiPath ${mainWikiToLink}`);
+          throw new SubWikiSMainWikiNotExistError(name ?? id, mainWikiID);
         }
         await this.restartWiki(mainWorkspace);
       }
