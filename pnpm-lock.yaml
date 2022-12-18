@@ -146,6 +146,7 @@ specifiers:
   typescript-plugin-styled-components: 2.0.0
   typescript-styled-is: ^2.1.0
   typesync: 0.9.2
+  v8-compile-cache-lib: ^3.0.1
   webpack-bundle-analyzer: 4.7.0
   webpack-node-externals: 3.0.0
   webpack5-externals-plugin: 1.0.4
@@ -192,6 +193,7 @@ dependencies:
   threads: 1.7.0
   type-fest: 3.4.0
   typescript-styled-is: 2.1.0_2zpt4ilzykmne4yndyzrqd4gdm
+  v8-compile-cache-lib: 3.0.1
   winston: 3.8.2
   winston-daily-rotate-file: 4.7.1_winston@3.8.2
   winston-transport: 4.5.0
@@ -10839,7 +10841,6 @@ packages:
 
   /v8-compile-cache-lib/3.0.1:
     resolution: {integrity: sha512-wa7YjyUGfNZngI/vtK0UHAN+lgDCxBPCylVXGp0zu59Fz5aiGtNXaq3DhIov063MorB+VfufLh3JlF2KdTK3xg==}
-    dev: true
 
   /validate-npm-package-license/3.0.4:
     resolution: {integrity: sha512-DpKm2Ui/xN7/HQKCtpZxoRWBhZ9Z0kqtygG8XCgNQ8ZlDnxuQmWhj566j8fN4Cu3/JmbhsDo7fcAJq4s9h27Ew==}

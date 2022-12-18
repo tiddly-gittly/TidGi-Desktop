@@ -63,6 +63,7 @@
     "threads": "1.7.0",
     "type-fest": "3.4.0",
     "typescript-styled-is": "^2.1.0",
+    "v8-compile-cache-lib": "^3.0.1",
     "winston": "3.8.2",
     "winston-daily-rotate-file": "4.7.1",
     "winston-transport": "4.5.0",

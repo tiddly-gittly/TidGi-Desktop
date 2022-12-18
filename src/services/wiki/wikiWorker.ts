@@ -1,3 +1,4 @@
+import '@/helpers/installV8Cache';
 import 'source-map-support/register';
 import { expose } from 'threads/worker';
 import path from 'path';

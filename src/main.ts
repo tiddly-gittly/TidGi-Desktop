@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
+import './helpers/installV8Cache';
 import 'source-map-support/register';
 import 'reflect-metadata';
 import './helpers/singleInstance';
