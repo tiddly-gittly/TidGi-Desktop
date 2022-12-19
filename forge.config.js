@@ -20,7 +20,7 @@ const config = {
     ],
     icon: 'build-resources/icon.icns',
     asar: {
-      unpack: '**/.webpack/main/*.worker.*',
+      unpack: '{**/.webpack/main/*.worker.*,**/.webpack/main/native_modules/path.txt}',
     },
     extraResource: ['localization', 'template/wiki', 'build-resources/menubar@2x.png', 'build-resources/menubarTemplate@2x.png'],
     mac: {
