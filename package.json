@@ -27,7 +27,7 @@
   "author": "Lin Onetwo <linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
   "main": ".webpack/main",
   "dependencies": {
-    "@tiddlygit/tiddlywiki": "^5.2.5-prerelease-2022-12-17",
+    "@tiddlygit/tiddlywiki": "^5.2.6-prerelease-2022-12-20",
     "app-path": "4.0.0",
     "best-effort-json-parser": "1.0.0",
     "bluebird": "3.7.2",
