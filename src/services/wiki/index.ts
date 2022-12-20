@@ -20,7 +20,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { logger, wikiOutputToFile, refreshOutputFile, getWikiLogFilePath } from '@services/libs/log';
 import { i18n } from '@services/libs/i18n';
 import { lazyInject } from '@services/container';
-import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH } from '@/constants/paths';
+import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER } from '@/constants/paths';
 import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './plugin/subWikiPlugin';
 import { IWikiService, WikiControlActions } from './interface';
 import { WikiChannel } from '@/constants/channels';
@@ -87,7 +87,7 @@ export class Wiki implements IWikiService {
     }
     // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
-    const workerData = { homePath: wikiFolderLocation, userName, tiddlyWikiPort, tiddlyWikiHost: defaultServerIP };
+    const workerData = { homePath: wikiFolderLocation, userName, tiddlyWikiPort, tiddlyWikiHost: defaultServerIP, constants: { TIDDLYWIKI_PACKAGE_FOLDER } };
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
     this.wikiWorkers[wikiFolderLocation] = worker;
     refreshOutputFile(wikiFolderLocation);

@@ -1,3 +1,6 @@
+/**
+ * Worker environment is not part of electron environment, so don't import "@/constants/paths" here, as its process.resourcesPath will become undefined and throw Errors
+ */
 import '@/helpers/installV8Cache';
 import 'source-map-support/register';
 import { expose } from 'threads/worker';
@@ -14,7 +17,6 @@ import { fixPath } from '@services/libs/fixPath';
 import { IWikiMessage, WikiControlActions, ZxWorkerControlActions, IZxWorkerMessage } from './interface';
 import { defaultServerIP } from '@/constants/urls';
 import { executeScriptInTWContext, extractTWContextScripts, getTWVmContext } from './plugin/zxPlugin';
-import { TIDDLYWIKI_PACKAGE_FOLDER } from '@/constants/paths';
 
 fixPath();
 let wikiInstance: ITiddlyWiki | undefined;
@@ -24,7 +26,9 @@ function startNodeJSWiki({
   tiddlyWikiHost = defaultServerIP,
   tiddlyWikiPort = 5112,
   userName,
+  constants: { TIDDLYWIKI_PACKAGE_FOLDER },
 }: {
+  constants: { TIDDLYWIKI_PACKAGE_FOLDER: string };
   homePath: string;
   tiddlyWikiHost: string;
   tiddlyWikiPort: number;
