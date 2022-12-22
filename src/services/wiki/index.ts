@@ -437,8 +437,8 @@ export class Wiki implements IWikiService {
 
   public async runFilterOnWiki(workspace: IWorkspace, filter: string): Promise<string[] | undefined> {
     const browserView = this.viewService.getView(workspace.id, WindowNames.main);
-    if (browserView === undefined) {
-      logger.error(`browserView is undefined in runFilterOnWiki ${workspace.id} when running filter ${filter}`);
+    if (browserView?.webContents === undefined) {
+      logger.error(`browserView.webContents is undefined in runFilterOnWiki ${workspace.id} when running filter ${filter}`);
       return;
     }
     // await service.wiki.runFilterOnWiki(await service.workspace.getActiveWorkspace(), '[is[draft]]')
