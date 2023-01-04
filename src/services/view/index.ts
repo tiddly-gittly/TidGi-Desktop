@@ -468,10 +468,19 @@ export class View implements IViewService {
   }
 
   public async reloadViewsWebContents(workspaceID?: string): Promise<void> {
-    this.forEachView((view, id, _name) => {
+    const rememberLastPageVisited = await this.preferenceService.get('rememberLastPageVisited');
+    this.forEachView(async (view, id, _name) => {
       /** if workspaceID not passed means reload all views. */
       if (workspaceID === undefined || id === workspaceID) {
         view.webContents.reload();
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        if (workspaceID !== undefined) {
+          const workspace = await this.workspaceService.get(workspaceID);
+          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+          if (rememberLastPageVisited && workspace?.lastUrl) {
+            await view.webContents.loadURL(workspace.lastUrl);
+          }
+        }
       }
     });
   }
