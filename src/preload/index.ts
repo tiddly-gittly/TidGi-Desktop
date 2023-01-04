@@ -1,5 +1,5 @@
 import 'reflect-metadata';
-import { contextBridge, ipcRenderer } from 'electron';
+import { ipcRenderer } from 'electron';
 import { IServicesWithoutObservables, IServicesWithOnlyObservables } from 'electron-ipc-cat/common';
 
 import './common/test';
@@ -7,14 +7,14 @@ import './common/i18n';
 import './common/log';
 import './common/remote';
 import * as service from './common/services';
+import './common/exportServices';
+import 'electron-ipc-cat/fixContextIsolation';
 import { ViewChannel } from '@/constants/channels';
 import { IPossibleWindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData } from './common/browserViewMetaData';
 import './common/authingPostMessage';
 import './view';
 import { syncTidgiStateWhenWikiLoads } from './appState';
-
-contextBridge.exposeInMainWorld('service', service);
 
 declare global {
   interface Window {

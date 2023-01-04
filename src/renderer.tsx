@@ -1,7 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable promise/always-return */
 import React from 'react';
-import ReactDOM from 'react-dom';
 import i18n from 'i18next';
 import { ThemeProvider } from 'styled-components';
 import { createRoot } from 'react-dom/client';
