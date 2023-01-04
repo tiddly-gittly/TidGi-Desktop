@@ -195,6 +195,7 @@
     "ResetDefaultIcon": "还原默认图标",
     "NoRevert": "注意！这个操作无法撤销！",
     "URL": "本地服务器地址",
+    "LastVisitState": "上次访问的页面",
     "Port": "本地服务器端口",
     "PathDescription": "本地维基文件夹的地址",
     "SyncOnInterval": "定时自动同步备份",

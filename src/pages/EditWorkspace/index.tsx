@@ -189,6 +189,7 @@ export default function EditWorkspace(): JSX.Element {
     tagName,
     transparentBackground,
     userName,
+    lastUrl,
     wikiFolderLocation,
   } = (workspace ?? {}) as unknown as IWorkspace;
   const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
@@ -253,30 +254,45 @@ export default function EditWorkspace(): JSX.Element {
           value={userName}
         />
         {!isSubWiki && (
-          <TextField
-            id="outlined-full-width"
-            label={t('EditWorkspace.Port')}
-            helperText={
-              <span>
-                {t('EditWorkspace.URL')}{' '}
-                <Link onClick={async () => actualIP && (await window.service.native.open(actualIP))} style={{ cursor: 'pointer' }}>
-                  {actualIP}
-                </Link>
-              </span>
-            }
-            placeholder="Optional"
-            value={port}
-            onChange={async (event) => {
-              if (!Number.isNaN(Number.parseInt(event.target.value))) {
+          <>
+            <TextField
+              id="outlined-full-width"
+              label={t('EditWorkspace.Port')}
+              helperText={
+                <span>
+                  {t('EditWorkspace.URL')}{' '}
+                  <Link onClick={async () => actualIP && (await window.service.native.open(actualIP))} style={{ cursor: 'pointer' }}>
+                    {actualIP}
+                  </Link>
+                </span>
+              }
+              placeholder="Optional"
+              value={port}
+              onChange={async (event) => {
+                if (!Number.isNaN(Number.parseInt(event.target.value))) {
+                  workspaceSetter({
+                    ...workspace,
+                    port: Number(event.target.value),
+                    homeUrl: await window.service.native.getLocalHostUrlWithActualIP(`http://${defaultServerIP}:${event.target.value}/`),
+                  });
+                  void requestSaveAndRestart();
+                }
+              }}
+            />
+            <TextField
+              id="outlined-full-width"
+              label={t('EditWorkspace.LastVisitState')}
+              helperText={t('Preference.RememberLastVisitState')}
+              placeholder={actualIP}
+              value={lastUrl}
+              onChange={(event) => {
                 workspaceSetter({
                   ...workspace,
-                  port: Number(event.target.value),
-                  homeUrl: await window.service.native.getLocalHostUrlWithActualIP(`http://${defaultServerIP}:${event.target.value}/`),
+                  lastUrl: event.target.value,
                 });
-                void requestSaveAndRestart();
-              }
-            }}
-          />
+              }}
+            />
+          </>
         )}
         {isSubWiki && (
           <Autocomplete

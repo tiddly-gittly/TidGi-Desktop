@@ -161,6 +161,7 @@
     "SelectLocal": "Select Local Image...",
     "ResetDefaultIcon": "Reset Default Icon",
     "NoRevert": "Caution! This operation can't be reverted.",
+    "LastVisitState": "Last page visited",
     "URL": "Wiki URL",
     "Port": "Local host server port",
     "PathDescription": "Location of your local wiki folder.",
