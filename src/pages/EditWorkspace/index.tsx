@@ -198,6 +198,7 @@ export default function EditWorkspace(): JSX.Element {
     [mainWikiToLink],
   ) as ISubWikiPluginContent[];
   const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName')) as string, '');
+  const rememberLastPageVisited = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
 
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
   const requestSaveAndRestart = useCallback(async () => {
@@ -279,19 +280,21 @@ export default function EditWorkspace(): JSX.Element {
                 }
               }}
             />
-            <TextField
-              id="outlined-full-width"
-              label={t('EditWorkspace.LastVisitState')}
-              helperText={t('Preference.RememberLastVisitState')}
-              placeholder={actualIP}
-              value={lastUrl}
-              onChange={(event) => {
-                workspaceSetter({
-                  ...workspace,
-                  lastUrl: event.target.value,
-                });
-              }}
-            />
+            {rememberLastPageVisited && (
+              <TextField
+                id="outlined-full-width"
+                label={t('EditWorkspace.LastVisitState')}
+                helperText={t('Preference.RememberLastVisitState')}
+                placeholder={actualIP}
+                value={lastUrl}
+                onChange={(event) => {
+                  workspaceSetter({
+                    ...workspace,
+                    lastUrl: event.target.value,
+                  });
+                }}
+              />
+            )}
           </>
         )}
         {isSubWiki && (
