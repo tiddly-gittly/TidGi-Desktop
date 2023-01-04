@@ -20,7 +20,7 @@ import { useUpdaterObservable } from '@services/updater/hooks';
 import FindInPage from '../../components/FindInPage';
 import { latestStableUpdateUrl } from '@/constants/urls';
 
-import { WorkspaceSelector, SortableWorkspaceSelectorList } from '@/components/WorkspaceIcon';
+import { WorkspaceSelector, SortableWorkspaceSelectorList } from '@/components/WorkspaceIconAndSelector';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { CommandPaletteIcon } from '@/components/icon/CommandPaletteSVG';
