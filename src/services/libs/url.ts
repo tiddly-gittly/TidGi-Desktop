@@ -1,5 +1,6 @@
 import { defaultServerIP } from '@/constants/urls';
 import { internalIpV4 } from '@/helpers/ip';
+import { logger } from './log';
 
 /**
  * get wiki address with local machine ip, so QR code will be correct, instead of get `0.0.0.0`
@@ -14,7 +15,17 @@ export async function getLocalHostUrlWithActualIP(originalUrl: string): Promise<
 
 /** Sometimes workspace port is corrupted, we want it be fixed to what user set in the workspace setting. */
 export function replaceUrlPortWithSettingPort(originalUrl: string, newPort: number): string {
-  const parsedUrl = new URL(originalUrl);
-  parsedUrl.port = String(newPort);
-  return parsedUrl.toString();
+  try {
+    // maybe TypeError: Invalid URL
+    const parsedUrl = new URL(originalUrl);
+    parsedUrl.port = String(newPort);
+    return parsedUrl.toString();
+  } catch (error) {
+    logger.error(
+      `Failed to replaceUrlPortWithSettingPort for originalUrl ${originalUrl} to newPort ${newPort} , fallback to originalUrl. Error: ${
+        (error as Error).message
+      }`,
+    );
+    return originalUrl;
+  }
 }
