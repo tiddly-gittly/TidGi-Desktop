@@ -1,6 +1,7 @@
 import { defaultServerIP } from '@/constants/urls';
 import { internalIpV4 } from '@/helpers/ip';
 import { logger } from './log';
+import type { IWorkspace } from '@services/workspaces/interface';
 
 /**
  * get wiki address with local machine ip, so QR code will be correct, instead of get `0.0.0.0`
@@ -27,5 +28,16 @@ export function replaceUrlPortWithSettingPort(originalUrl: string, newPort: numb
       }`,
     );
     return originalUrl;
+  }
+}
+
+export function isSameOrigin(a: string, b?: string | null): boolean {
+  if (b === undefined || b === null) return false;
+  try {
+    const urlA = new URL(a);
+    const urlB = new URL(b);
+    return urlA.origin === urlB.origin;
+  } catch {
+    return false;
   }
 }

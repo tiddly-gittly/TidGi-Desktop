@@ -20,7 +20,7 @@ import { WindowNames, IBrowserViewMetaData, windowDimension } from '@services/wi
 import { container } from '@services/container';
 import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { logger } from '@services/libs/log';
-import { getLocalHostUrlWithActualIP } from '@services/libs/url';
+import { getLocalHostUrlWithActualIP, isSameOrigin } from '@services/libs/url';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { throttle } from 'lodash';
 import { isWin } from '@/helpers/system';
@@ -72,6 +72,33 @@ export default function setupViewEventHandlers(
       didFailLoadErrorMessage: null,
       isLoading: true,
     });
+  });
+  view.webContents.on('will-navigate', async (event, newUrl) => {
+    const currentUrl = view.webContents.getURL();
+    if (isSameOrigin(newUrl, currentUrl)) {
+      return;
+    }
+    const { homeUrl, lastUrl } = workspace;
+    const [hostReplacedHomeUrl, hostReplacedLastUrl] = await Promise.all([
+      getLocalHostUrlWithActualIP(homeUrl),
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      lastUrl ? getLocalHostUrlWithActualIP(lastUrl) : undefined,
+    ]);
+    if (
+      isSameOrigin(newUrl, homeUrl) ||
+      isSameOrigin(newUrl, hostReplacedHomeUrl) ||
+      isSameOrigin(newUrl, lastUrl) ||
+      isSameOrigin(newUrl, hostReplacedLastUrl)
+    ) {
+      return;
+    }
+    logger.debug('will-navigate openExternal', { newUrl, currentUrl, homeUrl, lastUrl, hostReplacedHomeUrl, hostReplacedLastUrl });
+    await shell.openExternal(newUrl).catch((error) => logger.error(`will-navigate openExternal error ${(error as Error).message}`, error));
+    // if is an external website
+    event.preventDefault();
+    // TODO: do this until https://github.com/electron/electron/issues/31783 fixed
+    await view.webContents.loadURL(currentUrl);
+    // event.stopPropagation();
   });
   view.webContents.on('did-navigate-in-page', async () => {
     await workspaceViewService.updateLastUrl(workspace.id, view);

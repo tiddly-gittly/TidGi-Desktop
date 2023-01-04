@@ -386,10 +386,10 @@ export class View implements IViewService {
     const view = this.getView(workspaceID, windowName);
     logger.debug(`setActiveView(): view: ${String(view !== undefined && view !== null)} workspace: ${String(workspace !== undefined)}`);
     if (view === undefined || view === null) {
-      if (workspace !== undefined) {
-        return await this.addView(workspace, windowName);
-      } else {
+      if (workspace === undefined) {
         logger.error(`workspace is undefined when setActiveView(${windowName}, ${workspaceID})`);
+      } else {
+        return await this.addView(workspace, windowName);
       }
     } else {
       browserWindow.setBrowserView(view);
@@ -536,15 +536,15 @@ export class View implements IViewService {
       } else {
         view?.setBounds(await getViewBounds(contentSize as [number, number]));
       }
-    } else if (isRetry !== true) {
-      // retry one time later if webContent is not ready yet
-      setTimeout(() => void this.realignActiveView(browserWindow, activeId, true), 1000);
-    } else {
+    } else if (isRetry === true) {
       logger.error(
         `realignActiveView() ${activeId} failed view?.webContents is ${String(view?.webContents)} and isRetry is ${String(isRetry)} stack: ${
           new Error('stack').stack ?? 'no stack'
         }`,
       );
+    } else {
+      // retry one time later if webContent is not ready yet
+      setTimeout(() => void this.realignActiveView(browserWindow, activeId, true), 1000);
     }
   };
 }
