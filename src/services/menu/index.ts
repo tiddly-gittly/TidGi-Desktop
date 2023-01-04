@@ -109,7 +109,7 @@ export class MenuService implements IMenuService {
           label: typeof item.label === 'function' ? item.label() ?? undefined : item.label,
           checked: typeof item.checked === 'function' ? await item.checked() : item.checked,
           enabled: typeof item.enabled === 'function' ? await item.enabled() : item.enabled,
-          submenu: !Array.isArray(item.submenu) ? item.submenu : await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)),
+          submenu: Array.isArray(item.submenu) ? await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)) : item.submenu,
         })),
     );
   }
@@ -367,7 +367,42 @@ export class MenuService implements IMenuService {
     // workspace menus
     menu.append(new MenuItem({ type: 'separator' }));
     // show workspace menu to manipulate workspaces if sidebar is not open
-    if (!sidebar) {
+    if (sidebar) {
+      // when sidebar is showing, only show current workspace's operations
+      if (activeWorkspace !== undefined) {
+        menu.append(
+          new MenuItem({
+            label: i18n.t('Menu.CurrentWorkspace'),
+            submenu: await getWorkspaceMenuTemplate(activeWorkspace, i18n.t.bind(i18n), services),
+          }),
+        );
+      }
+      menu.append(
+        new MenuItem({
+          label: i18n.t('ContextMenu.RestartService'),
+          click: async () => {
+            const workspace = await this.workspaceService.getActiveWorkspace();
+            if (workspace !== undefined) {
+              await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
+              await this.workspaceViewService.realignActiveWorkspace(workspace.id);
+            }
+          },
+        }),
+      );
+      menu.append(
+        new MenuItem({
+          label: i18n.t('ContextMenu.Reload'),
+          click: async () => {
+            webContents.reload();
+            const rememberLastPageVisited = await this.preferenceService.get('rememberLastPageVisited');
+            // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+            if (rememberLastPageVisited && activeWorkspace?.lastUrl) {
+              await webContents.loadURL(activeWorkspace.lastUrl);
+            }
+          },
+        }),
+      );
+    } else {
       menu.append(
         new MenuItem({
           label: i18n.t('ContextMenu.OpenCommandPalette'),
@@ -414,36 +449,6 @@ export class MenuService implements IMenuService {
               await openWorkspaceTagTiddler(workspace, services);
             },
           })),
-        }),
-      );
-    } else {
-      // when sidebar is showing, only show current workspace's operations
-      if (activeWorkspace !== undefined) {
-        menu.append(
-          new MenuItem({
-            label: i18n.t('Menu.CurrentWorkspace'),
-            submenu: await getWorkspaceMenuTemplate(activeWorkspace, i18n.t.bind(i18n), services),
-          }),
-        );
-      }
-      menu.append(
-        new MenuItem({
-          label: i18n.t('ContextMenu.RestartService'),
-          click: async () => {
-            const workspace = await this.workspaceService.getActiveWorkspace();
-            if (workspace !== undefined) {
-              await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
-              await this.workspaceViewService.realignActiveWorkspace(workspace.id);
-            }
-          },
-        }),
-      );
-      menu.append(
-        new MenuItem({
-          label: i18n.t('ContextMenu.Reload'),
-          click: () => {
-            webContents.reload();
-          },
         }),
       );
     }

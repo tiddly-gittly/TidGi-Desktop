@@ -290,7 +290,7 @@ export default function EditWorkspace(): JSX.Element {
                 onChange={(event) => {
                   workspaceSetter({
                     ...workspace,
-                    lastUrl: event.target.value,
+                    lastUrl: (event.target.value || actualIP) ?? '',
                   });
                 }}
               />

@@ -206,19 +206,19 @@ export default function setupViewEventHandlers(
   view.webContents.session.on('will-download', async (_event, item) => {
     const { askForDownloadPath, downloadPath } = await preferenceService.getPreferences();
     // Set the save path, making Electron not to prompt a save dialog.
-    if (!askForDownloadPath) {
-      const finalFilePath = path.join(downloadPath, item.getFilename());
-      if (!fsExtra.existsSync(finalFilePath)) {
-        // eslint-disable-next-line no-param-reassign
-        item.savePath = finalFilePath;
-      }
-    } else {
+    if (askForDownloadPath) {
       // set preferred path for save dialog
       const options = {
         ...item.getSaveDialogOptions(),
         defaultPath: path.join(downloadPath, item.getFilename()),
       };
       item.setSaveDialogOptions(options);
+    } else {
+      const finalFilePath = path.join(downloadPath, item.getFilename());
+      if (!fsExtra.existsSync(finalFilePath)) {
+        // eslint-disable-next-line no-param-reassign
+        item.savePath = finalFilePath;
+      }
     }
   });
   // Unread count badge
@@ -227,7 +227,7 @@ export default function setupViewEventHandlers(
       view.webContents.on('page-title-updated', async (_event, title) => {
         const itemCountRegex = /[([{](\d*?)[)\]}]/;
         const match = itemCountRegex.exec(title);
-        const incString = match !== null ? match[1] : '';
+        const incString = match === null ? '' : match[1];
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         const inc = Number.parseInt(incString, 10) || 0;
         await workspaceService.updateMetaData(workspace.id, {
