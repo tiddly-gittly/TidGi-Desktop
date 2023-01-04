@@ -155,7 +155,7 @@ export function WorkspaceSelector({
   const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {
     void window.service.native.path('basename', workspaceName).then((baseName) => {
-      shortWorkspaceNameSetter(baseName !== undefined ? baseName : t('WorkspaceSelector.BadWorkspacePath'));
+      shortWorkspaceNameSetter(baseName === undefined ? t('WorkspaceSelector.BadWorkspacePath') : baseName);
     });
   }, [workspaceName, t]);
   return (
@@ -172,10 +172,10 @@ export function WorkspaceSelector({
           addAvatar={id === 'add'}
           highlightAdd={index === 0}
           id={id === 'add' ? 'add-workspace-button' : `workspace-avatar-${id}`}>
-          {id !== 'add' ? (
-            <AvatarPicture alt="Icon" large={!showSidebarShortcutHints} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />
-          ) : (
+          {id === 'add' ? (
             '+'
+          ) : (
+            <AvatarPicture alt="Icon" large={!showSidebarShortcutHints} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />
           )}
         </Avatar>
       </Badge>
