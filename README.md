@@ -32,6 +32,13 @@
 
 ---
 
+<div align="center">
+
+[![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)
+  
+More: [Download](#download)
+</div>
+
 ## ShowCases And Demo
 
 ### Demo
