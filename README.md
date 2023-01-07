@@ -17,6 +17,8 @@
 <!-- toc -->
 
 - [ShowCases And Demo](#showcases-and-demo)
+  * [Demo](#demo)
+  * [Screenshot](#screenshot)
 - [Related Posts About TidGi](#related-posts-about-tidgi)
 - [About TidGi-Desktop](#about-tidgi-desktop)
 - [Download](#download)
@@ -26,7 +28,7 @@
 - [Why Github?](#why-github)
 - [Development](#development)
 - [Credits](#credits)
-  - [Stargazers over time](#stargazers-over-time)
+  * [Stargazers over time](#stargazers-over-time)
 
 <!-- tocstop -->
 
@@ -35,8 +37,9 @@
 <div align="center">
 
 [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)
-  
+
 More: [Download](#download)
+
 </div>
 
 ## ShowCases And Demo
@@ -48,24 +51,24 @@ More: [Download](#download)
 
 ### Screenshot
 
-![Screenshot of main-window](./docs/images/main-window-hide-bar.png)
+![Screenshot of main-window](./docs/images/main-window-hide-bar01.png)
 
 <details>
 
-|                     Load NodeJS Wiki                     |
-| :-------------------------------------------------------: |
+|                      Load NodeJS Wiki                       |
+| :---------------------------------------------------------: |
 | ![Screenshot of main-window](./docs/images/main-window.png) |
 
-|                       Create Local Wiki                       |                         Clone Online Wiki                         |
-| :-----------------------------------------------------------: | :---------------------------------------------------------------: |
+|                        Create Local Wiki                        |                          Clone Online Wiki                          |
+| :-------------------------------------------------------------: | :-----------------------------------------------------------------: |
 | ![Screenshot of add-workspace](./docs/images/add-workspace.png) | ![Screenshot of clone-workspace](./docs/images/clone-workspace.png) |
 
-|                                                              Translation, Preferences                                                              |
-| :------------------------------------------------------------------------------------------------------------------------------------------------: |
-|                                              ![Screenshot of preference](./docs/images/preference.png)                                              |
-|                                                                  Interactive code                                                                  |
+|                                                               Translation, Preferences                                                               |
+| :--------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                                              ![Screenshot of preference](./docs/images/preference.png)                                               |
+|                                                                   Interactive code                                                                   |
 | ![Screen recording of zx-script in tiddlywiki](https://user-images.githubusercontent.com/3746270/133831500-ae91164c-7948-4de4-9a81-7017ed3b65c9.gif) |
-|                                                              Community Plugin Library                                                              |
+|                                                               Community Plugin Library                                                               |
 |                                      ![Screenshot of add-workspace](./docs/images/community-plugin-library.png)                                      |
 
 </details>
@@ -113,8 +116,8 @@ It used to named TiddlyGit, means TiddlyWiki with easy Git backup, short for Tid
 
 > For Windows MacOS normal user
 
-|                                                                         [Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                         |
-| :---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
+|                                                                          [Download](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest)                                                                          |
+| :--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------: |
 | [![GitHub Releases](https://img.shields.io/github/downloads/tiddly-gittly/TidGi-Desktop/latest/total?label=Download%20Latest%20Release&style=for-the-badge)](https://github.com/tiddly-gittly/TidGi-Desktop/releases/latest) |
 
 > For arch user
