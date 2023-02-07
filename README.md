@@ -5,6 +5,7 @@
 [![License: MPL 2.0](https://img.shields.io/badge/License-MPL%202.0-brightgreen.svg)](LICENSE)
 [![GitHub Actions Build Status](https://github.com/tiddly-gittly/TidGi-Desktop/actions/workflows/release.yml/badge.svg)](https://github.com/tiddly-gittly/TidGi-Desktop/actions)
 [![Lin Onetwo!](https://img.shields.io/github/followers/linonetwo)](https://github.com/linonetwo)
+[![Power by tiddlywiki!](./docs/images/Powered by-Tiddlywiki-green.svg)](https://tiddlywiki.com/)
 
 </div>
 
