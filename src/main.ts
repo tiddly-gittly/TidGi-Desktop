@@ -40,7 +40,6 @@ protocol.registerSchemesAsPrivileged([
 ]);
 bindServiceAndProxy();
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater);
 const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);

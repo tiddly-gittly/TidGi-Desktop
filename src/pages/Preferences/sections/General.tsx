@@ -55,7 +55,7 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                   </ListItem>
                 }>
                 <MenuItem dense onClick={async () => await window.service.preference.set('themeSource', 'system')}>
-                  {t('Preference.SystemDefalutTheme')}
+                  {t('Preference.SystemDefaultTheme')}
                 </MenuItem>
                 <MenuItem dense onClick={async () => await window.service.preference.set('themeSource', 'light')}>
                   {t('Preference.LightTheme')}
@@ -75,6 +75,19 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                     onChange={async (event) => {
                       await window.service.preference.set('sidebar', event.target.checked);
                       await window.service.workspaceView.realignActiveWorkspace();
+                    }}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
+              <ListItem>
+                <ListItemText primary={t('Preference.HideSideBarIcon')} secondary={t('Preference.ShowSideBarDetail')} />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge="end"
+                    color="primary"
+                    checked={preference.hideSideBarIcon}
+                    onChange={async (event) => {
+                      await window.service.preference.set('hideSideBarIcon', event.target.checked);
                     }}
                   />
                 </ListItemSecondaryAction>

@@ -166,7 +166,7 @@ export default function Main(): JSX.Element {
   const updaterMetaData = useUpdaterObservable();
   if (preferences === undefined) return <div>{t('Loading')}</div>;
 
-  const { sidebar, themeSource, sidebarShortcutHints } = preferences;
+  const { sidebar, themeSource, sidebarShortcutHints, hideSideBarIcon } = preferences;
   const hasError =
     typeof activeWorkspaceMetadata?.didFailLoadErrorMessage === 'string' &&
     activeWorkspaceMetadata?.didFailLoadErrorMessage.length > 0 &&
@@ -184,10 +184,11 @@ export default function Main(): JSX.Element {
               {workspacesList === undefined ? (
                 <div>{t('Loading')}</div>
               ) : (
-                <SortableWorkspaceSelectorList sidebarShortcutHints={sidebarShortcutHints} workspacesList={workspacesList} />
+                <SortableWorkspaceSelectorList sidebarShortcutHints={sidebarShortcutHints} workspacesList={workspacesList} hideSideBarIcon={hideSideBarIcon} />
               )}
               <WorkspaceSelector
                 id="add"
+                hideSideBarIcon={hideSideBarIcon}
                 index={workspacesList?.length ?? 0}
                 showSidebarShortcutHints={sidebarShortcutHints}
                 onClick={() => void window.service.window.open(WindowNames.addWorkspace)}
@@ -196,6 +197,7 @@ export default function Main(): JSX.Element {
                 (workspacesList.length === 0 && (
                   <WorkspaceSelector
                     id="guide"
+                    hideSideBarIcon={hideSideBarIcon}
                     index={workspacesList?.length ? workspacesList.length ?? 0 + 1 : 1}
                     active={activeWorkspace?.id === undefined}
                     showSidebarShortcutHints={sidebarShortcutHints}

@@ -12,6 +12,7 @@ export interface IPreferences {
   downloadPath: string;
   hibernateUnusedWorkspacesAtLaunch: boolean;
   hideMenuBar: boolean;
+  hideSideBarIcon: boolean;
   ignoreCertificateErrors: boolean;
   language: string;
   menuBarAlwaysOnTop: boolean;

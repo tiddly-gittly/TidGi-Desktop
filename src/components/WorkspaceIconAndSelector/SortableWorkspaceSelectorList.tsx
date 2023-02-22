@@ -5,11 +5,12 @@ import { IWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interfa
 import { SortableWorkspaceSelector } from './SortableWorkspaceSelector';
 
 export interface ISortableListProps {
+  hideSideBarIcon: boolean;
   sidebarShortcutHints: boolean;
   workspacesList: IWorkspaceWithMetadata[];
 }
 
-export function SortableWorkspaceSelectorList({ workspacesList, sidebarShortcutHints }: ISortableListProps): JSX.Element {
+export function SortableWorkspaceSelectorList({ workspacesList, sidebarShortcutHints, hideSideBarIcon }: ISortableListProps): JSX.Element {
   const dndSensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -47,6 +48,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, sidebarShortcutH
               index={index}
               workspace={workspace}
               showSidebarShortcutHints={sidebarShortcutHints}
+              hideSideBarIcon={hideSideBarIcon}
               workspaceCount={workspaceIDs.length}
             />
           ))}

@@ -11,6 +11,7 @@ export const defaultPreferences: IPreferences = {
   downloadPath: getDefaultDownloadsPath(),
   hibernateUnusedWorkspacesAtLaunch: false,
   hideMenuBar: false,
+  hideSideBarIcon: false,
   ignoreCertificateErrors: false,
   language: 'zh_CN',
   menuBarAlwaysOnTop: false,

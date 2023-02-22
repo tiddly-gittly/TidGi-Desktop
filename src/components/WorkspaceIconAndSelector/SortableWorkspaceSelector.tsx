@@ -9,13 +9,14 @@ import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/wor
 import defaultIcon from '@/images/default-icon.png';
 
 export interface ISortableItemProps {
+  hideSideBarIcon: boolean;
   index: number;
   showSidebarShortcutHints: boolean;
   workspace: IWorkspace;
   workspaceCount: number;
 }
 
-export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcutHints, workspaceCount }: ISortableItemProps): JSX.Element {
+export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcutHints, workspaceCount, hideSideBarIcon }: ISortableItemProps): JSX.Element {
   const { t } = useTranslation();
   const { active, id, name, picturePath, hibernated, transparentBackground } = workspace;
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
@@ -49,6 +50,7 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarShortcu
       <WorkspaceSelector
         workspaceClickedLoading={workspaceClickedLoading}
         workspaceCount={workspaceCount}
+        hideSideBarIcon={hideSideBarIcon}
         onClick={onWorkspaceClick}
         active={active}
         id={id}

@@ -133,6 +133,7 @@ interface Props {
   active?: boolean;
   badgeCount?: number;
   hibernated?: boolean;
+  hideSideBarIcon: boolean;
   id: string;
   index?: number;
   onClick?: () => void;
@@ -147,6 +148,7 @@ export function WorkspaceSelector({
   active = false,
   badgeCount = 0,
   hibernated = false,
+  hideSideBarIcon = false,
   id,
   index = 0,
   picturePath,
@@ -172,22 +174,24 @@ export function WorkspaceSelector({
       workspaceClickedLoading={workspaceClickedLoading}
       workspaceCount={workspaceCount}>
       <Badge color="secondary" badgeContent={badgeCount} max={99}>
-        <Avatar
-          large={!showSidebarShortcutHints}
-          transparent={transparentBackground}
-          addAvatar={id === 'add'}
-          highlightAdd={index === 0}
-          id={id === 'add' || id === 'guide' ? 'add-workspace-button' : `workspace-avatar-${id}`}>
-          {id === 'add' ? (
-            '+'
-          ) : id === 'guide' ? (
-            '※'
-          ) : (
-            <AvatarPicture alt="Icon" large={!showSidebarShortcutHints} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />
-          )}
-        </Avatar>
+        {!hideSideBarIcon && (
+          <Avatar
+            large={!showSidebarShortcutHints}
+            transparent={transparentBackground}
+            addAvatar={id === 'add'}
+            highlightAdd={index === 0}
+            id={id === 'add' || id === 'guide' ? 'add-workspace-button' : `workspace-avatar-${id}`}>
+            {id === 'add' ? (
+              '+'
+            ) : id === 'guide' ? (
+              '※'
+            ) : (
+              <AvatarPicture alt="Icon" large={!showSidebarShortcutHints} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />
+            )}
+          </Avatar>
+        )}
       </Badge>
-      {showSidebarShortcutHints && (
+      {(showSidebarShortcutHints || hideSideBarIcon) && (
         <ShortcutText active={active}>
           {id === 'add' ? t('WorkspaceSelector.Add') : id === 'guide' ? t('WorkspaceSelector.Guide') : shortWorkspaceName}
         </ShortcutText>

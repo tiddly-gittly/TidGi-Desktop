@@ -255,7 +255,7 @@
     "AttachToMenuBarTip": "Make  a small TidGi popup window that pop when you click appbar mini icon. Tip: Right-click on mini app icon to access context menu.",
     "OpenLogFolder": "Open the Log folder",
     "OpenLogFolderDetail": "When reporting a problem, please open the latest .log file in the folder and send its content to the developer, or paste it to pastebin.com and then paste the URL into the Github Issue",
-    "SystemDefalutTheme": "System Defalut Theme",
+    "SystemDefaultTheme": "System Defalut Theme",
     "LightTheme": "Light Theme",
     "DarkTheme": "Dark Theme",
     "ShowSideBar": "Show SideBar",
@@ -329,7 +329,8 @@
     "SyncOnlyWhenNoDraft": "Sync only when there are no drafts",
     "SyncOnlyWhenNoDraftDescription": "Check if there are drafts before synchronizing, if so, it will not be synchronized this time, preventing the drafts from being synchronized to your blog. \n(Not working for sync-before-shutdown, for you may want to bring drafts from one computer to another to continue editing)",
     "MoreWorkspaceSyncSettingsDescription": "Please right-click the workspace icon, open its workspace setting by click on \"Edit Workspace\" context menu item, and configure its independent synchronization settings in it.",
-    "MoreWorkspaceSyncSettings": "More Workspace Sync Settings"
+    "MoreWorkspaceSyncSettings": "More Workspace Sync Settings",
+    "HideSideBarIcon": "Hide sidebar workspace icons"
   },
   "Error": {
     "InitWikiGitError": "E-1 InitWikiGitError",
