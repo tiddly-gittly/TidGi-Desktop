@@ -2,7 +2,7 @@
   "name": "TidGi",
   "productName": "TidGi",
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
-  "version": "0.7.14",
+  "version": "0.7.15",
   "license": "MPL 2.0",
   "scripts": {
     "start": "npm run clean && npm run start-without-clean",
