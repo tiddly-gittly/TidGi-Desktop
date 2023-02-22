@@ -1,7 +1,7 @@
 /**
  * Worker environment is not part of electron environment, so don't import "@/constants/paths" here, as its process.resourcesPath will become undefined and throw Errors
  */
-import '@/helpers/installV8Cache';
+import { uninstall } from '@/helpers/installV8Cache';
 import 'source-map-support/register';
 import { expose } from 'threads/worker';
 import path from 'path';
@@ -198,12 +198,17 @@ function packetHTMLFromWikiFolder(folderWikiPath: string, saveWikiHtmlFolder: st
   });
 }
 
+function beforeExit(): void {
+  uninstall?.uninstall();
+}
+
 const wikiWorker = {
   startNodeJSWiki,
   getTiddlerFileMetadata: (tiddlerTitle: string) => wikiInstance?.boot?.files?.[tiddlerTitle],
   executeZxScript,
   extractWikiHTML,
   packetHTMLFromWikiFolder,
+  beforeExit,
 };
 export type WikiWorker = typeof wikiWorker;
 expose(wikiWorker);

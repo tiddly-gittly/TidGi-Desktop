@@ -196,6 +196,7 @@ export class Wiki implements IWikiService {
     }
     clearInterval(this.wikiSyncIntervals[wikiFolderLocation]);
     try {
+      await worker.beforeExit();
       await Thread.terminate(worker);
       await delay(100);
     } catch (error) {
