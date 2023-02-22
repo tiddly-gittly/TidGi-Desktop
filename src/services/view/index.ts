@@ -1,3 +1,4 @@
+/* eslint-disable n/no-callback-literal */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
 import { BrowserView, BrowserWindow, session, ipcMain, WebPreferences } from 'electron';
@@ -263,6 +264,15 @@ export class View implements IViewService {
     if (spellcheck && !isMac) {
       sessionOfView.setSpellCheckerLanguages(spellcheckLanguages);
     }
+    // pretending we are sending request from same origin using a Chrome browser. So image site won't block our request.
+    sessionOfView.webRequest.onBeforeSendHeaders((details, callback) => {
+      const url = new URL(details.url);
+      details.requestHeaders.Origin = url.origin;
+      details.requestHeaders.Referer = details.url;
+      details.requestHeaders['User-Agent'] =
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36';
+      callback({ cancel: false, requestHeaders: details.requestHeaders });
+    });
     const browserViewMetaData: IBrowserViewMetaData = { workspaceID: workspace.id };
     const sharedWebPreferences: WebPreferences = {
       devTools: true,
