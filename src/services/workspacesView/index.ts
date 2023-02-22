@@ -150,7 +150,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     // wait for main wiki webview loaded
     while (workspaceMetadata.isLoading !== false) {
       // eslint-disable-next-line no-await-in-loop
-      await delay(500);
+      await delay(200);
       workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
     }
     loadFailed = await this.workspaceService.workspaceDidFailLoad(workspace.id);
