@@ -3,6 +3,7 @@
   "LinOnetwo": "林一二",
   "WorkspaceSelector": {
     "Add": "添加",
+    "Guide": "引导",
     "OpenWorkspaceTagTiddler": "打开 {{tagName}}",
     "DefaultTiddlers": "默认条目",
     "OpenWorkspaceMenuName": "打开工作区",
@@ -247,6 +248,7 @@
     "SynchronizationFinish": "同步完成",
     "InitializeWikiGit": "正在初始化 Wiki 和 Git",
     "InitializeWorkspaceView": "正在初始化工作区和浏览器窗口，并加载内容，请耐心等待",
+    "InitializeWorkspaceViewDone": "创建成功，即将加载内容",
     "PrepareCloneOnlineWiki": "准备导入线上 Wiki",
     "StartFetchingFromGithubRemote": "正在拉取Github远端仓库的数据，需要的时间取决于网速和仓库大小，请耐心等待",
     "UsingUrlAndUsername": "使用 Git Url {{githubRepoUrl}} 和用户名 {{username}} 和 accessToken {{accessToken}}"

@@ -1,5 +1,6 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/promise-function-async */
-import React from 'react';
+import React, { useState } from 'react';
 import styled, { css } from 'styled-components';
 import is, { isNot } from 'typescript-styled-is';
 import { useTranslation } from 'react-i18next';
@@ -28,6 +29,7 @@ import { Languages } from '../Preferences/sections/Languages';
 import { TiddlyWiki } from '../Preferences/sections/TiddlyWiki';
 import { NewUserMessage } from './NewUserMessage';
 import { WikiErrorMessages, ViewLoadErrorMessages } from './ErrorMessage';
+import { useAutoCreateFirstWorkspace } from './useAutoCreateFirstWorkspace';
 
 const OuterRoot = styled.div`
   display: flex;
@@ -151,6 +153,8 @@ const SidebarContainer = ({ children }: { children: React.ReactNode }): JSX.Elem
 export default function Main(): JSX.Element {
   const { t } = useTranslation();
   const workspacesList = useWorkspacesListObservable();
+  const [wikiCreationMessage, wikiCreationMessageSetter] = useState('');
+  useAutoCreateFirstWorkspace(workspacesList, wikiCreationMessageSetter);
   const preferences = usePreferenceObservable();
   /** is title bar on. This only take effect after reload, so we don't want to get this preference from observable */
   const titleBar = usePromiseValue<boolean>(() => window.service.preference.get('titleBar'), false)!;
@@ -187,6 +191,13 @@ export default function Main(): JSX.Element {
                 index={workspacesList?.length ?? 0}
                 showSidebarShortcutHints={sidebarShortcutHints}
                 onClick={() => void window.service.window.open(WindowNames.addWorkspace)}
+              />
+              <WorkspaceSelector
+                id="guide"
+                index={workspacesList?.length ? workspacesList.length + 1 : 1}
+                active={activeWorkspace?.id === undefined}
+                showSidebarShortcutHints={sidebarShortcutHints}
+                onClick={() => void window.service.workspace.clearActiveWorkspace(activeWorkspace?.id)}
               />
             </SidebarTop>
             <SideBarEnd>
@@ -233,6 +244,7 @@ export default function Main(): JSX.Element {
             {Array.isArray(workspacesList) && workspacesList.length > 0 && activeWorkspaceMetadata?.isLoading === true && (
               <Typography color="textSecondary">{t('Loading')}</Typography>
             )}
+            {wikiCreationMessage && <Typography color="textSecondary">{wikiCreationMessage}</Typography>}
             {Array.isArray(workspacesList) && workspacesList.length === 0 && <NewUserMessage sidebar={sidebar} themeSource={themeSource} />}
           </InnerContentRoot>
           <Languages languageSelectorOnly />

@@ -355,7 +355,14 @@ export class Workspace implements IWorkspaceService {
     // active new one
     await this.update(id, { active: true, hibernated: false });
     // de-active the other one
-    if (typeof oldActiveWorkspaceID === 'string' && oldActiveWorkspaceID !== id) {
+    if (oldActiveWorkspaceID !== id) {
+      await this.clearActiveWorkspace(oldActiveWorkspaceID);
+    }
+  }
+
+  public async clearActiveWorkspace(oldActiveWorkspaceID: string | undefined): Promise<void> {
+    // de-active the other one
+    if (typeof oldActiveWorkspaceID === 'string') {
       await this.update(oldActiveWorkspaceID, { active: false });
     }
   }

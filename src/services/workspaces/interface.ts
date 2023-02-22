@@ -121,6 +121,8 @@ export type INewWorkspaceConfig = SetOptional<
  * Manage workspace level preferences and workspace metadata.
  */
 export interface IWorkspaceService {
+  /** Enter a state that no workspace is active (show welcome page) */
+  clearActiveWorkspace(oldActiveWorkspaceID: string | undefined): Promise<void>;
   countWorkspaces(): Promise<number>;
   create(newWorkspaceConfig: INewWorkspaceConfig): Promise<IWorkspace>;
   get(id: string): Promise<IWorkspace | undefined>;
@@ -157,6 +159,7 @@ export const WorkspaceServiceIPCDescriptor = {
   channel: WorkspaceChannel.name,
   properties: {
     countWorkspaces: ProxyPropertyType.Function,
+    clearActiveWorkspace: ProxyPropertyType.Function,
     create: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,
     get$: ProxyPropertyType.Function$,

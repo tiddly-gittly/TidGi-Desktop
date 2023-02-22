@@ -7,6 +7,7 @@ export async function callWikiInitialization(
   wikiCreationMessageSetter: (m: string) => void,
   t: TFunction<'translation'>,
   gitUserInfo: IGitUserInfos | undefined,
+  notClose?: boolean,
 ): Promise<void> {
   wikiCreationMessageSetter(t('Log.InitializeWikiGit'));
   const newWorkspace = await window.service.wikiGitWorkspace.initWikiGitTransaction(newWorkspaceConfig, gitUserInfo);
@@ -17,7 +18,11 @@ export async function callWikiInitialization(
   wikiCreationMessageSetter(t('Log.InitializeWorkspaceView'));
   /** create workspace from workspaceService to store workspace configs, and create a BrowserView to actually display wiki web content from viewService */
   await window.service.workspaceView.initializeWorkspaceView(newWorkspace, { isNew: true });
+  wikiCreationMessageSetter(t('Log.InitializeWorkspaceViewDone'));
   await window.service.workspaceView.setActiveWorkspaceView(newWorkspace.id);
-  // wait for wiki to start and close the window now.
-  await window.remote.closeCurrentWindow();
+  wikiCreationMessageSetter('');
+  if (notClose !== true) {
+    // wait for wiki to start and close the window now.
+    await window.remote.closeCurrentWindow();
+  }
 }

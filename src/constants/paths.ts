@@ -31,3 +31,5 @@ export const LOCALIZATION_FOLDER = isDevelopmentOrTest
   ? path.resolve(sourcePath, '..', localizationFolderName)
   : path.resolve(process.resourcesPath, localizationFolderName);
 export const DEFAULT_WIKI_FOLDER = isDevelopmentOrTest ? path.resolve(os.tmpdir(), developmentWikiFolderName) : DESKTOP_PATH;
+export const DEFAULT_FIRST_WIKI_NAME = 'wiki';
+export const DEFAULT_FIRST_WIKI_PATH = path.join(DEFAULT_WIKI_FOLDER, DEFAULT_FIRST_WIKI_NAME);

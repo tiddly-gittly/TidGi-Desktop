@@ -3,6 +3,8 @@ import { ContextChannel } from '@/constants/channels';
 
 export interface IPaths {
   CHROME_ERROR_PATH: string;
+  DEFAULT_FIRST_WIKI_NAME: string;
+  DEFAULT_FIRST_WIKI_PATH: string;
   DEFAULT_WIKI_FOLDER: string;
   DESKTOP_PATH: string;
   LOCALIZATION_FOLDER: string;

@@ -109,7 +109,7 @@ const AvatarPicture = styled.img<{ large?: boolean }>`
     `}
 `;
 
-const ShortcutText = styled.p`
+const ShortcutText = styled.p<{ active?: boolean }>`
   margin-top: 2px;
   margin-bottom: 0;
   padding: 0;
@@ -118,6 +118,12 @@ const ShortcutText = styled.p`
   display: inline-block;
   word-break: break-all;
   text-align: center;
+  ${({ active }) =>
+    active === true &&
+    css`
+      text-decoration: underline;
+      text-underline-offset: 0.2em;
+    `}
 `;
 const Badge = styled(BadgeRaw)`
   line-height: 20px;
@@ -171,15 +177,21 @@ export function WorkspaceSelector({
           transparent={transparentBackground}
           addAvatar={id === 'add'}
           highlightAdd={index === 0}
-          id={id === 'add' ? 'add-workspace-button' : `workspace-avatar-${id}`}>
+          id={id === 'add' || id === 'guide' ? 'add-workspace-button' : `workspace-avatar-${id}`}>
           {id === 'add' ? (
             '+'
+          ) : id === 'guide' ? (
+            '※'
           ) : (
             <AvatarPicture alt="Icon" large={!showSidebarShortcutHints} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />
           )}
         </Avatar>
       </Badge>
-      {showSidebarShortcutHints && <ShortcutText>{id === 'add' ? t('WorkspaceSelector.Add') : shortWorkspaceName}</ShortcutText>}
+      {showSidebarShortcutHints && (
+        <ShortcutText active={active}>
+          {id === 'add' ? t('WorkspaceSelector.Add') : id === 'guide' ? t('WorkspaceSelector.Guide') : shortWorkspaceName}
+        </ShortcutText>
+      )}
     </Root>
   );
 }

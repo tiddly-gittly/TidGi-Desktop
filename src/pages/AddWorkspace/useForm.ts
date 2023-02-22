@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable unicorn/no-null */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
@@ -10,6 +11,7 @@ import { useStorageServiceUserInfoObservable } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
 import { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
 import { INewWorkspaceConfig, IWorkspace } from '@services/workspaces/interface';
+import type { INewWikiRequiredFormData } from './useNewWiki';
 
 export function useIsCreateSyncedWorkspace(): [boolean, React.Dispatch<React.SetStateAction<boolean>>] {
   const [isCreateSyncedWorkspace, isCreateSyncedWorkspaceSetter] = useState(false);
@@ -151,15 +153,15 @@ export interface IWikiWorkspaceFormProps {
   isCreateMainWorkspace: boolean;
 }
 
-export function workspaceConfigFromForm(form: IWikiWorkspaceForm, isCreateMainWorkspace: boolean, isCreateSyncedWorkspace: boolean): INewWorkspaceConfig {
+export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreateMainWorkspace: boolean, isCreateSyncedWorkspace: boolean): INewWorkspaceConfig {
   return {
     gitUrl: isCreateSyncedWorkspace ? form.gitRepoUrl : null,
     isSubWiki: !isCreateMainWorkspace,
-    mainWikiToLink: !isCreateMainWorkspace ? form.mainWikiToLink.wikiFolderLocation : null,
-    mainWikiID: !isCreateMainWorkspace ? form.mainWikiToLink.id : null,
+    mainWikiToLink: isCreateMainWorkspace ? null : form.mainWikiToLink.wikiFolderLocation,
+    mainWikiID: isCreateMainWorkspace ? null : form.mainWikiToLink.id,
     name: form.wikiFolderName,
     storageService: form.storageProvider,
-    tagName: !isCreateMainWorkspace ? form.tagName : null,
+    tagName: isCreateMainWorkspace ? null : form.tagName,
     port: form.wikiPort,
     wikiFolderLocation: form.wikiFolderLocation!,
     backupOnInterval: true,

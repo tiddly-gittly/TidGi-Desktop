@@ -1,9 +1,11 @@
+/* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { callWikiInitialization } from './useCallWikiInitialization';
 import { IErrorInWhichComponent, IWikiWorkspaceForm, workspaceConfigFromForm } from './useForm';
 import { updateErrorInWhichComponentSetterByErrorMessage } from './useIndicator';
+import { ConditionalExcept } from 'type-fest';
 
 export function useValidateNewWiki(
   isCreateMainWorkspace: boolean,
@@ -56,20 +58,21 @@ export function useValidateNewWiki(
   return [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter];
 }
 
+export type INewWikiRequiredFormData = ConditionalExcept<IWikiWorkspaceForm, Function>;
 export function useNewWiki(
   isCreateMainWorkspace: boolean,
   isCreateSyncedWorkspace: boolean,
-  form: IWikiWorkspaceForm,
+  form: INewWikiRequiredFormData,
   wikiCreationMessageSetter: (m: string) => void,
-  hasErrorSetter: (m: boolean) => void,
-  errorInWhichComponentSetter: (errors: IErrorInWhichComponent) => void,
-  options?: { noCopyTemplate?: boolean },
+  hasErrorSetter?: (m: boolean) => void,
+  errorInWhichComponentSetter?: (errors: IErrorInWhichComponent) => void,
+  options?: { noCopyTemplate?: boolean; notClose?: boolean },
 ): () => Promise<void> {
   const { t } = useTranslation();
 
   const onSubmit = useCallback(async () => {
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
-    hasErrorSetter(false);
+    hasErrorSetter?.(false);
     try {
       const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, isCreateSyncedWorkspace);
       if (isCreateMainWorkspace) {
@@ -79,22 +82,13 @@ export function useNewWiki(
       } else {
         await window.service.wiki.createSubWiki(form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink?.wikiFolderLocation, form.tagName);
       }
-      await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo);
+      await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo, options?.notClose);
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
-      updateErrorInWhichComponentSetterByErrorMessage(t, (error as Error).message, errorInWhichComponentSetter);
-      hasErrorSetter(true);
+      errorInWhichComponentSetter && updateErrorInWhichComponentSetterByErrorMessage(t, (error as Error).message, errorInWhichComponentSetter);
+      hasErrorSetter?.(true);
     }
-  }, [
-    wikiCreationMessageSetter,
-    t,
-    hasErrorSetter,
-    form,
-    isCreateMainWorkspace,
-    isCreateSyncedWorkspace,
-    options?.noCopyTemplate,
-    errorInWhichComponentSetter,
-  ]);
+  }, [wikiCreationMessageSetter, t, hasErrorSetter, form, isCreateMainWorkspace, isCreateSyncedWorkspace, options, errorInWhichComponentSetter]);
 
   return onSubmit;
 }

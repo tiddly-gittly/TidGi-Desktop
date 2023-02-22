@@ -2,6 +2,7 @@
   "Hello": "Hello",
   "WorkspaceSelector": {
     "Add": "Add",
+    "Guide": "Guide",
     "OpenWorkspaceTagTiddler": "Open {{tagName}}",
     "DefaultTiddlers": "Default Tiddlers",
     "OpenWorkspaceMenuName": "Open Workspace",
@@ -229,7 +230,8 @@
     "CheckingRebaseStatus": "Analyzing the rebase processing plan",
     "InitializeWikiGit": "Initializing Wiki and Git",
     "InitializeWorkspaceView": "Initializing workspace and browser view, and loading the web content, please wait",
-    "GitTokenExpireOrWrong": "The Git credential (Token) has expired and you need to log in again, or the credential does not correspond to the user name"
+    "GitTokenExpireOrWrong": "The Git credential (Token) has expired and you need to log in again, or the credential does not correspond to the user name",
+    "InitializeWorkspaceViewDone": "Created successfully, content will be loaded soon"
   },
   "Cancel": "Cancel",
   "Preference": {
