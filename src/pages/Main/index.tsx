@@ -192,13 +192,16 @@ export default function Main(): JSX.Element {
                 showSidebarShortcutHints={sidebarShortcutHints}
                 onClick={() => void window.service.window.open(WindowNames.addWorkspace)}
               />
-              <WorkspaceSelector
-                id="guide"
-                index={workspacesList?.length ? workspacesList.length + 1 : 1}
-                active={activeWorkspace?.id === undefined}
-                showSidebarShortcutHints={sidebarShortcutHints}
-                onClick={() => void window.service.workspace.clearActiveWorkspace(activeWorkspace?.id)}
-              />
+              {workspacesList === undefined ||
+                (workspacesList.length === 0 && (
+                  <WorkspaceSelector
+                    id="guide"
+                    index={workspacesList?.length ? workspacesList.length ?? 0 + 1 : 1}
+                    active={activeWorkspace?.id === undefined}
+                    showSidebarShortcutHints={sidebarShortcutHints}
+                    onClick={() => void window.service.workspace.clearActiveWorkspace(activeWorkspace?.id)}
+                  />
+                ))}
             </SidebarTop>
             <SideBarEnd>
               {(workspacesList?.length ?? 0) > 0 && (
