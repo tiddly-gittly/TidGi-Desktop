@@ -159,7 +159,7 @@ See [Tiddloid](https://github.com/donmor/Tiddloid) for Android App developed by 
 
 ## 参与开发
 
-阅读[开发指引文档](docs/Development.md)
+阅读[开发指引文档（英文）](./Development.md)
 
 ## 鸣谢
 
