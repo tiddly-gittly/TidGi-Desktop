@@ -9,7 +9,7 @@ body:
     id: Environment
     attributes:
       label: Environment 环境信息
-      description: You can copy this from Menu → About 你可以从 菜单 → 关于 里面复制出来
+      description: You can copy this from Menu → About , if can't start, zip the C:\Users\linonetwo\AppData\Roaming\TidGi\logs and upload here. 你可以从 菜单 → 关于 里面复制出来，如果无法启动，打包 C:\Users\改为你的用户名\AppData\Roaming\TidGi\logs 发上来
     validations:
       required: false
   - type: textarea
