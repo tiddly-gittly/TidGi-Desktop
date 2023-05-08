@@ -121,7 +121,7 @@
     "@typescript-eslint/parser": "5.46.1",
     "@vercel/webpack-asset-relocator-loader": "1.7.3",
     "ajv": "^8.11.2",
-    "authing-js-sdk": "4.23.29",
+    "authing-js-sdk": "4.23.44",
     "beautiful-react-hooks": "3.11.2",
     "chai": "4.3.7",
     "circular-dependency-plugin": "5.2.2",
