@@ -100,7 +100,7 @@ const config = {
         options: {
           maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
           homepage: 'https://github.com/tiddly-gittly/TidGi-Desktop',
-          icon: 'build-resources/icon.ico',
+          icon: 'build-resources/icon.png',
         },
       },
     },
