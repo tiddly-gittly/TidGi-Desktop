@@ -1,6 +1,6 @@
 {
   "exclude": ["template/**/*.js"],
-  "include": ["src", "features"],
+  "include": ["src"],
   "ts-node": {
     "files": true,
     "compilerOptions": {

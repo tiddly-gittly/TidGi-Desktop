@@ -5,7 +5,7 @@ import styled from 'styled-components';
 import { useQuery, useMutation, GraphQLClient, ClientContext } from 'graphql-hooks';
 import { trim } from 'lodash';
 import { useTranslation } from 'react-i18next';
-import { useDebouncedCallback } from 'beautiful-react-hooks';
+import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 
 import { TextField, LinearProgress, List, ListItem, ListItemIcon, ListItemText, Button } from '@material-ui/core';
 import { Folder as FolderIcon, Cached as CachedIcon, CreateNewFolder as CreateNewFolderIcon } from '@material-ui/icons';

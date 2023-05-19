@@ -15,7 +15,8 @@
     "src/**/*.d.ts",
     "public/**/*.d.ts",
     "./*.json",
-    "./*.js"
+    "./*.js",
+    "./*.*.js"
   ],
   "exclude": ["template/**/*.js", "src/services/libs/i18n/i18next-electron-fs-backend.ts"]
 }

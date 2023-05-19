@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useObservable } from 'beautiful-react-hooks';
+import useObservable from 'beautiful-react-hooks/useObservable';
 import { IUserInfos } from './interface';
 import { SupportedStorageServices } from '@services/types';
 import { IGitUserInfos } from '@services/git/interface';

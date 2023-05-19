@@ -1,4 +1,4 @@
-import { usePreviousValue } from 'beautiful-react-hooks';
+import usePreviousValue from 'beautiful-react-hooks/usePreviousValue';
 import { useState, useEffect, useCallback } from 'react';
 import { IWorkspace } from '@services/workspaces/interface';
 

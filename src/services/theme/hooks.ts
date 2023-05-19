@@ -1,4 +1,4 @@
-import { useObservable } from 'beautiful-react-hooks';
+import useObservable from 'beautiful-react-hooks/useObservable';
 import { useState } from 'react';
 import { ITheme } from './interface';
 

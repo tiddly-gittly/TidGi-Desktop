@@ -1,0 +1,22 @@
+{
+  "lineWidth": 160,
+  "typescript": {
+    "quoteProps": "asNeeded",
+    "quoteStyle": "preferSingle",
+    "binaryExpression.operatorPosition": "sameLine"
+  },
+  "json": {},
+  "markdown": {},
+  "includes": [
+    "**/*.{ts,tsx,js,jsx,cjs,mjs,json,md}",
+    "./*.json",
+    "./*.js",
+    "packages/*/.*.js"
+  ],
+  "excludes": ["**/node_modules", "**/*-lock.json"],
+  "plugins": [
+    "https://plugins.dprint.dev/typescript-0.84.1.wasm",
+    "https://plugins.dprint.dev/json-0.17.1.wasm",
+    "https://plugins.dprint.dev/markdown-0.15.2.wasm"
+  ]
+}

@@ -91,7 +91,7 @@ const config = {
         An unhandled rejection has occurred inside Forge:
         [object Object]
      */
-    /*     {
+        {
       name: '@reforged/maker-appimage',
       platforms: ['linux'],
       config: {
@@ -101,7 +101,7 @@ const config = {
           icon: 'build-resources/icon.ico',
         },
       },
-    }, */
+    },
     /**
      * ✖ Making for target: flatpak - On platform: linux - For arch: x64
 

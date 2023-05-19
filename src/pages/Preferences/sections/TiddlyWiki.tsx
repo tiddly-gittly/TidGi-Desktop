@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useDebouncedCallback } from 'beautiful-react-hooks';
+import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 
 import { List } from '@material-ui/core';
 

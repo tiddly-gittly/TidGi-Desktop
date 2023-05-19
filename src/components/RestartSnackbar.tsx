@@ -3,7 +3,7 @@ import styled, { keyframes } from 'styled-components';
 import { Snackbar, Button, IconButton, Tooltip } from '@material-ui/core';
 import { Close as CloseIcon } from '@material-ui/icons';
 import { useTranslation } from 'react-i18next';
-import { useDebouncedCallback } from 'beautiful-react-hooks';
+import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 
 const progressAnimation = keyframes`
   from {

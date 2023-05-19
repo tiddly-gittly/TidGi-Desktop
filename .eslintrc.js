@@ -1,3 +1,4 @@
+// eslint-disable-next-line @typescript-eslint/no-var-requires
 const tsEslintConfig = require('./tsconfig.eslint.json');
 
 module.exports = {
@@ -32,7 +33,7 @@ module.exports = {
     },
   },
   rules: {
-    'no-use-before-define': ['error', { ignoreTypeReferences: true, functions: false }],
+    'no-use-before-define': ['error', { functions: false }],
     'unicorn/prevent-abbreviations': [
       'error',
       {
@@ -95,10 +96,20 @@ module.exports = {
     'unicorn/prefer-ternary': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
     semi: [0],
-    'no-use-before-define': [0],
     '@typescript-eslint/no-use-before-define': [1],
     'unused-imports/no-unused-imports': 'error',
     'unused-imports/no-unused-vars': ['warn', { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' }],
+    'dprint-integration/dprint': [
+      'warn',
+      // Global Config (will pass to the dprint formatter directly): Available at https://dprint.dev/config/
+      {
+        useDprintJson: true,
+      },
+      // Plugin Specific Config (will pass to the dprint plugins): Available at https://dprint.dev/plugins/
+      {
+        useDprintJson: true,
+      },
+    ],
   },
   extends: [
     'eslint:recommended',
@@ -106,7 +117,6 @@ module.exports = {
     'plugin:security/recommended',
     'plugin:react/recommended',
     'plugin:unicorn/recommended',
-    'plugin:prettier/recommended',
     'standard-with-typescript',
     'plugin:@typescript-eslint/eslint-recommended',
     'plugin:@typescript-eslint/recommended',
@@ -115,13 +125,14 @@ module.exports = {
     'plugin:import/warnings',
     'plugin:import/typescript',
     'plugin:react-hooks/recommended',
-    'prettier',
+    'plugin:dprint-integration/recommended',
+    'plugin:dprint-integration/disable-conflict',
     'plugin:security-node/recommended',
     'plugin:typescript-sort-keys/recommended',
   ],
   plugins: [
     '@typescript-eslint/eslint-plugin',
-    'prettier',
+    'dprint-integration',
     'react',
     'html',
     'typescript-sort-keys',
