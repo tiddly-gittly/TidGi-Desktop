@@ -72,6 +72,7 @@ const config = {
     {
       name: '@electron-forge/maker-deb',
       platforms: ['linux'],
+      executableName: 'tidgi',
       config: {
         maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
       },
@@ -79,6 +80,7 @@ const config = {
     {
       name: '@electron-forge/maker-rpm',
       platforms: ['linux'],
+      executableName: 'tidgi',
       config: {
         maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
       },
