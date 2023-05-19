@@ -37,15 +37,15 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
   /** copy npm packages with node-worker dependencies with binary or __filename usages, which can't be prepare properly by webpack */
   if (['production', 'test'].includes(process.env.NODE_ENV)) {
     console.log('Copying tiddlywiki dependency to dist');
-    await fs.copy(path.join(projectRoot, 'node_modules', '@tiddlygit', 'tiddlywiki'), path.join(cwd, 'node_modules', '@tiddlygit', 'tiddlywiki'));
-    await fs.copy(path.join(projectRoot, 'node_modules', 'dugite'), path.join(cwd, 'node_modules', 'dugite'));
+    await fs.copy(path.join(projectRoot, 'node_modules', '@tiddlygit', 'tiddlywiki'), path.join(cwd, 'node_modules', '@tiddlygit', 'tiddlywiki'), { dereference: true });
+    await fs.copy(path.join(projectRoot, 'node_modules', 'dugite'), path.join(cwd, 'node_modules', 'dugite'), { dereference: true });
     // we only need its `main` binary
     await fs.mkdirp(path.join(cwd, 'node_modules', 'app-path'));
-    await fs.copy(path.join(projectRoot, 'node_modules', 'app-path', 'main'), path.join(cwd, 'node_modules', 'app-path', 'main'));
+    await fs.copy(path.join(projectRoot, 'node_modules', 'app-path', 'main'), path.join(cwd, 'node_modules', 'app-path', 'main'), { dereference: true });
     // await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'app-path') });
     // await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'app-path', 'node_modules', 'cross-spawn') });
     // await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'app-path', 'node_modules', 'get-stream') });
-    await fs.copy(path.join(projectRoot, 'node_modules', 'zx'), path.join(cwd, 'node_modules', 'zx'));
+    await fs.copy(path.join(projectRoot, 'node_modules', 'zx'), path.join(cwd, 'node_modules', 'zx'), { dereference: true });
     // not using pnpm, because after using it, it always causing problem here, causing `Error: spawn /bin/sh ENOENT` in github actions
     // it can probably being "working directory didn't exist" in  https://github.com/nodejs/node/issues/9644#issuecomment-282060923
     await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx'), shell });
