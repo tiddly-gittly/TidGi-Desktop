@@ -60,7 +60,7 @@ const config = {
           ui: {
             chooseDirectory: true,
           },
-          icon: 'build-resources/icon@5x.png',
+          appIconPath: 'build-resources/icon.ico',
           // WiX distributables do not handle prerelease information in the app version, removing it from the MSI (-prerelease3.4)
           // and https://github.com/felixrieseberg/electron-wix-msi/issues/110 ask use to use fixed number
           version: '1.0.0',
