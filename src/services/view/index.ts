@@ -232,8 +232,8 @@ export class View implements IViewService {
   public async addViewForAllBrowserViews(workspace: IWorkspace): Promise<void> {
     await Promise.all([
       this.addView(workspace, WindowNames.main),
-      this.preferenceService.get('attachToMenubar').then((attachToMenubar) => {
-        attachToMenubar && this.addView(workspace, WindowNames.menuBar);
+      this.preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
+        return await (attachToMenubar && this.addView(workspace, WindowNames.menuBar));
       }),
     ]);
   }
@@ -388,8 +388,8 @@ export class View implements IViewService {
   public async setActiveViewForAllBrowserViews(workspaceID: string): Promise<void> {
     await Promise.all([
       this.setActiveView(workspaceID, WindowNames.main),
-      this.preferenceService.get('attachToMenubar').then((attachToMenubar) => {
-        attachToMenubar && this.setActiveView(workspaceID, WindowNames.menuBar);
+      this.preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
+        return await (attachToMenubar && this.setActiveView(workspaceID, WindowNames.menuBar));
       }),
     ]);
   }
@@ -480,6 +480,10 @@ export class View implements IViewService {
   public async reloadViewsWebContentsIfDidFailLoad(): Promise<void> {
     this.forEachView(async (view, id, _name) => {
       if (await this.workspaceService.workspaceDidFailLoad(id)) {
+        if (view.webContents === null) {
+          logger.error(`view.webContents is ${String(view.webContents)} when reloadViewsWebContentsIfDidFailLoad's forEachView(${id})`);
+          return;
+        }
         view.webContents.reload();
       }
     });
@@ -490,6 +494,11 @@ export class View implements IViewService {
     this.forEachView(async (view, id, _name) => {
       /** if workspaceID not passed means reload all views. */
       if (workspaceID === undefined || id === workspaceID) {
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        if (!view.webContents) {
+          logger.error(`view.webContents is ${String(view.webContents)} when reloadViewsWebContents's forEachView(${id})`);
+          return;
+        }
         view.webContents.reload();
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         if (workspaceID !== undefined) {
@@ -538,7 +547,8 @@ export class View implements IViewService {
   public async reloadActiveBrowserView(): Promise<void> {
     const views = await this.getActiveBrowserViews();
     views.forEach((view) => {
-      if (view !== undefined) {
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      if (view?.webContents) {
         view.webContents.reload();
       }
     });
