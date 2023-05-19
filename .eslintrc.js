@@ -112,6 +112,7 @@ module.exports = {
     ],
     // conflict with dprint-integration/dprint, will make some line disappear, and some line duplicated
     '@typescript-eslint/consistent-type-imports': 'off',
+    'comma-dangle': 'off'
   },
   extends: [
     'eslint:recommended',
@@ -143,7 +144,7 @@ module.exports = {
     'react-hooks',
     'security',
     'security-node',
-    // 'autofix',
+    'autofix',
     'unused-imports',
   ],
   env: {

@@ -229,7 +229,7 @@ export default function setupViewEventHandlers(
       },
       details.disposition,
       view.webContents,
-    ),
+    )
   );
   // Handle downloads
   // https://electronjs.org/docs/api/download-item
