@@ -32,6 +32,7 @@ import { useForm } from './useForm';
 
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { TokenForm } from '@/components/TokenForm';
+import { rootTiddlers } from '@/constants/defaultTiddlerNames';
 import { defaultServerIP } from '@/constants/urls';
 import { useActualIp } from '@services/native/hooks';
 import { SupportedStorageServices } from '@services/types';
@@ -191,6 +192,7 @@ export default function EditWorkspace(): JSX.Element {
     userName,
     lastUrl,
     wikiFolderLocation,
+    rootTiddler,
   } = (workspace ?? {}) as unknown as IWorkspace;
   const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
     async () => (mainWikiToLink ? await window.service.wiki.getSubWikiPluginContent(mainWikiToLink) : []),
@@ -431,6 +433,18 @@ export default function EditWorkspace(): JSX.Element {
               </ListItem>
             </List>
           </>
+        )}
+        {!isSubWiki && (
+          <Autocomplete
+            freeSolo
+            options={rootTiddlers}
+            value={rootTiddler}
+            onInputChange={(_, value) => {
+              workspaceSetter({ ...workspace, rootTiddler: value });
+              // void requestSaveAndRestart();
+            }}
+            renderInput={(parameters) => <TextField {...parameters} label={t('EditWorkspace.WikiRootTiddler')} helperText={t('EditWorkspace.WikiRootTiddlerDescription')} />}
+          />
         )}
         {!isSubWiki && (
           <List>

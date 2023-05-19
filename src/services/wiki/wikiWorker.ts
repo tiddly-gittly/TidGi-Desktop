@@ -26,10 +26,12 @@ function startNodeJSWiki({
   tiddlyWikiHost = defaultServerIP,
   tiddlyWikiPort = 5112,
   userName,
+  rootTiddler,
   constants: { TIDDLYWIKI_PACKAGE_FOLDER },
 }: {
   constants: { TIDDLYWIKI_PACKAGE_FOLDER: string };
   homePath: string;
+  rootTiddler?: string;
   tiddlyWikiHost: string;
   tiddlyWikiPort: number;
   userName: string;
@@ -59,7 +61,7 @@ function startNodeJSWiki({
         `anon-username=${userName}`,
         `port=${tiddlyWikiPort}`,
         `host=${tiddlyWikiHost}`,
-        'root-tiddler=$:/core/save/lazy-images',
+        `root-tiddler=${rootTiddler ?? '$:/core/save/lazy-images'}`,
       ];
       wikiInstance.hooks.addHook('th-server-command-post-start', function(listenCommand, server) {
         server.on('error', function(error: Error) {

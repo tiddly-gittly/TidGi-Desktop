@@ -206,7 +206,9 @@
     "SyncOnStartup": "启动时自动同步",
     "SyncOnStartupDescription": "在应用冷启动时自动同步一次。",
     "Name": "工作区名",
-    "NameDescription": "工作区的名字，将显示在侧边栏上，可以与工作区Git仓库的实际文件夹名不同"
+    "NameDescription": "工作区的名字，将显示在侧边栏上，可以与工作区Git仓库的实际文件夹名不同",
+    "WikiRootTiddler": "知识库根条目",
+    "WikiRootTiddlerDescription": "Wiki 的根条目（root-tiddler）决定了系统的核心行为，修改前请阅读官方文档来了解"
   },
   "Scripting": {
     "ExecutingScript": "正在执行脚本"

@@ -65,6 +65,11 @@ export interface IWorkspace {
    */
   port: number;
   /**
+   * The root tiddler for wiki. When missing, may use `$:/core/save/lazy-images`
+   * @url https://tiddlywiki.com/#LazyLoading
+   */
+  rootTiddler?: string;
+  /**
    * Storage service this workspace sync to
    */
   storageService: SupportedStorageServices;

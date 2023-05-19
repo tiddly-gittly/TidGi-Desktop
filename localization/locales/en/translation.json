@@ -173,7 +173,9 @@
     "Name": "Workspace Name",
     "NameDescription": "The name of the workspace, which will be displayed on the sidebar, can be different from the actual folder name of the Git repository in the workspace",
     "BackupOnInterval": "Backup On Interval",
-    "BackupOnIntervalDescription": "When enabled, data will be automatically backed up with local Git at regular intervals (interval in global settings), so that even if no cloud git synchronization address is configured, it will be automatically backed up locally."
+    "BackupOnIntervalDescription": "When enabled, data will be automatically backed up with local Git at regular intervals (interval in global settings), so that even if no cloud git synchronization address is configured, it will be automatically backed up locally.",
+    "WikiRootTiddler": "Wiki Root Tiddler",
+    "WikiRootTiddlerDescription": "Wiki's root tiddler determines the core behavior of the system, please read the official documentation to understand before modifying"
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed, or there is no wiki in this folder! \nDo you want to remove the workspace?",
