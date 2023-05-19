@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/naming-convention */
 declare module 'errio' {
   export function parse(error: Error): Error;
   export function stringify(error: Error): string;
@@ -11,6 +12,19 @@ declare module '@tiddlygit/tiddlywiki' {
 declare module 'threads-plugin' {
   const value: any;
   export default value;
+}
+declare module 'v8-compile-cache-lib' {
+  export namespace __TEST__ {
+    export function getMainName(): string;
+    export function getCacheDir(): string;
+    export function supportsCachedData(): boolean;
+  }
+  export function install(options?: {
+    cacheDir?: string;
+    prefix?: string;
+  }): {
+    uninstall(): void;
+  } | undefined;
 }
 declare module 'webpack2-externals-plugin' {
   const value: any;

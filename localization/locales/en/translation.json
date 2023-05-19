@@ -330,7 +330,10 @@
     "SyncOnlyWhenNoDraftDescription": "Check if there are drafts before synchronizing, if so, it will not be synchronized this time, preventing the drafts from being synchronized to your blog. \n(Not working for sync-before-shutdown, for you may want to bring drafts from one computer to another to continue editing)",
     "MoreWorkspaceSyncSettingsDescription": "Please right-click the workspace icon, open its workspace setting by click on \"Edit Workspace\" context menu item, and configure its independent synchronization settings in it.",
     "MoreWorkspaceSyncSettings": "More Workspace Sync Settings",
-    "HideSideBarIcon": "Hide sidebar workspace icons"
+    "HideSideBarIcon": "Hide sidebar workspace icons",
+    "HideSideBarIconDetail": "Hide the icon and only display the name of the workspace to make the workspace list more compact",
+    "OpenV8CacheFolder": "Open the V8 cache folder",
+    "OpenV8CacheFolderDetail": "The V8 cache folder stores cached files that accelerate application startup"
   },
   "Error": {
     "InitWikiGitError": "E-1 InitWikiGitError",

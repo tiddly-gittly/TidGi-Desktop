@@ -24,6 +24,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IUpdaterService } from '@services/updater/interface';
+import { IWikiService } from '@services/wiki/interface';
 import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import { isLinux, isMac } from './helpers/system';
 import type { IPreferenceService } from './services/preferences/interface';
@@ -40,9 +41,10 @@ protocol.registerSchemesAsPrivileged([
 ]);
 bindServiceAndProxy();
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater);
 const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);
+const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
+const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 app.on('second-instance', () => {
   // Someone tried to run a second instance, we should focus our window.
@@ -192,6 +194,7 @@ app.on(
         await windowService.updateWindowMeta(WindowNames.main, { forceClose: true });
       }
     }
+    await wikiService.stopAllWiki();
     app.exit(0);
   },
 );

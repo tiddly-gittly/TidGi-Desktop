@@ -10,14 +10,10 @@ import type { ISectionProps } from '../useSections';
 export function DeveloperTools(props: ISectionProps): JSX.Element {
   const { t } = useTranslation();
 
-  const [LOG_FOLDER, SETTINGS_FOLDER] = usePromiseValue(
-    async () =>
-      await Promise.all([window.service.context.get('LOG_FOLDER'), window.service.context.get('SETTINGS_FOLDER')]).catch((error) => {
-        console.error(error);
-        return [undefined, undefined];
-      }),
-    [undefined, undefined],
-  ) as [string | undefined, string | undefined];
+  const [LOG_FOLDER, SETTINGS_FOLDER, V8_CACHE_FOLDER] = usePromiseValue<[string | undefined, string | undefined, string | undefined]>(
+    async () => await Promise.all([window.service.context.get('LOG_FOLDER'), window.service.context.get('SETTINGS_FOLDER'), window.service.context.get('V8_CACHE_FOLDER')]),
+    [undefined, undefined, undefined],
+  )!;
 
   return (
     <>
@@ -37,7 +33,6 @@ export function DeveloperTools(props: ISectionProps): JSX.Element {
                 <ListItemText primary={t('Preference.OpenLogFolder')} secondary={t('Preference.OpenLogFolderDetail')} />
                 <ChevronRightIcon color='action' />
               </ListItem>
-              <Divider />
               <ListItem
                 button
                 onClick={() => {
@@ -47,6 +42,21 @@ export function DeveloperTools(props: ISectionProps): JSX.Element {
                 }}
               >
                 <ListItemText primary={t('Preference.OpenMetaDataFolder')} secondary={t('Preference.OpenMetaDataFolderDetail')} />
+                <ChevronRightIcon color='action' />
+              </ListItem>
+              <ListItem
+                button
+                onClick={async () => {
+                  if (V8_CACHE_FOLDER !== undefined) {
+                    try {
+                      await window.service.native.open(V8_CACHE_FOLDER, true);
+                    } catch (error) {
+                      console.error(error);
+                    }
+                  }
+                }}
+              >
+                <ListItemText primary={t('Preference.OpenV8CacheFolder')} secondary={t('Preference.OpenV8CacheFolderDetail')} />
                 <ChevronRightIcon color='action' />
               </ListItem>
               <Divider />

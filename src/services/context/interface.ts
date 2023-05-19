@@ -15,6 +15,7 @@ export interface IPaths {
   SETTINGS_FOLDER: string;
   TIDDLERS_PATH: string;
   TIDDLYWIKI_TEMPLATE_FOLDER_PATH: string;
+  V8_CACHE_FOLDER: string;
 }
 /**
  * Available values about running environment

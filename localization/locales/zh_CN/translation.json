@@ -367,7 +367,9 @@
     "MoreWorkspaceSyncSettings": "更多工作区同步设置",
     "MoreWorkspaceSyncSettingsDescription": "请右键工作区图标，点右键菜单里的「编辑工作区」来打开工作区设置，在里面配各个工作区的同步设置。",
     "SyncOnlyWhenNoDraft": "在没有草稿时才同步",
-    "SyncOnlyWhenNoDraftDescription": "在同步前检查有没有草稿，如果有则本次不同步，防止将草稿同步到你的博客里。（对关机前自动同步无效，毕竟你很可能希望将草稿从一台电脑上带到另一台电脑上继续编辑）"
+    "SyncOnlyWhenNoDraftDescription": "在同步前检查有没有草稿，如果有则本次不同步，防止将草稿同步到你的博客里。（对关机前自动同步无效，毕竟你很可能希望将草稿从一台电脑上带到另一台电脑上继续编辑）",
+    "OpenV8CacheFolder": "打开V8缓存文件夹",
+    "OpenV8CacheFolderDetail": "V8缓存文件夹存有加速应用启动的快取文件"
   },
   "Error": {
     "InitWikiGitError": "E-1 笔记仓库初始化失败错误",

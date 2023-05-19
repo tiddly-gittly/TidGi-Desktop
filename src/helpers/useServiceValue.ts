@@ -17,7 +17,14 @@ export function usePromiseValue<T, DefaultValueType = T | undefined>(
   // use initial value
   useEffect(() => {
     void (async () => {
-      valueSetter(await asyncValue());
+      try {
+        valueSetter(await asyncValue());
+      } catch (error) {
+        console.error(error);
+        if (defaultValue !== undefined) {
+          valueSetter(defaultValue);
+        }
+      }
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, dependency);

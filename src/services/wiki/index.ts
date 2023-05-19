@@ -211,9 +211,11 @@ export class Wiki implements IWikiService {
     }
     clearInterval(this.wikiSyncIntervals[wikiFolderLocation]);
     try {
+      logger.debug(`worker.beforeExit for ${wikiFolderLocation}`);
       await worker.beforeExit();
+      logger.debug(`Thread.terminate for ${wikiFolderLocation}`);
       await Thread.terminate(worker);
-      await delay(100);
+      // await delay(100);
     } catch (error) {
       logger.error(`Wiki-worker have error ${(error as Error).message} when try to stop`, { function: 'stopWiki' });
       // await worker.terminate();
@@ -226,6 +228,7 @@ export class Wiki implements IWikiService {
    * Stop all worker_thread, use and await this before app.quit()
    */
   public async stopAllWiki(): Promise<void> {
+    logger.debug('stopAllWiki()', { function: 'stopAllWiki' });
     const tasks = [];
     for (const homePath of Object.keys(this.wikiWorkers)) {
       tasks.push(this.stopWiki(homePath));
