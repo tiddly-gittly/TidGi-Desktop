@@ -62,7 +62,7 @@ export class View implements IViewService {
   }
 
   private async registerMenu(): Promise<void> {
-    const hasWorkspaces = (await this.workspaceService.countWorkspaces()) > 0;
+    const hasWorkspaces = async () => (await this.workspaceService.countWorkspaces()) > 0;
     const sidebar = await this.preferenceService.get('sidebar');
     const titleBar = await this.preferenceService.get('titleBar');
     // electron type forget that click can be async function
