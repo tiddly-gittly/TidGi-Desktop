@@ -7,7 +7,7 @@ const { version, description } = packageJson;
 const config = {
   packagerConfig: {
     name: 'TidGi',
-    executableName: 'TidGi',
+    executableName: 'tidgi',
     win32metadata: {
       CompanyName: 'TiddlyWiki Community',
       OriginalFilename: 'TidGi Desktop',
