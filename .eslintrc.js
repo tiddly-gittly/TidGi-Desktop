@@ -33,7 +33,6 @@ module.exports = {
     },
   },
   rules: {
-    'no-use-before-define': ['error', { functions: false }],
     'unicorn/prevent-abbreviations': [
       'error',
       {
@@ -94,9 +93,10 @@ module.exports = {
     'unicorn/consistent-function-scoping': [0],
     'no-void': [0],
     'unicorn/prefer-ternary': 'off',
+    'no-use-before-define': 'off',
     '@typescript-eslint/no-non-null-assertion': 'off',
+    '@typescript-eslint/explicit-function-return-type': 'off',
     semi: [0],
-    '@typescript-eslint/no-use-before-define': [1],
     'unused-imports/no-unused-imports': 'error',
     'unused-imports/no-unused-vars': ['warn', { vars: 'all', varsIgnorePattern: '^_', args: 'after-used', argsIgnorePattern: '^_' }],
     'dprint-integration/dprint': [

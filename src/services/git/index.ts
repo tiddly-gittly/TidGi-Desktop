@@ -1,16 +1,5 @@
 import { dialog, ipcMain, net, shell } from 'electron';
-import {
-  AssumeSyncError,
-  CantSyncGitNotInitializedError,
-  CantSyncInSpecialGitStateAutoFixFailed,
-  getRemoteName,
-  getRemoteUrl,
-  GitPullPushError,
-  GitStep,
-  ModifiedFileList,
-  SyncParameterMissingError,
-  SyncScriptIsInDeadLoopError,
-} from 'git-sync-js';
+import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
 import { compact } from 'lodash';
 import { ModuleThread, spawn, Worker } from 'threads';
@@ -74,6 +63,7 @@ export class Git implements IGitService {
   }
 
   public async getWorkspacesRemote(wikiFolderPath?: string): Promise<string | undefined> {
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!wikiFolderPath) return;
     const branch = (await this.authService.get('git-branch' as ServiceBranchTypes)) ?? 'main';
     const defaultRemoteName = (await getRemoteName(wikiFolderPath, branch)) ?? 'origin';
@@ -201,22 +191,15 @@ export class Git implements IGitService {
     }
   }
 
-  private translateAndLogErrorMessage(error: Error): void {
-    logger.error(error?.message ?? error);
-    if (error instanceof AssumeSyncError) {
-      error.message = i18n.t('Log.SynchronizationFailed');
-    } else if (error instanceof SyncParameterMissingError) {
-      error.message = i18n.t('Log.GitTokenMissing') + error.parameterName;
-    } else if (error instanceof GitPullPushError) {
-      error.message = i18n.t('Log.SyncFailedSystemError');
-    } else if (error instanceof CantSyncGitNotInitializedError) {
-      error.message = i18n.t('Log.CantSyncGitNotInitialized');
-    } else if (error instanceof SyncScriptIsInDeadLoopError) {
-      error.message = i18n.t('Log.CantSynchronizeAndSyncScriptIsInDeadLoop');
-    } else if (error instanceof CantSyncInSpecialGitStateAutoFixFailed) {
-      error.message = i18n.t('Log.CantSyncInSpecialGitStateAutoFixFailed');
-    }
-    logger.error('↑Translated→: ' + error?.message ?? error);
+  private getErrorMessageI18NDict() {
+    return {
+      AssumeSyncError: i18n.t('Log.SynchronizationFailed'),
+      SyncParameterMissingError: i18n.t('Log.GitTokenMissing'), // + error.parameterName,
+      GitPullPushError: i18n.t('Log.SyncFailedSystemError'),
+      CantSyncGitNotInitializedError: i18n.t('Log.CantSyncGitNotInitialized'),
+      SyncScriptIsInDeadLoopError: i18n.t('Log.CantSynchronizeAndSyncScriptIsInDeadLoop'),
+      CantSyncInSpecialGitStateAutoFixFailed: i18n.t('Log.CantSyncInSpecialGitStateAutoFixFailed'),
+    };
   }
 
   private popGitErrorNotificationToUser(step: GitStep, message: string): void {
@@ -234,8 +217,15 @@ export class Git implements IGitService {
     }
   }
 
-  private readonly getWorkerMessageObserver = (resolve: () => void, reject: (error: Error) => void): Observer<IGitLogMessage> => ({
+  /**
+   * Handle common error dialog and message dialog
+   */
+  private readonly getWorkerMessageObserver = (wikiFolderPath: string, resolve: () => void, reject: (error: Error) => void): Observer<IGitLogMessage> => ({
     next: (messageObject) => {
+      if (messageObject.level === 'error') {
+        this.createFailedDialog((messageObject.error).message, wikiFolderPath);
+        return;
+      }
       const { message, meta, level } = messageObject;
       if (typeof meta === 'object' && meta !== null && 'step' in meta) {
         this.popGitErrorNotificationToUser((meta as { step: GitStep }).step, message);
@@ -243,7 +233,7 @@ export class Git implements IGitService {
       logger.log(level, this.translateMessage(message), meta);
     },
     error: (error) => {
-      this.translateAndLogErrorMessage(error as Error);
+      // this normally won't happen. And will become unhandled error. Because Observable error can't be catch, don't know why.
       reject(error as Error);
     },
     complete: () => {
@@ -267,9 +257,10 @@ export class Git implements IGitService {
             try {
               const result = await this.nativeService.openInGitGuiApp(wikiFolderPath);
               if (!result) {
-                throw new Error('open download site');
+                throw new Error('open github desktop download site');
               }
-            } catch {
+            } catch (error) {
+              logger.error((error as Error).message);
               await shell.openExternal(githubDesktopUrl);
             }
           }
@@ -283,8 +274,8 @@ export class Git implements IGitService {
     const syncImmediately = !!isSyncedWiki && !!isMainWiki;
     await new Promise<void>((resolve, reject) => {
       this.gitWorker
-        ?.initWikiGit(wikiFolderPath, syncImmediately && net.isOnline(), remoteUrl, userInfo)
-        .subscribe(this.getWorkerMessageObserver(resolve, reject));
+        ?.initWikiGit(wikiFolderPath, this.getErrorMessageI18NDict(), syncImmediately && net.isOnline(), remoteUrl, userInfo)
+        .subscribe(this.getWorkerMessageObserver(wikiFolderPath, resolve, reject));
     });
   }
 
@@ -294,11 +285,14 @@ export class Git implements IGitService {
     }
     try {
       return await new Promise<boolean>((resolve, reject) => {
-        const observable = this.gitWorker?.commitAndSyncWiki(workspace, config);
-        observable?.subscribe(this.getWorkerMessageObserver(() => {}, reject));
+        const observable = this.gitWorker?.commitAndSyncWiki(workspace, config, this.getErrorMessageI18NDict());
+        observable?.subscribe(this.getWorkerMessageObserver(workspace.wikiFolderLocation, () => {}, reject));
         let hasChanges = false;
         observable?.subscribe({
           next: (messageObject) => {
+            if (messageObject.level === 'error') {
+              return;
+            }
             const { meta } = messageObject;
             if (typeof meta === 'object' && meta !== null && 'step' in meta && stepWithChanges.includes((meta as { step: GitStep }).step)) {
               hasChanges = true;
@@ -321,7 +315,7 @@ export class Git implements IGitService {
       return;
     }
     await new Promise<void>((resolve, reject) => {
-      this.gitWorker?.cloneWiki(repoFolderPath, remoteUrl, userInfo).subscribe(this.getWorkerMessageObserver(resolve, reject));
+      this.gitWorker?.cloneWiki(repoFolderPath, remoteUrl, userInfo, this.getErrorMessageI18NDict()).subscribe(this.getWorkerMessageObserver(repoFolderPath, resolve, reject));
     });
   }
 }

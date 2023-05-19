@@ -16,10 +16,15 @@ export interface IGitUserInfosWithoutToken {
   gitUserName: string;
 }
 
-export interface IGitLogMessage {
+export type IGitLogMessage = INormalGitLogMessage | IErrorGitLogMessage;
+export interface INormalGitLogMessage {
   level: 'debug' | 'warn' | 'info';
   message: string;
   meta: unknown;
+}
+export interface IErrorGitLogMessage {
+  error: Error;
+  level: 'error';
 }
 
 export interface ICommitAndSyncConfigs {

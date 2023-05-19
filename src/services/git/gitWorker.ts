@@ -2,13 +2,33 @@
 import 'source-map-support/register';
 import { WikiChannel } from '@/constants/channels';
 import type { IWorkspace } from '@services/workspaces/interface';
-import { clone, commitAndSync, getModifiedFileList, getRemoteUrl, GitStep, ILoggerContext, initGit, SyncParameterMissingError } from 'git-sync-js';
+import {
+  AssumeSyncError,
+  CantSyncGitNotInitializedError,
+  CantSyncInSpecialGitStateAutoFixFailed,
+  clone,
+  commitAndSync,
+  getModifiedFileList,
+  getRemoteUrl,
+  GitPullPushError,
+  GitStep,
+  ILoggerContext,
+  initGit,
+  SyncParameterMissingError,
+  SyncScriptIsInDeadLoopError,
+} from 'git-sync-js';
 import { Observable } from 'rxjs';
 import { expose } from 'threads/worker';
 import { defaultGitInfo } from './defaultGitInfo';
 import type { ICommitAndSyncConfigs, IGitLogMessage, IGitUserInfos } from './interface';
 
-function initWikiGit(wikiFolderPath: string, syncImmediately?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Observable<IGitLogMessage> {
+function initWikiGit(
+  wikiFolderPath: string,
+  errorI18NDict: Record<string, string>,
+  syncImmediately?: boolean,
+  remoteUrl?: string,
+  userInfo?: IGitUserInfos,
+): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
     let task: Promise<void>;
     if (syncImmediately === true) {
@@ -60,7 +80,14 @@ function initWikiGit(wikiFolderPath: string, syncImmediately?: boolean, remoteUr
         observer.complete();
       },
       (error) => {
-        observer.error(error);
+        if (error instanceof Error) {
+          observer.next({ message: `${error.message} ${error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'initWikiGit' } });
+          translateAndLogErrorMessage(error, errorI18NDict);
+          observer.next({ level: 'error', error });
+        } else {
+          observer.next({ message: String(error), level: 'warn', meta: { callerFunction: 'initWikiGit' } });
+        }
+        observer.complete();
       },
     );
   });
@@ -71,7 +98,7 @@ function initWikiGit(wikiFolderPath: string, syncImmediately?: boolean, remoteUr
  * @param {string} remoteUrl
  * @param {{ login: string, email: string, accessToken: string }} userInfo
  */
-function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs): Observable<IGitLogMessage> {
+function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs, errorI18NDict: Record<string, string>): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
     void commitAndSync({
       dir: workspace.wikiFolderLocation,
@@ -94,13 +121,20 @@ function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs
         observer.complete();
       },
       (error) => {
-        observer.error(error);
+        if (error instanceof Error) {
+          observer.next({ message: `${error.message} ${error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'commitAndSync' } });
+          translateAndLogErrorMessage(error, errorI18NDict);
+          observer.next({ level: 'error', error });
+        } else {
+          observer.next({ message: String(error), level: 'warn', meta: { callerFunction: 'commitAndSync' } });
+        }
+        observer.complete();
       },
     );
   });
 }
 
-function cloneWiki(repoFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos): Observable<IGitLogMessage> {
+function cloneWiki(repoFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos, errorI18NDict: Record<string, string>): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
     void clone({
       dir: repoFolderPath,
@@ -123,10 +157,33 @@ function cloneWiki(repoFolderPath: string, remoteUrl: string, userInfo: IGitUser
         observer.complete();
       },
       (error) => {
-        observer.error(error);
+        if (error instanceof Error) {
+          observer.next({ message: `${error.message} ${error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'clone' } });
+          translateAndLogErrorMessage(error, errorI18NDict);
+          observer.next({ level: 'error', error });
+        } else {
+          observer.next({ message: String(error), level: 'warn', meta: { callerFunction: 'clone' } });
+        }
+        observer.complete();
       },
     );
   });
+}
+
+function translateAndLogErrorMessage(error: Error, errorI18NDict: Record<string, string>): void {
+  if (error instanceof AssumeSyncError) {
+    error.message = errorI18NDict.AssumeSyncError;
+  } else if (error instanceof SyncParameterMissingError) {
+    error.message = errorI18NDict.SyncParameterMissingError + error.parameterName;
+  } else if (error instanceof GitPullPushError) {
+    error.message = errorI18NDict.GitPullPushError;
+  } else if (error instanceof CantSyncGitNotInitializedError) {
+    error.message = errorI18NDict.CantSyncGitNotInitializedError;
+  } else if (error instanceof SyncScriptIsInDeadLoopError) {
+    error.message = errorI18NDict.SyncScriptIsInDeadLoopError;
+  } else if (error instanceof CantSyncInSpecialGitStateAutoFixFailed) {
+    error.message = errorI18NDict.CantSyncInSpecialGitStateAutoFixFailed;
+  }
 }
 
 const gitWorker = { initWikiGit, commitAndSyncWiki, cloneWiki, getModifiedFileList, getRemoteUrl };
