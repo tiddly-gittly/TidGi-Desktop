@@ -18,7 +18,7 @@ const config = {
         schemes: ['tidgi'],
       },
     ],
-    icon: 'build-resources/icon.icns',
+    icon: 'build-resources/icon.ico',
     asar: {
       unpack: '{**/.webpack/main/*.worker.*,**/.webpack/main/native_modules/path.txt}',
     },
@@ -41,6 +41,8 @@ const config = {
         return {
           setupExe: `Install-TidGi-Windows-${arch}.exe`,
           setupIcon: 'build-resources/icon-installer.ico',
+          description,
+          iconUrl: 'https://raw.githubusercontent.com/tiddly-gittly/TidGi-Desktop/master/build-resources/icon%405x.png',
         };
       },
     },
@@ -58,7 +60,7 @@ const config = {
           ui: {
             chooseDirectory: true,
           },
-          appIconPath: 'build-resources/icon.ico',
+          icon: 'build-resources/icon@5x.png',
           // WiX distributables do not handle prerelease information in the app version, removing it from the MSI (-prerelease3.4)
           // and https://github.com/felixrieseberg/electron-wix-msi/issues/110 ask use to use fixed number
           version: '1.0.0',
