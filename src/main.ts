@@ -201,6 +201,7 @@ app.on(
 app.on('quit', () => {
   uninstall?.uninstall();
   logger.info('App quit');
+  logger.close();
 });
 
 if (!isTest) {

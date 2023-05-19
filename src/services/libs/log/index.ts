@@ -26,6 +26,7 @@ const logger = (
       warning: console.warn.bind(console),
       notice: console.log.bind(console),
       debug: console.log.bind(console),
+      close: () => {},
     })
     : winston.createLogger({
       levels,
