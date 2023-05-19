@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
-import { app, BrowserWindow, BrowserWindowConstructorOptions, clipboard, ipcMain, Menu, nativeImage, Tray } from 'electron';
+import { app, BrowserWindow, BrowserWindowConstructorOptions, ipcMain, Menu, nativeImage, Tray } from 'electron';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
 import { injectable } from 'inversify';
 import mergeDeep from 'lodash/merge';
@@ -375,9 +375,7 @@ export class Window implements IWindowService {
   }
 
   private async registerMenu(): Promise<void> {
-    await this.menuService.insertMenu('View', [
-      { role: 'reload' },
-      { role: 'forceReload' },
+    await this.menuService.insertMenu('Window', [
       // `role: 'zoom'` is only supported on macOS
       isMac
         ? {
@@ -462,11 +460,8 @@ export class Window implements IWindowService {
           // navigate in the popup window instead
           if (browserWindow !== undefined) {
             // TODO: test if we really can get this isPopup value
-            const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-            if (isPopup === true) {
-              browserWindow.webContents.goBack();
-              return;
-            }
+            const { isPopup = false } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
+            await this.goBack(isPopup ? WindowNames.menuBar : WindowNames.main);
           }
           ipcMain.emit('request-go-back');
         },
@@ -479,36 +474,10 @@ export class Window implements IWindowService {
           // if back is called in popup window
           // navigate in the popup window instead
           if (browserWindow !== undefined) {
-            const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-            if (isPopup === true) {
-              browserWindow.webContents.goBack();
-              return;
-            }
+            const { isPopup = false } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
+            await this.goForward(isPopup ? WindowNames.menuBar : WindowNames.main);
           }
           ipcMain.emit('request-go-forward');
-        },
-        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
-      },
-      { type: 'separator' },
-      {
-        label: () => i18n.t('ContextMenu.CopyLink'),
-        accelerator: 'CmdOrCtrl+L',
-        click: async (_menuItem, browserWindow) => {
-          // if back is called in popup window
-          // copy the popup window URL instead
-          if (browserWindow !== undefined) {
-            const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-            if (isPopup === true) {
-              const url = browserWindow.webContents.getURL();
-              clipboard.writeText(url);
-              return;
-            }
-          }
-          const mainWindow = this.get(WindowNames.main);
-          const url = mainWindow?.getBrowserView()?.webContents?.getURL();
-          if (typeof url === 'string') {
-            clipboard.writeText(url);
-          }
         },
         enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },

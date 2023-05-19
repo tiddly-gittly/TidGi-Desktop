@@ -18,6 +18,6 @@ try {
 
 export const browserViewMetaData = { windowName, ...extraMeta };
 contextBridge.exposeInMainWorld('meta', browserViewMetaData);
-ipcRenderer.on(MetaDataChannel.getViewMetaData, (event) => {
-  event.returnValue = browserViewMetaData;
+ipcRenderer.on(MetaDataChannel.getViewMetaData, (event, payload?: { ipcToken: string }) => {
+  ipcRenderer.send(`${MetaDataChannel.getViewMetaData}-${payload?.ipcToken ?? ''}`, browserViewMetaData);
 });

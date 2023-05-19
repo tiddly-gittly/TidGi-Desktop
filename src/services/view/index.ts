@@ -110,13 +110,12 @@ export class View implements IViewService {
         },
       },
       { type: 'separator' },
-      { role: 'togglefullscreen' },
       {
         label: () => i18n.t('Menu.ActualSize'),
         accelerator: 'CmdOrCtrl+0',
         click: async (_menuItem, browserWindow) => {
           // if item is called in popup window
-          // open menu bar in the popup window instead
+          // modify menu bar in the popup window instead
           if (browserWindow === undefined) return;
           const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
           if (isPopup === true) {
@@ -124,12 +123,9 @@ export class View implements IViewService {
             contents.zoomFactor = 1;
             return;
           }
+          // modify browser view in the main window
           const mainWindow = this.windowService.get(WindowNames.main);
-          const webContent = mainWindow?.getBrowserView()?.webContents;
-          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-          if (webContent) {
-            webContent.setZoomFactor(1);
-          }
+          mainWindow?.getBrowserView()?.webContents?.setZoomFactor(1);
         },
         enabled: hasWorkspaces,
       },
@@ -138,20 +134,19 @@ export class View implements IViewService {
         accelerator: 'CmdOrCtrl+=',
         click: async (_menuItem, browserWindow) => {
           // if item is called in popup window
-          // open menu bar in the popup window instead
+          // modify menu bar in the popup window instead
           if (browserWindow === undefined) return;
           const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
           if (isPopup === true) {
             const contents = browserWindow.webContents;
-            contents.zoomFactor += 0.1;
+            contents.zoomFactor += 0.05;
             return;
           }
+          // modify browser view in the main window
           const mainWindow = this.windowService.get(WindowNames.main);
           const webContent = mainWindow?.getBrowserView()?.webContents;
           // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-          if (webContent) {
-            webContent.setZoomFactor(webContent.getZoomFactor() + 0.1);
-          }
+          webContent?.setZoomFactor(webContent.getZoomFactor() + 0.05);
         },
         enabled: hasWorkspaces,
       },
@@ -160,20 +155,19 @@ export class View implements IViewService {
         accelerator: 'CmdOrCtrl+-',
         click: async (_menuItem, browserWindow) => {
           // if item is called in popup window
-          // open menu bar in the popup window instead
+          // modify menu bar in the popup window instead
           if (browserWindow === undefined) return;
           const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
           if (isPopup === true) {
             const contents = browserWindow.webContents;
-            contents.zoomFactor -= 0.1;
+            contents.zoomFactor -= 0.05;
             return;
           }
+          // modify browser view in the main window
           const mainWindow = this.windowService.get(WindowNames.main);
           const webContent = mainWindow?.getBrowserView()?.webContents;
           // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-          if (webContent) {
-            webContent.setZoomFactor(webContent.getZoomFactor() - 0.1);
-          }
+          webContent?.setZoomFactor(webContent.getZoomFactor() - 0.05);
         },
         enabled: hasWorkspaces,
       },
@@ -183,20 +177,16 @@ export class View implements IViewService {
         accelerator: 'CmdOrCtrl+R',
         click: async (_menuItem, browserWindow) => {
           // if item is called in popup window
-          // open menu bar in the popup window instead
+          // modify menu bar in the popup window instead
           if (browserWindow === undefined) return;
           const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
           if (isPopup === true) {
             browserWindow.webContents.reload();
             return;
           }
-
+          // refresh the main window browser view's wiki content, instead of sidebar's react content
           const mainWindow = this.windowService.get(WindowNames.main);
-          const webContent = mainWindow?.getBrowserView()?.webContents;
-          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-          if (webContent) {
-            webContent.reload();
-          }
+          mainWindow?.getBrowserView()?.webContents?.reload();
         },
         enabled: hasWorkspaces,
       },

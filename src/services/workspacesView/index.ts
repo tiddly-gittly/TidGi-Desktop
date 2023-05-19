@@ -2,10 +2,10 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/consistent-destructuring */
 import { delay, mapSeries } from 'bluebird';
-import { app, dialog, session } from 'electron';
+import { app, clipboard, dialog, session } from 'electron';
 import { injectable } from 'inversify';
 
-import { WikiChannel } from '@/constants/channels';
+import { MetaDataChannel, WikiChannel } from '@/constants/channels';
 import { tiddlywikiLanguagesMap } from '@/constants/languages';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
@@ -19,10 +19,11 @@ import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
+import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { WorkspaceFailedToLoadError } from './error';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
+import getFromRenderer from '@services/libs/getFromRenderer';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
@@ -254,6 +255,29 @@ export class WorkspaceView implements IWorkspaceViewService {
         click: async () => {
           await this.printTiddler();
         },
+      },
+      { type: 'separator' },
+      {
+        label: () => i18n.t('ContextMenu.CopyLink'),
+        accelerator: 'CmdOrCtrl+L',
+        click: async (_menuItem, browserWindow) => {
+          // if back is called in popup window
+          // copy the popup window URL instead
+          if (browserWindow !== undefined) {
+            const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
+            if (isPopup === true) {
+              const url = browserWindow.webContents.getURL();
+              clipboard.writeText(url);
+              return;
+            }
+          }
+          const mainWindow = this.windowService.get(WindowNames.main);
+          const url = mainWindow?.getBrowserView()?.webContents?.getURL();
+          if (typeof url === 'string') {
+            clipboard.writeText(url);
+          }
+        },
+        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
     ]);
   }
