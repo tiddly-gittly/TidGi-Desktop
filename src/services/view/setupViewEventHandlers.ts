@@ -109,6 +109,9 @@ export default function setupViewEventHandlers(
     if (await workspaceService.workspaceDidFailLoad(workspace.id)) {
       return;
     }
+    if (view.webContents === null) {
+      return;
+    }
     logger.debug(`throttledDidFinishedLoad() workspace.id: ${workspace.id}, now workspaceViewService.realignActiveWorkspace() then set isLoading to false`);
     // focus on initial load
     // https://github.com/atomery/webcatalog/issues/398

@@ -244,9 +244,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         click: async () => {
           const browserViews = await this.viewService.getActiveBrowserViews();
           browserViews.forEach((browserView) => {
-            if (browserView !== undefined) {
-              void browserView.webContents.print();
-            }
+            browserView?.webContents?.print();
           });
         },
       },
@@ -284,10 +282,15 @@ export class WorkspaceView implements IWorkspaceViewService {
   public async wakeUpWorkspaceView(workspaceID: string): Promise<void> {
     const workspace = await this.workspaceService.get(workspaceID);
     if (workspace !== undefined) {
-      await this.viewService.addViewForAllBrowserViews(workspace);
-      await this.workspaceService.update(workspaceID, {
-        hibernated: false,
-      });
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      const userName = (workspace.userName || (await this.authService.get('userName'))) ?? '';
+      await Promise.all([
+        this.wikiService.startWiki(workspace.wikiFolderLocation, workspace.port, userName),
+        this.viewService.addViewForAllBrowserViews(workspace),
+        this.workspaceService.update(workspaceID, {
+          hibernated: false,
+        }),
+      ]);
     }
   }
 
@@ -297,12 +300,11 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (workspace !== undefined && !workspace.active) {
       await Promise.all([
         this.wikiService.stopWiki(workspace.wikiFolderLocation),
-        // TODO: seems a window can only have a browser view, and is shared between workspaces
-        // this.viewService.removeAllViewOfWorkspace(workspaceID),
         this.workspaceService.update(workspaceID, {
           hibernated: true,
         }),
       ]);
+      this.viewService.removeAllViewOfWorkspace(workspaceID);
     }
   }
 
@@ -329,16 +331,9 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
     // later process will use the current active workspace
     await this.workspaceService.setActiveWorkspace(nextWorkspaceID, oldActiveWorkspace?.id);
-    const asyncTasks: Array<Promise<unknown>> = [];
     if (newWorkspace.hibernated) {
-      asyncTasks.push(
-        this.initializeWorkspaceView(newWorkspace, { followHibernateSettingWhenInit: false, syncImmediately: false }),
-        this.workspaceService.update(nextWorkspaceID, {
-          hibernated: false,
-        }),
-      );
+      await this.wakeUpWorkspaceView(nextWorkspaceID);
     }
-    await Promise.all(asyncTasks);
     try {
       await this.viewService.setActiveViewForAllBrowserViews(nextWorkspaceID);
       await this.realignActiveWorkspace(nextWorkspaceID);
@@ -490,8 +485,20 @@ export class WorkspaceView implements IWorkspaceViewService {
       if (mainWindow === undefined && menuBarWindow === undefined) {
         logger.warn('realignActiveWorkspaceView: no active window');
       }
-      mainBrowserViewWebContent && void this.viewService.realignActiveView(mainWindow, workspaceToRealign.id);
-      menuBarBrowserViewWebContent && void this.viewService.realignActiveView(menuBarWindow, workspaceToRealign.id);
+      const tasks = [];
+      if (mainBrowserViewWebContent) {
+        tasks.push(this.viewService.realignActiveView(mainWindow, workspaceToRealign.id));
+        logger.warn(`realignActiveWorkspaceView: realign main window for ${workspaceToRealign.id}.`);
+      } else {
+        logger.warn(`realignActiveWorkspaceView: no mainBrowserViewWebContent, skip main window for ${workspaceToRealign.id}.`);
+      }
+      if (menuBarBrowserViewWebContent) {
+        logger.warn(`realignActiveWorkspaceView: realign menu bar window for ${workspaceToRealign.id}.`);
+        tasks.push(this.viewService.realignActiveView(menuBarWindow, workspaceToRealign.id));
+      } else {
+        logger.warn(`realignActiveWorkspaceView: no menuBarBrowserViewWebContent, skip menu bar window for ${workspaceToRealign.id}.`);
+      }
+      await Promise.all(tasks);
     }
     /* eslint-enable @typescript-eslint/strict-boolean-expressions */
   }

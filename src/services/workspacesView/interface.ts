@@ -53,6 +53,8 @@ export interface IWorkspaceViewService {
   /**
    * If is main workspace, set workspace to active and load the url.
    * If is sub workspace, just load url with #tag for its main workspace.
+   *
+   * Will take care of hibernated workspace, start its wiki. For non-hibernated workspace, will just load url, because wiki is already started when app init with initializeWorkspaceView.
    */
   setActiveWorkspaceView(workspaceID: string): Promise<void>;
   setWorkspaceView(workspaceID: string, workspaceOptions: IWorkspace): Promise<void>;

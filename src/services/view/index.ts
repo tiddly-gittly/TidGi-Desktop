@@ -411,10 +411,12 @@ export class View implements IViewService {
       }
     } else {
       browserWindow.setBrowserView(view);
+      logger.debug(`setActiveView() setBrowserView`);
       const contentSize = browserWindow.getContentSize();
       if (workspace !== undefined && (await this.workspaceService.workspaceDidFailLoad(workspace.id))) {
         view.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       } else {
+        logger.debug(`setActiveView() contentSize ${JSON.stringify(contentSize)}`);
         view.setBounds(await getViewBounds(contentSize as [number, number]));
       }
       view.setAutoResize({
@@ -437,9 +439,12 @@ export class View implements IViewService {
       // stop find in page when switching workspaces
       view.webContents.stopFindInPage('clearSelection');
       view.webContents.send(WindowChannel.closeFindInPage);
-      // currently use workaround https://github.com/electron/electron/issues/10096
+
+      // don't destroy browserView here, the "current browser view" may point to other workspace's view now, it will close other workspace's view when switching workspaces.
       // eslint-disable-next-line unicorn/no-null
-      browserWindow.setBrowserView(null);
+      // browserWindow.setBrowserView(null);
+
+      // currently use workaround https://github.com/electron/electron/issues/10096
       // @ts-expect-error Property 'destroy' does not exist on type 'WebContents'.ts(2339)
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       view.webContents.destroy();
@@ -562,6 +567,7 @@ export class View implements IViewService {
         logger.warn(`realignActiveView() hide because didFailLoad`);
         view?.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
       } else {
+        logger.debug(`realignActiveView() contentSize set to ${JSON.stringify(contentSize)}`);
         view?.setBounds(await getViewBounds(contentSize as [number, number]));
       }
     } else if (isRetry === true) {
@@ -572,6 +578,7 @@ export class View implements IViewService {
       );
     } else {
       // retry one time later if webContent is not ready yet
+      logger.debug(`realignActiveView() retry one time later`);
       setTimeout(() => void this.realignActiveView(browserWindow, activeId, true), 1000);
     }
   };
