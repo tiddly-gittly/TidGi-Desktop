@@ -1,9 +1,9 @@
+import { Divider as DividerRaw, List, ListItem, ListItemIcon as ListItemIconRaw, ListItemText } from '@material-ui/core';
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
-import { Divider as DividerRaw, List, ListItem, ListItemIcon as ListItemIconRaw, ListItemText } from '@material-ui/core';
 
-import { ISectionProps } from './useSections';
 import { PreferenceSections } from '@services/preferences/interface';
+import { ISectionProps } from './useSections';
 
 const SideBar = styled.div`
   position: fixed;

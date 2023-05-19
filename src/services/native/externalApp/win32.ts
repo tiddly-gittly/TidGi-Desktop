@@ -2,9 +2,9 @@ import * as Path from 'path';
 
 import { enumerateValues, HKEY, RegistryValue, RegistryValueType } from 'registry-js';
 
+import { logger } from '@services/libs/log';
 import { pathExists } from 'fs-extra';
 import { IFoundEditor } from './found-editor';
-import { logger } from '@services/libs/log';
 
 interface IWindowsAppInformation {
   displayName: string;
@@ -19,25 +19,25 @@ interface RegistryKey {
 
 type WindowsExternalEditorPathInfo =
   | {
-      /**
-       * List of lists of path components from the editor's installation folder to
-       * the potential executable shims. Only needed when the install location
-       * registry key is `InstallLocation`.
-       **/
-      readonly executableShimPaths: ReadonlyArray<readonly string[]>;
+    /**
+     * List of lists of path components from the editor's installation folder to
+     * the potential executable shims. Only needed when the install location
+     * registry key is `InstallLocation`.
+     */
+    readonly executableShimPaths: ReadonlyArray<readonly string[]>;
 
-      /**
-       * Registry key with the install location of the app. If not provided,
-       * 'InstallLocation' will be used.
-       **/
-      readonly installLocationRegistryKey?: 'InstallLocation';
-    }
+    /**
+     * Registry key with the install location of the app. If not provided,
+     * 'InstallLocation' will be used.
+     */
+    readonly installLocationRegistryKey?: 'InstallLocation';
+  }
   | {
-      /**
-       * Registry key with the install location of the app.
-       **/
-      readonly installLocationRegistryKey: 'DisplayIcon';
-    };
+    /**
+     * Registry key with the install location of the app.
+     */
+    readonly installLocationRegistryKey: 'DisplayIcon';
+  };
 
 /** Represents an external editor on Windows */
 type WindowsExternalEditor = {
@@ -113,7 +113,7 @@ const executableShimPathsForJetBrainsIDE = (baseName: string): ReadonlyArray<rea
 /**
  * This list contains all the external editors supported on Windows. Add a new
  * entry here to add support for your favorite editor.
- **/
+ */
 const editors: WindowsExternalEditor[] = [
   {
     name: 'Atom',
@@ -321,7 +321,7 @@ const editors: WindowsExternalEditor[] = [
 /**
  * This list contains all the external git GUI app supported on Windows. Add a new
  * entry here to add support for your favorite git GUI app.
- **/
+ */
 const gitGUIApp: WindowsExternalEditor[] = [
   {
     name: 'GitHub Desktop',
@@ -358,8 +358,7 @@ async function findApplication(editor: WindowsExternalEditor) {
       continue;
     }
 
-    const executableShimPaths =
-      editor.installLocationRegistryKey === 'DisplayIcon' ? [installLocation] : editor.executableShimPaths.map((p) => Path.join(installLocation, ...p));
+    const executableShimPaths = editor.installLocationRegistryKey === 'DisplayIcon' ? [installLocation] : editor.executableShimPaths.map((p) => Path.join(installLocation, ...p));
 
     for (const path of executableShimPaths) {
       const exists = await pathExists(path);

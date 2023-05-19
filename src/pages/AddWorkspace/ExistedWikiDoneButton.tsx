@@ -1,12 +1,12 @@
 import { useTranslation } from 'react-i18next';
 
-import { Typography, LinearProgress, Snackbar } from '@material-ui/core';
+import { LinearProgress, Snackbar, Typography } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 
+import { CloseButton, ReportErrorFabButton, WikiLocation } from './FormComponents';
+import { useExistedWiki, useValidateExistedWiki } from './useExistedWiki';
 import type { IWikiWorkspaceFormProps } from './useForm';
-import { useValidateExistedWiki, useExistedWiki } from './useExistedWiki';
 import { useWikiCreationProgress } from './useIndicator';
-import { WikiLocation, CloseButton, ReportErrorFabButton } from './FormComponents';
 
 export function ExistedWikiDoneButton({
   form,
@@ -26,7 +26,7 @@ export function ExistedWikiDoneButton({
   if (hasError) {
     return (
       <>
-        <CloseButton variant="contained" disabled>
+        <CloseButton variant='contained' disabled>
           {wikiCreationMessage}
         </CloseButton>
         {wikiCreationMessage !== undefined && <ReportErrorFabButton message={wikiCreationMessage} />}
@@ -35,29 +35,37 @@ export function ExistedWikiDoneButton({
   }
   return (
     <>
-      {inProgressOrError && <LinearProgress color="secondary" />}
-      <Snackbar open={logPanelOpened} autoHideDuration={5000} onClose={() => logPanelSetter(false)}>
-        <Alert severity="info">{wikiCreationMessage}</Alert>
+      {inProgressOrError && <LinearProgress color='secondary' />}
+      <Snackbar
+        open={logPanelOpened}
+        autoHideDuration={5000}
+        onClose={() => {
+          logPanelSetter(false);
+        }}
+      >
+        <Alert severity='info'>{wikiCreationMessage}</Alert>
       </Snackbar>
 
-      {isCreateMainWorkspace ? (
-        <CloseButton variant="contained" color="secondary" disabled={inProgressOrError} onClick={onSubmit}>
-          <Typography variant="body1" display="inline">
-            {t('AddWorkspace.ImportWiki')}
-          </Typography>
-          <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
-        </CloseButton>
-      ) : (
-        <CloseButton variant="contained" color="secondary" disabled={inProgressOrError} onClick={onSubmit}>
-          <Typography variant="body1" display="inline">
-            {t('AddWorkspace.ImportWiki')}
-          </Typography>
-          <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
-          <Typography variant="body1" display="inline">
-            {t('AddWorkspace.AndLinkToMainWorkspace')}
-          </Typography>
-        </CloseButton>
-      )}
+      {isCreateMainWorkspace
+        ? (
+          <CloseButton variant='contained' color='secondary' disabled={inProgressOrError} onClick={onSubmit}>
+            <Typography variant='body1' display='inline'>
+              {t('AddWorkspace.ImportWiki')}
+            </Typography>
+            <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
+          </CloseButton>
+        )
+        : (
+          <CloseButton variant='contained' color='secondary' disabled={inProgressOrError} onClick={onSubmit}>
+            <Typography variant='body1' display='inline'>
+              {t('AddWorkspace.ImportWiki')}
+            </Typography>
+            <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
+            <Typography variant='body1' display='inline'>
+              {t('AddWorkspace.AndLinkToMainWorkspace')}
+            </Typography>
+          </CloseButton>
+        )}
     </>
   );
 }

@@ -1,19 +1,24 @@
 /* eslint-disable @typescript-eslint/require-await */
+import { lazyInject } from '@services/container';
+import type { IPreferenceService } from '@services/preferences/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IViewService } from '@services/view/interface';
+import type { IWindowService } from '@services/windows/interface';
 import { Notification, NotificationConstructorOptions } from 'electron';
 import { injectable } from 'inversify';
-import { lazyInject } from '@services/container';
-import serviceIdentifier from '@services/serviceIdentifier';
-import type { IPreferenceService } from '@services/preferences/interface';
-import type { IViewService } from '@services/view/interface';
-import type { INotificationService, IPauseNotificationsInfo } from './interface';
-import type { IWindowService } from '@services/windows/interface';
 import { BehaviorSubject } from 'rxjs';
+import type { INotificationService, IPauseNotificationsInfo } from './interface';
 
 @injectable()
 export class NotificationService implements INotificationService {
-  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
-  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.Preference)
+  private readonly preferenceService!: IPreferenceService;
+
+  @lazyInject(serviceIdentifier.View)
+  private readonly viewService!: IViewService;
+
+  @lazyInject(serviceIdentifier.Window)
+  private readonly windowService!: IWindowService;
 
   private pauseNotificationsInfo?: IPauseNotificationsInfo;
   public pauseNotificationsInfo$: BehaviorSubject<IPauseNotificationsInfo | undefined>;

@@ -1,11 +1,11 @@
-import Promise from 'bluebird';
-import React, { useState, useEffect } from 'react';
-import { useTranslation } from 'react-i18next';
 import BadgeRaw from '@material-ui/core/Badge';
+import Promise from 'bluebird';
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import styled, { css, keyframes } from 'styled-components';
 
-import defaultIcon from '../../images/default-icon.png';
 import { getAssetsFileUrl } from '@/helpers/url';
+import defaultIcon from '../../images/default-icon.png';
 
 Promise.config({ cancellation: true });
 
@@ -28,21 +28,21 @@ const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClick
   border: 0;
   border-color: transparent;
   ${({ hibernated }) =>
-    hibernated === true &&
-    css`
+  hibernated === true &&
+  css`
       opacity: 0.4;
     `}
   ${({ active }) =>
-    active === true &&
-    css`
+  active === true &&
+  css`
       opacity: 1;
     `}
       box-sizing: border-box;
   border-left: ${({ workspaceCount }) => (workspaceCount > 1 ? '3px' : '0')} solid
     ${({ active, theme }) => (active === true ? theme.palette.text.primary : 'transparent')};
   ${({ workspaceClickedLoading }) =>
-    workspaceClickedLoading === true &&
-    css`
+  workspaceClickedLoading === true &&
+  css`
       &:hover {
         cursor: wait;
       }
@@ -69,15 +69,15 @@ const Avatar = styled.div<IAvatarProps>`
   text-transform: uppercase;
   overflow: hidden;
   ${({ large }) =>
-    large === true &&
-    css`
+  large === true &&
+  css`
       height: 44px;
       width: 44px;
       line-height: 44px;
     `}
   ${({ transparent }) =>
-    transparent === true &&
-    css`
+  transparent === true &&
+  css`
       background: transparent;
       border: none;
       border-radius: 0;
@@ -91,9 +91,9 @@ const Avatar = styled.div<IAvatarProps>`
     color: ${({ theme }) => theme.palette.common.black};
   }
   ${({ addAvatar }: IAvatarProps) =>
-    addAvatar
-      ? ''
-      : css`
+  addAvatar
+    ? ''
+    : css`
           background-color: transparent;
         `}
 `;
@@ -102,8 +102,8 @@ const AvatarPicture = styled.img<{ large?: boolean }>`
   height: calc(36px - 2px);
   width: calc(36px - 2px);
   ${({ large }) =>
-    large === true &&
-    css`
+  large === true &&
+  css`
       height: 44px;
       width: 44px;
     `}
@@ -119,8 +119,8 @@ const ShortcutText = styled.p<{ active?: boolean }>`
   word-break: break-all;
   text-align: center;
   ${({ active }) =>
-    active === true &&
-    css`
+  active === true &&
+  css`
       text-decoration: underline;
       text-underline-offset: 0.2em;
     `}
@@ -172,28 +172,32 @@ export function WorkspaceSelector({
       active={active}
       onClick={workspaceClickedLoading ? () => {} : onClick}
       workspaceClickedLoading={workspaceClickedLoading}
-      workspaceCount={workspaceCount}>
-      <Badge color="secondary" badgeContent={badgeCount} max={99}>
+      workspaceCount={workspaceCount}
+    >
+      <Badge color='secondary' badgeContent={badgeCount} max={99}>
         {!hideSideBarIcon && (
           <Avatar
             large={!showSidebarShortcutHints}
             transparent={transparentBackground}
             addAvatar={id === 'add'}
             highlightAdd={index === 0}
-            id={id === 'add' || id === 'guide' ? 'add-workspace-button' : `workspace-avatar-${id}`}>
-            {id === 'add' ? (
-              '+'
-            ) : id === 'guide' ? (
-              '※'
-            ) : (
-              <AvatarPicture alt="Icon" large={!showSidebarShortcutHints} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />
-            )}
+            id={id === 'add' || id === 'guide' ? 'add-workspace-button' : `workspace-avatar-${id}`}
+          >
+            {id === 'add'
+              ? (
+                '+'
+              )
+              : (id === 'guide'
+                ? (
+                  '※'
+                )
+                : <AvatarPicture alt='Icon' large={!showSidebarShortcutHints} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />)}
           </Avatar>
         )}
       </Badge>
       {(showSidebarShortcutHints || hideSideBarIcon) && (
         <ShortcutText active={active}>
-          {id === 'add' ? t('WorkspaceSelector.Add') : id === 'guide' ? t('WorkspaceSelector.Guide') : shortWorkspaceName}
+          {id === 'add' ? t('WorkspaceSelector.Add') : (id === 'guide' ? t('WorkspaceSelector.Guide') : shortWorkspaceName)}
         </ShortcutText>
       )}
     </Root>

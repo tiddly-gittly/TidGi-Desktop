@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/require-await */
-import { app, net } from 'electron';
-import process from 'process';
-import os from 'os';
 import { isElectronDevelopment } from '@/constants/isElectronDevelopment';
+import { app, net } from 'electron';
 import { injectable } from 'inversify';
+import os from 'os';
+import process from 'process';
 
-import { IContextService, IContext, IPaths, IConstants } from './interface';
-import * as paths from '@/constants/paths';
 import * as appPaths from '@/constants/appPaths';
-import { tiddlywikiLanguagesMap, supportedLanguagesMap } from '@/constants/languages';
+import { supportedLanguagesMap, tiddlywikiLanguagesMap } from '@/constants/languages';
+import * as paths from '@/constants/paths';
+import { IConstants, IContext, IContextService, IPaths } from './interface';
 
 @injectable()
 export class ContextService implements IContextService {

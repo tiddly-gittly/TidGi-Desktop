@@ -20,11 +20,18 @@ export const wikiOperations = {
     const createWorkspaceWindow = windowService.get(WindowNames.addWorkspace);
     createWorkspaceWindow?.webContents?.send(WikiChannel.createProgress, message);
   },
-  [WikiChannel.syncProgress]: (workspaceID: string, message: string): void => sendToMainWindow(WikiChannel.syncProgress, workspaceID, [message]),
-  [WikiChannel.generalNotification]: (workspaceID: string, message: string): void => sendToMainWindow(WikiChannel.generalNotification, workspaceID, [message]),
-  [WikiChannel.openTiddler]: (workspaceID: string, tiddlerName: string): void => sendToMainWindow(WikiChannel.openTiddler, workspaceID, [tiddlerName]),
-  [WikiChannel.setState]: (workspaceID: string, stateKey: WikiStateKey, content: string): void =>
-    sendToMainWindow(WikiChannel.setState, workspaceID, [stateKey, content]),
+  [WikiChannel.syncProgress]: (workspaceID: string, message: string): void => {
+    sendToMainWindow(WikiChannel.syncProgress, workspaceID, [message]);
+  },
+  [WikiChannel.generalNotification]: (workspaceID: string, message: string): void => {
+    sendToMainWindow(WikiChannel.generalNotification, workspaceID, [message]);
+  },
+  [WikiChannel.openTiddler]: (workspaceID: string, tiddlerName: string): void => {
+    sendToMainWindow(WikiChannel.openTiddler, workspaceID, [tiddlerName]);
+  },
+  [WikiChannel.setState]: (workspaceID: string, stateKey: WikiStateKey, content: string): void => {
+    sendToMainWindow(WikiChannel.setState, workspaceID, [stateKey, content]);
+  },
   // TODO: add more operations here from `src/preload/wikiOperation.ts`
 };
 export type IWikiOperations = typeof wikiOperations;

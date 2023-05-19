@@ -1,5 +1,5 @@
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { ContextChannel } from '@/constants/channels';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 export interface IPaths {
   CHROME_ERROR_PATH: string;

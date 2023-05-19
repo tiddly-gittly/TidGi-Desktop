@@ -1,9 +1,9 @@
-import React, { useCallback, useState } from 'react';
-import styled, { keyframes } from 'styled-components';
-import { Snackbar, Button, IconButton, Tooltip } from '@material-ui/core';
+import { Button, IconButton, Snackbar, Tooltip } from '@material-ui/core';
 import { Close as CloseIcon } from '@material-ui/icons';
-import { useTranslation } from 'react-i18next';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
+import React, { useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import styled, { keyframes } from 'styled-components';
 
 const progressAnimation = keyframes`
   from {
@@ -65,7 +65,7 @@ export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart
 
   return [
     requestRestartCountDown,
-    <div key="RestartSnackbar">
+    <div key='RestartSnackbar'>
       <Snackbar
         anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
         open={opened}
@@ -88,14 +88,15 @@ export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart
             <RestartButton
               key={currentWaitBeforeRestart}
               currentWaitBeforeRestart={currentWaitBeforeRestart}
-              color="secondary"
-              size="small"
-              onClick={handleCloseAndRestart}>
+              color='secondary'
+              size='small'
+              onClick={handleCloseAndRestart}
+            >
               {t('Dialog.RestartNow')}
             </RestartButton>
             <Tooltip title={<span>{t('Dialog.Later')}</span>}>
-              <IconButton size="small" aria-label="close" color="inherit" onClick={handleCancelRestart}>
-                <CloseIcon fontSize="small" />
+              <IconButton size='small' aria-label='close' color='inherit' onClick={handleCancelRestart}>
+                <CloseIcon fontSize='small' />
               </IconButton>
             </Tooltip>
           </>

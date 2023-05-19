@@ -1,10 +1,10 @@
-import { contextBridge, ipcRenderer, MenuItemConstructorOptions, webFrame } from 'electron';
 import { ViewChannel, WindowChannel } from '@/constants/channels';
 import { rendererMenuItemProxy } from '@services/menu/contextMenu/rendererMenuItemProxy';
 import { IOnContextMenuInfo } from '@services/menu/interface';
+import { contextBridge, ipcRenderer, MenuItemConstructorOptions, webFrame } from 'electron';
 
-import * as service from './services';
 import { windowName } from './browserViewMetaData';
+import * as service from './services';
 
 export const remoteMethods = {
   buildContextMenuAndPopup: async (menus: MenuItemConstructorOptions[], parameters: IOnContextMenuInfo): Promise<() => void> => {

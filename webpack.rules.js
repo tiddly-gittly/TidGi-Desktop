@@ -25,86 +25,86 @@ module.exports = [
   // eslint-disable-next-line no-constant-condition
   false && isDevelopmentOrTest
     ? {
-        test: /\.(t|j)sx?$/,
-        exclude: /(node_modules|\.webpack)/,
-        use: {
-          loader: 'esbuild-loader',
-          options: {
-            loader: 'tsx', // Or 'ts' if you don't need tsx
-            target: 'esnext',
-            // tsconfigRaw: ts.readConfigFile('tsconfig.json', ts.sys.readFile.bind(ts.sys)),
-            tsconfigRaw: JSON5.parse(fs.readFileSync('./tsconfig.json')),
-          },
+      test: /\.(t|j)sx?$/,
+      exclude: /(node_modules|\.webpack)/,
+      use: {
+        loader: 'esbuild-loader',
+        options: {
+          loader: 'tsx', // Or 'ts' if you don't need tsx
+          target: 'esnext',
+          // tsconfigRaw: ts.readConfigFile('tsconfig.json', ts.sys.readFile.bind(ts.sys)),
+          tsconfigRaw: JSON5.parse(fs.readFileSync('./tsconfig.json')),
         },
-      }
+      },
+    }
     : {
-        test: /\.(t|j)sx?$/,
-        exclude: /(node_modules|\.webpack)/,
-        use: {
-          loader: 'ts-loader',
-          options: {
-            transpileOnly: true,
-            getCustomTransformers: () => ({
-              before: [
-                styledComponentsTransformerFactory(),
-                // lodash
-                tsImportPluginFactory({
-                  style: false,
-                  libraryName: 'lodash',
-                  libraryDirectory: null,
-                  camel2DashComponentName: false,
-                }),
-                // material-ui
-                tsImportPluginFactory({
-                  libraryName: '@material-ui/core',
-                  libraryDirectory: '',
-                  camel2DashComponentName: false,
-                }),
-                // svg-icons
-                // FIXME: will cause `FolderIcon is not defined`, which cannot reproduce in MacOS and dev mode https://github.com/tiddly-gittly/TidGi-Desktop/issues/88
-                // tsImportPluginFactory({
-                //   libraryDirectory: (importName) => {
-                //     const stringVec = importName
-                //       .split(/([A-Z][a-z]+|\d*)/)
-                //       .filter((s) => s.length)
-                //       .map((s) => s.toLocaleLowerCase());
+      test: /\.(t|j)sx?$/,
+      exclude: /(node_modules|\.webpack)/,
+      use: {
+        loader: 'ts-loader',
+        options: {
+          transpileOnly: true,
+          getCustomTransformers: () => ({
+            before: [
+              styledComponentsTransformerFactory(),
+              // lodash
+              tsImportPluginFactory({
+                style: false,
+                libraryName: 'lodash',
+                libraryDirectory: null,
+                camel2DashComponentName: false,
+              }),
+              // material-ui
+              tsImportPluginFactory({
+                libraryName: '@material-ui/core',
+                libraryDirectory: '',
+                camel2DashComponentName: false,
+              }),
+              // svg-icons
+              // FIXME: will cause `FolderIcon is not defined`, which cannot reproduce in MacOS and dev mode https://github.com/tiddly-gittly/TidGi-Desktop/issues/88
+              // tsImportPluginFactory({
+              //   libraryDirectory: (importName) => {
+              //     const stringVec = importName
+              //       .split(/([A-Z][a-z]+|\d*)/)
+              //       .filter((s) => s.length)
+              //       .map((s) => s.toLocaleLowerCase());
 
-                //     return stringVec.reduce((accumulator, current, index) => {
-                //       if (index > 1) {
-                //         return `${accumulator}-${current}`;
-                //       } else if (index === 1) {
-                //         return `${accumulator}/${current}`;
-                //       }
-                //       return accumulator + current;
-                //     }, '');
-                //   },
-                //   libraryName: '@material-ui/icons',
-                //   style: false,
-                //   camel2DashComponentName: false,
-                // }),
-                // RXJS
-                tsImportPluginFactory([
-                  {
-                    libraryDirectory: '../_esm5/internal/operators',
-                    libraryName: 'rxjs/operators',
-                    camel2DashComponentName: false,
-                    transformToDefaultImport: false,
-                  },
-                  {
-                    libraryDirectory: '../_esm5/internal/observable',
-                    libraryName: 'rxjs',
-                    camel2DashComponentName: false,
-                    transformToDefaultImport: false,
-                  },
-                ]),
-              ],
-            }),
-            compilerOptions: {
-              module: 'esnext',
-            },
+              //     return stringVec.reduce((accumulator, current, index) => {
+              //       if (index > 1) {
+              //         return `${accumulator}-${current}`;
+              //       } else if (index === 1) {
+              //         return `${accumulator}/${current}`;
+              //       }
+              //       return accumulator + current;
+              //     }, '');
+              //   },
+              //   libraryName: '@material-ui/icons',
+              //   style: false,
+              //   camel2DashComponentName: false,
+              // }),
+              // RXJS
+              tsImportPluginFactory([
+                {
+                  libraryDirectory: '../_esm5/internal/operators',
+                  libraryName: 'rxjs/operators',
+                  camel2DashComponentName: false,
+                  transformToDefaultImport: false,
+                },
+                {
+                  libraryDirectory: '../_esm5/internal/observable',
+                  libraryName: 'rxjs',
+                  camel2DashComponentName: false,
+                  transformToDefaultImport: false,
+                },
+              ]),
+            ],
+          }),
+          compilerOptions: {
+            module: 'esnext',
           },
         },
       },
+    },
   {
     test: /\.(woff(2)?|ttf|eot)(\?v=\d+\.\d+\.\d+)?$/,
     type: 'asset/resource',

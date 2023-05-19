@@ -1,7 +1,7 @@
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { GitChannel } from '@/constants/channels';
-import { ModifiedFileList } from 'git-sync-js';
 import type { IWorkspace } from '@services/workspaces/interface';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import { ModifiedFileList } from 'git-sync-js';
 
 export interface IGitUserInfos extends IGitUserInfosWithoutToken {
   /** Github Login: token */

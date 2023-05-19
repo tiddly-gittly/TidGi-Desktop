@@ -1,6 +1,6 @@
 import 'reflect-metadata';
 import { ipcRenderer } from 'electron';
-import { IServicesWithoutObservables, IServicesWithOnlyObservables } from 'electron-ipc-cat/common';
+import { IServicesWithOnlyObservables, IServicesWithoutObservables } from 'electron-ipc-cat/common';
 
 import './common/test';
 import './common/i18n';

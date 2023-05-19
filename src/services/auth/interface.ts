@@ -1,9 +1,9 @@
 /* eslint-disable unicorn/no-null */
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { AuthenticationChannel } from '@/constants/channels';
-import { BehaviorSubject } from 'rxjs';
 import { IGitUserInfos } from '@services/git/interface';
 import { SupportedStorageServices } from '@services/types';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import { BehaviorSubject } from 'rxjs';
 
 export type ServiceTokenTypes = `${SupportedStorageServices}-token`;
 export const getServiceTokenTypes = (serviceType: SupportedStorageServices): ServiceTokenTypes => `${serviceType}-token`;
@@ -25,13 +25,15 @@ export const getServiceBranchTypes = (serviceType: SupportedStorageServices): Se
 /** Git push: Git commit message branch, you may use different branch for different storage service */
 type BranchRecord = Record<ServiceBranchTypes, string>;
 
-export type IUserInfos = {
-  /** Default UserName in TiddlyWiki, each wiki can have different username, but fallback to this if not specific on */
-  userName: string;
-} & Partial<TokenRecord> &
-  Partial<UserNameRecord> &
-  Partial<EmailRecord> &
-  Partial<BranchRecord>;
+export type IUserInfos =
+  & {
+    /** Default UserName in TiddlyWiki, each wiki can have different username, but fallback to this if not specific on */
+    userName: string;
+  }
+  & Partial<TokenRecord>
+  & Partial<UserNameRecord>
+  & Partial<EmailRecord>
+  & Partial<BranchRecord>;
 
 /**
  * Handle login to Github GitLab Coding.net

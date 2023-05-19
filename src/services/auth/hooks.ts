@@ -1,8 +1,8 @@
-import { useState, useEffect } from 'react';
-import useObservable from 'beautiful-react-hooks/useObservable';
-import { IUserInfos } from './interface';
-import { SupportedStorageServices } from '@services/types';
 import { IGitUserInfos } from '@services/git/interface';
+import { SupportedStorageServices } from '@services/types';
+import useObservable from 'beautiful-react-hooks/useObservable';
+import { useEffect, useState } from 'react';
+import { IUserInfos } from './interface';
 
 export function useUserInfoObservable(): IUserInfos | undefined {
   const [userInfo, userInfoSetter] = useState<IUserInfos | undefined>();

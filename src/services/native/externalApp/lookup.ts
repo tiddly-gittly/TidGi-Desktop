@@ -1,10 +1,10 @@
-import { ExternalEditorError } from './shared';
-import { IFoundEditor } from './found-editor';
-import { getAvailableEditors as getAvailableEditorsDarwin, getAvailableGitGUIApps as getAvailableGitGUIAppsDarwin } from './darwin';
-import { getAvailableEditors as getAvailableEditorsWindows, getAvailableGitGUIApps as getAvailableGitGUIAppsWindows } from './win32';
-import { getAvailableEditors as getAvailableEditorsLinux, getAvailableGitGUIApps as getAvailableGitGUIAppsLinux } from './linux';
-import { logger } from '@services/libs/log';
 import { isLinux, isMac, isWin } from '@/helpers/system';
+import { logger } from '@services/libs/log';
+import { getAvailableEditors as getAvailableEditorsDarwin, getAvailableGitGUIApps as getAvailableGitGUIAppsDarwin } from './darwin';
+import { IFoundEditor } from './found-editor';
+import { getAvailableEditors as getAvailableEditorsLinux, getAvailableGitGUIApps as getAvailableGitGUIAppsLinux } from './linux';
+import { ExternalEditorError } from './shared';
+import { getAvailableEditors as getAvailableEditorsWindows, getAvailableGitGUIApps as getAvailableGitGUIAppsWindows } from './win32';
 
 let editorCache: ReadonlyArray<IFoundEditor<string>> | undefined;
 let gitGUIAppCache: ReadonlyArray<IFoundEditor<string>> | undefined;

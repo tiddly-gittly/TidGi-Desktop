@@ -1,11 +1,11 @@
+import { WikiChannel } from '@/constants/channels';
+import { IGitUserInfos } from '@services/git/interface';
+import { IWorkspace } from '@services/workspaces/interface';
 import type { BrowserView } from 'electron';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import { WikiChannel } from '@/constants/channels';
-import { IWorkspace } from '@services/workspaces/interface';
-import { IGitUserInfos } from '@services/git/interface';
+import { ModuleThread } from 'threads';
 import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
 import { IWikiOperations } from './wikiOperations';
-import { ModuleThread } from 'threads';
 import type { WikiWorker } from './wikiWorker';
 
 /**

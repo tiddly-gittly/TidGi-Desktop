@@ -1,6 +1,6 @@
 import { LOG_FOLDER } from '@/constants/appPaths';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { openNewGitHubIssue, debugInfo } from 'electron-util';
+import { debugInfo, openNewGitHubIssue } from 'electron-util';
 import { INativeService } from './interface';
 
 export function reportErrorToGithubWithTemplates(error: Error): void {

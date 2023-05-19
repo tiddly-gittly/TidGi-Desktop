@@ -16,7 +16,9 @@ import type { INewWikiRequiredFormData } from './useNewWiki';
 export function useIsCreateSyncedWorkspace(): [boolean, React.Dispatch<React.SetStateAction<boolean>>] {
   const [isCreateSyncedWorkspace, isCreateSyncedWorkspaceSetter] = useState(false);
   useEffect(() => {
-    void window.service.auth.getRandomStorageServiceUserInfo().then((result) => isCreateSyncedWorkspaceSetter(result !== undefined));
+    void window.service.auth.getRandomStorageServiceUserInfo().then((result) => {
+      isCreateSyncedWorkspaceSetter(result !== undefined);
+    });
   }, []);
   return [isCreateSyncedWorkspace, isCreateSyncedWorkspaceSetter];
 }
@@ -29,7 +31,9 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
   const [wikiPort, wikiPortSetter] = useState(5212);
   useEffect(() => {
     // only update default port on component mount
-    void window.service.workspace.countWorkspaces().then((workspaceCount) => wikiPortSetter(wikiPort + workspaceCount));
+    void window.service.workspace.countWorkspaces().then((workspaceCount) => {
+      wikiPortSetter(wikiPort + workspaceCount);
+    });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -79,7 +83,7 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
   useEffect(() => {
     void (async function getDefaultExistedWikiFolderPathEffect() {
       const desktopPathAsDefaultExistedWikiFolderPath = await window.service.context.get('DEFAULT_WIKI_FOLDER');
-      wikiFolderNameSetter(mainWorkspaceList[mainWorkspaceList.length - 1]?.wikiFolderLocation ?? 'wiki');
+      wikiFolderNameSetter(mainWorkspaceList.at(-1)?.wikiFolderLocation ?? 'wiki');
       parentFolderLocationSetter(desktopPathAsDefaultExistedWikiFolderPath);
     })();
     // we only do this on component init

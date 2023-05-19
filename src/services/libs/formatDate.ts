@@ -1,4 +1,4 @@
-import { format, isTomorrow, isToday } from 'date-fns';
+import { format, isToday, isTomorrow } from 'date-fns';
 
 export const formatDate = (date: Date): string => {
   if (isToday(date)) {

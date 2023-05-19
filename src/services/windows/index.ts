@@ -1,32 +1,32 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
-import mergeDeep from 'lodash/merge';
-import { BrowserWindow, ipcMain, app, clipboard, BrowserWindowConstructorOptions, Tray, nativeImage, Menu } from 'electron';
-import { injectable } from 'inversify';
-import { menubar, Menubar } from 'menubar';
+import { app, BrowserWindow, BrowserWindowConstructorOptions, clipboard, ipcMain, Menu, nativeImage, Tray } from 'electron';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
+import { injectable } from 'inversify';
+import mergeDeep from 'lodash/merge';
+import { Menubar, menubar } from 'menubar';
 
-import { IBrowserViewMetaData, WindowNames, windowDimension, WindowMeta } from '@services/windows/WindowProperties';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { IBrowserViewMetaData, windowDimension, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 
+import { Channels, MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
+import type { IMenuService } from '@services/menu/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import type { IMenuService } from '@services/menu/interface';
-import { Channels, WindowChannel, MetaDataChannel, ViewChannel } from '@/constants/channels';
 
-import { i18n } from '@services/libs/i18n';
-import getViewBounds from '@services/libs/getViewBounds';
-import getFromRenderer from '@services/libs/getFromRenderer';
-import { lazyInject } from '@services/container';
-import { IWindowService } from './interface';
+import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { isTest } from '@/constants/environment';
 import { MENUBAR_ICON_PATH } from '@/constants/paths';
-import { getLocalHostUrlWithActualIP } from '@services/libs/url';
-import { SETTINGS_FOLDER } from '@/constants/appPaths';
-import { IThemeService } from '@services/theme/interface';
 import { isMac } from '@/helpers/system';
+import { lazyInject } from '@services/container';
+import getFromRenderer from '@services/libs/getFromRenderer';
+import getViewBounds from '@services/libs/getViewBounds';
+import { i18n } from '@services/libs/i18n';
+import { getLocalHostUrlWithActualIP } from '@services/libs/url';
+import { IThemeService } from '@services/theme/interface';
+import { IWindowService } from './interface';
 
 @injectable()
 export class Window implements IWindowService {
@@ -35,11 +35,20 @@ export class Window implements IWindowService {
   /** menubar version of main window, if user set openInMenubar to true in preferences */
   private mainWindowMenuBar?: Menubar;
 
-  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
-  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
-  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
-  @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
-  @lazyInject(serviceIdentifier.ThemeService) private readonly themeService!: IThemeService;
+  @lazyInject(serviceIdentifier.Preference)
+  private readonly preferenceService!: IPreferenceService;
+
+  @lazyInject(serviceIdentifier.Workspace)
+  private readonly workspaceService!: IWorkspaceService;
+
+  @lazyInject(serviceIdentifier.WorkspaceView)
+  private readonly workspaceViewService!: IWorkspaceViewService;
+
+  @lazyInject(serviceIdentifier.MenuService)
+  private readonly menuService!: IMenuService;
+
+  @lazyInject(serviceIdentifier.ThemeService)
+  private readonly themeService!: IThemeService;
 
   constructor() {
     void this.registerMenu();
@@ -113,7 +122,8 @@ export class Window implements IWindowService {
       if (recreate === true || (typeof recreate === 'function' && existedWindowMeta !== undefined && recreate(existedWindowMeta))) {
         existedWindow.close();
       } else {
-        return existedWindow.show();
+        existedWindow.show();
+        return;
       }
     }
 
@@ -145,8 +155,7 @@ export class Window implements IWindowService {
       autoHideMenuBar: false,
       // hide titleBar should not take effect on setting window
       titleBarStyle: ![WindowNames.main, WindowNames.menuBar].includes(windowName) || (await this.preferenceService.get('titleBar')) ? 'default' : 'hidden',
-      alwaysOnTop:
-        windowName === WindowNames.menuBar ? await this.preferenceService.get('menuBarAlwaysOnTop') : await this.preferenceService.get('alwaysOnTop'),
+      alwaysOnTop: windowName === WindowNames.menuBar ? await this.preferenceService.get('menuBarAlwaysOnTop') : await this.preferenceService.get('alwaysOnTop'),
       webPreferences: {
         devTools: !isTest,
         nodeIntegration: false,
@@ -208,7 +217,8 @@ export class Window implements IWindowService {
           // ensure redux is loaded first
           // if not, redux might not be able catch changes sent from ipcMain
           if (!mainWindow.webContents.isLoading()) {
-            return resolve();
+            resolve();
+            return;
           }
           mainWindow.webContents.once('did-stop-loading', () => {
             resolve();
@@ -371,12 +381,14 @@ export class Window implements IWindowService {
       // `role: 'zoom'` is only supported on macOS
       isMac
         ? {
-            role: 'zoom',
-          }
+          role: 'zoom',
+        }
         : {
-            label: 'Zoom',
-            click: async () => await this.maximize(),
+          label: 'Zoom',
+          click: async () => {
+            await this.maximize();
           },
+        },
       { role: 'resetZoom' },
       { role: 'togglefullscreen' },
       { role: 'close' },
@@ -437,7 +449,9 @@ export class Window implements IWindowService {
       {
         label: () => i18n.t('Menu.Home'),
         accelerator: 'Shift+CmdOrCtrl+H',
-        click: async () => await this.goHome(),
+        click: async () => {
+          await this.goHome();
+        },
         enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
       {
@@ -553,27 +567,37 @@ export class Window implements IWindowService {
           const contextMenu = Menu.buildFromTemplate([
             {
               label: i18n.t('ContextMenu.OpenTidGi'),
-              click: async () => await this.open(WindowNames.main),
+              click: async () => {
+                await this.open(WindowNames.main);
+              },
             },
             {
               label: i18n.t('ContextMenu.OpenTidGiMenuBar'),
-              click: async () => await menuBar.showWindow(),
+              click: async () => {
+                await menuBar.showWindow();
+              },
             },
             {
               type: 'separator',
             },
             {
               label: i18n.t('ContextMenu.About'),
-              click: async () => await this.open(WindowNames.about),
+              click: async () => {
+                await this.open(WindowNames.about);
+              },
             },
             { type: 'separator' },
             {
               label: i18n.t('ContextMenu.Preferences'),
-              click: async () => await this.open(WindowNames.preferences),
+              click: async () => {
+                await this.open(WindowNames.preferences);
+              },
             },
             {
               label: i18n.t('ContextMenu.Notifications'),
-              click: async () => await this.open(WindowNames.notifications),
+              click: async () => {
+                await this.open(WindowNames.notifications);
+              },
             },
             { type: 'separator' },
             {

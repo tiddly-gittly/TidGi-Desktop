@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
+import { Channels, WorkspaceChannel } from '@/constants/channels';
 import { webFrame } from 'electron';
-import { WorkspaceChannel, Channels } from '@/constants/channels';
 import './wikiOperation';
-import { preference, workspace, workspaceView, menu } from './common/services';
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData, windowName } from './common/browserViewMetaData';
+import { menu, preference, workspace, workspaceView } from './common/services';
 
 let handled = false;
 const handleLoaded = (event: string): void => {
@@ -64,11 +64,15 @@ async function executeJavaScriptInBrowserView(): Promise<void> {
 
 if (windowName === WindowNames.view) {
   // try to load as soon as dom is loaded
-  document.addEventListener('DOMContentLoaded', () => handleLoaded('document.on("DOMContentLoaded")'));
+  document.addEventListener('DOMContentLoaded', () => {
+    handleLoaded('document.on("DOMContentLoaded")');
+  });
   // if user navigates between the same website
   // DOMContentLoaded might not be triggered so double check with 'onload'
   // https://github.com/atomery/webcatalog/issues/797
-  window.addEventListener('load', () => handleLoaded('window.on("onload")'));
+  window.addEventListener('load', () => {
+    handleLoaded('window.on("onload")');
+  });
   window.addEventListener('message', async (event?: MessageEvent<{ type?: Channels; workspaceID?: string } | undefined>) => {
     // set workspace to active when its notification is clicked
     if (event?.data?.type === WorkspaceChannel.focusWorkspace) {

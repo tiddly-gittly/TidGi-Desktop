@@ -1,9 +1,9 @@
-import { useTranslation } from 'react-i18next';
 import { List } from '@material-ui/core';
+import { useTranslation } from 'react-i18next';
 
-import type { ISectionProps } from '../useSections';
-import { Paper, SectionTitle, ListItem } from '../PreferenceComponents';
 import { usePreferenceObservable } from '@services/preferences/hooks';
+import { ListItem, Paper, SectionTitle } from '../PreferenceComponents';
+import type { ISectionProps } from '../useSections';
 
 export function Network(props: ISectionProps): JSX.Element {
   const { t } = useTranslation();
@@ -15,9 +15,7 @@ export function Network(props: ISectionProps): JSX.Element {
       <SectionTitle ref={props.sections.network.ref}>{t('Preference.Network')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
-          {preference === undefined ? (
-            <ListItem>{t('Loading')}</ListItem>
-          ) : (
+          {preference === undefined ? <ListItem>{t('Loading')}</ListItem> : (
             <>
               <ListItem></ListItem>
             </>

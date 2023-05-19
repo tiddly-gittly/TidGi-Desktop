@@ -1,10 +1,10 @@
 import { MessageBoxOptions } from 'electron';
 import { Observable } from 'rxjs';
 
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { NativeChannel } from '@/constants/channels';
-import { WindowNames } from '@services/windows/WindowProperties';
 import { IZxFileInput } from '@services/wiki/wikiWorker';
+import { WindowNames } from '@services/windows/WindowProperties';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 /**
  * Wrap call to electron api, so we won't need remote module in renderer process
@@ -23,10 +23,10 @@ export interface INativeService {
   openInGitGuiApp(filePath: string, editorName?: string | undefined): Promise<boolean>;
   openNewGitHubIssue(error: Error): Promise<void>;
   openPath(filePath: string): Promise<void>;
+  path(method: 'basename' | 'dirname' | 'join', pathString: string | undefined, ...paths: string[]): Promise<string | undefined>;
   pickDirectory(defaultPath?: string): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;
   quit(): void;
-  path(method: 'basename' | 'dirname' | 'join', pathString: string | undefined, ...paths: string[]): Promise<string | undefined>;
   showElectronMessageBox(message: string, type: MessageBoxOptions['type'], WindowName?: WindowNames): Promise<void>;
 }
 export const NativeServiceIPCDescriptor = {

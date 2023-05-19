@@ -1,33 +1,40 @@
 /* eslint-disable @typescript-eslint/require-await */
-import { BehaviorSubject } from 'rxjs';
-import { injectable } from 'inversify';
 import { dialog, nativeTheme } from 'electron';
-import { debounce } from 'lodash';
 import settings from 'electron-settings';
+import { injectable } from 'inversify';
+import { debounce } from 'lodash';
+import { BehaviorSubject } from 'rxjs';
 
-import serviceIdentifier from '@services/serviceIdentifier';
-import type { IWindowService } from '@services/windows/interface';
-import type { INotificationService } from '@services/notifications/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
-import { i18n } from '@services/libs/i18n';
-import { IPreferences, IPreferenceService } from './interface';
-import { defaultPreferences } from './defaultPreferences';
 import { lazyInject } from '@services/container';
+import { i18n } from '@services/libs/i18n';
 import { requestChangeLanguage } from '@services/libs/i18n/requestChangeLanguage';
+import type { INotificationService } from '@services/notifications/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
+import type { IWindowService } from '@services/windows/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspaceService } from '@services/workspaces/interface';
-import { WikiChannel } from '@/constants/channels';
-import { WikiStateKey } from '@/constants/wiki';
+import { defaultPreferences } from './defaultPreferences';
+import { IPreferences, IPreferenceService } from './interface';
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-const debouncedSetPreferenceFile = debounce(async (newPreferences: IPreferences) => await settings.set(`preferences`, { ...newPreferences } as any), 500);
+const debouncedSetPreferenceFile = debounce(async (newPreferences: IPreferences) => {
+  await settings.set(`preferences`, { ...newPreferences } as any);
+}, 500);
 
 @injectable()
 export class Preference implements IPreferenceService {
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-  @lazyInject(serviceIdentifier.NotificationService) private readonly notificationService!: INotificationService;
-  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
-  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
+  @lazyInject(serviceIdentifier.Window)
+  private readonly windowService!: IWindowService;
+
+  @lazyInject(serviceIdentifier.NotificationService)
+  private readonly notificationService!: INotificationService;
+
+  @lazyInject(serviceIdentifier.Wiki)
+  private readonly wikiService!: IWikiService;
+
+  @lazyInject(serviceIdentifier.Workspace)
+  private readonly workspaceService!: IWorkspaceService;
 
   private cachedPreferences: IPreferences;
   public preference$: BehaviorSubject<IPreferences>;

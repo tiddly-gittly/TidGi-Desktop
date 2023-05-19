@@ -1,49 +1,62 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
-import { injectable } from 'inversify';
 import { delay } from 'bluebird';
-import fs from 'fs-extra';
-import path from 'path';
-import { spawn, Thread, Worker, ModuleThread } from 'threads';
-import type { WorkerEvent } from 'threads/dist/types/master';
 import { BrowserView, dialog, ipcMain, shell } from 'electron';
+import fs from 'fs-extra';
+import { injectable } from 'inversify';
+import path from 'path';
+import { ModuleThread, spawn, Thread, Worker } from 'threads';
+import type { WorkerEvent } from 'threads/dist/types/master';
 
-import serviceIdentifier from '@services/serviceIdentifier';
-import type { IAuthenticationService } from '@services/auth/interface';
-import type { IWindowService } from '@services/windows/interface';
-import type { IViewService } from '@services/view/interface';
-import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interface';
-import type { IGitService, IGitUserInfos } from '@services/git/interface';
-import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
-import { logger, wikiOutputToFile, refreshOutputFile, getWikiLogFilePath } from '@services/libs/log';
-import { i18n } from '@services/libs/i18n';
-import { lazyInject } from '@services/container';
-import { TIDDLYWIKI_TEMPLATE_FOLDER_PATH, TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER } from '@/constants/paths';
-import { updateSubWikiPluginContent, getSubWikiPluginContent, ISubWikiPluginContent } from './plugin/subWikiPlugin';
-import { IWikiService, WikiControlActions } from './interface';
 import { WikiChannel } from '@/constants/channels';
-import { CopyWikiTemplateError, DoubleWikiInstanceError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
+import { TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
+import type { IAuthenticationService } from '@services/auth/interface';
+import { lazyInject } from '@services/container';
+import type { IGitService, IGitUserInfos } from '@services/git/interface';
+import { i18n } from '@services/libs/i18n';
+import { getWikiLogFilePath, logger, refreshOutputFile, wikiOutputToFile } from '@services/libs/log';
+import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
+import type { IViewService } from '@services/view/interface';
+import type { IWindowService } from '@services/windows/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
+import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import { CopyWikiTemplateError, DoubleWikiInstanceError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
+import { IWikiService, WikiControlActions } from './interface';
+import { getSubWikiPluginContent, ISubWikiPluginContent, updateSubWikiPluginContent } from './plugin/subWikiPlugin';
 import type { WikiWorker } from './wikiWorker';
 
+import { defaultServerIP } from '@/constants/urls';
+import { IPreferenceService } from '@services/preferences/interface';
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker.ts';
 import { IWikiOperations, wikiOperations } from './wikiOperations';
-import { defaultServerIP } from '@/constants/urls';
-import { IPreferenceService } from '@services/preferences/interface';
 
 @injectable()
 export class Wiki implements IWikiService {
-  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
-  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-  @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;
-  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
-  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
-  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
+  @lazyInject(serviceIdentifier.Preference)
+  private readonly preferenceService!: IPreferenceService;
+
+  @lazyInject(serviceIdentifier.Authentication)
+  private readonly authService!: IAuthenticationService;
+
+  @lazyInject(serviceIdentifier.Window)
+  private readonly windowService!: IWindowService;
+
+  @lazyInject(serviceIdentifier.Git)
+  private readonly gitService!: IGitService;
+
+  @lazyInject(serviceIdentifier.Workspace)
+  private readonly workspaceService!: IWorkspaceService;
+
+  @lazyInject(serviceIdentifier.View)
+  private readonly viewService!: IViewService;
+
+  @lazyInject(serviceIdentifier.WorkspaceView)
+  private readonly workspaceViewService!: IWorkspaceViewService;
 
   public async getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]> {
     return await getSubWikiPluginContent(mainWikiPath);
@@ -92,7 +105,7 @@ export class Wiki implements IWikiService {
     this.wikiWorkers[wikiFolderLocation] = worker;
     refreshOutputFile(wikiFolderLocation);
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation };
-    return await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       // handle native messages
       Thread.errors(worker).subscribe(async (error) => {
         logger.error(error.message, { ...loggerMeta, ...error });
@@ -147,7 +160,8 @@ export class Wiki implements IWikiService {
                   lastUrl: workspace.lastUrl?.replace?.(`:${tiddlyWikiPort}`, `:${tiddlyWikiPort + 1}`) ?? null,
                 };
                 await this.workspaceService.update(workspaceID, portChange, true);
-                return reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
+                reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
+                return;
               }
               reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, false));
             }
@@ -192,7 +206,8 @@ export class Wiki implements IWikiService {
       logger.warning(`No wiki for ${wikiFolderLocation}. No running worker, means maybe tiddlywiki server in this workspace failed to start`, {
         function: 'stopWiki',
       });
-      return await Promise.resolve();
+      await Promise.resolve();
+      return;
     }
     clearInterval(this.wikiSyncIntervals[wikiFolderLocation]);
     try {
@@ -617,7 +632,7 @@ export class Wiki implements IWikiService {
   }
 
   public async updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void> {
-    return updateSubWikiPluginContent(mainWikiPath, newConfig, oldConfig);
+    updateSubWikiPluginContent(mainWikiPath, newConfig, oldConfig);
   }
 
   public wikiOperation<OP extends keyof IWikiOperations>(
@@ -649,7 +664,8 @@ export class Wiki implements IWikiService {
       const onTimeout = (): void => {
         ipcMain.removeListener(WikiChannel.setTiddlerTextDone + workspaceID, onDone);
         clearInterval(intervalHandle);
-        const errorMessage = `setWikiLanguage("${tiddlywikiLanguageName}"), language "${tiddlywikiLanguageName}" in workspaceID ${workspaceID} is too slow to update after ${twLanguageUpdateTimeout}ms.`;
+        const errorMessage =
+          `setWikiLanguage("${tiddlywikiLanguageName}"), language "${tiddlywikiLanguageName}" in workspaceID ${workspaceID} is too slow to update after ${twLanguageUpdateTimeout}ms.`;
         logger.error(errorMessage);
         // no need to reject and show error dialog, otherwise user will rise issue. This happens too frequent.
         // reject(new Error(errorMessage));

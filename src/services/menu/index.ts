@@ -1,46 +1,69 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
-import { Menu, MenuItemConstructorOptions, shell, ContextMenuParams, WebContents, MenuItem, app } from 'electron';
-import { debounce, take, drop, reverse, remove, compact } from 'lodash';
-import { injectable } from 'inversify';
-import type { IMenuService, IOnContextMenuInfo } from './interface';
-import { DeferredMenuItemConstructorOptions } from './interface';
-import { WindowNames } from '@services/windows/WindowProperties';
-import { lazyInject } from '@services/container';
-import serviceIdentifier from '@services/serviceIdentifier';
 import type { IAuthenticationService } from '@services/auth/interface';
+import { lazyInject } from '@services/container';
 import type { IContextService } from '@services/context/interface';
 import type { IGitService } from '@services/git/interface';
+import { i18n } from '@services/libs/i18n';
+import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IUpdaterService } from '@services/updater/interface';
 import type { IViewService } from '@services/view/interface';
-import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import type { IWikiService } from '@services/wiki/interface';
+import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import type { IWindowService } from '@services/windows/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
+import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/workspaces/getWorkspaceMenuTemplate';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import type { IUpdaterService } from '@services/updater/interface';
-import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/workspaces/getWorkspaceMenuTemplate';
-import { logger } from '@services/libs/log';
-import { i18n } from '@services/libs/i18n';
+import { app, ContextMenuParams, Menu, MenuItem, MenuItemConstructorOptions, shell, WebContents } from 'electron';
+import { injectable } from 'inversify';
+import { compact, debounce, drop, remove, reverse, take } from 'lodash';
 import ContextMenuBuilder from './contextMenu/contextMenuBuilder';
 import { IpcSafeMenuItem, mainMenuItemProxy } from './contextMenu/rendererMenuItemProxy';
 import { InsertMenuAfterSubMenuIndexError } from './error';
+import type { IMenuService, IOnContextMenuInfo } from './interface';
+import { DeferredMenuItemConstructorOptions } from './interface';
 
 @injectable()
 export class MenuService implements IMenuService {
-  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
-  @lazyInject(serviceIdentifier.Context) private readonly contextService!: IContextService;
-  @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;
-  @lazyInject(serviceIdentifier.NativeService) private readonly nativeService!: INativeService;
-  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
-  @lazyInject(serviceIdentifier.Updater) private readonly updaterService!: IUpdaterService;
-  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
-  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
-  @lazyInject(serviceIdentifier.WikiGitWorkspace) private readonly wikiGitWorkspaceService!: IWikiGitWorkspaceService;
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
-  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
+  @lazyInject(serviceIdentifier.Authentication)
+  private readonly authService!: IAuthenticationService;
+
+  @lazyInject(serviceIdentifier.Context)
+  private readonly contextService!: IContextService;
+
+  @lazyInject(serviceIdentifier.Git)
+  private readonly gitService!: IGitService;
+
+  @lazyInject(serviceIdentifier.NativeService)
+  private readonly nativeService!: INativeService;
+
+  @lazyInject(serviceIdentifier.Preference)
+  private readonly preferenceService!: IPreferenceService;
+
+  @lazyInject(serviceIdentifier.Updater)
+  private readonly updaterService!: IUpdaterService;
+
+  @lazyInject(serviceIdentifier.View)
+  private readonly viewService!: IViewService;
+
+  @lazyInject(serviceIdentifier.Wiki)
+  private readonly wikiService!: IWikiService;
+
+  @lazyInject(serviceIdentifier.WikiGitWorkspace)
+  private readonly wikiGitWorkspaceService!: IWikiGitWorkspaceService;
+
+  @lazyInject(serviceIdentifier.Window)
+  private readonly windowService!: IWindowService;
+
+  @lazyInject(serviceIdentifier.Workspace)
+  private readonly workspaceService!: IWorkspaceService;
+
+  @lazyInject(serviceIdentifier.WorkspaceView)
+  private readonly workspaceViewService!: IWorkspaceViewService;
 
   private _menuTemplate?: DeferredMenuItemConstructorOptions[];
   private get menuTemplate(): DeferredMenuItemConstructorOptions[] {
@@ -125,23 +148,31 @@ export class MenuService implements IMenuService {
         submenu: [
           {
             label: () => i18n.t('ContextMenu.About'),
-            click: async () => await this.windowService.open(WindowNames.about),
+            click: async () => {
+              await this.windowService.open(WindowNames.about);
+            },
           },
           { type: 'separator' },
           {
             id: 'update',
             label: () => i18n.t('Updater.CheckUpdate'),
-            click: async () => await this.updaterService.checkForUpdates(),
+            click: async () => {
+              await this.updaterService.checkForUpdates();
+            },
           },
           {
             label: () => i18n.t('ContextMenu.Preferences'),
             accelerator: 'CmdOrCtrl+,',
-            click: async () => await this.windowService.open(WindowNames.preferences),
+            click: async () => {
+              await this.windowService.open(WindowNames.preferences);
+            },
           },
           { type: 'separator' },
           {
             label: () => i18n.t('Preference.Notifications'),
-            click: async () => await this.windowService.open(WindowNames.notifications),
+            click: async () => {
+              await this.windowService.open(WindowNames.notifications);
+            },
             accelerator: 'CmdOrCtrl+Shift+N',
           },
           { type: 'separator' },
@@ -192,19 +223,27 @@ export class MenuService implements IMenuService {
         submenu: [
           {
             label: () => i18n.t('ContextMenu.TidGiSupport'),
-            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues'),
+            click: async () => {
+              await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues');
+            },
           },
           {
             label: () => i18n.t('Menu.ReportBugViaGithub'),
-            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues'),
+            click: async () => {
+              await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues');
+            },
           },
           {
             label: () => i18n.t('Menu.RequestFeatureViaGithub'),
-            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues/new?template=feature.md&title=feature%3A+'),
+            click: async () => {
+              await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues/new?template=feature.md&title=feature%3A+');
+            },
           },
           {
             label: () => i18n.t('Menu.LearnMore'),
-            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/'),
+            click: async () => {
+              await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/');
+            },
           },
         ],
       },
@@ -218,8 +257,9 @@ export class MenuService implements IMenuService {
 
   /** Register `on('context-menu', openContextMenuForWindow)` for a window, return an unregister function */
   public async initContextMenuForWindowWebContents(webContents: WebContents): Promise<() => void> {
-    const openContextMenuForWindow = async (event: Electron.Event, parameters: ContextMenuParams): Promise<void> =>
+    const openContextMenuForWindow = async (event: Electron.Event, parameters: ContextMenuParams): Promise<void> => {
       await this.buildContextMenuAndPopup([], parameters, webContents);
+    };
     webContents.on('context-menu', openContextMenuForWindow);
 
     return () => {
@@ -433,7 +473,9 @@ export class MenuService implements IMenuService {
             )),
             {
               label: i18n.t('WorkspaceSelector.Add'),
-              click: async () => await this.windowService.open(WindowNames.addWorkspace),
+              click: async () => {
+                await this.windowService.open(WindowNames.addWorkspace);
+              },
             },
           ],
         }),
@@ -487,25 +529,35 @@ export class MenuService implements IMenuService {
         submenu: [
           {
             label: i18n.t('ContextMenu.Preferences'),
-            click: async () => await this.windowService.open(WindowNames.preferences),
+            click: async () => {
+              await this.windowService.open(WindowNames.preferences);
+            },
           },
           { type: 'separator' },
           {
             label: i18n.t('ContextMenu.About'),
-            click: async () => await this.windowService.open(WindowNames.about),
+            click: async () => {
+              await this.windowService.open(WindowNames.about);
+            },
           },
           {
             label: i18n.t('ContextMenu.TidGiSupport'),
-            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-Desktop/issues/new/choose'),
+            click: async () => {
+              await shell.openExternal('https://github.com/tiddly-gittly/TidGi-Desktop/issues/new/choose');
+            },
           },
           {
             label: i18n.t('ContextMenu.TidGiWebsite'),
-            click: async () => await shell.openExternal('https://github.com/tiddly-gittly/TidGi-Desktop'),
+            click: async () => {
+              await shell.openExternal('https://github.com/tiddly-gittly/TidGi-Desktop');
+            },
           },
           { type: 'separator' },
           {
             label: i18n.t('ContextMenu.Quit'),
-            click: () => app.quit(),
+            click: () => {
+              app.quit();
+            },
           },
         ],
       }),
@@ -521,7 +573,9 @@ export class MenuService implements IMenuService {
       // we are going to prepend items, so inverse first, so order will remain
       reverse(menuItems)
         .map((menuItem) => new MenuItem(menuItem))
-        .forEach((menuItem) => menu.insert(0, menuItem));
+        .forEach((menuItem) => {
+          menu.insert(0, menuItem);
+        });
     }
 
     menu.popup();

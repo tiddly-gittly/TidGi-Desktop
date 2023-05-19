@@ -1,6 +1,6 @@
-import { useEffect, useState, useCallback } from 'react';
-import { AsyncReturnType } from 'type-fest';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
+import { useCallback, useEffect, useState } from 'react';
+import { AsyncReturnType } from 'type-fest';
 
 /**
  * Use value from service, especially constant value that never changes

@@ -1,16 +1,18 @@
 /* eslint-disable @typescript-eslint/require-await */
-import { BehaviorSubject } from 'rxjs';
 import { nativeTheme } from 'electron';
 import { injectable } from 'inversify';
+import { BehaviorSubject } from 'rxjs';
 
-import type { IPreferenceService } from '@services/preferences/interface';
-import { ITheme, IThemeService } from './interface';
-import serviceIdentifier from '@services/serviceIdentifier';
 import { lazyInject } from '@services/container';
+import type { IPreferenceService } from '@services/preferences/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
+import { ITheme, IThemeService } from './interface';
 
 @injectable()
 export class ThemeService implements IThemeService {
-  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
+  @lazyInject(serviceIdentifier.Preference)
+  private readonly preferenceService!: IPreferenceService;
+
   public theme$: BehaviorSubject<ITheme>;
 
   constructor() {

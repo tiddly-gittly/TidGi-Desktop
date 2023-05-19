@@ -1,6 +1,6 @@
 import useObservable from 'beautiful-react-hooks/useObservable';
-import { useState } from 'react';
 import i18n from 'i18next';
+import { useState } from 'react';
 
 import { IUsedElectionSettings } from './interface';
 

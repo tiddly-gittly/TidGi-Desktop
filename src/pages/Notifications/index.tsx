@@ -2,18 +2,18 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 /* eslint-disable unicorn/no-useless-undefined */
 import React, { useState } from 'react';
-import styled from 'styled-components';
-import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
 
-import ListSubheader from '@material-ui/core/ListSubheader';
+import Container from '@material-ui/core/Container';
+import Divider from '@material-ui/core/Divider';
 import ListRaw from '@material-ui/core/List';
 import ListItem from '@material-ui/core/ListItem';
 import ListItemText from '@material-ui/core/ListItemText';
-import Divider from '@material-ui/core/Divider';
-import TextField from '@material-ui/core/TextField';
+import ListSubheader from '@material-ui/core/ListSubheader';
 import MenuItem from '@material-ui/core/MenuItem';
-import Container from '@material-ui/core/Container';
+import TextField from '@material-ui/core/TextField';
 
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 
@@ -23,12 +23,12 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import PopUpMenuItem from '@/components/PopUpMenuItem';
 
 // https://www.sketchappsources.com/free-source/2501-iphone-app-background-sketch-freebie-resource.html
-import nightBackgroundPng from '../../images/night-background.png';
-import { usePreferenceObservable } from '@services/preferences/hooks';
-import { useNotificationInfoObservable } from '@services/notifications/hooks';
-import { quickShortcuts } from './quickShortcuts';
-import { PreferenceSections } from '@services/preferences/interface';
 import { formatDate } from '@services/libs/formatDate';
+import { useNotificationInfoObservable } from '@services/notifications/hooks';
+import { usePreferenceObservable } from '@services/preferences/hooks';
+import { PreferenceSections } from '@services/preferences/interface';
+import nightBackgroundPng from '../../images/night-background.png';
+import { quickShortcuts } from './quickShortcuts';
 
 const Root = styled(Container)`
   width: 100%;
@@ -90,7 +90,7 @@ export default function Notifications(): JSX.Element {
           </PausingHeader>
           <ListItem button>
             <ListItemText
-              primary="Resume notifications"
+              primary='Resume notifications'
               onClick={async () => {
                 if (pauseNotificationsInfo === undefined) {
                   return;
@@ -114,19 +114,31 @@ export default function Notifications(): JSX.Element {
             <>
               <Divider />
               <PopUpMenuItem
-                id="adjustTime"
+                id='adjustTime'
                 buttonElement={
                   <ListItem button>
-                    <ListItemText primary="Adjust time" />
-                    <ChevronRightIcon color="action" />
+                    <ListItemText primary='Adjust time' />
+                    <ChevronRightIcon color='action' />
                   </ListItem>
-                }>
+                }
+              >
                 {quickShortcuts.map((shortcut) => (
-                  <MenuItem dense key={shortcut.name} onClick={() => pauseNotification(shortcut.calcDate())}>
+                  <MenuItem
+                    dense
+                    key={shortcut.name}
+                    onClick={() => {
+                      pauseNotification(shortcut.calcDate());
+                    }}
+                  >
                     {shortcut.name}
                   </MenuItem>
                 ))}
-                <MenuItem dense onClick={() => showDateTimePickerSetter(true)}>
+                <MenuItem
+                  dense
+                  onClick={() => {
+                    showDateTimePickerSetter(true);
+                  }}
+                >
                   Custom...
                 </MenuItem>
               </PopUpMenuItem>
@@ -147,19 +159,30 @@ export default function Notifications(): JSX.Element {
     }
 
     return (
-      <List subheader={<ListSubheader component="div">Pause notifications</ListSubheader>}>
+      <List subheader={<ListSubheader component='div'>Pause notifications</ListSubheader>}>
         {quickShortcuts.map((shortcut) => (
-          <ListItem button key={shortcut.name} onClick={() => pauseNotification(shortcut.calcDate())}>
+          <ListItem
+            button
+            key={shortcut.name}
+            onClick={() => {
+              pauseNotification(shortcut.calcDate());
+            }}
+          >
             <ListItemText primary={shortcut.name} />
           </ListItem>
         ))}
-        <ListItem button onClick={() => showDateTimePickerSetter(true)}>
-          <ListItemText primary="Custom..." />
+        <ListItem
+          button
+          onClick={() => {
+            showDateTimePickerSetter(true);
+          }}
+        >
+          <ListItemText primary='Custom...' />
         </ListItem>
         <Divider />
         <ListItem button>
           <ListItemText
-            primary="Pause notifications by schedule..."
+            primary='Pause notifications by schedule...'
             onClick={async () => {
               await window.service.window.open(WindowNames.preferences, { gotoTab: PreferenceSections.notifications });
               void window.remote.closeCurrentWindow();
@@ -172,7 +195,7 @@ export default function Notifications(): JSX.Element {
 
   return (
     <Root>
-      <div id="test" data-usage="For spectron automating testing" />
+      <div id='test' data-usage='For spectron automating testing' />
       <Helmet>
         <title>{t('ContextMenu.Notifications')}</title>
       </Helmet>
@@ -184,10 +207,14 @@ export default function Notifications(): JSX.Element {
           if (tilDate === null) return;
           pauseNotification(tilDate);
         }}
-        label="Custom"
+        label='Custom'
         open={showDateTimePicker}
-        onOpen={() => showDateTimePickerSetter(true)}
-        onClose={() => showDateTimePickerSetter(false)}
+        onOpen={() => {
+          showDateTimePickerSetter(true);
+        }}
+        onClose={() => {
+          showDateTimePickerSetter(false);
+        }}
         disablePast
         showTodayButton
       />

@@ -1,8 +1,8 @@
-import { Observable, BehaviorSubject } from 'rxjs';
-import { SetOptional } from 'type-fest';
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { WorkspaceChannel } from '@/constants/channels';
 import { SupportedStorageServices } from '@services/types';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import { BehaviorSubject, Observable } from 'rxjs';
+import { SetOptional } from 'type-fest';
 
 export interface IWorkspace {
   /**

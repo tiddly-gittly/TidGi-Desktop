@@ -1,12 +1,12 @@
-import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
 
-import { TextField, Button } from '@material-ui/core';
+import { Button, TextField } from '@material-ui/core';
 
-import { SupportedStorageServices } from '@services/types';
 import { useUserInfoObservable } from '@services/auth/hooks';
-import { useAuth } from './gitTokenHooks';
 import { getServiceBranchTypes, getServiceEmailTypes, getServiceTokenTypes, getServiceUserNameTypes } from '@services/auth/interface';
+import { SupportedStorageServices } from '@services/types';
+import { useAuth } from './gitTokenHooks';
 
 const AuthingLoginButton = styled(Button)`
   width: 100%;

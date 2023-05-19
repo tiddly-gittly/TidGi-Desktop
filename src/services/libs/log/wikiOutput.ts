@@ -1,10 +1,10 @@
-import path from 'path';
 import fs from 'fs-extra';
+import path from 'path';
 
 import { LOG_FOLDER } from '@/constants/appPaths';
 
 export function getWikiLogFilePath(wikiName: string): string {
-  const logFileName = wikiName.replace(/["*/:<>?\\|]/g, '_');
+  const logFileName = wikiName.replaceAll(/["*/:<>?\\|]/g, '_');
   const logFilePath = path.join(LOG_FOLDER, `${logFileName}.log`);
   return logFilePath;
 }

@@ -1,37 +1,46 @@
 /* eslint-disable n/no-callback-literal */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
-import { BrowserView, BrowserWindow, session, ipcMain, WebPreferences } from 'electron';
+import { BrowserView, BrowserWindow, ipcMain, session, WebPreferences } from 'electron';
 import { injectable } from 'inversify';
 
-import serviceIdentifier from '@services/serviceIdentifier';
+import type { IMenuService } from '@services/menu/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import type { IWindowService } from '@services/windows/interface';
-import type { IMenuService } from '@services/menu/interface';
 
-import { WindowNames, IBrowserViewMetaData } from '@services/windows/WindowProperties';
-import { i18n } from '@services/libs/i18n';
-import getViewBounds from '@services/libs/getViewBounds';
-import { IWorkspace } from '@services/workspaces/interface';
-import setupViewEventHandlers from './setupViewEventHandlers';
-import getFromRenderer from '@services/libs/getFromRenderer';
-import { ViewChannel, MetaDataChannel, WindowChannel } from '@/constants/channels';
-import { lazyInject } from '@services/container';
-import { IViewService } from './interface';
-import { getLocalHostUrlWithActualIP, replaceUrlPortWithSettingPort } from '@services/libs/url';
-import { logger } from '@services/libs/log';
-import { ViewLoadUrlError } from './error';
+import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { isMac, isWin } from '@/helpers/system';
+import { lazyInject } from '@services/container';
+import getFromRenderer from '@services/libs/getFromRenderer';
+import getViewBounds from '@services/libs/getViewBounds';
+import { i18n } from '@services/libs/i18n';
+import { logger } from '@services/libs/log';
+import { getLocalHostUrlWithActualIP, replaceUrlPortWithSettingPort } from '@services/libs/url';
+import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
+import { IWorkspace } from '@services/workspaces/interface';
+import { ViewLoadUrlError } from './error';
+import { IViewService } from './interface';
+import setupViewEventHandlers from './setupViewEventHandlers';
 
 @injectable()
 export class View implements IViewService {
-  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
-  @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
-  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
+  @lazyInject(serviceIdentifier.Preference)
+  private readonly preferenceService!: IPreferenceService;
+
+  @lazyInject(serviceIdentifier.Window)
+  private readonly windowService!: IWindowService;
+
+  @lazyInject(serviceIdentifier.Workspace)
+  private readonly workspaceService!: IWorkspaceService;
+
+  @lazyInject(serviceIdentifier.MenuService)
+  private readonly menuService!: IMenuService;
+
+  @lazyInject(serviceIdentifier.WorkspaceView)
+  private readonly workspaceViewService!: IWorkspaceViewService;
 
   constructor() {
     this.initIPCHandlers();
@@ -269,8 +278,7 @@ export class View implements IViewService {
       const url = new URL(details.url);
       details.requestHeaders.Origin = url.origin;
       details.requestHeaders.Referer = details.url;
-      details.requestHeaders['User-Agent'] =
-        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36';
+      details.requestHeaders['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36';
       callback({ cancel: false, requestHeaders: details.requestHeaders });
     });
     const browserViewMetaData: IBrowserViewMetaData = { workspaceID: workspace.id };
@@ -320,7 +328,9 @@ export class View implements IViewService {
       shouldPauseNotifications: this.shouldPauseNotifications,
       workspace,
       sharedWebPreferences,
-      loadInitialUrlWithCatch: async () => await this.loadUrlForView(workspace, view, windowName),
+      loadInitialUrlWithCatch: async () => {
+        await this.loadUrlForView(workspace, view, windowName);
+      },
     });
     await this.loadUrlForView(workspace, view, windowName);
   }
@@ -338,9 +348,7 @@ export class View implements IViewService {
     });
     try {
       logger.debug(
-        `loadInitialUrlWithCatch(): view.webContents: ${String(view.webContents)} ${hostReplacedUrl} for windowName ${windowName} for workspace ${
-          workspace.name
-        }`,
+        `loadInitialUrlWithCatch(): view.webContents: ${String(view.webContents)} ${hostReplacedUrl} for windowName ${windowName} for workspace ${workspace.name}`,
         { stack: new Error('debug error, not a real error').stack },
       );
       if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
@@ -399,7 +407,7 @@ export class View implements IViewService {
       if (workspace === undefined) {
         logger.error(`workspace is undefined when setActiveView(${windowName}, ${workspaceID})`);
       } else {
-        return await this.addView(workspace, windowName);
+        await this.addView(workspace, windowName);
       }
     } else {
       browserWindow.setBrowserView(view);

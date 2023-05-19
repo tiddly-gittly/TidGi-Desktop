@@ -1,51 +1,60 @@
-import { ipcMain, dialog, net, shell } from 'electron';
-import { injectable, inject } from 'inversify';
-import { compact } from 'lodash';
+import { dialog, ipcMain, net, shell } from 'electron';
 import {
   AssumeSyncError,
   CantSyncGitNotInitializedError,
   CantSyncInSpecialGitStateAutoFixFailed,
+  getRemoteName,
+  getRemoteUrl,
   GitPullPushError,
   GitStep,
   ModifiedFileList,
   SyncParameterMissingError,
   SyncScriptIsInDeadLoopError,
-  getRemoteName,
-  getRemoteUrl,
 } from 'git-sync-js';
-import { spawn, Worker, ModuleThread } from 'threads';
+import { inject, injectable } from 'inversify';
+import { compact } from 'lodash';
+import { ModuleThread, spawn, Worker } from 'threads';
 
+import { WikiChannel } from '@/constants/channels';
+import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
+import { i18n } from '@services/libs/i18n';
+import { logger } from '@services/libs/log';
+import type { INativeService } from '@services/native/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IViewService } from '@services/view/interface';
-import type { IPreferenceService } from '@services/preferences/interface';
-import type { IWindowService } from '@services/windows/interface';
-import type { INativeService } from '@services/native/interface';
-import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
 import type { IWikiService } from '@services/wiki/interface';
-import { logger } from '@services/libs/log';
-import { i18n } from '@services/libs/i18n';
-import { ICommitAndSyncConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
-import { WikiChannel } from '@/constants/channels';
-import { GitWorker } from './gitWorker';
+import type { IWindowService } from '@services/windows/interface';
 import { Observer } from 'rxjs';
+import { GitWorker } from './gitWorker';
+import { ICommitAndSyncConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
 
+import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
+import { githubDesktopUrl } from '@/constants/urls';
+import { lazyInject } from '@services/container';
+import { WindowNames } from '@services/windows/WindowProperties';
+import { IWorkspace } from '@services/workspaces/interface';
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
 import workerURL from 'threads-plugin/dist/loader?name=gitWorker!./gitWorker.ts';
-import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
-import { WindowNames } from '@services/windows/WindowProperties';
-import { lazyInject } from '@services/container';
-import { githubDesktopUrl } from '@/constants/urls';
-import { IWorkspace } from '@services/workspaces/interface';
 import { stepWithChanges } from './stepWithChanges';
 
 @injectable()
 export class Git implements IGitService {
-  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
-  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
-  @lazyInject(serviceIdentifier.NativeService) private readonly nativeService!: INativeService;
+  @lazyInject(serviceIdentifier.Authentication)
+  private readonly authService!: IAuthenticationService;
+
+  @lazyInject(serviceIdentifier.Wiki)
+  private readonly wikiService!: IWikiService;
+
+  @lazyInject(serviceIdentifier.Window)
+  private readonly windowService!: IWindowService;
+
+  @lazyInject(serviceIdentifier.View)
+  private readonly viewService!: IViewService;
+
+  @lazyInject(serviceIdentifier.NativeService)
+  private readonly nativeService!: INativeService;
 
   private gitWorker?: ModuleThread<GitWorker>;
 
@@ -73,7 +82,6 @@ export class Git implements IGitService {
   }
 
   /**
-   *
    * @param {string} githubRepoName similar to "linonetwo/wiki", string after "https://com/"
    */
   public async updateGitInfoTiddler(workspace: IWorkspace, githubRepoName: string): Promise<void> {
@@ -91,7 +99,9 @@ export class Git implements IGitService {
               browserView.webContents.send(WikiChannel.addTiddler, '$:/GitHub/Repo', githubRepoName, {
                 type: 'text/vnd.tiddlywiki',
               });
-              ipcMain.once(WikiChannel.addTiddlerDone, () => resolve());
+              ipcMain.once(WikiChannel.addTiddlerDone, () => {
+                resolve();
+              });
             });
           }
         }
@@ -236,7 +246,9 @@ export class Git implements IGitService {
       this.translateAndLogErrorMessage(error as Error);
       reject(error as Error);
     },
-    complete: () => resolve(),
+    complete: () => {
+      resolve();
+    },
   });
 
   private createFailedDialog(message: string, wikiFolderPath: string): void {
@@ -269,7 +281,7 @@ export class Git implements IGitService {
   public async initWikiGit(wikiFolderPath: string, isSyncedWiki?: boolean, isMainWiki?: boolean, remoteUrl?: string, userInfo?: IGitUserInfos): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const syncImmediately = !!isSyncedWiki && !!isMainWiki;
-    return await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       this.gitWorker
         ?.initWikiGit(wikiFolderPath, syncImmediately && net.isOnline(), remoteUrl, userInfo)
         .subscribe(this.getWorkerMessageObserver(resolve, reject));
@@ -292,7 +304,9 @@ export class Git implements IGitService {
               hasChanges = true;
             }
           },
-          complete: () => resolve(hasChanges),
+          complete: () => {
+            resolve(hasChanges);
+          },
         });
         return true;
       });
@@ -306,7 +320,7 @@ export class Git implements IGitService {
     if (!net.isOnline()) {
       return;
     }
-    return await new Promise<void>((resolve, reject) => {
+    await new Promise<void>((resolve, reject) => {
       this.gitWorker?.cloneWiki(repoFolderPath, remoteUrl, userInfo).subscribe(this.getWorkerMessageObserver(resolve, reject));
     });
   }

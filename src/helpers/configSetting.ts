@@ -1,13 +1,13 @@
-import fs from 'fs-extra';
-import settings from 'electron-settings';
-import { parse as bestEffortJsonParser } from 'best-effort-json-parser';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { logger } from '@services/libs/log';
+import { parse as bestEffortJsonParser } from 'best-effort-json-parser';
+import settings from 'electron-settings';
+import fs from 'fs-extra';
 import { isWin } from './system';
 
 export function fixSettingFileWhenError(jsonError: Error): void {
   logger.error('Setting file format bad: ' + jsonError.message);
-  const jsonContent = fs.readFileSync(settings.file(), 'utf-8');
+  const jsonContent = fs.readFileSync(settings.file(), 'utf8');
   logger.info('Try to fix JSON content.');
   try {
     const repaired = bestEffortJsonParser(jsonContent) as Record<string, unknown>;

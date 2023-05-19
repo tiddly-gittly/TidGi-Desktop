@@ -1,5 +1,5 @@
-import { ipcMain, BrowserView, BrowserWindow } from 'electron';
 import { Channels } from '@/constants/channels';
+import { BrowserView, BrowserWindow, ipcMain } from 'electron';
 
 /**
  * Get data from a BrowserView
@@ -11,6 +11,8 @@ export default async function getFromRenderer<T>(channel: Channels, viewToGetDat
   const ipcToken = String(Math.random());
   viewToGetData.webContents.send(channel, { ipcToken });
   return await new Promise((resolve) => {
-    ipcMain.once(`${channel}-${ipcToken}`, (_event, data: T) => resolve(data));
+    ipcMain.once(`${channel}-${ipcToken}`, (_event, data: T) => {
+      resolve(data);
+    });
   });
 }

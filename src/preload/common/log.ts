@@ -1,5 +1,5 @@
-import { contextBridge, ipcRenderer } from 'electron';
 import { WikiChannel } from '@/constants/channels';
+import { contextBridge, ipcRenderer } from 'electron';
 
 export const logMethods = {
   /**
@@ -7,7 +7,7 @@ export const logMethods = {
    * @param messageSetter can be wikiCreationMessageSetter from a useEffect
    * @returns
    */
-  registerWikiCreationMessage: (messageSetter: (message: string) => void): (() => void) => {
+  registerWikiCreationMessage: (messageSetter: (message: string) => void): () => void => {
     const handleNextMessage = (_event: Electron.IpcRendererEvent, message: string): void => {
       messageSetter(message);
     };

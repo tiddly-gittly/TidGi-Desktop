@@ -1,11 +1,11 @@
-import type { IWindowService } from '@services/windows/interface';
-import type { IViewService } from '@services/view/interface';
-import type { IMenuService } from '@services/menu/interface';
-import type { IWikiService } from '@services/wiki/interface';
 import { I18NChannels } from '@/constants/channels';
+import { supportedLanguagesMap, tiddlywikiLanguagesMap } from '@/constants/languages';
 import { container } from '@services/container';
+import type { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { tiddlywikiLanguagesMap, supportedLanguagesMap } from '@/constants/languages';
+import type { IViewService } from '@services/view/interface';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IWindowService } from '@services/windows/interface';
 import { logger } from '../log';
 import { i18n } from '.';
 
@@ -31,7 +31,14 @@ export async function requestChangeLanguage(newLanguage: string): Promise<void> 
     // change tiddlywiki language
     new Promise<unknown>((resolve, reject) => {
       const tiddlywikiLanguageName = tiddlywikiLanguagesMap[newLanguage];
-      if (tiddlywikiLanguageName !== undefined) {
+      if (tiddlywikiLanguageName === undefined) {
+        const errorMessage = `When click language menu "${newLanguage}", there is no corresponding tiddlywiki language registered`;
+        logger.error(errorMessage, {
+          supportedLanguagesMap,
+          tiddlywikiLanguagesMap,
+        });
+        reject(new Error(errorMessage));
+      } else {
         if (viewCount === 0) {
           return;
         }
@@ -40,13 +47,6 @@ export async function requestChangeLanguage(newLanguage: string): Promise<void> 
           tasks.push(wikiService.setWikiLanguage(view, workspaceID, tiddlywikiLanguageName));
         });
         void Promise.all(tasks).then(resolve, reject);
-      } else {
-        const errorMessage = `When click language menu "${newLanguage}", there is no corresponding tiddlywiki language registered`;
-        logger.error(errorMessage, {
-          supportedLanguagesMap,
-          tiddlywikiLanguagesMap,
-        });
-        reject(new Error(errorMessage));
       }
     }),
     // update menu

@@ -7,8 +7,8 @@
  *
  * You can use wrapped method in `services/wiki/index.ts` 's `wikiOperation()` instead. Available operations are registered in `src/services/wiki/wikiOperations.ts`
  */
-import { ipcRenderer, webFrame } from 'electron';
 import { WikiChannel } from '@/constants/channels';
+import { ipcRenderer, webFrame } from 'electron';
 
 export const wikiOperations = {
   [WikiChannel.setState]: async (stateKey: string, content: string) => {
@@ -26,13 +26,12 @@ export const wikiOperations = {
  * @param script js statement to be executed, nothing will be returned
  */
 async function executeTWJavaScriptWhenIdle(script: string, options?: { onlyWhenVisible?: boolean }): Promise<void> {
-  const executeHandlerCode =
-    options?.onlyWhenVisible === true
-      ? `
+  const executeHandlerCode = options?.onlyWhenVisible === true
+    ? `
         if (document.visibilityState === 'visible') {
           handler();
         }`
-      : `handler();`;
+    : `handler();`;
   await webFrame.executeJavaScript(`
     new Promise((resolve, reject) => {
       const handler = () => {
@@ -98,8 +97,9 @@ ipcRenderer.on(WikiChannel.syncProgress, async (event, message: string) => {
     { onlyWhenVisible: true },
   );
 });
-ipcRenderer.on(WikiChannel.setState, (_event: Electron.IpcRendererEvent, ...rest: Parameters<typeof wikiOperations[WikiChannel.setState]>) =>
-  wikiOperations[WikiChannel.setState](...rest),
+ipcRenderer.on(
+  WikiChannel.setState,
+  (_event: Electron.IpcRendererEvent, ...rest: Parameters<typeof wikiOperations[WikiChannel.setState]>) => wikiOperations[WikiChannel.setState](...rest),
 );
 ipcRenderer.on(WikiChannel.generalNotification, async (event, message: string) => {
   await executeTWJavaScriptWhenIdle(`

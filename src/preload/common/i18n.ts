@@ -1,5 +1,5 @@
-import { contextBridge, ipcRenderer } from 'electron';
 import { preloadBindings } from '@services/libs/i18n/preloadBindings';
+import { contextBridge, ipcRenderer } from 'electron';
 
 const i18n = {
   i18nextElectronBackend: preloadBindings(ipcRenderer),

@@ -3,7 +3,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IErrorInWhichComponent, IWikiWorkspaceForm } from './useForm';
 import { updateErrorInWhichComponentSetterByErrorMessage } from './useIndicator';
-import { useValidateNewWiki, useNewWiki } from './useNewWiki';
+import { useNewWiki, useValidateNewWiki } from './useNewWiki';
 
 export function useValidateHtmlWiki(
   isCreateMainWorkspace: boolean,
@@ -16,14 +16,14 @@ export function useValidateHtmlWiki(
   const [hasError, hasErrorSetter] = useState<boolean>(false);
   useValidateNewWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, errorInWhichComponentSetter);
   useEffect(() => {
-    if (!form.wikiHtmlPath) {
-      wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.LocalWikiHtml')}`);
-      errorInWhichComponentSetter({ wikiHtmlPath: true });
-      hasErrorSetter(true);
-    } else {
+    if (form.wikiHtmlPath) {
       wikiCreationMessageSetter('');
       errorInWhichComponentSetter({});
       hasErrorSetter(false);
+    } else {
+      wikiCreationMessageSetter(`${t('AddWorkspace.NotFilled')}：${t('AddWorkspace.LocalWikiHtml')}`);
+      errorInWhichComponentSetter({ wikiHtmlPath: true });
+      hasErrorSetter(true);
     }
   }, [t, form.wikiHtmlPath, form.parentFolderLocation, form.wikiFolderName, errorInWhichComponentSetter]);
 

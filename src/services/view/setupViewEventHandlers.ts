@@ -1,29 +1,29 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable unicorn/consistent-destructuring */
-import { app, BrowserView, shell, nativeImage, BrowserWindowConstructorOptions, BrowserWindow } from 'electron';
-import path from 'path';
-import fsExtra from 'fs-extra';
+import { app, BrowserView, BrowserWindow, BrowserWindowConstructorOptions, nativeImage, shell } from 'electron';
 import windowStateKeeper from 'electron-window-state';
+import fsExtra from 'fs-extra';
+import path from 'path';
 
-import { IWorkspace } from '@services/workspaces/interface';
-import getViewBounds from '@services/libs/getViewBounds';
-import { extractDomain, isInternalUrl } from '@/helpers/url';
 import { buildResourcePath } from '@/constants/paths';
+import { extractDomain, isInternalUrl } from '@/helpers/url';
+import getViewBounds from '@services/libs/getViewBounds';
+import { IWorkspace } from '@services/workspaces/interface';
 
-import serviceIdentifier from '@services/serviceIdentifier';
-import type { IPreferenceService } from '@services/preferences/interface';
-import type { IWorkspaceService } from '@services/workspaces/interface';
-import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { IMenuService } from '@services/menu/interface';
-import type { IWindowService } from '@services/windows/interface';
-import { WindowNames, IBrowserViewMetaData, windowDimension } from '@services/windows/WindowProperties';
-import { container } from '@services/container';
+import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
+import { isWin } from '@/helpers/system';
+import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP, isSameOrigin } from '@services/libs/url';
-import { SETTINGS_FOLDER } from '@/constants/appPaths';
+import { IMenuService } from '@services/menu/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
+import type { IWindowService } from '@services/windows/interface';
+import { IBrowserViewMetaData, windowDimension, WindowNames } from '@services/windows/WindowProperties';
+import type { IWorkspaceService } from '@services/workspaces/interface';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { throttle } from 'lodash';
-import { isWin } from '@/helpers/system';
 
 export interface IViewContext {
   loadInitialUrlWithCatch: () => Promise<void>;
@@ -308,12 +308,13 @@ function handleNewWindow(
   parentWebContents: Electron.WebContents,
 ):
   | {
-      action: 'deny';
-    }
+    action: 'deny';
+  }
   | {
-      action: 'allow';
-      overrideBrowserWindowOptions?: Electron.BrowserWindowConstructorOptions | undefined;
-    } {
+    action: 'allow';
+    overrideBrowserWindowOptions?: Electron.BrowserWindowConstructorOptions | undefined;
+  }
+{
   // don't show useless blank page
   if (nextUrl.startsWith('about:blank')) {
     return { action: 'deny' };
@@ -407,9 +408,7 @@ function handleNewWindow(
     }
     parentWebContents.once('did-create-window', (childWindow) => {
       childWindow.setMenuBarVisibility(false);
-      childWindow.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) =>
-        handleNewWindow(details.url, newWindowContext, details.disposition, parentWebContents),
-      );
+      childWindow.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) => handleNewWindow(details.url, newWindowContext, details.disposition, parentWebContents));
       childWindow.webContents.once('will-navigate', async (_event, url) => {
         // if the window is used for the current app, then use default behavior
         let appUrl = (await workspaceService.get(workspace.id))?.homeUrl;

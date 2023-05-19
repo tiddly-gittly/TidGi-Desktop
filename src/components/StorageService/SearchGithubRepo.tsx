@@ -1,14 +1,14 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
-import Promise from 'bluebird';
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import styled from 'styled-components';
-import { useQuery, useMutation, GraphQLClient, ClientContext } from 'graphql-hooks';
-import { trim } from 'lodash';
-import { useTranslation } from 'react-i18next';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
+import Promise from 'bluebird';
+import { ClientContext, GraphQLClient, useMutation, useQuery } from 'graphql-hooks';
+import { trim } from 'lodash';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
 
-import { TextField, LinearProgress, List, ListItem, ListItemIcon, ListItemText, Button } from '@material-ui/core';
-import { Folder as FolderIcon, Cached as CachedIcon, CreateNewFolder as CreateNewFolderIcon } from '@material-ui/icons';
+import { Button, LinearProgress, List, ListItem, ListItemIcon, ListItemText, TextField } from '@material-ui/core';
+import { Cached as CachedIcon, CreateNewFolder as CreateNewFolderIcon, Folder as FolderIcon } from '@material-ui/icons';
 
 import { GITHUB_GRAPHQL_API } from '@/constants/auth';
 import { useUserInfoObservable } from '@services/auth/hooks';
@@ -80,7 +80,7 @@ export default function SearchGithubRepo(props: Props): JSX.Element {
     [],
   );
   useEffect(() => {
-    graphqlClient.setHeader('Authorization', accessToken !== undefined ? `Bearer ${accessToken}` : '');
+    graphqlClient.setHeader('Authorization', accessToken === undefined ? '' : `Bearer ${accessToken}`);
   }, [accessToken, graphqlClient]);
 
   if (githubUsername === '' || githubUsername === undefined || accessToken === '' || accessToken === undefined) {
@@ -132,7 +132,9 @@ function SearchGithubRepoResultList({
     const timeoutHandle = setTimeout(async () => {
       await refetchDebounced();
     }, 100);
-    return () => clearTimeout(timeoutHandle);
+    return () => {
+      clearTimeout(timeoutHandle);
+    };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [githubUsername, accessToken]);
   // try refetch on error
@@ -143,7 +145,9 @@ function SearchGithubRepoResultList({
         await refetchDebounced();
         retryIntervalSetter(retryInterval * 10);
       }, retryInterval);
-      return () => clearTimeout(timeoutHandle);
+      return () => {
+        clearTimeout(timeoutHandle);
+      };
     }
     return () => {};
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -189,11 +193,18 @@ function SearchGithubRepoResultList({
         value={githubRepoSearchString}
         helperText={helperText}
       />
-      {(loading || isCreatingRepo) && <LinearProgress variant="query" />}
+      {(loading || isCreatingRepo) && <LinearProgress variant='query' />}
 
-      <List component="nav" aria-label="main mailbox folders">
+      <List component='nav' aria-label='main mailbox folders'>
         {repoList.map(({ name, url }) => (
-          <ListItem button key={url} onClick={() => onSelectRepo(url, name)} selected={trim(githubWikiUrl) === trim(url)}>
+          <ListItem
+            button
+            key={url}
+            onClick={() => {
+              onSelectRepo(url, name);
+            }}
+            selected={trim(githubWikiUrl) === trim(url)}
+          >
             <ListItemIcon>
               <FolderIcon />
             </ListItemIcon>
@@ -220,20 +231,19 @@ function SearchGithubRepoResultList({
               isCreatingRepoSetter(false);
               githubWikiUrlSetter(wikiUrlToCreate);
             }}
-            selected={isCreateNewRepo}>
+            selected={isCreateNewRepo}
+          >
             <ListItemIcon>
               <CreateNewFolderIcon />
             </ListItemIcon>
             <ListItemText
-              primary={`${
-                isCreateMainWorkspace ? t('AddWorkspace.CreatePublicRepository') : t('AddWorkspace.CreatePrivateRepository')
-              } ${githubRepoSearchString}`}
+              primary={`${isCreateMainWorkspace ? t('AddWorkspace.CreatePublicRepository') : t('AddWorkspace.CreatePrivateRepository')} ${githubRepoSearchString}`}
             />
           </ListItem>
         )}
       </List>
       {repoList.length === 0 && (
-        <ReloadButton color="secondary" endIcon={<CachedIcon />} onClick={async () => await refetchDebounced()}>
+        <ReloadButton color='secondary' endIcon={<CachedIcon />} onClick={async () => await refetchDebounced()}>
           {t('AddWorkspace.Reload')}
         </ReloadButton>
       )}

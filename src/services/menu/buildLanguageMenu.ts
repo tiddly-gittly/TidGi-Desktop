@@ -1,9 +1,9 @@
-import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';
+import serviceIdentifier from '@services/serviceIdentifier';
 
-import type { IPreferenceService } from '@services/preferences/interface';
-import type { IMenuService, DeferredMenuItemConstructorOptions } from '@services/menu/interface';
 import { supportedLanguagesKNames, supportedLanguagesMap } from '@/constants/languages';
+import type { DeferredMenuItemConstructorOptions, IMenuService } from '@services/menu/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
 
 /**
  * Register languages into language menu, call this function after container init

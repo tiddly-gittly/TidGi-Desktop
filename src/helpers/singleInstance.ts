@@ -1,5 +1,5 @@
-import { app } from 'electron';
 import { logger } from '@services/libs/log';
+import { app } from 'electron';
 
 const gotTheLock = app.requestSingleInstanceLock();
 

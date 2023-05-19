@@ -1,6 +1,6 @@
 /* eslint-disable typescript-sort-keys/interface */
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { UpdaterChannel } from '@/constants/channels';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { BehaviorSubject } from 'rxjs';
 
 export enum IUpdaterStatus {

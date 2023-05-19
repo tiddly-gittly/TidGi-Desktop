@@ -1,29 +1,36 @@
-import React from 'react';
 import { WindowNames } from '@services/windows/WindowProperties';
+import React from 'react';
 
-import Main from './Main';
 import AboutPage from './About';
 import { AddWorkspace as DialogAddWorkspace } from './AddWorkspace';
 import EditWorkspace from './EditWorkspace';
+import Main from './Main';
 import DialogNotifications from './Notifications';
 import DialogPreferences from './Preferences';
 import SpellcheckLanguages from './SpellcheckLanguages';
 
 export function Pages(): JSX.Element {
   switch (window.meta.windowName) {
-    case WindowNames.about:
+    case WindowNames.about: {
       return <AboutPage />;
-    case WindowNames.addWorkspace:
+    }
+    case WindowNames.addWorkspace: {
       return <DialogAddWorkspace />;
-    case WindowNames.editWorkspace:
+    }
+    case WindowNames.editWorkspace: {
       return <EditWorkspace />;
-    case WindowNames.notifications:
+    }
+    case WindowNames.notifications: {
       return <DialogNotifications />;
-    case WindowNames.preferences:
+    }
+    case WindowNames.preferences: {
       return <DialogPreferences />;
-    case WindowNames.spellcheck:
+    }
+    case WindowNames.spellcheck: {
       return <SpellcheckLanguages />;
-    default:
+    }
+    default: {
       return <Main />;
+    }
   }
 }

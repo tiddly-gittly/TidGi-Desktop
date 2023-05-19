@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import React from 'react';
 import Menu from '@material-ui/core/Menu';
+import React from 'react';
 
 interface Props {
   buttonElement: React.ReactElement;

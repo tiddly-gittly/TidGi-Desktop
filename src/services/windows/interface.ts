@@ -1,7 +1,7 @@
 import { Channels, WindowChannel } from '@/constants/channels';
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { BrowserWindow } from 'electron';
-import { WindowNames, WindowMeta } from './WindowProperties';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import { WindowMeta, WindowNames } from './WindowProperties';
 
 /**
  * Create and manage window open and destroy, you can get all opened electron window instance here

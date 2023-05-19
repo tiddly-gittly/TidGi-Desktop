@@ -1,9 +1,9 @@
-import React, { useState, useCallback, useEffect, useRef } from 'react';
-import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
 import Button from '@material-ui/core/Button';
 import TextField from '@material-ui/core/TextField';
 import Typography from '@material-ui/core/Typography';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
 
 const Root = styled.div`
   display: flex;
@@ -66,11 +66,11 @@ export default function FindInPage(): JSX.Element | null {
   return (
     <Root>
       <InfoContainer>
-        <Typography variant="body2">
+        <Typography variant='body2'>
           <strong>{activeMatch}</strong>
-          <span> / </span>
+          <span>/</span>
           <strong>{matches}</strong>
-          <span> {t('Menu.FindMatches')}</span>
+          <span>{t('Menu.FindMatches')}</span>
         </Typography>
       </InfoContainer>
       <div>
@@ -79,7 +79,7 @@ export default function FindInPage(): JSX.Element | null {
           inputRef={inputReference}
           placeholder={t('Menu.Find')}
           value={text}
-          margin="dense"
+          margin='dense'
           onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
             const value = event.target.value;
             if (typeof value !== 'string') return;
@@ -119,41 +119,45 @@ export default function FindInPage(): JSX.Element | null {
         />
       </div>
       <Button
-        size="small"
+        size='small'
         disabled={text.length === 0 || matches < 1}
         onClick={() => {
           if (text.length > 0) {
             void window.service.window.findInPage(text, false);
           }
-        }}>
+        }}
+      >
         {t('Menu.FindPrevious')}
       </Button>
       <Button
-        size="small"
+        size='small'
         disabled={text.length === 0 || matches < 1}
         onClick={() => {
           if (text.length > 0) {
             void window.service.window.findInPage(text, true);
           }
-        }}>
+        }}
+      >
         {t('Menu.FindNext')}
       </Button>
       <Button
-        size="small"
+        size='small'
         disabled={text.length === 0}
         onClick={() => {
           if (text.length > 0) {
             void window.service.window.findInPage(text, true);
           }
-        }}>
+        }}
+      >
         {t('Menu.Find')}
       </Button>
       <Button
-        size="small"
+        size='small'
         onClick={() => {
           void window.service.window.stopFindInPage(true);
           openSetter(false);
-        }}>
+        }}
+      >
         {t('Menu.Close')}
       </Button>
     </Root>

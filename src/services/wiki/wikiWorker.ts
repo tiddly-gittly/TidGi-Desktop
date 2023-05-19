@@ -3,19 +3,19 @@
  */
 import { uninstall } from '@/helpers/installV8Cache';
 import 'source-map-support/register';
-import { expose } from 'threads/worker';
-import path from 'path';
-import { TiddlyWiki, type ITiddlyWiki } from '@tiddlygit/tiddlywiki';
-import { Observable } from 'rxjs';
-import intercept from 'intercept-stdout';
+import { type ITiddlyWiki, TiddlyWiki } from '@tiddlygit/tiddlywiki';
 import { fork } from 'child_process';
-import { tmpdir } from 'os';
 import fs from 'fs';
 import { mkdtemp, writeFile } from 'fs-extra';
+import intercept from 'intercept-stdout';
+import { tmpdir } from 'os';
+import path from 'path';
+import { Observable } from 'rxjs';
+import { expose } from 'threads/worker';
 
-import { fixPath } from '@services/libs/fixPath';
-import { IWikiMessage, WikiControlActions, ZxWorkerControlActions, IZxWorkerMessage } from './interface';
 import { defaultServerIP } from '@/constants/urls';
+import { fixPath } from '@services/libs/fixPath';
+import { IWikiMessage, IZxWorkerMessage, WikiControlActions, ZxWorkerControlActions } from './interface';
 import { executeScriptInTWContext, extractTWContextScripts, getTWVmContext } from './plugin/zxPlugin';
 
 fixPath();
@@ -61,11 +61,11 @@ function startNodeJSWiki({
         `host=${tiddlyWikiHost}`,
         'root-tiddler=$:/core/save/lazy-images',
       ];
-      wikiInstance.hooks.addHook('th-server-command-post-start', function (listenCommand, server) {
-        server.on('error', function (error: Error) {
+      wikiInstance.hooks.addHook('th-server-command-post-start', function(listenCommand, server) {
+        server.on('error', function(error: Error) {
           observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message });
         });
-        server.on('listening', function () {
+        server.on('listening', function() {
           observer.next({
             type: 'control',
             actions: WikiControlActions.booted,
@@ -101,7 +101,7 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
         }
         const execution = fork(zxPath, [filePathToExecute], { silent: true });
 
-        execution.on('close', function (code) {
+        execution.on('close', function(code) {
           observer.next({ type: 'control', actions: ZxWorkerControlActions.ended, message: `child process exited with code ${String(code)}` });
         });
         execution.stdout?.on('data', (stdout: Buffer) => {

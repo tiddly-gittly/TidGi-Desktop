@@ -1,6 +1,6 @@
-import styled, { css } from 'styled-components';
-import { Paper, Button, TextField, Autocomplete, Typography, Fab, Tooltip } from '@material-ui/core';
+import { Autocomplete, Button, Fab, Paper, TextField, Tooltip, Typography } from '@material-ui/core';
 import { useTranslation } from 'react-i18next';
+import styled, { css } from 'styled-components';
 
 export const CreateContainer = styled(Paper)`
   padding: 10px;
@@ -28,9 +28,9 @@ export const LocationPickerButton = styled(Button)`
 `;
 export const CloseButton = styled(Button)`
   ${({ disabled }) =>
-    disabled === true
-      ? ''
-      : css`
+  disabled === true
+    ? ''
+    : css`
           white-space: nowrap;
         `}
   width: 100%;
@@ -61,12 +61,13 @@ export function ReportErrorButton(props: { message: string }): JSX.Element {
   return (
     <Tooltip title={(t('Dialog.ReportBugDetail') ?? '') + (t('Menu.ReportBugViaGithub') ?? '')}>
       <Button
-        color="secondary"
+        color='secondary'
         onClick={() => {
           const error = new Error(props.message);
           error.stack = 'ReportErrorButton';
           void window.service.native.openNewGitHubIssue(error);
-        }}>
+        }}
+      >
         {t('Dialog.ReportBug')}
       </Button>
     </Tooltip>
@@ -85,12 +86,13 @@ export function ReportErrorFabButton(props: { message: string }): JSX.Element {
   return (
     <Tooltip title={(t('Dialog.ReportBugDetail') ?? '') + (t('Menu.ReportBugViaGithub') ?? '')}>
       <AbsoluteFab
-        color="default"
+        color='default'
         onClick={() => {
           const error = new Error(props.message);
           error.stack = 'ReportErrorButton';
           void window.service.native.openNewGitHubIssue(error);
-        }}>
+        }}
+      >
         {t('Dialog.ReportBug')}
       </AbsoluteFab>
     </Tooltip>

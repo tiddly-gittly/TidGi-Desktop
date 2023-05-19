@@ -26,7 +26,14 @@ export function GitRepoUrlForm({
   return (
     <CreateContainer elevation={2} square>
       <LocationPickerContainer>
-        <LocationPickerInput error={error} onChange={(event) => gitRepoUrlSetter(event.target.value)} label={t('AddWorkspace.GitRepoUrl')} value={gitRepoUrl} />
+        <LocationPickerInput
+          error={error}
+          onChange={(event) => {
+            gitRepoUrlSetter(event.target.value);
+          }}
+          label={t('AddWorkspace.GitRepoUrl')}
+          value={gitRepoUrl}
+        />
       </LocationPickerContainer>
       {storageProvider === SupportedStorageServices.github && (
         <SearchGithubRepo

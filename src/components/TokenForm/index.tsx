@@ -1,10 +1,10 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-import React, { useEffect, useState } from 'react';
-import styled, { DefaultTheme, keyframes } from 'styled-components';
-import { Tab as TabRaw, ListItemText as ListItemTextRaw } from '@material-ui/core';
-import { TabPanel as TabPanelRaw, TabContext, TabList as TabListRaw } from '@material-ui/lab';
+import { ListItemText as ListItemTextRaw, Tab as TabRaw } from '@material-ui/core';
+import { TabContext, TabList as TabListRaw, TabPanel as TabPanelRaw } from '@material-ui/lab';
 import { SupportedStorageServices } from '@services/types';
+import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import styled, { DefaultTheme, keyframes } from 'styled-components';
 
 import { GitTokenForm } from './GitTokenForm';
 
@@ -45,7 +45,8 @@ const TabsContainer = styled.div`
     min-width: 160px;
   }
 `;
-const backgroundColorShift = ({ theme }: { theme: DefaultTheme }) => keyframes`
+const backgroundColorShift = ({ theme }: { theme: DefaultTheme }) =>
+  keyframes`
 from {background-color: ${theme.palette.background.default};}
   to {background-color: ${theme.palette.background.default};}
 `;
@@ -85,14 +86,17 @@ export function TokenForm({ storageProvider, storageProviderSetter }: Props): JS
       <TabContext value={currentTab}>
         <TabsContainer>
           <TabList
-            onChange={(_event, newValue) => currentTabSetter(newValue as SupportedStorageServices)}
-            orientation="vertical"
-            variant="scrollable"
+            onChange={(_event, newValue) => {
+              currentTabSetter(newValue as SupportedStorageServices);
+            }}
+            orientation='vertical'
+            variant='scrollable'
             value={currentTab}
-            aria-label="Vertical tabs example">
-            <Tab label="GitHub" value={SupportedStorageServices.github} />
-            <Tab label="GitLab" value={SupportedStorageServices.gitlab} />
-            <Tab label="Gitee" value={SupportedStorageServices.gitee} />
+            aria-label='Vertical tabs example'
+          >
+            <Tab label='GitHub' value={SupportedStorageServices.github} />
+            <Tab label='GitLab' value={SupportedStorageServices.gitlab} />
+            <Tab label='Gitee' value={SupportedStorageServices.gitee} />
           </TabList>
           <TabPanel value={SupportedStorageServices.github}>
             <GitTokenForm storageService={SupportedStorageServices.github} />

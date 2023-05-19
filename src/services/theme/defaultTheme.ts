@@ -1,5 +1,5 @@
-import { merge, cloneDeep } from 'lodash';
 import { createMuiTheme, Theme } from '@material-ui/core';
+import { cloneDeep, merge } from 'lodash';
 
 export const lightTheme = merge(cloneDeep(createMuiTheme())) as Theme;
 export const darkTheme = merge(

@@ -74,9 +74,9 @@ export function useExistedWiki(
         const parentFolderLocationForExistedFolder = await window.service.native.path('dirname', form.wikiFolderLocation);
         if (!wikiFolderNameForExistedFolder || !parentFolderLocationForExistedFolder) {
           throw new Error(
-            `Undefined folder name: parentFolderLocationForExistedFolder: ${
+            `Undefined folder name: parentFolderLocationForExistedFolder: ${parentFolderLocationForExistedFolder ?? '-'}, parentFolderLocationForExistedFolder: ${
               parentFolderLocationForExistedFolder ?? '-'
-            }, parentFolderLocationForExistedFolder: ${parentFolderLocationForExistedFolder ?? '-'}`,
+            }`,
           );
         }
         await window.service.wiki.ensureWikiExist(form.wikiFolderLocation, false);

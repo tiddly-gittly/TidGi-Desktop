@@ -1,33 +1,33 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/no-null */
-import { injectable } from 'inversify';
 import { app } from 'electron';
 import settings from 'electron-settings';
-import { pickBy, mapValues, debounce } from 'lodash';
+import fsExtra from 'fs-extra';
+import { injectable } from 'inversify';
+import Jimp from 'jimp';
+import { debounce, mapValues, pickBy } from 'lodash';
 import { nanoid } from 'nanoid';
 import path from 'path';
-import fsExtra from 'fs-extra';
-import Jimp from 'jimp';
-import { Observable, BehaviorSubject } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import serviceIdentifier from '@services/serviceIdentifier';
-import type { IWikiService } from '@services/wiki/interface';
-import type { IViewService } from '@services/view/interface';
-import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import type { IWindowService } from '@services/windows/interface';
-import type { IMenuService } from '@services/menu/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
-import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
-import { SupportedStorageServices } from '@services/types';
-import { lazyInject } from '@services/container';
-import type { IWorkspaceService, IWorkspace, IWorkspaceMetaData, INewWorkspaceConfig, IWorkspaceWithMetadata } from './interface';
-import { i18n } from '@services/libs/i18n';
 import { defaultServerIP } from '@/constants/urls';
-import { logger } from '@services/libs/log';
-import { workspaceSorter } from './utils';
 import { fixSettingFileWhenError } from '@/helpers/configSetting';
+import { lazyInject } from '@services/container';
+import { i18n } from '@services/libs/i18n';
+import { logger } from '@services/libs/log';
+import type { IMenuService } from '@services/menu/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
+import { SupportedStorageServices } from '@services/types';
+import type { IViewService } from '@services/view/interface';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
+import type { IWindowService } from '@services/windows/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { INewWorkspaceConfig, IWorkspace, IWorkspaceMetaData, IWorkspaceService, IWorkspaceWithMetadata } from './interface';
+import { workspaceSorter } from './utils';
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 const debouncedSetSettingFile = debounce(async (workspaces: Record<string, IWorkspace>) => {
@@ -48,12 +48,23 @@ export class Workspace implements IWorkspaceService {
   private workspaces: Record<string, IWorkspace> = {};
   public workspaces$: BehaviorSubject<Record<string, IWorkspaceWithMetadata>>;
 
-  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
-  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
-  @lazyInject(serviceIdentifier.WikiGitWorkspace) private readonly wikiGitWorkspaceService!: IWikiGitWorkspaceService;
-  @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
+  @lazyInject(serviceIdentifier.Wiki)
+  private readonly wikiService!: IWikiService;
+
+  @lazyInject(serviceIdentifier.Window)
+  private readonly windowService!: IWindowService;
+
+  @lazyInject(serviceIdentifier.View)
+  private readonly viewService!: IViewService;
+
+  @lazyInject(serviceIdentifier.WorkspaceView)
+  private readonly workspaceViewService!: IWorkspaceViewService;
+
+  @lazyInject(serviceIdentifier.WikiGitWorkspace)
+  private readonly wikiGitWorkspaceService!: IWikiGitWorkspaceService;
+
+  @lazyInject(serviceIdentifier.MenuService)
+  private readonly menuService!: IMenuService;
 
   constructor() {
     this.workspaces = this.getInitWorkspacesForCache();
@@ -174,9 +185,7 @@ export class Workspace implements IWorkspaceService {
   getInitWorkspacesForCache = (): Record<string, IWorkspace> => {
     const workspacesFromDisk = settings.getSync(`workspaces`) ?? {};
     return typeof workspacesFromDisk === 'object' && !Array.isArray(workspacesFromDisk)
-      ? mapValues(pickBy(workspacesFromDisk, (value) => value !== null) as unknown as Record<string, IWorkspace>, (workspace) =>
-          this.sanitizeWorkspace(workspace),
-        )
+      ? mapValues(pickBy(workspacesFromDisk, (value) => value !== null) as unknown as Record<string, IWorkspace>, (workspace) => this.sanitizeWorkspace(workspace))
       : {};
   };
 
@@ -292,9 +301,11 @@ export class Workspace implements IWorkspaceService {
       const { mainWikiToLink } = this.workspaces[id];
       if (typeof mainWikiToLink !== 'string') {
         throw new TypeError(
-          `mainWikiToLink is null in reactBeforeWorkspaceChanged when try to updateSubWikiPluginContent, workspacesID: ${id}\n${JSON.stringify(
-            this.workspaces,
-          )}`,
+          `mainWikiToLink is null in reactBeforeWorkspaceChanged when try to updateSubWikiPluginContent, workspacesID: ${id}\n${
+            JSON.stringify(
+              this.workspaces,
+            )
+          }`,
         );
       }
       await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, newWorkspaceConfig, {
@@ -319,7 +330,7 @@ export class Workspace implements IWorkspaceService {
       }
     }
     if (currentWorkspaceIndex === 0) {
-      return workspaceList[workspaceList.length - 1];
+      return workspaceList.at(-1);
     }
     return workspaceList[currentWorkspaceIndex - 1];
   };
@@ -368,7 +379,6 @@ export class Workspace implements IWorkspaceService {
   }
 
   /**
-   *
    * @param id workspace id
    * @param sourcePicturePath image path, could be an image in app's resource folder or temp folder, we will copy it into app data folder
    */
@@ -396,7 +406,8 @@ export class Workspace implements IWorkspaceService {
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (currentPicturePath) {
       try {
-        return await fsExtra.remove(currentPicturePath);
+        await fsExtra.remove(currentPicturePath);
+        return;
       } catch (error) {
         console.error(error);
       }

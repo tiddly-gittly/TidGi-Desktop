@@ -1,9 +1,9 @@
 import React from 'react';
-import styled from 'styled-components';
 import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
 
-import Paper from '@material-ui/core/Paper';
 import FormControlLabel from '@material-ui/core/FormControlLabel';
+import Paper from '@material-ui/core/Paper';
 import SwitchRaw from '@material-ui/core/Switch';
 import Typography from '@material-ui/core/Typography';
 
@@ -36,10 +36,17 @@ export function MainSubWikiDescription({
   return (
     <Container elevation={0} square>
       <FormControlLabel
-        control={<Switch checked={isCreateMainWorkspace} onChange={(event) => isCreateMainWorkspaceSetter(event.target.checked)} />}
+        control={
+          <Switch
+            checked={isCreateMainWorkspace}
+            onChange={(event) => {
+              isCreateMainWorkspaceSetter(event.target.checked);
+            }}
+          />
+        }
         label={label}
       />
-      <Typography variant="body2" display="inline">
+      <Typography variant='body2' display='inline'>
         {description}
       </Typography>
     </Container>
@@ -63,10 +70,17 @@ export function SyncedWikiDescription({
   return (
     <Container elevation={0} square>
       <FormControlLabel
-        control={<Switch checked={isCreateSyncedWorkspace} onChange={(event) => isCreateSyncedWorkspaceSetter(event.target.checked)} />}
+        control={
+          <Switch
+            checked={isCreateSyncedWorkspace}
+            onChange={(event) => {
+              isCreateSyncedWorkspaceSetter(event.target.checked);
+            }}
+          />
+        }
         label={label}
       />
-      <Typography variant="body2" display="inline">
+      <Typography variant='body2' display='inline'>
         {description}
       </Typography>
     </Container>

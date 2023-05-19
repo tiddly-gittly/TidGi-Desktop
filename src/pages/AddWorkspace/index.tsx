@@ -1,29 +1,29 @@
-import React, { useState, useEffect } from 'react';
-import styled from 'styled-components';
-import { useTranslation } from 'react-i18next';
-import { Helmet } from 'react-helmet';
-import { Accordion as AccordionRaw, AccordionSummary, AccordionDetails, AppBar, Paper as PaperRaw, Tab as TabRaw } from '@material-ui/core';
-import { TabPanel as TabPanelRaw, TabContext, TabList as TabListRaw } from '@material-ui/lab';
+import { Accordion as AccordionRaw, AccordionDetails, AccordionSummary, AppBar, Paper as PaperRaw, Tab as TabRaw } from '@material-ui/core';
 import { ExpandMore as ExpandMoreIcon } from '@material-ui/icons';
+import { TabContext, TabList as TabListRaw, TabPanel as TabPanelRaw } from '@material-ui/lab';
+import React, { useEffect, useState } from 'react';
+import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
 
 import { SupportedStorageServices } from '@services/types';
 
 import { MainSubWikiDescription, SyncedWikiDescription } from './Description';
 
-import { NewWikiForm } from './NewWikiForm';
-import { NewWikiDoneButton } from './NewWikiDoneButton';
-import { ExistedWikiForm } from './ExistedWikiForm';
-import { ExistedWikiDoneButton } from './ExistedWikiDoneButton';
-import { CloneWikiForm } from './CloneWikiForm';
 import { CloneWikiDoneButton } from './CloneWikiDoneButton';
-import { IErrorInWhichComponent, useIsCreateSyncedWorkspace, useWikiWorkspaceForm } from './useForm';
+import { CloneWikiForm } from './CloneWikiForm';
+import { ExistedWikiDoneButton } from './ExistedWikiDoneButton';
+import { ExistedWikiForm } from './ExistedWikiForm';
+import { NewWikiDoneButton } from './NewWikiDoneButton';
+import { NewWikiForm } from './NewWikiForm';
+import { IErrorInWhichComponent, useWikiWorkspaceForm } from './useForm';
 
 import { TokenForm } from '@/components/TokenForm';
-import { GitRepoUrlForm } from './GitRepoUrlForm';
-import { LocationPickerContainer, LocationPickerInput } from './FormComponents';
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import { ImportHtmlWikiForm } from './ImportHtmlWikiForm';
+import { LocationPickerContainer, LocationPickerInput } from './FormComponents';
+import { GitRepoUrlForm } from './GitRepoUrlForm';
 import { ImportHtmlWikiDoneButton } from './ImportHtmlWikiDoneButton';
+import { ImportHtmlWikiForm } from './ImportHtmlWikiForm';
 
 enum CreateWorkspaceTabs {
   CloneOnlineWiki = 'CloneOnlineWiki',
@@ -108,19 +108,22 @@ export function AddWorkspace(): JSX.Element {
 
   return (
     <TabContext value={currentTab}>
-      <div id="test" data-usage="For spectron automating testing" />
+      <div id='test' data-usage='For spectron automating testing' />
       <Helmet>
         <title>
           {t('AddWorkspace.AddWorkspace')} {wikiFolderName}
         </title>
       </Helmet>
-      <AppBar position="static">
+      <AppBar position='static'>
         <Paper square>
           <TabList
-            onChange={(_event, newValue) => currentTabSetter(newValue as CreateWorkspaceTabs)}
-            variant="scrollable"
+            onChange={(_event, newValue) => {
+              currentTabSetter(newValue as CreateWorkspaceTabs);
+            }}
+            variant='scrollable'
             value={currentTab}
-            aria-label={t('AddWorkspace.SwitchCreateNewOrOpenExisted')}>
+            aria-label={t('AddWorkspace.SwitchCreateNewOrOpenExisted')}
+          >
             <Tab label={t('AddWorkspace.CreateNewWiki')} value={CreateWorkspaceTabs.CreateNewWiki} />
             <Tab label={t(`AddWorkspace.CloneOnlineWiki`)} value={CreateWorkspaceTabs.CloneOnlineWiki} />
             <Tab label={t('AddWorkspace.OpenLocalWiki')} value={CreateWorkspaceTabs.OpenLocalWiki} />

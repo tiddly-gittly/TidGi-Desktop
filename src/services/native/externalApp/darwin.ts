@@ -1,15 +1,15 @@
 /* eslint-disable unicorn/no-null */
-import { pathExists } from 'fs-extra';
-import { IFoundEditor } from './found-editor';
-import appPath from './app-path';
 import { logger } from '@services/libs/log';
+import { pathExists } from 'fs-extra';
+import appPath from './app-path';
+import { IFoundEditor } from './found-editor';
 
 /** Represents an external editor on macOS */
 interface IDarwinExternalEditor {
   /**
    * List of bundle identifiers that are used by the app in its multiple
    * versions.
-   **/
+   */
   readonly bundleIdentifiers: string[];
 
   /** Name of the editor. It will be used both as identifier and user-facing. */
@@ -19,7 +19,7 @@ interface IDarwinExternalEditor {
 /**
  * This list contains all the external editors supported on macOS. Add a new
  * entry here to add support for your favorite editor.
- **/
+ */
 const editors: IDarwinExternalEditor[] = [
   {
     name: 'Atom',
@@ -122,7 +122,7 @@ const editors: IDarwinExternalEditor[] = [
 /**
  * This list contains all the external git GUI app supported on macOS. Add a new
  * entry here to add support for your favorite git GUI app.
- **/
+ */
 const gitGUIApp: IDarwinExternalEditor[] = [
   {
     name: 'GitHub Desktop',

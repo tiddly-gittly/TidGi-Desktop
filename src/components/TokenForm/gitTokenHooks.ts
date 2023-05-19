@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { useCallback, useMemo } from 'react';
-import { AuthenticationClient } from 'authing-js-sdk';
+import { APP_DOMAIN, APP_ID } from '@/constants/auth';
 import { SupportedStorageServices } from '@services/types';
-import { APP_ID, APP_DOMAIN } from '@/constants/auth';
+import { AuthenticationClient } from 'authing-js-sdk';
+import { useCallback, useMemo } from 'react';
 
 export function useAuth(storageService: SupportedStorageServices): [() => Promise<void>, () => Promise<void>] {
   const authing = useMemo(
@@ -42,7 +42,9 @@ export function useAuth(storageService: SupportedStorageServices): [() => Promis
             }
           }
         },
-        onError: (code, message) => onFailure(new Error(message + String(code))),
+        onError: (code, message) => {
+          onFailure(new Error(message + String(code)));
+        },
       });
     } catch (error) {
       onFailure(error as Error);

@@ -1,11 +1,11 @@
 import { Trans, useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
-import { WindowNames } from '@services/windows/WindowProperties';
 import { IPreferences } from '@services/preferences/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
 
-import arrowWhite from '@/images/arrow-white.png';
 import arrowBlack from '@/images/arrow-black.png';
+import arrowWhite from '@/images/arrow-white.png';
 
 const Arrow = styled.div<{ image: string }>`
   height: 202px;
@@ -64,31 +64,37 @@ export interface IProps {
 export function NewUserMessage(props: IProps): JSX.Element {
   const { t } = useTranslation();
   return (
-    <AddWorkspaceGuideInfoContainer onClick={async () => await window.service.window.open(WindowNames.addWorkspace)}>
-      {props.sidebar ? (
-        <>
-          <Arrow image={props.themeSource === 'dark' ? arrowWhite : arrowBlack} />
-          <TipWithSidebar id="new-user-tip">
-            <Trans t={t} i18nKey="AddWorkspace.MainPageTipWithSidebar">
-              <Tip2Text>Click</Tip2Text>
-              <Avatar>+</Avatar>
-              <Tip2Text>to get started!</Tip2Text>
-            </Trans>
-          </TipWithSidebar>
-        </>
-      ) : (
-        <TipWithoutSidebar id="new-user-tip">
-          <Tip2Text>
-            <Trans t={t} i18nKey="AddWorkspace.MainPageTipWithoutSidebar">
-              <span>Click </span>
-              <strong>Workspaces &gt; Add Workspace</strong>
-              <span>Or </span>
-              <strong>Click Here</strong>
-              <span> to get started!</span>
-            </Trans>
-          </Tip2Text>
-        </TipWithoutSidebar>
-      )}
+    <AddWorkspaceGuideInfoContainer
+      onClick={async () => {
+        await window.service.window.open(WindowNames.addWorkspace);
+      }}
+    >
+      {props.sidebar
+        ? (
+          <>
+            <Arrow image={props.themeSource === 'dark' ? arrowWhite : arrowBlack} />
+            <TipWithSidebar id='new-user-tip'>
+              <Trans t={t} i18nKey='AddWorkspace.MainPageTipWithSidebar'>
+                <Tip2Text>Click</Tip2Text>
+                <Avatar>+</Avatar>
+                <Tip2Text>to get started!</Tip2Text>
+              </Trans>
+            </TipWithSidebar>
+          </>
+        )
+        : (
+          <TipWithoutSidebar id='new-user-tip'>
+            <Tip2Text>
+              <Trans t={t} i18nKey='AddWorkspace.MainPageTipWithoutSidebar'>
+                <span>Click</span>
+                <strong>Workspaces &gt; Add Workspace</strong>
+                <span>Or</span>
+                <strong>Click Here</strong>
+                <span>to get started!</span>
+              </Trans>
+            </Tip2Text>
+          </TipWithoutSidebar>
+        )}
     </AddWorkspaceGuideInfoContainer>
   );
 }

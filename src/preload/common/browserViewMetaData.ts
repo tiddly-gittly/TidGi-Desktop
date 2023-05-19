@@ -1,6 +1,6 @@
-import { contextBridge, ipcRenderer } from 'electron';
 import { MetaDataChannel } from '@/constants/channels';
-import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
+import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { contextBridge, ipcRenderer } from 'electron';
 
 const metaDataArguments = process.argv
   .filter((item) => item.startsWith(MetaDataChannel.browserViewMetaData))

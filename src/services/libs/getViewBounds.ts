@@ -21,15 +21,15 @@ export default async function getViewBounds(
     return {
       x,
       y: y + FIND_IN_PAGE_HEIGHT,
-      height: height !== undefined ? height : contentSize[1] - FIND_IN_PAGE_HEIGHT,
-      width: width !== undefined ? width : contentSize[0] - x,
+      height: height === undefined ? contentSize[1] - FIND_IN_PAGE_HEIGHT : height,
+      width: width === undefined ? contentSize[0] - x : width,
     };
   }
 
   return {
     x,
     y,
-    height: height !== undefined ? height : contentSize[1],
-    width: width !== undefined ? width : contentSize[0] - x,
+    height: height === undefined ? contentSize[1] : height,
+    width: width === undefined ? contentSize[0] - x : width,
   };
 }

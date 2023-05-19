@@ -14,7 +14,7 @@ interface ILinuxExternalEditor {
 /**
  * This list contains all the external editors supported on Linux. Add a new
  * entry here to add support for your favorite editor.
- **/
+ */
 const editors: ILinuxExternalEditor[] = [
   {
     name: 'Atom',
@@ -59,7 +59,7 @@ const editors: ILinuxExternalEditor[] = [
 /**
  * This list contains all the external git GUI app supported on Linux. Add a new
  * entry here to add support for your favorite git GUI app.
- **/
+ */
 const gitGUIApp: ILinuxExternalEditor[] = [
   {
     name: 'GitHub Desktop',

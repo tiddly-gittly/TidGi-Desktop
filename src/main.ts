@@ -1,34 +1,34 @@
+/* eslint-disable unicorn/prefer-top-level-await */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 import { uninstall } from './helpers/installV8Cache';
 import 'source-map-support/register';
 import 'reflect-metadata';
 import './helpers/singleInstance';
 import './helpers/configSetting';
-import fs from 'fs-extra';
-import path from 'path';
-import { ipcMain, protocol, powerMonitor, app } from 'electron';
+import { app, ipcMain, powerMonitor, protocol } from 'electron';
 import settings from 'electron-settings';
 import unhandled from 'electron-unhandled';
+import fs from 'fs-extra';
+import path from 'path';
 
-import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
 import { MainChannel } from '@/constants/channels';
 import { isTest } from '@/constants/environment';
 import { container } from '@services/container';
-import { logger } from '@services/libs/log';
 import { initRendererI18NHandler } from '@services/libs/i18n';
+import { logger } from '@services/libs/log';
+import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
 
+import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 
-import type { IPreferenceService } from './services/preferences/interface';
-import type { IWikiService } from './services/wiki/interface';
-import type { IWindowService } from './services/windows/interface';
-import type { IWorkspaceViewService } from './services/workspacesView/interface';
-import type { IUpdaterService } from '@services/updater/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
+import type { IUpdaterService } from '@services/updater/interface';
 import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import { isLinux, isMac } from './helpers/system';
+import type { IPreferenceService } from './services/preferences/interface';
+import type { IWindowService } from './services/windows/interface';
+import type { IWorkspaceViewService } from './services/workspacesView/interface';
 
 logger.info('App booting');
 
@@ -82,9 +82,10 @@ ipcMain.once(MainChannel.commonInitFinished, () => {
  */
 const whenCommonInitFinished = async (): Promise<void> => {
   if (commonInitFinished) {
-    return await Promise.resolve();
+    await Promise.resolve();
+    return;
   }
-  return await new Promise((resolve) => {
+  await new Promise<void>((resolve) => {
     ipcMain.once(MainChannel.commonInitFinished, () => {
       commonInitFinished = true;
       resolve();
@@ -112,8 +113,8 @@ const commonInit = async (): Promise<void> => {
   // if user want a menubar, we create a new window for that
   await Promise.all([
     windowService.open(WindowNames.main),
-    preferenceService.get('attachToMenubar').then((attachToMenubar) => {
-      attachToMenubar && windowService.open(WindowNames.menuBar);
+    preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
+      attachToMenubar && await windowService.open(WindowNames.menuBar);
     }),
   ]);
   // perform wiki startup and git sync for each workspace
@@ -160,7 +161,9 @@ app.on('ready', async () => {
       }
       await updaterService.checkForUpdates();
     })
-    .catch((error) => console.error(error));
+    .catch((error) => {
+      console.error(error);
+    });
   powerMonitor.on('shutdown', () => {
     app.quit();
   });

@@ -1,12 +1,12 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/no-null */
-import { debounce } from 'lodash';
-import { injectable } from 'inversify';
-import settings from 'electron-settings';
-import { IAuthingUserInfo, SupportedStorageServices } from '@services/types';
-import { IAuthenticationService, IUserInfos, ServiceBranchTypes, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
-import { BehaviorSubject } from 'rxjs';
 import { IGitUserInfos } from '@services/git/interface';
+import { IAuthingUserInfo, SupportedStorageServices } from '@services/types';
+import settings from 'electron-settings';
+import { injectable } from 'inversify';
+import { debounce } from 'lodash';
+import { BehaviorSubject } from 'rxjs';
+import { IAuthenticationService, IUserInfos, ServiceBranchTypes, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
 
 const defaultUserInfos = {
   userName: '',

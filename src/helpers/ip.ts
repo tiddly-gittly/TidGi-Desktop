@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { platform, type, networkInterfaces } from 'os';
 import ip from 'ipaddr.js';
+import { networkInterfaces, platform, type } from 'os';
 
 /**
  * Copy from https://github.com/sindresorhus/internal-ip, to fi xsilverwind/default-gateway 's bug

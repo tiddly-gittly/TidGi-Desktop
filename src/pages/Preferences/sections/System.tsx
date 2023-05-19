@@ -1,12 +1,12 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { List, MenuItem } from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 
 import PopUpMenuItem from '@/components/PopUpMenuItem';
 import { getOpenAtLoginString, useSystemPreferenceObservable } from '@services/systemPreferences/hooks';
+import { ListItem, ListItemText, Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
-import { Paper, SectionTitle, ListItem, ListItemText } from '../PreferenceComponents';
 
 export function System(props: ISectionProps): JSX.Element {
   const { t } = useTranslation();
@@ -18,25 +18,39 @@ export function System(props: ISectionProps): JSX.Element {
       <SectionTitle ref={props.sections.system.ref}>{t('Preference.System')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
-          {systemPreference === undefined ? (
-            <ListItem>{t('Loading')}</ListItem>
-          ) : (
+          {systemPreference === undefined ? <ListItem>{t('Loading')}</ListItem> : (
             <>
               <PopUpMenuItem
-                id="openAtLogin"
+                id='openAtLogin'
                 buttonElement={
                   <ListItem button>
                     <ListItemText primary={t('Preference.OpenAtLogin')} secondary={getOpenAtLoginString(systemPreference.openAtLogin)} />
-                    <ChevronRightIcon color="action" />
+                    <ChevronRightIcon color='action' />
                   </ListItem>
-                }>
-                <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'yes')}>
+                }
+              >
+                <MenuItem
+                  dense
+                  onClick={async () => {
+                    await window.service.systemPreference.setSystemPreference('openAtLogin', 'yes');
+                  }}
+                >
                   {t('Yes')}
                 </MenuItem>
-                <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'yes-hidden')}>
+                <MenuItem
+                  dense
+                  onClick={async () => {
+                    await window.service.systemPreference.setSystemPreference('openAtLogin', 'yes-hidden');
+                  }}
+                >
                   {t('Preference.OpenAtLoginMinimized')}
                 </MenuItem>
-                <MenuItem dense onClick={async () => await window.service.systemPreference.setSystemPreference('openAtLogin', 'no')}>
+                <MenuItem
+                  dense
+                  onClick={async () => {
+                    await window.service.systemPreference.setSystemPreference('openAtLogin', 'no');
+                  }}
+                >
                   {t('No')}
                 </MenuItem>
               </PopUpMenuItem>

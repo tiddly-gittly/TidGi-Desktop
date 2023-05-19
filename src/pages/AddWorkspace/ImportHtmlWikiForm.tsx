@@ -1,9 +1,9 @@
-import { useTranslation } from 'react-i18next';
 import { Typography } from '@material-ui/core';
 import { Folder as FolderIcon } from '@material-ui/icons';
+import { useTranslation } from 'react-i18next';
 import { useValidateHtmlWiki } from './useImportHtmlWiki';
 
-import { CreateContainer, LocationPickerContainer, LocationPickerInput, LocationPickerButton } from './FormComponents';
+import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput } from './FormComponents';
 
 import type { IWikiWorkspaceFormProps } from './useForm';
 
@@ -45,8 +45,9 @@ export function ImportHtmlWikiForm({
               }
             }
           }}
-          endIcon={<FolderIcon />}>
-          <Typography variant="button" display="inline">
+          endIcon={<FolderIcon />}
+        >
+          <Typography variant='button' display='inline'>
             {t('AddWorkspace.Choose')}
           </Typography>
         </LocationPickerButton>
@@ -54,7 +55,9 @@ export function ImportHtmlWikiForm({
       <LocationPickerContainer>
         <LocationPickerInput
           error={errorInWhichComponent.parentFolderLocation}
-          onChange={(event) => form.parentFolderLocationSetter(event.target.value)}
+          onChange={(event) => {
+            form.parentFolderLocationSetter(event.target.value);
+          }}
           label={t('AddWorkspace.WorkspaceParentFolder')}
           value={parentFolderLocation}
         />
@@ -67,8 +70,9 @@ export function ImportHtmlWikiForm({
               form.parentFolderLocationSetter(filePaths[0]);
             }
           }}
-          endIcon={<FolderIcon />}>
-          <Typography variant="button" display="inline">
+          endIcon={<FolderIcon />}
+        >
+          <Typography variant='button' display='inline'>
             {t('AddWorkspace.Choose')}
           </Typography>
         </LocationPickerButton>
@@ -76,7 +80,9 @@ export function ImportHtmlWikiForm({
       <LocationPickerContainer>
         <LocationPickerInput
           error={errorInWhichComponent.wikiFolderName}
-          onChange={(event) => wikiFolderNameSetter(event.target.value)}
+          onChange={(event) => {
+            wikiFolderNameSetter(event.target.value);
+          }}
           label={t('AddWorkspace.ExtractedWikiFolderName')}
           helperText={`${t('AddWorkspace.CreateWiki')}${wikiFolderLocation ?? ''}`}
           value={wikiFolderName}

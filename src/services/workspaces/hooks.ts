@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
-import { map } from 'rxjs/operators';
 import useObservable from 'beautiful-react-hooks/useObservable';
-import { IWorkspaceWithMetadata, IWorkspace } from './interface';
+import { useMemo, useState } from 'react';
+import { map } from 'rxjs/operators';
+import { IWorkspace, IWorkspaceWithMetadata } from './interface';
 import { workspaceSorter } from './utils';
 
 export function useWorkspacesListObservable(): IWorkspaceWithMetadata[] | undefined {

@@ -1,6 +1,6 @@
-import { BehaviorSubject } from 'rxjs';
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { ThemeChannel } from '@/constants/channels';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import { BehaviorSubject } from 'rxjs';
 
 export interface ITheme {
   shouldUseDarkColors: boolean;

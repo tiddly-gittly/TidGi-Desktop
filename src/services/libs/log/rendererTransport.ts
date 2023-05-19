@@ -1,8 +1,8 @@
 /* eslint-disable global-require */
 import Transport from 'winston-transport';
 
-import { wikiOperations } from '@services/wiki/wikiOperations';
 import { WikiChannel } from '@/constants/channels';
+import { wikiOperations } from '@services/wiki/wikiOperations';
 
 export interface IInfo {
   /** which method or handler function we are logging for */

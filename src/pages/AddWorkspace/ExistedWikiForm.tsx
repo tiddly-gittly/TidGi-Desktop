@@ -1,20 +1,13 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
+import { MenuItem, Typography } from '@material-ui/core';
+import { Folder as FolderIcon } from '@material-ui/icons';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Typography, MenuItem } from '@material-ui/core';
-import { Folder as FolderIcon } from '@material-ui/icons';
 
-import {
-  CreateContainer,
-  LocationPickerContainer,
-  LocationPickerInput,
-  LocationPickerButton,
-  SoftLinkToMainWikiSelect,
-  SubWikiTagAutoComplete,
-} from './FormComponents';
+import { CreateContainer, LocationPickerButton, LocationPickerContainer, LocationPickerInput, SoftLinkToMainWikiSelect, SubWikiTagAutoComplete } from './FormComponents';
 
-import type { IWikiWorkspaceFormProps } from './useForm';
 import { useValidateExistedWiki } from './useExistedWiki';
+import type { IWikiWorkspaceFormProps } from './useForm';
 
 export function ExistedWikiForm({
   form,
@@ -73,8 +66,9 @@ export function ExistedWikiForm({
               onLocationChange(filePaths[0]);
             }
           }}
-          endIcon={<FolderIcon />}>
-          <Typography variant="button" display="inline">
+          endIcon={<FolderIcon />}
+        >
+          <Typography variant='button' display='inline'>
             {t('AddWorkspace.Choose')}
           </Typography>
         </LocationPickerButton>
@@ -84,16 +78,15 @@ export function ExistedWikiForm({
           <SoftLinkToMainWikiSelect
             error={errorInWhichComponent.mainWikiToLink}
             label={t('AddWorkspace.MainWorkspaceLocation')}
-            helperText={
-              mainWikiToLink.wikiFolderLocation &&
+            helperText={mainWikiToLink.wikiFolderLocation &&
               `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
-                    ${mainWikiToLink.wikiFolderLocation}/tiddlers/${wikiFolderName}`
-            }
+                    ${mainWikiToLink.wikiFolderLocation}/tiddlers/${wikiFolderName}`}
             value={mainWikiToLinkIndex}
             onChange={(event) => {
               const index = event.target.value as unknown as number;
               mainWikiToLinkSetter(mainWorkspaceList[index]);
-            }}>
+            }}
+          >
             {mainWorkspaceList.map((workspace, index) => (
               <MenuItem key={index} value={index}>
                 {workspace.name}
@@ -103,7 +96,9 @@ export function ExistedWikiForm({
           <SubWikiTagAutoComplete
             options={fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
             value={tagName}
-            onInputChange={(_, value) => tagNameSetter(value)}
+            onInputChange={(_, value) => {
+              tagNameSetter(value);
+            }}
             renderInput={(parameters) => (
               <LocationPickerInput
                 {...parameters}

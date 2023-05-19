@@ -15,7 +15,6 @@ const fs = require('fs-extra');
 const util = require('util');
 
 /**
- *
  * @param {*} buildPath /var/folders/qj/7j0zx32d0l75zmnrl1w3m3b80000gn/T/electron-packager/darwin-x64/TidGi-darwin-x64/Electron.app/Contents/Resources/app
  * @param {*} electronVersion 12.0.6
  * @param {*} platform darwin

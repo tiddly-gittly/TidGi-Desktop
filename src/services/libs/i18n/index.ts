@@ -1,17 +1,17 @@
-import path from 'path';
+import { isElectronDevelopment } from '@/constants/isElectronDevelopment';
 import i18next, { TFuncKey, TOptions } from 'i18next';
 import Backend from 'i18next-fs-backend';
-import { isElectronDevelopment } from '@/constants/isElectronDevelopment';
+import path from 'path';
 
 import { LOCALIZATION_FOLDER } from '@/constants/paths';
+import { clearMainBindings, mainBindings } from './i18nMainBindings';
 import changeToDefaultLanguage from './useDefaultLanguage';
-import { mainBindings, clearMainBindings } from './i18nMainBindings';
 
 // Workaround for https://github.com/isaachinman/next-i18next/issues/1781
 declare module 'i18next' {
   interface TFunction {
     // eslint-disable-next-line @typescript-eslint/prefer-function-type
-    <TKeys extends TFuncKey = string, TInterpolationMap extends object = { [key: string]: any }>(
+    <TKeys extends TFuncKey = string, TInterpolationMap extends object = Record<string, any>>(
       key: TKeys,
       options?: TOptions<TInterpolationMap> | string,
     ): string;

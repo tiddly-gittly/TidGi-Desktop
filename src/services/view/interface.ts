@@ -1,9 +1,9 @@
-import { BrowserWindow, BrowserView } from 'electron';
+import { BrowserView, BrowserWindow } from 'electron';
 
 import { ViewChannel } from '@/constants/channels';
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import { IWorkspace } from '@services/workspaces/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
+import { IWorkspace } from '@services/workspaces/interface';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 /**
  * BrowserView related things, the BrowserView is the webview like frame that renders our wiki website.

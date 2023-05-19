@@ -1,18 +1,18 @@
-import type { TFunction } from 'i18next';
-import type { MenuItemConstructorOptions } from 'electron';
-import { WindowNames } from '@services/windows/WindowProperties';
-import type { IWindowService } from '@services/windows/interface';
+import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService } from '@services/auth/interface';
-import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import type { IWorkspace, IWorkspaceService } from './interface';
+import { IContextService } from '@services/context/interface';
+import { IGitService } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
+import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
-import { IContextService } from '@services/context/interface';
-import { IGitService } from '@services/git/interface';
-import { SupportedStorageServices } from '@services/types';
-import { WikiChannel } from '@/constants/channels';
+import type { IWindowService } from '@services/windows/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
+import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import type { MenuItemConstructorOptions } from 'electron';
+import type { TFunction } from 'i18next';
+import type { IWorkspace, IWorkspaceService } from './interface';
 
 interface IWorkspaceMenuRequiredServices {
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
@@ -41,7 +41,8 @@ export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IW
   const oldActiveWorkspace = await service.workspace.getActiveWorkspace();
   // if is a new main workspace, active its browser view first
   if (!isSubWiki && idToActive !== null && idToActive !== undefined && oldActiveWorkspace?.id !== idToActive) {
-    return await service.workspaceView.setActiveWorkspaceView(idToActive);
+    await service.workspaceView.setActiveWorkspaceView(idToActive);
+    return;
   }
   // is not a new main workspace
   // open tiddler in the active view
@@ -80,11 +81,15 @@ export async function getWorkspaceMenuTemplate(
     },
     {
       label: t('WorkspaceSelector.RemoveWorkspace'),
-      click: async () => await service.wikiGitWorkspace.removeWorkspace(id),
+      click: async () => {
+        await service.wikiGitWorkspace.removeWorkspace(id);
+      },
     },
     {
       label: t('WorkspaceSelector.OpenWorkspaceFolder'),
-      click: async () => await service.native.open(wikiFolderLocation, true),
+      click: async () => {
+        await service.native.open(wikiFolderLocation, true);
+      },
     },
     {
       label: t('WorkspaceSelector.OpenWorkspaceFolderInEditor'),
@@ -140,7 +145,9 @@ export async function getWorkspaceMenuTemplate(
       },
       {
         label: t('ContextMenu.Reload'),
-        click: async () => await service.view.reloadViewsWebContents(id),
+        click: async () => {
+          await service.view.reloadViewsWebContents(id);
+        },
       },
     );
   }
@@ -150,9 +157,10 @@ export async function getWorkspaceMenuTemplate(
       label: hibernated ? t('WorkspaceSelector.WakeUpWorkspace') : t('WorkspaceSelector.HibernateWorkspace'),
       click: async () => {
         if (hibernated) {
-          return await service.workspaceView.wakeUpWorkspaceView(id);
+          await service.workspaceView.wakeUpWorkspaceView(id);
+          return;
         }
-        return await service.workspaceView.hibernateWorkspaceView(id);
+        await service.workspaceView.hibernateWorkspaceView(id);
       },
     });
   }

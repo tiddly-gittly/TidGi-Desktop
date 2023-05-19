@@ -1,9 +1,9 @@
-import path from 'path';
-import fs from 'fs-extra';
-import { take, drop, compact } from 'lodash';
+import { TIDDLERS_PATH } from '@/constants/paths';
 import { logger } from '@services/libs/log';
 import { IWorkspace } from '@services/workspaces/interface';
-import { TIDDLERS_PATH } from '@/constants/paths';
+import fs from 'fs-extra';
+import { compact, drop, take } from 'lodash';
+import path from 'path';
 
 const REPLACE_SYSTEM_TIDDLER_SYMBOL = 'search-replace:g[/],[_]search-replace:g[:],[_]';
 const getMatchPart = (tagToMatch: string): string => `kin::to[${tagToMatch}]`;

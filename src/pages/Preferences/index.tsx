@@ -1,27 +1,27 @@
 import React, { useEffect } from 'react';
-import styled, { css } from 'styled-components';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
 
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 
 import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
-import { usePreferenceSections } from './useSections';
-import { SectionSideBar } from './SectionsSideBar';
-import { TiddlyWiki } from './sections/TiddlyWiki';
-import { Sync } from './sections/Sync';
-import { General } from './sections/General';
-import { System } from './sections/System';
-import { Notifications } from './sections/Notifications';
-import { Languages } from './sections/Languages';
-import { Downloads } from './sections/Downloads';
-import { Network } from './sections/Network';
-import { PrivacyAndSecurity } from './sections/PrivacyAndSecurity';
 import { DeveloperTools } from './sections/DeveloperTools';
-import { Performance } from './sections/Performance';
-import { Updates } from './sections/Updates';
+import { Downloads } from './sections/Downloads';
 import { FriendLinks } from './sections/FriendLinks';
+import { General } from './sections/General';
+import { Languages } from './sections/Languages';
 import { Miscellaneous } from './sections/Miscellaneous';
+import { Network } from './sections/Network';
+import { Notifications } from './sections/Notifications';
+import { Performance } from './sections/Performance';
+import { PrivacyAndSecurity } from './sections/PrivacyAndSecurity';
+import { Sync } from './sections/Sync';
+import { System } from './sections/System';
+import { TiddlyWiki } from './sections/TiddlyWiki';
+import { Updates } from './sections/Updates';
+import { SectionSideBar } from './SectionsSideBar';
+import { usePreferenceSections } from './useSections';
 
 const Root = styled.div`
   padding: 20px;
@@ -47,7 +47,7 @@ export default function Preferences(): JSX.Element {
 
   return (
     <Root>
-      <div id="test" data-usage="For spectron automating testing" />
+      <div id='test' data-usage='For spectron automating testing' />
       {RestartSnackbar}
 
       <Helmet>

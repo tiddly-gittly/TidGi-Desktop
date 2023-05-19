@@ -1,8 +1,8 @@
 // on production build, if we try to redirect to http://localhost:3012 , we will reach chrome-error://chromewebdata/ , but we can easily get back
 // this happens when we are redirected by OAuth login
-import { context, window as windowService } from './services';
-import { windowName } from './browserViewMetaData';
 import { WindowNames } from '@services/windows/WindowProperties';
+import { windowName } from './browserViewMetaData';
+import { context, window as windowService } from './services';
 
 const CHECK_LOADED_INTERVAL = 500;
 let CHROME_ERROR_PATH: string | undefined;

@@ -1,34 +1,34 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/promise-function-async */
 import React, { useState } from 'react';
+import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
 import styled, { css } from 'styled-components';
 import is, { isNot } from 'typescript-styled-is';
-import { useTranslation } from 'react-i18next';
-import { Helmet } from 'react-helmet';
 
 import SimpleBar from 'simplebar-react';
 import 'simplebar/dist/simplebar.min.css';
 
-import { Typography, Tooltip, IconButton as IconButtonRaw } from '@material-ui/core';
+import { IconButton as IconButtonRaw, Tooltip, Typography } from '@material-ui/core';
 import { Settings as SettingsIcon, Upgrade as UpgradeIcon } from '@material-ui/icons';
 
-import { WindowNames } from '@services/windows/WindowProperties';
 import { IUpdaterStatus } from '@services/updater/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useUpdaterObservable } from '@services/updater/hooks';
 
-import FindInPage from '../../components/FindInPage';
 import { latestStableUpdateUrl } from '@/constants/urls';
+import FindInPage from '../../components/FindInPage';
 
-import { WorkspaceSelector, SortableWorkspaceSelectorList } from '@/components/WorkspaceIconAndSelector';
-import { useWorkspacesListObservable } from '@services/workspaces/hooks';
-import { usePreferenceObservable } from '@services/preferences/hooks';
 import { CommandPaletteIcon } from '@/components/icon/CommandPaletteSVG';
+import { SortableWorkspaceSelectorList, WorkspaceSelector } from '@/components/WorkspaceIconAndSelector';
+import { usePreferenceObservable } from '@services/preferences/hooks';
+import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import { Languages } from '../Preferences/sections/Languages';
 import { TiddlyWiki } from '../Preferences/sections/TiddlyWiki';
+import { ViewLoadErrorMessages, WikiErrorMessages } from './ErrorMessage';
 import { NewUserMessage } from './NewUserMessage';
-import { WikiErrorMessages, ViewLoadErrorMessages } from './ErrorMessage';
 import { useAutoCreateFirstWorkspace } from './useAutoCreateFirstWorkspace';
 
 const OuterRoot = styled.div`
@@ -91,11 +91,11 @@ const SidebarTop = styled.div<{ titleBar?: boolean }>`
   flex: 1;
   width: 100%;
   ${({ titleBar }) =>
-    titleBar === true
-      ? css`
+  titleBar === true
+    ? css`
           padding-top: 0;
         `
-      : css`
+    : css`
           padding-top: 30px;
         `}
 `;
@@ -167,13 +167,12 @@ export default function Main(): JSX.Element {
   if (preferences === undefined) return <div>{t('Loading')}</div>;
 
   const { sidebar, themeSource, sidebarShortcutHints, hideSideBarIcon } = preferences;
-  const hasError =
-    typeof activeWorkspaceMetadata?.didFailLoadErrorMessage === 'string' &&
+  const hasError = typeof activeWorkspaceMetadata?.didFailLoadErrorMessage === 'string' &&
     activeWorkspaceMetadata?.didFailLoadErrorMessage.length > 0 &&
     activeWorkspaceMetadata?.isLoading === false;
   return (
     <OuterRoot>
-      <div id="test" data-usage="For spectron automating testing" />
+      <div id='test' data-usage='For spectron automating testing' />
       <Helmet>
         <title>{t('Menu.TidGi')}</title>
       </Helmet>
@@ -181,13 +180,11 @@ export default function Main(): JSX.Element {
         {sidebar && (
           <SidebarContainer>
             <SidebarTop titleBar={titleBar}>
-              {workspacesList === undefined ? (
-                <div>{t('Loading')}</div>
-              ) : (
-                <SortableWorkspaceSelectorList sidebarShortcutHints={sidebarShortcutHints} workspacesList={workspacesList} hideSideBarIcon={hideSideBarIcon} />
-              )}
+              {workspacesList === undefined
+                ? <div>{t('Loading')}</div>
+                : <SortableWorkspaceSelectorList sidebarShortcutHints={sidebarShortcutHints} workspacesList={workspacesList} hideSideBarIcon={hideSideBarIcon} />}
               <WorkspaceSelector
-                id="add"
+                id='add'
                 hideSideBarIcon={hideSideBarIcon}
                 index={workspacesList?.length ?? 0}
                 showSidebarShortcutHints={sidebarShortcutHints}
@@ -196,7 +193,7 @@ export default function Main(): JSX.Element {
               {workspacesList === undefined ||
                 (workspacesList.length === 0 && (
                   <WorkspaceSelector
-                    id="guide"
+                    id='guide'
                     hideSideBarIcon={hideSideBarIcon}
                     index={workspacesList?.length ? workspacesList.length ?? 0 + 1 : 1}
                     active={activeWorkspace?.id === undefined}
@@ -209,10 +206,13 @@ export default function Main(): JSX.Element {
               {(workspacesList?.length ?? 0) > 0 && (
                 <>
                   <IconButton
-                    id="open-command-palette-button"
+                    id='open-command-palette-button'
                     aria-label={t('SideBar.CommandPalette')}
-                    onClick={async () => await window.service.wiki.requestWikiSendActionMessage('open-command-palette')}>
-                    <Tooltip title={<span>{t('SideBar.CommandPalette')}</span>} placement="top">
+                    onClick={async () => {
+                      await window.service.wiki.requestWikiSendActionMessage('open-command-palette');
+                    }}
+                  >
+                    <Tooltip title={<span>{t('SideBar.CommandPalette')}</span>} placement='top'>
                       <CommandPaletteIcon />
                     </Tooltip>
                   </IconButton>
@@ -220,19 +220,25 @@ export default function Main(): JSX.Element {
               )}
               {updaterMetaData?.status === IUpdaterStatus.updateAvailable && (
                 <IconButton
-                  id="update-available"
+                  id='update-available'
                   aria-label={t('SideBar.UpdateAvailable')}
-                  onClick={async () => await window.service.native.open(updaterMetaData.info?.latestReleasePageUrl ?? latestStableUpdateUrl)}>
-                  <Tooltip title={<span>{t('SideBar.UpdateAvailable')}</span>} placement="top">
+                  onClick={async () => {
+                    await window.service.native.open(updaterMetaData.info?.latestReleasePageUrl ?? latestStableUpdateUrl);
+                  }}
+                >
+                  <Tooltip title={<span>{t('SideBar.UpdateAvailable')}</span>} placement='top'>
                     <UpgradeIcon />
                   </Tooltip>
                 </IconButton>
               )}
               <IconButton
-                id="open-preferences-button"
+                id='open-preferences-button'
                 aria-label={t('SideBar.Preferences')}
-                onClick={async () => await window.service.window.open(WindowNames.preferences)}>
-                <Tooltip title={<span>{t('SideBar.Preferences')}</span>} placement="top">
+                onClick={async () => {
+                  await window.service.window.open(WindowNames.preferences);
+                }}
+              >
+                <Tooltip title={<span>{t('SideBar.Preferences')}</span>} placement='top'>
                   <SettingsIcon />
                 </Tooltip>
               </IconButton>
@@ -247,9 +253,9 @@ export default function Main(): JSX.Element {
               <ViewLoadErrorMessages activeWorkspace={activeWorkspace} activeWorkspaceMetadata={activeWorkspaceMetadata} />
             )}
             {Array.isArray(workspacesList) && workspacesList.length > 0 && activeWorkspaceMetadata?.isLoading === true && (
-              <Typography color="textSecondary">{t('Loading')}</Typography>
+              <Typography color='textSecondary'>{t('Loading')}</Typography>
             )}
-            {wikiCreationMessage && <Typography color="textSecondary">{wikiCreationMessage}</Typography>}
+            {wikiCreationMessage && <Typography color='textSecondary'>{wikiCreationMessage}</Typography>}
             {Array.isArray(workspacesList) && workspacesList.length === 0 && <NewUserMessage sidebar={sidebar} themeSource={themeSource} />}
           </InnerContentRoot>
           <Languages languageSelectorOnly />

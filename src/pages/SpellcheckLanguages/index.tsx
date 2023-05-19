@@ -1,7 +1,7 @@
 import React from 'react';
-import styled from 'styled-components';
-import { useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
 
 import ButtonRaw from '@material-ui/core/Button';
 import Checkbox from '@material-ui/core/Checkbox';
@@ -10,8 +10,8 @@ import ListItem from '@material-ui/core/ListItem';
 import ListItemIcon from '@material-ui/core/ListItemIcon';
 import ListItemText from '@material-ui/core/ListItemText';
 
-import { hunspellLanguagesMap, HunspellLanguages } from '../../constants/hunspellLanguages';
 import { usePreferenceObservable } from '@services/preferences/hooks';
+import { HunspellLanguages, hunspellLanguagesMap } from '../../constants/hunspellLanguages';
 
 const Root = styled.div`
   display: flex;
@@ -53,7 +53,7 @@ export default function SpellcheckLanguages(): JSX.Element {
   }
   return (
     <Root>
-      <div id="test" data-usage="For spectron automating testing" />
+      <div id='test' data-usage='For spectron automating testing' />
       <Helmet>
         <title>{t('Preference.SpellCheckLanguages')}</title>
       </Helmet>
@@ -72,10 +72,11 @@ export default function SpellcheckLanguages(): JSX.Element {
               } else {
                 void window.service.preference.set('spellcheckLanguages', [...preference.spellcheckLanguages, code]);
               }
-            }}>
+            }}
+          >
             <ListItemIcon>
               <Checkbox
-                edge="start"
+                edge='start'
                 checked={preference.spellcheckLanguages.includes(code)}
                 disabled={preference.spellcheckLanguages.length < 2 && preference.spellcheckLanguages.includes(code)}
               />
@@ -85,10 +86,16 @@ export default function SpellcheckLanguages(): JSX.Element {
         ))}
       </Top>
       <Bottom>
-        <Button color="primary" disabled>
+        <Button color='primary' disabled>
           This Page is Auto Saved
         </Button>
-        <Button onClick={async () => await window.remote.closeCurrentWindow()}>Close</Button>
+        <Button
+          onClick={async () => {
+            await window.remote.closeCurrentWindow();
+          }}
+        >
+          Close
+        </Button>
       </Bottom>
     </Root>
   );

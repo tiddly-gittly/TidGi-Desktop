@@ -1,6 +1,6 @@
 import { app } from 'electron';
-import semver from 'semver';
 import path from 'path';
+import semver from 'semver';
 import { IPreferences } from './interface';
 
 export const defaultPreferences: IPreferences = {

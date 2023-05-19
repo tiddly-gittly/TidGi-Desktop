@@ -1,7 +1,7 @@
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { WikiGitWorkspaceChannel } from '@/constants/channels';
-import { INewWorkspaceConfig, IWorkspace } from '@services/workspaces/interface';
 import { IGitUserInfos } from '@services/git/interface';
+import { INewWorkspaceConfig, IWorkspace } from '@services/workspaces/interface';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 /**
  * Deal with operations that needs to create a wiki and a git repo at once in a workspace

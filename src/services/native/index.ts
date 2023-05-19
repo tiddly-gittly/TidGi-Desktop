@@ -1,29 +1,32 @@
 /* eslint-disable @typescript-eslint/require-await */
-import { app, dialog, shell, MessageBoxOptions } from 'electron';
-import { injectable, inject } from 'inversify';
-import { Observable } from 'rxjs';
+import { app, dialog, MessageBoxOptions, shell } from 'electron';
+import { inject, injectable } from 'inversify';
 import path from 'path';
+import { Observable } from 'rxjs';
 
-import type { IWindowService } from '@services/windows/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
-import { INativeService } from './interface';
+import { ZX_FOLDER } from '@/constants/paths';
+import { lazyInject } from '@services/container';
+import { ILogLevels, logger } from '@services/libs/log';
+import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService, ZxWorkerControlActions } from '@services/wiki/interface';
-import { IWorkspaceService } from '@services/workspaces/interface';
-import { ZX_FOLDER } from '@/constants/paths';
-import { ILogLevels, logger } from '@services/libs/log';
-import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
-import { reportErrorToGithubWithTemplates } from './reportError';
 import { IZxFileInput } from '@services/wiki/wikiWorker';
-import { ZxNotInitializedError } from './error';
-import { lazyInject } from '@services/container';
+import type { IWindowService } from '@services/windows/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
+import { IWorkspaceService } from '@services/workspaces/interface';
 import i18next from 'i18next';
-import { getLocalHostUrlWithActualIP } from '@services/libs/url';
+import { ZxNotInitializedError } from './error';
+import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
+import { INativeService } from './interface';
+import { reportErrorToGithubWithTemplates } from './reportError';
 
 @injectable()
 export class NativeService implements INativeService {
-  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
-  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
+  @lazyInject(serviceIdentifier.Wiki)
+  private readonly wikiService!: IWikiService;
+
+  @lazyInject(serviceIdentifier.Workspace)
+  private readonly workspaceService!: IWorkspaceService;
 
   constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {}
 
@@ -121,7 +124,7 @@ ${message.message}
 
             break;
           }
-          // No default
+            // No default
         }
       });
     });
@@ -160,7 +163,7 @@ ${message.message}
   }
 
   public async open(uri: string, isDirectory = false): Promise<void> {
-    return isDirectory ? shell.showItemInFolder(uri) : await shell.openExternal(uri);
+    isDirectory ? shell.showItemInFolder(uri) : await shell.openExternal(uri);
   }
 
   public async quit(): Promise<void> {

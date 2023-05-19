@@ -1,6 +1,6 @@
 import type { ITiddlyWiki } from '@tiddlygit/tiddlywiki';
-import vm, { Context } from 'vm';
 import _ from 'lodash';
+import vm, { Context } from 'vm';
 
 export const TW_SCRIPT_SEPARATOR = '/** tw */';
 /**
@@ -48,7 +48,7 @@ export function getTWVmContext(wikiInstance: ITiddlyWiki): ITWVMContext {
     {
       get: (target, propertyName, receiver) => {
         return (...messageArguments: unknown[]): void => {
-          executionResults.push(messageArguments.map((item) => String(item)).join('\n'));
+          executionResults.push(messageArguments.map(String).join('\n'));
         };
       },
     },

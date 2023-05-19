@@ -1,7 +1,7 @@
-import { promisify } from 'util';
+import { isDevelopmentOrTest } from '@/constants/environment';
 import { execFile } from 'child_process';
 import path from 'path';
-import { isDevelopmentOrTest } from '@/constants/environment';
+import { promisify } from 'util';
 
 const repoFolder = path.join(__dirname, '..', '..', '..', '..', '..');
 

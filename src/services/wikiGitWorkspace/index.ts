@@ -1,37 +1,52 @@
-import path from 'path';
 import { app, dialog, powerMonitor } from 'electron';
 import { injectable } from 'inversify';
+import path from 'path';
 
+import type { IAuthenticationService } from '@services/auth/interface';
+import { lazyInject } from '@services/container';
+import type { IGitService, IGitUserInfos } from '@services/git/interface';
+import type { INotificationService } from '@services/notifications/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
-import type { IGitService, IGitUserInfos } from '@services/git/interface';
+import type { IWindowService } from '@services/windows/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
 import type { INewWorkspaceConfig, IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import type { IWindowService } from '@services/windows/interface';
-import type { IAuthenticationService } from '@services/auth/interface';
-import type { INotificationService } from '@services/notifications/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
-import { lazyInject } from '@services/container';
 
-import { logger } from '@services/libs/log';
-import { i18n } from '@services/libs/i18n';
-import { IWikiGitWorkspaceService } from './interface';
-import { InitWikiGitError, InitWikiGitRevertError, InitWikiGitSyncedWikiNoGitUserInfoError } from './error';
-import { SupportedStorageServices } from '@services/types';
-import { hasGit } from 'git-sync-js';
 import { IContextService } from '@services/context/interface';
+import { i18n } from '@services/libs/i18n';
+import { logger } from '@services/libs/log';
+import { SupportedStorageServices } from '@services/types';
 import { updateGhConfig } from '@services/wiki/plugin/ghPages';
+import { hasGit } from 'git-sync-js';
+import { InitWikiGitError, InitWikiGitRevertError, InitWikiGitSyncedWikiNoGitUserInfoError } from './error';
+import { IWikiGitWorkspaceService } from './interface';
 
 @injectable()
 export class WikiGitWorkspace implements IWikiGitWorkspaceService {
-  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
-  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
-  @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;
-  @lazyInject(serviceIdentifier.Context) private readonly contextService!: IContextService;
-  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
-  @lazyInject(serviceIdentifier.NotificationService) private readonly notificationService!: INotificationService;
+  @lazyInject(serviceIdentifier.Authentication)
+  private readonly authService!: IAuthenticationService;
+
+  @lazyInject(serviceIdentifier.Wiki)
+  private readonly wikiService!: IWikiService;
+
+  @lazyInject(serviceIdentifier.Git)
+  private readonly gitService!: IGitService;
+
+  @lazyInject(serviceIdentifier.Context)
+  private readonly contextService!: IContextService;
+
+  @lazyInject(serviceIdentifier.Workspace)
+  private readonly workspaceService!: IWorkspaceService;
+
+  @lazyInject(serviceIdentifier.Window)
+  private readonly windowService!: IWindowService;
+
+  @lazyInject(serviceIdentifier.WorkspaceView)
+  private readonly workspaceViewService!: IWorkspaceViewService;
+
+  @lazyInject(serviceIdentifier.NotificationService)
+  private readonly notificationService!: INotificationService;
 
   public registerSyncBeforeShutdown(): void {
     const listener = async (event: Event): Promise<void> => {

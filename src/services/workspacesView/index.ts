@@ -1,40 +1,57 @@
 /* eslint-disable unicorn/no-null */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/consistent-destructuring */
-import { app, session, dialog } from 'electron';
-import { injectable } from 'inversify';
 import { delay, mapSeries } from 'bluebird';
+import { app, dialog, session } from 'electron';
+import { injectable } from 'inversify';
 
-import serviceIdentifier from '@services/serviceIdentifier';
-import { i18n } from '@services/libs/i18n';
-import type { IViewService } from '@services/view/interface';
-import type { IWorkspaceService, IWorkspace } from '@services/workspaces/interface';
-import type { IWindowService } from '@services/windows/interface';
-import type { IMenuService } from '@services/menu/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
-import type { IPreferenceService } from '@services/preferences/interface';
-import { logger } from '@services/libs/log';
-import type { IAuthenticationService } from '@services/auth/interface';
-import type { IGitService } from '@services/git/interface';
-import type { IWikiService } from '@services/wiki/interface';
-import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
-import { lazyInject } from '@services/container';
-import { SupportedStorageServices } from '@services/types';
-import { WorkspaceFailedToLoadError } from './error';
 import { WikiChannel } from '@/constants/channels';
 import { tiddlywikiLanguagesMap } from '@/constants/languages';
+import type { IAuthenticationService } from '@services/auth/interface';
+import { lazyInject } from '@services/container';
+import type { IGitService } from '@services/git/interface';
+import { i18n } from '@services/libs/i18n';
+import { logger } from '@services/libs/log';
+import type { IMenuService } from '@services/menu/interface';
+import type { IPreferenceService } from '@services/preferences/interface';
+import serviceIdentifier from '@services/serviceIdentifier';
+import { SupportedStorageServices } from '@services/types';
+import type { IViewService } from '@services/view/interface';
+import type { IWikiService } from '@services/wiki/interface';
+import type { IWindowService } from '@services/windows/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
+import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { WorkspaceFailedToLoadError } from './error';
+import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
-  @lazyInject(serviceIdentifier.Authentication) private readonly authService!: IAuthenticationService;
-  @lazyInject(serviceIdentifier.View) private readonly viewService!: IViewService;
-  @lazyInject(serviceIdentifier.Git) private readonly gitService!: IGitService;
-  @lazyInject(serviceIdentifier.Wiki) private readonly wikiService!: IWikiService;
-  @lazyInject(serviceIdentifier.Workspace) private readonly workspaceService!: IWorkspaceService;
-  @lazyInject(serviceIdentifier.Window) private readonly windowService!: IWindowService;
-  @lazyInject(serviceIdentifier.Preference) private readonly preferenceService!: IPreferenceService;
-  @lazyInject(serviceIdentifier.MenuService) private readonly menuService!: IMenuService;
-  @lazyInject(serviceIdentifier.WorkspaceView) private readonly workspaceViewService!: IWorkspaceViewService;
+  @lazyInject(serviceIdentifier.Authentication)
+  private readonly authService!: IAuthenticationService;
+
+  @lazyInject(serviceIdentifier.View)
+  private readonly viewService!: IViewService;
+
+  @lazyInject(serviceIdentifier.Git)
+  private readonly gitService!: IGitService;
+
+  @lazyInject(serviceIdentifier.Wiki)
+  private readonly wikiService!: IWikiService;
+
+  @lazyInject(serviceIdentifier.Workspace)
+  private readonly workspaceService!: IWorkspaceService;
+
+  @lazyInject(serviceIdentifier.Window)
+  private readonly windowService!: IWindowService;
+
+  @lazyInject(serviceIdentifier.Preference)
+  private readonly preferenceService!: IPreferenceService;
+
+  @lazyInject(serviceIdentifier.MenuService)
+  private readonly menuService!: IMenuService;
+
+  @lazyInject(serviceIdentifier.WorkspaceView)
+  private readonly workspaceViewService!: IWorkspaceViewService;
 
   constructor() {
     void this.registerMenu();
@@ -67,12 +84,14 @@ export class WorkspaceView implements IWorkspaceViewService {
       const hibernateUnusedWorkspacesAtLaunch = await this.preferenceService.get('hibernateUnusedWorkspacesAtLaunch');
       if ((hibernateUnusedWorkspacesAtLaunch || workspace.hibernateWhenUnused) && !workspace.active) {
         logger.debug(
-          `initializeWorkspaceView() quit because ${JSON.stringify({
-            followHibernateSettingWhenInit,
-            'workspace.hibernateWhenUnused': workspace.hibernateWhenUnused,
-            'workspace.active': workspace.active,
-            hibernateUnusedWorkspacesAtLaunch,
-          })}`,
+          `initializeWorkspaceView() quit because ${
+            JSON.stringify({
+              followHibernateSettingWhenInit,
+              'workspace.hibernateWhenUnused': workspace.hibernateWhenUnused,
+              'workspace.active': workspace.active,
+              hibernateUnusedWorkspacesAtLaunch,
+            })
+          }`,
         );
         if (!workspace.hibernated) {
           await this.workspaceService.update(workspace.id, { hibernated: true });
@@ -294,9 +313,11 @@ export class WorkspaceView implements IWorkspaceViewService {
       throw new Error(`Workspace id ${nextWorkspaceID} does not exist. When setActiveWorkspaceView().`);
     }
     logger.debug(
-      `Set active workspace oldActiveWorkspace.id: ${oldActiveWorkspace?.id ?? 'undefined'} nextWorkspaceID: ${nextWorkspaceID} newWorkspace.isSubWiki ${String(
-        newWorkspace.isSubWiki,
-      )}`,
+      `Set active workspace oldActiveWorkspace.id: ${oldActiveWorkspace?.id ?? 'undefined'} nextWorkspaceID: ${nextWorkspaceID} newWorkspace.isSubWiki ${
+        String(
+          newWorkspace.isSubWiki,
+        )
+      }`,
     );
     if (newWorkspace.isSubWiki && typeof newWorkspace.mainWikiID === 'string') {
       logger.debug(`${nextWorkspaceID} is a subwiki, set its main wiki ${newWorkspace.mainWikiID} to active instead.`);
@@ -397,9 +418,9 @@ export class WorkspaceView implements IWorkspaceViewService {
           message: i18n.t('Preference.ClearBrowsingDataMessage'),
           cancelId: 1,
         })
-        .then(({ response }) => {
+        .then(async ({ response }) => {
           if (response === 0) {
-            return this.clearBrowsingData();
+            await this.clearBrowsingData();
           }
         })
         .catch(console.error);
@@ -409,7 +430,11 @@ export class WorkspaceView implements IWorkspaceViewService {
   public async clearBrowsingData(): Promise<void> {
     await session.defaultSession.clearStorageData();
     const workspaces = await this.workspaceService.getWorkspaces();
-    await Promise.all(Object.keys(workspaces).map(async (id) => await session.fromPartition(`persist:${id}`).clearStorageData()));
+    await Promise.all(
+      Object.keys(workspaces).map(async (id) => {
+        await session.fromPartition(`persist:${id}`).clearStorageData();
+      }),
+    );
 
     // shared session
     await session.fromPartition('persist:shared').clearStorageData();
@@ -453,9 +478,11 @@ export class WorkspaceView implements IWorkspaceViewService {
     const menuBarBrowserViewWebContent = menuBarWindow?.getBrowserView()?.webContents;
     /* eslint-disable @typescript-eslint/strict-boolean-expressions */
     logger.info(
-      `realignActiveWorkspaceView: id ${workspaceToRealign?.id ?? 'undefined'} mainWindow: ${String(!!mainBrowserViewWebContent)} menuBarWindow: ${String(
-        !!menuBarBrowserViewWebContent,
-      )}`,
+      `realignActiveWorkspaceView: id ${workspaceToRealign?.id ?? 'undefined'} mainWindow: ${String(!!mainBrowserViewWebContent)} menuBarWindow: ${
+        String(
+          !!menuBarBrowserViewWebContent,
+        )
+      }`,
     );
     if (workspaceToRealign === undefined) {
       logger.warn('realignActiveWorkspaceView: no active workspace');

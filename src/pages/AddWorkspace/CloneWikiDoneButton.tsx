@@ -1,13 +1,13 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { useTranslation } from 'react-i18next';
 
-import { Typography, LinearProgress, Snackbar } from '@material-ui/core';
+import { LinearProgress, Snackbar, Typography } from '@material-ui/core';
 import Alert from '@material-ui/lab/Alert';
 
+import { CloseButton, ReportErrorFabButton, WikiLocation } from './FormComponents';
+import { useCloneWiki, useValidateCloneWiki } from './useCloneWiki';
 import type { IWikiWorkspaceFormProps } from './useForm';
-import { useValidateCloneWiki, useCloneWiki } from './useCloneWiki';
 import { useWikiCreationProgress } from './useIndicator';
-import { WikiLocation, CloseButton, ReportErrorFabButton } from './FormComponents';
 
 export function CloneWikiDoneButton({ form, isCreateMainWorkspace, errorInWhichComponentSetter }: IWikiWorkspaceFormProps): JSX.Element {
   const { t } = useTranslation();
@@ -21,7 +21,7 @@ export function CloneWikiDoneButton({ form, isCreateMainWorkspace, errorInWhichC
   if (hasError) {
     return (
       <>
-        <CloseButton variant="contained" disabled>
+        <CloseButton variant='contained' disabled>
           {wikiCreationMessage}
         </CloseButton>
         {wikiCreationMessage !== undefined && <ReportErrorFabButton message={wikiCreationMessage} />}
@@ -30,29 +30,37 @@ export function CloneWikiDoneButton({ form, isCreateMainWorkspace, errorInWhichC
   }
   return (
     <>
-      {inProgressOrError && <LinearProgress color="secondary" />}
-      <Snackbar open={logPanelOpened} autoHideDuration={5000} onClose={() => logPanelSetter(false)}>
-        <Alert severity="info">{wikiCreationMessage}</Alert>
+      {inProgressOrError && <LinearProgress color='secondary' />}
+      <Snackbar
+        open={logPanelOpened}
+        autoHideDuration={5000}
+        onClose={() => {
+          logPanelSetter(false);
+        }}
+      >
+        <Alert severity='info'>{wikiCreationMessage}</Alert>
       </Snackbar>
 
-      {isCreateMainWorkspace ? (
-        <CloseButton variant="contained" color="secondary" disabled={inProgressOrError} onClick={onSubmit}>
-          <Typography variant="body1" display="inline">
-            {t('AddWorkspace.CloneWiki')}
-          </Typography>
-          <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
-        </CloseButton>
-      ) : (
-        <CloseButton variant="contained" color="secondary" disabled={inProgressOrError} onClick={onSubmit}>
-          <Typography variant="body1" display="inline">
-            {t('AddWorkspace.CloneWiki')}
-          </Typography>
-          <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
-          <Typography variant="body1" display="inline">
-            {t('AddWorkspace.AndLinkToMainWorkspace')}
-          </Typography>
-        </CloseButton>
-      )}
+      {isCreateMainWorkspace
+        ? (
+          <CloseButton variant='contained' color='secondary' disabled={inProgressOrError} onClick={onSubmit}>
+            <Typography variant='body1' display='inline'>
+              {t('AddWorkspace.CloneWiki')}
+            </Typography>
+            <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
+          </CloseButton>
+        )
+        : (
+          <CloseButton variant='contained' color='secondary' disabled={inProgressOrError} onClick={onSubmit}>
+            <Typography variant='body1' display='inline'>
+              {t('AddWorkspace.CloneWiki')}
+            </Typography>
+            <WikiLocation>{form.wikiFolderLocation}</WikiLocation>
+            <Typography variant='body1' display='inline'>
+              {t('AddWorkspace.AndLinkToMainWorkspace')}
+            </Typography>
+          </CloseButton>
+        )}
     </>
   );
 }

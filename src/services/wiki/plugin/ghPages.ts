@@ -1,6 +1,6 @@
+import { logger } from '@services/libs/log';
 import fs from 'fs-extra';
 import path from 'path';
-import { logger } from '@services/libs/log';
 
 interface IGhOptions {
   branch?: string;

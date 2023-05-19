@@ -1,10 +1,14 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { SvgIconTypeMap } from '@material-ui/core';
+import { OverridableComponent } from '@material-ui/core/OverridableComponent';
 import BuildIcon from '@material-ui/icons/Build';
 import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import CodeIcon from '@material-ui/icons/Code';
+import GitHubIcon from '@material-ui/icons/GitHub';
 import LanguageIcon from '@material-ui/icons/Language';
+import MenuBookIcon from '@material-ui/icons/MenuBook';
 import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 import NotificationsIcon from '@material-ui/icons/Notifications';
 import PowerIcon from '@material-ui/icons/Power';
@@ -13,10 +17,6 @@ import SecurityIcon from '@material-ui/icons/Security';
 import StorefrontIcon from '@material-ui/icons/Storefront';
 import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
 import WidgetsIcon from '@material-ui/icons/Widgets';
-import GitHubIcon from '@material-ui/icons/GitHub';
-import MenuBookIcon from '@material-ui/icons/MenuBook';
-import { OverridableComponent } from '@material-ui/core/OverridableComponent';
-import { SvgIconTypeMap } from '@material-ui/core';
 
 import { PreferenceSections } from '@services/preferences/interface';
 

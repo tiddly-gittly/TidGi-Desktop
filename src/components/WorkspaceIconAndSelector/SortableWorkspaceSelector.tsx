@@ -1,10 +1,10 @@
-import { useCallback, MouseEvent, useState } from 'react';
-import { useTranslation } from 'react-i18next';
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { WorkspaceSelector } from './WorkspaceSelector';
-import { IWorkspace } from '@services/workspaces/interface';
 import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/workspaces/getWorkspaceMenuTemplate';
+import { IWorkspace } from '@services/workspaces/interface';
+import { MouseEvent, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import { WorkspaceSelector } from './WorkspaceSelector';
 
 import defaultIcon from '@/images/default-icon.png';
 

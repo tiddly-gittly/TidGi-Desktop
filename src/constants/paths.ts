@@ -1,8 +1,8 @@
-import path from 'path';
 import os from 'os';
+import path from 'path';
+import { isMac } from '../helpers/system';
 import { isDevelopmentOrTest } from './environment';
 import { developmentWikiFolderName, localizationFolderName } from './fileNames';
-import { isMac } from '../helpers/system';
 
 /** src folder */
 export const sourcePath = path.resolve(__dirname, '..');

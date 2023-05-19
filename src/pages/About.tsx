@@ -1,10 +1,10 @@
 import React from 'react';
-import styled from 'styled-components';
-import { Trans, useTranslation } from 'react-i18next';
 import { Helmet } from 'react-helmet';
+import { Trans, useTranslation } from 'react-i18next';
+import styled from 'styled-components';
 
-import { Button, DialogContent as DialogContentRaw } from '@material-ui/core';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import { Button, DialogContent as DialogContentRaw } from '@material-ui/core';
 import iconPath from '../../build-resources/icon.png';
 
 const DialogContent = styled(DialogContentRaw)`
@@ -81,11 +81,11 @@ export default function About(): JSX.Element {
 
   return (
     <DialogContent>
-      <div id="test" data-usage="For spectron automating testing" />
+      <div id='test' data-usage='For spectron automating testing' />
       <Helmet>
         <title>{t('ContextMenu.About')}</title>
       </Helmet>
-      <Icon src={iconPath} alt="TidGi" />
+      <Icon src={iconPath} alt='TidGi' />
       <Title>TidGi ({platform ?? 'Unknown Platform'})</Title>
       <TidGiVersion>{`Version v${appVersion ?? ' - '}.`}</TidGiVersion>
       <DependenciesVersionsContainer>
@@ -97,45 +97,59 @@ export default function About(): JSX.Element {
       </DependenciesVersionsContainer>
 
       <ButtonContainer>
-        <GoToTheWebsiteButton onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TidGi-Desktop')}>
+        <GoToTheWebsiteButton
+          onClick={async () => {
+            await window.service.native.open('https://github.com/tiddly-gittly/TidGi-Desktop');
+          }}
+        >
           Website
         </GoToTheWebsiteButton>
-        <GoToTheWebsiteButton onClick={async () => await window.service.native.open('https://github.com/tiddly-gittly/TidGi-Desktop/issues/new/choose')}>
+        <GoToTheWebsiteButton
+          onClick={async () => {
+            await window.service.native.open('https://github.com/tiddly-gittly/TidGi-Desktop/issues/new/choose');
+          }}
+        >
           Support
         </GoToTheWebsiteButton>
       </ButtonContainer>
 
       <MadeBy>
-        <Trans t={t} i18nKey="Dialog.MadeWithLove">
-          <span>Made with </span>
-          <span role="img" aria-label="love">
+        <Trans t={t} i18nKey='Dialog.MadeWithLove'>
+          <span>Made with</span>
+          <span role='img' aria-label='love'>
             ❤
           </span>
-          <span> by </span>
+          <span>by</span>
         </Trans>
         <Link
-          onClick={async () => await window.service.native.open('https://onetwo.ren/wiki/')}
+          onClick={async () => {
+            await window.service.native.open('https://onetwo.ren/wiki/');
+          }}
           onKeyDown={async (event) => {
             if (event.key !== 'Enter') {
               return;
             }
             await window.service.native.open('https://onetwo.ren/wiki/');
           }}
-          role="link"
-          tabIndex={0}>
+          role='link'
+          tabIndex={0}
+        >
           {t('LinOnetwo')}
         </Link>
-        <span> && </span>
+        <span>&&</span>
         <Link
-          onClick={async () => await window.service.native.open('https://webcatalog.app/?utm_source=tidgi_app')}
+          onClick={async () => {
+            await window.service.native.open('https://webcatalog.app/?utm_source=tidgi_app');
+          }}
           onKeyDown={async (event) => {
             if (event.key !== 'Enter') {
               return;
             }
             await window.service.native.open('https://webcatalog.app/?utm_source=tidgi_app');
           }}
-          role="link"
-          tabIndex={0}>
+          role='link'
+          tabIndex={0}
+        >
           {t('Preference.WebCatalog')}
         </Link>
       </MadeBy>

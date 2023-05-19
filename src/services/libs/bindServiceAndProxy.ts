@@ -3,8 +3,8 @@
  */
 import { registerProxy } from 'electron-ipc-cat/server';
 
-import serviceIdentifier from '@services/serviceIdentifier';
 import { container } from '@services/container';
+import serviceIdentifier from '@services/serviceIdentifier';
 
 import { Authentication } from '@services/auth';
 import { ContextService } from '@services/context';
@@ -45,10 +45,10 @@ import type { IUpdaterService } from '@services/updater/interface';
 import { UpdaterServiceIPCDescriptor } from '@services/updater/interface';
 import type { IViewService } from '@services/view/interface';
 import { ViewServiceIPCDescriptor } from '@services/view/interface';
-import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
-import { WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import { WikiServiceIPCDescriptor } from '@services/wiki/interface';
+import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
+import { WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowServiceIPCDescriptor } from '@services/windows/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';

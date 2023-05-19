@@ -1,6 +1,6 @@
-import { DndContext, useSensor, useSensors, PointerSensor } from '@dnd-kit/core';
-import { SortableContext, arrayMove, verticalListSortingStrategy } from '@dnd-kit/sortable';
+import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
+import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { IWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { SortableWorkspaceSelector } from './SortableWorkspaceSelector';
 
@@ -38,7 +38,8 @@ export function SortableWorkspaceSelectorList({ workspacesList, sidebarShortcutH
         });
 
         await window.service.workspace.setWorkspaces(newWorkspaces);
-      }}>
+      }}
+    >
       <SortableContext items={workspaceIDs} strategy={verticalListSortingStrategy}>
         {workspacesList
           .sort((a, b) => a.order - b.order)

@@ -1,11 +1,11 @@
-import React from 'react';
-import { useTranslation } from 'react-i18next';
 import { Divider, List, ListItemSecondaryAction, Switch } from '@material-ui/core';
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
 
-import type { ISectionProps } from '../useSections';
-import { Paper, SectionTitle, ListItem, ListItemText } from '../PreferenceComponents';
 import { usePreferenceObservable } from '@services/preferences/hooks';
+import { ListItem, ListItemText, Paper, SectionTitle } from '../PreferenceComponents';
+import type { ISectionProps } from '../useSections';
 
 export function Downloads(props: Required<ISectionProps>): JSX.Element {
   const { t } = useTranslation();
@@ -17,9 +17,7 @@ export function Downloads(props: Required<ISectionProps>): JSX.Element {
       <SectionTitle ref={props.sections.downloads.ref}>{t('Preference.Downloads')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
-          {preference === undefined ? (
-            <ListItem>{t('Loading')}</ListItem>
-          ) : (
+          {preference === undefined ? <ListItem>{t('Loading')}</ListItem> : (
             <>
               <ListItem
                 button
@@ -34,17 +32,18 @@ export function Downloads(props: Required<ISectionProps>): JSX.Element {
                     .catch((error: Error) => {
                       console.log(error); // eslint-disable-line no-console
                     });
-                }}>
+                }}
+              >
                 <ListItemText primary={t('Preference.DownloadLocation')} secondary={preference.downloadPath} />
-                <ChevronRightIcon color="action" />
+                <ChevronRightIcon color='action' />
               </ListItem>
               <Divider />
               <ListItem>
                 <ListItemText primary={t('Preference.AskDownloadLocation')} />
                 <ListItemSecondaryAction>
                   <Switch
-                    edge="end"
-                    color="primary"
+                    edge='end'
+                    color='primary'
                     checked={preference.askForDownloadPath}
                     onChange={async (event) => {
                       await window.service.preference.set('askForDownloadPath', event.target.checked);

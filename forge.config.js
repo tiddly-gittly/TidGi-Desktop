@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 const packageJson = require('./package.json');
-const beforeAsar = require('./scripts/beforeAsar')
+const beforeAsar = require('./scripts/beforeAsar');
 
 const { version, description } = packageJson;
 
@@ -91,7 +91,7 @@ const config = {
         An unhandled rejection has occurred inside Forge:
         [object Object]
      */
-        {
+    {
       name: '@reforged/maker-appimage',
       platforms: ['linux'],
       config: {

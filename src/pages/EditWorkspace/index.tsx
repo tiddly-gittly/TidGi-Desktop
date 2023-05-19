@@ -2,42 +2,42 @@
 /* eslint-disable unicorn/no-useless-undefined */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null */
-import React, { useCallback } from 'react';
-import styled, { css } from 'styled-components';
-import { useTranslation } from 'react-i18next';
-import { Helmet } from 'react-helmet';
 import {
-  Tooltip,
   Button as ButtonRaw,
-  TextField as TextFieldRaw,
   Divider,
+  Link,
   List as ListRaw,
   ListItem as ListItemRaw,
-  ListItemText as ListItemTextRaw,
   ListItemSecondaryAction,
-  Switch,
-  Typography,
-  Link,
+  ListItemText as ListItemTextRaw,
   Paper,
+  Switch,
+  TextField as TextFieldRaw,
+  Tooltip,
+  Typography,
 } from '@material-ui/core';
 import { Autocomplete } from '@material-ui/lab';
+import React, { useCallback } from 'react';
+import { Helmet } from 'react-helmet';
+import { useTranslation } from 'react-i18next';
+import styled, { css } from 'styled-components';
 import defaultIcon from '../../images/default-icon.png';
 
-import type { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
-import { WindowNames, WindowMeta } from '@services/windows/WindowProperties';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import type { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
+import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
-import { useForm } from './useForm';
 import { IWorkspace } from '@services/workspaces/interface';
+import { useForm } from './useForm';
 
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
-import { defaultServerIP } from '@/constants/urls';
-import { SupportedStorageServices } from '@services/types';
-import { SyncedWikiDescription } from '../AddWorkspace/Description';
 import { TokenForm } from '@/components/TokenForm';
-import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
-import { isEqual } from 'lodash';
+import { defaultServerIP } from '@/constants/urls';
 import { useActualIp } from '@services/native/hooks';
+import { SupportedStorageServices } from '@services/types';
+import { isEqual } from 'lodash';
+import { SyncedWikiDescription } from '../AddWorkspace/Description';
+import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
 
 const Root = styled(Paper)`
   height: 100%;
@@ -88,7 +88,7 @@ const AvatarRight = styled.div`
 `;
 /**
  * border: theme.palette.type === 'dark' ? 'none': '1px solid rgba(0, 0, 0, 0.12)';
- * */
+ */
 const Avatar = styled.div<{ transparentBackground?: boolean }>`
   height: 85px;
   width: 85px;
@@ -103,14 +103,14 @@ const Avatar = styled.div<{ transparentBackground?: boolean }>`
 
   overflow: hidden;
   ${({ transparentBackground }) => {
-    if (transparentBackground === true) {
-      return css`
+  if (transparentBackground === true) {
+    return css`
         background: transparent;
         border: none;
         border-radius: 0;
       `;
-    }
-  }}
+  }
+}}
 `;
 const AvatarPicture = styled.img`
   height: 100%;
@@ -218,7 +218,7 @@ export default function EditWorkspace(): JSX.Element {
   const isCreateSyncedWorkspace = storageService !== SupportedStorageServices.local;
   return (
     <Root>
-      <div id="test" data-usage="For spectron automating testing" />
+      <div id='test' data-usage='For spectron automating testing' />
       {RestartSnackbar}
       <Helmet>
         <title>
@@ -227,21 +227,25 @@ export default function EditWorkspace(): JSX.Element {
       </Helmet>
       <FlexGrow>
         <TextField
-          id="outlined-full-width"
+          id='outlined-full-width'
           label={t('EditWorkspace.Name')}
           helperText={t('EditWorkspace.NameDescription')}
-          placeholder="Optional"
+          placeholder='Optional'
           value={name}
-          onChange={(event) => workspaceSetter({ ...workspace, name: event.target.value })}
+          onChange={(event) => {
+            workspaceSetter({ ...workspace, name: event.target.value });
+          }}
         />
         <TextField
-          id="outlined-full-width"
+          id='outlined-full-width'
           label={t('EditWorkspace.Path')}
           helperText={t('EditWorkspace.PathDescription')}
-          placeholder="Optional"
+          placeholder='Optional'
           disabled
           value={wikiFolderLocation}
-          onChange={(event) => workspaceSetter({ ...workspace, wikiFolderLocation: event.target.value })}
+          onChange={(event) => {
+            workspaceSetter({ ...workspace, wikiFolderLocation: event.target.value });
+          }}
         />
         <TextField
           helperText={t('AddWorkspace.WorkspaceUserNameDetail')}
@@ -257,17 +261,22 @@ export default function EditWorkspace(): JSX.Element {
         {!isSubWiki && (
           <>
             <TextField
-              id="outlined-full-width"
+              id='outlined-full-width'
               label={t('EditWorkspace.Port')}
               helperText={
                 <span>
                   {t('EditWorkspace.URL')}{' '}
-                  <Link onClick={async () => actualIP && (await window.service.native.open(actualIP))} style={{ cursor: 'pointer' }}>
+                  <Link
+                    onClick={async () => {
+                      actualIP && (await window.service.native.open(actualIP));
+                    }}
+                    style={{ cursor: 'pointer' }}
+                  >
                     {actualIP}
                   </Link>
                 </span>
               }
-              placeholder="Optional"
+              placeholder='Optional'
               value={port}
               onChange={async (event) => {
                 if (!Number.isNaN(Number.parseInt(event.target.value))) {
@@ -282,7 +291,7 @@ export default function EditWorkspace(): JSX.Element {
             />
             {rememberLastPageVisited && (
               <TextField
-                id="outlined-full-width"
+                id='outlined-full-width'
                 label={t('EditWorkspace.LastVisitState')}
                 helperText={t('Preference.RememberLastVisitState')}
                 placeholder={actualIP}
@@ -312,26 +321,32 @@ export default function EditWorkspace(): JSX.Element {
         <AvatarFlex>
           <AvatarLeft>
             <Avatar transparentBackground={transparentBackground}>
-              <AvatarPicture alt="Icon" src={getValidIconPath(picturePath)} />
+              <AvatarPicture alt='Icon' src={getValidIconPath(picturePath)} />
             </Avatar>
           </AvatarLeft>
           <AvatarRight>
-            <Tooltip title={wikiPictureExtensions.join(', ')} placement="top">
+            <Tooltip title={wikiPictureExtensions.join(', ')} placement='top'>
               <PictureButton
-                variant="outlined"
-                size="small"
+                variant='outlined'
+                size='small'
                 onClick={async () => {
                   const filePaths = await window.service.native.pickFile([{ name: 'Images', extensions: wikiPictureExtensions }]);
                   if (filePaths.length > 0) {
                     await window.service.workspace.update(workspaceID, { picturePath: filePaths[0] });
                   }
-                }}>
+                }}
+              >
                 {t('EditWorkspace.SelectLocal')}
               </PictureButton>
             </Tooltip>
 
-            <Tooltip title={t('EditWorkspace.NoRevert') ?? ''} placement="bottom">
-              <PictureButton onClick={() => workspaceSetter({ ...workspace, picturePath: null })} disabled={!picturePath}>
+            <Tooltip title={t('EditWorkspace.NoRevert') ?? ''} placement='bottom'>
+              <PictureButton
+                onClick={() => {
+                  workspaceSetter({ ...workspace, picturePath: null });
+                }}
+                disabled={!picturePath}
+              >
                 {t('EditWorkspace.ResetDefaultIcon')}
               </PictureButton>
             </Tooltip>
@@ -371,10 +386,12 @@ export default function EditWorkspace(): JSX.Element {
                 <ListItemText primary={t('EditWorkspace.SyncOnInterval')} secondary={t('EditWorkspace.SyncOnIntervalDescription')} />
                 <ListItemSecondaryAction>
                   <Switch
-                    edge="end"
-                    color="primary"
+                    edge='end'
+                    color='primary'
                     checked={syncOnInterval}
-                    onChange={(event) => workspaceSetter({ ...workspace, syncOnInterval: event.target.checked })}
+                    onChange={(event) => {
+                      workspaceSetter({ ...workspace, syncOnInterval: event.target.checked });
+                    }}
                   />
                 </ListItemSecondaryAction>
               </ListItem>
@@ -382,10 +399,12 @@ export default function EditWorkspace(): JSX.Element {
                 <ListItemText primary={t('EditWorkspace.SyncOnStartup')} secondary={t('EditWorkspace.SyncOnStartupDescription')} />
                 <ListItemSecondaryAction>
                   <Switch
-                    edge="end"
-                    color="primary"
+                    edge='end'
+                    color='primary'
                     checked={syncOnStartup}
-                    onChange={(event) => workspaceSetter({ ...workspace, syncOnStartup: event.target.checked })}
+                    onChange={(event) => {
+                      workspaceSetter({ ...workspace, syncOnStartup: event.target.checked });
+                    }}
                   />
                 </ListItemSecondaryAction>
               </ListItem>
@@ -401,10 +420,12 @@ export default function EditWorkspace(): JSX.Element {
                 <ListItemText primary={t('EditWorkspace.BackupOnInterval')} secondary={t('EditWorkspace.BackupOnIntervalDescription')} />
                 <ListItemSecondaryAction>
                   <Switch
-                    edge="end"
-                    color="primary"
+                    edge='end'
+                    color='primary'
                     checked={backupOnInterval}
-                    onChange={(event) => workspaceSetter({ ...workspace, backupOnInterval: event.target.checked })}
+                    onChange={(event) => {
+                      workspaceSetter({ ...workspace, backupOnInterval: event.target.checked });
+                    }}
                   />
                 </ListItemSecondaryAction>
               </ListItem>
@@ -418,10 +439,12 @@ export default function EditWorkspace(): JSX.Element {
               <ListItemText primary={t('EditWorkspace.HibernateTitle')} secondary={t('EditWorkspace.HibernateDescription')} />
               <ListItemSecondaryAction>
                 <Switch
-                  edge="end"
-                  color="primary"
+                  edge='end'
+                  color='primary'
                   checked={hibernateWhenUnused}
-                  onChange={(event) => workspaceSetter({ ...workspace, hibernateWhenUnused: event.target.checked })}
+                  onChange={(event) => {
+                    workspaceSetter({ ...workspace, hibernateWhenUnused: event.target.checked });
+                  }}
                 />
               </ListItemSecondaryAction>
             </ListItem>
@@ -429,10 +452,12 @@ export default function EditWorkspace(): JSX.Element {
               <ListItemText primary={t('EditWorkspace.DisableNotificationTitle')} secondary={t('EditWorkspace.DisableNotification')} />
               <ListItemSecondaryAction>
                 <Switch
-                  edge="end"
-                  color="primary"
+                  edge='end'
+                  color='primary'
                   checked={disableNotifications}
-                  onChange={(event) => workspaceSetter({ ...workspace, disableNotifications: event.target.checked })}
+                  onChange={(event) => {
+                    workspaceSetter({ ...workspace, disableNotifications: event.target.checked });
+                  }}
                 />
               </ListItemSecondaryAction>
             </ListItem>
@@ -440,10 +465,12 @@ export default function EditWorkspace(): JSX.Element {
               <ListItemText primary={t('EditWorkspace.DisableAudioTitle')} secondary={t('EditWorkspace.DisableAudio')} />
               <ListItemSecondaryAction>
                 <Switch
-                  edge="end"
-                  color="primary"
+                  edge='end'
+                  color='primary'
                   checked={disableAudio}
-                  onChange={(event) => workspaceSetter({ ...workspace, disableAudio: event.target.checked })}
+                  onChange={(event) => {
+                    workspaceSetter({ ...workspace, disableAudio: event.target.checked });
+                  }}
                 />
               </ListItemSecondaryAction>
             </ListItem>
@@ -452,10 +479,10 @@ export default function EditWorkspace(): JSX.Element {
       </FlexGrow>
       {!isEqual(workspace, originalWorkspace) && (
         <div>
-          <Button color="primary" variant="contained" disableElevation onClick={requestSaveAndRestart}>
+          <Button color='primary' variant='contained' disableElevation onClick={requestSaveAndRestart}>
             {t('EditWorkspace.Save')}
           </Button>
-          <Button variant="contained" disableElevation onClick={() => void window.remote.closeCurrentWindow()}>
+          <Button variant='contained' disableElevation onClick={() => void window.remote.closeCurrentWindow()}>
             {t('EditWorkspace.Cancel')}
           </Button>
         </div>

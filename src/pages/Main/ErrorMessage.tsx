@@ -1,11 +1,11 @@
 /* eslint-disable unicorn/no-null */
+import { Accordion, AccordionDetails, AccordionSummary, Button, Typography } from '@material-ui/core';
 import { useCallback } from 'react';
-import { Button, Accordion, AccordionSummary, AccordionDetails, Typography } from '@material-ui/core';
 import { Trans, useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import { IWorkspaceWithMetadata, IWorkspaceMetaData } from '@services/workspaces/interface';
+import { IWorkspaceMetaData, IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { ReportErrorButton } from '../AddWorkspace/FormComponents';
 
 const HelperTextsList = styled.ul`
@@ -38,15 +38,20 @@ export function WikiErrorMessages(props: IWikiErrorMessagesProps): JSX.Element {
       <WikiErrorMessagesContainer>
         <Accordion>
           <AccordionSummary>
-            <Typography align="left" variant="h5">
+            <Typography align='left' variant='h5'>
               {t('Error.WikiRuntimeError')} {t('ClickForDetails')}
             </Typography>
           </AccordionSummary>
           <AccordionDetails>
-            <Typography align="left" variant="body2">
+            <Typography align='left' variant='body2'>
               {t('Error.WikiRuntimeErrorDescription')}
             </Typography>
-            <Button variant="outlined" onClick={async () => await window.service.native.open(wikiLogs.filePath, true)}>
+            <Button
+              variant='outlined'
+              onClick={async () => {
+                await window.service.native.open(wikiLogs.filePath, true);
+              }}
+            >
               {t('Preference.OpenLogFolder')}
             </Button>
 
@@ -89,22 +94,22 @@ export function ViewLoadErrorMessages(props: IViewLoadErrorMessagesProps): JSX.E
 
   return (
     <WikiErrorMessagesContainer>
-      <Typography align="left" variant="h5">
+      <Typography align='left' variant='h5'>
         {t('AddWorkspace.WikiNotStarted')}
       </Typography>
-      <Typography align="left" variant="body2">
+      <Typography align='left' variant='body2'>
         {props.activeWorkspaceMetadata.didFailLoadErrorMessage}
       </Typography>
 
       <br />
-      <Trans t={t} i18nKey="AddWorkspace.MainPageReloadTip">
-        <Typography align="left" variant="body2" component="div">
+      <Trans t={t} i18nKey='AddWorkspace.MainPageReloadTip'>
+        <Typography align='left' variant='body2' component='div'>
           <>
             Try:
             <HelperTextsList>
               <li>
                 Click{' '}
-                <b onClick={requestReload} onKeyPress={requestReload} role="button" tabIndex={0} style={{ cursor: 'pointer' }}>
+                <b onClick={requestReload} onKeyPress={requestReload} role='button' tabIndex={0} style={{ cursor: 'pointer' }}>
                   Reload
                 </b>{' '}
                 button below or press <b>CMD_or_Ctrl + R</b> to reload the page.
@@ -112,11 +117,16 @@ export function ViewLoadErrorMessages(props: IViewLoadErrorMessagesProps): JSX.E
               <li>
                 Check the{' '}
                 <b
-                  onClick={async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}
-                  onKeyPress={async () => await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true)}
-                  role="button"
+                  onClick={async () => {
+                    await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true);
+                  }}
+                  onKeyPress={async () => {
+                    await window.service.native.open(await window.service.context.get('LOG_FOLDER'), true);
+                  }}
+                  role='button'
                   tabIndex={0}
-                  style={{ cursor: 'pointer' }}>
+                  style={{ cursor: 'pointer' }}
+                >
                   Log Folder
                 </b>{' '}
                 to see what happened.
@@ -128,12 +138,10 @@ export function ViewLoadErrorMessages(props: IViewLoadErrorMessagesProps): JSX.E
       </Trans>
 
       <ButtonGroup>
-        <Button variant="outlined" onClick={requestReload}>
+        <Button variant='outlined' onClick={requestReload}>
           {t('AddWorkspace.Reload')}
         </Button>
-        {typeof props.activeWorkspaceMetadata.didFailLoadErrorMessage === 'string' && (
-          <ReportErrorButton message={props.activeWorkspaceMetadata.didFailLoadErrorMessage} />
-        )}
+        {typeof props.activeWorkspaceMetadata.didFailLoadErrorMessage === 'string' && <ReportErrorButton message={props.activeWorkspaceMetadata.didFailLoadErrorMessage} />}
       </ButtonGroup>
     </WikiErrorMessagesContainer>
   );
