@@ -98,6 +98,11 @@ const commonInit = async (): Promise<void> => {
   // eslint-disable-next-line promise/catch-or-return
   await app.whenReady();
   if (
+    /**
+     * Handles in-app assets loading.
+     *
+     * For in-wiki file:// links, see handleNewWindow() in `src/services/view/setupViewEventHandlers.ts`.
+     */
     !protocol.registerFileProtocol('file', (request, callback) => {
       const pathname = decodeURIComponent(request.url.replace('file:///', ''));
       if (path.isAbsolute(pathname) ? fs.existsSync(pathname) : fs.existsSync(`/${pathname}`)) {

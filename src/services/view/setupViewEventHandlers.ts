@@ -318,29 +318,43 @@ function handleNewWindow(
     overrideBrowserWindowOptions?: Electron.BrowserWindowConstructorOptions | undefined;
   }
 {
+  logger.debug(`Getting url that will open externally`, { nextUrl });
   // don't show useless blank page
   if (nextUrl.startsWith('about:blank')) {
+    logger.debug('ignore about:blank');
     return { action: 'deny' };
   }
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const nextDomain = extractDomain(nextUrl);
-  // handle file opening
-  // `file://` will resulted in `nextDomain` being `about:blank#blocked`, so we use `open://` instead
-  if (nextUrl.startsWith('open://')) {
-    const filePath = nextUrl.replace('open://', '');
-    if (fsExtra.existsSync(filePath)) {
+  /**
+   * Handles in-wiki file opening
+   *
+   * `file://` may resulted in `nextDomain` being `about:blank#blocked`, so we use `open://` instead. But in MacOS it seem to works fine in most cases. Just leave open:// in case as a fallback for users.
+   *
+   * For  file:/// in-app assets loading., see commonInit() in `src/main.ts`.
+   */
+  if (nextUrl.startsWith('open://') || nextUrl.startsWith('file://')) {
+    logger.info('This url will open file', { nextUrl, nextDomain, disposition });
+    const filePath = decodeURI(nextUrl.replace('open://', '').replace('file://', ''));
+    const fileExists = fsExtra.existsSync(filePath);
+    logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { filePath });
+    if (fileExists) {
       void shell.openPath(filePath);
-    } else {
-      // try find file relative to workspace folder
-      void workspaceService.getActiveWorkspace().then((workspace) => {
-        if (workspace !== undefined) {
-          const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, filePath);
-          if (fsExtra.existsSync(filePathInWorkspaceFolder)) {
-            void shell.openPath(filePathInWorkspaceFolder);
-          }
-        }
-      });
+      return {
+        action: 'deny',
+      };
     }
+    logger.info(`try find file relative to workspace folder`);
+    void workspaceService.getActiveWorkspace().then((workspace) => {
+      if (workspace !== undefined) {
+        const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, filePath);
+        const fileExistsInWorkspaceFolder = fsExtra.existsSync(filePathInWorkspaceFolder);
+        logger.info(`This file ${fileExistsInWorkspaceFolder ? '' : 'not '}exists in workspace folder.`, { filePathInWorkspaceFolder });
+        if (fileExistsInWorkspaceFolder) {
+          void shell.openPath(filePathInWorkspaceFolder);
+        }
+      }
+    });
     return {
       action: 'deny',
     };
