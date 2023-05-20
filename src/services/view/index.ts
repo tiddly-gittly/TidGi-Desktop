@@ -422,14 +422,17 @@ export class View implements IViewService {
       view.webContents.stopFindInPage('clearSelection');
       view.webContents.send(WindowChannel.closeFindInPage);
 
-      // don't destroy browserView here, the "current browser view" may point to other workspace's view now, it will close other workspace's view when switching workspaces.
+      // don't set activate browserView to null here, the "current browser view" may point to other workspace's view now, it will close other workspace's view when switching workspaces.
       // eslint-disable-next-line unicorn/no-null
       // browserWindow.setBrowserView(null);
+      browserWindow.removeBrowserView(view);
 
       // currently use workaround https://github.com/electron/electron/issues/10096
       // @ts-expect-error Property 'destroy' does not exist on type 'WebContents'.ts(2339)
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
       view.webContents.destroy();
+    } else {
+      logger.error(`removeView() view or browserWindow is undefined for workspaceID ${workspaceID} windowName ${windowName}, not destroying view properly.`);
     }
     // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
     delete this.views[workspaceID]![windowName];
