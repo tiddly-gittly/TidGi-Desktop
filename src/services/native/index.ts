@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/require-await */
-import { app, dialog, MessageBoxOptions, shell } from 'electron';
+import { app, dialog, MessageBoxOptions, protocol, shell } from 'electron';
+import fs from 'fs-extra';
 import { inject, injectable } from 'inversify';
 import path from 'path';
 import { Observable } from 'rxjs';
@@ -200,5 +201,28 @@ ${message.message}
         break;
       }
     }
+  }
+
+  public handleFileProtocol(): boolean {
+    const succeed = protocol.registerFileProtocol('file', async (request, callback) => {
+      const pathname = decodeURI(request.url.replace('open://', '').replace('file://', ''));
+      logger.info('handleFileProtocol() handle file:// or open:// This url will open file in-wiki', { pathname });
+      let fileExists = fs.existsSync(pathname);
+      logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { pathname });
+      if (fileExists) {
+        callback(pathname);
+        return;
+      }
+      logger.info(`try find file relative to TidGi App folder`);
+      // on production, __dirname will be in .webpack/main
+      const inTidGiAppAbsoluteFilePath = path.join(app.getAppPath(), '.webpack', 'renderer', pathname);
+      fileExists = fs.existsSync(inTidGiAppAbsoluteFilePath);
+      if (fileExists) {
+        callback(inTidGiAppAbsoluteFilePath);
+        return;
+      }
+    });
+
+    return succeed;
   }
 }

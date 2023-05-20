@@ -9,7 +9,6 @@ import { app, ipcMain, powerMonitor, protocol } from 'electron';
 import settings from 'electron-settings';
 import unhandled from 'electron-unhandled';
 import fs from 'fs-extra';
-import path from 'path';
 
 import { MainChannel } from '@/constants/channels';
 import { isTest } from '@/constants/environment';
@@ -22,6 +21,7 @@ import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
+import { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IUpdaterService } from '@services/updater/interface';
 import { IWikiService } from '@services/wiki/interface';
@@ -46,6 +46,7 @@ const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceI
 const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 app.on('second-instance', () => {
   // Someone tried to run a second instance, we should focus our window.
   const mainWindow = windowService.get(WindowNames.main);
@@ -97,23 +98,7 @@ const whenCommonInitFinished = async (): Promise<void> => {
 const commonInit = async (): Promise<void> => {
   // eslint-disable-next-line promise/catch-or-return
   await app.whenReady();
-  if (
-    /**
-     * Handles in-app assets loading.
-     *
-     * For in-wiki file:// links, see handleNewWindow() in `src/services/view/setupViewEventHandlers.ts`.
-     */
-    !protocol.registerFileProtocol('file', (request, callback) => {
-      const pathname = decodeURIComponent(request.url.replace('file:///', ''));
-      if (path.isAbsolute(pathname) ? fs.existsSync(pathname) : fs.existsSync(`/${pathname}`)) {
-        callback(pathname);
-      } else {
-        // on production, __dirname will be in .webpack/main
-        const filePath = path.join(app.getAppPath(), '.webpack', 'renderer', pathname);
-        callback(filePath);
-      }
-    })
-  ) {
+  if (!nativeService.handleFileProtocol()) {
     logger.error('Failed to registerFileProtocol file:///');
     app.quit();
   }

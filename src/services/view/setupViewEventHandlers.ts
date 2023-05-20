@@ -327,14 +327,15 @@ function handleNewWindow(
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const nextDomain = extractDomain(nextUrl);
   /**
-   * Handles in-wiki file opening
+   * Handles in-wiki file link opening.
+   * This does not handle web request with file:// protocol.
    *
    * `file://` may resulted in `nextDomain` being `about:blank#blocked`, so we use `open://` instead. But in MacOS it seem to works fine in most cases. Just leave open:// in case as a fallback for users.
    *
-   * For  file:/// in-app assets loading., see commonInit() in `src/main.ts`.
+   * For  file:/// in-app assets loading., see handleFileProtocol() in `src/services/native/index.ts`.
    */
   if (nextUrl.startsWith('open://') || nextUrl.startsWith('file://')) {
-    logger.info('This url will open file', { nextUrl, nextDomain, disposition });
+    logger.info('handleNewWindow() handle file:// or open:// This url will open file externally', { nextUrl, nextDomain, disposition });
     const filePath = decodeURI(nextUrl.replace('open://', '').replace('file://', ''));
     const fileExists = fsExtra.existsSync(filePath);
     logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { filePath });

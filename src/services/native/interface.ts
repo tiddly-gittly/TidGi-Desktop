@@ -17,6 +17,12 @@ export interface INativeService {
    */
   executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string>;
   getLocalHostUrlWithActualIP(url: string): Promise<string>;
+  /**
+   * Handles in-app assets loading.
+   *
+   * For in-wiki file:// links, see handleNewWindow() in `src/services/view/setupViewEventHandlers.ts`.
+   */
+  handleFileProtocol(): boolean;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   openInEditor(filePath: string, editorName?: string | undefined): Promise<boolean>;
