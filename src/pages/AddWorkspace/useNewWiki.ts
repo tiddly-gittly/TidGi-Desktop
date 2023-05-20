@@ -75,7 +75,7 @@ export function useNewWiki(
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     hasErrorSetter?.(false);
     try {
-      const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, isCreateSyncedWorkspace);
+      const newWorkspaceConfig = await workspaceConfigFromForm(form, isCreateMainWorkspace, isCreateSyncedWorkspace);
       if (isCreateMainWorkspace) {
         if (options?.noCopyTemplate !== true) {
           await window.service.wiki.copyWikiTemplate(form.parentFolderLocation, form.wikiFolderName);

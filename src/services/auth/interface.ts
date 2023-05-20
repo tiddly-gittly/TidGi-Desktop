@@ -42,7 +42,8 @@ export type IUserInfos =
 export interface IAuthenticationService {
   generateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string;
   get<K extends keyof IUserInfos>(key: K): Promise<IUserInfos[K] | undefined>;
-  getOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string | undefined;
+  getOneTimeAdminAuthTokenForWorkspace(workspaceID: string): Promise<string | undefined>;
+  getOneTimeAdminAuthTokenForWorkspaceSync(workspaceID: string): string | undefined;
   /**
    * Get a random storage info, useful for checking if user have any token in the storage
    */

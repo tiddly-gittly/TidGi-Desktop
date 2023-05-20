@@ -45,7 +45,7 @@ function assignFakeUserAgent(details: Electron.OnBeforeSendHeadersListenerDetail
 }
 
 function assignAdminAuthToken(workspaceID: string, details: Electron.OnBeforeSendHeadersListenerDetails, authService: IAuthenticationService, viewContext: IViewSessionContext) {
-  const adminToken = authService.getOneTimeAdminAuthTokenForWorkspace(workspaceID);
+  const adminToken = authService.getOneTimeAdminAuthTokenForWorkspaceSync(workspaceID);
   if (adminToken === undefined) {
     logger.error(`adminToken is undefined for ${workspaceID}, this should not happen. Skip adding ${TIDGI_AUTH_TOKEN_HEADER}-xxx header for it.`);
     return;

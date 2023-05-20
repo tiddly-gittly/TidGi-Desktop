@@ -32,6 +32,7 @@ import { useForm } from './useForm';
 
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { TokenForm } from '@/components/TokenForm';
+import { DEFAULT_USER_NAME, getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { rootTiddlers } from '@/constants/defaultTiddlerNames';
 import { defaultServerIP } from '@/constants/urls';
 import { useActualIp } from '@services/native/hooks';
@@ -195,6 +196,7 @@ export default function EditWorkspace(): JSX.Element {
     wikiFolderLocation,
     rootTiddler,
     readOnlyMode,
+    id,
   } = (workspace ?? {}) as unknown as IWorkspace;
   const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
     async () => (mainWikiToLink ? await window.service.wiki.getSubWikiPluginContent(mainWikiToLink) : []),
@@ -202,6 +204,13 @@ export default function EditWorkspace(): JSX.Element {
     [mainWikiToLink],
   ) as ISubWikiPluginContent[];
   const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName')) as string, '');
+  // some feature need a username to work, so if userName is empty, assign a fallbackUserName DEFAULT_USER_NAME
+  const userNameIsEmpty = !(userName || fallbackUserName);
+  const authToken = usePromiseValue<string | undefined>(
+    async () => await (window.service.auth.getOneTimeAdminAuthTokenForWorkspace(id)),
+    '',
+    [id],
+  );
   const rememberLastPageVisited = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
 
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
@@ -262,6 +271,7 @@ export default function EditWorkspace(): JSX.Element {
           placeholder={fallbackUserName}
           value={userName}
         />
+        <Divider />
         {!isSubWiki && (
           <>
             <TextField
@@ -293,6 +303,7 @@ export default function EditWorkspace(): JSX.Element {
                 }
               }}
             />
+            <Divider />
             <List>
               <ListItem disableGutters>
                 <ListItemText primary={t('EditWorkspace.ReadOnlyMode')} secondary={t('EditWorkspace.ReadOnlyModeDescription')} />
@@ -309,19 +320,47 @@ export default function EditWorkspace(): JSX.Element {
                 </ListItemSecondaryAction>
               </ListItem>
               <ListItem disableGutters>
-                <ListItemText primary={t('EditWorkspace.TokenAuth')} secondary={t('EditWorkspace.TokenAuthDescription')} />
+                <ListItemText
+                  primary={t('EditWorkspace.TokenAuth')}
+                  secondary={
+                    <>
+                      <div>{t('EditWorkspace.TokenAuthDescription')}</div>
+                      {(userNameIsEmpty || !fallbackUserName) && <div>{t('EditWorkspace.TokenAuthAutoFillUserNameDescription')}</div>}
+                      <div>
+                        {tokenAuth && (
+                          <ListItemText
+                            primary={t('EditWorkspace.TokenAuthCurrentHeader')}
+                            // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+                            secondary={`"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`}
+                          />
+                        )}
+                      </div>
+                    </>
+                  }
+                />
                 <ListItemSecondaryAction>
                   <Switch
                     edge='end'
                     color='primary'
                     checked={tokenAuth}
                     onChange={(event) => {
-                      workspaceSetter({ ...workspace, tokenAuth: event.target.checked, readOnlyMode: event.target.checked ? false : readOnlyMode });
+                      workspaceSetter({
+                        ...workspace,
+                        tokenAuth: event.target.checked,
+                        readOnlyMode: event.target.checked ? false : readOnlyMode,
+                      });
+                      if (userNameIsEmpty) {
+                        workspaceSetter({
+                          ...workspace,
+                          userName: DEFAULT_USER_NAME,
+                        });
+                      }
                       void requestSaveAndRestart();
                     }}
                   />
                 </ListItemSecondaryAction>
               </ListItem>
+              <Divider />
             </List>
             {rememberLastPageVisited && (
               <TextField
@@ -414,7 +453,6 @@ export default function EditWorkspace(): JSX.Element {
         )}
         {storageService !== SupportedStorageServices.local && (
           <>
-            <Divider />
             <List>
               <ListItem disableGutters>
                 <ListItemText primary={t('EditWorkspace.SyncOnInterval')} secondary={t('EditWorkspace.SyncOnIntervalDescription')} />
@@ -447,7 +485,6 @@ export default function EditWorkspace(): JSX.Element {
         )}
         {storageService === SupportedStorageServices.local && (
           <>
-            <Divider />
             <List>
               <Divider />
               <ListItem disableGutters>

@@ -115,7 +115,19 @@ export class Authentication implements IAuthenticationService {
     return newToken;
   }
 
-  public getOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string | undefined {
+  public async getOneTimeAdminAuthTokenForWorkspace(workspaceID: string): Promise<string | undefined> {
+    // DEBUG: console workspaceID
+    console.log(`workspaceID`, workspaceID);
+    // DEBUG: console this.oneTimeAdminAuthToken
+    console.log(`this.oneTimeAdminAuthToken`, this.oneTimeAdminAuthToken);
+    return this.oneTimeAdminAuthToken.get(workspaceID);
+  }
+
+  public getOneTimeAdminAuthTokenForWorkspaceSync(workspaceID: string): string | undefined {
+    // DEBUG: console workspaceID
+    console.log(`workspaceID`, workspaceID);
+    // DEBUG: console this.oneTimeAdminAuthToken
+    console.log(`this.oneTimeAdminAuthToken`, this.oneTimeAdminAuthToken);
     return this.oneTimeAdminAuthToken.get(workspaceID);
   }
 

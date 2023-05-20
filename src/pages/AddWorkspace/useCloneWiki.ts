@@ -66,7 +66,7 @@ export function useCloneWiki(
   const onSubmit = useCallback(async () => {
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     try {
-      const newWorkspaceConfig = workspaceConfigFromForm(form, isCreateMainWorkspace, true);
+      const newWorkspaceConfig = await workspaceConfigFromForm(form, isCreateMainWorkspace, true);
       if (isCreateMainWorkspace) {
         await window.service.wiki.cloneWiki(form.parentFolderLocation, form.wikiFolderName, form.gitRepoUrl, form.gitUserInfo!);
       } else {

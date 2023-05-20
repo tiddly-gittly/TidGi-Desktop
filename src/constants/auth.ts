@@ -3,3 +3,4 @@ export const APP_DOMAIN = 'https://tiddlygit-desktop.authing.cn';
 export const GITHUB_GRAPHQL_API = 'https://api.github.com/graphql';
 export const TIDGI_AUTH_TOKEN_HEADER = 'x-tidgi-auth-token';
 export const getTidGiAuthHeaderWithToken = (adminToken: string) => `${TIDGI_AUTH_TOKEN_HEADER}-${adminToken}`;
+export const DEFAULT_USER_NAME = 'TidGi User';
