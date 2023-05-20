@@ -81,35 +81,39 @@ export class Wiki implements IWikiService {
     }
   }
 
-  // key is same to workspace wikiFolderLocation, so we can get this worker by workspace wikiFolderLocation
-  // { [wikiFolderLocation: string]: ArbitraryThreadType }
+  // key is same to workspace id, so we can get this worker by workspace id
+  // { [id: string]: ArbitraryThreadType }
   private wikiWorkers: Partial<Record<string, ModuleThread<WikiWorker>>> = {};
-  public getWorker(wikiFolderLocation: string): ModuleThread<WikiWorker> | undefined {
-    return this.wikiWorkers[wikiFolderLocation];
+  public getWorker(id: string): ModuleThread<WikiWorker> | undefined {
+    return this.wikiWorkers[id];
   }
 
-  public async startWiki(wikiFolderLocation: string, tiddlyWikiPort: number, userName: string, configs?: { adminToken?: string }): Promise<void> {
-    if (this.getWorker(wikiFolderLocation) !== undefined) {
-      throw new DoubleWikiInstanceError(wikiFolderLocation);
-    }
-    // use Promise to handle worker callbacks
-    const workspace = await this.workspaceService.getByWikiFolderLocation(wikiFolderLocation);
-    const workspaceID = workspace?.id;
-    if (workspace === undefined || workspaceID === undefined) {
-      logger.error('Try to start wiki, but workspace not found', { homePath: wikiFolderLocation, workspace, workspaceID });
+  public async startWiki(workspaceID: string, userName: string, configs?: { adminToken?: string }): Promise<void> {
+    if (workspaceID === undefined) {
+      logger.error('Try to start wiki, but workspace ID not provided', { workspaceID });
       return;
     }
+    if (this.getWorker(workspaceID) !== undefined) {
+      throw new DoubleWikiInstanceError(workspaceID);
+    }
+    // use Promise to handle worker callbacks
+    const workspace = await this.workspaceService.get(workspaceID);
+    if (workspace === undefined) {
+      logger.error('Try to start wiki, but workspace not found', { workspace, workspaceID });
+      return;
+    }
+    const { wikiFolderLocation, port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl } = workspace;
     // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
     const workerData = {
       homePath: wikiFolderLocation,
       userName,
-      tiddlyWikiPort,
-      rootTiddler: workspace.rootTiddler,
+      tiddlyWikiPort: port,
+      rootTiddler,
       tiddlyWikiHost: defaultServerIP,
       constants: { TIDDLYWIKI_PACKAGE_FOLDER },
-      readOnlyMode: workspace.readOnlyMode,
-      tokenAuth: workspace.tokenAuth,
+      readOnlyMode,
+      tokenAuth,
       adminToken: configs?.adminToken,
       isDev: isDevelopmentOrTest,
     };
@@ -166,10 +170,10 @@ export class Wiki implements IWikiService {
               // fix "message":"listen EADDRINUSE: address already in use 0.0.0.0:5212"
               if (errorMessage.includes('EADDRINUSE')) {
                 const portChange = {
-                  port: tiddlyWikiPort + 1,
-                  homeUrl: workspace.homeUrl.replace(`:${tiddlyWikiPort}`, `:${tiddlyWikiPort + 1}`),
+                  port: port + 1,
+                  homeUrl: homeUrl.replace(`:${port}`, `:${port + 1}`),
                   // eslint-disable-next-line unicorn/no-null
-                  lastUrl: workspace.lastUrl?.replace?.(`:${tiddlyWikiPort}`, `:${tiddlyWikiPort + 1}`) ?? null,
+                  lastUrl: lastUrl?.replace?.(`:${port}`, `:${port + 1}`) ?? null,
                 };
                 await this.workspaceService.update(workspaceID, portChange, true);
                 reject(new WikiRuntimeError(new Error(message.message), wikiFolderLocation, true, { ...workspace, ...portChange }));
@@ -581,7 +585,7 @@ export class Wiki implements IWikiService {
   }
 
   public async wikiStartup(workspace: IWorkspace, configs?: { adminToken?: string }): Promise<void> {
-    const { wikiFolderLocation, port, isSubWiki, mainWikiToLink, id, name, mainWikiID } = workspace;
+    const { wikiFolderLocation, isSubWiki, mainWikiToLink, id, name, mainWikiID } = workspace;
 
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     // and it will leak private sub-wiki's opened tiddler title
@@ -607,7 +611,7 @@ export class Wiki implements IWikiService {
     } else {
       try {
         logger.debug('startWiki() calling startWiki');
-        await this.startWiki(wikiFolderLocation, port, userName, { adminToken: configs?.adminToken });
+        await this.startWiki(id, userName, { adminToken: configs?.adminToken });
         logger.debug('startWiki() done');
       } catch (error) {
         logger.warn(`Get startWiki() error: ${(error as Error)?.message}`);
@@ -631,7 +635,7 @@ export class Wiki implements IWikiService {
   }
 
   public async restartWiki(workspace: IWorkspace): Promise<void> {
-    const { wikiFolderLocation, port, userName: workspaceUserName, isSubWiki } = workspace;
+    const { wikiFolderLocation, userName: workspaceUserName, isSubWiki, id } = workspace;
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const userName = (workspaceUserName || (await this.authService.get('userName'))) ?? '';
@@ -639,7 +643,7 @@ export class Wiki implements IWikiService {
     this.stopIntervalSync(workspace);
     if (!isSubWiki) {
       await this.stopWiki(wikiFolderLocation);
-      await this.startWiki(wikiFolderLocation, port, userName);
+      await this.startWiki(id, userName);
     }
     await this.startIntervalSyncIfNeeded(workspace);
   }

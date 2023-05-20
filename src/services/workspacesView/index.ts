@@ -316,7 +316,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       const userName = (workspace.userName || (await this.authService.get('userName'))) ?? '';
       await Promise.all([
-        this.wikiService.startWiki(workspace.wikiFolderLocation, workspace.port, userName),
+        this.wikiService.startWiki(workspaceID, userName),
         this.viewService.addViewForAllBrowserViews(workspace),
         this.workspaceService.update(workspaceID, {
           hibernated: false,

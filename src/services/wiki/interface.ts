@@ -64,7 +64,7 @@ export interface IWikiService {
    * For example, start main wiki then start sub-wiki, and sub-wiki will try to start its main wiki. */
   setWikiStartLockOn(wikiFolderLocation: string): void;
   /** call wiki worker to actually start nodejs wiki */
-  startWiki(homePath: string, tiddlyWikiPort: number, userName: string): Promise<void>;
+  startWiki(workspaceID: string, userName: string): Promise<void>;
   stopAllWiki(): Promise<void>;
   stopWiki(homePath: string): Promise<void>;
   updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void>;
