@@ -17,7 +17,7 @@ export interface INativeService {
    */
   executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string>;
   getLocalHostUrlWithActualIP(url: string): Promise<string>;
-  handleFileProtocol(request: Electron.ProtocolRequest, callback: (response: string | Electron.ProtocolResponse) => void): Promise<void>;
+  handleFileProtocol(request: { url: string }, callback: (response: string) => void): Promise<void>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   openInEditor(filePath: string, editorName?: string | undefined): Promise<boolean>;

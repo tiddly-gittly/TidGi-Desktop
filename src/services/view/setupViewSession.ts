@@ -34,6 +34,15 @@ export function setupViewSession(workspace: IWorkspace, preferences: IPreference
     assignAdminAuthToken(workspace.id, details, authService, viewContext);
     callback({ cancel: false, requestHeaders: details.requestHeaders });
   });
+  sessionOfView.webRequest.onBeforeRequest((details, callback) => {
+    if (details.url.startsWith('file://') || details.url.startsWith('open://')) {
+      void handleFileLink(details, nativeService, callback);
+    } else {
+      callback({
+        cancel: false,
+      });
+    }
+  });
   handleFileProtocol(sessionOfView, nativeService);
   return sessionOfView;
 }
@@ -60,5 +69,21 @@ function assignAdminAuthToken(workspaceID: string, details: Electron.OnBeforeSen
 }
 
 function handleFileProtocol(sessionOfView: Electron.Session, nativeService: INativeService) {
+  // this normally nor called. In wiki file:// image will use `handleFileLink()` below.
   sessionOfView.protocol.registerFileProtocol('file', nativeService.handleFileProtocol.bind(nativeService));
+}
+
+async function handleFileLink(details: Electron.OnBeforeRequestListenerDetails, nativeService: INativeService, callback: (response: Electron.CallbackResponse) => void) {
+  await nativeService.handleFileProtocol({ url: details.url }, (redirectURL: string) => {
+    if (redirectURL === details.url) {
+      callback({
+        cancel: false,
+      });
+    } else {
+      callback({
+        cancel: false,
+        redirectURL,
+      });
+    }
+  });
 }

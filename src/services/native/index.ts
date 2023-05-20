@@ -203,7 +203,7 @@ ${message.message}
     }
   }
 
-  public async handleFileProtocol(request: Electron.ProtocolRequest, callback: (response: string | Electron.ProtocolResponse) => void): Promise<void> {
+  public async handleFileProtocol(request: { url: string }, callback: (response: string) => void): Promise<void> {
     logger.info('handleFileProtocol() getting url', { url: request.url });
     const pathname = decodeURI(request.url.replace('open://', '').replace('file://', ''));
     logger.info('handleFileProtocol() handle file:// or open:// This url will open file in-wiki', { pathname });
@@ -240,6 +240,7 @@ ${message.message}
   }
 
   public registerFileProtocol(): boolean {
+    // this normally nor called. In wiki file:// image will use `handleFileLink()` in `src\services\view\setupViewSession.ts`.
     const succeed = protocol.registerFileProtocol('file', this.handleFileProtocol.bind(this));
     return succeed;
   }
