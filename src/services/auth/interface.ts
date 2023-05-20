@@ -2,6 +2,7 @@
 import { AuthenticationChannel } from '@/constants/channels';
 import { IGitUserInfos } from '@services/git/interface';
 import { SupportedStorageServices } from '@services/types';
+import { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { BehaviorSubject } from 'rxjs';
 
@@ -48,6 +49,7 @@ export interface IAuthenticationService {
   getRandomStorageServiceUserInfo(): Promise<{ info: IGitUserInfos; name: SupportedStorageServices } | undefined>;
   getStorageServiceUserInfo(serviceName: SupportedStorageServices): Promise<IGitUserInfos | undefined>;
   getUserInfos: () => Promise<IUserInfos>;
+  getUserName(workspace: IWorkspace): Promise<string>;
   reset(): Promise<void>;
   set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): Promise<void>;
   userInfo$: BehaviorSubject<IUserInfos>;
@@ -55,15 +57,16 @@ export interface IAuthenticationService {
 export const AuthenticationServiceIPCDescriptor = {
   channel: AuthenticationChannel.name,
   properties: {
-    userInfo$: ProxyPropertyType.Value$,
-    getStorageServiceUserInfo: ProxyPropertyType.Function,
     generateOneTimeAdminAuthTokenForWorkspace: ProxyPropertyType.Function,
+    get: ProxyPropertyType.Function,
     getOneTimeAdminAuthTokenForWorkspace: ProxyPropertyType.Function,
     getRandomStorageServiceUserInfo: ProxyPropertyType.Function,
+    getStorageServiceUserInfo: ProxyPropertyType.Function,
     getUserInfos: ProxyPropertyType.Function,
-    get: ProxyPropertyType.Function,
-    set: ProxyPropertyType.Function,
+    getUserName: ProxyPropertyType.Function,
     reset: ProxyPropertyType.Function,
+    set: ProxyPropertyType.Function,
+    userInfo$: ProxyPropertyType.Value$,
   },
 };
 

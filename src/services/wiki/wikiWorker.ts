@@ -14,7 +14,7 @@ import path from 'path';
 import { Observable } from 'rxjs';
 import { expose } from 'threads/worker';
 
-import { TIDGI_AUTH_TOKEN_HEADER } from '@/constants/auth';
+import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
 import { fixPath } from '@services/libs/fixPath';
 import { IWikiMessage, IZxWorkerMessage, WikiControlActions, ZxWorkerControlActions } from './interface';
@@ -86,7 +86,7 @@ function startNodeJSWiki({
       let tokenAuthenticateArguments: string[] = [`anon-username=${userName}`];
       if (tokenAuth === true) {
         if (adminTokenIsProvided(adminToken)) {
-          tokenAuthenticateArguments = [`authenticated-user-header=${TIDGI_AUTH_TOKEN_HEADER}`, `readers=${adminToken}`, `writers=${adminToken}`, `username=${userName}`];
+          tokenAuthenticateArguments = [`authenticated-user-header=${getTidGiAuthHeaderWithToken(adminToken)}`, `readers=${userName}`, `writers=${userName}`];
         } else {
           observer.next({ type: 'control', actions: WikiControlActions.error, message: 'tokenAuth is true, but adminToken is empty, this can be a bug.' });
         }

@@ -591,9 +591,7 @@ export class Wiki implements IWikiService {
       // do nothing
     }
 
-    // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    const userName = (workspace.userName || (await this.authService.get('userName'))) ?? '';
+    const userName = await this.authService.getUserName(workspace);
 
     // if is main wiki
     if (isSubWiki) {

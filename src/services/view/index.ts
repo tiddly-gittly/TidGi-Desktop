@@ -13,6 +13,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { isMac, isWin } from '@/helpers/system';
+import { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import getViewBounds from '@services/libs/getViewBounds';
@@ -42,6 +43,9 @@ export class View implements IViewService {
 
   @lazyInject(serviceIdentifier.WorkspaceView)
   private readonly workspaceViewService!: IWorkspaceViewService;
+
+  @lazyInject(serviceIdentifier.Authentication)
+  private readonly authService!: IAuthenticationService;
 
   constructor() {
     this.initIPCHandlers();
@@ -257,7 +261,8 @@ export class View implements IViewService {
     const preferences = await this.preferenceService.getPreferences();
     const { spellcheck } = preferences;
 
-    const sessionOfView = setupViewSession(workspace, preferences);
+    const viewContext = { userName: await this.authService.getUserName(workspace) };
+    const sessionOfView = setupViewSession(workspace, preferences, viewContext);
     const browserViewMetaData: IBrowserViewMetaData = { workspaceID: workspace.id };
     const sharedWebPreferences: WebPreferences = {
       devTools: true,

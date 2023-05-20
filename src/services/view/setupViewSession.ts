@@ -1,7 +1,7 @@
 /* eslint-disable n/no-callback-literal */
 import { session } from 'electron';
 
-import { TIDGI_AUTH_TOKEN_HEADER } from '@/constants/auth';
+import { getTidGiAuthHeaderWithToken, TIDGI_AUTH_TOKEN_HEADER } from '@/constants/auth';
 import { isMac } from '@/helpers/system';
 import { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
@@ -10,7 +10,11 @@ import { IPreferences } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWorkspace } from '@services/workspaces/interface';
 
-export function setupViewSession(workspace: IWorkspace, preferences: IPreferences) {
+interface IViewSessionContext {
+  userName: string;
+}
+
+export function setupViewSession(workspace: IWorkspace, preferences: IPreferences, viewContext: IViewSessionContext) {
   const { shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = preferences;
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
 
@@ -25,7 +29,7 @@ export function setupViewSession(workspace: IWorkspace, preferences: IPreference
   }
   sessionOfView.webRequest.onBeforeSendHeaders((details, callback) => {
     assignFakeUserAgent(details);
-    assignAdminAuthToken(workspace.id, details, authService);
+    assignAdminAuthToken(workspace.id, details, authService, viewContext);
     callback({ cancel: false, requestHeaders: details.requestHeaders });
   });
   return sessionOfView;
@@ -40,11 +44,11 @@ function assignFakeUserAgent(details: Electron.OnBeforeSendHeadersListenerDetail
   details.requestHeaders['User-Agent'] = FAKE_USER_AGENT;
 }
 
-function assignAdminAuthToken(workspaceID: string, details: Electron.OnBeforeSendHeadersListenerDetails, authService: IAuthenticationService) {
+function assignAdminAuthToken(workspaceID: string, details: Electron.OnBeforeSendHeadersListenerDetails, authService: IAuthenticationService, viewContext: IViewSessionContext) {
   const adminToken = authService.getOneTimeAdminAuthTokenForWorkspace(workspaceID);
   if (adminToken === undefined) {
-    logger.error(`adminToken is undefined for ${workspaceID}, this should not happen. Skip adding ${TIDGI_AUTH_TOKEN_HEADER} header for it.`);
+    logger.error(`adminToken is undefined for ${workspaceID}, this should not happen. Skip adding ${TIDGI_AUTH_TOKEN_HEADER}-xxx header for it.`);
     return;
   }
-  details.requestHeaders[TIDGI_AUTH_TOKEN_HEADER] = adminToken;
+  details.requestHeaders[getTidGiAuthHeaderWithToken(adminToken)] = viewContext.userName;
 }

@@ -2,6 +2,7 @@
 /* eslint-disable unicorn/no-null */
 import { IGitUserInfos } from '@services/git/interface';
 import { IAuthingUserInfo, SupportedStorageServices } from '@services/types';
+import { IWorkspace } from '@services/workspaces/interface';
 import settings from 'electron-settings';
 import { injectable } from 'inversify';
 import { debounce } from 'lodash';
@@ -116,5 +117,15 @@ export class Authentication implements IAuthenticationService {
 
   public getOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string | undefined {
     return this.oneTimeAdminAuthToken.get(workspaceID);
+  }
+
+  /**
+   * use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
+   * @param workspace the workspace to get userName setting from
+   */
+  public async getUserName(workspace: IWorkspace): Promise<string> {
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    const userName = (workspace.userName || (await this.get('userName'))) ?? '';
+    return userName;
   }
 }
