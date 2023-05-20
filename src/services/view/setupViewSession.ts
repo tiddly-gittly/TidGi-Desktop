@@ -44,6 +44,9 @@ function assignFakeUserAgent(details: Electron.OnBeforeSendHeadersListenerDetail
   details.requestHeaders['User-Agent'] = FAKE_USER_AGENT;
 }
 
+/**
+ * Work with tokenAuthenticateArguments in wikiWorker, see there for detail.
+ */
 function assignAdminAuthToken(workspaceID: string, details: Electron.OnBeforeSendHeadersListenerDetails, authService: IAuthenticationService, viewContext: IViewSessionContext) {
   const adminToken = authService.getOneTimeAdminAuthTokenForWorkspaceSync(workspaceID);
   if (adminToken === undefined) {

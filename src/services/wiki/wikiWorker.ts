@@ -82,6 +82,8 @@ function startNodeJSWiki({
        * For example, when server starts with `"readers=s0me7an6om3ey" writers=s0me7an6om3ey" authenticated-user-header=x-tidgi-auth-token`, only when other app query with header `x-tidgi-auth-token: s0me7an6om3ey`, can it get access to the wiki.
        *
        * When this is not enabled, provide a `anon-username` for any users.
+       *
+       * @url https://github.com/Jermolene/TiddlyWiki5/discussions/7469
        */
       let tokenAuthenticateArguments: string[] = [`anon-username=${userName}`];
       if (tokenAuth === true) {
