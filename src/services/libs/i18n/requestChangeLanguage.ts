@@ -50,6 +50,7 @@ export async function requestChangeLanguage(newLanguage: string): Promise<void> 
       }
     }),
     // update menu
+    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
     await menuService.buildMenu(),
   ]);
 }

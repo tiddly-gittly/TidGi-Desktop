@@ -7,9 +7,11 @@ import { injectable } from 'inversify';
 
 import { MetaDataChannel, WikiChannel } from '@/constants/channels';
 import { tiddlywikiLanguagesMap } from '@/constants/languages';
+import { WikiCreationMethod } from '@/constants/wikiCreation';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 import type { IGitService } from '@services/git/interface';
+import getFromRenderer from '@services/libs/getFromRenderer';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
@@ -23,7 +25,6 @@ import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowPrope
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { WorkspaceFailedToLoadError } from './error';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
-import getFromRenderer from '@services/libs/getFromRenderer';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
@@ -177,7 +178,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (loadFailed) {
       const latestWorkspaceData = await this.workspaceService.get(workspace.id);
       throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, latestWorkspaceData?.lastUrl ?? homeUrl);
-    } else if (isNew) {
+      // isNew: only set language when first time load the wiki; options.from: only set language when creating new wiki
+    } else if (isNew && options.from === WikiCreationMethod.Create) {
       const view = this.viewService.getView(workspace.id, WindowNames.main);
       if (view !== undefined) {
         // if is newly created wiki, we set the language as user preference

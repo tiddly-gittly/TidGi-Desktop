@@ -1,4 +1,5 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
+import { WikiCreationMethod } from '@/constants/wikiCreation';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { callWikiInitialization } from './useCallWikiInitialization';
@@ -88,7 +89,7 @@ export function useExistedWiki(
           true,
         );
       }
-      await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo);
+      await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo, { from: WikiCreationMethod.LoadExisting });
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
       updateErrorInWhichComponentSetterByErrorMessage(t, (error as Error).message, errorInWhichComponentSetter);

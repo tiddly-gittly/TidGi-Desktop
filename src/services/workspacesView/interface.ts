@@ -1,6 +1,7 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 import { WorkspaceViewChannel } from '@/constants/channels';
+import { WikiCreationMethod } from '@/constants/wikiCreation';
 import { IWorkspace } from '@services/workspaces/interface';
 
 export interface IInitializeWorkspaceOptions {
@@ -9,6 +10,11 @@ export interface IInitializeWorkspaceOptions {
    * Close this if you want to initialize workspace view without hibernate it, regardless of its setting (for example, when you want to wake up a hibernated workspace).
    */
   followHibernateSettingWhenInit?: boolean;
+  from?: WikiCreationMethod;
+  /**
+   * Are we load the wiki for first time in TidGi (for example, when we create/import/clone a new workspace).
+   * This is undefined or false when workspace already in TidGi, and we just want to load it on TidGi start (TidGi do initializeWorkspaceView on every start).
+   */
   isNew?: boolean;
   syncImmediately?: boolean;
 }

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-types */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
+import { WikiCreationMethod } from '@/constants/wikiCreation';
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { ConditionalExcept } from 'type-fest';
@@ -82,7 +83,7 @@ export function useNewWiki(
       } else {
         await window.service.wiki.createSubWiki(form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink?.wikiFolderLocation, form.tagName);
       }
-      await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo, options?.notClose);
+      await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo, { notClose: options?.notClose, from: WikiCreationMethod.Create });
     } catch (error) {
       wikiCreationMessageSetter((error as Error).message);
       errorInWhichComponentSetter && updateErrorInWhichComponentSetterByErrorMessage(t, (error as Error).message, errorInWhichComponentSetter);
