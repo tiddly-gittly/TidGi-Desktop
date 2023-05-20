@@ -8,6 +8,7 @@ import { fork } from 'child_process';
 import fs from 'fs';
 import { mkdtemp, writeFile } from 'fs-extra';
 import intercept from 'intercept-stdout';
+import { nanoid } from 'nanoid';
 import { tmpdir } from 'os';
 import path from 'path';
 import { Observable } from 'rxjs';
@@ -23,6 +24,7 @@ let wikiInstance: ITiddlyWiki | undefined;
 
 function startNodeJSWiki({
   homePath,
+  readonly,
   tiddlyWikiHost = defaultServerIP,
   tiddlyWikiPort = 5112,
   userName,
@@ -31,6 +33,7 @@ function startNodeJSWiki({
 }: {
   constants: { TIDDLYWIKI_PACKAGE_FOLDER: string };
   homePath: string;
+  readonly?: boolean;
   rootTiddler?: string;
   tiddlyWikiHost: string;
   tiddlyWikiPort: number;
@@ -51,8 +54,16 @@ function startNodeJSWiki({
       wikiInstance = TiddlyWiki();
       process.env.TIDDLYWIKI_PLUGIN_PATH = path.resolve(homePath, 'plugins');
       process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
-      // add tiddly filesystem back https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416
+      /**
+       * Make wiki readonly if readonly is true. This is normally used for server mode, so also enable gzip.
+       *
+       * The principle is to configure anonymous reads, but writes require a login, and then give an unguessable username and password to.
+       *
+       * @url https://wiki.zhiheng.io/static/TiddlyWiki%253A%2520Readonly%2520for%2520Node.js%2520Server.html
+       */
+      const readonlyArguments = readonly === true ? ['gzip=yes', '"readers=(anon)"', `writers=${userName}`, `username=${userName}`, `password=${nanoid()}`] : [];
       wikiInstance.boot.argv = [
+        // add tiddly filesystem back https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416
         '+plugins/tiddlywiki/filesystem',
         '+plugins/tiddlywiki/tiddlyweb',
         // '+plugins/linonetwo/watch-fs',
@@ -62,6 +73,7 @@ function startNodeJSWiki({
         `port=${tiddlyWikiPort}`,
         `host=${tiddlyWikiHost}`,
         `root-tiddler=${rootTiddler ?? '$:/core/save/lazy-images'}`,
+        ...readonlyArguments,
       ];
       wikiInstance.hooks.addHook('th-server-command-post-start', function(listenCommand, server) {
         server.on('error', function(error: Error) {

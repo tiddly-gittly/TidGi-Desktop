@@ -439,6 +439,7 @@ export default function EditWorkspace(): JSX.Element {
             freeSolo
             options={rootTiddlers}
             value={rootTiddler}
+            defaultValue={rootTiddlers[0]}
             onInputChange={(_, value) => {
               workspaceSetter({ ...workspace, rootTiddler: value });
               // void requestSaveAndRestart();
