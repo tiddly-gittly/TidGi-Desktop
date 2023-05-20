@@ -75,7 +75,7 @@ function startNodeJSWiki({
        *
        * @url https://wiki.zhiheng.io/static/TiddlyWiki%253A%2520Readonly%2520for%2520Node.js%2520Server.html
        */
-      const readonlyArguments = readOnlyMode === true ? ['gzip=yes', '"readers=(anon)"', `writers=${userName}`, `username=${userName}`, `password=${nanoid()}`] : [];
+      const readonlyArguments = readOnlyMode === true ? ['gzip=yes', 'readers=(anon)', `writers=${userName}`, `username=${userName}`, `password=${nanoid()}`] : [];
       /**
        * Use authenticated-user-header to provide `TIDGI_AUTH_TOKEN_HEADER` as header key to receive a value as username (we use it as token).
        *
@@ -86,7 +86,7 @@ function startNodeJSWiki({
       let tokenAuthenticateArguments: string[] = [`anon-username=${userName}`];
       if (tokenAuth === true) {
         if (adminTokenIsProvided(adminToken)) {
-          tokenAuthenticateArguments = [`authenticated-user-header=${TIDGI_AUTH_TOKEN_HEADER}`, `"readers=${adminToken}"`, `writers=${adminToken}`, `username=${userName}`];
+          tokenAuthenticateArguments = [`authenticated-user-header=${TIDGI_AUTH_TOKEN_HEADER}`, `readers=${adminToken}`, `writers=${adminToken}`, `username=${userName}`];
         } else {
           observer.next({ type: 'control', actions: WikiControlActions.error, message: 'tokenAuth is true, but adminToken is empty, this can be a bug.' });
         }
