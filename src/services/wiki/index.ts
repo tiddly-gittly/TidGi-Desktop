@@ -2,7 +2,6 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
-import { delay } from 'bluebird';
 import { BrowserView, dialog, ipcMain, shell } from 'electron';
 import fs from 'fs-extra';
 import { injectable } from 'inversify';
@@ -29,6 +28,7 @@ import { IWikiService, WikiControlActions } from './interface';
 import { getSubWikiPluginContent, ISubWikiPluginContent, updateSubWikiPluginContent } from './plugin/subWikiPlugin';
 import type { WikiWorker } from './wikiWorker';
 
+import { isDevelopmentOrTest } from '@/constants/environment';
 import { defaultServerIP } from '@/constants/urls';
 import { IPreferenceService } from '@services/preferences/interface';
 // @ts-expect-error it don't want .ts
@@ -88,7 +88,7 @@ export class Wiki implements IWikiService {
     return this.wikiWorkers[wikiFolderLocation];
   }
 
-  public async startWiki(wikiFolderLocation: string, tiddlyWikiPort: number, userName: string): Promise<void> {
+  public async startWiki(wikiFolderLocation: string, tiddlyWikiPort: number, userName: string, configs?: { adminToken?: string }): Promise<void> {
     if (this.getWorker(wikiFolderLocation) !== undefined) {
       throw new DoubleWikiInstanceError(wikiFolderLocation);
     }
@@ -108,6 +108,10 @@ export class Wiki implements IWikiService {
       rootTiddler: workspace.rootTiddler,
       tiddlyWikiHost: defaultServerIP,
       constants: { TIDDLYWIKI_PACKAGE_FOLDER },
+      readOnlyMode: workspace.readOnlyMode,
+      tokenAuth: workspace.tokenAuth,
+      adminToken: configs?.adminToken,
+      isDev: isDevelopmentOrTest,
     };
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
     this.wikiWorkers[wikiFolderLocation] = worker;
@@ -576,7 +580,7 @@ export class Wiki implements IWikiService {
     });
   }
 
-  public async wikiStartup(workspace: IWorkspace): Promise<void> {
+  public async wikiStartup(workspace: IWorkspace, configs?: { adminToken?: string }): Promise<void> {
     const { wikiFolderLocation, port, isSubWiki, mainWikiToLink, id, name, mainWikiID } = workspace;
 
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
@@ -605,7 +609,7 @@ export class Wiki implements IWikiService {
     } else {
       try {
         logger.debug('startWiki() calling startWiki');
-        await this.startWiki(wikiFolderLocation, port, userName);
+        await this.startWiki(wikiFolderLocation, port, userName, { adminToken: configs?.adminToken });
         logger.debug('startWiki() done');
       } catch (error) {
         logger.warn(`Get startWiki() error: ${(error as Error)?.message}`);

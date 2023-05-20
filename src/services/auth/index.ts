@@ -5,6 +5,7 @@ import { IAuthingUserInfo, SupportedStorageServices } from '@services/types';
 import settings from 'electron-settings';
 import { injectable } from 'inversify';
 import { debounce } from 'lodash';
+import { nanoid } from 'nanoid';
 import { BehaviorSubject } from 'rxjs';
 import { IAuthenticationService, IUserInfos, ServiceBranchTypes, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
 
@@ -16,6 +17,10 @@ const defaultUserInfos = {
 @injectable()
 export class Authentication implements IAuthenticationService {
   private cachedUserInfo: IUserInfos;
+  /**
+   * Generate one time token for admin user on workspace init, and let app use this token to communicate with wiki server.
+   */
+  private readonly oneTimeAdminAuthToken = new Map<string, string>();
   public userInfo$: BehaviorSubject<IUserInfos>;
 
   constructor() {
@@ -101,5 +106,15 @@ export class Authentication implements IAuthenticationService {
     this.cachedUserInfo = this.getInitUserInfoForCache();
     await this.setUserInfos(this.cachedUserInfo);
     this.updateUserInfoSubject();
+  }
+
+  public generateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string {
+    const newToken = nanoid();
+    this.oneTimeAdminAuthToken.set(workspaceID, newToken);
+    return newToken;
+  }
+
+  public getOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string | undefined {
+    return this.oneTimeAdminAuthToken.get(workspaceID);
   }
 }

@@ -188,11 +188,13 @@ export default function EditWorkspace(): JSX.Element {
     syncOnInterval,
     syncOnStartup,
     tagName,
+    tokenAuth,
     transparentBackground,
     userName,
     lastUrl,
     wikiFolderLocation,
     rootTiddler,
+    readOnlyMode,
   } = (workspace ?? {}) as unknown as IWorkspace;
   const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
     async () => (mainWikiToLink ? await window.service.wiki.getSubWikiPluginContent(mainWikiToLink) : []),
@@ -291,6 +293,36 @@ export default function EditWorkspace(): JSX.Element {
                 }
               }}
             />
+            <List>
+              <ListItem disableGutters>
+                <ListItemText primary={t('EditWorkspace.ReadOnlyMode')} secondary={t('EditWorkspace.ReadOnlyModeDescription')} />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge='end'
+                    color='primary'
+                    checked={readOnlyMode}
+                    onChange={(event) => {
+                      workspaceSetter({ ...workspace, readOnlyMode: event.target.checked, tokenAuth: event.target.checked ? false : tokenAuth });
+                      void requestSaveAndRestart();
+                    }}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
+              <ListItem disableGutters>
+                <ListItemText primary={t('EditWorkspace.TokenAuth')} secondary={t('EditWorkspace.TokenAuthDescription')} />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge='end'
+                    color='primary'
+                    checked={tokenAuth}
+                    onChange={(event) => {
+                      workspaceSetter({ ...workspace, tokenAuth: event.target.checked, readOnlyMode: event.target.checked ? false : readOnlyMode });
+                      void requestSaveAndRestart();
+                    }}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
+            </List>
             {rememberLastPageVisited && (
               <TextField
                 id='outlined-full-width'

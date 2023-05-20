@@ -14,29 +14,37 @@ import path from 'path';
 import { Observable } from 'rxjs';
 import { expose } from 'threads/worker';
 
+import { TIDGI_AUTH_TOKEN_HEADER } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
 import { fixPath } from '@services/libs/fixPath';
 import { IWikiMessage, IZxWorkerMessage, WikiControlActions, ZxWorkerControlActions } from './interface';
 import { executeScriptInTWContext, extractTWContextScripts, getTWVmContext } from './plugin/zxPlugin';
+import { adminTokenIsProvided } from './wikiWorkerUtils';
 
 fixPath();
 let wikiInstance: ITiddlyWiki | undefined;
 
 function startNodeJSWiki({
+  adminToken,
+  constants: { TIDDLYWIKI_PACKAGE_FOLDER },
   homePath,
-  readonly,
+  isDev,
+  readOnlyMode,
+  rootTiddler,
   tiddlyWikiHost = defaultServerIP,
   tiddlyWikiPort = 5112,
+  tokenAuth,
   userName,
-  rootTiddler,
-  constants: { TIDDLYWIKI_PACKAGE_FOLDER },
 }: {
+  adminToken?: string;
   constants: { TIDDLYWIKI_PACKAGE_FOLDER: string };
   homePath: string;
-  readonly?: boolean;
+  isDev: boolean;
+  readOnlyMode?: boolean;
   rootTiddler?: string;
   tiddlyWikiHost: string;
   tiddlyWikiPort: number;
+  tokenAuth?: boolean;
   userName: string;
 }): Observable<IWikiMessage> {
   return new Observable<IWikiMessage>((observer) => {
@@ -54,27 +62,48 @@ function startNodeJSWiki({
       wikiInstance = TiddlyWiki();
       process.env.TIDDLYWIKI_PLUGIN_PATH = path.resolve(homePath, 'plugins');
       process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
-      /**
-       * Make wiki readonly if readonly is true. This is normally used for server mode, so also enable gzip.
-       *
-       * The principle is to configure anonymous reads, but writes require a login, and then give an unguessable username and password to.
-       *
-       * @url https://wiki.zhiheng.io/static/TiddlyWiki%253A%2520Readonly%2520for%2520Node.js%2520Server.html
-       */
-      const readonlyArguments = readonly === true ? ['gzip=yes', '"readers=(anon)"', `writers=${userName}`, `username=${userName}`, `password=${nanoid()}`] : [];
-      wikiInstance.boot.argv = [
+      const builtInPluginArguments = [
         // add tiddly filesystem back https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416
         '+plugins/tiddlywiki/filesystem',
         '+plugins/tiddlywiki/tiddlyweb',
         // '+plugins/linonetwo/watch-fs',
+      ];
+      /**
+       * Make wiki readonly if readonly is true. This is normally used for server mode, so also enable gzip.
+       *
+       * The principle is to configure anonymous reads, but writes require a login, and then give an unguessable random password here.
+       *
+       * @url https://wiki.zhiheng.io/static/TiddlyWiki%253A%2520Readonly%2520for%2520Node.js%2520Server.html
+       */
+      const readonlyArguments = readOnlyMode === true ? ['gzip=yes', '"readers=(anon)"', `writers=${userName}`, `username=${userName}`, `password=${nanoid()}`] : [];
+      /**
+       * Use authenticated-user-header to provide `TIDGI_AUTH_TOKEN_HEADER` as header key to receive a value as username (we use it as token).
+       *
+       * For example, when server starts with `"readers=s0me7an6om3ey" writers=s0me7an6om3ey" authenticated-user-header=x-tidgi-auth-token`, only when other app query with header `x-tidgi-auth-token: s0me7an6om3ey`, can it get access to the wiki.
+       *
+       * When this is not enabled, provide a `anon-username` for any users.
+       */
+      let tokenAuthenticateArguments: string[] = [`anon-username=${userName}`];
+      if (tokenAuth === true) {
+        if (adminTokenIsProvided(adminToken)) {
+          tokenAuthenticateArguments = [`authenticated-user-header=${TIDGI_AUTH_TOKEN_HEADER}`, `"readers=${adminToken}"`, `writers=${adminToken}`, `username=${userName}`];
+        } else {
+          observer.next({ type: 'control', actions: WikiControlActions.error, message: 'tokenAuth is true, but adminToken is empty, this can be a bug.' });
+        }
+      }
+
+      wikiInstance.boot.argv = [
+        ...builtInPluginArguments,
         homePath,
         '--listen',
-        `anon-username=${userName}`,
         `port=${tiddlyWikiPort}`,
         `host=${tiddlyWikiHost}`,
         `root-tiddler=${rootTiddler ?? '$:/core/save/lazy-images'}`,
         ...readonlyArguments,
+        ...tokenAuthenticateArguments,
+        `debug-level=${isDev ? 'full' : 'none'}`,
       ];
+
       wikiInstance.hooks.addHook('th-server-command-post-start', function(listenCommand, server) {
         server.on('error', function(error: Error) {
           observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message });

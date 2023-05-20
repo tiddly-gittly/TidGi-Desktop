@@ -24,6 +24,7 @@ import { IWorkspace } from '@services/workspaces/interface';
 import { ViewLoadUrlError } from './error';
 import { IViewService } from './interface';
 import setupViewEventHandlers from './setupViewEventHandlers';
+import { setupViewSession } from './setupViewSession';
 
 @injectable()
 export class View implements IViewService {
@@ -253,24 +254,10 @@ export class View implements IViewService {
       return;
     }
     // create a new BrowserView
-    const { shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = await this.preferenceService.getPreferences();
-    // configure session, proxy & ad blocker
-    const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
-    // prepare configs for start a BrowserView that loads wiki's web content
-    // session
-    const sessionOfView = session.fromPartition(partitionId);
-    // spellchecker
-    if (spellcheck && !isMac) {
-      sessionOfView.setSpellCheckerLanguages(spellcheckLanguages);
-    }
-    // pretending we are sending request from same origin using a Chrome browser. So image site won't block our request.
-    sessionOfView.webRequest.onBeforeSendHeaders((details, callback) => {
-      const url = new URL(details.url);
-      details.requestHeaders.Origin = url.origin;
-      details.requestHeaders.Referer = details.url;
-      details.requestHeaders['User-Agent'] = 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36';
-      callback({ cancel: false, requestHeaders: details.requestHeaders });
-    });
+    const preferences = await this.preferenceService.getPreferences();
+    const { spellcheck } = preferences;
+
+    const sessionOfView = setupViewSession(workspace, preferences);
     const browserViewMetaData: IBrowserViewMetaData = { workspaceID: workspace.id };
     const sharedWebPreferences: WebPreferences = {
       devTools: true,
@@ -458,7 +445,7 @@ export class View implements IViewService {
       this.shouldMuteAudio = _shouldMuteAudio;
     }
 
-    this.forEachView(async (view, id, name) => {
+    this.forEachView(async (view, id) => {
       const workspace = await this.workspaceService.get(id);
       if (view !== undefined && workspace !== undefined) {
         view.webContents.audioMuted = workspace.disableAudio || this.shouldMuteAudio;

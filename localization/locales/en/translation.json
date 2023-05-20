@@ -175,7 +175,11 @@
     "BackupOnInterval": "Backup On Interval",
     "BackupOnIntervalDescription": "When enabled, data will be automatically backed up with local Git at regular intervals (interval in global settings), so that even if no cloud git synchronization address is configured, it will be automatically backed up locally.",
     "WikiRootTiddler": "Wiki Root Tiddler",
-    "WikiRootTiddlerDescription": "Wiki's root tiddler determines the core behavior of the system, please read the official documentation to understand before modifying"
+    "WikiRootTiddlerDescription": "Wiki's root tiddler determines the core behavior of the system, please read the official documentation to understand before modifying",
+    "ReadOnlyModeDescription": "Can be used with intranet penetration, allowing TidGi work as a server program  to deploy blogs. After opening, wiki can only be modified by directly modifying the file on the disk  (including using git synchronization). The content cannot be modified on the web page, but anyone can access it.",
+    "ReadOnlyMode": "ReadOnly Mode",
+    "TokenAuth": "Token Authenticate",
+    "TokenAuthDescription": "Cannot work with read-only mode. After enabled, other ones need to bring credentials in the request header to read write the content of the wiki, preventing other people in the same LAN from accessing your notes. TidGi will automatically bring the certificate, so turning on will not affect the normal use of TidGi app, it only increases security, so it is recommended to turn it on."
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed, or there is no wiki in this folder! \nDo you want to remove the workspace?",

@@ -157,6 +157,10 @@ export interface IWikiWorkspaceFormProps {
   isCreateMainWorkspace: boolean;
 }
 
+/**
+ * Fill in default value for newly created wiki.
+ * @param form New wiki form value
+ */
 export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreateMainWorkspace: boolean, isCreateSyncedWorkspace: boolean): INewWorkspaceConfig {
   return {
     gitUrl: isCreateSyncedWorkspace ? form.gitRepoUrl : null,
@@ -169,5 +173,7 @@ export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreate
     port: form.wikiPort,
     wikiFolderLocation: form.wikiFolderLocation!,
     backupOnInterval: true,
+    readOnlyMode: false,
+    tokenAuth: true,
   };
 }

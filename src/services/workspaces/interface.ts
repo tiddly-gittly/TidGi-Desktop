@@ -65,6 +65,14 @@ export interface IWorkspace {
    */
   port: number;
   /**
+   * Make wiki readonly if readonly is true. This is normally used for server mode, so also enable gzip.
+   *
+   * The principle is to configure anonymous reads, but writes require a login, and then give an unguessable username and password to.
+   *
+   * @url https://wiki.zhiheng.io/static/TiddlyWiki%253A%2520Readonly%2520for%2520Node.js%2520Server.html
+   */
+  readOnlyMode: boolean;
+  /**
    * The root tiddler for wiki. When missing, may use `$:/core/save/lazy-images`
    * @url https://tiddlywiki.com/#LazyLoading
    */
@@ -90,6 +98,10 @@ export interface IWorkspace {
    * Tag name in tiddlywiki's filesystemPath, tiddler with this tag will be save into this subwiki
    */
   tagName: string | null;
+  /**
+   * Use authenticated-user-header to provide `TIDGI_AUTH_TOKEN_HEADER` as header key to receive a value as username (we use it as token)
+   */
+  tokenAuth: boolean;
   transparentBackground: boolean;
   userName: string;
   /**

@@ -118,8 +118,13 @@ export class WorkspaceView implements IWorkspaceViewService {
         });
       }
     }
+    let adminToken = '';
+    if (workspace.tokenAuth) {
+      logger.debug(`initializeWorkspaceView() generateOneTimeAdminAuthTokenForWorkspace`);
+      adminToken = this.authService.generateOneTimeAdminAuthTokenForWorkspace(workspace.id);
+    }
     logger.debug(`initializeWorkspaceView() calling wikiStartup()`);
-    await this.wikiService.wikiStartup(workspace);
+    await this.wikiService.wikiStartup(workspace, { adminToken });
 
     const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
     const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService, homeUrl } = workspace;

@@ -39,7 +39,9 @@ export type IUserInfos =
  * Handle login to Github GitLab Coding.net
  */
 export interface IAuthenticationService {
+  generateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string;
   get<K extends keyof IUserInfos>(key: K): Promise<IUserInfos[K] | undefined>;
+  getOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string | undefined;
   /**
    * Get a random storage info, useful for checking if user have any token in the storage
    */
@@ -55,6 +57,8 @@ export const AuthenticationServiceIPCDescriptor = {
   properties: {
     userInfo$: ProxyPropertyType.Value$,
     getStorageServiceUserInfo: ProxyPropertyType.Function,
+    generateOneTimeAdminAuthTokenForWorkspace: ProxyPropertyType.Function,
+    getOneTimeAdminAuthTokenForWorkspace: ProxyPropertyType.Function,
     getRandomStorageServiceUserInfo: ProxyPropertyType.Function,
     getUserInfos: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,

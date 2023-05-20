@@ -208,7 +208,11 @@
     "Name": "工作区名",
     "NameDescription": "工作区的名字，将显示在侧边栏上，可以与工作区Git仓库的实际文件夹名不同",
     "WikiRootTiddler": "知识库根条目",
-    "WikiRootTiddlerDescription": "Wiki 的根条目（root-tiddler）决定了系统的核心行为，修改前请阅读官方文档来了解"
+    "WikiRootTiddlerDescription": "Wiki 的根条目（root-tiddler）决定了系统的核心行为，修改前请阅读官方文档来了解",
+    "ReadOnlyMode": "只读模式",
+    "ReadOnlyModeDescription": "可用于配合内网穿透，让太记作为服务器程序部署博客。打开后将只能通过直接改文件的方式修改知识库内容（包括git同步），网页上将不能修改内容，但任何人都可以访问。",
+    "TokenAuth": "凭证鉴权",
+    "TokenAuthDescription": "无法与只读模式同时开启。开启后需要在请求中带上凭证才能读写知识库内容，防止同一局域网下其他人访问笔记。太记会自动带上凭证，因此开启后不会影响太记应用正常使用，仅增加安全性，建议开启。"
   },
   "Scripting": {
     "ExecutingScript": "正在执行脚本"
