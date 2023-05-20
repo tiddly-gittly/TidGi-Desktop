@@ -343,7 +343,7 @@
     "NotificationsDisableSchedule": "按时间自动禁用通知：",
     "NotificationsMuteAudio": "暂停通知时也同时静音工作区",
     "OpenAtLogin": "开机自启",
-    "OpenAtLoginMinimized": "开机自启并最小化",
+    "OpenAtLoginMinimized": "开机自启并最小化(MacOS)",
     "RememberLastVisitState": "记住上次访问的页面，恢复打开时的上次访问状态",
     "RestartToApplyUpdates": "重新启动以使改动生效",
     "RestorePreferences": "将所有设置都恢复为其原始默认值",

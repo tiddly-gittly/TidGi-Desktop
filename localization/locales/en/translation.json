@@ -287,7 +287,7 @@
     "ClearBrowsingDataDescription": "Clear cookies, cache, and more",
     "System": "System",
     "OpenAtLogin": "Open at login",
-    "OpenAtLoginMinimized": "Yes, but minimized",
+    "OpenAtLoginMinimized": "Yes, but minimized (MacOS)",
     "DeveloperTools": "Developer Tools",
     "SwipeWithThreeFingersToNavigate": "Swipe with three fingers to navigate",
     "Performance": "Performance",

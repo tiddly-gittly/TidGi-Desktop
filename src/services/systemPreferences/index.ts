@@ -44,6 +44,7 @@ export class SystemPreference implements ISystemPreferenceService {
       case 'openAtLogin': {
         app.setLoginItemSettings({
           openAtLogin: value.startsWith('yes'),
+          // MacOS Only
           openAsHidden: value === 'yes-hidden',
         });
         break;
