@@ -17,7 +17,7 @@ import {
   Typography,
 } from '@material-ui/core';
 import { Autocomplete } from '@material-ui/lab';
-import React, { useCallback } from 'react';
+import React from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import styled, { css } from 'styled-components';
@@ -185,7 +185,8 @@ const wikiPictureExtensions = ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp'
 export default function EditWorkspace(): JSX.Element {
   const { t } = useTranslation();
   const originalWorkspace = useWorkspaceObservable(workspaceID);
-  const [workspace, workspaceSetter, onSave] = useForm(originalWorkspace);
+  const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
+  const [workspace, workspaceSetter, onSave] = useForm(originalWorkspace, requestRestartCountDown);
   const {
     backupOnInterval,
     disableAudio,
@@ -226,15 +227,6 @@ export default function EditWorkspace(): JSX.Element {
     [id],
   );
   const rememberLastPageVisited = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
-
-  const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
-  const requestSaveAndRestart = useCallback(async () => {
-    if (!isEqual(workspace, originalWorkspace)) {
-      await onSave();
-      requestRestartCountDown();
-    }
-  }, [onSave, requestRestartCountDown, workspace, originalWorkspace]);
-
   const actualIP = useActualIp(homeUrl);
   if (workspaceID === undefined) {
     return <Root>Error {workspaceID ?? '-'} not exists</Root>;
@@ -278,8 +270,7 @@ export default function EditWorkspace(): JSX.Element {
           helperText={t('AddWorkspace.WorkspaceUserNameDetail')}
           fullWidth
           onChange={(event) => {
-            workspaceSetter({ ...workspace, userName: event.target.value });
-            void requestSaveAndRestart();
+            workspaceSetter({ ...workspace, userName: event.target.value }, true);
           }}
           label={t('AddWorkspace.WorkspaceUserName')}
           placeholder={fallbackUserName}
@@ -312,8 +303,7 @@ export default function EditWorkspace(): JSX.Element {
                     ...workspace,
                     port: Number(event.target.value),
                     homeUrl: await window.service.native.getLocalHostUrlWithActualIP(`http://${defaultServerIP}:${event.target.value}/`),
-                  });
-                  void requestSaveAndRestart();
+                  }, true);
                 }
               }}
             />
@@ -327,8 +317,7 @@ export default function EditWorkspace(): JSX.Element {
                     color='primary'
                     checked={readOnlyMode}
                     onChange={(event) => {
-                      workspaceSetter({ ...workspace, readOnlyMode: event.target.checked, tokenAuth: event.target.checked ? false : tokenAuth });
-                      void requestSaveAndRestart();
+                      workspaceSetter({ ...workspace, readOnlyMode: event.target.checked, tokenAuth: event.target.checked ? false : tokenAuth }, true);
                     }}
                   />
                 </ListItemSecondaryAction>
@@ -358,18 +347,17 @@ export default function EditWorkspace(): JSX.Element {
                     color='primary'
                     checked={tokenAuth}
                     onChange={(event) => {
-                      workspaceSetter({
-                        ...workspace,
-                        tokenAuth: event.target.checked,
-                        readOnlyMode: event.target.checked ? false : readOnlyMode,
-                      });
                       if (userNameIsEmpty) {
                         workspaceSetter({
                           ...workspace,
                           userName: DEFAULT_USER_NAME,
                         });
                       }
-                      void requestSaveAndRestart();
+                      workspaceSetter({
+                        ...workspace,
+                        tokenAuth: event.target.checked,
+                        readOnlyMode: event.target.checked ? false : readOnlyMode,
+                      }, true);
                     }}
                   />
                 </ListItemSecondaryAction>
@@ -399,8 +387,7 @@ export default function EditWorkspace(): JSX.Element {
             options={fileSystemPaths?.map((fileSystemPath) => fileSystemPath.tagName)}
             value={tagName}
             onInputChange={(_, value) => {
-              workspaceSetter({ ...workspace, tagName: value });
-              void requestSaveAndRestart();
+              workspaceSetter({ ...workspace, tagName: value }, true);
             }}
             renderInput={(parameters) => <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
           />
@@ -577,7 +564,7 @@ export default function EditWorkspace(): JSX.Element {
       </FlexGrow>
       {!isEqual(workspace, originalWorkspace) && (
         <SaveCancelButtonsContainer>
-          <Button color='primary' variant='contained' disableElevation onClick={requestSaveAndRestart}>
+          <Button color='primary' variant='contained' disableElevation onClick={onSave}>
             {t('EditWorkspace.Save')}
           </Button>
           <Button variant='contained' disableElevation onClick={() => void window.remote.closeCurrentWindow()}>

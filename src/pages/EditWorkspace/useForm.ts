@@ -1,10 +1,13 @@
-import { IWorkspace } from '@services/workspaces/interface';
 import usePreviousValue from 'beautiful-react-hooks/usePreviousValue';
+import { isEqual } from 'lodash';
 import { useCallback, useEffect, useState } from 'react';
+
+import { IWorkspace } from '@services/workspaces/interface';
 
 export function useForm(
   originalWorkspace?: IWorkspace,
-): [IWorkspace | undefined, React.Dispatch<React.SetStateAction<IWorkspace | undefined>>, () => Promise<void>] {
+  requestRestartCountDown: () => void = () => {},
+): [IWorkspace | undefined, (newValue: IWorkspace, requestSaveAndRestart?: boolean) => void, () => Promise<void>] {
   const [workspace, workspaceSetter] = useState(originalWorkspace);
   const previous = usePreviousValue(originalWorkspace);
   // initial observable value maybe undefined, we pass an non-null initial value to the form
@@ -19,5 +22,13 @@ export function useForm(
     }
     await window.service.workspace.update(workspace.id, workspace);
   }, [workspace]);
-  return [workspace, workspaceSetter, onSave];
+  const setterWithRestartOption = (newValue: IWorkspace, requestSaveAndRestart?: boolean) => {
+    workspaceSetter(newValue);
+    if (requestSaveAndRestart === true && !isEqual(newValue, originalWorkspace)) {
+      void onSave().then(() => {
+        requestRestartCountDown();
+      });
+    }
+  };
+  return [workspace, setterWithRestartOption, onSave];
 }
