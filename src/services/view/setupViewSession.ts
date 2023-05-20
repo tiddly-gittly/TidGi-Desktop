@@ -6,6 +6,7 @@ import { isMac } from '@/helpers/system';
 import { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
+import { INativeService } from '@services/native/interface';
 import { IPreferences } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWorkspace } from '@services/workspaces/interface';
@@ -17,6 +18,7 @@ interface IViewSessionContext {
 export function setupViewSession(workspace: IWorkspace, preferences: IPreferences, viewContext: IViewSessionContext) {
   const { shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = preferences;
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
+  const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 
   // configure session, proxy & ad blocker
   const partitionId = shareWorkspaceBrowsingData ? 'persist:shared' : `persist:${workspace.id}`;
@@ -32,6 +34,7 @@ export function setupViewSession(workspace: IWorkspace, preferences: IPreference
     assignAdminAuthToken(workspace.id, details, authService, viewContext);
     callback({ cancel: false, requestHeaders: details.requestHeaders });
   });
+  handleFileProtocol(sessionOfView, nativeService);
   return sessionOfView;
 }
 
@@ -54,4 +57,8 @@ function assignAdminAuthToken(workspaceID: string, details: Electron.OnBeforeSen
     return;
   }
   details.requestHeaders[getTidGiAuthHeaderWithToken(adminToken)] = viewContext.userName;
+}
+
+function handleFileProtocol(sessionOfView: Electron.Session, nativeService: INativeService) {
+  sessionOfView.protocol.registerFileProtocol('file', nativeService.handleFileProtocol.bind(nativeService));
 }

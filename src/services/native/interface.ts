@@ -17,12 +17,7 @@ export interface INativeService {
    */
   executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string>;
   getLocalHostUrlWithActualIP(url: string): Promise<string>;
-  /**
-   * Handles in-app assets loading.
-   *
-   * For in-wiki file:// links, see handleNewWindow() in `src/services/view/setupViewEventHandlers.ts`.
-   */
-  handleFileProtocol(): boolean;
+  handleFileProtocol(request: Electron.ProtocolRequest, callback: (response: string | Electron.ProtocolResponse) => void): Promise<void>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   openInEditor(filePath: string, editorName?: string | undefined): Promise<boolean>;
@@ -33,6 +28,12 @@ export interface INativeService {
   pickDirectory(defaultPath?: string): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;
   quit(): void;
+  /**
+   * Handles in-app assets loading. This should be called after `app.whenReady()` is resolved.
+   *
+   * For in-wiki file:// links, see handleNewWindow() in `src/services/view/setupViewEventHandlers.ts`.
+   */
+  registerFileProtocol(): boolean;
   showElectronMessageBox(message: string, type: MessageBoxOptions['type'], WindowName?: WindowNames): Promise<void>;
 }
 export const NativeServiceIPCDescriptor = {
