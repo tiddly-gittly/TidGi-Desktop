@@ -45,6 +45,8 @@ const Root = styled(Paper)`
   height: 100%;
   width: 100%;
   padding: 20px;
+  /** for SaveCancelButtonsContainer 's height */
+  margin-bottom: 20px;
   display: flex;
   flex-direction: column;
   background: ${({ theme }) => theme.palette.background.paper};
@@ -113,6 +115,18 @@ const Avatar = styled.div<{ transparentBackground?: boolean }>`
       `;
   }
 }}
+`;
+const SaveCancelButtonsContainer = styled.div`
+  position: fixed;
+  left: 0;
+  bottom: 0;
+
+  height: auto;
+  width: 100%;
+  padding: 5px;
+  background-color: ${({ theme }) => theme.palette.background.paper};
+  opacity: 0.9;
+  backdrop-filter: blur(10px);
 `;
 const AvatarPicture = styled.img`
   height: 100%;
@@ -562,14 +576,14 @@ export default function EditWorkspace(): JSX.Element {
         )}
       </FlexGrow>
       {!isEqual(workspace, originalWorkspace) && (
-        <div>
+        <SaveCancelButtonsContainer>
           <Button color='primary' variant='contained' disableElevation onClick={requestSaveAndRestart}>
             {t('EditWorkspace.Save')}
           </Button>
           <Button variant='contained' disableElevation onClick={() => void window.remote.closeCurrentWindow()}>
             {t('EditWorkspace.Cancel')}
           </Button>
-        </div>
+        </SaveCancelButtonsContainer>
       )}
     </Root>
   );
