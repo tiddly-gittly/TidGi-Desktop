@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
@@ -65,7 +66,7 @@ export class Wiki implements IWikiService {
   public async requestWikiSendActionMessage(actionMessage: string): Promise<void> {
     const browserViews = await this.viewService.getActiveBrowserViews();
     browserViews.forEach((browserView) => {
-      if (browserView !== undefined) {
+      if (browserView?.webContents) {
         browserView.webContents.send(WikiChannel.sendActionMessage, actionMessage);
       }
     });
@@ -462,11 +463,6 @@ export class Wiki implements IWikiService {
   }
 
   public async runFilterOnWiki(workspace: IWorkspace, filter: string): Promise<string[] | undefined> {
-    const browserView = this.viewService.getView(workspace.id, WindowNames.main);
-    if (browserView?.webContents === undefined) {
-      logger.error(`browserView.webContents is undefined in runFilterOnWiki ${workspace.id} when running filter ${filter}`);
-      return;
-    }
     // await service.wiki.runFilterOnWiki(await service.workspace.getActiveWorkspace(), '[is[draft]]')
     const filterResult: string[] = await new Promise((resolve) => {
       /**
@@ -480,17 +476,17 @@ export class Wiki implements IWikiService {
         }
       };
       ipcMain.on(WikiChannel.runFilterDone, listener);
+      const browserView = this.viewService.getView(workspace.id, WindowNames.main);
+      if (!browserView?.webContents) {
+        logger.error(`browserView.webContents is undefined in runFilterOnWiki ${workspace.id} when running filter ${filter}`);
+        return;
+      }
       browserView.webContents.send(WikiChannel.runFilter, nonce, filter);
     });
     return filterResult;
   }
 
   public async getTiddlerText(workspace: IWorkspace, title: string): Promise<string | undefined> {
-    const browserView = this.viewService.getView(workspace.id, WindowNames.main);
-    if (browserView === undefined) {
-      logger.error(`browserView is undefined in getTiddlerText ${workspace.id} when running title ${title}`);
-      return;
-    }
     const textResult: string = await new Promise((resolve) => {
       /**
        * Use nonce to prevent data racing
@@ -503,6 +499,11 @@ export class Wiki implements IWikiService {
         }
       };
       ipcMain.on(WikiChannel.getTiddlerTextDone, listener);
+      const browserView = this.viewService.getView(workspace.id, WindowNames.main);
+      if (!browserView?.webContents) {
+        logger.error(`browserView is undefined in getTiddlerText ${workspace.id} when running title ${title}`);
+        return;
+      }
       browserView.webContents.send(WikiChannel.getTiddlerText, nonce, title);
     });
     return textResult;
@@ -658,16 +659,20 @@ export class Wiki implements IWikiService {
       throw new TypeError(`${(arguments_ as any) ?? ''} (${typeof arguments_}) is not a good argument array for ${operationType}`);
     }
     // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556) this maybe a bug of ts... try remove this comment after upgrade ts. And the result become void is weird too.
-    const callResult = wikiOperations[operationType](...arguments_);
-    return callResult as unknown as ReturnType<IWikiOperations[OP]>;
+    // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
+    return wikiOperations[operationType](...arguments_) as unknown as ReturnType<IWikiOperations[OP]>;
   }
 
   public async setWikiLanguage(view: BrowserView, workspaceID: string, tiddlywikiLanguageName: string): Promise<void> {
     const twLanguageUpdateTimeout = 15_000;
     const retryTime = 2000;
     // no need to wait setting wiki language, this sometimes cause slow PC to fail on this step
-    void new Promise<void>((resolve, reject) => {
+    void new Promise<void>((resolve) => {
       const onRetryOrDo = (): void => {
+        if (!view.webContents) {
+          logger.error(`browserView.webContents is undefined in getTiddlerText ${workspaceID} when setting tiddlywikiLanguageName ${tiddlywikiLanguageName}`);
+          return;
+        }
         view.webContents.send(WikiChannel.setTiddlerText, '$:/language', tiddlywikiLanguageName, workspaceID);
       };
       const intervalHandle = setInterval(onRetryOrDo, retryTime);
