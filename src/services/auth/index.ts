@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/no-null */
 import { IGitUserInfos } from '@services/git/interface';
+import { logger } from '@services/libs/log';
 import { IAuthingUserInfo, SupportedStorageServices } from '@services/types';
 import { IWorkspace } from '@services/workspaces/interface';
 import settings from 'electron-settings';
@@ -110,9 +111,10 @@ export class Authentication implements IAuthenticationService {
   }
 
   public generateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string {
-    const newToken = nanoid().toLowerCase();
-    this.oneTimeAdminAuthToken.set(workspaceID, newToken);
-    return newToken;
+    const adminToken = nanoid().toLowerCase();
+    logger.error(`generateOneTimeAdminAuthTokenForWorkspace() adminToken for ${workspaceID} is ${adminToken}`);
+    this.oneTimeAdminAuthToken.set(workspaceID, adminToken);
+    return adminToken;
   }
 
   public async getOneTimeAdminAuthTokenForWorkspace(workspaceID: string): Promise<string | undefined> {
@@ -120,7 +122,11 @@ export class Authentication implements IAuthenticationService {
   }
 
   public getOneTimeAdminAuthTokenForWorkspaceSync(workspaceID: string): string | undefined {
-    return this.oneTimeAdminAuthToken.get(workspaceID);
+    const adminToken = this.oneTimeAdminAuthToken.get(workspaceID);
+    if (adminToken === undefined) {
+      logger.error(`getOneTimeAdminAuthTokenForWorkspaceSync() No adminToken for ${workspaceID}`);
+    }
+    return adminToken;
   }
 
   /**

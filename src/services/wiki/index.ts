@@ -581,8 +581,8 @@ export class Wiki implements IWikiService {
     });
   }
 
-  public async wikiStartup(workspace: IWorkspace, configs?: { adminToken?: string }): Promise<void> {
-    const { wikiFolderLocation, isSubWiki, mainWikiToLink, id, name, mainWikiID } = workspace;
+  public async wikiStartup(workspace: IWorkspace): Promise<void> {
+    const { wikiFolderLocation, isSubWiki, mainWikiToLink, id, name, mainWikiID, tokenAuth } = workspace;
 
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     // and it will leak private sub-wiki's opened tiddler title
@@ -593,6 +593,11 @@ export class Wiki implements IWikiService {
     }
 
     const userName = await this.authService.getUserName(workspace);
+    let adminToken = '';
+    if (tokenAuth) {
+      logger.debug(`initializeWorkspaceView() generateOneTimeAdminAuthTokenForWorkspace`);
+      adminToken = this.authService.generateOneTimeAdminAuthTokenForWorkspace(id);
+    }
 
     // if is main wiki
     if (isSubWiki) {
@@ -608,7 +613,7 @@ export class Wiki implements IWikiService {
     } else {
       try {
         logger.debug('startWiki() calling startWiki');
-        await this.startWiki(id, userName, { adminToken: configs?.adminToken });
+        await this.startWiki(id, userName, { adminToken });
         logger.debug('startWiki() done');
       } catch (error) {
         logger.warn(`Get startWiki() error: ${(error as Error)?.message}`);

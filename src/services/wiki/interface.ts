@@ -73,7 +73,7 @@ export interface IWikiService {
     ...arguments_: Parameters<IWikiOperations[OP]>
   ): undefined | ReturnType<IWikiOperations[OP]>;
   /** handle start/restart of wiki/subwiki, will handle wiki sync too */
-  wikiStartup(workspace: IWorkspace, configs?: { adminToken?: string }): Promise<void>;
+  wikiStartup(workspace: IWorkspace): Promise<void>;
 }
 export const WikiServiceIPCDescriptor = {
   channel: WikiChannel.name,
