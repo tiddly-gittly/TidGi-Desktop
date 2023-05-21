@@ -35,7 +35,7 @@ export interface IWikiService {
    */
   createSubWiki(parentFolderLocation: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
-  extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<boolean | string>;
+  extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
   getTiddlerText(workspace: IWorkspace, title: string): Promise<string | undefined>;
   getWikiLogs(homePath: string): Promise<{ content: string; filePath: string }>;

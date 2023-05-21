@@ -184,10 +184,11 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
   });
 }
 
-async function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string, constants: { TIDDLYWIKI_PACKAGE_FOLDER: string }): Promise<boolean> {
+async function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string, constants: { TIDDLYWIKI_PACKAGE_FOLDER: string }): Promise<void> {
   // tiddlywiki --load ./mywiki.html --savewikifolder ./mywikifolder
   // --savewikifolder <wikifolderpath> [<filter>]
   // . /mywikifolder is the path where the tiddlder and plugins folders are stored
+  const { TIDDLYWIKI_PACKAGE_FOLDER } = constants;
   const reg = /(?:html|htm|Html|HTML|HTM|HTA|hta)$/;
   const isHtmlWiki = reg.test(htmlWikiPath);
   if (!isHtmlWiki) {
@@ -196,16 +197,15 @@ async function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string,
   if (await exists(saveWikiFolderPath)) {
     throw new Error(`A folder already exists at this path, and a new knowledge base cannot be created here. ${saveWikiFolderPath}`);
   }
-  return await new Promise((resolve, reject) => {
-    const { TIDDLYWIKI_PACKAGE_FOLDER } = constants;
+  const wikiInstance = TiddlyWiki();
+  wikiInstance.boot.argv = ['--load', htmlWikiPath, '--savewikifolder', saveWikiFolderPath];
+  await new Promise<void>((resolve, reject) => {
     try {
-      const wikiInstance = TiddlyWiki();
-      wikiInstance.boot.argv = ['--load', htmlWikiPath, '--savewikifolder', saveWikiFolderPath];
       wikiInstance.boot.startup({
         // passing bootPath inside TidGi app. fix The "path" argument must be of type string. Received undefined
         bootPath: TIDDLYWIKI_PACKAGE_FOLDER,
         callback: () => {
-          resolve(true);
+          resolve();
         },
       });
     } catch (error) {
@@ -214,25 +214,23 @@ async function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string,
   });
 }
 
-async function packetHTMLFromWikiFolder(folderWikiPath: string, folderToSaveWikiHtml: string, constants: { TIDDLYWIKI_PACKAGE_FOLDER: string }): Promise<boolean> {
+async function packetHTMLFromWikiFolder(folderWikiPath: string, folderToSaveWikiHtml: string, constants: { TIDDLYWIKI_PACKAGE_FOLDER: string }): Promise<void> {
   // tiddlywiki ./mywikifolder --rendertiddler '$:/core/save/all' mywiki.html text/plain
   // . /mywikifolder is the path to the wiki folder, which generally contains the tiddlder and plugins directories
-  return await new Promise((resolve, reject) => {
+  const { TIDDLYWIKI_PACKAGE_FOLDER } = constants;
+  const wikiInstance = TiddlyWiki();
+  wikiInstance.boot.argv = [folderWikiPath, '--rendertiddler', '$:/core/save/all', folderToSaveWikiHtml, 'text/plain'];
+  await new Promise<void>((resolve, reject) => {
     try {
-      const { TIDDLYWIKI_PACKAGE_FOLDER } = constants;
-      const wikiInstance = TiddlyWiki();
-      wikiInstance.boot.argv = [folderWikiPath, '--rendertiddler', '$:/core/save/all', folderToSaveWikiHtml, 'text/plain'];
       wikiInstance.boot.startup({
         // passing bootPath inside TidGi app. fix The "path" argument must be of type string. Received undefined
         bootPath: TIDDLYWIKI_PACKAGE_FOLDER,
         callback: () => {
-          resolve(true);
+          resolve();
         },
       });
     } catch (error) {
-      const message = `Tiddlywiki packetHTMLFromWikiFolder with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
-      console.error(message);
-      reject(message);
+      reject(error);
     }
   });
 }

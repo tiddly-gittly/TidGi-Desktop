@@ -2,7 +2,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { IErrorInWhichComponent, IWikiWorkspaceForm } from './useForm';
-import { updateErrorInWhichComponentSetterByErrorMessage } from './useIndicator';
 import { useNewWiki, useValidateNewWiki } from './useNewWiki';
 
 export function useValidateHtmlWiki(
@@ -60,14 +59,12 @@ export function useImportHtmlWiki(
     }
     wikiCreationMessageSetter(t('AddWorkspace.Processing'));
     try {
-      const extractSuccess = await window.service.wiki.extractWikiHTML(wikiHtmlPath, wikiFolderLocation);
-      if (extractSuccess === false) {
+      const extractErrorMessage = await window.service.wiki.extractWikiHTML(wikiHtmlPath, wikiFolderLocation);
+      if (typeof extractErrorMessage === 'string') {
         hasErrorSetter(true);
-        wikiCreationMessageSetter(t('AddWorkspace.BadWikiHtml'));
+        wikiCreationMessageSetter(t('AddWorkspace.BadWikiHtml') + extractErrorMessage);
         errorInWhichComponentSetter({ wikiHtmlPath: true });
         return;
-      } else if (typeof extractSuccess === 'string') {
-        updateErrorInWhichComponentSetterByErrorMessage(t, extractSuccess, errorInWhichComponentSetter);
       }
     } catch (error) {
       wikiCreationMessageSetter(`${t('AddWorkspace.BadWikiHtml')}${(error as Error).message}`);
