@@ -34,7 +34,16 @@ export interface INativeService {
    * For in-wiki file:// links, see handleNewWindow() in `src/services/view/setupViewEventHandlers.ts`.
    */
   registerFileProtocol(): boolean;
-  showElectronMessageBox(message: string, type: MessageBoxOptions['type'], WindowName?: WindowNames): Promise<void>;
+  showElectronMessageBox(options: Electron.MessageBoxOptions, windowName?: WindowNames): Promise<Electron.MessageBoxReturnValue | undefined>;
+  /**
+   * Shows a message box, it will block the process until the message box is closed. It returns the index of the clicked button.
+   *
+   * This can't be used in renderer process directly, because electron-ipc-cat doesn't support sync call. But you can use `window.remote.showElectronMessageBoxSync()` in renderer process, injected by preload script.
+   *
+   * The browserWindow argument allows the dialog to attach itself to a parent window, making it modal. If browserWindow is not shown dialog will not be attached to it. In such case it will be displayed as an independent window.
+   * @returns the index of the clicked button.
+   */
+  showElectronMessageBoxSync(options: Electron.MessageBoxSyncOptions, windowName?: WindowNames): number | undefined;
 }
 export const NativeServiceIPCDescriptor = {
   channel: NativeChannel.name,

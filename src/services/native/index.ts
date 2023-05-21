@@ -1,10 +1,11 @@
 /* eslint-disable @typescript-eslint/require-await */
-import { app, dialog, MessageBoxOptions, protocol, shell } from 'electron';
+import { app, dialog, ipcMain, MessageBoxOptions, protocol, shell } from 'electron';
 import fs from 'fs-extra';
 import { inject, injectable } from 'inversify';
 import path from 'path';
 import { Observable } from 'rxjs';
 
+import { NativeChannel } from '@/constants/channels';
 import { ZX_FOLDER } from '@/constants/paths';
 import { lazyInject } from '@services/container';
 import { ILogLevels, logger } from '@services/libs/log';
@@ -29,7 +30,15 @@ export class NativeService implements INativeService {
   @lazyInject(serviceIdentifier.Workspace)
   private readonly workspaceService!: IWorkspaceService;
 
-  constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {}
+  constructor(@inject(serviceIdentifier.Window) private readonly windowService: IWindowService) {
+    this.setupIpcHandlers();
+  }
+
+  setupIpcHandlers(): void {
+    ipcMain.on(NativeChannel.showElectronMessageBoxSync, (event, options: MessageBoxOptions, windowName: WindowNames = WindowNames.main) => {
+      event.returnValue = this.showElectronMessageBoxSync(options, windowName);
+    });
+  }
 
   public async openInEditor(filePath: string, editorName?: string): Promise<boolean> {
     // TODO: open vscode by default to speed up, support choose favorite editor later
@@ -131,10 +140,17 @@ ${message.message}
     });
   }
 
-  public async showElectronMessageBox(message: string, type: MessageBoxOptions['type'] = 'info', windowName = WindowNames.main): Promise<void> {
+  public async showElectronMessageBox(options: Electron.MessageBoxOptions, windowName: WindowNames = WindowNames.main): Promise<Electron.MessageBoxReturnValue | undefined> {
     const window = this.windowService.get(windowName);
     if (window !== undefined) {
-      await dialog.showMessageBox(window, { message, type });
+      return await dialog.showMessageBox(window, options);
+    }
+  }
+
+  public showElectronMessageBoxSync(options: Electron.MessageBoxSyncOptions, windowName: WindowNames = WindowNames.main): number | undefined {
+    const window = this.windowService.get(windowName);
+    if (window !== undefined) {
+      return dialog.showMessageBoxSync(window, options);
     }
   }
 

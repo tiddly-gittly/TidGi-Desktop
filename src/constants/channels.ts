@@ -22,6 +22,7 @@ export enum MenuChannel {
 }
 export enum NativeChannel {
   name = 'NativeChannel',
+  showElectronMessageBoxSync = 'show-electron-message-box-sync',
 }
 export enum NotificationChannel {
   name = 'NotificationChannel',

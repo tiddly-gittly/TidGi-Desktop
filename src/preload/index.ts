@@ -15,6 +15,7 @@ import { browserViewMetaData } from './common/browserViewMetaData';
 import './common/authingPostMessage';
 import './view';
 import { syncTidgiStateWhenWikiLoads } from './appState';
+import { fixAlertConfirm } from './wikiOperations/fixAlertConfirm';
 
 declare global {
   interface Window {
@@ -39,6 +40,7 @@ switch (browserViewMetaData.windowName) {
   }
   case WindowNames.view: {
     void syncTidgiStateWhenWikiLoads();
+    void fixAlertConfirm();
     break;
   }
 }

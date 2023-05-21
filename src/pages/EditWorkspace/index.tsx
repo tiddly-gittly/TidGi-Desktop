@@ -185,8 +185,6 @@ const wikiPictureExtensions = ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp'
 export default function EditWorkspace(): JSX.Element {
   const { t } = useTranslation();
   const originalWorkspace = useWorkspaceObservable(workspaceID);
-  // DEBUG: console originalWorkspace
-  console.log(`originalWorkspace`, originalWorkspace);
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
   const [workspace, workspaceSetter, onSave] = useForm(originalWorkspace, requestRestartCountDown);
   const {
