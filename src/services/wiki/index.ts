@@ -88,7 +88,7 @@ export class Wiki implements IWikiService {
     return this.wikiWorkers[id];
   }
 
-  public async startWiki(workspaceID: string, userName: string, configs?: { adminToken?: string }): Promise<void> {
+  public async startWiki(workspaceID: string, userName: string): Promise<void> {
     if (workspaceID === undefined) {
       logger.error('Try to start wiki, but workspace ID not provided', { workspaceID });
       return;
@@ -105,6 +105,11 @@ export class Wiki implements IWikiService {
     const { wikiFolderLocation, port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl } = workspace;
     // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
+    let adminToken: string | undefined;
+    if (tokenAuth) {
+      logger.debug(`initializeWorkspaceView() generateOneTimeAdminAuthTokenForWorkspace`);
+      adminToken = this.authService.generateOneTimeAdminAuthTokenForWorkspace(workspaceID);
+    }
     const workerData = {
       homePath: wikiFolderLocation,
       userName,
@@ -114,7 +119,7 @@ export class Wiki implements IWikiService {
       constants: { TIDDLYWIKI_PACKAGE_FOLDER },
       readOnlyMode,
       tokenAuth,
-      adminToken: configs?.adminToken,
+      adminToken,
       isDev: isDevelopmentOrTest,
     };
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
@@ -593,11 +598,6 @@ export class Wiki implements IWikiService {
     }
 
     const userName = await this.authService.getUserName(workspace);
-    let adminToken = '';
-    if (tokenAuth) {
-      logger.debug(`initializeWorkspaceView() generateOneTimeAdminAuthTokenForWorkspace`);
-      adminToken = this.authService.generateOneTimeAdminAuthTokenForWorkspace(id);
-    }
 
     // if is main wiki
     if (isSubWiki) {
@@ -613,7 +613,7 @@ export class Wiki implements IWikiService {
     } else {
       try {
         logger.debug('startWiki() calling startWiki');
-        await this.startWiki(id, userName, { adminToken });
+        await this.startWiki(id, userName);
         logger.debug('startWiki() done');
       } catch (error) {
         logger.warn(`Get startWiki() error: ${(error as Error)?.message}`);
