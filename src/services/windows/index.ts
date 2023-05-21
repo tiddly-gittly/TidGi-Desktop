@@ -539,7 +539,6 @@ export class Window implements IWindowService {
       if (isMac) {
         menuBar.app.hide();
       }
-      const position = menuBar.window?.getPosition();
     });
 
     // manually save window state https://github.com/mawie81/electron-window-state/issues/64
