@@ -200,9 +200,7 @@ export class Wiki implements IWikiService {
       result = (error as Error).message;
       logger.error(result, { worker: 'NodeJSWiki', method: 'extractWikiHTML', htmlWikiPath, saveWikiFolderPath });
       // removes the folder function that failed to convert.
-      try {
-        await fs.remove(saveWikiFolderPath);
-      } catch {}
+      await fs.remove(saveWikiFolderPath);
     }
     // this worker is only for one time use. we will spawn a new one for starting wiki later.
     await Thread.terminate(worker);

@@ -407,11 +407,7 @@
     "WikiRuntimeError": "E-13 维基运行时有错误",
     "WikiRuntimeErrorDescription": "E-13 维基运行时有错误，原因请查看 log 文件，并上传提交 issue 以便修复。",
     "SubWikiSMainWikiNotExistError": "子 Wiki 所附着的主 Wiki 不存在",
-    "SubWikiSMainWikiNotExistErrorDescription": "子 Wiki 在创建时必须选择一个附着到的主 Wiki，但是现在这个子 Wiki 所应该附着的主 Wiki 找不到了，无法附着。",
-    "WikiHTMLPathErrorDescription": "请输入HTML格式的wiki的路径，当前文件路径无法被使用。",
-    "WikiHTMLPathError": "Wiki HTML路径错误",
-    "FolderAlreadyExistError": "文件夹已存在错误",
-    "FolderAlreadyExistErrorDescription": "此路径已经存在文件夹，无法在这里再创建新的知识库。"
+    "SubWikiSMainWikiNotExistErrorDescription": "子 Wiki 在创建时必须选择一个附着到的主 Wiki，但是现在这个子 Wiki 所应该附着的主 Wiki 找不到了，无法附着。"
   },
   "Loading": "加载中",
   "ErrorMessage": "报错信息",

@@ -37,23 +37,3 @@ export class WikiRuntimeError extends Error {
     this.stack = error.stack;
   }
 }
-
-export class WikiHTMLPathError extends Error {
-  retry = false;
-  newWorkspace: IWorkspace | undefined;
-  constructor(wikiPath: string) {
-    super();
-    this.name = i18n.t('Error.WikiHTMLPathError');
-    this.message = `${i18n.t('Error.WikiHTMLPathErrorDescription')} ${wikiPath}`;
-  }
-}
-
-export class FolderAlreadyExistError extends Error {
-  retry = false;
-  newWorkspace: IWorkspace | undefined;
-  constructor(folderPath: string) {
-    super();
-    this.name = i18n.t('Error.FolderAlreadyExistError');
-    this.message = `${i18n.t('Error.FolderAlreadyExistErrorDescription')} ${folderPath}`;
-  }
-}

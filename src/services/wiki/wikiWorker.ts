@@ -5,7 +5,7 @@ import { uninstall } from '@/helpers/installV8Cache';
 import 'source-map-support/register';
 import { type ITiddlyWiki, TiddlyWiki } from '@tiddlygit/tiddlywiki';
 import { fork } from 'child_process';
-import fs, { mkdtemp, writeFile } from 'fs-extra';
+import { exists, mkdtemp, writeFile } from 'fs-extra';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
 import { tmpdir } from 'os';
@@ -16,7 +16,6 @@ import { expose } from 'threads/worker';
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
 import { fixPath } from '@services/libs/fixPath';
-import { FolderAlreadyExistError, WikiHTMLPathError } from './error';
 import { IWikiMessage, IZxWorkerMessage, WikiControlActions, ZxWorkerControlActions } from './interface';
 import { executeScriptInTWContext, extractTWContextScripts, getTWVmContext } from './plugin/zxPlugin';
 import { adminTokenIsProvided } from './wikiWorkerUtils';
@@ -190,10 +189,10 @@ async function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string)
   const reg = /(?:html|htm|Html|HTML|HTM|HTA|hta)$/;
   const isHtmlWiki = reg.test(htmlWikiPath);
   if (!isHtmlWiki) {
-    throw new WikiHTMLPathError(htmlWikiPath);
+    throw new Error(`Please enter the path to the tiddlywiki.html file. Current path can't be used. ${htmlWikiPath}`);
   }
-  if (await fs.exists(saveWikiFolderPath)) {
-    throw new FolderAlreadyExistError(saveWikiFolderPath);
+  if (await exists(saveWikiFolderPath)) {
+    throw new Error(`A folder already exists at this path, and a new knowledge base cannot be created here. ${saveWikiFolderPath}`);
   }
   return await new Promise((resolve, reject) => {
     try {
