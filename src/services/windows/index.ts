@@ -24,8 +24,10 @@ import { lazyInject } from '@services/container';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import getViewBounds from '@services/libs/getViewBounds';
 import { i18n } from '@services/libs/i18n';
+import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP } from '@services/libs/url';
 import { IThemeService } from '@services/theme/interface';
+import { debounce } from 'lodash';
 import { IWindowService } from './interface';
 
 @injectable()
@@ -172,7 +174,7 @@ export class Window implements IWindowService {
     };
     let newWindow: BrowserWindow;
     if (windowName === WindowNames.menuBar) {
-      this.mainWindowMenuBar = await this.handleAttachToMenuBar(windowConfig);
+      this.mainWindowMenuBar = await this.handleAttachToMenuBar(windowConfig, windowWithBrowserViewState);
       if (this.mainWindowMenuBar.window === undefined) {
         throw new Error('MenuBar failed to create window.');
       }
@@ -484,7 +486,7 @@ export class Window implements IWindowService {
     ]);
   }
 
-  private async handleAttachToMenuBar(windowConfig: BrowserWindowConstructorOptions): Promise<Menubar> {
+  private async handleAttachToMenuBar(windowConfig: BrowserWindowConstructorOptions, windowWithBrowserViewState: windowStateKeeper.State | undefined): Promise<Menubar> {
     // setImage after Tray instance is created to avoid
     // "Segmentation fault (core dumped)" bug on Linux
     // https://github.com/electron/electron/issues/22137#issuecomment-586105622
@@ -509,6 +511,17 @@ export class Window implements IWindowService {
     menuBar.on('after-create-window', () => {
       if (menuBar.window !== undefined) {
         menuBar.window.on('focus', () => {
+          logger.debug('restore window position');
+          if (windowWithBrowserViewState === undefined) {
+            logger.debug('windowWithBrowserViewState is undefined for menuBar');
+          } else {
+            if (menuBar.window === undefined) {
+              logger.debug('menuBar.window is undefined');
+            } else {
+              menuBar.window.setPosition(windowWithBrowserViewState.x, windowWithBrowserViewState.y, false);
+              menuBar.window.setSize(windowWithBrowserViewState.width, windowWithBrowserViewState.height, false);
+            }
+          }
           const view = menuBar.window?.getBrowserView();
           if (view?.webContents !== undefined) {
             view.webContents.focus();
@@ -526,7 +539,19 @@ export class Window implements IWindowService {
       if (isMac) {
         menuBar.app.hide();
       }
+      const position = menuBar.window?.getPosition();
     });
+
+    // manually save window state https://github.com/mawie81/electron-window-state/issues/64
+    const debouncedSaveWindowState = debounce(
+      (event: { sender: BrowserWindow }) => {
+        windowWithBrowserViewState?.saveState(event.sender);
+      },
+      500,
+    );
+    // menubar is hide, not close, so not managed by windowStateKeeper, need to save manually
+    menuBar.window?.on('resize', debouncedSaveWindowState);
+    menuBar.window?.on('move', debouncedSaveWindowState);
 
     return await new Promise<Menubar>((resolve) => {
       menuBar.on('ready', async () => {
