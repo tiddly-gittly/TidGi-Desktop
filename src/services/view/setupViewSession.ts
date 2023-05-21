@@ -65,7 +65,7 @@ function assignAdminAuthToken(workspaceID: string, details: Electron.OnBeforeSen
     logger.error(`adminToken is undefined for ${workspaceID}, this should not happen. Skip adding ${TIDGI_AUTH_TOKEN_HEADER}-xxx header for it.`);
     return;
   }
-  details.requestHeaders[getTidGiAuthHeaderWithToken(adminToken)] = viewContext.userName;
+  details.requestHeaders[getTidGiAuthHeaderWithToken(adminToken)] = encodeURIComponent(viewContext.userName);
 }
 
 function handleFileProtocol(sessionOfView: Electron.Session, nativeService: INativeService) {

@@ -110,7 +110,7 @@ export class Authentication implements IAuthenticationService {
   }
 
   public generateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string {
-    const newToken = nanoid();
+    const newToken = nanoid().toLowerCase();
     this.oneTimeAdminAuthToken.set(workspaceID, newToken);
     return newToken;
   }
