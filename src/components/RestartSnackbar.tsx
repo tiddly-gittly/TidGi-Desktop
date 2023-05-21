@@ -72,7 +72,9 @@ export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart
         onClose={(event, reason) => {
           switch (reason) {
             case 'timeout': {
-              handleCloseAndRestart();
+              if (inCountDown) {
+                handleCloseAndRestart();
+              }
               break;
             }
             case 'clickaway': {

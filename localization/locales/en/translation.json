@@ -193,7 +193,7 @@
     "StorageServiceUserInfoNoFoundDetail": "Seems you haven't login to Your storage service, so we disable syncing for this wiki.",
     "RestartMessage": "You need to restart the app for this change to take affect.",
     "Later": "Later",
-    "RestartNow": "Restart Now",
+    "RestartNow": "Save & Restart Now",
     "MadeWithLove": "<0>Made with </0><1>❤</1><2> by </2>",
     "ReportBug": "Report Bug",
     "ReportBugDetail": "If you have read the tutorial, and carefully read the error output text, and wisely check your input, you can click on the button."
