@@ -1,5 +1,5 @@
+import { DEFAULT_DOWNLOADS_PATH } from '@/constants/appPaths';
 import { app } from 'electron';
-import path from 'path';
 import semver from 'semver';
 import { IPreferences } from './interface';
 
@@ -8,7 +8,7 @@ export const defaultPreferences: IPreferences = {
   alwaysOnTop: false,
   askForDownloadPath: true,
   attachToMenubar: false,
-  downloadPath: getDefaultDownloadsPath(),
+  downloadPath: DEFAULT_DOWNLOADS_PATH,
   hibernateUnusedWorkspacesAtLaunch: false,
   hideMenuBar: false,
   hideSideBarIcon: false,
@@ -35,10 +35,6 @@ export const defaultPreferences: IPreferences = {
   unreadCountBadge: true,
   useHardwareAcceleration: true,
 };
-
-function getDefaultDownloadsPath(): string {
-  return path.join(app.getPath('home'), 'Downloads');
-}
 
 function getDefaultPauseNotificationsByScheduleFrom(): string {
   const d = new Date();

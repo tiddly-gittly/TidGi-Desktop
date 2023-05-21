@@ -5,6 +5,7 @@ import { delay, mapSeries } from 'bluebird';
 import { app, clipboard, dialog, session } from 'electron';
 import { injectable } from 'inversify';
 
+import { DEFAULT_DOWNLOADS_PATH } from '@/constants/appPaths';
 import { MetaDataChannel, WikiChannel } from '@/constants/channels';
 import { tiddlywikiLanguagesMap } from '@/constants/languages';
 import { WikiCreationMethod } from '@/constants/wikiCreation';
@@ -15,6 +16,7 @@ import getFromRenderer from '@services/libs/getFromRenderer';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
+import { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
@@ -54,6 +56,9 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   @lazyInject(serviceIdentifier.WorkspaceView)
   private readonly workspaceViewService!: IWorkspaceViewService;
+
+  @lazyInject(serviceIdentifier.NativeService)
+  private readonly nativeService!: INativeService;
 
   constructor() {
     void this.registerMenu();
@@ -239,22 +244,19 @@ export class WorkspaceView implements IWorkspaceViewService {
         label: () => i18n.t('Menu.DeveloperToolsActiveWorkspace'),
         accelerator: 'CmdOrCtrl+Option+I',
         click: async () => (await this.viewService.getActiveBrowserView())?.webContents?.openDevTools(),
-        enabled: async () => {
-          const hasWorkspaces = (await this.workspaceService.countWorkspaces()) > 0;
-          return hasWorkspaces;
-        },
+        enabled: hasWorkspaces,
       },
     ]);
     await this.menuService.insertMenu('Wiki', [
       {
         label: () => i18n.t('Menu.PrintPage'),
-        enabled: hasWorkspaces,
         click: async () => {
           const browserViews = await this.viewService.getActiveBrowserViews();
           browserViews.forEach((browserView) => {
             browserView?.webContents?.print();
           });
         },
+        enabled: hasWorkspaces,
       },
       {
         label: () => i18n.t('Menu.PrintActiveTiddler'),
@@ -262,6 +264,20 @@ export class WorkspaceView implements IWorkspaceViewService {
         click: async () => {
           await this.printTiddler();
         },
+        enabled: hasWorkspaces,
+      },
+      {
+        label: () => i18n.t('Menu.ExportWholeWikiHTML'),
+        click: async () => {
+          const activeWorkspace = await this.workspaceService.getActiveWorkspace();
+          if (activeWorkspace === undefined) {
+            logger.error('Can not export whole wiki, activeWorkspace is undefined');
+            return;
+          }
+          const folderToSaveWikiHtml = await this.nativeService.pickDirectory(DEFAULT_DOWNLOADS_PATH);
+          await this.wikiService.packetHTMLFromWikiFolder(activeWorkspace.wikiFolderLocation, folderToSaveWikiHtml[0]);
+        },
+        enabled: hasWorkspaces,
       },
       { type: 'separator' },
       {
@@ -284,7 +300,6 @@ export class WorkspaceView implements IWorkspaceViewService {
             clipboard.writeText(url);
           }
         },
-        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
       },
     ]);
   }

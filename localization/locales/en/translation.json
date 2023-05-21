@@ -405,7 +405,8 @@
     "FindMatches": "matches",
     "PrintPage": "Print Page",
     "PrintActiveTiddler": "Print Active Tiddler",
-    "Wiki": "Wiki"
+    "Wiki": "Wiki",
+    "ExportWholeWikiHTML": "Export Whole Wiki as HTML"
   },
   "ErrorMessage": "Error message",
   "ClickForDetails": "Click For Details",

@@ -222,14 +222,13 @@ function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Prom
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/promise-function-async
-function packetHTMLFromWikiFolder(folderWikiPath: string, saveWikiHtmlFolder: string): Promise<boolean> {
+async function packetHTMLFromWikiFolder(folderWikiPath: string, folderToSaveWikiHtml: string): Promise<boolean> {
   // tiddlywiki ./mywikifolder --rendertiddler '$:/core/save/all' mywiki.html text/plain
   // . /mywikifolder is the path to the wiki folder, which generally contains the tiddlder and plugins directories
-  return new Promise((resolve, reject) => {
+  return await new Promise((resolve, reject) => {
     try {
       const wikiInstance = TiddlyWiki();
-      wikiInstance.boot.argv = [folderWikiPath, '--rendertiddler', '$:/core/save/all', saveWikiHtmlFolder, 'text/plain'];
+      wikiInstance.boot.argv = [folderWikiPath, '--rendertiddler', '$:/core/save/all', folderToSaveWikiHtml, 'text/plain'];
       wikiInstance.boot.startup({
         callback: () => {
           resolve(true);

@@ -13,3 +13,4 @@ export const SETTINGS_FOLDER = isDevelopmentOrTest
 export const LOCAL_GIT_DIRECTORY = path.resolve(isDevelopmentOrTest ? path.join(sourcePath, '..') : process.resourcesPath, 'node_modules', 'dugite', 'git');
 export const LOG_FOLDER = isDevelopmentOrTest ? path.resolve(sourcePath, '..', 'logs') : path.resolve(USER_DATA_FOLDER, 'logs');
 export const V8_CACHE_FOLDER = v8CompileCacheLibrary.getCacheDir();
+export const DEFAULT_DOWNLOADS_PATH = path.join(app.getPath('home'), 'Downloads');
