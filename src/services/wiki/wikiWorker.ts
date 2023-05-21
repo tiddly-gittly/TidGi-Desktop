@@ -5,8 +5,7 @@ import { uninstall } from '@/helpers/installV8Cache';
 import 'source-map-support/register';
 import { type ITiddlyWiki, TiddlyWiki } from '@tiddlygit/tiddlywiki';
 import { fork } from 'child_process';
-import fs from 'fs';
-import { mkdtemp, writeFile } from 'fs-extra';
+import fs, { mkdtemp, writeFile } from 'fs-extra';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
 import { tmpdir } from 'os';
@@ -17,6 +16,7 @@ import { expose } from 'threads/worker';
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
 import { fixPath } from '@services/libs/fixPath';
+import { FolderAlreadyExistError, WikiHTMLPathError } from './error';
 import { IWikiMessage, IZxWorkerMessage, WikiControlActions, ZxWorkerControlActions } from './interface';
 import { executeScriptInTWContext, extractTWContextScripts, getTWVmContext } from './plugin/zxPlugin';
 import { adminTokenIsProvided } from './wikiWorkerUtils';
@@ -183,42 +183,30 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/promise-function-async
-function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<boolean> {
+async function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<boolean> {
   // tiddlywiki --load ./mywiki.html --savewikifolder ./mywikifolder
   // --savewikifolder <wikifolderpath> [<filter>]
   // . /mywikifolder is the path where the tiddlder and plugins folders are stored
-  return new Promise((resolve, reject) => {
-    let extractState = false;
-    // eslint-disable-next-line prefer-regex-literals
-    const reg = new RegExp(/(?:html|htm|Html|HTML|HTM)$/);
-    const isHtmlWiki = reg.test(htmlWikiPath);
-    if (!isHtmlWiki) {
-      const message = 'Please enter the path to the tiddlywiki.html file. But the current path is: ' + htmlWikiPath;
-      console.error(message);
-      reject(message);
-    } else if (fs.existsSync(saveWikiFolderPath)) {
-      const message = 'Error: The unpackwiki command requires that the output wiki folder be empty: ' + htmlWikiPath;
-      console.error(message);
-      reject(message);
-    } else {
-      try {
-        const wikiInstance = TiddlyWiki();
-        wikiInstance.boot.argv = ['--load', htmlWikiPath, '--savewikifolder', saveWikiFolderPath];
-        wikiInstance.boot.startup({
-          callback: () => {
-            resolve(true);
-          },
-        });
-        // eslint-disable-next-line security-node/detect-crlf
-        console.log('Extract Wiki Html Successful: ' + saveWikiFolderPath);
-        extractState = true;
-      } catch (error) {
-        const message = `Tiddlywiki extractWikiHTML with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
-        console.error(message);
-      }
+  const reg = /(?:html|htm|Html|HTML|HTM|HTA|hta)$/;
+  const isHtmlWiki = reg.test(htmlWikiPath);
+  if (!isHtmlWiki) {
+    throw new WikiHTMLPathError(htmlWikiPath);
+  }
+  if (await fs.exists(saveWikiFolderPath)) {
+    throw new FolderAlreadyExistError(saveWikiFolderPath);
+  }
+  return await new Promise((resolve, reject) => {
+    try {
+      const wikiInstance = TiddlyWiki();
+      wikiInstance.boot.argv = ['--load', htmlWikiPath, '--savewikifolder', saveWikiFolderPath];
+      wikiInstance.boot.startup({
+        callback: () => {
+          resolve(true);
+        },
+      });
+    } catch (error) {
+      reject(error);
     }
-    return extractState;
   });
 }
 
