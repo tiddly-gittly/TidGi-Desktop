@@ -195,7 +195,7 @@ export class Wiki implements IWikiService {
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
     let result: boolean | string = false;
     try {
-      result = await worker.extractWikiHTML(htmlWikiPath, saveWikiFolderPath);
+      result = await worker.extractWikiHTML(htmlWikiPath, saveWikiFolderPath, { TIDDLYWIKI_PACKAGE_FOLDER });
     } catch (error) {
       result = (error as Error).message;
       logger.error(result, { worker: 'NodeJSWiki', method: 'extractWikiHTML', htmlWikiPath, saveWikiFolderPath });
@@ -209,7 +209,7 @@ export class Wiki implements IWikiService {
 
   public async packetHTMLFromWikiFolder(wikiFolderLocation: string, folderToSaveWikiHtml: string): Promise<void> {
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
-    await worker.packetHTMLFromWikiFolder(wikiFolderLocation, folderToSaveWikiHtml);
+    await worker.packetHTMLFromWikiFolder(wikiFolderLocation, folderToSaveWikiHtml, { TIDDLYWIKI_PACKAGE_FOLDER });
     // this worker is only for one time use. we will spawn a new one for starting wiki later.
     await Thread.terminate(worker);
   }
