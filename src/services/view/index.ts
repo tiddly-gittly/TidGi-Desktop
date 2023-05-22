@@ -19,7 +19,7 @@ import getFromRenderer from '@services/libs/getFromRenderer';
 import getViewBounds from '@services/libs/getViewBounds';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
-import { getLocalHostUrlWithActualIP, replaceUrlPortWithSettingPort } from '@services/libs/url';
+import { INativeService } from '@services/native/interface';
 import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace } from '@services/workspaces/interface';
 import { ViewLoadUrlError } from './error';
@@ -46,6 +46,9 @@ export class View implements IViewService {
 
   @lazyInject(serviceIdentifier.Authentication)
   private readonly authService!: IAuthenticationService;
+
+  @lazyInject(serviceIdentifier.NativeService)
+  private readonly nativeService!: INativeService;
 
   constructor() {
     this.initIPCHandlers();
@@ -322,15 +325,14 @@ export class View implements IViewService {
     // fix some case that local ip can't be load
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
     const urlToReplace = rememberLastPageVisited ? workspace.lastUrl ?? workspace.homeUrl : workspace.homeUrl;
-    const portReplacedUrl = replaceUrlPortWithSettingPort(urlToReplace, workspace.port);
-    const hostReplacedUrl = await getLocalHostUrlWithActualIP(portReplacedUrl);
-    logger.debug(`Load initialUrl: ${hostReplacedUrl} for windowName ${windowName} for workspace ${workspace.name}`, {
+    const replacedUrl = await this.nativeService.getLocalHostUrlWithActualInfo(urlToReplace, workspace.id);
+    logger.debug(`Load initialUrl: ${replacedUrl} for windowName ${windowName} for workspace ${workspace.name}`, {
       urlToReplace,
-      replacedUrl: portReplacedUrl,
+      replacedUrl,
     });
     try {
       logger.debug(
-        `loadInitialUrlWithCatch(): view.webContents: ${String(view.webContents)} ${hostReplacedUrl} for windowName ${windowName} for workspace ${workspace.name}`,
+        `loadInitialUrlWithCatch(): view.webContents: ${String(view.webContents)} ${replacedUrl} for windowName ${windowName} for workspace ${workspace.name}`,
         { stack: new Error('debug error, not a real error').stack },
       );
       if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
@@ -342,14 +344,14 @@ export class View implements IViewService {
         didFailLoadErrorMessage: null,
         isLoading: true,
       });
-      await view.webContents.loadURL(hostReplacedUrl);
+      await view.webContents.loadURL(replacedUrl);
       logger.debug('loadInitialUrlWithCatch() await loadURL() done');
       const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
       view.webContents.on('destroyed', () => {
         unregisterContextMenu();
       });
     } catch (error) {
-      logger.warn(new ViewLoadUrlError(hostReplacedUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
+      logger.warn(new ViewLoadUrlError(replacedUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
     }
   }
 

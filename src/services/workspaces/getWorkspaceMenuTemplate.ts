@@ -18,7 +18,7 @@ interface IWorkspaceMenuRequiredServices {
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
   context: Pick<IContextService, 'isOnline'>;
   git: Pick<IGitService, 'commitAndSync'>;
-  native: Pick<INativeService, 'open' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualIP'>;
+  native: Pick<INativeService, 'open' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualInfo'>;
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
   wiki: Pick<IWikiService, 'wikiOperation' | 'requestWikiSendActionMessage'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
@@ -102,7 +102,7 @@ export async function getWorkspaceMenuTemplate(
     {
       label: t('WorkspaceSelector.OpenInBrowser'),
       click: async () => {
-        const actualIP = await service.native.getLocalHostUrlWithActualIP(homeUrl);
+        const actualIP = await service.native.getLocalHostUrlWithActualInfo(homeUrl, id);
         await service.native.open(actualIP);
       },
     },

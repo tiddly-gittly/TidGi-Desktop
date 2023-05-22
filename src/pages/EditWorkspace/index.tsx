@@ -184,7 +184,7 @@ export default function EditWorkspace(): JSX.Element {
     [id],
   );
   const rememberLastPageVisited = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
-  const actualIP = useActualIp(homeUrl);
+  const actualIP = useActualIp(homeUrl, workspaceID);
   if (workspaceID === undefined) {
     return <Root>Error {workspaceID ?? '-'} not exists</Root>;
   }

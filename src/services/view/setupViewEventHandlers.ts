@@ -15,7 +15,7 @@ import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channel
 import { isWin } from '@/helpers/system';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
-import { getLocalHostUrlWithActualIP, isSameOrigin } from '@services/libs/url';
+import { isSameOrigin } from '@services/libs/url';
 import { IMenuService } from '@services/menu/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -24,6 +24,7 @@ import { IBrowserViewMetaData, windowDimension, WindowNames } from '@services/wi
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { throttle } from 'lodash';
+import { INativeService } from '@services/native/interface';
 
 export interface IViewContext {
   loadInitialUrlWithCatch: () => Promise<void>;
@@ -53,6 +54,7 @@ export default function setupViewEventHandlers(
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
+  const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 
   view.webContents.on('did-start-loading', async () => {
     const workspaceObject = await workspaceService.get(workspace.id);
@@ -78,11 +80,11 @@ export default function setupViewEventHandlers(
     if (isSameOrigin(newUrl, currentUrl)) {
       return;
     }
-    const { homeUrl, lastUrl } = workspace;
+    const { homeUrl, lastUrl, id } = workspace;
     const [hostReplacedHomeUrl, hostReplacedLastUrl] = await Promise.all([
-      getLocalHostUrlWithActualIP(homeUrl),
+      nativeService.getLocalHostUrlWithActualInfo(homeUrl, id),
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      lastUrl ? getLocalHostUrlWithActualIP(lastUrl) : undefined,
+      lastUrl ? nativeService.getLocalHostUrlWithActualInfo(lastUrl, id) : undefined,
     ]);
     if (
       isSameOrigin(newUrl, homeUrl) ||
@@ -325,6 +327,8 @@ function handleNewWindow(
     return { action: 'deny' };
   }
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
+  const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
+
   const nextDomain = extractDomain(nextUrl);
   /**
    * Handles in-wiki file link opening.
@@ -433,7 +437,7 @@ function handleNewWindow(
         if (appUrl === undefined) {
           throw new Error(`Workspace ${workspace.id} not existed, or don't have homeUrl setting`);
         }
-        appUrl = await getLocalHostUrlWithActualIP(appUrl);
+        appUrl = await nativeService.getLocalHostUrlWithActualInfo(appUrl, workspace.id);
         if (isInternalUrl(url, [appUrl, currentUrl])) {
           childWindow.show();
         } else {

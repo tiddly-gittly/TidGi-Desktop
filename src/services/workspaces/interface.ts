@@ -31,6 +31,14 @@ export interface IWorkspace {
    * Localhost server url to load in the electron webview
    */
   homeUrl: string;
+  /**
+   * Mostly used for deploying blog. Need tls-key and tls-cert.
+   */
+  https?: {
+    enabled: boolean;
+    tlsCert?: string;
+    tlsKey?: string;
+  };
   id: string;
   /**
    * Is this workspace a subwiki that link to a main wiki, and doesn't have its own webview?

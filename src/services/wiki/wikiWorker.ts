@@ -29,6 +29,7 @@ function startNodeJSWiki({
   adminToken,
   constants: { TIDDLYWIKI_PACKAGE_FOLDER },
   homePath,
+  https,
   isDev,
   readOnlyMode,
   rootTiddler,
@@ -40,6 +41,11 @@ function startNodeJSWiki({
   adminToken?: string;
   constants: { TIDDLYWIKI_PACKAGE_FOLDER: string };
   homePath: string;
+  https?: {
+    enabled: boolean;
+    tlsCert?: string | undefined;
+    tlsKey?: string | undefined;
+  };
   isDev: boolean;
   readOnlyMode?: boolean;
   rootTiddler?: string;
@@ -94,6 +100,10 @@ function startNodeJSWiki({
           observer.next({ type: 'control', actions: WikiControlActions.error, message: 'tokenAuth is true, but adminToken is empty, this can be a bug.' });
         }
       }
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      const httpsArguments = https?.enabled && https.tlsKey && https.tlsCert
+        ? [`tls-key=${https.tlsKey}`, `tls-cert=${https.tlsCert}`]
+        : [];
 
       wikiInstance.boot.argv = [
         ...builtInPluginArguments,
@@ -102,6 +112,7 @@ function startNodeJSWiki({
         `port=${tiddlyWikiPort}`,
         `host=${tiddlyWikiHost}`,
         `root-tiddler=${rootTiddler ?? '$:/core/save/lazy-images'}`,
+        ...httpsArguments,
         ...readonlyArguments,
         ...tokenAuthenticateArguments,
         `debug-level=${isDev ? 'full' : 'none'}`,
@@ -115,9 +126,10 @@ function startNodeJSWiki({
           observer.next({
             type: 'control',
             actions: WikiControlActions.booted,
-            message: `Tiddlywiki booted at http://${tiddlyWikiHost}:${tiddlyWikiPort} (webview uri ip may be different, being getLocalHostUrlWithActualIP()) with args ${
-              wikiInstance === undefined ? '(wikiInstance is undefined)' : wikiInstance.boot.argv.join(' ')
-            }`,
+            message:
+              `Tiddlywiki booted at http://${tiddlyWikiHost}:${tiddlyWikiPort} (webview uri ip may be different, being nativeService.getLocalHostUrlWithActualInfo(appUrl, workspace.id)) with args ${
+                wikiInstance === undefined ? '(wikiInstance is undefined)' : wikiInstance.boot.argv.join(' ')
+              }`,
           });
         });
       });

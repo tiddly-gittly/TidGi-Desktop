@@ -11,12 +11,20 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
  */
 export interface INativeService {
   /**
+   * Copy a file or directory. The directory can have contents.
+   * @param fromFilePath Note that if src is a directory it will copy everything inside of this directory, not the entire directory itself (see fs.extra issue #537).
+   * @param toFilePath Note that if src is a file, dest cannot be a directory (see fs.extra issue #323). (but you can set `options.fileToDir` to true)
+   * @param options.fileToDir true means dest is a directory, create if not exist
+   * @returns false if failed. If success, returns the absolute path of the copied file or directory.
+   */
+  copyPath(fromFilePath: string, toFilePath: string, options?: { fileToDir?: boolean }): Promise<false | string>;
+  /**
    * Execute zx script in a wiki worker and get result.
    * @param zxWorkerArguments
    * @param wikiFolderLocation Each wiki has its own worker, we use wiki's folder path to determine which worker to use. If not provided, will use current active workspace's wiki's path
    */
   executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string>;
-  getLocalHostUrlWithActualIP(url: string): Promise<string>;
+  getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string>;
   handleFileProtocol(request: { url: string }, callback: (response: string) => void): Promise<void>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
@@ -48,18 +56,19 @@ export interface INativeService {
 export const NativeServiceIPCDescriptor = {
   channel: NativeChannel.name,
   properties: {
+    copyPath: ProxyPropertyType.Function,
     executeZxScript$: ProxyPropertyType.Function$,
-    getLocalHostUrlWithActualIP: ProxyPropertyType.Function,
+    getLocalHostUrlWithActualInfo: ProxyPropertyType.Function,
     log: ProxyPropertyType.Function,
     open: ProxyPropertyType.Function,
     openInEditor: ProxyPropertyType.Function,
     openInGitGuiApp: ProxyPropertyType.Function,
     openNewGitHubIssue: ProxyPropertyType.Function,
     openPath: ProxyPropertyType.Function,
+    path: ProxyPropertyType.Function,
     pickDirectory: ProxyPropertyType.Function,
     pickFile: ProxyPropertyType.Function,
     quit: ProxyPropertyType.Function,
-    path: ProxyPropertyType.Function,
     showElectronMessageBox: ProxyPropertyType.Function,
   },
 };

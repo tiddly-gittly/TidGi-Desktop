@@ -9,7 +9,7 @@ import { NativeChannel } from '@/constants/channels';
 import { ZX_FOLDER } from '@/constants/paths';
 import { lazyInject } from '@services/container';
 import { ILogLevels, logger } from '@services/libs/log';
-import { getLocalHostUrlWithActualIP } from '@services/libs/url';
+import { getLocalHostUrlWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService, ZxWorkerControlActions } from '@services/wiki/interface';
 import { IZxFileInput } from '@services/wiki/wikiWorker';
@@ -78,6 +78,28 @@ export class NativeService implements INativeService {
         await shell.openPath(absolutePath);
       }
     }
+  }
+
+  public async copyPath(fromFilePath: string, toFilePath: string, options?: { fileToDir?: boolean }): Promise<false | string> {
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    if (!fromFilePath.trim() || !toFilePath.trim()) {
+      logger.error('NativeService.copyPath() fromFilePath or toFilePath is empty', { fromFilePath, toFilePath });
+      return false;
+    }
+    if (!(await fs.exists(fromFilePath))) {
+      logger.error('NativeService.copyPath() fromFilePath not exists', { fromFilePath, toFilePath });
+      return false;
+    }
+    logger.debug(`NativeService.openPath() copy from ${fromFilePath} to ${toFilePath}`, options);
+    if (options?.fileToDir === true) {
+      await fs.ensureDir(toFilePath);
+      const fileName = path.basename(fromFilePath);
+      const copiedResultPath = path.join(toFilePath, fileName);
+      await fs.copy(fromFilePath, copiedResultPath);
+      return copiedResultPath;
+    }
+    await fs.copy(fromFilePath, toFilePath);
+    return toFilePath;
   }
 
   public executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string> {
@@ -195,8 +217,14 @@ ${message.message}
     reportErrorToGithubWithTemplates(error);
   }
 
-  public async getLocalHostUrlWithActualIP(url: string): Promise<string> {
-    return await getLocalHostUrlWithActualIP(url);
+  public async getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string> {
+    let replacedUrl = await getLocalHostUrlWithActualIP(urlToReplace);
+    const workspace = await this.workspaceService.get(workspaceID);
+    if (workspace !== undefined) {
+      replacedUrl = replaceUrlPortWithSettingPort(replacedUrl, workspace.port);
+      replacedUrl = getUrlWithCorrectProtocol(workspace, replacedUrl);
+    }
+    return replacedUrl;
   }
 
   public async path(method: 'basename' | 'dirname' | 'join', pathString: string | undefined, ...paths: string[]): Promise<string | undefined> {

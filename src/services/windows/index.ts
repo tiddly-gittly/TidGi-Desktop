@@ -25,7 +25,7 @@ import getFromRenderer from '@services/libs/getFromRenderer';
 import getViewBounds from '@services/libs/getViewBounds';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
-import { getLocalHostUrlWithActualIP } from '@services/libs/url';
+import { INativeService } from '@services/native/interface';
 import { IThemeService } from '@services/theme/interface';
 import { debounce } from 'lodash';
 import { IWindowService } from './interface';
@@ -51,6 +51,9 @@ export class Window implements IWindowService {
 
   @lazyInject(serviceIdentifier.ThemeService)
   private readonly themeService!: IThemeService;
+
+  @lazyInject(serviceIdentifier.NativeService)
+  private readonly nativeService!: INativeService;
 
   constructor() {
     void this.registerMenu();
@@ -331,7 +334,7 @@ export class Window implements IWindowService {
     const contents = win?.getBrowserView()?.webContents;
     const activeWorkspace = await this.workspaceService.getActiveWorkspace();
     if (contents !== undefined && activeWorkspace !== undefined && win !== undefined) {
-      await contents.loadURL(await getLocalHostUrlWithActualIP(activeWorkspace.homeUrl));
+      await contents.loadURL(await this.nativeService.getLocalHostUrlWithActualInfo(activeWorkspace.homeUrl, activeWorkspace.id));
       contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
       contents.send(WindowChannel.updateCanGoForward, contents.canGoForward());
     }

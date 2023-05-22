@@ -216,7 +216,18 @@
     "TokenAuthDescription": "无法与只读模式同时开启。开启后需要在请求中带上凭证才能读写知识库内容，防止同一局域网下其他人访问笔记。太记会自动带上凭证，因此开启后不会影响太记应用正常使用，仅增加安全性，建议开启。",
     "TokenAuthAutoFillUserNameDescription": "此功能需要在全局设置或工作区设置里填写用户名，不然不会生效。若你未填，将自动在工作区设置里填一个默认值，你可自行修改。",
     "TokenAuthCurrentHeader": "凭证鉴权当前请求头",
-    "BlogOptions": "博客服务器设置"
+    "BlogOptions": "博客服务器设置",
+    "EnableHTTPS": "启用HTTPS",
+    "EnableHTTPSDescription": "提供安全的TLS加密访问，需要你有自己的HTTPS证书，可以从域名提供商那下载，也可以搜索免费的HTTPS证书申请方式。",
+    "HTTPSUploadCert": "添加Cert文件",
+    "HTTPSPickCert": "选择Cert文件路径",
+    "HTTPSCertPath": "Cert文件路径",
+    "HTTPSCertPathDescription": "后缀为 .crt 的证书文件的所在位置，一般以 xxx_public.crt 结尾。",
+    "HTTPSKeyPathDescription": "后缀为 .key 的私钥文件的所在位置。",
+    "HTTPSUploadKey": "添加Key文件",
+    "HTTPSKeyPath": "Key文件路径",
+    "HTTPSPickKey": "选择Key文件路径",
+    "UploadOrSelectPathDescription": "点击上传按钮将文件提交给太记保管，也可以点击选择路径按钮从你保管的位置选取文件。"
   },
   "Scripting": {
     "ExecutingScript": "正在执行脚本"

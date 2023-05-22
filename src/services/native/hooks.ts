@@ -2,12 +2,12 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { usePromiseValue } from '@/helpers/useServiceValue';
 
-export function useActualIp(homeUrl: string): string | undefined {
+export function useActualIp(homeUrl: string, workspaceID?: string): string | undefined {
   return usePromiseValue<string | undefined, undefined>(
     async (): Promise<string | undefined> => {
-      return homeUrl ? await window.service.native.getLocalHostUrlWithActualIP(homeUrl) : void Promise.resolve(undefined);
+      return homeUrl && workspaceID ? await window.service.native.getLocalHostUrlWithActualInfo(homeUrl, workspaceID) : void Promise.resolve(undefined);
     },
     undefined,
-    [homeUrl],
+    [homeUrl, workspaceID],
   );
 }

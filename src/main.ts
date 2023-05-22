@@ -143,6 +143,18 @@ const commonInit = async (): Promise<void> => {
   ipcMain.emit(MainChannel.commonInitFinished);
 };
 
+/**
+ * When loading wiki with https, we need to allow insecure https
+ * // TODO: ask user upload certificate to be used by browser view
+ * @url https://stackoverflow.com/questions/44658269/electron-how-to-allow-insecure-https
+ */
+app.on('certificate-error', (event, webContents, url, error, certificate, callback) => {
+  // Prevent having error
+  event.preventDefault();
+  // and continue
+  // eslint-disable-next-line n/no-callback-literal
+  callback(true);
+});
 app.on('ready', async () => {
   whenCommonInitFinished()
     // eslint-disable-next-line promise/always-return

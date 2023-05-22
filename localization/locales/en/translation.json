@@ -181,7 +181,9 @@
     "TokenAuth": "Token Authenticate",
     "TokenAuthDescription": "Cannot work with read-only mode. After enabled, other ones need to bring credentials in the request header to read write the content of the wiki, preventing other people in the same LAN from accessing your notes. TidGi will automatically bring the certificate, so turning on will not affect the normal use of TidGi app, it only increases security, so it is recommended to turn it on.",
     "TokenAuthAutoFillUserNameDescription": "This feature requires userName to be filled in global setting or workspace setting, if its empty, a default one will be auto filled into workspace setting, you can change it later.",
-    "BlogOptions": "Blog Server Options"
+    "BlogOptions": "Blog Server Options",
+    "EnableHTTPS": "Enable HTTPS",
+    "EnableHTTPSDescription": "To provide secure TLS encrypted access, you need to have your own HTTPS certificate, which can be downloaded from the domain name provider, or you can search for free HTTPS certificate application methods."
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed, or there is no wiki in this folder! \nDo you want to remove the workspace?",
