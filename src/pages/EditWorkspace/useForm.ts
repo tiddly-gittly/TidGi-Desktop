@@ -9,6 +9,7 @@ export function useForm(
   requestRestartCountDown: () => void = () => {},
 ): [IWorkspace | undefined, (newValue: IWorkspace, requestSaveAndRestart?: boolean) => void, () => Promise<void>] {
   const [workspace, workspaceSetter] = useState(originalWorkspace);
+  const [requestRestartAfterSave, requestRestartAfterSaveSetter] = useState(false);
   const previous = usePreviousValue(originalWorkspace);
   // initial observable value maybe undefined, we pass an non-null initial value to the form
   useEffect(() => {
@@ -21,13 +22,14 @@ export function useForm(
       return;
     }
     await window.service.workspace.update(workspace.id, workspace);
-  }, [workspace]);
+    if (requestRestartAfterSave) {
+      requestRestartCountDown();
+    }
+  }, [workspace, requestRestartAfterSave, requestRestartCountDown]);
   const setterWithRestartOption = (newValue: IWorkspace, requestSaveAndRestart?: boolean) => {
     workspaceSetter(newValue);
     if (requestSaveAndRestart === true && !isEqual(newValue, originalWorkspace)) {
-      void onSave().then(() => {
-        requestRestartCountDown();
-      });
+      requestRestartAfterSaveSetter(true);
     }
   };
   return [workspace, setterWithRestartOption, onSave];
