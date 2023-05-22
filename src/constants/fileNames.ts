@@ -9,3 +9,8 @@ export const wikiPictureExtensions = ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif'
 export const wikiHtmlExtensions = ['html', 'htm', 'hta', 'Html', 'HTML', 'HTM', 'HTA'];
 export const tlsCertExtensions = ['crt'];
 export const tlsKeyExtensions = ['key'];
+/**
+ * wikiHtmlExtensions
+ */
+const isHtmlWikiRegex = /(?:html|htm|Html|HTML|HTM|HTA|hta)$/;
+export const isHtmlWiki = (htmlWikiPath: string) => isHtmlWikiRegex.test(htmlWikiPath);

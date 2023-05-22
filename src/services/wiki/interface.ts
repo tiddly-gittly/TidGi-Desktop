@@ -51,7 +51,7 @@ export interface IWikiService {
    * @param title tiddler title to open
    */
   openTiddlerInExternal(homePath: string, title: string): Promise<void>;
-  packetHTMLFromWikiFolder(wikiFolderLocation: string, folderToSaveWikiHtml: string): Promise<void>;
+  packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   /** send tiddlywiki action message to current active wiki */
   requestWikiSendActionMessage(actionMessage: string): Promise<void>;

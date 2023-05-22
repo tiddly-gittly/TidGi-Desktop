@@ -7,7 +7,7 @@ import { injectable } from 'inversify';
 
 import { DEFAULT_DOWNLOADS_PATH } from '@/constants/appPaths';
 import { MetaDataChannel, WikiChannel } from '@/constants/channels';
-import { wikiHtmlExtensions } from '@/constants/fileNames';
+import { isHtmlWiki, wikiHtmlExtensions } from '@/constants/fileNames';
 import { tiddlywikiLanguagesMap } from '@/constants/languages';
 import { WikiCreationMethod } from '@/constants/wikiCreation';
 import type { IAuthenticationService } from '@services/auth/interface';
@@ -26,6 +26,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import path from 'path';
 import { WorkspaceFailedToLoadError } from './error';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
 
@@ -270,11 +271,16 @@ export class WorkspaceView implements IWorkspaceViewService {
             logger.error('Can not export whole wiki, activeWorkspace is undefined');
             return;
           }
-          const folderToSaveWikiHtml = await this.nativeService.pickDirectory(DEFAULT_DOWNLOADS_PATH, {
+          const pathOfNewHTML = await this.nativeService.pickDirectory(DEFAULT_DOWNLOADS_PATH, {
             allowOpenFile: true,
             filters: [{ name: 'HTML', extensions: wikiHtmlExtensions }],
           });
-          await this.wikiService.packetHTMLFromWikiFolder(activeWorkspace.wikiFolderLocation, folderToSaveWikiHtml[0]);
+          if (pathOfNewHTML.length > 0) {
+            const fileName = isHtmlWiki(pathOfNewHTML[0]) ? pathOfNewHTML[0] : path.join(pathOfNewHTML[0], `${activeWorkspace.name}.html`);
+            await this.wikiService.packetHTMLFromWikiFolder(activeWorkspace.wikiFolderLocation, fileName);
+          } else {
+            logger.error("Can not export whole wiki, pickDirectory's pathOfNewHTML is empty");
+          }
         },
         enabled: hasWorkspaces,
       },

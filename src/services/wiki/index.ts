@@ -212,9 +212,9 @@ export class Wiki implements IWikiService {
     await Thread.terminate(worker);
   }
 
-  public async packetHTMLFromWikiFolder(wikiFolderLocation: string, folderToSaveWikiHtml: string): Promise<void> {
+  public async packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void> {
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
-    await worker.packetHTMLFromWikiFolder(wikiFolderLocation, folderToSaveWikiHtml, { TIDDLYWIKI_PACKAGE_FOLDER });
+    await worker.packetHTMLFromWikiFolder(wikiFolderLocation, pathOfNewHTML, { TIDDLYWIKI_PACKAGE_FOLDER });
     // this worker is only for one time use. we will spawn a new one for starting wiki later.
     await Thread.terminate(worker);
   }

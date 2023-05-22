@@ -16,6 +16,7 @@ import { Observable } from 'rxjs';
 import { expose } from 'threads/worker';
 
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
+import { isHtmlWiki } from '@/constants/fileNames';
 import { defaultServerIP } from '@/constants/urls';
 import { fixPath } from '@services/libs/fixPath';
 import { IWikiMessage, IZxWorkerMessage, WikiControlActions, ZxWorkerControlActions } from './interface';
@@ -195,12 +196,6 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
     })();
   });
 }
-
-/**
- * wikiHtmlExtensions
- */
-const isHtmlWikiRegex = /(?:html|htm|Html|HTML|HTM|HTA|hta)$/;
-const isHtmlWiki = (htmlWikiPath: string) => isHtmlWikiRegex.test(htmlWikiPath);
 
 async function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string, constants: { TIDDLYWIKI_PACKAGE_FOLDER: string }): Promise<void> {
   // tiddlywiki --load ./mywiki.html --savewikifolder ./mywikifolder
