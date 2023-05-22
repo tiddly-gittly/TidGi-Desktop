@@ -2,8 +2,8 @@ lockfileVersion: '6.0'
 
 dependencies:
   '@tiddlygit/tiddlywiki':
-    specifier: ^5.3.0-prerelease-2023-05-20-18
-    version: 5.3.0-prerelease-2023-05-20-18
+    specifier: ^5.3.0-prerelease-2023-05-22
+    version: 5.3.0-prerelease-2023-05-22
   app-path:
     specifier: 4.0.0
     version: 4.0.0
@@ -2444,11 +2444,12 @@ packages:
     engines: {node: '>=10.17'}
     dev: true
 
-  /@tiddlygit/tiddlywiki@5.3.0-prerelease-2023-05-20-18:
-    resolution: {integrity: sha512-5scgBBABo9tQ7XJm8h9OK8IHxqgcdfURcVNcJJbYbMPALbSmadxaQFzkFBfyOIigtmGbd58RYutBbADO0zOJag==}
+  /@tiddlygit/tiddlywiki@5.3.0-prerelease-2023-05-22:
+    resolution: {integrity: sha512-PLRjtiEvAql7Sdm726308AU9JnQTPxN244iEXNb+XSCmVFY+ZkvQkqyE3OiLY0JMy9BLj+jDPAdcBJ6/7pJKqg==}
     engines: {node: '>=0.8.2'}
     hasBin: true
     dev: false
+    bundledDependencies: []
 
   /@tokenizer/token@0.3.0:
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
@@ -3722,6 +3723,7 @@ packages:
 
   /brace-expansion@1.1.11:
     resolution: {integrity: sha512-iCuPHDFgrHX7H2vEI/5xpz07zSHB00TpugqhmYtVmMO6518mCuRMoOYFldEBl0g187ufozdaHgWKcYFb61qGiA==}
+    requiresBuild: true
     dependencies:
       balanced-match: 1.0.2
       concat-map: 0.0.1
@@ -4158,6 +4160,7 @@ packages:
   /color-convert@2.0.1:
     resolution: {integrity: sha512-RRECPsj7iu/xb5oKYcsFHSppFNnsj/52OVTRKb4zP5onXwVF3zVmmToNcOfGC+CRDpfK/U584fMg38ZHCaElKQ==}
     engines: {node: '>=7.0.0'}
+    requiresBuild: true
     dependencies:
       color-name: 1.1.4
 
@@ -4265,6 +4268,7 @@ packages:
 
   /concat-map@0.0.1:
     resolution: {integrity: sha1-2Klr13/Wjfd5OnMDajug1UBdR3s=}
+    requiresBuild: true
 
   /connect-history-api-fallback@2.0.0:
     resolution: {integrity: sha512-U73+6lQFmfiNPrYbXqr6kZ1i1wiRqXnp2nhMsINseWXO8lDau0LGEffJ8kQi4EjLZympVgRdvqjAgiZ1tgzDDA==}
@@ -9823,6 +9827,7 @@ packages:
   /shebang-command@2.0.0:
     resolution: {integrity: sha512-kHxr2zZpYtdmrN1qDjrrX/Z1rR1kG8Dx+gkpK1G4eXmvXswmcE1hTWBWYUzlraYw1/yZp6YuDY77YtvbN0dmDA==}
     engines: {node: '>=8'}
+    requiresBuild: true
     dependencies:
       shebang-regex: 3.0.0
 
@@ -9834,6 +9839,7 @@ packages:
   /shebang-regex@3.0.0:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
+    requiresBuild: true
 
   /shell-quote@1.8.1:
     resolution: {integrity: sha512-6j1W9l1iAs/4xYBI1SYOVZyFcCis9b4KCLQ8fgAGG07QvzaRLVVRQvAy85yNmmZSjYjg4MWh4gNvlPujU/5LpA==}
