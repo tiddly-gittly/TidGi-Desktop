@@ -285,7 +285,7 @@
     "StorageServiceUserInfoNoFoundDetail": "似乎你尚未登录存储备份服务，因此此 Wiki 的同步暂时禁用，直到你登录以提供有可用于同步的登录信息。",
     "Later": "稍后",
     "RestartMessage": "您需要重新启动本程序才能使此更改生效。",
-    "RestartNow": "保存并重启",
+    "RestartNow": "现在重启",
     "ReportBug": "报告错误",
     "ReportBugDetail": "如果你看过教程了解操作流程，并仔细读过报错内容并思考，仔细检查了自己的输入觉得没问题，可以点击按钮。",
     "MadeWithLove": "<0>有</0><1> ❤ </1><2>的开发者：</2>"
