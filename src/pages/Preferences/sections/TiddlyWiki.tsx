@@ -4,8 +4,9 @@ import { useTranslation } from 'react-i18next';
 
 import { List } from '@material-ui/core';
 
+import { ListItemText } from '@/components/ListItem';
 import { useUserInfoObservable } from '@services/auth/hooks';
-import { ListItemText, ListItemVertical, Paper, SectionTitle, TextField } from '../PreferenceComponents';
+import { ListItemVertical, Paper, SectionTitle, TextField } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 export function TiddlyWiki(props: Partial<ISectionProps>): JSX.Element {

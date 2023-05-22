@@ -5,10 +5,11 @@ import { Divider, List, ListItemSecondaryAction, Switch } from '@material-ui/cor
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import TimePicker from '@material-ui/lab/TimePicker';
 
+import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { Link, ListItem, ListItemText, ListItemVertical, Paper, SectionTitle, TextField, TimePickerContainer } from '../PreferenceComponents';
+import { Link, ListItemVertical, Paper, SectionTitle, TextField, TimePickerContainer } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 export function Notifications(props: Required<ISectionProps>): JSX.Element {

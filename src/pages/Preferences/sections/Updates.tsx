@@ -2,11 +2,12 @@ import { Divider, List, ListItemSecondaryAction, Switch } from '@material-ui/cor
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import { useTranslation } from 'react-i18next';
 
+import { ListItem, ListItemText } from '@/components/ListItem';
 import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { getUpdaterMessage, useUpdaterObservable } from '@services/updater/hooks';
 import { IUpdaterStatus } from '@services/updater/interface';
-import { ListItem, ListItemText, Paper, SectionTitle } from '../PreferenceComponents';
+import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 export function Updates(props: Required<ISectionProps>): JSX.Element {

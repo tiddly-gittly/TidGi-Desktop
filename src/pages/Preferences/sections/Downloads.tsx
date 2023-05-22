@@ -3,8 +3,9 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePreferenceObservable } from '@services/preferences/hooks';
-import { ListItem, ListItemText, Paper, SectionTitle } from '../PreferenceComponents';
+import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 export function Downloads(props: Required<ISectionProps>): JSX.Element {
@@ -30,7 +31,8 @@ export function Downloads(props: Required<ISectionProps>): JSX.Element {
                       }
                     })
                     .catch((error: Error) => {
-                      console.log(error); // eslint-disable-line no-console
+                      // eslint-disable-next-line security-node/detect-crlf
+                      console.log(error);
                     });
                 }}
               >

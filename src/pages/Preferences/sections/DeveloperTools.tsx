@@ -3,8 +3,9 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import { ListItem, ListItemText, Paper, SectionTitle } from '../PreferenceComponents';
+import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 export function DeveloperTools(props: ISectionProps): JSX.Element {

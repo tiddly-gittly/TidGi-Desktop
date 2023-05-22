@@ -4,7 +4,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
-import { ListItem, ListItemText, Paper, SectionTitle } from '../PreferenceComponents';
+import { ListItem, ListItemText } from '@/components/ListItem';
+import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 import translatiumLogo from '@/images/translatium-logo.svg';

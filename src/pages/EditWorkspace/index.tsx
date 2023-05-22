@@ -2,20 +2,7 @@
 /* eslint-disable unicorn/no-useless-undefined */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null */
-import {
-  Button as ButtonRaw,
-  Divider,
-  Link,
-  List as ListRaw,
-  ListItem as ListItemRaw,
-  ListItemSecondaryAction,
-  ListItemText as ListItemTextRaw,
-  Paper,
-  Switch,
-  TextField as TextFieldRaw,
-  Tooltip,
-  Typography,
-} from '@material-ui/core';
+import { Button as ButtonRaw, Divider, ListItemSecondaryAction, Paper, Switch, TextField as TextFieldRaw, Tooltip, Typography } from '@material-ui/core';
 import { Autocomplete } from '@material-ui/lab';
 import React from 'react';
 import { Helmet } from 'react-helmet';
@@ -30,16 +17,16 @@ import { useWorkspaceObservable } from '@services/workspaces/hooks';
 import { IWorkspace } from '@services/workspaces/interface';
 import { useForm } from './useForm';
 
+import { List, ListItem, ListItemText } from '@/components/ListItem';
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { TokenForm } from '@/components/TokenForm';
 import { DEFAULT_USER_NAME, getTidGiAuthHeaderWithToken } from '@/constants/auth';
-import { rootTiddlers } from '@/constants/defaultTiddlerNames';
-import { defaultServerIP } from '@/constants/urls';
 import { useActualIp } from '@services/native/hooks';
 import { SupportedStorageServices } from '@services/types';
 import { isEqual } from 'lodash';
 import { SyncedWikiDescription } from '../AddWorkspace/Description';
 import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
+import { BlogOptions } from './blog';
 
 const Root = styled(Paper)`
   height: 100%;
@@ -143,34 +130,6 @@ const Caption = styled(Typography)`
 Caption.defaultProps = {
   variant: 'caption',
 };
-const List = styled(ListRaw)`
-  & > li > div {
-    padding-top: 0;
-    padding-bottom: 0;
-  }
-`;
-export const ListItem: typeof ListItemRaw = styled(ListItemRaw)`
-  svg {
-    color: ${({ theme }) => theme.palette.action.active};
-  }
-  p,
-  label {
-    color: ${({ theme }) => theme.palette.text.secondary};
-  }
-  div[role='button'] {
-    color: ${({ theme }) => theme.palette.text.primary};
-  }
-`;
-export const ListItemText: typeof ListItemTextRaw = styled(ListItemTextRaw)`
-  color: ${({ theme }) => theme.palette.text.primary};
-  input {
-    color: ${({ theme }) => theme.palette.text.primary};
-  }
-  p,
-  label {
-    color: ${({ theme }) => theme.palette.text.secondary};
-  }
-`;
 
 const getValidIconPath = (iconPath?: string | null): string => {
   if (typeof iconPath === 'string') {
@@ -199,7 +158,6 @@ export default function EditWorkspace(): JSX.Element {
     name,
     order,
     picturePath,
-    port,
     storageService,
     syncOnInterval,
     syncOnStartup,
@@ -209,7 +167,6 @@ export default function EditWorkspace(): JSX.Element {
     userName,
     lastUrl,
     wikiFolderLocation,
-    rootTiddler,
     readOnlyMode,
     id,
   } = (workspace ?? {}) as unknown as IWorkspace;
@@ -279,49 +236,7 @@ export default function EditWorkspace(): JSX.Element {
         <Divider />
         {!isSubWiki && (
           <>
-            <TextField
-              id='outlined-full-width'
-              label={t('EditWorkspace.Port')}
-              helperText={
-                <span>
-                  {t('EditWorkspace.URL')}{' '}
-                  <Link
-                    onClick={async () => {
-                      actualIP && (await window.service.native.open(actualIP));
-                    }}
-                    style={{ cursor: 'pointer' }}
-                  >
-                    {actualIP}
-                  </Link>
-                </span>
-              }
-              placeholder='Optional'
-              value={port}
-              onChange={async (event) => {
-                if (!Number.isNaN(Number.parseInt(event.target.value))) {
-                  workspaceSetter({
-                    ...workspace,
-                    port: Number(event.target.value),
-                    homeUrl: await window.service.native.getLocalHostUrlWithActualIP(`http://${defaultServerIP}:${event.target.value}/`),
-                  }, true);
-                }
-              }}
-            />
-            <Divider />
             <List>
-              <ListItem disableGutters>
-                <ListItemText primary={t('EditWorkspace.ReadOnlyMode')} secondary={t('EditWorkspace.ReadOnlyModeDescription')} />
-                <ListItemSecondaryAction>
-                  <Switch
-                    edge='end'
-                    color='primary'
-                    checked={readOnlyMode}
-                    onChange={(event) => {
-                      workspaceSetter({ ...workspace, readOnlyMode: event.target.checked, tokenAuth: event.target.checked ? false : tokenAuth }, true);
-                    }}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
               <ListItem disableGutters>
                 <ListItemText
                   primary={t('EditWorkspace.TokenAuth')}
@@ -379,6 +294,7 @@ export default function EditWorkspace(): JSX.Element {
                 }}
               />
             )}
+            <BlogOptions actualIP={actualIP} workspace={workspace} workspaceSetter={workspaceSetter} />
           </>
         )}
         {isSubWiki && (
@@ -392,6 +308,7 @@ export default function EditWorkspace(): JSX.Element {
             renderInput={(parameters) => <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
           />
         )}
+        <Divider />
         <AvatarFlex>
           <AvatarLeft>
             <Avatar transparentBackground={transparentBackground}>
@@ -503,19 +420,6 @@ export default function EditWorkspace(): JSX.Element {
               </ListItem>
             </List>
           </>
-        )}
-        {!isSubWiki && (
-          <Autocomplete
-            freeSolo
-            options={rootTiddlers}
-            value={rootTiddler}
-            defaultValue={rootTiddlers[0]}
-            onInputChange={(_, value) => {
-              workspaceSetter({ ...workspace, rootTiddler: value });
-              // void requestSaveAndRestart();
-            }}
-            renderInput={(parameters) => <TextField {...parameters} label={t('EditWorkspace.WikiRootTiddler')} helperText={t('EditWorkspace.WikiRootTiddlerDescription')} />}
-          />
         )}
         {!isSubWiki && (
           <List>

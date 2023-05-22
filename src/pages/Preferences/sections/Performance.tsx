@@ -2,8 +2,9 @@ import { Divider, List, ListItemSecondaryAction, Switch } from '@material-ui/cor
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePreferenceObservable } from '@services/preferences/hooks';
-import { ListItem, ListItemText, Paper, SectionTitle } from '../PreferenceComponents';
+import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 export function Performance(props: Required<ISectionProps>): JSX.Element {

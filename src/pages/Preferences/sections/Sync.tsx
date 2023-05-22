@@ -9,9 +9,10 @@ import { useTranslation } from 'react-i18next';
 
 import { TokenForm } from '../../../components/TokenForm';
 
+import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { ListItem, ListItemText, Paper, SectionTitle, TextField, TimePickerContainer } from '../PreferenceComponents';
+import { Paper, SectionTitle, TextField, TimePickerContainer } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 export function Sync(props: Required<ISectionProps>): JSX.Element {

@@ -1,4 +1,4 @@
-import { InputLabel as InputLabelRaw, ListItem as ListItemRaw, ListItemText as ListItemTextRaw, Paper as PaperRaw, TextField as TextFieldRaw, Typography } from '@material-ui/core';
+import { InputLabel as InputLabelRaw, ListItem as ListItemRaw, Paper as PaperRaw, TextField as TextFieldRaw, Typography } from '@material-ui/core';
 import styled, { keyframes } from 'styled-components';
 
 export const Paper = styled(PaperRaw)`
@@ -45,28 +45,6 @@ TextField.defaultProps = {
 
 export const InputLabel: typeof InputLabelRaw = styled(InputLabelRaw)`
   color: ${({ theme }) => theme.palette.text.primary};
-`;
-export const ListItemText: typeof ListItemTextRaw = styled(ListItemTextRaw)`
-  color: ${({ theme }) => theme.palette.text.primary};
-  input {
-    color: ${({ theme }) => theme.palette.text.primary};
-  }
-  p,
-  label {
-    color: ${({ theme }) => theme.palette.text.secondary};
-  }
-`;
-export const ListItem: typeof ListItemRaw = styled(ListItemRaw)`
-  svg {
-    color: ${({ theme }) => theme.palette.action.active};
-  }
-  p,
-  label {
-    color: ${({ theme }) => theme.palette.text.secondary};
-  }
-  div[role='button'] {
-    color: ${({ theme }) => theme.palette.text.primary};
-  }
 `;
 export const ListItemVertical: typeof ListItemRaw = styled(ListItemRaw)`
   flex-direction: column;

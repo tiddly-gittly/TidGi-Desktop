@@ -2,11 +2,12 @@ import { Divider, List, ListItemSecondaryAction, MenuItem, Select, Switch } from
 import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import { useTranslation } from 'react-i18next';
 
+import { ListItem, ListItemText } from '@/components/ListItem';
 import { hunspellLanguagesMap } from '@/constants/hunspellLanguages';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { InputLabel, ListItem, ListItemText, Paper, SectionTitle } from '../PreferenceComponents';
+import { InputLabel, Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 export function Languages(props: Partial<ISectionProps> & { languageSelectorOnly?: boolean }): JSX.Element {

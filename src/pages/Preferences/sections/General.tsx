@@ -3,11 +3,12 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
+import { ListItem, ListItemText } from '@/components/ListItem';
 import PopUpMenuItem from '@/components/PopUpMenuItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { IPreferences } from '@services/preferences/interface';
-import { ListItem, ListItemText, Paper, SectionTitle } from '../PreferenceComponents';
+import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 const getThemeString = (theme: IPreferences['themeSource']): string => {

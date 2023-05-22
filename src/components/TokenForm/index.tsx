@@ -1,11 +1,12 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { ListItemText as ListItemTextRaw, Tab as TabRaw } from '@material-ui/core';
+import { Tab as TabRaw } from '@material-ui/core';
 import { TabContext, TabList as TabListRaw, TabPanel as TabPanelRaw } from '@material-ui/lab';
 import { SupportedStorageServices } from '@services/types';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled, { DefaultTheme, keyframes } from 'styled-components';
 
+import { ListItemText } from '../ListItem';
 import { GitTokenForm } from './GitTokenForm';
 
 const Container = styled.div`
@@ -13,16 +14,6 @@ const Container = styled.div`
   display: flex;
   flex-direction: column;
   background-color: ${({ theme }) => theme.palette.background.paper};
-`;
-export const ListItemText: typeof ListItemTextRaw = styled(ListItemTextRaw)`
-  color: ${({ theme }) => theme.palette.text.primary};
-  input {
-    color: ${({ theme }) => theme.palette.text.primary};
-  }
-  p,
-  label {
-    color: ${({ theme }) => theme.palette.text.secondary};
-  }
 `;
 const TabPanel = styled(TabPanelRaw)`
   padding: 5px 0 !important;

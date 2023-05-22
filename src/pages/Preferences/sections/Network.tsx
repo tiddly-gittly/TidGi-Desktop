@@ -1,8 +1,9 @@
 import { List } from '@material-ui/core';
 import { useTranslation } from 'react-i18next';
 
+import { ListItem } from '@/components/ListItem';
 import { usePreferenceObservable } from '@services/preferences/hooks';
-import { ListItem, Paper, SectionTitle } from '../PreferenceComponents';
+import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 export function Network(props: ISectionProps): JSX.Element {

@@ -4,7 +4,8 @@ import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { usePreferenceObservable } from '@services/preferences/hooks';
-import { Link, ListItem, ListItemText, Paper, SectionTitle } from '../PreferenceComponents';
+import { Link, Paper, SectionTitle } from '../PreferenceComponents';
+import { ListItem, ListItemText } from '@/components/ListItem';
 import type { ISectionProps } from '../useSections';
 
 export function PrivacyAndSecurity(props: Required<ISectionProps>): JSX.Element {

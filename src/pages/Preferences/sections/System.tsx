@@ -3,9 +3,10 @@ import ChevronRightIcon from '@material-ui/icons/ChevronRight';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
+import { ListItem, ListItemText } from '@/components/ListItem';
 import PopUpMenuItem from '@/components/PopUpMenuItem';
 import { getOpenAtLoginString, useSystemPreferenceObservable } from '@services/systemPreferences/hooks';
-import { ListItem, ListItemText, Paper, SectionTitle } from '../PreferenceComponents';
+import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 export function System(props: ISectionProps): JSX.Element {
