@@ -19,7 +19,7 @@ import { IWorkspaceService } from '@services/workspaces/interface';
 import i18next from 'i18next';
 import { ZxNotInitializedError } from './error';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
-import { INativeService } from './interface';
+import { INativeService, IPickDirectoryOptions } from './interface';
 import { reportErrorToGithubWithTemplates } from './reportError';
 
 @injectable()
@@ -176,10 +176,11 @@ ${message.message}
     }
   }
 
-  public async pickDirectory(defaultPath?: string): Promise<string[]> {
+  public async pickDirectory(defaultPath?: string, options?: IPickDirectoryOptions): Promise<string[]> {
     const dialogResult = await dialog.showOpenDialog({
-      properties: ['openDirectory'],
+      properties: options?.allowOpenFile === true ? ['openDirectory', 'openFile'] : ['openDirectory'],
       defaultPath,
+      filters: options?.filters,
     });
     if (!dialogResult.canceled && dialogResult.filePaths.length > 0) {
       return dialogResult.filePaths;

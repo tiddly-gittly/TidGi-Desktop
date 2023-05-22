@@ -409,7 +409,7 @@
     "PrintPage": "Print Page",
     "PrintActiveTiddler": "Print Active Tiddler",
     "Wiki": "Wiki",
-    "ExportWholeWikiHTML": "Export Whole Wiki as HTML"
+    "ExportWholeWikiHTML": "Export Whole Wiki as HTML to folder"
   },
   "ErrorMessage": "Error message",
   "ClickForDetails": "Click For Details",

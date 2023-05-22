@@ -21,6 +21,7 @@ import { List, ListItem, ListItemText } from '@/components/ListItem';
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { TokenForm } from '@/components/TokenForm';
 import { DEFAULT_USER_NAME, getTidGiAuthHeaderWithToken } from '@/constants/auth';
+import { wikiPictureExtensions } from '@/constants/fileNames';
 import { useActualIp } from '@services/native/hooks';
 import { SupportedStorageServices } from '@services/types';
 import { isEqual } from 'lodash';
@@ -139,7 +140,6 @@ const getValidIconPath = (iconPath?: string | null): string => {
 };
 
 const workspaceID = (window.meta as WindowMeta[WindowNames.editWorkspace]).workspaceID as string;
-const wikiPictureExtensions = ['jpg', 'jpeg', 'png', 'gif', 'tiff', 'tif', 'bmp', 'dib'];
 
 export default function EditWorkspace(): JSX.Element {
   const { t } = useTranslation();

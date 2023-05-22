@@ -103,7 +103,7 @@
     "PrintPage": "打印页面",
     "PrintActiveTiddler": "打印当前笔记",
     "Wiki": "Wiki",
-    "ExportWholeWikiHTML": "导出整个Wiki为HTML"
+    "ExportWholeWikiHTML": "导出整个Wiki为HTML存入文件夹"
   },
   "AddWorkspace": {
     "AddWorkspace": "添加工作区",

@@ -7,6 +7,7 @@ import { injectable } from 'inversify';
 
 import { DEFAULT_DOWNLOADS_PATH } from '@/constants/appPaths';
 import { MetaDataChannel, WikiChannel } from '@/constants/channels';
+import { wikiHtmlExtensions } from '@/constants/fileNames';
 import { tiddlywikiLanguagesMap } from '@/constants/languages';
 import { WikiCreationMethod } from '@/constants/wikiCreation';
 import type { IAuthenticationService } from '@services/auth/interface';
@@ -269,7 +270,10 @@ export class WorkspaceView implements IWorkspaceViewService {
             logger.error('Can not export whole wiki, activeWorkspace is undefined');
             return;
           }
-          const folderToSaveWikiHtml = await this.nativeService.pickDirectory(DEFAULT_DOWNLOADS_PATH);
+          const folderToSaveWikiHtml = await this.nativeService.pickDirectory(DEFAULT_DOWNLOADS_PATH, {
+            allowOpenFile: true,
+            filters: [{ name: 'HTML', extensions: wikiHtmlExtensions }],
+          });
           await this.wikiService.packetHTMLFromWikiFolder(activeWorkspace.wikiFolderLocation, folderToSaveWikiHtml[0]);
         },
         enabled: hasWorkspaces,

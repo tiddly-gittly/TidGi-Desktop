@@ -7,6 +7,7 @@ import styled from 'styled-components';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { rootTiddlers } from '@/constants/defaultTiddlerNames';
+import { tlsCertExtensions, tlsKeyExtensions } from '@/constants/fileNames';
 import { defaultServerIP } from '@/constants/urls';
 import { IWorkspace } from '@services/workspaces/interface';
 
@@ -25,9 +26,6 @@ const HttpsCertKeyListItem: typeof ListItem = styled(ListItem)`
 const AutocompleteWithMarginTop: typeof Autocomplete = styled(Autocomplete)`
   margin-top: 8px;
 `;
-
-const tlsCertExtensions = ['crt'];
-const tlsKeyExtensions = ['key'];
 
 export interface IBlogOptionsProps {
   actualIP: string | undefined;

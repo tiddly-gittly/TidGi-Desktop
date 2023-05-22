@@ -6,6 +6,14 @@ import { IZxFileInput } from '@services/wiki/wikiWorker';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
+export interface IPickDirectoryOptions {
+  /**
+   * Only works in MacOS, will use openDirectory as default on other platforms
+   * @url https://github.com/electron/electron/issues/26885
+   */
+  allowOpenFile?: boolean;
+  filters?: Electron.OpenDialogOptions['filters'];
+}
 /**
  * Wrap call to electron api, so we won't need remote module in renderer process
  */
@@ -33,7 +41,7 @@ export interface INativeService {
   openNewGitHubIssue(error: Error): Promise<void>;
   openPath(filePath: string): Promise<void>;
   path(method: 'basename' | 'dirname' | 'join', pathString: string | undefined, ...paths: string[]): Promise<string | undefined>;
-  pickDirectory(defaultPath?: string): Promise<string[]>;
+  pickDirectory(defaultPath?: string, options?: IPickDirectoryOptions): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;
   quit(): void;
   /**
