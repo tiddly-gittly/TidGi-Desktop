@@ -41,6 +41,7 @@
     "electron-util": "0.17.2",
     "electron-window-state": "5.0.3",
     "errio": "1.2.2",
+    "exponential-backoff": "^3.1.1",
     "fs-extra": "11.1.1",
     "git-sync-js": "^1.0.5",
     "i18next": "22.5.0",

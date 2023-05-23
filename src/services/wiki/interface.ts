@@ -1,7 +1,6 @@
 import { WikiChannel } from '@/constants/channels';
 import { IGitUserInfos } from '@services/git/interface';
 import { IWorkspace } from '@services/workspaces/interface';
-import type { BrowserView } from 'electron';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { ModuleThread } from 'threads';
 import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
@@ -56,9 +55,8 @@ export interface IWikiService {
   /** send tiddlywiki action message to current active wiki */
   requestWikiSendActionMessage(actionMessage: string): Promise<void>;
   restartWiki(workspace: IWorkspace): Promise<void>;
-  runFilterOnWiki(workspace: IWorkspace, filter: string): Promise<string[] | undefined>;
   setAllWikiStartLockOff(): void;
-  setWikiLanguage(view: BrowserView, workspaceID: string, tiddlywikiLanguageName: string): Promise<void>;
+  setWikiLanguage(workspaceID: string, tiddlywikiLanguageName: string): Promise<void>;
   /**
    * Lock to prevent some process ask a wiki to start and restart frequently.
    * For example, start main wiki then start sub-wiki, and sub-wiki will try to start its main wiki. */
@@ -93,7 +91,6 @@ export const WikiServiceIPCDescriptor = {
     removeWiki: ProxyPropertyType.Function,
     requestWikiSendActionMessage: ProxyPropertyType.Function,
     restartWiki: ProxyPropertyType.Function,
-    runFilterOnWiki: ProxyPropertyType.Function,
     setWikiLanguage: ProxyPropertyType.Function,
     startWiki: ProxyPropertyType.Function,
     stopAllWiki: ProxyPropertyType.Function,

@@ -2,7 +2,8 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
-import { BrowserView, dialog, ipcMain, shell } from 'electron';
+import { dialog, ipcMain, shell } from 'electron';
+import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import { injectable } from 'inversify';
 import path from 'path';
@@ -473,30 +474,6 @@ export class Wiki implements IWikiService {
     return this.justStartedWiki[wikiFolderLocation] ?? false;
   }
 
-  public async runFilterOnWiki(workspace: IWorkspace, filter: string): Promise<string[] | undefined> {
-    // await service.wiki.runFilterOnWiki(await service.workspace.getActiveWorkspace(), '[is[draft]]')
-    const filterResult: string[] = await new Promise((resolve) => {
-      /**
-       * Use nonce to prevent data racing
-       */
-      const nonce = Math.random();
-      const listener = (_event: Electron.IpcMainEvent, nonceReceived: number, value: string[]): void => {
-        if (nonce === nonceReceived) {
-          ipcMain.removeListener(WikiChannel.runFilterDone, listener);
-          resolve(value);
-        }
-      };
-      ipcMain.on(WikiChannel.runFilterDone, listener);
-      const browserView = this.viewService.getView(workspace.id, WindowNames.main);
-      if (!browserView?.webContents) {
-        logger.error(`browserView.webContents is undefined in runFilterOnWiki ${workspace.id} when running filter ${filter}`);
-        return;
-      }
-      browserView.webContents.send(WikiChannel.runFilter, nonce, filter);
-    });
-    return filterResult;
-  }
-
   public async getTiddlerText(workspace: IWorkspace, title: string): Promise<string | undefined> {
     const textResult: string = await new Promise((resolve) => {
       /**
@@ -525,33 +502,33 @@ export class Wiki implements IWikiService {
    * Simply do some check before calling `gitService.commitAndSync`
    */
   private async syncWikiIfNeeded(workspace: IWorkspace): Promise<void> {
-    const checkCanSyncDueToNoDraft = async (workspace: IWorkspace): Promise<boolean> => {
+    const { gitUrl: githubRepoUrl, storageService, backupOnInterval, id } = workspace;
+    const checkCanSyncDueToNoDraft = async (): Promise<boolean> => {
       const syncOnlyWhenNoDraft = await this.preferenceService.get('syncOnlyWhenNoDraft');
       if (!syncOnlyWhenNoDraft) {
         return true;
       }
-      const draftTitles = await this.runFilterOnWiki(workspace, '[is[draft]]');
+      const draftTitles = await this.wikiOperation(WikiChannel.runFilter, id, '[is[draft]]');
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      if (draftTitles && draftTitles.length > 0) {
+      if (Array.isArray(draftTitles) && draftTitles.length > 0) {
         return false;
       }
       return true;
     };
-    const { gitUrl: githubRepoUrl, storageService, backupOnInterval, id } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
 
     if (
       storageService !== SupportedStorageServices.local &&
       typeof githubRepoUrl === 'string' &&
       userInfo !== undefined &&
-      (await checkCanSyncDueToNoDraft(workspace))
+      (await checkCanSyncDueToNoDraft())
     ) {
       const hasChanges = await this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo });
       if (hasChanges) {
         await this.workspaceViewService.restartWorkspaceViewService(id);
         await this.viewService.reloadViewsWebContents(id);
       }
-    } else if (backupOnInterval && (await checkCanSyncDueToNoDraft(workspace))) {
+    } else if (backupOnInterval && (await checkCanSyncDueToNoDraft())) {
       await this.gitService.commitAndSync(workspace, { commitOnly: true });
     }
   }
@@ -588,7 +565,7 @@ export class Wiki implements IWikiService {
   }
 
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
-    const { wikiFolderLocation, isSubWiki, mainWikiToLink, id, name, mainWikiID, tokenAuth } = workspace;
+    const { wikiFolderLocation, isSubWiki, mainWikiToLink, id, name, mainWikiID } = workspace;
 
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     // and it will leak private sub-wiki's opened tiddler title
@@ -655,7 +632,7 @@ export class Wiki implements IWikiService {
     updateSubWikiPluginContent(mainWikiPath, newConfig, oldConfig);
   }
 
-  public wikiOperation<OP extends keyof IWikiOperations>(
+  public wikiOperation<OP extends keyof IWikiOperations, T = string[]>(
     operationType: OP,
     ...arguments_: Parameters<IWikiOperations[OP]>
   ): undefined | ReturnType<IWikiOperations[OP]> {
@@ -669,39 +646,16 @@ export class Wiki implements IWikiService {
     }
     // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556) this maybe a bug of ts... try remove this comment after upgrade ts. And the result become void is weird too.
     // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-    return wikiOperations[operationType](...arguments_) as unknown as ReturnType<IWikiOperations[OP]>;
+    return wikiOperations[operationType]<T>(...arguments_) as unknown as ReturnType<IWikiOperations[OP]>;
   }
 
-  public async setWikiLanguage(view: BrowserView, workspaceID: string, tiddlywikiLanguageName: string): Promise<void> {
+  public async setWikiLanguage(workspaceID: string, tiddlywikiLanguageName: string): Promise<void> {
     const twLanguageUpdateTimeout = 15_000;
-    const retryTime = 2000;
     // no need to wait setting wiki language, this sometimes cause slow PC to fail on this step
-    void new Promise<void>((resolve) => {
-      const onRetryOrDo = (): void => {
-        if (!view.webContents) {
-          logger.error(`browserView.webContents is undefined in getTiddlerText ${workspaceID} when setting tiddlywikiLanguageName ${tiddlywikiLanguageName}`);
-          return;
-        }
-        view.webContents.send(WikiChannel.setTiddlerText, '$:/language', tiddlywikiLanguageName, workspaceID);
-      };
-      const intervalHandle = setInterval(onRetryOrDo, retryTime);
-      const onTimeout = (): void => {
-        ipcMain.removeListener(WikiChannel.setTiddlerTextDone + workspaceID, onDone);
-        clearInterval(intervalHandle);
-        const errorMessage =
-          `setWikiLanguage("${tiddlywikiLanguageName}"), language "${tiddlywikiLanguageName}" in workspaceID ${workspaceID} is too slow to update after ${twLanguageUpdateTimeout}ms.`;
-        logger.error(errorMessage);
-        // no need to reject and show error dialog, otherwise user will rise issue. This happens too frequent.
-        // reject(new Error(errorMessage));
-      };
-      const timeoutHandle = setTimeout(onTimeout, twLanguageUpdateTimeout);
-      const onDone = (): void => {
-        clearTimeout(timeoutHandle);
-        clearInterval(intervalHandle);
-        resolve();
-      };
-      ipcMain.once(WikiChannel.setTiddlerTextDone + workspaceID, onDone);
-      onRetryOrDo();
+    void backOff(async () => {
+      await (this.wikiOperation(WikiChannel.setTiddlerText, workspaceID, '$:/language', tiddlywikiLanguageName, { timeout: twLanguageUpdateTimeout }) as Promise<void>);
+    }, {
+      startingDelay: 2000,
     });
   }
 

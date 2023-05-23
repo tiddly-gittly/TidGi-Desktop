@@ -199,7 +199,7 @@ export class WorkspaceView implements IWorkspaceViewService {
           });
         } else {
           logger.debug(`Setting wiki language to ${currentLanguage} (${tiddlywikiLanguageName}) on init`);
-          await this.wikiService.setWikiLanguage(view, workspace.id, tiddlywikiLanguageName);
+          await this.wikiService.setWikiLanguage(workspace.id, tiddlywikiLanguageName);
         }
       }
     }

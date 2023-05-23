@@ -44,7 +44,7 @@ export async function requestChangeLanguage(newLanguage: string): Promise<void> 
         }
         const tasks: Array<Promise<void>> = [];
         viewService.forEachView((view, workspaceID) => {
-          tasks.push(wikiService.setWikiLanguage(view, workspaceID, tiddlywikiLanguageName));
+          tasks.push(wikiService.setWikiLanguage(workspaceID, tiddlywikiLanguageName));
         });
         void Promise.all(tasks).then(resolve, reject);
       }

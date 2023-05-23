@@ -76,14 +76,14 @@ ipcRenderer.on(WikiChannel.runFilter, async (event, nonceReceived: number, filte
   const filterResult: string[] = await (webFrame.executeJavaScript(`
     $tw.wiki.compileFilter('${filter}')()
   `) as Promise<string[]>);
-  ipcRenderer.send(WikiChannel.runFilterDone, nonceReceived, filterResult);
+  ipcRenderer.send(WikiChannel.runFilter, nonceReceived, filterResult);
 });
 // set tiddler text, we use workspaceID as callback id
-ipcRenderer.on(WikiChannel.setTiddlerText, async (event, title: string, value: string, workspaceID: string = '') => {
+ipcRenderer.on(WikiChannel.setTiddlerText, async (event, nonceReceived: number, title: string, value: string) => {
   await executeTWJavaScriptWhenIdle(`
     $tw.wiki.setText('${title}', 'text', undefined, \`${value}\`);
   `);
-  ipcRenderer.send(`${WikiChannel.setTiddlerTextDone}${workspaceID}`);
+  ipcRenderer.send(WikiChannel.setTiddlerText, nonceReceived);
 });
 // add snackbar to notify user
 ipcRenderer.on(WikiChannel.syncProgress, async (event, message: string) => {
