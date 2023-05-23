@@ -38,7 +38,8 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
   if (['production', 'test'].includes(process.env.NODE_ENV)) {
     console.log('Copying tiddlywiki dependency to dist');
     await fs.copy(path.join(projectRoot, 'node_modules', '@tiddlygit', 'tiddlywiki'), path.join(cwd, 'node_modules', '@tiddlygit', 'tiddlywiki'), { dereference: true });
-    await fs.copy(path.join(projectRoot, 'node_modules', 'dugite'), path.join(cwd, 'node_modules', 'dugite'), { dereference: true });
+    // it has things like `git/bin/libexec/git-core/git-add` link to `git/bin/libexec/git-core/git`, to reduce size, so can't use `dereference: true` here.
+    await fs.copy(path.join(projectRoot, 'node_modules', '.pnpm', 'dugite@2.5.0', 'node_modules', 'dugite'), path.join(cwd, 'node_modules', 'dugite'), { dereference: false });
     // we only need its `main` binary
     await fs.mkdirp(path.join(cwd, 'node_modules', 'app-path'));
     await fs.copy(path.join(projectRoot, 'node_modules', 'app-path', 'main'), path.join(cwd, 'node_modules', 'app-path', 'main'), { dereference: true });
