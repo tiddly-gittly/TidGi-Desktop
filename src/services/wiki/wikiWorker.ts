@@ -29,6 +29,7 @@ let wikiInstance: ITiddlyWiki | undefined;
 function startNodeJSWiki({
   adminToken,
   constants: { TIDDLYWIKI_PACKAGE_FOLDER },
+  excludedPlugins = [],
   homePath,
   https,
   isDev,
@@ -41,6 +42,7 @@ function startNodeJSWiki({
 }: {
   adminToken?: string;
   constants: { TIDDLYWIKI_PACKAGE_FOLDER: string };
+  excludedPlugins: string[];
   homePath: string;
   https?: {
     enabled: boolean;
@@ -105,6 +107,20 @@ function startNodeJSWiki({
       const httpsArguments = https?.enabled && https.tlsKey && https.tlsCert
         ? [`tls-key=${https.tlsKey}`, `tls-cert=${https.tlsCert}`]
         : [];
+      /**
+       * Set excluded plugins or tiddler content to empty string
+       * @url https://github.com/linonetwo/wiki/blob/8f1f091455eec23a9f016d6972b7f38fe85efde1/tiddlywiki.info#LL35C1-L39C20
+       */
+      const excludePluginsArguments = [
+        '--setfield',
+        excludedPlugins.map((pluginOrTiddlerTitle) =>
+          // allows filter like `[is[binary]] [type[application/msword]] -[type[application/pdf]]`, but also auto add `[[]]` to plugin title to be like `[[$:/plugins/tiddlywiki/filesystem]]`
+          pluginOrTiddlerTitle.includes('[') && pluginOrTiddlerTitle.includes(']') ? pluginOrTiddlerTitle : `[[${pluginOrTiddlerTitle}]]`
+        ).join(' '),
+        'text',
+        '',
+        'text/plain',
+      ];
 
       wikiInstance.boot.argv = [
         ...builtInPluginArguments,
@@ -116,7 +132,8 @@ function startNodeJSWiki({
         ...httpsArguments,
         ...readonlyArguments,
         ...tokenAuthenticateArguments,
-        // `debug-level=${isDev ? 'full' : 'none'}`,
+        ...excludePluginsArguments,
+        `debug-level=${isDev ? 'full' : 'none'}`,
       ];
 
       wikiInstance.hooks.addHook('th-server-command-post-start', function(listenCommand, server) {

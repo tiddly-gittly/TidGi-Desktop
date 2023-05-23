@@ -301,7 +301,7 @@ function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSe
           if (autoCompleteClosed && event.key === 'Enter') {
             // Prevent's default 'Enter' behavior.
             event.preventDefault();
-            workspaceSetter({ ...workspace, excludedPlugins: [...excludedPlugins.filter(item => item !== currentInput), currentInput] });
+            workspaceSetter({ ...workspace, excludedPlugins: [...excludedPlugins.filter(item => item !== currentInput), currentInput] }, true);
             currentInputSetter('');
           }
         }}
