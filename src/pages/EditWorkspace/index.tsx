@@ -14,7 +14,6 @@ import { usePromiseValue } from '@/helpers/useServiceValue';
 import type { ISubWikiPluginContent } from '@services/wiki/plugin/subWikiPlugin';
 import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspaceObservable } from '@services/workspaces/hooks';
-import { IWorkspace } from '@services/workspaces/interface';
 import { useForm } from './useForm';
 
 import { List, ListItem, ListItemText } from '@/components/ListItem';
@@ -167,9 +166,9 @@ export default function EditWorkspace(): JSX.Element {
     userName,
     lastUrl,
     wikiFolderLocation,
-    readOnlyMode,
+    readOnlyMode = false,
     id,
-  } = (workspace ?? {}) as unknown as IWorkspace;
+  } = workspace ?? {};
   const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
     async () => (mainWikiToLink ? await window.service.wiki.getSubWikiPluginContent(mainWikiToLink) : []),
     [],
@@ -177,9 +176,10 @@ export default function EditWorkspace(): JSX.Element {
   ) as ISubWikiPluginContent[];
   const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName')) as string, '');
   // some feature need a username to work, so if userName is empty, assign a fallbackUserName DEFAULT_USER_NAME
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   const userNameIsEmpty = !(userName || fallbackUserName);
   const authToken = usePromiseValue<string | undefined>(
-    async () => await (window.service.auth.getOneTimeAdminAuthTokenForWorkspace(id)),
+    async () => id && await (window.service.auth.getOneTimeAdminAuthTokenForWorkspace(id)),
     '',
     [id],
   );

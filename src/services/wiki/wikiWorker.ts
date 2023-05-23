@@ -116,7 +116,7 @@ function startNodeJSWiki({
         ...httpsArguments,
         ...readonlyArguments,
         ...tokenAuthenticateArguments,
-        `debug-level=${isDev ? 'full' : 'none'}`,
+        // `debug-level=${isDev ? 'full' : 'none'}`,
       ];
 
       wikiInstance.hooks.addHook('th-server-command-post-start', function(listenCommand, server) {

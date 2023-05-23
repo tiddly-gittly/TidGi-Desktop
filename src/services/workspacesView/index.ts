@@ -539,15 +539,15 @@ export class WorkspaceView implements IWorkspaceViewService {
       const tasks = [];
       if (mainBrowserViewWebContent) {
         tasks.push(this.viewService.realignActiveView(mainWindow, workspaceToRealign.id));
-        logger.warn(`realignActiveWorkspaceView: realign main window for ${workspaceToRealign.id}.`);
+        logger.debug(`realignActiveWorkspaceView: realign main window for ${workspaceToRealign.id}.`);
       } else {
         logger.warn(`realignActiveWorkspaceView: no mainBrowserViewWebContent, skip main window for ${workspaceToRealign.id}.`);
       }
       if (menuBarBrowserViewWebContent) {
-        logger.warn(`realignActiveWorkspaceView: realign menu bar window for ${workspaceToRealign.id}.`);
+        logger.debug(`realignActiveWorkspaceView: realign menu bar window for ${workspaceToRealign.id}.`);
         tasks.push(this.viewService.realignActiveView(menuBarWindow, workspaceToRealign.id));
       } else {
-        logger.warn(`realignActiveWorkspaceView: no menuBarBrowserViewWebContent, skip menu bar window for ${workspaceToRealign.id}.`);
+        logger.info(`realignActiveWorkspaceView: no menuBarBrowserViewWebContent, skip menu bar window for ${workspaceToRealign.id}.`);
       }
       await Promise.all(tasks);
     }

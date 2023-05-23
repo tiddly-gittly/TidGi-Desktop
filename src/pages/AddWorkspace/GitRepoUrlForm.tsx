@@ -19,7 +19,7 @@ export function GitRepoUrlForm({
   gitRepoUrl: string;
   gitRepoUrlSetter: (nextUrl: string) => void;
   isCreateMainWorkspace: boolean;
-  storageProvider: SupportedStorageServices;
+  storageProvider?: SupportedStorageServices;
   wikiFolderNameSetter?: (nextName: string) => void;
 }): JSX.Element {
   const { t } = useTranslation();

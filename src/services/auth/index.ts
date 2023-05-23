@@ -112,7 +112,7 @@ export class Authentication implements IAuthenticationService {
 
   public generateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string {
     const adminToken = nanoid().toLowerCase();
-    logger.error(`generateOneTimeAdminAuthTokenForWorkspace() adminToken for ${workspaceID} is ${adminToken}`);
+    logger.debug(`generateOneTimeAdminAuthTokenForWorkspace() adminToken for ${workspaceID} is ${adminToken}`);
     this.oneTimeAdminAuthToken.set(workspaceID, adminToken);
     return adminToken;
   }
@@ -124,7 +124,7 @@ export class Authentication implements IAuthenticationService {
   public getOneTimeAdminAuthTokenForWorkspaceSync(workspaceID: string): string | undefined {
     const adminToken = this.oneTimeAdminAuthToken.get(workspaceID);
     if (adminToken === undefined) {
-      logger.error(`getOneTimeAdminAuthTokenForWorkspaceSync() No adminToken for ${workspaceID}`);
+      logger.error(`getOneTimeAdminAuthTokenForWorkspaceSync() No adminToken for ${workspaceID}`, { stack: new Error('-').stack });
     }
     return adminToken;
   }

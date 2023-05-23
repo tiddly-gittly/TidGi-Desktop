@@ -107,7 +107,7 @@ export class Wiki implements IWikiService {
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
     let adminToken: string | undefined;
     if (tokenAuth) {
-      logger.debug(`initializeWorkspaceView() generateOneTimeAdminAuthTokenForWorkspace`);
+      logger.debug(`startWiki() generateOneTimeAdminAuthTokenForWorkspace`);
       adminToken = this.authService.generateOneTimeAdminAuthTokenForWorkspace(workspaceID);
     }
     const workerData = {
