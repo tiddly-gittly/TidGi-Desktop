@@ -183,7 +183,21 @@
     "TokenAuthAutoFillUserNameDescription": "This feature requires userName to be filled in global setting or workspace setting, if its empty, a default one will be auto filled into workspace setting, you can change it later.",
     "BlogOptions": "Blog Server Options",
     "EnableHTTPS": "Enable HTTPS",
-    "EnableHTTPSDescription": "To provide secure TLS encrypted access, you need to have your own HTTPS certificate, which can be downloaded from the domain name provider, or you can search for free HTTPS certificate application methods."
+    "EnableHTTPSDescription": "To provide secure TLS encrypted access, you need to have your own HTTPS certificate, which can be downloaded from the domain name provider, or you can search for free HTTPS certificate application methods.",
+    "HTTPSUploadCert": "Add Cert file",
+    "HTTPSUploadKey": "Add Key file",
+    "TokenAuthCurrentHeader": "Credential authentication current request header",
+    "UploadOrSelectPathDescription": "Click the upload button to submit the file to Taiji for storage, or click the select path button to select the file from your storage location.",
+    "AddExcludedPlugins": "Enter the name of the plugin you want to ignore",
+    "HTTPSPickCert": "Select the Cert file path",
+    "HTTPSPickKey": "Select the Key file path",
+    "AddExcludedPluginsDescription": "You can search for installed plugins in the current wiki, or enter any plugin name.",
+    "ExcludedPlugins": "plugins to ignore",
+    "HTTPSCertPathDescription": "The location of the certificate file with the suffix .crt, generally ending with xxx_public.crt.",
+    "ExcludedPluginsDescription": "When starting the wiki as a blog in read-only mode, you may want to not load some editing-related plugins to reduce the size of the first-loaded web page, such as $:/plugins/tiddlywiki/codemirror, etc. After all, the loaded blog does not need these editing functions. \n(Note that this function can also take effect when the read-only mode is not enabled)",
+    "HTTPSCertPath": "Cert file path",
+    "HTTPSKeyPath": "Key file path",
+    "HTTPSKeyPathDescription": "The location of the private key file with the suffix .key."
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed, or there is no wiki in this folder! \nDo you want to remove the workspace?",

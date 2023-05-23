@@ -4,6 +4,11 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { SetOptional } from 'type-fest';
 
+/**
+ * A workspace is basically a TiddlyWiki instance, it can be a local/online wiki (depends on git related config). Can be a mainWiki that starts a a TiddlyWiki instance or subwiki that link to a main wiki.
+ *
+ * New value added here can be init in `sanitizeWorkspace`
+ */
 export interface IWorkspace {
   /**
    * Is this workspace selected by user, and showing corresponding webview?
@@ -15,6 +20,10 @@ export interface IWorkspace {
   backupOnInterval: boolean;
   disableAudio: boolean;
   disableNotifications: boolean;
+  /**
+   * List of plugins excluded on startup, for example `['$:/plugins/bimlas/kin-filter', '$:/plugins/dullroar/sitemap']`
+   */
+  excludedPlugins: string[];
   /**
    * The online repo to back data up to
    */

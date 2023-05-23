@@ -30,7 +30,8 @@ async function sendToMainWindowAndAwait<T = string[]>(type: WikiChannel, workspa
     return;
   }
   return await new Promise<T>((resolve, reject) => {
-    browserView?.webContents?.send?.(type, ...messages);
+    const nonce = Math.random();
+    browserView?.webContents?.send?.(type, nonce, ...messages);
     let timeoutHandle: NodeJS.Timeout;
     if (options?.timeout !== undefined) {
       timeoutHandle = setTimeout(() => {
@@ -40,7 +41,6 @@ async function sendToMainWindowAndAwait<T = string[]>(type: WikiChannel, workspa
     /**
      * Use nonce to prevent data racing
      */
-    const nonce = Math.random();
     const listener = (_event: Electron.IpcMainEvent, nonceReceived: number, value: T): void => {
       if (nonce === nonceReceived) {
         clearTimeout(timeoutHandle);

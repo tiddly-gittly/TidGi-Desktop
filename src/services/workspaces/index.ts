@@ -270,6 +270,7 @@ export class Workspace implements IWorkspaceService {
     const defaultValues: Partial<IWorkspace> = {
       storageService: SupportedStorageServices.github,
       backupOnInterval: true,
+      excludedPlugins: [],
     };
     const fixingValues: Partial<IWorkspace> = {};
     // we add mainWikiID in creation, we fix this value for old existed workspaces
@@ -473,6 +474,7 @@ export class Workspace implements IWorkspaceService {
       syncOnInterval: false,
       syncOnStartup: true,
       transparentBackground: false,
+      excludedPlugins: [],
     };
 
     await this.set(newID, newWorkspace);

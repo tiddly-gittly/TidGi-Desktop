@@ -180,5 +180,6 @@ export async function workspaceConfigFromForm(form: INewWikiRequiredFormData, is
     readOnlyMode: false,
     tokenAuth: true,
     userName: userNameIsEmpty ? DEFAULT_USER_NAME : undefined,
+    excludedPlugins: [],
   };
 }
