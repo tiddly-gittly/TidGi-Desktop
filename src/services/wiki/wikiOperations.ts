@@ -1,9 +1,12 @@
+/**
+ * Can't use logger in this file:
+ * ERROR in Circular dependency detected: src/services/libs/log/index.ts -> src/services/libs/log/rendererTransport.ts -> src/services/wiki/wikiOperations.ts -> src/services/libs/log/index.ts
+ */
 import { ipcMain } from 'electron';
 
 import { WikiChannel } from '@/constants/channels';
 import { WikiStateKey } from '@/constants/wiki';
 import { container } from '@services/container';
-import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IViewService } from '@services/view/interface';
 import { IWindowService } from '@services/windows/interface';
@@ -26,8 +29,7 @@ async function sendToMainWindowAndAwait<T = string[]>(type: WikiChannel, workspa
   const viewService = container.get<IViewService>(serviceIdentifier.View);
   const browserView = viewService.getView(workspaceID, WindowNames.main);
   if ((browserView?.webContents) === undefined) {
-    logger.error(`browserView.webContents is undefined in sendToMainWindowAndAwait ${workspaceID} when running ${type}`);
-    return;
+    throw new Error(`browserView.webContents is undefined in sendToMainWindowAndAwait ${workspaceID} when running ${type}`);
   }
   return await new Promise<T>((resolve, reject) => {
     const nonce = Math.random();
