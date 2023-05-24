@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prefer-native-coercion-functions */
 /**
  * Worker environment is not part of electron environment, so don't import "@/constants/paths" here, as its process.resourcesPath will become undefined and throw Errors.
  * 
@@ -73,11 +74,11 @@ function startNodeJSWiki({
       process.env.TIDDLYWIKI_PLUGIN_PATH = path.resolve(homePath, 'plugins');
       process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
       const builtInPluginArguments = [
-        // add tiddly filesystem back https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416
-        '+plugins/tiddlywiki/filesystem',
+        // add tiddly filesystem back if is not readonly https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416
+        readOnlyMode === true ? undefined : '+plugins/tiddlywiki/filesystem',
         '+plugins/tiddlywiki/tiddlyweb',
         // '+plugins/linonetwo/watch-fs',
-      ];
+      ].filter((a): a is string => Boolean(a));
       /**
        * Make wiki readonly if readonly is true. This is normally used for server mode, so also enable gzip.
        *
@@ -108,19 +109,22 @@ function startNodeJSWiki({
         ? [`tls-key=${https.tlsKey}`, `tls-cert=${https.tlsCert}`]
         : [];
       /**
-       * Set excluded plugins or tiddler content to empty string
+       * Set excluded plugins or tiddler content to empty string.
+       * Should disable plugins/tiddlywiki/filesystem (so only work in readonly mode), otherwise will write empty string to tiddlers.
        * @url https://github.com/linonetwo/wiki/blob/8f1f091455eec23a9f016d6972b7f38fe85efde1/tiddlywiki.info#LL35C1-L39C20
        */
-      const excludePluginsArguments = [
-        '--setfield',
-        excludedPlugins.map((pluginOrTiddlerTitle) =>
-          // allows filter like `[is[binary]] [type[application/msword]] -[type[application/pdf]]`, but also auto add `[[]]` to plugin title to be like `[[$:/plugins/tiddlywiki/filesystem]]`
-          pluginOrTiddlerTitle.includes('[') && pluginOrTiddlerTitle.includes(']') ? pluginOrTiddlerTitle : `[[${pluginOrTiddlerTitle}]]`
-        ).join(' '),
-        'text',
-        '',
-        'text/plain',
-      ];
+      const excludePluginsArguments = readOnlyMode === true
+        ? [
+          '--setfield',
+          excludedPlugins.map((pluginOrTiddlerTitle) =>
+            // allows filter like `[is[binary]] [type[application/msword]] -[type[application/pdf]]`, but also auto add `[[]]` to plugin title to be like `[[$:/plugins/tiddlywiki/filesystem]]`
+            pluginOrTiddlerTitle.includes('[') && pluginOrTiddlerTitle.includes(']') ? pluginOrTiddlerTitle : `[[${pluginOrTiddlerTitle}]]`
+          ).join(' '),
+          'text',
+          '',
+          'text/plain',
+        ]
+        : [];
 
       wikiInstance.boot.argv = [
         ...builtInPluginArguments,

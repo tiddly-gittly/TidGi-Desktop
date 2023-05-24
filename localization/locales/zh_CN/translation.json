@@ -231,7 +231,7 @@
     "ExcludedPlugins": "需忽略的插件",
     "AddExcludedPlugins": "输入希望忽略的插件名",
     "AddExcludedPluginsDescription": "可搜索当前Wiki中已安装的插件，或输入任意插件名。",
-    "ExcludedPluginsDescription": "在只读模式启动Wiki作为博客时，你可能希望不加载一些编辑相关的插件以减小初次加载的网页大小，例如 $:/plugins/tiddlywiki/codemirror 等，毕竟加载的博客不需要这些编辑功能。（注意此功能在只读模式未开启时，也可以生效）"
+    "ExcludedPluginsDescription": "在只读模式启动Wiki作为博客时，你可能希望不加载一些编辑相关的插件以减小初次加载的网页大小，例如 $:/plugins/tiddlywiki/codemirror 等，毕竟加载的博客不需要这些编辑功能。"
   },
   "Scripting": {
     "ExecutingScript": "正在执行脚本"

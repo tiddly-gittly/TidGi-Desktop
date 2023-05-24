@@ -194,7 +194,7 @@
     "AddExcludedPluginsDescription": "You can search for installed plugins in the current wiki, or enter any plugin name.",
     "ExcludedPlugins": "plugins to ignore",
     "HTTPSCertPathDescription": "The location of the certificate file with the suffix .crt, generally ending with xxx_public.crt.",
-    "ExcludedPluginsDescription": "When starting the wiki as a blog in read-only mode, you may want to not load some editing-related plugins to reduce the size of the first-loaded web page, such as $:/plugins/tiddlywiki/codemirror, etc. After all, the loaded blog does not need these editing functions. \n(Note that this function can also take effect when the read-only mode is not enabled)",
+    "ExcludedPluginsDescription": "When starting the wiki as a blog in read-only mode, you may want to not load some editing-related plugins to reduce the size of the first-loaded web page, such as $:/plugins/tiddlywiki/codemirror, etc. After all, the loaded blog does not need these editing functions.",
     "HTTPSCertPath": "Cert file path",
     "HTTPSKeyPath": "Key file path",
     "HTTPSKeyPathDescription": "The location of the private key file with the suffix .key."

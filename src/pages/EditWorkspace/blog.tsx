@@ -4,7 +4,7 @@ import {
   AccordionDetails,
   AccordionSummary,
   Button,
-  Chip,
+  Checkbox,
   createFilterOptions,
   Divider,
   Link,
@@ -13,7 +13,7 @@ import {
   Switch,
   TextField,
 } from '@material-ui/core';
-import { ExpandMore as ExpandMoreIcon } from '@material-ui/icons';
+import { CheckBox as CheckBoxIcon, CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon, ExpandMore as ExpandMoreIcon } from '@material-ui/icons';
 import { Autocomplete } from '@material-ui/lab';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
@@ -25,7 +25,6 @@ import { tlsCertExtensions, tlsKeyExtensions } from '@/constants/fileNames';
 import { defaultServerIP } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IWorkspace } from '@services/workspaces/interface';
-import { useState } from 'react';
 
 const ABlogOptionsAccordion = styled(Accordion)`
   box-shadow: unset;
@@ -42,7 +41,7 @@ const HttpsCertKeyListItem: typeof ListItem = styled(ListItem)`
 const AutocompleteWithMarginTop: typeof Autocomplete = styled(Autocomplete)`
   margin-top: 8px;
 `;
-const ChipsContainer = styled.div`
+const ChipContainer = styled.div`
   display: flex;
   flex-wrap: wrap;
 
@@ -116,6 +115,8 @@ export function BlogOptions(props: IBlogOptionsProps) {
               />
             </ListItemSecondaryAction>
           </ListItem>
+
+          {workspace !== undefined && readOnlyMode && <ExcludedPluginsAutocomplete workspace={workspace} workspaceSetter={workspaceSetter} />}
           <ListItem disableGutters>
             <ListItemText primary={t('EditWorkspace.EnableHTTPS')} secondary={t('EditWorkspace.EnableHTTPSDescription')} />
             <ListItemSecondaryAction>
@@ -236,13 +237,14 @@ export function BlogOptions(props: IBlogOptionsProps) {
           }}
           renderInput={(parameters) => <TextField {...parameters} label={t('EditWorkspace.WikiRootTiddler')} helperText={t('EditWorkspace.WikiRootTiddlerDescription')} />}
         />
-        {workspace !== undefined && <ExcludedPluginsAutocomplete workspace={workspace} workspaceSetter={workspaceSetter} />}
       </AccordionDetails>
     </ABlogOptionsAccordion>
   );
 }
 
 const autocompleteExcludedPluginsFilter = createFilterOptions<string>();
+const uncheckedIcon = <CheckBoxOutlineBlankIcon fontSize='small' />;
+const checkedIcon = <CheckBoxIcon fontSize='small' />;
 function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSetter: (newValue: IWorkspace, requestSaveAndRestart?: boolean | undefined) => void }) {
   const { t } = useTranslation();
   const { workspaceSetter, workspace } = props;
@@ -256,35 +258,43 @@ function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSe
     [],
     [id, active],
   ) ?? [];
-  const [currentInput, currentInputSetter] = useState('');
-  const [autoCompleteClosed, autoCompleteClosedSetter] = useState(true);
 
   return (
     <>
       <ListItem disableGutters>
         <ListItemText primary={t('EditWorkspace.ExcludedPlugins')} secondary={t('EditWorkspace.ExcludedPluginsDescription')} />
       </ListItem>
-      <ChipsContainer>
-        {excludedPlugins.map(pluginName => (
-          <Chip
-            key={pluginName}
-            label={pluginName}
-            style={{ marginRight: 1, marginBottom: 1 }}
-            onClick={() => {
-              currentInputSetter(pluginName);
-            }}
-            onDelete={() => {
-              workspaceSetter({ ...workspace, excludedPlugins: excludedPlugins.filter(item => item !== pluginName) });
-            }}
-          />
-        ))}
-      </ChipsContainer>
       <Autocomplete
         freeSolo
+        multiple
+        disableCloseOnSelect
         options={pluginsInWiki}
-        value={currentInput}
-        onInputChange={(_, value) => {
-          currentInputSetter(value);
+        value={excludedPlugins}
+        limitTags={2}
+        renderOption={(props, option, { selected }) => (
+          <li {...props}>
+            <Checkbox
+              icon={uncheckedIcon}
+              checkedIcon={checkedIcon}
+              style={{ marginRight: 8 }}
+              checked={selected}
+              onChange={(event) => {
+                if (event.target.checked) {
+                  workspaceSetter({ ...workspace, excludedPlugins: [...excludedPlugins.filter(item => item !== option), option] }, true);
+                } else {
+                  workspaceSetter({ ...workspace, excludedPlugins: excludedPlugins.filter(item => item !== option) }, true);
+                }
+              }}
+            />
+            {option}
+          </li>
+        )}
+        ChipProps={{
+          onDelete: (event) => {
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, unicorn/prefer-dom-node-text-content
+            const value = ((event.target)?.parentNode as HTMLDivElement).innerText;
+            workspaceSetter({ ...workspace, excludedPlugins: excludedPlugins.filter(item => item !== value) }, true);
+          },
         }}
         filterOptions={(options, parameters) => {
           const filtered = autocompleteExcludedPluginsFilter(options, parameters);
@@ -296,22 +306,7 @@ function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSe
           return filtered;
         }}
         groupBy={(option) => option.split('/')[2]}
-        autoSelect
-        onKeyDown={(event) => {
-          if (autoCompleteClosed && event.key === 'Enter') {
-            // Prevent's default 'Enter' behavior.
-            event.preventDefault();
-            workspaceSetter({ ...workspace, excludedPlugins: [...excludedPlugins.filter(item => item !== currentInput), currentInput] }, true);
-            currentInputSetter('');
-          }
-        }}
         renderInput={(parameters) => <TextField {...parameters} label={t('EditWorkspace.AddExcludedPlugins')} helperText={t('EditWorkspace.AddExcludedPluginsDescription')} />}
-        onOpen={() => {
-          autoCompleteClosedSetter(false);
-        }}
-        onClose={() => {
-          autoCompleteClosedSetter(true);
-        }}
       />
     </>
   );
