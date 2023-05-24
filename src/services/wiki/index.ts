@@ -103,7 +103,11 @@ export class Wiki implements IWikiService {
       logger.error('Try to start wiki, but workspace not found', { workspace, workspaceID });
       return;
     }
-    const { wikiFolderLocation, port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl, https, excludedPlugins } = workspace;
+    const { wikiFolderLocation, port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl, https, excludedPlugins, isSubWiki } = workspace;
+    if (isSubWiki) {
+      logger.error('Try to start wiki, but workspace is sub wiki', { workspace, workspaceID });
+      return;
+    }
     // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
     let adminToken: string | undefined;
