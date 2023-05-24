@@ -113,7 +113,10 @@ export class Wiki implements IWikiService {
     let adminToken: string | undefined;
     if (tokenAuth) {
       logger.debug(`startWiki() generateOneTimeAdminAuthTokenForWorkspace`);
-      adminToken = this.authService.generateOneTimeAdminAuthTokenForWorkspace(workspaceID);
+      adminToken = this.authService.getOneTimeAdminAuthTokenForWorkspaceSync(workspaceID);
+      if (adminToken === undefined) {
+        adminToken = this.authService.generateOneTimeAdminAuthTokenForWorkspace(workspaceID);
+      }
     }
     const workerData = {
       adminToken,
