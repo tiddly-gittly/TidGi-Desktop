@@ -160,6 +160,7 @@ export class Wiki implements IWikiService {
       // subscribe to the Observable that startNodeJSWiki returns, handle messages send by our code
       worker.startNodeJSWiki(workerData).subscribe(async (message) => {
         if (message.type === 'control') {
+          await this.workspaceService.update(workspaceID, { lastNodeJSArgv: message.argv }, true);
           switch (message.actions) {
             case WikiControlActions.booted: {
               setTimeout(async () => {

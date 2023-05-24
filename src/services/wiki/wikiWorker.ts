@@ -59,13 +59,14 @@ function startNodeJSWiki({
   userName: string;
 }): Observable<IWikiMessage> {
   return new Observable<IWikiMessage>((observer) => {
-    observer.next({ type: 'control', actions: WikiControlActions.start });
+    let fullBootArgv: string[] = [];
+    observer.next({ type: 'control', actions: WikiControlActions.start, argv: fullBootArgv });
     intercept(
       (newStdOut: string) => {
         observer.next({ type: 'stdout', message: newStdOut });
       },
       (newStdError: string) => {
-        observer.next({ type: 'control', source: 'intercept', actions: WikiControlActions.error, message: newStdError });
+        observer.next({ type: 'control', source: 'intercept', actions: WikiControlActions.error, message: newStdError, argv: fullBootArgv });
       },
     );
 
@@ -101,7 +102,7 @@ function startNodeJSWiki({
         if (adminTokenIsProvided(adminToken)) {
           tokenAuthenticateArguments = [`authenticated-user-header=${getTidGiAuthHeaderWithToken(adminToken)}`, `readers=${userName}`, `writers=${userName}`];
         } else {
-          observer.next({ type: 'control', actions: WikiControlActions.error, message: 'tokenAuth is true, but adminToken is empty, this can be a bug.' });
+          observer.next({ type: 'control', actions: WikiControlActions.error, message: 'tokenAuth is true, but adminToken is empty, this can be a bug.', argv: fullBootArgv });
         }
       }
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
@@ -126,7 +127,7 @@ function startNodeJSWiki({
         ]
         : [];
 
-      wikiInstance.boot.argv = [
+      fullBootArgv = [
         ...builtInPluginArguments,
         homePath,
         '--listen',
@@ -137,12 +138,13 @@ function startNodeJSWiki({
         ...readonlyArguments,
         ...tokenAuthenticateArguments,
         ...excludePluginsArguments,
-        `debug-level=${isDev ? 'full' : 'none'}`,
+        // `debug-level=${isDev ? 'full' : 'none'}`,
       ];
+      wikiInstance.boot.argv = [...fullBootArgv];
 
       wikiInstance.hooks.addHook('th-server-command-post-start', function(listenCommand, server) {
         server.on('error', function(error: Error) {
-          observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message });
+          observer.next({ type: 'control', actions: WikiControlActions.error, message: error.message, argv: fullBootArgv });
         });
         server.on('listening', function() {
           observer.next({
@@ -150,15 +152,16 @@ function startNodeJSWiki({
             actions: WikiControlActions.booted,
             message:
               `Tiddlywiki booted at http://${tiddlyWikiHost}:${tiddlyWikiPort} (webview uri ip may be different, being nativeService.getLocalHostUrlWithActualInfo(appUrl, workspace.id)) with args ${
-                wikiInstance === undefined ? '(wikiInstance is undefined)' : wikiInstance.boot.argv.join(' ')
+                wikiInstance === undefined ? '(wikiInstance is undefined)' : fullBootArgv.join(' ')
               }`,
+            argv: fullBootArgv,
           });
         });
       });
       wikiInstance.boot.startup({ bootPath: TIDDLYWIKI_PACKAGE_FOLDER });
     } catch (error) {
       const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
-      observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message });
+      observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
     }
   });
 }

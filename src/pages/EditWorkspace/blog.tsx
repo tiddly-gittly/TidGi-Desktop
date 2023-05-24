@@ -63,6 +63,7 @@ export function BlogOptions(props: IBlogOptionsProps) {
     readOnlyMode,
     rootTiddler,
     tokenAuth,
+    lastNodeJSArgv,
   } = (workspace ?? {}) as unknown as IWorkspace;
 
   const alreadyEnableSomeBlogOptions = readOnlyMode;
@@ -101,6 +102,14 @@ export function BlogOptions(props: IBlogOptionsProps) {
               }}
             />
           </ListItem>
+          {Array.isArray(lastNodeJSArgv) && (
+            <>
+              <Divider />
+              <ListItem disableGutters>
+                <ListItemText primary={t('EditWorkspace.LastNodeJSArgv')} secondary={`tiddlywiki ${lastNodeJSArgv.join(' ')}`} />
+              </ListItem>
+            </>
+          )}
           <Divider />
           <ListItem disableGutters>
             <ListItemText primary={t('EditWorkspace.ReadOnlyMode')} secondary={t('EditWorkspace.ReadOnlyModeDescription')} />
@@ -291,8 +300,15 @@ function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSe
         )}
         ChipProps={{
           onDelete: (event) => {
-            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, unicorn/prefer-dom-node-text-content
-            const value = ((event.target)?.parentNode as HTMLDivElement).innerText;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-assignment
+            let node = (event.target).parentNode;
+            // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+            if (node.tagName !== 'DIV') {
+              // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment, @typescript-eslint/no-unsafe-member-access
+              node = node.parentNode;
+            }
+            // eslint-disable-next-line unicorn/prefer-dom-node-text-content
+            const value = (node as HTMLDivElement).innerText;
             workspaceSetter({ ...workspace, excludedPlugins: excludedPlugins.filter(item => item !== value) }, true);
           },
         }}

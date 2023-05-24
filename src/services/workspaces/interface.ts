@@ -54,6 +54,10 @@ export interface IWorkspace {
    */
   isSubWiki: boolean;
   /**
+   * Nodejs start argument cli, used to start tiddlywiki server in terminal
+   */
+  lastNodeJSArgv?: string[];
+  /**
    * Last visited url, used for rememberLastPageVisited in preferences
    */
   lastUrl: string | null;

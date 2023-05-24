@@ -31,7 +31,7 @@ export function setupViewSession(workspace: IWorkspace, preferences: IPreference
   }
   sessionOfView.webRequest.onBeforeSendHeaders((details, callback) => {
     assignFakeUserAgent(details);
-    if (workspace.readOnlyMode) {
+    if (workspace.tokenAuth) {
       assignAdminAuthToken(workspace.id, details, authService, viewContext);
     }
     callback({ cancel: false, requestHeaders: details.requestHeaders });

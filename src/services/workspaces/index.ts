@@ -468,6 +468,7 @@ export class Workspace implements IWorkspaceService {
       homeUrl: `http://${defaultServerIP}:${newWorkspaceConfig.port}`,
       id: newID,
       lastUrl: null,
+      lastNodeJSArgv: [],
       order: max + 1,
       picturePath: null,
       subWikiFolderName: 'subwiki',

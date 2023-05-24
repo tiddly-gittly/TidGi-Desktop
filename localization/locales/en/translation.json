@@ -197,7 +197,8 @@
     "ExcludedPluginsDescription": "When starting the wiki as a blog in read-only mode, you may want to not load some editing-related plugins to reduce the size of the first-loaded web page, such as $:/plugins/tiddlywiki/codemirror, etc. After all, the loaded blog does not need these editing functions.",
     "HTTPSCertPath": "Cert file path",
     "HTTPSKeyPath": "Key file path",
-    "HTTPSKeyPathDescription": "The location of the private key file with the suffix .key."
+    "HTTPSKeyPathDescription": "The location of the private key file with the suffix .key.",
+    "LastNodeJSArgv": "Command line arguments from the latest startup"
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed, or there is no wiki in this folder! \nDo you want to remove the workspace?",
