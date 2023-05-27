@@ -171,7 +171,7 @@ export interface IWorkspaceService {
    */
   getActiveWorkspaceSync: () => IWorkspace | undefined;
   getAllMetaData: () => Promise<Record<string, Partial<IWorkspaceMetaData>>>;
-  getByWikiFolderLocation(name: string): Promise<IWorkspace | undefined>;
+  getByWikiFolderLocation(wikiFolderLocation: string): Promise<IWorkspace | undefined>;
   getFirstWorkspace: () => Promise<IWorkspace | undefined>;
   getMetaData: (id: string) => Promise<Partial<IWorkspaceMetaData>>;
   getNextWorkspace: (id: string) => Promise<IWorkspace | undefined>;

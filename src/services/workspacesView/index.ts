@@ -350,7 +350,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     logger.debug(`Hibernating workspace ${workspaceID}, workspace.active: ${String(workspace?.active)}`);
     if (workspace !== undefined && !workspace.active) {
       await Promise.all([
-        this.wikiService.stopWiki(workspace.wikiFolderLocation),
+        this.wikiService.stopWiki(workspaceID),
         this.workspaceService.update(workspaceID, {
           hibernated: true,
         }),
@@ -427,7 +427,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.info(`Restarting workspace ${workspaceToRestart.id}`);
       await this.updateLastUrl(workspaceToRestart.id);
       await this.workspaceService.updateMetaData(workspaceToRestart.id, { didFailLoadErrorMessage: null, isLoading: false });
-      await this.wikiService.stopWiki(workspaceToRestart.wikiFolderLocation);
+      await this.wikiService.stopWiki(workspaceToRestart.id);
       await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
       if (await this.workspaceService.workspaceDidFailLoad(workspaceToRestart.id)) {
         logger.warn('restartWorkspaceViewService() skip because workspaceDidFailLoad');

@@ -431,7 +431,6 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async remove(id: string): Promise<void> {
-    const { wikiFolderLocation } = this.workspaces[id];
     if (id in this.workspaces) {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
       delete this.workspaces[id];
@@ -440,7 +439,7 @@ export class Workspace implements IWorkspaceService {
       throw new Error(`Try to remote workspace, but id ${id} is not existed`);
     }
     // call wiki service
-    await this.wikiService.stopWiki(wikiFolderLocation);
+    await this.wikiService.stopWiki(id);
     await this.updateWorkspaceMenuItems();
     await this.updateWorkspaceSubject();
   }

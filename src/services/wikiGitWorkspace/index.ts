@@ -130,8 +130,8 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           if (workspace === undefined) {
             throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
           }
-          const { isSubWiki, mainWikiToLink, wikiFolderLocation } = workspace;
-          await this.wikiService.stopWiki(wikiFolderLocation).catch((error: Error) => logger.error(error.message, error));
+          const { isSubWiki, mainWikiToLink, wikiFolderLocation, id } = workspace;
+          await this.wikiService.stopWiki(id).catch((error: Error) => logger.error(error.message, error));
           if (isSubWiki) {
             if (mainWikiToLink === null) {
               throw new Error(`workspace.mainWikiToLink is null in WikiGitWorkspace.removeWorkspace ${JSON.stringify(workspace)}`);

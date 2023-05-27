@@ -88,9 +88,9 @@ export function ViewLoadErrorMessages(props: IViewLoadErrorMessagesProps): JSX.E
     await window.service.workspace.updateMetaData(props.activeWorkspace.id, { didFailLoadErrorMessage: null, isLoading: false });
     await window.service.window.reload(window.meta.windowName);
     await window.service.view.removeAllViewOfWorkspace(props.activeWorkspace.id);
-    await window.service.wiki.stopWiki(props.activeWorkspace.wikiFolderLocation);
+    await window.service.wiki.stopWiki(props.activeWorkspace.id);
     await window.service.workspaceView.initializeWorkspaceView(props.activeWorkspace);
-  }, []);
+  }, [props.activeWorkspace]);
 
   return (
     <WikiErrorMessagesContainer>

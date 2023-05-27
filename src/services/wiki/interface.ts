@@ -40,16 +40,16 @@ export interface IWikiService {
   getWikiLogs(homePath: string): Promise<{ content: string; filePath: string }>;
   /**
    * Get wiki worker, and you can call its methods. Only meant to be used in TidGi's services internally.
-   * @param wikiFolderLocation You can get this from active workspace
+   * @param workspaceID You can get this from active workspace
    */
-  getWorker(wikiFolderLocation: string): ModuleThread<WikiWorker> | undefined;
+  getWorker(workspaceID: string): ModuleThread<WikiWorker> | undefined;
   linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
   /**
    * Open image or PDF in OS native viewer or some else usage like this.
    * @param homePath Workspace home path, used to locate wiki worker
    * @param title tiddler title to open
    */
-  openTiddlerInExternal(homePath: string, title: string): Promise<void>;
+  openTiddlerInExternal(title: string, workspaceID: string): Promise<void>;
   packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   /** send tiddlywiki action message to current active wiki */
@@ -64,7 +64,7 @@ export interface IWikiService {
   /** call wiki worker to actually start nodejs wiki */
   startWiki(workspaceID: string, userName: string): Promise<void>;
   stopAllWiki(): Promise<void>;
-  stopWiki(homePath: string): Promise<void>;
+  stopWiki(workspaceID: string): Promise<void>;
   updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void>;
   wikiOperation<OP extends keyof IWikiOperations>(
     operationType: OP,
