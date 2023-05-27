@@ -517,12 +517,22 @@ export class Wiki implements IWikiService {
       if (!syncOnlyWhenNoDraft) {
         return true;
       }
-      const draftTitles = await this.wikiOperation(WikiChannel.runFilter, id, '[is[draft]]');
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      if (Array.isArray(draftTitles) && draftTitles.length > 0) {
-        return false;
+      try {
+        const draftTitles = await this.wikiOperation(WikiChannel.runFilter, id, '[is[draft]]');
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        if (Array.isArray(draftTitles) && draftTitles.length > 0) {
+          return false;
+        }
+        return true;
+      } catch (error) {
+        logger.error(
+          `${(error as Error).message} when checking draft titles. ${
+            (error as Error).stack ?? ''
+          }\n This might because it just will throw error when on Windows and App is at background (BrowserView will disappear and not accessible.)`,
+        );
+        // when app is on background, might have no draft, because user won't edit it. So just return true
+        return true;
       }
-      return true;
     };
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
 

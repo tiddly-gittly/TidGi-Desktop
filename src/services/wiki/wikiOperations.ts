@@ -21,7 +21,10 @@ function sendToMainWindowNoWait(type: WikiChannel, workspaceID: string, messages
   browserView?.webContents?.send?.(type, ...messages);
 }
 /**
- * Send to main window renderer (preload script) and wait for response
+ * Send to main window renderer (preload script) and wait for response.
+ *
+ * Will throw error when on Windows and App is at background (BrowserView will disappear and not accessible.) https://github.com/tiddly-gittly/TidGi-Desktop/issues/398
+ *
  * @param type The handler on renderer (preload script) side should implement `ipcRenderer.send(WikiChannel.xxx, nonceReceived, result);`, where `result` is usually `string[]` (the default type for `<T>` in function signature)
  * @returns undefined if main window webContents is not found
  */
