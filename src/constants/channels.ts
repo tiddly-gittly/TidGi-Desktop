@@ -14,6 +14,12 @@ export enum AuthenticationChannel {
 export enum ContextChannel {
   name = 'ContextChannel',
 }
+export enum DatabaseChannel {
+  getTiddlers = 'get-tiddlers',
+  insertTiddlers = 'insert-tiddlers',
+  name = 'DatabaseChannel',
+  searchTiddlers = 'search-tiddlers',
+}
 export enum GitChannel {
   name = 'GitChannel',
 }

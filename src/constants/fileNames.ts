@@ -1,6 +1,6 @@
-/** Used to store settings during dev and testing */
-export const developmentSettingFolderName = 'settings-dev';
-export const developmentHttpsCertKeyFolderName = 'https-keys-dev';
+export const settingFolderName = 'settings';
+export const httpsCertKeyFolderName = 'https-keys';
+export const cacheDatabaseFolderName = 'cache-database';
 /** Used to place mock wiki during dev and testing */
 export const developmentWikiFolderName = 'tidgi-dev';
 export const localizationFolderName = 'localization';

@@ -11,7 +11,7 @@ import { ModuleThread, spawn, Thread, Worker } from 'threads';
 import type { WorkerEvent } from 'threads/dist/types/master';
 
 import { WikiChannel } from '@/constants/channels';
-import { TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
+import { SQLITE_BINARY_PATH, TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
@@ -27,10 +27,11 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { CopyWikiTemplateError, DoubleWikiInstanceError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
 import { IWikiService, WikiControlActions } from './interface';
 import { getSubWikiPluginContent, ISubWikiPluginContent, updateSubWikiPluginContent } from './plugin/subWikiPlugin';
-import type { WikiWorker } from './wikiWorker';
+import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
 
 import { isDevelopmentOrTest } from '@/constants/environment';
 import { defaultServerIP } from '@/constants/urls';
+import { IDatabaseService } from '@services/database/interface';
 import { IPreferenceService } from '@services/preferences/interface';
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
@@ -44,6 +45,9 @@ export class Wiki implements IWikiService {
 
   @lazyInject(serviceIdentifier.Authentication)
   private readonly authService!: IAuthenticationService;
+
+  @lazyInject(serviceIdentifier.Database)
+  private readonly databaseService!: IDatabaseService;
 
   @lazyInject(serviceIdentifier.Window)
   private readonly windowService!: IWindowService;
@@ -118,7 +122,7 @@ export class Wiki implements IWikiService {
         adminToken = this.authService.generateOneTimeAdminAuthTokenForWorkspace(workspaceID);
       }
     }
-    const workerData = {
+    const workerData: IStartNodeJSWikiConfigs = {
       adminToken,
       constants: { TIDDLYWIKI_PACKAGE_FOLDER },
       excludedPlugins,
@@ -154,6 +158,15 @@ export class Wiki implements IWikiService {
           logger.info(warningMessage, loggerMeta);
           logger.info(`startWiki() rejected with message.type === 'message' and event.type === 'termination'`, loggerMeta);
           resolve();
+        }
+      });
+
+      worker.initCacheDatabase({
+        databaseFile: this.databaseService.getDataBasePath(workspaceID),
+        sqliteBinary: SQLITE_BINARY_PATH,
+      }).subscribe(async (message) => {
+        if (message.type === 'stderr' || message.type === 'stdout') {
+          wikiOutputToFile(id, message.message);
         }
       });
 
@@ -575,7 +588,9 @@ export class Wiki implements IWikiService {
   private async syncAllSubWikiIfNeeded(workspace: IWorkspace) {
     const workspaces = await this.workspaceService.getWorkspacesAsList();
     const subWikiWorkspaces = workspaces.filter((w) => w.mainWikiID === workspace.id);
-    await Promise.all(subWikiWorkspaces.map((w) => this.syncWikiIfNeeded(w)));
+    await Promise.all(subWikiWorkspaces.map(async (w) => {
+      await this.syncWikiIfNeeded(w);
+    }));
   }
 
   private stopIntervalSync(workspace: IWorkspace): void {

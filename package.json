@@ -17,7 +17,7 @@
     "make:win-arm": "npm run init:git-submodule && cross-env NODE_ENV=production electron-forge make --platform=win32 --arch=arm64",
     "make:linux-x64": "npm run init:git-submodule && cross-env NODE_ENV=production electron-forge make --platform=linux --arch=x64",
     "make:linux-arm": "npm run init:git-submodule && cross-env NODE_ENV=production electron-forge make --platform=linux --arch=arm64",
-    "clean": "rimraf ./out ./settings-dev ./logs ./.webpack && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts && npm run init:git-submodule",
+    "clean": "rimraf ./out ./settings-dev ./cache-database-dev ./logs ./.webpack && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts && npm run init:git-submodule",
     "init:git-submodule": "git submodule update --recursive && git submodule update --remote",
     "lint": "eslint ./src --ext js,ts,tsx,json",
     "lint:fix": "eslint ./src --ext js,ts,tsx,json --fix",
@@ -30,6 +30,7 @@
     "@tiddlygit/tiddlywiki": "^5.3.0-prerelease-2023-05-22",
     "app-path": "4.0.0",
     "best-effort-json-parser": "1.0.1",
+    "better-sqlite3": "^8.4.0",
     "bluebird": "3.7.2",
     "default-gateway": "6.0.3",
     "dugite": "^2.5.0",
@@ -61,6 +62,7 @@
     "rxjs": "7.8.1",
     "semver": "7.5.1",
     "source-map-support": "0.5.21",
+    "sqlite-vss": "0.1.1-alpha.13",
     "strip-ansi": "^7.0.1",
     "threads": "1.7.0",
     "type-fest": "3.10.0",
@@ -70,6 +72,11 @@
     "winston-daily-rotate-file": "4.7.1",
     "winston-transport": "4.5.0",
     "zx": "7.2.2"
+  },
+  "optionalDependencies": {
+    "sqlite-vss-darwin-x64": "0.1.1-alpha.13",
+    "sqlite-vss-darwin-arm64": "0.1.1-alpha.13",
+    "sqlite-vss-linux-x64": "0.1.1-alpha.13"
   },
   "devDependencies": {
     "@cucumber/cucumber": "9.1.2",
@@ -93,6 +100,7 @@
     "@material-ui/lab": "5.0.0-alpha.27",
     "@material-ui/styled-engine-sc": "5.0.0-alpha.26",
     "@reforged/maker-appimage": "^3.2.0",
+    "@types/better-sqlite3": "^7.6.4",
     "@types/bluebird": "3.5.38",
     "@types/chai": "4.3.5",
     "@types/circular-dependency-plugin": "5.0.5",

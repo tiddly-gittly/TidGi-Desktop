@@ -8,6 +8,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 
 import { Authentication } from '@services/auth';
 import { ContextService } from '@services/context';
+import { DatabaseService } from '@services/database';
 import { Git } from '@services/git';
 import { MenuService } from '@services/menu';
 import { NativeService } from '@services/native';
@@ -27,6 +28,8 @@ import type { IAuthenticationService } from '@services/auth/interface';
 import { AuthenticationServiceIPCDescriptor } from '@services/auth/interface';
 import type { IContextService } from '@services/context/interface';
 import { ContextServiceIPCDescriptor } from '@services/context/interface';
+import type { IDatabaseService } from '@services/database/interface';
+import { DatabaseServiceIPCDescriptor } from '@services/database/interface';
 import type { IGitService } from '@services/git/interface';
 import { GitServiceIPCDescriptor } from '@services/git/interface';
 import type { IMenuService } from '@services/menu/interface';
@@ -59,6 +62,7 @@ import { WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/inte
 export function bindServiceAndProxy(): void {
   container.bind<IAuthenticationService>(serviceIdentifier.Authentication).to(Authentication).inSingletonScope();
   container.bind<IContextService>(serviceIdentifier.Context).to(ContextService).inSingletonScope();
+  container.bind<IDatabaseService>(serviceIdentifier.Database).to(DatabaseService).inSingletonScope();
   container.bind<IGitService>(serviceIdentifier.Git).to(Git).inSingletonScope();
   container.bind<IMenuService>(serviceIdentifier.MenuService).to(MenuService).inSingletonScope();
   container.bind<INativeService>(serviceIdentifier.NativeService).to(NativeService).inSingletonScope();
@@ -76,6 +80,7 @@ export function bindServiceAndProxy(): void {
 
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
   const contextService = container.get<IContextService>(serviceIdentifier.Context);
+  const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
   const gitService = container.get<IGitService>(serviceIdentifier.Git);
   const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
   const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
@@ -93,6 +98,7 @@ export function bindServiceAndProxy(): void {
 
   registerProxy(authService, AuthenticationServiceIPCDescriptor);
   registerProxy(contextService, ContextServiceIPCDescriptor);
+  registerProxy(databaseService, DatabaseServiceIPCDescriptor);
   registerProxy(gitService, GitServiceIPCDescriptor);
   registerProxy(menuService, MenuServiceIPCDescriptor);
   registerProxy(nativeService, NativeServiceIPCDescriptor);

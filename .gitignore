@@ -68,3 +68,4 @@ https-keys-dev/
 .cache/
 deb2appimage_cache/
 deb2appimage.json
+cache-database-dev/

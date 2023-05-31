@@ -12,6 +12,7 @@ import { tiddlywikiLanguagesMap } from '@/constants/languages';
 import { WikiCreationMethod } from '@/constants/wikiCreation';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
+import { IDatabaseService } from '@services/database/interface';
 import type { IGitService } from '@services/git/interface';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import { i18n } from '@services/libs/i18n';
@@ -40,6 +41,9 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   @lazyInject(serviceIdentifier.Git)
   private readonly gitService!: IGitService;
+
+  @lazyInject(serviceIdentifier.Database)
+  private readonly databaseService!: IDatabaseService;
 
   @lazyInject(serviceIdentifier.Wiki)
   private readonly wikiService!: IWikiService;
@@ -203,6 +207,8 @@ export class WorkspaceView implements IWorkspaceViewService {
         }
       }
     }
+    // after all init finished, create cache database if there is no one
+    await this.databaseService.initializeForWorkspace(workspace.id);
   }
 
   public async updateLastUrl(

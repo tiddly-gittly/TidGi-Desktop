@@ -10,6 +10,9 @@ dependencies:
   best-effort-json-parser:
     specifier: 1.0.1
     version: 1.0.1
+  better-sqlite3:
+    specifier: ^8.4.0
+    version: 8.4.0
   bluebird:
     specifier: 3.7.2
     version: 3.7.2
@@ -103,6 +106,9 @@ dependencies:
   source-map-support:
     specifier: 0.5.21
     version: 0.5.21
+  sqlite-vss:
+    specifier: 0.1.1-alpha.13
+    version: 0.1.1-alpha.13
   strip-ansi:
     specifier: ^7.0.1
     version: 7.0.1
@@ -130,6 +136,17 @@ dependencies:
   zx:
     specifier: 7.2.2
     version: 7.2.2
+
+optionalDependencies:
+  sqlite-vss-darwin-arm64:
+    specifier: 0.1.1-alpha.13
+    version: 0.1.1-alpha.13
+  sqlite-vss-darwin-x64:
+    specifier: 0.1.1-alpha.13
+    version: 0.1.1-alpha.13
+  sqlite-vss-linux-x64:
+    specifier: 0.1.1-alpha.13
+    version: 0.1.1-alpha.13
 
 devDependencies:
   '@cucumber/cucumber':
@@ -195,6 +212,9 @@ devDependencies:
   '@reforged/maker-appimage':
     specifier: ^3.2.0
     version: 3.2.0(bluebird@3.7.2)
+  '@types/better-sqlite3':
+    specifier: ^7.6.4
+    version: 7.6.4
   '@types/bluebird':
     specifier: 3.5.38
     version: 3.5.38
@@ -2479,6 +2499,12 @@ packages:
     resolution: {integrity: sha512-vxhUy4J8lyeyinH7Azl1pdd43GJhZH/tP2weN8TntQblOY+A0XbT8DJk1/oCPuOOyg/Ja757rG0CgHcWC8OfMA==}
     dev: true
 
+  /@types/better-sqlite3@7.6.4:
+    resolution: {integrity: sha512-dzrRZCYPXIXfSR1/surNbJ/grU3scTaygS0OMzjlGf71i9sc2fGyHPXXiXmEvNIoE0cGwsanEFMVJxPXmco9Eg==}
+    dependencies:
+      '@types/node': 20.2.1
+    dev: true
+
   /@types/bluebird@3.5.38:
     resolution: {integrity: sha512-yR/Kxc0dd4FfwtEoLZMoqJbM/VE/W7hXn/MIjb+axcwag0iFmSPK7OBUZq1YWLynJUoWQkfUrI7T0HDqGApNSg==}
     dev: true
@@ -3652,6 +3678,14 @@ packages:
     resolution: {integrity: sha512-Fbne5nLqmDQXUmHf6cxeFAAIcsiFaSbCBoK0Rt+wgWv/7SacNhViNeXnuf0H0wXupwW5Io8FfB1FHPUfZujwwg==}
     dev: false
 
+  /better-sqlite3@8.4.0:
+    resolution: {integrity: sha512-NmsNW1CQvqMszu/CFAJ3pLct6NEFlNfuGM6vw72KHkjOD1UDnL96XNN1BMQc1hiHo8vE2GbOWQYIpZ+YM5wrZw==}
+    requiresBuild: true
+    dependencies:
+      bindings: 1.5.0
+      prebuild-install: 7.1.1
+    dev: false
+
   /big-integer@1.6.51:
     resolution: {integrity: sha512-GPEid2Y9QU1Exl1rpO9B2IPJGHPSupF5GnVIP0blYvNOMer2bTvSWs1jGOUg04hTmu67nmLsQ9TBo1puaotBHg==}
     engines: {node: '>=0.6'}
@@ -3665,6 +3699,12 @@ packages:
     resolution: {integrity: sha512-jDctJ/IVQbZoJykoeHbhXpOlNBqGNcwXJKJog42E5HDPUwQTSdjCHdihjj0DlnheQ7blbT6dHOafNAiS8ooQKA==}
     engines: {node: '>=8'}
     dev: true
+
+  /bindings@1.5.0:
+    resolution: {integrity: sha512-p2q/t/mhvuOj/UeLlV6566GD/guowlr0hHxClI0W9m7MWYkL1F0hLo+0Aexs9HSPCtR1SXQ0TD3MMKrXZajbiQ==}
+    dependencies:
+      file-uri-to-path: 1.0.0
+    dev: false
 
   /bl@4.1.0:
     resolution: {integrity: sha512-1W07cM9gS6DcLperZfFSj+bWLtaPGSOHWhPiGzXmvVJbRLdG82sH/Kn8EtW1VqWVA54AKf2h5k5BbnIbwF3h6w==}
@@ -4706,7 +4746,6 @@ packages:
   /detect-libc@2.0.1:
     resolution: {integrity: sha512-463v3ZeIrcWtdgIg6vI6XUncguvr2TnGl4SzDXinkt9mSLpBJKXT3mW6xT3VQdDN11+WVs29pgvivTc4Lp8v+w==}
     engines: {node: '>=8'}
-    dev: true
 
   /detect-node@2.1.0:
     resolution: {integrity: sha512-T0NIuQpnTvFDATNuHN5roPwSBG83rFsuO+MXXH9/3N1eFbn4wcPjttvjMLEPWJ0RGUYgQE7cGgS3tNxbqCGM7g==}
@@ -6046,6 +6085,10 @@ packages:
       readable-web-to-node-stream: 3.0.2
       strtok3: 6.3.0
       token-types: 4.2.1
+    dev: false
+
+  /file-uri-to-path@1.0.0:
+    resolution: {integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==}
     dev: false
 
   /filename-reserved-regex@2.0.0:
@@ -8274,7 +8317,6 @@ packages:
     engines: {node: '>=10'}
     dependencies:
       semver: 7.5.1
-    dev: true
 
   /node-abort-controller@3.1.1:
     resolution: {integrity: sha512-AGK2yQKIjRuqnc6VkX2Xj5d+QW8xZ87pa1UK6yA6ouUyuxfHuMP6umE5QK7UmTeOAymo+Zx1Fxiuw9rVx8taHQ==}
@@ -9038,6 +9080,25 @@ packages:
       tar-fs: 2.1.1
       tunnel-agent: 0.6.0
       which-pm-runs: 1.1.0
+    dev: false
+
+  /prebuild-install@7.1.1:
+    resolution: {integrity: sha512-jAXscXWMcCK8GgCoHOfIr0ODh5ai8mj63L2nWrjuAgXE6tDyYGnx4/8o/rCgU+B4JSyZBKbeZqzhtwtC3ovxjw==}
+    engines: {node: '>=10'}
+    hasBin: true
+    dependencies:
+      detect-libc: 2.0.1
+      expand-template: 2.0.3
+      github-from-package: 0.0.0
+      minimist: 1.2.8
+      mkdirp-classic: 0.5.3
+      napi-build-utils: 1.0.2
+      node-abi: 3.40.0
+      pump: 3.0.0
+      rc: 1.2.8
+      simple-get: 4.0.1
+      tar-fs: 2.1.1
+      tunnel-agent: 0.6.0
     dev: false
 
   /prelude-ls@1.2.1:
@@ -10085,6 +10146,38 @@ packages:
   /sprintf-js@1.1.2:
     resolution: {integrity: sha512-VE0SOVEHCk7Qc8ulkWw3ntAzXuqf7S2lvwQaDLRnUeIEaKNQJzV6BwmLKhOqT61aGhfUMrXeaBk+oDGCzvhcug==}
     optional: true
+
+  /sqlite-vss-darwin-arm64@0.1.1-alpha.13:
+    resolution: {integrity: sha512-jakStdR47vBW2zuZuRprrMFe+mz6coAufaTArNid3SdvyqwfzWT5QnTR0iM3LDVDChBrpVCreEqxwc0669sUwg==}
+    cpu: [arm64]
+    os: [darwin]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /sqlite-vss-darwin-x64@0.1.1-alpha.13:
+    resolution: {integrity: sha512-DI0Yoiw7NwiHuQSmXy7T1iRaE97MzAhtTFdnOwQevJahSr6ojziwsdZEuvfwjPP/hpL1xcVazsJBwXdSnAgypg==}
+    cpu: [x64]
+    os: [darwin]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /sqlite-vss-linux-x64@0.1.1-alpha.13:
+    resolution: {integrity: sha512-+dDOvhiFQoXrecSqrh3dBTDO1ks43m0gS08agyBLEHByN/5mM7MzXltKBWf5oNsS9oZ6rsr2UzxQKZszs9hVmA==}
+    cpu: [x64]
+    os: [linux]
+    requiresBuild: true
+    dev: false
+    optional: true
+
+  /sqlite-vss@0.1.1-alpha.13:
+    resolution: {integrity: sha512-e932Qv2eaycaWI/k8cGvsKB++p6df9UHvNdw93vJM6AX/Uy/H2t764QE4a/CuJPi34W6VbtKXTXmGbQQP8dduw==}
+    optionalDependencies:
+      sqlite-vss-darwin-arm64: 0.1.1-alpha.13
+      sqlite-vss-darwin-x64: 0.1.1-alpha.13
+      sqlite-vss-linux-x64: 0.1.1-alpha.13
+    dev: false
 
   /ssri@10.0.4:
     resolution: {integrity: sha512-12+IR2CB2C28MMAw0Ncqwj5QbTcs0nGIhgJzYWzDkb21vWmfNI83KS4f3Ci6GI98WreIfG7o9UXp3C0qbpA8nQ==}
