@@ -28,7 +28,6 @@
   "main": ".webpack/main",
   "dependencies": {
     "@tiddlygit/tiddlywiki": "^5.3.0-prerelease-2023-05-22",
-    "app-path": "4.0.0",
     "best-effort-json-parser": "1.0.1",
     "better-sqlite3": "^8.4.0",
     "bluebird": "3.7.2",

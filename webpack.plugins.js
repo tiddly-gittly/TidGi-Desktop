@@ -1,3 +1,6 @@
+/* eslint-disable @typescript-eslint/no-unsafe-member-access */
+/* eslint-disable @typescript-eslint/no-unsafe-call */
+/* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable unicorn/prefer-module */
 /* eslint-disable @typescript-eslint/no-var-requires */
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
@@ -38,11 +41,9 @@ exports.main = _.compact([
   }),
   new ExternalsPlugin({
     type: 'commonjs',
-    include: path.join(__dirname, 'node_modules', '@tiddlygit', 'tiddlywiki'),
-  }),
-  new ExternalsPlugin({
-    type: 'commonjs',
-    include: path.join(__dirname, 'node_modules', 'app-path'),
+    include: /@tiddlygit\+tiddlywiki@(.+)/,
+    // when using npm, we can use this. But with pnpm, this won't work ↓
+    // include: path.join(__dirname, 'node_modules', '.pnpm', '@tiddlygit', 'tiddlywiki'),
   }),
   new ThreadsPlugin({
     target: 'electron-node-worker',

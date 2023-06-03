@@ -1,3 +1,6 @@
+/**
+ * Copy from https://github.com/sindresorhus/app-path and modified.
+ */
 import { isDevelopmentOrTest } from '@/constants/environment';
 import { execFile } from 'child_process';
 import path from 'path';
