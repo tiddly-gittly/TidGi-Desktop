@@ -1,12 +1,14 @@
 lockfileVersion: '6.0'
 
+patchedDependencies:
+  sqlite-vss@0.1.1-alpha.13:
+    hash: hc7mlr7keqlykbn4wvpdytkn2e
+    path: patches/sqlite-vss@0.1.1-alpha.13.patch
+
 dependencies:
   '@tiddlygit/tiddlywiki':
     specifier: ^5.3.0-prerelease-2023-05-22
     version: 5.3.0-prerelease-2023-05-22
-  app-path:
-    specifier: 4.0.0
-    version: 4.0.0
   best-effort-json-parser:
     specifier: 1.0.1
     version: 1.0.1
@@ -108,7 +110,7 @@ dependencies:
     version: 0.5.21
   sqlite-vss:
     specifier: 0.1.1-alpha.13
-    version: 0.1.1-alpha.13
+    version: 0.1.1-alpha.13(patch_hash=hc7mlr7keqlykbn4wvpdytkn2e)
   strip-ansi:
     specifier: ^7.0.1
     version: 7.0.1
@@ -3415,13 +3417,6 @@ packages:
       normalize-path: 3.0.0
       picomatch: 2.3.1
     dev: true
-
-  /app-path@4.0.0:
-    resolution: {integrity: sha512-mgBO9PZJ3MpbKbwFTljTi36ZKBvG5X/fkVR1F85ANsVcVllEb+C0LGNdJfGUm84GpC4xxgN6HFkmkMU8VEO4mA==}
-    engines: {node: '>=12'}
-    dependencies:
-      execa: 5.1.1
-    dev: false
 
   /aproba@1.2.0:
     resolution: {integrity: sha512-Y9J6ZjXtoYh8RnXVCMOU/ttDmk1aBjunq9vO0ta5x85WDQiQfUF9sIPBITdbiiIVcBo03Hi3jMxigBtsddlXRw==}
@@ -10171,13 +10166,14 @@ packages:
     dev: false
     optional: true
 
-  /sqlite-vss@0.1.1-alpha.13:
+  /sqlite-vss@0.1.1-alpha.13(patch_hash=hc7mlr7keqlykbn4wvpdytkn2e):
     resolution: {integrity: sha512-e932Qv2eaycaWI/k8cGvsKB++p6df9UHvNdw93vJM6AX/Uy/H2t764QE4a/CuJPi34W6VbtKXTXmGbQQP8dduw==}
     optionalDependencies:
       sqlite-vss-darwin-arm64: 0.1.1-alpha.13
       sqlite-vss-darwin-x64: 0.1.1-alpha.13
       sqlite-vss-linux-x64: 0.1.1-alpha.13
     dev: false
+    patched: true
 
   /ssri@10.0.4:
     resolution: {integrity: sha512-12+IR2CB2C28MMAw0Ncqwj5QbTcs0nGIhgJzYWzDkb21vWmfNI83KS4f3Ci6GI98WreIfG7o9UXp3C0qbpA8nQ==}

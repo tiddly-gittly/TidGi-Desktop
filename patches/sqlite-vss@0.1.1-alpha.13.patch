@@ -1,0 +1,13 @@
+diff --git a/src/index.js b/src/index.js
+index 5c6b2f39fdbd05ca4b5e9e2bf6e66c9bf71489b6..825040c516711fadc889b473c129657df1a4bec2 100644
+--- a/src/index.js
++++ b/src/index.js
+@@ -34,7 +34,7 @@ function loadablePathResolver(name) {
+   }
+   const packageName = platformPackageName(platform, arch);
+   const loadablePath = join(
+-    fileURLToPath(new URL(".", import.meta.url)),
++    __dirname,
+     "..",
+     "..",
+     packageName,
