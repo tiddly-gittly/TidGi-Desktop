@@ -21,15 +21,14 @@ export const MENUBAR_ICON_PATH = path.resolve(isDevelopmentOrTest ? buildResourc
 export const CHROME_ERROR_PATH = 'chrome-error://chromewebdata/';
 export const LOGIN_REDIRECT_PATH = 'http://localhost:3012/?code=';
 export const DESKTOP_PATH = path.join(os.homedir(), 'Desktop');
-export const ZX_FOLDER = isDevelopmentOrTest
-  ? path.resolve(__dirname, '..', '..', 'node_modules', 'zx', 'build', 'cli.js')
-  : path.resolve(process.resourcesPath, 'node_modules', 'zx', 'build', 'cli.js');
-export const TIDDLYWIKI_PACKAGE_FOLDER = isDevelopmentOrTest
-  ? path.resolve(__dirname, '..', '..', 'node_modules', '@tiddlygit', 'tiddlywiki', 'boot')
-  : path.resolve(process.resourcesPath, 'node_modules', '@tiddlygit', 'tiddlywiki', 'boot');
-export const SQLITE_BINARY_PATH = isDevelopmentOrTest
-  ? path.resolve(__dirname, '..', '..', 'node_modules', 'better-sqlite3/build/Release/better_sqlite3.node')
-  : path.resolve(process.resourcesPath, 'node_modules', 'better-sqlite3/build/Release/better_sqlite3.node');
+
+export const PACKAGE_PATH_BASE = isDevelopmentOrTest
+  ? path.resolve(__dirname, '..', '..', 'node_modules')
+  : path.resolve(process.resourcesPath, 'node_modules');
+export const ZX_FOLDER = path.resolve(PACKAGE_PATH_BASE, 'zx', 'build', 'cli.js');
+export const TIDDLYWIKI_PACKAGE_FOLDER = path.resolve(PACKAGE_PATH_BASE, '@tiddlygit', 'tiddlywiki', 'boot');
+export const SQLITE_BINARY_PATH = path.resolve(PACKAGE_PATH_BASE, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
+
 export const LOCALIZATION_FOLDER = isDevelopmentOrTest
   ? path.resolve(sourcePath, '..', localizationFolderName)
   : path.resolve(process.resourcesPath, localizationFolderName);

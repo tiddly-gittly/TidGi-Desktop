@@ -135,7 +135,7 @@
     "css-loader": "6.7.4",
     "date-fns": "2.30.0",
     "dprint": "^0.37.1",
-    "electron": "25.0.1",
+    "electron": "24.4.1",
     "electron-wix-msi": "^5.0.0",
     "esbuild-loader": "^3.0.1",
     "eslint": "8.42.0",

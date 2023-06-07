@@ -44,7 +44,7 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
     await fs.mkdirp(path.join(cwd, 'node_modules', 'app-path'));
     await fs.copy(path.join(projectRoot, 'node_modules', 'app-path', 'main'), path.join(cwd, 'node_modules', 'app-path', 'main'), { dereference: true });
     await fs.copy(path.resolve(projectRoot, 'node_modules/better-sqlite3/build/Release/better_sqlite3.node'), path.resolve(cwd, 'node_modules/better-sqlite3/build/Release/better_sqlite3.node'), { dereference: true });
-    const sqliteVssPackages = ['sqlite-vss', 'sqlite-vss-linux-x64', 'sqlite-vss-darwin-x64', 'sqlite-vss-darwin-arm64']
+    const sqliteVssPackages = ['sqlite-vss-linux-x64', 'sqlite-vss-darwin-x64', 'sqlite-vss-darwin-arm64']
     for (const sqliteVssPackage of sqliteVssPackages) {
       try {
         await fs.copy(path.resolve(projectRoot, `node_modules/${sqliteVssPackage}`), path.resolve(cwd, `node_modules/${sqliteVssPackage}`), { dereference: true });

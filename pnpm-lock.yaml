@@ -21,13 +21,13 @@ dependencies:
     version: 2.5.0
   electron-ipc-cat:
     specifier: 1.2.9
-    version: 1.2.9(electron@25.0.1)(rxjs@7.8.1)
+    version: 1.2.9(electron@24.4.1)(rxjs@7.8.1)
   electron-is-packaged:
     specifier: 1.0.2
     version: 1.0.2(eslint@8.42.0)
   electron-settings:
     specifier: 5.0.0
-    version: 5.0.0(electron@25.0.1)
+    version: 5.0.0(electron@24.4.1)
   electron-squirrel-startup:
     specifier: 1.0.0
     version: 1.0.0
@@ -81,7 +81,7 @@ dependencies:
     version: 4.17.21
   menubar:
     specifier: 9.3.0
-    version: 9.3.0(electron@25.0.1)
+    version: 9.3.0(electron@24.4.1)
   nanoid:
     specifier: ^4.0.2
     version: 4.0.2
@@ -318,8 +318,8 @@ devDependencies:
     specifier: ^0.37.1
     version: 0.37.1
   electron:
-    specifier: 25.0.1
-    version: 25.0.1
+    specifier: 24.4.1
+    version: 24.4.1
   electron-wix-msi:
     specifier: ^5.0.0
     version: 5.0.0
@@ -4985,13 +4985,13 @@ packages:
     dev: true
     optional: true
 
-  /electron-ipc-cat@1.2.9(electron@25.0.1)(rxjs@7.8.1):
+  /electron-ipc-cat@1.2.9(electron@24.4.1)(rxjs@7.8.1):
     resolution: {integrity: sha512-H/d2/sDlc4BP7IlVUONWipGLxYzRxQOVhO5So/DQ7kYCOm4hW+PdHFE0EKUzNeK5W9hQaiYAuQ22k9AQJ/VAyA==}
     peerDependencies:
       electron: '>= 13.0.0'
       rxjs: '>= 7.5.0'
     dependencies:
-      electron: 25.0.1
+      electron: 24.4.1
       errio: 1.2.2
       lodash: 4.17.21
       rxjs: 7.8.1
@@ -5046,13 +5046,13 @@ packages:
     resolution: {integrity: sha512-726DfbI9ZNoCg+Fcu6XLuTKTnzf+6nFqv7h+K/V6Ug7IbaPMI7s9S8URnGtWFCy5N5PL4HSzRFF2mXuinftDdg==}
     dev: false
 
-  /electron-settings@5.0.0(electron@25.0.1):
+  /electron-settings@5.0.0(electron@24.4.1):
     resolution: {integrity: sha512-QZOtjW3mPmyDE7VM4yHPS2JCmExwqaqPrArldgOdOLz25/yrn8qXPB5ZkiqPeCTXjdB7TZc4BFbOMjUBEbatSA==}
     peerDependencies:
       electron: '>= 2'
     dependencies:
       atomically: 2.0.1
-      electron: 25.0.1
+      electron: 24.4.1
       lodash.get: 4.4.2
       lodash.has: 4.5.2
       lodash.set: 4.3.2
@@ -5130,8 +5130,8 @@ packages:
       - supports-color
     dev: true
 
-  /electron@25.0.1:
-    resolution: {integrity: sha512-YD3xCrH01LiPeLlG90DWgMXJK69UxY4NiXKqXT12HOiXLqEaKrLWap+CiiS7J7SWUXz+4XOItQI8g1dtG7zkkA==}
+  /electron@24.4.1:
+    resolution: {integrity: sha512-tVZw5/dKGJbU1h8bdY0gfz4Y7ANYi8VddnIiLg/sPidJWc4CdshCZhLfU0lW1ySjtEt35JYxGHfmerkJJqUSTw==}
     engines: {node: '>= 12.20.55'}
     hasBin: true
     requiresBuild: true
@@ -8001,12 +8001,12 @@ packages:
       fs-monkey: 1.0.3
     dev: true
 
-  /menubar@9.3.0(electron@25.0.1):
+  /menubar@9.3.0(electron@24.4.1):
     resolution: {integrity: sha512-TC7R5YR+OKVfFIyGiZ+HkKmY0hMLhOseX6wN0DxWzzF1CNhZ2Tm3hMB6erc35jzBmrsMDghRm89dtSeY0VjmjQ==}
     peerDependencies:
       electron: ^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0 || ^22.0.0
     dependencies:
-      electron: 25.0.1
+      electron: 24.4.1
       electron-positioner: 4.1.0
     dev: false
 

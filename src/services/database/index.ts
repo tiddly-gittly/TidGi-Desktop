@@ -1,16 +1,17 @@
 import Sqlite3Database from 'better-sqlite3';
 import { injectable } from 'inversify';
-import * as sqlite_vss from 'sqlite-vss';
 
 import type { INativeService } from '@services/native/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IDatabaseService } from './interface';
 
 import { CACHE_DATABASE_FOLDER } from '@/constants/appPaths';
+import { PACKAGE_PATH_BASE, SQLITE_BINARY_PATH } from '@/constants/paths';
 import { lazyInject } from '@services/container';
 import { logger } from '@services/libs/log';
 import fs from 'fs-extra';
 import path from 'path';
+import { loadSqliteVss } from './sqlite-vss';
 
 @injectable()
 export class DatabaseService implements IDatabaseService {
@@ -25,14 +26,16 @@ export class DatabaseService implements IDatabaseService {
     const destinationFilePath = this.getDataBasePath(workspaceID);
     // only create db file for this workspace's wiki if it doesn't exist
     if (await fs.exists(this.getDataBasePath(workspaceID))) {
+      logger.debug(`initializeForWorkspace skip, there already has sqlite database for workspace ${workspaceID} in ${destinationFilePath}`);
       return;
     }
     await fs.ensureDir(CACHE_DATABASE_FOLDER);
     try {
       // create a database and table that adapts tiddlywiki usage
-      const database = new Sqlite3Database(':memory:', { verbose: logger.debug });
+      logger.debug(`initializeForWorkspace create a sqlite database with vss and table that adapts tiddlywiki usage for workspace ${workspaceID}`);
+      const database = new Sqlite3Database(':memory:', { verbose: logger.debug, nativeBinding: SQLITE_BINARY_PATH });
       try {
-        sqlite_vss.load(database);
+        loadSqliteVss(database, PACKAGE_PATH_BASE);
         const vssVersion = database.prepare('select vss_version()').pluck().get() as string;
         logger.debug(`initializeForWorkspace using sqlite-vss version: ${vssVersion} for workspace ${workspaceID}`);
       } catch (error) {

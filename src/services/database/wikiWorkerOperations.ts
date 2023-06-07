@@ -1,10 +1,11 @@
 import type { ITiddlerFields } from '@tiddlygit/tiddlywiki';
 import Sqlite3Database from 'better-sqlite3';
 import fs from 'fs-extra';
-import * as sqlite_vss from 'sqlite-vss';
+import { loadSqliteVss } from './sqlite-vss';
 
 export interface ISqliteDatabasePaths {
   databaseFile: string;
+  packagePathBase: string;
   sqliteBinary: string;
 }
 export class WikiWorkerDatabaseOperations {
@@ -14,13 +15,17 @@ export class WikiWorkerDatabaseOperations {
       throw new SqliteDatabaseNotInitializedError(paths.databaseFile);
     }
     const database = new Sqlite3Database(paths.databaseFile, { verbose: console.log, fileMustExist: true, nativeBinding: paths.sqliteBinary });
+    this.#database = database;
+    this.prepareMethods();
+    this.loadVSS(database, paths);
+  }
+
+  loadVSS(database: Sqlite3Database.Database, paths: ISqliteDatabasePaths) {
     try {
-      sqlite_vss.load(database);
+      loadSqliteVss(database, paths.packagePathBase);
     } catch {
       // ignore, error already logged in src/services/database/index.ts 's `initializeForWorkspace`
     }
-    this.#database = database;
-    this.prepareMethods();
   }
 
   insertTiddlers!: Sqlite3Database.Transaction<(tiddlers: ITiddlerFields[]) => void>;

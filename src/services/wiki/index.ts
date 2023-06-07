@@ -11,7 +11,7 @@ import { ModuleThread, spawn, Thread, Worker } from 'threads';
 import type { WorkerEvent } from 'threads/dist/types/master';
 
 import { WikiChannel } from '@/constants/channels';
-import { SQLITE_BINARY_PATH, TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
+import { PACKAGE_PATH_BASE, SQLITE_BINARY_PATH, TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
@@ -161,6 +161,7 @@ export class Wiki implements IWikiService {
       worker.initCacheDatabase({
         databaseFile: this.databaseService.getDataBasePath(workspaceID),
         sqliteBinary: SQLITE_BINARY_PATH,
+        packagePathBase: PACKAGE_PATH_BASE,
       }).subscribe(async (message) => {
         if (message.type === 'stderr' || message.type === 'stdout') {
           wikiOutputToFile(id, message.message);
