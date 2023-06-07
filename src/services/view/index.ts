@@ -333,7 +333,7 @@ export class View implements IViewService {
     try {
       logger.debug(
         `loadInitialUrlWithCatch(): view.webContents: ${String(view.webContents)} ${replacedUrl} for windowName ${windowName} for workspace ${workspace.name}`,
-        { stack: new Error('debug error, not a real error').stack },
+        { stack: new Error('stack').stack?.replace('Error:', '') },
       );
       if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
         return;
