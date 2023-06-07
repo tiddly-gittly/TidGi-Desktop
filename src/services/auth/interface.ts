@@ -44,6 +44,7 @@ export interface IAuthenticationService {
   get<K extends keyof IUserInfos>(key: K): Promise<IUserInfos[K] | undefined>;
   getOneTimeAdminAuthTokenForWorkspace(workspaceID: string): Promise<string | undefined>;
   getOneTimeAdminAuthTokenForWorkspaceSync(workspaceID: string): string | undefined;
+  getOrGenerateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string;
   /**
    * Get a random storage info, useful for checking if user have any token in the storage
    */
@@ -61,6 +62,7 @@ export const AuthenticationServiceIPCDescriptor = {
     generateOneTimeAdminAuthTokenForWorkspace: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,
     getOneTimeAdminAuthTokenForWorkspace: ProxyPropertyType.Function,
+    getOrGenerateOneTimeAdminAuthTokenForWorkspace: ProxyPropertyType.Function,
     getRandomStorageServiceUserInfo: ProxyPropertyType.Function,
     getStorageServiceUserInfo: ProxyPropertyType.Function,
     getUserInfos: ProxyPropertyType.Function,

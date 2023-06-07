@@ -116,11 +116,8 @@ export class Wiki implements IWikiService {
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
     let adminToken: string | undefined;
     if (tokenAuth) {
-      logger.debug(`startWiki() generateOneTimeAdminAuthTokenForWorkspace`);
-      adminToken = this.authService.getOneTimeAdminAuthTokenForWorkspaceSync(workspaceID);
-      if (adminToken === undefined) {
-        adminToken = this.authService.generateOneTimeAdminAuthTokenForWorkspace(workspaceID);
-      }
+      logger.debug(`startWiki() getOneTimeAdminAuthTokenForWorkspaceSync because tokenAuth is ${String(tokenAuth)}`);
+      adminToken = this.authService.getOrGenerateOneTimeAdminAuthTokenForWorkspace(workspaceID);
     }
     const workerData: IStartNodeJSWikiConfigs = {
       adminToken,

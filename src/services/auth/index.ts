@@ -117,6 +117,14 @@ export class Authentication implements IAuthenticationService {
     return adminToken;
   }
 
+  public getOrGenerateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string {
+    const adminToken = this.oneTimeAdminAuthToken.get(workspaceID);
+    if (adminToken === undefined) {
+      return this.generateOneTimeAdminAuthTokenForWorkspace(workspaceID);
+    }
+    return adminToken;
+  }
+
   public async getOneTimeAdminAuthTokenForWorkspace(workspaceID: string): Promise<string | undefined> {
     return this.getOneTimeAdminAuthTokenForWorkspaceSync(workspaceID);
   }
