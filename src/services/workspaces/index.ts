@@ -156,7 +156,7 @@ export class Workspace implements IWorkspaceService {
         id: workspace.id,
         type: 'checkbox' as const,
         checked: () => workspace.active,
-        click: async () => {
+        click: async (): Promise<void> => {
           await this.workspaceViewService.setActiveWorkspaceView(workspace.id);
           // manually update menu since we have alter the active workspace
           await this.menuService.buildMenu();
