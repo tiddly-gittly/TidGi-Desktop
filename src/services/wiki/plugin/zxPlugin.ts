@@ -1,4 +1,5 @@
 import type { ITiddlyWiki } from '@tiddlygit/tiddlywiki';
+import * as espree from 'espree';
 import _ from 'lodash';
 import vm, { Context } from 'vm';
 
@@ -31,6 +32,10 @@ export function executeScriptInTWContext(scriptContent: string, context: ITWVMCo
     context.executionResults.push(`${(error as Error).name}: ${(error as Error).message} ${(error as Error).stack ?? ''}`);
   }
   return context.executionResults;
+}
+
+export function getVariablesFromScript(scriptContent: string): string[] {
+  espree.parse(scriptContent, { sourceType: 'module' });
 }
 
 export interface ITWVMContext {
