@@ -98,8 +98,10 @@ export class Wiki implements IWikiService {
       logger.error('Try to start wiki, but workspace ID not provided', { workspaceID });
       return;
     }
-    if (this.getWorker(workspaceID) !== undefined) {
-      throw new DoubleWikiInstanceError(workspaceID);
+    const previousWorker = this.getWorker(workspaceID);
+    if (previousWorker !== undefined) {
+      logger.error(new DoubleWikiInstanceError(workspaceID));
+      await this.stopWiki(workspaceID);
     }
     // use Promise to handle worker callbacks
     const workspace = await this.workspaceService.get(workspaceID);
@@ -246,7 +248,6 @@ export class Wiki implements IWikiService {
       logger.warning(`No wiki for ${id}. No running worker, means maybe tiddlywiki server in this workspace failed to start`, {
         function: 'stopWiki',
       });
-      await Promise.resolve();
       return;
     }
     clearInterval(this.wikiSyncIntervals[id]);
