@@ -29,9 +29,9 @@ export interface INativeService {
   /**
    * Execute zx script in a wiki worker and get result.
    * @param zxWorkerArguments
-   * @param wikiFolderLocation Each wiki has its own worker, we use wiki's folder path to determine which worker to use. If not provided, will use current active workspace's wiki's path
+   * @param workspaceID Each wiki has its own worker, we use wiki's workspaceID to determine which worker to use. If not provided, will use current active workspace's ID
    */
-  executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string>;
+  executeZxScript$(zxWorkerArguments: IZxFileInput, workspaceID?: string): Observable<string>;
   getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string>;
   handleFileProtocol(request: { url: string }, callback: (response: string) => void): Promise<void>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;

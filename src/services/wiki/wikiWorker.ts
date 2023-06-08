@@ -217,6 +217,9 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
         execution.on('close', function(code) {
           observer.next({ type: 'control', actions: ZxWorkerControlActions.ended, message: `child process exited with code ${String(code)}` });
         });
+        /**
+         * zx script may have multiple console.log, we need to extract some of them and execute them in the $tw context (`executeScriptInTWContext`). And send some of them back to frontend.
+         */
         execution.stdout?.on('data', (stdout: Buffer) => {
           // if there are multiple console.log, their output will be concatenated into this stdout. And some of them are not intended to be executed. We use TW_SCRIPT_SEPARATOR to allow user determine the range they want to execute in the $tw context.
           const message = String(stdout);
@@ -228,11 +231,13 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
               if (wikiInstance === undefined) {
                 observer.next({ type: 'stderr', message: `Error in executeZxScript(): $tw is undefined` });
               } else {
+                // execute code in the $tw context
                 const context = getTWVmContext(wikiInstance);
                 const twExecutionResult = executeScriptInTWContext(content, context);
                 observer.next({ type: 'stdout', message: twExecutionResult.join('\n\n') });
               }
             } else {
+              // send some of them back to frontend.
               observer.next({ type: 'stdout', message: content });
             }
           });

@@ -102,8 +102,8 @@ export class NativeService implements INativeService {
     return toFilePath;
   }
 
-  public executeZxScript$(zxWorkerArguments: IZxFileInput, wikiFolderLocation?: string): Observable<string> {
-    const zxWorker = this.wikiService.getWorker(wikiFolderLocation ?? this.workspaceService.getActiveWorkspaceSync()?.wikiFolderLocation ?? '');
+  public executeZxScript$(zxWorkerArguments: IZxFileInput, workspaceID?: string): Observable<string> {
+    const zxWorker = this.wikiService.getWorker(workspaceID ?? this.workspaceService.getActiveWorkspaceSync()?.id ?? '');
     if (zxWorker === undefined) {
       const error = new ZxNotInitializedError();
       return new Observable<string>((observer) => {
