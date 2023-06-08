@@ -121,6 +121,7 @@ export class NativeService implements INativeService {
               case ZxWorkerControlActions.start: {
                 if (message.message !== undefined) {
                   observer.next(message.message);
+                  logger.debug(`zxWorker execute start with message`, { message: message.message });
                 }
                 break;
               }
@@ -132,7 +133,7 @@ export class NativeService implements INativeService {
               }
               case ZxWorkerControlActions.ended: {
                 const endedMessage = message.message ?? 'get ZxWorkerControlActions.ended without message';
-                observer.next(endedMessage);
+                logger.info(`zxWorker execute ended with message`, { message: endedMessage });
                 break;
               }
             }
@@ -142,7 +143,7 @@ export class NativeService implements INativeService {
           case 'stderr':
           case 'stdout': {
             observer.next(message.message);
-
+            logger.debug(`zxWorker execute has stdout/stderr`, { message: message.message });
             break;
           }
           case 'execution': {
