@@ -23,12 +23,13 @@ export type IVariableContextList = IVariableContext[];
  */
 export function getVariablesFromScript(scriptContent: string): string[] {
   try {
-    const tree = espree.parse(scriptContent, { sourceType: 'module' }) as EspreeASTRoot;
+    const tree = espree.parse(scriptContent, { sourceType: 'module', ecmaVersion: 'latest' }) as EspreeASTRoot;
     const topLevelVariables = tree.body.filter(node => node.type === 'VariableDeclaration' && node.declarations?.length > 0).flatMap(node =>
       node.declarations.map(declaration => declaration.id.name)
     );
     return topLevelVariables;
-  } catch {
+  } catch (error) {
+    console.error('espree.parse', error);
     // Can't use logger in this file to log error, because it runs in the worker. Just return empty variable list, let user to guess...
     return [];
   }
@@ -59,10 +60,13 @@ export function getSerializeAllVariablesInContextSnippet(content: string): strin
 /**
  * Used in context that can't return value, like in the zx script.
  */
-export function getSerializeAllVariablesInContextToLogSnippet(content: string): string {
+export function addVariableIOToContentLogVersion(content: string, variables: IVariableContext | undefined): string {
+  const setVariablesScript = variables === undefined ? '' : getDeserializeAllVariablesInContextSnippet(variables);
   const variablesToStringScript = getSerializeAllVariablesInContextSnippet(content);
-  return `${variablesToStringScript}
-  console.log('${VARIABLES_MAP_LOG_PREFIX}', variableMap);`;
+  return `${setVariablesScript}
+${content}
+${variablesToStringScript}
+console.log('${VARIABLES_MAP_LOG_PREFIX}', JSON.stringify(variableMap));`;
 }
 export function extractVariablesFromExecutionLog(logString: string): IVariableContext {
   // extract variables from `console.log('${VARIABLES_MAP_LOG_PREFIX}', variableMap);`;
@@ -76,21 +80,46 @@ export function extractVariablesFromExecutionLog(logString: string): IVariableCo
 }
 
 /**
- * Used in context that can return value, like in the vm.
+ * Used in context that can inject api, like vm context.
+ * Use `pushVariablesToTWContext` in `additionalVMContext`
  */
-export function getSerializeAllVariablesInContextToReturnSnippet(content: string): string {
+export function addVariableIOToContentAPIVersion(content: string, variables: IVariableContext | undefined): string {
+  const setVariablesScript = variables === undefined ? '' : getDeserializeAllVariablesInContextSnippet(variables);
   const variablesToStringScript = getSerializeAllVariablesInContextSnippet(content);
-  return `${variablesToStringScript}
-  return variableMap;`;
+  return `${setVariablesScript}
+${content}
+${variablesToStringScript}
+pushVariablesToTWContext(variableMap);`;
 }
 
-export function getDeserializeAllVariablesInContextSnippet(variables: string[]): string {
-  /**
-   * Deserialize all variables that is primitive in the context using JSONParse.
-   * This is a helper function that will not be executed. We toString it, and concat it to the JS script that will be executed.
-   * @param variableMap
-   */
-  const fromStringHelper = () => {};
+export function getDeserializeAllVariablesInContextSnippet(variables: IVariableContext): string {
+  const setVariablesScript = Object.keys(variables).reduce((accumulator, variable) => {
+    const variableValue = variables[variable];
+    // try to parse JSON in vm/zx context
+    if (typeof variableValue === 'string') {
+      const quote = variableValue.includes("'") ? '"' : "'";
+      if (variableValue.includes('{')) {
+        // parse json with default "" quote
+        return `${accumulator}
+        let ${variable};
+        try {
+          ${variable} = JSON.parse('${variableValue}');
+        } catch {
+          // this is a normal string, not json
+          ${variable} = ${quote}${variableValue}${quote};
+        }
+        `;
+      } else {
+        // for string, need extra quote
+        return `${accumulator}
+        const ${variable} = ${quote}${variableValue}${quote};`;
+      }
+    }
+    // for number boolean
+    return `${accumulator}
+      const ${variable} = ${String(variableValue)};`;
+  }, '');
+  return setVariablesScript;
 }
 
 export interface EspreeASTRoot {

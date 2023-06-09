@@ -213,11 +213,11 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
            * Store each script's variable context in an array, so that we can restore them later in next context.
            * Key is the variable name, value is the variable value.
            */
-          const variableContext: IVariableContextList = [];
-          for (const scriptInContext of scriptsInDifferentContext) {
+          const variableContextList: IVariableContextList = [];
+          for (const [index, scriptInContext] of scriptsInDifferentContext.entries()) {
             switch (scriptInContext?.context) {
               case 'zx': {
-                await executeScriptInZxScriptContext({ zxPath, filePathToExecute }, observer, scriptInContext.content, variableContext);
+                await executeScriptInZxScriptContext({ zxPath, filePathToExecute }, observer, scriptInContext.content, variableContextList, index);
                 break;
               }
               case 'tw-server': {
@@ -225,7 +225,7 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
                   observer.next({ type: 'stderr', message: `Error in executeZxScript(): $tw is undefined` });
                   break;
                 }
-                executeScriptInTWContext(scriptInContext.content, observer, wikiInstance, variableContext);
+                executeScriptInTWContext(scriptInContext.content, observer, wikiInstance, variableContextList, index);
                 break;
               }
             }
