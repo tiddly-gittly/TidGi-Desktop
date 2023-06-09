@@ -9,8 +9,7 @@
 import { uninstall } from '@/helpers/installV8Cache';
 import 'source-map-support/register';
 import { type ITiddlyWiki, type IUtils, TiddlyWiki } from '@tiddlygit/tiddlywiki';
-import { fork } from 'child_process';
-import { exists, mkdtemp, writeFile } from 'fs-extra';
+import { exists, mkdtemp } from 'fs-extra';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
 import { tmpdir } from 'os';
@@ -24,7 +23,7 @@ import { defaultServerIP } from '@/constants/urls';
 import { ISqliteDatabasePaths, SqliteDatabaseNotInitializedError, WikiWorkerDatabaseOperations } from '@services/database/wikiWorkerOperations';
 import { fixPath } from '@services/libs/fixPath';
 import { IWikiLogMessage, IWikiMessage, IZxWorkerMessage, WikiControlActions, ZxWorkerControlActions } from './interface';
-import { executeScriptInTWContext, extractTWContextScripts, getTWVmContext } from './plugin/zxPlugin';
+import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts } from './plugin/zxPlugin';
 import { adminTokenIsProvided } from './wikiWorkerUtils';
 
 fixPath();
@@ -202,52 +201,34 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
   return new Observable<IZxWorkerMessage>((observer) => {
     observer.next({ type: 'control', actions: ZxWorkerControlActions.start });
 
+    let filePathToExecute: string;
     void (async function executeZxScriptIIFE() {
       try {
-        let filePathToExecute = '';
         if ('fileName' in file) {
+          // codeblock mode, eval a string that might have different contexts separated by TW_SCRIPT_SEPARATOR
           const temporaryDirectory = await mkdtemp(`${tmpdir()}${path.sep}`);
           filePathToExecute = path.join(temporaryDirectory, file.fileName);
-          await writeFile(filePathToExecute, file.fileContent);
+          const scriptsInDifferentContext = extractTWContextScripts(file.fileContent);
+          for (const scriptInContext of scriptsInDifferentContext) {
+            switch (scriptInContext?.context) {
+              case 'zx': {
+                await executeScriptInZxScriptContext({ zxPath, filePathToExecute }, observer, scriptInContext.content);
+                break;
+              }
+              case 'tw-server': {
+                if (wikiInstance === undefined) {
+                  observer.next({ type: 'stderr', message: `Error in executeZxScript(): $tw is undefined` });
+                  break;
+                }
+                executeScriptInTWContext(scriptInContext.content, observer, wikiInstance);
+                break;
+              }
+            }
+          }
         } else if ('filePath' in file) {
+          // simple mode, only execute a designated file
           filePathToExecute = file.filePath;
         }
-        const execution = fork(zxPath, [filePathToExecute], { silent: true });
-
-        execution.on('close', function(code) {
-          observer.next({ type: 'control', actions: ZxWorkerControlActions.ended, message: `child process exited with code ${String(code)}` });
-        });
-        /**
-         * zx script may have multiple console.log, we need to extract some of them and execute them in the $tw context (`executeScriptInTWContext`). And send some of them back to frontend.
-         */
-        execution.stdout?.on('data', (stdout: Buffer) => {
-          // if there are multiple console.log, their output will be concatenated into this stdout. And some of them are not intended to be executed. We use TW_SCRIPT_SEPARATOR to allow user determine the range they want to execute in the $tw context.
-          const message = String(stdout);
-          const zxConsoleLogMessages = extractTWContextScripts(message);
-          // log and execute each different console.log result.
-          zxConsoleLogMessages.forEach(({ messageType, content }) => {
-            if (messageType === 'script') {
-              observer.next({ type: 'execution', message: content });
-              if (wikiInstance === undefined) {
-                observer.next({ type: 'stderr', message: `Error in executeZxScript(): $tw is undefined` });
-              } else {
-                // execute code in the $tw context
-                const context = getTWVmContext(wikiInstance);
-                const twExecutionResult = executeScriptInTWContext(content, context);
-                observer.next({ type: 'stdout', message: twExecutionResult.join('\n\n') });
-              }
-            } else {
-              // send some of them back to frontend.
-              observer.next({ type: 'stdout', message: content });
-            }
-          });
-        });
-        execution.stderr?.on('data', (stdout: Buffer) => {
-          observer.next({ type: 'stderr', message: String(stdout) });
-        });
-        execution.on('error', (error) => {
-          observer.next({ type: 'stderr', message: `${error.message} ${error.stack ?? ''}` });
-        });
       } catch (error) {
         const message = `zx script's executeZxScriptIIFE() failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
         observer.next({ type: 'control', actions: ZxWorkerControlActions.error, message });
