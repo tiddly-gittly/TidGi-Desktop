@@ -9,13 +9,13 @@ export interface ISqliteDatabasePaths {
   sqliteBinary: string;
 }
 export class WikiWorkerDatabaseOperations {
-  #database: Sqlite3Database.Database;
+  public database: Sqlite3Database.Database;
   constructor(paths: ISqliteDatabasePaths) {
     if (!fs.existsSync(paths.databaseFile)) {
       throw new SqliteDatabaseNotInitializedError(paths.databaseFile);
     }
     const database = new Sqlite3Database(paths.databaseFile, { verbose: console.log, fileMustExist: true, nativeBinding: paths.sqliteBinary });
-    this.#database = database;
+    this.database = database;
     this.prepareMethods();
     this.loadVSS(database, paths);
   }
@@ -34,7 +34,7 @@ export class WikiWorkerDatabaseOperations {
   }
 
   private prepareMethods() {
-    const insertTiddler = this.#database.prepare(`
+    const insertTiddler = this.database.prepare(`
       INSERT INTO tiddlers (title, text, type, created, modified, tags, fields, creator, modifier)
       VALUES (@title, @text, @type, @created, @modified, @tags, @fields, @creator, @modifier)
       ON CONFLICT(title) DO UPDATE SET
@@ -47,7 +47,7 @@ export class WikiWorkerDatabaseOperations {
         creator = excluded.creator,
         modifier = excluded.modifier
     `);
-    this.insertTiddlers = this.#database.transaction((tiddlers: ITiddlerFields[]) => {
+    this.insertTiddlers = this.database.transaction((tiddlers: ITiddlerFields[]) => {
       for (const tiddler of tiddlers) {
         insertTiddler.run(tiddler);
       }

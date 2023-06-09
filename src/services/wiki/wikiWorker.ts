@@ -9,6 +9,7 @@
 import { uninstall } from '@/helpers/installV8Cache';
 import 'source-map-support/register';
 import { type ITiddlyWiki, type IUtils, TiddlyWiki } from '@tiddlygit/tiddlywiki';
+import Sqlite3Database from 'better-sqlite3';
 import { exists, mkdtemp } from 'fs-extra';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
@@ -50,7 +51,8 @@ export interface IStartNodeJSWikiConfigs {
 }
 
 export interface IUtilsWithSqlite extends IUtils {
-  Sqlite: WikiWorkerDatabaseOperations;
+  Sqlite: Sqlite3Database.Database;
+  TidgiCacheDB: WikiWorkerDatabaseOperations;
 }
 
 function initCacheDatabase(cacheDatabaseConfig: ISqliteDatabasePaths) {
@@ -99,7 +101,8 @@ function startNodeJSWiki({
       wikiInstance = TiddlyWiki();
       // mount database to $tw
       if (wikiInstance !== undefined && cacheDatabase !== undefined) {
-        (wikiInstance.utils as IUtilsWithSqlite).Sqlite = cacheDatabase;
+        (wikiInstance.utils as IUtilsWithSqlite).TidgiCacheDB = cacheDatabase;
+        (wikiInstance.utils as IUtilsWithSqlite).Sqlite = cacheDatabase.database;
       }
       process.env.TIDDLYWIKI_PLUGIN_PATH = path.resolve(homePath, 'plugins');
       process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
