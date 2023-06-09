@@ -40,9 +40,10 @@ export async function executeScriptInZxScriptContext(
   const { filePathToExecute, zxPath } = paths;
   try {
     const execution = fork(zxPath, [filePathToExecute], { silent: true });
+    let contextWithVariableExtraction = '';
     if (content !== undefined) {
       const previousVariableContext = variableContextList?.[(index ?? 0) - 1];
-      const contextWithVariableExtraction = addVariableIOToContentLogVersion(content, previousVariableContext);
+      contextWithVariableExtraction = addVariableIOToContentLogVersion(content, previousVariableContext);
       await writeFile(filePathToExecute, contextWithVariableExtraction);
     }
     await new Promise<void>((resolve, reject) => {
@@ -69,7 +70,7 @@ export async function executeScriptInZxScriptContext(
         observer.next({ type: 'stderr', message: String(stdout) });
       });
       execution.on('error', (error) => {
-        const message = `${error.message} ${error.stack ?? ''}`;
+        const message = `${error.message} ${error.stack ?? ''}\n${contextWithVariableExtraction}`;
         observer.next({ type: 'stderr', message });
         reject(new Error(message));
       });

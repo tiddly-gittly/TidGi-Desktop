@@ -54,7 +54,10 @@ export function getSerializeAllVariablesInContextSnippet(content: string): strin
       }
     }, {});
   };
-  const variablesToStringScript = toStringHelper.toString().split('\n').slice(1, -1).join('\n').replace('variables', JSON.stringify(variables));
+  // after minify, the `() => {` will become `()=>{`, so we need to replace both, otherwise after bundle, this will cause error.
+  const stringScriptWithoutPrefix = toStringHelper.toString().replace('() => {', '').replace('()=>{', '');
+  // replace tailing `}`, and replace `variables` string with actuarial variables
+  const variablesToStringScript = stringScriptWithoutPrefix.substring(0, stringScriptWithoutPrefix.length - 1).replace('variables', JSON.stringify(variables));
   return variablesToStringScript;
 }
 /**
