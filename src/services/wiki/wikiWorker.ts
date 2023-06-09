@@ -23,7 +23,7 @@ import { defaultServerIP } from '@/constants/urls';
 import { ISqliteDatabasePaths, SqliteDatabaseNotInitializedError, WikiWorkerDatabaseOperations } from '@services/database/wikiWorkerOperations';
 import { fixPath } from '@services/libs/fixPath';
 import { IWikiLogMessage, IWikiMessage, IZxWorkerMessage, WikiControlActions, ZxWorkerControlActions } from './interface';
-import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts } from './plugin/zxPlugin';
+import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts, type IVariableContextList } from './plugin/zxPlugin';
 import { adminTokenIsProvided } from './wikiWorkerUtils';
 
 fixPath();
@@ -209,10 +209,15 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
           const temporaryDirectory = await mkdtemp(`${tmpdir()}${path.sep}`);
           filePathToExecute = path.join(temporaryDirectory, file.fileName);
           const scriptsInDifferentContext = extractTWContextScripts(file.fileContent);
+          /**
+           * Store each script's variable context in an array, so that we can restore them later in next context.
+           * Key is the variable name, value is the variable value.
+           */
+          const variableContext: IVariableContextList = [];
           for (const scriptInContext of scriptsInDifferentContext) {
             switch (scriptInContext?.context) {
               case 'zx': {
-                await executeScriptInZxScriptContext({ zxPath, filePathToExecute }, observer, scriptInContext.content);
+                await executeScriptInZxScriptContext({ zxPath, filePathToExecute }, observer, scriptInContext.content, variableContext);
                 break;
               }
               case 'tw-server': {
@@ -220,7 +225,7 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
                   observer.next({ type: 'stderr', message: `Error in executeZxScript(): $tw is undefined` });
                   break;
                 }
-                executeScriptInTWContext(scriptInContext.content, observer, wikiInstance);
+                executeScriptInTWContext(scriptInContext.content, observer, wikiInstance, variableContext);
                 break;
               }
             }
@@ -228,6 +233,7 @@ function executeZxScript(file: IZxFileInput, zxPath: string): Observable<IZxWork
         } else if ('filePath' in file) {
           // simple mode, only execute a designated file
           filePathToExecute = file.filePath;
+          await executeScriptInZxScriptContext({ zxPath, filePathToExecute }, observer);
         }
       } catch (error) {
         const message = `zx script's executeZxScriptIIFE() failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
