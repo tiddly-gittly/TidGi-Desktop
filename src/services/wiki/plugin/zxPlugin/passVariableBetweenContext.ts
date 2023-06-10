@@ -100,27 +100,25 @@ export function getDeserializeAllVariablesInContextSnippet(variables: IVariableC
     const variableValue = variables[variable];
     // try to parse JSON in vm/zx context
     if (typeof variableValue === 'string') {
-      const quote = variableValue.includes("'") ? '"' : "'";
       if (variableValue.includes('{')) {
         // parse json with default "" quote
         return `${accumulator}
-        let ${variable};
         try {
-          ${variable} = JSON.parse('${variableValue}');
+          var ${variable} = JSON.parse('${variableValue}');
         } catch {
           // this is a normal string, not json
-          ${variable} = ${quote}${variableValue}${quote};
+          var ${variable} = ${variableValue};
         }
         `;
       } else {
-        // for string, need extra quote
+        // for string, not need extra quote, because it was stringified in zx context and parsed back
         return `${accumulator}
-        const ${variable} = ${quote}${variableValue}${quote};`;
+        var ${variable} = ${variableValue};`;
       }
     }
     // for number boolean
     return `${accumulator}
-      const ${variable} = ${String(variableValue)};`;
+      var ${variable} = ${String(variableValue)};`;
   }, '');
   return setVariablesScript;
 }
