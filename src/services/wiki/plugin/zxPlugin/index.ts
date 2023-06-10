@@ -123,7 +123,7 @@ export function executeScriptInTWContext(
     ${scriptContentWithVariable}`);
   }
   // vm execution is Sync, so we can't get streambed result. return all console.log messages to user at once.
-  const message = context.executionResults.join('\n\n');
+  const message = `\n\n${context.executionResults.join('\n\n')}`;
   observer.next({ type: 'stdout', message });
 }
 
