@@ -94,37 +94,30 @@ export function executeScriptInTWContext(
   variableContextList: IVariableContextList,
   index: number,
 ): void {
-  const additionalVMContext = {
-    pushVariablesToTWContext(variables: IVariableContext) {
-      if (typeof variables === 'object' && variables !== undefined && variables !== null) {
-        variableContextList.push(variables);
-      }
-    },
-  };
   // execute code in the $tw context
-  const context = getTWVmContext(wikiInstance, additionalVMContext);
+  const vmContext = getTWVmContext(observer, wikiInstance, variableContextList);
   let scriptContentWithVariable = '';
   try {
     // prevent user add custom "return" statement that will break the script.
     const scriptContentWithoutReturn = scriptContent.split('\n').filter((line) => !line.trim().startsWith('return')).join('\n');
     if (scriptContentWithoutReturn.length < scriptContent.length) {
-      context.executionResults.push('Error: return statement is not allowed in the script. Auto removed.');
+      const message = 'Error: return statement is not allowed in the script. Auto removed.';
+      observer.next({ type: 'stderr', message });
     }
     const previousVariableContext = variableContextList[index - 1];
     scriptContentWithVariable = addVariableIOToContentAPIVersion(scriptContentWithoutReturn, previousVariableContext);
   } catch (error) {
-    context.executionResults.push(`TW Script init error: ${(error as Error).name}: ${(error as Error).message} ${(error as Error).stack ?? ''}`);
+    const message = `TW Script init error: ${(error as Error).name}: ${(error as Error).message} ${(error as Error).stack ?? ''}`;
+    observer.next({ type: 'stderr', message });
   }
   try {
-    vm.runInContext(scriptContentWithVariable, context.context, { timeout: 1000 * 60 * 5 });
+    vm.runInContext(scriptContentWithVariable, vmContext, { timeout: 1000 * 60 * 5 });
   } catch (error) {
-    context.executionResults.push(`${(error as Error).name}: ${(error as Error).message} ${(error as Error).stack ?? ''}
+    const message = `${(error as Error).name}: ${(error as Error).message} ${(error as Error).stack ?? ''}
     SourceCode:
-    ${scriptContentWithVariable}`);
+    ${scriptContentWithVariable}`;
+    observer.next({ type: 'stderr', message });
   }
-  // vm execution is Sync, so we can't get streambed result. return all console.log messages to user at once.
-  const message = `\n\n${context.executionResults.join('\n\n')}`;
-  observer.next({ type: 'stdout', message });
 }
 
 export const TW_SCRIPT_SEPARATOR = '/** tw */';
@@ -158,24 +151,32 @@ export interface ITWVMContext {
  * Get context that has global variables like `console` and `$tw`, and a result output buffer that contains result from the `console`.
  * @returns
  */
-export function getTWVmContext(wikiInstance: ITiddlyWiki, additionalVMContext: Record<string, unknown>): ITWVMContext {
-  const executionResults: string[] = [];
+export function getTWVmContext(
+  observer: Subscriber<IZxWorkerMessage>,
+  wikiInstance: ITiddlyWiki,
+  variableContextList: IVariableContextList,
+): vm.Context {
   const proxyConsole = new Proxy(
     {},
     {
-      get: (target, propertyName, receiver) => {
+      get: (_target, _propertyName, _receiver) => {
         return (...messageArguments: unknown[]): void => {
-          executionResults.push(messageArguments.map(String).join('\n'));
+          const message = messageArguments.map(String).join('\n');
+          observer.next({ type: 'stdout', message });
         };
       },
     },
   );
   const context = vm.createContext({
-    ...additionalVMContext,
+    pushVariablesToTWContext(variables: IVariableContext) {
+      if (typeof variables === 'object' && variables !== undefined && variables !== null) {
+        variableContextList.push(variables);
+      }
+    },
     console: proxyConsole,
     $tw: wikiInstance,
     _,
   });
 
-  return { context, executionResults };
+  return context;
 }
