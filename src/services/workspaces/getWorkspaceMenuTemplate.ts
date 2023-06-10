@@ -62,7 +62,7 @@ export async function getWorkspaceMenuTemplate(
   t: TFunction,
   service: IWorkspaceMenuRequiredServices,
 ): Promise<MenuItemConstructorOptions[]> {
-  const { active, id, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, homeUrl, name } = workspace;
+  const { active, id, mainWikiID, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, homeUrl, name } = workspace;
   /* eslint-disable @typescript-eslint/no-misused-promises */
   const template: MenuItemConstructorOptions[] = [
     {
@@ -118,8 +118,13 @@ export async function getWorkspaceMenuTemplate(
         click: async () => {
           const hasChanges = await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
           if (hasChanges) {
-            await service.workspaceView.restartWorkspaceViewService(id);
-            await service.view.reloadViewsWebContents(id);
+            if (isSubWiki && mainWikiID !== null) {
+              await service.workspaceView.restartWorkspaceViewService(mainWikiID);
+              await service.view.reloadViewsWebContents(mainWikiID);
+            } else {
+              await service.workspaceView.restartWorkspaceViewService(id);
+              await service.view.reloadViewsWebContents(id);
+            }
           }
         },
       });

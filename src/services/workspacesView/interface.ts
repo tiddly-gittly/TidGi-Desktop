@@ -53,7 +53,7 @@ export interface IWorkspaceViewService {
   removeWorkspaceView(workspaceID: string): Promise<void>;
   restartAllWorkspaceView(): Promise<void>;
   /**
-   * Restart nodejs wiki and reload the view
+   * Restart nodejs wiki and reload the view. Only works for main wiki.
    */
   restartWorkspaceViewService(workspaceID?: string | undefined): Promise<void>;
   /**

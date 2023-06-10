@@ -75,8 +75,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     // sorting (-1 will make a in the front, b in the back)
     const sortedList = workspacesList
       .sort((a, b) => a.order - b.order) // sort by order, 1-2<0, so first will be the first
-      .sort((a, b) => (a.isSubWiki && !b.isSubWiki ? 1 : 0)) // put subwiki on bottom, they have nothing to really do, deal with them later
-      .sort((a, b) => (a.active && !b.active ? -1 : 0)); // put active wiki first
+      .sort((a, b) => (a.active && !b.active ? -1 : 0)) // put active wiki first
+      .sort((a, b) => (a.isSubWiki && !b.isSubWiki ? -1 : 0)); // put subwiki on top, they can't restart wiki, so need to sync them first, then let main wiki restart the wiki // revert this after tw can reload tid from fs
     await mapSeries(sortedList, async (workspace) => {
       this.wikiService.setWikiStartLockOn(workspace.wikiFolderLocation);
       await this.initializeWorkspaceView(workspace);
@@ -112,27 +112,8 @@ export class WorkspaceView implements IWorkspaceViewService {
         return;
       }
     }
-    if (workspace.storageService !== SupportedStorageServices.local) {
-      const mainWindow = this.windowService.get(WindowNames.main);
-      if (mainWindow === undefined) {
-        throw new Error(i18n.t(`Error.MainWindowMissing`));
-      }
-      const userInfo = this.authService.getStorageServiceUserInfo(workspace.storageService);
-      if (userInfo === undefined) {
-        // user not login into Github or something else
-        void dialog.showMessageBox(mainWindow, {
-          title: i18n.t('Dialog.StorageServiceUserInfoNoFound'),
-          message: i18n.t('Dialog.StorageServiceUserInfoNoFoundDetail'),
-          buttons: ['OK'],
-          cancelId: 0,
-          defaultId: 0,
-        });
-      }
-    }
     logger.debug(`initializeWorkspaceView() calling wikiStartup()`);
     await this.wikiService.wikiStartup(workspace);
-
-    const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
     const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService, homeUrl } = workspace;
 
     // get sync process ready
@@ -142,16 +123,29 @@ export class WorkspaceView implements IWorkspaceViewService {
         if (typeof githubRepoUrl !== 'string') {
           throw new TypeError(`githubRepoUrl is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
         }
-        if (userInfo === undefined) {
-          throw new TypeError(`userInfo is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
+        const mainWindow = this.windowService.get(WindowNames.main);
+        if (mainWindow === undefined) {
+          throw new Error(i18n.t(`Error.MainWindowMissing`));
         }
-        // sync in non-blocking way
-        void this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo }).then(async (hasChanges) => {
-          if (hasChanges) {
-            await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
-            await this.viewService.reloadViewsWebContents(workspace.id);
-          }
-        });
+        const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
+        if (userInfo === undefined) {
+          // user not login into Github or something else
+          void dialog.showMessageBox(mainWindow, {
+            title: i18n.t('Dialog.StorageServiceUserInfoNoFound'),
+            message: i18n.t('Dialog.StorageServiceUserInfoNoFoundDetail'),
+            buttons: ['OK'],
+            cancelId: 0,
+            defaultId: 0,
+          });
+        } else {
+          // sync in non-blocking way
+          void this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo }).then(async (hasChanges) => {
+            if (hasChanges) {
+              await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
+              await this.viewService.reloadViewsWebContents(workspace.id);
+            }
+          });
+        }
       }
     } catch (error) {
       logger.error(`Can't sync at wikiStartup(), ${(error as Error).message}\n${(error as Error).stack ?? 'no stack'}`);
@@ -429,19 +423,22 @@ export class WorkspaceView implements IWorkspaceViewService {
     const workspaceToRestart = id === undefined ? await this.workspaceService.getActiveWorkspace() : await this.workspaceService.get(id);
     if (workspaceToRestart === undefined) {
       logger.warn(`restartWorkspaceViewService: no workspace ${id ?? 'id undefined'} to restart`);
-    } else {
-      logger.info(`Restarting workspace ${workspaceToRestart.id}`);
-      await this.updateLastUrl(workspaceToRestart.id);
-      await this.workspaceService.updateMetaData(workspaceToRestart.id, { didFailLoadErrorMessage: null, isLoading: false });
-      await this.wikiService.stopWiki(workspaceToRestart.id);
-      await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
-      if (await this.workspaceService.workspaceDidFailLoad(workspaceToRestart.id)) {
-        logger.warn('restartWorkspaceViewService() skip because workspaceDidFailLoad');
-        return;
-      }
-      await this.viewService.reloadViewsWebContents(workspaceToRestart.id);
-      this.wikiService.wikiOperation(WikiChannel.generalNotification, workspaceToRestart.id, i18n.t('ContextMenu.RestartServiceComplete'));
+      return;
     }
+    if (workspaceToRestart.isSubWiki) {
+      return;
+    }
+    logger.info(`Restarting workspace ${workspaceToRestart.id}`);
+    await this.updateLastUrl(workspaceToRestart.id);
+    await this.workspaceService.updateMetaData(workspaceToRestart.id, { didFailLoadErrorMessage: null, isLoading: false });
+    await this.wikiService.stopWiki(workspaceToRestart.id);
+    await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
+    if (await this.workspaceService.workspaceDidFailLoad(workspaceToRestart.id)) {
+      logger.warn('restartWorkspaceViewService() skip because workspaceDidFailLoad');
+      return;
+    }
+    await this.viewService.reloadViewsWebContents(workspaceToRestart.id);
+    this.wikiService.wikiOperation(WikiChannel.generalNotification, workspaceToRestart.id, i18n.t('ContextMenu.RestartServiceComplete'));
   }
 
   public async restartAllWorkspaceView(): Promise<void> {

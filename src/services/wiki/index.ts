@@ -560,6 +560,7 @@ export class Wiki implements IWikiService {
         await this.viewService.reloadViewsWebContents(id);
       }
     } else if (backupOnInterval && (await checkCanSyncDueToNoDraft())) {
+      // for local workspace, commitOnly
       await this.gitService.commitAndSync(workspace, { commitOnly: true });
     }
   }
@@ -578,18 +579,8 @@ export class Wiki implements IWikiService {
       const syncDebounceInterval = await this.preferenceService.get('syncDebounceInterval');
       this.wikiSyncIntervals[id] = setInterval(async () => {
         await this.syncWikiIfNeeded(workspace);
-        // sync all subwiki together, if main workspace set to sync
-        await this.syncAllSubWikiIfNeeded(workspace);
       }, syncDebounceInterval);
     }
-  }
-
-  private async syncAllSubWikiIfNeeded(workspace: IWorkspace) {
-    const workspaces = await this.workspaceService.getWorkspacesAsList();
-    const subWikiWorkspaces = workspaces.filter((w) => w.mainWikiID === workspace.id);
-    await Promise.all(subWikiWorkspaces.map(async (w) => {
-      await this.syncWikiIfNeeded(w);
-    }));
   }
 
   private stopIntervalSync(workspace: IWorkspace): void {
