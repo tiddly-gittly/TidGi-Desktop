@@ -2,7 +2,7 @@ lockfileVersion: '6.0'
 
 dependencies:
   '@tiddlygit/tiddlywiki':
-    specifier: ^5.3.0-prerelease-2023-05-22
+    specifier: ^5.3.0-prerelease-2023-05-15
     version: 5.3.0-prerelease-2023-05-22
   app-path:
     specifier: ^4.0.0
@@ -24,13 +24,13 @@ dependencies:
     version: 2.5.0
   electron-ipc-cat:
     specifier: 1.2.9
-    version: 1.2.9(electron@24.4.1)(rxjs@7.8.1)
+    version: 1.2.9(electron@25.1.1)(rxjs@7.8.1)
   electron-is-packaged:
     specifier: 1.0.2
     version: 1.0.2(eslint@8.42.0)
   electron-settings:
     specifier: 5.0.0
-    version: 5.0.0(electron@24.4.1)
+    version: 5.0.0(electron@25.1.1)
   electron-squirrel-startup:
     specifier: 1.0.0
     version: 1.0.0
@@ -87,7 +87,7 @@ dependencies:
     version: 4.17.21
   menubar:
     specifier: 9.3.0
-    version: 9.3.0(electron@24.4.1)
+    version: 9.3.0(electron@25.1.1)
   nanoid:
     specifier: ^4.0.2
     version: 4.0.2
@@ -324,8 +324,8 @@ devDependencies:
     specifier: ^0.37.1
     version: 0.37.1
   electron:
-    specifier: 24.4.1
-    version: 24.4.1
+    specifier: 25.1.1
+    version: 25.1.1
   electron-wix-msi:
     specifier: ^5.0.0
     version: 5.0.0
@@ -3795,7 +3795,7 @@ packages:
     dev: true
 
   /buffer-crc32@0.2.13:
-    resolution: {integrity: sha512-VO9Ht/+p3SN7SKWqcrgEzjGbRSJYTx+Q1pTQC0wrWqHx0vpJraQ6GtHx8tvcg1rlK1byhU5gccxgOgj7B0TDkQ==}
+    resolution: {integrity: sha1-DTM+PwDqxQqhRUq9MO+MKl2ackI=}
 
   /buffer-equal@0.0.1:
     resolution: {integrity: sha1-kbx0sR6kBbyRa8aqkI+q+ltKrEs=}
@@ -4998,13 +4998,13 @@ packages:
     dev: true
     optional: true
 
-  /electron-ipc-cat@1.2.9(electron@24.4.1)(rxjs@7.8.1):
+  /electron-ipc-cat@1.2.9(electron@25.1.1)(rxjs@7.8.1):
     resolution: {integrity: sha512-H/d2/sDlc4BP7IlVUONWipGLxYzRxQOVhO5So/DQ7kYCOm4hW+PdHFE0EKUzNeK5W9hQaiYAuQ22k9AQJ/VAyA==}
     peerDependencies:
       electron: '>= 13.0.0'
       rxjs: '>= 7.5.0'
     dependencies:
-      electron: 24.4.1
+      electron: 25.1.1
       errio: 1.2.2
       lodash: 4.17.21
       rxjs: 7.8.1
@@ -5059,13 +5059,13 @@ packages:
     resolution: {integrity: sha512-726DfbI9ZNoCg+Fcu6XLuTKTnzf+6nFqv7h+K/V6Ug7IbaPMI7s9S8URnGtWFCy5N5PL4HSzRFF2mXuinftDdg==}
     dev: false
 
-  /electron-settings@5.0.0(electron@24.4.1):
+  /electron-settings@5.0.0(electron@25.1.1):
     resolution: {integrity: sha512-QZOtjW3mPmyDE7VM4yHPS2JCmExwqaqPrArldgOdOLz25/yrn8qXPB5ZkiqPeCTXjdB7TZc4BFbOMjUBEbatSA==}
     peerDependencies:
       electron: '>= 2'
     dependencies:
       atomically: 2.0.1
-      electron: 24.4.1
+      electron: 25.1.1
       lodash.get: 4.4.2
       lodash.has: 4.5.2
       lodash.set: 4.3.2
@@ -5143,8 +5143,8 @@ packages:
       - supports-color
     dev: true
 
-  /electron@24.4.1:
-    resolution: {integrity: sha512-tVZw5/dKGJbU1h8bdY0gfz4Y7ANYi8VddnIiLg/sPidJWc4CdshCZhLfU0lW1ySjtEt35JYxGHfmerkJJqUSTw==}
+  /electron@25.1.1:
+    resolution: {integrity: sha512-WvFUfVsJn6YiP35UxdibYVjU2LceastyMm4SVp2bmb4XvKEvItAIiwxgm7tPC5Syl1243aRCvQLqr84sZ71pyQ==}
     engines: {node: '>= 12.20.55'}
     hasBin: true
     requiresBuild: true
@@ -6058,7 +6058,7 @@ packages:
     dev: true
 
   /fd-slicer@1.1.0:
-    resolution: {integrity: sha512-cE1qsB/VwyQozZ+q1dGxR8LBYNZeofhEdUNGSMbQD3Gw2lAzX9Zb3uIU6Ebc/Fmyjo9AWWfnn0AUCHqtevs/8g==}
+    resolution: {integrity: sha1-JcfInLH5B3+IkbvmHY85Dq4lbx4=}
     dependencies:
       pend: 1.2.0
 
@@ -8014,12 +8014,12 @@ packages:
       fs-monkey: 1.0.3
     dev: true
 
-  /menubar@9.3.0(electron@24.4.1):
+  /menubar@9.3.0(electron@25.1.1):
     resolution: {integrity: sha512-TC7R5YR+OKVfFIyGiZ+HkKmY0hMLhOseX6wN0DxWzzF1CNhZ2Tm3hMB6erc35jzBmrsMDghRm89dtSeY0VjmjQ==}
     peerDependencies:
       electron: ^9.0.0 || ^10.0.0 || ^11.0.0 || ^12.0.0 || ^13.0.0 || ^14.0.0 || ^15.0.0 || ^16.0.0 || ^17.0.0 || ^18.0.0 || ^19.0.0 || ^20.0.0 || ^21.0.0 || ^22.0.0
     dependencies:
-      electron: 24.4.1
+      electron: 25.1.1
       electron-positioner: 4.1.0
     dev: false
 
@@ -8953,7 +8953,7 @@ packages:
     dev: false
 
   /pend@1.2.0:
-    resolution: {integrity: sha512-F3asv42UuXchdzt+xXqfW1OGlVBe+mxa2mqI0pg5yAHZPvFmY3Y6drSf/GQ1A86WgWEN9Kzh/WrgKa6iGcHXLg==}
+    resolution: {integrity: sha1-elfrVQpng/kRUzH89GY9XI4AelA=}
 
   /phin@2.9.3:
     resolution: {integrity: sha512-CzFr90qM24ju5f88quFC/6qohjC144rehe5n6DH900lgXmUe86+xCKc10ev56gRKC4/BkHUoG4uSiQgBiIXwDA==}
@@ -11631,7 +11631,7 @@ packages:
     dev: true
 
   /yauzl@2.10.0:
-    resolution: {integrity: sha512-p4a9I6X6nu6IhoGmBqAcbJy1mlC4j27vEPZX9F4L4/vZT3Lyq1VkFHw/V/PUcB9Buo+DG3iHkT0x3Qya58zc3g==}
+    resolution: {integrity: sha1-x+sXyT4RLLEIb6bY5R+wZnt5pfk=}
     dependencies:
       buffer-crc32: 0.2.13
       fd-slicer: 1.1.0

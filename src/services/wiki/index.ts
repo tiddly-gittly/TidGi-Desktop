@@ -176,6 +176,10 @@ export class Wiki implements IWikiService {
         if (message.type === 'control') {
           await this.workspaceService.update(workspaceID, { lastNodeJSArgv: message.argv }, true);
           switch (message.actions) {
+            case WikiControlActions.rendered: {
+              await this.viewService.loadWikiHTMLWaitForView(workspaceID, message.wikiHTML);
+              break;
+            }
             case WikiControlActions.booted: {
               setTimeout(async () => {
                 if (message.message !== undefined) {
