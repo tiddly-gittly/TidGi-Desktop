@@ -22,6 +22,7 @@ import { logger } from '@services/libs/log';
 import { INativeService } from '@services/native/interface';
 import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace } from '@services/workspaces/interface';
+import { setViewEventName } from './constants';
 import { ViewLoadUrlError } from './error';
 import { IViewService } from './interface';
 import setupViewEventHandlers from './setupViewEventHandlers';
@@ -58,14 +59,14 @@ export class View implements IViewService {
   private initIPCHandlers(): void {
     ipcMain.handle(ViewChannel.onlineStatusChanged, async (_event, online: boolean) => {
       // try to fix when wifi status changed when wiki startup, causing wiki not loaded properly.
-      if (online) {
-        await this.reloadViewsWebContentsIfDidFailLoad();
-      }
-      /**
-       * fixLocalIpNotAccessible. try to fix when network changed cause old local ip not accessible, need to generate a new ip and reload the view
-       * Do this for all workspace and all views...
-       */
-      await this.workspaceViewService.restartAllWorkspaceView();
+      // if (online) {
+      //   await this.reloadViewsWebContentsIfDidFailLoad();
+      // }
+      // /**
+      //  * fixLocalIpNotAccessible. try to fix when network changed cause old local ip not accessible, need to generate a new ip and reload the view
+      //  * Do this for all workspace and all views...
+      //  */
+      // await this.workspaceViewService.restartAllWorkspaceView();
     });
   }
 
@@ -219,10 +220,13 @@ export class View implements IViewService {
     const workspaceOwnedViews = this.views[workspaceID];
     if (workspaceOwnedViews === undefined) {
       this.views[workspaceID] = { [windowName]: newView } as Record<WindowNames, BrowserView>;
+      this.setViewEventTarget.dispatchEvent(new Event(setViewEventName(workspaceID, windowName)));
     } else {
       workspaceOwnedViews[windowName] = newView;
     }
   };
+
+  private readonly setViewEventTarget = new EventTarget();
 
   private shouldMuteAudio = false;
   private shouldPauseNotifications = false;
@@ -314,10 +318,60 @@ export class View implements IViewService {
       workspace,
       sharedWebPreferences,
       loadInitialUrlWithCatch: async () => {
-        await this.loadUrlForView(workspace, view, windowName);
+        // await this.loadUrlForView(workspace, view, windowName);
       },
     });
-    await this.loadUrlForView(workspace, view, windowName);
+    // await this.loadUrlForView(workspace, view, windowName);
+  }
+
+  public async loadWikiHTMLWaitForView(workspaceID: string, htmlString: string): Promise<void> {
+    /**
+     * If view is not ready, wait for it to be ready, by listening to setViewEventTarget
+     */
+    const loadOrWait = async (windowName: WindowNames) => {
+      const existedView = this.getView(workspaceID, windowName);
+      if (existedView === undefined) {
+        const eventName = setViewEventName(workspaceID, windowName);
+        await new Promise<void>((resolve, reject) => {
+          this.setViewEventTarget.addEventListener(eventName, () => {
+            const view = this.getView(workspaceID, windowName);
+            if (view === undefined) {
+              const errorMessage = `loadWikiHTMLWaitForView EventTarget.addEventListener(${eventName}): view is still undefined`;
+              logger.error(errorMessage);
+              reject(new Error(errorMessage));
+            } else {
+              void this.loadHTMLStringForView(htmlString, view).then(() => {
+                resolve();
+              });
+            }
+          });
+        });
+      } else {
+        await this.loadHTMLStringForView(htmlString, existedView);
+      }
+    };
+    await loadOrWait(WindowNames.main);
+    // always do the same for main and menuBar
+    await this.preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
+      if (attachToMenubar) {
+        await loadOrWait(WindowNames.menuBar);
+      }
+    });
+  }
+
+  private async loadHTMLStringForView(htmlString: string, view: BrowserView) {
+    const callbackWithHTMLString = (request: GlobalRequest): GlobalResponse => {
+      return new Response(htmlString, {
+        headers: { 'content-type': 'text/html' },
+      });
+    };
+    try {
+      view.webContents.session.protocol.handle('htmlString', callbackWithHTMLString);
+      await view.webContents.loadURL(`htmlString://`);
+      view.webContents.session.protocol.unhandle('htmlString');
+    } catch (error) {
+      logger.error(`loadHTMLStringForView: ${(error as Error).message}  (maybe this htmlString is not encodeURIComponent):\n${htmlString.substring(0, 100)}...`);
+    }
   }
 
   public async loadUrlForView(workspace: IWorkspace, view: BrowserView, windowName: WindowNames): Promise<void> {

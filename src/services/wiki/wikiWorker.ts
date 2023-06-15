@@ -82,7 +82,7 @@ function startNodeJSWiki({
   isDev,
   openDebugger,
   readOnlyMode,
-  rootTiddler,
+  rootTiddler = '$:/core/save/lazy-images',
   tiddlyWikiHost = defaultServerIP,
   tiddlyWikiPort = 5112,
   tokenAuth,
@@ -174,7 +174,7 @@ function startNodeJSWiki({
         '--listen',
         `port=${tiddlyWikiPort}`,
         `host=${tiddlyWikiHost}`,
-        `root-tiddler=${rootTiddler ?? '$:/core/save/lazy-images'}`,
+        `root-tiddler=${rootTiddler}`,
         ...httpsArguments,
         ...readonlyArguments,
         ...tokenAuthenticateArguments,
@@ -200,6 +200,8 @@ function startNodeJSWiki({
         });
       });
       wikiInstance.boot.startup({ bootPath: TIDDLYWIKI_PACKAGE_FOLDER });
+      const wikiHTML = wikiInstance.wiki.renderTiddler('text/plain', rootTiddler);
+      observer.next({ type: 'control', actions: WikiControlActions.rendered, wikiHTML, argv: fullBootArgv });
     } catch (error) {
       const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
       observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });

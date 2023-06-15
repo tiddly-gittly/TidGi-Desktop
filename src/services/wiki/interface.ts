@@ -106,7 +106,7 @@ export const WikiServiceIPCDescriptor = {
 
 // Workers
 
-export type IWikiMessage = IWikiLogMessage | IWikiControlMessage;
+export type IWikiMessage = IWikiLogMessage | IWikiControlMessage | IWikiContentMessage;
 export interface IWikiLogMessage {
   message: string;
   type: 'stdout' | 'stderr';
@@ -115,16 +115,23 @@ export enum WikiControlActions {
   /** wiki is booted */
   booted = 'tw-booted',
   error = 'tw-error',
+  rendered = 'tw-rendered',
   /** means worker is just started */
   start = 'tw-start',
 }
 export interface IWikiControlMessage {
-  actions: WikiControlActions;
+  actions: WikiControlActions.booted | WikiControlActions.error | WikiControlActions.start;
   argv: string[];
   message?: string;
   /** where this bug rise, helps debug */
   source?: string;
   type: 'control';
+}
+export interface IWikiContentMessage {
+  actions: WikiControlActions.rendered;
+  argv: string[];
+  type: 'control';
+  wikiHTML: string;
 }
 
 export type IZxWorkerMessage = IZxWorkerLogMessage | IZxWorkerControlMessage;
