@@ -367,6 +367,10 @@ export class View implements IViewService {
     };
     try {
       view.webContents.session.protocol.handle('htmlString', callbackWithHTMLString);
+      const handled = view.webContents.session.protocol.isProtocolHandled('htmlString');
+      if (!handled) {
+        logger.warn(`loadHTMLStringForView: htmlString protocol is not handled`);
+      }
       await view.webContents.loadURL(`htmlString://`);
       view.webContents.session.protocol.unhandle('htmlString');
     } catch (error) {
