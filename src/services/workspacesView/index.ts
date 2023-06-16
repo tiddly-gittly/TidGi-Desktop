@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/no-null */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/consistent-destructuring */
-import { delay, mapSeries } from 'bluebird';
+import { mapSeries } from 'bluebird';
 import { app, clipboard, dialog, session } from 'electron';
 import { injectable } from 'inversify';
 
@@ -28,7 +28,6 @@ import type { IWindowService } from '@services/windows/interface';
 import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import path from 'path';
-import { WorkspaceFailedToLoadError } from './error';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
 
 @injectable()
@@ -112,99 +111,116 @@ export class WorkspaceView implements IWorkspaceViewService {
         return;
       }
     }
+    const syncGitWhenInitializeWorkspaceView = async () => {
+      const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService } = workspace;
+
+      // get sync process ready
+      try {
+        if (workspace.syncOnStartup && storageService !== SupportedStorageServices.local && syncImmediately) {
+          // check synced wiki should have githubRepoUrl
+          if (typeof githubRepoUrl !== 'string') {
+            throw new TypeError(`githubRepoUrl is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
+          }
+          const mainWindow = this.windowService.get(WindowNames.main);
+          if (mainWindow === undefined) {
+            throw new Error(i18n.t(`Error.MainWindowMissing`));
+          }
+          const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
+          if (userInfo === undefined) {
+            // user not login into Github or something else
+            void dialog.showMessageBox(mainWindow, {
+              title: i18n.t('Dialog.StorageServiceUserInfoNoFound'),
+              message: i18n.t('Dialog.StorageServiceUserInfoNoFoundDetail'),
+              buttons: ['OK'],
+              cancelId: 0,
+              defaultId: 0,
+            });
+          } else {
+            // sync in non-blocking way
+            void this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo }).then(async (hasChanges) => {
+              if (hasChanges) {
+                await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
+                await this.viewService.reloadViewsWebContents(workspace.id);
+              }
+            });
+          }
+        }
+      } catch (error) {
+        logger.error(`Can't sync at wikiStartup(), ${(error as Error).message}\n${(error as Error).stack ?? 'no stack'}`);
+      }
+    };
+
+    const addViewWhenInitializeWorkspaceView = async (): Promise<void> => {
+      // adding BrowserView for each workspace
+      // skip view initialize if this is a sub wiki
+      if (workspace.isSubWiki) {
+        return;
+      }
+      // wait for main wiki's watch-fs plugin to be fully initialized
+      // and also wait for wiki BrowserView to be able to receive command
+      // eslint-disable-next-line global-require
+      // let workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
+      // let loadFailed = await this.workspaceService.workspaceDidFailLoad(workspace.id);
+      // // if wikiStartup cause load failed, we skip the view creation
+      // if (loadFailed) {
+      //   logger.info(`Exit initializeWorkspaceView() because loadFailed`, { workspace, workspaceMetadata });
+      //   return;
+      // }
+      // if we run this due to RestartService, then skip the view adding and the while loop, because the workspaceMetadata.isLoading will be false, because addViewForAllBrowserViews will return before it run loadInitialUrlWithCatch
+      if (await this.viewService.alreadyHaveView(workspace)) {
+        logger.debug('Skip initializeWorkspaceView() because alreadyHaveView');
+        return;
+      }
+      // Create browserView, and if user want a menubar, we also create a new window for that
+      await this.viewService.addViewForAllBrowserViews(workspace);
+      // wait for main wiki webview loaded
+      // while (workspaceMetadata.isLoading !== false) {
+      //   // eslint-disable-next-line no-await-in-loop
+      //   await delay(200);
+      //   workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
+      // }
+      // loadFailed = await this.workspaceService.workspaceDidFailLoad(workspace.id);
+      // if (loadFailed) {
+      //   const latestWorkspaceData = await this.workspaceService.get(workspace.id);
+      //   // DEBUG: console workspaceMetadata
+      //   console.log(`workspaceMetadata`, workspaceMetadata);
+      //   // throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, latestWorkspaceData?.lastUrl ?? homeUrl);
+      //   // isNew: only set language when first time load the wiki; options.from: only set language when creating new wiki
+      // } else
+
+      if (isNew && options.from === WikiCreationMethod.Create) {
+        const view = this.viewService.getView(workspace.id, WindowNames.main);
+        if (view !== undefined) {
+          // if is newly created wiki, we set the language as user preference
+          const currentLanguage = await this.preferenceService.get('language');
+          const tiddlywikiLanguageName = tiddlywikiLanguagesMap[currentLanguage];
+          if (tiddlywikiLanguageName === undefined) {
+            const errorMessage = `When creating new wiki, and switch to language "${currentLanguage}", there is no corresponding tiddlywiki language registered`;
+            logger.error(errorMessage, {
+              tiddlywikiLanguagesMap,
+            });
+          } else {
+            logger.debug(`Setting wiki language to ${currentLanguage} (${tiddlywikiLanguageName}) on init`);
+            await this.wikiService.setWikiLanguage(workspace.id, tiddlywikiLanguageName);
+          }
+        }
+      }
+    };
+    const initDatabaseWhenInitializeWorkspaceView = async (): Promise<void> => {
+      if (workspace.isSubWiki) {
+        return;
+      }
+      // after all init finished, create cache database if there is no one
+      await this.databaseService.initializeForWorkspace(workspace.id);
+    };
+
     logger.debug(`initializeWorkspaceView() calling wikiStartup()`);
-    await this.wikiService.wikiStartup(workspace);
-    const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService } = workspace;
-
-    // get sync process ready
-    try {
-      if (workspace.syncOnStartup && storageService !== SupportedStorageServices.local && syncImmediately) {
-        // check synced wiki should have githubRepoUrl
-        if (typeof githubRepoUrl !== 'string') {
-          throw new TypeError(`githubRepoUrl is undefined in initializeAllWorkspaceView when init ${wikiFolderLocation}`);
-        }
-        const mainWindow = this.windowService.get(WindowNames.main);
-        if (mainWindow === undefined) {
-          throw new Error(i18n.t(`Error.MainWindowMissing`));
-        }
-        const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
-        if (userInfo === undefined) {
-          // user not login into Github or something else
-          void dialog.showMessageBox(mainWindow, {
-            title: i18n.t('Dialog.StorageServiceUserInfoNoFound'),
-            message: i18n.t('Dialog.StorageServiceUserInfoNoFoundDetail'),
-            buttons: ['OK'],
-            cancelId: 0,
-            defaultId: 0,
-          });
-        } else {
-          // sync in non-blocking way
-          void this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo }).then(async (hasChanges) => {
-            if (hasChanges) {
-              await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
-              await this.viewService.reloadViewsWebContents(workspace.id);
-            }
-          });
-        }
-      }
-    } catch (error) {
-      logger.error(`Can't sync at wikiStartup(), ${(error as Error).message}\n${(error as Error).stack ?? 'no stack'}`);
-    }
-
-    // adding BrowserView for each workspace
-    // skip view initialize if this is a sub wiki
-    if (workspace.isSubWiki) {
-      return;
-    }
-    // wait for main wiki's watch-fs plugin to be fully initialized
-    // and also wait for wiki BrowserView to be able to receive command
-    // eslint-disable-next-line global-require
-    let workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
-    let loadFailed = await this.workspaceService.workspaceDidFailLoad(workspace.id);
-    // if wikiStartup cause load failed, we skip the view creation
-    if (loadFailed) {
-      logger.info(`Exit initializeWorkspaceView() because loadFailed`, { workspace, workspaceMetadata });
-      return;
-    }
-    // if we run this due to RestartService, then skip the view adding and the while loop, because the workspaceMetadata.isLoading will be false, because addViewForAllBrowserViews will return before it run loadInitialUrlWithCatch
-    if (await this.viewService.alreadyHaveView(workspace)) {
-      logger.debug('Skip initializeWorkspaceView() because alreadyHaveView');
-      return;
-    }
-    // Create browserView, and if user want a menubar, we also create a new window for that
-    await this.viewService.addViewForAllBrowserViews(workspace);
-    // wait for main wiki webview loaded
-    while (workspaceMetadata.isLoading !== false) {
-      // eslint-disable-next-line no-await-in-loop
-      await delay(200);
-      workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
-    }
-    loadFailed = await this.workspaceService.workspaceDidFailLoad(workspace.id);
-    if (loadFailed) {
-      const latestWorkspaceData = await this.workspaceService.get(workspace.id);
-      // DEBUG: console workspaceMetadata
-      console.log(`workspaceMetadata`, workspaceMetadata);
-      // throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, latestWorkspaceData?.lastUrl ?? homeUrl);
-      // isNew: only set language when first time load the wiki; options.from: only set language when creating new wiki
-    } else if (isNew && options.from === WikiCreationMethod.Create) {
-      const view = this.viewService.getView(workspace.id, WindowNames.main);
-      if (view !== undefined) {
-        // if is newly created wiki, we set the language as user preference
-        const currentLanguage = await this.preferenceService.get('language');
-        const tiddlywikiLanguageName = tiddlywikiLanguagesMap[currentLanguage];
-        if (tiddlywikiLanguageName === undefined) {
-          const errorMessage = `When creating new wiki, and switch to language "${currentLanguage}", there is no corresponding tiddlywiki language registered`;
-          logger.error(errorMessage, {
-            tiddlywikiLanguagesMap,
-          });
-        } else {
-          logger.debug(`Setting wiki language to ${currentLanguage} (${tiddlywikiLanguageName}) on init`);
-          await this.wikiService.setWikiLanguage(workspace.id, tiddlywikiLanguageName);
-        }
-      }
-    }
-    // after all init finished, create cache database if there is no one
-    await this.databaseService.initializeForWorkspace(workspace.id);
+    await Promise.all([
+      this.wikiService.wikiStartup(workspace),
+      addViewWhenInitializeWorkspaceView(),
+      initDatabaseWhenInitializeWorkspaceView(),
+    ]);
+    void syncGitWhenInitializeWorkspaceView();
   }
 
   public async updateLastUrl(
