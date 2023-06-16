@@ -39,6 +39,7 @@ const ipcServerRoutesMethods = {
   getIndex: ipcServerRoutes.getIndex.bind(ipcServerRoutes),
   getStatus: ipcServerRoutes.getStatus.bind(ipcServerRoutes),
   getTiddler: ipcServerRoutes.getTiddler.bind(ipcServerRoutes),
+  getTiddlerHtml: ipcServerRoutes.getTiddlerHtml.bind(ipcServerRoutes),
   getTiddlersJSON: ipcServerRoutes.getTiddlersJSON.bind(ipcServerRoutes),
   putTiddler: ipcServerRoutes.putTiddler.bind(ipcServerRoutes),
   getFile: ipcServerRoutes.getFile.bind(ipcServerRoutes),
