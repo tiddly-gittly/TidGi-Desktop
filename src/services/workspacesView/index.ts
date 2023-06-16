@@ -78,7 +78,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       .sort((a, b) => (a.active && !b.active ? -1 : 0)) // put active wiki first
       .sort((a, b) => (a.isSubWiki && !b.isSubWiki ? -1 : 0)); // put subwiki on top, they can't restart wiki, so need to sync them first, then let main wiki restart the wiki // revert this after tw can reload tid from fs
     await mapSeries(sortedList, async (workspace) => {
-      this.wikiService.setWikiStartLockOn(workspace.wikiFolderLocation);
+      this.wikiService.setWikiStartLockOn(workspace.id);
       await this.initializeWorkspaceView(workspace);
     });
     this.wikiService.setAllWikiStartLockOff();
@@ -114,7 +114,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
     logger.debug(`initializeWorkspaceView() calling wikiStartup()`);
     await this.wikiService.wikiStartup(workspace);
-    const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService, homeUrl } = workspace;
+    const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService } = workspace;
 
     // get sync process ready
     try {
