@@ -1,7 +1,7 @@
 /* eslint-disable n/no-callback-literal */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
-import { BrowserView, BrowserWindow, ipcMain, session, WebPreferences } from 'electron';
+import { BrowserView, BrowserWindow, ipcMain, protocol, session, WebPreferences } from 'electron';
 import { injectable } from 'inversify';
 
 import type { IMenuService } from '@services/menu/interface';
@@ -27,6 +27,7 @@ import { ViewLoadUrlError } from './error';
 import { IViewService } from './interface';
 import setupViewEventHandlers from './setupViewEventHandlers';
 import { setupViewSession } from './setupViewSession';
+import { delay } from 'bluebird';
 
 @injectable()
 export class View implements IViewService {
@@ -340,14 +341,14 @@ export class View implements IViewService {
               logger.error(errorMessage);
               reject(new Error(errorMessage));
             } else {
-              void this.loadHTMLStringForView(htmlString, view).then(() => {
+              void this.loadHTMLStringForView(htmlString, view, workspaceID).then(() => {
                 resolve();
               });
             }
           });
         });
       } else {
-        await this.loadHTMLStringForView(htmlString, existedView);
+        await this.loadHTMLStringForView(htmlString, existedView, workspaceID);
       }
     };
     await loadOrWait(WindowNames.main);
@@ -359,22 +360,25 @@ export class View implements IViewService {
     });
   }
 
-  private async loadHTMLStringForView(htmlString: string, view: BrowserView) {
+  private async loadHTMLStringForView(htmlString: string, view: BrowserView, workspaceID: string) {
     const callbackWithHTMLString = (request: GlobalRequest): GlobalResponse => {
+      // DEBUG: console request
+      console.log(`request`, request);
       return new Response(htmlString, {
         headers: { 'content-type': 'text/html' },
       });
     };
     try {
-      view.webContents.session.protocol.handle('htmlString', callbackWithHTMLString);
-      const handled = view.webContents.session.protocol.isProtocolHandled('htmlString');
+      view.webContents.session.protocol.handle(`htmlString${workspaceID}`, callbackWithHTMLString);
+      const handled = protocol.isProtocolHandled(`htmlString${workspaceID}`);
       if (!handled) {
         logger.warn(`loadHTMLStringForView: htmlString protocol is not handled`);
       }
-      await view.webContents.loadURL(`htmlString://`);
-      view.webContents.session.protocol.unhandle('htmlString');
+      await delay(1);
+      await view.webContents.loadURL(`htmlString${workspaceID}://example.com/${workspaceID}/index`);
+      view.webContents.session.protocol.unhandle(`htmlString${workspaceID}`);
     } catch (error) {
-      logger.error(`loadHTMLStringForView: ${(error as Error).message}  (maybe this htmlString is not encodeURIComponent):\n${htmlString.substring(0, 100)}...`);
+      logger.error(`loadHTMLStringForView: ${(error as Error).message} :\n${htmlString.substring(0, 100)}...`);
     }
   }
 
