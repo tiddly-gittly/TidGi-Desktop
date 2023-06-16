@@ -6,9 +6,10 @@
   "license": "MPL 2.0",
   "scripts": {
     "start": "npm run clean && npm run start-without-clean",
-    "start-without-clean": "cross-env NODE_ENV=development electron-forge start",
+    "start:without-clean": "cross-env NODE_ENV=development electron-forge start",
+    "start:without-clean:debug-worker": "cross-env NODE_ENV=development DEBUG_WORKER=true electron-forge start",
     "test": "npm run clean && cross-env NODE_ENV=test npm run package && npm run test-without-package",
-    "test-without-package": "mkdir -p logs && cross-env NODE_ENV=test cucumber-js",
+    "test:without-package": "mkdir -p logs && cross-env NODE_ENV=test cucumber-js",
     "package": "npm run init:git-submodule && electron-forge package",
     "make:mac-x64": "npm run init:git-submodule && cross-env NODE_ENV=production electron-forge make --platform=darwin --arch=x64",
     "make:mac-arm": "npm run init:git-submodule && cross-env NODE_ENV=production electron-forge make --platform=darwin --arch=arm64",

@@ -13,6 +13,7 @@ import Sqlite3Database from 'better-sqlite3';
 import { exists, mkdtemp } from 'fs-extra';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
+import inspector from 'node:inspector';
 import { tmpdir } from 'os';
 import path from 'path';
 import { Observable } from 'rxjs';
@@ -42,6 +43,7 @@ export interface IStartNodeJSWikiConfigs {
     tlsKey?: string | undefined;
   };
   isDev: boolean;
+  openDebugger?: boolean;
   readOnlyMode?: boolean;
   rootTiddler?: string;
   tiddlyWikiHost: string;
@@ -78,6 +80,7 @@ function startNodeJSWiki({
   homePath,
   https,
   isDev,
+  openDebugger,
   readOnlyMode,
   rootTiddler,
   tiddlyWikiHost = defaultServerIP,
@@ -85,6 +88,12 @@ function startNodeJSWiki({
   tokenAuth,
   userName,
 }: IStartNodeJSWikiConfigs): Observable<IWikiMessage> {
+  if (openDebugger === true) {
+    inspector.open();
+    inspector.waitForDebugger();
+    // eslint-disable-next-line no-debugger
+    debugger;
+  }
   return new Observable<IWikiMessage>((observer) => {
     let fullBootArgv: string[] = [];
     observer.next({ type: 'control', actions: WikiControlActions.start, argv: fullBootArgv });

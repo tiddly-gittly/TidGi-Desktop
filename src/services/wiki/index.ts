@@ -134,6 +134,7 @@ export class Wiki implements IWikiService {
       tiddlyWikiPort: port,
       tokenAuth,
       userName,
+      openDebugger: process.env.DEBUG_WORKER === 'true',
     };
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
     this.wikiWorkers[id] = worker;
