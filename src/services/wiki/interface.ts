@@ -3,14 +3,24 @@ import { IGitUserInfos } from '@services/git/interface';
 import { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { ModuleThread } from 'threads';
+import { IWikiServerRouteResponse } from './ipcServerRoutes';
 import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
 import { IWikiOperations } from './wikiOperations';
-import type { WikiWorker } from './wikiWorker';
+import type { IpcServerRouteMethods, WikiWorker } from './wikiWorker';
 
 /**
  * Handle wiki worker startup and restart
  */
 export interface IWikiService {
+  /**
+   * Call wiki worker route methods, and return response.
+   * Methods are copy from core/modules/server/routes , to support the IPC communication between renderer's browserView and main process and wiki worker.
+   */
+  callWikiIpcServerRoute<NAME extends 'deleteTiddler' | 'getFavicon' | 'getIndex' | 'getStatus' | 'getTiddler' | 'getTiddlersJSON' | 'putTiddler' | 'getFile'>(
+    workspaceID: string,
+    route: NAME,
+    ...arguments_: Parameters<IpcServerRouteMethods[NAME]>
+  ): Promise<IWikiServerRouteResponse | undefined>;
   /** return true if wiki does existed and folder is a valid tiddlywiki folder, return error message (a string) if there is an error checking wiki existence */
   checkWikiExist(workspace: IWorkspace, options?: { shouldBeMainWiki?: boolean; showDialog?: boolean }): Promise<string | true>;
   checkWikiStartLock(wikiFolderLocation: string): boolean;
@@ -106,7 +116,7 @@ export const WikiServiceIPCDescriptor = {
 
 // Workers
 
-export type IWikiMessage = IWikiLogMessage | IWikiControlMessage | IWikiContentMessage;
+export type IWikiMessage = IWikiLogMessage | IWikiControlMessage;
 export interface IWikiLogMessage {
   message: string;
   type: 'stdout' | 'stderr';
@@ -115,7 +125,6 @@ export enum WikiControlActions {
   /** wiki is booted */
   booted = 'tw-booted',
   error = 'tw-error',
-  rendered = 'tw-rendered',
   /** means worker is just started */
   start = 'tw-start',
 }
@@ -126,12 +135,6 @@ export interface IWikiControlMessage {
   /** where this bug rise, helps debug */
   source?: string;
   type: 'control';
-}
-export interface IWikiContentMessage {
-  actions: WikiControlActions.rendered;
-  argv: string[];
-  type: 'control';
-  wikiHTML: string;
 }
 
 export type IZxWorkerMessage = IZxWorkerLogMessage | IZxWorkerControlMessage;

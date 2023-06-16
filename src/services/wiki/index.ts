@@ -27,7 +27,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { CopyWikiTemplateError, DoubleWikiInstanceError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
 import { IWikiService, WikiControlActions } from './interface';
 import { getSubWikiPluginContent, ISubWikiPluginContent, updateSubWikiPluginContent } from './plugin/subWikiPlugin';
-import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
+import type { IpcServerRouteMethods, IpcServerRouteNames, IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
 
 import { isDevelopmentOrTest } from '@/constants/environment';
 import { defaultServerIP } from '@/constants/urls';
@@ -176,10 +176,6 @@ export class Wiki implements IWikiService {
         if (message.type === 'control') {
           await this.workspaceService.update(workspaceID, { lastNodeJSArgv: message.argv }, true);
           switch (message.actions) {
-            case WikiControlActions.rendered: {
-              await this.viewService.loadWikiHTMLWaitForView(workspaceID, message.wikiHTML);
-              break;
-            }
             case WikiControlActions.booted: {
               setTimeout(async () => {
                 if (message.message !== undefined) {
@@ -221,6 +217,19 @@ export class Wiki implements IWikiService {
         }
       });
     });
+  }
+
+  public async callWikiIpcServerRoute<NAME extends IpcServerRouteNames>(workspaceID: string, route: NAME, ...arguments_: Parameters<IpcServerRouteMethods[NAME]>) {
+    const worker = this.getWorker(workspaceID);
+    if (worker === undefined) {
+      logger.warning(`No wiki for ${workspaceID}. No running worker, means you call this function too early, or maybe tiddlywiki server in this workspace failed to start`, {
+        function: 'callWikiIpcServerRoute',
+      });
+      return;
+    }
+    // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
+    // @ts-ignore Argument of type 'string | string[] | ITiddlerFields | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.ts(2345)
+    return await worker[route](...arguments_);
   }
 
   public async extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined> {

@@ -25,12 +25,29 @@ import { defaultServerIP } from '@/constants/urls';
 import { ISqliteDatabasePaths, SqliteDatabaseNotInitializedError, WikiWorkerDatabaseOperations } from '@services/database/wikiWorkerOperations';
 import { fixPath } from '@services/libs/fixPath';
 import { IWikiLogMessage, IWikiMessage, IZxWorkerMessage, WikiControlActions, ZxWorkerControlActions } from './interface';
+import { IpcServerRoutes } from './ipcServerRoutes';
 import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts, type IVariableContextList } from './plugin/zxPlugin';
 import { adminTokenIsProvided } from './wikiWorkerUtils';
 
 fixPath();
 let wikiInstance: ITiddlyWiki | undefined;
 let cacheDatabase: WikiWorkerDatabaseOperations | undefined;
+const ipcServerRoutes: IpcServerRoutes = new IpcServerRoutes();
+const ipcServerRoutesMethods = {
+  deleteTiddler: ipcServerRoutes.deleteTiddler.bind(ipcServerRoutes),
+  getFavicon: ipcServerRoutes.getFavicon.bind(ipcServerRoutes),
+  getIndex: ipcServerRoutes.getIndex.bind(ipcServerRoutes),
+  getStatus: ipcServerRoutes.getStatus.bind(ipcServerRoutes),
+  getTiddler: ipcServerRoutes.getTiddler.bind(ipcServerRoutes),
+  getTiddlersJSON: ipcServerRoutes.getTiddlersJSON.bind(ipcServerRoutes),
+  putTiddler: ipcServerRoutes.putTiddler.bind(ipcServerRoutes),
+  getFile: ipcServerRoutes.getFile.bind(ipcServerRoutes),
+};
+/**
+ * Available methods for ipcServerRoutes exposed from wiki worker
+ */
+export type IpcServerRouteNames = keyof typeof ipcServerRoutesMethods;
+export type IpcServerRouteMethods = typeof ipcServerRoutesMethods;
 
 export interface IStartNodeJSWikiConfigs {
   adminToken?: string;
@@ -200,8 +217,7 @@ function startNodeJSWiki({
         });
       });
       wikiInstance.boot.startup({ bootPath: TIDDLYWIKI_PACKAGE_FOLDER });
-      const wikiHTML = wikiInstance.wiki.renderTiddler('text/plain', rootTiddler);
-      observer.next({ type: 'control', actions: WikiControlActions.rendered, wikiHTML, argv: fullBootArgv });
+      ipcServerRoutes.setWikiInstance(wikiInstance);
     } catch (error) {
       const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
       observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
@@ -320,6 +336,7 @@ const wikiWorker = {
   packetHTMLFromWikiFolder,
   beforeExit,
   initCacheDatabase,
+  ...ipcServerRoutesMethods,
 };
 export type WikiWorker = typeof wikiWorker;
 expose(wikiWorker);
