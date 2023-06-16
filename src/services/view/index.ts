@@ -1,7 +1,7 @@
 /* eslint-disable n/no-callback-literal */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
-import { BrowserView, BrowserWindow, ipcMain, protocol, session, WebPreferences } from 'electron';
+import { BrowserView, BrowserWindow, ipcMain, session, WebPreferences } from 'electron';
 import { injectable } from 'inversify';
 
 import type { IMenuService } from '@services/menu/interface';
@@ -25,9 +25,9 @@ import { IWorkspace } from '@services/workspaces/interface';
 import { setViewEventName } from './constants';
 import { ViewLoadUrlError } from './error';
 import { IViewService } from './interface';
+import { setupIpcServerRoutesHandlers } from './setupIpcServerRoutesHandlers';
 import setupViewEventHandlers from './setupViewEventHandlers';
 import { setupViewSession } from './setupViewSession';
-import { delay } from 'bluebird';
 
 @injectable()
 export class View implements IViewService {
@@ -322,64 +322,8 @@ export class View implements IViewService {
         // await this.loadUrlForView(workspace, view, windowName);
       },
     });
+    await setupIpcServerRoutesHandlers(view, workspace.id);
     // await this.loadUrlForView(workspace, view, windowName);
-  }
-
-  public async loadWikiHTMLWaitForView(workspaceID: string, htmlString: string): Promise<void> {
-    /**
-     * If view is not ready, wait for it to be ready, by listening to setViewEventTarget
-     */
-    const loadOrWait = async (windowName: WindowNames) => {
-      const existedView = this.getView(workspaceID, windowName);
-      if (existedView === undefined) {
-        const eventName = setViewEventName(workspaceID, windowName);
-        await new Promise<void>((resolve, reject) => {
-          this.setViewEventTarget.addEventListener(eventName, () => {
-            const view = this.getView(workspaceID, windowName);
-            if (view === undefined) {
-              const errorMessage = `loadWikiHTMLWaitForView EventTarget.addEventListener(${eventName}): view is still undefined`;
-              logger.error(errorMessage);
-              reject(new Error(errorMessage));
-            } else {
-              void this.loadHTMLStringForView(htmlString, view, workspaceID).then(() => {
-                resolve();
-              });
-            }
-          });
-        });
-      } else {
-        await this.loadHTMLStringForView(htmlString, existedView, workspaceID);
-      }
-    };
-    await loadOrWait(WindowNames.main);
-    // always do the same for main and menuBar
-    await this.preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
-      if (attachToMenubar) {
-        await loadOrWait(WindowNames.menuBar);
-      }
-    });
-  }
-
-  private async loadHTMLStringForView(htmlString: string, view: BrowserView, workspaceID: string) {
-    const callbackWithHTMLString = (request: GlobalRequest): GlobalResponse => {
-      // DEBUG: console request
-      console.log(`request`, request);
-      return new Response(htmlString, {
-        headers: { 'content-type': 'text/html' },
-      });
-    };
-    try {
-      view.webContents.session.protocol.handle(`htmlString${workspaceID}`, callbackWithHTMLString);
-      const handled = protocol.isProtocolHandled(`htmlString${workspaceID}`);
-      if (!handled) {
-        logger.warn(`loadHTMLStringForView: htmlString protocol is not handled`);
-      }
-      await delay(1);
-      await view.webContents.loadURL(`htmlString${workspaceID}://example.com/${workspaceID}/index`);
-      view.webContents.session.protocol.unhandle(`htmlString${workspaceID}`);
-    } catch (error) {
-      logger.error(`loadHTMLStringForView: ${(error as Error).message} :\n${htmlString.substring(0, 100)}...`);
-    }
   }
 
   public async loadUrlForView(workspace: IWorkspace, view: BrowserView, windowName: WindowNames): Promise<void> {

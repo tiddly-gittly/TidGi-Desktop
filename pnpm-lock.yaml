@@ -447,8 +447,8 @@ devDependencies:
     specifier: 10.9.1
     version: 10.9.1(@types/node@20.2.5)(typescript@5.1.3)
   tw5-typed:
-    specifier: ^0.2.27
-    version: 0.2.27
+    specifier: ^0.3.1
+    version: 0.3.1
   typeface-roboto:
     specifier: 1.1.13
     version: 1.1.13
@@ -10797,8 +10797,8 @@ packages:
       safe-buffer: 5.2.1
     dev: false
 
-  /tw5-typed@0.2.27:
-    resolution: {integrity: sha512-ATJaMZh1udwzcgqNOoPTmH9nzI/yMo5TLgv5u3O8WKDIE8SzuDVteah0G4gSsx/ogDyHAdmn0Wu5m+2hQ2wc7A==}
+  /tw5-typed@0.3.1:
+    resolution: {integrity: sha512-U0FnMomBCC4cHzxCMNMYRuC3VbSgRUZjQJ8cCXhlJF8BjaTkO4vy+guZqD5aTHeJinyhhKK5RCmwd1AOGKpzAQ==}
     dependencies:
       '@types/codemirror': 5.60.7
       '@types/echarts': 4.9.17

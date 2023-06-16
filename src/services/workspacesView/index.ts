@@ -182,7 +182,9 @@ export class WorkspaceView implements IWorkspaceViewService {
     loadFailed = await this.workspaceService.workspaceDidFailLoad(workspace.id);
     if (loadFailed) {
       const latestWorkspaceData = await this.workspaceService.get(workspace.id);
-      throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, latestWorkspaceData?.lastUrl ?? homeUrl);
+      // DEBUG: console workspaceMetadata
+      console.log(`workspaceMetadata`, workspaceMetadata);
+      // throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, latestWorkspaceData?.lastUrl ?? homeUrl);
       // isNew: only set language when first time load the wiki; options.from: only set language when creating new wiki
     } else if (isNew && options.from === WikiCreationMethod.Create) {
       const view = this.viewService.getView(workspace.id, WindowNames.main);

@@ -36,12 +36,6 @@ export interface IViewService {
    * We will set `didFailLoadErrorMessage`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
    */
   loadUrlForView(workspace: IWorkspace, view: BrowserView, windowName: WindowNames): Promise<void>;
-  /**
-   * load wiki's html string to workspace view, if view is not ready, this will wait for it to ready.
-   * @param workspaceID
-   * @param htmlString htmlString should be already `encodeURIComponent`
-   */
-  loadWikiHTMLWaitForView(workspaceID: string, htmlString: string): Promise<void>;
   realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;
   reloadActiveBrowserView: () => Promise<void>;
   reloadViewsWebContents(workspaceID?: string | undefined): Promise<void>;
