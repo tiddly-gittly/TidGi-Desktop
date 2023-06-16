@@ -6,7 +6,7 @@ import { ModuleThread } from 'threads';
 import { IWikiServerRouteResponse } from './ipcServerRoutes';
 import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
 import { IWikiOperations } from './wikiOperations';
-import type { IpcServerRouteMethods, WikiWorker } from './wikiWorker';
+import type { IpcServerRouteMethods, IpcServerRouteNames, WikiWorker } from './wikiWorker';
 
 /**
  * Handle wiki worker startup and restart
@@ -16,7 +16,7 @@ export interface IWikiService {
    * Call wiki worker route methods, and return response.
    * Methods are copy from core/modules/server/routes , to support the IPC communication between renderer's browserView and main process and wiki worker.
    */
-  callWikiIpcServerRoute<NAME extends 'deleteTiddler' | 'getFavicon' | 'getIndex' | 'getStatus' | 'getTiddler' | 'getTiddlersJSON' | 'putTiddler' | 'getFile'>(
+  callWikiIpcServerRoute<NAME extends IpcServerRouteNames>(
     workspaceID: string,
     route: NAME,
     ...arguments_: Parameters<IpcServerRouteMethods[NAME]>

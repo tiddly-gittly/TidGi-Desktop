@@ -62,7 +62,7 @@ export class IpcServerRoutes {
       try {
         const data = await fs.readFile(filename);
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        const type = this.wikiInstance.config.fileExtensionInfo[extension] ? $tw.config.fileExtensionInfo[extension].type : 'application/octet-stream';
+        const type = this.wikiInstance.config.fileExtensionInfo[extension] ? this.wikiInstance.config.fileExtensionInfo[extension].type : 'application/octet-stream';
         return ({ statusCode: 200, headers: { 'Content-Type': type }, data });
       } catch (error) {
         return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `Error accessing file ${suppliedFilename} with error: ${(error as Error).toString()}` };
@@ -85,7 +85,7 @@ export class IpcServerRoutes {
       space: {
         recipe: 'default',
       },
-      tiddlywiki_version: $tw.version,
+      tiddlywiki_version: this.wikiInstance.version,
     });
     return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, data: text };
   }
@@ -110,8 +110,9 @@ export class IpcServerRoutes {
       'type',
       'uri',
     ]);
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (tiddler) {
+    if (tiddler === undefined) {
+      return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `Tiddler "${title}" not exist` };
+    } else {
       Object.keys(tiddler.fields).forEach((name) => {
         const value = tiddler.getFieldStrings(name);
         if (knownFields.has(name)) {
@@ -127,8 +128,6 @@ export class IpcServerRoutes {
       tiddlerFields.bag = 'default';
       tiddlerFields.type = tiddlerFields.type ?? 'text/vnd.tiddlywiki';
       return { statusCode: 200, headers: { 'Content-Type': 'application/json; charset=utf8' }, data: JSON.stringify(tiddlerFields) };
-    } else {
-      return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `Tiddler "${title}" not exist` };
     }
   }
 
@@ -177,8 +176,34 @@ export class IpcServerRoutes {
         tiddlerFieldsToPut.text = tiddler.fields.text;
       }
     }
-    this.wikiInstance.wiki.addTiddler(new $tw.Tiddler(fields, { title }));
+    this.wikiInstance.wiki.addTiddler(new this.wikiInstance.Tiddler(fields, { title }));
     const changeCount = this.wikiInstance.wiki.getChangeCount(title).toString();
     return { statusCode: 204, headers: { 'Content-Type': 'text/plain', Etag: `"default/${encodeURIComponent(title)}/${changeCount}:"` }, data: 'OK' };
+  }
+
+  async getTiddlerHtml(title: string): Promise<IWikiServerRouteResponse> {
+    await this.waitForIpcServerRoutesAvailable();
+    const tiddler = this.wikiInstance.wiki.getTiddler(title);
+    if (tiddler === undefined) {
+      return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `Tiddler "${title}" not exist` };
+    } else {
+      let renderType: string = tiddler.getFieldString('_render_type');
+      let renderTemplate: string = tiddler.getFieldString('_render_template');
+      // Tiddler fields '_render_type' and '_render_template' overwrite
+      // system wide settings for render type and template
+      if (this.wikiInstance.wiki.isSystemTiddler(title)) {
+        renderType = renderType ?? this.wikiInstance.server.get('system-tiddler-render-type') ?? 'text/plain';
+        renderTemplate = renderTemplate ?? this.wikiInstance.server.get('system-tiddler-render-template') ?? '$:/core/templates/wikified-tiddler';
+      } else {
+        renderType = renderType ?? this.wikiInstance.server.get('tiddler-render-type') ?? 'text/html';
+        renderTemplate = renderTemplate ?? this.wikiInstance.server.get('tiddler-render-template') ?? '$:/core/templates/server/static.tiddler.html';
+      }
+      // DEBUG: console renderType
+      console.log(`renderType`, renderType, 'renderTemplate', renderTemplate);
+      const text = this.wikiInstance.wiki.renderTiddler(renderType, renderTemplate, { parseAsInline: true, variables: { currentTiddler: title } });
+
+      // Naughty not to set a content-type, but it's the easiest way to ensure the browser will see HTML pages as HTML, and accept plain text tiddlers as CSS or JS
+      return { statusCode: 200, headers: { 'Content-Type': '; charset=utf8' }, data: text };
+    }
   }
 }

@@ -5,12 +5,11 @@ import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
-import { IWikiServerRouteResponse } from '@services/wiki/ipcServerRoutes';
 import { IWorkspaceService } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 
 export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceID: string) {
-  const urlBase = `tidgi://${workspaceID}/`;
+  const urlBase = `tidgi://${workspaceID}`;
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
@@ -18,27 +17,34 @@ export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceI
     {
       method: 'DELETE',
       path: /^\/bags\/default\/tiddlers\/(.+)$/,
-      handler: async (title: string) => await wikiService.callWikiIpcServerRoute(workspaceID, 'deleteTiddler', title),
+      name: 'deleteTiddler',
+      handler: async (_request: GlobalRequest, parameters: RegExpMatchArray | null) =>
+        await wikiService.callWikiIpcServerRoute(workspaceID, 'deleteTiddler', parameters?.[1] ?? ''),
     },
     {
       method: 'GET',
       path: /^\/favicon.ico$/,
-      handler: async () => await wikiService.callWikiIpcServerRoute(workspaceID, 'getFavicon'),
+      name: 'getFavicon',
+      handler: async (_request: GlobalRequest, _parameters: RegExpMatchArray | null) => await wikiService.callWikiIpcServerRoute(workspaceID, 'getFavicon'),
     },
     {
       method: 'GET',
       path: /^\/files\/(.+)$/,
-      handler: async (fileName: string) => await wikiService.callWikiIpcServerRoute(workspaceID, 'getFile', fileName),
+      name: 'getFile',
+      handler: async (_request: GlobalRequest, parameters: RegExpMatchArray | null) => await wikiService.callWikiIpcServerRoute(workspaceID, 'getFile', parameters?.[1] ?? ''),
     },
     {
       method: 'GET',
       path: /^\/$/,
-      handler: async () => await wikiService.callWikiIpcServerRoute(workspaceID, 'getIndex', (await workspaceService.get(workspaceID))?.rootTiddler ?? '$:/core/save/lazy-images'),
+      name: 'getIndex',
+      handler: async (_request: GlobalRequest, _parameters: RegExpMatchArray | null) =>
+        await wikiService.callWikiIpcServerRoute(workspaceID, 'getIndex', (await workspaceService.get(workspaceID))?.rootTiddler ?? '$:/core/save/lazy-images'),
     },
     {
       method: 'GET',
       path: /^\/status$/,
-      handler: async () => {
+      name: 'getStatus',
+      handler: async (_request: GlobalRequest, _parameters: RegExpMatchArray | null) => {
         const workspace = await workspaceService.get(workspaceID);
         const userName = workspace === undefined ? '' : await authService.getUserName(workspace);
         await wikiService.callWikiIpcServerRoute(workspaceID, 'getStatus', userName);
@@ -46,45 +52,53 @@ export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceI
     },
     {
       method: 'GET',
+      path: /^\/([^/]+)$/,
+      name: 'getTiddlerHtml',
+      handler: async (_request: GlobalRequest, parameters: RegExpMatchArray | null) =>
+        await wikiService.callWikiIpcServerRoute(workspaceID, 'getTiddlerHtml', parameters?.[1] ?? ''),
+    },
+    {
+      method: 'GET',
       path: /^\/recipes\/default\/tiddlers\/(.+)$/,
-      handler: async (title: string) => await wikiService.callWikiIpcServerRoute(workspaceID, 'getTiddler', title),
+      name: 'getTiddler',
+      handler: async (_request: GlobalRequest, parameters: RegExpMatchArray | null) => await wikiService.callWikiIpcServerRoute(workspaceID, 'getTiddler', parameters?.[1] ?? ''),
+    },
+    {
+      method: 'GET',
+      path: /^\/recipes\/default\/tiddlers\/(.+)$/,
+      name: 'getTiddlersJSON',
+      handler: async (request: GlobalRequest, _parameters: RegExpMatchArray | null) =>
+        await wikiService.callWikiIpcServerRoute(workspaceID, 'getTiddlersJSON', new URL(request.url).searchParams.get('filter') ?? ''),
     },
     {
       method: 'PUT',
       path: /^\/recipes\/default\/tiddlers\/(.+)$/,
-      handler: async (title: string, fields: ITiddlerFields) => await wikiService.callWikiIpcServerRoute(workspaceID, 'putTiddler', title, fields),
+      name: 'putTiddler',
+      handler: async (request: GlobalRequest, parameters: RegExpMatchArray | null) => {
+        const body = await request.json() as ITiddlerFields;
+        await wikiService.callWikiIpcServerRoute(workspaceID, 'putTiddler', parameters?.[1] ?? '', body);
+      },
     },
   ];
   async function handlerCallback(request: GlobalRequest): Promise<GlobalResponse> {
-    // Extracting methods and URLs from requests
-    const { method, url } = request;
-    const urlPath = url.replace(urlBase, '');
-    // DEBUG: console urlPath
-    console.log(`urlPath`, urlPath);
-
+    const parsedUrl = new URL(request.url);
     // Iterate through methods to find matching routes
     for (const route of methods) {
-      if (method === route.method && route.path.test(urlPath)) {
+      if (request.method === route.method && route.path.test(parsedUrl.pathname)) {
         // Get the parameters in the URL path
-        const parameters = url.match(route.path);
-
+        const parameters = parsedUrl.pathname.match(route.path);
+        logger.debug(`loadHTMLStringForView: ${route.name}`, { parsedUrl, parameters });
         // Call the handler of the route to process the request and return the result
-        if (parameters === null) {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
-          // @ts-ignore Expected 2 arguments, but got 0.
-          const responseData: IWikiServerRouteResponse = await route.handler();
-          return new Response(responseData.data, { status: responseData.statusCode, headers: responseData.headers });
-        } else {
-          // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
-          // @ts-ignore Expected 2 arguments, but got 0.
-          const responseData: IWikiServerRouteResponse = await route.handler(...parameters.slice(1));
-          return new Response(responseData.data, { status: responseData.statusCode, headers: responseData.headers });
+        const responseData = await route.handler(request, parameters);
+        if (responseData === undefined) {
+          const statusText = `loadHTMLStringForView: responseData is undefined ${request.url}`;
+          logger.warn(statusText);
+          return new Response(undefined, { status: 404, statusText });
         }
+        return new Response(responseData.data, { status: responseData.statusCode, headers: responseData.headers });
       }
     }
-
-    // 如果没有找到匹配的路由，返回404错误
-    const statusText = `loadHTMLStringForView: tidgi protocol is not handled ${url}`;
+    const statusText = `loadHTMLStringForView: tidgi protocol is not handled ${request.url}`;
     logger.warn(statusText);
     return new Response(undefined, { status: 404, statusText });
   }
@@ -95,7 +109,7 @@ export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceI
     if (!handled) {
       logger.warn(`loadHTMLStringForView: tidgi protocol is not handled`);
     }
-    await view.webContents.loadURL(urlBase);
+    await view.webContents.loadURL(`${urlBase}/`);
     // view.webContents.session.protocol.unhandle(`tidgi`);
     view.webContents.openDevTools({ mode: 'detach' });
   } catch (error) {
