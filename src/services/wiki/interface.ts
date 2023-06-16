@@ -70,7 +70,7 @@ export interface IWikiService {
   /**
    * Lock to prevent some process ask a wiki to start and restart frequently.
    * For example, start main wiki then start sub-wiki, and sub-wiki will try to start its main wiki. */
-  setWikiStartLockOn(wikiFolderLocation: string): void;
+  setWikiStartLockOn(workspaceID: string): void;
   /** call wiki worker to actually start nodejs wiki */
   startWiki(workspaceID: string, userName: string): Promise<void>;
   stopAllWiki(): Promise<void>;
