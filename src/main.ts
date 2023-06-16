@@ -37,8 +37,11 @@ app.commandLine.appendSwitch('--disable-web-security');
 protocol.registerSchemesAsPrivileged([
   { scheme: 'http', privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'https', privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
+  { scheme: 'htmlString', privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'mailto', privileges: { standard: true } },
 ]);
+// TODO: handle workspace name + tiddler name in uri https://www.electronjs.org/docs/latest/tutorial/launch-app-from-url-in-another-app
+app.setAsDefaultProtocolClient('tidgi');
 bindServiceAndProxy();
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater);
