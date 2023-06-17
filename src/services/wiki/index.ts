@@ -16,7 +16,7 @@ import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
-import { logger, startWikiLogger } from '@services/libs/log';
+import { getWikiErrorLogFileName, logger, startWikiLogger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
@@ -36,6 +36,7 @@ import { IPreferenceService } from '@services/preferences/interface';
 import { mapValues } from 'lodash';
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
+import { LOG_FOLDER } from '@/constants/appPaths';
 import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker.ts';
 import { wikiWorkerStartedEventName } from './constants';
 import { IWikiOperations, wikiOperations } from './wikiOperations';
@@ -737,8 +738,8 @@ export class Wiki implements IWikiService {
     }
   }
 
-  public async getWikiLogs(homePath: string): Promise<{ content: string; filePath: string }> {
-    const filePath = getWikiLogFilePath(homePath);
+  public async getWikiErrorLogs(workspaceID: string, wikiName: string): Promise<{ content: string; filePath: string }> {
+    const filePath = path.join(LOG_FOLDER, getWikiErrorLogFileName(workspaceID, wikiName));
     const content = await fs.readFile(filePath, 'utf8');
     return {
       content,

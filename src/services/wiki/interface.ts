@@ -47,7 +47,7 @@ export interface IWikiService {
   extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
   getTiddlerText(workspace: IWorkspace, title: string): Promise<string | undefined>;
-  getWikiLogs(homePath: string): Promise<{ content: string; filePath: string }>;
+  getWikiErrorLogs(workspaceID: string, wikiName: string): Promise<{ content: string; filePath: string }>;
   /**
    * Get wiki worker, and you can call its methods. Only meant to be used in TidGi's services internally.
    * @param workspaceID You can get this from active workspace
@@ -97,7 +97,7 @@ export const WikiServiceIPCDescriptor = {
     extractWikiHTML: ProxyPropertyType.Function,
     getSubWikiPluginContent: ProxyPropertyType.Function,
     getTiddlerText: ProxyPropertyType.Function,
-    getWikiLogs: ProxyPropertyType.Function,
+    getWikiErrorLogs: ProxyPropertyType.Function,
     linkWiki: ProxyPropertyType.Function,
     openTiddlerInExternal: ProxyPropertyType.Function,
     packetHTMLFromWikiFolder: ProxyPropertyType.Function,

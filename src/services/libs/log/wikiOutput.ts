@@ -7,6 +7,9 @@ function getWikiLogFileName(workspaceID: string, wikiName: string): string {
   const logFileName = wikiName.replaceAll(/["*/:<>?\\|]/g, '_');
   return `${workspaceID}-${logFileName}.log`;
 }
+export function getWikiErrorLogFileName(workspaceID: string, wikiName: string): string {
+  return `error-${getWikiLogFileName(workspaceID, wikiName)}`;
+}
 
 const wikiLoggers: Record<string, winston.Logger> = {};
 
@@ -45,7 +48,7 @@ export function startWikiLogger(workspaceID: string, wikiName: string) {
         ],
         exceptionHandlers: [
           new winston.transports.DailyRotateFile({
-            filename: `error-${getWikiLogFileName(workspaceID, wikiName)}`,
+            filename: getWikiErrorLogFileName(workspaceID, wikiName),
             datePattern: 'YYYY-MM-DD',
             zippedArchive: false,
             maxSize: '20mb',
