@@ -1,22 +1,11 @@
 import { isElectronDevelopment } from '@/constants/isElectronDevelopment';
-import i18next, { TFuncKey, TOptions } from 'i18next';
+import i18next from 'i18next';
 import Backend from 'i18next-fs-backend';
 import path from 'path';
 
 import { LOCALIZATION_FOLDER } from '@/constants/paths';
 import { clearMainBindings, mainBindings } from './i18nMainBindings';
 import changeToDefaultLanguage from './useDefaultLanguage';
-
-// Workaround for https://github.com/isaachinman/next-i18next/issues/1781
-declare module 'i18next' {
-  interface TFunction {
-    // eslint-disable-next-line @typescript-eslint/prefer-function-type
-    <TKeys extends TFuncKey = string, TInterpolationMap extends object = Record<string, any>>(
-      key: TKeys,
-      options?: TOptions<TInterpolationMap> | string,
-    ): string;
-  }
-}
 
 // init i18n is async, but our usage is basically await the electron app to start, so this is basically ok
 // eslint-disable-next-line import/no-named-as-default-member
