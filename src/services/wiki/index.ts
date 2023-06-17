@@ -138,19 +138,19 @@ export class Wiki implements IWikiService {
     };
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
     this.wikiWorkers[id] = worker;
-    refreshOutputFile(name);
+    void refreshOutputFile(name);
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation };
     await new Promise<void>((resolve, reject) => {
       // handle native messages
       Thread.errors(worker).subscribe(async (error) => {
         logger.error(error.message, { ...loggerMeta, ...error });
-        wikiOutputToFile(name, error.message);
+        void wikiOutputToFile(name, error.message);
         reject(new WikiRuntimeError(error, name, false));
       });
       Thread.events(worker).subscribe((event: WorkerEvent) => {
         if (event.type === 'message') {
           const messageString = JSON.stringify(event.data);
-          wikiOutputToFile(id, `${messageString}\n`);
+          void wikiOutputToFile(id, `${messageString}\n`);
           logger.debug('wiki message', { ...event.data, ...loggerMeta });
         } else if (event.type === 'termination') {
           delete this.wikiWorkers[id];
@@ -167,7 +167,7 @@ export class Wiki implements IWikiService {
         packagePathBase: PACKAGE_PATH_BASE,
       }).subscribe(async (message) => {
         if (message.type === 'stderr' || message.type === 'stdout') {
-          wikiOutputToFile(id, message.message);
+          void wikiOutputToFile(id, message.message);
         }
       });
 
@@ -213,7 +213,7 @@ export class Wiki implements IWikiService {
             }
           }
         } else if (message.type === 'stderr' || message.type === 'stdout') {
-          wikiOutputToFile(id, message.message);
+          void wikiOutputToFile(id, message.message);
         }
       });
     });
