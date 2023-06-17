@@ -32,7 +32,7 @@ interface IWikiErrorMessagesProps {
 
 export function WikiErrorMessages(props: IWikiErrorMessagesProps): JSX.Element {
   const { t } = useTranslation();
-  const wikiLogs = usePromiseValue(async () => await window.service.wiki.getWikiLogs(props.activeWorkspace.wikiFolderLocation));
+  const wikiLogs = usePromiseValue(async () => await window.service.wiki.getWikiErrorLogs(props.activeWorkspace.id, props.activeWorkspace.name));
   if (wikiLogs !== undefined) {
     return (
       <WikiErrorMessagesContainer>
