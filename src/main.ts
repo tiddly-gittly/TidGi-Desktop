@@ -9,6 +9,7 @@ import { app, ipcMain, powerMonitor, protocol } from 'electron';
 import settings from 'electron-settings';
 import unhandled from 'electron-unhandled';
 import fs from 'fs-extra';
+import inspector from 'node:inspector';
 
 import { MainChannel } from '@/constants/channels';
 import { isTest } from '@/constants/environment';
@@ -32,6 +33,12 @@ import type { IWindowService } from './services/windows/interface';
 import type { IWorkspaceViewService } from './services/workspacesView/interface';
 
 logger.info('App booting');
+if (process.env.DEBUG_MAIN === 'true') {
+  inspector.open();
+  inspector.waitForDebugger();
+  // eslint-disable-next-line no-debugger
+  debugger;
+}
 
 app.commandLine.appendSwitch('--disable-web-security');
 protocol.registerSchemesAsPrivileged([
