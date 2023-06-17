@@ -5,15 +5,22 @@
 import fs from 'fs-extra';
 import omit from 'lodash/omit';
 import path from 'path';
-import type { ITiddlerFields, ITiddlyWiki } from 'tiddlywiki';
+import type { ITiddlerFields, ITiddlyWiki, OutputMimeTypes } from 'tiddlywiki';
 
+export interface IWikiServerStatusObject {
+  anonymous: boolean;
+  read_only: boolean;
+  space: {
+    recipe: string;
+  };
+  tiddlywiki_version: string;
+  username: string;
+}
 export interface IWikiServerRouteResponse {
-  data?: string | Buffer;
+  data?: string | Buffer | Array<Omit<ITiddlerFields, 'text'>> | IWikiServerStatusObject | ITiddlerFields;
   headers?: Record<string, string>;
   statusCode?: number;
 }
-
-type IGetTiddlerObject = Record<string, string | number> & { fields: Record<string, string | number> };
 
 export class IpcServerRoutes {
   private wikiInstance!: ITiddlyWiki;
@@ -78,7 +85,7 @@ export class IpcServerRoutes {
 
   async getStatus(userName: string): Promise<IWikiServerRouteResponse> {
     await this.waitForIpcServerRoutesAvailable();
-    const text = JSON.stringify({
+    const data: IWikiServerStatusObject = {
       username: userName,
       anonymous: false,
       read_only: false,
@@ -86,49 +93,27 @@ export class IpcServerRoutes {
         recipe: 'default',
       },
       tiddlywiki_version: this.wikiInstance.version,
-    });
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, data: text };
+    };
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, data };
   }
 
   async getTiddler(title: string): Promise<IWikiServerRouteResponse> {
     await this.waitForIpcServerRoutesAvailable();
     const tiddler = this.wikiInstance.wiki.getTiddler(title);
-    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
-    const tiddlerFields = {} as IGetTiddlerObject;
-    const knownFields = new Set([
-      'bag',
-      'created',
-      'creator',
-      'modified',
-      'modifier',
-      'permissions',
-      'recipe',
-      'revision',
-      'tags',
-      'text',
-      'title',
-      'type',
-      'uri',
-    ]);
     if (tiddler === undefined) {
       return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `Tiddler "${title}" not exist` };
-    } else {
-      Object.keys(tiddler.fields).forEach((name) => {
-        const value = tiddler.getFieldStrings(name);
-        if (knownFields.has(name)) {
-          tiddlerFields[name] = value;
-        } else {
-          if (tiddlerFields.fields === undefined) {
-            tiddlerFields.fields = {};
-          }
-          tiddlerFields.fields[name] = value;
-        }
-      });
-      tiddlerFields.revision = this.wikiInstance.wiki.getChangeCount(title);
-      tiddlerFields.bag = 'default';
-      tiddlerFields.type = tiddlerFields.type ?? 'text/vnd.tiddlywiki';
-      return { statusCode: 200, headers: { 'Content-Type': 'application/json; charset=utf8' }, data: JSON.stringify(tiddlerFields) };
     }
+    // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
+    const tiddlerFields = { ...tiddler.fields };
+
+    // only add revision if it > 0 or exists
+    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+    if (this.wikiInstance.wiki.getChangeCount(title)) {
+      tiddlerFields.revision = String(this.wikiInstance.wiki.getChangeCount(title));
+    }
+    tiddlerFields.bag = 'default';
+    tiddlerFields.type = tiddlerFields.type ?? 'text/vnd.tiddlywiki';
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json; charset=utf8' }, data: tiddlerFields as ITiddlerFields };
   }
 
   async getTiddlersJSON(filter = '[all[tiddlers]!is[system]sort[title]]', exclude = ['text']): Promise<IWikiServerRouteResponse> {
@@ -137,36 +122,39 @@ export class IpcServerRoutes {
       filter += '+[!is[system]]';
     }
     const titles = this.wikiInstance.wiki.filterTiddlers(filter);
-    const tiddlers = titles.map(title => {
+    const tiddlers: Array<Omit<ITiddlerFields, 'text'>> = titles.map(title => {
       const tiddler = this.wikiInstance.wiki.getTiddler(title);
-      if (tiddler !== undefined) {
-        const tiddlerFields = omit(tiddler.fields, exclude) as Record<string, string | number>;
-        tiddlerFields.revision = this.wikiInstance.wiki.getChangeCount(title);
-        tiddlerFields.type = tiddlerFields.type ?? 'text/vnd.tiddlywiki';
-        return tiddlerFields;
+      if (tiddler === undefined) {
+        return tiddler;
       }
+      const tiddlerFields = omit(tiddler.fields, exclude) as Record<string, string | number>;
+      // only add revision if it > 0 or exists
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      if (this.wikiInstance.wiki.getChangeCount(title)) {
+        tiddlerFields.revision = String(this.wikiInstance.wiki.getChangeCount(title));
+      }
+      tiddlerFields.type = tiddlerFields.type ?? 'text/vnd.tiddlywiki';
+      return tiddlerFields as Omit<ITiddlerFields, 'text'>;
       // eslint-disable-next-line unicorn/no-useless-undefined
-      return undefined;
-    }).filter(item => item !== undefined);
-
-    const tiddlersJSON = JSON.stringify(tiddlers);
-    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, data: tiddlersJSON };
+    }).filter((item): item is Omit<ITiddlerFields, 'text'> => item !== undefined);
+    return { statusCode: 200, headers: { 'Content-Type': 'application/json' }, data: tiddlers };
   }
 
   async putTiddler(title: string, fields: ITiddlerFields): Promise<IWikiServerRouteResponse> {
     await this.waitForIpcServerRoutesAvailable();
-    let tiddlerFieldsToPut: Record<string, string | number> = {};
+    const tiddlerFieldsToPut = omit(fields, ['fields', 'revision', '_is_skinny']) as Record<string, string | number>;
     // Pull up any subfields in the `fields` object
-    if ('fields' in fields) {
-      tiddlerFieldsToPut = {
-        ...fields.fields as Record<string, string | number>,
-      };
-    }
-    tiddlerFieldsToPut = {
-      ...tiddlerFieldsToPut,
-      // Remove any revision field
-      ...omit(fields, ['fields', 'revision', '_is_skinny']) as Record<string, string | number>,
-    };
+    // we skip this part by not creating the fields object at the beginning at src\services\wiki\plugin\ipcSyncAdaptor\index.ts
+    // if ('fields' in fields) {
+    //   tiddlerFieldsToPut = {
+    //     ...fields.fields as Record<string, string | number>,
+    //   };
+    // }
+    // tiddlerFieldsToPut = {
+    //   ...tiddlerFieldsToPut,
+    //   // Remove any revision field
+    //   ...omit(fields, ['fields', 'revision', '_is_skinny']) as Record<string, string | number>,
+    // };
     // If this is a skinny tiddler, it means the client never got the full
     // version of the tiddler to edit. So we must preserve whatever text
     // already exists on the server, or else we'll inadvertently delete it.
@@ -176,7 +164,8 @@ export class IpcServerRoutes {
         tiddlerFieldsToPut.text = tiddler.fields.text;
       }
     }
-    this.wikiInstance.wiki.addTiddler(new this.wikiInstance.Tiddler(fields, { title }));
+    tiddlerFieldsToPut.title = title;
+    this.wikiInstance.wiki.addTiddler(new this.wikiInstance.Tiddler(tiddlerFieldsToPut));
     const changeCount = this.wikiInstance.wiki.getChangeCount(title).toString();
     return { statusCode: 204, headers: { 'Content-Type': 'text/plain', Etag: `"default/${encodeURIComponent(title)}/${changeCount}:"` }, data: 'OK' };
   }
@@ -187,16 +176,16 @@ export class IpcServerRoutes {
     if (tiddler === undefined) {
       return { statusCode: 404, headers: { 'Content-Type': 'text/plain' }, data: `Tiddler "${title}" not exist` };
     } else {
-      let renderType: string = tiddler.getFieldString('_render_type');
+      let renderType: OutputMimeTypes = tiddler.getFieldString('_render_type') as OutputMimeTypes;
       let renderTemplate: string = tiddler.getFieldString('_render_template');
       // Tiddler fields '_render_type' and '_render_template' overwrite
       // system wide settings for render type and template
       if (this.wikiInstance.wiki.isSystemTiddler(title)) {
-        renderType = renderType ?? this.wikiInstance.server.get('system-tiddler-render-type') ?? 'text/plain';
-        renderTemplate = renderTemplate ?? this.wikiInstance.server.get('system-tiddler-render-template') ?? '$:/core/templates/wikified-tiddler';
+        renderType = renderType ?? /* this.wikiInstance.server.get('system-tiddler-render-type') ?? */ 'text/plain';
+        renderTemplate = renderTemplate ?? /* this.wikiInstance.server.get('system-tiddler-render-template') ?? */ '$:/core/templates/wikified-tiddler';
       } else {
-        renderType = renderType ?? this.wikiInstance.server.get('tiddler-render-type') ?? 'text/html';
-        renderTemplate = renderTemplate ?? this.wikiInstance.server.get('tiddler-render-template') ?? '$:/core/templates/server/static.tiddler.html';
+        renderType = renderType ?? /* this.wikiInstance.server.get('tiddler-render-type') ?? */ 'text/html';
+        renderTemplate = renderTemplate ?? /* this.wikiInstance.server.get('tiddler-render-template') ?? */ '$:/core/templates/server/static.tiddler.html';
       }
       const text = this.wikiInstance.wiki.renderTiddler(renderType, renderTemplate, { parseAsInline: true, variables: { currentTiddler: title } });
 
