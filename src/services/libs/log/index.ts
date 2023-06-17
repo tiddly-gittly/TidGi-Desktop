@@ -2,20 +2,10 @@ import { LOG_FOLDER } from '@/constants/appPaths';
 import winston, { format } from 'winston';
 import RendererTransport from './rendererTransport';
 import 'winston-daily-rotate-file';
+import { levels } from '@/constants/logger';
 
 export * from './wikiOutput';
 
-const levels = {
-  emerg: 0,
-  alert: 1,
-  crit: 2,
-  error: 3,
-  warning: 4,
-  warn: 5,
-  notice: 6,
-  info: 7,
-  debug: 8,
-};
 export type ILogLevels = keyof typeof levels;
 const logger = (
   process.env.NODE_ENV === 'test'
