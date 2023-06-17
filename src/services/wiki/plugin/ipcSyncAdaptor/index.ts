@@ -1,30 +1,35 @@
-import type { SyncAdaptor, Wiki } from 'tiddlywiki';
+/* eslint-disable unicorn/no-null */
+import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import type { Logger, Tiddler, Wiki } from 'tiddlywiki';
 
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-const CONFIG_HOST_TIDDLER = '$:/config/tiddlyweb/host';
-const DEFAULT_HOST_TIDDLER = '$protocol$//$host$/';
-
-class TidGiIPCSyncAdaptor implements SyncAdaptor {
+class TidGiIPCSyncAdaptor {
   name = 'tidgi-ipc';
   supportsLazyLoading = true;
-  wiki: Wiki
-hasStatus: boolean
-logger
-isLoggedIn
-isReadOnly
-logoutIsAvailable
+  wiki: Wiki;
+  hasStatus: boolean;
+  logger: Logger;
+  isLoggedIn: boolean;
+  isReadOnly: boolean;
+  logoutIsAvailable: boolean;
+  wikiService: typeof window.service.wiki;
+  workspaceService: typeof window.service.workspace;
+  authService: typeof window.service.auth;
+  workspaceID: string;
 
-  constructor(options) {
+  constructor(options: { wiki: Wiki }) {
     this.wiki = options.wiki;
-    this.host = this.getHost();
+    this.wikiService = window.service.wiki;
+    this.workspaceService = window.service.workspace;
+    this.authService = window.service.auth;
     this.hasStatus = false;
     this.logger = new $tw.utils.Logger('TidGiIPCSyncAdaptor');
     this.isLoggedIn = false;
     this.isReadOnly = false;
     this.logoutIsAvailable = true;
+    this.workspaceID = (window.meta as WindowMeta[WindowNames.view]).workspaceID!;
   }
 
-  setLoggerSaveBuffer(loggerForSaving) {
+  setLoggerSaveBuffer(loggerForSaving: Logger) {
     this.logger.setSaveBuffer(loggerForSaving);
   }
 
@@ -32,70 +37,55 @@ logoutIsAvailable
     return this.hasStatus;
   }
 
-  getHost() {
-    let text = this.wiki.getTiddlerText(CONFIG_HOST_TIDDLER, DEFAULT_HOST_TIDDLER);
-    const substitutions = [
-      { name: 'protocol', value: document.location.protocol },
-      { name: 'host', value: document.location.host },
-    ];
-    for (const s of substitutions) {
-      text = $tw.utils.replaceString(text, new RegExp('\\$' + s.name + '\\$', 'mg'), s.value);
-    }
-    return text;
-  }
-
-  getTiddlerInfo(tiddler) {
+  getTiddlerInfo(tiddler: Tiddler) {
     return {
       bag: tiddler.fields.bag,
     };
   }
 
-  getTiddlerRevision(title) {
+  getTiddlerRevision(title: string) {
     const tiddler = this.wiki.getTiddler(title);
-    return tiddler.fields.revision;
+    return tiddler?.fields?.revision;
   }
 
   /*
   Get the current status of the TiddlyWeb connection
   */
-  getStatus(callback) {
-    // Get status
-    const self = this;
+  async getStatus(callback: (error: Error | null, isLoggedIn?: boolean, username?: string, isReadOnly?: boolean, isAnonymous?: boolean) => void) {
     this.logger.log('Getting status');
-    $tw.utils.httpRequest({
-      url: this.host + 'status',
-      callback: function(error, data) {
-        self.hasStatus = true;
-        if (error) {
-          return callback(error);
-        }
-        // If Browser-Storage plugin is present, cache pre-loaded tiddlers and add back after sync from server completes
-        if ($tw.browserStorage && $tw.browserStorage.isEnabled()) {
-          $tw.browserStorage.cachePreloadTiddlers();
-        }
-        // Decode the status JSON
-        let json = null;
-        try {
-          json = JSON.parse(data);
-        } catch {}
-        if (json) {
-          self.logger.log('Status:', data);
-          // Record the recipe
-          if (json.space) {
-            self.recipe = json.space.recipe;
-          }
-          // Check if we're logged in
-          self.isLoggedIn = json.username !== 'GUEST';
-          self.isReadOnly = !!json.read_only;
-          self.isAnonymous = !!json.anonymous;
-          self.logoutIsAvailable = 'logout_is_available' in json ? !!json.logout_is_available : true;
-        }
-        // Invoke the callback if present
-        if (callback) {
-          callback(null, self.isLoggedIn, json.username, self.isReadOnly, self.isAnonymous);
-        }
-      },
-    });
+    const workspace = await this.workspaceService.get(this.workspaceID);
+    const userName = await this.authService.getUserName(workspace);
+    const statusResponse = await this.wikiService.callWikiIpcServerRoute(this.workspaceID, 'getStatus', userName);
+    self.hasStatus = true;
+    if (error) {
+      callback(error);
+      return;
+    }
+    // If Browser-Storage plugin is present, cache pre-loaded tiddlers and add back after sync from server completes
+    if ($tw.browserStorage && $tw.browserStorage.isEnabled()) {
+      $tw.browserStorage.cachePreloadTiddlers();
+    }
+    // Decode the status JSON
+    let json = null;
+    try {
+      json = JSON.parse(data);
+    } catch {}
+    if (json) {
+      self.logger.log('Status:', data);
+      // Record the recipe
+      if (json.space) {
+        self.recipe = json.space.recipe;
+      }
+      // Check if we're logged in
+      self.isLoggedIn = json.username !== 'GUEST';
+      self.isReadOnly = !!json.read_only;
+      self.isAnonymous = !!json.anonymous;
+      self.logoutIsAvailable = 'logout_is_available' in json ? !!json.logout_is_available : true;
+    }
+    // Invoke the callback if present
+    if (callback) {
+      callback(null, self.isLoggedIn, json.username, self.isReadOnly, self.isAnonymous);
+    }
   }
 
   /*
@@ -378,7 +368,10 @@ logoutIsAvailable
   }
 }
 
-if (($tw.browser) && document.location.protocol.startsWith('tidgi')) {
+const isInTidGi = ($tw.browser != null) && document.location.protocol.startsWith('tidgi');
+const servicesExposed = window.service?.wiki !== undefined;
+const hasWorkspaceIDinMeta = (window.meta as WindowMeta[WindowNames.view]).workspaceID !== undefined;
+if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
   // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
   exports.adaptorClass = TidGiIPCSyncAdaptor;
 }
