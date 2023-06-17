@@ -352,7 +352,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     const workspace = await this.workspaceService.get(workspaceID);
     if (workspace !== undefined) {
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      const userName = (workspace.userName || (await this.authService.get('userName'))) ?? '';
+      const userName = await this.authService.getUserName(workspace);
       await Promise.all([
         this.wikiService.startWiki(workspaceID, userName),
         this.viewService.addViewForAllBrowserViews(workspace),

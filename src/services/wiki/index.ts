@@ -682,10 +682,10 @@ export class Wiki implements IWikiService {
   }
 
   public async restartWiki(workspace: IWorkspace): Promise<void> {
-    const { id, userName: workspaceUserName, isSubWiki } = workspace;
+    const { id, isSubWiki } = workspace;
     // use workspace specific userName first, and fall back to preferences' userName, pass empty editor username if undefined
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    const userName = (workspaceUserName || (await this.authService.get('userName'))) ?? '';
+    const userName = await this.authService.getUserName(workspace);
 
     this.stopIntervalSync(workspace);
     if (!isSubWiki) {
