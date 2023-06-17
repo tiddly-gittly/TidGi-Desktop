@@ -96,7 +96,7 @@ export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceI
             logger.warn(statusText);
             return new Response(undefined, { status: 404, statusText });
           }
-          return new Response(responseData.data, { status: responseData.statusCode, headers: responseData.headers });
+          return new Response(responseData.data as string, { status: responseData.statusCode, headers: responseData.headers });
         }
       }
     } catch (error) {
