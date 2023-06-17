@@ -1,34 +1,73 @@
-import fs from 'fs-extra';
-import path from 'path';
-
 import { LOG_FOLDER } from '@/constants/appPaths';
-import { logger } from '.';
+import winston, { format } from 'winston';
+import 'winston-daily-rotate-file';
+import { levels } from '@/constants/logger';
 
-export function getWikiLogFilePath(wikiName: string): string {
+function getWikiLogFileName(workspaceID: string, wikiName: string): string {
   const logFileName = wikiName.replaceAll(/["*/:<>?\\|]/g, '_');
-  const logFilePath = path.join(LOG_FOLDER, `${logFileName}.log`);
-  return logFilePath;
+  return `${workspaceID}-${logFileName}.log`;
 }
-export async function wikiOutputToFile(wikiName: string, message: string) {
-  try {
-    await fs.appendFile(getWikiLogFilePath(wikiName), message);
-  } catch (error) {
-    logger.error(`${getWikiLogFilePath(wikiName)}: ${(error as Error).message})}`, { function: 'wikiOutputToFile' });
-  }
-}
+
+const wikiLoggers: Record<string, winston.Logger> = {};
 
 /**
- * Recreate log file
+ * Create log file using winston
  * @param {string} wikiName
  */
-export async function refreshOutputFile(wikiName: string) {
-  try {
-    const logFilePath = getWikiLogFilePath(wikiName);
-    if (await fs.exists(logFilePath)) {
-      await fs.remove(logFilePath);
-    }
-    await fs.createFile(logFilePath);
-  } catch (error) {
-    logger.error(`${getWikiLogFilePath(wikiName)}: ${(error as Error).message})}`, { function: 'refreshOutputFile' });
+export function startWikiLogger(workspaceID: string, wikiName: string) {
+  if (getWikiLogger(workspaceID) !== undefined) {
+    stopWikiLogger(workspaceID);
   }
+  const wikiLogger = (
+    process.env.NODE_ENV === 'test'
+      ? Object.assign(console, {
+        emerg: console.error.bind(console),
+        alert: console.error.bind(console),
+        crit: console.error.bind(console),
+        warning: console.warn.bind(console),
+        notice: console.log.bind(console),
+        debug: console.log.bind(console),
+        close: () => {},
+      })
+      : winston.createLogger({
+        levels,
+        transports: [
+          new winston.transports.Console(),
+          new winston.transports.DailyRotateFile({
+            filename: getWikiLogFileName(workspaceID, wikiName),
+            datePattern: 'YYYY-MM-DD',
+            zippedArchive: false,
+            maxSize: '20mb',
+            maxFiles: '14d',
+            dirname: LOG_FOLDER,
+            level: 'debug',
+          }),
+        ],
+        exceptionHandlers: [
+          new winston.transports.DailyRotateFile({
+            filename: `error-${getWikiLogFileName(workspaceID, wikiName)}`,
+            datePattern: 'YYYY-MM-DD',
+            zippedArchive: false,
+            maxSize: '20mb',
+            maxFiles: '14d',
+            dirname: LOG_FOLDER,
+          }),
+        ],
+        format: format.combine(format.timestamp(), format.json()),
+      })
+  ) as winston.Logger;
+  wikiLoggers[workspaceID] = wikiLogger;
+  return wikiLogger;
+}
+
+export function getWikiLogger(workspaceID: string): winston.Logger {
+  return wikiLoggers[workspaceID];
+}
+
+export function stopWikiLogger(workspaceID: string) {
+  wikiLoggers[workspaceID].close();
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
+    delete wikiLoggers[workspaceID];
+  } catch {}
 }

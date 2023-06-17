@@ -16,7 +16,7 @@ import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
-import { getWikiLogFilePath, logger, refreshOutputFile, wikiOutputToFile } from '@services/libs/log';
+import { logger, startWikiLogger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
@@ -35,7 +35,9 @@ import { IDatabaseService } from '@services/database/interface';
 import { IPreferenceService } from '@services/preferences/interface';
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
+import { mapValues } from 'lodash';
 import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker.ts';
+import { wikiWorkerStartedEventName } from './constants';
 import { IWikiOperations, wikiOperations } from './wikiOperations';
 
 @injectable()
@@ -93,6 +95,8 @@ export class Wiki implements IWikiService {
     return this.wikiWorkers[id];
   }
 
+  private readonly wikiWorkerStartedEventTarget = new EventTarget();
+
   public async startWiki(workspaceID: string, userName: string): Promise<void> {
     if (workspaceID === undefined) {
       logger.error('Try to start wiki, but workspace ID not provided', { workspaceID });
@@ -137,21 +141,19 @@ export class Wiki implements IWikiService {
       openDebugger: process.env.DEBUG_WORKER === 'true',
     };
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
+    this.wikiWorkerStartedEventTarget.dispatchEvent(new Event(wikiWorkerStartedEventName(workspaceID)));
     this.wikiWorkers[id] = worker;
-    void refreshOutputFile(name);
+    const wikiLogger = startWikiLogger(workspaceID, name);
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation };
     await new Promise<void>((resolve, reject) => {
       // handle native messages
       Thread.errors(worker).subscribe(async (error) => {
-        logger.error(error.message, { ...loggerMeta, ...error });
-        void wikiOutputToFile(name, error.message);
+        wikiLogger.error(error.message, { function: 'Thread.errors' });
         reject(new WikiRuntimeError(error, name, false));
       });
       Thread.events(worker).subscribe((event: WorkerEvent) => {
         if (event.type === 'message') {
-          const messageString = JSON.stringify(event.data);
-          void wikiOutputToFile(id, `${messageString}\n`);
-          logger.debug('wiki message', { ...event.data, ...loggerMeta });
+          wikiLogger.info('', { ...mapValues(event.data, (value: unknown) => typeof value === 'string' ? `${value.substring(0, 200)}... (substring(0, 200))` : String(value)) });
         } else if (event.type === 'termination') {
           delete this.wikiWorkers[id];
           const warningMessage = `NodeJSWiki ${id} Worker stopped (can be normal quit, or unexpected error, see other logs to determine)`;
@@ -167,7 +169,7 @@ export class Wiki implements IWikiService {
         packagePathBase: PACKAGE_PATH_BASE,
       }).subscribe(async (message) => {
         if (message.type === 'stderr' || message.type === 'stdout') {
-          void wikiOutputToFile(id, message.message);
+          logger.info(message.message, { function: 'initCacheDatabase' });
         }
       });
 
@@ -213,13 +215,19 @@ export class Wiki implements IWikiService {
             }
           }
         } else if (message.type === 'stderr' || message.type === 'stdout') {
-          void wikiOutputToFile(id, message.message);
+          wikiLogger.info(message.message, { function: 'startNodeJSWiki' });
         }
       });
     });
   }
 
   public async callWikiIpcServerRoute<NAME extends IpcServerRouteNames>(workspaceID: string, route: NAME, ...arguments_: Parameters<IpcServerRouteMethods[NAME]>) {
+    // wait for wiki worker started
+    await new Promise<void>(resolve => {
+      this.wikiWorkerStartedEventTarget.addEventListener(wikiWorkerStartedEventName(workspaceID), () => {
+        resolve();
+      });
+    });
     const worker = this.getWorker(workspaceID);
     if (worker === undefined) {
       logger.warning(`No wiki for ${workspaceID}. No running worker, means you call this function too early, or maybe tiddlywiki server in this workspace failed to start`, {

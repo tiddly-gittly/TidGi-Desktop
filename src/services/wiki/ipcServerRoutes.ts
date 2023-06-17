@@ -198,8 +198,6 @@ export class IpcServerRoutes {
         renderType = renderType ?? this.wikiInstance.server.get('tiddler-render-type') ?? 'text/html';
         renderTemplate = renderTemplate ?? this.wikiInstance.server.get('tiddler-render-template') ?? '$:/core/templates/server/static.tiddler.html';
       }
-      // DEBUG: console renderType
-      console.log(`renderType`, renderType, 'renderTemplate', renderTemplate);
       const text = this.wikiInstance.wiki.renderTiddler(renderType, renderTemplate, { parseAsInline: true, variables: { currentTiddler: title } });
 
       // Naughty not to set a content-type, but it's the easiest way to ensure the browser will see HTML pages as HTML, and accept plain text tiddlers as CSS or JS
