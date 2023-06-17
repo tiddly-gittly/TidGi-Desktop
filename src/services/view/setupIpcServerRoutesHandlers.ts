@@ -15,47 +15,11 @@ export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceI
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
   const methods = [
     {
-      method: 'DELETE',
-      path: /^\/bags\/default\/tiddlers\/(.+)$/,
-      name: 'deleteTiddler',
-      handler: async (_request: GlobalRequest, parameters: RegExpMatchArray | null) =>
-        await wikiService.callWikiIpcServerRoute(workspaceID, 'deleteTiddler', parameters?.[1] ?? ''),
-    },
-    {
-      method: 'GET',
-      path: /^\/favicon.ico$/,
-      name: 'getFavicon',
-      handler: async (_request: GlobalRequest, _parameters: RegExpMatchArray | null) => await wikiService.callWikiIpcServerRoute(workspaceID, 'getFavicon'),
-    },
-    {
-      method: 'GET',
-      path: /^\/files\/(.+)$/,
-      name: 'getFile',
-      handler: async (_request: GlobalRequest, parameters: RegExpMatchArray | null) => await wikiService.callWikiIpcServerRoute(workspaceID, 'getFile', parameters?.[1] ?? ''),
-    },
-    {
       method: 'GET',
       path: /^\/$/,
       name: 'getIndex',
       handler: async (_request: GlobalRequest, _parameters: RegExpMatchArray | null) =>
         await wikiService.callWikiIpcServerRoute(workspaceID, 'getIndex', (await workspaceService.get(workspaceID))?.rootTiddler ?? '$:/core/save/lazy-images'),
-    },
-    {
-      method: 'GET',
-      path: /^\/status$/,
-      name: 'getStatus',
-      handler: async (_request: GlobalRequest, _parameters: RegExpMatchArray | null) => {
-        const workspace = await workspaceService.get(workspaceID);
-        const userName = workspace === undefined ? '' : await authService.getUserName(workspace);
-        await wikiService.callWikiIpcServerRoute(workspaceID, 'getStatus', userName);
-      },
-    },
-    {
-      method: 'GET',
-      path: /^\/([^/]+)$/,
-      name: 'getTiddlerHtml',
-      handler: async (_request: GlobalRequest, parameters: RegExpMatchArray | null) =>
-        await wikiService.callWikiIpcServerRoute(workspaceID, 'getTiddlerHtml', parameters?.[1] ?? ''),
     },
     {
       method: 'GET',
@@ -78,6 +42,42 @@ export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceI
         const body = await request.json() as ITiddlerFields;
         await wikiService.callWikiIpcServerRoute(workspaceID, 'putTiddler', parameters?.[1] ?? '', body);
       },
+    },
+    {
+      method: 'DELETE',
+      path: /^\/bags\/default\/tiddlers\/(.+)$/,
+      name: 'deleteTiddler',
+      handler: async (_request: GlobalRequest, parameters: RegExpMatchArray | null) =>
+        await wikiService.callWikiIpcServerRoute(workspaceID, 'deleteTiddler', parameters?.[1] ?? ''),
+    },
+    {
+      method: 'GET',
+      path: /^\/favicon.ico$/,
+      name: 'getFavicon',
+      handler: async (_request: GlobalRequest, _parameters: RegExpMatchArray | null) => await wikiService.callWikiIpcServerRoute(workspaceID, 'getFavicon'),
+    },
+    {
+      method: 'GET',
+      path: /^\/files\/(.+)$/,
+      name: 'getFile',
+      handler: async (_request: GlobalRequest, parameters: RegExpMatchArray | null) => await wikiService.callWikiIpcServerRoute(workspaceID, 'getFile', parameters?.[1] ?? ''),
+    },
+    {
+      method: 'GET',
+      path: /^\/status$/,
+      name: 'getStatus',
+      handler: async (_request: GlobalRequest, _parameters: RegExpMatchArray | null) => {
+        const workspace = await workspaceService.get(workspaceID);
+        const userName = workspace === undefined ? '' : await authService.getUserName(workspace);
+        await wikiService.callWikiIpcServerRoute(workspaceID, 'getStatus', userName);
+      },
+    },
+    {
+      method: 'GET',
+      path: /^\/([^/]+)$/,
+      name: 'getTiddlerHtml',
+      handler: async (_request: GlobalRequest, parameters: RegExpMatchArray | null) =>
+        await wikiService.callWikiIpcServerRoute(workspaceID, 'getTiddlerHtml', parameters?.[1] ?? ''),
     },
   ];
   async function handlerCallback(request: GlobalRequest): Promise<GlobalResponse> {

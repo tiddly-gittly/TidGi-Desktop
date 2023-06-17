@@ -86,6 +86,7 @@ export interface IWikiService {
 export const WikiServiceIPCDescriptor = {
   channel: WikiChannel.name,
   properties: {
+    callWikiIpcServerRoute: ProxyPropertyType.Function,
     checkWikiExist: ProxyPropertyType.Function,
     clearAllSyncIntervals: ProxyPropertyType.Function,
     cloneSubWiki: ProxyPropertyType.Function,
@@ -93,11 +94,13 @@ export const WikiServiceIPCDescriptor = {
     copyWikiTemplate: ProxyPropertyType.Function,
     createSubWiki: ProxyPropertyType.Function,
     ensureWikiExist: ProxyPropertyType.Function,
+    extractWikiHTML: ProxyPropertyType.Function,
     getSubWikiPluginContent: ProxyPropertyType.Function,
     getTiddlerText: ProxyPropertyType.Function,
     getWikiLogs: ProxyPropertyType.Function,
     linkWiki: ProxyPropertyType.Function,
     openTiddlerInExternal: ProxyPropertyType.Function,
+    packetHTMLFromWikiFolder: ProxyPropertyType.Function,
     removeWiki: ProxyPropertyType.Function,
     requestWikiSendActionMessage: ProxyPropertyType.Function,
     restartWiki: ProxyPropertyType.Function,
@@ -108,9 +111,6 @@ export const WikiServiceIPCDescriptor = {
     updateSubWikiPluginContent: ProxyPropertyType.Function,
     wikiOperation: ProxyPropertyType.Function,
     wikiStartup: ProxyPropertyType.Function,
-    // Register here to unpack and package wikiHTML functions
-    extractWikiHTML: ProxyPropertyType.Function,
-    packetHTMLFromWikiFolder: ProxyPropertyType.Function,
   },
 };
 
