@@ -33,9 +33,9 @@ import { isDevelopmentOrTest } from '@/constants/environment';
 import { defaultServerIP } from '@/constants/urls';
 import { IDatabaseService } from '@services/database/interface';
 import { IPreferenceService } from '@services/preferences/interface';
+import { mapValues } from 'lodash';
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
-import { mapValues } from 'lodash';
 import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker.ts';
 import { wikiWorkerStartedEventName } from './constants';
 import { IWikiOperations, wikiOperations } from './wikiOperations';
@@ -113,7 +113,7 @@ export class Wiki implements IWikiService {
       logger.error('Try to start wiki, but workspace not found', { workspace, workspaceID });
       return;
     }
-    const { id, port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl, https, excludedPlugins, isSubWiki, wikiFolderLocation, name } = workspace;
+    const { port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl, https, excludedPlugins, isSubWiki, wikiFolderLocation, name } = workspace;
     if (isSubWiki) {
       logger.error('Try to start wiki, but workspace is sub wiki', { workspace, workspaceID });
       return;
@@ -141,8 +141,8 @@ export class Wiki implements IWikiService {
       openDebugger: process.env.DEBUG_WORKER === 'true',
     };
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
+    this.wikiWorkers[workspaceID] = worker;
     this.wikiWorkerStartedEventTarget.dispatchEvent(new Event(wikiWorkerStartedEventName(workspaceID)));
-    this.wikiWorkers[id] = worker;
     const wikiLogger = startWikiLogger(workspaceID, name);
     const loggerMeta = { worker: 'NodeJSWiki', homePath: wikiFolderLocation };
     await new Promise<void>((resolve, reject) => {
@@ -153,10 +153,15 @@ export class Wiki implements IWikiService {
       });
       Thread.events(worker).subscribe((event: WorkerEvent) => {
         if (event.type === 'message') {
-          wikiLogger.info('', { ...mapValues(event.data, (value: unknown) => typeof value === 'string' ? `${value.substring(0, 200)}... (substring(0, 200))` : String(value)) });
+          wikiLogger.info('', {
+            ...mapValues(
+              event.data,
+              (value: unknown) => typeof value === 'string' ? (value.length > 200 ? `${value.substring(0, 200)}... (substring(0, 200))` : value) : String(value),
+            ),
+          });
         } else if (event.type === 'termination') {
-          delete this.wikiWorkers[id];
-          const warningMessage = `NodeJSWiki ${id} Worker stopped (can be normal quit, or unexpected error, see other logs to determine)`;
+          delete this.wikiWorkers[workspaceID];
+          const warningMessage = `NodeJSWiki ${workspaceID} Worker stopped (can be normal quit, or unexpected error, see other logs to determine)`;
           logger.info(warningMessage, loggerMeta);
           logger.info(`startWiki() rejected with message.type === 'message' and event.type === 'termination'`, loggerMeta);
           resolve();
@@ -222,18 +227,26 @@ export class Wiki implements IWikiService {
   }
 
   public async callWikiIpcServerRoute<NAME extends IpcServerRouteNames>(workspaceID: string, route: NAME, ...arguments_: Parameters<IpcServerRouteMethods[NAME]>) {
-    // wait for wiki worker started
-    await new Promise<void>(resolve => {
-      this.wikiWorkerStartedEventTarget.addEventListener(wikiWorkerStartedEventName(workspaceID), () => {
-        resolve();
-      });
-    });
-    const worker = this.getWorker(workspaceID);
+    let worker = this.getWorker(workspaceID);
     if (worker === undefined) {
-      logger.warning(`No wiki for ${workspaceID}. No running worker, means you call this function too early, or maybe tiddlywiki server in this workspace failed to start`, {
-        function: 'callWikiIpcServerRoute',
+      // wait for wiki worker started
+      await new Promise<void>(resolve => {
+        this.wikiWorkerStartedEventTarget.addEventListener(wikiWorkerStartedEventName(workspaceID), () => {
+          resolve();
+        });
       });
-      return;
+    }
+    worker = this.getWorker(workspaceID);
+    if (worker === undefined) {
+      const errorMessage =
+        `Still no wiki for ${workspaceID} after wikiWorkerStartedEventTarget.addEventListener(wikiWorkerStartedEventName. No running worker, maybe tiddlywiki server in this workspace failed to start`;
+      logger.error(
+        errorMessage,
+        {
+          function: 'callWikiIpcServerRoute',
+        },
+      );
+      throw new Error(errorMessage);
     }
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
     // @ts-ignore Argument of type 'string | string[] | ITiddlerFields | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.ts(2345)

@@ -83,20 +83,24 @@ export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceI
   async function handlerCallback(request: GlobalRequest): Promise<GlobalResponse> {
     const parsedUrl = new URL(request.url);
     // Iterate through methods to find matching routes
-    for (const route of methods) {
-      if (request.method === route.method && route.path.test(parsedUrl.pathname)) {
-        // Get the parameters in the URL path
-        const parameters = parsedUrl.pathname.match(route.path);
-        logger.debug(`loadHTMLStringForView: ${route.name}`, { parsedUrl, parameters });
-        // Call the handler of the route to process the request and return the result
-        const responseData = await route.handler(request, parameters);
-        if (responseData === undefined) {
-          const statusText = `loadHTMLStringForView: responseData is undefined ${request.url}`;
-          logger.warn(statusText);
-          return new Response(undefined, { status: 404, statusText });
+    try {
+      for (const route of methods) {
+        if (request.method === route.method && route.path.test(parsedUrl.pathname)) {
+          // Get the parameters in the URL path
+          const parameters = parsedUrl.pathname.match(route.path);
+          logger.debug(`loadHTMLStringForView: ${route.name}`, { parsedUrl, parameters });
+          // Call the handler of the route to process the request and return the result
+          const responseData = await route.handler(request, parameters);
+          if (responseData === undefined) {
+            const statusText = `loadHTMLStringForView: responseData is undefined ${request.url}`;
+            logger.warn(statusText);
+            return new Response(undefined, { status: 404, statusText });
+          }
+          return new Response(responseData.data, { status: responseData.statusCode, headers: responseData.headers });
         }
-        return new Response(responseData.data, { status: responseData.statusCode, headers: responseData.headers });
       }
+    } catch (error) {
+      return new Response(undefined, { status: 500, statusText: `${(error as Error).message} ${(error as Error).stack ?? ''}` });
     }
     const statusText = `loadHTMLStringForView: tidgi protocol is not handled ${request.url}`;
     logger.warn(statusText);
@@ -109,7 +113,7 @@ export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceI
     if (!handled) {
       logger.warn(`loadHTMLStringForView: tidgi protocol is not handled`);
     }
-    logger.info(`view.webContents.loadURL(${urlBase}/)`)
+    logger.info(`view.webContents.loadURL(${urlBase}/)`);
     await view.webContents.loadURL(`${urlBase}/`);
     // view.webContents.session.protocol.unhandle(`tidgi`);
     view.webContents.openDevTools({ mode: 'detach' });
