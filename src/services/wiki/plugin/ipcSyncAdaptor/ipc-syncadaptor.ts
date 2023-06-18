@@ -85,6 +85,11 @@ class TidGiIPCSyncAdaptor {
   }
 
   updatedTiddlers: { deletions: string[]; modifications: string[] } = {
+    // use $:/StoryList to trigger a initial sync, otherwise it won't do lazy load for Index tiddler after init, don't know why, maybe because we disabled the polling by changing pollTimerInterval.
+    modifications: ['$:/StoryList'],
+    deletions: [],
+  };
+
   /**
    * We will get echo from the server, for these tiddler changes caused by the client, we remove them from the `updatedTiddlers` so that the client won't get them again from server, which will usually get outdated tiddler (lack 1 or 2 words that user just typed).
    */
