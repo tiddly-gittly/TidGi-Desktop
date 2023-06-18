@@ -227,11 +227,13 @@ class TidGiIPCSyncAdaptor {
       return;
     }
     try {
-      this.addRecentUpdatedTiddlersFromClient('modifications', tiddler.fields.title);
+      const title = tiddler.fields.title;
+      this.logger.log(`loadTiddler ${title}`);
+      this.addRecentUpdatedTiddlersFromClient('modifications', title);
       const putTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
         this.workspaceID,
         'putTiddler',
-        tiddler.fields.title,
+        title,
         tiddler.fields,
       );
       if (putTiddlerResponse === undefined) {
@@ -241,7 +243,7 @@ class TidGiIPCSyncAdaptor {
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
       if (($tw as any).browserStorage && ($tw as any).browserStorage.isEnabled()) {
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
-        ($tw as any).browserStorage.removeTiddlerFromLocalStorage(tiddler.fields.title);
+        ($tw as any).browserStorage.removeTiddlerFromLocalStorage(title);
       }
       // Save the details of the new revision of the tiddler
       const etag = putTiddlerResponse?.headers?.Etag;
@@ -266,7 +268,7 @@ class TidGiIPCSyncAdaptor {
   Load a tiddler and invoke the callback with (err,tiddlerFields)
   */
   async loadTiddler(title: string, callback?: ISyncAdaptorLoadTiddlerCallback) {
-    this.logger.log('loadTiddler');
+    this.logger.log(`loadTiddler ${title}`);
     try {
       const getTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
         this.workspaceID,
