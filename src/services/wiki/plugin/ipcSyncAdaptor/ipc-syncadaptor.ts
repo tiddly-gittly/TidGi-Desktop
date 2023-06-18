@@ -41,9 +41,11 @@ class TidGiIPCSyncAdaptor {
     this.isReadOnly = false;
     this.logoutIsAvailable = true;
     this.workspaceID = (window.meta as WindowMeta[WindowNames.view]).workspaceID!;
-    this.setupSSE();
   }
 
+  /**
+   * This should be called after install-electron-ipc-cat, so this is called in `$:/plugins/linonetwo/tidgi/Startup/install-electron-ipc-cat.js`
+   */
   setupSSE() {
     if (window.observables?.wiki?.getWikiChangeObserver$ === undefined) {
       console.error("getWikiChangeObserver$ is undefined in window.observables.wiki, can't subscribe to server changes.");
@@ -57,6 +59,7 @@ class TidGiIPCSyncAdaptor {
       $tw.syncer.syncFromServer();
       this.clearUpdatedTiddlers();
     }, 500);
+    this.logger.log('setupSSE');
     window.observables?.wiki?.getWikiChangeObserver$(this.workspaceID).subscribe((change: IChangedTiddlers) => {
       // `$tw.syncer.syncFromServer` calling `this.getUpdatedTiddlers`, so we need to update `this.updatedTiddlers` before it do so. See `core/modules/syncer.js` in the core
       Object.keys(change).forEach(title => {
@@ -286,6 +289,7 @@ class TidGiIPCSyncAdaptor {
   Load a tiddler and invoke the callback with (err,tiddlerFields)
   */
   async loadTiddler(title: string, callback?: ISyncAdaptorLoadTiddlerCallback) {
+    this.logger.log('loadTiddler');
     try {
       const getTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
         this.workspaceID,
@@ -314,6 +318,7 @@ class TidGiIPCSyncAdaptor {
     }
     // If we don't have a bag it means that the tiddler hasn't been seen by the server, so we don't need to delete it
     const bag = options?.tiddlerInfo?.adaptorInfo?.bag;
+    this.logger.log('deleteTiddler', bag);
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (!bag) {
       callback(null, options.tiddlerInfo.adaptorInfo);
