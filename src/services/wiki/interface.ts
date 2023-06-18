@@ -2,7 +2,9 @@ import { WikiChannel } from '@/constants/channels';
 import { IGitUserInfos } from '@services/git/interface';
 import { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import type { Observable } from 'rxjs';
 import { ModuleThread } from 'threads';
+import type { IChangedTiddlers } from 'tiddlywiki';
 import { IWikiServerRouteResponse } from './ipcServerRoutes';
 import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
 import { IWikiOperations } from './wikiOperations';
@@ -47,6 +49,7 @@ export interface IWikiService {
   extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
   getTiddlerText(workspace: IWorkspace, title: string): Promise<string | undefined>;
+  getWikiChangeObserver$(workspaceID: string): Observable<IChangedTiddlers>;
   getWikiErrorLogs(workspaceID: string, wikiName: string): Promise<{ content: string; filePath: string }>;
   /**
    * Get wiki worker, and you can call its methods. Only meant to be used in TidGi's services internally.
@@ -111,6 +114,7 @@ export const WikiServiceIPCDescriptor = {
     updateSubWikiPluginContent: ProxyPropertyType.Function,
     wikiOperation: ProxyPropertyType.Function,
     wikiStartup: ProxyPropertyType.Function,
+    getWikiChangeObserver$: ProxyPropertyType.Function$,
   },
 };
 

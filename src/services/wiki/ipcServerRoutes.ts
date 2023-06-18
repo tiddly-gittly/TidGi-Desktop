@@ -5,7 +5,8 @@
 import fs from 'fs-extra';
 import omit from 'lodash/omit';
 import path from 'path';
-import type { ITiddlerFields, ITiddlyWiki, OutputMimeTypes } from 'tiddlywiki';
+import { Observable } from 'rxjs';
+import type { IChangedTiddlers, ITiddlerFields, ITiddlyWiki, OutputMimeTypes } from 'tiddlywiki';
 
 export interface IWikiServerStatusObject {
   anonymous: boolean;
@@ -41,6 +42,12 @@ export class IpcServerRoutes {
       this.pendingIpcServerRoutesRequests.push(resolve);
     });
   }
+
+  // ████████ ██ ██████  ██████  ██      ██    ██       ██     ██ ███████ ██████
+  //    ██    ██ ██   ██ ██   ██ ██       ██  ██        ██     ██ ██      ██   ██
+  //    ██    ██ ██   ██ ██   ██ ██        ████   █████ ██  █  ██ █████   ██████
+  //    ██    ██ ██   ██ ██   ██ ██         ██          ██ ███ ██ ██      ██   ██
+  //    ██    ██ ██████  ██████  ███████    ██           ███ ███  ███████ ██████
 
   async deleteTiddler(title: string): Promise<IWikiServerRouteResponse> {
     await this.waitForIpcServerRoutesAvailable();
@@ -192,5 +199,22 @@ export class IpcServerRoutes {
       // Naughty not to set a content-type, but it's the easiest way to ensure the browser will see HTML pages as HTML, and accept plain text tiddlers as CSS or JS
       return { statusCode: 200, headers: { 'Content-Type': '; charset=utf8' }, data: text };
     }
+  }
+
+  // ████████ ██     ██       ███████ ███████ ███████
+  //    ██    ██     ██       ██      ██      ██
+  //    ██    ██  █  ██ █████ ███████ ███████ █████
+  //    ██    ██ ███ ██            ██      ██ ██
+  //    ██     ███ ███        ███████ ███████ ███████
+  async getWikiChangeObserver() {
+    await this.waitForIpcServerRoutesAvailable();
+    return new Observable<IChangedTiddlers>((observer) => {
+      if (this.wikiInstance === undefined) {
+        throw new Error(`this.wikiInstance is undefined, maybe something went wrong between waitForIpcServerRoutesAvailable and return new Observable.`);
+      }
+      this.wikiInstance.wiki.addEventListener('change', (changes) => {
+        observer.next(changes);
+      });
+    });
   }
 }

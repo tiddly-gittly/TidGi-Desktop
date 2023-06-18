@@ -2,7 +2,8 @@
 /* eslint-disable unicorn/no-null */
 import type { IWikiServerStatusObject } from '@services/wiki/ipcServerRoutes';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
-import type { ITiddlerFields, Logger, Tiddler, Wiki } from 'tiddlywiki';
+import debounce from 'lodash/debounce';
+import type { IChangedTiddlers, ITiddlerFields, Logger, Syncer, Tiddler, Wiki } from 'tiddlywiki';
 
 type ISyncAdaptorGetStatusCallback = (error: Error | null, isLoggedIn?: boolean, username?: string, isReadOnly?: boolean, isAnonymous?: boolean) => void;
 type ISyncAdaptorGetTiddlersJSONCallback = (error: Error | null, tiddler?: Array<Omit<ITiddlerFields, 'text'>>) => void;
@@ -40,6 +41,52 @@ class TidGiIPCSyncAdaptor {
     this.isReadOnly = false;
     this.logoutIsAvailable = true;
     this.workspaceID = (window.meta as WindowMeta[WindowNames.view]).workspaceID!;
+    this.setupSSE();
+  }
+
+  setupSSE() {
+    if (window.observables?.wiki?.getWikiChangeObserver$ === undefined) {
+      console.error("getWikiChangeObserver$ is undefined in window.observables.wiki, can't subscribe to server changes.");
+      return;
+    }
+    const debouncedSync = debounce(() => {
+      if ($tw.syncer === undefined) {
+        console.error('Syncer is undefined in TidGiIPCSyncAdaptor. Abort the `syncFromServer` in `setupSSE debouncedSync`.');
+        return;
+      }
+      $tw.syncer.syncFromServer();
+      this.clearUpdatedTiddlers();
+    }, 500);
+    window.observables?.wiki?.getWikiChangeObserver$(this.workspaceID).subscribe((change: IChangedTiddlers) => {
+      // `$tw.syncer.syncFromServer` calling `this.getUpdatedTiddlers`, so we need to update `this.updatedTiddlers` before it do so. See `core/modules/syncer.js` in the core
+      Object.keys(change).forEach(title => {
+        if (!change[title]) {
+          return;
+        }
+        if (change[title].deleted) {
+          this.updatedTiddlers.deletions.push(title);
+        } else {
+          this.updatedTiddlers.modifications.push(title);
+        }
+      });
+      debouncedSync();
+    });
+  }
+
+  updatedTiddlers: { deletions: string[]; modifications: string[] } = {
+    modifications: [],
+    deletions: [],
+  };
+
+  clearUpdatedTiddlers() {
+    this.updatedTiddlers = {
+      modifications: [],
+      deletions: [],
+    };
+  }
+
+  getUpdatedTiddlers(_syncer: Syncer, callback: (error: Error | null | undefined, changes: { deletions: string[]; modifications: string[] }) => void): void {
+    callback(null, this.updatedTiddlers);
   }
 
   setLoggerSaveBuffer(loggerForSaving: Logger) {
