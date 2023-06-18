@@ -15,8 +15,8 @@
     },
     "skipLibCheck": true,
     /* Basic Options */
-    /* Wait until https://github.com/inversify/InversifyJS/pull/1499 fixed */
-    "target": "es2021" /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017','ES2018' or 'ESNEXT'. */,
+    /* ES2022/ESNEXT work well with inversifyjs, Wait until https://github.com/inversify/InversifyJS/pull/1499 fixed */
+    "target": "ES2021" /* Specify ECMAScript target version: 'ES3' (default), 'ES5', 'ES2015', 'ES2016', 'ES2017','ES2018' or 'ESNEXT'. */,
     "module": "commonjs" /* Specify module code generation: 'none', 'commonjs', 'amd', 'system', 'umd', 'es2015', or 'ESNext'. */,
     "lib": ["ESNext", "dom"] /* Specify library files to be included in the compilation. */,
     "allowJs": true /* Allow javascript files to be compiled. */,
