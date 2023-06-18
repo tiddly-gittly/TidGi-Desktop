@@ -114,9 +114,9 @@ export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceI
       logger.warn(`loadHTMLStringForView: tidgi protocol is not handled`);
     }
     logger.info(`view.webContents.loadURL(${urlBase}/)`);
+    // DEBUG devTool
+    // view.webContents.openDevTools({ mode: 'detach' });
     await view.webContents.loadURL(`${urlBase}/`);
-    // view.webContents.session.protocol.unhandle(`tidgi`);
-    view.webContents.openDevTools({ mode: 'detach' });
   } catch (error) {
     logger.error(`loadHTMLStringForView: ${(error as Error).message}`);
   }
