@@ -21,9 +21,9 @@ module.exports = [
     test: /\.css$/,
     use: [{ loader: 'style-loader' }, { loader: 'css-loader' }],
   },
-  // esbuild don't work well with inversifyjs, will cause this.menuService being undefined despite of already injected
+  // TODO: until I have time to add https://github.com/linjiajian999/esbuild-plugin-import , only do this in development mode
   // eslint-disable-next-line no-constant-condition
-  false && isDevelopmentOrTest
+  isDevelopmentOrTest
     ? {
       test: /\.(t|j)sx?$/,
       exclude: /(node_modules|\.webpack)/,
@@ -31,7 +31,8 @@ module.exports = [
         loader: 'esbuild-loader',
         options: {
           loader: 'tsx', // Or 'ts' if you don't need tsx
-          target: 'esnext',
+          /* ES2022/ESNEXT work well with inversifyjs, Wait until https://github.com/inversify/InversifyJS/pull/1499 fixed */
+          target: 'ES2021',
           // tsconfigRaw: ts.readConfigFile('tsconfig.json', ts.sys.readFile.bind(ts.sys)),
           tsconfigRaw: JSON5.parse(fs.readFileSync('./tsconfig.json')),
         },
