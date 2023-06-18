@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null */
 import type { IWikiServerStatusObject } from '@services/wiki/ipcServerRoutes';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
@@ -390,10 +391,12 @@ class TidGiIPCSyncAdaptor {
   }
 }
 
-const isInTidGi = ($tw.browser != null) && document.location.protocol.startsWith('tidgi');
-const servicesExposed = window.service?.wiki !== undefined;
-const hasWorkspaceIDinMeta = (window.meta as WindowMeta[WindowNames.view]).workspaceID !== undefined;
-if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
-  // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
-  exports.adaptorClass = TidGiIPCSyncAdaptor;
+if (typeof $tw !== 'undefined' && $tw.browser && typeof window !== 'undefined') {
+  const isInTidGi = typeof document !== 'undefined' && document?.location?.protocol?.startsWith('tidgi');
+  const servicesExposed = Boolean(window.service?.wiki);
+  const hasWorkspaceIDinMeta = Boolean((window.meta as WindowMeta[WindowNames.view]).workspaceID);
+  if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
+    exports.adaptorClass = TidGiIPCSyncAdaptor;
+  }
 }

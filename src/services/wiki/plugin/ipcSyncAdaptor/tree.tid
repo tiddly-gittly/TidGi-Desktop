@@ -1,0 +1,4 @@
+title: $:/plugins/linonetwo/tidgi/tree
+caption: {{$:/language/SideBar/Explorer/Caption}}
+
+<<tree "$:/plugins/linonetwo/tidgi/">>
