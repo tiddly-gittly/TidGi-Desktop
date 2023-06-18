@@ -10,9 +10,8 @@ const outDir = path.join(__dirname, '../plugins-dev/linonetwo/tidgi');
 await fs.mkdirp(outDir);
 const tsconfigPath = path.join(__dirname, '../tsconfig.json');
 const sourceFolder = '../src/services/wiki/plugin/ipcSyncAdaptor';
-await esbuild.build({
+const sharedConfig = {
   logLevel: 'info',
-  entryPoints: [path.join(__dirname, sourceFolder, 'ipc-syncadaptor.ts')],
   bundle: true,
   // use node so we have `exports`, otherwise `module.adaptorClass` in $:/core/modules/startup.js will be undefined
   platform: 'node',
@@ -20,7 +19,17 @@ await esbuild.build({
   outdir: outDir,
   tsconfig: tsconfigPath,
   target: 'ESNEXT',
-});
+};
+await Promise.all([
+  esbuild.build({
+    ...sharedConfig,
+    entryPoints: [path.join(__dirname, sourceFolder, 'ipc-syncadaptor.ts')],
+  }),
+  esbuild.build({
+    ...sharedConfig,
+    entryPoints: [path.join(__dirname, sourceFolder, 'Startup/electron-ipc-cat.ts')],
+  }),
+]);
 const filterFunc = (src) => {
   return !src.endsWith('.ts');
 };
