@@ -27,7 +27,7 @@ await Promise.all([
   }),
   esbuild.build({
     ...sharedConfig,
-    entryPoints: [path.join(__dirname, sourceFolder, 'Startup/electron-ipc-cat.ts')],
+    entryPoints: [path.join(__dirname, sourceFolder, 'electron-ipc-cat.ts')],
   }),
 ]);
 const filterFunc = (src) => {
