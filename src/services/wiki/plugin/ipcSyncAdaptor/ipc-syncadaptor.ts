@@ -41,6 +41,10 @@ class TidGiIPCSyncAdaptor {
     this.isReadOnly = false;
     this.logoutIsAvailable = true;
     this.workspaceID = (window.meta as WindowMeta[WindowNames.view]).workspaceID!;
+    if (window.observables?.wiki?.getWikiChangeObserver$ !== undefined) {
+      // if install-electron-ipc-cat is faster than us, just subscribe to the observable. Otherwise we normally will wait for it to call us here.
+      this.setupSSE();
+    }
   }
 
   /**
@@ -60,6 +64,14 @@ class TidGiIPCSyncAdaptor {
       this.clearUpdatedTiddlers();
     }, 500);
     this.logger.log('setupSSE');
+    // disable polling
+    if ($tw.syncer === undefined) {
+      console.error('Syncer is undefined in TidGiIPCSyncAdaptor. Abort the disable polling.');
+      return;
+    } else {
+      $tw.syncer.pollTimerInterval = 2_147_483_647;
+    }
+
     window.observables?.wiki?.getWikiChangeObserver$(this.workspaceID).subscribe((change: IChangedTiddlers) => {
       // `$tw.syncer.syncFromServer` calling `this.getUpdatedTiddlers`, so we need to update `this.updatedTiddlers` before it do so. See `core/modules/syncer.js` in the core
       Object.keys(change).forEach(title => {
@@ -89,6 +101,7 @@ class TidGiIPCSyncAdaptor {
   }
 
   getUpdatedTiddlers(_syncer: Syncer, callback: (error: Error | null | undefined, changes: { deletions: string[]; modifications: string[] }) => void): void {
+    this.logger.log('getUpdatedTiddlers');
     callback(null, this.updatedTiddlers);
   }
 
@@ -151,6 +164,7 @@ class TidGiIPCSyncAdaptor {
   */
   async getSkinnyTiddlers(callback: ISyncAdaptorGetTiddlersJSONCallback) {
     try {
+      this.logger.log('getSkinnyTiddlers');
       const tiddlersJSONResponse = await this.wikiService.callWikiIpcServerRoute(
         this.workspaceID,
         'getTiddlersJSON',
@@ -162,6 +176,7 @@ class TidGiIPCSyncAdaptor {
       if (skinnyTiddlers === undefined) {
         throw new Error('No tiddlers returned from callWikiIpcServerRoute getTiddlersJSON in getSkinnyTiddlers');
       }
+      this.logger.log('skinnyTiddlers.length', skinnyTiddlers.length);
       // Invoke the callback with the skinny tiddlers
       callback(null, skinnyTiddlers);
       // If Browswer Storage tiddlers were cached on reloading the wiki, add them after sync from server completes in the above callback.
