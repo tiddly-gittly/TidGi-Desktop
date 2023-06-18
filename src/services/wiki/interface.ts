@@ -5,10 +5,11 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { Observable } from 'rxjs';
 import { ModuleThread } from 'threads';
 import type { IChangedTiddlers } from 'tiddlywiki';
-import { IWikiServerRouteResponse } from './ipcServerRoutes';
 import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
 import { IWikiOperations } from './wikiOperations';
-import type { IpcServerRouteMethods, IpcServerRouteNames, WikiWorker } from './wikiWorker';
+import { WikiWorker } from './wikiWorker';
+import { IWikiServerRouteResponse } from './wikiWorker/ipcServerRoutes';
+import type { IpcServerRouteMethods, IpcServerRouteNames } from './wikiWorker/ipcServerRoutes';
 
 /**
  * Handle wiki worker startup and restart

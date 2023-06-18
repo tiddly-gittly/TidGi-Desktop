@@ -29,7 +29,8 @@ import type { IChangedTiddlers } from 'tiddlywiki';
 import { CopyWikiTemplateError, DoubleWikiInstanceError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
 import { IWikiService, WikiControlActions } from './interface';
 import { getSubWikiPluginContent, ISubWikiPluginContent, updateSubWikiPluginContent } from './plugin/subWikiPlugin';
-import type { IpcServerRouteMethods, IpcServerRouteNames, IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
+import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
+import type { IpcServerRouteMethods, IpcServerRouteNames } from './wikiWorker/ipcServerRoutes';
 
 import { LOG_FOLDER } from '@/constants/appPaths';
 import { isDevelopmentOrTest } from '@/constants/environment';
@@ -39,7 +40,7 @@ import { IPreferenceService } from '@services/preferences/interface';
 import { mapValues } from 'lodash';
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
-import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker.ts';
+import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker/index.ts';
 import { wikiWorkerStartedEventName } from './constants';
 import { IWikiOperations, wikiOperations } from './wikiOperations';
 

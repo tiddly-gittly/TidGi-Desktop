@@ -218,3 +218,23 @@ export class IpcServerRoutes {
     });
   }
 }
+
+export const ipcServerRoutes: IpcServerRoutes = new IpcServerRoutes();
+export const ipcServerRoutesMethods = {
+  deleteTiddler: ipcServerRoutes.deleteTiddler.bind(ipcServerRoutes),
+  getFavicon: ipcServerRoutes.getFavicon.bind(ipcServerRoutes),
+  getIndex: ipcServerRoutes.getIndex.bind(ipcServerRoutes),
+  getStatus: ipcServerRoutes.getStatus.bind(ipcServerRoutes),
+  getTiddler: ipcServerRoutes.getTiddler.bind(ipcServerRoutes),
+  getTiddlerHtml: ipcServerRoutes.getTiddlerHtml.bind(ipcServerRoutes),
+  getTiddlersJSON: ipcServerRoutes.getTiddlersJSON.bind(ipcServerRoutes),
+  putTiddler: ipcServerRoutes.putTiddler.bind(ipcServerRoutes),
+  getFile: ipcServerRoutes.getFile.bind(ipcServerRoutes),
+  getWikiChangeObserver: ipcServerRoutes.getWikiChangeObserver.bind(ipcServerRoutes),
+};
+
+/**
+ * Available methods for ipcServerRoutes exposed from wiki worker
+ */
+export type IpcServerRouteMethods = Omit<typeof ipcServerRoutesMethods, 'getWikiChangeObserver'>;
+export type IpcServerRouteNames = keyof IpcServerRouteMethods;
