@@ -37,8 +37,6 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
   /** copy npm packages with node-worker dependencies with binary or __filename usages, which can't be prepare properly by webpack */
   if (['production', 'test'].includes(process.env.NODE_ENV)) {
     console.log('Copying tiddlywiki dependency to dist');
-    await fs.copy(path.join(projectRoot, 'plugins-dev'), path.join(cwd, 'node_modules', '@tiddlygit', 'tiddlywiki', 'plugins'));
-    // copy linonetwo/tidgi plugin
     await fs.copy(path.join(projectRoot, 'node_modules', '@tiddlygit', 'tiddlywiki'), path.join(cwd, 'node_modules', '@tiddlygit', 'tiddlywiki'), { dereference: true });
     // it has things like `git/bin/libexec/git-core/git-add` link to `git/bin/libexec/git-core/git`, to reduce size, so can't use `dereference: true` here.
     await fs.copy(path.join(projectRoot, 'node_modules', '.pnpm', 'dugite@2.5.0', 'node_modules', 'dugite'), path.join(cwd, 'node_modules', 'dugite'), { dereference: false });

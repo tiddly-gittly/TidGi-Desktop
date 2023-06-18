@@ -59,6 +59,11 @@ export function startNodeJSWiki({
       const builtInPluginArguments = [
         // add tiddly filesystem back if is not readonly https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416
         readOnlyMode === true ? undefined : '+plugins/tiddlywiki/filesystem',
+        /**
+         * Install $:/plugins/linonetwo/tidgi instead of +plugins/tiddlywiki/tiddlyweb to speedup (without JSON.parse) and fix http errors when network change.
+         * See scripts/compilePlugins.mjs for how it is built.
+         */
+        '+plugins/linonetwo/tidgi',
         // '+plugins/tiddlywiki/tiddlyweb', // we use $:/plugins/linonetwo/tidgi instead
         // '+plugins/linonetwo/watch-fs',
       ].filter(Boolean) as string[];
@@ -141,13 +146,6 @@ export function startNodeJSWiki({
         });
       });
       wikiInstance.boot.startup({ bootPath: TIDDLYWIKI_PACKAGE_FOLDER });
-      /**
-       * Install $:/plugins/linonetwo/tidgi instead of +plugins/tiddlywiki/tiddlyweb to speedup (without JSON.parse) and fix http errors when network change.
-       */
-      const tidgiPlugin = wikiInstance.loadPluginFolder(path.join(EXTRA_TIDGI_PLUGINS_PATH, 'linonetwo/tidgi'));
-      if (tidgiPlugin !== null) {
-        wikiInstance.wiki.addTiddler(tidgiPlugin);
-      }
       // after setWikiInstance, ipc server routes will start serving content
       ipcServerRoutes.setWikiInstance(wikiInstance);
     } catch (error) {

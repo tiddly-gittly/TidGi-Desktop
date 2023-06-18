@@ -6,7 +6,8 @@
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import esbuild from 'esbuild';
 
-const outDir = path.join(__dirname, '../plugins-dev/linonetwo/tidgi');
+// put it here, so it can be loaded via `'+plugins/linonetwo/tidgi'` in cli, and get copied in scripts/afterPack.js when copying tiddlywiki (no need to copy this plugin again)
+const outDir = path.join(__dirname, '../node_modules/@tiddlygit/tiddlywiki/plugins/linonetwo/tidgi');
 await fs.mkdirp(outDir);
 const tsconfigPath = path.join(__dirname, '../tsconfig.json');
 const sourceFolder = '../src/services/wiki/plugin/ipcSyncAdaptor';
