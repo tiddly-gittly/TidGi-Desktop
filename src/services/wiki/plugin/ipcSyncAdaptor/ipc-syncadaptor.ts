@@ -131,8 +131,6 @@ class TidGiIPCSyncAdaptor {
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
         ($tw as any).browserStorage?.cachePreloadTiddlers();
       }
-
-      this.logger.log('Status:', status);
       // Record the recipe
       this.recipe = status.space?.recipe;
       // Check if we're logged in
@@ -147,70 +145,6 @@ class TidGiIPCSyncAdaptor {
       callback?.(error as Error);
     }
   }
-
-  // /*
-  // Attempt to login and invoke the callback(err)
-  // */
-  // login(username, password, callback) {
-  //   const options = {
-  //     url: this.host + 'challenge/tiddlywebplugins.tiddlyspace.cookie_form',
-  //     type: 'POST',
-  //     data: {
-  //       user: username,
-  //       password,
-  //       tiddlyweb_redirect: '/status', // workaround to marginalize automatic subsequent GET
-  //     },
-  //     callback: function(error) {
-  //       callback(error);
-  //     },
-  //     headers: {
-  //       accept: 'application/json',
-  //       'X-Requested-With': 'TiddlyWiki',
-  //     },
-  //   };
-  //   this.logger.log('Logging in:', options);
-  //   $tw.utils.httpRequest(options);
-  // }
-
-  // /*
-  // */
-  // logout(callback) {
-  //   if (this.logoutIsAvailable) {
-  //     const options = {
-  //       url: this.host + 'logout',
-  //       type: 'POST',
-  //       data: {
-  //         csrf_token: this.getCsrfToken(),
-  //         tiddlyweb_redirect: '/status', // workaround to marginalize automatic subsequent GET
-  //       },
-  //       callback: function(error, data, xhr) {
-  //         callback(error);
-  //       },
-  //       headers: {
-  //         accept: 'application/json',
-  //         'X-Requested-With': 'TiddlyWiki',
-  //       },
-  //     };
-  //     this.logger.log('Logging out:', options);
-  //     $tw.utils.httpRequest(options);
-  //   } else {
-  //     alert('This server does not support logging out. If you are using basic authentication the only way to logout is close all browser windows');
-  //     callback(null);
-  //   }
-  // }
-
-  // /*
-  // Retrieve the CSRF token from its cookie
-  // */
-  // getCsrfToken() {
-  //   const regex = /^(?:.*; )?csrf_token=([^$();|]*)(?:;|$)/;
-  //   const match = regex.exec(document.cookie);
-  //   let csrf = null;
-  //   if ((match != undefined) && (match.length === 2)) {
-  //     csrf = match[1];
-  //   }
-  //   return csrf;
-  // }
 
   /*
   Get an array of skinny tiddler fields from the server
@@ -340,79 +274,6 @@ class TidGiIPCSyncAdaptor {
       callback?.(error as Error);
     }
   }
-
-  // /*
-  // Convert a tiddler to a field set suitable for PUTting to TiddlyWeb
-  // */
-  // convertTiddlerToTiddlyWebFormat(tiddler: Tiddler) {
-  //   const result = {};
-  //   const knownFields = new Set([
-  //     'bag',
-  //     'created',
-  //     'creator',
-  //     'modified',
-  //     'modifier',
-  //     'permissions',
-  //     'recipe',
-  //     'revision',
-  //     'tags',
-  //     'text',
-  //     'title',
-  //     'type',
-  //     'uri',
-  //   ]);
-  //   if (tiddler) {
-  //     Object.keys(tiddler.fields).forEach((fieldName) => {
-  //       const fieldString = fieldName === 'tags'
-  //         ? tiddler.fields.tags
-  //         : tiddler.getFieldString(fieldName); // Tags must be passed as an array, not a string
-
-  //       if (knownFields.has(fieldName)) {
-  //         // If it's a known field, just copy it across
-  //         // @ts-expect-error ts-migrate(2339) Property 'fields' does not exist on type '{}'.
-  //         result[fieldName] = fieldString;
-  //       } else {
-  //         // If it's unknown, put it in the "fields" field
-  //         // @ts-expect-error ts-migrate(2339) Property 'fields' does not exist on type '{}'.
-  //         result.fields = result.fields || {};
-  //         // @ts-expect-error ts-migrate(2339) Property 'fields' does not exist on type '{}'.
-  //         result.fields[fieldName] = fieldString;
-  //       }
-  //     });
-  //   }
-  //   // Default the content type
-  //   // @ts-expect-error ts-migrate(2339) Property 'type' does not exist on type '{}'.
-  //   result.type = result.type || 'text/vnd.tiddlywiki';
-  //   return JSON.stringify(result, null, $tw.config.preferences.jsonSpaces);
-  // }
-
-  // /*
-  // Convert a field set in TiddlyWeb format into ordinary TiddlyWiki5 format
-  // */
-  // convertTiddlerFromTiddlyWebFormat(tiddlerFields: IWikiServerTiddlersJSONObject): Tiddler {
-  //   const result = {};
-  //   // Transfer the fields, pulling down the `fields` hashmap
-  //   $tw.utils.each(tiddlerFields, (element, title, object) => {
-  //     if (title === 'fields') {
-  //       $tw.utils.each(element, (element, subTitle, object) => {
-  //         result[subTitle] = element;
-  //       });
-  //     } else {
-  //       result[title] = tiddlerFields[title];
-  //     }
-  //   });
-  //   // Make sure the revision is expressed as a string
-  //   if (typeof result.revision === 'number') {
-  //     result.revision = result.revision.toString();
-  //   }
-  //   // Some unholy freaking of content types
-  //   if (result.type === 'text/javascript') {
-  //     result.type = 'application/javascript';
-  //   } else if (!result.type || result.type === 'None') {
-  //     result.type = 'text/x-tiddlywiki';
-  //   }
-  //   return result;
-  // }
 
   /*
   Split a TiddlyWeb Etag into its constituent parts. For example:
