@@ -4,9 +4,9 @@ exports.name = 'install-electron-ipc-cat';
 exports.platforms = ['browser'];
 exports.after = ['startup'];
 exports.synchronous = true;
-exports.startup = function () {
+exports.startup = function() {
   if ('service' in window && 'descriptors' in window.service && window.service.descriptors !== undefined) {
-    require('$:/plugins/linonetwo/itonnote/Startup/electron-ipc-cat.js');
+    require('$:/plugins/linonetwo/tidgi/Startup/electron-ipc-cat.js');
     // call setupSSE in `src/services/wiki/plugin/ipcSyncAdaptor/ipc-syncadaptor.ts` of TidGi-Desktop
     if (typeof $tw !== 'undefined') {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
