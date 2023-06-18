@@ -64,13 +64,9 @@ class TidGiIPCSyncAdaptor {
       this.clearUpdatedTiddlers();
     }, 500);
     this.logger.log('setupSSE');
-    // disable polling
-    if ($tw.syncer === undefined) {
-      console.error('Syncer is undefined in TidGiIPCSyncAdaptor. Abort the disable polling.');
-      return;
-    } else {
-      $tw.syncer.pollTimerInterval = 2_147_483_647;
-    }
+
+    // After SSE is enabled, we can disable polling and else things that related to syncer. (build up complexer behavior with syncer.)
+    this.configSyncer();
 
     window.observables?.wiki?.getWikiChangeObserver$(this.workspaceID).subscribe((change: IChangedTiddlers) => {
       // `$tw.syncer.syncFromServer` calling `this.getUpdatedTiddlers`, so we need to update `this.updatedTiddlers` before it do so. See `core/modules/syncer.js` in the core
@@ -78,9 +74,9 @@ class TidGiIPCSyncAdaptor {
         if (!change[title]) {
           return;
         }
-        if (change[title].deleted) {
+        if (change[title].deleted && !this.recentUpdatedTiddlersFromClient.deletions.includes(title)) {
           this.updatedTiddlers.deletions.push(title);
-        } else {
+        } else if (change[title].modified && !this.recentUpdatedTiddlersFromClient.modifications.includes(title)) {
           this.updatedTiddlers.modifications.push(title);
         }
       });
@@ -89,15 +85,41 @@ class TidGiIPCSyncAdaptor {
   }
 
   updatedTiddlers: { deletions: string[]; modifications: string[] } = {
+  /**
+   * We will get echo from the server, for these tiddler changes caused by the client, we remove them from the `updatedTiddlers` so that the client won't get them again from server, which will usually get outdated tiddler (lack 1 or 2 words that user just typed).
+   */
+  recentUpdatedTiddlersFromClient: { deletions: string[]; modifications: string[] } = {
     modifications: [],
     deletions: [],
   };
+
+  /**
+   * Add a title as lock to prevent sse echo back. This will auto clear the lock after 2s (this number still needs testing).
+   * And it only clear one title after 2s, so if you add the same title rapidly, it will prevent sse echo after 2s of last operation, which can prevent last echo, which is what we want.
+   */
+  addRecentUpdatedTiddlersFromClient(type: 'modifications' | 'deletions', title: string) {
+    this.recentUpdatedTiddlersFromClient[type].push(title);
+    setTimeout(() => {
+      const index = this.recentUpdatedTiddlersFromClient[type].indexOf(title);
+      if (index !== -1) {
+        this.recentUpdatedTiddlersFromClient[type].splice(index, 1);
+      }
+    }, 2000);
+  }
 
   clearUpdatedTiddlers() {
     this.updatedTiddlers = {
       modifications: [],
       deletions: [],
     };
+  }
+
+  private configSyncer() {
+    if ($tw.syncer === undefined) {
+      console.error('Syncer is undefined in TidGiIPCSyncAdaptor. Abort the configSyncer.');
+      return;
+    }
+    $tw.syncer.pollTimerInterval = 2_147_483_647;
   }
 
   getUpdatedTiddlers(_syncer: Syncer, callback: (error: Error | null | undefined, changes: { deletions: string[]; modifications: string[] }) => void): void {
@@ -200,6 +222,7 @@ class TidGiIPCSyncAdaptor {
       return;
     }
     try {
+      this.addRecentUpdatedTiddlersFromClient('modifications', tiddler.fields.title);
       const putTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
         this.workspaceID,
         'putTiddler',
@@ -273,6 +296,7 @@ class TidGiIPCSyncAdaptor {
       callback(null, options.tiddlerInfo.adaptorInfo);
       return;
     }
+    this.addRecentUpdatedTiddlersFromClient('deletions', title);
     const getTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
       this.workspaceID,
       'deleteTiddler',
