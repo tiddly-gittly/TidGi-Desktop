@@ -24,6 +24,8 @@ import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import { Observable } from 'rxjs';
+import type { IChangedTiddlers } from 'tiddlywiki';
 import { CopyWikiTemplateError, DoubleWikiInstanceError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
 import { IWikiService, WikiControlActions } from './interface';
 import { getSubWikiPluginContent, ISubWikiPluginContent, updateSubWikiPluginContent } from './plugin/subWikiPlugin';
@@ -227,7 +229,11 @@ export class Wiki implements IWikiService {
     });
   }
 
-  public async callWikiIpcServerRoute<NAME extends IpcServerRouteNames>(workspaceID: string, route: NAME, ...arguments_: Parameters<IpcServerRouteMethods[NAME]>) {
+  /**
+   * Ensure you get a started worker. If not stated, it will await for it to start.
+   * @param workspaceID
+   */
+  private async getWorkerEnsure(workspaceID: string): Promise<ModuleThread<WikiWorker>> {
     let worker = this.getWorker(workspaceID);
     if (worker === undefined) {
       // wait for wiki worker started
@@ -236,6 +242,8 @@ export class Wiki implements IWikiService {
           resolve();
         });
       });
+    } else {
+      return worker;
     }
     worker = this.getWorker(workspaceID);
     if (worker === undefined) {
@@ -249,9 +257,25 @@ export class Wiki implements IWikiService {
       );
       throw new Error(errorMessage);
     }
+    return worker;
+  }
+
+  public async callWikiIpcServerRoute<NAME extends IpcServerRouteNames>(workspaceID: string, route: NAME, ...arguments_: Parameters<IpcServerRouteMethods[NAME]>) {
+    const worker = await this.getWorkerEnsure(workspaceID);
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
     // @ts-ignore Argument of type 'string | string[] | ITiddlerFields | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.ts(2345)
     return await worker[route](...arguments_);
+  }
+
+  public getWikiChangeObserver$(workspaceID: string): Observable<IChangedTiddlers> {
+    return new Observable((observer) => {
+      const getWikiChangeObserverIIFE = async () => {
+        const worker = await this.getWorkerEnsure(workspaceID);
+        const observable = await worker.getWikiChangeObserver();
+        observable.subscribe(observer);
+      };
+      void getWikiChangeObserverIIFE();
+    });
   }
 
   public async extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined> {

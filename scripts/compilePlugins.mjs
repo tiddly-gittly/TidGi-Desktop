@@ -12,7 +12,7 @@ const tsconfigPath = path.join(__dirname, '../tsconfig.json');
 const sourceFolder = '../src/services/wiki/plugin/ipcSyncAdaptor';
 await esbuild.build({
   logLevel: 'info',
-  entryPoints: [path.join(__dirname, sourceFolder, 'index.ts')],
+  entryPoints: [path.join(__dirname, sourceFolder, 'ipc-syncadaptor.ts')],
   bundle: true,
   // use node so we have `exports`, otherwise `module.adaptorClass` in $:/core/modules/startup.js will be undefined
   platform: 'node',

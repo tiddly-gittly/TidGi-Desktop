@@ -43,12 +43,13 @@ const ipcServerRoutesMethods = {
   getTiddlersJSON: ipcServerRoutes.getTiddlersJSON.bind(ipcServerRoutes),
   putTiddler: ipcServerRoutes.putTiddler.bind(ipcServerRoutes),
   getFile: ipcServerRoutes.getFile.bind(ipcServerRoutes),
+  getWikiChangeObserver: ipcServerRoutes.getWikiChangeObserver.bind(ipcServerRoutes),
 };
 /**
  * Available methods for ipcServerRoutes exposed from wiki worker
  */
-export type IpcServerRouteNames = keyof typeof ipcServerRoutesMethods;
-export type IpcServerRouteMethods = typeof ipcServerRoutesMethods;
+export type IpcServerRouteMethods = Omit<typeof ipcServerRoutesMethods, 'getWikiChangeObserver'>;
+export type IpcServerRouteNames = keyof IpcServerRouteMethods;
 
 export interface IStartNodeJSWikiConfigs {
   adminToken?: string;
