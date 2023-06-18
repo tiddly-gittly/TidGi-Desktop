@@ -20,7 +20,7 @@
     "make:win-arm": "npm run init:git-submodule && cross-env NODE_ENV=production electron-forge make --platform=win32 --arch=arm64",
     "make:linux-x64": "npm run init:git-submodule && cross-env NODE_ENV=production electron-forge make --platform=linux --arch=x64",
     "make:linux-arm": "npm run init:git-submodule && cross-env NODE_ENV=production electron-forge make --platform=linux --arch=arm64",
-    "clean": "rimraf ./out ./settings-dev ./plugins-dev ./cache-database-dev ./logs ./.webpack && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts && npm run init:git-submodule",
+    "clean": "rimraf ./out ./settings-dev ./node_modules/@tiddlygit/tiddlywiki/plugins/linonetwo ./cache-database-dev ./logs ./.webpack && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts && npm run init:git-submodule",
     "init:git-submodule": "git submodule update --recursive && git submodule update --remote",
     "lint": "eslint ./src --ext js,ts,tsx,json",
     "lint:fix": "eslint ./src --ext js,ts,tsx,json --fix",
