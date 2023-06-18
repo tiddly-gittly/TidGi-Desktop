@@ -1,0 +1,11 @@
+{
+  "title": "$:/plugins/linonetwo/tidgi",
+  "name": "TidGi",
+  "description": "Plugin that make TidGi works",
+  "author": "LinOnetwo",
+  "core-version": ">=5.1.22",
+  "plugin-type": "plugin",
+  "version": "0.1.0",
+  "dependents": [],
+  "list": "readme"
+}

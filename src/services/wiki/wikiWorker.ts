@@ -52,7 +52,7 @@ export type IpcServerRouteMethods = typeof ipcServerRoutesMethods;
 
 export interface IStartNodeJSWikiConfigs {
   adminToken?: string;
-  constants: { TIDDLYWIKI_PACKAGE_FOLDER: string };
+  constants: { EXTRA_TIDGI_PLUGINS_PATH: string; TIDDLYWIKI_PACKAGE_FOLDER: string };
   excludedPlugins: string[];
   homePath: string;
   https?: {
@@ -93,7 +93,7 @@ function initCacheDatabase(cacheDatabaseConfig: ISqliteDatabasePaths) {
 
 function startNodeJSWiki({
   adminToken,
-  constants: { TIDDLYWIKI_PACKAGE_FOLDER },
+  constants: { TIDDLYWIKI_PACKAGE_FOLDER, EXTRA_TIDGI_PLUGINS_PATH },
   excludedPlugins = [],
   homePath,
   https,
@@ -217,6 +217,7 @@ function startNodeJSWiki({
           });
         });
       });
+      wikiInstance.loadPlugins(['linonetwo/tidgi'], EXTRA_TIDGI_PLUGINS_PATH);
       wikiInstance.boot.startup({ bootPath: TIDDLYWIKI_PACKAGE_FOLDER });
       ipcServerRoutes.setWikiInstance(wikiInstance);
     } catch (error) {

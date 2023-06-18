@@ -27,6 +27,9 @@ export const PACKAGE_PATH_BASE = isDevelopmentOrTest
   : path.resolve(process.resourcesPath, 'node_modules');
 export const ZX_FOLDER = path.resolve(PACKAGE_PATH_BASE, 'zx', 'build', 'cli.js');
 export const TIDDLYWIKI_PACKAGE_FOLDER = path.resolve(PACKAGE_PATH_BASE, '@tiddlygit', 'tiddlywiki', 'boot');
+export const EXTRA_TIDGI_PLUGINS_PATH = isDevelopmentOrTest
+  ? path.resolve(sourcePath, '..', `plugins-dev`)
+  : path.resolve(TIDDLYWIKI_PACKAGE_FOLDER, '..', 'plugins');
 export const SQLITE_BINARY_PATH = path.resolve(PACKAGE_PATH_BASE, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
 
 export const LOCALIZATION_FOLDER = isDevelopmentOrTest

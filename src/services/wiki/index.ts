@@ -11,7 +11,7 @@ import { ModuleThread, spawn, Thread, Worker } from 'threads';
 import type { WorkerEvent } from 'threads/dist/types/master';
 
 import { WikiChannel } from '@/constants/channels';
-import { PACKAGE_PATH_BASE, SQLITE_BINARY_PATH, TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
+import { EXTRA_TIDGI_PLUGINS_PATH, PACKAGE_PATH_BASE, SQLITE_BINARY_PATH, TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
@@ -29,6 +29,7 @@ import { IWikiService, WikiControlActions } from './interface';
 import { getSubWikiPluginContent, ISubWikiPluginContent, updateSubWikiPluginContent } from './plugin/subWikiPlugin';
 import type { IpcServerRouteMethods, IpcServerRouteNames, IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
 
+import { LOG_FOLDER } from '@/constants/appPaths';
 import { isDevelopmentOrTest } from '@/constants/environment';
 import { defaultServerIP } from '@/constants/urls';
 import { IDatabaseService } from '@services/database/interface';
@@ -36,7 +37,6 @@ import { IPreferenceService } from '@services/preferences/interface';
 import { mapValues } from 'lodash';
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
-import { LOG_FOLDER } from '@/constants/appPaths';
 import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker.ts';
 import { wikiWorkerStartedEventName } from './constants';
 import { IWikiOperations, wikiOperations } from './wikiOperations';
@@ -128,7 +128,7 @@ export class Wiki implements IWikiService {
     }
     const workerData: IStartNodeJSWikiConfigs = {
       adminToken,
-      constants: { TIDDLYWIKI_PACKAGE_FOLDER },
+      constants: { TIDDLYWIKI_PACKAGE_FOLDER, EXTRA_TIDGI_PLUGINS_PATH },
       excludedPlugins,
       homePath: wikiFolderLocation,
       https,
