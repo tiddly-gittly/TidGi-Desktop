@@ -206,15 +206,18 @@ export class IpcServerRoutes {
   //    ██    ██  █  ██ █████ ███████ ███████ █████
   //    ██    ██ ███ ██            ██      ██ ██
   //    ██     ███ ███        ███████ ███████ ███████
-  async getWikiChangeObserver() {
-    await this.waitForIpcServerRoutesAvailable();
+  getWikiChangeObserver() {
     return new Observable<IChangedTiddlers>((observer) => {
-      if (this.wikiInstance === undefined) {
-        throw new Error(`this.wikiInstance is undefined, maybe something went wrong between waitForIpcServerRoutesAvailable and return new Observable.`);
-      }
-      this.wikiInstance.wiki.addEventListener('change', (changes) => {
-        observer.next(changes);
-      });
+      const getWikiChangeObserverInWorkerIIFE = async () => {
+        await this.waitForIpcServerRoutesAvailable();
+        if (this.wikiInstance === undefined) {
+          observer.error(new Error(`this.wikiInstance is undefined, maybe something went wrong between waitForIpcServerRoutesAvailable and return new Observable.`));
+        }
+        this.wikiInstance.wiki.addEventListener('change', (changes) => {
+          observer.next(changes);
+        });
+      };
+      void getWikiChangeObserverInWorkerIIFE();
     });
   }
 }
