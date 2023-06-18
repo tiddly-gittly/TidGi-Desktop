@@ -86,7 +86,7 @@ class TidGiIPCSyncAdaptor {
 
   updatedTiddlers: { deletions: string[]; modifications: string[] } = {
     // use $:/StoryList to trigger a initial sync, otherwise it won't do lazy load for Index tiddler after init, don't know why, maybe because we disabled the polling by changing pollTimerInterval.
-    modifications: ['$:/StoryList'],
+    modifications: [],
     deletions: [],
   };
 
@@ -137,7 +137,8 @@ class TidGiIPCSyncAdaptor {
   }
 
   isReady() {
-    return this.hasStatus;
+    // We ipc sync adaptor is always ready to work! (Otherwise this will be false for first lazy-load event.) Seems first lazy load happened before the first status ipc call returns.
+    return true;
   }
 
   getTiddlerInfo(tiddler: Tiddler) {
