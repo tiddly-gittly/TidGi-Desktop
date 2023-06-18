@@ -6,6 +6,8 @@
   "core-version": ">=5.1.22",
   "plugin-type": "plugin",
   "version": "0.1.0",
-  "dependents": [],
-  "list": "readme"
+  "dependents": ["$:/plugins/tiddlywiki/tiddlyweb"],
+  "list": "readme tree",
+  "plugin-priority-comment": "lower than $:/plugins/tiddlywiki/tiddlyweb's 10, so we load before it, so our syncadaptor load first in core/modules/server/server.js",
+  "plugin-priority": 9
 }
