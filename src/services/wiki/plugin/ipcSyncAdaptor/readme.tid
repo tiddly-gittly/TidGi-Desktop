@@ -1,0 +1,10 @@
+title: $:/plugins/linonetwo/tidgi/readme
+type: text/vnd.tiddlywiki
+
+!! SyncAdaptor
+
+Copied and modified from Tiddlywiki core's `plugins/tiddlywiki/tiddlyweb/tiddlywebadaptor.js`.
+
+It uses `src/services/wiki/ipcServerRoutes.ts` exposed from `window.wiki.ipcServerRoutes` to communicate with the main process.
+
+Some `JSON.stringify` and JSON.parse` logic are removed because we don't need this process when doing IPC. And some tiddlyweb related logic are removed, because it seems just transform to/back from tiddlyweb format, and nothing really changes after data received.
