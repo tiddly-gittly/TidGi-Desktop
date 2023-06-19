@@ -20,7 +20,6 @@ import { List, ListItem, ListItemText } from '@/components/ListItem';
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { TokenForm } from '@/components/TokenForm';
 import { wikiPictureExtensions } from '@/constants/fileNames';
-import { useActualIp } from '@services/native/hooks';
 import { SupportedStorageServices } from '@services/types';
 import { isEqual } from 'lodash';
 import { SyncedWikiDescription } from '../AddWorkspace/Description';
@@ -173,7 +172,6 @@ export default function EditWorkspace(): JSX.Element {
   const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName')) as string, '');
 
   const rememberLastPageVisited = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
-  const actualIP = useActualIp(homeUrl, workspaceID);
   if (workspaceID === undefined) {
     return <Root>Error {workspaceID ?? '-'} not exists</Root>;
   }
@@ -230,17 +228,17 @@ export default function EditWorkspace(): JSX.Element {
                 id='outlined-full-width'
                 label={t('EditWorkspace.LastVisitState')}
                 helperText={t('Preference.RememberLastVisitState')}
-                placeholder={actualIP}
+                placeholder={homeUrl}
                 value={lastUrl}
                 onChange={(event) => {
                   workspaceSetter({
                     ...workspace,
-                    lastUrl: (event.target.value || actualIP) ?? '',
+                    lastUrl: (event.target.value || homeUrl) ?? '',
                   });
                 }}
               />
             )}
-            <ServerOptions actualIP={actualIP} workspace={workspace} workspaceSetter={workspaceSetter} />
+            <ServerOptions workspace={workspace} workspaceSetter={workspaceSetter} />
           </>
         )}
         {isSubWiki && (

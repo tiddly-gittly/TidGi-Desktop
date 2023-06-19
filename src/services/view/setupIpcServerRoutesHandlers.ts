@@ -8,15 +8,14 @@ import { IWikiService } from '@services/wiki/interface';
 import { IWorkspaceService } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 
-export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceID: string) {
-  const urlBase = `tidgi://${workspaceID}`;
+export function setupIpcServerRoutesHandlers(view: BrowserView, workspaceID: string) {
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
   const methods = [
     {
       method: 'GET',
-      path: /^\/$/,
+      path: /^\/?$/,
       name: 'getIndex',
       handler: async (_request: GlobalRequest, _parameters: RegExpMatchArray | null) =>
         await wikiService.callWikiIpcServerRoute(workspaceID, 'getIndex', (await workspaceService.get(workspaceID))?.rootTiddler ?? '$:/core/save/lazy-images'),
@@ -83,16 +82,20 @@ export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceI
   async function handlerCallback(request: GlobalRequest): Promise<GlobalResponse> {
     const parsedUrl = new URL(request.url);
     // Iterate through methods to find matching routes
+    // DEBUG: console parsedUrl
+    console.log(`parsedUrl`, parsedUrl);
     try {
       for (const route of methods) {
+        // DEBUG: console parsedUrl.pathname
+        console.log(`parsedUrl.pathname`, parsedUrl.pathname, request.method === route.method, route.name, route.path.test(parsedUrl.pathname));
         if (request.method === route.method && route.path.test(parsedUrl.pathname)) {
           // Get the parameters in the URL path
           const parameters = parsedUrl.pathname.match(route.path);
-          logger.debug(`loadHTMLStringForView: ${route.name}`, { parsedUrl, parameters });
+          logger.debug(`setupIpcServerRoutesHandlers.handlerCallback: ${route.name}`, { parsedUrl, parameters });
           // Call the handler of the route to process the request and return the result
           const responseData = await route.handler(request, parameters);
           if (responseData === undefined) {
-            const statusText = `loadHTMLStringForView: responseData is undefined ${request.url}`;
+            const statusText = `setupIpcServerRoutesHandlers.handlerCallback: responseData is undefined ${request.url}`;
             logger.warn(statusText);
             return new Response(undefined, { status: 404, statusText });
           }
@@ -102,7 +105,7 @@ export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceI
     } catch (error) {
       return new Response(undefined, { status: 500, statusText: `${(error as Error).message} ${(error as Error).stack ?? ''}` });
     }
-    const statusText = `loadHTMLStringForView: tidgi protocol is not handled ${request.url}`;
+    const statusText = `setupIpcServerRoutesHandlers.handlerCallback: tidgi protocol is not handled ${request.url}`;
     logger.warn(statusText);
     return new Response(undefined, { status: 404, statusText });
   }
@@ -111,13 +114,9 @@ export async function setupIpcServerRoutesHandlers(view: BrowserView, workspaceI
     view.webContents.session.protocol.handle(`tidgi`, handlerCallback);
     const handled = view.webContents.session.protocol.isProtocolHandled(`tidgi`);
     if (!handled) {
-      logger.warn(`loadHTMLStringForView: tidgi protocol is not handled`);
+      logger.warn(`setupIpcServerRoutesHandlers.handlerCallback: tidgi protocol is not handled`);
     }
-    logger.info(`view.webContents.loadURL(${urlBase}/)`);
-    // DEBUG devTool
-    // view.webContents.openDevTools({ mode: 'detach' });
-    await view.webContents.loadURL(`${urlBase}/`);
   } catch (error) {
-    logger.error(`loadHTMLStringForView: ${(error as Error).message}`);
+    logger.error(`setupIpcServerRoutesHandlers.handlerCallback: ${(error as Error).message}`);
   }
 }

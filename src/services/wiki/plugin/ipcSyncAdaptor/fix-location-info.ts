@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 
+import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 
 function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: string; title: string }>) => void) {
@@ -20,7 +21,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
       const setLocationProperty = function(name: string, value: string) {
         asyncInfoTiddlerFields.push({ title: '$:/info/url/' + name, text: value });
       };
-      const localHostUrl = await window.service.native.getLocalHostUrlWithActualInfo(workspace.homeUrl, workspaceID);
+      const localHostUrl = await window.service.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(workspace.port), workspaceID);
       const urlObject = new URL(localHostUrl);
       setLocationProperty('full', (localHostUrl).split('#')[0]);
       setLocationProperty('host', urlObject.host);

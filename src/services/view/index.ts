@@ -12,6 +12,7 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
+import { getDefaultTidGiUrl } from '@/constants/urls';
 import { isMac, isWin } from '@/helpers/system';
 import { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
@@ -319,26 +320,21 @@ export class View implements IViewService {
       workspace,
       sharedWebPreferences,
       loadInitialUrlWithCatch: async () => {
-        // await this.loadUrlForView(workspace, view, windowName);
+        await this.loadUrlForView(workspace, view, windowName);
       },
     });
-    await setupIpcServerRoutesHandlers(view, workspace.id);
-    // await this.loadUrlForView(workspace, view, windowName);
+    setupIpcServerRoutesHandlers(view, workspace.id);
+    await this.loadUrlForView(workspace, view, windowName);
   }
 
   public async loadUrlForView(workspace: IWorkspace, view: BrowserView, windowName: WindowNames): Promise<void> {
     const { rememberLastPageVisited } = await this.preferenceService.getPreferences();
     // fix some case that local ip can't be load
-    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-    const urlToReplace = rememberLastPageVisited ? workspace.lastUrl ?? workspace.homeUrl : workspace.homeUrl;
-    const replacedUrl = await this.nativeService.getLocalHostUrlWithActualInfo(urlToReplace, workspace.id);
-    logger.debug(`Load initialUrl: ${replacedUrl} for windowName ${windowName} for workspace ${workspace.name}`, {
-      urlToReplace,
-      replacedUrl,
-    });
+    // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/strict-boolean-expressions
+    const urlToLoad = (rememberLastPageVisited ? workspace.lastUrl ?? workspace.homeUrl : workspace.homeUrl) || getDefaultTidGiUrl(workspace.id);
     try {
       logger.debug(
-        `loadInitialUrlWithCatch(): view.webContents: ${String(view.webContents)} ${replacedUrl} for windowName ${windowName} for workspace ${workspace.name}`,
+        `loadUrlForView(): view.webContents: ${String(view.webContents)} urlToLoad: ${urlToLoad} for windowName ${windowName} for workspace ${workspace.name}`,
         { stack: new Error('stack').stack?.replace('Error:', '') },
       );
       if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
@@ -350,14 +346,16 @@ export class View implements IViewService {
         didFailLoadErrorMessage: null,
         isLoading: true,
       });
-      await view.webContents.loadURL(replacedUrl);
-      logger.debug('loadInitialUrlWithCatch() await loadURL() done');
+      // DEBUG devTool
+      // view.webContents.openDevTools({ mode: 'detach' });
+      await view.webContents.loadURL(urlToLoad);
+      logger.debug('loadUrlForView() await loadURL() done');
       const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);
       view.webContents.on('destroyed', () => {
         unregisterContextMenu();
       });
     } catch (error) {
-      logger.warn(new ViewLoadUrlError(replacedUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
+      logger.warn(new ViewLoadUrlError(urlToLoad, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
     }
   }
 

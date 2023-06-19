@@ -13,8 +13,9 @@ import path from 'path';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
-import { defaultServerIP } from '@/constants/urls';
+import { getDefaultTidGiUrl } from '@/constants/urls';
 import { fixSettingFileWhenError } from '@/helpers/configSetting';
+import { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
@@ -29,7 +30,6 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { INewWorkspaceConfig, IWorkspace, IWorkspaceMetaData, IWorkspaceService, IWorkspaceWithMetadata } from './interface';
 import { workspaceSorter } from './utils';
-import { IAuthenticationService } from '@services/auth/interface';
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 const debouncedSetSettingFile = debounce(async (workspaces: Record<string, IWorkspace>) => {
@@ -291,8 +291,11 @@ export class Workspace implements IWorkspaceService {
       fixingValues.tagName = workspaceToSanitize.tagName.replaceAll('\n', '');
     }
     // before 0.8.0, tidgi was loading http content, so lastUrl will be http protocol, but later we switch to tidgi:// protocol, so old value can't be used.
-    if (workspaceToSanitize.lastUrl?.startsWith('tidgi')) {
-      fixingValues.lastUrl = '';
+    if (!workspaceToSanitize.lastUrl?.startsWith('tidgi')) {
+      fixingValues.lastUrl = null;
+    }
+    if (!workspaceToSanitize.homeUrl?.startsWith('tidgi')) {
+      fixingValues.homeUrl = getDefaultTidGiUrl(workspaceToSanitize.id);
     }
     if (workspaceToSanitize.tokenAuth && !workspaceToSanitize.authToken) {
       fixingValues.authToken = this.authService.generateOneTimeAdminAuthTokenForWorkspaceSync(workspaceToSanitize.id);
@@ -475,7 +478,7 @@ export class Workspace implements IWorkspaceService {
       disableNotifications: false,
       hibernated: false,
       hibernateWhenUnused: false,
-      homeUrl: `http://${defaultServerIP}:${newWorkspaceConfig.port}`,
+      homeUrl: getDefaultTidGiUrl(newID),
       id: newID,
       lastUrl: null,
       lastNodeJSArgv: [],
