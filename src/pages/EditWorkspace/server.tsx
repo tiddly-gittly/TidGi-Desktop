@@ -138,7 +138,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                 edge='end'
                 color='primary'
                 checked={tokenAuth}
-                onChange={async (event) => {
+                onChange={async () => {
                   const nextTokenAuth = !tokenAuth;
                   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
                   const newAuthToken = authToken || await (window.service.auth.generateOneTimeAdminAuthTokenForWorkspace(id));
