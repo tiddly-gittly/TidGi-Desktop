@@ -11,7 +11,7 @@ import { ModuleThread, spawn, Thread, Worker } from 'threads';
 import type { WorkerEvent } from 'threads/dist/types/master';
 
 import { WikiChannel } from '@/constants/channels';
-import { EXTRA_TIDGI_PLUGINS_PATH, PACKAGE_PATH_BASE, SQLITE_BINARY_PATH, TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
+import { PACKAGE_PATH_BASE, SQLITE_BINARY_PATH, TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
@@ -117,33 +117,31 @@ export class Wiki implements IWikiService {
       logger.error('Try to start wiki, but workspace not found', { workspace, workspaceID });
       return;
     }
-    const { port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI } = workspace;
+    const { port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI, authToken } = workspace;
     if (isSubWiki) {
       logger.error('Try to start wiki, but workspace is sub wiki', { workspace, workspaceID });
       return;
     }
     // wiki server is about to boot, but our webview is just start loading, wait for `view.webContents.on('did-stop-loading'` to set this to false
     await this.workspaceService.updateMetaData(workspaceID, { isLoading: true });
-    let adminToken: string | undefined;
-    if (tokenAuth) {
-      logger.debug(`startWiki() getOneTimeAdminAuthTokenForWorkspaceSync because tokenAuth is ${String(tokenAuth)}`);
-      adminToken = this.authService.getOrGenerateOneTimeAdminAuthTokenForWorkspace(workspaceID);
+    if (tokenAuth && authToken) {
+      logger.debug(`startWiki() getOneTimeAdminAuthTokenForWorkspaceSync because tokenAuth is ${String(tokenAuth)} && authToken is ${authToken}`);
     }
     const workerData: IStartNodeJSWikiConfigs = {
+      authToken,
+      constants: { TIDDLYWIKI_PACKAGE_FOLDER },
       enableHTTPAPI,
-      adminToken,
-      constants: { TIDDLYWIKI_PACKAGE_FOLDER, EXTRA_TIDGI_PLUGINS_PATH },
       excludedPlugins,
       homePath: wikiFolderLocation,
       https,
       isDev: isDevelopmentOrTest,
+      openDebugger: process.env.DEBUG_WORKER === 'true',
       readOnlyMode,
       rootTiddler,
       tiddlyWikiHost: defaultServerIP,
       tiddlyWikiPort: port,
       tokenAuth,
       userName,
-      openDebugger: process.env.DEBUG_WORKER === 'true',
     };
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
     this.wikiWorkers[workspaceID] = worker;

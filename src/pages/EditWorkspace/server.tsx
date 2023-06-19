@@ -42,11 +42,9 @@ const HttpsCertKeyListItem: typeof ListItem = styled(ListItem)`
 const AutocompleteWithMarginTop: typeof Autocomplete = styled(Autocomplete)`
   margin-top: 8px;
 `;
-const ChipContainer = styled.div`
+const AuthTokenTextAndButtonContainer = styled.div`
   display: flex;
-  flex-wrap: wrap;
-
-  margin-bottom: 10px;
+  flex-direction: row;
 `;
 
 export interface IServerOptionsProps {
@@ -65,6 +63,7 @@ export function ServerOptions(props: IServerOptionsProps) {
     enableHTTPAPI,
     readOnlyMode = false,
     tokenAuth,
+    authToken,
     userName,
     id,
   } = (workspace ?? {}) as unknown as IWorkspace;
@@ -72,11 +71,6 @@ export function ServerOptions(props: IServerOptionsProps) {
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName')) as string, '');
   const userNameIsEmpty = !(userName || fallbackUserName);
-  const authToken = usePromiseValue<string | undefined>(
-    async () => id && await (window.service.auth.getOneTimeAdminAuthTokenForWorkspace(id)),
-    '',
-    [id],
-  );
   const alreadyEnableSomeServerOptions = readOnlyMode;
   return (
     <AServerOptionsAccordion defaultExpanded={alreadyEnableSomeServerOptions}>
@@ -136,15 +130,6 @@ export function ServerOptions(props: IServerOptionsProps) {
                 <>
                   <div>{t('EditWorkspace.TokenAuthDescription')}</div>
                   {(userNameIsEmpty || !fallbackUserName) && <div>{t('EditWorkspace.TokenAuthAutoFillUserNameDescription')}</div>}
-                  <div>
-                    {tokenAuth && (
-                      <ListItemText
-                        primary={t('EditWorkspace.TokenAuthCurrentHeader')}
-                        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-                        secondary={`"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`}
-                      />
-                    )}
-                  </div>
                 </>
               }
             />
@@ -153,22 +138,57 @@ export function ServerOptions(props: IServerOptionsProps) {
                 edge='end'
                 color='primary'
                 checked={tokenAuth}
-                onChange={(event) => {
-                  if (userNameIsEmpty) {
-                    workspaceSetter({
-                      ...workspace,
-                      userName: DEFAULT_USER_NAME,
-                    });
-                  }
+                onChange={async (event) => {
+                  const nextTokenAuth = !tokenAuth;
+                  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+                  const newAuthToken = authToken || await (window.service.auth.generateOneTimeAdminAuthTokenForWorkspace(id));
                   workspaceSetter({
                     ...workspace,
-                    tokenAuth: event.target.checked,
-                    readOnlyMode: event.target.checked ? false : readOnlyMode,
+                    userName: userNameIsEmpty ? DEFAULT_USER_NAME : userName,
+                    tokenAuth: nextTokenAuth,
+                    readOnlyMode: nextTokenAuth ? false : readOnlyMode,
+                    authToken: newAuthToken,
                   }, true);
                 }}
               />
             </ListItemSecondaryAction>
           </ListItem>
+          {tokenAuth && (
+            <>
+              <ListItem disableGutters>
+                <TextField
+                  id='outlined-full-width'
+                  label={t('EditWorkspace.TokenAuthCurrentToken')}
+                  helperText={
+                    <AuthTokenTextAndButtonContainer>
+                      <div>{t('EditWorkspace.TokenAuthCurrentTokenDescription')}</div>{' '}
+                      <Button
+                        onClick={async () => {
+                          const newAuthToken = await (window.service.auth.generateOneTimeAdminAuthTokenForWorkspace(id));
+                          workspaceSetter({ ...workspace, authToken: newAuthToken }, true);
+                        }}
+                      >
+                        {t('EditWorkspace.Generate')}
+                      </Button>
+                    </AuthTokenTextAndButtonContainer>
+                  }
+                  placeholder={t('EditWorkspace.TokenAuthCurrentTokenEmptyText')}
+                  fullWidth
+                  value={authToken ?? ''}
+                  onChange={(event) => {
+                    workspaceSetter({ ...workspace, authToken: event.target.value }, true);
+                  }}
+                />
+              </ListItem>
+              <ListItem disableGutters>
+                <ListItemText
+                  primary={t('EditWorkspace.TokenAuthCurrentHeader')}
+                  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+                  secondary={`"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`}
+                />
+              </ListItem>
+            </>
+          )}
           {Array.isArray(lastNodeJSArgv) && (
             <>
               <Divider />

@@ -14,6 +14,7 @@ export interface IWorkspace {
    * Is this workspace selected by user, and showing corresponding webview?
    */
   active: boolean;
+  authToken?: string;
   /**
    * When this workspace is a local workspace, we can still use local git to backup
    */

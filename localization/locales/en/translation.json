@@ -179,7 +179,7 @@
     "ReadOnlyModeDescription": "Can be used with intranet penetration, allowing TidGi work as a server program  to deploy blogs. After opening, wiki can only be modified by directly modifying the file on the disk  (including using git synchronization). The content cannot be modified on the web page, but anyone can access it.",
     "ReadOnlyMode": "ReadOnly Mode",
     "TokenAuth": "Token Authenticate",
-    "TokenAuthDescription": "Cannot work with read-only mode. After enabled, other ones need to bring credentials in the request header to read write the content of the wiki, preventing other people in the same LAN from accessing your notes. TidGi will automatically bring the certificate, so turning on will not affect the normal use of TidGi app, it only increases security, so it is recommended to turn it on.",
+    "TokenAuthDescription": "When enabled, credentials need to be included in the HTTP request to read write to your knowledge base, which prevents other people in the same LAN from accessing notes, so improves server security. Cannot be turned on at the same time as read-only mode.",
     "TokenAuthAutoFillUserNameDescription": "This feature requires userName to be filled in global setting or workspace setting, if its empty, a default one will be auto filled into workspace setting, you can change it later.",
     "ServerOptions": "Blog & Server Options",
     "EnableHTTPS": "Enable HTTPS",
@@ -200,7 +200,11 @@
     "HTTPSKeyPathDescription": "The location of the private key file with the suffix .key.",
     "LastNodeJSArgv": "Command line arguments from the latest startup",
     "EnableHTTPAPI": "Enable HTTP APIs",
-    "EnableHTTPAPIDescription": "Allow third-party programs such as Tiddloid, MaoXianWebclipper clipper, etc. to read and modify your notes through the HTTP network interface."
+    "EnableHTTPAPIDescription": "Allow third-party programs such as Tiddloid, MaoXianWebclipper clipper, etc. to read and modify your notes through the HTTP network interface.",
+    "TokenAuthCurrentToken": "Current Token of Token Auth",
+    "TokenAuthCurrentTokenDescription": "This token is confidential, which needs to be regenerated after being leaked to a hostile entity, and credentials need to be updated for connected third-party applications after regeneration",
+    "Generate": "Generate",
+    "TokenAuthCurrentTokenEmptyText": "Click the Generate button to generate a new credential"
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed, or there is no wiki in this folder! \nDo you want to remove the workspace?",
