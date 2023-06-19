@@ -19,7 +19,6 @@ import { useForm } from './useForm';
 import { List, ListItem, ListItemText } from '@/components/ListItem';
 import { useRestartSnackbar } from '@/components/RestartSnackbar';
 import { TokenForm } from '@/components/TokenForm';
-import { DEFAULT_USER_NAME, getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { wikiPictureExtensions } from '@/constants/fileNames';
 import { useActualIp } from '@services/native/hooks';
 import { SupportedStorageServices } from '@services/types';
@@ -161,13 +160,10 @@ export default function EditWorkspace(): JSX.Element {
     syncOnInterval,
     syncOnStartup,
     tagName,
-    tokenAuth,
     transparentBackground,
     userName,
     lastUrl,
     wikiFolderLocation,
-    readOnlyMode = false,
-    id,
   } = workspace ?? {};
   const fileSystemPaths = usePromiseValue<ISubWikiPluginContent[]>(
     async () => (mainWikiToLink ? await window.service.wiki.getSubWikiPluginContent(mainWikiToLink) : []),
@@ -175,14 +171,7 @@ export default function EditWorkspace(): JSX.Element {
     [mainWikiToLink],
   ) as ISubWikiPluginContent[];
   const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName')) as string, '');
-  // some feature need a username to work, so if userName is empty, assign a fallbackUserName DEFAULT_USER_NAME
-  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-  const userNameIsEmpty = !(userName || fallbackUserName);
-  const authToken = usePromiseValue<string | undefined>(
-    async () => id && await (window.service.auth.getOneTimeAdminAuthTokenForWorkspace(id)),
-    '',
-    [id],
-  );
+
   const rememberLastPageVisited = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
   const actualIP = useActualIp(homeUrl, workspaceID);
   if (workspaceID === undefined) {
@@ -236,49 +225,6 @@ export default function EditWorkspace(): JSX.Element {
         <Divider />
         {!isSubWiki && (
           <>
-            <List>
-              <ListItem disableGutters>
-                <ListItemText
-                  primary={t('EditWorkspace.TokenAuth')}
-                  secondary={
-                    <>
-                      <div>{t('EditWorkspace.TokenAuthDescription')}</div>
-                      {(userNameIsEmpty || !fallbackUserName) && <div>{t('EditWorkspace.TokenAuthAutoFillUserNameDescription')}</div>}
-                      <div>
-                        {tokenAuth && (
-                          <ListItemText
-                            primary={t('EditWorkspace.TokenAuthCurrentHeader')}
-                            // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-                            secondary={`"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`}
-                          />
-                        )}
-                      </div>
-                    </>
-                  }
-                />
-                <ListItemSecondaryAction>
-                  <Switch
-                    edge='end'
-                    color='primary'
-                    checked={tokenAuth}
-                    onChange={(event) => {
-                      if (userNameIsEmpty) {
-                        workspaceSetter({
-                          ...workspace,
-                          userName: DEFAULT_USER_NAME,
-                        });
-                      }
-                      workspaceSetter({
-                        ...workspace,
-                        tokenAuth: event.target.checked,
-                        readOnlyMode: event.target.checked ? false : readOnlyMode,
-                      }, true);
-                    }}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-            </List>
             {rememberLastPageVisited && (
               <TextField
                 id='outlined-full-width'
