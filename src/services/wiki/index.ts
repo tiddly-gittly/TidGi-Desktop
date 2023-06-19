@@ -108,7 +108,7 @@ export class Wiki implements IWikiService {
     }
     const previousWorker = this.getWorker(workspaceID);
     if (previousWorker !== undefined) {
-      logger.error(new DoubleWikiInstanceError(workspaceID));
+      logger.error(new DoubleWikiInstanceError(workspaceID).message, { stack: new Error('stack').stack?.replace('Error:', '') ?? 'no stack' });
       await this.stopWiki(workspaceID);
     }
     // use Promise to handle worker callbacks
@@ -188,31 +188,27 @@ export class Wiki implements IWikiService {
           switch (message.actions) {
             case WikiControlActions.booted: {
               setTimeout(async () => {
-                if (message.message !== undefined) {
-                  logger.info('WikiControlActions.booted ' + message.message, loggerMeta);
-                }
-                logger.info(`startWiki() resolved with message.type === 'control' and WikiControlActions.booted`, loggerMeta);
+                logger.info(`startWiki() resolved with message.type === 'control' and WikiControlActions.booted`, { ...loggerMeta, message: message.message, workspaceID });
                 resolve();
               }, 100);
               break;
             }
             case WikiControlActions.start: {
               if (message.message !== undefined) {
-                logger.debug('WikiControlActions.start', { 'message.message': message.message, ...loggerMeta });
+                logger.debug('WikiControlActions.start', { 'message.message': message.message, ...loggerMeta, workspaceID });
               }
               break;
             }
             case WikiControlActions.listening: {
               // API server started, but we are using IPC to serve content now, so do nothing here.
               if (message.message !== undefined) {
-                logger.info('WikiControlActions.listening ' + message.message, loggerMeta);
+                logger.info('WikiControlActions.listening ' + message.message, { ...loggerMeta, workspaceID });
               }
               break;
             }
             case WikiControlActions.error: {
               const errorMessage = message.message ?? 'get WikiControlActions.error without message';
-              logger.error(errorMessage, { ...loggerMeta, message });
-              logger.info(`startWiki() rejected with message.type === 'control' and  WikiControlActions.error`, loggerMeta);
+              logger.error(`startWiki() rejected with message.type === 'control' and  WikiControlActions.error`, { ...loggerMeta, message, errorMessage, workspaceID });
               await this.workspaceService.updateMetaData(workspaceID, { isLoading: false, didFailLoadErrorMessage: errorMessage });
               // fix "message":"listen EADDRINUSE: address already in use 0.0.0.0:5212"
               if (errorMessage.includes('EADDRINUSE')) {
@@ -268,10 +264,14 @@ export class Wiki implements IWikiService {
   }
 
   public async callWikiIpcServerRoute<NAME extends IpcServerRouteNames>(workspaceID: string, route: NAME, ...arguments_: Parameters<IpcServerRouteMethods[NAME]>) {
+    logger.debug(`callWikiIpcServerRoute get ${route}`, { arguments_, workspaceID });
     const worker = await this.getWorkerEnsure(workspaceID);
+    logger.debug(`callWikiIpcServerRoute got worker`);
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
     // @ts-ignore Argument of type 'string | string[] | ITiddlerFields | undefined' is not assignable to parameter of type 'string'. Type 'undefined' is not assignable to type 'string'.ts(2345)
-    return await worker[route](...arguments_);
+    const response = await worker[route](...arguments_);
+    logger.debug(`callWikiIpcServerRoute returning response`, { route, code: response.statusCode });
+    return response;
   }
 
   public getWikiChangeObserver$(workspaceID: string): Observable<IChangedTiddlers> {
@@ -314,6 +314,7 @@ export class Wiki implements IWikiService {
     if (worker === undefined) {
       logger.warning(`No wiki for ${id}. No running worker, means maybe tiddlywiki server in this workspace failed to start`, {
         function: 'stopWiki',
+        stack: new Error('stack').stack?.replace('Error:', '') ?? 'no stack',
       });
       return;
     }
@@ -664,12 +665,12 @@ export class Wiki implements IWikiService {
   }
 
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
-    const { id, isSubWiki, name, mainWikiID } = workspace;
+    const { id, isSubWiki, name, mainWikiID, wikiFolderLocation } = workspace;
 
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     // and it will leak private sub-wiki's opened tiddler title
     try {
-      void fs.unlink(path.resolve(id, 'tiddlers', '$__StoryList')).catch(() => {});
+      void fs.unlink(path.resolve(wikiFolderLocation, 'tiddlers', '$__StoryList')).catch(() => {});
     } catch {
       // do nothing
     }
