@@ -19,6 +19,7 @@ import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
+import { DEFAULT_USER_NAME, getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { WikiChannel } from '@/constants/channels';
 import { rootTiddlers } from '@/constants/defaultTiddlerNames';
 import { tlsCertExtensions, tlsKeyExtensions } from '@/constants/fileNames';
@@ -58,15 +59,24 @@ export function ServerOptions(props: IServerOptionsProps) {
   const { workspace, actualIP, workspaceSetter } = props;
   const {
     https = { enabled: false },
-    id,
     port,
-    readOnlyMode,
     rootTiddler,
-    tokenAuth,
     lastNodeJSArgv,
     enableHTTPAPI,
+    readOnlyMode = false,
+    tokenAuth,
+    userName,
+    id,
   } = (workspace ?? {}) as unknown as IWorkspace;
-
+  // some feature need a username to work, so if userName is empty, assign a fallbackUserName DEFAULT_USER_NAME
+  // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+  const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName')) as string, '');
+  const userNameIsEmpty = !(userName || fallbackUserName);
+  const authToken = usePromiseValue<string | undefined>(
+    async () => id && await (window.service.auth.getOneTimeAdminAuthTokenForWorkspace(id)),
+    '',
+    [id],
+  );
   const alreadyEnableSomeServerOptions = readOnlyMode;
   return (
     <AServerOptionsAccordion defaultExpanded={alreadyEnableSomeServerOptions}>
@@ -81,7 +91,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                 color='primary'
                 checked={enableHTTPAPI}
                 onChange={(event) => {
-                  workspaceSetter({ ...workspace, enableHTTPAPI: event.target.checked, tokenAuth: event.target.checked ? false : tokenAuth }, true);
+                  workspaceSetter({ ...workspace, enableHTTPAPI: event.target.checked }, true);
                 }}
               />
             </ListItemSecondaryAction>
@@ -116,6 +126,48 @@ export function ServerOptions(props: IServerOptionsProps) {
                 }
               }}
             />
+          </ListItem>
+
+          <Divider />
+          <ListItem disableGutters>
+            <ListItemText
+              primary={t('EditWorkspace.TokenAuth')}
+              secondary={
+                <>
+                  <div>{t('EditWorkspace.TokenAuthDescription')}</div>
+                  {(userNameIsEmpty || !fallbackUserName) && <div>{t('EditWorkspace.TokenAuthAutoFillUserNameDescription')}</div>}
+                  <div>
+                    {tokenAuth && (
+                      <ListItemText
+                        primary={t('EditWorkspace.TokenAuthCurrentHeader')}
+                        // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
+                        secondary={`"${getTidGiAuthHeaderWithToken(authToken ?? '')}": "${userName || fallbackUserName || ''}"`}
+                      />
+                    )}
+                  </div>
+                </>
+              }
+            />
+            <ListItemSecondaryAction>
+              <Switch
+                edge='end'
+                color='primary'
+                checked={tokenAuth}
+                onChange={(event) => {
+                  if (userNameIsEmpty) {
+                    workspaceSetter({
+                      ...workspace,
+                      userName: DEFAULT_USER_NAME,
+                    });
+                  }
+                  workspaceSetter({
+                    ...workspace,
+                    tokenAuth: event.target.checked,
+                    readOnlyMode: event.target.checked ? false : readOnlyMode,
+                  }, true);
+                }}
+              />
+            </ListItemSecondaryAction>
           </ListItem>
           {Array.isArray(lastNodeJSArgv) && (
             <>
