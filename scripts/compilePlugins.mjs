@@ -30,6 +30,10 @@ await Promise.all([
     ...sharedConfig,
     entryPoints: [path.join(__dirname, tidgiIpcSyncadaptorSourceFolder, 'electron-ipc-cat.ts')],
   }),
+  esbuild.build({
+    ...sharedConfig,
+    entryPoints: [path.join(__dirname, tidgiIpcSyncadaptorSourceFolder, 'fix-location-info.ts')],
+  }),
 ]);
 const filterFunc = (src) => {
   return !src.endsWith('.ts');
