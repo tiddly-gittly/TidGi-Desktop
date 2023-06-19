@@ -1,4 +1,4 @@
-title: $:/plugins/linonetwo/tidgi/styles
+title: $:/plugins/linonetwo/tidgi-ipc-syncadaptor-ui/styles
 tags: [[$:/tags/Stylesheet]]
 
 \rules only filteredtranscludeinline transcludeinline macrodef macrocallinline macrocallblock

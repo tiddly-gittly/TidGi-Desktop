@@ -65,7 +65,8 @@ export function startNodeJSWiki({
          * Install $:/plugins/linonetwo/tidgi instead of +plugins/tiddlywiki/tiddlyweb to speedup (without JSON.parse) and fix http errors when network change.
          * See scripts/compilePlugins.mjs for how it is built.
          */
-        'plugins/linonetwo/tidgi',
+        'plugins/linonetwo/tidgi-ipc-syncadaptor',
+        'plugins/linonetwo/tidgi-ipc-syncadaptor-ui',
         enableHTTPAPI ? 'plugins/tiddlywiki/tiddlyweb' : undefined, // we use $:/plugins/linonetwo/tidgi instead
         // 'plugins/linonetwo/watch-fs',
       ].filter(Boolean) as string[];

@@ -1,5 +1,5 @@
-title: $:/plugins/linonetwo/tidgi/syncer-actions/save-snapshot
-tags: $:/tags/SyncerDropdown
+title: $:/plugins/linonetwo/tidgi-ipc-syncadaptor-ui/syncer-actions/save-snapshot
+tags: $:/tags/TidgiSyncadaptorDropdown
 
 <$button class="tc-btn-invisible">
 <$wikify name="site-title" text={{$:/config/SaveWikiButton/Filename}}>

@@ -1,0 +1,9 @@
+title: $:/plugins/linonetwo/tidgi-ipc-syncadaptor-ui/syncer-actions/refresh
+tags: $:/tags/TidgiSyncadaptorDropdown
+
+<$reveal state="$:/status/IsLoggedIn" type="match" text="yes">
+<$button tooltip="Sync from TidGi main process" aria-label="Refresh from server" class="tc-btn-invisible">
+<$action-sendmessage $message="tm-server-refresh"/>
+{{$:/core/images/refresh-button}}<span class="tc-btn-text"><$text text="Sync from TidGi main process"/></span>
+</$button>
+</$reveal>

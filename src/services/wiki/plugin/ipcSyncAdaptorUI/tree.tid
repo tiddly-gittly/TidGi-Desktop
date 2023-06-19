@@ -1,0 +1,4 @@
+title: $:/plugins/linonetwo/tidgi-ipc-syncadaptor-ui/tree
+caption: {{$:/language/SideBar/Explorer/Caption}}
+
+<<tree "$:/plugins/linonetwo/tidgi-ipc-syncadaptor-ui/">>

@@ -1,0 +1,6 @@
+title: $:/plugins/linonetwo/tidgi-ipc-syncadaptor-ui/syncer-actions/copy-logs
+tags: $:/tags/TidgiSyncadaptorDropdown
+
+<$button message="tm-copy-syncer-logs-to-clipboard" class="tc-btn-invisible">
+{{$:/core/images/copy-clipboard}} Copy TidGi syncer logs to clipboard
+</$button>

@@ -1,0 +1,13 @@
+{
+  "title": "$:/plugins/linonetwo/tidgi-ipc-syncadaptor-ui",
+  "name": "TidGi",
+  "description": "UI for $:/plugins/linonetwo/tidgi-ipc-syncadaptor",
+  "author": "LinOnetwo",
+  "core-version": ">=5.1.22",
+  "plugin-type": "plugin",
+  "version": "0.1.0",
+  "dependents": ["$:/plugins/linonetwo/tidgi-ipc-syncadaptor"],
+  "list": "readme tree",
+  "plugin-priority-comment": "higher than $:/plugins/tiddlywiki/tiddlyweb's 10, so we load after it to overwrite it",
+  "plugin-priority": 11
+}

@@ -48,7 +48,7 @@ class TidGiIPCSyncAdaptor {
   }
 
   /**
-   * This should be called after install-electron-ipc-cat, so this is called in `$:/plugins/linonetwo/tidgi/Startup/install-electron-ipc-cat.js`
+   * This should be called after install-electron-ipc-cat, so this is called in `$:/plugins/linonetwo/tidgi-ipc-syncadaptor/Startup/install-electron-ipc-cat.js`
    */
   setupSSE() {
     if (window.observables?.wiki?.getWikiChangeObserver$ === undefined) {

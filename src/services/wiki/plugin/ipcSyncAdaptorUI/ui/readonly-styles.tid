@@ -1,4 +1,4 @@
-title: $:/plugins/linonetwo/tidgi/readonly
+title: $:/plugins/linonetwo/tidgi-ipc-syncadaptor-ui/readonly
 tags: [[$:/tags/Stylesheet]]
 
 \define button-selector(title)
