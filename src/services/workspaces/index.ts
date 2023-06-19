@@ -413,7 +413,6 @@ export class Workspace implements IWorkspaceService {
     if (currentPicturePath) {
       try {
         await fsExtra.remove(currentPicturePath);
-        return;
       } catch (error) {
         console.error(error);
       }
