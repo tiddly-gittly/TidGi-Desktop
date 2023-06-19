@@ -5,7 +5,7 @@ import { levels } from '@/constants/logger';
 
 function getWikiLogFileName(workspaceID: string, wikiName: string): string {
   const logFileName = wikiName.replaceAll(/["*/:<>?\\|]/g, '_');
-  return `${workspaceID}-${logFileName}.log`;
+  return `${workspaceID}-${logFileName}`;
 }
 export function getWikiErrorLogFileName(workspaceID: string, wikiName: string): string {
   return `error-${getWikiLogFileName(workspaceID, wikiName)}`;
@@ -37,7 +37,7 @@ export function startWikiLogger(workspaceID: string, wikiName: string) {
         transports: [
           new winston.transports.Console(),
           new winston.transports.DailyRotateFile({
-            filename: getWikiLogFileName(workspaceID, wikiName),
+            filename: `${getWikiLogFileName(workspaceID, wikiName)}-%DATE%.log`,
             datePattern: 'YYYY-MM-DD',
             zippedArchive: false,
             maxSize: '20mb',
@@ -48,7 +48,7 @@ export function startWikiLogger(workspaceID: string, wikiName: string) {
         ],
         exceptionHandlers: [
           new winston.transports.DailyRotateFile({
-            filename: getWikiErrorLogFileName(workspaceID, wikiName),
+            filename: `${getWikiErrorLogFileName(workspaceID, wikiName)}-%DATE%.log`,
             datePattern: 'YYYY-MM-DD',
             zippedArchive: false,
             maxSize: '20mb',
