@@ -20,6 +20,7 @@ export interface IWorkspace {
   backupOnInterval: boolean;
   disableAudio: boolean;
   disableNotifications: boolean;
+  enableHTTPAPI: boolean;
   /**
    * List of plugins excluded on startup, for example `['$:/plugins/bimlas/kin-filter', '$:/plugins/dullroar/sitemap']`
    */
@@ -165,6 +166,9 @@ export interface IWorkspaceService {
   create(newWorkspaceConfig: INewWorkspaceConfig): Promise<IWorkspace>;
   get(id: string): Promise<IWorkspace | undefined>;
   get$(id: string): Observable<IWorkspace | undefined>;
+  /**
+   * Get active workspace, if no active workspace, return the first workspace. Only when workspace list is empty, return undefined.
+   */
   getActiveWorkspace: () => Promise<IWorkspace | undefined>;
   /**
    * Only meant to be used in TidGi's services internally.
