@@ -23,8 +23,9 @@ import { DEFAULT_USER_NAME, getTidGiAuthHeaderWithToken } from '@/constants/auth
 import { WikiChannel } from '@/constants/channels';
 import { rootTiddlers } from '@/constants/defaultTiddlerNames';
 import { tlsCertExtensions, tlsKeyExtensions } from '@/constants/fileNames';
-import { defaultServerIP } from '@/constants/urls';
+import { defaultServerIP, getDefaultHTTPServerIP } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import { useActualIp } from '@services/native/hooks';
 import { IWorkspace } from '@services/workspaces/interface';
 
 const AServerOptionsAccordion = styled(Accordion)`
@@ -48,13 +49,12 @@ const AuthTokenTextAndButtonContainer = styled.div`
 `;
 
 export interface IServerOptionsProps {
-  actualIP: string | undefined;
   workspace: IWorkspace;
   workspaceSetter: (newValue: IWorkspace, requestSaveAndRestart?: boolean | undefined) => void;
 }
 export function ServerOptions(props: IServerOptionsProps) {
   const { t } = useTranslation();
-  const { workspace, actualIP, workspaceSetter } = props;
+  const { workspace, workspaceSetter } = props;
   const {
     https = { enabled: false },
     port,
@@ -67,6 +67,7 @@ export function ServerOptions(props: IServerOptionsProps) {
     userName,
     id,
   } = (workspace ?? {}) as unknown as IWorkspace;
+  const actualIP = useActualIp(getDefaultHTTPServerIP(port), id);
   // some feature need a username to work, so if userName is empty, assign a fallbackUserName DEFAULT_USER_NAME
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
   const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName')) as string, '');
