@@ -130,11 +130,12 @@ export enum WikiControlActions {
   /** wiki is booted */
   booted = 'tw-booted',
   error = 'tw-error',
+  listening = 'tw-listening',
   /** means worker is just started */
   start = 'tw-start',
 }
 export interface IWikiControlMessage {
-  actions: WikiControlActions.booted | WikiControlActions.error | WikiControlActions.start;
+  actions: WikiControlActions;
   argv: string[];
   message?: string;
   /** where this bug rise, helps debug */

@@ -26,7 +26,7 @@ import { SupportedStorageServices } from '@services/types';
 import { isEqual } from 'lodash';
 import { SyncedWikiDescription } from '../AddWorkspace/Description';
 import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
-import { BlogOptions } from './blog';
+import { ServerOptions } from './server';
 
 const Root = styled(Paper)`
   height: 100%;
@@ -294,7 +294,7 @@ export default function EditWorkspace(): JSX.Element {
                 }}
               />
             )}
-            <BlogOptions actualIP={actualIP} workspace={workspace} workspaceSetter={workspaceSetter} />
+            <ServerOptions actualIP={actualIP} workspace={workspace} workspaceSetter={workspaceSetter} />
           </>
         )}
         {isSubWiki && (

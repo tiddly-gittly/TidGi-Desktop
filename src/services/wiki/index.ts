@@ -117,7 +117,7 @@ export class Wiki implements IWikiService {
       logger.error('Try to start wiki, but workspace not found', { workspace, workspaceID });
       return;
     }
-    const { port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl, https, excludedPlugins, isSubWiki, wikiFolderLocation, name } = workspace;
+    const { port, rootTiddler, readOnlyMode, tokenAuth, homeUrl, lastUrl, https, excludedPlugins, isSubWiki, wikiFolderLocation, name, enableHTTPAPI } = workspace;
     if (isSubWiki) {
       logger.error('Try to start wiki, but workspace is sub wiki', { workspace, workspaceID });
       return;
@@ -130,6 +130,7 @@ export class Wiki implements IWikiService {
       adminToken = this.authService.getOrGenerateOneTimeAdminAuthTokenForWorkspace(workspaceID);
     }
     const workerData: IStartNodeJSWikiConfigs = {
+      enableHTTPAPI,
       adminToken,
       constants: { TIDDLYWIKI_PACKAGE_FOLDER, EXTRA_TIDGI_PLUGINS_PATH },
       excludedPlugins,
@@ -190,7 +191,7 @@ export class Wiki implements IWikiService {
             case WikiControlActions.booted: {
               setTimeout(async () => {
                 if (message.message !== undefined) {
-                  logger.info('WikiControlActions.booted', { 'message.message': message.message, ...loggerMeta });
+                  logger.info('WikiControlActions.booted ' + message.message, loggerMeta);
                 }
                 logger.info(`startWiki() resolved with message.type === 'control' and WikiControlActions.booted`, loggerMeta);
                 resolve();
@@ -200,6 +201,13 @@ export class Wiki implements IWikiService {
             case WikiControlActions.start: {
               if (message.message !== undefined) {
                 logger.debug('WikiControlActions.start', { 'message.message': message.message, ...loggerMeta });
+              }
+              break;
+            }
+            case WikiControlActions.listening: {
+              // API server started, but we are using IPC to serve content now, so do nothing here.
+              if (message.message !== undefined) {
+                logger.info('WikiControlActions.listening ' + message.message, loggerMeta);
               }
               break;
             }
