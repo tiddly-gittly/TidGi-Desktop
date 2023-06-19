@@ -271,6 +271,7 @@ export class Workspace implements IWorkspaceService {
       storageService: SupportedStorageServices.github,
       backupOnInterval: true,
       excludedPlugins: [],
+      enableHTTPAPI: false,
     };
     const fixingValues: Partial<IWorkspace> = {};
     // we add mainWikiID in creation, we fix this value for old existed workspaces
@@ -356,11 +357,15 @@ export class Workspace implements IWorkspaceService {
   };
 
   public getActiveWorkspaceSync = (): IWorkspace | undefined => {
-    return this.getWorkspacesAsListSync().find((workspace) => workspace.active);
+    return this.getWorkspacesAsListSync().find((workspace) => workspace.active) ?? this.getFirstWorkspaceSync();
   };
 
   public getFirstWorkspace = async (): Promise<IWorkspace | undefined> => {
-    return (await this.getWorkspacesAsList())[0];
+    return this.getFirstWorkspaceSync();
+  };
+
+  public getFirstWorkspaceSync = (): IWorkspace | undefined => {
+    return this.getWorkspacesAsListSync()[0];
   };
 
   public async setActiveWorkspace(id: string, oldActiveWorkspaceID: string | undefined): Promise<void> {
@@ -474,6 +479,7 @@ export class Workspace implements IWorkspaceService {
       syncOnInterval: false,
       syncOnStartup: true,
       transparentBackground: false,
+      enableHTTPAPI: false,
       excludedPlugins: [],
     };
 
