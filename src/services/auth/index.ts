@@ -19,10 +19,6 @@ const defaultUserInfos = {
 @injectable()
 export class Authentication implements IAuthenticationService {
   private cachedUserInfo: IUserInfos;
-  /**
-   * Generate one time token for admin user on workspace init, and let app use this token to communicate with wiki server.
-   */
-  private readonly oneTimeAdminAuthToken = new Map<string, string>();
   public userInfo$: BehaviorSubject<IUserInfos>;
 
   constructor() {
@@ -110,31 +106,10 @@ export class Authentication implements IAuthenticationService {
     this.updateUserInfoSubject();
   }
 
-  public generateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string {
-    const adminToken = nanoid().toLowerCase();
-    logger.debug(`generateOneTimeAdminAuthTokenForWorkspace() adminToken for ${workspaceID} is ${adminToken}`);
-    this.oneTimeAdminAuthToken.set(workspaceID, adminToken);
-    return adminToken;
-  }
-
-  public getOrGenerateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): string {
-    const adminToken = this.oneTimeAdminAuthToken.get(workspaceID);
-    if (adminToken === undefined) {
-      return this.generateOneTimeAdminAuthTokenForWorkspace(workspaceID);
-    }
-    return adminToken;
-  }
-
-  public async getOneTimeAdminAuthTokenForWorkspace(workspaceID: string): Promise<string | undefined> {
-    return this.getOneTimeAdminAuthTokenForWorkspaceSync(workspaceID);
-  }
-
-  public getOneTimeAdminAuthTokenForWorkspaceSync(workspaceID: string): string | undefined {
-    const adminToken = this.oneTimeAdminAuthToken.get(workspaceID);
-    if (adminToken === undefined) {
-      logger.error(`getOneTimeAdminAuthTokenForWorkspaceSync() No adminToken for ${workspaceID}`, { stack: new Error('-').stack });
-    }
-    return adminToken;
+  public async generateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): Promise<string> {
+    const newAuthToken = nanoid().toLowerCase();
+    logger.debug(`generateOneTimeAdminAuthTokenForWorkspace() newAuthToken for ${workspaceID} is ${newAuthToken}`);
+    return newAuthToken;
   }
 
   /**

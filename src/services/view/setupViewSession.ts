@@ -31,9 +31,6 @@ export function setupViewSession(workspace: IWorkspace, preferences: IPreference
   }
   sessionOfView.webRequest.onBeforeSendHeaders((details, callback) => {
     assignFakeUserAgent(details);
-    if (workspace.tokenAuth) {
-      assignAdminAuthToken(workspace.id, details, authService, viewContext);
-    }
     callback({ cancel: false, requestHeaders: details.requestHeaders });
   });
   sessionOfView.webRequest.onBeforeRequest((details, callback) => {
@@ -56,18 +53,6 @@ function assignFakeUserAgent(details: Electron.OnBeforeSendHeadersListenerDetail
   details.requestHeaders.Origin = url.origin;
   details.requestHeaders.Referer = details.url;
   details.requestHeaders['User-Agent'] = FAKE_USER_AGENT;
-}
-
-/**
- * Work with tokenAuthenticateArguments in wikiWorker, see there for detail.
- */
-function assignAdminAuthToken(workspaceID: string, details: Electron.OnBeforeSendHeadersListenerDetails, authService: IAuthenticationService, viewContext: IViewSessionContext) {
-  const adminToken = authService.getOneTimeAdminAuthTokenForWorkspaceSync(workspaceID);
-  if (adminToken === undefined) {
-    logger.error(`adminToken is undefined for ${workspaceID}, this should not happen. Skip adding ${TIDGI_AUTH_TOKEN_HEADER}-xxx header for it.`);
-    return;
-  }
-  details.requestHeaders[getTidGiAuthHeaderWithToken(adminToken)] = encodeURIComponent(viewContext.userName);
 }
 
 function handleFileProtocol(sessionOfView: Electron.Session, nativeService: INativeService) {

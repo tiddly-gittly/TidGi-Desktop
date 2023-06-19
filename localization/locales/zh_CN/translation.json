@@ -213,7 +213,7 @@
     "ReadOnlyMode": "只读模式",
     "ReadOnlyModeDescription": "可用于配合内网穿透，让太记作为服务器程序部署博客。打开后将只能通过直接改文件的方式修改知识库内容（包括git同步），网页上将不能修改内容，但任何人都可以访问。",
     "TokenAuth": "凭证鉴权",
-    "TokenAuthDescription": "无法与只读模式同时开启。开启后需要在请求中带上凭证才能读写知识库内容，防止同一局域网下其他人访问笔记。太记会自动带上凭证，因此开启后不会影响太记应用正常使用，仅增加安全性，建议开启。",
+    "TokenAuthDescription": "开启后，HTTP请求中需要带上凭证才能读写知识库内容，防止同一局域网下其他人访问笔记，提高服务器的安全性。无法与只读模式同时开启。",
     "TokenAuthAutoFillUserNameDescription": "此功能需要在全局设置或工作区设置里填写用户名，不然不会生效。若你未填，将自动在工作区设置里填一个默认值，你可自行修改。",
     "TokenAuthCurrentHeader": "凭证鉴权当前请求头",
     "ServerOptions": "博客和服务器设置",
@@ -234,7 +234,11 @@
     "AddExcludedPlugins": "输入希望忽略的插件名",
     "AddExcludedPluginsDescription": "可搜索当前Wiki中已安装的插件，或输入任意插件名。",
     "ExcludedPluginsDescription": "在只读模式启动Wiki作为博客时，你可能希望不加载一些编辑相关的插件以减小初次加载的网页大小，例如 $:/plugins/tiddlywiki/codemirror 等，毕竟加载的博客不需要这些编辑功能。",
-    "LastNodeJSArgv": "最近一次启动的命令行参数"
+    "LastNodeJSArgv": "最近一次启动的命令行参数",
+    "TokenAuthCurrentToken": "当前可用的鉴权凭证",
+    "TokenAuthCurrentTokenEmptyText": "点击生成按钮来生成新的凭证",
+    "TokenAuthCurrentTokenDescription": "机密信息，泄露给敌意实体后需要重新生成，重新生成后需要为连接的第三方应用更新凭证",
+    "Generate": "生成"
   },
   "Scripting": {
     "ExecutingScript": "正在执行脚本"

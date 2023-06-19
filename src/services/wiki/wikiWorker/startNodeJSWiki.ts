@@ -10,12 +10,12 @@ import { IWikiMessage, WikiControlActions } from '../interface';
 import { IStartNodeJSWikiConfigs, IUtilsWithSqlite } from '.';
 import { getCacheDatabase, setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
-import { adminTokenIsProvided } from './wikiWorkerUtils';
+import { authTokenIsProvided } from './wikiWorkerUtils';
 
 export function startNodeJSWiki({
   enableHTTPAPI,
-  adminToken,
-  constants: { TIDDLYWIKI_PACKAGE_FOLDER, EXTRA_TIDGI_PLUGINS_PATH },
+  authToken,
+  constants: { TIDDLYWIKI_PACKAGE_FOLDER },
   excludedPlugins = [],
   homePath,
   https,
@@ -89,10 +89,10 @@ export function startNodeJSWiki({
        */
       let tokenAuthenticateArguments: string[] = [`anon-username=${userName}`];
       if (tokenAuth === true) {
-        if (adminTokenIsProvided(adminToken)) {
-          tokenAuthenticateArguments = [`authenticated-user-header=${getTidGiAuthHeaderWithToken(adminToken)}`, `readers=${userName}`, `writers=${userName}`];
+        if (authTokenIsProvided(authToken)) {
+          tokenAuthenticateArguments = [`authenticated-user-header=${getTidGiAuthHeaderWithToken(authToken)}`, `readers=${userName}`, `writers=${userName}`];
         } else {
-          observer.next({ type: 'control', actions: WikiControlActions.error, message: 'tokenAuth is true, but adminToken is empty, this can be a bug.', argv: fullBootArgv });
+          observer.next({ type: 'control', actions: WikiControlActions.error, message: 'tokenAuth is true, but authToken is empty, this can be a bug.', argv: fullBootArgv });
         }
       }
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions

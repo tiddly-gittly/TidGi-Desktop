@@ -25,8 +25,8 @@ import { ipcServerRoutesMethods } from './ipcServerRoutes';
 import { startNodeJSWiki } from './startNodeJSWiki';
 
 export interface IStartNodeJSWikiConfigs {
-  adminToken?: string;
-  constants: { EXTRA_TIDGI_PLUGINS_PATH: string; TIDDLYWIKI_PACKAGE_FOLDER: string };
+  authToken?: string;
+  constants: { TIDDLYWIKI_PACKAGE_FOLDER: string };
   enableHTTPAPI: boolean;
   excludedPlugins: string[];
   homePath: string;
