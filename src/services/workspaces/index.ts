@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/no-null */
@@ -28,6 +29,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { INewWorkspaceConfig, IWorkspace, IWorkspaceMetaData, IWorkspaceService, IWorkspaceWithMetadata } from './interface';
 import { workspaceSorter } from './utils';
+import { IAuthenticationService } from '@services/auth/interface';
 
 // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
 const debouncedSetSettingFile = debounce(async (workspaces: Record<string, IWorkspace>) => {
@@ -65,6 +67,9 @@ export class Workspace implements IWorkspaceService {
 
   @lazyInject(serviceIdentifier.MenuService)
   private readonly menuService!: IMenuService;
+
+  @lazyInject(serviceIdentifier.Authentication)
+  private readonly authService!: IAuthenticationService;
 
   constructor() {
     this.workspaces = this.getInitWorkspacesForCache();
@@ -151,7 +156,6 @@ export class Workspace implements IWorkspaceService {
   private async updateWorkspaceMenuItems(): Promise<void> {
     const newMenuItems = (await this.getWorkspacesAsList()).flatMap((workspace, index) => [
       {
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         label: (): string => workspace.name || `Workspace ${index + 1}`,
         id: workspace.id,
         type: 'checkbox' as const,
@@ -164,7 +168,6 @@ export class Workspace implements IWorkspaceService {
         accelerator: `CmdOrCtrl+${index + 1}`,
       },
       {
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         label: () => `${workspace.name || `Workspace ${index + 1}`} ${i18n.t('ContextMenu.DeveloperTools')}`,
         id: `${workspace.id}-devtool`,
         click: async () => {
@@ -263,7 +266,7 @@ export class Workspace implements IWorkspaceService {
   }
 
   /**
-   * Pure function that make sure workspace setting is consistent
+   * Pure function that make sure workspace setting is consistent, or doing migration across updates
    * @param workspaceToSanitize User input workspace or loaded workspace, that may contains bad values
    */
   private sanitizeWorkspace(workspaceToSanitize: IWorkspace): IWorkspace {
@@ -275,7 +278,6 @@ export class Workspace implements IWorkspaceService {
     };
     const fixingValues: Partial<IWorkspace> = {};
     // we add mainWikiID in creation, we fix this value for old existed workspaces
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (workspaceToSanitize.isSubWiki && !workspaceToSanitize.mainWikiID) {
       const mainWorkspace = (this.getWorkspacesAsListSync() ?? []).find(
         (workspaceToSearch) => workspaceToSanitize.mainWikiToLink === workspaceToSearch.wikiFolderLocation,
@@ -287,6 +289,13 @@ export class Workspace implements IWorkspaceService {
     // fix WikiChannel.openTiddler in src/preload/wikiOperation.ts have \n on the end
     if (workspaceToSanitize.tagName?.endsWith('\n') === true) {
       fixingValues.tagName = workspaceToSanitize.tagName.replaceAll('\n', '');
+    }
+    // before 0.8.0, tidgi was loading http content, so lastUrl will be http protocol, but later we switch to tidgi:// protocol, so old value can't be used.
+    if (workspaceToSanitize.lastUrl?.startsWith('tidgi')) {
+      fixingValues.lastUrl = '';
+    }
+    if (workspaceToSanitize.tokenAuth && !workspaceToSanitize.authToken) {
+      fixingValues.authToken = this.authService.generateOneTimeAdminAuthTokenForWorkspaceSync(workspaceToSanitize.id);
     }
     return { ...defaultValues, ...workspaceToSanitize, ...fixingValues };
   }
@@ -409,7 +418,6 @@ export class Workspace implements IWorkspaceService {
     await this.update(id, {
       picturePath: destinationPicturePath,
     });
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (currentPicturePath) {
       try {
         await fsExtra.remove(currentPicturePath);
@@ -424,7 +432,6 @@ export class Workspace implements IWorkspaceService {
     if (workspace === undefined) {
       throw new Error(`Try to removeWorkspacePicture() but this workspace is not existed ${id}`);
     }
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (workspace.picturePath) {
       await fsExtra.remove(workspace.picturePath);
       await this.set(id, {

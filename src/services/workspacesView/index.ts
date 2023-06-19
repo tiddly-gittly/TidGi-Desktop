@@ -538,7 +538,7 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   private async realignActiveWorkspaceView(id?: string): Promise<void> {
     const workspaceToRealign = id === undefined ? await this.workspaceService.getActiveWorkspace() : await this.workspaceService.get(id);
-    logger.debug(`realignActiveWorkspaceView() activeWorkspace.id: ${workspaceToRealign?.id ?? 'undefined'}`);
+    logger.debug(`realignActiveWorkspaceView() activeWorkspace.id: ${workspaceToRealign?.id ?? 'undefined'}`, { stack: new Error('stack').stack?.replace('Error:', '') });
     const mainWindow = this.windowService.get(WindowNames.main);
     const menuBarWindow = this.windowService.get(WindowNames.menuBar);
     const mainBrowserViewWebContent = mainWindow?.getBrowserView()?.webContents;
