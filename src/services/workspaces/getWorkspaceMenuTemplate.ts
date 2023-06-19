@@ -36,8 +36,7 @@ interface IWorkspaceMenuRequiredServices {
 }
 
 export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IWorkspaceMenuRequiredServices): Promise<void> {
-  const { id, isSubWiki, tagName, mainWikiID } = workspace;
-  let idToActive = id;
+  const { id: idToActive, isSubWiki, tagName, mainWikiID } = workspace;
   const oldActiveWorkspace = await service.workspace.getActiveWorkspace();
   // if is a new main workspace, active its browser view first
   if (!isSubWiki && idToActive !== null && idToActive !== undefined && oldActiveWorkspace?.id !== idToActive) {
@@ -51,7 +50,6 @@ export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IW
       return;
     }
     service.wiki.wikiOperation(WikiChannel.openTiddler, mainWikiID, tagName);
-    idToActive = mainWikiID;
   } else {
     await service.wiki.requestWikiSendActionMessage('tm-home');
   }

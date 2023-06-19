@@ -369,7 +369,7 @@ export class Workspace implements IWorkspaceService {
   };
 
   public getActiveWorkspaceSync = (): IWorkspace | undefined => {
-    return this.getWorkspacesAsListSync().find((workspace) => workspace.active) ?? this.getFirstWorkspaceSync();
+    return this.getWorkspacesAsListSync().find((workspace) => workspace.active);
   };
 
   public getFirstWorkspace = async (): Promise<IWorkspace | undefined> => {

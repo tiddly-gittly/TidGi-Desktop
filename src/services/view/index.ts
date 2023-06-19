@@ -537,11 +537,15 @@ export class View implements IViewService {
     if (workspace !== undefined) {
       return [this.getView(workspace.id, WindowNames.main), this.getView(workspace.id, WindowNames.menuBar)];
     }
+    logger.error(`getActiveBrowserViews workspace !== undefined`, { stack: new Error('stack').stack?.replace('Error:', '') });
     return [];
   }
 
   public async reloadActiveBrowserView(): Promise<void> {
     const views = await this.getActiveBrowserViews();
+    if (views.length === 0) {
+      logger.error(`reloadActiveBrowserView views.length === 0`, { stack: new Error('stack').stack?.replace('Error:', '') });
+    }
     views.forEach((view) => {
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (view?.webContents) {

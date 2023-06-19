@@ -71,7 +71,7 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async initializeAllWorkspaceView(): Promise<void> {
     const workspacesList = await this.workspaceService.getWorkspacesAsList();
-    workspacesList.filter((workspace) => !workspace.isSubWiki && !workspace.hibernated).forEach((workspace) => {
+    workspacesList.filter((workspace) => !workspace.isSubWiki).forEach((workspace) => {
       this.wikiService.setWikiStartLockOn(workspace.id);
     });
     // sorting (-1 will make a in the front, b in the back)
@@ -355,12 +355,12 @@ export class WorkspaceView implements IWorkspaceViewService {
     if (workspace !== undefined) {
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       const userName = await this.authService.getUserName(workspace);
+      await this.workspaceService.update(workspaceID, {
+        hibernated: false,
+      });
       await Promise.all([
         this.wikiService.startWiki(workspaceID, userName),
         this.viewService.addViewForAllBrowserViews(workspace),
-        this.workspaceService.update(workspaceID, {
-          hibernated: false,
-        }),
       ]);
     }
   }
