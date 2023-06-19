@@ -564,7 +564,7 @@ export class View implements IViewService {
     } else if (isRetry === true) {
       logger.error(
         `realignActiveView() ${activeId} failed view?.webContents is ${String(view?.webContents)} and isRetry is ${String(isRetry)} stack: ${
-          new Error('stack').stack ?? 'no stack'
+          new Error('stack').stack?.replace('Error:', '') ?? 'no stack'
         }`,
       );
     } else {

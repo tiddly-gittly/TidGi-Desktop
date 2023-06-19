@@ -71,13 +71,15 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async initializeAllWorkspaceView(): Promise<void> {
     const workspacesList = await this.workspaceService.getWorkspacesAsList();
+    workspacesList.filter((workspace) => !workspace.isSubWiki && !workspace.hibernated).forEach((workspace) => {
+      this.wikiService.setWikiStartLockOn(workspace.id);
+    });
     // sorting (-1 will make a in the front, b in the back)
     const sortedList = workspacesList
       .sort((a, b) => a.order - b.order) // sort by order, 1-2<0, so first will be the first
       .sort((a, b) => (a.active && !b.active ? -1 : 0)) // put active wiki first
       .sort((a, b) => (a.isSubWiki && !b.isSubWiki ? -1 : 0)); // put subwiki on top, they can't restart wiki, so need to sync them first, then let main wiki restart the wiki // revert this after tw can reload tid from fs
     await mapSeries(sortedList, async (workspace) => {
-      this.wikiService.setWikiStartLockOn(workspace.id);
       await this.initializeWorkspaceView(workspace);
     });
     this.wikiService.setAllWikiStartLockOff();

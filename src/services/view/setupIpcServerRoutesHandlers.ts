@@ -82,16 +82,12 @@ export function setupIpcServerRoutesHandlers(view: BrowserView, workspaceID: str
   async function handlerCallback(request: GlobalRequest): Promise<GlobalResponse> {
     const parsedUrl = new URL(request.url);
     // Iterate through methods to find matching routes
-    // DEBUG: console parsedUrl
-    console.log(`parsedUrl`, parsedUrl);
     try {
       for (const route of methods) {
-        // DEBUG: console parsedUrl.pathname
-        console.log(`parsedUrl.pathname`, parsedUrl.pathname, request.method === route.method, route.name, route.path.test(parsedUrl.pathname));
         if (request.method === route.method && route.path.test(parsedUrl.pathname)) {
           // Get the parameters in the URL path
           const parameters = parsedUrl.pathname.match(route.path);
-          logger.debug(`setupIpcServerRoutesHandlers.handlerCallback: ${route.name}`, { parsedUrl, parameters });
+          logger.debug(`setupIpcServerRoutesHandlers.handlerCallback: started`, { name: route.name, parsedUrl, parameters });
           // Call the handler of the route to process the request and return the result
           const responseData = await route.handler(request, parameters);
           if (responseData === undefined) {
@@ -99,6 +95,7 @@ export function setupIpcServerRoutesHandlers(view: BrowserView, workspaceID: str
             logger.warn(statusText);
             return new Response(undefined, { status: 404, statusText });
           }
+          logger.debug(`setupIpcServerRoutesHandlers.handlerCallback: success`, { name: route.name, parsedUrl, parameters, status: responseData.statusCode });
           return new Response(responseData.data as string, { status: responseData.statusCode, headers: responseData.headers });
         }
       }
