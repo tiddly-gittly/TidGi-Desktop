@@ -181,6 +181,7 @@ export async function workspaceConfigFromForm(form: INewWikiRequiredFormData, is
     tokenAuth: true,
     userName: userNameIsEmpty ? DEFAULT_USER_NAME : undefined,
     excludedPlugins: [],
+    enableHTTPAPI: false,
     lastNodeJSArgv: [],
   };
 }

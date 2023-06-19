@@ -26,11 +26,11 @@ import { defaultServerIP } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IWorkspace } from '@services/workspaces/interface';
 
-const ABlogOptionsAccordion = styled(Accordion)`
+const AServerOptionsAccordion = styled(Accordion)`
   box-shadow: unset;
   background-color: unset;
 `;
-const ABlogOptionsAccordionSummary = styled(AccordionSummary)`
+const AServerOptionsAccordionSummary = styled(AccordionSummary)`
   padding: 0;
 `;
 const HttpsCertKeyListItem: typeof ListItem = styled(ListItem)`
@@ -48,12 +48,12 @@ const ChipContainer = styled.div`
   margin-bottom: 10px;
 `;
 
-export interface IBlogOptionsProps {
+export interface IServerOptionsProps {
   actualIP: string | undefined;
   workspace: IWorkspace;
   workspaceSetter: (newValue: IWorkspace, requestSaveAndRestart?: boolean | undefined) => void;
 }
-export function BlogOptions(props: IBlogOptionsProps) {
+export function ServerOptions(props: IServerOptionsProps) {
   const { t } = useTranslation();
   const { workspace, actualIP, workspaceSetter } = props;
   const {
@@ -64,14 +64,29 @@ export function BlogOptions(props: IBlogOptionsProps) {
     rootTiddler,
     tokenAuth,
     lastNodeJSArgv,
+    enableHTTPAPI,
   } = (workspace ?? {}) as unknown as IWorkspace;
 
-  const alreadyEnableSomeBlogOptions = readOnlyMode;
+  const alreadyEnableSomeServerOptions = readOnlyMode;
   return (
-    <ABlogOptionsAccordion defaultExpanded={alreadyEnableSomeBlogOptions}>
-      <ABlogOptionsAccordionSummary expandIcon={<ExpandMoreIcon />}>{t('EditWorkspace.BlogOptions')}</ABlogOptionsAccordionSummary>
+    <AServerOptionsAccordion defaultExpanded={alreadyEnableSomeServerOptions}>
+      <AServerOptionsAccordionSummary expandIcon={<ExpandMoreIcon />}>{t('EditWorkspace.ServerOptions')}</AServerOptionsAccordionSummary>
       <AccordionDetails>
         <List>
+          <ListItem disableGutters>
+            <ListItemText primary={t('EditWorkspace.EnableHTTPAPI')} secondary={t('EditWorkspace.EnableHTTPAPIDescription')} />
+            <ListItemSecondaryAction>
+              <Switch
+                edge='end'
+                color='primary'
+                checked={enableHTTPAPI}
+                onChange={(event) => {
+                  workspaceSetter({ ...workspace, enableHTTPAPI: event.target.checked, tokenAuth: event.target.checked ? false : tokenAuth }, true);
+                }}
+              />
+            </ListItemSecondaryAction>
+          </ListItem>
+
           <ListItem disableGutters>
             <TextField
               id='outlined-full-width'
@@ -247,7 +262,7 @@ export function BlogOptions(props: IBlogOptionsProps) {
           renderInput={(parameters) => <TextField {...parameters} label={t('EditWorkspace.WikiRootTiddler')} helperText={t('EditWorkspace.WikiRootTiddlerDescription')} />}
         />
       </AccordionDetails>
-    </ABlogOptionsAccordion>
+    </AServerOptionsAccordion>
   );
 }
 

@@ -13,6 +13,7 @@ import { ipcServerRoutes } from './ipcServerRoutes';
 import { adminTokenIsProvided } from './wikiWorkerUtils';
 
 export function startNodeJSWiki({
+  enableHTTPAPI,
   adminToken,
   constants: { TIDDLYWIKI_PACKAGE_FOLDER, EXTRA_TIDGI_PLUGINS_PATH },
   excludedPlugins = [],
@@ -56,16 +57,17 @@ export function startNodeJSWiki({
       }
       process.env.TIDDLYWIKI_PLUGIN_PATH = path.resolve(homePath, 'plugins');
       process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
-      const builtInPluginArguments = [
+      // don't add `+` prefix to plugin name here. `+` only used in args[0], but we are not prepend this list to the args list.
+      wikiInstance.boot.extraPlugins = [
         // add tiddly filesystem back if is not readonly https://github.com/Jermolene/TiddlyWiki5/issues/4484#issuecomment-596779416
-        readOnlyMode === true ? undefined : '+plugins/tiddlywiki/filesystem',
+        readOnlyMode === true ? undefined : 'plugins/tiddlywiki/filesystem',
         /**
          * Install $:/plugins/linonetwo/tidgi instead of +plugins/tiddlywiki/tiddlyweb to speedup (without JSON.parse) and fix http errors when network change.
          * See scripts/compilePlugins.mjs for how it is built.
          */
-        '+plugins/linonetwo/tidgi',
-        // '+plugins/tiddlywiki/tiddlyweb', // we use $:/plugins/linonetwo/tidgi instead
-        // '+plugins/linonetwo/watch-fs',
+        'plugins/linonetwo/tidgi',
+        enableHTTPAPI ? 'plugins/tiddlywiki/tiddlyweb' : undefined, // we use $:/plugins/linonetwo/tidgi instead
+        // 'plugins/linonetwo/watch-fs',
       ].filter(Boolean) as string[];
       /**
        * Make wiki readonly if readonly is true. This is normally used for server mode, so also enable gzip.
@@ -114,19 +116,19 @@ export function startNodeJSWiki({
         ]
         : [];
 
-      fullBootArgv = [
-        ...builtInPluginArguments,
-        homePath,
-        '--listen',
-        `port=${tiddlyWikiPort}`,
-        `host=${tiddlyWikiHost}`,
-        `root-tiddler=${rootTiddler}`,
-        ...httpsArguments,
-        ...readonlyArguments,
-        ...tokenAuthenticateArguments,
-        ...excludePluginsArguments,
-        // `debug-level=${isDev ? 'full' : 'none'}`,
-      ];
+      fullBootArgv = enableHTTPAPI
+        ? [
+          homePath,
+          '--listen',
+          `port=${tiddlyWikiPort}`,
+          `host=${tiddlyWikiHost}`,
+          `root-tiddler=${rootTiddler}`,
+          ...httpsArguments,
+          ...readonlyArguments,
+          ...tokenAuthenticateArguments,
+          ...excludePluginsArguments,
+        ]
+        : [homePath, '--version'];
       wikiInstance.boot.argv = [...fullBootArgv];
 
       wikiInstance.hooks.addHook('th-server-command-post-start', function(listenCommand, server) {
@@ -136,9 +138,9 @@ export function startNodeJSWiki({
         server.on('listening', function() {
           observer.next({
             type: 'control',
-            actions: WikiControlActions.booted,
+            actions: WikiControlActions.listening,
             message:
-              `Tiddlywiki booted at http://${tiddlyWikiHost}:${tiddlyWikiPort} (webview uri ip may be different, being nativeService.getLocalHostUrlWithActualInfo(appUrl, workspace.id)) with args ${
+              `Tiddlywiki listening at http://${tiddlyWikiHost}:${tiddlyWikiPort} (webview uri ip may be different, being nativeService.getLocalHostUrlWithActualInfo(appUrl, workspace.id)) with args ${
                 wikiInstance === undefined ? '(wikiInstance is undefined)' : fullBootArgv.join(' ')
               }`,
             argv: fullBootArgv,
@@ -148,6 +150,12 @@ export function startNodeJSWiki({
       wikiInstance.boot.startup({ bootPath: TIDDLYWIKI_PACKAGE_FOLDER });
       // after setWikiInstance, ipc server routes will start serving content
       ipcServerRoutes.setWikiInstance(wikiInstance);
+      observer.next({
+        type: 'control',
+        actions: WikiControlActions.booted,
+        message: `Tiddlywiki booted with args ${wikiInstance === undefined ? '(wikiInstance is undefined)' : fullBootArgv.join(' ')}`,
+        argv: fullBootArgv,
+      });
     } catch (error) {
       const message = `Tiddlywiki booted failed with error ${(error as Error).message} ${(error as Error).stack ?? ''}`;
       observer.next({ type: 'control', source: 'try catch', actions: WikiControlActions.error, message, argv: fullBootArgv });
