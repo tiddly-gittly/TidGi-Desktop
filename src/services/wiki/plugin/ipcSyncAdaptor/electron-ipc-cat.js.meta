@@ -1,4 +1,4 @@
 creator: LinOnetwo
-title: $:/plugins/linonetwo/tidgi/Startup/electron-ipc-cat.js
+title: $:/plugins/linonetwo/tidgi-ipc-syncadaptor/Startup/electron-ipc-cat.js
 type: application/javascript
 module-type: library
