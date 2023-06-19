@@ -107,6 +107,10 @@ export class Authentication implements IAuthenticationService {
   }
 
   public async generateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): Promise<string> {
+    return this.generateOneTimeAdminAuthTokenForWorkspaceSync(workspaceID);
+  }
+
+  public generateOneTimeAdminAuthTokenForWorkspaceSync(workspaceID: string): string {
     const newAuthToken = nanoid().toLowerCase();
     logger.debug(`generateOneTimeAdminAuthTokenForWorkspace() newAuthToken for ${workspaceID} is ${newAuthToken}`);
     return newAuthToken;

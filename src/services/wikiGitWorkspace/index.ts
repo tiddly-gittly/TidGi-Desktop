@@ -76,6 +76,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
 
   public initWikiGitTransaction = async (newWorkspaceConfig: INewWorkspaceConfig, userInfo?: IGitUserInfos): Promise<IWorkspace | undefined> => {
     const newWorkspace = await this.workspaceService.create(newWorkspaceConfig);
+    await this.workspaceService.setActiveWorkspace(newWorkspace.id, this.workspaceService.getActiveWorkspaceSync()?.id);
     const { gitUrl, storageService, wikiFolderLocation, isSubWiki, id: workspaceID, mainWikiToLink } = newWorkspace;
     const isSyncedWiki = storageService !== SupportedStorageServices.local;
     try {
