@@ -95,7 +95,7 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                 </ListItemSecondaryAction>
               </ListItem>
               <ListItem>
-                <ListItemText primary={t('Preference.HideSideBarIcon')} secondary={t('Preference.ShowSideBarDetail')} />
+                <ListItemText primary={t('Preference.HideSideBarIcon')} secondary={t('Preference.HideSideBarIconDetail')} />
                 <ListItemSecondaryAction>
                   <Switch
                     edge='end'
