@@ -166,12 +166,6 @@ class TidGiIPCSyncAdaptor {
         throw new Error('No status returned from callWikiIpcServerRoute getStatus');
       }
       this.hasStatus = true;
-      // If Browser-Storage plugin is present, cache pre-loaded tiddlers and add back after sync from server completes
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
-      if (($tw as any).browserStorage?.isEnabled()) {
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
-        ($tw as any).browserStorage?.cachePreloadTiddlers();
-      }
       // Record the recipe
       this.recipe = status.space?.recipe;
       // Check if we're logged in
@@ -207,12 +201,6 @@ class TidGiIPCSyncAdaptor {
       this.logger.log('skinnyTiddlers.length', skinnyTiddlers.length);
       // Invoke the callback with the skinny tiddlers
       callback(null, skinnyTiddlers);
-      // If Browswer Storage tiddlers were cached on reloading the wiki, add them after sync from server completes in the above callback.
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
-      if (($tw as any).browserStorage && ($tw as any).browserStorage.isEnabled()) {
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
-        ($tw as any).browserStorage.addCachedTiddlers();
-      }
     } catch (error) {
       // eslint-disable-next-line n/no-callback-literal
       callback?.(error as Error);
@@ -239,12 +227,6 @@ class TidGiIPCSyncAdaptor {
       );
       if (putTiddlerResponse === undefined) {
         throw new Error('saveTiddler returned undefined from callWikiIpcServerRoute putTiddler in saveTiddler');
-      }
-      //  If Browser-Storage plugin is present, remove tiddler from local storage after successful sync to the server
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
-      if (($tw as any).browserStorage && ($tw as any).browserStorage.isEnabled()) {
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/no-unsafe-member-access, @typescript-eslint/no-unsafe-call, @typescript-eslint/no-explicit-any
-        ($tw as any).browserStorage.removeTiddlerFromLocalStorage(title);
       }
       // Save the details of the new revision of the tiddler
       const etag = putTiddlerResponse?.headers?.Etag;
