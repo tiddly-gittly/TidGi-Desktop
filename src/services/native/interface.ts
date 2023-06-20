@@ -32,8 +32,12 @@ export interface INativeService {
    * @param workspaceID Each wiki has its own worker, we use wiki's workspaceID to determine which worker to use. If not provided, will use current active workspace's ID
    */
   executeZxScript$(zxWorkerArguments: IZxFileInput, workspaceID?: string): Observable<string>;
+  /**
+   * Handles in-app assets loading. This should be called after `app.whenReady()` is resolved.
+   * This handles file:// protocol when webview load image content, not handling file external link clicking.
+   */
+  formatFileUrlToAbsolutePath(request: { url: string }, callback: (response: string) => void): Promise<void>;
   getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string>;
-  handleFileProtocol(request: { url: string }, callback: (response: string) => void): Promise<void>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   openInEditor(filePath: string, editorName?: string | undefined): Promise<boolean>;

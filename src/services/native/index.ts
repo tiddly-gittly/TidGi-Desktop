@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/require-await */
-import { app, dialog, ipcMain, MessageBoxOptions, protocol, shell } from 'electron';
+import { app, dialog, ipcMain, MessageBoxOptions, shell } from 'electron';
 import fs from 'fs-extra';
 import { inject, injectable } from 'inversify';
 import path from 'path';
@@ -247,5 +247,41 @@ ${message.message}
         break;
       }
     }
+  }
+
+  public async formatFileUrlToAbsolutePath(request: { url: string }, callback: (response: string) => void): Promise<void> {
+    logger.info('getting url', { url: request.url, function: 'formatFileUrlToAbsolutePath' });
+    const pathname = decodeURI(request.url.replace('open://', '').replace('file://', ''));
+    logger.info('handle file:// or open:// This url will open file in-wiki', { pathname, function: 'formatFileUrlToAbsolutePath' });
+    let fileExists = fs.existsSync(pathname);
+    logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { pathname, function: 'formatFileUrlToAbsolutePath' });
+    if (fileExists) {
+      callback(pathname);
+      return;
+    }
+    logger.info(`try find file relative to workspace folder`, { pathname, function: 'formatFileUrlToAbsolutePath' });
+    const workspace = await this.workspaceService.getActiveWorkspace();
+    if (workspace === undefined) {
+      logger.error(`No active workspace, abort. Try loading pathname as-is.`, { pathname, function: 'formatFileUrlToAbsolutePath' });
+      callback(pathname);
+      return;
+    }
+    const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, pathname);
+    fileExists = fs.existsSync(filePathInWorkspaceFolder);
+    logger.info(`This file ${fileExists ? '' : 'not '}exists in workspace folder.`, { filePathInWorkspaceFolder, function: 'formatFileUrlToAbsolutePath' });
+    if (fileExists) {
+      callback(filePathInWorkspaceFolder);
+      return;
+    }
+    // on production, __dirname will be in .webpack/main
+    const inTidGiAppAbsoluteFilePath = path.join(app.getAppPath(), '.webpack', 'renderer', pathname);
+    logger.info(`try find file relative to TidGi App folder`, { inTidGiAppAbsoluteFilePath, function: 'formatFileUrlToAbsolutePath' });
+    fileExists = fs.existsSync(inTidGiAppAbsoluteFilePath);
+    if (fileExists) {
+      callback(inTidGiAppAbsoluteFilePath);
+      return;
+    }
+    logger.warn(`This url can't be loaded in-wiki. Try loading url as-is.`, { url: request.url, function: 'formatFileUrlToAbsolutePath' });
+    callback(request.url);
   }
 }

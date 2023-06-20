@@ -25,6 +25,8 @@ import { IBrowserViewMetaData, windowDimension, WindowNames } from '@services/wi
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { throttle } from 'lodash';
+import { INewWindowAction } from './interface';
+import { handleOpenFileExternalLink, handleViewFileContentLoading } from './setupViewFileProtocol';
 
 export interface IViewContext {
   loadInitialUrlWithCatch: () => Promise<void>;
@@ -56,6 +58,7 @@ export default function setupViewEventHandlers(
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
   const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 
+  handleViewFileContentLoading(view, nativeService);
   view.webContents.on('did-start-loading', async () => {
     const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
@@ -306,15 +309,7 @@ function handleNewWindow(
   newWindowContext: INewWindowContext,
   disposition: 'default' | 'new-window' | 'foreground-tab' | 'background-tab' | 'save-to-disk' | 'other',
   parentWebContents: Electron.WebContents,
-):
-  | {
-    action: 'deny';
-  }
-  | {
-    action: 'allow';
-    overrideBrowserWindowOptions?: Electron.BrowserWindowConstructorOptions | undefined;
-  }
-{
+): INewWindowAction {
   logger.debug(`Getting url that will open externally`, { nextUrl });
   // don't show useless blank page
   if (nextUrl.startsWith('about:blank')) {
@@ -322,43 +317,10 @@ function handleNewWindow(
     return { action: 'deny' };
   }
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-  const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 
   const nextDomain = extractDomain(nextUrl);
-  /**
-   * Handles in-wiki file link opening.
-   * This does not handle web request with file:// protocol.
-   *
-   * `file://` may resulted in `nextDomain` being `about:blank#blocked`, so we use `open://` instead. But in MacOS it seem to works fine in most cases. Just leave open:// in case as a fallback for users.
-   *
-   * For  file:/// in-app assets loading., see handleFileProtocol() in `src/services/native/index.ts`.
-   */
-  if (nextUrl.startsWith('open://') || nextUrl.startsWith('file://')) {
-    logger.info('handleNewWindow() handle file:// or open:// This url will open file externally', { nextUrl, nextDomain, disposition });
-    const filePath = decodeURI(nextUrl.replace('open://', '').replace('file://', ''));
-    const fileExists = fsExtra.existsSync(filePath);
-    logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { filePath });
-    if (fileExists) {
-      void shell.openPath(filePath);
-      return {
-        action: 'deny',
-      };
-    }
-    logger.info(`try find file relative to workspace folder`);
-    void workspaceService.getActiveWorkspace().then((workspace) => {
-      if (workspace !== undefined) {
-        const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, filePath);
-        const fileExistsInWorkspaceFolder = fsExtra.existsSync(filePathInWorkspaceFolder);
-        logger.info(`This file ${fileExistsInWorkspaceFolder ? '' : 'not '}exists in workspace folder.`, { filePathInWorkspaceFolder });
-        if (fileExistsInWorkspaceFolder) {
-          void shell.openPath(filePathInWorkspaceFolder);
-        }
-      }
-    });
-    return {
-      action: 'deny',
-    };
-  }
+  const handleOpenFileExternalLinkAction = handleOpenFileExternalLink(nextUrl, nextDomain, disposition);
+  if (handleOpenFileExternalLinkAction !== undefined) return handleOpenFileExternalLinkAction;
   // open external url in browser
   if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
     logger.debug('handleNewWindow() openExternal', { nextUrl, nextDomain, disposition });
