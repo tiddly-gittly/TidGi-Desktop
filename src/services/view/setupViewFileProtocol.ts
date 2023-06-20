@@ -24,22 +24,27 @@ export function handleOpenFileExternalLink(
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
 
   if (nextUrl.startsWith('open://') || nextUrl.startsWith('file://')) {
-    logger.info('handleNewWindow() handle file:// or open:// This url will open file externally', { nextUrl, nextDomain, disposition });
-    const filePath = decodeURI(nextUrl.replace('open://', '').replace('file://', ''));
+    let { pathname } = new URL(nextUrl);
+    if (process.platform === 'win32') {
+      // fix `/G:/EpicGames` to `G:/EpicGames` on windows
+      pathname = pathname.slice(1);
+    }
+    logger.debug('handle file:// or open:// This url will open file externally', { pathname, nextUrl, nextDomain, disposition, function: 'handleOpenFileExternalLink' });
+    const filePath = path.resolve(pathname);
     const fileExists = fs.existsSync(filePath);
-    logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { filePath });
+    logger.debug(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { filePath, function: 'handleOpenFileExternalLink' });
     if (fileExists) {
       void shell.openPath(filePath);
       return {
         action: 'deny',
       };
     }
-    logger.info(`try find file relative to workspace folder`);
+    logger.debug(`try find file relative to workspace folder`);
     void workspaceService.getActiveWorkspace().then((workspace) => {
       if (workspace !== undefined) {
         const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, filePath);
         const fileExistsInWorkspaceFolder = fs.existsSync(filePathInWorkspaceFolder);
-        logger.info(`This file ${fileExistsInWorkspaceFolder ? '' : 'not '}exists in workspace folder.`, { filePathInWorkspaceFolder });
+        logger.debug(`This file ${fileExistsInWorkspaceFolder ? '' : 'not '}exists in workspace folder.`, { filePathInWorkspaceFolder });
         if (fileExistsInWorkspaceFolder) {
           void shell.openPath(filePathInWorkspaceFolder);
         }
