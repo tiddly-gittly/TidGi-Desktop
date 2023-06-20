@@ -5,6 +5,15 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
+export type INewWindowAction =
+  | {
+    action: 'deny';
+  }
+  | {
+    action: 'allow';
+    overrideBrowserWindowOptions?: Electron.BrowserWindowConstructorOptions | undefined;
+  };
+
 /**
  * BrowserView related things, the BrowserView is the webview like frame that renders our wiki website.
  */

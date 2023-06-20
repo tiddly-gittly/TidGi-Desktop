@@ -85,4 +85,6 @@ Some library doesn't fit electron usage, we move their code to this repo and mod
 
 ## Code Tour
 
+[FileProtocol](./features/FileProtocol.md)
+
 TBD
