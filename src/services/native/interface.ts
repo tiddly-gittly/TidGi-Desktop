@@ -44,12 +44,6 @@ export interface INativeService {
   pickDirectory(defaultPath?: string, options?: IPickDirectoryOptions): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;
   quit(): void;
-  /**
-   * Handles in-app assets loading. This should be called after `app.whenReady()` is resolved.
-   *
-   * For in-wiki file:// links, see handleNewWindow() in `src/services/view/setupViewEventHandlers.ts`.
-   */
-  registerFileProtocol(): boolean;
   showElectronMessageBox(options: Electron.MessageBoxOptions, windowName?: WindowNames): Promise<Electron.MessageBoxReturnValue | undefined>;
   /**
    * Shows a message box, it will block the process until the message box is closed. It returns the index of the clicked button.

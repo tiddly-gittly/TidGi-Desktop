@@ -108,10 +108,6 @@ const whenCommonInitFinished = async (): Promise<void> => {
 const commonInit = async (): Promise<void> => {
   // eslint-disable-next-line promise/catch-or-return
   await app.whenReady();
-  if (!nativeService.registerFileProtocol()) {
-    logger.error('Failed to registerFileProtocol file:///');
-    app.quit();
-  }
   // if user want a menubar, we create a new window for that
   await Promise.all([
     windowService.open(WindowNames.main),

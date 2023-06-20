@@ -248,46 +248,4 @@ ${message.message}
       }
     }
   }
-
-  public async handleFileProtocol(request: { url: string }, callback: (response: string) => void): Promise<void> {
-    logger.info('handleFileProtocol() getting url', { url: request.url });
-    const pathname = decodeURI(request.url.replace('open://', '').replace('file://', ''));
-    logger.info('handleFileProtocol() handle file:// or open:// This url will open file in-wiki', { pathname });
-    let fileExists = fs.existsSync(pathname);
-    logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { pathname });
-    if (fileExists) {
-      callback(pathname);
-      return;
-    }
-    logger.info(`try find file relative to workspace folder`);
-    const workspace = await this.workspaceService.getActiveWorkspace();
-    if (workspace === undefined) {
-      logger.error(`No active workspace, abort. Try loading pathname as-is.`, { pathname });
-      callback(pathname);
-      return;
-    }
-    const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, pathname);
-    fileExists = fs.existsSync(filePathInWorkspaceFolder);
-    logger.info(`This file ${fileExists ? '' : 'not '}exists in workspace folder.`, { filePathInWorkspaceFolder });
-    if (fileExists) {
-      callback(filePathInWorkspaceFolder);
-      return;
-    }
-    logger.info(`try find file relative to TidGi App folder`);
-    // on production, __dirname will be in .webpack/main
-    const inTidGiAppAbsoluteFilePath = path.join(app.getAppPath(), '.webpack', 'renderer', pathname);
-    fileExists = fs.existsSync(inTidGiAppAbsoluteFilePath);
-    if (fileExists) {
-      callback(inTidGiAppAbsoluteFilePath);
-      return;
-    }
-    logger.warn(`This url can't be loaded in-wiki. Try loading url as-is.`, { url: request.url });
-    callback(request.url);
-  }
-
-  public registerFileProtocol(): boolean {
-    // this normally nor called. In wiki file:// image will use `handleFileLink()` in `src\services\view\setupViewSession.ts`.
-    const succeed = protocol.registerFileProtocol('file', this.handleFileProtocol.bind(this));
-    return succeed;
-  }
 }
