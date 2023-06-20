@@ -2,8 +2,8 @@ lockfileVersion: '6.0'
 
 dependencies:
   '@tiddlygit/tiddlywiki':
-    specifier: ^5.3.0-prerelease-2023-05-15
-    version: 5.3.0-prerelease-2023-05-22
+    specifier: ^5.3.0-prerelease-2023-06-20
+    version: 5.3.0-prerelease-2023-06-20
   app-path:
     specifier: ^4.0.0
     version: 4.0.0
@@ -2675,12 +2675,11 @@ packages:
     engines: {node: '>=10.17'}
     dev: true
 
-  /@tiddlygit/tiddlywiki@5.3.0-prerelease-2023-05-22:
-    resolution: {integrity: sha512-PLRjtiEvAql7Sdm726308AU9JnQTPxN244iEXNb+XSCmVFY+ZkvQkqyE3OiLY0JMy9BLj+jDPAdcBJ6/7pJKqg==}
+  /@tiddlygit/tiddlywiki@5.3.0-prerelease-2023-06-20:
+    resolution: {integrity: sha512-DXEBnN5qbwqCFENhvJTDSz3JtddJ4Z4Dw9ejOansGcV0VKOH6gLTcBGIA07ioNvnIifxl/Xl4xXtF8aHO8Zlwg==}
     engines: {node: '>=0.8.2'}
     hasBin: true
     dev: false
-    bundledDependencies: []
 
   /@tokenizer/token@0.3.0:
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
