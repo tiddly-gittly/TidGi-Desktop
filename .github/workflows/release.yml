@@ -60,6 +60,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install
         
+      - name: Build plugins
+        run: pnpm run build:plugin
+
       - name: Make Linux (x64)
         run: npm run make:linux-x64
         env:
@@ -129,6 +132,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+
+      - name: Build plugins
+        run: pnpm run build:plugin
 
       - name: Make macOS (x64)
         run: npm run make:mac-x64
@@ -205,10 +211,12 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-
+        
       - name: Add msi to path
         run: echo "${env:wix}bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-
+        
+      - name: Build plugins
+        run: pnpm run build:plugin
       # Enable x32 if someone still need it
       # - name: Make Windows (ia32)
       #   run: npm run make:win-ia32
