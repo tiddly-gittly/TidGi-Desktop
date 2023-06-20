@@ -1,23 +1,15 @@
 /* eslint-disable n/no-callback-literal */
 import { session } from 'electron';
 
-import { getTidGiAuthHeaderWithToken, TIDGI_AUTH_TOKEN_HEADER } from '@/constants/auth';
 import { isMac } from '@/helpers/system';
-import { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
-import { logger } from '@services/libs/log';
 import { INativeService } from '@services/native/interface';
 import { IPreferences } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWorkspace } from '@services/workspaces/interface';
 
-interface IViewSessionContext {
-  userName: string;
-}
-
-export function setupViewSession(workspace: IWorkspace, preferences: IPreferences, viewContext: IViewSessionContext) {
+export function setupViewSession(workspace: IWorkspace, preferences: IPreferences) {
   const { shareWorkspaceBrowsingData, spellcheck, spellcheckLanguages } = preferences;
-  const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
   const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 
   // configure session, proxy & ad blocker

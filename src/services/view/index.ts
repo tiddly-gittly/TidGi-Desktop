@@ -270,8 +270,7 @@ export class View implements IViewService {
     const preferences = await this.preferenceService.getPreferences();
     const { spellcheck } = preferences;
 
-    const viewContext = { userName: await this.authService.getUserName(workspace) };
-    const sessionOfView = setupViewSession(workspace, preferences, viewContext);
+    const sessionOfView = setupViewSession(workspace, preferences);
     const browserViewMetaData: IBrowserViewMetaData = { workspaceID: workspace.id };
     const sharedWebPreferences: WebPreferences = {
       devTools: true,

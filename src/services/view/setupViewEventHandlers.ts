@@ -17,6 +17,7 @@ import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import { isSameOrigin } from '@services/libs/url';
 import { IMenuService } from '@services/menu/interface';
+import { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
@@ -24,7 +25,6 @@ import { IBrowserViewMetaData, windowDimension, WindowNames } from '@services/wi
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { throttle } from 'lodash';
-import { INativeService } from '@services/native/interface';
 
 export interface IViewContext {
   loadInitialUrlWithCatch: () => Promise<void>;
@@ -80,21 +80,16 @@ export default function setupViewEventHandlers(
     if (isSameOrigin(newUrl, currentUrl)) {
       return;
     }
-    const { homeUrl, lastUrl, id } = workspace;
-    const [hostReplacedHomeUrl, hostReplacedLastUrl] = await Promise.all([
-      nativeService.getLocalHostUrlWithActualInfo(homeUrl, id),
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      lastUrl ? nativeService.getLocalHostUrlWithActualInfo(lastUrl, id) : undefined,
-    ]);
+    const { homeUrl, lastUrl } = workspace;
+    // skip handling if is in-wiki link
     if (
       isSameOrigin(newUrl, homeUrl) ||
-      isSameOrigin(newUrl, hostReplacedHomeUrl) ||
-      isSameOrigin(newUrl, lastUrl) ||
-      isSameOrigin(newUrl, hostReplacedLastUrl)
+      isSameOrigin(newUrl, lastUrl)
     ) {
       return;
     }
-    logger.debug('will-navigate openExternal', { newUrl, currentUrl, homeUrl, lastUrl, hostReplacedHomeUrl, hostReplacedLastUrl });
+    // if is external website
+    logger.debug('will-navigate openExternal', { newUrl, currentUrl, homeUrl, lastUrl });
     await shell.openExternal(newUrl).catch((error) => logger.error(`will-navigate openExternal error ${(error as Error).message}`, error));
     // if is an external website
     event.preventDefault();
@@ -433,11 +428,10 @@ function handleNewWindow(
       childWindow.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) => handleNewWindow(details.url, newWindowContext, details.disposition, parentWebContents));
       childWindow.webContents.once('will-navigate', async (_event, url) => {
         // if the window is used for the current app, then use default behavior
-        let appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
+        const appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
         if (appUrl === undefined) {
           throw new Error(`Workspace ${workspace.id} not existed, or don't have homeUrl setting`);
         }
-        appUrl = await nativeService.getLocalHostUrlWithActualInfo(appUrl, workspace.id);
         if (isInternalUrl(url, [appUrl, currentUrl])) {
           childWindow.show();
         } else {
