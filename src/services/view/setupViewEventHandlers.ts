@@ -17,7 +17,6 @@ import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import { isSameOrigin } from '@services/libs/url';
 import { IMenuService } from '@services/menu/interface';
-import { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
