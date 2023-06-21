@@ -1,3 +1,4 @@
+import { whenCommonInitFinished } from '@/helpers/mainInitFinished';
 import { container } from '@services/container';
 import { logger } from '@services/libs/log';
 import { INativeService } from '@services/native/interface';
@@ -37,18 +38,23 @@ export function handleOpenFileExternalLink(nextUrl: string): INewWindowAction | 
  */
 export function handleViewFileContentLoading(view: BrowserView) {
   /**
-   * Electron's bug, file protocol is not handle-able, won't get any callback. But things like `filea://` `filefix` works.
+   * This function is called after `await app.whenReady()`, but electron will still throw error `Failed to register protocol: filefix` in https://github.com/tiddly-gittly/TidGi-Desktop/issues/422 , so we further delay it.
    */
-  view.webContents.session.protocol.handle('filefix', async (request) => {
-    let { pathname } = new URL(request.url);
-    pathname = decodeURIComponent(pathname);
-    logger.info(`Loading file content from ${pathname}`, { function: 'handleViewFileContentLoading view.webContents.session.protocol.handle' });
-    try {
-      const file = await fs.readFile(pathname);
-      return new Response(file, { status: 200 });
-    } catch (error) {
-      return new Response(undefined, { status: 404, statusText: (error as Error).message });
-    }
+  void whenCommonInitFinished().then(() => {
+    /**
+     * Electron's bug, file protocol is not handle-able, won't get any callback. But things like `filea://` `filefix` works.
+     */
+    view.webContents.session.protocol.handle('filefix', async (request) => {
+      let { pathname } = new URL(request.url);
+      pathname = decodeURIComponent(pathname);
+      logger.info(`Loading file content from ${pathname}`, { function: 'handleViewFileContentLoading view.webContents.session.protocol.handle' });
+      try {
+        const file = await fs.readFile(pathname);
+        return new Response(file, { status: 200 });
+      } catch (error) {
+        return new Response(undefined, { status: 404, statusText: (error as Error).message });
+      }
+    });
   });
   view.webContents.session.webRequest.onBeforeRequest((details, callback) => {
     if (details.url.startsWith('file://') || details.url.startsWith('open://')) {
