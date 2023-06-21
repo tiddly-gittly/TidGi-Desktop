@@ -19,9 +19,12 @@ export function handleOpenFileExternalLink(nextUrl: string): INewWindowAction | 
   const absoluteFilePath = nativeService.formatFileUrlToAbsolutePath(nextUrl);
   const fileStat = fs.statSync(absoluteFilePath);
   if (fileStat.isDirectory()) {
-    void shell.openExternal(absoluteFilePath);
-  } else if (fileStat.isFile()) {
+    logger.info(`Opening directory ${absoluteFilePath}`, { function: 'handleOpenFileExternalLink' });
     void shell.openPath(absoluteFilePath);
+  } else if (fileStat.isFile()) {
+    logger.info(`Opening file ${absoluteFilePath}`, { function: 'handleOpenFileExternalLink' });
+    void shell.openPath(absoluteFilePath);
+    // void shell.openExternal(absoluteFilePath);
   }
   return {
     action: 'deny',
