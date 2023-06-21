@@ -1,4 +1,5 @@
 import { container } from '@services/container';
+import { logger } from '@services/libs/log';
 import { INativeService } from '@services/native/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { BrowserView, shell } from 'electron';
@@ -30,6 +31,20 @@ export function handleOpenFileExternalLink(nextUrl: string): INewWindowAction | 
  * Handle file protocol in webview to request file content and show in the view.
  */
 export function handleViewFileContentLoading(view: BrowserView) {
+  /**
+   * Electron's bug, file protocol is not handle-able, won't get any callback. But things like `filea://` `filefix` works.
+   */
+  view.webContents.session.protocol.handle('filefix', async (request) => {
+    let { pathname } = new URL(request.url);
+    pathname = decodeURIComponent(pathname);
+    logger.info(`Loading file content from ${pathname}`, { function: 'handleViewFileContentLoading view.webContents.session.protocol.handle' });
+    try {
+      const file = await fs.readFile(pathname);
+      return new Response(file, { status: 200 });
+    } catch (error) {
+      return new Response(undefined, { status: 404, statusText: (error as Error).message });
+    }
+  });
   view.webContents.session.webRequest.onBeforeRequest((details, callback) => {
     if (details.url.startsWith('file://') || details.url.startsWith('open://')) {
       handleFileLink(details, callback);
@@ -43,17 +58,16 @@ export function handleViewFileContentLoading(view: BrowserView) {
 
 function handleFileLink(details: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) {
   const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
-  const redirectURL = nativeService.formatFileUrlToAbsolutePath(details.url);
+  let redirectURL = nativeService.formatFileUrlToAbsolutePath(details.url);
   if (redirectURL === details.url) {
-    callback({
-      cancel: false,
-      // prevent redirect loop, remove file:// prefix, so it never comes back to this function from `handleViewFileContentLoading` again.
-      redirectURL: redirectURL.replace('file://', '').replace('open://', ''),
-    });
+    // prevent redirect loop, remove file:// prefix, so it never comes back to this function from `handleViewFileContentLoading` again.
+    redirectURL = redirectURL.replace('file://', '').replace('open://', '');
   } else {
-    callback({
-      cancel: false,
-      redirectURL: encodeURI(redirectURL),
-    });
+    redirectURL = `filefix://${redirectURL}`;
   }
+  logger.info(`Redirecting file protocol to ${redirectURL}`, { function: 'handleFileLink' });
+  callback({
+    cancel: false,
+    redirectURL,
+  });
 }
