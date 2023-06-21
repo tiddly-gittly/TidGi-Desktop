@@ -30,10 +30,9 @@ export function handleOpenFileExternalLink(nextUrl: string): INewWindowAction | 
  * Handle file protocol in webview to request file content and show in the view.
  */
 export function handleViewFileContentLoading(view: BrowserView) {
-  const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
   view.webContents.session.webRequest.onBeforeRequest((details, callback) => {
     if (details.url.startsWith('file://') || details.url.startsWith('open://')) {
-      handleFileLink(details, nativeService, callback);
+      handleFileLink(details, callback);
     } else {
       callback({
         cancel: false,
@@ -42,18 +41,19 @@ export function handleViewFileContentLoading(view: BrowserView) {
   });
 }
 
-function handleFileLink(details: Electron.OnBeforeRequestListenerDetails, nativeService: INativeService, callback: (response: Electron.CallbackResponse) => void) {
-  const redirectURL = nativeService.formatFileUrlToAbsolutePath(decodeURI(details.url));
-  // DEBUG: console redirectURL
-  console.log(`redirectURL`, redirectURL);
+function handleFileLink(details: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) {
+  const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
+  const redirectURL = nativeService.formatFileUrlToAbsolutePath(details.url);
   if (redirectURL === details.url) {
     callback({
       cancel: false,
+      // prevent redirect loop, remove file:// prefix, so it never comes back to this function from `handleViewFileContentLoading` again.
+      redirectURL: redirectURL.replace('file://', '').replace('open://', ''),
     });
   } else {
     callback({
       cancel: false,
-      redirectURL,
+      redirectURL: encodeURI(redirectURL),
     });
   }
 }
