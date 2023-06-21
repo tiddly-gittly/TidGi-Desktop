@@ -57,6 +57,12 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
+      # only run codeql on Linux
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: javascript
+
       - name: Install dependencies
         run: pnpm install
         
@@ -75,6 +81,9 @@ jobs:
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
