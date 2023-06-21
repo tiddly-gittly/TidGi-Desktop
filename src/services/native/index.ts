@@ -256,7 +256,11 @@ ${message.message}
      * urlWithFileProtocol: `file://./files/xxx.png`
      * hostname: `.`, pathname: `/files/xxx.png`
      */
-    const filePath = decodeURIComponent(`${hostname}${pathname}`);
+    let filePath = decodeURIComponent(`${hostname}${pathname}`);
+    // get "/D:/" on windows
+    if (process.platform === 'win32' && filePath.startsWith('/')) {
+      filePath = filePath.substring(1);
+    }
     logger.info('handle file:// or open:// This url will open file in-wiki', { hostname, pathname, filePath, function: 'formatFileUrlToAbsolutePath' });
     let fileExists = fs.existsSync(filePath);
     logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { filePath, function: 'formatFileUrlToAbsolutePath' });
