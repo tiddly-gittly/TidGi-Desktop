@@ -36,7 +36,7 @@ export interface INativeService {
    * Handles in-app assets loading. This should be called after `app.whenReady()` is resolved.
    * This handles file:// protocol when webview load image content, not handling file external link clicking.
    */
-  formatFileUrlToAbsolutePath(request: { url: string }, callback: (response: string) => void): Promise<void>;
+  formatFileUrlToAbsolutePath(urlWithFileProtocol: string): string;
   getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   open(uri: string, isDirectory?: boolean): Promise<void>;

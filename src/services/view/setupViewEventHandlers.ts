@@ -56,9 +56,8 @@ export default function setupViewEventHandlers(
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-  const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 
-  handleViewFileContentLoading(view, nativeService);
+  handleViewFileContentLoading(view);
   view.webContents.on('did-start-loading', async () => {
     const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
@@ -319,7 +318,7 @@ function handleNewWindow(
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
 
   const nextDomain = extractDomain(nextUrl);
-  const handleOpenFileExternalLinkAction = handleOpenFileExternalLink(nextUrl, nextDomain, disposition);
+  const handleOpenFileExternalLinkAction = handleOpenFileExternalLink(nextUrl);
   if (handleOpenFileExternalLinkAction !== undefined) return handleOpenFileExternalLinkAction;
   // open external url in browser
   if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {
