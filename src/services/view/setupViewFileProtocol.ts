@@ -17,13 +17,15 @@ import { INewWindowAction } from './interface';
 export function handleOpenFileExternalLink(nextUrl: string): INewWindowAction | undefined {
   const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
   const absoluteFilePath = nativeService.formatFileUrlToAbsolutePath(nextUrl);
-  const fileExists = fs.existsSync(absoluteFilePath);
-  if (fileExists) {
+  const fileStat = fs.statSync(absoluteFilePath);
+  if (fileStat.isDirectory()) {
+    void shell.openExternal(absoluteFilePath);
+  } else if (fileStat.isFile()) {
     void shell.openPath(absoluteFilePath);
-    return {
-      action: 'deny',
-    };
   }
+  return {
+    action: 'deny',
+  };
 }
 
 /* eslint-disable n/no-callback-literal */
