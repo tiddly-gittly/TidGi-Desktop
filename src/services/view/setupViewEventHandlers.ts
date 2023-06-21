@@ -317,7 +317,7 @@ function handleNewWindow(
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
 
   const nextDomain = extractDomain(nextUrl);
-  const handleOpenFileExternalLinkAction = handleOpenFileExternalLink(nextUrl);
+  const handleOpenFileExternalLinkAction = handleOpenFileExternalLink(nextUrl, newWindowContext);
   if (handleOpenFileExternalLinkAction !== undefined) return handleOpenFileExternalLinkAction;
   // open external url in browser
   if (nextDomain !== undefined && (disposition === 'foreground-tab' || disposition === 'background-tab')) {

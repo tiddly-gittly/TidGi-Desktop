@@ -14,7 +14,7 @@ export const wikiOperations = {
   [WikiChannel.setState]: async (stateKey: string, content: string) => {
     await executeTWJavaScriptWhenIdle(
       `
-      $tw.wiki.addTiddler({ title: '$:/state/${stateKey}', text: '${content}' });
+      $tw.wiki.addTiddler({ title: '$:/state/${stateKey}', text: \`${content}\` });
     `,
     );
   },
@@ -58,7 +58,7 @@ async function executeTWJavaScriptWhenIdle(script: string, options?: { onlyWhenV
 ipcRenderer.on(WikiChannel.addTiddler, async (event, title: string, text: string, meta: unknown) => {
   const extraMeta = typeof meta === 'object' ? JSON.stringify(meta) : '{}';
   await executeTWJavaScriptWhenIdle(`
-    $tw.wiki.addTiddler({ title: '${title}', text: '${text}', ...${extraMeta} });
+    $tw.wiki.addTiddler({ title: \`${title}\`, text: \`${text}\`, ...${extraMeta} });
   `);
   // wait for fs to be settle
   setTimeout(() => {
@@ -68,20 +68,20 @@ ipcRenderer.on(WikiChannel.addTiddler, async (event, title: string, text: string
 // get tiddler text
 ipcRenderer.on(WikiChannel.getTiddlerText, async (event, nonceReceived: number, title: string) => {
   const tiddlerText: string = await (webFrame.executeJavaScript(`
-    $tw.wiki.getTiddlerText('${title}');
+    $tw.wiki.getTiddlerText(\`${title}\`);
   `) as Promise<string>);
   ipcRenderer.send(WikiChannel.getTiddlerTextDone, nonceReceived, tiddlerText);
 });
 ipcRenderer.on(WikiChannel.runFilter, async (event, nonceReceived: number, filter: string) => {
   const filterResult: string[] = await (webFrame.executeJavaScript(`
-    $tw.wiki.compileFilter('${filter}')()
+    $tw.wiki.compileFilter(\`${filter}\`)()
   `) as Promise<string[]>);
   ipcRenderer.send(WikiChannel.runFilter, nonceReceived, filterResult);
 });
 // set tiddler text, we use workspaceID as callback id
 ipcRenderer.on(WikiChannel.setTiddlerText, async (event, nonceReceived: number, title: string, value: string) => {
   await executeTWJavaScriptWhenIdle(`
-    $tw.wiki.setText('${title}', 'text', undefined, \`${value}\`);
+    $tw.wiki.setText(\`${title}\`, 'text', undefined, \`${value}\`);
   `);
   ipcRenderer.send(WikiChannel.setTiddlerText, nonceReceived);
 });
@@ -89,7 +89,7 @@ ipcRenderer.on(WikiChannel.setTiddlerText, async (event, nonceReceived: number, 
 ipcRenderer.on(WikiChannel.syncProgress, async (event, message: string) => {
   await executeTWJavaScriptWhenIdle(
     `
-    $tw.wiki.addTiddler({ title: '$:/state/notification/${WikiChannel.syncProgress}', text: '${message}' });
+    $tw.wiki.addTiddler({ title: '$:/state/notification/${WikiChannel.syncProgress}', text: \`${message}\` });
     $tw.notifier.display('$:/state/notification/${WikiChannel.syncProgress}');
   `,
     // requestIdleCallback seem to only execute when app page is visible. So there will be tons of scheduled sync when user open the app, unless we set `onlyWhenVisible: true`
@@ -103,8 +103,8 @@ ipcRenderer.on(
 );
 ipcRenderer.on(WikiChannel.generalNotification, async (event, message: string) => {
   await executeTWJavaScriptWhenIdle(`
-    $tw.wiki.addTiddler({ title: '$:/state/notification/${WikiChannel.generalNotification}', text: '${message}' });
-    $tw.notifier.display('$:/state/notification/${WikiChannel.generalNotification}');
+    $tw.wiki.addTiddler({ title: \`$:/state/notification/${WikiChannel.generalNotification}\`, text: \`${message}\` });
+    $tw.notifier.display(\`$:/state/notification/${WikiChannel.generalNotification}\`);
   `);
 });
 // open a tiddler
@@ -115,7 +115,7 @@ ipcRenderer.on(WikiChannel.openTiddler, async (event, tiddlerName: string) => {
     let currentHandlerWidget = $tw.rootWidget
     let handled = false;
     while (currentHandlerWidget && !handled) {
-      const bubbled = currentHandlerWidget.dispatchEvent({ type: "tm-navigate", navigateTo: "${trimmedTiddlerName}", param: "${trimmedTiddlerName}" });
+      const bubbled = currentHandlerWidget.dispatchEvent({ type: "tm-navigate", navigateTo: \`${trimmedTiddlerName}\`, param: \`${trimmedTiddlerName}\` });
       handled = !bubbled;
       currentHandlerWidget = currentHandlerWidget.children?.[0]
     }
@@ -124,7 +124,7 @@ ipcRenderer.on(WikiChannel.openTiddler, async (event, tiddlerName: string) => {
 // send an action message
 ipcRenderer.on(WikiChannel.sendActionMessage, async (event, actionMessage: string) => {
   await executeTWJavaScriptWhenIdle(`
-    $tw.rootWidget.dispatchEvent({ type: "${actionMessage}" });
+    $tw.rootWidget.dispatchEvent({ type: \`${actionMessage}\` });
   `);
 });
 
@@ -136,7 +136,7 @@ ipcRenderer.on(WikiChannel.printTiddler, async (event, tiddlerName?: string) => 
   `) as Promise<string>);
   }
   await executeTWJavaScriptWhenIdle(`
-    var page = (${printer.printTiddler.toString()})('${tiddlerName}');
+    var page = (${printer.printTiddler.toString()})(\`${tiddlerName}\`);
     page?.print?.();
     page?.close?.();
   `);

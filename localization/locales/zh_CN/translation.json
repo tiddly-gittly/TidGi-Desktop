@@ -161,7 +161,7 @@
     "CreateLinkFromSubWikiToMainWikiSucceed": "在主Wiki内成功创建子Wiki的快捷方式，将文件存入主Wiki内的快捷方式会自动将文件存入子Wiki。",
     "CreateLinkFromSubWikiToMainWikiFailed": "无法链接文件夹 \"{{subWikiPath}}\" 到 \"{{mainWikiTiddlersFolderPath}}\"",
     "StartUsingTemplateToCreateWiki": "开始用模板创建Wiki",
-    "PathNotExist": "该目录不存在 \"{{newFolderPath}}\"",
+    "PathNotExist": "该路径不存在 \"{{path}}\"",
     "WikiTemplateMissing": "Wiki模板缺失 \"{{TIDDLYWIKI_TEMPLATE_FOLDER_PATH}}\"",
     "WikiExisted": "Wiki已经存在于该位置 \"{{newWikiPath}}\"",
     "CantCreateFolderHere": "无法在该处创建文件夹 \"{{newWikiPath}}\"",

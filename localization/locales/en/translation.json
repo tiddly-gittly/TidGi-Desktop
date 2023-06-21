@@ -111,7 +111,7 @@
     "CantCreateFolderHere": "Cannot create folder \"{{newWikiPath}}\" there",
     "CreateLinkFromSubWikiToMainWikiFailed": "Cannot link folder \"{{subWikiPath}}\" to \"{{mainWikiTiddlersFolderPath}}\"",
     "CreateLinkFromSubWikiToMainWikiSucceed": "The shortcut to the sub-wiki is successfully created in the main Wiki, and the shortcut that saves the file in the main Wiki will automatically save the file in the sub-Wiki.",
-    "PathNotExist": "The directory does not exist \"{{newFolderPath}}\"",
+    "PathNotExist": "The path does not exist \"{{path}}\"",
     "StartCloningSubWiki": "Start cloning sub-Wiki",
     "StartCloningWiki": "Start cloning Wiki",
     "StartCreatingSubWiki": "Start creating sub-wiki",

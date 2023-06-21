@@ -381,7 +381,7 @@ export class Wiki implements IWikiService {
     this.logProgress(i18n.t('AddWorkspace.StartUsingTemplateToCreateWiki'));
     const newWikiPath = path.join(newFolderPath, folderName);
     if (!(await fs.pathExists(newFolderPath))) {
-      throw new Error(i18n.t('AddWorkspace.PathNotExist', { newFolderPath }));
+      throw new Error(i18n.t('AddWorkspace.PathNotExist', { path: newFolderPath }));
     }
     if (!(await fs.pathExists(TIDDLYWIKI_TEMPLATE_FOLDER_PATH))) {
       throw new Error(i18n.t('AddWorkspace.WikiTemplateMissing', { TIDDLYWIKI_TEMPLATE_FOLDER_PATH }));
@@ -413,7 +413,7 @@ export class Wiki implements IWikiService {
     this.logProgress(i18n.t('AddWorkspace.StartCreatingSubWiki'));
     const newWikiPath = path.join(parentFolderLocation, folderName);
     if (!(await fs.pathExists(parentFolderLocation))) {
-      throw new Error(i18n.t('AddWorkspace.PathNotExist', { parentFolderLocation }));
+      throw new Error(i18n.t('AddWorkspace.PathNotExist', { path: parentFolderLocation }));
     }
     if (!onlyLink) {
       if (await fs.pathExists(newWikiPath)) {
@@ -447,7 +447,7 @@ export class Wiki implements IWikiService {
 
   public async ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void> {
     if (!(await fs.pathExists(wikiPath))) {
-      throw new Error(i18n.t('AddWorkspace.PathNotExist', { newFolderPath: wikiPath }));
+      throw new Error(i18n.t('AddWorkspace.PathNotExist', { path: wikiPath }));
     }
     const wikiInfoPath = path.resolve(wikiPath, 'tiddlywiki.info');
     if (shouldBeMainWiki && !(await fs.pathExists(wikiInfoPath))) {
@@ -505,7 +505,7 @@ export class Wiki implements IWikiService {
     this.logProgress(i18n.t('AddWorkspace.StartCloningWiki'));
     const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
     if (!(await fs.pathExists(parentFolderLocation))) {
-      throw new Error(i18n.t('AddWorkspace.PathNotExist', { newFolderPath: parentFolderLocation }));
+      throw new Error(i18n.t('AddWorkspace.PathNotExist', { path: parentFolderLocation }));
     }
     if (await fs.pathExists(newWikiPath)) {
       throw new Error(i18n.t('AddWorkspace.WikiExisted', { newWikiPath }));
@@ -529,7 +529,7 @@ export class Wiki implements IWikiService {
     this.logProgress(i18n.t('AddWorkspace.StartCloningSubWiki'));
     const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
     if (!(await fs.pathExists(parentFolderLocation))) {
-      throw new Error(i18n.t('AddWorkspace.PathNotExist', { newFolderPath: parentFolderLocation }));
+      throw new Error(i18n.t('AddWorkspace.PathNotExist', { path: parentFolderLocation }));
     }
     if (await fs.pathExists(newWikiPath)) {
       throw new Error(i18n.t('AddWorkspace.WikiExisted', { newWikiPath }));
