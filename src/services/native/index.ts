@@ -249,39 +249,40 @@ ${message.message}
     }
   }
 
-  public async formatFileUrlToAbsolutePath(request: { url: string }, callback: (response: string) => void): Promise<void> {
-    logger.info('getting url', { url: request.url, function: 'formatFileUrlToAbsolutePath' });
-    const pathname = decodeURI(request.url.replace('open://', '').replace('file://', ''));
-    logger.info('handle file:// or open:// This url will open file in-wiki', { pathname, function: 'formatFileUrlToAbsolutePath' });
-    let fileExists = fs.existsSync(pathname);
-    logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { pathname, function: 'formatFileUrlToAbsolutePath' });
+  public formatFileUrlToAbsolutePath(urlWithFileProtocol: string): string {
+    logger.info('getting url', { url: urlWithFileProtocol, function: 'formatFileUrlToAbsolutePath' });
+    const { hostname, pathname } = new URL(urlWithFileProtocol);
+    /**
+     * urlWithFileProtocol: `file://./files/xxx.png`
+     * hostname: `.`, pathname: `/files/xxx.png`
+     */
+    const filePath = `${hostname}${pathname}`;
+    logger.info('handle file:// or open:// This url will open file in-wiki', { hostname, pathname, filePath, function: 'formatFileUrlToAbsolutePath' });
+    let fileExists = fs.existsSync(filePath);
+    logger.info(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { filePath, function: 'formatFileUrlToAbsolutePath' });
     if (fileExists) {
-      callback(pathname);
-      return;
+      return filePath;
     }
-    logger.info(`try find file relative to workspace folder`, { pathname, function: 'formatFileUrlToAbsolutePath' });
-    const workspace = await this.workspaceService.getActiveWorkspace();
+    logger.info(`try find file relative to workspace folder`, { filePath, function: 'formatFileUrlToAbsolutePath' });
+    const workspace = this.workspaceService.getActiveWorkspaceSync();
     if (workspace === undefined) {
-      logger.error(`No active workspace, abort. Try loading pathname as-is.`, { pathname, function: 'formatFileUrlToAbsolutePath' });
-      callback(pathname);
-      return;
+      logger.error(`No active workspace, abort. Try loading filePath as-is.`, { filePath, function: 'formatFileUrlToAbsolutePath' });
+      return filePath;
     }
-    const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, pathname);
+    const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, filePath);
     fileExists = fs.existsSync(filePathInWorkspaceFolder);
     logger.info(`This file ${fileExists ? '' : 'not '}exists in workspace folder.`, { filePathInWorkspaceFolder, function: 'formatFileUrlToAbsolutePath' });
     if (fileExists) {
-      callback(filePathInWorkspaceFolder);
-      return;
+      return filePathInWorkspaceFolder;
     }
     // on production, __dirname will be in .webpack/main
-    const inTidGiAppAbsoluteFilePath = path.join(app.getAppPath(), '.webpack', 'renderer', pathname);
+    const inTidGiAppAbsoluteFilePath = path.join(app.getAppPath(), '.webpack', 'renderer', filePath);
     logger.info(`try find file relative to TidGi App folder`, { inTidGiAppAbsoluteFilePath, function: 'formatFileUrlToAbsolutePath' });
     fileExists = fs.existsSync(inTidGiAppAbsoluteFilePath);
     if (fileExists) {
-      callback(inTidGiAppAbsoluteFilePath);
-      return;
+      return inTidGiAppAbsoluteFilePath;
     }
-    logger.warn(`This url can't be loaded in-wiki. Try loading url as-is.`, { url: request.url, function: 'formatFileUrlToAbsolutePath' });
-    callback(request.url);
+    logger.warn(`This url can't be loaded in-wiki. Try loading url as-is.`, { url: urlWithFileProtocol, function: 'formatFileUrlToAbsolutePath' });
+    return urlWithFileProtocol;
   }
 }

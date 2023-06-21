@@ -1,11 +1,8 @@
 import { container } from '@services/container';
-import { logger } from '@services/libs/log';
 import { INativeService } from '@services/native/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWorkspaceService } from '@services/workspaces/interface';
 import { BrowserView, shell } from 'electron';
 import fs from 'fs-extra';
-import path from 'path';
 import { INewWindowAction } from './interface';
 
 /**
@@ -16,40 +13,12 @@ import { INewWindowAction } from './interface';
  *
  * For  file:/// in-app assets loading., see handleFileProtocol() in `src/services/native/index.ts`.
  */
-export function handleOpenFileExternalLink(
-  nextUrl: string,
-  nextDomain: string | undefined,
-  disposition: 'default' | 'new-window' | 'foreground-tab' | 'background-tab' | 'save-to-disk' | 'other',
-): INewWindowAction | undefined {
-  const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
-
-  if (nextUrl.startsWith('open://') || nextUrl.startsWith('file://')) {
-    let { pathname } = new URL(nextUrl);
-    if (process.platform === 'win32') {
-      // fix `/G:/EpicGames` to `G:/EpicGames` on windows
-      pathname = pathname.slice(1);
-    }
-    logger.debug('handle file:// or open:// This url will open file externally', { pathname, nextUrl, nextDomain, disposition, function: 'handleOpenFileExternalLink' });
-    const filePath = path.resolve(pathname);
-    const fileExists = fs.existsSync(filePath);
-    logger.debug(`This file (decodeURI) ${fileExists ? '' : 'not '}exists`, { filePath, function: 'handleOpenFileExternalLink' });
-    if (fileExists) {
-      void shell.openPath(filePath);
-      return {
-        action: 'deny',
-      };
-    }
-    logger.debug(`try find file relative to workspace folder`);
-    void workspaceService.getActiveWorkspace().then((workspace) => {
-      if (workspace !== undefined) {
-        const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, filePath);
-        const fileExistsInWorkspaceFolder = fs.existsSync(filePathInWorkspaceFolder);
-        logger.debug(`This file ${fileExistsInWorkspaceFolder ? '' : 'not '}exists in workspace folder.`, { filePathInWorkspaceFolder });
-        if (fileExistsInWorkspaceFolder) {
-          void shell.openPath(filePathInWorkspaceFolder);
-        }
-      }
-    });
+export function handleOpenFileExternalLink(nextUrl: string): INewWindowAction | undefined {
+  const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
+  const absoluteFilePath = nativeService.formatFileUrlToAbsolutePath(nextUrl);
+  const fileExists = fs.existsSync(absoluteFilePath);
+  if (fileExists) {
+    void shell.openPath(absoluteFilePath);
     return {
       action: 'deny',
     };
@@ -60,12 +29,11 @@ export function handleOpenFileExternalLink(
 /**
  * Handle file protocol in webview to request file content and show in the view.
  */
-export function handleViewFileContentLoading(view: BrowserView, nativeService: INativeService) {
+export function handleViewFileContentLoading(view: BrowserView) {
+  const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
   view.webContents.session.webRequest.onBeforeRequest((details, callback) => {
-    // DEBUG: console details
-    console.log(`details`, details);
     if (details.url.startsWith('file://') || details.url.startsWith('open://')) {
-      void handleFileLink(details, nativeService, callback);
+      handleFileLink(details, nativeService, callback);
     } else {
       callback({
         cancel: false,
@@ -74,19 +42,18 @@ export function handleViewFileContentLoading(view: BrowserView, nativeService: I
   });
 }
 
-async function handleFileLink(details: Electron.OnBeforeRequestListenerDetails, nativeService: INativeService, callback: (response: Electron.CallbackResponse) => void) {
-  await nativeService.formatFileUrlToAbsolutePath({ url: details.url }, (redirectURL: string) => {
-    // DEBUG: console redirectURL
-    console.log(`redirectURL`, redirectURL);
-    if (redirectURL === details.url) {
-      callback({
-        cancel: false,
-      });
-    } else {
-      callback({
-        cancel: false,
-        redirectURL,
-      });
-    }
-  });
+function handleFileLink(details: Electron.OnBeforeRequestListenerDetails, nativeService: INativeService, callback: (response: Electron.CallbackResponse) => void) {
+  const redirectURL = nativeService.formatFileUrlToAbsolutePath(decodeURI(details.url));
+  // DEBUG: console redirectURL
+  console.log(`redirectURL`, redirectURL);
+  if (redirectURL === details.url) {
+    callback({
+      cancel: false,
+    });
+  } else {
+    callback({
+      cancel: false,
+      redirectURL,
+    });
+  }
 }
