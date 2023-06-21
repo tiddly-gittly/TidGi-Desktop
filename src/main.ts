@@ -27,6 +27,7 @@ import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IUpdaterService } from '@services/updater/interface';
 import { IWikiService } from '@services/wiki/interface';
 import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
+import { whenCommonInitFinished } from './helpers/mainInitFinished';
 import { isLinux, isMac } from './helpers/system';
 import type { IPreferenceService } from './services/preferences/interface';
 import type { IWindowService } from './services/windows/interface';
@@ -85,28 +86,8 @@ if (fs.existsSync(settings.file())) {
     }
   });
 }
-let commonInitFinished = false;
-/** mock app.whenReady */
-ipcMain.once(MainChannel.commonInitFinished, () => {
-  commonInitFinished = true;
-});
-/**
- * Make sure some logic only run after window and services are truly ready
- */
-const whenCommonInitFinished = async (): Promise<void> => {
-  if (commonInitFinished) {
-    await Promise.resolve();
-    return;
-  }
-  await new Promise<void>((resolve) => {
-    ipcMain.once(MainChannel.commonInitFinished, () => {
-      commonInitFinished = true;
-      resolve();
-    });
-  });
-};
+
 const commonInit = async (): Promise<void> => {
-  // eslint-disable-next-line promise/catch-or-return
   await app.whenReady();
   // if user want a menubar, we create a new window for that
   await Promise.all([
@@ -162,23 +143,20 @@ app.on('certificate-error', (event, webContents, url, error, certificate, callba
   callback(true);
 });
 app.on('ready', async () => {
-  whenCommonInitFinished()
-    // eslint-disable-next-line promise/always-return
-    .then(async () => {
-      buildLanguageMenu();
-      if (await preferenceService.get('syncBeforeShutdown')) {
-        wikiGitWorkspaceService.registerSyncBeforeShutdown();
-      }
-      await updaterService.checkForUpdates();
-    })
-    .catch((error) => {
-      console.error(error);
-    });
+  await initRendererI18NHandler();
   powerMonitor.on('shutdown', () => {
     app.quit();
   });
-  await initRendererI18NHandler();
   await commonInit();
+  try {
+    buildLanguageMenu();
+    if (await preferenceService.get('syncBeforeShutdown')) {
+      wikiGitWorkspaceService.registerSyncBeforeShutdown();
+    }
+    await updaterService.checkForUpdates();
+  } catch (error) {
+    logger.error(`Error when app.on('ready'): ${(error as Error).message}`);
+  }
 });
 app.on(MainChannel.windowAllClosed, () => {
   // prevent quit on MacOS. But also quit if we are in test.
