@@ -283,7 +283,9 @@
     "InitializeWorkspaceViewDone": "创建成功，即将加载内容",
     "PrepareCloneOnlineWiki": "准备导入线上 Wiki",
     "StartFetchingFromGithubRemote": "正在拉取Github远端仓库的数据，需要的时间取决于网速和仓库大小，请耐心等待",
-    "UsingUrlAndUsername": "使用 Git Url {{githubRepoUrl}} 和用户名 {{username}} 和 accessToken {{accessToken}}"
+    "UsingUrlAndUsername": "使用 Git Url {{githubRepoUrl}} 和用户名 {{username}} 和 accessToken {{accessToken}}",
+    "FailedToOpenDirectory": "无法打开文件夹 {{path}} {{errorMessage}}",
+    "FailedToOpenFile": "无法打开文件 {{path}} {{errorMessage}}"
   },
   "Dialog": {
     "NeedCorrectTiddlywikiFolderPath": "需要传入正确的路径，而此路径无法被 TiddlyWiki 识别。",
