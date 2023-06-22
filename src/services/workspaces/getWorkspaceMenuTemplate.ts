@@ -23,7 +23,7 @@ interface IWorkspaceMenuRequiredServices {
   wiki: Pick<IWikiService, 'wikiOperation' | 'requestWikiSendActionMessage'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open'>;
-  workspace: Pick<IWorkspaceService, 'getActiveWorkspace'>;
+  workspace: Pick<IWorkspaceService, 'getActiveWorkspace' | 'getSubWorkspacesAsListSync'>;
   workspaceView: Pick<
     IWorkspaceViewService,
     | 'wakeUpWorkspaceView'
@@ -114,12 +114,28 @@ export async function getWorkspaceMenuTemplate(
         label: t('ContextMenu.SyncNow') + (isOnline ? '' : `(${t('ContextMenu.NoNetworkConnection')})`),
         enabled: isOnline,
         click: async () => {
-          const hasChanges = await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
-          if (hasChanges) {
-            if (isSubWiki && mainWikiID !== null) {
-              await service.workspaceView.restartWorkspaceViewService(mainWikiID);
-              await service.view.reloadViewsWebContents(mainWikiID);
-            } else {
+          if (isSubWiki) {
+            const hasChanges = await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
+            if (hasChanges) {
+              if (mainWikiID === null) {
+                await service.workspaceView.restartWorkspaceViewService(id);
+                await service.view.reloadViewsWebContents(id);
+              } else {
+                // reload main workspace to reflect change (do this before watch-fs stable)
+                await service.workspaceView.restartWorkspaceViewService(mainWikiID);
+                await service.view.reloadViewsWebContents(mainWikiID);
+              }
+            }
+          } else {
+            // sync all sub workspace
+            const mainHasChanges = await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
+            const subHasChangesPromise = service.workspace.getSubWorkspacesAsListSync(id).map(async (workspace) => {
+              const hasChanges = await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
+              return hasChanges;
+            });
+            const subHasChange = (await Promise.all(subHasChangesPromise)).some(Boolean);
+            const hasChange = mainHasChanges || subHasChange;
+            if (hasChange) {
               await service.workspaceView.restartWorkspaceViewService(id);
               await service.view.reloadViewsWebContents(id);
             }

@@ -181,6 +181,7 @@ export interface IWorkspaceService {
   getMetaData: (id: string) => Promise<Partial<IWorkspaceMetaData>>;
   getNextWorkspace: (id: string) => Promise<IWorkspace | undefined>;
   getPreviousWorkspace: (id: string) => Promise<IWorkspace | undefined>;
+  getSubWorkspacesAsListSync(workspaceID: string): IWorkspace[];
   getWorkspaces(): Promise<Record<string, IWorkspace>>;
   getWorkspacesAsList(): Promise<IWorkspace[]>;
   remove(id: string): Promise<void>;
