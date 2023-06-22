@@ -38,7 +38,6 @@
     "default-gateway": "6.0.3",
     "dugite": "^2.5.0",
     "electron-ipc-cat": "1.2.9",
-    "electron-is-packaged": "1.0.2",
     "electron-settings": "5.0.0",
     "electron-squirrel-startup": "1.0.0",
     "electron-unhandled": "4.0.1",
