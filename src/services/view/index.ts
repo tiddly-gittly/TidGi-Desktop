@@ -494,15 +494,21 @@ export class View implements IViewService {
           logger.error(`view.webContents is ${String(view.webContents)} when reloadViewsWebContents's forEachView(${id})`);
           return;
         }
-        view.webContents.reload();
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        // if we can get lastUrl, use it
         if (workspaceID !== undefined) {
           const workspace = await this.workspaceService.get(workspaceID);
           // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
           if (rememberLastPageVisited && workspace?.lastUrl) {
-            await view.webContents.loadURL(workspace.lastUrl);
+            try {
+              await view.webContents.loadURL(workspace.lastUrl);
+              return;
+            } catch (error) {
+              logger.warn(new ViewLoadUrlError(workspace.lastUrl, `${(error as Error).message} ${(error as Error).stack ?? ''}`));
+            }
           }
         }
+        // else fallback to just reload
+        view.webContents.reload();
       }
     });
   }

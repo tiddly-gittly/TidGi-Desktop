@@ -121,13 +121,15 @@ export function setupIpcServerRoutesHandlers(view: BrowserView, workspaceID: str
     return new Response(undefined, { status: 404, statusText });
   }
 
-  try {
-    view.webContents.session.protocol.handle(`tidgi`, handlerCallback);
-    const handled = view.webContents.session.protocol.isProtocolHandled(`tidgi`);
-    if (!handled) {
-      logger.warn(`setupIpcServerRoutesHandlers.handlerCallback: tidgi protocol is not handled`);
+  if (!view.webContents.session.protocol.isProtocolHandled(`tidgi`)) {
+    try {
+      view.webContents.session.protocol.handle(`tidgi`, handlerCallback);
+      const handled = view.webContents.session.protocol.isProtocolHandled(`tidgi`);
+      if (!handled) {
+        logger.warn(`setupIpcServerRoutesHandlers.handlerCallback: tidgi protocol is not handled`);
+      }
+    } catch (error) {
+      logger.error(`setupIpcServerRoutesHandlers.handlerCallback: ${(error as Error).message}`);
     }
-  } catch (error) {
-    logger.error(`setupIpcServerRoutesHandlers.handlerCallback: ${(error as Error).message}`);
   }
 }
