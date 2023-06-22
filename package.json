@@ -140,7 +140,7 @@
     "electron-wix-msi": "^5.0.0",
     "esbuild": "^0.18.4",
     "esbuild-loader": "^3.0.1",
-    "eslint-config-tidgi": "0.6.0",
+    "eslint-config-tidgi": "1.1.0",
     "event-hooks-webpack-plugin": "2.3.0",
     "fork-ts-checker-webpack-plugin": "8.0.0",
     "graphql-hooks": "6.2.3",
