@@ -158,16 +158,6 @@ export class WorkspaceView implements IWorkspaceViewService {
       if (workspace.isSubWiki) {
         return;
       }
-      // wait for main wiki's watch-fs plugin to be fully initialized
-      // and also wait for wiki BrowserView to be able to receive command
-      // eslint-disable-next-line global-require
-      // let workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
-      // let loadFailed = await this.workspaceService.workspaceDidFailLoad(workspace.id);
-      // // if wikiStartup cause load failed, we skip the view creation
-      // if (loadFailed) {
-      //   logger.info(`Exit initializeWorkspaceView() because loadFailed`, { workspace, workspaceMetadata });
-      //   return;
-      // }
       // if we run this due to RestartService, then skip the view adding and the while loop, because the workspaceMetadata.isLoading will be false, because addViewForAllBrowserViews will return before it run loadInitialUrlWithCatch
       if (await this.viewService.alreadyHaveView(workspace)) {
         logger.debug('Skip initializeWorkspaceView() because alreadyHaveView');
@@ -175,21 +165,6 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
       // Create browserView, and if user want a menubar, we also create a new window for that
       await this.viewService.addViewForAllBrowserViews(workspace);
-      // wait for main wiki webview loaded
-      // while (workspaceMetadata.isLoading !== false) {
-      //   // eslint-disable-next-line no-await-in-loop
-      //   await delay(200);
-      //   workspaceMetadata = await this.workspaceService.getMetaData(workspace.id);
-      // }
-      // loadFailed = await this.workspaceService.workspaceDidFailLoad(workspace.id);
-      // if (loadFailed) {
-      //   const latestWorkspaceData = await this.workspaceService.get(workspace.id);
-      //   // DEBUG: console workspaceMetadata
-      //   console.log(`workspaceMetadata`, workspaceMetadata);
-      //   // throw new WorkspaceFailedToLoadError(workspaceMetadata.didFailLoadErrorMessage!, latestWorkspaceData?.lastUrl ?? homeUrl);
-      //   // isNew: only set language when first time load the wiki; options.from: only set language when creating new wiki
-      // } else
-
       if (isNew && options.from === WikiCreationMethod.Create) {
         const view = this.viewService.getView(workspace.id, WindowNames.main);
         if (view !== undefined) {
