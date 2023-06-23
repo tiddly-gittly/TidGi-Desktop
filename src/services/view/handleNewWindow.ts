@@ -57,9 +57,9 @@ export function handleNewWindow(
       action: 'deny',
     };
   }
-  logger.debug('handleNewWindow()', { newWindowContext });
-  const { view, workspace, sharedWebPreferences, meta } = newWindowContext;
-  const currentUrl = view.webContents.getURL();
+  logger.debug('Allowing creating new window', { newWindowContext, function: 'handleNewWindow' });
+  const { view: parentWindowView, workspace, sharedWebPreferences, meta } = newWindowContext;
+  const currentUrl = parentWindowView.webContents.getURL();
   /** Conditions are listed by order of priority
   if global.forceNewWindow = true
   or regular new-window event
@@ -115,7 +115,7 @@ export function handleNewWindow(
     }
     parentWebContents.once('did-create-window', (childWindow) => {
       childWindow.setMenuBarVisibility(false);
-      childWindow.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) => handleNewWindow(details, newWindowContext, parentWebContents));
+      childWindow.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) => handleNewWindow(details, newWindowContext, childWindow.webContents));
       childWindow.webContents.once('will-navigate', async (_event, url) => {
         // if the window is used for the current app, then use default behavior
         const appUrl = (await workspaceService.get(workspace.id))?.homeUrl;
@@ -133,9 +133,11 @@ export function handleNewWindow(
       });
       windowWithBrowserViewState.manage(childWindow);
       const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
-      void menuService.initContextMenuForWindowWebContents(view.webContents).then((unregisterContextMenu) => {
-        childWindow.webContents.on('destroyed', () => {
-          unregisterContextMenu();
+      childWindow.webContents.once('dom-ready', async () => {
+        await menuService.initContextMenuForWindowWebContents(childWindow.webContents).then((unregisterContextMenu) => {
+          childWindow.webContents.on('destroyed', () => {
+            unregisterContextMenu();
+          });
         });
       });
     });
