@@ -251,7 +251,14 @@ ${message.message}
 
   public formatFileUrlToAbsolutePath(urlWithFileProtocol: string): string {
     logger.info('getting url', { url: urlWithFileProtocol, function: 'formatFileUrlToAbsolutePath' });
-    const { hostname, pathname } = new URL(urlWithFileProtocol);
+    let pathname = '';
+    let hostname = '';
+    try {
+      ({ hostname, pathname } = new URL(urlWithFileProtocol));
+    } catch {
+      pathname = urlWithFileProtocol.replace('file://', '').replace('open://', '');
+      logger.error(`Parse URL failed, use original url replace file:// instead`, { pathname, function: 'formatFileUrlToAbsolutePath.error' });
+    }
     /**
      * urlWithFileProtocol: `file://./files/xxx.png`
      * hostname: `.`, pathname: `/files/xxx.png`
@@ -273,6 +280,7 @@ ${message.message}
       logger.error(`No active workspace, abort. Try loading filePath as-is.`, { filePath, function: 'formatFileUrlToAbsolutePath' });
       return filePath;
     }
+    // try concat workspace path + file path to get relative path
     const filePathInWorkspaceFolder = path.resolve(workspace.wikiFolderLocation, filePath);
     fileExists = fs.existsSync(filePathInWorkspaceFolder);
     logger.info(`This file ${fileExists ? '' : 'not '}exists in workspace folder.`, { filePathInWorkspaceFolder, function: 'formatFileUrlToAbsolutePath' });
