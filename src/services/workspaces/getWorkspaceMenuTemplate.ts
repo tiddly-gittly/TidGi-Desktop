@@ -23,7 +23,7 @@ interface IWorkspaceMenuRequiredServices {
   wiki: Pick<IWikiService, 'wikiOperation' | 'requestWikiSendActionMessage'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open'>;
-  workspace: Pick<IWorkspaceService, 'getActiveWorkspace' | 'getSubWorkspacesAsListSync'>;
+  workspace: Pick<IWorkspaceService, 'getActiveWorkspace' | 'getSubWorkspacesAsList'>;
   workspaceView: Pick<
     IWorkspaceViewService,
     | 'wakeUpWorkspaceView'
@@ -129,7 +129,8 @@ export async function getWorkspaceMenuTemplate(
           } else {
             // sync all sub workspace
             const mainHasChanges = await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
-            const subHasChangesPromise = service.workspace.getSubWorkspacesAsListSync(id).map(async (workspace) => {
+            const subWorkspaces = await service.workspace.getSubWorkspacesAsList(id);
+            const subHasChangesPromise = subWorkspaces.map(async (workspace) => {
               const hasChanges = await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
               return hasChanges;
             });

@@ -220,6 +220,13 @@ export class Workspace implements IWorkspaceService {
     return Object.values(this.workspaces).sort(workspaceSorter);
   }
 
+  public async getSubWorkspacesAsList(workspaceID: string): Promise<IWorkspace[]> {
+    const workspace = this.getSync(workspaceID);
+    if (workspace === undefined) return [];
+    if (workspace.isSubWiki) return [];
+    return this.getWorkspacesAsListSync().filter((w) => w.mainWikiID === workspaceID).sort(workspaceSorter);
+  }
+
   public getSubWorkspacesAsListSync(workspaceID: string): IWorkspace[] {
     const workspace = this.getSync(workspaceID);
     if (workspace === undefined) return [];

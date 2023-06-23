@@ -181,6 +181,10 @@ export interface IWorkspaceService {
   getMetaData: (id: string) => Promise<Partial<IWorkspaceMetaData>>;
   getNextWorkspace: (id: string) => Promise<IWorkspace | undefined>;
   getPreviousWorkspace: (id: string) => Promise<IWorkspace | undefined>;
+  getSubWorkspacesAsList(workspaceID: string): Promise<IWorkspace[]>;
+  /**
+   * Only meant to be used in TidGi's services internally.
+   */
   getSubWorkspacesAsListSync(workspaceID: string): IWorkspace[];
   getWorkspaces(): Promise<Record<string, IWorkspace>>;
   getWorkspacesAsList(): Promise<IWorkspace[]>;
