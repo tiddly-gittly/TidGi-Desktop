@@ -264,12 +264,8 @@ export class MenuService implements IMenuService {
   /** Register `on('context-menu', openContextMenuForWindow)` for a window, return an unregister function */
   public async initContextMenuForWindowWebContents(webContents: WebContents): Promise<() => void> {
     const openContextMenuForWindow = async (event: Electron.Event, parameters: ContextMenuParams): Promise<void> => {
-      // DEBUG: console event
-      console.log(`event`, event);
       await this.buildContextMenuAndPopup([], parameters, webContents);
     };
-    // DEBUG: console webContents
-    console.log(`webContents`, webContents);
     webContents.on('context-menu', openContextMenuForWindow);
 
     return () => {
