@@ -22,14 +22,25 @@ export interface INewWindowContext {
 }
 
 export function handleNewWindow(
-  nextUrl: string,
+  details: Electron.HandlerDetails,
   newWindowContext: INewWindowContext,
-  disposition: 'default' | 'new-window' | 'foreground-tab' | 'background-tab' | 'save-to-disk' | 'other',
   parentWebContents: Electron.WebContents,
 ): INewWindowAction {
-  logger.debug(`Getting url that will open externally`, { nextUrl });
+  const { url: nextUrl, disposition, frameName } = details;
+  /**
+   * Guess from tiddlywiki's `core/modules/startup/windows.js`, it will open with details {
+      url: 'about:blank#blocked',
+      frameName: 'external-XXXSomeTiddlerTitle',
+      features: 'scrollbars,width=700,height=600',
+      disposition: 'new-window',
+      referrer: { url: '', policy: 'strict-origin-when-cross-origin' },
+      postBody: undefined
+    }
+   */
+  const mightFromTiddlywikiOpenNewWindow = frameName.startsWith('external-');
+  logger.debug(`Getting url that will open externally`, { ...details, fromTW: mightFromTiddlywikiOpenNewWindow });
   // don't show useless blank page
-  if (nextUrl.startsWith('about:blank')) {
+  if (nextUrl.startsWith('about:blank') && !mightFromTiddlywikiOpenNewWindow) {
     logger.debug('ignore about:blank');
     return { action: 'deny' };
   }
@@ -79,7 +90,7 @@ export function handleNewWindow(
     meta.forceNewWindow = false;
     const metadataConfig = {
       additionalArguments: [
-        `${MetaDataChannel.browserViewMetaData}${WindowNames.newWindow}`,
+        `${MetaDataChannel.browserViewMetaData}${WindowNames.view}`,
         `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(browserViewMetaData))}`,
       ],
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
@@ -104,7 +115,7 @@ export function handleNewWindow(
     }
     parentWebContents.once('did-create-window', (childWindow) => {
       childWindow.setMenuBarVisibility(false);
-      childWindow.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) => handleNewWindow(details.url, newWindowContext, details.disposition, parentWebContents));
+      childWindow.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) => handleNewWindow(details, newWindowContext, parentWebContents));
       childWindow.webContents.once('will-navigate', async (_event, url) => {
         // if the window is used for the current app, then use default behavior
         const appUrl = (await workspaceService.get(workspace.id))?.homeUrl;

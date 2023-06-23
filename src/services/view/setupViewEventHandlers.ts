@@ -213,14 +213,13 @@ export default function setupViewEventHandlers(
 
   view.webContents.setWindowOpenHandler((details: Electron.HandlerDetails) =>
     handleNewWindow(
-      details.url,
+      details,
       {
         workspace,
         sharedWebPreferences,
         view,
         meta: viewMeta,
       },
-      details.disposition,
       view.webContents,
     )
   );

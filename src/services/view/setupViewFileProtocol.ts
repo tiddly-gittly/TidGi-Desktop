@@ -7,8 +7,8 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
 import { BrowserView, shell } from 'electron';
 import fs from 'fs-extra';
+import type { INewWindowContext } from './handleNewWindow';
 import { INewWindowAction } from './interface';
-import type { INewWindowContext } from './setupViewEventHandlers';
 
 /**
  * Handles in-wiki file link opening.

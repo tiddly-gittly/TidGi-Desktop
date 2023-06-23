@@ -11,7 +11,6 @@ export enum WindowNames {
    */
   main = 'main',
   menuBar = 'menuBar',
-  newWindow = 'newWindow',
   notifications = 'notifications',
   preferences = 'preferences',
   spellcheck = 'spellcheck',
@@ -43,10 +42,6 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     height: 220,
   },
   [WindowNames.view]: {
-    width: undefined,
-    height: undefined,
-  },
-  [WindowNames.newWindow]: {
     width: undefined,
     height: undefined,
   },
@@ -89,7 +84,6 @@ export interface WindowMeta {
   [WindowNames.about]: undefined;
   [WindowNames.auth]: undefined;
   [WindowNames.view]: { workspaceID?: string };
-  [WindowNames.newWindow]: undefined;
   [WindowNames.addWorkspace]: undefined;
   [WindowNames.notifications]: undefined;
   [WindowNames.spellcheck]: undefined;
