@@ -19,6 +19,7 @@ import type { INewWindowContext } from './setupViewEventHandlers';
  * For  file:/// in-app assets loading., see handleFileProtocol() in `src/services/native/index.ts`.
  */
 export function handleOpenFileExternalLink(nextUrl: string, newWindowContext: INewWindowContext): INewWindowAction | undefined {
+  if (!nextUrl.startsWith('file://') && !nextUrl.startsWith('open://')) return;
   const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
   const absoluteFilePath = nativeService.formatFileUrlToAbsolutePath(nextUrl);
