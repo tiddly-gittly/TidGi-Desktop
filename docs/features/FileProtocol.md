@@ -10,7 +10,7 @@ Normally, link like
 [ext[外部文件夹|file:///Users/linonetwo/Downloads/]]
 ```
 
-Will become external link that will open new window, so this feature is handled in `handleOpenFileExternalLink` in `src/services/view/setupViewEventHandlers.ts`.
+Will become external link that will open new window, so this feature is handled in `handleOpenFileExternalLink` in `src/services/view/setupViewFileProtocol.ts`.
 
 ## Load the file content
 
@@ -20,9 +20,69 @@ Image syntax like
 [img[file://./files/1644384970572.jpeg]]
 ```
 
-will ask `view.webContent` to send a request, which will be handled in `handleFileProtocol` in `src/services/view/setupViewSession.ts`.
+will ask `view.webContent` to send a request, which will be handled in `handleViewFileContentLoading` in `src/services/view/setupViewFileProtocol.ts`, we use `onBeforeRequest` to catch this request.
 
-We can switch to this
+If the url in the request is absolute, we just let `webContent` load it as normal. We use `callback({ cancel: false });` to hand back control to `webContent`.
+
+If it is relative to workspace path, we use `nativeService.formatFileUrlToAbsolutePath(details.url)` to get the absolute path, and pass it to `redirectURL` to ask ``webContent` to load this new absolute path.
+
+### Deprecated ways
+
+#### `protocol.handle('filefix')`
+
+This implementation is buggy, that will crash app when loading pdf.
+
+```ts
+const fileTypeThatWillCrash = new Set(['.pdf']);
+async function loadFileContentHandler(request: Request) {
+  let { pathname } = new URL(request.url);
+  pathname = decodeURIComponent(pathname);
+  logger.info(`Loading file content from ${pathname}`, { function: 'handleViewFileContentLoading view.webContents.session.protocol.handle' });
+  try {
+    // mimeType will be `text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7` so is useless, `contentType` will also be `null`
+    // const mimeType = request.headers.get('accept');
+    // const contentType = request.headers.get('Content-Type');
+    const extname = path.extname(pathname);
+    if (fileTypeThatWillCrash.has(extname)) {
+      return new Response(undefined, { status: 500, statusText: `${extname} will crash electron, prevented loading.` });
+    }
+    const response = await net.fetch(pathToFileURL(pathname).toString(), {
+      method: request.method,
+      headers: request.headers,
+      body: request.body,
+      bypassCustomProtocolHandlers: true,
+    });
+    logger.info(`${pathname} loaded`, { function: 'handleViewFileContentLoading view.webContents.session.protocol.handle' });
+    return response;
+  } catch (error) {
+    return new Response(undefined, { status: 404, statusText: (error as Error).message });
+  }
+}
+
+  try {
+    /**
+     * This function is called for every view, but seems register on two different view will throw error, so we check if it's already registered.
+     */
+    if (!view.webContents.session.protocol.isProtocolHandled('filefix')) {
+      /**
+       * Electron's bug, file protocol is not handle-able, won't get any callback. But things like `filea://` `filefix` works.
+       */
+      view.webContents.session.protocol.handle('filefix', loadFileContentHandler);
+    }
+    /**
+     * Alternative `open://` protocol for a backup if `file://` doesn't work for some reason.
+     */
+    if (!view.webContents.session.protocol.isProtocolHandled('open')) {
+      view.webContents.session.protocol.handle('open', loadFileContentHandler);
+    }
+  } catch (error) {
+    logger.error(`Failed to register protocol: ${(error as Error).message}`, { function: 'handleViewFileContentLoading' });
+  }
+```
+
+#### `protocol.handle('file')`
+
+`protocol.handle('file'`'s handler won't receive anything.
 
 ```ts
   public async handleFileProtocol(request: GlobalRequest): Promise<GlobalResponse> {
@@ -65,4 +125,4 @@ await app.whenReady();
 protocol.handle('file', nativeService.handleFileProtocol.bind(nativeService));
 ```
 
-works. But currently it is not. `protocol.handle('file'`'s handler won't receive anything.
+works. But currently it is not.

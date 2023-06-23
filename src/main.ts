@@ -22,12 +22,10 @@ import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
-import { INativeService } from '@services/native/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IUpdaterService } from '@services/updater/interface';
 import { IWikiService } from '@services/wiki/interface';
 import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
-import { whenCommonInitFinished } from './helpers/mainInitFinished';
 import { isLinux, isMac } from './helpers/system';
 import type { IPreferenceService } from './services/preferences/interface';
 import type { IWindowService } from './services/windows/interface';
@@ -45,7 +43,10 @@ app.commandLine.appendSwitch('--disable-web-security');
 protocol.registerSchemesAsPrivileged([
   { scheme: 'http', privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'https', privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
-  { scheme: 'htmlString', privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
+  // don't use `standard: true,` otherwise it will prevents `protocol.handle` to work
+  { scheme: 'tidgi', privileges: { bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
+  { scheme: 'open', privileges: { bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
+  { scheme: 'file', privileges: { bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'mailto', privileges: { standard: true } },
 ]);
 // TODO: handle workspace name + tiddler name in uri https://www.electronjs.org/docs/latest/tutorial/launch-app-from-url-in-another-app
@@ -57,7 +58,6 @@ const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceI
 const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
-const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
 app.on('second-instance', () => {
   // Someone tried to run a second instance, we should focus our window.
   const mainWindow = windowService.get(WindowNames.main);

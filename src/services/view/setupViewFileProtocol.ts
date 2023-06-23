@@ -5,9 +5,8 @@ import { logger } from '@services/libs/log';
 import { INativeService } from '@services/native/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
-import { BrowserView, net, shell } from 'electron';
+import { BrowserView, shell } from 'electron';
 import fs from 'fs-extra';
-import { pathToFileURL } from 'url';
 import { INewWindowAction } from './interface';
 import type { INewWindowContext } from './setupViewEventHandlers';
 
@@ -51,43 +50,11 @@ export function handleOpenFileExternalLink(nextUrl: string, newWindowContext: IN
   };
 }
 
-async function loadFileContentHandler(request: Request) {
-  let { pathname } = new URL(request.url);
-  pathname = decodeURIComponent(pathname);
-  logger.info(`Loading file content from ${pathname}`, { function: 'handleViewFileContentLoading view.webContents.session.protocol.handle' });
-  try {
-    const response = await net.fetch(pathToFileURL(pathname).toString());
-    logger.info(`${pathname} loaded`, { function: 'handleViewFileContentLoading view.webContents.session.protocol.handle' });
-    return response;
-  } catch (error) {
-    return new Response(undefined, { status: 404, statusText: (error as Error).message });
-  }
-}
-
 /* eslint-disable n/no-callback-literal */
 /**
  * Handle file protocol in webview to request file content and show in the view.
  */
 export function handleViewFileContentLoading(view: BrowserView) {
-  try {
-    /**
-     * This function is called for every view, but seems register on two different view will throw error, so we check if it's already registered.
-     */
-    if (!view.webContents.session.protocol.isProtocolHandled('filefix')) {
-      /**
-       * Electron's bug, file protocol is not handle-able, won't get any callback. But things like `filea://` `filefix` works.
-       */
-      view.webContents.session.protocol.handle('filefix', loadFileContentHandler);
-    }
-    /**
-     * Alternative `open://` protocol for a backup if `file://` doesn't work for some reason.
-     */
-    if (!view.webContents.session.protocol.isProtocolHandled('open')) {
-      view.webContents.session.protocol.handle('open', loadFileContentHandler);
-    }
-  } catch (error) {
-    logger.error(`Failed to register protocol: ${(error as Error).message}`, { function: 'handleViewFileContentLoading' });
-  }
   view.webContents.session.webRequest.onBeforeRequest((details, callback) => {
     if (details.url.startsWith('file://')) {
       handleFileLink(details, callback);
@@ -101,16 +68,17 @@ export function handleViewFileContentLoading(view: BrowserView) {
 
 function handleFileLink(details: Electron.OnBeforeRequestListenerDetails, callback: (response: Electron.CallbackResponse) => void) {
   const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
-  let redirectURL = nativeService.formatFileUrlToAbsolutePath(details.url);
-  if (redirectURL === details.url) {
-    // prevent redirect loop, remove file:// prefix, so it never comes back to this function from `handleViewFileContentLoading` again.
-    redirectURL = redirectURL.replace('file://', '');
+  const absolutePath: string | undefined = nativeService.formatFileUrlToAbsolutePath(details.url);
+  // When details.url is an absolute route, we just load it, don't need any redirect
+  if (`file://${absolutePath}` === decodeURI(details.url) || absolutePath === decodeURI(details.url)) {
+    callback({
+      cancel: false,
+    });
   } else {
-    redirectURL = `filefix://${redirectURL}`;
+    logger.info(`Redirecting file protocol to ${String(absolutePath)}`, { function: 'handleFileLink' });
+    callback({
+      cancel: false,
+      redirectURL: `file://${absolutePath}`,
+    });
   }
-  logger.info(`Redirecting file protocol to ${redirectURL}`, { function: 'handleFileLink' });
-  callback({
-    cancel: false,
-    redirectURL,
-  });
 }
