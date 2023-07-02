@@ -130,8 +130,10 @@ export async function getWorkspaceMenuTemplate(
             // sync all sub workspace
             const mainHasChanges = await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
             const subWorkspaces = await service.workspace.getSubWorkspacesAsList(id);
-            const subHasChangesPromise = subWorkspaces.map(async (workspace) => {
-              const hasChanges = await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
+            const subHasChangesPromise = subWorkspaces.map(async (subWorkspace) => {
+              const { gitUrl: subGitUrl } = subWorkspace;
+              if (!subGitUrl) return false;
+              const hasChanges = await service.git.commitAndSync(subWorkspace, { remoteUrl: subGitUrl, userInfo });
               return hasChanges;
             });
             const subHasChange = (await Promise.all(subHasChangesPromise)).some(Boolean);
