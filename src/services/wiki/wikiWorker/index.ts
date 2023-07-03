@@ -129,7 +129,7 @@ async function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string,
     throw new Error(`A folder already exists at this path, and a new knowledge base cannot be created here. ${saveWikiFolderPath}`);
   }
   const wikiInstance = TiddlyWiki();
-  wikiInstance.boot.argv = ['--load', htmlWikiPath, '--savewikifolder', saveWikiFolderPath];
+  wikiInstance.boot.argv = ['--load', htmlWikiPath, '--savewikifolder', saveWikiFolderPath, 'explodePlugins=no'];
   await new Promise<void>((resolve, reject) => {
     try {
       wikiInstance.boot.startup({

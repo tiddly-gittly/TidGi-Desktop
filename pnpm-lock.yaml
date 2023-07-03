@@ -1,9 +1,13 @@
 lockfileVersion: '6.0'
 
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
 dependencies:
   '@tiddlygit/tiddlywiki':
-    specifier: ^5.3.0-prerelease-2023-06-20
-    version: 5.3.0-prerelease-2023-06-20
+    specifier: ^5.3.0-prerelease-2023-06-30
+    version: 5.3.0-prerelease-2023-06-30
   app-path:
     specifier: ^4.0.0
     version: 4.0.0
@@ -894,7 +898,7 @@ packages:
       '@electron/get': 2.0.2
       chalk: 4.1.2
       commander: 4.1.1
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       fs-extra: 10.1.0
       listr2: 5.0.8
       semver: 7.5.2
@@ -913,7 +917,7 @@ packages:
       '@electron/rebuild': 3.2.13(bluebird@3.7.2)
       '@malept/cross-spawn-promise': 2.0.0
       chalk: 4.1.2
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       find-up: 5.0.0
       fs-extra: 10.1.0
       log-symbols: 4.1.0
@@ -942,7 +946,7 @@ packages:
       '@electron/rebuild': 3.2.13(bluebird@3.7.2)
       '@malept/cross-spawn-promise': 2.0.0
       chalk: 4.1.2
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       electron-packager: 17.1.1
       fast-glob: 3.2.12
       filenamify: 4.3.0
@@ -1117,7 +1121,7 @@ packages:
       '@electron-forge/shared-types': 6.2.1(bluebird@3.7.2)
       '@electron-forge/web-multi-logger': 6.2.1
       chalk: 4.1.2
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       fs-extra: 10.1.0
       html-webpack-plugin: 5.5.1(webpack@5.83.1)
       webpack: 5.83.1(esbuild@0.18.4)
@@ -1165,7 +1169,7 @@ packages:
     dependencies:
       '@electron-forge/shared-types': 6.2.1(bluebird@3.7.2)
       '@malept/cross-spawn-promise': 2.0.0
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       fs-extra: 10.1.0
       username: 5.1.0
     transitivePeerDependencies:
@@ -1243,7 +1247,7 @@ packages:
     resolution: {integrity: sha512-eFZVFoRXb3GFGd7Ak7W4+6jBl9wBtiZ4AaYOse97ej6mKj5tkyO0dUnUChs1IhJZtx1BENo4/p4WUTXpi6vT+g==}
     engines: {node: '>=12'}
     dependencies:
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       env-paths: 2.2.1
       fs-extra: 8.1.0
       got: 11.8.6
@@ -1259,7 +1263,7 @@ packages:
     resolution: {integrity: sha512-9oRzT56rKh5bspk3KpAVF8lPKHYQrBnRwcgiOeR0hdilVEQmszDaAu0IPCPrwwzJN0ugNs0rRboTreHMt/6mBQ==}
     engines: {node: '>= 10.0.0'}
     dependencies:
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       fs-extra: 9.1.0
     transitivePeerDependencies:
       - supports-color
@@ -1271,7 +1275,7 @@ packages:
     hasBin: true
     dependencies:
       compare-version: 0.1.2
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       fs-extra: 10.1.0
       isbinaryfile: 4.0.10
       minimist: 1.2.8
@@ -1287,7 +1291,7 @@ packages:
     dependencies:
       '@malept/cross-spawn-promise': 2.0.0
       chalk: 4.1.2
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       detect-libc: 2.0.1
       fs-extra: 10.1.0
       got: 11.8.6
@@ -1309,7 +1313,7 @@ packages:
     dependencies:
       '@electron/asar': 3.2.4
       '@malept/cross-spawn-promise': 1.1.1
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       dir-compare: 3.3.0
       fs-extra: 9.1.0
       minimatch: 3.1.2
@@ -1774,7 +1778,7 @@ packages:
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
     dependencies:
       ajv: 6.12.6
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       espree: 9.5.2
       globals: 13.20.0
       ignore: 5.2.4
@@ -1800,7 +1804,7 @@ packages:
     engines: {node: '>=10.10.0'}
     dependencies:
       '@humanwhocodes/object-schema': 1.2.1
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       minimatch: 3.1.2
     transitivePeerDependencies:
       - supports-color
@@ -2247,7 +2251,7 @@ packages:
     requiresBuild: true
     dependencies:
       '@malept/flatpak-bundler': 0.4.0
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       electron-installer-common: 0.10.3
       lodash: 4.17.21
       semver: 7.5.2
@@ -2262,7 +2266,7 @@ packages:
     engines: {node: '>= 10.0.0'}
     requiresBuild: true
     dependencies:
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       fs-extra: 9.1.0
       lodash: 4.17.21
       tmp-promise: 3.0.3
@@ -2604,8 +2608,8 @@ packages:
     engines: {node: '>=10.17'}
     dev: true
 
-  /@tiddlygit/tiddlywiki@5.3.0-prerelease-2023-06-20:
-    resolution: {integrity: sha512-DXEBnN5qbwqCFENhvJTDSz3JtddJ4Z4Dw9ejOansGcV0VKOH6gLTcBGIA07ioNvnIifxl/Xl4xXtF8aHO8Zlwg==}
+  /@tiddlygit/tiddlywiki@5.3.0-prerelease-2023-06-30:
+    resolution: {integrity: sha512-3TexdExSS2geLdvtSc0EJawrgxG2NAC5KCbcO871aQwsVNvX4WvlknPFThQ42+YJMgvlozGtWNxBcLIZta/cEQ==}
     engines: {node: '>=0.8.2'}
     hasBin: true
     dev: false
@@ -3132,7 +3136,7 @@ packages:
       '@typescript-eslint/scope-manager': 5.60.0
       '@typescript-eslint/type-utils': 5.60.0(eslint@8.43.0)(typescript@5.1.3)
       '@typescript-eslint/utils': 5.60.0(eslint@8.43.0)(typescript@5.1.3)
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       eslint: 8.43.0
       grapheme-splitter: 1.0.4
       ignore: 5.2.4
@@ -3170,7 +3174,7 @@ packages:
       '@typescript-eslint/scope-manager': 5.60.0
       '@typescript-eslint/types': 5.60.0
       '@typescript-eslint/typescript-estree': 5.60.0(typescript@5.1.3)
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       eslint: 8.43.0
       typescript: 5.1.3
     transitivePeerDependencies:
@@ -3197,7 +3201,7 @@ packages:
     dependencies:
       '@typescript-eslint/typescript-estree': 5.60.0(typescript@5.1.3)
       '@typescript-eslint/utils': 5.60.0(eslint@8.43.0)(typescript@5.1.3)
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       eslint: 8.43.0
       tsutils: 3.21.0(typescript@5.1.3)
       typescript: 5.1.3
@@ -3221,7 +3225,7 @@ packages:
     dependencies:
       '@typescript-eslint/types': 5.60.0
       '@typescript-eslint/visitor-keys': 5.60.0
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       globby: 11.1.0
       is-glob: 4.0.3
       semver: 7.5.2
@@ -3420,7 +3424,7 @@ packages:
     resolution: {integrity: sha512-RZNwNclF7+MS/8bDg70amg32dyeZGZxiDuQmZxKLAlQjr3jGyLx+4Kkk58UO7D2QdgFIQCovuSuZESne6RG6XQ==}
     engines: {node: '>= 6.0.0'}
     dependencies:
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -3429,7 +3433,7 @@ packages:
     resolution: {integrity: sha512-7Epl1Blf4Sy37j4v9f9FjICCh4+KAQOyXgHEwlyBiAQLbhKdq/i2QQU3amQalS/wPhdPzDXPL5DMR5bkn+YeWg==}
     engines: {node: '>= 8.0.0'}
     dependencies:
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       depd: 2.0.0
       humanize-ms: 1.2.1
     transitivePeerDependencies:
@@ -4700,6 +4704,17 @@ packages:
       ms: 2.1.3
     dev: true
 
+  /debug@4.3.4:
+    resolution: {integrity: sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ==}
+    engines: {node: '>=6.0'}
+    peerDependencies:
+      supports-color: '*'
+    peerDependenciesMeta:
+      supports-color:
+        optional: true
+    dependencies:
+      ms: 2.1.2
+
   /debug@4.3.4(supports-color@5.5.0):
     resolution: {integrity: sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ==}
     engines: {node: '>=6.0'}
@@ -5020,7 +5035,7 @@ packages:
     dependencies:
       '@malept/cross-spawn-promise': 1.1.1
       asar: 3.2.0
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       fs-extra: 9.1.0
       glob: 7.2.3
       lodash: 4.17.21
@@ -5042,7 +5057,7 @@ packages:
     requiresBuild: true
     dependencies:
       '@malept/cross-spawn-promise': 1.1.1
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       electron-installer-common: 0.10.3
       fs-extra: 9.1.0
       get-folder-size: 2.0.1
@@ -5062,7 +5077,7 @@ packages:
     requiresBuild: true
     dependencies:
       '@malept/cross-spawn-promise': 1.1.1
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       electron-installer-common: 0.10.3
       fs-extra: 9.1.0
       lodash: 4.17.21
@@ -5080,7 +5095,7 @@ packages:
     requiresBuild: true
     dependencies:
       '@malept/cross-spawn-promise': 1.1.1
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       electron-installer-common: 0.10.3
       fs-extra: 9.1.0
       js-yaml: 3.14.1
@@ -5126,7 +5141,7 @@ packages:
       '@electron/osx-sign': 1.0.4
       '@electron/universal': 1.3.4
       cross-spawn-windows-exe: 1.2.0
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       extract-zip: 2.0.1
       filenamify: 4.3.0
       fs-extra: 10.1.0
@@ -5204,7 +5219,7 @@ packages:
     requiresBuild: true
     dependencies:
       '@electron/asar': 3.2.4
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       fs-extra: 7.0.1
       lodash.template: 4.5.0
       temp: 0.9.4
@@ -5217,7 +5232,7 @@ packages:
     resolution: {integrity: sha512-CfcakpocoGGtzXElHwiSqB5nSlscyZYPBDTj7s+kfw2jXby3Nzzso7vIA+6EiPebn704D4JyKaJ7O4GCY2h5KQ==}
     engines: {node: '>=14.0.0'}
     dependencies:
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       fs-extra: 10.1.0
       klaw: 4.1.0
       lodash: 4.17.21
@@ -5596,7 +5611,7 @@ packages:
       eslint: '*'
       eslint-plugin-import: '*'
     dependencies:
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       enhanced-resolve: 5.14.0
       eslint: 8.43.0
       eslint-module-utils: 2.8.0(@typescript-eslint/parser@5.60.0)(eslint-import-resolver-typescript@3.5.5)(eslint@8.43.0)
@@ -5955,7 +5970,7 @@ packages:
       ajv: 6.12.6
       chalk: 4.1.2
       cross-spawn: 7.0.3
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       doctrine: 3.0.0
       escape-string-regexp: 4.0.0
       eslint-scope: 7.2.0
@@ -6195,7 +6210,7 @@ packages:
     engines: {node: '>= 10.17.0'}
     hasBin: true
     dependencies:
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       get-stream: 5.2.0
       yauzl: 2.10.0
     optionalDependencies:
@@ -6369,7 +6384,7 @@ packages:
     resolution: {integrity: sha512-d+9na7t9FyH8gBJoNDSi28mE4NgQVGGvxQ4aHtFRetjyh5SXjuus+V5EZaxFmFdXVemSOrx0lsgEl/ZMjnOWJA==}
     engines: {node: '>= 6.0.0'}
     dependencies:
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       fs-extra: 7.0.1
     transitivePeerDependencies:
       - supports-color
@@ -6388,7 +6403,7 @@ packages:
       debug:
         optional: true
     dependencies:
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
     dev: true
 
   /follow-redirects@1.5.10:
@@ -7075,7 +7090,7 @@ packages:
     dependencies:
       '@tootallnate/once': 2.0.0
       agent-base: 6.0.2
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -7122,7 +7137,7 @@ packages:
     engines: {node: '>= 6'}
     dependencies:
       agent-base: 6.0.2
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -10190,7 +10205,7 @@ packages:
     engines: {node: '>= 10'}
     dependencies:
       agent-base: 6.0.2
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       socks: 2.7.1
     transitivePeerDependencies:
       - supports-color
@@ -10253,7 +10268,7 @@ packages:
   /spdy-transport@3.0.0:
     resolution: {integrity: sha512-hsLVFE5SjA6TCisWeJXFKniGGOpBgMLmerfO2aCyCU5s7nJ/rpAepqmFifv/GCbSbueEeAJJnmSQ2rKC/g8Fcw==}
     dependencies:
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       detect-node: 2.1.0
       hpack.js: 2.1.6
       obuf: 1.1.2
@@ -10267,7 +10282,7 @@ packages:
     resolution: {integrity: sha512-r46gZQZQV+Kl9oItvl1JZZqJKGr+oEkB08A6BzkiR7593/7IbtuncXHd2YoYeTsG4157ZssMu9KYvUHLcjcDoA==}
     engines: {node: '>=6.0.0'}
     dependencies:
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       handle-thing: 2.0.1
       http-deceiver: 1.2.7
       select-hose: 2.0.0
@@ -10565,7 +10580,7 @@ packages:
     resolution: {integrity: sha512-MvjXzkz/BOfyVDkG0oFOtBxHX2u3gKbMHIF/dXblZsgD3BWOFLmHovIpZY7BykJdAjcqRCBi1WYBNdEC9yI7vg==}
     engines: {node: '>= 8.0'}
     dependencies:
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
     transitivePeerDependencies:
       - supports-color
 
@@ -10719,7 +10734,7 @@ packages:
     resolution: {integrity: sha512-Mx5NBSHX3sQYR6iI9VYbgHKBLisyB+xROCBGjjWm1O9wb9vfLxdaGtmT/KCjUqMsSNW6nERzCW3T6H43LqjDZQ==}
     dependencies:
       callsites: 3.1.0
-      debug: 4.3.4(supports-color@5.5.0)
+      debug: 4.3.4
       is-observable: 2.1.0
       observable-fns: 0.6.1
     optionalDependencies:
