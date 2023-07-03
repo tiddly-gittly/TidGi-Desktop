@@ -87,7 +87,7 @@ export default function About(): JSX.Element {
       </Helmet>
       <Icon src={iconPath} alt='TidGi' />
       <Title>TidGi ({platform ?? 'Unknown Platform'})</Title>
-      <TidGiVersion>{`Version v${appVersion ?? ' - '}.`}</TidGiVersion>
+      <TidGiVersion>{`Version v${appVersion ?? ' - '}`}</TidGiVersion>
       <DependenciesVersionsContainer>
         {versions?.map(({ name, version }) => (
           <DependenciesVersions key={name}>
