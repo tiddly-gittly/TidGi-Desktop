@@ -1,0 +1,45 @@
+import { LanguageModelChannel } from '@/constants/channels';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import type { Observable } from 'rxjs';
+
+export interface ILLMResultBase {
+  /**
+   * Conversation id.
+   * Can use this to stop a generation.
+   * Also this worker is shared across all workspaces, so you can use this to identify which window is the result for.
+   */
+  id: string;
+}
+export type ILanguageModelLogMessage = INormalLanguageModelLogMessage | IErrorLanguageModelLogMessage | ILanguageModelWorkerResult;
+export interface INormalLanguageModelLogMessage extends ILLMResultBase {
+  level: 'debug' | 'warn' | 'info';
+  message: string;
+  meta: unknown;
+}
+export interface IErrorLanguageModelLogMessage extends ILLMResultBase {
+  error: Error;
+  level: 'error';
+}
+export interface ILanguageModelWorkerResult extends ILLMResultBase, ILLMResultPart {
+  type: 'result';
+}
+
+/**
+ * Part of generate result.
+ */
+export interface ILLMResultPart {
+  token: string;
+}
+
+/**
+ * Run language model on a shared worker, and queue requests to the worker.
+ */
+export interface ILanguageModelService {
+  runLLama$(): Observable<ILLMResultPart>;
+}
+export const LanguageModelServiceIPCDescriptor = {
+  channel: LanguageModelChannel.name,
+  properties: {
+    runLLama$: ProxyPropertyType.Function$,
+  },
+};
