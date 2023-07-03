@@ -30,6 +30,9 @@
   "author": "Lin Onetwo <linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
   "main": ".webpack/main",
   "dependencies": {
+    "@llama-node/core": "^0.1.6",
+    "@llama-node/llama-cpp": "^0.1.6",
+    "@llama-node/rwkv-cpp": "^0.1.6",
     "@tiddlygit/tiddlywiki": "^5.3.0-prerelease-2023-06-30",
     "app-path": "^4.0.0",
     "best-effort-json-parser": "1.0.1",
@@ -56,6 +59,7 @@
     "inversify-inject-decorators": "3.1.0",
     "ipaddr.js": "2.1.0",
     "jimp": "0.22.8",
+    "llama-node": "^0.1.6",
     "lodash": "4.17.21",
     "menubar": "9.3.0",
     "nanoid": "^4.0.2",
