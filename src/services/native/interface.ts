@@ -37,6 +37,10 @@ export interface INativeService {
    * This handles file:// protocol when webview load image content, not handling file external link clicking.
    */
   formatFileUrlToAbsolutePath(urlWithFileProtocol: string): string;
+  /**
+   * Replace 0.0.0.0 to actual IP address.
+   * @param urlToReplace Usually `getDefaultHTTPServerIP(port)`
+   */
   getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   open(uri: string, isDirectory?: boolean): Promise<void>;

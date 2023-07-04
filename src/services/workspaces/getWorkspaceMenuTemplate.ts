@@ -1,4 +1,5 @@
 import { WikiChannel } from '@/constants/channels';
+import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { IContextService } from '@services/context/interface';
 import { IGitService } from '@services/git/interface';
@@ -60,7 +61,7 @@ export async function getWorkspaceMenuTemplate(
   t: TFunction,
   service: IWorkspaceMenuRequiredServices,
 ): Promise<MenuItemConstructorOptions[]> {
-  const { active, id, mainWikiID, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, homeUrl, name } = workspace;
+  const { active, id, mainWikiID, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, name, enableHTTPAPI } = workspace;
   /* eslint-disable @typescript-eslint/no-misused-promises */
   const template: MenuItemConstructorOptions[] = [
     {
@@ -98,9 +99,10 @@ export async function getWorkspaceMenuTemplate(
       click: async () => await service.native.openInGitGuiApp(wikiFolderLocation),
     },
     {
-      label: t('WorkspaceSelector.OpenInBrowser'),
+      label: `${t('WorkspaceSelector.OpenInBrowser')}${enableHTTPAPI ? '' : t('WorkspaceSelector.OpenInBrowserDisabledHint')}`,
+      enabled: enableHTTPAPI,
       click: async () => {
-        const actualIP = await service.native.getLocalHostUrlWithActualInfo(homeUrl, id);
+        const actualIP = await service.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(port), id);
         await service.native.open(actualIP);
       },
     },
@@ -132,6 +134,7 @@ export async function getWorkspaceMenuTemplate(
             const subWorkspaces = await service.workspace.getSubWorkspacesAsList(id);
             const subHasChangesPromise = subWorkspaces.map(async (subWorkspace) => {
               const { gitUrl: subGitUrl } = subWorkspace;
+              // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
               if (!subGitUrl) return false;
               const hasChanges = await service.git.commitAndSync(subWorkspace, { remoteUrl: subGitUrl, userInfo });
               return hasChanges;

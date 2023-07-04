@@ -19,6 +19,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { isTest } from '@/constants/environment';
 import { MENUBAR_ICON_PATH } from '@/constants/paths';
+import { getDefaultHTTPServerIP } from '@/constants/urls';
 import { isMac } from '@/helpers/system';
 import { lazyInject } from '@services/container';
 import getFromRenderer from '@services/libs/getFromRenderer';
@@ -334,7 +335,7 @@ export class Window implements IWindowService {
     const contents = win?.getBrowserView()?.webContents;
     const activeWorkspace = await this.workspaceService.getActiveWorkspace();
     if (contents !== undefined && activeWorkspace !== undefined && win !== undefined) {
-      await contents.loadURL(await this.nativeService.getLocalHostUrlWithActualInfo(activeWorkspace.homeUrl, activeWorkspace.id));
+      await contents.loadURL(await this.nativeService.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(activeWorkspace.port), activeWorkspace.id));
       contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
       contents.send(WindowChannel.updateCanGoForward, contents.canGoForward());
     }

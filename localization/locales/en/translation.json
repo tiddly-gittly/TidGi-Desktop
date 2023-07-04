@@ -19,7 +19,8 @@
     "ReloadCurrentWorkspace": "Reload Current Workspace",
     "OpenWorkspaceFolderInEditor": "Open Folder In External Editor",
     "OpenWorkspaceFolderInGitGUI": "Open in Git GUI",
-    "OpenInBrowser": "Open in browser"
+    "OpenInBrowser": "Open in browser",
+    "OpenInBrowserDisabledHint": "(Config→EnableHTTPAPI to enable)"
   },
   "SideBar": {
     "CommandPalette": "CmdPal",

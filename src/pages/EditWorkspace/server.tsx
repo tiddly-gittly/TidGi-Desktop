@@ -116,7 +116,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                   workspaceSetter({
                     ...workspace,
                     port: Number(event.target.value),
-                    homeUrl: await window.service.native.getLocalHostUrlWithActualInfo(`http://${defaultServerIP}:${event.target.value}/`, id),
+                    homeUrl: await window.service.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(Number(event.target.value)), id),
                   }, true);
                 }
               }}
