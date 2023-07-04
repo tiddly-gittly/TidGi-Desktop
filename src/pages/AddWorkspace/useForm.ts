@@ -178,7 +178,7 @@ export async function workspaceConfigFromForm(form: INewWikiRequiredFormData, is
     wikiFolderLocation: form.wikiFolderLocation!,
     backupOnInterval: true,
     readOnlyMode: false,
-    tokenAuth: true,
+    tokenAuth: false,
     userName: userNameIsEmpty ? DEFAULT_USER_NAME : undefined,
     excludedPlugins: [],
     enableHTTPAPI: false,
