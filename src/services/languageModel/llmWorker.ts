@@ -1,25 +1,25 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 import 'source-map-support/register';
+import { LLM } from 'llama-node';
+import { LLamaCpp, LoadConfig as LLamaLoadConfig } from 'llama-node/dist/llm/llama-cpp.js';
 import { Observable } from 'rxjs';
 import { expose } from 'threads/worker';
-// index.mjs
-import { LLM } from 'llama-node';
-import { LLamaCpp } from 'llama-node/dist/llm/llama-cpp.js';
-import { ILanguageModelLogMessage } from './interface';
-// import path from 'path';
+import { ILanguageModelWorkerResponse } from './interface';
 
-function runLLama(
-  userPrompt: string,
-  modelPath: string,
-  conversationID: string,
-): Observable<ILanguageModelLogMessage> {
-  return new Observable<ILanguageModelLogMessage>((observer) => {
+/**
+ * If a llm stop responding for this long, we will kill the conversation. This basically means it stopped responding.
+ */
+const DEFAULT_TIMEOUT_DURATION = 1000 * 30;
+function runLLama$(
+  options: { conversationID: string; modelPath: string; prompt: string },
+): Observable<ILanguageModelWorkerResponse> {
+  const { conversationID, modelPath, prompt } = options;
+  return new Observable<ILanguageModelWorkerResponse>((observer) => {
     void (async function runLLamaObservableIIFE() {
       try {
-        const model = '/Users/linonetwo/Downloads/ggml-vic7b-q5_1.bin'; /* path.resolve(process.cwd(), '../ggml-vic7b-q5_1.bin') */
         const llama = new LLM(LLamaCpp);
-        const config = {
-          modelPath: model,
+        const config: LLamaLoadConfig = {
+          modelPath,
           enableLogging: true,
           nCtx: 1024,
           seed: 0,
@@ -31,13 +31,17 @@ function runLLama(
           useMmap: true,
           nGpuLayers: 0,
         };
-
-        const template = `How to write a science fiction?`;
-        const prompt = `A chat between a user and a useful assistant.
-USER: ${template}
-ASSISTANT:`;
         await llama.load(config);
-
+        let respondTimeout: NodeJS.Timeout | undefined;
+        const abortController = new AbortController();
+        const updateTimeout = () => {
+          clearTimeout(respondTimeout);
+          respondTimeout = setTimeout(() => {
+            abortController.abort();
+            observer.complete();
+          }, DEFAULT_TIMEOUT_DURATION);
+        };
+        updateTimeout();
         await llama.createCompletion(
           {
             nThreads: 4,
@@ -50,11 +54,14 @@ ASSISTANT:`;
           },
           (response) => {
             const { completed, token } = response;
+            updateTimeout();
             observer.next({ type: 'result', token, id: conversationID });
             if (completed) {
+              clearTimeout(respondTimeout);
               observer.complete();
             }
           },
+          abortController.signal,
         );
       } catch (error) {
         if (error instanceof Error) {
@@ -67,7 +74,6 @@ ASSISTANT:`;
   });
 }
 
-
-const llmWorker = { runLLama };
+const llmWorker = { runLLama$ };
 export type LLMWorker = typeof llmWorker;
 expose(llmWorker);
