@@ -54,16 +54,18 @@ async function executeTWJavaScriptWhenIdle(script: string, options?: { onlyWhenV
   `);
 }
 
-// add tiddler
-ipcRenderer.on(WikiChannel.addTiddler, async (event, title: string, text: string, meta: unknown) => {
-  const extraMeta = typeof meta === 'object' ? JSON.stringify(meta) : '{}';
+/**
+ * add tiddler
+ *
+ * @param title tiddler title
+ * @param text tiddler text
+ * @param extraMeta extra meta data, is `{}` by default, a JSONStringified object
+ */
+ipcRenderer.on(WikiChannel.addTiddler, async (event, nonceReceived: number, title: string, text: string, extraMeta: string = '{}') => {
   await executeTWJavaScriptWhenIdle(`
     $tw.wiki.addTiddler({ title: \`${title}\`, text: \`${text}\`, ...${extraMeta} });
   `);
-  // wait for fs to be settle
-  setTimeout(() => {
-    void ipcRenderer.invoke(WikiChannel.addTiddlerDone);
-  }, 1000);
+  ipcRenderer.send(WikiChannel.addTiddler, nonceReceived);
 });
 // get tiddler text
 ipcRenderer.on(WikiChannel.getTiddlerText, async (event, nonceReceived: number, title: string) => {

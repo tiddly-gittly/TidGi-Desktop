@@ -1,7 +1,6 @@
-import { dialog, ipcMain, net, shell } from 'electron';
+import { dialog, net, shell } from 'electron';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
-import { compact } from 'lodash';
 import { ModuleThread, spawn, Worker } from 'threads';
 
 import { WikiChannel } from '@/constants/channels';
@@ -72,31 +71,32 @@ export class Git implements IGitService {
   }
 
   /**
-   * @param {string} githubRepoName similar to "linonetwo/wiki", string after "https://com/"
+   * Update in-wiki settings for git.
+   * @param {string} remoteUrl
    */
-  public async updateGitInfoTiddler(workspace: IWorkspace, githubRepoName: string): Promise<void> {
-    const browserViews = await this.viewService.getActiveBrowserViews();
-    if (compact(browserViews).length === 0) {
-      logger.error('no browserView in updateGitInfoTiddler');
+  private async updateGitInfoTiddler(workspace: IWorkspace, remoteUrl?: string, branch?: string): Promise<void> {
+    // at least 'http://', but in some case it might be shorter, like 'a.b'
+    if (remoteUrl === undefined || remoteUrl.length < 3) return;
+    if (branch === undefined) return;
+    const browserView = this.viewService.getView(workspace.id, WindowNames.main);
+    if (browserView === undefined) {
+      logger.error(`no browserView in updateGitInfoTiddler for ID ${workspace.id}`);
       return;
     }
-    await Promise.all(
-      browserViews.map(async (browserView) => {
-        if (browserView !== undefined) {
-          const tiddlerText = await this.wikiService.getTiddlerText(workspace, '$:/GitHub/Repo');
-          if (tiddlerText !== githubRepoName) {
-            await new Promise<void>((resolve) => {
-              browserView.webContents.send(WikiChannel.addTiddler, '$:/GitHub/Repo', githubRepoName, {
-                type: 'text/vnd.tiddlywiki',
-              });
-              ipcMain.once(WikiChannel.addTiddlerDone, () => {
-                resolve();
-              });
-            });
-          }
-        }
-      }),
-    );
+    // "/tiddly-gittly/TidGi-Desktop/issues/370"
+    const { pathname } = new URL(remoteUrl);
+    // [ "", "tiddly-gittly", "TidGi-Desktop", "issues", "370" ]
+    const [, userName, repoName] = pathname.split('/');
+    /**
+     * similar to "linonetwo/wiki", string after "https://com/"
+     */
+    const githubRepoName = `${userName}/${repoName}`;
+    if (await this.wikiService.getTiddlerText(workspace, '$:/GitHub/Repo') !== githubRepoName) {
+      await this.wikiService.wikiOperation(WikiChannel.addTiddler, workspace.id, '$:/GitHub/Repo', githubRepoName);
+    }
+    if (await this.wikiService.getTiddlerText(workspace, '$:/GitHub/Branch') !== branch) {
+      await this.wikiService.wikiOperation(WikiChannel.addTiddler, workspace.id, '$:/GitHub/Branch', branch);
+    }
   }
 
   private translateMessage(message: string): string {
@@ -284,7 +284,12 @@ export class Git implements IGitService {
       return false;
     }
     try {
-      return await new Promise<boolean>((resolve, reject) => {
+      try {
+        await this.updateGitInfoTiddler(workspace, config.remoteUrl, config.userInfo?.branch);
+      } catch (error) {
+        logger.error('updateGitInfoTiddler failed when commitAndSync', error);
+      }
+      const result = await new Promise<boolean>((resolve, reject) => {
         const observable = this.gitWorker?.commitAndSyncWiki(workspace, config, this.getErrorMessageI18NDict());
         observable?.subscribe(this.getWorkerMessageObserver(workspace.wikiFolderLocation, () => {}, reject));
         let hasChanges = false;
@@ -304,6 +309,7 @@ export class Git implements IGitService {
         });
         return true;
       });
+      return result;
     } catch (error) {
       this.createFailedDialog((error as Error).message, workspace.wikiFolderLocation);
       return true;

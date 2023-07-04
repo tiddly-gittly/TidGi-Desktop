@@ -51,12 +51,10 @@ export interface IGitService {
    * Run git init in a folder, prepare remote origin if isSyncedWiki
    */
   initWikiGit(wikiFolderPath: string, isSyncedWiki: true, isMainWiki: boolean, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
-  updateGitInfoTiddler(workspace: IWorkspace, githubRepoName: string): Promise<void>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,
   properties: {
-    updateGitInfoTiddler: ProxyPropertyType.Function,
     getModifiedFileList: ProxyPropertyType.Function,
     initWikiGit: ProxyPropertyType.Function,
     commitAndSync: ProxyPropertyType.Function,

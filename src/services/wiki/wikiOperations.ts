@@ -35,6 +35,10 @@ export const wikiOperations = {
   [WikiChannel.runFilter]: async <T extends string[]>(workspaceID: string, filterString: string): Promise<T | undefined> => {
     return await sendToMainWindowAndAwait<T>(WikiChannel.runFilter, workspaceID, [filterString]);
   },
+  [WikiChannel.addTiddler]: async (workspaceID: string, title: string, text: string, meta?: unknown, options?: { timeout?: number }): Promise<void> => {
+    const extraMeta = typeof meta === 'object' ? JSON.stringify(meta) : '{}';
+    await sendToMainWindowAndAwait(WikiChannel.addTiddler, workspaceID, [title, text, extraMeta], options);
+  },
   [WikiChannel.setTiddlerText]: async (workspaceID: string, title: string, value: string, options?: { timeout?: number }): Promise<void> => {
     await sendToMainWindowAndAwait(WikiChannel.setTiddlerText, workspaceID, [title, value], options);
   },

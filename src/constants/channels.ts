@@ -48,7 +48,6 @@ export enum ViewChannel {
 }
 export enum WikiChannel {
   addTiddler = 'wiki-add-tiddler',
-  addTiddlerDone = 'wiki-add-tiddler-done',
   /** used to show wiki creation messages in the TidGi UI for user to read */
   createProgress = 'wiki-create-progress',
   generalNotification = 'wiki-notification-tiddly-git',
