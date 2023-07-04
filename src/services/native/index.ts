@@ -21,6 +21,7 @@ import { ZxNotInitializedError } from './error';
 import { findEditorOrDefault, findGitGUIAppOrDefault, launchExternalEditor } from './externalApp';
 import { INativeService, IPickDirectoryOptions } from './interface';
 import { reportErrorToGithubWithTemplates } from './reportError';
+import { githubDesktopUrl } from '@/constants/urls';
 
 @injectable()
 export class NativeService implements INativeService {
@@ -54,11 +55,12 @@ export class NativeService implements INativeService {
   }
 
   public async openInGitGuiApp(filePath: string, editorName?: string): Promise<boolean> {
-    const defaultEditor = await findGitGUIAppOrDefault(editorName);
-    if (defaultEditor !== undefined) {
-      await launchExternalEditor(filePath, defaultEditor);
+    const defaultGitGui = await findGitGUIAppOrDefault(editorName);
+    if (defaultGitGui !== undefined) {
+      await launchExternalEditor(filePath, defaultGitGui);
       return true;
     }
+    await shell.openExternal(githubDesktopUrl);
     return false;
   }
 

@@ -1,4 +1,4 @@
-import { dialog, net, shell } from 'electron';
+import { dialog, net } from 'electron';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
 import { ModuleThread, spawn, Worker } from 'threads';
@@ -18,7 +18,6 @@ import { GitWorker } from './gitWorker';
 import { ICommitAndSyncConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
 
 import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
-import { githubDesktopUrl } from '@/constants/urls';
 import { lazyInject } from '@services/container';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace } from '@services/workspaces/interface';
@@ -220,10 +219,15 @@ export class Git implements IGitService {
   /**
    * Handle common error dialog and message dialog
    */
-  private readonly getWorkerMessageObserver = (wikiFolderPath: string, resolve: () => void, reject: (error: Error) => void): Observer<IGitLogMessage> => ({
+  private readonly getWorkerMessageObserver = (wikiFolderPath: string, resolve: () => void, reject: (error: Error) => void, workspaceID?: string): Observer<IGitLogMessage> => ({
     next: (messageObject) => {
       if (messageObject.level === 'error') {
-        this.createFailedDialog((messageObject.error).message, wikiFolderPath);
+        // if workspace exists, show notification in workspace, else use dialog instead
+        if (workspaceID === undefined) {
+          this.createFailedDialog((messageObject.error).message, wikiFolderPath);
+        } else {
+          this.createFailedNotification((messageObject.error).message, workspaceID);
+        }
         return;
       }
       const { message, meta, level } = messageObject;
@@ -241,6 +245,10 @@ export class Git implements IGitService {
     },
   });
 
+  private createFailedNotification(message: string, workspaceID: string) {
+    this.wikiService.wikiOperation(WikiChannel.generalNotification, workspaceID, `${i18n.t('Log.SynchronizationFailed')} ${message}`);
+  }
+
   private createFailedDialog(message: string, wikiFolderPath: string): void {
     const mainWindow = this.windowService.get(WindowNames.main);
     if (mainWindow !== undefined) {
@@ -254,15 +262,7 @@ export class Git implements IGitService {
         })
         .then(async ({ response }) => {
           if (response === 1) {
-            try {
-              const result = await this.nativeService.openInGitGuiApp(wikiFolderPath);
-              if (!result) {
-                throw new Error('open github desktop download site');
-              }
-            } catch (error) {
-              logger.error((error as Error).message);
-              await shell.openExternal(githubDesktopUrl);
-            }
+            await this.nativeService.openInGitGuiApp(wikiFolderPath);
           }
         })
         .catch((error) => logger.error('createFailedDialog failed', error));
@@ -283,6 +283,7 @@ export class Git implements IGitService {
     if (!net.isOnline()) {
       return false;
     }
+    const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     try {
       try {
         await this.updateGitInfoTiddler(workspace, config.remoteUrl, config.userInfo?.branch);
@@ -291,7 +292,7 @@ export class Git implements IGitService {
       }
       const result = await new Promise<boolean>((resolve, reject) => {
         const observable = this.gitWorker?.commitAndSyncWiki(workspace, config, this.getErrorMessageI18NDict());
-        observable?.subscribe(this.getWorkerMessageObserver(workspace.wikiFolderLocation, () => {}, reject));
+        observable?.subscribe(this.getWorkerMessageObserver(workspace.wikiFolderLocation, () => {}, reject, workspaceIDToShowNotification));
         let hasChanges = false;
         observable?.subscribe({
           next: (messageObject) => {
@@ -311,7 +312,7 @@ export class Git implements IGitService {
       });
       return result;
     } catch (error) {
-      this.createFailedDialog((error as Error).message, workspace.wikiFolderLocation);
+      this.createFailedNotification((error as Error).message, workspaceIDToShowNotification);
       return true;
     }
   }
