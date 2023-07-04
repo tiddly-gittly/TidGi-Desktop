@@ -10,7 +10,7 @@ export interface ILLMResultBase {
    */
   id: string;
 }
-export type ILanguageModelLogMessage = INormalLanguageModelLogMessage | IErrorLanguageModelLogMessage | ILanguageModelWorkerResult;
+export type ILanguageModelWorkerResponse = INormalLanguageModelLogMessage | IErrorLanguageModelLogMessage | ILanguageModelWorkerResult;
 export interface INormalLanguageModelLogMessage extends ILLMResultBase {
   level: 'debug' | 'warn' | 'info';
   message: string;
@@ -20,22 +20,27 @@ export interface IErrorLanguageModelLogMessage extends ILLMResultBase {
   error: Error;
   level: 'error';
 }
-export interface ILanguageModelWorkerResult extends ILLMResultBase, ILLMResultPart {
+export interface ILanguageModelWorkerResult extends ILLMResultPart {
   type: 'result';
 }
 
 /**
  * Part of generate result.
  */
-export interface ILLMResultPart {
+export interface ILLMResultPart extends ILLMResultBase {
   token: string;
+}
+
+export interface IRunLLAmaOptions extends ILLMResultBase {
+  modelName?: string;
+  prompt: string;
 }
 
 /**
  * Run language model on a shared worker, and queue requests to the worker.
  */
 export interface ILanguageModelService {
-  runLLama$(): Observable<ILLMResultPart>;
+  runLLama$(options: IRunLLAmaOptions): Observable<ILLMResultPart>;
 }
 export const LanguageModelServiceIPCDescriptor = {
   channel: LanguageModelChannel.name,
