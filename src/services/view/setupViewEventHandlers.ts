@@ -2,8 +2,8 @@
 /* eslint-disable unicorn/consistent-destructuring */
 import { app, BrowserView, BrowserWindow, BrowserWindowConstructorOptions, nativeImage, shell } from 'electron';
 import fsExtra from 'fs-extra';
-import path from 'path';
 import { throttle } from 'lodash';
+import path from 'path';
 
 import { buildResourcePath } from '@/constants/paths';
 import getViewBounds from '@services/libs/getViewBounds';
@@ -21,6 +21,7 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { handleNewWindow } from './handleNewWindow';
 import { handleViewFileContentLoading } from './setupViewFileProtocol';
+import { ViewLoadUrlError } from './error';
 
 export interface IViewContext {
   loadInitialUrlWithCatch: () => Promise<void>;
@@ -89,8 +90,12 @@ export default function setupViewEventHandlers(
     await shell.openExternal(newUrl).catch((error) => logger.error(`will-navigate openExternal error ${(error as Error).message}`, error));
     // if is an external website
     event.preventDefault();
-    // TODO: do this until https://github.com/electron/electron/issues/31783 fixed
-    await view.webContents.loadURL(currentUrl);
+    try {
+      // TODO: do this until https://github.com/electron/electron/issues/31783 fixed
+      await view.webContents.loadURL(currentUrl);
+    } catch (error) {
+      logger.warn(new ViewLoadUrlError(lastUrl ?? '', `${(error as Error).message} ${(error as Error).stack ?? ''}`));
+    }
     // event.stopPropagation();
   });
   view.webContents.on('did-navigate-in-page', async () => {

@@ -328,14 +328,14 @@ export class View implements IViewService {
 
   public async loadUrlForView(workspace: IWorkspace, view: BrowserView, windowName: WindowNames): Promise<void> {
     const { rememberLastPageVisited } = await this.preferenceService.getPreferences();
-    // fix some case that local ip can't be load
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/strict-boolean-expressions
-    const urlToLoad = (rememberLastPageVisited ? workspace.lastUrl ?? workspace.homeUrl : workspace.homeUrl) || getDefaultTidGiUrl(workspace.id);
+    const urlToLoad = (rememberLastPageVisited ? workspace.lastUrl : workspace.homeUrl) || workspace.homeUrl || getDefaultTidGiUrl(workspace.id);
     try {
       logger.debug(
         `loadUrlForView(): view.webContents: ${String(view.webContents)} urlToLoad: ${urlToLoad} for windowName ${windowName} for workspace ${workspace.name}`,
         { stack: new Error('stack').stack?.replace('Error:', '') },
       );
+      // if workspace failed to load, means nodejs server may have plugin error or something. Stop retrying, and show the error message in src/pages/Main/ErrorMessage.tsx
       if (await this.workspaceService.workspaceDidFailLoad(workspace.id)) {
         return;
       }
