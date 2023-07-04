@@ -70,3 +70,4 @@ deb2appimage_cache/
 deb2appimage.json
 cache-database-dev/
 plugins-dev/
+language-model-dev/
