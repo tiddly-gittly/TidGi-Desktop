@@ -7,6 +7,7 @@
  * Import tw related things and typing from `@tiddlygit/tiddlywiki` instead of `tiddlywiki`, otherwise you will get `Unhandled Error ReferenceError: self is not defined at $:/boot/bootprefix.js:40749:36` because tiddlywiki 
  */
 import { uninstall } from '@/helpers/installV8Cache';
+import './preload';
 import 'source-map-support/register';
 import { type IUtils, TiddlyWiki } from '@tiddlygit/tiddlywiki';
 import Sqlite3Database from 'better-sqlite3';
