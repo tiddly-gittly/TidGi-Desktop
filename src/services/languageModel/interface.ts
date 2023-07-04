@@ -37,6 +37,13 @@ export interface IRunLLAmaOptions extends ILLMResultBase {
 }
 
 /**
+ * Test language model on renderer by:
+ * ```js
+ * window.observables.languageModel.runLLama$({ id: '1' }).subscribe({ next: console.log, error: console.error, complete: () => console.warn('completed') })
+ * ```
+ */
+
+/**
  * Run language model on a shared worker, and queue requests to the worker.
  */
 export interface ILanguageModelService {

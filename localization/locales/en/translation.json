@@ -439,5 +439,10 @@
   "ClickForDetails": "Click For Details",
   "Scripting": {
     "ExecutingScript": "Executing Script"
+  },
+  "LanguageModel": {
+    "ModelNotExist": "Model Not Exist",
+    "OpenThisPath": "Open This Path",
+    "ModelNotExistDescription": "Try to load the model using this path you gave, but there is actually no model needed at this location"
   }
 }
