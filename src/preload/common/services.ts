@@ -10,6 +10,7 @@ import { AsyncifyProxy } from 'electron-ipc-cat/common';
 import { AuthenticationServiceIPCDescriptor, IAuthenticationService } from '@services/auth/interface';
 import { ContextServiceIPCDescriptor, IContextService } from '@services/context/interface';
 import { GitServiceIPCDescriptor, IGitService } from '@services/git/interface';
+import { ILanguageModelService, LanguageModelServiceIPCDescriptor } from '@services/languageModel/interface';
 import { IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
 import { INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';
 import { INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
@@ -27,6 +28,7 @@ import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@servi
 export const auth = createProxy<IAuthenticationService>(AuthenticationServiceIPCDescriptor);
 export const context = createProxy<IContextService>(ContextServiceIPCDescriptor);
 export const git = createProxy<IGitService>(GitServiceIPCDescriptor);
+export const languageModel = createProxy<ILanguageModelService>(LanguageModelServiceIPCDescriptor);
 export const menu = createProxy<IMenuService>(MenuServiceIPCDescriptor);
 export const native = createProxy<INativeService>(NativeServiceIPCDescriptor);
 export const notification = createProxy<INotificationService>(NotificationServiceIPCDescriptor);
@@ -45,6 +47,7 @@ export const descriptors = {
   auth: AuthenticationServiceIPCDescriptor,
   context: ContextServiceIPCDescriptor,
   git: GitServiceIPCDescriptor,
+  languageModel: LanguageModelServiceIPCDescriptor,
   menu: MenuServiceIPCDescriptor,
   native: NativeServiceIPCDescriptor,
   notification: NotificationServiceIPCDescriptor,
