@@ -1,26 +1,25 @@
+import { dialog } from 'electron';
 import fs from 'fs-extra';
 import { injectable } from 'inversify';
 import path from 'path';
 import { Observable } from 'rxjs';
 import { ModuleThread, spawn, Worker } from 'threads';
 
+// @ts-expect-error it don't want .ts
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import workerURL from 'threads-plugin/dist/loader?name=llmWorker!./llmWorker.ts';
+
+import { LANGUAGE_MODEL_FOLDER } from '@/constants/appPaths';
+import { getExistingParentDirectory } from '@/helpers/findPath';
 import { lazyInject } from '@services/container';
+import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-
-import { LANGUAGE_MODEL_FOLDER } from '@/constants/appPaths';
 import { IWindowService } from '@services/windows/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
 import { ILanguageModelService, ILLMResultPart, IRunLLAmaOptions } from './interface';
 import { LLMWorker } from './llmWorker';
-
-// @ts-expect-error it don't want .ts
-// eslint-disable-next-line import/no-webpack-loader-syntax
-import { getExistingParentDirectory } from '@/helpers/findPath';
-import { i18n } from '@services/libs/i18n';
-import { WindowNames } from '@services/windows/WindowProperties';
-import { dialog } from 'electron';
-import workerURL from 'threads-plugin/dist/loader?name=llmWorker!./llmWorker.ts';
 
 @injectable()
 export class LanguageModel implements ILanguageModelService {
@@ -93,11 +92,11 @@ export class LanguageModel implements ILanguageModelService {
 
   public runLLama$(options: IRunLLAmaOptions): Observable<ILLMResultPart> {
     const { id: conversationID } = options;
-    return new Observable<ILLMResultPart>((observer) => {
+    return new Observable<ILLMResultPart>((subscriber) => {
       const getWikiChangeObserverIIFE = async () => {
         const worker = await this.getWorker();
 
-        const template = `How to write a science fiction?`;
+        const template = `Write a short helloworld in JavaScript.`;
         const prompt = `A chat between a user and a useful assistant.
 USER: ${template}
 ASSISTANT:`;
@@ -106,7 +105,7 @@ ASSISTANT:`;
         const modelName = options.modelName ?? defaultModelName;
         const modelPath = path.join(LANGUAGE_MODEL_FOLDER, modelName);
         if (!(await this.checkModelExistsAndWarnUser(modelPath))) {
-          observer.error(new Error(`${i18n.t('LanguageModel.ModelNotExist')} ${modelPath}`));
+          subscriber.error(new Error(`${i18n.t('LanguageModel.ModelNotExist')} ${modelPath}`));
           return;
         }
         const observable = worker.runLLama$({ prompt, modelPath, conversationID });
@@ -118,7 +117,7 @@ ASSISTANT:`;
               const { token, id } = result;
               // prevent the case that the result is from previous or next conversation, where its Observable is not properly closed.
               if (id === conversationID) {
-                observer.next({ token, id });
+                subscriber.next({ token, id });
               }
             } else if ('level' in result) {
               if (result.level === 'error') {
@@ -129,10 +128,11 @@ ASSISTANT:`;
             }
           },
           error: (error) => {
-            observer.error(error);
+            subscriber.error(error);
           },
           complete: () => {
-            observer.complete();
+            logger.info(`worker observable completed`, { function: 'LanguageModel.runLLama$' });
+            subscriber.complete();
           },
         });
       };
