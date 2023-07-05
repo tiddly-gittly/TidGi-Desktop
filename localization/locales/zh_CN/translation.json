@@ -404,7 +404,16 @@
     "SyncOnlyWhenNoDraft": "在没有草稿时才同步",
     "SyncOnlyWhenNoDraftDescription": "在同步前检查有没有草稿，如果有则本次不同步，防止将草稿同步到你的博客里。（对关机前自动同步无效，毕竟你很可能希望将草稿从一台电脑上带到另一台电脑上继续编辑）",
     "OpenV8CacheFolder": "打开V8缓存文件夹",
-    "OpenV8CacheFolderDetail": "V8缓存文件夹存有加速应用启动的快取文件"
+    "OpenV8CacheFolderDetail": "V8缓存文件夹存有加速应用启动的快取文件",
+    "LanguageModel": {
+      "Title": "语言模型",
+      "DefaultModel": "默认模型文件名",
+      "DefaultModelDescription": "每种推理程序可以加载的模型是不同的。这里可以改每个推理程序加载的默认模型文件名。",
+      "UpdateTimeoutDuration": "单位（秒）。如果一个语言模型这么久了还没回应，将自动终止对话停止等待，因为这基本上意味着它停止运行了。需要大于0，且不能太小，不然无法正常输出。",
+      "TimeoutDuration": "超时时长",
+      "OpenModelFolder": "打开模型文件夹",
+      "OpenModelFolderDescription": "推理程序将在这个文件夹里寻找模型，请将你下载的模型放到这里（或使用命令行创建软链接到这里）"
+    }
   },
   "Error": {
     "InitWikiGitError": "E-1 笔记仓库初始化失败错误",

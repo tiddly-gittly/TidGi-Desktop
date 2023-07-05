@@ -8,6 +8,7 @@ export interface IPaths {
   DEFAULT_WIKI_FOLDER: string;
   DESKTOP_PATH: string;
   HTTPS_CERT_KEY_FOLDER: string;
+  LANGUAGE_MODEL_FOLDER: string;
   LOCALIZATION_FOLDER: string;
   LOGIN_REDIRECT_PATH: string;
   LOG_FOLDER: string;

@@ -91,15 +91,15 @@ export class LanguageModel implements ILanguageModelService {
   }
 
   public runLLama$(options: IRunLLAmaOptions): Observable<ILLMResultPart> {
-    const { id: conversationID } = options;
+    const { id: conversationID, prompt } = options;
     return new Observable<ILLMResultPart>((subscriber) => {
       const getWikiChangeObserverIIFE = async () => {
         const worker = await this.getWorker();
 
-        const template = `Write a short helloworld in JavaScript.`;
-        const prompt = `A chat between a user and a useful assistant.
-USER: ${template}
-ASSISTANT:`;
+        //         const template = `Write a short helloworld in JavaScript.`;
+        //         const prompt = `A chat between a user and a useful assistant.
+        // USER: ${template}
+        // ASSISTANT:`;
         // TODO: get default model name from preference
         const defaultModelName = 'llama.bin';
         const modelName = options.modelName ?? defaultModelName;

@@ -8,6 +8,7 @@ import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
 import CodeIcon from '@material-ui/icons/Code';
 import GitHubIcon from '@material-ui/icons/GitHub';
 import LanguageIcon from '@material-ui/icons/Language';
+import LanguageModelIcon from '@material-ui/icons/Psychology';
 import MenuBookIcon from '@material-ui/icons/MenuBook';
 import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
 import NotificationsIcon from '@material-ui/icons/Notifications';
@@ -37,9 +38,14 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
       Icon: MenuBookIcon,
       ref: useRef<SectionTitleElement>(null),
     },
-    [PreferenceSections.notifications]: {
-      text: t('Preference.Notifications'),
-      Icon: NotificationsIcon,
+    [PreferenceSections.general]: {
+      text: t('Preference.General'),
+      Icon: WidgetsIcon,
+      ref: useRef<SectionTitleElement>(null),
+    },
+    [PreferenceSections.languageModel]: {
+      text: t('Preference.LanguageModel.Title'),
+      Icon: LanguageModelIcon,
       ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.sync]: {
@@ -47,9 +53,9 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
       Icon: GitHubIcon,
       ref: useRef<SectionTitleElement>(null),
     },
-    [PreferenceSections.general]: {
-      text: t('Preference.General'),
-      Icon: WidgetsIcon,
+    [PreferenceSections.notifications]: {
+      text: t('Preference.Notifications'),
+      Icon: NotificationsIcon,
       ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.system]: {
@@ -60,6 +66,11 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
     [PreferenceSections.languages]: {
       text: t('Preference.Languages'),
       Icon: LanguageIcon,
+      ref: useRef<SectionTitleElement>(null),
+    },
+    [PreferenceSections.developers]: {
+      text: t('Preference.DeveloperTools'),
+      Icon: CodeIcon,
       ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.downloads]: {
@@ -75,11 +86,6 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
     [PreferenceSections.privacy]: {
       text: t('Preference.PrivacyAndSecurity'),
       Icon: SecurityIcon,
-      ref: useRef<SectionTitleElement>(null),
-    },
-    [PreferenceSections.developers]: {
-      text: t('Preference.DeveloperTools'),
-      Icon: CodeIcon,
       ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.performance]: {
