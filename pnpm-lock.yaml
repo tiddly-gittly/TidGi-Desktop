@@ -32,8 +32,8 @@ dependencies:
     specifier: ^2.5.0
     version: 2.5.0
   electron-ipc-cat:
-    specifier: 1.3.6
-    version: 1.3.6(electron@25.2.0)(rxjs@7.8.1)
+    specifier: 2.0.1
+    version: 2.0.1(electron@25.2.0)(rxjs@7.8.1)
   electron-settings:
     specifier: 5.0.0
     version: 5.0.0(electron@25.2.0)
@@ -5215,8 +5215,8 @@ packages:
     dev: true
     optional: true
 
-  /electron-ipc-cat@1.3.6(electron@25.2.0)(rxjs@7.8.1):
-    resolution: {integrity: sha512-UaobZcdCmqgckBIq+s8i2GS5I9BNWXCU3q2i7r4NlK2kH5bwOAxLKZQHT2gzz1nCitFJ2RT1fBNMzfFgiRgmBg==}
+  /electron-ipc-cat@2.0.1(electron@25.2.0)(rxjs@7.8.1):
+    resolution: {integrity: sha512-lPGLv//HQLeC+9SdhC6tx5tgv8wir/Ws5GIAcfHtbIEN47FARBbQsNaZks61dzveS4zb4LxbRzOV3mweyoTUDg==}
     peerDependencies:
       electron: '>= 13.0.0'
       rxjs: '>= 7.5.0'
