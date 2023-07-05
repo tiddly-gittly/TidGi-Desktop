@@ -14,11 +14,11 @@ function runLLama$(
   options: { conversationID: string; modelPath: string; prompt: string },
 ): Observable<ILanguageModelWorkerResponse> {
   const { conversationID, modelPath, prompt } = options;
-  const loggerCommonMeta = { meta: { function: 'llmWorker.runLLama$' }, id: conversationID };
-  return new Observable<ILanguageModelWorkerResponse>((observer) => {
+  const loggerCommonMeta = { level: 'info' as const, meta: { function: 'llmWorker.runLLama$' }, id: conversationID };
+  return new Observable<ILanguageModelWorkerResponse>((subscriber) => {
     void (async function runLLamaObservableIIFE() {
       try {
-        observer.next({ level: 'info', message: 'preparing instance and config', ...loggerCommonMeta });
+        subscriber.next({ message: 'preparing instance and config', ...loggerCommonMeta });
         const llama = new LLM(LLamaCpp);
         const config: LLamaLoadConfig = {
           modelPath,
@@ -33,7 +33,7 @@ function runLLama$(
           useMmap: true,
           nGpuLayers: 0,
         };
-        observer.next({ level: 'info', message: 'loading config', ...loggerCommonMeta, meta: { config, ...loggerCommonMeta.meta } });
+        subscriber.next({ message: 'loading config', ...loggerCommonMeta, meta: { config, ...loggerCommonMeta.meta } });
         await llama.load(config);
         let respondTimeout: NodeJS.Timeout | undefined;
         const abortController = new AbortController();
@@ -41,11 +41,11 @@ function runLLama$(
           clearTimeout(respondTimeout);
           respondTimeout = setTimeout(() => {
             abortController.abort();
-            observer.complete();
+            subscriber.complete();
           }, DEFAULT_TIMEOUT_DURATION);
         };
         updateTimeout();
-        observer.next({ level: 'info', message: 'ready to createCompletion', ...loggerCommonMeta });
+        subscriber.next({ message: 'ready to createCompletion', ...loggerCommonMeta });
         await llama.createCompletion(
           {
             nThreads: 4,
@@ -59,24 +59,22 @@ function runLLama$(
           (response) => {
             const { completed, token } = response;
             updateTimeout();
-            observer.next({ type: 'result', token, id: conversationID });
-            if (completed) {
-              // DEBUG: console
-              console.log(`completed`);
-            }
+            subscriber.next({ type: 'result', token, id: conversationID });
             if (completed) {
               clearTimeout(respondTimeout);
-              observer.complete();
+              // DEBUG: console
+              console.log(`completed`);
+              subscriber.complete();
             }
           },
           abortController.signal,
         );
-        observer.next({ level: 'info', message: 'createCompletion completed', ...loggerCommonMeta });
+        subscriber.next({ message: 'createCompletion completed', ...loggerCommonMeta });
       } catch (error) {
         if (error instanceof Error) {
-          observer.next({ level: 'error', error, id: conversationID });
+          subscriber.next({ level: 'error', error, id: conversationID });
         } else {
-          observer.next({ level: 'error', error: new Error(String(error)), id: conversationID });
+          subscriber.next({ level: 'error', error: new Error(String(error)), id: conversationID });
         }
       }
     })();
