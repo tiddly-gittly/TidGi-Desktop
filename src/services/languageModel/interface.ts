@@ -2,6 +2,22 @@ import { LanguageModelChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { Observable } from 'rxjs';
 
+export interface ILanguageModelPreferences {
+  /**
+   * Each runner can load different models. This is the default model file name for each runner.
+   * @url https://github.com/Atome-FE/llama-node#supported-models
+   */
+  defaultModel: {
+    'llama-rs': string;
+    'llama.cpp': string;
+    'rwkv.cpp': string;
+  };
+  /**
+   * If a llm stop responding for this long, we will kill the conversation. This basically means it stopped responding.
+   */
+  timeoutDuration: number;
+}
+
 export interface ILLMResultBase {
   /**
    * Conversation id.

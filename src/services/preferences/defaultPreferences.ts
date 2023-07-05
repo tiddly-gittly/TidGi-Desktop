@@ -14,6 +14,14 @@ export const defaultPreferences: IPreferences = {
   hideSideBarIcon: false,
   ignoreCertificateErrors: false,
   language: 'zh_CN',
+  languageModel: {
+    defaultModel: {
+      'llama-rs': 'llama.bin',
+      'llama.cpp': 'llama.bin',
+      'rwkv.cpp': 'rwkv.bin',
+    },
+    timeoutDuration: 1000 * 30,
+  },
   menuBarAlwaysOnTop: false,
   pauseNotifications: '',
   pauseNotificationsBySchedule: false,

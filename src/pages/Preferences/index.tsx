@@ -10,6 +10,7 @@ import { DeveloperTools } from './sections/DeveloperTools';
 import { Downloads } from './sections/Downloads';
 import { FriendLinks } from './sections/FriendLinks';
 import { General } from './sections/General';
+import { LanguageModel } from './sections/LanguageModel';
 import { Languages } from './sections/Languages';
 import { Miscellaneous } from './sections/Miscellaneous';
 import { Network } from './sections/Network';
@@ -57,15 +58,16 @@ export default function Preferences(): JSX.Element {
       <SectionSideBar sections={sections} />
       <Inner>
         <TiddlyWiki sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <Notifications sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <Sync sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <General sections={sections} requestRestartCountDown={requestRestartCountDown} />
+        <LanguageModel sections={sections} />
+        <Sync sections={sections} requestRestartCountDown={requestRestartCountDown} />
+        <Notifications sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <System sections={sections} />
         <Languages sections={sections} requestRestartCountDown={requestRestartCountDown} />
+        <DeveloperTools sections={sections} />
         <Downloads sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <Network sections={sections} />
         <PrivacyAndSecurity sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <DeveloperTools sections={sections} />
         <Performance sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <Updates sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <FriendLinks sections={sections} />

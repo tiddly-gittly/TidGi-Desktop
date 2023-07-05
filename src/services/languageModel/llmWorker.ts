@@ -6,9 +6,6 @@ import { Observable } from 'rxjs';
 import { expose } from 'threads/worker';
 import { ILanguageModelWorkerResponse } from './interface';
 
-/**
- * If a llm stop responding for this long, we will kill the conversation. This basically means it stopped responding.
- */
 const DEFAULT_TIMEOUT_DURATION = 1000 * 30;
 function runLLama$(
   options: { conversationID: string; modelPath: string; prompt: string },

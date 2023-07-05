@@ -1,8 +1,9 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 import { PreferenceChannel } from '@/constants/channels';
-import { HunspellLanguages } from '@/constants/hunspellLanguages';
-import { BehaviorSubject } from 'rxjs';
+import type { HunspellLanguages } from '@/constants/hunspellLanguages';
+import type { ILanguageModelPreferences } from '@services/languageModel/interface';
+import type { BehaviorSubject } from 'rxjs';
 
 export interface IPreferences {
   allowPrerelease: boolean;
@@ -15,6 +16,7 @@ export interface IPreferences {
   hideSideBarIcon: boolean;
   ignoreCertificateErrors: boolean;
   language: string;
+  languageModel: ILanguageModelPreferences;
   menuBarAlwaysOnTop: boolean;
   pauseNotifications: string | undefined;
   pauseNotificationsBySchedule: boolean;
@@ -45,6 +47,7 @@ export enum PreferenceSections {
   downloads = 'downloads',
   friendLinks = 'friendLinks',
   general = 'general',
+  languageModel = 'languageModel',
   languages = 'languages',
   misc = 'misc',
   network = 'network',
