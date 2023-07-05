@@ -14,6 +14,7 @@ import { ILanguageModelService, LanguageModelServiceIPCDescriptor } from '@servi
 import { IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
 import { INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';
 import { INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
+import { IPagesService, PagesServiceIPCDescriptor } from '@services/pages/interface';
 import { IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/preferences/interface';
 import { ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences/interface';
 import { IThemeService, ThemeServiceIPCDescriptor } from '@services/theme/interface';
@@ -32,6 +33,7 @@ export const languageModel = createProxy<ILanguageModelService>(LanguageModelSer
 export const menu = createProxy<IMenuService>(MenuServiceIPCDescriptor);
 export const native = createProxy<INativeService>(NativeServiceIPCDescriptor);
 export const notification = createProxy<INotificationService>(NotificationServiceIPCDescriptor);
+export const pages = createProxy<IPagesService>(PagesServiceIPCDescriptor);
 export const preference = createProxy<IPreferenceService>(PreferenceServiceIPCDescriptor);
 export const systemPreference = createProxy<ISystemPreferenceService>(SystemPreferenceServiceIPCDescriptor);
 export const theme = createProxy<IThemeService>(ThemeServiceIPCDescriptor);
@@ -51,6 +53,7 @@ export const descriptors = {
   menu: MenuServiceIPCDescriptor,
   native: NativeServiceIPCDescriptor,
   notification: NotificationServiceIPCDescriptor,
+  pages: PagesServiceIPCDescriptor,
   preference: PreferenceServiceIPCDescriptor,
   systemPreference: SystemPreferenceServiceIPCDescriptor,
   theme: ThemeServiceIPCDescriptor,

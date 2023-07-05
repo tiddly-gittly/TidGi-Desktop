@@ -7,7 +7,7 @@ import settings from 'electron-settings';
 import fsExtra from 'fs-extra';
 import { injectable } from 'inversify';
 import Jimp from 'jimp';
-import { debounce, mapValues, pickBy } from 'lodash';
+import { mapValues, pickBy } from 'lodash';
 import { nanoid } from 'nanoid';
 import path from 'path';
 import { BehaviorSubject, Observable } from 'rxjs';
@@ -28,19 +28,9 @@ import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interf
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import { debouncedSetSettingFile } from './debouncedSetSettingFile';
 import type { INewWorkspaceConfig, IWorkspace, IWorkspaceMetaData, IWorkspaceService, IWorkspaceWithMetadata } from './interface';
 import { workspaceSorter } from './utils';
-
-// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-const debouncedSetSettingFile = debounce(async (workspaces: Record<string, IWorkspace>) => {
-  try {
-    await settings.set(`workspaces`, workspaces as any);
-  } catch (error) {
-    logger.error('Setting file format bad in debouncedSetSettingFile, will try again', { workspaces });
-    fixSettingFileWhenError(error as Error);
-    await settings.set(`workspaces`, workspaces as any);
-  }
-}, 500);
 
 @injectable()
 export class Workspace implements IWorkspaceService {
