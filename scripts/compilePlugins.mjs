@@ -16,7 +16,7 @@ const sharedConfig = {
   bundle: true,
   // use node so we have `exports`, otherwise `module.adaptorClass` in $:/core/modules/startup.js will be undefined
   platform: 'node',
-  minify: true,
+  minify: process.env.NODE_ENV === 'production',
   outdir: tidgiIpcSyncadaptorOutDir,
   tsconfig: tsconfigPath,
   target: 'ESNEXT',
