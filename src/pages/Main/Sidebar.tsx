@@ -10,6 +10,7 @@ import { sidebarWidth } from '@/constants/style';
 import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IconButton as IconButtonRaw, Tooltip } from '@material-ui/core';
+import { usePagesListObservable } from '@services/pages/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useUpdaterObservable } from '@services/updater/hooks';
 import { IUpdaterStatus } from '@services/updater/interface';
@@ -85,6 +86,7 @@ export function SideBar(): JSX.Element {
   const titleBar = usePromiseValue<boolean>(async () => await window.service.preference.get('titleBar'), false)!;
 
   const workspacesList = useWorkspacesListObservable();
+  const pagesList = usePagesListObservable();
   const activeWorkspace = workspacesList?.find((workspace) => workspace.active);
   const preferences = usePreferenceObservable();
   const updaterMetaData = useUpdaterObservable();
@@ -105,17 +107,6 @@ export function SideBar(): JSX.Element {
           showSidebarShortcutHints={sidebarShortcutHints}
           onClick={() => void window.service.window.open(WindowNames.addWorkspace)}
         />
-        {workspacesList === undefined ||
-          (workspacesList.length === 0 && (
-            <WorkspaceSelector
-              id='guide'
-              hideSideBarIcon={hideSideBarIcon}
-              index={workspacesList?.length ? workspacesList.length ?? 0 + 1 : 1}
-              active={activeWorkspace?.id === undefined}
-              showSidebarShortcutHints={sidebarShortcutHints}
-              onClick={() => void window.service.workspace.clearActiveWorkspace(activeWorkspace?.id)}
-            />
-          ))}
       </SidebarTop>
       <SideBarEnd>
         {(workspacesList?.length ?? 0) > 0 && (
