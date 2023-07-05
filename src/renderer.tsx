@@ -11,6 +11,7 @@ import DateFnsUtils from '@material-ui/lab/AdapterDateFns';
 import LocalizationProvider from '@material-ui/lab/LocalizationProvider';
 import { I18nextProvider } from 'react-i18next';
 import 'typeface-roboto/index.css';
+import 'simplebar/dist/simplebar.min.css';
 
 import { darkTheme, lightTheme } from '@services/theme/defaultTheme';
 import { useThemeObservable } from '@services/theme/hooks';
