@@ -40,7 +40,7 @@
     "bluebird": "3.7.2",
     "default-gateway": "6.0.3",
     "dugite": "^2.5.0",
-    "electron-ipc-cat": "1.3.6",
+    "electron-ipc-cat": "2.0.1",
     "electron-settings": "5.0.0",
     "electron-squirrel-startup": "1.0.0",
     "electron-unhandled": "4.0.1",
