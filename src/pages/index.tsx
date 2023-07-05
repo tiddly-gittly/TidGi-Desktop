@@ -1,5 +1,4 @@
 import { WindowNames } from '@services/windows/WindowProperties';
-import React from 'react';
 
 import AboutPage from './About';
 import { AddWorkspace as DialogAddWorkspace } from './AddWorkspace';
