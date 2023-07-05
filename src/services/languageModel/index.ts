@@ -15,6 +15,7 @@ import { lazyInject } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
+import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -28,6 +29,9 @@ export class LanguageModel implements ILanguageModelService {
 
   @lazyInject(serviceIdentifier.Window)
   private readonly windowService!: IWindowService;
+
+  @lazyInject(serviceIdentifier.Preference)
+  private readonly preferenceService!: IPreferenceService;
 
   private llmWorker?: ModuleThread<LLMWorker>;
 
@@ -91,7 +95,7 @@ export class LanguageModel implements ILanguageModelService {
   }
 
   public runLLama$(options: IRunLLAmaOptions): Observable<ILLMResultPart> {
-    const { id: conversationID, prompt } = options;
+    const { id: conversationID, prompt, modelName } = options;
     return new Observable<ILLMResultPart>((subscriber) => {
       const getWikiChangeObserverIIFE = async () => {
         const worker = await this.getWorker();
@@ -100,10 +104,8 @@ export class LanguageModel implements ILanguageModelService {
         //         const prompt = `A chat between a user and a useful assistant.
         // USER: ${template}
         // ASSISTANT:`;
-        // TODO: get default model name from preference
-        const defaultModelName = 'llama.bin';
-        const modelName = options.modelName ?? defaultModelName;
-        const modelPath = path.join(LANGUAGE_MODEL_FOLDER, modelName);
+        const { defaultModel } = await this.preferenceService.get('languageModel');
+        const modelPath = path.join(LANGUAGE_MODEL_FOLDER, modelName ?? defaultModel['llama.cpp']);
         if (!(await this.checkModelExistsAndWarnUser(modelPath))) {
           subscriber.error(new Error(`${i18n.t('LanguageModel.ModelNotExist')} ${modelPath}`));
           return;
