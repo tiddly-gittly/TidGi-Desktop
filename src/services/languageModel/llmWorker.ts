@@ -62,8 +62,6 @@ function runLLama$(
             subscriber.next({ type: 'result', token, id: conversationID });
             if (completed) {
               clearTimeout(respondTimeout);
-              // DEBUG: console
-              console.log(`completed`);
               subscriber.complete();
             }
           },
