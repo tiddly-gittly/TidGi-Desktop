@@ -1,12 +1,15 @@
+/* eslint-disable @typescript-eslint/promise-function-async */
 import { WindowNames } from '@services/windows/WindowProperties';
+import { lazy } from 'react';
 
-import AboutPage from './About';
-import { AddWorkspace as DialogAddWorkspace } from './AddWorkspace';
-import EditWorkspace from './EditWorkspace';
-import Main from './Main';
-import DialogNotifications from './Notifications';
-import DialogPreferences from './Preferences';
-import SpellcheckLanguages from './SpellcheckLanguages';
+const AboutPage = lazy(() => import('./About'));
+const DialogAddWorkspace = lazy(() => import('./AddWorkspace').then((module) => ({ default: module.AddWorkspace })));
+const EditWorkspace = lazy(() => import('./EditWorkspace'));
+const Main = lazy(() => import('./Main'));
+const DialogNotifications = lazy(() => import('./Notifications'));
+const DialogPreferences = lazy(() => import('./Preferences'));
+const SpellcheckLanguages = lazy(() => import('./SpellcheckLanguages'));
+
 
 export function Pages(): JSX.Element {
   switch (window.meta.windowName) {

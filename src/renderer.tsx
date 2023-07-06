@@ -41,7 +41,7 @@ function App(): JSX.Element {
   );
 }
 
-void window.remote.setVisualZoomLevelLimits(1, 1);
+window.remote.setVisualZoomLevelLimits(1, 1);
 const container = document.querySelector('#app');
 const root = createRoot(container!);
 root.render(<App />);
