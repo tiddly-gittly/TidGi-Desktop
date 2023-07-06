@@ -109,21 +109,6 @@ export function SideBar(): JSX.Element {
         />
       </SidebarTop>
       <SideBarEnd>
-        {(workspacesList?.length ?? 0) > 0 && (
-          <>
-            <IconButton
-              id='open-command-palette-button'
-              aria-label={t('SideBar.CommandPalette')}
-              onClick={async () => {
-                await window.service.wiki.requestWikiSendActionMessage('open-command-palette');
-              }}
-            >
-              <Tooltip title={<span>{t('SideBar.CommandPalette')}</span>} placement='top'>
-                <CommandPaletteIcon />
-              </Tooltip>
-            </IconButton>
-          </>
-        )}
         {updaterMetaData?.status === IUpdaterStatus.updateAvailable && (
           <IconButton
             id='update-available'
