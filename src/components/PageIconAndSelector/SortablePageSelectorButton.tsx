@@ -9,10 +9,10 @@ import { getBuildInPageIcon } from './getBuildInPageIcon';
 import { PageSelectorBase } from './PageSelectorBase';
 
 export interface ISortableItemProps {
-  showSideBarIcon: boolean;
   index: number;
   page: IPage;
   pageCount: number;
+  showSideBarIcon: boolean;
   showSidebarTexts: boolean;
 }
 

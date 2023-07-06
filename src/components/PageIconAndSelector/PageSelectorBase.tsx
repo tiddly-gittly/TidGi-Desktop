@@ -137,7 +137,7 @@ export function PageSelectorBase({
   showSideBarIcon = true,
   id,
   index = 0,
-  showSidebarTexts = false,
+  showSidebarTexts = true,
   pageName,
   pageClickedLoading = false,
   onClick = () => {},
@@ -172,7 +172,7 @@ export function PageSelectorBase({
           </Avatar>
         )}
       </Badge>
-      {(showSidebarTexts || showSideBarIcon) && (
+      {showSidebarTexts && (
         <ShortcutText active={active}>
           {id === 'add' ? t('WorkspaceSelector.Add') : (id === 'guide' ? t('WorkspaceSelector.Guide') : shortPageName)}
         </ShortcutText>

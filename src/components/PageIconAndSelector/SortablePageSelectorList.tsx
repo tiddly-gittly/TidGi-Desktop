@@ -5,8 +5,8 @@ import { IPage } from '@services/pages/interface';
 import { SortablePageSelectorButton } from './SortablePageSelectorButton';
 
 export interface ISortableListProps {
-  showSideBarIcon: boolean;
   pagesList: IPage[];
+  showSideBarIcon: boolean;
   showSideBarText: boolean;
 }
 

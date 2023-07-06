@@ -9,8 +9,8 @@ import { WorkspaceSelector } from './WorkspaceSelector';
 import defaultIcon from '@/images/default-icon.png';
 
 export interface ISortableItemProps {
-  showSideBarIcon: boolean;
   index: number;
+  showSideBarIcon: boolean;
   showSidebarTexts: boolean;
   workspace: IWorkspace;
   workspaceCount: number;
