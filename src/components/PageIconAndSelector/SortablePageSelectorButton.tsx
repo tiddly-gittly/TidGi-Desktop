@@ -2,10 +2,11 @@ import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { IPage } from '@services/pages/interface';
 import { useCallback, useMemo, useState } from 'react';
-import { PageSelectorBase } from './PageSelectorBase';
+import { useTranslation } from 'react-i18next';
 
 import { getBuildInPageName } from '@services/pages/getBuildInPageName';
 import { getBuildInPageIcon } from './getBuildInPageIcon';
+import { PageSelectorBase } from './PageSelectorBase';
 
 export interface ISortableItemProps {
   hideSideBarIcon: boolean;
@@ -16,6 +17,7 @@ export interface ISortableItemProps {
 }
 
 export function SortablePageSelectorButton({ index, page, showSidebarShortcutHints, pageCount, hideSideBarIcon }: ISortableItemProps): JSX.Element {
+  const { t } = useTranslation();
   const { active, id, type } = page;
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
   const style = {
@@ -35,8 +37,8 @@ export function SortablePageSelectorButton({ index, page, showSidebarShortcutHin
     pageClickedLoadingSetter(false);
   }, [type]);
   const name = useMemo(() => {
-    return getBuildInPageName(type);
-  }, [type]);
+    return getBuildInPageName(type, t);
+  }, [type, t]);
   const icon = useMemo(() => {
     return getBuildInPageIcon(type);
   }, [type]);
