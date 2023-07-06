@@ -79,6 +79,12 @@ export class Pages implements IPagesService {
     return Object.values(this.pages);
   }
 
+  public async setPages(newPages: Record<string, IPage>): Promise<void> {
+    for (const id in newPages) {
+      await this.set(id, newPages[id]);
+    }
+  }
+
   /**
    * Get sorted page list
    * Sync for internal use

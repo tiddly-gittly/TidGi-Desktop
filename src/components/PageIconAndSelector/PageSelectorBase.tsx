@@ -4,11 +4,9 @@ import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled, { css, keyframes } from 'styled-components';
 
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
-
 Promise.config({ cancellation: true });
 
-const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClickedLoading?: boolean; workspaceCount: number }>`
+const Root = styled.div<{ active?: boolean; pageClickedLoading?: boolean; pageCount: number }>`
   height: fit-content;
   width: auto;
   padding: 10px 0;
@@ -26,21 +24,16 @@ const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClick
   position: relative;
   border: 0;
   border-color: transparent;
-  ${({ hibernated }) =>
-  hibernated === true &&
-  css`
-      opacity: 0.4;
-    `}
   ${({ active }) =>
   active === true &&
   css`
       opacity: 1;
     `}
       box-sizing: border-box;
-  border-left: ${({ workspaceCount }) => (workspaceCount > 1 ? '3px' : '0')} solid
+  border-left: ${({ pageCount }) => (pageCount > 1 ? '3px' : '0')} solid
     ${({ active, theme }) => (active === true ? theme.palette.text.primary : 'transparent')};
-  ${({ workspaceClickedLoading }) =>
-  workspaceClickedLoading === true &&
+  ${({ pageClickedLoading }) =>
+  pageClickedLoading === true &&
   css`
       &:hover {
         cursor: wait;
@@ -56,7 +49,6 @@ interface IAvatarProps {
   addAvatar: boolean;
   highlightAdd: boolean;
   large?: boolean;
-  transparent?: boolean;
 }
 const Avatar = styled.div<IAvatarProps>`
   height: 36px;
@@ -74,13 +66,10 @@ const Avatar = styled.div<IAvatarProps>`
       width: 44px;
       line-height: 44px;
     `}
-  ${({ transparent }) =>
-  transparent === true &&
-  css`
-      background: transparent;
-      border: none;
-      border-radius: 0;
-    `}
+
+  background: transparent;
+  border: none;
+  border-radius: 0;
 
   &${({ highlightAdd, addAvatar }) => (highlightAdd && addAvatar ? '' : ':hover')}, &:hover {
     background-color: ${({ theme }) => theme.palette.background.default};
@@ -97,7 +86,7 @@ const Avatar = styled.div<IAvatarProps>`
         `}
 `;
 
-const AvatarPicture = styled.img<{ large?: boolean }>`
+const AvatarPicture = styled.div<{ large?: boolean }>`
   height: calc(36px - 2px);
   width: calc(36px - 2px);
   ${({ large }) =>
@@ -131,64 +120,61 @@ const Badge = styled(BadgeRaw)`
 interface Props {
   active?: boolean;
   badgeCount?: number;
-  hibernated?: boolean;
   hideSideBarIcon: boolean;
+  icon: React.ReactNode;
   id: string;
   index?: number;
   onClick?: () => void;
+  pageClickedLoading?: boolean;
+  pageCount?: number;
+  pageName?: string;
   picturePath?: string | null;
   showSidebarShortcutHints?: boolean;
-  transparentBackground?: boolean;
-  workspaceClickedLoading?: boolean;
-  workspaceCount?: number;
-  workspaceName?: string;
 }
-export function PageSelector({
+export function PageSelectorBase({
   active = false,
   badgeCount = 0,
-  hibernated = false,
   hideSideBarIcon = false,
   id,
   index = 0,
-  picturePath,
   showSidebarShortcutHints = false,
-  transparentBackground = false,
-  workspaceName,
-  workspaceClickedLoading = false,
+  pageName,
+  pageClickedLoading = false,
   onClick = () => {},
-  workspaceCount = 0,
+  pageCount = 0,
+  icon,
 }: Props): JSX.Element {
   const { t } = useTranslation();
-  const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
+  const [shortPageName, shortPageNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {
-    void window.service.native.path('basename', workspaceName).then((baseName) => {
-      shortWorkspaceNameSetter(baseName === undefined ? t('WorkspaceSelector.BadWorkspacePath') : baseName);
+    void window.service.native.path('basename', pageName).then((baseName) => {
+      shortPageNameSetter(baseName === undefined ? t('WorkspaceSelector.BadWorkspacePath') : baseName);
     });
-  }, [workspaceName, t]);
+  }, [pageName, t]);
   return (
     <Root
-      hibernated={hibernated}
       active={active}
-      onClick={workspaceClickedLoading ? () => {} : onClick}
-      workspaceClickedLoading={workspaceClickedLoading}
-      workspaceCount={workspaceCount}
+      onClick={pageClickedLoading ? () => {} : onClick}
+      pageClickedLoading={pageClickedLoading}
+      pageCount={pageCount}
     >
       <Badge color='secondary' badgeContent={badgeCount} max={99}>
         {!hideSideBarIcon && (
           <Avatar
             large={!showSidebarShortcutHints}
-            transparent={transparentBackground}
             addAvatar={id === 'add'}
             highlightAdd={index === 0}
             id={id === 'add' || id === 'guide' ? 'add-workspace-button' : `workspace-avatar-${id}`}
           >
-            
+            <AvatarPicture large={!showSidebarShortcutHints} draggable={false}>
+              {icon}
+            </AvatarPicture>
           </Avatar>
         )}
       </Badge>
       {(showSidebarShortcutHints || hideSideBarIcon) && (
         <ShortcutText active={active}>
-          {id === 'add' ? t('WorkspaceSelector.Add') : (id === 'guide' ? t('WorkspaceSelector.Guide') : shortWorkspaceName)}
+          {id === 'add' ? t('WorkspaceSelector.Add') : (id === 'guide' ? t('WorkspaceSelector.Guide') : shortPageName)}
         </ShortcutText>
       )}
     </Root>

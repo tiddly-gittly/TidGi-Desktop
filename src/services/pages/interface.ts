@@ -20,13 +20,19 @@ export interface IPage {
  * Handle switch between wiki and build-in pages like Workflow page.
  */
 export interface IPagesService {
+  getPagesAsList(): Promise<IPage[]>;
   openPage(page: PageType): Promise<void>;
   pages$: BehaviorSubject<IPage[]>;
+  set(id: string, page: IPage): Promise<void>;
+  setPages(newPages: Record<string, IPage>): Promise<void>;
 }
 export const PagesServiceIPCDescriptor = {
   channel: PagesChannel.name,
   properties: {
+    getPagesAsList: ProxyPropertyType.Function,
     openPage: ProxyPropertyType.Function,
     pages$: ProxyPropertyType.Value$,
+    set: ProxyPropertyType.Function,
+    setPages: ProxyPropertyType.Function,
   },
 };
