@@ -4,7 +4,6 @@ import { t } from 'i18next';
 import SimpleBar from 'simplebar-react';
 import styled, { css } from 'styled-components';
 
-import { CommandPaletteIcon } from '@/components/icon/CommandPaletteSVG';
 import { SortableWorkspaceSelectorList, WorkspaceSelector } from '@/components/WorkspaceIconAndSelector';
 import { sidebarWidth } from '@/constants/style';
 import { latestStableUpdateUrl } from '@/constants/urls';
@@ -16,6 +15,7 @@ import { useUpdaterObservable } from '@services/updater/hooks';
 import { IUpdaterStatus } from '@services/updater/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
+import { SortablePageSelectorList } from './PageIconAndSelector';
 
 const SideBarEnd = styled.div`
   display: flex;
@@ -87,7 +87,6 @@ export function SideBar(): JSX.Element {
 
   const workspacesList = useWorkspacesListObservable();
   const pagesList = usePagesListObservable();
-  const activeWorkspace = workspacesList?.find((workspace) => workspace.active);
   const preferences = usePreferenceObservable();
   const updaterMetaData = useUpdaterObservable();
   if (preferences === undefined) return <div>{t('Loading')}</div>;
@@ -107,6 +106,15 @@ export function SideBar(): JSX.Element {
           showSidebarShortcutHints={sidebarShortcutHints}
           onClick={() => void window.service.window.open(WindowNames.addWorkspace)}
         />
+        {pagesList === undefined
+          ? <div>{t('Loading')}</div>
+          : (
+            <SortablePageSelectorList
+              sidebarShortcutHints={sidebarShortcutHints}
+              pagesList={pagesList}
+              hideSideBarIcon={hideSideBarIcon}
+            />
+          )}
       </SidebarTop>
       <SideBarEnd>
         {updaterMetaData?.status === IUpdaterStatus.updateAvailable && (

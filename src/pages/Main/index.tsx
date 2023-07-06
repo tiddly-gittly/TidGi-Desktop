@@ -10,7 +10,7 @@ import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import FindInPage from '../../components/FindInPage';
 import { WikiBackground } from '../WikiBackground';
-import { SideBar } from './Sidebar';
+import { SideBar } from '../../components/Sidebar';
 
 const OuterRoot = styled.div`
   display: flex;
