@@ -9,14 +9,14 @@ import { getBuildInPageIcon } from './getBuildInPageIcon';
 import { PageSelectorBase } from './PageSelectorBase';
 
 export interface ISortableItemProps {
-  hideSideBarIcon: boolean;
+  showSideBarIcon: boolean;
   index: number;
   page: IPage;
   pageCount: number;
-  showSidebarShortcutHints: boolean;
+  showSidebarTexts: boolean;
 }
 
-export function SortablePageSelectorButton({ index, page, showSidebarShortcutHints, pageCount, hideSideBarIcon }: ISortableItemProps): JSX.Element {
+export function SortablePageSelectorButton({ index, page, showSidebarTexts, pageCount, showSideBarIcon }: ISortableItemProps): JSX.Element {
   const { t } = useTranslation();
   const { active, id, type } = page;
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
@@ -48,14 +48,14 @@ export function SortablePageSelectorButton({ index, page, showSidebarShortcutHin
         icon={icon}
         pageClickedLoading={pageClickedLoading}
         pageCount={pageCount}
-        hideSideBarIcon={hideSideBarIcon}
+        showSideBarIcon={showSideBarIcon}
         onClick={onPageClick}
         active={active}
         id={id}
         key={id}
         pageName={name}
         index={index}
-        showSidebarShortcutHints={showSidebarShortcutHints}
+        showSidebarTexts={showSidebarTexts}
       />
     </div>
   );

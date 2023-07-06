@@ -120,7 +120,6 @@ const Badge = styled(BadgeRaw)`
 interface Props {
   active?: boolean;
   badgeCount?: number;
-  hideSideBarIcon: boolean;
   icon: React.ReactNode;
   id: string;
   index?: number;
@@ -129,15 +128,16 @@ interface Props {
   pageCount?: number;
   pageName?: string;
   picturePath?: string | null;
-  showSidebarShortcutHints?: boolean;
+  showSideBarIcon: boolean;
+  showSidebarTexts?: boolean;
 }
 export function PageSelectorBase({
   active = false,
   badgeCount = 0,
-  hideSideBarIcon = false,
+  showSideBarIcon = true,
   id,
   index = 0,
-  showSidebarShortcutHints = false,
+  showSidebarTexts = false,
   pageName,
   pageClickedLoading = false,
   onClick = () => {},
@@ -159,20 +159,20 @@ export function PageSelectorBase({
       pageCount={pageCount}
     >
       <Badge color='secondary' badgeContent={badgeCount} max={99}>
-        {!hideSideBarIcon && (
+        {showSideBarIcon && (
           <Avatar
-            large={!showSidebarShortcutHints}
+            large={!showSidebarTexts}
             addAvatar={id === 'add'}
             highlightAdd={index === 0}
             id={id === 'add' || id === 'guide' ? 'add-workspace-button' : `workspace-avatar-${id}`}
           >
-            <AvatarPicture large={!showSidebarShortcutHints} draggable={false}>
+            <AvatarPicture large={!showSidebarTexts} draggable={false}>
               {icon}
             </AvatarPicture>
           </Avatar>
         )}
       </Badge>
-      {(showSidebarShortcutHints || hideSideBarIcon) && (
+      {(showSidebarTexts || showSideBarIcon) && (
         <ShortcutText active={active}>
           {id === 'add' ? t('WorkspaceSelector.Add') : (id === 'guide' ? t('WorkspaceSelector.Guide') : shortPageName)}
         </ShortcutText>

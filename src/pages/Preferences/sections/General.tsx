@@ -95,28 +95,35 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                 </ListItemSecondaryAction>
               </ListItem>
               <ListItem>
-                <ListItemText primary={t('Preference.HideSideBarIcon')} secondary={t('Preference.HideSideBarIconDetail')} />
+                <ListItemText primary={t('Preference.ShowSideBarIcon')} secondary={t('Preference.HideSideBarIconDetail')} />
                 <ListItemSecondaryAction>
                   <Switch
                     edge='end'
                     color='primary'
-                    checked={preference.hideSideBarIcon}
+                    checked={preference.showSideBarIcon}
                     onChange={async (event) => {
-                      await window.service.preference.set('hideSideBarIcon', event.target.checked);
+                      await window.service.preference.set('showSideBarIcon', event.target.checked);
+                      // when you hide icon, show the text
+                      if (!event.target.checked && !preference.showSideBarText) {
+                        await window.service.preference.set('showSideBarText', true);
+                      }
                     }}
                   />
                 </ListItemSecondaryAction>
               </ListItem>
-              <Divider />
               <ListItem>
-                <ListItemText primary={t('Preference.ShowSideBarShortcut')} />
+                <ListItemText primary={t('Preference.ShowSideBarText')} />
                 <ListItemSecondaryAction>
                   <Switch
                     edge='end'
                     color='primary'
-                    checked={preference.sidebarShortcutHints}
+                    checked={preference.showSideBarText}
                     onChange={async (event) => {
-                      await window.service.preference.set('sidebarShortcutHints', event.target.checked);
+                      await window.service.preference.set('showSideBarText', event.target.checked);
+                      // when you hide text, show the icon
+                      if (!event.target.checked && !preference.showSideBarIcon) {
+                        await window.service.preference.set('showSideBarIcon', true);
+                      }
                     }}
                   />
                 </ListItemSecondaryAction>

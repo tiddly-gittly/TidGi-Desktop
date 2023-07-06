@@ -13,7 +13,7 @@ export interface IPreferences {
   downloadPath: string;
   hibernateUnusedWorkspacesAtLaunch: boolean;
   hideMenuBar: boolean;
-  hideSideBarIcon: boolean;
+  showSideBarIcon: boolean;
   ignoreCertificateErrors: boolean;
   language: string;
   languageModel: ILanguageModelPreferences;
@@ -26,7 +26,7 @@ export interface IPreferences {
   rememberLastPageVisited: boolean;
   shareWorkspaceBrowsingData: boolean;
   sidebar: boolean;
-  sidebarShortcutHints: boolean;
+  showSideBarText: boolean;
   spellcheck: boolean;
   spellcheckLanguages: HunspellLanguages[];
   swipeToNavigate: boolean;
