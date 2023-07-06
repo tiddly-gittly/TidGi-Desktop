@@ -11,7 +11,7 @@ export const defaultPreferences: IPreferences = {
   downloadPath: DEFAULT_DOWNLOADS_PATH,
   hibernateUnusedWorkspacesAtLaunch: false,
   hideMenuBar: false,
-  hideSideBarIcon: false,
+  showSideBarIcon: true,
   ignoreCertificateErrors: false,
   language: 'zh_CN',
   languageModel: {
@@ -31,7 +31,7 @@ export const defaultPreferences: IPreferences = {
   rememberLastPageVisited: true,
   shareWorkspaceBrowsingData: false,
   sidebar: true,
-  sidebarShortcutHints: true,
+  showSideBarText: true,
   spellcheck: true,
   spellcheckLanguages: ['en-US'],
   swipeToNavigate: true,

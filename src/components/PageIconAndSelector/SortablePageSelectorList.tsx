@@ -5,12 +5,12 @@ import { IPage } from '@services/pages/interface';
 import { SortablePageSelectorButton } from './SortablePageSelectorButton';
 
 export interface ISortableListProps {
-  hideSideBarIcon: boolean;
+  showSideBarIcon: boolean;
   pagesList: IPage[];
-  sidebarShortcutHints: boolean;
+  showSideBarText: boolean;
 }
 
-export function SortablePageSelectorList({ pagesList, sidebarShortcutHints, hideSideBarIcon }: ISortableListProps): JSX.Element {
+export function SortablePageSelectorList({ pagesList, showSideBarText, showSideBarIcon }: ISortableListProps): JSX.Element {
   const dndSensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {
@@ -48,8 +48,8 @@ export function SortablePageSelectorList({ pagesList, sidebarShortcutHints, hide
               key={`item-${page.id}`}
               index={index}
               page={page}
-              showSidebarShortcutHints={sidebarShortcutHints}
-              hideSideBarIcon={hideSideBarIcon}
+              showSidebarTexts={showSideBarText}
+              showSideBarIcon={showSideBarIcon}
               pageCount={pageIDs.length}
             />
           ))}

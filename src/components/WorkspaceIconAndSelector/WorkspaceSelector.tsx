@@ -133,12 +133,12 @@ interface Props {
   active?: boolean;
   badgeCount?: number;
   hibernated?: boolean;
-  hideSideBarIcon: boolean;
+  showSideBarIcon: boolean;
   id: string;
   index?: number;
   onClick?: () => void;
   picturePath?: string | null;
-  showSidebarShortcutHints?: boolean;
+  showSidebarTexts?: boolean;
   transparentBackground?: boolean;
   workspaceClickedLoading?: boolean;
   workspaceCount?: number;
@@ -148,11 +148,11 @@ export function WorkspaceSelector({
   active = false,
   badgeCount = 0,
   hibernated = false,
-  hideSideBarIcon = false,
+  showSideBarIcon = true,
   id,
   index = 0,
   picturePath,
-  showSidebarShortcutHints = false,
+  showSidebarTexts = false,
   transparentBackground = false,
   workspaceName,
   workspaceClickedLoading = false,
@@ -175,9 +175,9 @@ export function WorkspaceSelector({
       workspaceCount={workspaceCount}
     >
       <Badge color='secondary' badgeContent={badgeCount} max={99}>
-        {!hideSideBarIcon && (
+        {showSideBarIcon && (
           <Avatar
-            large={!showSidebarShortcutHints}
+            large={!showSidebarTexts}
             transparent={transparentBackground}
             addAvatar={id === 'add'}
             highlightAdd={index === 0}
@@ -191,11 +191,11 @@ export function WorkspaceSelector({
                 ? (
                   '※'
                 )
-                : <AvatarPicture alt='Icon' large={!showSidebarShortcutHints} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />)}
+                : <AvatarPicture alt='Icon' large={!showSidebarTexts} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />)}
           </Avatar>
         )}
       </Badge>
-      {(showSidebarShortcutHints || hideSideBarIcon) && (
+      {(showSidebarTexts || showSideBarIcon) && (
         <ShortcutText active={active}>
           {id === 'add' ? t('WorkspaceSelector.Add') : (id === 'guide' ? t('WorkspaceSelector.Guide') : shortWorkspaceName)}
         </ShortcutText>

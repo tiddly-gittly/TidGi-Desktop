@@ -91,28 +91,28 @@ export function SideBar(): JSX.Element {
   const updaterMetaData = useUpdaterObservable();
   if (preferences === undefined) return <div>{t('Loading')}</div>;
 
-  const { sidebarShortcutHints, hideSideBarIcon } = preferences;
+  const { showSideBarText, showSideBarIcon } = preferences;
 
   return (
     <SidebarContainer>
       <SidebarTop titleBar={titleBar}>
         {workspacesList === undefined
           ? <div>{t('Loading')}</div>
-          : <SortableWorkspaceSelectorList sidebarShortcutHints={sidebarShortcutHints} workspacesList={workspacesList} hideSideBarIcon={hideSideBarIcon} />}
+          : <SortableWorkspaceSelectorList showSideBarText={showSideBarText} workspacesList={workspacesList} showSideBarIcon={showSideBarIcon} />}
         <WorkspaceSelector
           id='add'
-          hideSideBarIcon={hideSideBarIcon}
+          showSideBarIcon={showSideBarIcon}
           index={workspacesList?.length ?? 0}
-          showSidebarShortcutHints={sidebarShortcutHints}
+          showSidebarTexts={showSideBarText}
           onClick={() => void window.service.window.open(WindowNames.addWorkspace)}
         />
         {pagesList === undefined
           ? <div>{t('Loading')}</div>
           : (
             <SortablePageSelectorList
-              sidebarShortcutHints={sidebarShortcutHints}
+              showSideBarText={showSideBarText}
               pagesList={pagesList}
-              hideSideBarIcon={hideSideBarIcon}
+              showSideBarIcon={showSideBarIcon}
             />
           )}
       </SidebarTop>
