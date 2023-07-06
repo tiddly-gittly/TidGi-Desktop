@@ -95,6 +95,11 @@ const AvatarPicture = styled.div<{ large?: boolean }>`
       height: 44px;
       width: 44px;
     `}
+  & svg {
+    margin-top: 5%;
+    width: 90%;
+    height: 90%;
+  }
 `;
 
 const ShortcutText = styled.p<{ active?: boolean }>`
