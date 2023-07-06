@@ -45,8 +45,6 @@ export class Pages implements IPagesService {
    * load pages in sync, and ensure it is an Object
    */
   private getInitPagesForCache(): Record<string, IPage> {
-    // DEBUG: console settings.getSync(`pages`)
-    console.log(`settings.getSync(pages)`, settings.getSync(`pages`));
     const pagesFromDisk = settings.getSync(`pages`) ?? defaultBuildInPages;
     const loadedPages = typeof pagesFromDisk === 'object' && !Array.isArray(pagesFromDisk)
       ? pickBy(pagesFromDisk, (value) => value !== null) as unknown as Record<string, IPage>
