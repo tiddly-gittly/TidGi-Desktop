@@ -1,13 +1,13 @@
-import { i18n } from '@services/libs/i18n';
+import type { TFunction } from 'i18next';
 import { PageType } from './interface';
 
-export function getBuildInPageName(pageType: PageType) {
+export function getBuildInPageName(pageType: PageType, t: TFunction) {
   switch (pageType) {
     case PageType.wiki: {
-      return i18n.t('Menu.Wiki');
+      return t('Menu.Wiki');
     }
     case PageType.workflow: {
-      return i18n.t('Workflow.Title');
+      return t('Workflow.Title');
     }
   }
 }
