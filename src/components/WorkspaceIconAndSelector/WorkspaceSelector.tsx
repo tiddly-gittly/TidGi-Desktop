@@ -133,11 +133,11 @@ interface Props {
   active?: boolean;
   badgeCount?: number;
   hibernated?: boolean;
-  showSideBarIcon: boolean;
   id: string;
   index?: number;
   onClick?: () => void;
   picturePath?: string | null;
+  showSideBarIcon: boolean;
   showSidebarTexts?: boolean;
   transparentBackground?: boolean;
   workspaceClickedLoading?: boolean;
@@ -152,7 +152,7 @@ export function WorkspaceSelector({
   id,
   index = 0,
   picturePath,
-  showSidebarTexts = false,
+  showSidebarTexts = true,
   transparentBackground = false,
   workspaceName,
   workspaceClickedLoading = false,
@@ -195,7 +195,7 @@ export function WorkspaceSelector({
           </Avatar>
         )}
       </Badge>
-      {(showSidebarTexts || showSideBarIcon) && (
+      {showSidebarTexts && (
         <ShortcutText active={active}>
           {id === 'add' ? t('WorkspaceSelector.Add') : (id === 'guide' ? t('WorkspaceSelector.Guide') : shortWorkspaceName)}
         </ShortcutText>
