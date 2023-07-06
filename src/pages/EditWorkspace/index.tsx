@@ -199,6 +199,41 @@ export default function EditWorkspace(): JSX.Element {
             workspaceSetter({ ...workspace, name: event.target.value });
           }}
         />
+        <Divider />
+        <AvatarFlex>
+          <AvatarLeft>
+            <Avatar transparentBackground={transparentBackground}>
+              <AvatarPicture alt='Icon' src={getValidIconPath(picturePath)} />
+            </Avatar>
+          </AvatarLeft>
+          <AvatarRight>
+            <Tooltip title={wikiPictureExtensions.join(', ')} placement='top'>
+              <PictureButton
+                variant='outlined'
+                size='small'
+                onClick={async () => {
+                  const filePaths = await window.service.native.pickFile([{ name: 'Images', extensions: wikiPictureExtensions }]);
+                  if (filePaths.length > 0) {
+                    workspaceSetter({ ...workspace, picturePath: filePaths[0] });
+                  }
+                }}
+              >
+                {t('EditWorkspace.SelectLocal')}
+              </PictureButton>
+            </Tooltip>
+
+            <Tooltip title={t('EditWorkspace.NoRevert') ?? ''} placement='bottom'>
+              <PictureButton
+                onClick={() => {
+                  workspaceSetter({ ...workspace, picturePath: null });
+                }}
+                disabled={!picturePath}
+              >
+                {t('EditWorkspace.ResetDefaultIcon')}
+              </PictureButton>
+            </Tooltip>
+          </AvatarRight>
+        </AvatarFlex>
         <TextField
           id='outlined-full-width'
           label={t('EditWorkspace.Path')}
@@ -252,41 +287,6 @@ export default function EditWorkspace(): JSX.Element {
             renderInput={(parameters) => <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
           />
         )}
-        <Divider />
-        <AvatarFlex>
-          <AvatarLeft>
-            <Avatar transparentBackground={transparentBackground}>
-              <AvatarPicture alt='Icon' src={getValidIconPath(picturePath)} />
-            </Avatar>
-          </AvatarLeft>
-          <AvatarRight>
-            <Tooltip title={wikiPictureExtensions.join(', ')} placement='top'>
-              <PictureButton
-                variant='outlined'
-                size='small'
-                onClick={async () => {
-                  const filePaths = await window.service.native.pickFile([{ name: 'Images', extensions: wikiPictureExtensions }]);
-                  if (filePaths.length > 0) {
-                    await window.service.workspace.update(workspaceID, { picturePath: filePaths[0] });
-                  }
-                }}
-              >
-                {t('EditWorkspace.SelectLocal')}
-              </PictureButton>
-            </Tooltip>
-
-            <Tooltip title={t('EditWorkspace.NoRevert') ?? ''} placement='bottom'>
-              <PictureButton
-                onClick={() => {
-                  workspaceSetter({ ...workspace, picturePath: null });
-                }}
-                disabled={!picturePath}
-              >
-                {t('EditWorkspace.ResetDefaultIcon')}
-              </PictureButton>
-            </Tooltip>
-          </AvatarRight>
-        </AvatarFlex>
         <SyncedWikiDescription
           isCreateSyncedWorkspace={isCreateSyncedWorkspace}
           isCreateSyncedWorkspaceSetter={(isSynced: boolean) => {
