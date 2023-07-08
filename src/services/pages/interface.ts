@@ -3,11 +3,25 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { BehaviorSubject } from 'rxjs';
 
 export enum PageType {
+  /**
+   * Default empty page, have some user guide and new user settings.
+   */
+  guide = 'guide',
+  /**
+   * All "workspaces". It is hard to merge workspace concept with page concept, because will need to migrate all user data. So we leave them to be still workspace, but also call them wiki pages. And in event listeners about wiki page, we redirect them to call workspace methods.
+   */
   wiki = 'wiki',
+  /**
+   * AI workflow
+   */
   workflow = 'workflow',
 }
 export interface IPage {
   active: boolean;
+  /**
+   * User can hide a page's button from sidebar if they don't want to see it.
+   */
+  hide: boolean;
   /**
    * Wiki's workspaceID, or just be build-in page's type.
    */

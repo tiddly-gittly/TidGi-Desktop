@@ -38,11 +38,17 @@ export class Pages implements IPagesService {
    * load pages in sync, and ensure it is an Object
    */
   private getInitPagesForCache(): Record<string, IPage> {
-    const pagesFromDisk = settings.getSync(`pages`) ?? defaultBuildInPages;
+    const pagesFromDisk = settings.getSync(`pages`) ?? {};
     const loadedPages = typeof pagesFromDisk === 'object' && !Array.isArray(pagesFromDisk)
       ? pickBy(pagesFromDisk, (value) => value !== null) as unknown as Record<string, IPage>
       : {};
-    return loadedPages;
+    return this.sanitizePageSettings(loadedPages);
+  }
+
+  private sanitizePageSettings(pages: Record<string, IPage>): Record<string, IPage> {
+    // assign newly added default page setting to old user config, if user config missing a key (id of newly added build-in page)
+    const sanitizedPages = { ...defaultBuildInPages, ...pages };
+    return sanitizedPages;
   }
 
   public async setActivePage(id: string | PageType, oldActivePageID: string | PageType | undefined): Promise<void> {

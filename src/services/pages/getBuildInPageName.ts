@@ -9,5 +9,8 @@ export function getBuildInPageName(pageType: PageType, t: TFunction) {
     case PageType.workflow: {
       return t('Workflow.Title');
     }
+    case PageType.guide: {
+      return t('WorkspaceSelector.Guide');
+    }
   }
 }

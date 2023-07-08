@@ -1,6 +1,5 @@
 /* eslint-disable @typescript-eslint/promise-function-async */
 import { WindowNames } from '@services/windows/WindowProperties';
-import { t } from 'i18next';
 import { lazy, useEffect } from 'react';
 import { Route, Switch, useLocation } from 'wouter';
 
@@ -26,9 +25,7 @@ export function Pages(): JSX.Element {
       <Route path={`/${WindowNames.preferences}`} component={DialogPreferences} />
       <Route path={`/${WindowNames.spellcheck}`} component={SpellcheckLanguages} />
       <Route path={`/${WindowNames.main}/:any*/:any*`} component={Main} />
-      <Route>
-        <div>{t('Loading')}(index)</div>
-      </Route>
+      <Route component={Main} />
     </Switch>
   );
 }

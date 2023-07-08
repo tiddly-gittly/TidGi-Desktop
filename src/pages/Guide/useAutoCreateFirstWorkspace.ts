@@ -34,7 +34,7 @@ export function useAutoCreateFirstWorkspace(workspacesList: IWorkspaceWithMetada
     if (DEFAULT_WIKI_FOLDER === undefined || DEFAULT_FIRST_WIKI_PATH === undefined) return;
     if (workspacesList?.length === 0) {
       createdSetter(true);
-      void onSubmit();
+      void onSubmit()
     }
   }, [workspacesList?.length, created, createdSetter, onSubmit, DEFAULT_WIKI_FOLDER, DEFAULT_FIRST_WIKI_PATH]);
 }

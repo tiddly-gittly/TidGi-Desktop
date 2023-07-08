@@ -397,6 +397,7 @@ export class Workspace implements IWorkspaceService {
     }
     // switch from page to workspace, clear active page to switch to WikiBackground page
     const activePage = this.pagesService.getActivePageSync();
+    // instead of switch to a wiki workspace, we simply clear active page, because wiki page logic is not implemented yet, we are still using workspace logic.
     await this.pagesService.clearActivePage(activePage?.id);
   }
 
