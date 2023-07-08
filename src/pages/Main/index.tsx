@@ -14,6 +14,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import FindInPage from '../../components/FindInPage';
 import { SideBar } from '../../components/Sidebar';
 import { WikiBackground } from '../WikiBackground';
+import { Guide } from '../Guide';
 
 const Workflow = lazy(() => import('../Workflow'));
 
@@ -78,11 +79,10 @@ export default function Main(): JSX.Element {
           <FindInPage />
           <Switch>
             <Route path={`/${WindowNames.main}/${PageType.wiki}/:id/`} component={WikiBackground} />
+            <Route path={`/${WindowNames.main}/${PageType.guide}/:id/`} component={Guide} />
             <Route path={`/${WindowNames.main}/${PageType.workflow}/:id/`} component={Workflow} />
-            <Route path={`/${WindowNames.main}`} component={WikiBackground} />
-            <Route>
-              <div>{t('Loading')}(Main)</div>
-            </Route>
+            <Route path={`/${WindowNames.main}`} component={Guide} />
+            <Route component={Guide} />
           </Switch>
         </ContentRoot>
       </Root>

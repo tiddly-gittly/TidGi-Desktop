@@ -4,14 +4,10 @@ import { Typography } from '@material-ui/core';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
-import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import { useState } from 'react';
-import { useAutoCreateFirstWorkspace } from '../Main/useAutoCreateFirstWorkspace';
-import { Languages } from '../Preferences/sections/Languages';
-import { TiddlyWiki } from '../Preferences/sections/TiddlyWiki';
+import { useAutoCreateFirstWorkspace } from '../Guide/useAutoCreateFirstWorkspace';
 import { ViewLoadErrorMessages, WikiErrorMessages } from './ErrorMessage';
-import { NewUserMessage } from './NewUserMessage';
 
 const InnerContentRoot = styled.div`
   flex: 1;
@@ -37,10 +33,6 @@ export function WikiBackground(): JSX.Element {
     activeWorkspaceMetadata?.isLoading === false;
   const [wikiCreationMessage, wikiCreationMessageSetter] = useState('');
   useAutoCreateFirstWorkspace(workspacesList, wikiCreationMessageSetter);
-  const preferences = usePreferenceObservable();
-  if (preferences === undefined) return <div>{t('Loading')}</div>;
-
-  const { sidebar, themeSource } = preferences;
   return (
     <>
       <InnerContentRoot>
@@ -50,10 +42,7 @@ export function WikiBackground(): JSX.Element {
         )}
         {Array.isArray(workspacesList) && workspacesList.length > 0 && activeWorkspaceMetadata?.isLoading === true && <Typography color='textSecondary'>{t('Loading')}</Typography>}
         {wikiCreationMessage && <Typography color='textSecondary'>{wikiCreationMessage}</Typography>}
-        {Array.isArray(workspacesList) && workspacesList.length === 0 && <NewUserMessage sidebar={sidebar} themeSource={themeSource} />}
       </InnerContentRoot>
-      <Languages languageSelectorOnly />
-      <TiddlyWiki />
     </>
   );
 }
