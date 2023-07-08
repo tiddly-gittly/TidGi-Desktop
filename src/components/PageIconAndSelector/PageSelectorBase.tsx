@@ -6,7 +6,7 @@ import styled, { css, keyframes } from 'styled-components';
 
 Promise.config({ cancellation: true });
 
-const Root = styled.div<{ active?: boolean; pageClickedLoading?: boolean; pageCount: number }>`
+const Root = styled.div<{ active?: boolean; pageClickedLoading?: boolean }>`
   height: fit-content;
   width: auto;
   padding: 10px 0;
@@ -30,8 +30,7 @@ const Root = styled.div<{ active?: boolean; pageClickedLoading?: boolean; pageCo
       opacity: 1;
     `}
       box-sizing: border-box;
-  border-left: ${({ pageCount }) => (pageCount > 1 ? '3px' : '0')} solid
-    ${({ active, theme }) => (active === true ? theme.palette.text.primary : 'transparent')};
+  border-left: 3px solid ${({ active, theme }) => (active === true ? theme.palette.text.primary : 'transparent')};
   ${({ pageClickedLoading }) =>
   pageClickedLoading === true &&
   css`
@@ -130,7 +129,6 @@ interface Props {
   index?: number;
   onClick?: () => void;
   pageClickedLoading?: boolean;
-  pageCount?: number;
   pageName?: string;
   picturePath?: string | null;
   showSideBarIcon: boolean;
@@ -146,7 +144,6 @@ export function PageSelectorBase({
   pageName,
   pageClickedLoading = false,
   onClick = () => {},
-  pageCount = 0,
   icon,
 }: Props): JSX.Element {
   const { t } = useTranslation();
@@ -161,7 +158,6 @@ export function PageSelectorBase({
       active={active}
       onClick={pageClickedLoading ? () => {} : onClick}
       pageClickedLoading={pageClickedLoading}
-      pageCount={pageCount}
     >
       <Badge color='secondary' badgeContent={badgeCount} max={99}>
         {showSideBarIcon && (
