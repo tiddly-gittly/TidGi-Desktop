@@ -4,9 +4,12 @@ import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/wor
 import { IWorkspace } from '@services/workspaces/interface';
 import { MouseEvent, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { WorkspaceSelector } from './WorkspaceSelector';
+import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
 
 import defaultIcon from '@/images/default-icon.png';
+import { PageType } from '@services/pages/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
+import { useLocation } from 'wouter';
 
 export interface ISortableItemProps {
   index: number;
@@ -16,7 +19,7 @@ export interface ISortableItemProps {
   workspaceCount: number;
 }
 
-export function SortableWorkspaceSelector({ index, workspace, showSidebarTexts, workspaceCount, showSideBarIcon }: ISortableItemProps): JSX.Element {
+export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarTexts, workspaceCount, showSideBarIcon }: ISortableItemProps): JSX.Element {
   const { t } = useTranslation();
   const { active, id, name, picturePath, hibernated, transparentBackground } = workspace;
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
@@ -25,17 +28,19 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarTexts, 
     transition: transition ?? undefined,
   };
   const [workspaceClickedLoading, workspaceClickedLoadingSetter] = useState(false);
+  const [, setLocation] = useLocation();
   const onWorkspaceClick = useCallback(async () => {
     workspaceClickedLoadingSetter(true);
     try {
       await openWorkspaceTagTiddler(workspace, window.service);
+      setLocation(`/${WindowNames.main}/${PageType.wiki}/${id}/`);
     } catch (error) {
       if (error instanceof Error) {
         await window.service.native.log('error', error.message);
       }
     }
     workspaceClickedLoadingSetter(false);
-  }, [workspace]);
+  }, [id, setLocation, workspace]);
   const onWorkspaceContextMenu = useCallback(
     async (event: MouseEvent<HTMLDivElement>) => {
       event.preventDefault();
@@ -47,7 +52,7 @@ export function SortableWorkspaceSelector({ index, workspace, showSidebarTexts, 
   );
   return (
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} onContextMenu={onWorkspaceContextMenu}>
-      <WorkspaceSelector
+      <WorkspaceSelectorBase
         workspaceClickedLoading={workspaceClickedLoading}
         workspaceCount={workspaceCount}
         showSideBarIcon={showSideBarIcon}

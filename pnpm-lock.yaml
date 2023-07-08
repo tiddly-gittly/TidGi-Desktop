@@ -142,6 +142,9 @@ dependencies:
   winston-transport:
     specifier: 4.5.0
     version: 4.5.0
+  wouter:
+    specifier: ^2.11.0
+    version: 2.11.0(react@18.2.0)
   zx:
     specifier: 7.2.2
     version: 7.2.2

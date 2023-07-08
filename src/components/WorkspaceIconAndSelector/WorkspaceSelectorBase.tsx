@@ -144,7 +144,7 @@ interface Props {
   workspaceCount?: number;
   workspaceName?: string;
 }
-export function WorkspaceSelector({
+export function WorkspaceSelectorBase({
   active = false,
   badgeCount = 0,
   hibernated = false,

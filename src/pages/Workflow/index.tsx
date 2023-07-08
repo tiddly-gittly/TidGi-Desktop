@@ -22,7 +22,7 @@ const InnerContentRoot = styled.div`
   height: 100%;
 `;
 
-export function Workflow(): JSX.Element {
+export default function Workflow(): JSX.Element {
   const { t } = useTranslation();
   const workspacesList = useWorkspacesListObservable();
 
@@ -42,10 +42,8 @@ export function Workflow(): JSX.Element {
   return (
     <>
       <InnerContentRoot>
-        
+        Workflow
       </InnerContentRoot>
-      <Languages languageSelectorOnly />
-      <TiddlyWiki />
     </>
   );
 }

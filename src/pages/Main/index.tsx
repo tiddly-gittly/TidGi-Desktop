@@ -1,16 +1,21 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/promise-function-async */
+import { lazy } from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import is, { isNot } from 'typescript-styled-is';
+import { Route, Switch } from 'wouter';
 
 import { sidebarWidth } from '@/constants/style';
+import { PageType } from '@services/pages/interface';
 import { usePreferenceObservable } from '@services/preferences/hooks';
-import { useWorkspacesListObservable } from '@services/workspaces/hooks';
+import { WindowNames } from '@services/windows/WindowProperties';
 import FindInPage from '../../components/FindInPage';
-import { WikiBackground } from '../WikiBackground';
 import { SideBar } from '../../components/Sidebar';
+import { WikiBackground } from '../WikiBackground';
+
+const Workflow = lazy(() => import('../Workflow'));
 
 const OuterRoot = styled.div`
   display: flex;
@@ -71,7 +76,14 @@ export default function Main(): JSX.Element {
         {sidebar && <SideBar />}
         <ContentRoot sidebar={sidebar}>
           <FindInPage />
-          <WikiBackground />
+          <Switch>
+            <Route path={`/${WindowNames.main}/${PageType.wiki}/:id/`} component={WikiBackground} />
+            <Route path={`/${WindowNames.main}/${PageType.workflow}/:id/`} component={Workflow} />
+            <Route path={`/${WindowNames.main}`} component={WikiBackground} />
+            <Route>
+              <div>{t('Loading')}(Main)</div>
+            </Route>
+          </Switch>
         </ContentRoot>
       </Root>
     </OuterRoot>
