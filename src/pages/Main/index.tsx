@@ -13,8 +13,9 @@ import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
 import FindInPage from '../../components/FindInPage';
 import { SideBar } from '../../components/Sidebar';
-import { WikiBackground } from '../WikiBackground';
 import { Guide } from '../Guide';
+import { WikiBackground } from '../WikiBackground';
+import { useInitialPage } from './useInitialPage';
 
 const Workflow = lazy(() => import('../Workflow'));
 
@@ -63,6 +64,7 @@ const ContentRoot = styled.div`
 
 export default function Main(): JSX.Element {
   const { t } = useTranslation();
+  useInitialPage();
   const preferences = usePreferenceObservable();
   if (preferences === undefined) return <div>{t('Loading')}</div>;
   const { sidebar } = preferences;
