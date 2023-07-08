@@ -13,12 +13,11 @@ import { PageSelectorBase } from './PageSelectorBase';
 export interface ISortableItemProps {
   index: number;
   page: IPage;
-  pageCount: number;
   showSideBarIcon: boolean;
   showSidebarTexts: boolean;
 }
 
-export function SortablePageSelectorButton({ index, page, showSidebarTexts, pageCount, showSideBarIcon }: ISortableItemProps): JSX.Element {
+export function SortablePageSelectorButton({ index, page, showSidebarTexts, showSideBarIcon }: ISortableItemProps): JSX.Element {
   const { t } = useTranslation();
   const { active, id, type } = page;
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
@@ -52,7 +51,6 @@ export function SortablePageSelectorButton({ index, page, showSidebarTexts, page
       <PageSelectorBase
         icon={icon}
         pageClickedLoading={pageClickedLoading}
-        pageCount={pageCount}
         showSideBarIcon={showSideBarIcon}
         onClick={onPageClick}
         active={active}

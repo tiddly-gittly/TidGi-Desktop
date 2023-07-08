@@ -50,7 +50,6 @@ export function SortablePageSelectorList({ pagesList, showSideBarText, showSideB
               page={page}
               showSidebarTexts={showSideBarText}
               showSideBarIcon={showSideBarIcon}
-              pageCount={pageIDs.length}
             />
           ))}
       </SortableContext>

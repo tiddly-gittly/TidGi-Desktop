@@ -50,7 +50,6 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
               workspace={workspace}
               showSidebarTexts={showSideBarText}
               showSideBarIcon={showSideBarIcon}
-              workspaceCount={workspaceIDs.length}
             />
           ))}
       </SortableContext>

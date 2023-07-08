@@ -16,10 +16,9 @@ export interface ISortableItemProps {
   showSideBarIcon: boolean;
   showSidebarTexts: boolean;
   workspace: IWorkspace;
-  workspaceCount: number;
 }
 
-export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarTexts, workspaceCount, showSideBarIcon }: ISortableItemProps): JSX.Element {
+export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarTexts, showSideBarIcon }: ISortableItemProps): JSX.Element {
   const { t } = useTranslation();
   const { active, id, name, picturePath, hibernated, transparentBackground } = workspace;
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
@@ -54,7 +53,6 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} onContextMenu={onWorkspaceContextMenu}>
       <WorkspaceSelectorBase
         workspaceClickedLoading={workspaceClickedLoading}
-        workspaceCount={workspaceCount}
         showSideBarIcon={showSideBarIcon}
         onClick={onWorkspaceClick}
         active={active}

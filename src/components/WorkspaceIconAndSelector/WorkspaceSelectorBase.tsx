@@ -9,7 +9,7 @@ import defaultIcon from '../../images/default-icon.png';
 
 Promise.config({ cancellation: true });
 
-const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClickedLoading?: boolean; workspaceCount: number }>`
+const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClickedLoading?: boolean }>`
   height: fit-content;
   width: auto;
   padding: 10px 0;
@@ -38,8 +38,7 @@ const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClick
       opacity: 1;
     `}
       box-sizing: border-box;
-  border-left: ${({ workspaceCount }) => (workspaceCount > 1 ? '3px' : '0')} solid
-    ${({ active, theme }) => (active === true ? theme.palette.text.primary : 'transparent')};
+  border-left: 3px solid ${({ active, theme }) => (active === true ? theme.palette.text.primary : 'transparent')};
   ${({ workspaceClickedLoading }) =>
   workspaceClickedLoading === true &&
   css`
@@ -157,7 +156,6 @@ export function WorkspaceSelectorBase({
   workspaceName,
   workspaceClickedLoading = false,
   onClick = () => {},
-  workspaceCount = 0,
 }: Props): JSX.Element {
   const { t } = useTranslation();
   const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
@@ -172,7 +170,6 @@ export function WorkspaceSelectorBase({
       active={active}
       onClick={workspaceClickedLoading ? () => {} : onClick}
       workspaceClickedLoading={workspaceClickedLoading}
-      workspaceCount={workspaceCount}
     >
       <Badge color='secondary' badgeContent={badgeCount} max={99}>
         {showSideBarIcon && (
