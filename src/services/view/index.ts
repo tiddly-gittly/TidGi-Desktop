@@ -565,7 +565,7 @@ export class View implements IViewService {
       const contentSize = browserWindow.getContentSize();
       if (await this.workspaceService.workspaceDidFailLoad(activeId)) {
         logger.warn(`realignActiveView() hide because didFailLoad`);
-        view?.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
+        await this.hideView(browserWindow);
       } else {
         logger.debug(`realignActiveView() contentSize set to ${JSON.stringify(contentSize)}`);
         view?.setBounds(await getViewBounds(contentSize as [number, number]));
@@ -582,4 +582,12 @@ export class View implements IViewService {
       setTimeout(() => void this.realignActiveView(browserWindow, activeId, true), 1000);
     }
   };
+
+  public async hideView(browserWindow: BrowserWindow): Promise<void> {
+    const view = browserWindow.getBrowserView();
+    if (view !== null) {
+      const contentSize = browserWindow.getContentSize();
+      view?.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message or other pages
+    }
+  }
 }

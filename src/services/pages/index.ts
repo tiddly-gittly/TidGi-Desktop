@@ -5,10 +5,8 @@ import { debounce, pickBy } from 'lodash';
 
 import { lazyInject } from '@services/container';
 import { logger } from '@services/libs/log';
-import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWindowService } from '@services/windows/interface';
-import { IWorkspaceService } from '@services/workspaces/interface';
+import { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { BehaviorSubject } from 'rxjs';
 import { debouncedSetSettingFile } from './debouncedSetSettingFile';
 import { defaultBuildInPages } from './defaultBuildInPages';
@@ -23,14 +21,8 @@ export class Pages implements IPagesService {
 
   public pages$: BehaviorSubject<IPage[]>;
 
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
-
-  @lazyInject(serviceIdentifier.Window)
-  private readonly windowService!: IWindowService;
-
-  @lazyInject(serviceIdentifier.Preference)
-  private readonly preferenceService!: IPreferenceService;
+  @lazyInject(serviceIdentifier.WorkspaceView)
+  private readonly workspaceViewService!: IWorkspaceViewService;
 
   constructor() {
     this.pages = this.getInitPagesForCache();
@@ -55,13 +47,12 @@ export class Pages implements IPagesService {
 
   public async setActivePage(id: string | PageType, oldActivePageID: string | PageType | undefined): Promise<void> {
     logger.info(`openPage: ${id}`);
-    await this.update(id, { active: true });
-    if (oldActivePageID !== id) {
-      await this.clearActivePage(oldActivePageID);
-    }
-    // switch from workspace to page , clear active workspace to close its browser view
-    const activeWorkspace = this.workspaceService.getActiveWorkspaceSync();
-    await this.workspaceService.clearActiveWorkspace(activeWorkspace?.id);
+    await Promise.all([
+      this.update(id, { active: true }),
+      oldActivePageID !== id && this.clearActivePage(oldActivePageID),
+      // if not switch to wiki page, e.g. switch from workspace to workflow page, clear active workspace and close its browser view
+      id !== PageType.wiki && this.workspaceViewService.clearActiveWorkspaceView(),
+    ]);
   }
 
   public async clearActivePage(id: string | PageType | undefined): Promise<void> {

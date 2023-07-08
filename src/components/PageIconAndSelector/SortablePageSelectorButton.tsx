@@ -40,7 +40,7 @@ export function SortablePageSelectorButton({ index, page, showSidebarTexts, page
       }
     }
     pageClickedLoadingSetter(false);
-  }, [type]);
+  }, [id, setLocation, type]);
   const name = useMemo(() => {
     return getBuildInPageName(type, t);
   }, [type, t]);
