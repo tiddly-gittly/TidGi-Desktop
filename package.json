@@ -146,11 +146,13 @@
     "esbuild-loader": "^3.0.1",
     "eslint-config-tidgi": "1.1.2",
     "event-hooks-webpack-plugin": "2.3.0",
+    "fbp-graph": "^0.7.0",
     "fork-ts-checker-webpack-plugin": "8.0.0",
     "glob": "^10.3.2",
     "graphql-hooks": "6.2.3",
     "json5": "^2.2.3",
     "node-loader": "2.0.0",
+    "node-polyfill-webpack-plugin": "^2.0.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
     "react-helmet": "6.1.0",
@@ -160,6 +162,7 @@
     "simplebar-react": "3.2.4",
     "style-loader": "3.3.3",
     "styled-components": "5.3.6",
+    "the-graph": "^0.13.1",
     "threads-plugin": "1.4.0",
     "ts-import-plugin": "3.0.0",
     "ts-loader": "9.4.4",
@@ -173,6 +176,14 @@
     "webpack-node-externals": "3.0.0",
     "webpack5-externals-plugin": "1.0.4",
     "webpackbar": "5.0.2"
+  },
+  "pnpm": {
+    "overrides": {
+      "fbp-graph": "$fbp-graph"
+    },
+    "patchedDependencies": {
+      "fbp-graph@0.7.0": "patches/fbp-graph@0.7.0.patch"
+    }
   },
   "private": false
 }

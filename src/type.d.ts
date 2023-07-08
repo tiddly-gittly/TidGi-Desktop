@@ -9,6 +9,47 @@ declare module '@tiddlygit/tiddlywiki' {
   export * from 'tiddlywiki';
 }
 
+declare module 'the-graph' {
+  import type { Graph } from 'fbp-graph';
+
+  export interface ITheGraphProps {
+    graph: Graph;
+    height: number | string;
+    library: {
+      basic: {
+        description: string;
+        icon: string;
+        inports: Array<{
+          name: string;
+          type: string;
+        }>;
+        name: string;
+        outports: Array<{
+          name: string;
+          type: string;
+        }>;
+      };
+      tall: {
+        description: string;
+        icon: string;
+        inports: Array<{
+          name: string;
+          type: string;
+        }>;
+        name: string;
+        outports: Array<{
+          name: string;
+          type: string;
+        }>;
+      };
+    };
+    offsetX?: number;
+    readonly: boolean;
+    width: number | string;
+  }
+  export function App(props: ITheGraphProps): JSX.Element;
+}
+
 declare module 'espree' {
   // https://github.com/eslint/espree#options
   export interface Options {
