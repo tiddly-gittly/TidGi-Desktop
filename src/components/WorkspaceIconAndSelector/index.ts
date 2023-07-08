@@ -1,3 +1,3 @@
-export * from './SortableWorkspaceSelector';
+export * from './SortableWorkspaceSelectorButton';
 export * from './SortableWorkspaceSelectorList';
-export * from './WorkspaceSelector';
+export * from './WorkspaceSelectorBase';

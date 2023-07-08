@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await */
 import settings from 'electron-settings';
 import { injectable } from 'inversify';
+import { debounce, pickBy } from 'lodash';
 
 import { lazyInject } from '@services/container';
 import { logger } from '@services/libs/log';
@@ -8,7 +9,6 @@ import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
 import { IWorkspaceService } from '@services/workspaces/interface';
-import { pickBy } from 'lodash';
 import { BehaviorSubject } from 'rxjs';
 import { debouncedSetSettingFile } from './debouncedSetSettingFile';
 import { defaultBuildInPages } from './defaultBuildInPages';
@@ -17,7 +17,7 @@ import { IPage, IPagesService, PageType } from './interface';
 @injectable()
 export class Pages implements IPagesService {
   /**
-   * Record from page id to page settings
+   * Record from page id/PageType to page settings. For build-in pages, id is the type.
    */
   private readonly pages: Record<string, IPage> = {};
 
@@ -35,6 +35,7 @@ export class Pages implements IPagesService {
   constructor() {
     this.pages = this.getInitPagesForCache();
     this.pages$ = new BehaviorSubject<IPage[]>(this.getPagesAsListSync());
+    this.updatePageSubject = debounce(this.updatePageSubject.bind(this), 500) as () => Promise<void>;
   }
 
   private async updatePageSubject(): Promise<void> {
@@ -52,20 +53,52 @@ export class Pages implements IPagesService {
     return loadedPages;
   }
 
-  public async openPage(page: PageType): Promise<void> {
-    logger.info(`openPage: ${page}`);
+  public async setActivePage(id: string | PageType, oldActivePageID: string | PageType | undefined): Promise<void> {
+    logger.info(`openPage: ${id}`);
+    await this.update(id, { active: true });
+    if (oldActivePageID !== id) {
+      await this.clearActivePage(oldActivePageID);
+    }
+    // switch from workspace to page , clear active workspace to close its browser view
+    const activeWorkspace = this.workspaceService.getActiveWorkspaceSync();
+    await this.workspaceService.clearActiveWorkspace(activeWorkspace?.id);
   }
 
-  public async set(id: string, page: IPage): Promise<void> {
+  public async clearActivePage(id: string | PageType | undefined): Promise<void> {
+    if (id === undefined) {
+      return;
+    }
+    await this.update(id, { active: false });
+  }
+
+  public async getActivePage(): Promise<IPage | undefined> {
+    return this.getActivePageSync();
+  }
+
+  public getActivePageSync(): IPage | undefined {
+    return this.getPagesAsListSync().find((page) => page.active);
+  }
+
+  public async set(id: string | PageType, page: IPage): Promise<void> {
     this.pages[id] = page;
     void debouncedSetSettingFile(this.pages);
+    void this.updatePageSubject();
   }
 
-  public async get(id: string): Promise<IPage | undefined> {
+  public async update(id: string | PageType, pageSetting: Partial<IPage>): Promise<void> {
+    const page = this.getSync(id);
+    if (page === undefined) {
+      logger.error(`Could not update page ${id} because it does not exist`);
+      return;
+    }
+    await this.set(id, { ...page, ...pageSetting });
+  }
+
+  public async get(id: string | PageType): Promise<IPage | undefined> {
     return this.getSync(id);
   }
 
-  private getSync(id: string): IPage {
+  public getSync(id: string | PageType): IPage {
     return this.pages[id];
   }
 
@@ -87,7 +120,7 @@ export class Pages implements IPagesService {
    * Get sorted page list
    * Sync for internal use
    */
-  private getPagesAsListSync(): IPage[] {
+  public getPagesAsListSync(): IPage[] {
     return Object.values(this.pages);
   }
 }

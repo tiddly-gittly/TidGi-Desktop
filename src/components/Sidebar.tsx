@@ -4,7 +4,7 @@ import { t } from 'i18next';
 import SimpleBar from 'simplebar-react';
 import styled, { css } from 'styled-components';
 
-import { SortableWorkspaceSelectorList, WorkspaceSelector } from '@/components/WorkspaceIconAndSelector';
+import { SortableWorkspaceSelectorList, WorkspaceSelectorBase } from '@/components/WorkspaceIconAndSelector';
 import { sidebarWidth } from '@/constants/style';
 import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
@@ -99,7 +99,7 @@ export function SideBar(): JSX.Element {
         {workspacesList === undefined
           ? <div>{t('Loading')}</div>
           : <SortableWorkspaceSelectorList showSideBarText={showSideBarText} workspacesList={workspacesList} showSideBarIcon={showSideBarIcon} />}
-        <WorkspaceSelector
+        <WorkspaceSelectorBase
           id='add'
           showSideBarIcon={showSideBarIcon}
           index={workspacesList?.length ?? 0}

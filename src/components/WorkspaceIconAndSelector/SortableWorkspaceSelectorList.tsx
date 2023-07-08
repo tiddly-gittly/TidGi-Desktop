@@ -2,7 +2,7 @@ import { DndContext, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { restrictToVerticalAxis } from '@dnd-kit/modifiers';
 import { arrayMove, SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import { IWorkspace, IWorkspaceWithMetadata } from '@services/workspaces/interface';
-import { SortableWorkspaceSelector } from './SortableWorkspaceSelector';
+import { SortableWorkspaceSelectorButton } from './SortableWorkspaceSelectorButton';
 
 export interface ISortableListProps {
   showSideBarIcon: boolean;
@@ -44,7 +44,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
         {workspacesList
           .sort((a, b) => a.order - b.order)
           .map((workspace, index) => (
-            <SortableWorkspaceSelector
+            <SortableWorkspaceSelectorButton
               key={`item-${workspace.id}`}
               index={index}
               workspace={workspace}

@@ -20,6 +20,7 @@ import { lazyInject } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
+import { IPagesService } from '@services/pages/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
@@ -60,6 +61,9 @@ export class Workspace implements IWorkspaceService {
 
   @lazyInject(serviceIdentifier.Authentication)
   private readonly authService!: IAuthenticationService;
+
+  @lazyInject(serviceIdentifier.Pages)
+  private readonly pagesService!: IPagesService;
 
   constructor() {
     this.workspaces = this.getInitWorkspacesForCache();
@@ -391,6 +395,9 @@ export class Workspace implements IWorkspaceService {
     if (oldActiveWorkspaceID !== id) {
       await this.clearActiveWorkspace(oldActiveWorkspaceID);
     }
+    // switch from page to workspace, clear active page to switch to WikiBackground page
+    const activePage = this.pagesService.getActivePageSync();
+    await this.pagesService.clearActivePage(activePage?.id);
   }
 
   public async clearActiveWorkspace(oldActiveWorkspaceID: string | undefined): Promise<void> {

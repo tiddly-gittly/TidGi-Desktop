@@ -3,8 +3,10 @@ import { CSS } from '@dnd-kit/utilities';
 import { IPage } from '@services/pages/interface';
 import { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useLocation } from 'wouter';
 
 import { getBuildInPageName } from '@services/pages/getBuildInPageName';
+import { WindowNames } from '@services/windows/WindowProperties';
 import { getBuildInPageIcon } from './getBuildInPageIcon';
 import { PageSelectorBase } from './PageSelectorBase';
 
@@ -25,10 +27,13 @@ export function SortablePageSelectorButton({ index, page, showSidebarTexts, page
     transition: transition ?? undefined,
   };
   const [pageClickedLoading, pageClickedLoadingSetter] = useState(false);
+  const [, setLocation] = useLocation();
   const onPageClick = useCallback(async () => {
     pageClickedLoadingSetter(true);
     try {
-      await window.service.pages.openPage(type);
+      const oldActivePage = await window.service.pages.getActivePage();
+      await window.service.pages.setActivePage(type, oldActivePage?.id);
+      setLocation(`/${WindowNames.main}/${type}/${id}/`);
     } catch (error) {
       if (error instanceof Error) {
         await window.service.native.log('error', error.message);

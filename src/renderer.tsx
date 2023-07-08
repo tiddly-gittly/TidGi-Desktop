@@ -3,13 +3,14 @@
 import i18n from 'i18next';
 import React from 'react';
 import { createRoot } from 'react-dom/client';
+import { I18nextProvider } from 'react-i18next';
 import { ThemeProvider } from 'styled-components';
+import { Router } from 'wouter';
 
 import CssBaseline from '@material-ui/core/CssBaseline';
 import StyledEngineProvider from '@material-ui/core/StyledEngineProvider';
 import DateFnsUtils from '@material-ui/lab/AdapterDateFns';
 import LocalizationProvider from '@material-ui/lab/LocalizationProvider';
-import { I18nextProvider } from 'react-i18next';
 import 'typeface-roboto/index.css';
 import 'simplebar/dist/simplebar.min.css';
 
@@ -18,6 +19,7 @@ import { useThemeObservable } from '@services/theme/hooks';
 import { initI18N } from './i18n';
 import 'electron-ipc-cat/fixContextIsolation';
 import { RootStyle } from './components/RootStyle';
+import { useHashLocation } from './helpers/router';
 import { Pages } from './pages';
 
 function App(): JSX.Element {
@@ -31,7 +33,9 @@ function App(): JSX.Element {
           <React.Suspense fallback={<div />}>
             <I18nextProvider i18n={i18n}>
               <RootStyle>
-                <Pages />
+                <Router hook={useHashLocation}>
+                  <Pages />
+                </Router>
               </RootStyle>
             </I18nextProvider>
           </React.Suspense>
