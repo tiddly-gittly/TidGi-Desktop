@@ -22,6 +22,10 @@ export interface IInitializeWorkspaceOptions {
  * Deal with operations that needs to create a workspace and a browserView at once
  */
 export interface IWorkspaceViewService {
+  /**
+   * Hide BrowserView, so page below it will show up.
+   */
+  clearActiveWorkspaceView(): Promise<void>;
   clearBrowsingData(): Promise<void>;
   clearBrowsingDataWithConfirm(): Promise<void>;
   hibernateWorkspaceView(id: string): Promise<void>;

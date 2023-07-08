@@ -393,6 +393,28 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
   }
 
+  public async clearActiveWorkspaceView(idToDeactivate?: string): Promise<void> {
+    const activeWorkspace = idToDeactivate === undefined ? await this.workspaceService.getActiveWorkspace() : await this.workspaceService.get(idToDeactivate);
+    await this.workspaceService.clearActiveWorkspace(activeWorkspace?.id);
+    if (activeWorkspace === undefined) {
+      return;
+    }
+    if (activeWorkspace.isSubWiki && typeof activeWorkspace.mainWikiID === 'string') {
+      logger.debug(`${activeWorkspace.id} is a subwiki, set its main wiki ${activeWorkspace.mainWikiID} to deactivated instead.`, { function: 'clearActiveWorkspaceView' });
+      await this.clearActiveWorkspaceView(activeWorkspace.mainWikiID);
+      return;
+    }
+    try {
+      await this.hideWorkspaceView();
+    } catch (error) {
+      logger.error(`Error while setActiveWorkspaceView(): ${(error as Error).message}`, error);
+      throw error;
+    }
+    if (activeWorkspace.hibernateWhenUnused) {
+      await this.hibernateWorkspaceView(activeWorkspace.id);
+    }
+  }
+
   public async removeWorkspaceView(workspaceID: string): Promise<void> {
     const mainWindow = this.windowService.get(WindowNames.main);
     // if there's only one workspace left, clear all
@@ -549,6 +571,27 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
       await Promise.all(tasks);
     }
-    /* eslint-enable @typescript-eslint/strict-boolean-expressions */
   }
+
+  private async hideWorkspaceView(): Promise<void> {
+    const mainWindow = this.windowService.get(WindowNames.main);
+    const menuBarWindow = this.windowService.get(WindowNames.menuBar);
+    const mainBrowserViewWebContent = mainWindow?.getBrowserView()?.webContents;
+    const menuBarBrowserViewWebContent = menuBarWindow?.getBrowserView()?.webContents;
+    const tasks = [];
+    if (mainBrowserViewWebContent) {
+      tasks.push(this.viewService.hideView(mainWindow));
+      logger.debug(`hideActiveWorkspaceView: hide main window browserView.`);
+    } else {
+      logger.warn(`hideActiveWorkspaceView: no mainBrowserViewWebContent, skip main window browserView.`);
+    }
+    if (menuBarBrowserViewWebContent) {
+      logger.debug(`hideActiveWorkspaceView: hide menu bar window browserView.`);
+      tasks.push(this.viewService.hideView(menuBarWindow));
+    } else {
+      logger.info(`hideActiveWorkspaceView: no menuBarBrowserViewWebContent, skip menu bar window browserView.`);
+    }
+    await Promise.all(tasks);
+  }
+  /* eslint-enable @typescript-eslint/strict-boolean-expressions */
 }

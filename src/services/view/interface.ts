@@ -40,6 +40,7 @@ export interface IViewService {
   getView: (workspaceID: string, windowName: WindowNames) => BrowserView | undefined;
   getViewCount(): Promise<number>;
   getViewCurrentUrl(workspaceID?: string): Promise<string | undefined>;
+  hideView(browserWindow: BrowserWindow): Promise<void>;
   /**
    * Try catch loadUrl, other wise it will throw unhandled promise rejection Error: ERR_CONNECTION_REFUSED (-102) loading 'http://localhost:5212/
    * We will set `didFailLoadErrorMessage`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
@@ -74,6 +75,7 @@ export const ViewServiceIPCDescriptor = {
     getView: ProxyPropertyType.Function,
     getViewCount: ProxyPropertyType.Function,
     getViewCurrentUrl: ProxyPropertyType.Function,
+    hideView: ProxyPropertyType.Function,
     realignActiveView: ProxyPropertyType.Function,
     reloadActiveBrowserView: ProxyPropertyType.Function,
     reloadViewsWebContents: ProxyPropertyType.Function,

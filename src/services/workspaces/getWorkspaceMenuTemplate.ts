@@ -4,6 +4,7 @@ import type { IAuthenticationService } from '@services/auth/interface';
 import { IContextService } from '@services/context/interface';
 import { IGitService } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
+import { IPagesService, PageType } from '@services/pages/interface';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
@@ -20,6 +21,7 @@ interface IWorkspaceMenuRequiredServices {
   context: Pick<IContextService, 'isOnline'>;
   git: Pick<IGitService, 'commitAndSync'>;
   native: Pick<INativeService, 'open' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualInfo'>;
+  pages: Pick<IPagesService, 'setActivePage' | 'getActivePage'>;
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
   wiki: Pick<IWikiService, 'wikiOperation' | 'requestWikiSendActionMessage'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
@@ -38,6 +40,9 @@ interface IWorkspaceMenuRequiredServices {
 
 export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IWorkspaceMenuRequiredServices): Promise<void> {
   const { id: idToActive, isSubWiki, tagName, mainWikiID } = workspace;
+  // switch to workspace page
+  const oldActivePage = await service.pages.getActivePage();
+  await service.pages.setActivePage(PageType.wiki, oldActivePage?.id);
   const oldActiveWorkspace = await service.workspace.getActiveWorkspace();
   // if is a new main workspace, active its browser view first
   if (!isSubWiki && idToActive !== null && idToActive !== undefined && oldActiveWorkspace?.id !== idToActive) {
