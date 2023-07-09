@@ -5,6 +5,9 @@ import TheGraph from 'the-graph';
 import type { IFBPLibrary, ITheGraphProps } from 'the-graph';
 import 'the-graph/themes/the-graph-dark.css';
 import 'the-graph/themes/the-graph-light.css';
+import '@fortawesome/fontawesome-free/js/all.js';
+import '@fortawesome/fontawesome-free/css/all.css';
+import '@fortawesome/fontawesome-free/css/v4-font-face.css';
 
 import { useCallback, useEffect, useRef } from 'react';
 import { useMenu } from './menu';
@@ -18,6 +21,17 @@ const Container = styled.main`
   &.the-graph-light .the-graph-app, &.the-graph-dark .the-graph-app {
     background-color: ${({ theme }) => theme.palette.background.default};
   }
+  & .icon {
+    /* fix with v4-font-face */
+    font-family: 'FontAwesome' !important;
+  }
+`;
+const ThumbnailContainer = styled.div`
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  z-index: 1;
+  overflow: hidden;
 `;
 
 export interface IGraphEditorProps {
@@ -59,7 +73,7 @@ export interface IGraphEditorProps {
 }
 
 export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) {
-  const { library, theme, graph } = props;
+  const { library, theme, graph, readonly = false } = props;
   // const initializeAutolayouter = () => {
   //   // Logic for initializing autolayouter
   //   const auto = klayNoflo.init({
@@ -74,11 +88,11 @@ export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) 
 
   const appReference = useRef<HTMLDivElement>(null);
 
-  // DEBUG: console appReference.current
-  console.log(`appReference.current`, appReference.current);
   // methods
-  const { subscribeGraph, unsubscribeGraph } = useSubscribeGraph({});
+  const { subscribeGraph, unsubscribeGraph } = useSubscribeGraph({ readonly });
   const {
+    pan,
+    scale,
     handleEdgeSelection,
     handleNodeSelection,
     handlePanScale,
@@ -109,17 +123,36 @@ export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) 
     buildInitialLibrary(graph);
   }, [buildInitialLibrary]);
 
+  // Attach nav
+  function fitGraphInView() {
+    // editor.triggerFit();
+  }
+
+  function panEditorTo() {}
+
   return (
     <Container className={`the-graph-${theme}`}>
       <TheGraph.App
         ref={appReference}
-        readonly={false}
+        readonly={readonly}
         height={window.innerHeight}
         width={window.innerWidth - sidebarWidth}
         offsetX={sidebarWidth}
         getMenuDef={getMenuDef}
+        onPanScale={handlePanScale}
         {...props}
       />
+      <ThumbnailContainer>
+        <TheGraph.nav.Component
+          height={162}
+          width={216}
+          graph={graph}
+          onTap={fitGraphInView}
+          onPanTo={panEditorTo}
+          viewrectangle={[...pan, window.innerWidth, window.innerHeight]}
+          viewscale={scale}
+        />
+      </ThumbnailContainer>
     </Container>
   );
 }
