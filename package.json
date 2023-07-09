@@ -63,6 +63,14 @@
     "menubar": "9.3.0",
     "nanoid": "^4.0.2",
     "node-fetch": "3.3.1",
+    "noflo-core": "^0.6.1",
+    "noflo-filesystem": "^2.2.0",
+    "noflo-flow": "^0.8.0",
+    "noflo-graph": "^0.4.0",
+    "noflo-interaction": "^0.3.1",
+    "noflo-nodejs": "^0.15.2",
+    "noflo-objects": "^0.7.0",
+    "noflo-strings": "^0.5.1",
     "reflect-metadata": "0.1.13",
     "registry-js": "1.15.1",
     "rxjs": "7.8.1",
@@ -182,9 +190,6 @@
   "pnpm": {
     "overrides": {
       "fbp-graph": "$fbp-graph"
-    },
-    "patchedDependencies": {
-      "fbp-graph@0.7.0": "patches/fbp-graph@0.7.0.patch"
     }
   },
   "private": false
