@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { Graph } from 'fbp-graph';
+import type { Graph } from 'fbp-graph';
 import { RefObject, useCallback, useState } from 'react';
 import TheGraph, { IFBPComponent } from 'the-graph';
 
