@@ -7,7 +7,10 @@ export interface IGraphChangeEvent {
   payload: any;
 }
 
-export function useSubscribeGraph(context: {}) {
+export function useSubscribeGraph(context: {
+  readonly?: boolean;
+}) {
+  const { readonly } = context;
   const [trackGraphChange, setTrackGraphChange] = useState<Record<string, ((payload: any) => void) | ((from: any, to: any) => void)>>({});
   const [graphChanges, setGraphChanges] = useState<IGraphChangeEvent[]>([]);
   // const [autolayout, setAutolayout] = useState<boolean>(false);
@@ -65,11 +68,11 @@ export function useSubscribeGraph(context: {}) {
     });
 
     trackChange.endTransaction = () => {
-      fire('changed', graph);
+      // fire('changed', graph);
 
       if (graphChanges.length > 0) {
         if (!readonly) {
-          fire('graphChanges', graphChanges);
+          // fire('graphChanges', graphChanges);
         }
         setGraphChanges([]);
       }

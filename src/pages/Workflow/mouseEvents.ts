@@ -15,7 +15,7 @@ export function useMouseEvents({ graph, library, appReference }: { appReference:
   const [selectedEdges, setSelectedEdges] = useState<any[]>([]);
 
   const [icons, setIcons] = useState<any[]>([]);
-  const [pan, setPan] = useState<any[]>([0, 0]);
+  const [pan, setPan] = useState<[number, number]>([0, 0]);
   const [scale, setScale] = useState<number>(1);
 
   const handleEdgeSelection = useCallback((itemKey: any, item: any, toggle: boolean) => {
@@ -59,7 +59,7 @@ export function useMouseEvents({ graph, library, appReference }: { appReference:
   }, []);
 
   const handlePanScale = useCallback((x: number, y: number, scale: number) => {
-    setPan([x, y]);
+    setPan([-x, -y]);
     setScale(scale);
   }, []);
 
@@ -151,6 +151,8 @@ export function useMouseEvents({ graph, library, appReference }: { appReference:
   // };
 
   return {
+    pan,
+    scale,
     handleEdgeSelection,
     handleNodeSelection,
     handlePanScale,

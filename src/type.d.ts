@@ -23,6 +23,7 @@ declare module 'the-graph' {
     height: number | string;
     library?: IFBPLibrary;
     offsetX?: number;
+    onPanScale: (x: number, y: number, scale: number) => void;
     readonly: boolean;
     ref?: RefObject<HTMLDivElement>;
     width: number | string;
@@ -48,6 +49,35 @@ declare module 'the-graph' {
   export const library = {
     componentsFromGraph,
     libraryFromGraph,
+  };
+
+  function styleFromTheme(theme: 'dark' | 'light'): {
+    height: number;
+    lineWidth: number;
+    nodeSize: number;
+    width: number;
+  };
+  function renderThumbnail(contextcontext: CanvasRenderingContext2D | null, graph: Graph, properties: ReturnType<typeof styleFromTheme>): {
+    rectangle: number[];
+    scale: number;
+  };
+  export const thumb = {
+    styleFromTheme,
+    render: renderThumbnail,
+  };
+
+  export interface ITheGraphNavProps {
+    graph: Graph;
+    height: number;
+    onPanTo: () => void;
+    onTap: () => void;
+    viewrectangle: number[];
+    viewscale: number;
+    width: number;
+  }
+  function NavComponent(props: ITheGraphNavProps): JSX.Element;
+  export const nav = {
+    Component: NavComponent,
   };
 }
 
