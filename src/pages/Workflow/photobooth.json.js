@@ -272,6 +272,7 @@ export const photoboothJSON = {
         y: 828,
         label: 'negative',
       },
+      icon: 'copyright',
     },
     'seriously/Split_7oj15': {
       component: 'seriously/Split',
@@ -280,6 +281,7 @@ export const photoboothJSON = {
         y: 756,
         label: 'halfScreen',
       },
+      icon: 'commenting',
     },
     'core/Split_jx318': {
       component: 'core/Split',

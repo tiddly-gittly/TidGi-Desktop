@@ -1,4 +1,4 @@
-import { Graph } from 'fbp-graph';
+import type { Graph } from 'fbp-graph';
 import { useCallback, useState } from 'react';
 import { graphEvents, graphPortEvents, graphRenameEvents } from './constants';
 

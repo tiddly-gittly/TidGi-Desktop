@@ -1,4 +1,4 @@
-import { Graph } from 'fbp-graph';
+import type { Graph } from 'fbp-graph';
 import { type RefObject, useEffect } from 'react';
 import TheGraph from 'the-graph';
 

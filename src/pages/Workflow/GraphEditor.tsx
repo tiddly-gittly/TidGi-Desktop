@@ -1,5 +1,5 @@
 import { sidebarWidth } from '@/constants/style';
-import { Graph } from 'fbp-graph';
+import type { Graph } from 'fbp-graph';
 import styled from 'styled-components';
 import TheGraph from 'the-graph';
 import type { IFBPLibrary, ITheGraphProps } from 'the-graph';
