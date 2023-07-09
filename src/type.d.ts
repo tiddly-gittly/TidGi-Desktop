@@ -13,41 +13,42 @@ declare module 'the-graph' {
   import type { Graph } from 'fbp-graph';
 
   export interface ITheGraphProps {
+    getMenuDef?: (options: {
+      graph: any;
+      item: any;
+      itemKey: any;
+      type: string;
+    }) => any;
     graph: Graph;
     height: number | string;
-    library: {
-      basic: {
-        description: string;
-        icon: string;
-        inports: Array<{
-          name: string;
-          type: string;
-        }>;
-        name: string;
-        outports: Array<{
-          name: string;
-          type: string;
-        }>;
-      };
-      tall: {
-        description: string;
-        icon: string;
-        inports: Array<{
-          name: string;
-          type: string;
-        }>;
-        name: string;
-        outports: Array<{
-          name: string;
-          type: string;
-        }>;
-      };
-    };
+    library?: IFBPLibrary;
     offsetX?: number;
     readonly: boolean;
+    ref?: RefObject<HTMLDivElement>;
     width: number | string;
   }
   export function App(props: ITheGraphProps): JSX.Element;
+
+  export interface ITheGraphNodePort {
+    name: string;
+    type: string;
+  }
+  export interface IFBPComponent {
+    description: string;
+    icon: string;
+    inports: ITheGraphNodePort[];
+    name: string;
+    outports: ITheGraphNodePort[];
+    unnamespaced?: boolean;
+  }
+  function componentsFromGraph(graph: Graph): IFBPComponent[];
+  export type IFBPLibrary = Record<string, IFBPComponent>;
+  function libraryFromGraph(graph: Graph): IFBPLibrary;
+
+  export const library = {
+    componentsFromGraph,
+    libraryFromGraph,
+  };
 }
 
 declare module 'espree' {
