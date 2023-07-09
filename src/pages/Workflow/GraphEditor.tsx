@@ -51,6 +51,9 @@ const Container = styled.main`
   .the-graph-app > svg, .the-graph-app > canvas {
     left: ${sidebarWidth}px!important;
   }
+  &.the-graph-light .the-graph-app, &.the-graph-dark .the-graph-app {
+    background-color: ${({ theme }) => theme.palette.background.default};
+  }
 `;
 
 export interface IGraphEditorProps {
