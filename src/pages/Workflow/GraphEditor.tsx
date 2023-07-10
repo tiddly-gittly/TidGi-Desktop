@@ -1,7 +1,6 @@
 import { sidebarWidth } from '@/constants/style';
 import type { Graph } from 'fbp-graph';
-import { ComponentLoader } from 'noflo';
-import components from 'noflo/lib/loader/register';
+
 import styled from 'styled-components';
 import TheGraph from 'the-graph';
 import type { IFBPLibrary, ITheGraphProps } from 'the-graph';
@@ -110,31 +109,7 @@ export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) 
     library,
     appReference,
   });
-
-  const buildInitialLibrary = useCallback((graph: Graph) => {
-    const components = TheGraph.library.componentsFromGraph(graph);
-    components.forEach((component) => {
-      registerComponent(component, true);
-    });
-  }, [registerComponent]);
   const { addMenu, addMenuCallback, addMenuAction, getMenuDef } = useMenu();
-
-  // when ready
-  useEffect(() => {
-    // initializeAutolayouter();
-    buildInitialLibrary(graph);
-  }, [buildInitialLibrary]);
-
-  useEffect(() => {
-    void (async function IIFE() {
-      const loader = new ComponentLoader('');
-      const componentList = await loader.listComponents();
-      // DEBUG: console componentList
-      // DEBUG: console components
-      console.log(`components`, components.getSource(loader, 'BaseName', console.log));
-      console.log(`componentList`, componentList);
-    })();
-  }, []);
 
   // Attach nav
   function fitGraphInView() {
@@ -142,6 +117,9 @@ export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) 
   }
 
   function panEditorTo() {}
+
+  // DEBUG: console library
+  console.log(`library`, library);
 
   return (
     <Container className={`the-graph-${theme}`}>
