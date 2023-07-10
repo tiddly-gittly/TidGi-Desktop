@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 import 'source-map-support/register';
+import { LLM } from 'llama-node';
+import { LLamaCpp, LoadConfig as LLamaLoadConfig } from 'llama-node/dist/llm/llama-cpp.js';
 import { Observable } from 'rxjs';
 import { expose } from 'threads/worker';
 import { ILanguageModelWorkerResponse } from './interface';
@@ -74,6 +76,6 @@ function runLLama$(
   });
 }
 
-const workflowWorker = { runLLama$ };
-export type WorkflowWorker = typeof workflowWorker;
-expose(workflowWorker);
+const llmWorker = { runLLama$ };
+export type LLMWorker = typeof llmWorker;
+expose(llmWorker);
