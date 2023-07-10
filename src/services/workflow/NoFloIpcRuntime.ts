@@ -1,6 +1,6 @@
 import Base from "noflo-runtime-base";
 
-export class IPCRuntime extends Base {
+class WebSocketRuntime extends Base {
   constructor(options = {}) {
     super(options);
     this.connections = [];
