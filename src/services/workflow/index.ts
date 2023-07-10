@@ -7,7 +7,7 @@ import { ModuleThread, spawn, Worker } from 'threads';
 
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
-import workerURL from 'threads-plugin/dist/loader?name=llmWorker!./llmWorker.ts';
+import workerURL from 'threads-plugin/dist/loader?name=workflowWorker!./workflowWorker.ts';
 
 import { LANGUAGE_MODEL_FOLDER } from '@/constants/appPaths';
 import { getExistingParentDirectory } from '@/helpers/findPath';
@@ -19,11 +19,11 @@ import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { ILanguageModelService, ILLMResultPart, ICreateRuntimeOptions } from './interface';
-import { LLMWorker } from './workflowWorker';
+import { IWorkflowService, ILLMResultPart, ICreateRuntimeOptions } from './interface';
+import { WorkflowWorker } from './workflowWorker';
 
 @injectable()
-export class LanguageModel implements ILanguageModelService {
+export class Workflow implements IWorkflowService {
   @lazyInject(serviceIdentifier.NativeService)
   private readonly nativeService!: INativeService;
 
@@ -33,25 +33,25 @@ export class LanguageModel implements ILanguageModelService {
   @lazyInject(serviceIdentifier.Preference)
   private readonly preferenceService!: IPreferenceService;
 
-  private llmWorker?: ModuleThread<LLMWorker>;
+  private workflowWorker?: ModuleThread<WorkflowWorker>;
 
   private async initWorker(): Promise<void> {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    this.llmWorker = await spawn<LLMWorker>(new Worker(workerURL), { timeout: 1000 * 60 });
+    this.workflowWorker = await spawn<WorkflowWorker>(new Worker(workerURL), { timeout: 1000 * 60 });
   }
 
   /**
    * Ensure you get a started worker. If not stated, it will await for it to start.
    * @param workspaceID
    */
-  private async getWorker(): Promise<ModuleThread<LLMWorker>> {
-    if (this.llmWorker === undefined) {
+  private async getWorker(): Promise<ModuleThread<WorkflowWorker>> {
+    if (this.workflowWorker === undefined) {
       await this.initWorker();
     } else {
-      return this.llmWorker;
+      return this.workflowWorker;
     }
-    if (this.llmWorker === undefined) {
-      const errorMessage = `Still no llmWorker after init. No running worker, maybe worker failed to start`;
+    if (this.workflowWorker === undefined) {
+      const errorMessage = `Still no workflowWorker after init. No running worker, maybe worker failed to start`;
       logger.error(
         errorMessage,
         {
@@ -60,7 +60,7 @@ export class LanguageModel implements ILanguageModelService {
       );
       throw new Error(errorMessage);
     }
-    return this.llmWorker;
+    return this.workflowWorker;
   }
 
   /**
@@ -75,9 +75,9 @@ export class LanguageModel implements ILanguageModelService {
         let pathToOpen = modelPath;
         void dialog
           .showMessageBox(mainWindow, {
-            title: i18n.t('LanguageModel.ModelNotExist'),
-            message: `${i18n.t('LanguageModel.ModelNotExistDescription')}: ${modelPath}`,
-            buttons: ['OK', i18n.t('LanguageModel.OpenThisPath')],
+            title: i18n.t('Workflow.ModelNotExist'),
+            message: `${i18n.t('Workflow.ModelNotExistDescription')}: ${modelPath}`,
+            buttons: ['OK', i18n.t('Workflow.OpenThisPath')],
             cancelId: 0,
             defaultId: 1,
           })
@@ -104,16 +104,16 @@ export class LanguageModel implements ILanguageModelService {
         //         const prompt = `A chat between a user and a useful assistant.
         // USER: ${template}
         // ASSISTANT:`;
-        const { defaultModel } = await this.preferenceService.get('languageModel');
+        const { defaultModel } = await this.preferenceService.get('workflow');
         const modelPath = path.join(LANGUAGE_MODEL_FOLDER, modelName ?? defaultModel['llama.cpp']);
         if (!(await this.checkModelExistsAndWarnUser(modelPath))) {
-          subscriber.error(new Error(`${i18n.t('LanguageModel.ModelNotExist')} ${modelPath}`));
+          subscriber.error(new Error(`${i18n.t('Workflow.ModelNotExist')} ${modelPath}`));
           return;
         }
         const observable = worker.runLLama$({ prompt, modelPath, conversationID });
         observable.subscribe({
           next: (result) => {
-            const loggerCommonMeta = { id: result.id, function: 'LanguageModel.runLLama$' };
+            const loggerCommonMeta = { id: result.id, function: 'Workflow.runLLama$' };
 
             if ('type' in result && result.type === 'result') {
               const { token, id } = result;
@@ -133,7 +133,7 @@ export class LanguageModel implements ILanguageModelService {
             subscriber.error(error);
           },
           complete: () => {
-            logger.info(`worker observable completed`, { function: 'LanguageModel.runLLama$' });
+            logger.info(`worker observable completed`, { function: 'Workflow.runLLama$' });
             subscriber.complete();
           },
         });
