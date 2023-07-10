@@ -69,6 +69,9 @@ export enum WikiChannel {
 export enum WikiGitWorkspaceChannel {
   name = 'WikiGitWorkspaceChannel',
 }
+export enum WorkflowChannel {
+  name = 'WorkflowChannel',
+}
 export enum WorkspaceChannel {
   focusWorkspace = 'focus-workspace',
   name = 'WorkspaceChannel',
