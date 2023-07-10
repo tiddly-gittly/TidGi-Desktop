@@ -120,4 +120,40 @@ module.exports = [
       filename: 'images/[name].[ext]',
     },
   },
+  {
+    test: /noflo(\\+|\/)lib(\\+|\/)loader(\\+|\/)register.js$/,
+    use: [
+      {
+        loader: 'noflo-component-loader',
+        options: {
+          // Only include components used by this graph
+          // Set to NULL if you want all installed components
+          graph: null,
+          // Whether to include the original component sources
+          // in the build
+          debug: true,
+          baseDir: __dirname,
+          manifest: {
+            runtimes: ['noflo'],
+            discover: true,
+            recursive: true,
+          },
+          runtimes: [
+            'noflo',
+            'noflo-browser',
+          ],
+        },
+      },
+    ],
+  },
+  {
+    test: /\.coffee$/,
+    // load noflo-interaction standard lib, which provide some component in this format
+    use: ['coffee-loader'],
+  },
+  {
+    test: /\.fbp$/,
+    // load noflo-strings standard lib, which provide some component in this format
+    use: ['fbp-loader'],
+  },
 ];

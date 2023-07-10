@@ -15,7 +15,7 @@ module.exports = {
   resolve: {
     alias: webpackAlias,
     extensions: ['.js', '.ts', '.jsx', '.tsx', '.css'],
-    fallback: { crypto: false, fs: false },
+    fallback: { crypto: false, fs: false, process: false },
   },
   output: {
     chunkFilename: 'main_window/[name].chunk.js',

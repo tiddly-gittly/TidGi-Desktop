@@ -1,5 +1,7 @@
 import { sidebarWidth } from '@/constants/style';
 import type { Graph } from 'fbp-graph';
+import { ComponentLoader } from 'noflo';
+import components from 'noflo/lib/loader/register';
 import styled from 'styled-components';
 import TheGraph from 'the-graph';
 import type { IFBPLibrary, ITheGraphProps } from 'the-graph';
@@ -122,6 +124,17 @@ export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) 
     // initializeAutolayouter();
     buildInitialLibrary(graph);
   }, [buildInitialLibrary]);
+
+  useEffect(() => {
+    void (async function IIFE() {
+      const loader = new ComponentLoader('');
+      const componentList = await loader.listComponents();
+      // DEBUG: console componentList
+      // DEBUG: console components
+      console.log(`components`, components.getSource(loader, 'BaseName', console.log));
+      console.log(`componentList`, componentList);
+    })();
+  }, []);
 
   // Attach nav
   function fitGraphInView() {
