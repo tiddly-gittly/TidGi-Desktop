@@ -335,6 +335,9 @@ devDependencies:
   circular-dependency-plugin:
     specifier: 5.2.2
     version: 5.2.2(webpack@5.88.1)
+  coffee-loader:
+    specifier: ^4.0.0
+    version: 4.0.0(coffeescript@2.7.0)(webpack@5.88.1)
   copy-webpack-plugin:
     specifier: 11.0.0
     version: 11.0.0(webpack@5.88.1)
@@ -374,6 +377,12 @@ devDependencies:
   fbp-graph:
     specifier: ^0.7.0
     version: 0.7.0
+  fbp-loader:
+    specifier: ^0.1.2
+    version: 0.1.2
+  fbp-manifest:
+    specifier: ^0.3.1
+    version: 0.3.1
   font-awesome:
     specifier: ^4.7.0
     version: 4.7.0
@@ -395,6 +404,12 @@ devDependencies:
   node-polyfill-webpack-plugin:
     specifier: ^2.0.1
     version: 2.0.1(webpack@5.88.1)
+  noflo:
+    specifier: ^1.4.3
+    version: 1.4.3
+  noflo-component-loader:
+    specifier: ^0.4.1
+    version: 0.4.1
   react:
     specifier: 18.2.0
     version: 18.2.0
@@ -4702,6 +4717,23 @@ packages:
     resolution: {integrity: sha1-DQcLTQQ6W+ozovGkDi7bPZpMz3c=}
     engines: {node: '>=0.10.0'}
 
+  /coffee-loader@4.0.0(coffeescript@2.7.0)(webpack@5.88.1):
+    resolution: {integrity: sha512-RvgC8c0JwRew5lq3x2J+P4z9Cvan/v91muEvV90VJXcTuJbJQN20taZxfj6/XC4yysA8PInPGpxdB1J9LphLuQ==}
+    engines: {node: '>= 14.15.0'}
+    peerDependencies:
+      coffeescript: '>= 2.0.0'
+      webpack: ^5.0.0
+    dependencies:
+      coffeescript: 2.7.0
+      webpack: 5.88.1(esbuild@0.18.11)
+    dev: true
+
+  /coffeescript@2.7.0:
+    resolution: {integrity: sha512-hzWp6TUE2d/jCcN67LrW1eh5b/rSDKQK6oD6VMLlggYVUUFexgTH9z3dNYihzX4RMhze5FTUsUmOXViJKFQR/A==}
+    engines: {node: '>=6'}
+    hasBin: true
+    dev: true
+
   /color-convert@1.9.3:
     resolution: {integrity: sha512-QfAUtd+vFdAtFQcC8CCyYt1fYWxSqAiK2cSD6zDB8N3cpsEBAvRxp9zOGg6G/SHHJYAT88/az/IuDGALsNVbGg==}
     dependencies:
@@ -4779,7 +4811,6 @@ packages:
   /commander@6.2.1:
     resolution: {integrity: sha512-U7VdrJFnJgo4xjrHpTzu0yrHPGImdsmD95ZlgYSEajAn2JKzDhDTPG9kBTefmObL2w/ngeZnilk+OV9CG3d7UA==}
     engines: {node: '>= 6'}
-    dev: false
 
   /commander@7.2.0:
     resolution: {integrity: sha512-QrWXB+ZQSVPmIWIhtEO9H+gwHaMGYiF5ChvoJ+K9ZGHG/sVsa6yiesAD1GC/x46sET00Xlwo1u49RVVVzvcSkw==}
@@ -6856,6 +6887,13 @@ packages:
       clone: 2.1.2
       fbp: 1.8.0
 
+  /fbp-loader@0.1.2:
+    resolution: {integrity: sha1-9H2jFUGNFBc1sV8xW7x7IpOTfMk=}
+    dependencies:
+      fbp: 1.8.0
+      loader-utils: 1.4.2
+    dev: true
+
   /fbp-manifest@0.2.7:
     resolution: {integrity: sha512-wzNp78Ql1/hTNAN7dQNBEr+CyBvo5O0xk++8vylJWNriGtQvDRS3dJW0kgTtIsa1vqNe+sOsoEu4uPjdJ4SJDA==}
     hasBin: true
@@ -6865,7 +6903,16 @@ packages:
       commander: 6.2.1
       fbp: 1.8.0
       tv4: 1.3.0
-    dev: false
+
+  /fbp-manifest@0.3.1:
+    resolution: {integrity: sha512-wP0jL8aTqEJZpSmC9AHW1KZs8s/eC5ven1OQ9ZmZkeF0CMChaNGA7UYIKkpRY2mPWu7Qt7t7XBtUQd/BPMqJhQ==}
+    hasBin: true
+    dependencies:
+      clone: 2.1.2
+      commander: 6.2.1
+      fbp-graph: 0.7.0
+      tv4: 1.3.0
+    dev: true
 
   /fbp-protocol-client@0.3.3:
     resolution: {integrity: sha512-SAFDCdz0oohtBojR6dI3YO8AfDmNfk6QlQWcIAxC6/GnYpYsfu0bQmIh3V7mjNBwhhzftUqsBJQPpk7nhwFxTg==}
@@ -7354,7 +7401,6 @@ packages:
   /get-function-params@2.0.7:
     resolution: {integrity: sha512-fxmaws3IONmtzz6grq3XHywp0jkJs4hDc6+9Gk0P4ehN/2c9drIdo5sEoYZ+YnbH9YidwWa7OO6rtV32VdOC/Q==}
     engines: {node: '>= 0.10.0'}
-    dev: false
 
   /get-installed-path@2.1.1:
     resolution: {integrity: sha512-Qkn9eq6tW5/q9BDVdMpB8tOHljX9OSP0jRC5TRNVA4qRc839t4g8KQaR8t0Uv0EFVL0MlyG7m/ofjEgAROtYsA==}
@@ -9523,6 +9569,13 @@ packages:
   /node-releases@2.0.12:
     resolution: {integrity: sha512-QzsYKWhXTWx8h1kIvqfnC++o0pEmpRQA/aenALsL2F4pqNVr7YzcdMlDij5WBnwftRbJCNJL/O7zdKaxKPHqgQ==}
 
+  /noflo-component-loader@0.4.1:
+    resolution: {integrity: sha512-8x76z+yZl3aaQwRPv7BoI3n+2sJeI6krXnW/OKI0dqHgj4gm1W/XpBkuWSBXipRePLsw4mznQC8n8PRxslhung==}
+    dependencies:
+      fbp-manifest: 0.2.7
+      loader-utils: 2.0.4
+    dev: true
+
   /noflo-core@0.6.1:
     resolution: {integrity: sha512-Vhc9icg72q/RF+9+6ztkb1kQBn6+YFsHq5hjIGsuAHfn0SviG0YZis+wDbzXoy/l8w1VRTRBiHkNt44ApmBQ8Q==}
     dependencies:
@@ -9665,7 +9718,6 @@ packages:
       get-function-params: 2.0.7
     transitivePeerDependencies:
       - supports-color
-    dev: false
 
   /noop-logger@0.1.1:
     resolution: {integrity: sha512-6kM8CLXvuW5crTxsAtva2YLrRrDaiTIkIePWs9moLHqbFWT94WpNFjwS/5dfLfECg5i/lkmw3aoqVidxt23TEQ==}
