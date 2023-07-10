@@ -1,7 +1,8 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import type { Graph } from 'fbp-graph';
 import { RefObject, useCallback, useState } from 'react';
-import TheGraph, { IFBPComponent } from 'the-graph';
+import TheGraph from 'the-graph';
+import type { Component } from 'noflo';
 
 const unnamespace = (name: string) => {
   if (!name.includes('/')) {
@@ -116,11 +117,11 @@ export function useMouseEvents({ graph, library, appReference }: { appReference:
     appReference.current.focusNode(node);
   };
 
-  const getComponent = (name: string): IFBPComponent | undefined => {
+  const getComponent = (name: string): Component | undefined => {
     return library?.[name];
   };
 
-  const registerComponent = (definition: TheGraph.IFBPComponent, generated: boolean) => {
+  const registerComponent = (definition: Component, generated: boolean) => {
     const component = getComponent(definition.name);
     if (component && generated) {
       return;

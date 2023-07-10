@@ -10,7 +10,8 @@ declare module '@tiddlygit/tiddlywiki' {
 }
 
 declare module 'the-graph' {
-  import type { Graph } from 'fbp-graph';
+  import { Graph } from 'fbp-graph';
+  import { Component } from 'noflo';
 
   export interface ITheGraphProps {
     getMenuDef?: (options: {
@@ -34,16 +35,22 @@ declare module 'the-graph' {
     name: string;
     type: string;
   }
-  export interface IFBPComponent {
-    description: string;
-    icon: string;
-    inports: ITheGraphNodePort[];
-    name: string;
-    outports: ITheGraphNodePort[];
-    unnamespaced?: boolean;
-  }
-  function componentsFromGraph(graph: Graph): IFBPComponent[];
-  export type IFBPLibrary = Record<string, IFBPComponent>;
+  function componentsFromGraph(graph: Graph): Component[];
+  /**
+   * value Component is actually:
+   *
+   * ```ts
+   * export interface IFBPComponent {
+   *    description: string;
+   *    icon: string;
+   *    inports: ITheGraphNodePort[];
+   *    name: string;
+   *    outports: ITheGraphNodePort[];
+   *    unnamespaced?: boolean;
+   *  }
+   * ```
+   */
+  export type IFBPLibrary = Record<string, Component>;
   function libraryFromGraph(graph: Graph): IFBPLibrary;
 
   export const library = {
