@@ -25,7 +25,7 @@ body:
     attributes:
       label: Steps to Reproduce 复现方式
       description: Please explain the steps required to duplicate the issue. 精确的复现方法，需要能稳定复现
-      placeholder: Help developer to debug 帮助开发者高效debug
+      placeholder: Help developer to debug. Issues without this will be closed immediately by the owner. 帮助开发者高效debug。没填这个的话帖子会在看到后被立即无情关闭。
     validations:
       required: true
   - type: textarea
