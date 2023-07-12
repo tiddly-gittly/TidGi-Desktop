@@ -11,7 +11,6 @@ declare module '@tiddlygit/tiddlywiki' {
 
 declare module 'the-graph' {
   import { Graph } from 'fbp-graph';
-  import { Component } from 'noflo';
 
   export interface ITheGraphProps {
     getMenuDef?: (options: {
@@ -31,26 +30,43 @@ declare module 'the-graph' {
   }
   export function App(props: ITheGraphProps): JSX.Element;
 
-  export interface ITheGraphNodePort {
-    name: string;
+  export interface INoFloProtocolComponentPort {
+    addressable?: boolean;
+    /**
+     * @example default: 'default-value',
+     */
+    default: unknown;
+    description: string;
+    id: string;
+    required?: boolean;
+    schema?: string;
     type: string;
+    /**
+     * @example values: 'noflo is awesome'.split(' ')
+     */
+    values: unknown[];
   }
-  function componentsFromGraph(graph: Graph): Component[];
-  /**
-   * value Component is actually:
-   *
-   * ```ts
-   * export interface IFBPComponent {
-   *    description: string;
-   *    icon: string;
-   *    inports: ITheGraphNodePort[];
-   *    name: string;
-   *    outports: ITheGraphNodePort[];
-   *    unnamespaced?: boolean;
-   *  }
-   * ```
-   */
-  export type IFBPLibrary = Record<string, Component>;
+  export interface INoFloUIComponentPort extends Omit<INoFloProtocolComponentPort, 'id'> {
+    name: string;
+  }
+  function componentsFromGraph(graph: Graph): INoFloUIComponent[];
+  export interface INoFloUIComponent {
+    description: string;
+    icon: string;
+    inports?: INoFloUIComponentPort[];
+    name: string;
+    outports?: INoFloUIComponentPort[];
+    /**
+     * True means this is not a Elementary component
+     */
+    subgraph?: boolean;
+    unnamespaced?: boolean;
+  }
+  export interface INoFloProtocolComponent extends Omit<INoFloUIComponent, 'inports' | 'outports'> {
+    inPorts?: INoFloProtocolComponentPort[];
+    outPorts?: INoFloProtocolComponentPort[];
+  }
+  export type IFBPLibrary = Record<string, INoFloUIComponent>;
   function libraryFromGraph(graph: Graph): IFBPLibrary;
 
   export const library = {

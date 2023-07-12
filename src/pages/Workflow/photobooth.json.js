@@ -50,7 +50,7 @@ export const photoboothJSON = {
       nodes: [
         'interaction/ListenMouse_1w3vt',
         'core/Split_y0bla',
-        'seriously/SetSource_szf33',
+        'flow/Gate_szf33',
         'gum/GetUserMedia_9e9i4',
         'dom/SetAttribute_uto4k',
         'core/Split_occbw',
@@ -111,16 +111,16 @@ export const photoboothJSON = {
         'interaction/ListenChange_z7m5u',
         'math/Multiply_rbxrn',
         'math/Multiply_3v13k',
-        'seriously/HueSaturation_bzfvt',
+        'strings/Append_bzfvt',
         'core/Split_jx318',
         'math/Multiply_3eldx',
-        'seriously/TVGlitch_e1qre',
-        'seriously/Hex_lx162',
-        'seriously/Ascii_17c9q',
-        'seriously/Invert_7xnl3',
-        'seriously/Edge_egmkb',
-        'seriously/Split_7oj15',
-        'seriously/SetTarget_kii7s',
+        'math/Add_e1qre',
+        'math/Floor_lx162',
+        'flow/Race_17c9q',
+        'math/Multiply_7xnl3',
+        'math/Divide_egmkb',
+        'math/Modulo_7oj15',
+        'flow/Stop_kii7s',
       ],
       metadata: {
         description: '',
@@ -169,20 +169,20 @@ export const photoboothJSON = {
         label: 'setVideoSrc',
       },
     },
-    'seriously/SetSource_szf33': {
-      component: 'seriously/SetSource',
+    'flow/Gate_szf33': {
+      component: 'flow/Gate',
       metadata: {
         x: 576,
         y: 648,
         label: 'setFilterSource',
       },
     },
-    'seriously/Ascii_17c9q': {
-      component: 'seriously/Ascii',
+    'flow/Race_17c9q': {
+      component: 'flow/Race',
       metadata: {
         x: 1080,
         y: 396,
-        label: 'seriously/Ascii',
+        label: 'flow/Race',
       },
     },
     'dom/GetElement_ah82a': {
@@ -193,8 +193,8 @@ export const photoboothJSON = {
         label: 'canvasEl',
       },
     },
-    'seriously/SetTarget_kii7s': {
-      component: 'seriously/SetTarget',
+    'flow/Stop_kii7s': {
+      component: 'flow/Stop',
       metadata: {
         x: 1404,
         y: 648,
@@ -241,32 +241,32 @@ export const photoboothJSON = {
         label: 'chooseFilter',
       },
     },
-    'seriously/TVGlitch_e1qre': {
-      component: 'seriously/TVGlitch',
+    'math/Add_e1qre': {
+      component: 'math/Add',
       metadata: {
         x: 1080,
         y: 504,
-        label: 'seriously/TVGlitch',
+        label: 'math/Add',
       },
     },
-    'seriously/Hex_lx162': {
-      component: 'seriously/Hex',
+    'math/Floor_lx162': {
+      component: 'math/Floor',
       metadata: {
         x: 1008,
         y: 612,
-        label: 'seriously/Hex',
+        label: 'math/Floor',
       },
     },
-    'seriously/Edge_egmkb': {
-      component: 'seriously/Edge',
+    'math/Divide_egmkb': {
+      component: 'math/Divide',
       metadata: {
         x: 1152,
         y: 612,
-        label: 'seriously/Edge',
+        label: 'math/Divide',
       },
     },
-    'seriously/Invert_7xnl3': {
-      component: 'seriously/Invert',
+    'math/Multiply_7xnl3': {
+      component: 'math/Multiply',
       metadata: {
         x: 1008,
         y: 828,
@@ -274,8 +274,8 @@ export const photoboothJSON = {
       },
       icon: 'copyright',
     },
-    'seriously/Split_7oj15': {
-      component: 'seriously/Split',
+    'math/Modulo_7oj15': {
+      component: 'math/Modulo',
       metadata: {
         x: 1152,
         y: 756,
@@ -307,12 +307,12 @@ export const photoboothJSON = {
         label: 'core/Split',
       },
     },
-    'seriously/HueSaturation_bzfvt': {
-      component: 'seriously/HueSaturation',
+    'strings/Append_bzfvt': {
+      component: 'strings/Append',
       metadata: {
         x: 1080,
         y: 972,
-        label: 'seriously/HueSaturation',
+        label: 'strings/Append',
       },
     },
     'core/Split_jzzu2': {
@@ -558,11 +558,11 @@ export const photoboothJSON = {
     },
     {
       src: {
-        process: 'seriously/Ascii_17c9q',
+        process: 'flow/Race_17c9q',
         port: 'out',
       },
       tgt: {
-        process: 'seriously/SetTarget_kii7s',
+        process: 'flow/Stop_kii7s',
         port: 'source',
       },
       metadata: {
@@ -623,11 +623,11 @@ export const photoboothJSON = {
     },
     {
       src: {
-        process: 'seriously/TVGlitch_e1qre',
+        process: 'math/Add_e1qre',
         port: 'out',
       },
       tgt: {
-        process: 'seriously/SetTarget_kii7s',
+        process: 'flow/Stop_kii7s',
         port: 'source',
       },
       metadata: {
@@ -640,7 +640,7 @@ export const photoboothJSON = {
         port: 'out',
       },
       tgt: {
-        process: 'seriously/Hex_lx162',
+        process: 'math/Floor_lx162',
         port: 'source',
       },
       metadata: {
@@ -649,11 +649,11 @@ export const photoboothJSON = {
     },
     {
       src: {
-        process: 'seriously/Edge_egmkb',
+        process: 'math/Divide_egmkb',
         port: 'out',
       },
       tgt: {
-        process: 'seriously/SetTarget_kii7s',
+        process: 'flow/Stop_kii7s',
         port: 'source',
       },
       metadata: {
@@ -662,11 +662,11 @@ export const photoboothJSON = {
     },
     {
       src: {
-        process: 'seriously/Hex_lx162',
+        process: 'math/Floor_lx162',
         port: 'out',
       },
       tgt: {
-        process: 'seriously/Edge_egmkb',
+        process: 'math/Divide_egmkb',
         port: 'source',
       },
       metadata: {
@@ -692,7 +692,7 @@ export const photoboothJSON = {
         port: 'out',
       },
       tgt: {
-        process: 'seriously/Invert_7xnl3',
+        process: 'math/Multiply_7xnl3',
         port: 'source',
       },
       metadata: {
@@ -701,11 +701,11 @@ export const photoboothJSON = {
     },
     {
       src: {
-        process: 'seriously/Split_7oj15',
+        process: 'math/Modulo_7oj15',
         port: 'out',
       },
       tgt: {
-        process: 'seriously/SetTarget_kii7s',
+        process: 'flow/Stop_kii7s',
         port: 'source',
       },
       metadata: {
@@ -714,7 +714,7 @@ export const photoboothJSON = {
     },
     {
       src: {
-        process: 'seriously/SetSource_szf33',
+        process: 'flow/Gate_szf33',
         port: 'out',
       },
       tgt: {
@@ -770,7 +770,7 @@ export const photoboothJSON = {
         port: 'out',
       },
       tgt: {
-        process: 'seriously/SetSource_szf33',
+        process: 'flow/Gate_szf33',
         port: 'source',
       },
       metadata: {
@@ -783,7 +783,7 @@ export const photoboothJSON = {
         port: 'out',
       },
       tgt: {
-        process: 'seriously/HueSaturation_bzfvt',
+        process: 'strings/Append_bzfvt',
         port: 'source',
       },
       metadata: {
@@ -792,11 +792,11 @@ export const photoboothJSON = {
     },
     {
       src: {
-        process: 'seriously/HueSaturation_bzfvt',
+        process: 'strings/Append_bzfvt',
         port: 'out',
       },
       tgt: {
-        process: 'seriously/SetTarget_kii7s',
+        process: 'flow/Stop_kii7s',
         port: 'source',
       },
       metadata: {
@@ -822,7 +822,7 @@ export const photoboothJSON = {
         port: 'out',
       },
       tgt: {
-        process: 'seriously/SetTarget_kii7s',
+        process: 'flow/Stop_kii7s',
         port: 'target',
       },
       metadata: {
@@ -861,7 +861,7 @@ export const photoboothJSON = {
         port: 'out',
       },
       tgt: {
-        process: 'seriously/Split_7oj15',
+        process: 'math/Modulo_7oj15',
         port: 'sourcea',
       },
       metadata: {
@@ -870,11 +870,11 @@ export const photoboothJSON = {
     },
     {
       src: {
-        process: 'seriously/Invert_7xnl3',
+        process: 'math/Multiply_7xnl3',
         port: 'out',
       },
       tgt: {
-        process: 'seriously/Split_7oj15',
+        process: 'math/Modulo_7oj15',
         port: 'sourceb',
       },
       metadata: {
@@ -1017,7 +1017,7 @@ export const photoboothJSON = {
         port: 'out',
       },
       tgt: {
-        process: 'seriously/Ascii_17c9q',
+        process: 'flow/Race_17c9q',
         port: 'source',
       },
       metadata: {
@@ -1030,7 +1030,7 @@ export const photoboothJSON = {
         port: 'out',
       },
       tgt: {
-        process: 'seriously/TVGlitch_e1qre',
+        process: 'math/Add_e1qre',
         port: 'source',
       },
       metadata: {
@@ -1069,7 +1069,7 @@ export const photoboothJSON = {
         port: 'product',
       },
       tgt: {
-        process: 'seriously/Split_7oj15',
+        process: 'math/Modulo_7oj15',
         port: 'angle',
       },
       metadata: {
@@ -1095,7 +1095,7 @@ export const photoboothJSON = {
         port: 'product',
       },
       tgt: {
-        process: 'seriously/Hex_lx162',
+        process: 'math/Floor_lx162',
         port: 'size',
       },
       metadata: {
@@ -1121,7 +1121,7 @@ export const photoboothJSON = {
         port: 'product',
       },
       tgt: {
-        process: 'seriously/TVGlitch_e1qre',
+        process: 'math/Add_e1qre',
         port: 'distortion',
       },
       metadata: {
@@ -1134,7 +1134,7 @@ export const photoboothJSON = {
         port: 'value',
       },
       tgt: {
-        process: 'seriously/HueSaturation_bzfvt',
+        process: 'strings/Append_bzfvt',
         port: 'hue',
       },
       metadata: {
@@ -1329,21 +1329,21 @@ export const photoboothJSON = {
     {
       data: 0.01,
       tgt: {
-        process: 'seriously/Split_7oj15',
+        process: 'math/Modulo_7oj15',
         port: 'fuzzy',
       },
     },
     {
       data: '0.5',
       tgt: {
-        process: 'seriously/Split_7oj15',
+        process: 'math/Modulo_7oj15',
         port: 'split',
       },
     },
     {
       data: '0.25',
       tgt: {
-        process: 'seriously/HueSaturation_bzfvt',
+        process: 'strings/Append_bzfvt',
         port: 'saturation',
       },
     },
@@ -1406,35 +1406,35 @@ export const photoboothJSON = {
     {
       data: 0.01,
       tgt: {
-        process: 'seriously/TVGlitch_e1qre',
+        process: 'math/Add_e1qre',
         port: 'verticalsync',
       },
     },
     {
       data: '0.04',
       tgt: {
-        process: 'seriously/TVGlitch_e1qre',
+        process: 'math/Add_e1qre',
         port: 'linesync',
       },
     },
     {
       data: 0.01,
       tgt: {
-        process: 'seriously/TVGlitch_e1qre',
+        process: 'math/Add_e1qre',
         port: 'time',
       },
     },
     {
       data: '0.01',
       tgt: {
-        process: 'seriously/TVGlitch_e1qre',
+        process: 'math/Add_e1qre',
         port: 'bars',
       },
     },
     {
       data: 0.15,
       tgt: {
-        process: 'seriously/TVGlitch_e1qre',
+        process: 'math/Add_e1qre',
         port: 'scanlines',
       },
     },
