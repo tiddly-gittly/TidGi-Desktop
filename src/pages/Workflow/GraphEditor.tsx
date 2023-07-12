@@ -10,7 +10,8 @@ import '@fortawesome/fontawesome-free/js/all.js';
 import '@fortawesome/fontawesome-free/css/all.css';
 import '@fortawesome/fontawesome-free/css/v4-font-face.css';
 
-import { useCallback, useEffect, useRef } from 'react';
+import { useRef } from 'react';
+import { SearchComponents } from './components/SearchComponents';
 import { useMenu } from './menu';
 import { useMouseEvents } from './mouseEvents';
 import { useSubscribeGraph } from './subscribe';
@@ -144,6 +145,7 @@ export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) 
           viewscale={scale}
         />
       </ThumbnailContainer>
+      <SearchComponents library={library} />
     </Container>
   );
 }

@@ -455,6 +455,7 @@
     "OpenThisPath": "打开该位置"
   },
   "Workflow": {
-    "Title": "工作流"
+    "Title": "工作流",
+    "SearchComponents": "搜索可用组件"
   }
 }
