@@ -46,6 +46,54 @@ declare module 'the-graph' {
      */
     values: unknown[];
   }
+  /**
+   * ```json
+   * {
+        "name": "adapters/ObjectToString",
+        "icon": "font",
+        "description": "stringifies a simple object with configurable associator and delimiter",
+        "subgraph": false,
+        "inports": [
+            {
+                "id": "in",
+                "type": "object",
+                "schema": null,
+                "required": false,
+                "description": "Object to convert",
+                "name": "in"
+            },
+            {
+                "id": "assoc",
+                "type": "string",
+                "schema": null,
+                "required": false,
+                "default": ":",
+                "description": "Associating string for key/value pairs",
+                "name": "assoc"
+            },
+            {
+                "id": "delim",
+                "type": "string",
+                "schema": null,
+                "required": false,
+                "default": ",",
+                "description": "Delimiter string between object properties",
+                "name": "delim"
+            }
+        ],
+        "outports": [
+            {
+                "id": "out",
+                "type": "string",
+                "schema": null,
+                "required": false,
+                "description": "string",
+                "name": "out"
+            }
+        ]
+    }
+    ```
+   */
   export interface INoFloUIComponentPort extends Omit<INoFloProtocolComponentPort, 'id'> {
     name: string;
   }
@@ -102,6 +150,18 @@ declare module 'the-graph' {
   export const nav = {
     Component: NavComponent,
   };
+
+  /**
+   * @url https://github.com/flowhub/the-graph/blob/7e9457ece2923dd86b1078019d50fc18e7052770/the-graph/font-awesome-unicode-map.js
+   * ```js
+   * // This file is generated via `npm run fontawesome`
+      module.exports = {
+        '500px': '',
+        'address-book': '',
+        'address-book-o': '',
+    ```
+   */
+  export const FONT_AWESOME: Record<string, string>;
 }
 
 declare module 'espree' {
