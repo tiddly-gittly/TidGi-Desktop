@@ -45,17 +45,17 @@ const Root = styled.div`
   }
 `;
 
-const ContentRoot = styled.div`
+const ContentRoot = styled.div<{ $sidebar: boolean }>`
   flex: 1;
   display: flex;
   flex-direction: column;
 
   padding-right: 20px;
-  ${is('sidebar')`
+  ${is('$sidebar')`
     width: calc(100% - ${String(sidebarWidth)}px);
     max-width: calc(100% - ${String(sidebarWidth)}px);
   `}
-  ${isNot('sidebar')`
+  ${isNot('$sidebar')`
     width: 100%;
     padding-left: 20px;
   `}
@@ -77,7 +77,7 @@ export default function Main(): JSX.Element {
       </Helmet>
       <Root>
         {sidebar && <SideBar />}
-        <ContentRoot sidebar={sidebar}>
+        <ContentRoot $sidebar={sidebar}>
           <FindInPage />
           <Switch>
             <Route path={`/${WindowNames.main}/${PageType.wiki}/:id/`} component={WikiBackground} />

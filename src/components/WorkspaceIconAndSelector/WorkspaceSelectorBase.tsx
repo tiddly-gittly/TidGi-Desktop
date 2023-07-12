@@ -3,13 +3,14 @@ import Promise from 'bluebird';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled, { css, keyframes } from 'styled-components';
+import is from 'typescript-styled-is';
 
 import { getAssetsFileUrl } from '@/helpers/url';
 import defaultIcon from '../../images/default-icon.png';
 
 Promise.config({ cancellation: true });
 
-const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClickedLoading?: boolean }>`
+const Root = styled.div<{ $active?: boolean; $hibernated?: boolean; $workspaceClickedLoading?: boolean }>`
   height: fit-content;
   width: auto;
   padding: 10px 0;
@@ -27,25 +28,19 @@ const Root = styled.div<{ active?: boolean; hibernated?: boolean; workspaceClick
   position: relative;
   border: 0;
   border-color: transparent;
-  ${({ hibernated }) =>
-  hibernated === true &&
-  css`
-      opacity: 0.4;
-    `}
-  ${({ active }) =>
-  active === true &&
-  css`
-      opacity: 1;
-    `}
-      box-sizing: border-box;
-  border-left: 3px solid ${({ active, theme }) => (active === true ? theme.palette.text.primary : 'transparent')};
-  ${({ workspaceClickedLoading }) =>
-  workspaceClickedLoading === true &&
-  css`
-      &:hover {
-        cursor: wait;
-      }
-    `}
+  ${is('$hibernated')`
+    opacity: 0.4;
+  `}
+  ${is('$active')`
+    opacity: 1;
+  `}
+  box-sizing: border-box;
+  border-left: 3px solid ${({ $active, theme }) => ($active === true ? theme.palette.text.primary : 'transparent')};
+  ${is('$workspaceClickedLoading')`
+    &:hover {
+      cursor: wait;
+    }
+  `}
 `;
 
 const backgroundColorShift = keyframes`
@@ -53,10 +48,10 @@ from {background-color: #dddddd;}
   to {background-color: #eeeeee}
 `;
 interface IAvatarProps {
-  addAvatar: boolean;
-  highlightAdd: boolean;
-  large?: boolean;
-  transparent?: boolean;
+  $addAvatar: boolean;
+  $highlightAdd: boolean;
+  $large?: boolean;
+  $transparent?: boolean;
 }
 const Avatar = styled.div<IAvatarProps>`
   height: 36px;
@@ -67,48 +62,39 @@ const Avatar = styled.div<IAvatarProps>`
   font-weight: 500;
   text-transform: uppercase;
   overflow: hidden;
-  ${({ large }) =>
-  large === true &&
-  css`
-      height: 44px;
-      width: 44px;
-      line-height: 44px;
-    `}
-  ${({ transparent }) =>
-  transparent === true &&
-  css`
+  ${is('$large')`
+    height: 44px;
+    width: 44px;
+    line-height: 44px;
+  `}
+  ${is('$transparent')`
       background: transparent;
       border: none;
       border-radius: 0;
     `}
 
-  &${({ highlightAdd, addAvatar }) => (highlightAdd && addAvatar ? '' : ':hover')}, &:hover {
+  &${({ $highlightAdd, $addAvatar }) => ($highlightAdd && $addAvatar ? '' : ':hover')}, &:hover {
     background-color: ${({ theme }) => theme.palette.background.default};
     animation: ${backgroundColorShift} 5s infinite;
     animation-direction: alternate;
     animation-timing-function: cubic-bezier(0.4, 0, 1, 1);
     color: ${({ theme }) => theme.palette.common.black};
   }
-  ${({ addAvatar }: IAvatarProps) =>
-  addAvatar
-    ? ''
-    : css`
-          background-color: transparent;
-        `}
+  ${is('$addAvatar')`
+    background-color: transparent;
+  `}
 `;
 
-const AvatarPicture = styled.img<{ large?: boolean }>`
+const AvatarPicture = styled.img<{ $large?: boolean }>`
   height: calc(36px - 2px);
   width: calc(36px - 2px);
-  ${({ large }) =>
-  large === true &&
-  css`
-      height: 44px;
-      width: 44px;
-    `}
+  ${is('$large')`
+    height: 44px;
+    width: 44px;
+  `}
 `;
 
-const ShortcutText = styled.p<{ active?: boolean }>`
+const ShortcutText = styled.p<{ $active?: boolean }>`
   margin-top: 2px;
   margin-bottom: 0;
   padding: 0;
@@ -117,12 +103,10 @@ const ShortcutText = styled.p<{ active?: boolean }>`
   display: inline-block;
   word-break: break-all;
   text-align: center;
-  ${({ active }) =>
-  active === true &&
-  css`
-      text-decoration: underline;
-      text-underline-offset: 0.2em;
-    `}
+  ${is('$active')`
+    text-decoration: underline;
+    text-underline-offset: 0.2em;
+  `}
 `;
 const Badge = styled(BadgeRaw)`
   line-height: 20px;
@@ -166,18 +150,18 @@ export function WorkspaceSelectorBase({
   }, [workspaceName, t]);
   return (
     <Root
-      hibernated={hibernated}
-      active={active}
+      $hibernated={hibernated}
+      $active={active}
+      $workspaceClickedLoading={workspaceClickedLoading}
       onClick={workspaceClickedLoading ? () => {} : onClick}
-      workspaceClickedLoading={workspaceClickedLoading}
     >
       <Badge color='secondary' badgeContent={badgeCount} max={99}>
         {showSideBarIcon && (
           <Avatar
-            large={!showSidebarTexts}
-            transparent={transparentBackground}
-            addAvatar={id === 'add'}
-            highlightAdd={index === 0}
+            $large={!showSidebarTexts}
+            $transparent={transparentBackground}
+            $addAvatar={id === 'add'}
+            $highlightAdd={index === 0}
             id={id === 'add' || id === 'guide' ? 'add-workspace-button' : `workspace-avatar-${id}`}
           >
             {id === 'add'
@@ -188,12 +172,12 @@ export function WorkspaceSelectorBase({
                 ? (
                   '※'
                 )
-                : <AvatarPicture alt='Icon' large={!showSidebarTexts} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />)}
+                : <AvatarPicture alt='Icon' $large={!showSidebarTexts} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />)}
           </Avatar>
         )}
       </Badge>
       {showSidebarTexts && (
-        <ShortcutText active={active}>
+        <ShortcutText $active={active}>
           {id === 'add' ? t('WorkspaceSelector.Add') : (id === 'guide' ? t('WorkspaceSelector.Guide') : shortWorkspaceName)}
         </ShortcutText>
       )}

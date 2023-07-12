@@ -3,6 +3,7 @@ import { Settings as SettingsIcon, Upgrade as UpgradeIcon } from '@material-ui/i
 import { t } from 'i18next';
 import SimpleBar from 'simplebar-react';
 import styled, { css } from 'styled-components';
+import is, { isNot } from 'typescript-styled-is';
 
 import { SortableWorkspaceSelectorList, WorkspaceSelectorBase } from '@/components/WorkspaceIconAndSelector';
 import { sidebarWidth } from '@/constants/style';
@@ -48,21 +49,19 @@ const SidebarWithStyle = styled(SimpleBar)`
   ${sideBarStyle}
 `;
 
-const SidebarTop = styled.div<{ titleBar?: boolean }>`
+const SidebarTop = styled.div<{ $titleBar?: boolean }>`
   overflow-y: scroll;
   &::-webkit-scrollbar {
     width: 0;
   }
   flex: 1;
   width: 100%;
-  ${({ titleBar }) =>
-  titleBar === true
-    ? css`
-          padding-top: 0;
-        `
-    : css`
-          padding-top: 30px;
-        `}
+  ${is('$titleBar')`
+    padding-top: 0;
+  `}
+  ${isNot('$titleBar')`
+    padding-top: 30px;
+  `}
 `;
 
 const IconButton = styled(IconButtonRaw)`
@@ -95,7 +94,7 @@ export function SideBar(): JSX.Element {
 
   return (
     <SidebarContainer>
-      <SidebarTop titleBar={titleBar}>
+      <SidebarTop $titleBar={titleBar}>
         {workspacesList === undefined
           ? <div>{t('Loading')}</div>
           : <SortableWorkspaceSelectorList showSideBarText={showSideBarText} workspacesList={workspacesList} showSideBarIcon={showSideBarIcon} />}
