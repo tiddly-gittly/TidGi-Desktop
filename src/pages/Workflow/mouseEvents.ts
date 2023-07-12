@@ -3,6 +3,7 @@ import type { Graph } from 'fbp-graph';
 import { RefObject, useCallback, useState } from 'react';
 import TheGraph from 'the-graph';
 import type { Component } from 'noflo';
+import { PropertyMap } from 'fbp-graph/lib/Types';
 
 const unnamespace = (name: string) => {
   if (!name.includes('/')) {
@@ -100,7 +101,7 @@ export function useMouseEvents({ graph, library, appReference }: { appReference:
     }
   };
 
-  const addNode = (id, component, metadata) => {
+  const addNode = (id: string, component: string, metadata?: PropertyMap | undefined) => {
     if (graph) {
       graph.addNode(id, component, metadata);
     }
