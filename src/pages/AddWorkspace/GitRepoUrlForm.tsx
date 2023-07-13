@@ -28,7 +28,7 @@ export function GitRepoUrlForm({
       <LocationPickerContainer>
         <LocationPickerInput
           error={error}
-          onChange={(event) => {
+          onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
             gitRepoUrlSetter(event.target.value);
           }}
           label={t('AddWorkspace.GitRepoUrl')}

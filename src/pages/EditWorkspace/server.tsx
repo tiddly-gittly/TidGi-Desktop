@@ -1,8 +1,11 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
+import { CheckBox as CheckBoxIcon, CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import { Autocomplete } from '@mui/lab';
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  AutocompleteRenderInputParams,
   Button,
   Checkbox,
   createFilterOptions,
@@ -13,8 +16,6 @@ import {
   Switch,
   TextField,
 } from '@mui/material';
-import { CheckBox as CheckBoxIcon, CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import { Autocomplete } from '@mui/lab';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
@@ -23,7 +24,7 @@ import { DEFAULT_USER_NAME, getTidGiAuthHeaderWithToken } from '@/constants/auth
 import { WikiChannel } from '@/constants/channels';
 import { rootTiddlers } from '@/constants/defaultTiddlerNames';
 import { tlsCertExtensions, tlsKeyExtensions } from '@/constants/fileNames';
-import { defaultServerIP, getDefaultHTTPServerIP } from '@/constants/urls';
+import { getDefaultHTTPServerIP } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useActualIp } from '@services/native/hooks';
 import { IWorkspace } from '@services/workspaces/interface';
@@ -85,7 +86,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                 edge='end'
                 color='primary'
                 checked={enableHTTPAPI}
-                onChange={(event) => {
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                   workspaceSetter({ ...workspace, enableHTTPAPI: event.target.checked }, true);
                 }}
               />
@@ -176,7 +177,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                   placeholder={t('EditWorkspace.TokenAuthCurrentTokenEmptyText')}
                   fullWidth
                   value={authToken ?? ''}
-                  onChange={(event) => {
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                     workspaceSetter({ ...workspace, authToken: event.target.value }, true);
                   }}
                 />
@@ -206,7 +207,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                 edge='end'
                 color='primary'
                 checked={readOnlyMode}
-                onChange={(event) => {
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                   workspaceSetter({ ...workspace, readOnlyMode: event.target.checked, tokenAuth: event.target.checked ? false : tokenAuth }, true);
                 }}
               />
@@ -221,7 +222,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                 edge='end'
                 color='primary'
                 checked={https.enabled}
-                onChange={(event) => {
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                   workspaceSetter({ ...workspace, https: { ...https, enabled: event.target.checked } });
                 }}
               />
@@ -270,7 +271,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                   placeholder='Optional'
                   fullWidth
                   value={https.tlsCert ?? ''}
-                  onChange={(event) => {
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                     workspaceSetter({ ...workspace, https: { ...https, tlsCert: event.target.value } });
                   }}
                 />
@@ -314,7 +315,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                   placeholder='Optional'
                   fullWidth
                   value={https.tlsKey ?? ''}
-                  onChange={(event) => {
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                     workspaceSetter({ ...workspace, https: { ...https, tlsKey: event.target.value } });
                   }}
                 />
@@ -328,11 +329,13 @@ export function ServerOptions(props: IServerOptionsProps) {
           options={rootTiddlers}
           value={rootTiddler}
           defaultValue={rootTiddlers[0]}
-          onInputChange={(_, value) => {
+          onInputChange={(event: React.SyntheticEvent, value: string) => {
             workspaceSetter({ ...workspace, rootTiddler: value });
             // void requestSaveAndRestart();
           }}
-          renderInput={(parameters) => <TextField {...parameters} label={t('EditWorkspace.WikiRootTiddler')} helperText={t('EditWorkspace.WikiRootTiddlerDescription')} />}
+          renderInput={(parameters: AutocompleteRenderInputParams) => (
+            <TextField {...parameters} label={t('EditWorkspace.WikiRootTiddler')} helperText={t('EditWorkspace.WikiRootTiddlerDescription')} />
+          )}
         />
       </AccordionDetails>
     </AServerOptionsAccordion>
@@ -375,7 +378,7 @@ function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSe
               checkedIcon={checkedIcon}
               style={{ marginRight: 8 }}
               checked={selected}
-              onChange={(event) => {
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                 if (event.target.checked) {
                   workspaceSetter({ ...workspace, excludedPlugins: [...excludedPlugins.filter(item => item !== option), option] }, true);
                 } else {
@@ -410,7 +413,9 @@ function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSe
           return filtered;
         }}
         groupBy={(option) => option.split('/')[2]}
-        renderInput={(parameters) => <TextField {...parameters} label={t('EditWorkspace.AddExcludedPlugins')} helperText={t('EditWorkspace.AddExcludedPluginsDescription')} />}
+        renderInput={(parameters: AutocompleteRenderInputParams) => (
+          <TextField {...parameters} label={t('EditWorkspace.AddExcludedPlugins')} helperText={t('EditWorkspace.AddExcludedPluginsDescription')} />
+        )}
       />
     </>
   );

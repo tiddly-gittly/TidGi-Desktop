@@ -1,5 +1,5 @@
 import { sidebarWidth } from '@/constants/style';
-import { Autocomplete, autocompleteClasses, Box, createFilterOptions, TextField } from '@mui/material';
+import { Autocomplete, autocompleteClasses, AutocompleteRenderInputParams, Box, createFilterOptions, TextField } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
@@ -108,7 +108,7 @@ export function SearchComponents({ library, addNode }: SearchBarProps) {
             </SearchItemOptionText>
           </Box>
         )}
-        renderInput={(parameters) => <TextField {...parameters} label={t('Workflow.SearchComponents')} />}
+        renderInput={(parameters: AutocompleteRenderInputParams) => <TextField {...parameters} label={t('Workflow.SearchComponents')} />}
       />
     </SearchBarWrapper>
   );

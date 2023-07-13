@@ -13,16 +13,16 @@ import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListSubheader from '@mui/material/ListSubheader';
 import MenuItem from '@mui/material/MenuItem';
-import TextField from '@mui/material/TextField';
 
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
-import DateTimePicker from '@mui/lab/DateTimePicker';
+import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 import PopUpMenuItem from '@/components/PopUpMenuItem';
 
 // https://www.sketchappsources.com/free-source/2501-iphone-app-background-sketch-freebie-resource.html
+import { ListItemButton } from '@mui/material';
 import { formatDate } from '@services/libs/formatDate';
 import { useNotificationInfoObservable } from '@services/notifications/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
@@ -45,10 +45,6 @@ List.defaultProps = {
   dense: true,
   disablePadding: true,
 };
-
-const HiddenTextField = styled(TextField)`
-  display: none;
-`;
 
 // TODO: handle classes={{ root: classes.pausingHeader }}
 const PausingHeader = styled(ListItem)`
@@ -145,7 +141,7 @@ export default function Notifications(): JSX.Element {
             </>
           )}
           <Divider />
-          <ListItem button>
+          <ListItemButton>
             <ListItemText
               primary={pauseNotificationsInfo.reason === 'scheduled' ? 'Adjust schedule...' : 'Pause notifications by schedule...'}
               onClick={async () => {
@@ -153,7 +149,7 @@ export default function Notifications(): JSX.Element {
                 void window.remote.closeCurrentWindow();
               }}
             />
-          </ListItem>
+          </ListItemButton>
         </List>
       );
     }
@@ -161,15 +157,14 @@ export default function Notifications(): JSX.Element {
     return (
       <List subheader={<ListSubheader component='div'>Pause notifications</ListSubheader>}>
         {quickShortcuts.map((shortcut) => (
-          <ListItem
-            button
+          <ListItemButton
             key={shortcut.name}
             onClick={() => {
               pauseNotification(shortcut.calcDate());
             }}
           >
             <ListItemText primary={shortcut.name} />
-          </ListItem>
+          </ListItemButton>
         ))}
         <ListItem
           button
@@ -202,7 +197,6 @@ export default function Notifications(): JSX.Element {
       {renderList()}
       <DateTimePicker
         value={new Date()}
-        renderInput={(dateTimeProps) => <HiddenTextField {...dateTimeProps} />}
         onChange={(tilDate) => {
           if (tilDate === null) return;
           pauseNotification(tilDate);
@@ -216,7 +210,6 @@ export default function Notifications(): JSX.Element {
           showDateTimePickerSetter(false);
         }}
         disablePast
-        showTodayButton
       />
     </Root>
   );

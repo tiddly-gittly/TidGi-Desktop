@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { MenuItem, Typography } from '@mui/material';
 import { Folder as FolderIcon } from '@mui/icons-material';
+import { AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -17,7 +17,7 @@ export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichCompone
       <LocationPickerContainer>
         <LocationPickerInput
           error={errorInWhichComponent.parentFolderLocation}
-          onChange={(event) => {
+          onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
             form.parentFolderLocationSetter(event.target.value);
           }}
           label={t('AddWorkspace.WorkspaceParentFolder')}
@@ -42,7 +42,7 @@ export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichCompone
       <LocationPickerContainer>
         <LocationPickerInput
           error={errorInWhichComponent.wikiFolderName}
-          onChange={(event) => {
+          onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
             form.wikiFolderNameSetter(event.target.value);
           }}
           label={t('AddWorkspace.WorkspaceFolderNameToCreate')}
@@ -59,7 +59,7 @@ export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichCompone
               `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
                     ${form.mainWikiToLink.wikiFolderLocation}/tiddlers/${form.wikiFolderName}`}
             value={form.mainWikiToLinkIndex}
-            onChange={(event) => {
+            onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
               const index = event.target.value as unknown as number;
               form.mainWikiToLinkSetter(form.mainWorkspaceList[index]);
             }}
@@ -73,10 +73,10 @@ export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichCompone
           <SubWikiTagAutoComplete
             options={form.fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
             value={form.tagName}
-            onInputChange={(_, value) => {
+            onInputChange={(event: React.SyntheticEvent, value: string) => {
               form.tagNameSetter(value);
             }}
-            renderInput={(parameters) => (
+            renderInput={(parameters: AutocompleteRenderInputParams) => (
               <LocationPickerInput
                 {...parameters}
                 error={errorInWhichComponent.tagName}

@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { Tab as TabRaw } from '@mui/material';
 import { TabContext, TabList as TabListRaw, TabPanel as TabPanelRaw } from '@mui/lab';
+import { Tab as TabRaw } from '@mui/material';
 import { SupportedStorageServices } from '@services/types';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -77,8 +77,8 @@ export function TokenForm({ storageProvider, storageProviderSetter }: Props): JS
       <TabContext value={currentTab}>
         <TabsContainer>
           <TabList
-            onChange={(_event, newValue) => {
-              currentTabSetter(newValue as SupportedStorageServices);
+            onChange={(event: React.SyntheticEvent<Element, Event>, newValue: SupportedStorageServices) => {
+              currentTabSetter(newValue);
             }}
             orientation='vertical'
             variant='scrollable'

@@ -1,6 +1,6 @@
-import { Accordion as AccordionRaw, AccordionDetails, AccordionSummary, AppBar, Paper as PaperRaw, Tab as TabRaw } from '@mui/material';
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { TabContext, TabList as TabListRaw, TabPanel as TabPanelRaw } from '@mui/lab';
+import { Accordion as AccordionRaw, AccordionDetails, AccordionSummary, AppBar, Paper as PaperRaw, Tab as TabRaw } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
@@ -36,12 +36,12 @@ export const Paper = styled(PaperRaw)`
   border-color: ${({ theme }) => theme.palette.divider};
   background: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.primary};
-`;
+` as unknown as typeof PaperRaw;
 export const Accordion = styled(AccordionRaw)`
   border-color: ${({ theme }) => theme.palette.divider};
   background: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.primary};
-`;
+` as unknown as typeof AccordionRaw;
 const Container = styled.main`
   display: flex;
   flex-direction: column;
@@ -117,8 +117,8 @@ export function AddWorkspace(): JSX.Element {
       <AppBar position='static'>
         <Paper square>
           <TabList
-            onChange={(_event, newValue) => {
-              currentTabSetter(newValue as CreateWorkspaceTabs);
+            onChange={(_event: React.SyntheticEvent<Element, Event>, newValue: CreateWorkspaceTabs) => {
+              currentTabSetter(newValue);
             }}
             variant='scrollable'
             value={currentTab}
@@ -143,7 +143,7 @@ export function AddWorkspace(): JSX.Element {
             <LocationPickerContainer>
               <LocationPickerInput
                 error={errorInWhichComponent.wikiPort}
-                onChange={(event) => {
+                onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
                   form.wikiPortSetter(Number(event.target.value));
                 }}
                 label={t('AddWorkspace.WikiServerPort')}

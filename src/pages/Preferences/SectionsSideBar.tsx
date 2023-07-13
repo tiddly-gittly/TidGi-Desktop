@@ -1,4 +1,4 @@
-import { Divider as DividerRaw, List, ListItem, ListItemIcon as ListItemIconRaw, ListItemText } from '@mui/material';
+import { Divider as DividerRaw, List, ListItemButton, ListItemIcon as ListItemIconRaw, ListItemText } from '@mui/material';
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
 
@@ -30,7 +30,7 @@ const animateMoveFromLeft = keyframes`
   }
 `;
 
-const SideMenuListItem = styled(ListItem)<{ index: number }>`
+const SideMenuListItem = styled(ListItemButton)<{ index: number }>`
   opacity: 0;
   animation: ${animateMoveFromLeft} 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   animation-fill-mode: forwards;
@@ -47,7 +47,7 @@ export function SectionSideBar(props: ISectionProps): JSX.Element {
           return (
             <React.Fragment key={sectionKey}>
               {index > 0 && <Divider />}
-              <SideMenuListItem button index={index} onClick={() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
+              <SideMenuListItem index={index} onClick={() => ref.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}>
                 <ListItemIcon>
                   <Icon />
                 </ListItemIcon>
