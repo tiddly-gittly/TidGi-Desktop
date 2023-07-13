@@ -81,8 +81,8 @@ export default function Main(): JSX.Element {
           <FindInPage />
           <Switch>
             <Route path={`/${WindowNames.main}/${PageType.wiki}/:id/`} component={WikiBackground} />
-            <Route path={`/${WindowNames.main}/${PageType.guide}/:id/`} component={Guide} />
-            <Route path={`/${WindowNames.main}/${PageType.workflow}/:id/`} component={Workflow} />
+            <Route path={`/${WindowNames.main}/${PageType.guide}/`} component={Guide} />
+            <Route path={`/${WindowNames.main}/${PageType.workflow}/:id*/`} component={Workflow} />
             <Route path={`/${WindowNames.main}`} component={Guide} />
             <Route component={Guide} />
           </Switch>

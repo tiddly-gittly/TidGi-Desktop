@@ -91,7 +91,7 @@ export function SideBar(): JSX.Element {
   // when no active workspace and no active page, the guide page is active in src/pages/index.tsx 's route. so we make sidebar icon active too.
   const pagesListWithGuideActiveIfNoActiveWorkspaceAndPage = pagesList?.map?.((page) => {
     if (page.type === PageType.guide) {
-      return { ...page, active: noActiveWorkspaceAndPage };
+      return { ...page, active: page.active || noActiveWorkspaceAndPage };
     }
     return page;
   });

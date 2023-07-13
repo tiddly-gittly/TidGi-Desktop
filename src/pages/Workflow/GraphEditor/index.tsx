@@ -1,19 +1,25 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
+/* eslint-disable @typescript-eslint/promise-function-async */
 import { sidebarWidth } from '@/constants/style';
-import type { Graph } from 'fbp-graph';
-
+import { useThemeObservable } from '@services/theme/hooks';
+import { type Graph, loadJSON } from 'fbp-graph/lib/Graph';
+import { useEffect, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
+import type { IFBPLibrary } from 'the-graph';
 import TheGraph from 'the-graph';
-import type { IFBPLibrary, ITheGraphProps } from 'the-graph';
 import 'the-graph/themes/the-graph-dark.css';
 import 'the-graph/themes/the-graph-light.css';
 import '@fortawesome/fontawesome-free/js/all.js';
 import '@fortawesome/fontawesome-free/css/all.css';
 import '@fortawesome/fontawesome-free/css/v4-font-face.css';
 
+import { photoboothJSON } from '../photobooth.json';
+import { TheGraphErrorBoundary } from './components/ErrorBoundary';
 import { SearchComponents } from './components/SearchComponents';
+import { getBrowserComponentLibrary } from './library';
 import { useMenu } from './menu';
 import { useMouseEvents } from './mouseEvents';
-import { useSubscribeGraph } from './subscribe';
 
 const TheGraphContainer = styled.main`
   /**
@@ -82,8 +88,7 @@ export interface IGraphEditorProps {
   width?: number;
 }
 
-export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) {
-  const { library, theme, graph, readonly = false, setGraph } = props;
+export function GraphEditor() {
   // const initializeAutolayouter = () => {
   //   // Logic for initializing autolayouter
   //   const auto = klayNoflo.init({
@@ -96,8 +101,28 @@ export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) 
   //   // Logic for applying autolayout
   // };
 
+  const { t } = useTranslation();
+  const theme = useThemeObservable();
+
+  const [graph, setGraph] = useState<Graph | undefined>();
+  useEffect(() => {
+    void loadJSON(photoboothJSON).then(graph => {
+      setGraph(graph);
+    });
+  }, []);
+  // load library bundled by webpack noflo-component-loader from installed noflo related npm packages
+  const [library, setLibrary] = useState<IFBPLibrary | undefined>();
+  useEffect(() => {
+    void (async () => {
+      const libraryToLoad = await getBrowserComponentLibrary();
+      // DEBUG: console libraryToLoad
+      console.log(`libraryToLoad`, libraryToLoad);
+      setLibrary(libraryToLoad);
+    })();
+  }, []);
+
   // methods
-  const { subscribeGraph, unsubscribeGraph } = useSubscribeGraph({ readonly });
+  // const { subscribeGraph, unsubscribeGraph } = useSubscribeGraph({ readonly });
   const {
     pan,
     scale,
@@ -114,11 +139,14 @@ export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) 
   });
   const { addMenu, addMenuCallback, addMenuAction, getMenuDef } = useMenu();
 
+  if (!graph || !library) return <div>{t('Loading')}</div>;
   return (
-    <>
-      <TheGraphContainer className={`the-graph-${theme}`}>
+    <TheGraphErrorBoundary>
+      <TheGraphContainer className={`the-graph-${theme?.shouldUseDarkColors ? 'dark' : 'light'}`}>
         <TheGraph.App
-          readonly={readonly}
+          graph={graph}
+          library={library}
+          readonly={false}
           height={window.innerHeight}
           width={window.innerWidth}
           offsetX={sidebarWidth}
@@ -126,7 +154,6 @@ export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) 
           onPanScale={onPanScale}
           onNodeSelection={onNodeSelection}
           onEdgeSelection={onEdgeSelection}
-          {...props}
         />
       </TheGraphContainer>
       <ThumbnailContainer>
@@ -139,6 +166,6 @@ export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) 
         />
       </ThumbnailContainer>
       <SearchComponents library={library} addNode={addNode} />
-    </>
+    </TheGraphErrorBoundary>
   );
 }

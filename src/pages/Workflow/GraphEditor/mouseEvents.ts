@@ -13,7 +13,7 @@ const unnamespace = (name: string) => {
   return name.split('/').pop() as string;
 };
 
-export function useMouseEvents({ graph, library, setGraph }: { graph: Graph; library?: IFBPLibrary; setGraph: (graph: Graph) => void }) {
+export function useMouseEvents({ graph, library, setGraph }: { graph?: Graph; library?: IFBPLibrary; setGraph: (graph: Graph) => void }) {
   const [selectedNodes, setSelectedNodes] = useState<GraphNode[]>([]);
   const [selectedEdges, setSelectedEdges] = useState<GraphEdge[]>([]);
   const [_, triggerForceRerender] = useToggle();
@@ -68,6 +68,7 @@ export function useMouseEvents({ graph, library, setGraph }: { graph: Graph; lib
   }, []);
 
   const addNode = useCallback((component: INoFloUIComponent) => {
+    if (graph === undefined) return;
     const componentName = component.name;
     const id = makeNewID(componentName);
     graph.startTransaction('addnode');

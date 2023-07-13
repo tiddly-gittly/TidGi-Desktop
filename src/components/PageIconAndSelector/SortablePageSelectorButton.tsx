@@ -31,15 +31,15 @@ export function SortablePageSelectorButton({ index, page, showSidebarTexts, show
     pageClickedLoadingSetter(true);
     try {
       const oldActivePage = await window.service.pages.getActivePage();
-      await window.service.pages.setActivePage(type, oldActivePage?.id);
-      setLocation(`/${WindowNames.main}/${type}/${id}/`);
+      await window.service.pages.setActivePage(type, oldActivePage?.type);
+      setLocation(`/${WindowNames.main}/${type}/`);
     } catch (error) {
       if (error instanceof Error) {
         await window.service.native.log('error', error.message);
       }
     }
     pageClickedLoadingSetter(false);
-  }, [id, setLocation, type]);
+  }, [setLocation, type]);
   const name = useMemo(() => {
     return getBuildInPageName(type, t);
   }, [type, t]);
