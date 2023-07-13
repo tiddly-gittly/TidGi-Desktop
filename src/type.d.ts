@@ -142,8 +142,8 @@ declare module 'the-graph' {
   export interface ITheGraphNavProps {
     graph: Graph;
     height: number;
-    onPanTo: () => void;
-    onTap: () => void;
+    onPanTo?: () => void;
+    onTap?: () => void;
     viewrectangle: number[];
     viewscale: number;
     width: number;
