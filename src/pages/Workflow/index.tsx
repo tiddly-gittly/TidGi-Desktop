@@ -6,7 +6,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { IFBPLibrary } from 'the-graph';
 import { GraphEditor } from './GraphEditor';
-import { getBrowserComponentLibrary } from './library';
+import { getBrowserComponentLibrary } from './GraphEditor/library';
 import { photoboothJSON } from './photobooth.json';
 
 export default function Workflow(): JSX.Element {
