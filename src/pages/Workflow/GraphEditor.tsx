@@ -114,18 +114,6 @@ export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) 
   });
   const { addMenu, addMenuCallback, addMenuAction, getMenuDef } = useMenu();
 
-  // Attach nav
-  function fitGraphInView() {
-    // editor.triggerFit();
-  }
-
-  function panEditorTo() {}
-
-  // DEBUG: console library
-  console.log(`library`, library);
-  // DEBUG: console graph
-  console.log(`graph`, graph);
-
   return (
     <>
       <TheGraphContainer className={`the-graph-${theme}`}>
@@ -146,9 +134,7 @@ export function GraphEditor(props: Partial<ITheGraphProps> & IGraphEditorProps) 
           height={162}
           width={216}
           graph={graph}
-          onTap={fitGraphInView}
-          onPanTo={panEditorTo}
-          viewrectangle={[pan[0] + sidebarWidth, pan[1], window.innerWidth , window.innerHeight]}
+          viewrectangle={[pan[0] + sidebarWidth, pan[1], window.innerWidth, window.innerHeight]}
           viewscale={scale}
         />
       </ThumbnailContainer>
