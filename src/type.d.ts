@@ -23,6 +23,8 @@ declare module 'the-graph' {
     height: number | string;
     library?: IFBPLibrary;
     offsetX?: number;
+    onEdgeSelection: (edgeID: string, edge: any, toggle: boolean) => void;
+    onNodeSelection: (nodeID: string, node: any, toggle: boolean) => void;
     onPanScale: (x: number, y: number, scale: number) => void;
     readonly: boolean;
     ref?: RefObject<HTMLDivElement>;
