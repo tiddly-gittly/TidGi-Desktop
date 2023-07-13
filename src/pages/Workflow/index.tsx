@@ -30,7 +30,7 @@ export default function Workflow(): JSX.Element {
   return graph && library
     ? (
       <>
-        <GraphEditor theme={theme?.shouldUseDarkColors ? 'dark' : 'light'} library={library} graph={graph} />
+        <GraphEditor theme={theme?.shouldUseDarkColors ? 'dark' : 'light'} library={library} graph={graph} setGraph={setGraph} />
       </>
     )
     : <div>{t('Loading')}</div>;

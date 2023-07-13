@@ -1,21 +1,12 @@
 import { sidebarWidth } from '@/constants/style';
 import { Autocomplete, autocompleteClasses, Box, createFilterOptions, TextField } from '@material-ui/core';
+import { PropertyMap } from 'fbp-graph/lib/Types';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import type { IFBPLibrary } from 'the-graph';
+import type { IFBPLibrary, INoFloUIComponent } from 'the-graph';
+import { makeNewID } from '../idUtils';
 import { NoFloIcon } from './NoFloIcon';
-
-interface SearchBarProps {
-  library?: IFBPLibrary;
-}
-
-interface OptionType {
-  description: string;
-  groupName: string;
-  icon: string;
-  title: string;
-}
 
 const SearchBarWrapper = styled.div`
   position: absolute;
@@ -62,7 +53,18 @@ const filterOptions = createFilterOptions({
   stringify: (option: OptionType) => option.groupName + option.title,
 });
 
-export function SearchComponents({ library }: SearchBarProps) {
+interface OptionType {
+  component: INoFloUIComponent;
+  groupName: string;
+  title: string;
+}
+
+interface SearchBarProps {
+  addNode: (component: INoFloUIComponent) => void;
+  library?: IFBPLibrary;
+}
+
+export function SearchComponents({ library, addNode }: SearchBarProps) {
   const [options, setOptions] = useState<OptionType[]>([]);
   const { t } = useTranslation();
   const components = useMemo(() => Object.values(library ?? {}), [library]);
@@ -73,11 +75,9 @@ export function SearchComponents({ library }: SearchBarProps) {
       return {
         groupName: splitName[0],
         title: splitName[1] ?? component.name,
-        icon: component.icon,
-        description: component.description,
+        component,
       };
     });
-
     setOptions(newOptions);
   }, [components]);
 
@@ -99,11 +99,14 @@ export function SearchComponents({ library }: SearchBarProps) {
             }}
             component='li'
             {...props}
+            onClick={() => {
+              addNode(option.component);
+            }}
           >
-            <NoFloIcon icon={option.icon} />
+            <NoFloIcon icon={option.component.icon} />
             <SearchItemOptionText>
               <ItemTitle>{option.title}</ItemTitle>
-              <ItemDescription>{option.description}</ItemDescription>
+              <ItemDescription>{option.component.description}</ItemDescription>
             </SearchItemOptionText>
           </Box>
         )}

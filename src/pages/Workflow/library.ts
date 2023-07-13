@@ -92,3 +92,21 @@ export async function getBrowserComponentLibrary() {
   });
   return libraryToLoad;
 }
+
+// const registerComponent = (definition: Component, generated: boolean) => {
+//   const component = getComponent(definition.name);
+//   if (component && generated) {
+//     return;
+//   }
+//   if (library === undefined) return;
+//   library[definition.name] = definition;
+//   // debounceLibraryRefesh();
+//   if (definition.name.includes('/')) {
+//     const unnamespaced = unnamespace(definition.name);
+//     registerComponent({
+//       ...definition,
+//       name: unnamespaced,
+//       unnamespaced: true,
+//     }, false);
+//   }
+// };
