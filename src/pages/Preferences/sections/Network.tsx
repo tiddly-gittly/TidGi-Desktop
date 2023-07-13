@@ -1,4 +1,4 @@
-import { List } from '@material-ui/core';
+import { List } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem } from '@/components/ListItem';

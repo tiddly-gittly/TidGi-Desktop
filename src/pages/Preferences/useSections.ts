@@ -1,23 +1,23 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { SvgIconTypeMap } from '@material-ui/core';
-import { OverridableComponent } from '@material-ui/core/OverridableComponent';
-import BuildIcon from '@material-ui/icons/Build';
-import CloudDownloadIcon from '@material-ui/icons/CloudDownload';
-import CodeIcon from '@material-ui/icons/Code';
-import GitHubIcon from '@material-ui/icons/GitHub';
-import LanguageIcon from '@material-ui/icons/Language';
-import LanguageModelIcon from '@material-ui/icons/Psychology';
-import MenuBookIcon from '@material-ui/icons/MenuBook';
-import MoreHorizIcon from '@material-ui/icons/MoreHoriz';
-import NotificationsIcon from '@material-ui/icons/Notifications';
-import PowerIcon from '@material-ui/icons/Power';
-import RouterIcon from '@material-ui/icons/Router';
-import SecurityIcon from '@material-ui/icons/Security';
-import StorefrontIcon from '@material-ui/icons/Storefront';
-import SystemUpdateAltIcon from '@material-ui/icons/SystemUpdateAlt';
-import WidgetsIcon from '@material-ui/icons/Widgets';
+import { SvgIconTypeMap } from '@mui/material';
+import { OverridableComponent } from '@mui/material/OverridableComponent';
+import BuildIcon from '@mui/icons-material/Build';
+import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
+import CodeIcon from '@mui/icons-material/Code';
+import GitHubIcon from '@mui/icons-material/GitHub';
+import LanguageIcon from '@mui/icons-material/Language';
+import LanguageModelIcon from '@mui/icons-material/Psychology';
+import MenuBookIcon from '@mui/icons-material/MenuBook';
+import MoreHorizIcon from '@mui/icons-material/MoreHoriz';
+import NotificationsIcon from '@mui/icons-material/Notifications';
+import PowerIcon from '@mui/icons-material/Power';
+import RouterIcon from '@mui/icons-material/Router';
+import SecurityIcon from '@mui/icons-material/Security';
+import StorefrontIcon from '@mui/icons-material/Storefront';
+import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
+import WidgetsIcon from '@mui/icons-material/Widgets';
 
 import { PreferenceSections } from '@services/preferences/interface';
 

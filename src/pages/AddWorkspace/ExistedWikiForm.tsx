@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { MenuItem, Typography } from '@material-ui/core';
-import { Folder as FolderIcon } from '@material-ui/icons';
+import { MenuItem, Typography } from '@mui/material';
+import { Folder as FolderIcon } from '@mui/icons-material';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 

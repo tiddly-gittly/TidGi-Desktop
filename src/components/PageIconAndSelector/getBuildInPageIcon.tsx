@@ -1,5 +1,5 @@
-import AccountTreeIcon from '@material-ui/icons/AccountTree';
-import InfoIcon from '@material-ui/icons/Info';
+import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import InfoIcon from '@mui/icons-material/Info';
 import { PageType } from '@services/pages/interface';
 
 export function getBuildInPageIcon(pageType: PageType): JSX.Element {

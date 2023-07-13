@@ -1,5 +1,5 @@
-import { Divider, List, ListItemSecondaryAction, Switch } from '@material-ui/core';
-import TimePicker from '@material-ui/lab/TimePicker';
+import { Divider, List, ListItemSecondaryAction, Switch } from '@mui/material';
+import TimePicker from '@mui/lab/TimePicker';
 import fromUnixTime from 'date-fns/fromUnixTime';
 import setDate from 'date-fns/setDate';
 import setMonth from 'date-fns/setMonth';

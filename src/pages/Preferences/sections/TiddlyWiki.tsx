@@ -2,7 +2,7 @@ import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { List } from '@material-ui/core';
+import { List } from '@mui/material';
 
 import { ListItemText } from '@/components/ListItem';
 import { useUserInfoObservable } from '@services/auth/hooks';

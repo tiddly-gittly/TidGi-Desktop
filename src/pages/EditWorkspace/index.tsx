@@ -2,8 +2,8 @@
 /* eslint-disable unicorn/no-useless-undefined */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null */
-import { Button as ButtonRaw, Divider, ListItemSecondaryAction, Paper, Switch, TextField as TextFieldRaw, Tooltip, Typography } from '@material-ui/core';
-import { Autocomplete } from '@material-ui/lab';
+import { Button as ButtonRaw, Divider, ListItemSecondaryAction, Paper, Switch, TextField as TextFieldRaw, Tooltip, Typography } from '@mui/material';
+import { Autocomplete } from '@mui/lab';
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';

@@ -1,5 +1,5 @@
-import { Typography } from '@material-ui/core';
-import { Folder as FolderIcon } from '@material-ui/icons';
+import { Typography } from '@mui/material';
+import { Folder as FolderIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useValidateHtmlWiki } from './useImportHtmlWiki';
 

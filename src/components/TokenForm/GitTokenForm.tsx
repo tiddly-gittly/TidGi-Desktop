@@ -1,7 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
-import { Button, TextField } from '@material-ui/core';
+import { Button, TextField } from '@mui/material';
 
 import { useUserInfoObservable } from '@services/auth/hooks';
 import { getServiceBranchTypes, getServiceEmailTypes, getServiceTokenTypes, getServiceUserNameTypes } from '@services/auth/interface';

@@ -1,9 +1,9 @@
 import { Trans, useTranslation } from 'react-i18next';
 import semver from 'semver';
 
-import { Divider, List, ListItemSecondaryAction, Switch } from '@material-ui/core';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
-import TimePicker from '@material-ui/lab/TimePicker';
+import { Divider, List, ListItemSecondaryAction, Switch } from '@mui/material';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import TimePicker from '@mui/lab/TimePicker';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';

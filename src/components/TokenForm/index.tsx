@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { Tab as TabRaw } from '@material-ui/core';
-import { TabContext, TabList as TabListRaw, TabPanel as TabPanelRaw } from '@material-ui/lab';
+import { Tab as TabRaw } from '@mui/material';
+import { TabContext, TabList as TabListRaw, TabPanel as TabPanelRaw } from '@mui/lab';
 import { SupportedStorageServices } from '@services/types';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';

@@ -4,7 +4,7 @@ import { Trans, useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import { Button, DialogContent as DialogContentRaw } from '@material-ui/core';
+import { Button, DialogContent as DialogContentRaw } from '@mui/material';
 import iconPath from '../../build-resources/icon.png';
 
 const DialogContent = styled(DialogContentRaw)`

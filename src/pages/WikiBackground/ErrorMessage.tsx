@@ -1,5 +1,5 @@
 /* eslint-disable unicorn/no-null */
-import { Accordion, AccordionDetails, AccordionSummary, Button, Typography } from '@material-ui/core';
+import { Accordion, AccordionDetails, AccordionSummary, Button, Typography } from '@mui/material';
 import { useCallback } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 import styled from 'styled-components';

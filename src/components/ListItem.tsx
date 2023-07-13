@@ -1,4 +1,4 @@
-import { List as ListRaw, ListItem as ListItemRaw, ListItemText as ListItemTextRaw } from '@material-ui/core';
+import { List as ListRaw, ListItem as ListItemRaw, ListItemText as ListItemTextRaw } from '@mui/material';
 import styled from 'styled-components';
 
 export const List = styled(ListRaw)`

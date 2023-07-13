@@ -6,18 +6,18 @@ import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
-import Container from '@material-ui/core/Container';
-import Divider from '@material-ui/core/Divider';
-import ListRaw from '@material-ui/core/List';
-import ListItem from '@material-ui/core/ListItem';
-import ListItemText from '@material-ui/core/ListItemText';
-import ListSubheader from '@material-ui/core/ListSubheader';
-import MenuItem from '@material-ui/core/MenuItem';
-import TextField from '@material-ui/core/TextField';
+import Container from '@mui/material/Container';
+import Divider from '@mui/material/Divider';
+import ListRaw from '@mui/material/List';
+import ListItem from '@mui/material/ListItem';
+import ListItemText from '@mui/material/ListItemText';
+import ListSubheader from '@mui/material/ListSubheader';
+import MenuItem from '@mui/material/MenuItem';
+import TextField from '@mui/material/TextField';
 
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
-import DateTimePicker from '@material-ui/lab/DateTimePicker';
+import DateTimePicker from '@mui/lab/DateTimePicker';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 import PopUpMenuItem from '@/components/PopUpMenuItem';

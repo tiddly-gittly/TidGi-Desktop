@@ -1,4 +1,4 @@
-import BadgeRaw from '@material-ui/core/Badge';
+import BadgeRaw from '@mui/material/Badge';
 import Promise from 'bluebird';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';

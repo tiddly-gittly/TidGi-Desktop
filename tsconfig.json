@@ -11,7 +11,8 @@
     "baseUrl": "./",
     "paths": {
       "@services/*": ["./src/services/*"],
-      "@/*": ["./src/*"]
+      "@/*": ["./src/*"],
+      "@mui/styled-engine": ["./node_modules/@mui/styled-engine-sc"]
     },
     "skipLibCheck": true,
     /* Basic Options */
