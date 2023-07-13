@@ -1,11 +1,9 @@
 import { sidebarWidth } from '@/constants/style';
 import { Autocomplete, autocompleteClasses, Box, createFilterOptions, TextField } from '@material-ui/core';
-import { PropertyMap } from 'fbp-graph/lib/Types';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import type { IFBPLibrary, INoFloUIComponent } from 'the-graph';
-import { makeNewID } from '../idUtils';
 import { NoFloIcon } from './NoFloIcon';
 
 const SearchBarWrapper = styled.div`
