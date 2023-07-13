@@ -53,7 +53,7 @@ export function LanguageModel(props: Partial<ISectionProps>): JSX.Element {
                     fullWidth
                     key={key}
                     label={key}
-                    onChange={async (event) => {
+                    onChange={async (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
                       await window.service.preference.set('languageModel', {
                         ...preference.languageModel,
                         defaultModel: {
@@ -71,7 +71,7 @@ export function LanguageModel(props: Partial<ISectionProps>): JSX.Element {
                 <ListItemText primary={t('Preference.LanguageModel.TimeoutDuration')} secondary={t('Preference.LanguageModel.UpdateTimeoutDuration')} />
                 <TextField
                   type='number'
-                  onChange={async (event) => {
+                  onChange={async (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
                     const newValue = 1000 * Number(event.target.value);
                     await window.service.preference.set('languageModel', {
                       ...preference.languageModel,

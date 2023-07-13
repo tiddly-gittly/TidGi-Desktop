@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { MenuItem, Typography } from '@mui/material';
 import { Folder as FolderIcon } from '@mui/icons-material';
+import { AutocompleteRenderInputParams, MenuItem, Typography } from '@mui/material';
 import React, { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -50,7 +50,7 @@ export function ExistedWikiForm({
       <LocationPickerContainer>
         <LocationPickerInput
           error={errorInWhichComponent.wikiFolderLocation}
-          onChange={(event) => {
+          onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
             onLocationChange(event.target.value);
           }}
           label={t('AddWorkspace.WorkspaceFolder')}
@@ -82,7 +82,7 @@ export function ExistedWikiForm({
               `${t('AddWorkspace.SubWorkspaceWillLinkTo')}
                     ${mainWikiToLink.wikiFolderLocation}/tiddlers/${wikiFolderName}`}
             value={mainWikiToLinkIndex}
-            onChange={(event) => {
+            onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
               const index = event.target.value as unknown as number;
               mainWikiToLinkSetter(mainWorkspaceList[index]);
             }}
@@ -96,10 +96,10 @@ export function ExistedWikiForm({
           <SubWikiTagAutoComplete
             options={fileSystemPaths.map((fileSystemPath) => fileSystemPath.tagName)}
             value={tagName}
-            onInputChange={(_, value) => {
+            onInputChange={(event: React.SyntheticEvent, value: string) => {
               tagNameSetter(value);
             }}
-            renderInput={(parameters) => (
+            renderInput={(parameters: AutocompleteRenderInputParams) => (
               <LocationPickerInput
                 {...parameters}
                 error={errorInWhichComponent.tagName}

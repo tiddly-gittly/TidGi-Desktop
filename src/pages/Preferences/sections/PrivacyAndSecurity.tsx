@@ -45,7 +45,7 @@ export function PrivacyAndSecurity(props: Required<ISectionProps>): JSX.Element 
                         onClick={async () => {
                           await window.service.native.open('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ');
                         }}
-                        onKeyDown={(event) => {
+                        onKeyDown={(event: React.KeyboardEvent<HTMLSpanElement>) => {
                           if (event.key !== 'Enter') return;
                           void window.service.native.open('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ');
                         }}

@@ -35,7 +35,7 @@ export function TiddlyWiki(props: Partial<ISectionProps>): JSX.Element {
               <TextField
                 helperText={t('Preference.DefaultUserNameDetail')}
                 fullWidth
-                onChange={(event) => {
+                onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
                   userNameSetter(event.target.value);
                   void userNameTextFieldOnChange(event);
                 }}

@@ -1,5 +1,5 @@
 import { Divider, List, ListItemSecondaryAction, Switch } from '@mui/material';
-import TimePicker from '@mui/lab/TimePicker';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 import fromUnixTime from 'date-fns/fromUnixTime';
 import setDate from 'date-fns/setDate';
 import setMonth from 'date-fns/setMonth';
@@ -12,7 +12,7 @@ import { TokenForm } from '../../../components/TokenForm';
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { Paper, SectionTitle, TextField, TimePickerContainer } from '../PreferenceComponents';
+import { Paper, SectionTitle, TimePickerContainer } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 export function Sync(props: Required<ISectionProps>): JSX.Element {
@@ -66,9 +66,7 @@ export function Sync(props: Required<ISectionProps>): JSX.Element {
                     ampm={false}
                     openTo='hours'
                     views={['hours', 'minutes', 'seconds']}
-                    inputFormat='HH:mm:ss'
-                    mask='__:__:__'
-                    renderInput={(timeProps) => <TextField {...timeProps} />}
+                    format='HH:mm:ss'
                     value={fromUnixTime(preference.syncDebounceInterval / 1000 + new Date().getTimezoneOffset() * 60)}
                     onChange={async (date) => {
                       if (date === null) throw new Error(`date is null`);

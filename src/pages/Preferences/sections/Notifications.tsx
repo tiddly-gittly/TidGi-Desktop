@@ -1,15 +1,15 @@
 import { Trans, useTranslation } from 'react-i18next';
 import semver from 'semver';
 
-import { Divider, List, ListItemSecondaryAction, Switch } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import TimePicker from '@mui/lab/TimePicker';
+import { Divider, List, ListItemSecondaryAction, Switch } from '@mui/material';
+import { TimePicker } from '@mui/x-date-pickers/TimePicker';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { Link, ListItemVertical, Paper, SectionTitle, TextField, TimePickerContainer } from '../PreferenceComponents';
+import { Link, ListItemVertical, Paper, SectionTitle, TimePickerContainer } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
 export function Notifications(props: Required<ISectionProps>): JSX.Element {
@@ -47,9 +47,8 @@ export function Notifications(props: Required<ISectionProps>): JSX.Element {
                 <TimePickerContainer>
                   <TimePicker
                     label='from'
-                    renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(preference.pauseNotificationsByScheduleFrom)}
-                    onChange={async (d) => {
+                    onChange={async (d: Date | null) => {
                       await window.service.preference.set('pauseNotificationsByScheduleFrom', (d ?? '').toString());
                     }}
                     onClose={async () => {
@@ -62,9 +61,8 @@ export function Notifications(props: Required<ISectionProps>): JSX.Element {
                   />
                   <TimePicker
                     label='to'
-                    renderInput={(timeProps) => <TextField {...timeProps} />}
                     value={new Date(preference.pauseNotificationsByScheduleTo)}
-                    onChange={async (d) => {
+                    onChange={async (d: Date | null) => {
                       await window.service.preference.set('pauseNotificationsByScheduleTo', (d ?? '').toString());
                     }}
                     onClose={async () => {
@@ -157,7 +155,7 @@ export function Notifications(props: Required<ISectionProps>): JSX.Element {
                         onClick={async () => {
                           await window.service.native.open('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
                         }}
-                        onKeyDown={(event) => {
+                        onKeyDown={(event: React.KeyboardEvent<HTMLSpanElement>) => {
                           if (event.key !== 'Enter') return;
                           void window.service.native.open('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
                         }}

@@ -2,8 +2,8 @@
 /* eslint-disable unicorn/no-useless-undefined */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null */
-import { Button as ButtonRaw, Divider, ListItemSecondaryAction, Paper, Switch, TextField as TextFieldRaw, Tooltip, Typography } from '@mui/material';
 import { Autocomplete } from '@mui/lab';
+import { AutocompleteRenderInputParams, Button as ButtonRaw, Divider, ListItemSecondaryAction, Paper, Switch, TextField as TextFieldRaw, Tooltip, Typography } from '@mui/material';
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
@@ -195,7 +195,7 @@ export default function EditWorkspace(): JSX.Element {
           helperText={t('EditWorkspace.NameDescription')}
           placeholder='Optional'
           value={name}
-          onChange={(event) => {
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             workspaceSetter({ ...workspace, name: event.target.value });
           }}
         />
@@ -241,14 +241,14 @@ export default function EditWorkspace(): JSX.Element {
           placeholder='Optional'
           disabled
           value={wikiFolderLocation}
-          onChange={(event) => {
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             workspaceSetter({ ...workspace, wikiFolderLocation: event.target.value });
           }}
         />
         <TextField
           helperText={t('AddWorkspace.WorkspaceUserNameDetail')}
           fullWidth
-          onChange={(event) => {
+          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
             workspaceSetter({ ...workspace, userName: event.target.value }, true);
           }}
           label={t('AddWorkspace.WorkspaceUserName')}
@@ -265,7 +265,7 @@ export default function EditWorkspace(): JSX.Element {
                 helperText={t('Preference.RememberLastVisitState')}
                 placeholder={homeUrl}
                 value={lastUrl}
-                onChange={(event) => {
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                   workspaceSetter({
                     ...workspace,
                     lastUrl: (event.target.value || homeUrl) ?? '',
@@ -281,10 +281,10 @@ export default function EditWorkspace(): JSX.Element {
             freeSolo
             options={fileSystemPaths?.map((fileSystemPath) => fileSystemPath.tagName)}
             value={tagName}
-            onInputChange={(_, value) => {
+            onInputChange={(event: React.SyntheticEvent, value: string) => {
               workspaceSetter({ ...workspace, tagName: value }, true);
             }}
-            renderInput={(parameters) => <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
+            renderInput={(parameters: AutocompleteRenderInputParams) => <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
           />
         )}
         <SyncedWikiDescription
@@ -323,7 +323,7 @@ export default function EditWorkspace(): JSX.Element {
                     edge='end'
                     color='primary'
                     checked={syncOnInterval}
-                    onChange={(event) => {
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                       workspaceSetter({ ...workspace, syncOnInterval: event.target.checked });
                     }}
                   />
@@ -336,7 +336,7 @@ export default function EditWorkspace(): JSX.Element {
                     edge='end'
                     color='primary'
                     checked={syncOnStartup}
-                    onChange={(event) => {
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                       workspaceSetter({ ...workspace, syncOnStartup: event.target.checked });
                     }}
                   />
@@ -356,7 +356,7 @@ export default function EditWorkspace(): JSX.Element {
                     edge='end'
                     color='primary'
                     checked={backupOnInterval}
-                    onChange={(event) => {
+                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                       workspaceSetter({ ...workspace, backupOnInterval: event.target.checked });
                     }}
                   />
@@ -375,7 +375,7 @@ export default function EditWorkspace(): JSX.Element {
                   edge='end'
                   color='primary'
                   checked={hibernateWhenUnused}
-                  onChange={(event) => {
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                     workspaceSetter({ ...workspace, hibernateWhenUnused: event.target.checked });
                   }}
                 />
@@ -388,7 +388,7 @@ export default function EditWorkspace(): JSX.Element {
                   edge='end'
                   color='primary'
                   checked={disableNotifications}
-                  onChange={(event) => {
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                     workspaceSetter({ ...workspace, disableNotifications: event.target.checked });
                   }}
                 />
@@ -401,7 +401,7 @@ export default function EditWorkspace(): JSX.Element {
                   edge='end'
                   color='primary'
                   checked={disableAudio}
-                  onChange={(event) => {
+                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
                     workspaceSetter({ ...workspace, disableAudio: event.target.checked });
                   }}
                 />

@@ -39,7 +39,7 @@ export function MainSubWikiDescription({
         control={
           <Switch
             checked={isCreateMainWorkspace}
-            onChange={(event) => {
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
               isCreateMainWorkspaceSetter(event.target.checked);
             }}
           />
@@ -73,7 +73,7 @@ export function SyncedWikiDescription({
         control={
           <Switch
             checked={isCreateSyncedWorkspace}
-            onChange={(event) => {
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
               isCreateSyncedWorkspaceSetter(event.target.checked);
             }}
           />

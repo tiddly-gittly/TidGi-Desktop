@@ -100,7 +100,7 @@ export default function FindInPage(): JSX.Element | null {
               void window.service.window.stopFindInPage();
             }
           }}
-          onKeyDown={(event) => {
+          onKeyDown={(event: React.KeyboardEvent<HTMLSpanElement>) => {
             if (
               event.key === 'Enter' && // Enter
               text.length > 0

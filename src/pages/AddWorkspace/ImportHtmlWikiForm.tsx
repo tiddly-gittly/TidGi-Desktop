@@ -23,7 +23,7 @@ export function ImportHtmlWikiForm({
       <LocationPickerContainer>
         <LocationPickerInput
           error={errorInWhichComponent.wikiHtmlPath}
-          onChange={(event) => {
+          onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
             // https://zh-hans.reactjs.org/docs/events.html#clipboard-events
             wikiHtmlPathSetter(event.target.value);
           }}
@@ -55,7 +55,7 @@ export function ImportHtmlWikiForm({
       <LocationPickerContainer>
         <LocationPickerInput
           error={errorInWhichComponent.parentFolderLocation}
-          onChange={(event) => {
+          onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
             form.parentFolderLocationSetter(event.target.value);
           }}
           label={t('AddWorkspace.WorkspaceParentFolder')}
@@ -80,7 +80,7 @@ export function ImportHtmlWikiForm({
       <LocationPickerContainer>
         <LocationPickerInput
           error={errorInWhichComponent.wikiFolderName}
-          onChange={(event) => {
+          onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
             wikiFolderNameSetter(event.target.value);
           }}
           label={t('AddWorkspace.ExtractedWikiFolderName')}

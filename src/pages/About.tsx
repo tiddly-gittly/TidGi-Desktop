@@ -125,7 +125,7 @@ export default function About(): JSX.Element {
           onClick={async () => {
             await window.service.native.open('https://onetwo.ren/wiki/');
           }}
-          onKeyDown={async (event) => {
+          onKeyDown={async (event: React.KeyboardEvent<HTMLSpanElement>) => {
             if (event.key !== 'Enter') {
               return;
             }
@@ -141,7 +141,7 @@ export default function About(): JSX.Element {
           onClick={async () => {
             await window.service.native.open('https://webcatalog.app/?utm_source=tidgi_app');
           }}
-          onKeyDown={async (event) => {
+          onKeyDown={async (event: React.KeyboardEvent<HTMLSpanElement>) => {
             if (event.key !== 'Enter') {
               return;
             }

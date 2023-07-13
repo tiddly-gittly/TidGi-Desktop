@@ -186,7 +186,7 @@ function SearchGithubRepoResultList({
     <RepoSearchContainer>
       <RepoSearchInput
         fullWidth
-        onChange={(event) => {
+        onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
           githubRepoSearchStringSetter(event.target.value);
         }}
         label={t('AddWorkspace.SearchGithubRepoName')}
