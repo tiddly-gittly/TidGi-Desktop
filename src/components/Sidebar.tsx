@@ -11,6 +11,7 @@ import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IconButton as IconButtonRaw, Tooltip } from '@mui/material';
 import { usePagesListObservable } from '@services/pages/hooks';
+import { PageType } from '@services/pages/interface';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useUpdaterObservable } from '@services/updater/hooks';
 import { IUpdaterStatus } from '@services/updater/interface';
@@ -86,6 +87,14 @@ export function SideBar(): JSX.Element {
 
   const workspacesList = useWorkspacesListObservable();
   const pagesList = usePagesListObservable();
+  const noActiveWorkspaceAndPage = workspacesList?.some((workspace) => workspace.active) === false && pagesList?.some((page) => page.active) === false;
+  // when no active workspace and no active page, the guide page is active in src/pages/index.tsx 's route. so we make sidebar icon active too.
+  const pagesListWithGuideActiveIfNoActiveWorkspaceAndPage = pagesList?.map?.((page) => {
+    if (page.type === PageType.guide) {
+      return { ...page, active: noActiveWorkspaceAndPage };
+    }
+    return page;
+  });
   const preferences = usePreferenceObservable();
   const updaterMetaData = useUpdaterObservable();
   if (preferences === undefined) return <div>{t('Loading')}</div>;
@@ -105,12 +114,12 @@ export function SideBar(): JSX.Element {
           showSidebarTexts={showSideBarText}
           onClick={() => void window.service.window.open(WindowNames.addWorkspace)}
         />
-        {pagesList === undefined
+        {pagesListWithGuideActiveIfNoActiveWorkspaceAndPage === undefined
           ? <div>{t('Loading')}</div>
           : (
             <SortablePageSelectorList
               showSideBarText={showSideBarText}
-              pagesList={pagesList}
+              pagesList={pagesListWithGuideActiveIfNoActiveWorkspaceAndPage}
               showSideBarIcon={showSideBarIcon}
             />
           )}

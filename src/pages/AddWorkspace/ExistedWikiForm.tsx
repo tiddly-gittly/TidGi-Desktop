@@ -50,20 +50,20 @@ export function ExistedWikiForm({
       <LocationPickerContainer>
         <LocationPickerInput
           error={errorInWhichComponent.wikiFolderLocation}
-          onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-            onLocationChange(event.target.value);
+          onChange={async (event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+            await onLocationChange(event.target.value);
           }}
           label={t('AddWorkspace.WorkspaceFolder')}
-          helperText={`${t('AddWorkspace.ImportWiki')}${wikiFolderLocation}`}
+          helperText={`${t('AddWorkspace.ImportWiki')}${wikiFolderLocation ?? ''}`}
           value={wikiFolderLocation}
         />
         <LocationPickerButton
           onClick={async () => {
             // first clear the text, so button will refresh
-            onLocationChange('');
+            await onLocationChange('');
             const filePaths = await window.service.native.pickDirectory(parentFolderLocation);
             if (filePaths?.length > 0) {
-              onLocationChange(filePaths[0]);
+              await onLocationChange(filePaths[0]);
             }
           }}
           endIcon={<FolderIcon />}
