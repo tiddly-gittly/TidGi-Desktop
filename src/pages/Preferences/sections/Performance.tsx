@@ -1,4 +1,4 @@
-import { Divider, List, ListItemSecondaryAction, Switch } from '@material-ui/core';
+import { Divider, List, ListItemSecondaryAction, Switch } from '@mui/material';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 

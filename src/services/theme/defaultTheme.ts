@@ -1,10 +1,16 @@
-import { createMuiTheme, Theme } from '@material-ui/core';
+import { createTheme, Theme } from '@mui/material';
 import { cloneDeep, merge } from 'lodash';
 
-export const lightTheme = merge(cloneDeep(createMuiTheme())) as Theme;
+export const lightTheme = merge(cloneDeep(createTheme({
+  palette: {
+    background: {
+      default: '#fafafa',
+    },
+  },
+}))) as Theme;
 export const darkTheme = merge(
   cloneDeep(
-    createMuiTheme({
+    createTheme({
       palette: {
         mode: 'dark',
         background: {

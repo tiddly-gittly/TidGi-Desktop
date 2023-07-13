@@ -57,7 +57,7 @@ module.exports = [
               }),
               // material-ui
               tsImportPluginFactory({
-                libraryName: '@material-ui/core',
+                libraryName: '@mui/material',
                 libraryDirectory: '',
                 camel2DashComponentName: false,
               }),
@@ -79,7 +79,7 @@ module.exports = [
               //       return accumulator + current;
               //     }, '');
               //   },
-              //   libraryName: '@material-ui/icons',
+              //   libraryName: '@mui/icons-material',
               //   style: false,
               //   camel2DashComponentName: false,
               // }),

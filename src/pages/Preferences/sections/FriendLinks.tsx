@@ -1,5 +1,5 @@
-import { Divider, List } from '@material-ui/core';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import { Divider, List } from '@mui/material';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';

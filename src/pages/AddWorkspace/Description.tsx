@@ -2,10 +2,10 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
-import FormControlLabel from '@material-ui/core/FormControlLabel';
-import Paper from '@material-ui/core/Paper';
-import SwitchRaw from '@material-ui/core/Switch';
-import Typography from '@material-ui/core/Typography';
+import FormControlLabel from '@mui/material/FormControlLabel';
+import Paper from '@mui/material/Paper';
+import SwitchRaw from '@mui/material/Switch';
+import Typography from '@mui/material/Typography';
 
 const Switch = styled(SwitchRaw)`
   & span.MuiSwitch-track,

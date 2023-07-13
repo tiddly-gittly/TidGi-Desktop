@@ -1,4 +1,4 @@
-import { Autocomplete, Button, Fab, Paper, TextField, Tooltip, Typography } from '@material-ui/core';
+import { Autocomplete, Button, Fab, Paper, TextField, Tooltip, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import styled, { css } from 'styled-components';
 

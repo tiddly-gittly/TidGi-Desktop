@@ -1,4 +1,4 @@
-import { InputLabel as InputLabelRaw, ListItem as ListItemRaw, Paper as PaperRaw, TextField as TextFieldRaw, Typography } from '@material-ui/core';
+import { InputLabel as InputLabelRaw, ListItem as ListItemRaw, Paper as PaperRaw, TextField as TextFieldRaw, Typography } from '@mui/material';
 import styled, { keyframes } from 'styled-components';
 
 export const Paper = styled(PaperRaw)`

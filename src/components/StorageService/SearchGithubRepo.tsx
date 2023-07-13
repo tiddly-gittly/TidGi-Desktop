@@ -7,8 +7,8 @@ import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
-import { Button, LinearProgress, List, ListItem, ListItemIcon, ListItemText, TextField } from '@material-ui/core';
-import { Cached as CachedIcon, CreateNewFolder as CreateNewFolderIcon, Folder as FolderIcon } from '@material-ui/icons';
+import { Button, LinearProgress, List, ListItem, ListItemIcon, ListItemText, TextField } from '@mui/material';
+import { Cached as CachedIcon, CreateNewFolder as CreateNewFolderIcon, Folder as FolderIcon } from '@mui/icons-material';
 
 import { GITHUB_GRAPHQL_API } from '@/constants/auth';
 import { useUserInfoObservable } from '@services/auth/hooks';

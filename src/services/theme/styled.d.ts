@@ -1,6 +1,6 @@
 // styled.d.ts
 import 'styled-components';
-import { Theme } from '@material-ui/core';
+import { Theme } from '@mui/material';
 interface IPalette {
   contrastText: string;
   main: string;

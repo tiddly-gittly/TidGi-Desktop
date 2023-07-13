@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import Menu from '@material-ui/core/Menu';
+import Menu from '@mui/material/Menu';
 import React from 'react';
 
 interface Props {

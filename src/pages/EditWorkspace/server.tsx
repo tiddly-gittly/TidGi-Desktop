@@ -12,9 +12,9 @@ import {
   ListItemSecondaryAction,
   Switch,
   TextField,
-} from '@material-ui/core';
-import { CheckBox as CheckBoxIcon, CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon, ExpandMore as ExpandMoreIcon } from '@material-ui/icons';
-import { Autocomplete } from '@material-ui/lab';
+} from '@mui/material';
+import { CheckBox as CheckBoxIcon, CheckBoxOutlineBlank as CheckBoxOutlineBlankIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import { Autocomplete } from '@mui/lab';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 

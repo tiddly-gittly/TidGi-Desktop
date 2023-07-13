@@ -1,5 +1,5 @@
-import { Divider, List, ListItemSecondaryAction, Switch } from '@material-ui/core';
-import ChevronRightIcon from '@material-ui/icons/ChevronRight';
+import { Divider, List, ListItemSecondaryAction, Switch } from '@mui/material';
+import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { Settings as SettingsIcon, Upgrade as UpgradeIcon } from '@material-ui/icons';
+import { Settings as SettingsIcon, Upgrade as UpgradeIcon } from '@mui/icons-material';
 import { t } from 'i18next';
 import SimpleBar from 'simplebar-react';
 import styled, { css } from 'styled-components';
@@ -9,7 +9,7 @@ import { SortableWorkspaceSelectorList, WorkspaceSelectorBase } from '@/componen
 import { sidebarWidth } from '@/constants/style';
 import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import { IconButton as IconButtonRaw, Tooltip } from '@material-ui/core';
+import { IconButton as IconButtonRaw, Tooltip } from '@mui/material';
 import { usePagesListObservable } from '@services/pages/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useUpdaterObservable } from '@services/updater/hooks';

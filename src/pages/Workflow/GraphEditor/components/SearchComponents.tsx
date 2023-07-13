@@ -1,5 +1,5 @@
 import { sidebarWidth } from '@/constants/style';
-import { Autocomplete, autocompleteClasses, Box, createFilterOptions, TextField } from '@material-ui/core';
+import { Autocomplete, autocompleteClasses, Box, createFilterOptions, TextField } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';

@@ -1,4 +1,4 @@
-import { Divider as DividerRaw, List, ListItem, ListItemIcon as ListItemIconRaw, ListItemText } from '@material-ui/core';
+import { Divider as DividerRaw, List, ListItem, ListItemIcon as ListItemIconRaw, ListItemText } from '@mui/material';
 import React from 'react';
 import styled, { keyframes } from 'styled-components';
 
