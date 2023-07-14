@@ -80,11 +80,13 @@ export function useWorkflowFromWiki(workspacesList: IWorkspaceWithMetadata[] | u
       return workspacesList?.map?.((workspace, workspaceIndex) => {
         const workflowTiddlersInWorkspace = workflowsByWorkspace[workspaceIndex];
         return workflowTiddlersInWorkspace.map((tiddler) => {
+          // DEBUG: console tiddler
+          console.log(`tiddler`, tiddler);
           const workflowItem: IWorkflowListItem = {
             id: `${workspace.id}:${tiddler.title}`,
             title: tiddler.title,
             description: tiddler.description,
-            tags: tiddler.tags,
+            tags: typeof tiddler.tags === 'string' ? (tiddler.tags as string).split(' ') : tiddler.tags,
             workspaceID: workspace.id,
             image: tiddler['page-cover'],
             metadata: {

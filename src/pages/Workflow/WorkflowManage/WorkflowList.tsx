@@ -1,24 +1,34 @@
-/* eslint-disable unicorn/no-null */
+/* eslint-disable unicorn/no-null, @typescript-eslint/strict-boolean-expressions, unicorn/no-useless-undefined */
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
-import { Box, Button, Card, CardActionArea, CardContent, Fade, Menu, MenuItem, Typography } from '@mui/material';
+import { Box, Button, Card, CardActionArea, CardActions, CardContent, CardMedia, Chip, Fade, Menu, MenuItem, Stack, Typography } from '@mui/material';
 import type { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import is from 'typescript-styled-is';
+import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 import type { IWorkflowTiddler } from './useWorkflowDataSource';
 
-const WorkflowCard = styled(Card)<{ $backgroundImage?: string }>`
-  ${is('$backgroundImage')`
-    background-image: url(${(props: { $backgroundImage: string }) => props.$backgroundImage});
-  `}
-  background-size: cover;
-  background-blend-mode: darken;
+const WorkflowListContainer = styled(Box)`
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: flex-start;
 `;
-
-const WorkflowTitle = styled(Typography)`
-  color: white;
+const WorkflowCard = styled(Card)`
+  display: flex;
+  flex-direction: column;
+  position: relative;
+  width: 300px;
+  justify-content: space-between;
+  margin-right: 1em;
+  margin-bottom: 1em;
+`;
+const ItemMenuCardActions = styled(CardActions)`
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
 `;
 
 interface IWorkflowListItemProps {
@@ -43,15 +53,31 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
   }, [item, onDeleteWorkflow]);
   const menuID = `workflow-list-item-menu-${item.id}`;
   return (
-    <WorkflowCard $backgroundImage={item.image}>
+    <WorkflowCard>
       <CardActionArea>
+        {item.image && (
+          <CardMedia
+            component='img'
+            height='140'
+            image={item.image}
+            alt={`screenshot of workflow ${item.title}`}
+          />
+        )}
         <CardContent>
-          <WorkflowTitle variant='h5'>{item.title}</WorkflowTitle>
+          <Typography gutterBottom variant='h5' component='div'>{item.title}</Typography>
+          {item.tags && (
+            <Stack direction='row' spacing={1} flexWrap='wrap'>
+              {item.tags.map(tag => <Chip key={tag} label={tag} style={{ marginBottom: '0.3em' }} clickable />)}
+            </Stack>
+          )}
         </CardContent>
       </CardActionArea>
-      <Button aria-controls={menuID} aria-haspopup='true' onClick={handleOpenItemMenu}>
-        {anchorElement === null ? <MenuIcon /> : <MenuOpenIcon />}
-      </Button>
+      <ItemMenuCardActions>
+        <Button>{t('Open')}</Button>
+        <Button aria-controls={menuID} aria-haspopup='true' onClick={handleOpenItemMenu}>
+          {anchorElement === null ? <MenuIcon /> : <MenuOpenIcon />}
+        </Button>
+      </ItemMenuCardActions>
       <Menu
         id={menuID}
         anchorEl={anchorElement}
@@ -85,9 +111,30 @@ interface IWorkflowListProps {
 }
 
 export const WorkflowList: React.FC<IWorkflowListProps> = ({ workflows, onDeleteWorkflow }) => {
+  const [itemToDelete, setDeleteItem] = useState<IWorkflowListItem | undefined>();
+  const handleDeleteConfirmed = useCallback(() => {
+    if (itemToDelete) {
+      onDeleteWorkflow(itemToDelete);
+      setDeleteItem(undefined);
+    }
+  }, [itemToDelete, onDeleteWorkflow]);
+  const handleDeleteWithConfirmation = useCallback((item: IWorkflowListItem) => {
+    setDeleteItem(item);
+  }, []);
+  const handleDeleteCancel = useCallback(() => {
+    setDeleteItem(undefined);
+  }, []);
+
   return (
-    <Box>
-      {workflows.map((workflow) => <WorkflowListItem key={workflow.id} item={workflow} onDeleteWorkflow={onDeleteWorkflow} />)}
-    </Box>
+    <>
+      <WorkflowListContainer>
+        {workflows.map((workflow) => <WorkflowListItem key={workflow.id} item={workflow} onDeleteWorkflow={handleDeleteWithConfirmation} />)}
+      </WorkflowListContainer>
+      <DeleteConfirmationDialog
+        open={itemToDelete !== undefined}
+        onCancel={handleDeleteCancel}
+        onConfirm={handleDeleteConfirmed}
+      />
+    </>
   );
 };

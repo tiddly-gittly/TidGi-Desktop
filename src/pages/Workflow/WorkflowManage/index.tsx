@@ -8,6 +8,16 @@ import { AddItemDialog } from './AddItemDialog';
 import { useAvailableFilterTags, useWorkflows } from './useWorkflowDataSource';
 import { IWorkflowListItem, WorkflowList } from './WorkflowList';
 
+const WorkflowManageContainer = styled(Box)`
+  display: flex;
+  flex-direction: column;
+  margin: 1em;
+`;
+const SearchRegionContainer = styled(Box)`
+  display: flex;
+  flex-direction: column;
+  margin-bottom: 1em;
+`;
 const AddNewItemFloatingButton = styled(Fab)`
   position: absolute;
   bottom: 1em;
@@ -44,27 +54,29 @@ export const WorkflowManage: React.FC = () => {
     .filter(workflow => selectedTags.length > 0 ? selectedTags.some(tag => workflow.tags.includes(tag)) : workflow);
 
   return (
-    <Box>
-      <TextField
-        label='Search'
-        value={search}
-        onChange={(event: ChangeEvent<HTMLInputElement>) => {
-          setSearch(event.target.value);
-        }}
-      />
-      <Stack direction='row' spacing={1}>
-        {availableFilterTags.map(tag => (
-          <Chip
-            key={tag}
-            label={tag}
-            clickable
-            color={selectedTags.includes(tag) ? 'primary' : 'default'}
-            onClick={() => {
-              handleTagClick(tag);
-            }}
-          />
-        ))}
-      </Stack>
+    <WorkflowManageContainer>
+      <SearchRegionContainer>
+        <TextField
+          label='Search'
+          value={search}
+          onChange={(event: ChangeEvent<HTMLInputElement>) => {
+            setSearch(event.target.value);
+          }}
+        />
+        <Stack direction='row' spacing={1}>
+          {availableFilterTags.map(tag => (
+            <Chip
+              key={tag}
+              label={tag}
+              clickable
+              color={selectedTags.includes(tag) ? 'primary' : 'default'}
+              onClick={() => {
+                handleTagClick(tag);
+              }}
+            />
+          ))}
+        </Stack>
+      </SearchRegionContainer>
       <WorkflowList workflows={filteredWorkflows} onDeleteWorkflow={onDeleteWorkflow} />
       <AddNewItemFloatingButton color='primary' aria-label='add' onClick={handleOpenDialog}>
         <AddIcon />
@@ -76,6 +88,6 @@ export const WorkflowManage: React.FC = () => {
         availableFilterTags={availableFilterTags}
         workspacesList={workspacesList}
       />
-    </Box>
+    </WorkflowManageContainer>
   );
 };
