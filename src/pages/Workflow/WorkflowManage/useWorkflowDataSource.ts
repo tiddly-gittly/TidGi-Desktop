@@ -11,7 +11,12 @@ export function useAvailableFilterTags(workspacesList: IWorkspaceWithMetadata[] 
     async () => {
       const tasks = workspacesList?.map(async (workspace) => {
         try {
-          const tags = await window.service.wiki.wikiOperation(WikiChannel.runFilter, workspace.id, '[all[tags]!is[missing]!is[system]]');
+          const tags = await window.service.wiki.wikiOperation(
+            WikiChannel.runFilter,
+            workspace.id,
+            // get workflow tiddlers' tags
+            `[all[tiddlers+shadows]tag[${workflowTiddlerTagName}]tags[]!is[system]]`,
+          );
           return tags ?? [];
         } catch {
           // if workspace is hibernated or is subwiki, it will throw error, just return empty tags array
