@@ -114,6 +114,13 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({
                   {...parameters}
                   label={`${t('Tags')} (${t('Workflow.AddTagsDescription')})`}
                   margin='dense'
+                  onBlur={() => {
+                    // add new tag from text in text input, no enter needed.
+                    if (parameters.inputProps.value) {
+                      const newValue = parameters.inputProps.value as string;
+                      setTags(previousTags => [...previousTags.filter(tag => tag !== newValue), newValue]);
+                    }
+                  }}
                 />
               )}
               renderTags={(value, getTagProps) =>
@@ -124,6 +131,7 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({
                     key={option}
                   />
                 ))}
+              clearOnBlur
             />
             <Autocomplete
               options={workspacesList ?? []}

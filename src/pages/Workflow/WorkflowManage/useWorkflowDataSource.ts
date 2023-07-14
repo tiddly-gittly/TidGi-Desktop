@@ -119,7 +119,7 @@ export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefine
       '{}',
       {
         type: 'application/json',
-        tags: newItem.tags,
+        tags: [...newItem.tags, workflowTiddlerTagName],
         description: newItem.description ?? '',
         'page-cover': newItem.image ?? '',
       } satisfies Omit<IWorkflowTiddler, 'text' | 'title'>,
@@ -129,7 +129,8 @@ export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefine
     setWorkflows((workflows) => [...workflows.filter(item => item.title !== newItem.title), newItem]);
     // update tag list in the search region tags filter
     setTagsByWorkspace((previousTagsByWorkspace) => {
-      const newTags = newItem.tags.filter((tag) => !previousTagsByWorkspace[newItem.workspaceID]?.includes(tag));
+      // add newly appeared tags to local state
+      const newTags = newItem.tags.filter((tag) => !previousTagsByWorkspace[newItem.workspaceID]?.includes(tag) && tag !== workflowTiddlerTagName);
       if (newTags.length === 0) return previousTagsByWorkspace;
       const previousTags = previousTagsByWorkspace[newItem.workspaceID] ?? [];
       return {
