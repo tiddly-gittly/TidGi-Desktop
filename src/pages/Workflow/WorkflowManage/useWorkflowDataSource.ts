@@ -102,6 +102,9 @@ export function useWorkflowFromWiki(workspacesList: IWorkspaceWithMetadata[] | u
   return workflowItems;
 }
 
+/**
+ * CRUD and local state of workflows
+ */
 export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefined, setTagsByWorkspace: React.Dispatch<React.SetStateAction<Record<string, string[]>>>) {
   const [workflows, setWorkflows] = useState<IWorkflowListItem[]>([]);
   const initialWorkflows = useWorkflowFromWiki(workspacesList);
@@ -138,6 +141,17 @@ export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefine
         [newItem.workspaceID]: [...previousTags, ...newTags],
       };
     });
-  }, [setTagsByWorkspace]);
-  return [workflows, onAddWorkflow] as const;
+  }, [setTagsByWorkspace, setWorkflows]);
+  const onDeleteWorkflow = useCallback((item: IWorkflowListItem) => {
+    // delete workflow from wiki
+    window.service.wiki.wikiOperation(
+      WikiChannel.deleteTiddler,
+      item.workspaceID,
+      item.title,
+    );
+    // delete workflow from local state
+    setWorkflows((workflows) => workflows.filter(workflow => workflow.id !== item.id));
+  }, [setWorkflows]);
+
+  return [workflows, onAddWorkflow, onDeleteWorkflow] as const;
 }
