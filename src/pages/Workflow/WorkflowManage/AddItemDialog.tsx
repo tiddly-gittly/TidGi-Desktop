@@ -8,7 +8,7 @@ import type { IWorkflowListItem } from './WorkflowList';
 
 interface AddItemDialogProps {
   availableFilterTags: string[];
-  onAdd: (newItem: IWorkflowListItem) => void;
+  onAdd: (newItem: IWorkflowListItem) => Promise<void>;
   onClose: () => void;
   open: boolean;
   workspacesList: IWorkspaceWithMetadata[] | undefined;
@@ -40,7 +40,7 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({
     onClose();
   }, [onClose]);
   const workspaceIDs = useMemo(() => workspacesList?.map(workspace => workspace.id) ?? [], [workspacesList]);
-  const onSubmit = useCallback(() => {
+  const onSubmit = useCallback(async () => {
     const workspaceID = workspaceToSaveTo?.id ?? workspacesList?.[0]?.id;
     if (!workspaceID || !workspaceIDs.includes(workspaceID ?? '')) {
       console.error('No workspaceID found');
@@ -57,9 +57,10 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({
       tags,
       workspaceID,
     };
-    onAdd(newItem);
+    await onAdd(newItem);
     setDoneMessageSnackBarOpen(true);
-  }, [onAdd, tags, title, workspaceIDs, workspaceToSaveTo, workspacesList, setHasError, setDoneMessageSnackBarOpen]);
+    closeAndCleanup();
+  }, [workspaceToSaveTo?.id, workspacesList, workspaceIDs, title, tags, onAdd, closeAndCleanup]);
 
   return (
     <>
@@ -111,7 +112,7 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({
               renderInput={(parameters) => (
                 <TextField
                   {...parameters}
-                  label={t('Tags')}
+                  label={`${t('Tags')} (${t('Workflow.AddTagsDescription')})`}
                   margin='dense'
                 />
               )}

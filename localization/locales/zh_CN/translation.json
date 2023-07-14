@@ -463,6 +463,7 @@
     "AddNewWorkflow": "添加新的工作流",
     "AddNewWorkflowDescription": "创建新的自动化工作流，并保存到所选的工作区Wiki里备份。",
     "AddNewWorkflowDoneMessage": "添加成功",
-    "BelongsToWorkspace": "所属工作区"
+    "BelongsToWorkspace": "所属工作区",
+    "AddTagsDescription": "回车后变成标签的样子才算成功添加"
   }
 }

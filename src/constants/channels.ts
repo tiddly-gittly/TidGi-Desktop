@@ -58,7 +58,7 @@ export enum WikiChannel {
   getTiddlerTextDone = 'wiki-get-tiddler-text-done',
   /**
    * `$tw.wiki.getTiddlersAsJson('[all[]]')`
-   * 
+   *
    * result example:
    * ```js
    * `[

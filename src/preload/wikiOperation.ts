@@ -59,11 +59,32 @@ async function executeTWJavaScriptWhenIdle(script: string, options?: { onlyWhenV
  *
  * @param title tiddler title
  * @param text tiddler text
+ * @param options stringifyed JSON object, is `{}` by default.
  * @param extraMeta extra meta data, is `{}` by default, a JSONStringified object
+ *
+ * ## options
+ *
+ * - withDate: boolean, whether to add `created` and `modified` field to tiddler
  */
-ipcRenderer.on(WikiChannel.addTiddler, async (event, nonceReceived: number, title: string, text: string, extraMeta: string = '{}') => {
+ipcRenderer.on(WikiChannel.addTiddler, async (event, nonceReceived: number, title: string, text: string, extraMeta: string = '{}', optionsString: string = '{}') => {
+  const options = JSON.parse(optionsString) as { withDate?: boolean };
   await executeTWJavaScriptWhenIdle(`
-    $tw.wiki.addTiddler({ title: \`${title}\`, text: \`${text}\`, ...${extraMeta} });
+    const dateObject = {};
+    ${
+    options.withDate === true
+      ? `
+    const existedTiddler = $tw.wiki.getTiddler(\`${title}\`);
+    let created = existedTiddler?.fields?.created;
+    const modified = $tw.utils.stringifyDate(new Date());
+    if (!existedTiddler) {
+      created = $tw.utils.stringifyDate(new Date());
+    }
+    dateObject.created = created;
+    dateObject.modified = modified;
+    `
+      : ''
+  }
+    $tw.wiki.addTiddler({ title: \`${title}\`, text: \`${text}\`, ...${extraMeta}, ...dateObject });
   `);
   ipcRenderer.send(WikiChannel.addTiddler, nonceReceived);
 });

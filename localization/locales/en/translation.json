@@ -460,7 +460,8 @@
     "AddNewWorkflow": "Add new workflow",
     "AddNewWorkflowDescription": "Create a new automated workflow and save it to the selected workspace wiki to backup.",
     "BelongsToWorkspace": "Belongs to workspace",
-    "AddNewWorkflowDoneMessage": "Add successfully"
+    "AddNewWorkflowDoneMessage": "Add successfully",
+    "AddTagsDescription": "press Enter to input a tag"
   },
   "Description": "Description",
   "Tags": "Tags",
