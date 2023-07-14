@@ -461,9 +461,13 @@
     "AddNewWorkflowDescription": "Create a new automated workflow and save it to the selected workspace wiki to backup.",
     "BelongsToWorkspace": "Belongs to workspace",
     "AddNewWorkflowDoneMessage": "Add successfully",
-    "AddTagsDescription": "in-wiki tags, press Enter to add more"
+    "AddTagsDescription": "in-wiki tags, press Enter to add more",
+    "DeleteWorkflow": "Delete Workflow",
+    "DeleteWorkflowDescription": "The workflow will be completely deleted from the Wiki workspace it belongs to, should it really be deleted?"
   },
   "Description": "Description",
   "Tags": "Tags",
-  "Title": "Title"
+  "Title": "Title",
+  "Delete": "Delete",
+  "Open": "Open"
 }
