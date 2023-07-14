@@ -7,7 +7,8 @@ import type { ITiddlerFields } from 'tiddlywiki';
 import { IWorkflowListItem } from './WorkflowList';
 
 export function useAvailableFilterTags(workspacesList: IWorkspaceWithMetadata[] | undefined) {
-  const tagsByWorkspace = usePromiseValue<Record<string, string[]>>(
+  const [tagsByWorkspace, setTagsByWorkspace] = useState<Record<string, string[]>>({});
+  const initialTagsByWorkspace = usePromiseValue<Record<string, string[]>>(
     async () => {
       const tasks = workspacesList?.map(async (workspace) => {
         try {
@@ -32,6 +33,10 @@ export function useAvailableFilterTags(workspacesList: IWorkspaceWithMetadata[] 
     {},
     [workspacesList],
   )!;
+  // loading TagsByWorkspace using filter expression is expensive, so we only do this on initial load. Later just update&use local state value
+  useEffect(() => {
+    setTagsByWorkspace(initialTagsByWorkspace);
+  }, [initialTagsByWorkspace]);
   const allTagsSet = useMemo(() => {
     const allTags = new Set<string>();
     for (const tags of Object.values(tagsByWorkspace)) {
@@ -42,7 +47,7 @@ export function useAvailableFilterTags(workspacesList: IWorkspaceWithMetadata[] 
     return allTags;
   }, [tagsByWorkspace]);
   const allTags = useMemo(() => [...allTagsSet], [allTagsSet]);
-  return [allTags, allTagsSet, tagsByWorkspace] as const;
+  return [allTags, setTagsByWorkspace, allTagsSet, tagsByWorkspace] as const;
 }
 
 export interface IWorkflowTiddler extends ITiddlerFields {
@@ -97,16 +102,41 @@ export function useWorkflowFromWiki(workspacesList: IWorkspaceWithMetadata[] | u
   return workflowItems;
 }
 
-export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefined) {
+export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefined, setTagsByWorkspace: React.Dispatch<React.SetStateAction<Record<string, string[]>>>) {
   const [workflows, setWorkflows] = useState<IWorkflowListItem[]>([]);
   const initialWorkflows = useWorkflowFromWiki(workspacesList);
   // loading workflows using filter expression is expensive, so we only do this on initial load. Later just update&use local state value
   useEffect(() => {
     setWorkflows(initialWorkflows);
   }, [initialWorkflows]);
-  const onAddWorkflow = useCallback((newItem: IWorkflowListItem) => {
-    // TODO: add workflow to wiki
-    setWorkflows((workflows) => [...workflows, newItem]);
-  }, []);
+  const onAddWorkflow = useCallback(async (newItem: IWorkflowListItem) => {
+    // add workflow to wiki
+    await window.service.wiki.wikiOperation(
+      WikiChannel.addTiddler,
+      newItem.workspaceID,
+      newItem.title,
+      // only save an initial value at this creation time
+      '{}',
+      {
+        type: 'application/json',
+        tags: newItem.tags,
+        description: newItem.description ?? '',
+        'page-cover': newItem.image ?? '',
+      } satisfies Omit<IWorkflowTiddler, 'text' | 'title'>,
+      { withDate: true },
+    );
+    // can overwrite a old workflow with same title
+    setWorkflows((workflows) => [...workflows.filter(item => item.title !== newItem.title), newItem]);
+    // update tag list in the search region tags filter
+    setTagsByWorkspace((previousTagsByWorkspace) => {
+      const newTags = newItem.tags.filter((tag) => !previousTagsByWorkspace[newItem.workspaceID]?.includes(tag));
+      if (newTags.length === 0) return previousTagsByWorkspace;
+      const previousTags = previousTagsByWorkspace[newItem.workspaceID] ?? [];
+      return {
+        ...previousTagsByWorkspace,
+        [newItem.workspaceID]: [...previousTags, ...newTags],
+      };
+    });
+  }, [setTagsByWorkspace]);
   return [workflows, onAddWorkflow] as const;
 }

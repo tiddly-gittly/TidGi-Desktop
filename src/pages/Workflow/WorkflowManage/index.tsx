@@ -20,8 +20,8 @@ export const WorkflowManage: React.FC = () => {
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const workspacesList = useWorkspacesListObservable();
-  const [availableFilterTags] = useAvailableFilterTags(workspacesList);
-  const [workflows, onAddWorkflow] = useWorkflows(workspacesList);
+  const [availableFilterTags, setTagsByWorkspace] = useAvailableFilterTags(workspacesList);
+  const [workflows, onAddWorkflow] = useWorkflows(workspacesList, setTagsByWorkspace);
 
   const handleOpenDialog = useCallback(() => {
     setDialogOpen(true);
@@ -30,8 +30,8 @@ export const WorkflowManage: React.FC = () => {
   const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
   }, []);
-  const handleDialogAddWorkflow = useCallback((newItem: IWorkflowListItem) => {
-    onAddWorkflow(newItem);
+  const handleDialogAddWorkflow = useCallback(async (newItem: IWorkflowListItem) => {
+    await onAddWorkflow(newItem);
     handleCloseDialog();
   }, [handleCloseDialog, onAddWorkflow]);
 
