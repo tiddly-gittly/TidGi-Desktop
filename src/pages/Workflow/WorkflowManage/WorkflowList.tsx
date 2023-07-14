@@ -51,6 +51,10 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
     setAnchorElement(null);
     onDeleteWorkflow(item);
   }, [item, onDeleteWorkflow]);
+  const handleOpenInWiki = useCallback(() => {
+    setAnchorElement(null);
+    // TODO: open in wiki
+  }, [item, onDeleteWorkflow]);
   const menuID = `workflow-list-item-menu-${item.id}`;
   return (
     <WorkflowCard>
@@ -87,6 +91,7 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
         TransitionComponent={Fade}
       >
         <MenuItem onClick={handleDelete}>{t('Delete')}</MenuItem>
+        <MenuItem onClick={handleOpenInWiki}>{t('Workflow.OpenInWorkspaceTiddler', { title: item.title, workspace: item.metadata?.workspace?.name ?? t('AddWorkspace.MainWorkspace') })}</MenuItem>
       </Menu>
     </WorkflowCard>
   );

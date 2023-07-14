@@ -18,6 +18,9 @@ const SearchRegionContainer = styled(Box)`
   flex-direction: column;
   margin-bottom: 1em;
 `;
+const SearchBar = styled(TextField)`
+  margin-bottom: 0.5em;
+`;
 const AddNewItemFloatingButton = styled(Fab)`
   position: absolute;
   bottom: 1em;
@@ -56,7 +59,7 @@ export const WorkflowManage: React.FC = () => {
   return (
     <WorkflowManageContainer>
       <SearchRegionContainer>
-        <TextField
+        <SearchBar
           label='Search'
           value={search}
           onChange={(event: ChangeEvent<HTMLInputElement>) => {

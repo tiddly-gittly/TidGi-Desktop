@@ -463,7 +463,8 @@
     "AddNewWorkflowDoneMessage": "Add successfully",
     "AddTagsDescription": "in-wiki tags, press Enter to add more",
     "DeleteWorkflow": "Delete Workflow",
-    "DeleteWorkflowDescription": "The workflow will be completely deleted from the Wiki workspace it belongs to, should it really be deleted?"
+    "DeleteWorkflowDescription": "The workflow will be completely deleted from the Wiki workspace it belongs to, should it really be deleted?",
+    "OpenInWorkspaceTiddler": "Open {{title}} in {{workspace}}"
   },
   "Description": "Description",
   "Tags": "Tags",
