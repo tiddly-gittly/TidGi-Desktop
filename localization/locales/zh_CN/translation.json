@@ -468,6 +468,7 @@
     "DeleteWorkflow": "删除工作流",
     "DeleteWorkflowDescription": "将从所属的Wiki工作区里彻底删除该工作流，是否真的要删除？",
     "BelongsToWorkspace": "所属工作区",
-    "AddTagsDescription": "Wiki内的标签，回车可以添加更多"
+    "AddTagsDescription": "Wiki内的标签，回车可以添加更多",
+    "OpenInWorkspaceTiddler": "在 {{workspace}} 中打开 {{title}}"
   }
 }
