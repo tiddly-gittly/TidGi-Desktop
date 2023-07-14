@@ -23,6 +23,9 @@ export const wikiOperations = {
   [WikiChannel.syncProgress]: (workspaceID: string, message: string): void => {
     sendToMainWindowNoWait(WikiChannel.syncProgress, workspaceID, [message]);
   },
+  [WikiChannel.deleteTiddler]: (workspaceID: string, title: string): void => {
+    sendToMainWindowNoWait(WikiChannel.deleteTiddler, workspaceID, [title]);
+  },
   [WikiChannel.generalNotification]: (workspaceID: string, message: string): void => {
     sendToMainWindowNoWait(WikiChannel.generalNotification, workspaceID, [message]);
   },

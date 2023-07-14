@@ -21,7 +21,7 @@ export const WorkflowManage: React.FC = () => {
 
   const workspacesList = useWorkspacesListObservable();
   const [availableFilterTags, setTagsByWorkspace] = useAvailableFilterTags(workspacesList);
-  const [workflows, onAddWorkflow] = useWorkflows(workspacesList, setTagsByWorkspace);
+  const [workflows, onAddWorkflow, onDeleteWorkflow] = useWorkflows(workspacesList, setTagsByWorkspace);
 
   const handleOpenDialog = useCallback(() => {
     setDialogOpen(true);
@@ -65,7 +65,7 @@ export const WorkflowManage: React.FC = () => {
           />
         ))}
       </Stack>
-      <WorkflowList workflows={filteredWorkflows} />
+      <WorkflowList workflows={filteredWorkflows} onDeleteWorkflow={onDeleteWorkflow} />
       <AddNewItemFloatingButton color='primary' aria-label='add' onClick={handleOpenDialog}>
         <AddIcon />
       </AddNewItemFloatingButton>

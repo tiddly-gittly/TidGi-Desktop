@@ -159,6 +159,11 @@ ipcRenderer.on(WikiChannel.sendActionMessage, async (event, actionMessage: strin
     $tw.rootWidget.dispatchEvent({ type: \`${actionMessage}\` });
   `);
 });
+ipcRenderer.on(WikiChannel.deleteTiddler, async (event, title: string) => {
+  await executeTWJavaScriptWhenIdle(`
+    $tw.wiki.deleteTiddler(\`${title}\`);
+  `);
+});
 
 ipcRenderer.on(WikiChannel.printTiddler, async (event, tiddlerName?: string) => {
   const printer = await import('../services/libs/printer');
