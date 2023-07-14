@@ -1,17 +1,27 @@
 import AddIcon from '@mui/icons-material/Add';
-import { Autocomplete } from '@mui/lab';
-import { Box, Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, DialogTitle, Fab, InputLabel, Stack, TextField } from '@mui/material';
+import { Box, Chip, Fab, Stack, TextField } from '@mui/material';
+import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import React, { ChangeEvent, useCallback, useState } from 'react';
+import styled from 'styled-components';
+
+import { AddItemDialog } from './AddItemDialog';
+import { useAvailableFilterTags, useWorkflows } from './useWorkflowDataSource';
 import { IWorkflowListItem, WorkflowList } from './WorkflowList';
+
+const AddNewItemFloatingButton = styled(Fab)`
+  position: absolute;
+  bottom: 1em;
+  right: 1em;
+`;
 
 export const WorkflowManage: React.FC = () => {
   const [search, setSearch] = useState('');
   const [selectedTags, setSelectedTags] = useState<string[]>([]);
-  const [workflows, setWorkflows] = useState<IWorkflowListItem[]>([]);
-  const [availableFilterTags, setAvailableFilterTags] = useState<string[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
-  const [newWorkflowTitle, setNewWorkflowTitle] = useState('');
-  const [newWorkflowTags, setNewWorkflowTags] = useState<string[]>([]);
+
+  const workspacesList = useWorkspacesListObservable();
+  const [availableFilterTags] = useAvailableFilterTags(workspacesList);
+  const [workflows, onAddWorkflow] = useWorkflows(workspacesList);
 
   const handleOpenDialog = useCallback(() => {
     setDialogOpen(true);
@@ -20,18 +30,10 @@ export const WorkflowManage: React.FC = () => {
   const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
   }, []);
-  const onAddWorkflow = useCallback((newItem: IWorkflowListItem) => {}, []);
-
-  const handleAddWorkflow = useCallback(() => {
-    onAddWorkflow({
-      id: Math.floor(Math.random() * 10_000), // Generate a random id, replace this with proper id
-      title: newWorkflowTitle,
-      tags: newWorkflowTags,
-    });
-    setDialogOpen(false);
-    setNewWorkflowTitle('');
-    setNewWorkflowTags([]);
-  }, [newWorkflowTitle, newWorkflowTags, onAddWorkflow]);
+  const handleDialogAddWorkflow = useCallback((newItem: IWorkflowListItem) => {
+    onAddWorkflow(newItem);
+    handleCloseDialog();
+  }, [handleCloseDialog, onAddWorkflow]);
 
   const handleTagClick = useCallback((tag: string) => {
     setSelectedTags(previous => previous.includes(tag) ? previous.filter(t => t !== tag) : [...previous, tag]);
@@ -64,60 +66,16 @@ export const WorkflowManage: React.FC = () => {
         ))}
       </Stack>
       <WorkflowList workflows={filteredWorkflows} />
-      <Fab color='primary' aria-label='add' onClick={handleOpenDialog}>
+      <AddNewItemFloatingButton color='primary' aria-label='add' onClick={handleOpenDialog}>
         <AddIcon />
-      </Fab>
-      <Dialog open={dialogOpen} onClose={handleCloseDialog}>
-        <DialogTitle>Add Workflow</DialogTitle>
-        <DialogContent>
-          <DialogContentText>Add a new workflow to your list</DialogContentText>
-          <TextField
-            autoFocus
-            margin='dense'
-            label='Title'
-            type='text'
-            fullWidth
-            value={newWorkflowTitle}
-            onChange={event => {
-              setNewWorkflowTitle(event.target.value);
-            }}
-          />
-          <InputLabel>Add Tags</InputLabel>
-          <Autocomplete
-            multiple
-            options={availableFilterTags}
-            freeSolo
-            value={newWorkflowTags}
-            onChange={(event, newValue) => {
-              setNewWorkflowTags(newValue);
-            }}
-            renderInput={(parameters) => (
-              <TextField
-                {...parameters}
-                variant='standard'
-              />
-            )}
-            renderTags={(value, getTagProps) =>
-              value.map((option, index) => (
-                <Chip
-                  label={option}
-                  {...getTagProps({ index })}
-                  key={option}
-                />
-              ))}
-            onInputChange={(event, newInputValue) => {
-              setNewWorkflowTags(previous => [...previous, newInputValue]);
-            }}
-            onBlur={() => {
-              setNewWorkflowTags(previous => previous.filter(tag => tag !== ''));
-            }}
-          />
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCloseDialog}>Cancel</Button>
-          <Button onClick={handleAddWorkflow}>Add</Button>
-        </DialogActions>
-      </Dialog>
+      </AddNewItemFloatingButton>
+      <AddItemDialog
+        open={dialogOpen}
+        onClose={handleCloseDialog}
+        onAdd={handleDialogAddWorkflow}
+        availableFilterTags={availableFilterTags}
+        workspacesList={workspacesList}
+      />
     </Box>
   );
 };

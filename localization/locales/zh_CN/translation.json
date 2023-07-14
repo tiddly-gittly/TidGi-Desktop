@@ -449,6 +449,9 @@
   "ClickForDetails": "点击了解详情",
   "Yes": "是的",
   "No": "不了",
+  "Title": "标题",
+  "Description": "描述",
+  "Tags": "标签",
   "LanguageModel": {
     "ModelNotExist": "找不到模型",
     "ModelNotExistDescription": "尝试使用你给的这个路径加载模型，但在这个位置其实没有所需要的模型",
@@ -456,6 +459,10 @@
   },
   "Workflow": {
     "Title": "工作流",
-    "SearchComponents": "搜索可用组件"
+    "SearchComponents": "搜索可用组件",
+    "AddNewWorkflow": "添加新的工作流",
+    "AddNewWorkflowDescription": "创建新的自动化工作流，并保存到所选的工作区Wiki里备份。",
+    "AddNewWorkflowDoneMessage": "添加成功",
+    "BelongsToWorkspace": "所属工作区"
   }
 }

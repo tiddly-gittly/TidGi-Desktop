@@ -11,7 +11,7 @@ export function useInitialPage() {
   const [alreadyInitialized, alreadyInitializedSetter] = useState(false);
   useEffect(() => {
     if (initialActivePage !== undefined && !alreadyInitialized) {
-      setLocation(`/${WindowNames.main}/${initialActivePage.type}/${initialActivePage.id}/`);
+      setLocation(`/${WindowNames.main}/${initialActivePage.type}/`);
       alreadyInitializedSetter(true);
     }
   }, [setLocation, initialActivePage, alreadyInitialized, alreadyInitializedSetter]);
