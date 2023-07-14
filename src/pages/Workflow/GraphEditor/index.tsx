@@ -116,8 +116,6 @@ export function GraphEditor() {
   useEffect(() => {
     void (async () => {
       const libraryToLoad = await getBrowserComponentLibrary();
-      // DEBUG: console libraryToLoad
-      console.log(`libraryToLoad`, libraryToLoad);
       setLibrary(libraryToLoad);
     })();
   }, []);

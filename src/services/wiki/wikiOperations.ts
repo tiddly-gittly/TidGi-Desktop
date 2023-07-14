@@ -32,6 +32,9 @@ export const wikiOperations = {
   [WikiChannel.setState]: (workspaceID: string, stateKey: WikiStateKey, content: string): void => {
     sendToMainWindowNoWait(WikiChannel.setState, workspaceID, [stateKey, content]);
   },
+  [WikiChannel.getTiddlersAsJson]: async <T extends string>(workspaceID: string, filterString: string): Promise<T | undefined> => {
+    return await sendToMainWindowAndAwait<T>(WikiChannel.getTiddlersAsJson, workspaceID, [filterString]);
+  },
   [WikiChannel.runFilter]: async <T extends string[]>(workspaceID: string, filterString: string): Promise<T | undefined> => {
     return await sendToMainWindowAndAwait<T>(WikiChannel.runFilter, workspaceID, [filterString]);
   },

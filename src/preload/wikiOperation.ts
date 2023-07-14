@@ -80,6 +80,15 @@ ipcRenderer.on(WikiChannel.runFilter, async (event, nonceReceived: number, filte
   `) as Promise<string[]>);
   ipcRenderer.send(WikiChannel.runFilter, nonceReceived, filterResult);
 });
+ipcRenderer.on(WikiChannel.getTiddlersAsJson, async (event, nonceReceived: number, filter: string) => {
+  /**
+   * Result is a stringified JSON array, which is a string. We just return the string, which is cheaper than ipc passing a large object array.
+   */
+  const filterResult: string = await (webFrame.executeJavaScript(`
+    $tw.wiki.getTiddlersAsJson(\`${filter}\`)
+  `) as Promise<string>);
+  ipcRenderer.send(WikiChannel.getTiddlersAsJson, nonceReceived, filterResult);
+});
 // set tiddler text, we use workspaceID as callback id
 ipcRenderer.on(WikiChannel.setTiddlerText, async (event, nonceReceived: number, title: string, value: string) => {
   await executeTWJavaScriptWhenIdle(`
