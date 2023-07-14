@@ -40,8 +40,8 @@ export const WorkflowManage: React.FC = () => {
   }, []);
 
   const filteredWorkflows = workflows
-    .filter(workflow => workflow.title.includes(search))
-    .filter(workflow => selectedTags.some(tag => workflow.tags.includes(tag)));
+    .filter(workflow => search.length > 0 ? workflow.title.includes(search) : workflow)
+    .filter(workflow => selectedTags.length > 0 ? selectedTags.some(tag => workflow.tags.includes(tag)) : workflow);
 
   return (
     <Box>
