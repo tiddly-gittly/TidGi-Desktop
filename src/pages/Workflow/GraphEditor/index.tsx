@@ -3,11 +3,13 @@
 import { sidebarWidth } from '@/constants/style';
 import { useThemeObservable } from '@services/theme/hooks';
 import { type Graph, loadJSON } from 'fbp-graph/lib/Graph';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import type { IFBPLibrary } from 'the-graph';
+import type { IFBPLibrary, ITheGraphEditor } from 'the-graph';
 import TheGraph from 'the-graph';
+import { Component as ThumbnailNav } from 'the-graph/the-graph-nav/the-graph-nav';
 import 'the-graph/themes/the-graph-dark.css';
 import 'the-graph/themes/the-graph-light.css';
 import '@fortawesome/fontawesome-free/js/all.js';
@@ -15,7 +17,6 @@ import '@fortawesome/fontawesome-free/css/all.css';
 import '@fortawesome/fontawesome-free/css/v4-font-face.css';
 
 import { photoboothJSON } from '../photobooth.json';
-import { TheGraphErrorBoundary } from './components/ErrorBoundary';
 import { SearchComponents } from './components/SearchComponents';
 import { getBrowserComponentLibrary } from './library';
 import { useMenu } from './menu';
@@ -138,10 +139,10 @@ export function GraphEditor() {
     setGraph,
   });
   const { addMenu, addMenuCallback, addMenuAction, getMenuDef } = useMenu();
-
+  const editorReference = useRef<ITheGraphEditor>();
   if (!graph || !library) return <div>{t('Loading')}</div>;
   return (
-    <TheGraphErrorBoundary>
+    <ErrorBoundary fallback={<div>Something went wrong</div>}>
       <TheGraphContainer className={`the-graph-${theme?.shouldUseDarkColors ? 'dark' : 'light'}`}>
         <TheGraph.App
           graph={graph}
@@ -154,18 +155,25 @@ export function GraphEditor() {
           onPanScale={onPanScale}
           onNodeSelection={onNodeSelection}
           onEdgeSelection={onEdgeSelection}
+          getEditorRef={editorReference}
         />
       </TheGraphContainer>
       <ThumbnailContainer>
-        <TheGraph.nav.Component
+        <ThumbnailNav
           height={162}
           width={216}
           graph={graph}
-          viewrectangle={[pan[0] + sidebarWidth, pan[1], window.innerWidth, window.innerHeight]}
+          viewrectangle={[pan[0] + sidebarWidth * scale, pan[1], window.innerWidth - sidebarWidth * scale, window.innerHeight]}
           viewscale={scale}
+          onTap={() => {
+            editorReference?.current?.triggerFit();
+          }}
+          onPanTo={(panTo, event) => {
+            editorReference?.current?.setState(panTo);
+          }}
         />
       </ThumbnailContainer>
       <SearchComponents library={library} addNode={addNode} />
-    </TheGraphErrorBoundary>
+    </ErrorBoundary>
   );
 }

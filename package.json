@@ -193,6 +193,7 @@
     "path-browserify": "^1.0.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
+    "react-error-boundary": "^4.0.10",
     "react-helmet": "6.1.0",
     "react-i18next": "13.0.2",
     "rimraf": "^5.0.1",
@@ -217,6 +218,9 @@
   "pnpm": {
     "overrides": {
       "fbp-graph": "$fbp-graph"
+    },
+    "patchedDependencies": {
+      "the-graph@0.13.1": "patches/the-graph@0.13.1.patch"
     }
   },
   "private": false

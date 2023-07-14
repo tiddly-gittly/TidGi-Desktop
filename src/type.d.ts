@@ -10,15 +10,27 @@ declare module '@tiddlygit/tiddlywiki' {
 }
 
 declare module 'the-graph' {
-  import { Graph } from 'fbp-graph';
+  import { Graph, GraphEdge, GraphNode } from 'fbp-graph';
+  import { MutableRefObject } from 'react';
+  import { Component as NoFloComponent } from 'noflo';
 
+  export interface ITheGraphEditorContextMenuOptions {
+    element: ITheGraphEditor;
+    graph: Graph;
+    item: Graph | GraphNode | GraphEdge;
+    itemKey: 'graph' | 'node' | 'edge';
+    /**
+     * Keyof this.props.menus
+     * For example, `'main'`
+     */
+    type: string;
+    x?: number;
+    y?: number;
+  }
   export interface ITheGraphProps {
-    getMenuDef?: (options: {
-      graph: any;
-      item: any;
-      itemKey: any;
-      type: string;
-    }) => any;
+    contextMenu?: contextMenu;
+    getEditorRef?: MutableRefObject<ITheGraphEditor | undefined>;
+    getMenuDef?: (options: ITheGraphEditorContextMenuOptions) => any;
     graph: Graph;
     height: number | string;
     library?: IFBPLibrary;
@@ -27,8 +39,61 @@ declare module 'the-graph' {
     onNodeSelection: (nodeID: string, node: any, toggle: boolean) => void;
     onPanScale: (x: number, y: number, scale: number) => void;
     readonly: boolean;
-    ref?: RefObject<HTMLDivElement>;
     width: number | string;
+  }
+  export interface ITheGraphEditorState {
+    height: number;
+    maxZoom: number;
+    minZoom: number;
+    scale: number;
+    tooltip: string;
+    tooltipVisible: boolean;
+    tooltipX: number;
+    tooltipY: number;
+    trackStartX: number | null;
+    trackStartY: number | null;
+    width: number;
+    x: number;
+    y: number;
+  }
+  /**
+   * Things accessible in the-graph/the-graph-app.js
+   */
+  export interface ITheGraphEditor {
+    debounceLibraryRefesh: () => void;
+    dirty: boolean;
+    focusNode: (node: GraphNode) => void;
+    getComponent: (name: string) => void;
+    hideContext: () => void;
+    lastScale: number;
+    lastX: number;
+    lastY: number;
+    library: IFBPLibrary;
+    libraryDirty: boolean;
+    pinching: boolean;
+    registerComponent: (definition: NoFloComponent, generated: boolean) => void;
+    /**
+     * This is undefined, because it is in the-graph/the-graph-graph.js
+     * Set the preview bounding rect by drag event
+     * In the-graph/the-graph-graph.js
+     * ```js
+     * appDomNode.addEventListener('mousemove', this.renderPreviewEdge);
+     * appDomNode.addEventListener('panmove', this.renderPreviewEdge);
+     * appDomNode.addEventListener('tap', this.cancelPreviewEdge);
+      ```
+     */
+    renderPreviewEdge?: (event: MouseEvent | TouchEvent) => void;
+    rerender: () => void;
+    setState: (state: Partial<ITheGraphEditorState>) => void;
+    showContext: (options: ITheGraphEditorContextMenuOptions) => void;
+    state: ITheGraphEditorState;
+    theme: 'dark' | 'light';
+    triggerAutolayout: () => void;
+    triggerFit: () => void;
+    unselectAll: () => void;
+    zoomFactor: number;
+    zoomX: number;
+    zoomY: number;
   }
   export function App(props: ITheGraphProps): JSX.Element;
 
@@ -142,9 +207,12 @@ declare module 'the-graph' {
   export interface ITheGraphNavProps {
     graph: Graph;
     height: number;
-    onPanTo?: () => void;
+    onPanTo?: (panTo: {
+      x: number;
+      y: number;
+    }, event: MouseEvent) => void;
     onTap?: () => void;
-    viewrectangle: number[];
+    viewrectangle?: number[];
     viewscale: number;
     width: number;
   }
@@ -164,6 +232,10 @@ declare module 'the-graph' {
     ```
    */
   export const FONT_AWESOME: Record<string, string>;
+}
+declare module 'the-graph/the-graph-nav/the-graph-nav' {
+  import { nav } from 'the-graph';
+  export const Component = nav.Component;
 }
 
 declare module 'espree' {
