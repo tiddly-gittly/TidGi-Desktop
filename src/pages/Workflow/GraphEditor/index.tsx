@@ -29,9 +29,8 @@ const TheGraphContainer = styled.main`
   */
   width: ${window.innerWidth - sidebarWidth}px;
   overflow-x: hidden;
-  left: ${sidebarWidth}px;
+
   .the-graph-app > svg, .the-graph-app > canvas {
-    left: -${sidebarWidth}px !important;
   }
   &.the-graph-light .the-graph-app, &.the-graph-dark .the-graph-app {
     background-color: ${({ theme }) => theme.palette.background.default};
@@ -99,12 +98,12 @@ export function GraphEditor() {
           height={162}
           width={216}
           graph={graph}
-          viewrectangle={[pan[0] + sidebarWidth * scale, pan[1], window.innerWidth - sidebarWidth * scale, window.innerHeight]}
+          viewrectangle={[pan[0], pan[1], window.innerWidth - sidebarWidth, window.innerHeight]}
           viewscale={scale}
           onTap={() => {
             editorReference?.current?.triggerFit();
           }}
-          onPanTo={(panTo, event) => {
+          onPanTo={(panTo) => {
             editorReference?.current?.setState(panTo);
           }}
         />
