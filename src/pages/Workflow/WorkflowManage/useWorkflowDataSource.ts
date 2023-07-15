@@ -65,12 +65,12 @@ export function useWorkflowFromWiki(workspacesList: IWorkspaceWithMetadata[] | u
     async () => {
       const tasks = workspacesList?.map(async (workspace) => {
         try {
-          const workflowTiddlersJSONString = await window.service.wiki.wikiOperation(
+          const workflowTiddlers = await window.service.wiki.wikiOperation(
             WikiChannel.getTiddlersAsJson,
             workspace.id,
             `[all[tiddlers+shadows]tag[${workflowTiddlerTagName}]]`,
           );
-          return JSON.parse(workflowTiddlersJSONString ?? '[]') as IWorkflowTiddler[];
+          return (workflowTiddlers ?? []) as IWorkflowTiddler[];
         } catch {
           // if workspace is hibernated or is subwiki, it will throw error, just return empty workflows array
           return [];
@@ -80,13 +80,11 @@ export function useWorkflowFromWiki(workspacesList: IWorkspaceWithMetadata[] | u
       return workspacesList?.map?.((workspace, workspaceIndex) => {
         const workflowTiddlersInWorkspace = workflowsByWorkspace[workspaceIndex];
         return workflowTiddlersInWorkspace.map((tiddler) => {
-          // DEBUG: console tiddler
-          console.log(`tiddler`, tiddler);
           const workflowItem: IWorkflowListItem = {
             id: `${workspace.id}:${tiddler.title}`,
             title: tiddler.title,
             description: tiddler.description,
-            tags: typeof tiddler.tags === 'string' ? (tiddler.tags as string).split(' ') : tiddler.tags,
+            tags: tiddler.tags.filter(item => item !== workflowTiddlerTagName),
             workspaceID: workspace.id,
             image: tiddler['page-cover'],
             metadata: {

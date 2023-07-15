@@ -9,6 +9,7 @@
  */
 import { WikiChannel } from '@/constants/channels';
 import { ipcRenderer, webFrame } from 'electron';
+import type { ITiddlerFields } from 'tiddlywiki';
 
 export const wikiOperations = {
   [WikiChannel.setState]: async (stateKey: string, content: string) => {
@@ -103,11 +104,15 @@ ipcRenderer.on(WikiChannel.runFilter, async (event, nonceReceived: number, filte
 });
 ipcRenderer.on(WikiChannel.getTiddlersAsJson, async (event, nonceReceived: number, filter: string) => {
   /**
-   * Result is a stringified JSON array, which is a string. We just return the string, which is cheaper than ipc passing a large object array.
+   * Modified from `$tw.wiki.getTiddlersAsJson` (it will turn tags into string, so we are not using it.)
+   * This modified version will return Object
    */
-  const filterResult: string = await (webFrame.executeJavaScript(`
-    $tw.wiki.getTiddlersAsJson(\`${filter}\`)
-  `) as Promise<string>);
+  const filterResult: ITiddlerFields = await (webFrame.executeJavaScript(`
+    $tw.wiki.filterTiddlers(\`${filter}\`).map(title => {
+      const tiddler = $tw.wiki.getTiddler(title);
+      return tiddler?.fields;
+    }).filter(item => item !== undefined)
+  `) as Promise<ITiddlerFields>);
   ipcRenderer.send(WikiChannel.getTiddlersAsJson, nonceReceived, filterResult);
 });
 // set tiddler text, we use workspaceID as callback id
