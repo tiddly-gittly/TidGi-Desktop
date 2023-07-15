@@ -1,7 +1,7 @@
 /* eslint-disable unicorn/no-null, @typescript-eslint/strict-boolean-expressions, unicorn/no-useless-undefined */
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
-import { Box, Button, Card, CardActionArea, CardActions, CardContent, CardMedia, Chip, Fade, Menu, MenuItem, Stack, Typography } from '@mui/material';
+import { Box, Button, Card, CardActionArea, CardActions, CardContent, CardMedia, Chip, Fade, Grid, Menu, MenuItem, Stack, Typography } from '@mui/material';
 import type { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -91,7 +91,9 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
         TransitionComponent={Fade}
       >
         <MenuItem onClick={handleDelete}>{t('Delete')}</MenuItem>
-        <MenuItem onClick={handleOpenInWiki}>{t('Workflow.OpenInWorkspaceTiddler', { title: item.title, workspace: item.metadata?.workspace?.name ?? t('AddWorkspace.MainWorkspace') })}</MenuItem>
+        <MenuItem onClick={handleOpenInWiki}>
+          {t('Workflow.OpenInWorkspaceTiddler', { title: item.title, workspace: item.metadata?.workspace?.name ?? t('AddWorkspace.MainWorkspace') })}
+        </MenuItem>
       </Menu>
     </WorkflowCard>
   );
@@ -133,7 +135,13 @@ export const WorkflowList: React.FC<IWorkflowListProps> = ({ workflows, onDelete
   return (
     <>
       <WorkflowListContainer>
-        {workflows.map((workflow) => <WorkflowListItem key={workflow.id} item={workflow} onDeleteWorkflow={handleDeleteWithConfirmation} />)}
+        <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
+          {workflows.map((workflow) => (
+            <Grid item xs={2} sm={4} md={4} key={workflow.id}>
+              <WorkflowListItem item={workflow} onDeleteWorkflow={handleDeleteWithConfirmation} />
+            </Grid>
+          ))}
+        </Grid>
       </WorkflowListContainer>
       <DeleteConfirmationDialog
         open={itemToDelete !== undefined}
