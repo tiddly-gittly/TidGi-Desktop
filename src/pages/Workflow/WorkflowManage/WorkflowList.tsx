@@ -3,24 +3,31 @@
 import { WikiChannel } from '@/constants/channels';
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
-import { Box, Button, Card, CardActionArea, CardActions, CardContent, CardMedia, Chip, Fade, Grid, Menu, MenuItem, Stack, Typography } from '@mui/material';
+import { Box, Button, Card, CardActionArea, CardActions, CardContent, CardMedia, Chip, Fade, Menu, MenuItem, Stack, Typography } from '@mui/material';
 import { PageType } from '@services/pages/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import React, { useCallback, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import Masonry from 'react-masonry-css';
 import styled from 'styled-components';
 import { useLocation } from 'wouter';
+
 import { WorkflowContext } from '../useContext';
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 import type { IWorkflowTiddler } from './useWorkflowDataSource';
 
 const WorkflowListContainer = styled(Box)`
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  justify-content: flex-start;
-  align-items: flex-start;
+  width: 100%;
+  .masonry-grid {
+    display: flex;
+    margin-left: -30px; /* gutter size offset */
+    width: auto;
+  }
+  .masonry-grid_column {
+    padding-left: 30px; /* gutter size */
+    background-clip: padding-box;
+  }
 `;
 const WorkflowCard = styled(Card)`
   display: flex;
@@ -169,13 +176,17 @@ export const WorkflowList: React.FC<IWorkflowListProps> = ({ workflows, onDelete
   return (
     <>
       <WorkflowListContainer>
-        <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
+        <Masonry
+          breakpointCols={{ default: 4, 1320: 3, 990: 2, 680: 1 }}
+          className='masonry-grid'
+          columnClassName='masonry-grid_column'
+        >
           {workflows.map((workflow) => (
-            <Grid item xs={2} sm={4} md={4} key={workflow.id}>
-              <WorkflowListItem item={workflow} onDeleteWorkflow={handleDeleteWithConfirmation} handleOpenChangeMetadataDialog={handleOpenChangeMetadataDialog} />
-            </Grid>
+            <div key={workflow.id}>
+              <WorkflowListItem key={workflow.id} item={workflow} onDeleteWorkflow={handleDeleteWithConfirmation} handleOpenChangeMetadataDialog={handleOpenChangeMetadataDialog} />
+            </div>
           ))}
-        </Grid>
+        </Masonry>
       </WorkflowListContainer>
       <DeleteConfirmationDialog
         open={itemToDelete !== undefined}
