@@ -196,6 +196,7 @@
     "react-error-boundary": "^4.0.10",
     "react-helmet": "6.1.0",
     "react-i18next": "13.0.2",
+    "react-masonry-css": "^1.0.16",
     "rimraf": "^5.0.1",
     "simplebar": "6.2.5",
     "simplebar-react": "3.2.4",
