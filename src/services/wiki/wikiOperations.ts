@@ -10,6 +10,7 @@ import { sendToMainWindowAndAwait, sendToMainWindowNoWait } from '@services/libs
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
+import type { ITiddlerFields } from 'tiddlywiki';
 
 /**
  * Handle sending message to trigger operations defined in `src/preload/wikiOperation.ts`
@@ -35,7 +36,7 @@ export const wikiOperations = {
   [WikiChannel.setState]: (workspaceID: string, stateKey: WikiStateKey, content: string): void => {
     sendToMainWindowNoWait(WikiChannel.setState, workspaceID, [stateKey, content]);
   },
-  [WikiChannel.getTiddlersAsJson]: async <T extends string>(workspaceID: string, filterString: string): Promise<T | undefined> => {
+  [WikiChannel.getTiddlersAsJson]: async <T extends ITiddlerFields>(workspaceID: string, filterString: string): Promise<T | undefined> => {
     return await sendToMainWindowAndAwait<T>(WikiChannel.getTiddlersAsJson, workspaceID, [filterString]);
   },
   [WikiChannel.runFilter]: async <T extends string[]>(workspaceID: string, filterString: string): Promise<T | undefined> => {
