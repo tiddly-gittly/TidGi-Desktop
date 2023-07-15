@@ -1,10 +1,10 @@
 import { sidebarWidth } from '@/constants/style';
-import EditIcon from '@mui/icons-material/Edit';
+import EditOnIcon from '@mui/icons-material/Edit';
+import EditLocationAltIcon from '@mui/icons-material/EditLocationAlt';
+import EditOffIcon from '@mui/icons-material/EditOff';
 import HomeIcon from '@mui/icons-material/Home';
 import InfoIcon from '@mui/icons-material/Info';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
-import VisibilityOnIcon from '@mui/icons-material/Visibility';
-import VisibilityOffIcon from '@mui/icons-material/VisibilityOff';
 import ZoomOutMapIcon from '@mui/icons-material/ZoomOutMap';
 import { IconButton, Toolbar, Tooltip } from '@mui/material';
 import { PageType } from '@services/pages/interface';
@@ -23,11 +23,22 @@ import { searchBarWidth } from './styleConstant';
 
 const ToolbarContainer = styled(Toolbar)`
   position: absolute;
-  top: 1em;
   left: ${sidebarWidth + searchBarWidth}px;
   min-height: unset;
-  /** same as the search bar */
-  height: 56px;
+  /** search bar height is 56, button height is 40 */
+  height: 40px;
+  top: calc(1em + (56px - 40px) / 2);
+  background-color: rgba(255,255,255,0.3);
+  backdrop-filter: blur(10px);
+  border-top-right-radius: 1em;
+  border-bottom-right-radius: 1em;
+  padding: 0;
+
+  opacity: 0.3;
+  &:hover {
+    opacity: 1;
+  }
+  transition: opacity 0.3s ease-in-out;
 `;
 
 interface IGraphTopToolbarProps {
@@ -90,9 +101,9 @@ export const GraphTopToolbar = (props: IGraphTopToolbarProps) => {
             <HomeIcon />
           </IconButton>
         </Tooltip>
-        <Tooltip title={readonly ? t('Workflow.ToggleOnReadonly') : t('Workflow.ToggleOffReadonly')}>
+        <Tooltip title={readonly ? t('Workflow.ToggleOffReadonly') : t('Workflow.ToggleOnReadonly')}>
           <IconButton onClick={toggleReadonly}>
-            {readonly ? <VisibilityOnIcon /> : <VisibilityOffIcon />}
+            {readonly ? <EditOnIcon /> : <EditOffIcon />}
           </IconButton>
         </Tooltip>
         <Tooltip title={t('Workflow.ZoomToFit')}>
@@ -107,7 +118,7 @@ export const GraphTopToolbar = (props: IGraphTopToolbarProps) => {
         </Tooltip>
         <Tooltip title={t('Workflow.ChangeSelectedItemInfo')}>
           <IconButton onClick={changeSelectedItemInfo}>
-            <EditIcon />
+            <EditLocationAltIcon />
           </IconButton>
         </Tooltip>
       </ToolbarContainer>
