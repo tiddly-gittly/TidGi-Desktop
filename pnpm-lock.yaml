@@ -5,7 +5,7 @@ overrides:
 
 patchedDependencies:
   the-graph@0.13.1:
-    hash: qh2oubvi5pucujczogjikyo55e
+    hash: 7l2bhm362kxjhsgmmhtyhvw7ga
     path: patches/the-graph@0.13.1.patch
 
 dependencies:
@@ -516,7 +516,7 @@ devDependencies:
     version: 6.0.3(react-dom@18.2.0)(react@18.2.0)
   the-graph:
     specifier: ^0.13.1
-    version: 0.13.1(patch_hash=qh2oubvi5pucujczogjikyo55e)(react-dom@18.2.0)(react@18.2.0)
+    version: 0.13.1(patch_hash=7l2bhm362kxjhsgmmhtyhvw7ga)(react-dom@18.2.0)(react@18.2.0)
   threads-plugin:
     specifier: 1.4.0
     version: 1.4.0(@babel/types@7.22.5)(webpack@5.88.1)
@@ -13412,7 +13412,7 @@ packages:
     resolution: {integrity: sha1-f17oI66AUgfACvLfSoTsP8+lcLQ=}
     dev: true
 
-  /the-graph@0.13.1(patch_hash=qh2oubvi5pucujczogjikyo55e)(react-dom@18.2.0)(react@18.2.0):
+  /the-graph@0.13.1(patch_hash=7l2bhm362kxjhsgmmhtyhvw7ga)(react-dom@18.2.0)(react@18.2.0):
     resolution: {integrity: sha512-MaXkGQGKfndu7PNmfNayUli0DRWVuDpSpKnVVMu2HbRGUGJv4HHp9W8mHXB/ncoOmjrZD72IShvQK32O+63Kng==}
     hasBin: true
     peerDependencies:
