@@ -2,6 +2,7 @@ import AddIcon from '@mui/icons-material/Add';
 import { Box, Chip, Fab, Stack, TextField } from '@mui/material';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import React, { ChangeEvent, useCallback, useState } from 'react';
+import SimpleBar from 'simplebar-react';
 import styled from 'styled-components';
 
 import { AddItemDialog } from './AddItemDialog';
@@ -12,11 +13,16 @@ const WorkflowManageContainer = styled(Box)`
   display: flex;
   flex-direction: column;
   margin: 1em;
+
+  width: 100%;
+  height: 100vh;
+  overflow: auto;
 `;
 const SearchRegionContainer = styled(Box)`
   display: flex;
   flex-direction: column;
   margin-bottom: 1em;
+  width: 100%;
 `;
 const SearchBar = styled(TextField)`
   margin-bottom: 0.5em;
@@ -58,29 +64,31 @@ export const WorkflowManage: React.FC = () => {
 
   return (
     <WorkflowManageContainer>
-      <SearchRegionContainer>
-        <SearchBar
-          label='Search'
-          value={search}
-          onChange={(event: ChangeEvent<HTMLInputElement>) => {
-            setSearch(event.target.value);
-          }}
-        />
-        <Stack direction='row' spacing={1}>
-          {availableFilterTags.map(tag => (
-            <Chip
-              key={tag}
-              label={tag}
-              clickable
-              color={selectedTags.includes(tag) ? 'primary' : 'default'}
-              onClick={() => {
-                handleTagClick(tag);
-              }}
-            />
-          ))}
-        </Stack>
-      </SearchRegionContainer>
-      <WorkflowList workflows={filteredWorkflows} onDeleteWorkflow={onDeleteWorkflow} />
+      <SimpleBar>
+        <SearchRegionContainer>
+          <SearchBar
+            label='Search'
+            value={search}
+            onChange={(event: ChangeEvent<HTMLInputElement>) => {
+              setSearch(event.target.value);
+            }}
+          />
+          <Stack direction='row' spacing={1}>
+            {availableFilterTags.map(tag => (
+              <Chip
+                key={tag}
+                label={tag}
+                clickable
+                color={selectedTags.includes(tag) ? 'primary' : 'default'}
+                onClick={() => {
+                  handleTagClick(tag);
+                }}
+              />
+            ))}
+          </Stack>
+        </SearchRegionContainer>
+        <WorkflowList workflows={filteredWorkflows} onDeleteWorkflow={onDeleteWorkflow} />
+      </SimpleBar>
       <AddNewItemFloatingButton color='primary' aria-label='add' onClick={handleOpenDialog}>
         <AddIcon />
       </AddNewItemFloatingButton>
