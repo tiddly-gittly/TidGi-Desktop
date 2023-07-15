@@ -465,10 +465,20 @@
     "AddNewWorkflow": "添加新的工作流",
     "AddNewWorkflowDescription": "创建新的自动化工作流，并保存到所选的工作区Wiki里备份。",
     "AddNewWorkflowDoneMessage": "添加成功",
+    "ChangeWorkflowMetadataDoneMessage": "修改成功",
     "DeleteWorkflow": "删除工作流",
     "DeleteWorkflowDescription": "将从所属的Wiki工作区里彻底删除该工作流，是否真的要删除？",
     "BelongsToWorkspace": "所属工作区",
     "AddTagsDescription": "Wiki内的标签，回车可以添加更多",
-    "OpenInWorkspaceTiddler": "在 {{workspace}} 中打开 {{title}}"
+    "OpenInWorkspaceTiddler": "在 {{workspace}} 中打开 {{title}}",
+    "RunWorkflow": "运行工作流",
+    "BackToHome": "返回列表页",
+    "ToggleOnReadonly": "打开只读状态",
+    "ToggleOffReadonly": "关闭只读状态",
+    "ZoomToFit": "缩放到合适大小",
+    "ChangeWorkflowMetadata": "修改本流程图的元信息",
+    "ChangeMetadata": "修改元信息",
+    "ChangeWorkflowMetadataDescription": "修改所选的自动化工作流，并保存到所选的工作区Wiki里备份。",
+    "ChangeSelectedItemInfo": "修改选中的物体的信息"
   }
 }

@@ -38,12 +38,13 @@ const ItemMenuCardActions = styled(CardActions)`
 `;
 
 interface IWorkflowListItemProps {
+  handleOpenChangeMetadataDialog: (item: IWorkflowListItem) => void;
   item: IWorkflowListItem;
   onDeleteWorkflow: (item: IWorkflowListItem) => void;
 }
 export function WorkflowListItem(props: IWorkflowListItemProps) {
   const { t } = useTranslation();
-  const { onDeleteWorkflow, item } = props;
+  const { onDeleteWorkflow, item, handleOpenChangeMetadataDialog: handleOpenChangeMetadataDialogRaw } = props;
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
 
   const handleOpenItemMenu = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -57,6 +58,10 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
     setAnchorElement(null);
     onDeleteWorkflow(item);
   }, [item, onDeleteWorkflow]);
+  const handleOpenChangeMetadataDialog = useCallback(() => {
+    setAnchorElement(null);
+    handleOpenChangeMetadataDialogRaw(item);
+  }, [item, handleOpenChangeMetadataDialogRaw]);
 
   const [, setLocation] = useLocation();
   const handleOpenInWiki = useCallback(async () => {
@@ -110,6 +115,11 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
         TransitionComponent={Fade}
       >
         <MenuItem onClick={handleDelete}>{t('Delete')}</MenuItem>
+        <MenuItem
+          onClick={handleOpenChangeMetadataDialog}
+        >
+          {t('Workflow.ChangeMetadata')}
+        </MenuItem>
         <MenuItem onClick={handleOpenInWiki}>
           {t('Workflow.OpenInWorkspaceTiddler', { title: item.title, workspace: item.metadata?.workspace?.name ?? t('AddWorkspace.MainWorkspace') })}
         </MenuItem>
@@ -136,11 +146,12 @@ export interface IWorkflowListItem {
 }
 
 interface IWorkflowListProps {
+  handleOpenChangeMetadataDialog: (item: IWorkflowListItem) => void;
   onDeleteWorkflow: (item: IWorkflowListItem) => void;
   workflows: IWorkflowListItem[];
 }
 
-export const WorkflowList: React.FC<IWorkflowListProps> = ({ workflows, onDeleteWorkflow }) => {
+export const WorkflowList: React.FC<IWorkflowListProps> = ({ workflows, onDeleteWorkflow, handleOpenChangeMetadataDialog }) => {
   const [itemToDelete, setDeleteItem] = useState<IWorkflowListItem | undefined>();
   const handleDeleteConfirmed = useCallback(() => {
     if (itemToDelete) {
@@ -161,7 +172,7 @@ export const WorkflowList: React.FC<IWorkflowListProps> = ({ workflows, onDelete
         <Grid container spacing={{ xs: 2, md: 3 }} columns={{ xs: 4, sm: 8, md: 12 }}>
           {workflows.map((workflow) => (
             <Grid item xs={2} sm={4} md={4} key={workflow.id}>
-              <WorkflowListItem item={workflow} onDeleteWorkflow={handleDeleteWithConfirmation} />
+              <WorkflowListItem item={workflow} onDeleteWorkflow={handleDeleteWithConfirmation} handleOpenChangeMetadataDialog={handleOpenChangeMetadataDialog} />
             </Grid>
           ))}
         </Grid>
