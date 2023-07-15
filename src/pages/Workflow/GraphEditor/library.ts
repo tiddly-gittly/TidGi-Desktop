@@ -1,5 +1,6 @@
 import { Component, ComponentLoader, InPort } from 'noflo';
 import type BasePort from 'noflo/lib/BasePort';
+import { useEffect, useState } from 'react';
 import type { IFBPLibrary, INoFloProtocolComponent, INoFloProtocolComponentPort, INoFloUIComponent, INoFloUIComponentPort } from 'the-graph';
 
 /**
@@ -110,3 +111,15 @@ export async function getBrowserComponentLibrary() {
 //     }, false);
 //   }
 // };
+
+export function useLibrary() {
+  // load library bundled by webpack noflo-component-loader from installed noflo related npm packages
+  const [library, setLibrary] = useState<IFBPLibrary | undefined>();
+  useEffect(() => {
+    void (async () => {
+      const libraryToLoad = await getBrowserComponentLibrary();
+      setLibrary(libraryToLoad);
+    })();
+  }, []);
+  return library;
+}

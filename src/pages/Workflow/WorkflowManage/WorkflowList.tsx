@@ -7,10 +7,11 @@ import { Box, Button, Card, CardActionArea, CardActions, CardContent, CardMedia,
 import { PageType } from '@services/pages/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceWithMetadata } from '@services/workspaces/interface';
-import React, { useCallback, useState } from 'react';
+import React, { useCallback, useContext, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { useLocation } from 'wouter';
+import { WorkflowContext } from '../useContext';
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 import type { IWorkflowTiddler } from './useWorkflowDataSource';
 
@@ -67,10 +68,16 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
     setLocation(`/${WindowNames.main}/${PageType.wiki}/${item.workspaceID}/`);
     window.service.wiki.wikiOperation(WikiChannel.openTiddler, item.workspaceID, item.title);
   }, [item, setLocation]);
+
+  const workflowContext = useContext(WorkflowContext);
+  const handleOpenInTheGraphEditor = useCallback(() => {
+    setLocation(`/${WindowNames.main}/${PageType.workflow}/${item.id}/`);
+    workflowContext.setOpenedWorkflowItem(item);
+  }, [item, setLocation, workflowContext]);
   const menuID = `workflow-list-item-menu-${item.id}`;
   return (
     <WorkflowCard>
-      <CardActionArea>
+      <CardActionArea onClick={handleOpenInTheGraphEditor}>
         {item.image && (
           <CardMedia
             component='img'
@@ -89,7 +96,7 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
         </CardContent>
       </CardActionArea>
       <ItemMenuCardActions>
-        <Button>{t('Open')}</Button>
+        <Button onClick={handleOpenInTheGraphEditor}>{t('Open')}</Button>
         <Button aria-controls={menuID} aria-haspopup='true' onClick={handleOpenItemMenu}>
           {anchorElement === null ? <MenuIcon /> : <MenuOpenIcon />}
         </Button>
@@ -113,6 +120,10 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
 
 export interface IWorkflowListItem {
   description?: string;
+  /**
+   * Map to tiddler's text field. Store the JSON format of the graph.
+   */
+  graphJSONString: string;
   id: string;
   image?: string;
   metadata?: {

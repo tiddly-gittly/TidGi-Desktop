@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { WikiChannel } from '@/constants/channels';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { workflowTiddlerTagName } from '@services/wiki/plugin/nofloWorkflow/constants';
@@ -83,6 +84,7 @@ export function useWorkflowFromWiki(workspacesList: IWorkspaceWithMetadata[] | u
           const workflowItem: IWorkflowListItem = {
             id: `${workspace.id}:${tiddler.title}`,
             title: tiddler.title,
+            graphJSONString: tiddler.text,
             description: tiddler.description,
             tags: tiddler.tags.filter(item => item !== workflowTiddlerTagName),
             workspaceID: workspace.id,
@@ -113,21 +115,7 @@ export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefine
     setWorkflows(initialWorkflows);
   }, [initialWorkflows]);
   const onAddWorkflow = useCallback(async (newItem: IWorkflowListItem) => {
-    // add workflow to wiki
-    await window.service.wiki.wikiOperation(
-      WikiChannel.addTiddler,
-      newItem.workspaceID,
-      newItem.title,
-      // only save an initial value at this creation time
-      '{}',
-      {
-        type: 'application/json',
-        tags: [...newItem.tags, workflowTiddlerTagName],
-        description: newItem.description ?? '',
-        'page-cover': newItem.image ?? '',
-      } satisfies Omit<IWorkflowTiddler, 'text' | 'title'>,
-      { withDate: true },
-    );
+    await addWorkflowToWiki(newItem);
     // can overwrite a old workflow with same title
     setWorkflows((workflows) => [...workflows.filter(item => item.title !== newItem.title), newItem]);
     // update tag list in the search region tags filter
@@ -154,4 +142,21 @@ export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefine
   }, [setWorkflows]);
 
   return [workflows, onAddWorkflow, onDeleteWorkflow] as const;
+}
+
+export async function addWorkflowToWiki(newItem: IWorkflowListItem) {
+  await window.service.wiki.wikiOperation(
+    WikiChannel.addTiddler,
+    newItem.workspaceID,
+    newItem.title,
+    // Store the graph json on modify, or only save an initial value at this creation time
+    newItem.graphJSONString || '{}',
+    {
+      type: 'application/json',
+      tags: [...newItem.tags, workflowTiddlerTagName],
+      description: newItem.description ?? '',
+      'page-cover': newItem.image ?? '',
+    } satisfies Omit<IWorkflowTiddler, 'text' | 'title'>,
+    { withDate: true },
+  );
 }
