@@ -1,13 +1,10 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/promise-function-async */
 import { sidebarWidth } from '@/constants/style';
 import { useThemeObservable } from '@services/theme/hooks';
-import { type Graph, loadJSON } from 'fbp-graph/lib/Graph';
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import type { IFBPLibrary, ITheGraphEditor } from 'the-graph';
+import type { ITheGraphEditor } from 'the-graph';
 import TheGraph from 'the-graph';
 import { Component as ThumbnailNav } from 'the-graph/the-graph-nav/the-graph-nav';
 import 'the-graph/themes/the-graph-dark.css';
@@ -16,11 +13,11 @@ import '@fortawesome/fontawesome-free/js/all.js';
 import '@fortawesome/fontawesome-free/css/all.css';
 import '@fortawesome/fontawesome-free/css/v4-font-face.css';
 
-import { photoboothJSON } from '../photobooth.json';
 import { SearchComponents } from './components/SearchComponents';
-import { getBrowserComponentLibrary } from './library';
+import { useLibrary } from './library';
 import { useMenu } from './menu';
 import { useMouseEvents } from './mouseEvents';
+import { useSaveLoadGraph } from './useSaveLoadGraph';
 
 const TheGraphContainer = styled.main`
   /**
@@ -50,75 +47,12 @@ const ThumbnailContainer = styled.div`
   overflow: hidden;
 `;
 
-export interface IGraphEditorProps {
-  animatedEdges?: any[];
-  appView?: any;
-  autolayout?: boolean;
-  autolayouter?: any;
-  copyNodes?: any[];
-  debounceLibraryRefeshTimer?: any;
-  displaySelectionGroup?: boolean;
-  editable?: boolean;
-  errorNodes?: any;
-  forceSelection?: boolean;
-  graph: Graph;
-  graphChanges?: any[];
-  graphView?: any;
-  grid?: number;
-  height?: number;
-  icons?: any;
-  library?: IFBPLibrary;
-  maxZoom?: number;
-  menus?: any;
-  minZoom?: number;
-  notifyView?: () => void;
-  offsetX?: number;
-  offsetY?: number;
-  onContextMenu?: () => void;
-  pan?: any;
-  plugins?: object;
-  readonly?: boolean;
-  scale?: number;
-  selectedEdges?: any[];
-  selectedNodes?: any[];
-
-  selectedNodesHash?: any;
-  setGraph: (graph: Graph) => void;
-  snap?: number;
-  theme: 'light' | 'dark';
-  width?: number;
-}
-
 export function GraphEditor() {
-  // const initializeAutolayouter = () => {
-  //   // Logic for initializing autolayouter
-  //   const auto = klayNoflo.init({
-  //     onSuccess: applyAutolayout,
-  //     workerScript: 'vendor/klayjs/klay.js',
-  //   });
-  //   setAutolayouter(auto);
-  // };
-  // const applyAutolayout = (keilerGraph: any) => {
-  //   // Logic for applying autolayout
-  // };
-
   const { t } = useTranslation();
   const theme = useThemeObservable();
 
-  const [graph, setGraph] = useState<Graph | undefined>();
-  useEffect(() => {
-    void loadJSON(photoboothJSON).then(graph => {
-      setGraph(graph);
-    });
-  }, []);
-  // load library bundled by webpack noflo-component-loader from installed noflo related npm packages
-  const [library, setLibrary] = useState<IFBPLibrary | undefined>();
-  useEffect(() => {
-    void (async () => {
-      const libraryToLoad = await getBrowserComponentLibrary();
-      setLibrary(libraryToLoad);
-    })();
-  }, []);
+  const [graph, setGraph] = useSaveLoadGraph();
+  const library = useLibrary();
 
   // methods
   // const { subscribeGraph, unsubscribeGraph } = useSubscribeGraph({ readonly });
@@ -136,12 +70,12 @@ export function GraphEditor() {
     library,
     setGraph,
   });
-  const { addMenu, addMenuCallback, addMenuAction, getMenuDef } = useMenu();
+  const { getMenuDef } = useMenu();
   const editorReference = useRef<ITheGraphEditor>();
-  if (!graph || !library) return <div>{t('Loading')}</div>;
+  if ((graph === undefined) || (library === undefined)) return <div>{t('Loading')}</div>;
   return (
     <ErrorBoundary fallback={<div>Something went wrong</div>}>
-      <TheGraphContainer className={`the-graph-${theme?.shouldUseDarkColors ? 'dark' : 'light'}`}>
+      <TheGraphContainer className={`the-graph-${theme?.shouldUseDarkColors === true ? 'dark' : 'light'}`}>
         <TheGraph.App
           graph={graph}
           library={library}

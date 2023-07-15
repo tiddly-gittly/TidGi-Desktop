@@ -56,6 +56,7 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({
       title,
       tags,
       workspaceID,
+      graphJSONString: '{}',
     };
     await onAdd(newItem);
     setDoneMessageSnackBarOpen(true);
