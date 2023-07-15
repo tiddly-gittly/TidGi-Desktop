@@ -1,10 +1,37 @@
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { Graph } from 'fbp-graph';
 import { loadJSON } from 'fbp-graph/lib/Graph';
-import { useContext, useEffect, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { IWorkflowContext, WorkflowContext } from '../useContext';
 import { addWorkflowToWiki } from '../WorkflowManage/useWorkflowDataSource';
 
+/**
+ * From `graphEvents` of elements/the-graph.js
+ */
+const changeEvents = [
+  'changeProperties',
+  'addNode',
+  'changeNode',
+  'removeNode',
+  'addEdge',
+  'changeEdge',
+  'removeEdge',
+  'addInitial',
+  'removeInitial',
+  'addGroup',
+  'removeGroup',
+  'changeGroup',
+  // graphRenameEvents
+  'renameInport',
+  'renameOutport',
+  'renameGroup',
+  'renameNode',
+  // graphPortEvents: [
+  'addInport',
+  'removeInport',
+  'addOutport',
+  'removeOutport',
+];
 export function useSaveLoadGraph() {
   const workflowContext = useContext(WorkflowContext);
 
@@ -22,12 +49,32 @@ export function useSaveLoadGraph() {
     }
   }, [graph, workflowContext.openedWorkflowItem]);
   const debouncedOnSave = useDebouncedCallback(onSave, [], 1000);
+  const onSaveListenerRegistered = useRef(false);
+  /**
+   * use reference to prevent workflowContext's change trigger `graph.removeListener` below
+   */
+  const workflowContextReference = useRef(workflowContext);
   useEffect(() => {
+    workflowContextReference.current = workflowContext;
+  }, [workflowContext]);
+  useEffect(() => {
+    const onChangeCallback = async () => {
+      if (graph === undefined) return;
+      await debouncedOnSave(graph, workflowContextReference.current);
+    };
     // save on graph changed
-    if (graph !== undefined) {
-      void debouncedOnSave(graph, workflowContext);
+    if (graph !== undefined && !onSaveListenerRegistered.current) {
+      onSaveListenerRegistered.current = true;
+      changeEvents.forEach(eventName => {
+        graph.on(eventName, onChangeCallback);
+      });
+      return () => {
+        changeEvents.forEach(eventName => {
+          graph.removeListener(eventName, onChangeCallback);
+        });
+      };
     }
-  }, [debouncedOnSave, graph, workflowContext]);
+  }, [debouncedOnSave, graph, onSaveListenerRegistered, workflowContextReference]);
 
   return [graph, setGraph] as const;
 }

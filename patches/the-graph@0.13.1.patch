@@ -21,6 +21,32 @@ index 08aa19642e811c336fdc5c1ea99b6b9906109d5b..c21d6f9470d4ebd609c6553688a7074b
        var domNode = ReactDOM.findDOMNode(this.refs.svg);
  
        // Unselect edges and nodes
+diff --git a/the-graph/the-graph-edge.js b/the-graph/the-graph-edge.js
+index 9d658061b85ebb47eb5a8c3e16d765150ea17033..ece77b909a96e9f6c7db61535d81e5a00d5709c7 100644
+--- a/the-graph/the-graph-edge.js
++++ b/the-graph/the-graph-edge.js
+@@ -79,7 +79,7 @@ module.exports.register = function (context) {
+     mixins: [
+       TooltipMixin
+     ],
+-    componentWillMount: function() {
++    UNSAFE_componentWillMount: function() {
+     },
+     componentDidMount: function () {
+       var domNode = ReactDOM.findDOMNode(this);
+diff --git a/the-graph/the-graph-graph.js b/the-graph/the-graph-graph.js
+index 803b63b8cd42682f230172e015acfea2574b2919..bdf9bff23349781e36d8a1f0c61b182b035e6035 100644
+--- a/the-graph/the-graph-graph.js
++++ b/the-graph/the-graph-graph.js
+@@ -121,7 +121,7 @@ module.exports.register = function (context) {
+     componentWillUnmount: function () {
+         this.mounted = false;
+     },
+-    componentWillReceiveProps: function(nextProps) {
++    UNSAFE_componentWillReceiveProps: function(nextProps) {
+       this.subscribeGraph(this.props.graph, nextProps.graph);
+       this.markDirty();
+     },
 diff --git a/the-graph-nav/the-graph-nav.js b/the-graph-nav/the-graph-nav.js
 index 206975d0fc2b3efb89d18b2543830c1922cd740d..cdbcbd1b9e5f1fc60cafa0f105c32dd40b0d25f1 100644
 --- a/the-graph-nav/the-graph-nav.js

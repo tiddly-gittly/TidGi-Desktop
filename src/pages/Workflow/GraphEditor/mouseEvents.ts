@@ -86,9 +86,7 @@ export function useMouseEvents({ graph, library, setGraph }: { graph?: Graph; li
       }
     });
     graph.endTransaction('addnode');
-    // useState to trigger rerender
-    setGraph(graph);
-  }, [graph, pan, scale, setGraph]);
+  }, [graph, pan, scale]);
 
   return {
     pan,
