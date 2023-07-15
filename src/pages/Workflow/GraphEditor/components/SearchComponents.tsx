@@ -19,6 +19,9 @@ const SearchBarWrapper = styled.div`
     opacity: 1;
   }
   transition: opacity 0.3s ease-in-out;
+
+  background-color: rgba(255,255,255,0.3);
+  backdrop-filter: blur(10px);
 `;
 const SearchItemOptionText = styled.div`
   margin-left: 1em;
