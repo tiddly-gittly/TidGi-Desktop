@@ -145,7 +145,7 @@ export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefine
 }
 
 export async function addWorkflowToWiki(newItem: IWorkflowListItem, oldItem?: IWorkflowListItem) {
-  // FIXME: this won't resolve if user haven't click on wiki once, the browser view might not initialized
+  // FIXME: this won't resolve if user haven't click on wiki once, the browser view might not initialized (but why we can still read workflow list using filter??)
   await window.service.wiki.wikiOperation(
     WikiChannel.addTiddler,
     newItem.workspaceID,
