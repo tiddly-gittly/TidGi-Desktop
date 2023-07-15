@@ -22,6 +22,7 @@ const SearchRegionContainer = styled(Box)`
   display: flex;
   flex-direction: column;
   margin-bottom: 1em;
+  padding-right: 1em;
   width: 100%;
 `;
 const SearchBar = styled(TextField)`
@@ -42,15 +43,18 @@ export const WorkflowManage: React.FC = () => {
   const [availableFilterTags, setTagsByWorkspace] = useAvailableFilterTags(workspacesList);
   const [workflows, onAddWorkflow, onDeleteWorkflow] = useWorkflows(workspacesList, setTagsByWorkspace);
 
-  const handleOpenDialog = useCallback(() => {
+  const [itemSelectedForDialog, setItemSelectedForDialog] = useState<IWorkflowListItem | undefined>();
+  const handleOpenDialog = useCallback((item?: IWorkflowListItem) => {
+    setItemSelectedForDialog(item);
     setDialogOpen(true);
   }, []);
-
   const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
+    // eslint-disable-next-line unicorn/no-useless-undefined
+    setItemSelectedForDialog(undefined);
   }, []);
-  const handleDialogAddWorkflow = useCallback(async (newItem: IWorkflowListItem) => {
-    await onAddWorkflow(newItem);
+  const handleDialogAddWorkflow = useCallback(async (newItem: IWorkflowListItem, oldItem?: IWorkflowListItem) => {
+    await onAddWorkflow(newItem, oldItem);
     handleCloseDialog();
   }, [handleCloseDialog, onAddWorkflow]);
 
@@ -87,9 +91,15 @@ export const WorkflowManage: React.FC = () => {
             ))}
           </Stack>
         </SearchRegionContainer>
-        <WorkflowList workflows={filteredWorkflows} onDeleteWorkflow={onDeleteWorkflow} />
+        <WorkflowList workflows={filteredWorkflows} onDeleteWorkflow={onDeleteWorkflow} handleOpenChangeMetadataDialog={handleOpenDialog} />
       </SimpleBar>
-      <AddNewItemFloatingButton color='primary' aria-label='add' onClick={handleOpenDialog}>
+      <AddNewItemFloatingButton
+        color='primary'
+        aria-label='add'
+        onClick={() => {
+          handleOpenDialog();
+        }}
+      >
         <AddIcon />
       </AddNewItemFloatingButton>
       <AddItemDialog
@@ -98,6 +108,7 @@ export const WorkflowManage: React.FC = () => {
         onAdd={handleDialogAddWorkflow}
         availableFilterTags={availableFilterTags}
         workspacesList={workspacesList}
+        item={itemSelectedForDialog}
       />
     </WorkflowManageContainer>
   );

@@ -8,7 +8,8 @@ import type { IWorkflowListItem } from './WorkflowList';
 
 interface AddItemDialogProps {
   availableFilterTags: string[];
-  onAdd: (newItem: IWorkflowListItem) => Promise<void>;
+  item?: IWorkflowListItem;
+  onAdd: (newItem: IWorkflowListItem, oldItem?: IWorkflowListItem) => Promise<void>;
   onClose: () => void;
   open: boolean;
   workspacesList: IWorkspaceWithMetadata[] | undefined;
@@ -20,23 +21,37 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({
   onAdd,
   availableFilterTags,
   workspacesList,
+  item,
 }) => {
   const { t } = useTranslation();
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const isModifyMode = !!item;
+  const [title, setTitle] = useState(item?.title ?? '');
+  const [description, setDescription] = useState(item?.description ?? '');
   const [hasError, setHasError] = useState(false);
   const [doneMessageSnackBarOpen, setDoneMessageSnackBarOpen] = useState(false);
-  const [workspaceToSaveTo, setWorkspaceToSaveTo] = useState<IWorkspaceWithMetadata | undefined | null>(workspacesList?.[0]);
+  const [workspaceToSaveTo, setWorkspaceToSaveTo] = useState<IWorkspaceWithMetadata | undefined | null>(
+    item?.workspaceID ? workspacesList?.find(workspace => workspace.id === item.workspaceID) : workspacesList?.[0],
+  );
   useEffect(() => {
     // when list was undefined and change to have value, auto set default value once.
     if (workspaceToSaveTo === undefined && workspacesList?.[0]) {
       setWorkspaceToSaveTo(workspacesList?.[0]);
     }
   }, [workspaceToSaveTo, workspacesList]);
-  const [tags, setTags] = useState<string[]>([]);
+  const [tags, setTags] = useState<string[]>(item?.tags ?? []);
+  useEffect(() => {
+    if (item) {
+      setTitle(item.title ?? '');
+      setDescription(item.description ?? '');
+      setTags(item.tags ?? []);
+      setWorkspaceToSaveTo(workspacesList?.find(workspace => workspace.id === item.workspaceID));
+    }
+  }, [item, workspacesList]);
   const closeAndCleanup = useCallback(() => {
     setTitle('');
+    setDescription('');
     setTags([]);
+    // no need to reset workspace dropdown, because later workflow might save to same workspace
     onClose();
   }, [onClose]);
   const workspaceIDs = useMemo(() => workspacesList?.map(workspace => workspace.id) ?? [], [workspacesList]);
@@ -52,16 +67,18 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({
       return;
     }
     const newItem: IWorkflowListItem = {
+      ...item,
       id: `${workspaceID}:${title}`,
       title,
       tags,
       workspaceID,
       graphJSONString: '{}',
+      description,
     };
-    await onAdd(newItem);
+    await onAdd(newItem, item);
     setDoneMessageSnackBarOpen(true);
     closeAndCleanup();
-  }, [workspaceToSaveTo?.id, workspacesList, workspaceIDs, title, tags, onAdd, closeAndCleanup]);
+  }, [workspaceToSaveTo?.id, workspacesList, workspaceIDs, title, tags, description, item, onAdd, closeAndCleanup]);
 
   return (
     <>
@@ -71,13 +88,13 @@ export const AddItemDialog: React.FC<AddItemDialogProps> = ({
           setDoneMessageSnackBarOpen(false);
         }}
         autoHideDuration={3000}
-        message={t('Workflow.AddNewWorkflowDoneMessage')}
+        message={isModifyMode ? t('Workflow.ChangeWorkflowMetadataDoneMessage') : t('Workflow.AddNewWorkflowDoneMessage')}
         anchorOrigin={{ horizontal: 'center', vertical: 'top' }}
       />
       <Dialog open={open} onClose={closeAndCleanup}>
-        <DialogTitle>{t('Workflow.AddNewWorkflow')}</DialogTitle>
+        <DialogTitle>{isModifyMode ? t('Workflow.ChangeWorkflowMetadata') : t('Workflow.AddNewWorkflow')}</DialogTitle>
         <DialogContent>
-          <DialogContentText>{t('Workflow.AddNewWorkflowDescription')}</DialogContentText>
+          <DialogContentText>{isModifyMode ? t('Workflow.ChangeWorkflowMetadataDescription') : t('Workflow.AddNewWorkflowDescription')}</DialogContentText>
           <FormControl fullWidth>
             <TextField
               required

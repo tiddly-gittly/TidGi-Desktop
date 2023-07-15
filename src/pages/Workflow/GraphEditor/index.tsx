@@ -1,6 +1,6 @@
 import { sidebarWidth } from '@/constants/style';
 import { useThemeObservable } from '@services/theme/hooks';
-import { useRef } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
@@ -13,7 +13,9 @@ import '@fortawesome/fontawesome-free/js/all.js';
 import '@fortawesome/fontawesome-free/css/all.css';
 import '@fortawesome/fontawesome-free/css/v4-font-face.css';
 
+import { WorkflowContext } from '../useContext';
 import { SearchComponents } from './components/SearchComponents';
+import { GraphTopToolbar } from './components/Toolbar';
 import { useLibrary } from './library';
 import { useMenu } from './menu';
 import { useMouseEvents } from './mouseEvents';
@@ -52,7 +54,9 @@ export function GraphEditor() {
   const theme = useThemeObservable();
 
   const [graph, setGraph] = useSaveLoadGraph();
+  const workflowContext = useContext(WorkflowContext);
   const library = useLibrary();
+  const [readonly, setReadonly] = useState(false);
 
   // methods
   // const { subscribeGraph, unsubscribeGraph } = useSubscribeGraph({ readonly });
@@ -79,7 +83,6 @@ export function GraphEditor() {
         <TheGraph.App
           graph={graph}
           library={library}
-          readonly={false}
           height={window.innerHeight}
           width={window.innerWidth}
           offsetX={sidebarWidth}
@@ -88,6 +91,7 @@ export function GraphEditor() {
           onNodeSelection={onNodeSelection}
           onEdgeSelection={onEdgeSelection}
           getEditorRef={editorReference}
+          readonly={readonly}
         />
       </TheGraphContainer>
       <ThumbnailContainer>
@@ -106,6 +110,7 @@ export function GraphEditor() {
         />
       </ThumbnailContainer>
       <SearchComponents library={library} addNode={addNode} />
+      <GraphTopToolbar editorReference={editorReference} readonly={readonly} setReadonly={setReadonly} workflowContext={workflowContext} />
     </ErrorBoundary>
   );
 }

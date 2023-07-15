@@ -1,0 +1,1 @@
+export const searchBarWidth = 300;

@@ -5,13 +5,14 @@ import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import type { IFBPLibrary, INoFloUIComponent } from 'the-graph';
 import { NoFloIcon } from './NoFloIcon';
+import { searchBarWidth } from './styleConstant';
 
 const SearchBarWrapper = styled.div`
   position: absolute;
   left: ${sidebarWidth}px;
   top: 1em;
   z-index: 2;
-  width: 300px;
+  width: ${searchBarWidth}px;
 
   opacity: 0.3;
   &:hover {

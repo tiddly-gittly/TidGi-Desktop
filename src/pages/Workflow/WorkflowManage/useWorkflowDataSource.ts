@@ -112,12 +112,12 @@ export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefine
   const initialWorkflows = useWorkflowFromWiki(workspacesList);
   // loading workflows using filter expression is expensive, so we only do this on initial load. Later just update&use local state value
   useEffect(() => {
-    setWorkflows(initialWorkflows);
+    setWorkflows(initialWorkflows.sort(sortWorkflow));
   }, [initialWorkflows]);
-  const onAddWorkflow = useCallback(async (newItem: IWorkflowListItem) => {
-    await addWorkflowToWiki(newItem);
+  const onAddWorkflow = useCallback(async (newItem: IWorkflowListItem, oldItem?: IWorkflowListItem) => {
+    await addWorkflowToWiki(newItem, oldItem);
     // can overwrite a old workflow with same title
-    setWorkflows((workflows) => [...workflows.filter(item => item.title !== newItem.title), newItem]);
+    setWorkflows((workflows) => [...workflows.filter(item => item.title !== newItem.title), newItem].sort(sortWorkflow));
     // update tag list in the search region tags filter
     setTagsByWorkspace((previousTagsByWorkspace) => {
       // add newly appeared tags to local state
@@ -138,13 +138,14 @@ export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefine
       item.title,
     );
     // delete workflow from local state
-    setWorkflows((workflows) => workflows.filter(workflow => workflow.id !== item.id));
+    setWorkflows((workflows) => workflows.filter(workflow => workflow.id !== item.id).sort(sortWorkflow));
   }, [setWorkflows]);
 
   return [workflows, onAddWorkflow, onDeleteWorkflow] as const;
 }
 
-export async function addWorkflowToWiki(newItem: IWorkflowListItem) {
+export async function addWorkflowToWiki(newItem: IWorkflowListItem, oldItem?: IWorkflowListItem) {
+  // FIXME: this won't resolve if user haven't click on wiki once, the browser view might not initialized
   await window.service.wiki.wikiOperation(
     WikiChannel.addTiddler,
     newItem.workspaceID,
@@ -159,4 +160,21 @@ export async function addWorkflowToWiki(newItem: IWorkflowListItem) {
     } satisfies Omit<IWorkflowTiddler, 'text' | 'title'>,
     { withDate: true },
   );
+  // we sort workflows using workflow.metadata.tiddler.modified, so we need to update it (side effect)
+  if (newItem.metadata?.tiddler) {
+    // @ts-expect-error Cannot assign to 'modified' because it is a read-only property.ts(2540)
+    newItem.metadata.tiddler.modified = new Date();
+  }
+  // when change title, wiki requires delete old tiddler manually
+  if (oldItem !== undefined && oldItem.title !== newItem.title) {
+    window.service.wiki.wikiOperation(
+      WikiChannel.deleteTiddler,
+      oldItem.workspaceID,
+      oldItem.title,
+    );
+  }
+}
+
+export function sortWorkflow(workflow1: IWorkflowListItem, workflow2: IWorkflowListItem) {
+  return (workflow2.metadata?.tiddler?.modified ?? new Date()).getTime() - (workflow1.metadata?.tiddler?.modified ?? new Date()).getTime();
 }
