@@ -1,12 +1,16 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable unicorn/no-null, @typescript-eslint/strict-boolean-expressions, unicorn/no-useless-undefined */
+import { WikiChannel } from '@/constants/channels';
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import { Box, Button, Card, CardActionArea, CardActions, CardContent, CardMedia, Chip, Fade, Grid, Menu, MenuItem, Stack, Typography } from '@mui/material';
+import { PageType } from '@services/pages/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
+import { useLocation } from 'wouter';
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 import type { IWorkflowTiddler } from './useWorkflowDataSource';
 
@@ -52,10 +56,17 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
     setAnchorElement(null);
     onDeleteWorkflow(item);
   }, [item, onDeleteWorkflow]);
-  const handleOpenInWiki = useCallback(() => {
+
+  const [, setLocation] = useLocation();
+  const handleOpenInWiki = useCallback(async () => {
     setAnchorElement(null);
-    // TODO: open in wiki
-  }, [item, onDeleteWorkflow]);
+    if (!item.workspaceID) return;
+    const oldActivePage = await window.service.pages.getActivePage();
+    await window.service.pages.setActivePage(PageType.wiki, oldActivePage?.type);
+    await window.service.workspaceView.setActiveWorkspaceView(item.workspaceID);
+    setLocation(`/${WindowNames.main}/${PageType.wiki}/${item.workspaceID}/`);
+    window.service.wiki.wikiOperation(WikiChannel.openTiddler, item.workspaceID, item.title);
+  }, [item, setLocation]);
   const menuID = `workflow-list-item-menu-${item.id}`;
   return (
     <WorkflowCard>

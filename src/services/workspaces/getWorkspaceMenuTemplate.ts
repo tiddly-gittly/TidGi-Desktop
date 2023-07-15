@@ -14,8 +14,8 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import type { MenuItemConstructorOptions } from 'electron';
 import type { FlatNamespace, TFunction } from 'i18next';
-import type { IWorkspace, IWorkspaceService } from './interface';
 import type { _DefaultNamespace } from 'react-i18next/TransWithoutContext';
+import type { IWorkspace, IWorkspaceService } from './interface';
 
 interface IWorkspaceMenuRequiredServices {
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
@@ -64,7 +64,7 @@ export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IW
 
 export async function getWorkspaceMenuTemplate(
   workspace: IWorkspace,
-  t: TFunction<[_DefaultNamespace, ...Exclude<FlatNamespace, _DefaultNamespace>[]]>,
+  t: TFunction<[_DefaultNamespace, ...Array<Exclude<FlatNamespace, _DefaultNamespace>>]>,
   service: IWorkspaceMenuRequiredServices,
 ): Promise<MenuItemConstructorOptions[]> {
   const { active, id, mainWikiID, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, name, enableHTTPAPI } = workspace;
