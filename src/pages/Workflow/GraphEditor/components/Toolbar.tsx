@@ -1,4 +1,5 @@
 import { sidebarWidth } from '@/constants/style';
+import AlignHorizontalLeftIcon from '@mui/icons-material/AlignHorizontalLeft';
 import EditOnIcon from '@mui/icons-material/Edit';
 import EditLocationAltIcon from '@mui/icons-material/EditLocationAlt';
 import EditOffIcon from '@mui/icons-material/EditOff';
@@ -10,15 +11,18 @@ import { IconButton, Toolbar, Tooltip } from '@mui/material';
 import { PageType } from '@services/pages/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
-import React, { Dispatch, MutableRefObject, SetStateAction, useCallback, useState } from 'react';
+import type { Graph } from 'fbp-graph';
+import React, { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { ITheGraphEditor } from 'the-graph';
+import type { ITheGraphEditor } from 'the-graph';
+import autoLayout from 'the-graph/the-graph/the-graph-autolayout';
 import { useLocation } from 'wouter';
 import { IWorkflowContext } from '../../useContext';
 import { AddItemDialog } from '../../WorkflowManage/AddItemDialog';
 import { addWorkflowToWiki, useAvailableFilterTags } from '../../WorkflowManage/useWorkflowDataSource';
 import { IWorkflowListItem } from '../../WorkflowManage/WorkflowList';
+import { klayNoflo } from 'klayjs-noflo/klay-noflo';
 import { searchBarWidth } from './styleConstant';
 
 const ToolbarContainer = styled(Toolbar)`
@@ -43,12 +47,13 @@ const ToolbarContainer = styled(Toolbar)`
 
 interface IGraphTopToolbarProps {
   editorReference: MutableRefObject<ITheGraphEditor | undefined>;
+  graph: Graph;
   readonly: boolean;
   setReadonly: Dispatch<SetStateAction<boolean>>;
   workflowContext: IWorkflowContext;
 }
 export const GraphTopToolbar = (props: IGraphTopToolbarProps) => {
-  const { editorReference, readonly, setReadonly, workflowContext } = props;
+  const { editorReference, readonly, setReadonly, workflowContext, graph } = props;
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
 
@@ -68,6 +73,45 @@ export const GraphTopToolbar = (props: IGraphTopToolbarProps) => {
   const zoomToFit = useCallback(() => {
     editorReference?.current?.triggerFit();
   }, [editorReference]);
+
+  const onAutoLayoutSuccess = useCallback((keilerGraph: unknown) => {
+    graph.startTransaction('autolayout');
+    autoLayout.applyToGraph(graph, keilerGraph, { snap: 36 });
+    graph.endTransaction('autolayout');
+    // Fit to window
+    zoomToFit();
+  }, [graph, zoomToFit]);
+  const autoLayouterReference = useRef<typeof klayNoflo | undefined>();
+  useEffect(() => {
+    const newAutoLayouter = klayNoflo.init({
+      onSuccess: onAutoLayoutSuccess,
+      workerScript: 'webWorkers/klayjs/klay.js',
+    });
+    autoLayouterReference.current = newAutoLayouter;
+  }, [onAutoLayoutSuccess]);
+  const applyAutolayout = useCallback(() => {
+    const portInfo = editorReference?.current?.refs?.graph?.portInfo;
+    // Calls the autolayouter
+    autoLayouterReference.current?.layout({
+      graph,
+      portInfo,
+      direction: 'RIGHT',
+      options: {
+        intCoordinates: true,
+        algorithm: 'de.cau.cs.kieler.klay.layered',
+        layoutHierarchy: true,
+        spacing: 36,
+        borderSpacing: 20,
+        edgeSpacingFactor: 0.2,
+        inLayerSpacingFactor: 2,
+        nodePlace: 'BRANDES_KOEPF',
+        nodeLayering: 'NETWORK_SIMPLEX',
+        edgeRouting: 'POLYLINE',
+        crossMin: 'LAYER_SWEEP',
+        direction: 'RIGHT',
+      },
+    });
+  }, [editorReference, graph]);
 
   const [changeGraphInfoDialogOpen, setChangeGraphInfoDialogOpen] = useState(false);
   const workspacesList = useWorkspacesListObservable();
@@ -109,6 +153,11 @@ export const GraphTopToolbar = (props: IGraphTopToolbarProps) => {
         <Tooltip title={t('Workflow.ZoomToFit')}>
           <IconButton onClick={zoomToFit}>
             <ZoomOutMapIcon />
+          </IconButton>
+        </Tooltip>
+        <Tooltip title={t('Workflow.AutoLayout')}>
+          <IconButton onClick={applyAutolayout}>
+            <AlignHorizontalLeftIcon />
           </IconButton>
         </Tooltip>
         <Tooltip title={t('Workflow.ChangeWorkflowMetadata')}>

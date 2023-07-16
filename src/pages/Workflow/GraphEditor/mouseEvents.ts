@@ -16,9 +16,6 @@ const unnamespace = (name: string) => {
 export function useMouseEvents({ graph, library, setGraph }: { graph?: Graph; library?: IFBPLibrary; setGraph: (graph: Graph) => void }) {
   const [selectedNodes, setSelectedNodes] = useState<GraphNode[]>([]);
   const [selectedEdges, setSelectedEdges] = useState<GraphEdge[]>([]);
-  const [_, triggerForceRerender] = useToggle();
-
-  const [icons, setIcons] = useState<any[]>([]);
   const [pan, setPan] = useState<[number, number]>([0, 0]);
   const [scale, setScale] = useState<number>(1);
 
@@ -95,5 +92,7 @@ export function useMouseEvents({ graph, library, setGraph }: { graph?: Graph; li
     onNodeSelection,
     onPanScale,
     addNode,
+    selectedNodes,
+    selectedEdges,
   };
 }

@@ -186,6 +186,8 @@
     "glob": "^10.3.3",
     "graphql-hooks": "6.2.3",
     "json5": "^2.2.3",
+    "klayjs": "0.2.1",
+    "klayjs-noflo": "^0.3.1",
     "node-loader": "2.0.0",
     "node-polyfill-webpack-plugin": "^2.0.1",
     "noflo": "^1.4.3",
@@ -221,7 +223,8 @@
       "fbp-graph": "$fbp-graph"
     },
     "patchedDependencies": {
-      "the-graph@0.13.1": "patches/the-graph@0.13.1.patch"
+      "the-graph@0.13.1": "patches/the-graph@0.13.1.patch",
+      "klayjs-noflo@0.3.1": "patches/klayjs-noflo@0.3.1.patch"
     }
   },
   "private": false

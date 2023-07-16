@@ -65,9 +65,9 @@ export function GraphEditor() {
     onEdgeSelection,
     onNodeSelection,
     onPanScale,
-    // triggerAutolayout,
-    // applyAutolayout,
     addNode,
+    selectedNodes,
+    selectedEdges,
   } = useMouseEvents({
     graph,
     library,
@@ -109,7 +109,7 @@ export function GraphEditor() {
         />
       </ThumbnailContainer>
       <SearchComponents library={library} addNode={addNode} />
-      <GraphTopToolbar editorReference={editorReference} readonly={readonly} setReadonly={setReadonly} workflowContext={workflowContext} />
+      <GraphTopToolbar editorReference={editorReference} readonly={readonly} setReadonly={setReadonly} workflowContext={workflowContext} graph={graph} />
     </ErrorBoundary>
   );
 }
