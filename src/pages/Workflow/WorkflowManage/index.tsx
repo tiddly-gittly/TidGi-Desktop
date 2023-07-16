@@ -1,5 +1,5 @@
 import AddIcon from '@mui/icons-material/Add';
-import { Box, Chip, Fab, Stack, TextField } from '@mui/material';
+import { Box, Chip, Fab, Stack, TextField, Tooltip } from '@mui/material';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import React, { ChangeEvent, useCallback, useState } from 'react';
 import SimpleBar from 'simplebar-react';
@@ -8,6 +8,7 @@ import styled from 'styled-components';
 import { AddItemDialog } from './AddItemDialog';
 import { useAvailableFilterTags, useWorkflows } from './useWorkflowDataSource';
 import { IWorkflowListItem, WorkflowList } from './WorkflowList';
+import { useTranslation } from 'react-i18next';
 
 const WorkflowManageContainer = styled(Box)`
   display: flex;
@@ -35,8 +36,10 @@ const AddNewItemFloatingButton = styled(Fab)`
 `;
 
 export const WorkflowManage: React.FC = () => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedIncludedTags, setSelectedIncludedTags] = useState<string[]>([]);
+  const [selectedExcludedTags, setSelectedExcludedTags] = useState<string[]>([]);
   const [dialogOpen, setDialogOpen] = useState(false);
 
   const workspacesList = useWorkspacesListObservable();
@@ -59,12 +62,23 @@ export const WorkflowManage: React.FC = () => {
   }, [handleCloseDialog, onAddWorkflow]);
 
   const handleTagClick = useCallback((tag: string) => {
-    setSelectedTags(previous => previous.includes(tag) ? previous.filter(t => t !== tag) : [...previous, tag]);
-  }, []);
+    // if included, set it as excluded
+    if (selectedIncludedTags.includes(tag)) {
+      setSelectedIncludedTags(previous => previous.includes(tag) ? previous.filter(t => t !== tag) : [...previous, tag]);
+      setSelectedExcludedTags(previous => previous.includes(tag) ? previous.filter(t => t !== tag) : [...previous, tag]);
+    } else if (selectedExcludedTags.includes(tag)) {
+      // if excluded, set as normal
+      setSelectedExcludedTags(previous => previous.includes(tag) ? previous.filter(t => t !== tag) : [...previous, tag]);
+    } else {
+      // if normal, set as included
+      setSelectedIncludedTags(previous => previous.includes(tag) ? previous.filter(t => t !== tag) : [...previous, tag]);
+    }
+  }, [selectedIncludedTags, selectedExcludedTags]);
 
   const filteredWorkflows = workflows
     .filter(workflow => search.length > 0 ? workflow.title.includes(search) : workflow)
-    .filter(workflow => selectedTags.length > 0 ? selectedTags.some(tag => workflow.tags.includes(tag)) : workflow);
+    .filter(workflow => selectedIncludedTags.length > 0 ? selectedIncludedTags.some(tag => workflow.tags.includes(tag)) : workflow)
+    .filter(workflow => selectedExcludedTags.length > 0 ? selectedExcludedTags.every(tag => !workflow.tags.includes(tag)) : workflow);
 
   return (
     <WorkflowManageContainer>
@@ -78,17 +92,24 @@ export const WorkflowManage: React.FC = () => {
             }}
           />
           <Stack direction='row' spacing={1}>
-            {availableFilterTags.map(tag => (
-              <Chip
-                key={tag}
-                label={tag}
-                clickable
-                color={selectedTags.includes(tag) ? 'primary' : 'default'}
-                onClick={() => {
-                  handleTagClick(tag);
-                }}
-              />
-            ))}
+            {availableFilterTags.map(tag => {
+              const tooltip = selectedIncludedTags.includes(tag)
+                ? t('Workflow.FilteringIncludeClickToExclude')
+                : (selectedExcludedTags.includes(tag) ? t('Workflow.FilteringExcludeClickToRemove') : t('Workflow.NotFilteringClickToInclude'));
+              const color = selectedIncludedTags.includes(tag) ? 'primary' : (selectedExcludedTags.includes(tag) ? 'warning' : 'default');
+              return (
+                <Tooltip title={tooltip} key={tag}>
+                  <Chip
+                    label={tag}
+                    clickable
+                    color={color}
+                    onClick={() => {
+                      handleTagClick(tag);
+                    }}
+                  />
+                </Tooltip>
+              );
+            })}
           </Stack>
         </SearchRegionContainer>
         <WorkflowList workflows={filteredWorkflows} onDeleteWorkflow={onDeleteWorkflow} handleOpenChangeMetadataDialog={handleOpenDialog} />
