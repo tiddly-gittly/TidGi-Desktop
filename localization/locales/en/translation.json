@@ -476,7 +476,10 @@
     "ChangeWorkflowMetadataDescription": "Create this automated workflow and save it to the selected workspace wiki to backup.",
     "ChangeWorkflowMetadataDoneMessage": "Change Done",
     "ToggleOnReadonly": "Toggle On Readonly",
-    "AutoLayout": "Auto Layout"
+    "AutoLayout": "Auto Layout",
+    "NotFilteringClickToInclude": "Not Filtering, Click To Include",
+    "FilteringIncludeClickToExclude": "Filtering Include, Click To Exclude",
+    "FilteringExcludeClickToRemove": "Filtering Exclude, Click To Remove Filtering"
   },
   "Description": "Description",
   "Tags": "Tags",

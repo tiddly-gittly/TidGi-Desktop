@@ -480,6 +480,9 @@
     "ChangeMetadata": "修改元信息",
     "ChangeWorkflowMetadataDescription": "修改所选的自动化工作流，并保存到所选的工作区Wiki里备份。",
     "ChangeSelectedItemInfo": "修改选中的物体的信息",
-    "AutoLayout": "自动调整布局"
+    "AutoLayout": "自动调整布局",
+    "NotFilteringClickToInclude": "未参与筛选，点击设为需要包含",
+    "FilteringIncludeClickToExclude": "正筛选包含本标签的，点击设为不包含本标签",
+    "FilteringExcludeClickToRemove": "正筛选不包含本标签的，点击设为不参与筛选\t"
   }
 }
