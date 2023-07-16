@@ -1,8 +1,8 @@
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { Divider, List } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { Divider, List, ListItemButton } from '@mui/material';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
@@ -26,11 +26,11 @@ export function LanguageModel(props: Partial<ISectionProps>): JSX.Element {
         <List dense disablePadding>
           {preference === undefined ? <ListItemVertical>{t('Loading')}</ListItemVertical> : (
             <>
-              <ListItem
-                button
-                onClick={() => {
+              <ListItemButton
+                onClick={async () => {
                   if (LANGUAGE_MODEL_FOLDER !== undefined) {
-                    void window.service.native.open(LANGUAGE_MODEL_FOLDER, true);
+                    await window.service.native.mkdir(LANGUAGE_MODEL_FOLDER);
+                    await window.service.native.open(LANGUAGE_MODEL_FOLDER, true);
                   }
                 }}
               >
@@ -44,7 +44,7 @@ export function LanguageModel(props: Partial<ISectionProps>): JSX.Element {
                   }
                 />
                 <ChevronRightIcon color='action' />
-              </ListItem>
+              </ListItemButton>
               <ListItemVertical>
                 <ListItemText primary={t('Preference.LanguageModel.DefaultModel')} />
                 <ListItemText secondary={t('Preference.LanguageModel.DefaultModelDescription')} />

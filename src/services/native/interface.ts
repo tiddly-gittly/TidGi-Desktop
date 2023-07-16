@@ -43,6 +43,7 @@ export interface INativeService {
    */
   getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
+  mkdir(absoulutePath: string): Promise<void>;
   open(uri: string, isDirectory?: boolean): Promise<void>;
   openInEditor(filePath: string, editorName?: string | undefined): Promise<boolean>;
   openInGitGuiApp(filePath: string, editorName?: string | undefined): Promise<boolean>;
@@ -71,6 +72,7 @@ export const NativeServiceIPCDescriptor = {
     getLocalHostUrlWithActualInfo: ProxyPropertyType.Function,
     log: ProxyPropertyType.Function,
     open: ProxyPropertyType.Function,
+    mkdir: ProxyPropertyType.Function,
     openInEditor: ProxyPropertyType.Function,
     openInGitGuiApp: ProxyPropertyType.Function,
     openNewGitHubIssue: ProxyPropertyType.Function,

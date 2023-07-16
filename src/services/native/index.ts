@@ -209,6 +209,10 @@ ${message.message}
     isDirectory ? shell.showItemInFolder(uri) : await shell.openExternal(uri);
   }
 
+  public async mkdir(absoulutePath: string): Promise<void> {
+    await fs.mkdirp(absoulutePath);
+  }
+
   public async quit(): Promise<void> {
     app.quit();
   }
