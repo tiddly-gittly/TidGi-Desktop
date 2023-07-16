@@ -4,6 +4,9 @@ overrides:
   fbp-graph: ^0.7.0
 
 patchedDependencies:
+  klayjs-noflo@0.3.1:
+    hash: 6fjyliev4jv57qjijqsznbr3si
+    path: patches/klayjs-noflo@0.3.1.patch
   the-graph@0.13.1:
     hash: 7l2bhm362kxjhsgmmhtyhvw7ga
     path: patches/the-graph@0.13.1.patch
@@ -469,6 +472,12 @@ devDependencies:
   json5:
     specifier: ^2.2.3
     version: 2.2.3
+  klayjs:
+    specifier: 0.2.1
+    version: 0.2.1
+  klayjs-noflo:
+    specifier: ^0.3.1
+    version: 0.3.1(patch_hash=6fjyliev4jv57qjijqsznbr3si)
   node-loader:
     specifier: 2.0.0
     version: 2.0.0(webpack@5.88.1)
@@ -9818,14 +9827,15 @@ packages:
     engines: {node: '>=14.14.0'}
     dev: true
 
-  /klayjs-noflo@0.3.1:
-    resolution: {integrity: sha1-CS/lXMKJgFWTUDveUAG2pe3bSV8=}
+  /klayjs-noflo@0.3.1(patch_hash=6fjyliev4jv57qjijqsznbr3si):
+    resolution: {integrity: sha512-sJJAPXahzVBrNIvLBx4mgn32Wf6XMx7ebaaBuaARnD7k3Ifpi3hTI5mqdBbyv5v/bq0jj6oqN3yo9kUkPxCv6g==}
     dependencies:
       klayjs: 0.2.1
     dev: true
+    patched: true
 
   /klayjs@0.2.1:
-    resolution: {integrity: sha1-rLDvCmB8C86rAuhQGkK3WzFQZyA=}
+    resolution: {integrity: sha512-cIW1NIuHqVy/yROTBNPs6/FjddGbLYVhECY6RaBPFVSxaHT6LRiVQZUr5qBYMySRZMJESVBWb4O33nE8lNGzbg==}
     dev: true
 
   /knuth-shuffle-seeded@1.0.6:
@@ -13436,7 +13446,7 @@ packages:
       fbp-graph: 0.7.0
       font-awesome: 4.7.0
       hammerjs: 2.0.8
-      klayjs-noflo: 0.3.1
+      klayjs-noflo: 0.3.1(patch_hash=6fjyliev4jv57qjijqsznbr3si)
       react: 18.2.0
       react-dom: 18.2.0(react@18.2.0)
       tv4: 1.3.0

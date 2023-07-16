@@ -71,6 +71,9 @@ declare module 'the-graph' {
     library: IFBPLibrary;
     libraryDirty: boolean;
     pinching: boolean;
+    refs: {
+      graph?: ITheGraphEditorGraph;
+    };
     registerComponent: (definition: NoFloComponent, generated: boolean) => void;
     /**
      * This is undefined, because it is in the-graph/the-graph-graph.js
@@ -94,6 +97,62 @@ declare module 'the-graph' {
     zoomFactor: number;
     zoomX: number;
     zoomY: number;
+  }
+  export interface ITheGraphEditorGraphState {
+    animatedEdges: GraphEdge[];
+    displaySelectionGroup: boolean;
+    edgePreview: GraphEdge | null;
+    edgePreviewX: number;
+    edgePreviewY: number;
+    errorNodes: GraphNode[];
+    forceSelection: boolean;
+    offsetX: number;
+    offsetY: number;
+    selectedEdges: GraphEdge[];
+    selectedNodes: GraphNode[];
+  }
+  export interface ITheGraphEditorGraphProps {
+    app: ITheGraphEditor | null;
+    graph: Graph;
+    library: IFBPLibrary;
+    // allows overriding icon of a node
+    nodeIcons: Record<string, string>;
+    offsetX: number;
+    offsetY: number;
+  }
+  export interface ITheGraphEditorGraph {
+    addEdge: Function;
+    cancelPreviewEdge: Function;
+    context: {};
+    dirty: false;
+    edgeStart: Function;
+    getComponentInfo: Function;
+    getGraphInport: Function;
+    getGraphOutport: Function;
+    getNodeInport: Function;
+    getNodeOutport: Function;
+    getPorts: Function;
+    markDirty: Function;
+    mounted: true;
+    moveGroup: Function;
+    /**
+     * ```json
+     * {"adapters/ObjectToString_emfdv":{"inports":{"in":{"label":"in","type":"object","x":0,"y":18},"assoc":{"label":"assoc","type":"string","x":0,"y":36,"route":0},"delim":{"label":"delim","type":"string","x":0,"y":54,"route":0}},"outports":{"out":{"label":"out","type":"string","x":72,"y":36,"route":0}}},"adapters/PacketsToObject_llf0k":{"inports":{"in":{"label":"in","type":"all","x":0,"y":36,"route":0}},"outports":{"out":{"label":"out","type":"object","x":72,"y":36}}}}
+     * ```
+     */
+    portInfo?: Record<string, { inports: INoFloProtocolComponentPort[]; outports: INoFloProtocolComponentPort[] }>;
+    props: ITheGraphEditorGraphProps;
+    refs: {};
+    renderPreviewEdge: Function;
+    resetPortRoute: Function;
+    setAnimatedEdges: Function;
+    setErrorNodes: Function;
+    setSelectedEdges: Function;
+    setSelectedNodes: Function;
+    state: ITheGraphEditorGraphState;
+    subscribeGraph: Function;
+    triggerRender: Function;
+    updateIcon: Function;
   }
   export function App(props: ITheGraphProps): JSX.Element;
 
@@ -232,10 +291,64 @@ declare module 'the-graph' {
     ```
    */
   export const FONT_AWESOME: Record<string, string>;
+
+  /**
+   *
+   * @param keilerGraph assign by
+   * ```js
+   * autolayouter = klayNoflo.init({
+      onSuccess: this.applyAutolayout.bind(this),
+      workerScript: 'vendor/klayjs/klay.js',
+    })
+    ```
+   * @param props `{ snap: 36 }` in noflo-ui example.
+   */
+  function applyAutolayout(graph: Graph, keilerGraph, props: { snap: number }): void;
+  export const autolayout = {
+    applyToGraph: applyAutolayout,
+  };
 }
 declare module 'the-graph/the-graph-nav/the-graph-nav' {
   import { nav } from 'the-graph';
   export const Component = nav.Component;
+}
+
+declare module 'the-graph/the-graph/the-graph-autolayout' {
+  import { autolayout } from 'the-graph';
+  // eslint-disable-next-line unicorn/prefer-export-from
+  export default autolayout;
+}
+
+declare module 'klayjs-noflo/klay-noflo' {
+  import { Graph } from 'fbp-graph';
+  export interface IKlayLayoutOptions {
+    direction: string;
+    graph: Graph;
+    options: {
+      algorithm: string;
+      borderSpacing: number;
+      crossMin: string;
+      direction: string;
+      edgeRouting: string;
+      edgeSpacingFactor: number;
+      inLayerSpacingFactor: number;
+      intCoordinates: boolean;
+      layoutHierarchy: boolean;
+      nodeLayering: string;
+      nodePlace: string;
+      spacing: number;
+    };
+    portInfo:
+      | Record<string, {
+        inports: INoFloProtocolComponentPort[];
+        outports: INoFloProtocolComponentPort[];
+      }>
+      | undefined;
+  }
+  export const klayNoflo: {
+    init(options: { onSuccess: (keilerGraph: unknown) => void; workerScript: string }): typeof klayNoflo;
+    layout(options: IKlayLayoutOptions): void;
+  };
 }
 
 declare module 'espree' {

@@ -475,7 +475,8 @@
     "ChangeMetadata": "Change Metadata",
     "ChangeWorkflowMetadataDescription": "Create this automated workflow and save it to the selected workspace wiki to backup.",
     "ChangeWorkflowMetadataDoneMessage": "Change Done",
-    "ToggleOnReadonly": "Toggle On Readonly"
+    "ToggleOnReadonly": "Toggle On Readonly",
+    "AutoLayout": "Auto Layout"
   },
   "Description": "Description",
   "Tags": "Tags",

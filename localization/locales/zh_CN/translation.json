@@ -479,6 +479,7 @@
     "ChangeWorkflowMetadata": "修改本流程图的元信息",
     "ChangeMetadata": "修改元信息",
     "ChangeWorkflowMetadataDescription": "修改所选的自动化工作流，并保存到所选的工作区Wiki里备份。",
-    "ChangeSelectedItemInfo": "修改选中的物体的信息"
+    "ChangeSelectedItemInfo": "修改选中的物体的信息",
+    "AutoLayout": "自动调整布局"
   }
 }
