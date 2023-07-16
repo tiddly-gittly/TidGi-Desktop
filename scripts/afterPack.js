@@ -35,35 +35,43 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
     await Promise.all(pathsToRemove.map((dir) => fs.remove(dir)));
   }
   /** copy npm packages with node-worker dependencies with binary or __filename usages, which can't be prepare properly by webpack */
+  const tasks = [];
   if (['production', 'test'].includes(process.env.NODE_ENV)) {
     console.log('Copying tiddlywiki dependency to dist');
-    await fs.copy(path.join(projectRoot, 'node_modules', '@tiddlygit', 'tiddlywiki'), path.join(cwd, 'node_modules', '@tiddlygit', 'tiddlywiki'), { dereference: true });
+    tasks.push(fs.copy(path.join(projectRoot, 'node_modules', '@tiddlygit', 'tiddlywiki'), path.join(cwd, 'node_modules', '@tiddlygit', 'tiddlywiki'), { dereference: true }));
     // it has things like `git/bin/libexec/git-core/git-add` link to `git/bin/libexec/git-core/git`, to reduce size, so can't use `dereference: true` here.
-    await fs.copy(path.join(projectRoot, 'node_modules', '.pnpm', 'dugite@2.5.0', 'node_modules', 'dugite'), path.join(cwd, 'node_modules', 'dugite'), { dereference: false });
-    // we only need its `main` binary
-    await fs.mkdirp(path.join(cwd, 'node_modules', 'app-path'));
-    await fs.copy(path.join(projectRoot, 'node_modules', 'app-path', 'main'), path.join(cwd, 'node_modules', 'app-path', 'main'), { dereference: true });
-    await fs.copy(path.resolve(projectRoot, 'node_modules/better-sqlite3/build/Release/better_sqlite3.node'), path.resolve(cwd, 'node_modules/better-sqlite3/build/Release/better_sqlite3.node'), { dereference: true });
+    tasks.push(fs.copy(path.join(projectRoot, 'node_modules', '.pnpm', 'dugite@2.5.1', 'node_modules', 'dugite'), path.join(cwd, 'node_modules', 'dugite'), { dereference: false }));
+    // we only need its `main` binary, no need its dependency and code, because we already copy it to src/services/native/externalApp
+    tasks.push(fs.mkdirp(path.join(cwd, 'node_modules', 'app-path')).then(async () => {
+      await fs.copy(path.join(projectRoot, 'node_modules', 'app-path', 'main'), path.join(cwd, 'node_modules', 'app-path', 'main'), { dereference: true })
+    }));
+    tasks.push(fs.copy(path.resolve(projectRoot, 'node_modules/better-sqlite3/build/Release/better_sqlite3.node'), path.resolve(cwd, 'node_modules/better-sqlite3/build/Release/better_sqlite3.node'), { dereference: true }));
+    tasks.push(fs.copy(path.join(projectRoot, 'node_modules', 'zx'), path.join(cwd, 'node_modules', 'zx'), { dereference: true }).then(async () => {
+      // not using pnpm, because after using it, it always causing problem here, causing `Error: spawn /bin/sh ENOENT` in github actions
+      // it can probably being "working directory didn't exist" in  https://github.com/nodejs/node/issues/9644#issuecomment-282060923
+      // await exec(`pnpm i --shamefully-hoist --prod --ignore-scripts`, { cwd: path.join(cwd, 'node_modules', 'zx'), shell });
+      await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx'), shell });
+      await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'globby'), shell });
+      await exec(`npm i --legacy-building --ignore-scripts`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'node-fetch'), shell });
+    }));
     const sqliteVssPackages = ['sqlite-vss-linux-x64', 'sqlite-vss-darwin-x64', 'sqlite-vss-darwin-arm64']
     for (const sqliteVssPackage of sqliteVssPackages) {
-      try {
-        await fs.copy(path.resolve(projectRoot, `node_modules/${sqliteVssPackage}`), path.resolve(cwd, `node_modules/${sqliteVssPackage}`), { dereference: true });
-      } catch {}
+      // some binary may not exist in other platforms, so allow failing here.
+      tasks.push(fs.copy(path.resolve(projectRoot, `node_modules/${sqliteVssPackage}`), path.resolve(cwd, `node_modules/${sqliteVssPackage}`), { dereference: true }).catch(() => {}));
     }
-    // await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'app-path') });
-    // await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'app-path', 'node_modules', 'cross-spawn') });
-    // await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'app-path', 'node_modules', 'get-stream') });
-    await fs.copy(path.join(projectRoot, 'node_modules', 'zx'), path.join(cwd, 'node_modules', 'zx'), { dereference: true });
-    // not using pnpm, because after using it, it always causing problem here, causing `Error: spawn /bin/sh ENOENT` in github actions
-    // it can probably being "working directory didn't exist" in  https://github.com/nodejs/node/issues/9644#issuecomment-282060923
-    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx'), shell });
-    await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'globby'), shell });
-    await exec(`npm i --legacy-building --ignore-scripts`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'node-fetch'), shell });
   }
-  /** sign it for mac m1 https://www.zhihu.com/question/431722091/answer/1592339574 */
-  if (platform === 'darwin') {
-    await exec(`xattr -rd com.apple.quarantine ${appPath}`, { cwd: appParentPath, shell });
-  }
+  /** sign it for mac m1 https://www.zhihu.com/question/431722091/answer/1592339574 (only work if user run this.)
+   * And have error
+   * ```
+   * An unhandled rejection has occurred inside Forge:
+    Error: Command failed: xattr -rd com.apple.quarantine /var/folders/t3/0jyr287x3rd2m0b6ml8w4f2c0000gn/T/electron-packager/darwin-x64/TidGi-darwin-x64-8UwtyU/Electron.app
+    xattr: No such file: /var/folders/t3/0jyr287x3rd2m0b6ml8w4f2c0000gn/T/electron-packager/darwin-x64/TidGi-darwin-x64-8UwtyU/Electron.app/Contents/Resources/node_modules/dugite
+    ```
+   */
+  // if (platform === 'darwin') {
+  //   await exec(`xattr -rd com.apple.quarantine ${appPath}`, { cwd: appParentPath, shell });
+  // }
+  await Promise.all(tasks);
   /** complete this hook */
   callback();
 };

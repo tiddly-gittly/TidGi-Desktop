@@ -65,18 +65,15 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
-        
-      - name: Build plugins
-        run: pnpm run build:plugin
 
       - name: Make Linux (x64)
-        run: npm run make:linux-x64
+        run: pnpm run make:linux-x64
         env:
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Make Linux (arm64)
-        run: npm run make:linux-arm
+        run: pnpm run make:linux-arm
         env:
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
@@ -142,11 +139,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install
 
-      - name: Build plugins
-        run: pnpm run build:plugin
-
       - name: Make macOS (x64)
-        run: npm run make:mac-x64
+        run: pnpm run make:mac-x64
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
@@ -154,7 +148,7 @@ jobs:
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Make macOS (arm64)
-        run: npm run make:mac-arm
+        run: pnpm run make:mac-arm
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
@@ -223,12 +217,9 @@ jobs:
         
       - name: Add msi to path
         run: echo "${env:wix}bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
-        
-      - name: Build plugins
-        run: pnpm run build:plugin
       # Enable x32 if someone still need it
       # - name: Make Windows (ia32)
-      #   run: npm run make:win-ia32
+      #   run: pnpm run make:win-ia32
       #   env:
       #     CSC_LINK: ${{ secrets.WIN_CERT }}
       #     CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASS }}
@@ -240,7 +231,7 @@ jobs:
       #     Get-ChildItem out/make/wix/ia32
       #     Rename-Item -Path "out/make/wix/ia32/TidGi.msi" -NewName "Install-TidGi-Windows-ia32.msi"
       - name: Make Windows (x64)
-        run: npm run make:win-x64
+        run: pnpm run make:win-x64
         env:
           CSC_LINK: ${{ secrets.WIN_CERT }}
           CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASS }}
@@ -252,7 +243,7 @@ jobs:
           Get-ChildItem out/make/wix/x64
           Rename-Item -Path "out/make/wix/x64/TidGi.msi" -NewName "Install-TidGi-Windows-x64.msi"
       - name: Make Windows (arm64)
-        run: npm run make:win-arm
+        run: pnpm run make:win-arm
         env:
           CSC_LINK: ${{ secrets.WIN_CERT }}
           CSC_KEY_PASSWORD: ${{ secrets.WIN_CERT_PASS }}
