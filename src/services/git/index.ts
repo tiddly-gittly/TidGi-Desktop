@@ -1,10 +1,17 @@
 import { dialog, net } from 'electron';
 import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
+import { Observer } from 'rxjs';
 import { ModuleThread, spawn, Worker } from 'threads';
 
+// @ts-expect-error it don't want .ts
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import workerURL from 'threads-plugin/dist/loader?name=gitWorker!./gitWorker.ts';
+
+import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
 import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService, ServiceBranchTypes } from '@services/auth/interface';
+import { lazyInject } from '@services/container';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { INativeService } from '@services/native/interface';
@@ -13,17 +20,10 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
-import { Observer } from 'rxjs';
-import { GitWorker } from './gitWorker';
-import { ICommitAndSyncConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
-
-import { LOCAL_GIT_DIRECTORY } from '@/constants/appPaths';
-import { lazyInject } from '@services/container';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace } from '@services/workspaces/interface';
-// @ts-expect-error it don't want .ts
-// eslint-disable-next-line import/no-webpack-loader-syntax
-import workerURL from 'threads-plugin/dist/loader?name=gitWorker!./gitWorker.ts';
+import { GitWorker } from './gitWorker';
+import { ICommitAndSyncConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
 import { stepWithChanges } from './stepWithChanges';
 
 @injectable()
@@ -51,8 +51,9 @@ export class Git implements IGitService {
 
   private async initWorker(): Promise<void> {
     process.env.LOCAL_GIT_DIRECTORY = LOCAL_GIT_DIRECTORY;
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    this.gitWorker = await spawn<GitWorker>(new Worker(workerURL), { timeout: 1000 * 60 });
+    logger.debug(`initial gitWorker with  ${workerURL as string}`, { function: 'Git.initWorker', LOCAL_GIT_DIRECTORY });
+    this.gitWorker = await spawn<GitWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
+    logger.debug(`initial gitWorker done`, { function: 'Git.initWorker' });
   }
 
   public async getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]> {

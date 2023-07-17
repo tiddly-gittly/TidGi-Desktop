@@ -32,15 +32,16 @@ import { getSubWikiPluginContent, ISubWikiPluginContent, updateSubWikiPluginCont
 import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
 import type { IpcServerRouteMethods, IpcServerRouteNames } from './wikiWorker/ipcServerRoutes';
 
+// @ts-expect-error it don't want .ts
+// eslint-disable-next-line import/no-webpack-loader-syntax
+import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker/index.ts';
+
 import { LOG_FOLDER } from '@/constants/appPaths';
 import { isDevelopmentOrTest } from '@/constants/environment';
 import { defaultServerIP } from '@/constants/urls';
 import { IDatabaseService } from '@services/database/interface';
 import { IPreferenceService } from '@services/preferences/interface';
 import { mapValues } from 'lodash';
-// @ts-expect-error it don't want .ts
-// eslint-disable-next-line import/no-webpack-loader-syntax
-import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker/index.ts';
 import { wikiWorkerStartedEventName } from './constants';
 import { IWikiOperations, wikiOperations } from './wikiOperations';
 
@@ -143,7 +144,9 @@ export class Wiki implements IWikiService {
       tokenAuth,
       userName,
     };
+    logger.debug(`initial wikiWorker with  ${workerURL as string} for workspaceID ${workspaceID}`, { function: 'Wiki.startWiki' });
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
+    logger.debug(`initial wikiWorker done`, { function: 'Wiki.startWiki' });
     this.wikiWorkers[workspaceID] = worker;
     this.wikiWorkerStartedEventTarget.dispatchEvent(new Event(wikiWorkerStartedEventName(workspaceID)));
     const wikiLogger = startWikiLogger(workspaceID, name);

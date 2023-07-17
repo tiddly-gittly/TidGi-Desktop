@@ -9,6 +9,10 @@ declare module '@tiddlygit/tiddlywiki' {
   export * from 'tiddlywiki';
 }
 
+declare module 'llama-node/dist/llm/llama-cpp.cjs' {
+  export { LLamaCpp } from 'llama-node/dist/llm/llama-cpp';
+}
+
 declare module 'the-graph' {
   import { Graph, GraphEdge, GraphNode } from 'fbp-graph';
   import { MutableRefObject } from 'react';

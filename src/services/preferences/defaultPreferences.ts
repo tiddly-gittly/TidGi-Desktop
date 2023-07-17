@@ -20,7 +20,7 @@ export const defaultPreferences: IPreferences = {
       'llama.cpp': 'llama.bin',
       'rwkv.cpp': 'rwkv.bin',
     },
-    timeoutDuration: 1000 * 30,
+    timeoutDuration: 1000 * 60,
   },
   menuBarAlwaysOnTop: false,
   pauseNotifications: '',

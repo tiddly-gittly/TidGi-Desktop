@@ -7,6 +7,7 @@ const path = require('path');
 const glob = require('glob');
 const fs = require('fs-extra');
 const util = require('util');
+const packageJSON = require('../package.json')
 const exec = util.promisify(require('child_process').exec);
 
 /**
@@ -38,14 +39,6 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
   const tasks = [];
   if (['production', 'test'].includes(process.env.NODE_ENV)) {
     console.log('Copying tiddlywiki dependency to dist');
-    tasks.push(fs.copy(path.join(projectRoot, 'node_modules', '@tiddlygit', 'tiddlywiki'), path.join(cwd, 'node_modules', '@tiddlygit', 'tiddlywiki'), { dereference: true }));
-    // it has things like `git/bin/libexec/git-core/git-add` link to `git/bin/libexec/git-core/git`, to reduce size, so can't use `dereference: true` here.
-    tasks.push(fs.copy(path.join(projectRoot, 'node_modules', '.pnpm', 'dugite@2.5.1', 'node_modules', 'dugite'), path.join(cwd, 'node_modules', 'dugite'), { dereference: false }));
-    // we only need its `main` binary, no need its dependency and code, because we already copy it to src/services/native/externalApp
-    tasks.push(fs.mkdirp(path.join(cwd, 'node_modules', 'app-path')).then(async () => {
-      await fs.copy(path.join(projectRoot, 'node_modules', 'app-path', 'main'), path.join(cwd, 'node_modules', 'app-path', 'main'), { dereference: true })
-    }));
-    tasks.push(fs.copy(path.resolve(projectRoot, 'node_modules/better-sqlite3/build/Release/better_sqlite3.node'), path.resolve(cwd, 'node_modules/better-sqlite3/build/Release/better_sqlite3.node'), { dereference: true }));
     tasks.push(fs.copy(path.join(projectRoot, 'node_modules', 'zx'), path.join(cwd, 'node_modules', 'zx'), { dereference: true }).then(async () => {
       // not using pnpm, because after using it, it always causing problem here, causing `Error: spawn /bin/sh ENOENT` in github actions
       // it can probably being "working directory didn't exist" in  https://github.com/nodejs/node/issues/9644#issuecomment-282060923
@@ -54,11 +47,30 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
       await exec(`npm i --legacy-building`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'globby'), shell });
       await exec(`npm i --legacy-building --ignore-scripts`, { cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'node-fetch'), shell });
     }));
+    const packagePathsToCopyDereferenced = [
+      ['@tiddlygit', 'tiddlywiki'],
+      ['llama-node'],
+      ['@llama-node','llama-cpp'],
+      ['@llama-node','core'],
+      ['@llama-node','rwkv-cpp'],
+      ['better-sqlite3','build','Release','better_sqlite3.node'],
+    ]
+    for (const packagePathInNodeModules of packagePathsToCopyDereferenced) {
+      // some binary may not exist in other platforms, so allow failing here.
+      tasks.push(fs.copy(path.resolve(projectRoot, 'node_modules', ...packagePathInNodeModules), path.resolve(cwd, 'node_modules', ...packagePathInNodeModules), { dereference: true }));
+    }
     const sqliteVssPackages = ['sqlite-vss-linux-x64', 'sqlite-vss-darwin-x64', 'sqlite-vss-darwin-arm64']
     for (const sqliteVssPackage of sqliteVssPackages) {
       // some binary may not exist in other platforms, so allow failing here.
-      tasks.push(fs.copy(path.resolve(projectRoot, `node_modules/${sqliteVssPackage}`), path.resolve(cwd, `node_modules/${sqliteVssPackage}`), { dereference: true }).catch(() => {}));
+      tasks.push(fs.copy(path.resolve(projectRoot, 'node_modules', sqliteVssPackage), path.resolve(cwd, 'node_modules', sqliteVssPackage), { dereference: true }).catch(() => {}));
     }
+    // it has things like `git/bin/libexec/git-core/git-add` link to `git/bin/libexec/git-core/git`, to reduce size, so can't use `dereference: true` here.
+    // And pnpm will have node_modules/dugite to be a shortcut, can't just copy it with `dereference: false`, have to copy from .pnpm folder
+    tasks.push(fs.copy(path.join(projectRoot, 'node_modules', '.pnpm', `dugite@${packageJSON.dependencies.dugite}`, 'node_modules', 'dugite'), path.join(cwd, 'node_modules', 'dugite'), { dereference: false }));
+    // we only need its `main` binary, no need its dependency and code, because we already copy it to src/services/native/externalApp
+    tasks.push(fs.mkdirp(path.join(cwd, 'node_modules', 'app-path')).then(async () => {
+      await fs.copy(path.join(projectRoot, 'node_modules', 'app-path', 'main'), path.join(cwd, 'node_modules', 'app-path', 'main'), { dereference: true })
+    }));
   }
   /** sign it for mac m1 https://www.zhihu.com/question/431722091/answer/1592339574 (only work if user run this.)
    * And have error
