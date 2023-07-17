@@ -1,5 +1,6 @@
 import { LanguageModelChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import type { LoadConfig as LLamaLoadConfig } from 'llama-node/dist/llm/llama-cpp';
 import type { Observable } from 'rxjs';
 
 export interface ILanguageModelPreferences {
@@ -47,9 +48,20 @@ export interface ILLMResultPart extends ILLMResultBase {
   token: string;
 }
 
-export interface IRunLLAmaOptions extends ILLMResultBase {
-  modelName?: string;
+export interface ILLAmaCompletionOptions {
+  nThreads?: number;
+  nTokPredict?: number;
   prompt: string;
+  repeatPenalty?: number;
+  temp?: number;
+  topK?: number;
+  topP?: number;
+}
+
+export interface IRunLLAmaOptions extends ILLMResultBase {
+  completionOptions: ILLAmaCompletionOptions;
+  loadConfig?: Partial<LLamaLoadConfig>;
+  modelName?: string;
 }
 
 /**
@@ -63,11 +75,13 @@ export interface IRunLLAmaOptions extends ILLMResultBase {
  * Run language model on a shared worker, and queue requests to the worker.
  */
 export interface ILanguageModelService {
+  abortLLama(id: string): Promise<void>;
   runLLama$(options: IRunLLAmaOptions): Observable<ILLMResultPart>;
 }
 export const LanguageModelServiceIPCDescriptor = {
   channel: LanguageModelChannel.name,
   properties: {
+    abortLLama: ProxyPropertyType.Function,
     runLLama$: ProxyPropertyType.Function$,
   },
 };
