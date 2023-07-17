@@ -26,9 +26,9 @@ ${debugInfo()}
 
 ### Description 描述
 
-${(error.message ?? '')}`
+${(error.message ?? '')}
 
-${(error.stack ?? '')}`
+${(error.stack ?? '')}
 
 ### Steps to Reproduce 复现方式
 
