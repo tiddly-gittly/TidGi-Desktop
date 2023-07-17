@@ -108,7 +108,7 @@ export class LanguageModel implements ILanguageModelService {
   }
 
   public runLLama$(options: IRunLLAmaOptions): Observable<ILLMResultPart> {
-    const { id: conversationID, prompt, modelName } = options;
+    const { id: conversationID, completionOptions, modelName, loadConfig: config } = options;
     return new Observable<ILLMResultPart>((subscriber) => {
       const getWikiChangeObserverIIFE = async () => {
         const worker = await this.getWorker();
@@ -118,7 +118,7 @@ export class LanguageModel implements ILanguageModelService {
           subscriber.error(new Error(`${i18n.t('LanguageModel.ModelNotExist')} ${modelPath}`));
           return;
         }
-        const observable = worker.runLLama({ prompt, modelPath, conversationID, openDebugger: false });
+        const observable = worker.runLLama({ completionOptions, loadConfig: { modelPath, ...config }, conversationID });
         observable.subscribe({
           next: (result) => {
             const loggerCommonMeta = { id: result.id, function: 'LanguageModel.runLLama$' };
@@ -148,5 +148,9 @@ export class LanguageModel implements ILanguageModelService {
       };
       void getWikiChangeObserverIIFE();
     });
+  }
+
+  public async abortLLama(id: string): Promise<void> {
+    await this.llmWorker?.abortLLama(id);
   }
 }

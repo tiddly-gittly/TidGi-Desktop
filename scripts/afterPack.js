@@ -64,6 +64,7 @@ exports.default = async (buildPath, electronVersion, platform, arch, callback) =
       ['@tiddlygit', 'tiddlywiki', 'core'],
       ['@tiddlygit', 'tiddlywiki', 'plugins'],
       ['@tiddlygit', 'tiddlywiki', 'themes'],
+      ['@tiddlygit', 'tiddlywiki', 'languages'],
       ['@tiddlygit', 'tiddlywiki', 'tiddlywiki.js'],
       // llama-node and @llama-node/core etc. include too many source code, so only copy its binary
       ['llama-node', 'dist'],
