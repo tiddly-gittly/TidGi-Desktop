@@ -143,8 +143,11 @@ export interface IWorkflowListItem {
   graphJSONString: string;
   id: string;
   image?: string;
+  /**
+   * Things that only exist on runtime, and won't be persisted.
+   */
   metadata?: {
-    tiddler: IWorkflowTiddler;
+    tiddler?: IWorkflowTiddler;
     workspace?: IWorkspaceWithMetadata;
   };
   tags: string[];

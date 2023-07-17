@@ -1,21 +1,30 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 import 'source-map-support/register';
-import { LLM } from 'llama-node';
-import { LLamaCpp, LoadConfig as LLamaLoadConfig } from 'llama-node/dist/llm/llama-cpp.js';
+import type { LoadConfig as LLamaLoadConfig } from 'llama-node/dist/llm/llama-cpp';
+import inspector from 'node:inspector';
 import { Observable } from 'rxjs';
 import { expose } from 'threads/worker';
 import { ILanguageModelWorkerResponse } from './interface';
 
 const DEFAULT_TIMEOUT_DURATION = 1000 * 30;
-function runLLama$(
-  options: { conversationID: string; modelPath: string; prompt: string },
+function runLLama(
+  options: { conversationID: string; modelPath: string; openDebugger?: boolean; prompt: string },
 ): Observable<ILanguageModelWorkerResponse> {
-  const { conversationID, modelPath, prompt } = options;
-  const loggerCommonMeta = { level: 'info' as const, meta: { function: 'llmWorker.runLLama$' }, id: conversationID };
+  const { conversationID, modelPath, prompt, openDebugger } = options;
+  if (openDebugger === true) {
+    inspector.open();
+    inspector.waitForDebugger();
+    // eslint-disable-next-line no-debugger
+    debugger;
+  }
+  const loggerCommonMeta = { level: 'info' as const, meta: { function: 'llmWorker.runLLama' }, id: conversationID };
   return new Observable<ILanguageModelWorkerResponse>((subscriber) => {
     void (async function runLLamaObservableIIFE() {
       try {
         subscriber.next({ message: 'preparing instance and config', ...loggerCommonMeta });
+        const { LLM } = await import('llama-node');
+        // use dynamic import cjs version to fix https://github.com/andywer/threads.js/issues/478
+        const { LLamaCpp } = await import('llama-node/dist/llm/llama-cpp.cjs');
         const llama = new LLM(LLamaCpp);
         const config: LLamaLoadConfig = {
           modelPath,
@@ -76,6 +85,6 @@ function runLLama$(
   });
 }
 
-const llmWorker = { runLLama$ };
+const llmWorker = { runLLama };
 export type LLMWorker = typeof llmWorker;
 expose(llmWorker);

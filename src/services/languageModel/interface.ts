@@ -55,7 +55,7 @@ export interface IRunLLAmaOptions extends ILLMResultBase {
 /**
  * Test language model on renderer by:
  * ```js
- * window.observables.languageModel.runLLama$({ id: '1' }).subscribe({ next: console.log, error: console.error, complete: () => console.warn('completed') })
+ * window.observables.languageModel.runLLama$({ prompt: 'A chat between a user and an assistant.\nUSER: You are a helpful assistant. Write a simple hello world in JS.\nASSISTANT:\n', id: '1' }).subscribe({ next: console.log, error: console.error, complete: () => console.warn('completed') })
  * ```
  */
 

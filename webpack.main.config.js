@@ -48,11 +48,18 @@ module.exports = {
     },
   },
   externals: [
-    // TODO: simply external things will make require can't find things. May need some other way.
+    // simply external all things will make require can't find things. Only exclude what we copied in scripts/afterPack.js
     // nodeExternals({
     //   additionalModuleDirs: ['@tiddlygit/tiddlywiki'],
     //   allowlist: [/(threads-plugin)/],
     // }),
+    '@tiddlygit/tiddlywiki',
+    'llama-node',
+    '@llama-node/llama-cpp',
+    '@llama-node/core',
+    '@llama-node/rwkv-cpp',
+    'dugite',
+    'zx',
   ],
   // externalsType: 'commonjs',
   // externalsPresets: { electronMain: true },

@@ -40,7 +40,7 @@ dependencies:
     specifier: 6.0.3
     version: 6.0.3
   dugite:
-    specifier: ^2.5.1
+    specifier: 2.5.1
     version: 2.5.1
   electron-ipc-cat:
     specifier: 2.0.1

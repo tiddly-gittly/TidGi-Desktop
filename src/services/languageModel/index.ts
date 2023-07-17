@@ -36,8 +36,21 @@ export class LanguageModel implements ILanguageModelService {
   private llmWorker?: ModuleThread<LLMWorker>;
 
   private async initWorker(): Promise<void> {
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    this.llmWorker = await spawn<LLMWorker>(new Worker(workerURL), { timeout: 1000 * 60 });
+    logger.debug(`initial llmWorker with  ${workerURL as string}`, { function: 'LanguageModel.initWorker' });
+    try {
+      this.llmWorker = await spawn<LLMWorker>(new Worker(workerURL as string), { timeout: 1000 * 30 });
+      logger.debug(`initial llmWorker done`, { function: 'LanguageModel.initWorker' });
+    } catch (error) {
+      if ((error as Error).message.includes('Did not receive an init message from worker after')) {
+        // https://github.com/andywer/threads.js/issues/426
+        // wait some time and restart the wiki will solve this
+        logger.warn(`initWorker() handle "${(error as Error)?.message}", will try recreate worker.`, { function: 'LanguageModel.initWorker' });
+        await this.initWorker();
+      } else {
+        logger.warn('initWorker() unexpected error, throw it', { function: 'LanguageModel.initWorker' });
+        throw error;
+      }
+    }
   }
 
   /**
@@ -99,18 +112,13 @@ export class LanguageModel implements ILanguageModelService {
     return new Observable<ILLMResultPart>((subscriber) => {
       const getWikiChangeObserverIIFE = async () => {
         const worker = await this.getWorker();
-
-        //         const template = `Write a short helloworld in JavaScript.`;
-        //         const prompt = `A chat between a user and a useful assistant.
-        // USER: ${template}
-        // ASSISTANT:`;
         const { defaultModel } = await this.preferenceService.get('languageModel');
         const modelPath = path.join(LANGUAGE_MODEL_FOLDER, modelName ?? defaultModel['llama.cpp']);
         if (!(await this.checkModelExistsAndWarnUser(modelPath))) {
           subscriber.error(new Error(`${i18n.t('LanguageModel.ModelNotExist')} ${modelPath}`));
           return;
         }
-        const observable = worker.runLLama$({ prompt, modelPath, conversationID });
+        const observable = worker.runLLama({ prompt, modelPath, conversationID, openDebugger: false });
         observable.subscribe({
           next: (result) => {
             const loggerCommonMeta = { id: result.id, function: 'LanguageModel.runLLama$' };
