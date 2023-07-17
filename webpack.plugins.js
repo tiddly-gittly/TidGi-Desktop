@@ -42,7 +42,7 @@ exports.main = _.compact([
   new ExternalsPlugin({
     type: 'commonjs',
     // use regex works.
-    include: /@tiddlygit\+tiddlywiki@(.+)|llama-node(.+)|@llama-node(.+)/,
+    include: /@tiddlygit\+tiddlywiki@(.+)|llama-node(.+)|@llama-node(.+)|dugite(.+)/,
     // when using npm, we can use this. But with pnpm, this won't work ↓
     // include: path.join(__dirname, 'node_modules', '.pnpm', '@tiddlygit', 'tiddlywiki'),
   }),
