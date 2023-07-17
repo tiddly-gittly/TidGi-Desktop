@@ -29,6 +29,7 @@ async function loadLLama(
     ...loadConfigOverwrite,
   };
   await llama.load(loadConfig);
+  return llama;
 }
 function unloadLLama() {
   llama = undefined;
@@ -43,8 +44,7 @@ function runLLama(
   return new Observable<ILanguageModelWorkerResponse>((subscriber) => {
     void (async function runLLamaObservableIIFE() {
       if (llama === undefined) {
-        await loadLLama(loadConfig);
-        return;
+        llama = await loadLLama(loadConfig);
       }
       try {
         let respondTimeout: NodeJS.Timeout | undefined;
