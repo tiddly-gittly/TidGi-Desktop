@@ -19,7 +19,7 @@ import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { ILanguageModelService, ILLMResultPart, IRunLLAmaOptions } from './interface';
+import { ILanguageModelService, ILLMResultPart, IRunLLAmaOptions, IRunRwkvOptions, LanguageModelRunner } from './interface';
 import { LLMWorker } from './llmWorker/index';
 
 @injectable()
@@ -107,21 +107,37 @@ export class LanguageModel implements ILanguageModelService {
     return exists;
   }
 
-  public runLLama$(options: IRunLLAmaOptions): Observable<ILLMResultPart> {
+  public runLanguageModel$(runner: LanguageModelRunner.llamaCpp, options: IRunLLAmaOptions): Observable<ILLMResultPart>;
+  public runLanguageModel$(runner: LanguageModelRunner.rwkvCpp, options: IRunRwkvOptions): Observable<ILLMResultPart>;
+  public runLanguageModel$(runner: LanguageModelRunner, options: IRunLLAmaOptions | IRunRwkvOptions): Observable<ILLMResultPart> {
     const { id: conversationID, completionOptions, modelName, loadConfig: config } = options;
     return new Observable<ILLMResultPart>((subscriber) => {
-      const getWikiChangeObserverIIFE = async () => {
+      const runLanguageModelObserverIIFE = async () => {
         const worker = await this.getWorker();
         const { defaultModel } = await this.preferenceService.get('languageModel');
-        const modelPath = path.join(LANGUAGE_MODEL_FOLDER, modelName ?? defaultModel['llama.cpp']);
+        const modelPath = path.join(LANGUAGE_MODEL_FOLDER, modelName ?? defaultModel[runner]);
         if (!(await this.checkModelExistsAndWarnUser(modelPath))) {
           subscriber.error(new Error(`${i18n.t('LanguageModel.ModelNotExist')} ${modelPath}`));
           return;
         }
-        const observable = worker.runLLama({ completionOptions, loadConfig: { modelPath, ...config }, conversationID });
+        let observable;
+        switch (runner) {
+          case LanguageModelRunner.llamaCpp: {
+            observable = worker.runLLama({ completionOptions, loadConfig: { modelPath, ...config }, conversationID });
+            break;
+          }
+          case LanguageModelRunner.rwkvCpp: {
+            observable = worker.runRwkv({ completionOptions, loadConfig: { modelPath, ...config }, conversationID });
+            break;
+          }
+          case LanguageModelRunner.llmRs: {
+            logger.error(`llmRs haven't implemented yet.`);
+            return;
+          }
+        }
         observable.subscribe({
           next: (result) => {
-            const loggerCommonMeta = { id: result.id, function: 'LanguageModel.runLLama$' };
+            const loggerCommonMeta = { id: result.id, function: 'LanguageModel.runLanguageModel$' };
 
             if ('type' in result && result.type === 'result') {
               const { token, id } = result;
@@ -141,16 +157,28 @@ export class LanguageModel implements ILanguageModelService {
             subscriber.error(error);
           },
           complete: () => {
-            logger.info(`worker observable completed`, { function: 'LanguageModel.runLLama$' });
+            logger.info(`worker observable completed`, { function: 'LanguageModel.runLanguageModel$' });
             subscriber.complete();
           },
         });
       };
-      void getWikiChangeObserverIIFE();
+      void runLanguageModelObserverIIFE();
     });
   }
 
-  public async abortLLama(id: string): Promise<void> {
-    await this.llmWorker?.abortLLama(id);
+  public async abortLanguageModel(runner: LanguageModelRunner, id: string): Promise<void> {
+    switch (runner) {
+      case LanguageModelRunner.llamaCpp: {
+        await this.llmWorker?.abortLLama(id);
+        break;
+      }
+      case LanguageModelRunner.rwkvCpp: {
+        await this.llmWorker?.abortRwkv(id);
+        break;
+      }
+      case LanguageModelRunner.llmRs: {
+        logger.error(`llmRs haven't implemented yet.`);
+      }
+    }
   }
 }

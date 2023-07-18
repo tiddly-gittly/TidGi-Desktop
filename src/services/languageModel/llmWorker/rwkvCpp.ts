@@ -1,47 +1,40 @@
 import type { LLM } from 'llama-node';
-import type { LoadConfig } from 'llama-node/dist/llm/llama-cpp';
+import type { LoadConfig } from 'llama-node/dist/llm/rwkv-cpp';
 import { Observable } from 'rxjs';
 import { ILanguageModelWorkerResponse, ILLAmaCompletionOptions } from '../interface';
 
 let runnerInstance: undefined | LLM;
 const DEFAULT_TIMEOUT_DURATION = 1000 * 30;
-export async function loadLLama(
+export async function loadRwkv(
   loadConfigOverwrite: Partial<LoadConfig> & { modelPath: string },
 ) {
   const { LLM } = await import('llama-node');
   // use dynamic import cjs version to fix https://github.com/andywer/threads.js/issues/478
-  const { LLamaCpp } = await import('llama-node/dist/llm/llama-cpp.cjs');
-  runnerInstance = new LLM(LLamaCpp);
+  const { RwkvCpp } = await import('llama-node/dist/llm/rwkv-cpp.cjs');
+  runnerInstance = new LLM(RwkvCpp);
   const loadConfig: LoadConfig = {
     enableLogging: true,
-    nCtx: 1024,
-    seed: 0,
-    f16Kv: false,
-    logitsAll: false,
-    vocabOnly: false,
-    useMlock: false,
-    embedding: false,
-    useMmap: true,
-    nGpuLayers: 0,
+    tokenizerPath: '',
+    nThreads: 4,
     ...loadConfigOverwrite,
   };
   await runnerInstance.load(loadConfig);
   return runnerInstance;
 }
-export function unloadLLama() {
+export function unloadRwkv() {
   runnerInstance = undefined;
 }
 const runnerAbortControllers = new Map<string, AbortController>();
-export function runLLama(
+export function runRwkv(
   options: { completionOptions?: ILLAmaCompletionOptions; conversationID: string; loadConfig: Partial<LoadConfig> & { modelPath: string } },
 ): Observable<ILanguageModelWorkerResponse> {
   const { conversationID, completionOptions, loadConfig } = options;
 
-  const loggerCommonMeta = { level: 'info' as const, meta: { function: 'llmWorker.runLLama' }, id: conversationID };
+  const loggerCommonMeta = { level: 'info' as const, meta: { function: 'llmWorker.runRwkv' }, id: conversationID };
   return new Observable<ILanguageModelWorkerResponse>((subscriber) => {
-    void (async function runLLamaObservableIIFE() {
+    void (async function runRwkvObservableIIFE() {
       if (runnerInstance === undefined) {
-        runnerInstance = await loadLLama(loadConfig);
+        runnerInstance = await loadRwkv(loadConfig);
       }
       try {
         let respondTimeout: NodeJS.Timeout | undefined;
@@ -92,7 +85,7 @@ export function runLLama(
     })();
   });
 }
-export function abortLLama(conversationID: string) {
+export function abortRwkv(conversationID: string) {
   const abortController = runnerAbortControllers.get(conversationID);
   if (abortController !== undefined) {
     abortController.abort();

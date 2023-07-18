@@ -1,4 +1,5 @@
 import { DEFAULT_DOWNLOADS_PATH } from '@/constants/appPaths';
+import { LanguageModelRunner } from '@services/languageModel/interface';
 import { app } from 'electron';
 import semver from 'semver';
 import { IPreferences } from './interface';
@@ -16,9 +17,9 @@ export const defaultPreferences: IPreferences = {
   language: 'zh_CN',
   languageModel: {
     defaultModel: {
-      'llama-rs': 'llama.bin',
-      'llama.cpp': 'llama.bin',
-      'rwkv.cpp': 'rwkv.bin',
+      [LanguageModelRunner.llmRs]: 'llama.bin',
+      [LanguageModelRunner.llamaCpp]: 'llama.bin',
+      [LanguageModelRunner.rwkvCpp]: 'rwkv.bin',
     },
     timeoutDuration: 1000 * 60,
   },
