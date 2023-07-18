@@ -10,6 +10,7 @@ import { ModuleThread, spawn, Worker } from 'threads';
 import workerURL from 'threads-plugin/dist/loader?name=llmWorker!./llmWorker/index.ts';
 
 import { LANGUAGE_MODEL_FOLDER } from '@/constants/appPaths';
+import { RWKV_CPP_TOKENIZER_PATH } from '@/constants/paths';
 import { getExistingParentDirectory } from '@/helpers/findPath';
 import { lazyInject } from '@services/container';
 import { i18n } from '@services/libs/i18n';
@@ -127,7 +128,7 @@ export class LanguageModel implements ILanguageModelService {
             break;
           }
           case LanguageModelRunner.rwkvCpp: {
-            observable = worker.runRwkv({ completionOptions, loadConfig: { modelPath, ...config }, conversationID });
+            observable = worker.runRwkv({ completionOptions, loadConfig: { modelPath, tokenizerPath: RWKV_CPP_TOKENIZER_PATH, ...config }, conversationID });
             break;
           }
           case LanguageModelRunner.llmRs: {

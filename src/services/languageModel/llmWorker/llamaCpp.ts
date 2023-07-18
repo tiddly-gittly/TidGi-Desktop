@@ -7,7 +7,7 @@ import { ILanguageModelWorkerResponse, LLamaInvocation } from '../interface';
 let runnerInstance: undefined | LLM<LLama, LoadConfig, LLamaInvocation>;
 const DEFAULT_TIMEOUT_DURATION = 1000 * 30;
 export async function loadLLama(
-  loadConfigOverwrite: Partial<LoadConfig> & { modelPath: string },
+  loadConfigOverwrite: Partial<LoadConfig> & Pick<LoadConfig, 'modelPath'>,
 ) {
   const { LLM } = await import('llama-node');
   // use dynamic import cjs version to fix https://github.com/andywer/threads.js/issues/478
@@ -34,7 +34,7 @@ export function unloadLLama() {
 }
 const runnerAbortControllers = new Map<string, AbortController>();
 export function runLLama(
-  options: { completionOptions: Partial<LLamaInvocation> & { prompt: string }; conversationID: string; loadConfig: Partial<LoadConfig> & { modelPath: string } },
+  options: { completionOptions: Partial<LLamaInvocation> & { prompt: string }; conversationID: string; loadConfig: Partial<LoadConfig> & Pick<LoadConfig, 'modelPath'> },
 ): Observable<ILanguageModelWorkerResponse> {
   const { conversationID, completionOptions, loadConfig } = options;
 

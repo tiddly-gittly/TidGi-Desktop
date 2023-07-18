@@ -7,7 +7,7 @@ import { ILanguageModelWorkerResponse, RwkvInvocation } from '../interface';
 let runnerInstance: undefined | LLM<Rwkv, LoadConfig, RwkvInvocation>;
 const DEFAULT_TIMEOUT_DURATION = 1000 * 30;
 export async function loadRwkv(
-  loadConfigOverwrite: Partial<LoadConfig> & { modelPath: string },
+  loadConfigOverwrite: Partial<LoadConfig> & Pick<LoadConfig, 'modelPath' | 'tokenizerPath'>,
 ) {
   const { LLM } = await import('llama-node');
   // use dynamic import cjs version to fix https://github.com/andywer/threads.js/issues/478
@@ -15,7 +15,6 @@ export async function loadRwkv(
   runnerInstance = new LLM(RwkvCpp);
   const loadConfig: LoadConfig = {
     enableLogging: true,
-    tokenizerPath: '',
     nThreads: 4,
     ...loadConfigOverwrite,
   };
@@ -27,7 +26,11 @@ export function unloadRwkv() {
 }
 const runnerAbortControllers = new Map<string, AbortController>();
 export function runRwkv(
-  options: { completionOptions: Partial<RwkvInvocation> & { prompt: string }; conversationID: string; loadConfig: Partial<LoadConfig> & { modelPath: string } },
+  options: {
+    completionOptions: Partial<RwkvInvocation> & { prompt: string };
+    conversationID: string;
+    loadConfig: Partial<LoadConfig> & Pick<LoadConfig, 'modelPath' | 'tokenizerPath'>;
+  },
 ): Observable<ILanguageModelWorkerResponse> {
   const { conversationID, completionOptions, loadConfig } = options;
 
