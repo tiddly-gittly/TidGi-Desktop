@@ -122,13 +122,18 @@ export class LanguageModel implements ILanguageModelService {
           return;
         }
         let observable;
+        const texts = { timeout: i18n.t('LanguageModel.GenerationTimeout') };
         switch (runner) {
           case LanguageModelRunner.llamaCpp: {
-            observable = worker.runLLama({ completionOptions, loadConfig: { modelPath, ...config }, conversationID });
+            // DEBUG: console modelPath
+            console.log(`modelPath`, modelPath);
+            observable = worker.runLLama({ completionOptions, loadConfig: { modelPath, ...config }, conversationID }, texts);
             break;
           }
           case LanguageModelRunner.rwkvCpp: {
-            observable = worker.runRwkv({ completionOptions, loadConfig: { modelPath, tokenizerPath: RWKV_CPP_TOKENIZER_PATH, ...config }, conversationID });
+            // DEBUG: console RWKV_CPP_TOKENIZER_PATH
+            console.log(`RWKV_CPP_TOKENIZER_PATH`, RWKV_CPP_TOKENIZER_PATH);
+            observable = worker.runRwkv({ completionOptions, loadConfig: { modelPath, tokenizerPath: RWKV_CPP_TOKENIZER_PATH, ...config }, conversationID }, texts);
             break;
           }
           case LanguageModelRunner.llmRs: {

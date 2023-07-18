@@ -3,9 +3,9 @@ import type { LLM } from 'llama-node';
 import type { LoadConfig } from 'llama-node/dist/llm/rwkv-cpp';
 import { Observable } from 'rxjs';
 import { ILanguageModelWorkerResponse, RwkvInvocation } from '../interface';
+import { DEFAULT_TIMEOUT_DURATION } from './constants';
 
 let runnerInstance: undefined | LLM<Rwkv, LoadConfig, RwkvInvocation>;
-const DEFAULT_TIMEOUT_DURATION = 1000 * 30;
 export async function loadRwkv(
   loadConfigOverwrite: Partial<LoadConfig> & Pick<LoadConfig, 'modelPath' | 'tokenizerPath'>,
 ) {
@@ -31,6 +31,7 @@ export function runRwkv(
     conversationID: string;
     loadConfig: Partial<LoadConfig> & Pick<LoadConfig, 'modelPath' | 'tokenizerPath'>;
   },
+  texts: { timeout: string },
 ): Observable<ILanguageModelWorkerResponse> {
   const { conversationID, completionOptions, loadConfig } = options;
 
@@ -48,6 +49,7 @@ export function runRwkv(
           respondTimeout = setTimeout(() => {
             abortController.abort();
             runnerAbortControllers.delete(conversationID);
+            subscriber.next({ type: 'result', token: texts.timeout, id: conversationID });
             subscriber.complete();
           }, DEFAULT_TIMEOUT_DURATION);
         };

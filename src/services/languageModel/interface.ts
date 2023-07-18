@@ -57,12 +57,12 @@ export interface ILLMResultPart extends ILLMResultBase {
 }
 
 export interface IRunLLAmaOptions extends ILLMResultBase {
-  completionOptions: LLamaInvocation;
+  completionOptions: Partial<LLamaInvocation> & { prompt: string };
   loadConfig?: Partial<LLamaLoadConfig>;
   modelName?: string;
 }
 export interface IRunRwkvOptions extends ILLMResultBase {
-  completionOptions: RwkvInvocation;
+  completionOptions: Partial<RwkvInvocation> & { prompt: string };
   loadConfig?: Partial<RwkvLoadConfig>;
   modelName?: string;
 }
@@ -90,5 +90,5 @@ export const LanguageModelServiceIPCDescriptor = {
   },
 };
 
-export { type Generate as LLamaInvocation } from '@llama-node/llama-cpp';
-export { type RwkvInvocation } from '@llama-node/rwkv-cpp';
+export type { Generate as LLamaInvocation } from '@llama-node/llama-cpp';
+export type { RwkvInvocation } from '@llama-node/rwkv-cpp';
