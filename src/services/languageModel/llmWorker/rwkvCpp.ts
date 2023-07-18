@@ -1,9 +1,10 @@
+import type { Rwkv } from '@llama-node/rwkv-cpp';
 import type { LLM } from 'llama-node';
 import type { LoadConfig } from 'llama-node/dist/llm/rwkv-cpp';
 import { Observable } from 'rxjs';
-import { ILanguageModelWorkerResponse, ILLAmaCompletionOptions } from '../interface';
+import { ILanguageModelWorkerResponse, RwkvInvocation } from '../interface';
 
-let runnerInstance: undefined | LLM;
+let runnerInstance: undefined | LLM<Rwkv, LoadConfig, RwkvInvocation>;
 const DEFAULT_TIMEOUT_DURATION = 1000 * 30;
 export async function loadRwkv(
   loadConfigOverwrite: Partial<LoadConfig> & { modelPath: string },
@@ -26,7 +27,7 @@ export function unloadRwkv() {
 }
 const runnerAbortControllers = new Map<string, AbortController>();
 export function runRwkv(
-  options: { completionOptions?: ILLAmaCompletionOptions; conversationID: string; loadConfig: Partial<LoadConfig> & { modelPath: string } },
+  options: { completionOptions: Partial<RwkvInvocation> & { prompt: string }; conversationID: string; loadConfig: Partial<LoadConfig> & { modelPath: string } },
 ): Observable<ILanguageModelWorkerResponse> {
   const { conversationID, completionOptions, loadConfig } = options;
 
@@ -52,12 +53,9 @@ export function runRwkv(
         runnerAbortControllers.set(conversationID, abortController);
         await runnerInstance.createCompletion(
           {
-            nThreads: 4,
-            nTokPredict: 2048,
-            topK: 40,
+            maxPredictLength: 2048,
             topP: 0.1,
-            temp: 0.2,
-            // repeatPenalty: 1,
+            temp: 0.1,
             ...completionOptions,
           },
           (response) => {

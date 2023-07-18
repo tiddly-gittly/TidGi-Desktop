@@ -1,9 +1,10 @@
+import type { LLama } from '@llama-node/llama-cpp';
 import type { LLM } from 'llama-node';
 import type { LoadConfig } from 'llama-node/dist/llm/llama-cpp';
 import { Observable } from 'rxjs';
-import { ILanguageModelWorkerResponse, ILLAmaCompletionOptions } from '../interface';
+import { ILanguageModelWorkerResponse, LLamaInvocation } from '../interface';
 
-let runnerInstance: undefined | LLM;
+let runnerInstance: undefined | LLM<LLama, LoadConfig, LLamaInvocation>;
 const DEFAULT_TIMEOUT_DURATION = 1000 * 30;
 export async function loadLLama(
   loadConfigOverwrite: Partial<LoadConfig> & { modelPath: string },
@@ -33,7 +34,7 @@ export function unloadLLama() {
 }
 const runnerAbortControllers = new Map<string, AbortController>();
 export function runLLama(
-  options: { completionOptions?: ILLAmaCompletionOptions; conversationID: string; loadConfig: Partial<LoadConfig> & { modelPath: string } },
+  options: { completionOptions: Partial<LLamaInvocation> & { prompt: string }; conversationID: string; loadConfig: Partial<LoadConfig> & { modelPath: string } },
 ): Observable<ILanguageModelWorkerResponse> {
   const { conversationID, completionOptions, loadConfig } = options;
 
@@ -64,7 +65,7 @@ export function runLLama(
             topK: 40,
             topP: 0.1,
             temp: 0.2,
-            // repeatPenalty: 1,
+            repeatPenalty: 1.5,
             ...completionOptions,
           },
           (response) => {

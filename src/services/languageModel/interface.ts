@@ -1,4 +1,6 @@
 import { LanguageModelChannel } from '@/constants/channels';
+import type { Generate as LLamaInvocation } from '@llama-node/llama-cpp';
+import type { RwkvInvocation } from '@llama-node/rwkv-cpp';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { LoadConfig as LLamaLoadConfig } from 'llama-node/dist/llm/llama-cpp';
 import type { LoadConfig as RwkvLoadConfig } from 'llama-node/dist/llm/rwkv-cpp';
@@ -54,29 +56,13 @@ export interface ILLMResultPart extends ILLMResultBase {
   token: string;
 }
 
-export interface ILLAmaCompletionOptions {
-  nThreads?: number;
-  nTokPredict?: number;
-  prompt: string;
-  repeatPenalty?: number;
-  temp?: number;
-  topK?: number;
-  topP?: number;
-}
-export interface IRwkvCompletionOptions {
-  maxPredictLength?: number;
-  prompt: string;
-  temp?: number;
-  topP?: number;
-}
-
 export interface IRunLLAmaOptions extends ILLMResultBase {
-  completionOptions: ILLAmaCompletionOptions;
+  completionOptions: LLamaInvocation;
   loadConfig?: Partial<LLamaLoadConfig>;
   modelName?: string;
 }
 export interface IRunRwkvOptions extends ILLMResultBase {
-  completionOptions: IRwkvCompletionOptions;
+  completionOptions: RwkvInvocation;
   loadConfig?: Partial<RwkvLoadConfig>;
   modelName?: string;
 }
@@ -103,3 +89,6 @@ export const LanguageModelServiceIPCDescriptor = {
     runLanguageModel$: ProxyPropertyType.Function$,
   },
 };
+
+export { type Generate as LLamaInvocation } from '@llama-node/llama-cpp';
+export { type RwkvInvocation } from '@llama-node/rwkv-cpp';
