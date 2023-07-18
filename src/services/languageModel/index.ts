@@ -7,7 +7,7 @@ import { ModuleThread, spawn, Worker } from 'threads';
 
 // @ts-expect-error it don't want .ts
 // eslint-disable-next-line import/no-webpack-loader-syntax
-import workerURL from 'threads-plugin/dist/loader?name=llmWorker!./llmWorker.ts';
+import workerURL from 'threads-plugin/dist/loader?name=llmWorker!./llmWorker/index.ts';
 
 import { LANGUAGE_MODEL_FOLDER } from '@/constants/appPaths';
 import { getExistingParentDirectory } from '@/helpers/findPath';
@@ -20,7 +20,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { ILanguageModelService, ILLMResultPart, IRunLLAmaOptions } from './interface';
-import { LLMWorker } from './llmWorker';
+import { LLMWorker } from './llmWorker/index';
 
 @injectable()
 export class LanguageModel implements ILanguageModelService {

@@ -1,14 +1,11 @@
-/* eslint-disable @typescript-eslint/no-misused-promises */
-import 'source-map-support/register';
 import type { LLM } from 'llama-node';
 import type { LoadConfig as LLamaLoadConfig } from 'llama-node/dist/llm/llama-cpp';
 import { Observable } from 'rxjs';
-import { expose } from 'threads/worker';
-import { ILanguageModelWorkerResponse, ILLAmaCompletionOptions } from './interface';
+import { ILanguageModelWorkerResponse, ILLAmaCompletionOptions } from '../interface';
 
 let llama: undefined | LLM;
 const DEFAULT_TIMEOUT_DURATION = 1000 * 30;
-async function loadLLama(
+export async function loadLLama(
   loadConfigOverwrite: Partial<LLamaLoadConfig> & { modelPath: string },
 ) {
   const { LLM } = await import('llama-node');
@@ -31,11 +28,11 @@ async function loadLLama(
   await llama.load(loadConfig);
   return llama;
 }
-function unloadLLama() {
+export function unloadLLama() {
   llama = undefined;
 }
 const llamaAbortControllers = new Map<string, AbortController>();
-function runLLama(
+export function runLLama(
   options: { completionOptions?: ILLAmaCompletionOptions; conversationID: string; loadConfig: Partial<LLamaLoadConfig> & { modelPath: string } },
 ): Observable<ILanguageModelWorkerResponse> {
   const { conversationID, completionOptions, loadConfig } = options;
@@ -95,13 +92,9 @@ function runLLama(
     })();
   });
 }
-function abortLLama(conversationID: string) {
+export function abortLLama(conversationID: string) {
   const abortController = llamaAbortControllers.get(conversationID);
   if (abortController !== undefined) {
     abortController.abort();
   }
 }
-
-const llmWorker = { loadLLama, unloadLLama, runLLama, abortLLama };
-export type LLMWorker = typeof llmWorker;
-expose(llmWorker);
