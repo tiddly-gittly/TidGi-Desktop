@@ -1,5 +1,6 @@
 import { DEFAULT_DOWNLOADS_PATH } from '@/constants/appPaths';
 import { LanguageModelRunner } from '@services/languageModel/interface';
+import { DEFAULT_TIMEOUT_DURATION } from '@services/languageModel/llmWorker/constants';
 import { app } from 'electron';
 import semver from 'semver';
 import { IPreferences } from './interface';
@@ -21,7 +22,7 @@ export const defaultPreferences: IPreferences = {
       [LanguageModelRunner.llamaCpp]: 'llama.bin',
       [LanguageModelRunner.rwkvCpp]: 'rwkv.bin',
     },
-    timeoutDuration: 1000 * 60,
+    timeoutDuration: DEFAULT_TIMEOUT_DURATION,
   },
   menuBarAlwaysOnTop: false,
   pauseNotifications: '',
