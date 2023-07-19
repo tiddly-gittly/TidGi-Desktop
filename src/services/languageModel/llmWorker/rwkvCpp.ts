@@ -16,16 +16,21 @@ export async function loadRwkv(
   // use dynamic import cjs version to fix https://github.com/andywer/threads.js/issues/478
   const { RwkvCpp } = await import('llama-node/dist/llm/rwkv-cpp.cjs');
   subscriber?.next({ message: 'library loaded, new LLM now', ...loggerCommonMeta });
-  runnerInstance = new LLM(RwkvCpp);
-  const loadConfig: LoadConfig = {
-    enableLogging: true,
-    nThreads: 4,
-    ...loadConfigOverwrite,
-  };
-  subscriber?.next({ message: 'prepared to load instance', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, loadConfigOverwrite } });
-  await runnerInstance.load(loadConfig);
-  subscriber?.next({ message: 'instance loaded', ...loggerCommonMeta });
-  return runnerInstance;
+  try {
+    runnerInstance = new LLM(RwkvCpp);
+    const loadConfig: LoadConfig = {
+      enableLogging: true,
+      nThreads: 4,
+      ...loadConfigOverwrite,
+    };
+    subscriber?.next({ message: 'prepared to load instance', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, loadConfigOverwrite } });
+    await runnerInstance.load(loadConfig);
+    subscriber?.next({ message: 'instance loaded', ...loggerCommonMeta });
+    return runnerInstance;
+  } catch (error) {
+    unloadRwkv();
+    throw error;
+  }
 }
 export function unloadRwkv() {
   runnerInstance = undefined;

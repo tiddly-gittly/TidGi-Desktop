@@ -16,24 +16,29 @@ export async function loadLLama(
   // use dynamic import cjs version to fix https://github.com/andywer/threads.js/issues/478
   const { LLamaCpp } = await import('llama-node/dist/llm/llama-cpp.cjs');
   subscriber?.next({ message: 'library loaded, new LLM now', ...loggerCommonMeta });
-  runnerInstance = new LLM(LLamaCpp);
-  const loadConfig: LoadConfig = {
-    enableLogging: true,
-    nCtx: 1024,
-    seed: 0,
-    f16Kv: false,
-    logitsAll: false,
-    vocabOnly: false,
-    useMlock: false,
-    embedding: false,
-    useMmap: true,
-    nGpuLayers: 0,
-    ...loadConfigOverwrite,
-  };
-  subscriber?.next({ message: 'prepared to load instance', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, loadConfigOverwrite } });
-  await runnerInstance.load(loadConfig);
-  subscriber?.next({ message: 'instance loaded', ...loggerCommonMeta });
-  return runnerInstance;
+  try {
+    runnerInstance = new LLM(LLamaCpp);
+    const loadConfig: LoadConfig = {
+      enableLogging: true,
+      nCtx: 1024,
+      seed: 0,
+      f16Kv: false,
+      logitsAll: false,
+      vocabOnly: false,
+      useMlock: false,
+      embedding: false,
+      useMmap: true,
+      nGpuLayers: 0,
+      ...loadConfigOverwrite,
+    };
+    subscriber?.next({ message: 'prepared to load instance', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, loadConfigOverwrite } });
+    await runnerInstance.load(loadConfig);
+    subscriber?.next({ message: 'instance loaded', ...loggerCommonMeta });
+    return runnerInstance;
+  } catch (error) {
+    unloadLLama();
+    throw error;
+  }
 }
 export function unloadLLama() {
   runnerInstance = undefined;
