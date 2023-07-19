@@ -148,18 +148,15 @@ export class LanguageModel implements ILanguageModelService {
                 subscriber.next({ token, id });
               }
             } else if ('level' in result) {
-              if (result.level === 'error') {
-                logger.error(`${result.error.message} ${result.error.stack ?? 'no stack'}`, loggerCommonMeta);
-              } else {
-                logger.log(result.level, `${result.message}`, loggerCommonMeta);
-              }
+              logger.log(result.level, `${result.message}`, loggerCommonMeta);
             }
           },
           error: (error) => {
+            logger.error(`${(error as Error).message} ${(error as Error).stack ?? 'no stack'}`, { id: conversationID, function: 'LanguageModel.runLanguageModel$.error' });
             subscriber.error(error);
           },
           complete: () => {
-            logger.info(`worker observable completed`, { function: 'LanguageModel.runLanguageModel$' });
+            logger.info(`worker observable completed`, { function: 'LanguageModel.runLanguageModel$.complete' });
             subscriber.complete();
           },
         });
