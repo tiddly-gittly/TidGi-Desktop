@@ -1,5 +1,9 @@
 lockfileVersion: '6.0'
 
+settings:
+  autoInstallPeers: true
+  excludeLinksFromLockfile: false
+
 overrides:
   fbp-graph: ^0.7.0
 
@@ -6783,7 +6787,7 @@ packages:
       fs-extra: 9.1.0
       get-folder-size: 2.0.1
       lodash: 4.17.21
-      word-wrap: 1.2.3
+      word-wrap: 1.2.4
       yargs: 15.4.1
     transitivePeerDependencies:
       - supports-color
@@ -6802,7 +6806,7 @@ packages:
       electron-installer-common: 0.10.3
       fs-extra: 9.1.0
       lodash: 4.17.21
-      word-wrap: 1.2.3
+      word-wrap: 1.2.4
       yargs: 16.2.0
     transitivePeerDependencies:
       - supports-color
@@ -7500,7 +7504,7 @@ packages:
     resolution: {integrity: sha512-X3Z+dp9nZw7d/y41EDO6JyFw4WVMOT91SFuoJvL0C0/4M1l6NxQ5mLTjXHuYhq0AazW75pAmj25yMk5wPMzjsw==}
     engines: {node: '>=12'}
     peerDependencies:
-      eslint: ^7.2.0 || ^8 || $eslint
+      eslint: ^7.2.0 || ^8
     dependencies:
       debug: 3.2.7
       doctrine: 2.1.0
@@ -10527,7 +10531,7 @@ packages:
     dev: true
 
   /ms@2.0.0:
-    resolution: {integrity: sha1-VgiurfwAvmwpAd9fmGF4jeDVl8g=}
+    resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
 
   /ms@2.1.2:
     resolution: {integrity: sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==}
@@ -11319,7 +11323,7 @@ packages:
       levn: 0.3.0
       prelude-ls: 1.1.2
       type-check: 0.3.2
-      word-wrap: 1.2.3
+      word-wrap: 1.2.4
     dev: false
 
   /optionator@0.9.3:
@@ -14388,10 +14392,9 @@ packages:
       winston-transport: 4.5.0
     dev: false
 
-  /word-wrap@1.2.3:
-    resolution: {integrity: sha512-Hz/mrNwitNRh/HUAtM/VT/5VH+ygD6DV7mYKZAtHOrbs8U7lvPS6xf7EJKMF0uW1KJCl0H701g3ZGus+muE5vQ==}
+  /word-wrap@1.2.4:
+    resolution: {integrity: sha512-2V81OA4ugVo5pRo46hAoD2ivUJx8jXmWXfUkY4KFNw0hEptvN0QfH3K4nHiwzGeKl5rFKedV48QVoqYavy4YpA==}
     engines: {node: '>=0.10.0'}
-    requiresBuild: true
 
   /wouter@2.11.0(react@18.2.0):
     resolution: {integrity: sha512-Y2CzNCwIN8kHjR2Q10D+UAgQND6TvBNmwXxgYw5ltXjjTlL7cLDUDpCip3a927Svxrmxr6vJMcPUysFxSvriCw==}
