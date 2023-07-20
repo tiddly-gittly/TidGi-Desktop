@@ -20,12 +20,6 @@ import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import { useMemo } from 'react';
 import { SortablePageSelectorList } from './PageIconAndSelector';
 
-const SideBarEnd = styled.div`
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-`;
-
 const sideBarStyle = css`
   height: 100%;
   width: ${sidebarWidth}px;
@@ -64,6 +58,12 @@ const SidebarTop = styled.div<{ $titleBar?: boolean }>`
   ${isNot('$titleBar')`
     padding-top: 30px;
   `}
+`;
+const SideBarEnd = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
 `;
 
 const IconButton = styled(IconButtonRaw)`
