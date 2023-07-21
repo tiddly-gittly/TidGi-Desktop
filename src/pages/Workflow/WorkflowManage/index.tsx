@@ -2,11 +2,12 @@ import AddIcon from '@mui/icons-material/Add';
 import { Box, Chip, Fab, Stack, TextField, Tooltip } from '@mui/material';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import React, { ChangeEvent, useCallback, useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import SimpleBar from 'simplebar-react';
 import styled from 'styled-components';
 
-import { useTranslation } from 'react-i18next';
 import { AddItemDialog } from './AddItemDialog';
+import { useHandleOpenInTheGraphEditor } from './useClickHandler';
 import { useAvailableFilterTags, useWorkflows } from './useWorkflowDataSource';
 import { IWorkflowListItem, WorkflowList } from './WorkflowList';
 
@@ -56,10 +57,12 @@ export const WorkflowManage: React.FC = () => {
     // eslint-disable-next-line unicorn/no-useless-undefined
     setItemSelectedForDialog(undefined);
   }, []);
+  const handleOpenInTheGraphEditor = useHandleOpenInTheGraphEditor();
   const handleDialogAddWorkflow = useCallback(async (newItem: IWorkflowListItem, oldItem?: IWorkflowListItem) => {
     await onAddWorkflow(newItem, oldItem);
+    handleOpenInTheGraphEditor(newItem);
     handleCloseDialog();
-  }, [handleCloseDialog, onAddWorkflow]);
+  }, [handleCloseDialog, handleOpenInTheGraphEditor, onAddWorkflow]);
 
   const handleTagClick = useCallback((tag: string) => {
     // if included, set it as excluded
