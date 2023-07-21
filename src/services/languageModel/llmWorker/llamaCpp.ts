@@ -1,33 +1,44 @@
 import type { LLama } from '@llama-node/llama-cpp';
 import type { LLM } from 'llama-node';
 import type { LoadConfig } from 'llama-node/dist/llm/llama-cpp';
-import { Observable } from 'rxjs';
+import { Observable, type Subscriber } from 'rxjs';
 import { ILanguageModelWorkerResponse, LLamaInvocation } from '../interface';
 import { DEFAULT_TIMEOUT_DURATION } from './constants';
 
 let runnerInstance: undefined | LLM<LLama, LoadConfig, LLamaInvocation>;
 export async function loadLLama(
   loadConfigOverwrite: Partial<LoadConfig> & Pick<LoadConfig, 'modelPath'>,
+  subscriber?: Subscriber<ILanguageModelWorkerResponse>,
 ) {
+  const loggerCommonMeta = { level: 'info' as const, meta: { function: 'llmWorker.loadLLama' }, id: 'loadLLama' };
+  subscriber?.next({ message: 'async importing library', ...loggerCommonMeta });
   const { LLM } = await import('llama-node');
   // use dynamic import cjs version to fix https://github.com/andywer/threads.js/issues/478
   const { LLamaCpp } = await import('llama-node/dist/llm/llama-cpp.cjs');
-  runnerInstance = new LLM(LLamaCpp);
-  const loadConfig: LoadConfig = {
-    enableLogging: true,
-    nCtx: 1024,
-    seed: 0,
-    f16Kv: false,
-    logitsAll: false,
-    vocabOnly: false,
-    useMlock: false,
-    embedding: false,
-    useMmap: true,
-    nGpuLayers: 0,
-    ...loadConfigOverwrite,
-  };
-  await runnerInstance.load(loadConfig);
-  return runnerInstance;
+  subscriber?.next({ message: 'library loaded, new LLM now', ...loggerCommonMeta });
+  try {
+    runnerInstance = new LLM(LLamaCpp);
+    const loadConfig: LoadConfig = {
+      enableLogging: true,
+      nCtx: 1024,
+      seed: 0,
+      f16Kv: false,
+      logitsAll: false,
+      vocabOnly: false,
+      useMlock: false,
+      embedding: false,
+      useMmap: true,
+      nGpuLayers: 0,
+      ...loadConfigOverwrite,
+    };
+    subscriber?.next({ message: 'prepared to load instance', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, loadConfigOverwrite } });
+    await runnerInstance.load(loadConfig);
+    subscriber?.next({ message: 'instance loaded', ...loggerCommonMeta });
+    return runnerInstance;
+  } catch (error) {
+    unloadLLama();
+    throw error;
+  }
 }
 export function unloadLLama() {
   runnerInstance = undefined;
@@ -39,11 +50,16 @@ export function runLLama(
 ): Observable<ILanguageModelWorkerResponse> {
   const { conversationID, completionOptions, loadConfig } = options;
 
-  const loggerCommonMeta = { level: 'info' as const, meta: { function: 'llmWorker.runLLama' }, id: conversationID };
+  const loggerCommonMeta = { level: 'debug' as const, meta: { function: 'llmWorker.runLLama' }, id: conversationID };
   return new Observable<ILanguageModelWorkerResponse>((subscriber) => {
     void (async function runLLamaObservableIIFE() {
-      if (runnerInstance === undefined) {
-        runnerInstance = await loadLLama(loadConfig);
+      try {
+        if (runnerInstance === undefined) {
+          runnerInstance = await loadLLama(loadConfig, subscriber);
+        }
+      } catch (error) {
+        subscriber.error(error);
+        return;
       }
       try {
         let respondTimeout: NodeJS.Timeout | undefined;
@@ -84,13 +100,8 @@ export function runLLama(
         );
         subscriber.next({ message: 'createCompletion completed', ...loggerCommonMeta });
       } catch (error) {
-        if (error instanceof Error) {
-          subscriber.next({ level: 'error', error, id: conversationID });
-        } else {
-          subscriber.next({ level: 'error', error: new Error(String(error)), id: conversationID });
-        }
         runnerAbortControllers.delete(conversationID);
-        subscriber.complete();
+        subscriber.error(error);
       }
     })();
   });

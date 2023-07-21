@@ -1,25 +1,36 @@
 import type { Rwkv } from '@llama-node/rwkv-cpp';
 import type { LLM } from 'llama-node';
 import type { LoadConfig } from 'llama-node/dist/llm/rwkv-cpp';
-import { Observable } from 'rxjs';
+import { Observable, type Subscriber } from 'rxjs';
 import { ILanguageModelWorkerResponse, RwkvInvocation } from '../interface';
 import { DEFAULT_TIMEOUT_DURATION } from './constants';
 
 let runnerInstance: undefined | LLM<Rwkv, LoadConfig, RwkvInvocation>;
 export async function loadRwkv(
   loadConfigOverwrite: Partial<LoadConfig> & Pick<LoadConfig, 'modelPath' | 'tokenizerPath'>,
+  subscriber?: Subscriber<ILanguageModelWorkerResponse>,
 ) {
+  const loggerCommonMeta = { level: 'info' as const, meta: { function: 'llmWorker.loadRwkv' }, id: 'loadRwkv' };
+  subscriber?.next({ message: 'async importing library', ...loggerCommonMeta });
   const { LLM } = await import('llama-node');
   // use dynamic import cjs version to fix https://github.com/andywer/threads.js/issues/478
   const { RwkvCpp } = await import('llama-node/dist/llm/rwkv-cpp.cjs');
-  runnerInstance = new LLM(RwkvCpp);
-  const loadConfig: LoadConfig = {
-    enableLogging: true,
-    nThreads: 4,
-    ...loadConfigOverwrite,
-  };
-  await runnerInstance.load(loadConfig);
-  return runnerInstance;
+  subscriber?.next({ message: 'library loaded, new LLM now', ...loggerCommonMeta });
+  try {
+    runnerInstance = new LLM(RwkvCpp);
+    const loadConfig: LoadConfig = {
+      enableLogging: true,
+      nThreads: 4,
+      ...loadConfigOverwrite,
+    };
+    subscriber?.next({ message: 'prepared to load instance', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, loadConfigOverwrite } });
+    await runnerInstance.load(loadConfig);
+    subscriber?.next({ message: 'instance loaded', ...loggerCommonMeta });
+    return runnerInstance;
+  } catch (error) {
+    unloadRwkv();
+    throw error;
+  }
 }
 export function unloadRwkv() {
   runnerInstance = undefined;
@@ -38,8 +49,13 @@ export function runRwkv(
   const loggerCommonMeta = { level: 'info' as const, meta: { function: 'llmWorker.runRwkv' }, id: conversationID };
   return new Observable<ILanguageModelWorkerResponse>((subscriber) => {
     void (async function runRwkvObservableIIFE() {
-      if (runnerInstance === undefined) {
-        runnerInstance = await loadRwkv(loadConfig);
+      try {
+        if (runnerInstance === undefined) {
+          runnerInstance = await loadRwkv(loadConfig, subscriber);
+        }
+      } catch (error) {
+        subscriber.error(error);
+        return;
       }
       try {
         let respondTimeout: NodeJS.Timeout | undefined;
@@ -77,13 +93,8 @@ export function runRwkv(
         );
         subscriber.next({ message: 'createCompletion completed', ...loggerCommonMeta });
       } catch (error) {
-        if (error instanceof Error) {
-          subscriber.next({ level: 'error', error, id: conversationID });
-        } else {
-          subscriber.next({ level: 'error', error: new Error(String(error)), id: conversationID });
-        }
         runnerAbortControllers.delete(conversationID);
-        subscriber.complete();
+        subscriber.error(error);
       }
     })();
   });

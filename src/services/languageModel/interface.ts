@@ -35,15 +35,12 @@ export interface ILLMResultBase {
    */
   id: string;
 }
-export type ILanguageModelWorkerResponse = INormalLanguageModelLogMessage | IErrorLanguageModelLogMessage | ILanguageModelWorkerResult;
+export type ILanguageModelWorkerResponse = INormalLanguageModelLogMessage | ILanguageModelWorkerResult;
 export interface INormalLanguageModelLogMessage extends ILLMResultBase {
+  /** for error, use `observer.error` instead */
   level: 'debug' | 'warn' | 'info';
   message: string;
   meta: unknown;
-}
-export interface IErrorLanguageModelLogMessage extends ILLMResultBase {
-  error: Error;
-  level: 'error';
 }
 export interface ILanguageModelWorkerResult extends ILLMResultPart {
   type: 'result';

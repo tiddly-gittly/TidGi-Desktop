@@ -4,6 +4,8 @@ Development plan of TidGi-Desktop is listed in these [Kanban](https://github.com
 
 Explanation of our code can be found in the [Wiki](https://github.com/tiddly-gittly/TidGi-Desktop/wiki).
 
+[Detailed environment setup guide](./environment)
+
 <details>
 
 <summary>To contribute, fork this repo, then clone it and setup development environment</summary>
