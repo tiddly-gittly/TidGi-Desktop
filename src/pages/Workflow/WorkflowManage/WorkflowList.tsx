@@ -109,6 +109,7 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
       </CardActionArea>
       <ItemMenuCardActions>
         <Button onClick={handleOpenInTheGraphEditor}>{t('Open')}</Button>
+        <Button onClick={handleOpenInTheGraphEditor}>{t('Open')}</Button>
         <Button aria-controls={menuID} aria-haspopup='true' onClick={handleOpenItemMenu}>
           {anchorElement === null ? <MenuIcon /> : <MenuOpenIcon />}
         </Button>

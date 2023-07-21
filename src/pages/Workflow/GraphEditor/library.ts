@@ -91,7 +91,7 @@ export async function getBrowserComponentLibrary() {
       libraryToLoad[name] = componentForLibrary(componentToProtocolComponent(name, componentInstance));
     }
   });
-  return libraryToLoad;
+  return [libraryToLoad, loader] as const;
 }
 
 // const registerComponent = (definition: Component, generated: boolean) => {
@@ -115,11 +115,13 @@ export async function getBrowserComponentLibrary() {
 export function useLibrary() {
   // load library bundled by webpack noflo-component-loader from installed noflo related npm packages
   const [library, setLibrary] = useState<IFBPLibrary | undefined>();
+  const [libraryLoader, setLibraryLoader] = useState<ComponentLoader | undefined>();
   useEffect(() => {
     void (async () => {
-      const libraryToLoad = await getBrowserComponentLibrary();
+      const [libraryToLoad, libraryLoaderToUse] = await getBrowserComponentLibrary();
       setLibrary(libraryToLoad);
+      setLibraryLoader(libraryLoaderToUse);
     })();
   }, []);
-  return library;
+  return [library, libraryLoader] as const;
 }

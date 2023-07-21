@@ -12,6 +12,8 @@ import { PageType } from '@services/pages/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
 import type { Graph } from 'fbp-graph';
+import { klayNoflo } from 'klayjs-noflo/klay-noflo';
+import type { ComponentLoader } from 'noflo';
 import React, { Dispatch, MutableRefObject, SetStateAction, useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
@@ -22,7 +24,7 @@ import { IWorkflowContext } from '../../useContext';
 import { AddItemDialog } from '../../WorkflowManage/AddItemDialog';
 import { addWorkflowToWiki, useAvailableFilterTags } from '../../WorkflowManage/useWorkflowDataSource';
 import { IWorkflowListItem } from '../../WorkflowManage/WorkflowList';
-import { klayNoflo } from 'klayjs-noflo/klay-noflo';
+import { useRunGraph } from '../useRunGraph';
 import { searchBarWidth } from './styleConstant';
 
 const ToolbarContainer = styled(Toolbar)`
@@ -48,18 +50,17 @@ const ToolbarContainer = styled(Toolbar)`
 interface IGraphTopToolbarProps {
   editorReference: MutableRefObject<ITheGraphEditor | undefined>;
   graph: Graph;
+  libraryLoader?: ComponentLoader;
   readonly: boolean;
   setReadonly: Dispatch<SetStateAction<boolean>>;
   workflowContext: IWorkflowContext;
 }
 export const GraphTopToolbar = (props: IGraphTopToolbarProps) => {
-  const { editorReference, readonly, setReadonly, workflowContext, graph } = props;
+  const { editorReference, readonly, setReadonly, libraryLoader, workflowContext, graph } = props;
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
 
-  const runWorkflow = useCallback(() => {
-    console.log('Running workflow...');
-  }, []);
+  const runWorkflow = useRunGraph(graph, libraryLoader);
 
   const backToHome = useCallback(() => {
     // don't need to save here, because we already debouncedSave after all operations

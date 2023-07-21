@@ -85,7 +85,7 @@ export const WorkflowManage: React.FC = () => {
       <SimpleBar>
         <SearchRegionContainer>
           <SearchBar
-            label='Search'
+            label={t('Workflow.SearchWorkflows')}
             value={search}
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
               setSearch(event.target.value);

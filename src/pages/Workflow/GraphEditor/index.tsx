@@ -54,7 +54,7 @@ export function GraphEditor() {
 
   const [graph, setGraph] = useSaveLoadGraph();
   const workflowContext = useContext(WorkflowContext);
-  const library = useLibrary();
+  const [library, libraryLoader] = useLibrary();
   const [readonly, setReadonly] = useState(false);
 
   // methods
@@ -109,7 +109,7 @@ export function GraphEditor() {
         />
       </ThumbnailContainer>
       <SearchComponents library={library} addNode={addNode} />
-      <GraphTopToolbar editorReference={editorReference} readonly={readonly} setReadonly={setReadonly} workflowContext={workflowContext} graph={graph} />
+      <GraphTopToolbar editorReference={editorReference} readonly={readonly} setReadonly={setReadonly} workflowContext={workflowContext} graph={graph} libraryLoader={libraryLoader} />
     </ErrorBoundary>
   );
 }

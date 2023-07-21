@@ -457,6 +457,7 @@
   },
   "Workflow": {
     "Title": "Workflow",
+    "Use": "Use",
     "SearchComponents": "Search Components",
     "AddNewWorkflow": "Add new workflow",
     "AddNewWorkflowDescription": "Create a new automated workflow and save it to the selected workspace wiki to backup.",
@@ -480,11 +481,13 @@
     "AutoLayout": "Auto Layout",
     "NotFilteringClickToInclude": "Not Filtering, Click To Include",
     "FilteringIncludeClickToExclude": "Filtering Include, Click To Exclude",
-    "FilteringExcludeClickToRemove": "Filtering Exclude, Click To Remove Filtering"
+    "FilteringExcludeClickToRemove": "Filtering Exclude, Click To Remove Filtering",
+    "SearchWorkflows": "Search Workflows"
   },
   "Description": "Description",
   "Tags": "Tags",
   "Title": "Title",
   "Delete": "Delete",
+  "Edit": "Edit",
   "Open": "Open"
 }
