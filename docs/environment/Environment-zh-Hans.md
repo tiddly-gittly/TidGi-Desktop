@@ -6,7 +6,7 @@
 
 需要的工具：Watt Toolkit(Steam++)、git、nvm、pnpm、node-gyp、vscode
 
-## Watt Toolkit(Steam++)
+## 1. Watt Toolkit(Steam++)
 
 下载链接：https://github.com/BeyondDimension/SteamTools
 
