@@ -7,6 +7,7 @@
   "scripts": {
     "start": "pnpm run clean && pnpm run init:git-submodule && pnpm run start:without-clean",
     "start:without-clean": "pnpm run build:plugin && cross-env NODE_ENV=development electron-forge start",
+    "clean": "rimraf -- ./out ./settings-dev ./node_modules/@tiddlygit/tiddlywiki/plugins/linonetwo ./cache-database-dev ./logs ./.webpack ./node_modules/.cache && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts",
     "start:without-clean:debug-worker": "pnpm run build:plugin && cross-env NODE_ENV=development DEBUG_WORKER=true electron-forge start",
     "start:without-clean:debug-main": "pnpm run build:plugin && cross-env NODE_ENV=development DEBUG_MAIN=true electron-forge start",
     "build:plugin": "zx scripts/compilePlugins.mjs",
@@ -20,7 +21,6 @@
     "make:win-arm": "pnpm run build:plugin && cross-env NODE_ENV=production electron-forge make --platform=win32 --arch=arm64",
     "make:linux-x64": "pnpm run build:plugin && cross-env NODE_ENV=production electron-forge make --platform=linux --arch=x64",
     "make:linux-arm": "pnpm run build:plugin && cross-env NODE_ENV=production electron-forge make --platform=linux --arch=arm64",
-    "clean": "rimraf -- ./out ./settings-dev ./node_modules/@tiddlygit/tiddlywiki/plugins/linonetwo ./cache-database-dev ./logs ./.webpack ./node_modules/.cache && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts",
     "init:git-submodule": "git submodule update --recursive && git submodule update --remote",
     "lint": "eslint ./src --ext js,ts,tsx,json",
     "lint:fix": "eslint ./src --ext js,ts,tsx,json --fix",
@@ -180,7 +180,6 @@
     "event-hooks-webpack-plugin": "2.3.0",
     "fbp-graph": "^0.7.0",
     "fbp-loader": "^0.1.2",
-    "fbp-manifest": "^0.3.1",
     "font-awesome": "^4.7.0",
     "fork-ts-checker-webpack-plugin": "8.0.0",
     "glob": "^10.3.3",
@@ -224,7 +223,8 @@
     },
     "patchedDependencies": {
       "the-graph@0.13.1": "patches/the-graph@0.13.1.patch",
-      "klayjs-noflo@0.3.1": "patches/klayjs-noflo@0.3.1.patch"
+      "klayjs-noflo@0.3.1": "patches/klayjs-noflo@0.3.1.patch",
+      "noflo@1.4.3": "patches/noflo@1.4.3.patch"
     }
   },
   "private": false
