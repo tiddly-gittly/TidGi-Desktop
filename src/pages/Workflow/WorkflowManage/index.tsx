@@ -15,6 +15,7 @@ const WorkflowManageContainer = styled(Box)`
   display: flex;
   flex-direction: column;
   margin: 1em;
+  margin-top: 0;
 
   width: 100%;
   height: 100vh;
@@ -23,6 +24,7 @@ const WorkflowManageContainer = styled(Box)`
 const SearchRegionContainer = styled(Box)`
   display: flex;
   flex-direction: column;
+  padding-top: 1em;
   margin-bottom: 1em;
   padding-right: 1em;
   width: 100%;
