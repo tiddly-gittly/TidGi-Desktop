@@ -121,6 +121,9 @@ module.exports = [
     },
   },
   {
+    /**
+     * Replace this file in noflo library's content with bundled components pack, so when noflo's internal code require this file, it will get the bundled components pack as result.
+     */
     test: /noflo(\\+|\/)lib(\\+|\/)loader(\\+|\/)register.js$/,
     use: [
       {
