@@ -4,23 +4,32 @@ import type { Network } from 'noflo/lib/Network';
 import { useEffect, useRef } from 'react';
 
 export function useRunGraph(fbpGraph: FbpGraph, libraryLoader?: ComponentLoader) {
-  const currentGraphReference = useRef<Network | undefined>();
+  const currentNetworkReference = useRef<Network | undefined>();
   async function runGraph() {
     /**
-     * Simillar to noflo-runtime-base's `src/protocol/Network.js`, transform FbpGraph to ~~NofloGraph~~ Network
+     * Similar to noflo-runtime-base's `src/protocol/Network.js`, transform FbpGraph to ~~NofloGraph~~ Network
      */
-    const nofloGraph: Network = await createNetwork(fbpGraph, {
+    // fbpGraph.addInitial('aaa', fbpGraph.nodes[1].id, 'in');
+    const nofloNetwork: Network = await createNetwork(fbpGraph, {
       subscribeGraph: false,
       delay: true,
       componentLoader: libraryLoader,
     });
-    currentGraphReference.current = nofloGraph;
-    await nofloGraph.start();
+    currentNetworkReference.current = nofloNetwork;
+    nofloNetwork.on('process-error', (processError: { error: Error }) => {
+      if (typeof console.error === 'function') {
+        console.error(processError.error);
+      } else {
+        console.log(processError.error);
+      }
+    });
+    await nofloNetwork.connect();
+    await nofloNetwork.start();
   }
   useEffect(() => {
     return () => {
-      void currentGraphReference.current?.stop();
+      void currentNetworkReference.current?.stop();
     };
-  }, [currentGraphReference]);
+  }, [currentNetworkReference]);
   return runGraph;
 }

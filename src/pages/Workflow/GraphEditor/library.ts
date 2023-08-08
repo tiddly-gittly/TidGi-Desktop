@@ -1,5 +1,7 @@
+import { buildInComponents } from '@services/libs/workflow';
 import { Component, ComponentLoader, InPort } from 'noflo';
 import type BasePort from 'noflo/lib/BasePort';
+import { ModuleComponent } from 'noflo/lib/ComponentLoader';
 import { useEffect, useState } from 'react';
 import type { IFBPLibrary, INoFloProtocolComponent, INoFloProtocolComponentPort, INoFloUIComponent, INoFloUIComponentPort } from 'the-graph';
 
@@ -91,6 +93,18 @@ export async function getBrowserComponentLibrary() {
       libraryToLoad[name] = componentForLibrary(componentToProtocolComponent(name, componentInstance));
     }
   });
+  const loadBuildInComponentsTask: Array<Promise<unknown>> = [];
+  Object.entries(buildInComponents).forEach(([componentsSetName, componentsSet]) => {
+    Object.entries(componentsSet).forEach(([componentName, componentDefinitionRaw]: [string, ModuleComponent]) => {
+      if ('getComponent' in componentDefinitionRaw) {
+        const componentFullName = `${componentsSetName}/${componentName}`;
+        loadBuildInComponentsTask.push(loader.createComponent(componentFullName, componentDefinitionRaw, {}));
+        const componentInstance = componentDefinitionRaw.getComponent();
+        libraryToLoad[componentFullName] = componentForLibrary(componentToProtocolComponent(componentFullName, componentInstance));
+      }
+    });
+  });
+  await Promise.all(loadBuildInComponentsTask);
   return [libraryToLoad, loader] as const;
 }
 
