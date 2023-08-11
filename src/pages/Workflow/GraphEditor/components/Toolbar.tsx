@@ -20,11 +20,11 @@ import styled from 'styled-components';
 import type { ITheGraphEditor } from 'the-graph';
 import autoLayout from 'the-graph/the-graph/the-graph-autolayout';
 import { useLocation } from 'wouter';
-import { IWorkflowContext } from '../../useContext';
+import { IWorkflowContext } from '../hooks/useContext';
 import { AddItemDialog } from '../../WorkflowManage/AddItemDialog';
 import { addWorkflowToWiki, useAvailableFilterTags } from '../../WorkflowManage/useWorkflowDataSource';
 import { IWorkflowListItem } from '../../WorkflowManage/WorkflowList';
-import { useRunGraph } from '../useRunGraph';
+import { useRunGraph } from '../hooks/useRunGraph';
 import { searchBarWidth } from './styleConstant';
 
 const ToolbarContainer = styled(Toolbar)`

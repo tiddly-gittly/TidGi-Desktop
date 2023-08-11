@@ -1,5 +1,5 @@
 import { createContext } from 'react';
-import { IWorkflowListItem } from './WorkflowManage/WorkflowList';
+import { IWorkflowListItem } from '../../WorkflowManage/WorkflowList';
 
 export interface IWorkflowContext {
   openedWorkflowItem: IWorkflowListItem | undefined;

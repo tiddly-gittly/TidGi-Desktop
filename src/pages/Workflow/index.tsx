@@ -4,7 +4,7 @@ import { PageType } from '@services/pages/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useState } from 'react';
 import { GraphEditor } from './GraphEditor';
-import { WorkflowContext } from './useContext';
+import { WorkflowContext } from './GraphEditor/hooks/useContext';
 import { WorkflowManage } from './WorkflowManage';
 import { IWorkflowListItem } from './WorkflowManage/WorkflowList';
 

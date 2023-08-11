@@ -13,13 +13,14 @@ import '@fortawesome/fontawesome-free/js/all.js';
 import '@fortawesome/fontawesome-free/css/all.css';
 import '@fortawesome/fontawesome-free/css/v4-font-face.css';
 
-import { WorkflowContext } from '../useContext';
+import { WorkflowContext } from './hooks/useContext';
+import { NodeDetailPanel } from './components/NodeDetailPanel';
 import { SearchComponents } from './components/SearchComponents';
 import { GraphTopToolbar } from './components/Toolbar';
-import { useLibrary } from './utils/library';
 import { useMenu } from './hooks/useMenu';
 import { useMouseEvents } from './hooks/useMouseEvents';
 import { useSaveLoadGraph } from './hooks/useSaveLoadGraph';
+import { useLibrary } from './utils/library';
 
 const TheGraphContainer = styled.main`
   /**
@@ -43,6 +44,13 @@ const TheGraphContainer = styled.main`
 const ThumbnailContainer = styled.div`
   position: absolute;
   bottom: 0;
+  right: 0;
+  z-index: 1;
+  overflow: hidden;
+`;
+const NodeDetailsContainer = styled.div`
+  position: absolute;
+  top: 0;
   right: 0;
   z-index: 1;
   overflow: hidden;
@@ -94,6 +102,9 @@ export function GraphEditor() {
           readonly={readonly}
         />
       </TheGraphContainer>
+      <NodeDetailsContainer>
+        <NodeDetailPanel selectedNodes={selectedNodes} library={library} />
+      </NodeDetailsContainer>
       <ThumbnailContainer>
         <ThumbnailNav
           height={162}
@@ -110,7 +121,14 @@ export function GraphEditor() {
         />
       </ThumbnailContainer>
       <SearchComponents library={library} addNode={addNode} />
-      <GraphTopToolbar editorReference={editorReference} readonly={readonly} setReadonly={setReadonly} workflowContext={workflowContext} graph={graph} libraryLoader={libraryLoader} />
+      <GraphTopToolbar
+        editorReference={editorReference}
+        readonly={readonly}
+        setReadonly={setReadonly}
+        workflowContext={workflowContext}
+        graph={graph}
+        libraryLoader={libraryLoader}
+      />
     </ErrorBoundary>
   );
 }

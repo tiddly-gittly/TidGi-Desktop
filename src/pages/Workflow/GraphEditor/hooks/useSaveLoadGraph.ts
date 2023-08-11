@@ -2,8 +2,8 @@ import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { Graph } from 'fbp-graph';
 import { loadJSON } from 'fbp-graph/lib/Graph';
 import { useContext, useEffect, useRef, useState } from 'react';
-import { IWorkflowContext, WorkflowContext } from '../useContext';
-import { addWorkflowToWiki } from '../WorkflowManage/useWorkflowDataSource';
+import { addWorkflowToWiki } from '../../WorkflowManage/useWorkflowDataSource';
+import { IWorkflowContext, WorkflowContext } from './useContext';
 
 /**
  * From `graphEvents` of elements/the-graph.js

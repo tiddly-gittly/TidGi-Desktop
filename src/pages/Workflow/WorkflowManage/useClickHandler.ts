@@ -2,7 +2,7 @@ import { PageType } from '@services/pages/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useCallback, useContext } from 'react';
 import { useLocation } from 'wouter';
-import { WorkflowContext } from '../useContext';
+import { WorkflowContext } from '../GraphEditor/hooks/useContext';
 import type { IWorkflowListItem } from './WorkflowList';
 
 export function useHandleOpenInTheGraphEditor() {
