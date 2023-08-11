@@ -16,10 +16,10 @@ import '@fortawesome/fontawesome-free/css/v4-font-face.css';
 import { WorkflowContext } from '../useContext';
 import { SearchComponents } from './components/SearchComponents';
 import { GraphTopToolbar } from './components/Toolbar';
-import { useLibrary } from './library';
-import { useMenu } from './menu';
-import { useMouseEvents } from './mouseEvents';
-import { useSaveLoadGraph } from './useSaveLoadGraph';
+import { useLibrary } from './utils/library';
+import { useMenu } from './hooks/useMenu';
+import { useMouseEvents } from './hooks/useMouseEvents';
+import { useSaveLoadGraph } from './hooks/useSaveLoadGraph';
 
 const TheGraphContainer = styled.main`
   /**
@@ -76,6 +76,7 @@ export function GraphEditor() {
   const { getMenuDef } = useMenu();
   const editorReference = useRef<ITheGraphEditor>();
   if ((graph === undefined) || (library === undefined)) return <div>{t('Loading')}</div>;
+
   return (
     <ErrorBoundary fallback={<div>Something went wrong</div>}>
       <TheGraphContainer className={`the-graph-${theme?.shouldUseDarkColors === true ? 'dark' : 'light'}`}>

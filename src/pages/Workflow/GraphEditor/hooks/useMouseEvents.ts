@@ -1,10 +1,9 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import useToggle from 'beautiful-react-hooks/useToggle';
 import type { Graph } from 'fbp-graph';
 import { GraphEdge, GraphNode } from 'fbp-graph/lib/Types';
 import { useCallback, useState } from 'react';
 import { IFBPLibrary, INoFloUIComponent } from 'the-graph';
-import { makeNewID } from './idUtils';
+import { makeNewID } from '../utils/idUtils';
 
 const unnamespace = (name: string) => {
   if (!name.includes('/')) {
