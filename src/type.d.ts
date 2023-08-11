@@ -20,7 +20,7 @@ declare module 'the-graph' {
   import { Graph, GraphEdge, GraphNode } from 'fbp-graph';
   import { MutableRefObject } from 'react';
   import { Component as NoFloComponent } from 'noflo';
-  import { JSONSchema7TypeName, JSONSchema7Type } from 'json-schema';
+  import { JSONSchema7Type } from 'json-schema';
 
   export interface ITheGraphEditorContextMenuOptions {
     element: ITheGraphEditor;
@@ -174,7 +174,7 @@ declare module 'the-graph' {
     id: string;
     required?: boolean;
     schema?: string;
-    type: JSONSchema7TypeName;
+    type: 'all' | 'array' | 'boolean' | 'bang' | 'int' | 'number' | 'object' | 'string';
     /**
      * @example values: 'noflo is awesome'.split(' ')
      */

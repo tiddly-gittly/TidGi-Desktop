@@ -1,18 +1,17 @@
-import { sidebarWidth } from '@/constants/style';
-import { Autocomplete, autocompleteClasses, AutocompleteRenderInputParams, Box, createFilterOptions, TextField } from '@mui/material';
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
+import { Autocomplete, autocompleteClasses, AutocompleteRenderInputParams, Box, createFilterOptions, TextField, TextFieldVariants } from '@mui/material';
 import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import type { IFBPLibrary, INoFloUIComponent } from 'the-graph';
 import { NoFloIcon } from './NoFloIcon';
-import { searchBarWidth } from './styleConstant';
 
 const SearchBarWrapper = styled.div`
   position: absolute;
-  left: ${sidebarWidth}px;
+  left: ${({ theme }) => theme.sidebar.width}px;
   top: 1em;
   z-index: 2;
-  width: ${searchBarWidth}px;
+  width: ${({ theme }) => theme.searchBar.width}px;
 
   opacity: 0.3;
   &:hover {
@@ -65,10 +64,16 @@ interface SearchBarProps {
   addNode: (component: INoFloUIComponent) => void;
   library?: IFBPLibrary;
 }
+interface SearchComponentAutocompleteProps {
+  defaultValue?: string;
+  label?: string;
+  library?: IFBPLibrary;
+  onClick: (component: INoFloUIComponent) => void;
+  variant?: TextFieldVariants;
+}
 
-export function SearchComponents({ library, addNode }: SearchBarProps) {
+export function SearchComponentsAutocomplete({ library, onClick, defaultValue, label, variant }: SearchComponentAutocompleteProps) {
   const [options, setOptions] = useState<OptionType[]>([]);
-  const { t } = useTranslation();
   const components = useMemo(() => Object.values(library ?? {}), [library]);
 
   useEffect(() => {
@@ -83,36 +88,52 @@ export function SearchComponents({ library, addNode }: SearchBarProps) {
     setOptions(newOptions);
   }, [components]);
 
+  const [defaultValueGroup, defaultValueTitle] = defaultValue?.split('/') ?? [];
+
+  return (
+    <Autocomplete
+      defaultValue={defaultValue && library?.[defaultValue] ? { groupName: defaultValueGroup, title: defaultValueTitle, component: library[defaultValue] } : undefined}
+      options={options.sort((a, b) => -b.groupName.localeCompare(a.groupName))}
+      groupBy={(option: OptionType) => option.groupName}
+      getOptionLabel={(option: OptionType) => option.title}
+      filterOptions={filterOptions}
+      renderOption={(props, option: OptionType) => (
+        <Box
+          sx={{
+            borderRadius: '8px',
+            margin: '5px',
+            [`&.${autocompleteClasses.option}`]: {
+              padding: '8px',
+            },
+          }}
+          component='li'
+          {...props}
+          onClick={() => {
+            onClick(option.component);
+          }}
+        >
+          <NoFloIcon icon={option.component.icon} />
+          <SearchItemOptionText>
+            <ItemTitle>{option.title}</ItemTitle>
+            <ItemDescription>{option.component.description}</ItemDescription>
+          </SearchItemOptionText>
+        </Box>
+      )}
+      renderInput={(parameters: AutocompleteRenderInputParams) => <TextField {...parameters} label={label} variant={variant} />}
+    />
+  );
+}
+
+export function SearchComponentsBar({ library, addNode }: SearchBarProps) {
+  const { t } = useTranslation();
   return (
     <SearchBarWrapper>
-      <Autocomplete
-        options={options.sort((a, b) => -b.groupName.localeCompare(a.groupName))}
-        groupBy={(option: OptionType) => option.groupName}
-        getOptionLabel={(option: OptionType) => option.title}
-        filterOptions={filterOptions}
-        renderOption={(props, option: OptionType) => (
-          <Box
-            sx={{
-              borderRadius: '8px',
-              margin: '5px',
-              [`&.${autocompleteClasses.option}`]: {
-                padding: '8px',
-              },
-            }}
-            component='li'
-            {...props}
-            onClick={() => {
-              addNode(option.component);
-            }}
-          >
-            <NoFloIcon icon={option.component.icon} />
-            <SearchItemOptionText>
-              <ItemTitle>{option.title}</ItemTitle>
-              <ItemDescription>{option.component.description}</ItemDescription>
-            </SearchItemOptionText>
-          </Box>
-        )}
-        renderInput={(parameters: AutocompleteRenderInputParams) => <TextField {...parameters} label={t('Workflow.SearchComponents')} />}
+      <SearchComponentsAutocomplete
+        library={library}
+        onClick={(component) => {
+          addNode(component);
+        }}
+        label={t('Workflow.SearchComponents')}
       />
     </SearchBarWrapper>
   );

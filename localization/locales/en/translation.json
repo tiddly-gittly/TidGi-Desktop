@@ -482,7 +482,10 @@
     "NotFilteringClickToInclude": "Not Filtering, Click To Include",
     "FilteringIncludeClickToExclude": "Filtering Include, Click To Exclude",
     "FilteringExcludeClickToRemove": "Filtering Exclude, Click To Remove Filtering",
-    "SearchWorkflows": "Search Workflows"
+    "SearchWorkflows": "Search Workflows",
+    "CurrentNodeComponentType": "Component type of this node",
+    "NodeLabel": "Label",
+    "InPort": "In Ports"
   },
   "Description": "Description",
   "Tags": "Tags",

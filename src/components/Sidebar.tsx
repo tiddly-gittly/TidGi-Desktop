@@ -6,7 +6,6 @@ import styled, { css } from 'styled-components';
 import is, { isNot } from 'typescript-styled-is';
 
 import { SortableWorkspaceSelectorList, WorkspaceSelectorBase } from '@/components/WorkspaceIconAndSelector';
-import { sidebarWidth } from '@/constants/style';
 import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IconButton as IconButtonRaw, Tooltip } from '@mui/material';
@@ -22,8 +21,8 @@ import { SortablePageSelectorList } from './PageIconAndSelector';
 
 const sideBarStyle = css`
   height: 100%;
-  width: ${sidebarWidth}px;
-  min-width: ${sidebarWidth}px;
+  width: ${({ theme }) => theme.sidebar.width}px;
+  min-width: ${({ theme }) => theme.sidebar.width}px;
   background-color: ${({ theme }) => theme.palette.background.default};
   -webkit-app-region: drag;
   user-select: none;

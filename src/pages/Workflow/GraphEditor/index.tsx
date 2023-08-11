@@ -1,4 +1,3 @@
-import { sidebarWidth } from '@/constants/style';
 import { useThemeObservable } from '@services/theme/hooks';
 import { useContext, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
@@ -13,10 +12,11 @@ import '@fortawesome/fontawesome-free/js/all.js';
 import '@fortawesome/fontawesome-free/css/all.css';
 import '@fortawesome/fontawesome-free/css/v4-font-face.css';
 
-import { WorkflowContext } from './hooks/useContext';
+import { useTheme } from '@mui/material';
 import { NodeDetailPanel } from './components/NodeDetailPanel';
-import { SearchComponents } from './components/SearchComponents';
+import { SearchComponentsBar } from './components/SearchComponents';
 import { GraphTopToolbar } from './components/Toolbar';
+import { WorkflowContext } from './hooks/useContext';
 import { useMenu } from './hooks/useMenu';
 import { useMouseEvents } from './hooks/useMouseEvents';
 import { useSaveLoadGraph } from './hooks/useSaveLoadGraph';
@@ -28,7 +28,7 @@ const TheGraphContainer = styled.main`
   so we have to let it be full-screen so it can calculate correctly.
   And we hide the left side overflow to let it looks like it's not full-screen (when left sidebar opened).
   */
-  width: ${window.innerWidth - sidebarWidth}px;
+  width: ${({ theme }) => window.innerWidth - theme.sidebar.width}px;
   overflow-x: hidden;
 
   .the-graph-app > svg, .the-graph-app > canvas {
@@ -44,7 +44,7 @@ const TheGraphContainer = styled.main`
 const ThumbnailContainer = styled.div`
   position: absolute;
   bottom: 0;
-  right: 0;
+  left: ${({ theme }) => theme.sidebar.width}px;
   z-index: 1;
   overflow: hidden;
 `;
@@ -53,12 +53,18 @@ const NodeDetailsContainer = styled.div`
   top: 0;
   right: 0;
   z-index: 1;
-  overflow: hidden;
+  overflow: auto;
+  width: ${({ theme }) => theme.workflow.nodeDetailPanel.width}px;
+  height: 100vh;
+  &::-webkit-scrollbar {
+    width: 0;
+  }
 `;
 
 export function GraphEditor() {
   const { t } = useTranslation();
-  const theme = useThemeObservable();
+  const systemTheme = useThemeObservable();
+  const muiTheme = useTheme();
 
   const [graph, setGraph] = useSaveLoadGraph();
   const workflowContext = useContext(WorkflowContext);
@@ -87,13 +93,13 @@ export function GraphEditor() {
 
   return (
     <ErrorBoundary fallback={<div>Something went wrong</div>}>
-      <TheGraphContainer className={`the-graph-${theme?.shouldUseDarkColors === true ? 'dark' : 'light'}`}>
+      <TheGraphContainer className={`the-graph-${systemTheme?.shouldUseDarkColors === true ? 'dark' : 'light'}`}>
         <TheGraph.App
           graph={graph}
           library={library}
           height={window.innerHeight}
           width={window.innerWidth}
-          offsetX={sidebarWidth}
+          offsetX={muiTheme.sidebar.width}
           getMenuDef={getMenuDef}
           onPanScale={onPanScale}
           onNodeSelection={onNodeSelection}
@@ -107,10 +113,10 @@ export function GraphEditor() {
       </NodeDetailsContainer>
       <ThumbnailContainer>
         <ThumbnailNav
-          height={162}
-          width={216}
+          height={muiTheme.workflow.thumbnail.height}
+          width={muiTheme.workflow.thumbnail.width}
           graph={graph}
-          viewrectangle={[pan[0], pan[1], window.innerWidth - sidebarWidth, window.innerHeight]}
+          viewrectangle={[pan[0], pan[1], window.innerWidth - muiTheme.sidebar.width, window.innerHeight]}
           viewscale={scale}
           onTap={() => {
             editorReference?.current?.triggerFit();
@@ -120,7 +126,7 @@ export function GraphEditor() {
           }}
         />
       </ThumbnailContainer>
-      <SearchComponents library={library} addNode={addNode} />
+      <SearchComponentsBar library={library} addNode={addNode} />
       <GraphTopToolbar
         editorReference={editorReference}
         readonly={readonly}

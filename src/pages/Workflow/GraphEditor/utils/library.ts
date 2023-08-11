@@ -61,7 +61,7 @@ function processPort(portName: string, port: BasePort): INoFloProtocolComponentP
   // Required port properties
   const portSerialized: INoFloProtocolComponentPort = {
     id: portName,
-    type: (port?.getDataType?.() as string | undefined) ?? 'all',
+    type: port?.getDataType?.() ?? 'string' as const,
     schema: port?.getSchema?.() as string | undefined,
     required: port?.isRequired?.() ?? false,
     default: ((port as InPort)?.hasDefault?.() ?? false) ? port.options.default : undefined,

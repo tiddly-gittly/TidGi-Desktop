@@ -3,11 +3,10 @@
 import { lazy } from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import styled, { DefaultTheme } from 'styled-components';
 import is, { isNot } from 'typescript-styled-is';
 import { Route, Switch } from 'wouter';
 
-import { sidebarWidth } from '@/constants/style';
 import { PageType } from '@services/pages/interface';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -52,8 +51,8 @@ const ContentRoot = styled.div<{ $sidebar: boolean }>`
 
   padding-right: 20px;
   ${is('$sidebar')`
-    width: calc(100% - ${String(sidebarWidth)}px);
-    max-width: calc(100% - ${String(sidebarWidth)}px);
+    width: calc(100% - ${({ theme }: { theme: DefaultTheme }) => theme.sidebar.width}px);
+    max-width: calc(100% - ${({ theme }: { theme: DefaultTheme }) => theme.sidebar.width}px);
   `}
   ${isNot('$sidebar')`
     width: 100%;

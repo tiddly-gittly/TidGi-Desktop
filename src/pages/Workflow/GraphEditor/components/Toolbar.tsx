@@ -1,4 +1,3 @@
-import { sidebarWidth } from '@/constants/style';
 import AlignHorizontalLeftIcon from '@mui/icons-material/AlignHorizontalLeft';
 import EditOnIcon from '@mui/icons-material/Edit';
 import EditLocationAltIcon from '@mui/icons-material/EditLocationAlt';
@@ -25,11 +24,10 @@ import { AddItemDialog } from '../../WorkflowManage/AddItemDialog';
 import { addWorkflowToWiki, useAvailableFilterTags } from '../../WorkflowManage/useWorkflowDataSource';
 import { IWorkflowListItem } from '../../WorkflowManage/WorkflowList';
 import { useRunGraph } from '../hooks/useRunGraph';
-import { searchBarWidth } from './styleConstant';
 
 const ToolbarContainer = styled(Toolbar)`
   position: absolute;
-  left: ${sidebarWidth + searchBarWidth}px;
+  left: ${({ theme }) => theme.sidebar.width + theme.searchBar.width}px;
   min-height: unset;
   /** search bar height is 56, button height is 40 */
   height: 40px;
