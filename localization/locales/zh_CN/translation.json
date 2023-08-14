@@ -490,6 +490,7 @@
     "FilteringExcludeClickToRemove": "正筛选不包含本标签的，点击设为不参与筛选\t",
     "CurrentNodeComponentType": "此节点的组件类型",
     "NodeLabel": "节点名",
-    "InPort": "入口"
+    "InPort": "入口",
+    "StopWorkflow": "停止工作流"
   }
 }

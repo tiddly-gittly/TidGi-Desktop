@@ -485,7 +485,8 @@
     "SearchWorkflows": "Search Workflows",
     "CurrentNodeComponentType": "Component type of this node",
     "NodeLabel": "Label",
-    "InPort": "In Ports"
+    "InPort": "In Ports",
+    "StopWorkflow": "Stop Workflow"
   },
   "Description": "Description",
   "Tags": "Tags",

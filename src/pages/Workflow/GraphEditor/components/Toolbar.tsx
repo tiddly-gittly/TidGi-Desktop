@@ -5,6 +5,7 @@ import EditOffIcon from '@mui/icons-material/EditOff';
 import HomeIcon from '@mui/icons-material/Home';
 import InfoIcon from '@mui/icons-material/Info';
 import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
 import ZoomOutMapIcon from '@mui/icons-material/ZoomOutMap';
 import { IconButton, Toolbar, Tooltip } from '@mui/material';
 import { PageType } from '@services/pages/interface';
@@ -19,10 +20,10 @@ import styled from 'styled-components';
 import type { ITheGraphEditor } from 'the-graph';
 import autoLayout from 'the-graph/the-graph/the-graph-autolayout';
 import { useLocation } from 'wouter';
-import { IWorkflowContext } from '../hooks/useContext';
 import { AddItemDialog } from '../../WorkflowManage/AddItemDialog';
 import { addWorkflowToWiki, useAvailableFilterTags } from '../../WorkflowManage/useWorkflowDataSource';
 import { IWorkflowListItem } from '../../WorkflowManage/WorkflowList';
+import { IWorkflowContext } from '../hooks/useContext';
 import { useRunGraph } from '../hooks/useRunGraph';
 
 const ToolbarContainer = styled(Toolbar)`
@@ -58,7 +59,7 @@ export const GraphTopToolbar = (props: IGraphTopToolbarProps) => {
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
 
-  const runWorkflow = useRunGraph(graph, libraryLoader);
+  const [runGraph, stopGraph, graphIsRunning] = useRunGraph(graph, libraryLoader);
 
   const backToHome = useCallback(() => {
     // don't need to save here, because we already debouncedSave after all operations
@@ -134,11 +135,21 @@ export const GraphTopToolbar = (props: IGraphTopToolbarProps) => {
   return (
     <>
       <ToolbarContainer>
-        <Tooltip title={t('Workflow.RunWorkflow')}>
-          <IconButton onClick={runWorkflow}>
-            <PlayArrowIcon />
-          </IconButton>
-        </Tooltip>
+        {graphIsRunning
+          ? (
+            <Tooltip title={t('Workflow.StopWorkflow')}>
+              <IconButton onClick={stopGraph}>
+                <StopIcon />
+              </IconButton>
+            </Tooltip>
+          )
+          : (
+            <Tooltip title={t('Workflow.RunWorkflow')}>
+              <IconButton onClick={runGraph}>
+                <PlayArrowIcon />
+              </IconButton>
+            </Tooltip>
+          )}
         <Tooltip title={t('Workflow.BackToHome')}>
           <IconButton onClick={backToHome}>
             <HomeIcon />
