@@ -80,9 +80,23 @@ function portForLibrary(port: INoFloProtocolComponentPort): INoFloUIComponentPor
 }
 
 export async function getBrowserComponentLibrary() {
+  /**
+   * Most of components are injected to this Class on build time by noflo-component-loader in webpack.rules.js
+   */
   const loader = new ComponentLoader('');
   const componentList = await loader.listComponents();
   const libraryToLoad: IFBPLibrary = {};
+  /**
+   * Load custom build-in components in src/services/libs/workflow
+   */
+  Object.entries(buildInComponents).forEach(([componentsSetName, componentsSet]) => {
+    Object.entries(componentsSet).forEach(([componentName, componentDefinitionRaw]: [string, ModuleComponent]) => {
+      if ('getComponent' in componentDefinitionRaw) {
+        const componentFullName = `${componentsSetName}/${componentName}`;
+        loader.registerComponent('', componentFullName, componentDefinitionRaw);
+      }
+    });
+  });
   Object.entries(componentList).forEach(([name, componentDefinitionRaw]) => {
     if (typeof componentDefinitionRaw === 'string') {
       // TODO: handle these ComponentDefinition types
@@ -93,18 +107,6 @@ export async function getBrowserComponentLibrary() {
       libraryToLoad[name] = componentForLibrary(componentToProtocolComponent(name, componentInstance));
     }
   });
-  const loadBuildInComponentsTask: Array<Promise<unknown>> = [];
-  Object.entries(buildInComponents).forEach(([componentsSetName, componentsSet]) => {
-    Object.entries(componentsSet).forEach(([componentName, componentDefinitionRaw]: [string, ModuleComponent]) => {
-      if ('getComponent' in componentDefinitionRaw) {
-        const componentFullName = `${componentsSetName}/${componentName}`;
-        loadBuildInComponentsTask.push(loader.createComponent(componentFullName, componentDefinitionRaw, {}));
-        const componentInstance = componentDefinitionRaw.getComponent();
-        libraryToLoad[componentFullName] = componentForLibrary(componentToProtocolComponent(componentFullName, componentInstance));
-      }
-    });
-  });
-  await Promise.all(loadBuildInComponentsTask);
   return [libraryToLoad, loader] as const;
 }
 
