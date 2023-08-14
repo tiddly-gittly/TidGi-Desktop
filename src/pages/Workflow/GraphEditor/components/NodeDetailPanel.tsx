@@ -1,17 +1,20 @@
 /* eslint-disable unicorn/no-null */
 import DeleteIcon from '@mui/icons-material/Delete';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import { Avatar, Card, CardActions, CardContent, CardHeader, Collapse, IconButton, IconButtonProps, TextField, Typography } from '@mui/material';
+import { Avatar, Card, CardActions, CardContent, CardHeader, Collapse, IconButton, IconButtonProps, TextField } from '@mui/material';
 import { red } from '@mui/material/colors';
+import { IChangeEvent } from '@rjsf/core';
 import Form from '@rjsf/mui';
 import { RJSFSchema, UiSchema } from '@rjsf/utils';
 import validator from '@rjsf/validator-ajv8';
+import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { GraphNode } from 'fbp-graph/lib/Types';
 import { JSONSchema7TypeName } from 'json-schema';
-import { FC, useState } from 'react';
+import { FC, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { IFBPLibrary, INoFloProtocolComponentPort, INoFloUIComponent, INoFloUIComponentPort } from 'the-graph';
+import { FBPGraphReferenceContext } from '../hooks/useContext';
 import { useSelectedNodeComponent } from '../hooks/useSelectedNodeComponent';
 import { NoFloIcon } from './NoFloIcon';
 import { SearchComponentsAutocomplete } from './SearchComponents';
@@ -77,8 +80,9 @@ const nofloPortTypeToRJSFType = (type: INoFloProtocolComponentPort['type']): JSO
   }
 };
 
-const generateSchemaFromPort = (port: INoFloUIComponentPort): RJSFSchema => {
+const generateSchemaFromPort = (port: INoFloUIComponentPort, options: { titleSuffix: string }): RJSFSchema => {
   return {
+    title: `${port.name} (${options.titleSuffix})`,
     type: nofloPortTypeToRJSFType(port.type),
     default: port.default,
     enum: Array.isArray(port.values) ? port.values : undefined,
@@ -120,7 +124,8 @@ export const NodeDetailPanel: FC<NodeDetailPanelProps> = ({ selectedNodes, libra
       {nodes.map((node) => (
         <NodeItem
           key={node.node.id}
-          node={node}
+          node={node.node}
+          component={node.component}
           library={library}
         />
       ))}
@@ -129,30 +134,52 @@ export const NodeDetailPanel: FC<NodeDetailPanelProps> = ({ selectedNodes, libra
 };
 
 interface NodeItemProps {
+  component: INoFloUIComponent;
   library: IFBPLibrary;
-  node: {
-    component: INoFloUIComponent;
-    node: GraphNode;
-  };
+  node: GraphNode;
 }
-const NodeItem: FC<NodeItemProps> = ({ node, library }) => {
+const NodeItem: FC<NodeItemProps> = ({ node, component, library }) => {
   const { t } = useTranslation();
-  const inPorts = node.component.inports ?? [];
+  const inPorts = component.inports ?? [];
   const inPortSchemas: RJSFSchema = {
     type: 'object',
-    properties: Object.fromEntries(inPorts.map((port) => [`${t('Workflow.InPort')} ${port.name}`, generateSchemaFromPort(port)])),
+    properties: Object.fromEntries(inPorts.map((port) => [port.name, generateSchemaFromPort(port, { titleSuffix: t('Workflow.InPort') })])),
   };
   const [moreFormExpanded, setMoreFormExpanded] = useState(false);
+  const fbpGraphReference = useContext(FBPGraphReferenceContext);
+  const initializers = fbpGraphReference?.current?.initializers;
+  const inPortData = useMemo(() => {
+    const nodeInitialData: Record<string, unknown> = {};
+    initializers?.forEach?.(initialInformationPackets => {
+      if (initialInformationPackets.to.node === node.id) {
+        nodeInitialData[initialInformationPackets.to.port] = initialInformationPackets.from.data as unknown;
+      }
+    });
+    return nodeInitialData;
+  }, [node, initializers]);
+  const handleInPortsChange = useDebouncedCallback((data: IChangeEvent<any, RJSFSchema, any>, id?: string | undefined) => {
+    const fbpGraph = fbpGraphReference?.current;
+    if (fbpGraph === undefined) return;
+    /**
+     * Input data is flattened, even you want to input an Object, it will be just string.
+     */
+    const formData = data.formData as Record<string, unknown>;
+    Object.entries(formData).forEach(([key, value]) => {
+      if (value === undefined) return;
+      fbpGraph.removeInitial(node.id, key);
+      fbpGraph.addInitial(value, node.id, key);
+    });
+  }, [fbpGraphReference, node.id]);
 
   return (
     <ItemContainer>
       <CardHeader
         avatar={
           <Avatar sx={{ bgcolor: red[500] }} aria-label='recipe'>
-            <NoFloIcon icon={node.component.icon} />
+            <NoFloIcon icon={component.icon} />
           </Avatar>
         }
-        title={<TextField value={node.node.metadata?.label as string ?? ''} label={t('Workflow.NodeLabel')} />}
+        title={<TextField value={node.metadata?.label as string ?? ''} label={t('Workflow.NodeLabel')} />}
       />
       <CardContent>
         <SearchComponentsAutocomplete
@@ -160,9 +187,9 @@ const NodeItem: FC<NodeItemProps> = ({ node, library }) => {
           library={library}
           onClick={(component) => {}}
           variant='standard'
-          defaultValue={node.node.component}
+          defaultValue={node.component}
         />
-        <Form schema={inPortSchemas} validator={validator} uiSchema={uiSchema} />
+        <Form formData={inPortData} schema={inPortSchemas} validator={validator} uiSchema={uiSchema} onChange={handleInPortsChange} />
       </CardContent>
       <CardActions disableSpacing>
         <IconButton aria-label='delete'>
@@ -181,7 +208,7 @@ const NodeItem: FC<NodeItemProps> = ({ node, library }) => {
       </CardActions>
       <Collapse in={moreFormExpanded} timeout='auto' unmountOnExit>
         <CardContent>
-          {(node.node.metadata !== undefined) && <Form schema={generateSchemaForMetadata(node.node.metadata)} validator={validator} uiSchema={uiSchema} />}
+          {(node.metadata !== undefined) && <Form schema={generateSchemaForMetadata(node.metadata)} validator={validator} uiSchema={uiSchema} />}
         </CardContent>
       </Collapse>
     </ItemContainer>

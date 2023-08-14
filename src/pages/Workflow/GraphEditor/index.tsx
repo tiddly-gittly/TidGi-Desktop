@@ -16,7 +16,8 @@ import { useTheme } from '@mui/material';
 import { NodeDetailPanel } from './components/NodeDetailPanel';
 import { SearchComponentsBar } from './components/SearchComponents';
 import { GraphTopToolbar } from './components/Toolbar';
-import { WorkflowContext } from './hooks/useContext';
+import { FBPGraphReferenceContext, WorkflowContext } from './hooks/useContext';
+import { useFBPGraphReference } from './hooks/useFBPGraphReference';
 import { useMenu } from './hooks/useMenu';
 import { useMouseEvents } from './hooks/useMouseEvents';
 import { useSaveLoadGraph } from './hooks/useSaveLoadGraph';
@@ -87,54 +88,57 @@ export function GraphEditor() {
     library,
     setGraph,
   });
+  const fBPGraphReference = useFBPGraphReference(graph);
   const { getMenuDef } = useMenu();
   const editorReference = useRef<ITheGraphEditor>();
   if ((graph === undefined) || (library === undefined)) return <div>{t('Loading')}</div>;
 
   return (
     <ErrorBoundary fallback={<div>Something went wrong</div>}>
-      <TheGraphContainer className={`the-graph-${systemTheme?.shouldUseDarkColors === true ? 'dark' : 'light'}`}>
-        <TheGraph.App
-          graph={graph}
-          library={library}
-          height={window.innerHeight}
-          width={window.innerWidth}
-          offsetX={muiTheme.sidebar.width}
-          getMenuDef={getMenuDef}
-          onPanScale={onPanScale}
-          onNodeSelection={onNodeSelection}
-          onEdgeSelection={onEdgeSelection}
-          getEditorRef={editorReference}
+      <FBPGraphReferenceContext.Provider value={fBPGraphReference}>
+        <TheGraphContainer className={`the-graph-${systemTheme?.shouldUseDarkColors === true ? 'dark' : 'light'}`}>
+          <TheGraph.App
+            graph={graph}
+            library={library}
+            height={window.innerHeight}
+            width={window.innerWidth}
+            offsetX={muiTheme.sidebar.width}
+            getMenuDef={getMenuDef}
+            onPanScale={onPanScale}
+            onNodeSelection={onNodeSelection}
+            onEdgeSelection={onEdgeSelection}
+            getEditorRef={editorReference}
+            readonly={readonly}
+          />
+        </TheGraphContainer>
+        <NodeDetailsContainer>
+          <NodeDetailPanel selectedNodes={selectedNodes} library={library} />
+        </NodeDetailsContainer>
+        <ThumbnailContainer>
+          <ThumbnailNav
+            height={muiTheme.workflow.thumbnail.height}
+            width={muiTheme.workflow.thumbnail.width}
+            graph={graph}
+            viewrectangle={[pan[0], pan[1], window.innerWidth - muiTheme.sidebar.width, window.innerHeight]}
+            viewscale={scale}
+            onTap={() => {
+              editorReference?.current?.triggerFit();
+            }}
+            onPanTo={(panTo) => {
+              editorReference?.current?.setState(panTo);
+            }}
+          />
+        </ThumbnailContainer>
+        <SearchComponentsBar library={library} addNode={addNode} />
+        <GraphTopToolbar
+          editorReference={editorReference}
           readonly={readonly}
-        />
-      </TheGraphContainer>
-      <NodeDetailsContainer>
-        <NodeDetailPanel selectedNodes={selectedNodes} library={library} />
-      </NodeDetailsContainer>
-      <ThumbnailContainer>
-        <ThumbnailNav
-          height={muiTheme.workflow.thumbnail.height}
-          width={muiTheme.workflow.thumbnail.width}
+          setReadonly={setReadonly}
+          workflowContext={workflowContext}
           graph={graph}
-          viewrectangle={[pan[0], pan[1], window.innerWidth - muiTheme.sidebar.width, window.innerHeight]}
-          viewscale={scale}
-          onTap={() => {
-            editorReference?.current?.triggerFit();
-          }}
-          onPanTo={(panTo) => {
-            editorReference?.current?.setState(panTo);
-          }}
+          libraryLoader={libraryLoader}
         />
-      </ThumbnailContainer>
-      <SearchComponentsBar library={library} addNode={addNode} />
-      <GraphTopToolbar
-        editorReference={editorReference}
-        readonly={readonly}
-        setReadonly={setReadonly}
-        workflowContext={workflowContext}
-        graph={graph}
-        libraryLoader={libraryLoader}
-      />
+      </FBPGraphReferenceContext.Provider>
     </ErrorBoundary>
   );
 }

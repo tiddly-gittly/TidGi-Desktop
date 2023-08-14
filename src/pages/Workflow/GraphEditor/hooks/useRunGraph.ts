@@ -9,7 +9,6 @@ export function useRunGraph(fbpGraph: FbpGraph, libraryLoader?: ComponentLoader)
     /**
      * Similar to noflo-runtime-base's `src/protocol/Network.js`, transform FbpGraph to ~~NofloGraph~~ Network
      */
-    // fbpGraph.addInitial('aaa', fbpGraph.nodes[1].id, 'in');
     const nofloNetwork: Network = await createNetwork(fbpGraph, {
       subscribeGraph: false,
       delay: true,
