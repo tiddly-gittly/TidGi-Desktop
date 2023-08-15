@@ -1,3 +1,4 @@
+import { injectUIEffectsWhenRunGraph } from '@services/libs/workflow/ui/debugUIEffects/injectUIEffectsWhenRunGraph';
 import { Graph as FbpGraph } from 'fbp-graph';
 import { /* Graph as NofloGraph, */ type ComponentLoader, createNetwork } from 'noflo';
 import type { Network } from 'noflo/lib/Network';
@@ -26,10 +27,11 @@ export function useRunGraph(fbpGraph: FbpGraph, libraryLoader?: ComponentLoader)
         }
       });
       await nofloNetwork.connect();
+      injectUIEffectsWhenRunGraph(nofloNetwork);
       await nofloNetwork.start();
       nofloNetwork.once('end', () => {
         setGraphIsRunning(false);
-      })
+      });
     } catch (error) {
       // TODO: show error on a debugger panel
       // network.once('process-error', onError);

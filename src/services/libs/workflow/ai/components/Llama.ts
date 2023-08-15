@@ -6,7 +6,7 @@ import { Observable } from 'rxjs';
 
 const runner = LanguageModelRunner.llamaCpp;
 
-class LLaMaChat extends Component {
+class LLaMa extends Component {
   description = 'Call local Llama model';
   icon = 'file';
   /**
@@ -32,6 +32,7 @@ class LLaMaChat extends Component {
     });
 
     // token by token
+    // TODO: use "bracket IPs", and receiver should use `hasStream`
     this.outPorts.add('token', {
       datatype: 'string',
     });
@@ -105,4 +106,4 @@ class LLaMaChat extends Component {
 }
 
 // Register the component
-export const getComponent = () => new LLaMaChat();
+export const getComponent = () => new LLaMa();
