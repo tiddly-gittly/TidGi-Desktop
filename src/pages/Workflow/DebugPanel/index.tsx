@@ -31,6 +31,9 @@ const UIContainer = styled.div`
   height: ${({ theme }) => theme.workflow.debugPanel.height}px;
 
   background-color: ${({ theme }) => theme.palette.background.paper};
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 `;
 const DragHandle = styled.div<{ graphIsRunning: boolean }>`
   width: 100%;

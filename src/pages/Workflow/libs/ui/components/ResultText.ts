@@ -35,6 +35,7 @@ class ResultText extends Component {
       if (this.uiEffects === undefined) return;
       if (!input.hasData('in')) return;
       const content = input.getData('in') as string;
+      if (content === null || content === undefined) return;
       const props: IResultTextProps = {
         content,
       };

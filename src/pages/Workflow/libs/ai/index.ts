@@ -1,6 +1,6 @@
-import * as getLlama from './components/Llama';
+import * as LLaMa from './components/Llama';
 
 const components = {
-  getLlama,
+  LLaMa,
 };
 export default components;

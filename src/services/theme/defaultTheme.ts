@@ -13,6 +13,7 @@ const workflow: ThemeOptions['workflow'] = {
   debugPanel: {
     width: 350,
     height: 300,
+    cardSpacing: 12,
   },
 };
 export const lightTheme = merge(cloneDeep(createTheme({

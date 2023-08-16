@@ -13,6 +13,7 @@ export interface UIElementState {
    * Props for UI element. See ITextFieldProps and IButtonGroupProps for example, this can be added by plugin, so can't be statically typed, just as an example here.
    */
   props: ITextFieldProps | IButtonGroupProps | IResultTextProps | Record<string, unknown>;
+  timestamp: number;
   type: 'textField' | 'buttonGroup' | 'textResult' | string;
 }
 
@@ -41,6 +42,7 @@ export const uiStore = createStore<UIStoreState>((set) => ({
     const newElement = {
       content: undefined,
       id,
+      timestamp: Date.now(),
       isSubmitted: false,
       props,
       type,

@@ -22,6 +22,7 @@ declare module '@mui/material/styles' {
       debugPanel: {
         height: number;
         width: number;
+        cardSpacing: number;
       };
       nodeDetailPanel: {
         width: number;

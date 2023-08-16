@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null */
 // Load the NoFlo interface
 import { ILLMResultPart, LanguageModelRunner } from '@services/languageModel/interface';
@@ -6,6 +7,13 @@ import { Observable } from 'rxjs';
 
 const runner = LanguageModelRunner.llamaCpp;
 
+/**
+ * Works with prompt that contains `USER` and `ASSISTANT` tokens.
+ *
+ * ```
+ * A chat between a user and an assistant.USER: You are a helpful assistant. Write a simple hello world in JS.ASSISTANT:
+ * ```
+ */
 class LLaMa extends Component {
   description = 'Call local Llama model';
   icon = 'file';
@@ -54,9 +62,11 @@ class LLaMa extends Component {
       if (!input.hasData('prompt')) {
         return;
       }
-      this.currentConversationID = String(Date.now());
-      // Retrieve the incoming data from the inport
+      // Retrieve the incoming data from the inPort
+      // it will initially be `null`, but `input.hasData('prompt')` will return true, so we have to check here again.
       const prompt = input.getData('prompt') as string;
+      if (!prompt) return;
+      this.currentConversationID = String(Date.now());
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       const cpuCount = input.getData('cpu_count') as number || 4;
 
