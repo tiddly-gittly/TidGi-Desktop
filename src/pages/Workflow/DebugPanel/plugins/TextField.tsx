@@ -21,8 +21,10 @@ function TextFieldPluginComponent({ label, placeholder, description, introductio
         onChange={(event) => {
           setValue(event.target.value);
         }}
-        onSubmit={() => {
-          onSubmit(id, value);
+        onKeyDown={(event) => {
+          if (event.key === 'Enter') {
+            onSubmit(id, value);
+          }
         }}
       />
     </>

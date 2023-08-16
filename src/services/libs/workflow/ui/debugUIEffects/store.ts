@@ -1,4 +1,4 @@
-import { IButtonGroupProps, ITextFieldProps } from '@services/libs/workflow/ui/types/UIEffectsContext';
+import { IButtonGroupProps, IResultTextProps, ITextFieldProps } from '@services/libs/workflow/ui/types/UIEffectsContext';
 import { createStore } from 'zustand/vanilla';
 
 export interface UIElementState {
@@ -12,7 +12,7 @@ export interface UIElementState {
   /**
    * Props for UI element. See ITextFieldProps and IButtonGroupProps for example, this can be added by plugin, so can't be statically typed, just as an example here.
    */
-  props: ITextFieldProps | IButtonGroupProps | unknown;
+  props: ITextFieldProps | IButtonGroupProps | IResultTextProps | Record<string, unknown>;
   type: 'textField' | 'buttonGroup' | 'textResult' | string;
 }
 

@@ -31,6 +31,7 @@ const UIContainer = styled.div`
 const DragHandle = styled.div`
   width: 100%;
   height: 1em;
+  margin-bottom: 0.5em;
   background-color: ${({ theme }) => theme.palette.primary.main};
   cursor: move;
 `;
@@ -41,7 +42,7 @@ export function DebugPanel({ graphIsRunning }: { graphIsRunning: boolean }) {
 
   return (
     <Container style={{ userSelect: 'none', display: graphIsRunning ? 'block' : 'none' }}>
-      <UIContainer ref={moveableReference} >
+      <UIContainer ref={moveableReference}>
         <DragHandle ref={draggableReference} />
         <DebugUIElements />
       </UIContainer>
@@ -60,6 +61,7 @@ export function DebugPanel({ graphIsRunning }: { graphIsRunning: boolean }) {
           target.style.transform = transform;
         }}
         throttleResize={1}
+        renderDirections={['se']}
         onResize={({
           target,
           width,

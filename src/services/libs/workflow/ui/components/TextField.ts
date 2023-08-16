@@ -46,7 +46,7 @@ class TextField extends Component {
     this.process(async (input, output) => {
       this.uiEffects ??= input.getData('ui_effects') as UIEffectsContext | undefined;
       if (this.uiEffects === undefined) return;
-      if (!input.hasData('label')) return;
+      if (!input.hasData('label') || !input.hasData('desc')) return;
       const label = input.getData('label') as string;
       const desc = input.getData('desc') as string;
       const intro = input.getData('intro') as string;
