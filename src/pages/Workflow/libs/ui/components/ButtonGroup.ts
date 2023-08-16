@@ -8,7 +8,7 @@ export const getComponent = () => new ButtonGroup();
 class ButtonGroup extends Component {
   description = 'Let user click on provided button and get clicked index.';
   icon = 'hand-pointer-o';
-  openedUIElementIDs = new Set<string>();
+  uiElementID?: string;
   uiEffects?: UIEffectsContext;
 
   constructor() {
@@ -64,18 +64,21 @@ class ButtonGroup extends Component {
         buttons,
         introduction: intro,
       };
-      const uiElementID = this.uiEffects.addElement({ type: 'buttonGroup', props });
-      // prepared for remove of ui element
-      this.openedUIElementIDs.add(uiElementID);
-      // wait for result, and sent to outPort
-      const clickedButtonIndex = await this.uiEffects.onSubmit(uiElementID);
-      output.sendDone({ out: clickedButtonIndex });
+      // If we already have an UI element created, update it. Otherwise, create a new one.
+      if (this.uiElementID === undefined) {
+        this.uiElementID = this.uiEffects.addElement({ type: 'buttonGroup', props });
+        // wait for result, and sent to outPort
+        const clickedButtonIndex = await this.uiEffects.onSubmit(this.uiElementID);
+        output.sendDone({ out: clickedButtonIndex });
+      } else {
+        this.uiEffects.updateElementProps({ id: this.uiElementID, props });
+      }
     });
   }
 
   async tearDown() {
-    for (const uiElementID of this.openedUIElementIDs) {
-      this.uiEffects?.removeElement?.(uiElementID);
+    if (this.uiElementID !== undefined) {
+      this.uiEffects?.removeElement?.(this.uiElementID);
     }
   }
 }

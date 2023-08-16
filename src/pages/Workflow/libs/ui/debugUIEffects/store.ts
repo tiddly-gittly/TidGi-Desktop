@@ -1,4 +1,5 @@
 import { IButtonGroupProps, IResultTextProps, ITextFieldProps } from '@/pages/Workflow/libs/ui/types/UIEffectsContext';
+import { isUndefined, mergeWith } from 'lodash';
 import { createStore } from 'zustand/vanilla';
 
 export interface UIElementState {
@@ -18,12 +19,14 @@ export interface UIElementState {
 }
 
 export interface UIStoreState {
+  /** adds element and returns its ID */
   addElement: (element: Pick<UIElementState, 'type' | 'props'>) => string;
   clearElements: () => void;
   elements: Record<string, UIElementState | undefined>;
   removeElement: (id: string) => void;
-  // adds element and returns its ID
   submitElement: (id: string, content: unknown) => void;
+  /** update existing element with new props, props will merge with old props, undefined value will be omitted (to use old value) */
+  updateElementProps: (element: Pick<UIElementState, 'id' | 'props'>) => void;
 }
 
 /**
@@ -49,6 +52,19 @@ export const uiStore = createStore<UIStoreState>((set) => ({
     };
     set((state) => ({ elements: { ...state.elements, [id]: newElement } }));
     return id;
+  },
+  updateElementProps: ({ id, props }) => {
+    set((state) => {
+      const existedElement = state.elements[id];
+      if (existedElement !== undefined) {
+        mergeWith(existedElement.props, props, (objectValue: unknown, sourceValue) => {
+          if (isUndefined(sourceValue)) {
+            return objectValue;
+          }
+        });
+      }
+      return { elements: { ...state.elements, [id]: existedElement } };
+    });
   },
   submitElement: (id, content) => {
     set((state) => {

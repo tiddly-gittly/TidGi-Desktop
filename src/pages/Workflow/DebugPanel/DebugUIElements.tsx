@@ -40,12 +40,12 @@ export function DebugUIElements() {
         }
         const { Component } = plugin;
         return (
-          <>
+          <div key={id}>
             <Typography color='textSecondary'>
               {new Date(timestamp).toLocaleTimeString()}
             </Typography>
-            <Component key={id} {...props} onSubmit={onSubmit} id={id} isSubmitted={isSubmitted} />
-          </>
+            <Component {...props} onSubmit={onSubmit} id={id} isSubmitted={isSubmitted} />
+          </div>
         );
       })}
     </Container>

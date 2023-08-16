@@ -7,7 +7,7 @@ export const getComponent = () => new ResultText();
 class ResultText extends Component {
   description = 'Result text from workflow or LLM.';
   icon = 'check-square-o';
-  openedUIElementIDs = new Set<string>();
+  uiElementID?: string;
   uiEffects?: UIEffectsContext;
 
   constructor() {
@@ -39,16 +39,14 @@ class ResultText extends Component {
       const props: IResultTextProps = {
         content,
       };
-      const uiElementID = this.uiEffects.addElement({ type: 'textResult', props });
-      // prepared for remove of ui element
-      this.openedUIElementIDs.add(uiElementID);
+      this.uiElementID = this.uiEffects.addElement({ type: 'textResult', props });
       output.done();
     });
   }
 
   async tearDown() {
-    for (const uiElementID of this.openedUIElementIDs) {
-      this.uiEffects?.removeElement?.(uiElementID);
+    if (this.uiElementID !== undefined) {
+      this.uiEffects?.removeElement?.(this.uiElementID);
     }
   }
 }

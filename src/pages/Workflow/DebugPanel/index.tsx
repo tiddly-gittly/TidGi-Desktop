@@ -35,11 +35,11 @@ const UIContainer = styled.div`
   flex-direction: column;
   justify-content: space-between;
 `;
-const DragHandle = styled.div<{ graphIsRunning: boolean }>`
+const DragHandle = styled.div<{ $graphIsRunning: boolean }>`
   width: 100%;
   height: 1.5em;
   margin-bottom: 0.5em;
-  background-color: ${({ theme, graphIsRunning }) => graphIsRunning ? theme.palette.primary.main : theme.palette.primary.light};
+  background-color: ${({ theme, $graphIsRunning }) => $graphIsRunning ? theme.palette.primary.main : theme.palette.primary.light};
   cursor: move;
 
   display: flex;
@@ -62,7 +62,7 @@ export function DebugPanel(
   return (
     <Container style={{ userSelect: 'none', display: debugPanelOpened ? 'block' : 'none' }}>
       <UIContainer ref={moveableReference}>
-        <DragHandle ref={draggableReference} graphIsRunning={graphIsRunning}>
+        <DragHandle ref={draggableReference} $graphIsRunning={graphIsRunning}>
           <Tooltip title={t('Workflow.ClearDebugPanel')}>
             <ClearAllIcon
               onClick={clearDebugPanelElements}

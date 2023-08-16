@@ -27,6 +27,7 @@ export function useRunGraph(fbpGraph?: FbpGraph, libraryLoader?: ComponentLoader
           console.log(processError.error);
         }
       });
+      // node's initial data already being added by UI in src/pages/Workflow/GraphEditor/components/NodeDetailPanel.tsx
       await nofloNetwork.connect();
       injectUIEffectsWhenRunGraph(nofloNetwork);
       await nofloNetwork.start();
