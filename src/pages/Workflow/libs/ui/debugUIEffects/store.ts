@@ -18,11 +18,11 @@ export interface UIElementState {
 
 export interface UIStoreState {
   addElement: (element: Pick<UIElementState, 'type' | 'props'>) => string;
+  clearElements: () => void;
   elements: Record<string, UIElementState | undefined>;
   removeElement: (id: string) => void;
   // adds element and returns its ID
   submitElement: (id: string, content: unknown) => void;
-  clearElements: () => void;
 }
 
 /**
@@ -30,6 +30,7 @@ export interface UIStoreState {
  */
 export interface IUiElementSubmitProps {
   id: string;
+  isSubmitted: boolean;
   onSubmit: (id: string, content: unknown) => void;
 }
 

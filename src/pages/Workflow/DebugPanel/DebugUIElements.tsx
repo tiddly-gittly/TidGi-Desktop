@@ -1,6 +1,5 @@
-import { UIElementState, uiStore, UIStoreState } from '@/pages/Workflow/libs/ui/debugUIEffects/store';
+import { UIElementState } from '@/pages/Workflow/libs/ui/debugUIEffects/store';
 import { styled } from 'styled-components';
-import { useStore } from 'zustand';
 import { plugins } from './plugins';
 import { useUIStore } from './useUIStore';
 
@@ -14,7 +13,7 @@ export function DebugUIElements() {
   return (
     <Container>
       {elements.map(element => {
-        const { type, id, props = {} } = element;
+        const { type, id, props = {}, isSubmitted } = element;
         const plugin = plugins.find(p => p.type === type);
         if (plugin === undefined) {
           // TODO: return a placeholder element instead
@@ -22,7 +21,7 @@ export function DebugUIElements() {
           return null;
         }
         const { Component } = plugin;
-        return <Component key={id} {...props} onSubmit={onSubmit} id={id} />;
+        return <Component key={id} {...props} onSubmit={onSubmit} id={id} isSubmitted={isSubmitted} />;
       })}
     </Container>
   );
