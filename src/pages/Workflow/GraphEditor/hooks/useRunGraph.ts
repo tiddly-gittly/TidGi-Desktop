@@ -4,10 +4,11 @@ import { /* Graph as NofloGraph, */ type ComponentLoader, createNetwork } from '
 import type { Network } from 'noflo/lib/Network';
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export function useRunGraph(fbpGraph: FbpGraph, libraryLoader?: ComponentLoader) {
+export function useRunGraph(fbpGraph?: FbpGraph, libraryLoader?: ComponentLoader) {
   const currentNetworkReference = useRef<Network | undefined>();
   const [graphIsRunning, setGraphIsRunning] = useState(false);
   const runGraph = useCallback(async () => {
+    if (fbpGraph === undefined) return;
     setGraphIsRunning(true);
     try {
       /**
@@ -41,10 +42,12 @@ export function useRunGraph(fbpGraph: FbpGraph, libraryLoader?: ComponentLoader)
   }, [fbpGraph, libraryLoader]);
   const stopGraph = useCallback(async () => {
     await currentNetworkReference.current?.stop();
+    setGraphIsRunning(false);
   }, []);
   useEffect(() => {
     return () => {
       void currentNetworkReference.current?.stop();
+      setGraphIsRunning(false);
     };
   }, [currentNetworkReference]);
   return [runGraph, stopGraph, graphIsRunning] as const;

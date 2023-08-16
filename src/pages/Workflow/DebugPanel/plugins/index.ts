@@ -1,7 +1,5 @@
-import { ReactNode } from 'react';
-
 export interface UIPlugin {
-  component: (props: any) => JSX.Element | ReactNode;
+  Component: (props: any) => JSX.Element;
   type: string;
 }
 

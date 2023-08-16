@@ -2,10 +2,9 @@
 import React, { useRef } from 'react';
 import { flushSync } from 'react-dom';
 import Moveable from 'react-moveable';
-import { useStore } from 'zustand';
 
-import { UIElementState, uiStore, UIStoreState } from '@services/libs/workflow/ui/debugUIEffects/store';
-import { plugins, registerPlugin } from './plugins';
+import { DebugUIElements } from './DebugUIElements';
+import { registerPlugin } from './plugins';
 import { ButtonGroupPlugin } from './plugins/ButtonGroup';
 import { TextFieldPlugin } from './plugins/TextField';
 import { TextResultPlugin } from './plugins/TextResult';
@@ -14,22 +13,13 @@ registerPlugin(ButtonGroupPlugin);
 registerPlugin(TextFieldPlugin);
 registerPlugin(TextResultPlugin);
 
-function useUIStore<T>(selector: (state: UIStoreState) => T) {
-  return useStore(uiStore, selector);
-}
-
 const DebugPanel: React.FC = () => {
   const moveableReference = useRef(null);
-  const elements = useUIStore((state) => Object.values(state.elements).filter((element): element is UIElementState => element !== undefined));
 
   return (
     <>
       <div ref={moveableReference} style={{ userSelect: 'none' }}>
-        {elements.map(element => {
-          const plugin = plugins.find(p => p.type === element.type);
-          // eslint-disable-next-line unicorn/no-null
-          return (plugin === undefined) ? null : plugin.component(element.props);
-        })}
+        <DebugUIElements />
       </div>
       <Moveable
         target={moveableReference.current}

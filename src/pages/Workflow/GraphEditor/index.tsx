@@ -13,6 +13,7 @@ import '@fortawesome/fontawesome-free/css/all.css';
 import '@fortawesome/fontawesome-free/css/v4-font-face.css';
 
 import { useTheme } from '@mui/material';
+import DebugPanel from '../DebugPanel';
 import { NodeDetailPanel } from './components/NodeDetailPanel';
 import { SearchComponentsBar } from './components/SearchComponents';
 import { GraphTopToolbar } from './components/Toolbar';
@@ -20,6 +21,7 @@ import { FBPGraphReferenceContext, WorkflowContext } from './hooks/useContext';
 import { useFBPGraphReference } from './hooks/useFBPGraphReference';
 import { useMenu } from './hooks/useMenu';
 import { useMouseEvents } from './hooks/useMouseEvents';
+import { useRunGraph } from './hooks/useRunGraph';
 import { useSaveLoadGraph } from './hooks/useSaveLoadGraph';
 import { useLibrary } from './utils/library';
 
@@ -91,6 +93,7 @@ export function GraphEditor() {
   const fBPGraphReference = useFBPGraphReference(graph);
   const { getMenuDef } = useMenu();
   const editorReference = useRef<ITheGraphEditor>();
+  const [runGraph, stopGraph, graphIsRunning] = useRunGraph(graph, libraryLoader);
   if ((graph === undefined) || (library === undefined)) return <div>{t('Loading')}</div>;
 
   return (
@@ -136,8 +139,11 @@ export function GraphEditor() {
           setReadonly={setReadonly}
           workflowContext={workflowContext}
           graph={graph}
-          libraryLoader={libraryLoader}
+          runGraph={runGraph}
+          stopGraph={stopGraph}
+          graphIsRunning={graphIsRunning}
         />
+        {graphIsRunning && <DebugPanel />}
       </FBPGraphReferenceContext.Provider>
     </ErrorBoundary>
   );

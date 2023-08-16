@@ -1,10 +1,10 @@
 import { TextField, Typography } from '@mui/material';
 import { ITextFieldProps } from '@services/libs/workflow/ui/types/UIEffectsContext';
-import { FC, useState } from 'react';
+import { useState } from 'react';
 import type { IUiElementSubmitProps } from '../../../../services/libs/workflow/ui/debugUIEffects/store';
 import type { UIPlugin } from '.';
 
-const TextFieldPluginComponent: FC<ITextFieldProps & IUiElementSubmitProps> = ({ label, placeholder, description, introduction, id, onSubmit }) => {
+function TextFieldPluginComponent({ label, placeholder, description, introduction, id, onSubmit }: ITextFieldProps & IUiElementSubmitProps) {
   const [value, setValue] = useState<string>('');
   return (
     <>
@@ -27,9 +27,9 @@ const TextFieldPluginComponent: FC<ITextFieldProps & IUiElementSubmitProps> = ({
       />
     </>
   );
-};
+}
 
 export const TextFieldPlugin: UIPlugin = {
   type: 'textField',
-  component: TextFieldPluginComponent,
+  Component: TextFieldPluginComponent,
 };

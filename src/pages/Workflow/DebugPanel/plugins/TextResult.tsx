@@ -2,7 +2,10 @@ import { Typography } from '@mui/material';
 import { IResultTextProps } from '@services/libs/workflow/ui/types/UIEffectsContext';
 import type { UIPlugin } from '.';
 
+function Component({ content }: IResultTextProps) {
+  return <Typography>{content}</Typography>;
+}
 export const TextResultPlugin: UIPlugin = {
   type: 'textResult',
-  component: ({ content }: IResultTextProps) => <Typography>{content}</Typography>,
+  Component,
 };
