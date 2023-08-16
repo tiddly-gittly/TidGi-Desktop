@@ -36,7 +36,7 @@ export function useSaveLoadGraph() {
   const workflowContext = useContext(WorkflowContext);
 
   const [graph, setGraph] = useState<Graph | undefined>();
-  const previousOpenedWorkflowItemIDReference = useRef<string | undefined>()
+  const previousOpenedWorkflowItemIDReference = useRef<string | undefined>();
   // load graph when openedWorkflowItem's ID changed, means we are loading another graph
   useEffect(() => {
     // this hook is only for initial load
