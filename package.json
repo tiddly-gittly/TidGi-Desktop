@@ -202,6 +202,7 @@
     "react-helmet": "6.1.0",
     "react-i18next": "13.0.2",
     "react-masonry-css": "^1.0.16",
+    "react-moveable": "^0.54.1",
     "rimraf": "^5.0.1",
     "simplebar": "6.2.5",
     "simplebar-react": "3.2.4",
@@ -219,7 +220,8 @@
     "webpack-bundle-analyzer": "4.9.0",
     "webpack-node-externals": "3.0.0",
     "webpack5-externals-plugin": "1.0.4",
-    "webpackbar": "5.0.2"
+    "webpackbar": "5.0.2",
+    "zustand": "^4.4.1"
   },
   "pnpm": {
     "overrides": {

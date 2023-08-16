@@ -1,5 +1,7 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { UIEffectsContext } from '../types/UIEffectsContext';
+import type { StoreApi } from 'zustand/vanilla';
+import type { UIEffectsContext } from '../types/UIEffectsContext';
+import type { UIStoreState } from './store';
 
 export type IUIEffect = (...payloads: unknown[]) => void;
 export interface IUIEffectPlugin {
@@ -12,15 +14,24 @@ export interface IUIEffectPlugin {
 
 /**
  * This is a global object that contains all UI effects.
- * Methods should be injected by plugins.
  */
-export const debugUIEffectsContext = {} as unknown as UIEffectsContext;
-/**
- * Add new UI effects to the debug UI effects context.
- */
-export function installPlugin(plugin: IUIEffectPlugin) {
-  const uiEffectsToAdd = plugin?.provideUIEffects?.();
-  if (uiEffectsToAdd && Object.keys(uiEffectsToAdd).length > 0) {
-    Object.assign(debugUIEffectsContext, uiEffectsToAdd);
-  }
-}
+export const createUIEffectsContext = (uiStore: StoreApi<UIStoreState>): UIEffectsContext => {
+  const uiEffectsContext: UIEffectsContext = {
+    ...uiStore.getState(),
+    onSubmit: async (uiElementID: string) => {
+      return await new Promise((resolve) => {
+        // Watch for submission of this field
+        const unsubscribe = uiStore.subscribe(
+          (state) => {
+            const element = state.elements[uiElementID];
+            if (element?.isSubmitted) {
+              resolve(element.content);
+              unsubscribe();
+            }
+          },
+        );
+      });
+    },
+  };
+  return uiEffectsContext;
+};
