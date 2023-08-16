@@ -36,9 +36,13 @@ export function useSaveLoadGraph() {
   const workflowContext = useContext(WorkflowContext);
 
   const [graph, setGraph] = useState<Graph | undefined>();
+  const previousOpenedWorkflowItemIDReference = useRef<string | undefined>()
+  // load graph when openedWorkflowItem's ID changed, means we are loading another graph
   useEffect(() => {
     // this hook is only for initial load
-    if (graph !== undefined) return;
+    if (workflowContext.openedWorkflowItem?.id === undefined) return;
+    if (previousOpenedWorkflowItemIDReference.current === workflowContext.openedWorkflowItem.id) return;
+    previousOpenedWorkflowItemIDReference.current = workflowContext.openedWorkflowItem.id;
     // this is set when when click open on src/pages/Workflow/WorkflowManage/WorkflowList.tsx , so it usually won't be undefined.
     const graphJSON = workflowContext.openedWorkflowItem?.graphJSONString;
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
@@ -47,7 +51,7 @@ export function useSaveLoadGraph() {
         setGraph(graph);
       });
     }
-  }, [graph, workflowContext.openedWorkflowItem]);
+  }, [graph, workflowContext.openedWorkflowItem, previousOpenedWorkflowItemIDReference]);
   const debouncedOnSave = useDebouncedCallback(onSave, [], 1000);
   const onSaveListenerRegistered = useRef(false);
   /**

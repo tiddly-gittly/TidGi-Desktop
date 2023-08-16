@@ -3,8 +3,9 @@ import { WikiChannel } from '@/constants/channels';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { workflowTiddlerTagName } from '@services/wiki/plugin/nofloWorkflow/constants';
 import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import type { ITiddlerFields } from 'tiddlywiki';
+import { WorkflowContext } from '../GraphEditor/hooks/useContext';
 import { IWorkflowListItem } from './WorkflowList';
 
 export function useAvailableFilterTags(workspacesList: IWorkspaceWithMetadata[] | undefined) {
@@ -110,6 +111,7 @@ export function useWorkflowFromWiki(workspacesList: IWorkspaceWithMetadata[] | u
 export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefined, setTagsByWorkspace: React.Dispatch<React.SetStateAction<Record<string, string[]>>>) {
   const [workflows, setWorkflows] = useState<IWorkflowListItem[]>([]);
   const initialWorkflows = useWorkflowFromWiki(workspacesList);
+  const workflowContext = useContext(WorkflowContext);
   // loading workflows using filter expression is expensive, so we only do this on initial load. Later just update&use local state value
   useEffect(() => {
     setWorkflows(initialWorkflows.sort(sortWorkflow));
@@ -129,7 +131,8 @@ export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefine
         [newItem.workspaceID]: [...previousTags, ...newTags],
       };
     });
-  }, [setTagsByWorkspace, setWorkflows]);
+    workflowContext.setOpenedWorkflowItem(newItem);
+  }, [setTagsByWorkspace, workflowContext]);
   const onDeleteWorkflow = useCallback((item: IWorkflowListItem) => {
     // delete workflow from wiki
     window.service.wiki.wikiOperation(
@@ -139,7 +142,11 @@ export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefine
     );
     // delete workflow from local state
     setWorkflows((workflows) => workflows.filter(workflow => workflow.id !== item.id).sort(sortWorkflow));
-  }, [setWorkflows]);
+    if (item.id === workflowContext.openedWorkflowItem?.id) {
+      // eslint-disable-next-line unicorn/no-useless-undefined
+      workflowContext.setOpenedWorkflowItem(undefined);
+    }
+  }, [workflowContext]);
 
   return [workflows, onAddWorkflow, onDeleteWorkflow] as const;
 }
