@@ -1,5 +1,5 @@
 import { Typography } from '@mui/material';
-import { IResultTextProps } from '@services/libs/workflow/ui/types/UIEffectsContext';
+import { IResultTextProps } from '@/pages/Workflow/libs/ui/types/UIEffectsContext';
 import type { UIPlugin } from '.';
 
 function Component({ content }: IResultTextProps) {

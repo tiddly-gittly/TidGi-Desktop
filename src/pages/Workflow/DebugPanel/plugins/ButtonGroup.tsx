@@ -1,6 +1,6 @@
 import { Button, ButtonGroup } from '@mui/material';
-import { IButtonGroupProps } from '@services/libs/workflow/ui/types/UIEffectsContext';
-import { IUiElementSubmitProps } from '../../../../services/libs/workflow/ui/debugUIEffects/store';
+import { IButtonGroupProps } from '@/pages/Workflow/libs/ui/types/UIEffectsContext';
+import { IUiElementSubmitProps } from '../../libs/ui/debugUIEffects/store';
 import type { UIPlugin } from '.';
 
 function ButtonGroupComponent({ buttons, onSubmit, id }: IButtonGroupProps & IUiElementSubmitProps) {

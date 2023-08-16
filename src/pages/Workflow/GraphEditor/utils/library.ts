@@ -1,4 +1,4 @@
-import { buildInComponents } from '@services/libs/workflow';
+import { buildInComponents } from '@/pages/Workflow/libs';
 import { Component, ComponentLoader, InPort } from 'noflo';
 import type BasePort from 'noflo/lib/BasePort';
 import { ModuleComponent } from 'noflo/lib/ComponentLoader';

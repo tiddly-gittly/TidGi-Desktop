@@ -1,4 +1,4 @@
-import { IButtonGroupProps, IResultTextProps, ITextFieldProps } from '@services/libs/workflow/ui/types/UIEffectsContext';
+import { IButtonGroupProps, IResultTextProps, ITextFieldProps } from '@/pages/Workflow/libs/ui/types/UIEffectsContext';
 import { createStore } from 'zustand/vanilla';
 
 export interface UIElementState {

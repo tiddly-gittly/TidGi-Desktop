@@ -1,4 +1,4 @@
-import { UIElementState, uiStore, UIStoreState } from '@services/libs/workflow/ui/debugUIEffects/store';
+import { UIElementState, uiStore, UIStoreState } from '@/pages/Workflow/libs/ui/debugUIEffects/store';
 import { styled } from 'styled-components';
 import { useStore } from 'zustand';
 import { plugins } from './plugins';

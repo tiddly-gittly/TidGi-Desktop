@@ -1,6 +1,6 @@
 {
   "exclude": ["template/**/*.js"],
-  "include": ["src", "src/services/libs/workflow/ui/components/ButtonGroup.ts"],
+  "include": ["src"],
   "ts-node": {
     "files": true,
     "compilerOptions": {

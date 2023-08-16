@@ -1,4 +1,4 @@
-import { UIStoreState } from '@services/libs/workflow/ui/debugUIEffects/store';
+import { UIStoreState } from '@/pages/Workflow/libs/ui/debugUIEffects/store';
 
 export interface ITextFieldProps {
   description?: string;

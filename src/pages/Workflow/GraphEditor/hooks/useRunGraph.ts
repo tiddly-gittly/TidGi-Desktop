@@ -1,4 +1,4 @@
-import { injectUIEffectsWhenRunGraph } from '@services/libs/workflow/ui/debugUIEffects/injectUIEffectsWhenRunGraph';
+import { injectUIEffectsWhenRunGraph } from '@/pages/Workflow/libs/ui/debugUIEffects/injectUIEffectsWhenRunGraph';
 import { Graph as FbpGraph } from 'fbp-graph';
 import { /* Graph as NofloGraph, */ type ComponentLoader, createNetwork } from 'noflo';
 import type { Network } from 'noflo/lib/Network';

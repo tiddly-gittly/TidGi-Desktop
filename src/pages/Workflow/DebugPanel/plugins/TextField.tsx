@@ -1,7 +1,7 @@
 import { TextField, Typography } from '@mui/material';
-import { ITextFieldProps } from '@services/libs/workflow/ui/types/UIEffectsContext';
+import { ITextFieldProps } from '@/pages/Workflow/libs/ui/types/UIEffectsContext';
 import { useState } from 'react';
-import type { IUiElementSubmitProps } from '../../../../services/libs/workflow/ui/debugUIEffects/store';
+import type { IUiElementSubmitProps } from '../../libs/ui/debugUIEffects/store';
 import type { UIPlugin } from '.';
 
 function TextFieldPluginComponent({ label, placeholder, description, introduction, id, onSubmit }: ITextFieldProps & IUiElementSubmitProps) {
