@@ -10,7 +10,7 @@ import validator from '@rjsf/validator-ajv8';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { GraphNode } from 'fbp-graph/lib/Types';
 import { JSONSchema7TypeName } from 'json-schema';
-import { FC, useContext, useMemo, useState } from 'react';
+import { FC, useCallback, useContext, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { IFBPLibrary, INoFloProtocolComponentPort, INoFloUIComponent, INoFloUIComponentPort } from 'the-graph';
@@ -157,18 +157,20 @@ const NodeItem: FC<NodeItemProps> = ({ node, component, library }) => {
     });
     return nodeInitialData;
   }, [node, initializers]);
-  const handleInPortsChange = useDebouncedCallback((data: IChangeEvent<any, RJSFSchema, any>, id?: string | undefined) => {
+
+  const handleInPortsChange = useDebouncedCallback((formData: Record<string, unknown>) => {
     const fbpGraph = fbpGraphReference?.current;
     if (fbpGraph === undefined) return;
-    /**
-     * Input data is flattened, even you want to input an Object, it will be just string.
-     */
-    const formData = data.formData as Record<string, unknown>;
+    // update actual data in the graph
     Object.entries(formData).forEach(([key, value]) => {
       if (value === undefined) return;
       fbpGraph.removeInitial(node.id, key);
       fbpGraph.addInitial(value, node.id, key);
     });
+  }, [fbpGraphReference, node.id]);
+
+  const handleMetadataChange = useDebouncedCallback((formData: Record<string, unknown>) => {
+    // TODO: update node's metadata
   }, [fbpGraphReference, node.id]);
 
   return (
@@ -189,7 +191,7 @@ const NodeItem: FC<NodeItemProps> = ({ node, component, library }) => {
           variant='standard'
           defaultValue={node.component}
         />
-        <Form formData={inPortData} schema={inPortSchemas} validator={validator} uiSchema={uiSchema} onChange={handleInPortsChange} />
+        <ControlledForm initialValue={inPortData} schema={inPortSchemas} updateGraphValue={handleInPortsChange} />
       </CardContent>
       <CardActions disableSpacing>
         <IconButton aria-label='delete'>
@@ -208,9 +210,31 @@ const NodeItem: FC<NodeItemProps> = ({ node, component, library }) => {
       </CardActions>
       <Collapse in={moreFormExpanded} timeout='auto' unmountOnExit>
         <CardContent>
-          {(node.metadata !== undefined) && <Form schema={generateSchemaForMetadata(node.metadata)} validator={validator} uiSchema={uiSchema} />}
+          {(node.metadata !== undefined) && (
+            <ControlledForm initialValue={node.metadata} schema={generateSchemaForMetadata(node.metadata)} updateGraphValue={handleMetadataChange} />
+          )}
         </CardContent>
       </Collapse>
     </ItemContainer>
   );
 };
+
+/**
+ * Form with local data source so typing is smooth, and update remote graph data source when data changed (usually debounced).
+ */
+function ControlledForm(
+  { initialValue, schema, updateGraphValue }: { initialValue: Record<string, unknown>; schema: RJSFSchema; updateGraphValue: (value: Record<string, unknown>) => void },
+) {
+  /** data source for controlled form, for smoother type experience */
+  const [formData, formDataSetter] = useState(initialValue);
+  const onChange = useCallback((data: IChangeEvent<any, RJSFSchema, any>, id?: string | undefined) => {
+    /**
+     * Input data is flattened, even you want to input an Object, it will be just string.
+     */
+    const formData = data.formData as Record<string, unknown>;
+    // update local data for UI display
+    formDataSetter(formData);
+    updateGraphValue(formData);
+  }, [updateGraphValue]);
+  return <Form formData={formData} schema={schema} validator={validator} uiSchema={uiSchema} onChange={onChange} />;
+}
