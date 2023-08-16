@@ -486,7 +486,9 @@
     "CurrentNodeComponentType": "Component type of this node",
     "NodeLabel": "Label",
     "InPort": "In Ports",
-    "StopWorkflow": "Stop Workflow"
+    "StopWorkflow": "Stop Workflow",
+    "ToggleDebugPanel": "Toggle Debug Panel",
+    "ClearDebugPanel": "Clear Debug Panel"
   },
   "Description": "Description",
   "Tags": "Tags",

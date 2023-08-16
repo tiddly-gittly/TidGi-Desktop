@@ -1,3 +1,4 @@
+import AdbIcon from '@mui/icons-material/Adb';
 import AlignHorizontalLeftIcon from '@mui/icons-material/AlignHorizontalLeft';
 import EditOnIcon from '@mui/icons-material/Edit';
 import EditLocationAltIcon from '@mui/icons-material/EditLocationAlt';
@@ -45,17 +46,19 @@ const ToolbarContainer = styled(Toolbar)`
 `;
 
 interface IGraphTopToolbarProps {
+  debugPanelOpened: boolean;
   editorReference: MutableRefObject<ITheGraphEditor | undefined>;
   graph: Graph;
   graphIsRunning: boolean;
   readonly: boolean;
   runGraph: () => Promise<void>;
+  setDebugPanelOpened: Dispatch<SetStateAction<boolean>>;
   setReadonly: Dispatch<SetStateAction<boolean>>;
   stopGraph: () => Promise<void>;
   workflowContext: IWorkflowContext;
 }
 export const GraphTopToolbar = (props: IGraphTopToolbarProps) => {
-  const { editorReference, readonly, setReadonly, workflowContext, graph, graphIsRunning, runGraph, stopGraph } = props;
+  const { editorReference, readonly, setReadonly, workflowContext, graph, graphIsRunning, runGraph, stopGraph, debugPanelOpened, setDebugPanelOpened } = props;
   const { t } = useTranslation();
   const [, setLocation] = useLocation();
 
@@ -148,6 +151,15 @@ export const GraphTopToolbar = (props: IGraphTopToolbarProps) => {
               </IconButton>
             </Tooltip>
           )}
+        <Tooltip title={t('Workflow.ToggleDebugPanel')}>
+          <IconButton
+            onClick={() => {
+              setDebugPanelOpened(!debugPanelOpened);
+            }}
+          >
+            <AdbIcon />
+          </IconButton>
+        </Tooltip>
         <Tooltip title={t('Workflow.BackToHome')}>
           <IconButton onClick={backToHome}>
             <HomeIcon />

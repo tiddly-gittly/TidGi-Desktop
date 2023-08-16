@@ -1,5 +1,5 @@
 import { useThemeObservable } from '@services/theme/hooks';
-import { useContext, useRef, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { ErrorBoundary } from 'react-error-boundary';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
@@ -74,6 +74,7 @@ export function GraphEditor() {
   const workflowContext = useContext(WorkflowContext);
   const [library, libraryLoader] = useLibrary();
   const [readonly, setReadonly] = useState(false);
+  const [debugPanelOpened, setDebugPanelOpened] = useState(false);
 
   // methods
   // const { subscribeGraph, unsubscribeGraph } = useSubscribeGraph({ readonly });
@@ -95,6 +96,12 @@ export function GraphEditor() {
   const { getMenuDef } = useMenu();
   const editorReference = useRef<ITheGraphEditor>();
   const [runGraph, stopGraph, graphIsRunning] = useRunGraph(graph, libraryLoader);
+  // auto open debug panel when run graph
+  useEffect(() => {
+    if (graphIsRunning) {
+      setDebugPanelOpened(true);
+    }
+  }, [graphIsRunning, setDebugPanelOpened]);
   if ((graph === undefined) || (library === undefined)) return <div>{t('Loading')}</div>;
 
   return (
@@ -143,8 +150,10 @@ export function GraphEditor() {
           runGraph={runGraph}
           stopGraph={stopGraph}
           graphIsRunning={graphIsRunning}
+          debugPanelOpened={debugPanelOpened}
+          setDebugPanelOpened={setDebugPanelOpened}
         />
-        <DebugPanel graphIsRunning={graphIsRunning} />
+        <DebugPanel graphIsRunning={graphIsRunning} debugPanelOpened={debugPanelOpened} setDebugPanelOpened={setDebugPanelOpened} />
       </FBPGraphReferenceContext.Provider>
     </ErrorBoundary>
   );

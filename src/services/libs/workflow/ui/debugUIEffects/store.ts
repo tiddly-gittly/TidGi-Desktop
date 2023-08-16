@@ -22,6 +22,7 @@ export interface UIStoreState {
   removeElement: (id: string) => void;
   // adds element and returns its ID
   submitElement: (id: string, content: unknown) => void;
+  clearElements: () => void;
 }
 
 /**
@@ -61,5 +62,8 @@ export const uiStore = createStore<UIStoreState>((set) => ({
       const newElements = { ...state.elements, [id]: undefined };
       return { elements: newElements };
     });
+  },
+  clearElements: () => {
+    set({ elements: {} });
   },
 }));

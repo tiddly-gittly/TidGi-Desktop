@@ -2,14 +2,11 @@ import { UIElementState, uiStore, UIStoreState } from '@services/libs/workflow/u
 import { styled } from 'styled-components';
 import { useStore } from 'zustand';
 import { plugins } from './plugins';
+import { useUIStore } from './useUIStore';
 
 const Container = styled.div`
   padding: 0 1em;
 `;
-
-export function useUIStore<T>(selector: (state: UIStoreState) => T) {
-  return useStore(uiStore, selector);
-}
 
 export function DebugUIElements() {
   const elements = useUIStore((state) => Object.values(state.elements).filter((element): element is UIElementState => element !== undefined));

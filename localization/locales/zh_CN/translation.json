@@ -491,6 +491,8 @@
     "CurrentNodeComponentType": "此节点的组件类型",
     "NodeLabel": "节点名",
     "InPort": "入口",
-    "StopWorkflow": "停止工作流"
+    "StopWorkflow": "停止工作流",
+    "ToggleDebugPanel": "切换开关调试面板",
+    "ClearDebugPanel": "清空调试面板"
   }
 }
