@@ -13,7 +13,7 @@ import '@fortawesome/fontawesome-free/css/all.css';
 import '@fortawesome/fontawesome-free/css/v4-font-face.css';
 
 import { useTheme } from '@mui/material';
-import DebugPanel from '../DebugPanel';
+import { DebugPanel } from '../DebugPanel';
 import { NodeDetailPanel } from './components/NodeDetailPanel';
 import { SearchComponentsBar } from './components/SearchComponents';
 import { GraphTopToolbar } from './components/Toolbar';
@@ -58,7 +58,8 @@ const NodeDetailsContainer = styled.div`
   z-index: 1;
   overflow: auto;
   width: ${({ theme }) => theme.workflow.nodeDetailPanel.width}px;
-  height: 100vh;
+  max-height: 100vh;
+  height: fit-content;
   &::-webkit-scrollbar {
     width: 0;
   }
@@ -143,7 +144,7 @@ export function GraphEditor() {
           stopGraph={stopGraph}
           graphIsRunning={graphIsRunning}
         />
-        {graphIsRunning && <DebugPanel />}
+        <DebugPanel graphIsRunning={graphIsRunning} />
       </FBPGraphReferenceContext.Provider>
     </ErrorBoundary>
   );

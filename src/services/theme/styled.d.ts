@@ -19,6 +19,10 @@ declare module '@mui/material/styles' {
       width: number;
     };
     workflow: {
+      debugPanel: {
+        height: number;
+        width: number;
+      };
       nodeDetailPanel: {
         width: number;
       };

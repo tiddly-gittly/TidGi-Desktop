@@ -45,10 +45,8 @@ class ButtonGroup extends Component {
 
     // Register a process handler for incoming data
     this.process(async (input, output) => {
-      if (!input.hasData('ui_effects')) return;
-      const uiEffects = input.getData('ui_effects') as UIEffectsContext | undefined;
-      if (uiEffects === undefined) return;
-      this.uiEffects = uiEffects;
+      this.uiEffects ??= input.getData('ui_effects') as UIEffectsContext | undefined;
+      if (this.uiEffects === undefined) return;
       // prepare data for ui element from inPorts
       const buttons: IButtonGroupProps['buttons'] = [];
       for (const index of [1, 2, 3]) {
@@ -66,11 +64,11 @@ class ButtonGroup extends Component {
         buttons,
         introduction: intro,
       };
-      const uiElementID = uiEffects.addElement({ type: 'buttonGroup', props });
+      const uiElementID = this.uiEffects.addElement({ type: 'buttonGroup', props });
       // prepared for remove of ui element
       this.openedUIElementIDs.add(uiElementID);
       // wait for result, and sent to outPort
-      const clickedButtonIndex = await uiEffects.onSubmit(uiElementID);
+      const clickedButtonIndex = await this.uiEffects.onSubmit(uiElementID);
       output.sendDone({ out: clickedButtonIndex });
     });
   }

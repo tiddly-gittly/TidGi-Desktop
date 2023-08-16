@@ -10,6 +10,10 @@ const workflow: ThemeOptions['workflow'] = {
   nodeDetailPanel: {
     width: 350,
   },
+  debugPanel: {
+    width: 350,
+    height: 300,
+  },
 };
 export const lightTheme = merge(cloneDeep(createTheme({
   palette: {

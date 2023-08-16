@@ -1,7 +1,9 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 // DebugPanel.tsx
 import React, { useRef } from 'react';
 import { flushSync } from 'react-dom';
 import Moveable from 'react-moveable';
+import { styled } from 'styled-components';
 
 import { DebugUIElements } from './DebugUIElements';
 import { registerPlugin } from './plugins';
@@ -13,42 +15,65 @@ registerPlugin(ButtonGroupPlugin);
 registerPlugin(TextFieldPlugin);
 registerPlugin(TextResultPlugin);
 
-const DebugPanel: React.FC = () => {
+const Container = styled.div`
+  position: absolute;
+  right: 0;
+  top: 0;
+  overflow: visible;
+  z-index: 100;
+`;
+const UIContainer = styled.div`
+  width: ${({ theme }) => theme.workflow.debugPanel.width}px;
+  height: ${({ theme }) => theme.workflow.debugPanel.height}px;
+
+  background-color: ${({ theme }) => theme.palette.background.paper};
+`;
+const DragHandle = styled.div`
+  width: 100%;
+  height: 1em;
+  background-color: ${({ theme }) => theme.palette.primary.main};
+  cursor: move;
+`;
+
+export function DebugPanel({ graphIsRunning }: { graphIsRunning: boolean }) {
   const moveableReference = useRef(null);
+  const draggableReference = useRef(null);
 
   return (
-    <>
-      <div ref={moveableReference} style={{ userSelect: 'none' }}>
+    <Container style={{ userSelect: 'none', display: graphIsRunning ? 'block' : 'none' }}>
+      <UIContainer ref={moveableReference} >
+        <DragHandle ref={draggableReference} />
         <DebugUIElements />
-      </div>
+      </UIContainer>
       <Moveable
         target={moveableReference.current}
-        draggable={true}
-        resizable={true}
+        dragTarget={draggableReference.current}
+        origin={false}
+        draggable={graphIsRunning}
+        resizable={graphIsRunning}
         flushSync={flushSync}
+        throttleDrag={1}
         onDrag={({
           target,
-          beforeDelta,
-          beforeDist,
-          left,
-          top,
-          right,
-          bottom,
-          delta,
-          dist,
           transform,
-          clientX,
-          clientY,
         }) => {
-          console.log('onDrag left, top', left, top);
-          // target!.style.left = `${left}px`;
-          // target!.style.top = `${top}px`;
-          console.log('onDrag translate', dist);
           target.style.transform = transform;
         }}
+        throttleResize={1}
+        onResize={({
+          target,
+          width,
+          height,
+          delta,
+        }) => {
+          if (delta[0]) {
+            target.style.width = `${width}px`;
+          }
+          if (delta[1]) {
+            target.style.height = `${height}px`;
+          }
+        }}
       />
-    </>
+    </Container>
   );
-};
-
-export default DebugPanel;
+}

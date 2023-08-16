@@ -41,13 +41,14 @@ export function useRunGraph(fbpGraph?: FbpGraph, libraryLoader?: ComponentLoader
     }
   }, [fbpGraph, libraryLoader]);
   const stopGraph = useCallback(async () => {
-    await currentNetworkReference.current?.stop();
     setGraphIsRunning(false);
+    // this may await forever
+    await currentNetworkReference.current?.stop();
   }, []);
   useEffect(() => {
     return () => {
-      void currentNetworkReference.current?.stop();
       setGraphIsRunning(false);
+      void currentNetworkReference.current?.stop();
     };
   }, [currentNetworkReference]);
   return [runGraph, stopGraph, graphIsRunning] as const;
