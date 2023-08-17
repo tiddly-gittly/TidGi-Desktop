@@ -7,7 +7,7 @@
   "scripts": {
     "start": "pnpm run clean && pnpm run init:git-submodule && pnpm run start:without-clean",
     "start:without-clean": "pnpm run build:plugin && cross-env NODE_ENV=development electron-forge start",
-    "clean": "rimraf -- ./out ./settings-dev ./node_modules/@tiddlygit/tiddlywiki/plugins/linonetwo ./cache-database-dev ./logs ./.webpack ./node_modules/.cache && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts",
+    "clean": "rimraf -- ./out ./userData-dev ./node_modules/@tiddlygit/tiddlywiki/plugins/linonetwo ./.webpack ./node_modules/.cache && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts",
     "start:without-clean:debug-worker": "pnpm run build:plugin && cross-env NODE_ENV=development DEBUG_WORKER=true electron-forge start",
     "start:without-clean:debug-main": "pnpm run build:plugin && cross-env NODE_ENV=development DEBUG_MAIN=true electron-forge start",
     "build:plugin": "zx scripts/compilePlugins.mjs",
