@@ -44,7 +44,7 @@ class ButtonGroup extends Component {
     });
 
     // Register a process handler for incoming data
-    this.process(async (input, output) => {
+    this.process((input, output) => {
       this.uiEffects ??= input.getData('ui_effects') as UIEffectsContext | undefined;
       if (this.uiEffects === undefined) return;
       // prepare data for ui element from inPorts
@@ -68,8 +68,10 @@ class ButtonGroup extends Component {
       if (this.uiElementID === undefined) {
         this.uiElementID = this.uiEffects.addElement({ type: 'buttonGroup', props });
         // wait for result, and sent to outPort
-        const clickedButtonIndex = await this.uiEffects.onSubmit(this.uiElementID);
-        output.sendDone({ out: clickedButtonIndex });
+        void this.uiEffects.onSubmit(this.uiElementID).then(clickedButtonIndex => {
+          this.uiElementID = undefined;
+          output.sendDone({ out: clickedButtonIndex });
+        });
       } else {
         this.uiEffects.updateElementProps({ id: this.uiElementID, props });
       }
@@ -78,7 +80,8 @@ class ButtonGroup extends Component {
 
   async tearDown() {
     if (this.uiElementID !== undefined) {
-      this.uiEffects?.removeElement?.(this.uiElementID);
+      // set to submit state
+      this.uiEffects?.submitElement?.(this.uiElementID, null);
     }
   }
 }

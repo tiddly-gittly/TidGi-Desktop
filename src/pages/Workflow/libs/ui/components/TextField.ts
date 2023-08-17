@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null, @typescript-eslint/require-await */
 // Load the NoFlo interface
 import { Component } from 'noflo';
@@ -14,7 +15,7 @@ class TextField extends Component {
     super();
 
     // Define the component's inports
-    this.inPorts.add('in', {
+    this.inPorts.add('control', {
       datatype: 'bang',
       description: 'Trigger the input box to show.',
     });
@@ -48,9 +49,14 @@ class TextField extends Component {
     });
 
     // Register a process handler for incoming data
-    this.process(async (input, output) => {
+    this.process((input, output) => {
       this.uiEffects ??= input.getData('ui_effects') as UIEffectsContext | undefined;
       if (this.uiEffects === undefined) return;
+      // If 'in' port is not triggered, return
+      if (!input.hasData('control')) return;
+      const control = input.getData('control') as undefined | null | true;
+      // rapidly receive null here, still stuck
+      if (control !== true) return;
       const label = input.getData('label') as string;
       const desc = input.getData('desc') as string | undefined;
       const intro = input.getData('intro') as string | undefined;
@@ -65,17 +71,14 @@ class TextField extends Component {
       if (this.uiElementID === undefined) {
         this.uiElementID = this.uiEffects.addElement({ type: 'textField', props });
         // wait for result, and sent to outPort
-        const resultText = await this.uiEffects.onSubmit(this.uiElementID);
-        output.sendDone({ out: resultText });
+        // TODO: change to async await when https://github.com/noflo/noflo/issues/1047 is fixed.
+        void this.uiEffects.onSubmit(this.uiElementID).then(resultText => {
+          this.uiElementID = undefined;
+          output.sendDone({ out: resultText });
+        });
       } else {
         this.uiEffects.updateElementProps({ id: this.uiElementID, props });
       }
     });
-  }
-
-  async tearDown() {
-    if (this.uiElementID !== undefined) {
-      this.uiEffects?.removeElement?.(this.uiElementID);
-    }
   }
 }

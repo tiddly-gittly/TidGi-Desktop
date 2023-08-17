@@ -30,7 +30,7 @@ class ResultText extends Component {
     });
 
     // Register a process handler for incoming data
-    this.process(async (input, output) => {
+    this.process((input, output) => {
       this.uiEffects ??= input.getData('ui_effects') as UIEffectsContext | undefined;
       if (this.uiEffects === undefined) return;
       if (!input.hasData('in')) return;
@@ -40,13 +40,14 @@ class ResultText extends Component {
         content,
       };
       this.uiElementID = this.uiEffects.addElement({ type: 'textResult', props });
-      output.done();
+      output.sendDone({ out: true });
     });
   }
 
   async tearDown() {
     if (this.uiElementID !== undefined) {
-      this.uiEffects?.removeElement?.(this.uiElementID);
+      // set to submit state
+      this.uiEffects?.submitElement?.(this.uiElementID, null);
     }
   }
 }
