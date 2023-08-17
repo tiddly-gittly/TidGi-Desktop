@@ -16,7 +16,7 @@ function TextFieldPluginComponent({ label, placeholder, description, introductio
   const isComposing = useRef(false);
   return (
     <ContainerCard>
-      {Boolean(introduction?.length) && (
+      {introduction !== undefined && (
         <CardContent>
           <Typography>
             {introduction}

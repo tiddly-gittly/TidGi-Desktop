@@ -18,4 +18,5 @@ export function getDataOrDefault<T>(key: string, input: ProcessInput, defaultVal
     defaultValues[key] = ip.data;
     return defaultValues[key] as T;
   }
+  return ip.data as T ?? defaultValues[key] as T;
 }
