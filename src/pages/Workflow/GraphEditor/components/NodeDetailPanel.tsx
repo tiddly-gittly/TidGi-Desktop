@@ -143,7 +143,9 @@ const NodeItem: FC<NodeItemProps> = ({ node, component, library }) => {
   const inPorts = component.inports ?? [];
   const inPortSchemas: RJSFSchema = {
     type: 'object',
-    properties: Object.fromEntries(inPorts.map((port) => [port.name, generateSchemaFromPort(port, { titleSuffix: t('Workflow.InPort') })])),
+    properties: Object.fromEntries(
+      inPorts.filter(port => !['ui_effects'].includes(port.name)).map((port) => [port.name, generateSchemaFromPort(port, { titleSuffix: t('Workflow.InPort') })]),
+    ),
   };
   const [moreFormExpanded, setMoreFormExpanded] = useState(false);
   const fbpGraphReference = useContext(FBPGraphReferenceContext);

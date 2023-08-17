@@ -1,6 +1,7 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null, @typescript-eslint/require-await */
 // Load the NoFlo interface
+import { getDataOrDefault } from '@/pages/Workflow/GraphEditor/utils/getDataOrDefault';
 import { Component } from 'noflo';
 import type { ITextFieldProps, UIEffectsContext } from '../types/UIEffectsContext';
 
@@ -10,6 +11,7 @@ class TextField extends Component {
   icon = 'commenting-o';
   uiElementID?: string;
   uiEffects?: UIEffectsContext;
+  defaultValues: Record<string, string> = {};
 
   constructor() {
     super();
@@ -57,15 +59,11 @@ class TextField extends Component {
       const control = input.getData('control') as undefined | null | true;
       // rapidly receive null here, still stuck
       if (control !== true) return;
-      const label = input.getData('label') as string;
-      const desc = input.getData('desc') as string | undefined;
-      const intro = input.getData('intro') as string | undefined;
-      const placeholder = input.getData('placeholder') as string | undefined;
       const props: ITextFieldProps = {
-        label,
-        description: desc,
-        introduction: intro,
-        placeholder,
+        label: getDataOrDefault('label', input, this.defaultValues),
+        description: getDataOrDefault('desc', input, this.defaultValues),
+        introduction: getDataOrDefault('intro', input, this.defaultValues),
+        placeholder: getDataOrDefault('placeholder', input, this.defaultValues),
       };
       // If we already have an UI element created, update it. Otherwise, create a new one.
       if (this.uiElementID === undefined) {

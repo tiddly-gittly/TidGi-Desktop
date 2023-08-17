@@ -3,7 +3,7 @@ import { UIStoreState } from '@/pages/Workflow/libs/ui/debugUIEffects/store';
 export interface ITextFieldProps {
   description?: string;
   introduction?: string;
-  label: string;
+  label?: string;
   placeholder?: string;
 }
 export interface IButtonGroupProps {

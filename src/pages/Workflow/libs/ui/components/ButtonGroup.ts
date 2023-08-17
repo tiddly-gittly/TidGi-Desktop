@@ -1,5 +1,7 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null, @typescript-eslint/require-await */
 // Load the NoFlo interface
+import { getDataOrDefault } from '@/pages/Workflow/GraphEditor/utils/getDataOrDefault';
 import { Component } from 'noflo';
 import { LastArrayElement } from 'type-fest';
 import type { IButtonGroupProps, UIEffectsContext } from '../types/UIEffectsContext';
@@ -10,14 +12,14 @@ class ButtonGroup extends Component {
   icon = 'hand-pointer-o';
   uiElementID?: string;
   uiEffects?: UIEffectsContext;
+  defaultValues: Record<string, string> = {};
 
   constructor() {
     super();
 
-    this.inPorts.add('ui_effects', {
-      datatype: 'object',
-      description: 'Used by system, inject UI related methods.',
-      required: true,
+    this.inPorts.add('control', {
+      datatype: 'bang',
+      description: 'Trigger the input box to show.',
     });
 
     // Define the component's inports
@@ -38,6 +40,12 @@ class ButtonGroup extends Component {
       });
     }
 
+    this.inPorts.add('ui_effects', {
+      datatype: 'object',
+      description: 'Used by system, inject UI related methods.',
+      required: true,
+    });
+
     // output clicked button index
     this.outPorts.add('out', {
       datatype: 'int',
@@ -50,19 +58,18 @@ class ButtonGroup extends Component {
       // prepare data for ui element from inPorts
       const buttons: IButtonGroupProps['buttons'] = [];
       for (const index of [1, 2, 3]) {
-        if (!input.hasData(`label${index}`)) continue;
-        const label = input.getData(`label${index}`) as string;
+        const label = getDataOrDefault<string>(`label${index}`, input, this.defaultValues);
+        if (!label) continue;
         const button: LastArrayElement<IButtonGroupProps['buttons']> = { label };
-        if (input.hasData(`desc${index}`)) {
-          const desc = input.getData(`desc${index}`) as string;
-          button.description = desc;
+        const description = getDataOrDefault<string>(`desc${index}`, input, this.defaultValues);
+        if (description) {
+          button.description = description;
         }
         buttons.push(button);
       }
-      const intro = input.getData('intro') as string;
       const props: IButtonGroupProps = {
         buttons,
-        introduction: intro,
+        introduction: getDataOrDefault<string>('intro', input, this.defaultValues),
       };
       // If we already have an UI element created, update it. Otherwise, create a new one.
       if (this.uiElementID === undefined) {

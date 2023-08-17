@@ -13,16 +13,16 @@ class ResultText extends Component {
   constructor() {
     super();
 
-    this.inPorts.add('ui_effects', {
-      datatype: 'object',
-      description: 'Used by system, inject UI related methods.',
-      required: true,
-    });
-
     // Define the component's inports
     this.inPorts.add('in', {
       datatype: 'string',
       description: 'Result text to display.',
+    });
+
+    this.inPorts.add('ui_effects', {
+      datatype: 'object',
+      description: 'Used by system, inject UI related methods.',
+      required: true,
     });
 
     this.outPorts.add('out', {

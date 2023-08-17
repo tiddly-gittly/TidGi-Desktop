@@ -8,7 +8,7 @@ const ContainerCard = styled(Card)`
   margin-bottom: ${({ theme }) => theme.workflow.debugPanel.cardSpacing}px;
 `;
 
-function ButtonGroupComponent({ buttons, onSubmit, id, introduction }: IButtonGroupProps & IUiElementSubmitProps) {
+function ButtonGroupComponent({ buttons, onSubmit, id, introduction, isSubmitted }: IButtonGroupProps & IUiElementSubmitProps) {
   return (
     <ContainerCard>
       <CardContent>
@@ -26,6 +26,7 @@ function ButtonGroupComponent({ buttons, onSubmit, id, introduction }: IButtonGr
                 onClick={() => {
                   onSubmit(id, index);
                 }}
+                disabled={isSubmitted}
               >
                 {button.label}
               </Button>
