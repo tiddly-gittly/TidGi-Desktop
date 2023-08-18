@@ -30,12 +30,21 @@ class ResultText extends Component {
     });
 
     // Register a process handler for incoming data
-    this.process((input, output) => {
+    this.process((input, output, context) => {
       this.uiEffects ??= input.getData('ui_effects') as UIEffectsContext | undefined;
-      if (this.uiEffects === undefined) return;
-      if (!input.hasData('in')) return;
+      if (this.uiEffects === undefined) {
+        this.deactivate(context);
+        return;
+      }
+      if (!input.hasData('in')) {
+        this.deactivate(context);
+        return;
+      }
       const content = input.getData('in') as string;
-      if (content === null || content === undefined) return;
+      if (content === null || content === undefined) {
+        this.deactivate(context);
+        return;
+      }
       const props: IResultTextProps = {
         content,
       };

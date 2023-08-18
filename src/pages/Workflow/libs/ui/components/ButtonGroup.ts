@@ -52,9 +52,12 @@ class ButtonGroup extends Component {
     });
 
     // Register a process handler for incoming data
-    this.process((input, output) => {
+    this.process((input, output, context) => {
       this.uiEffects ??= input.getData('ui_effects') as UIEffectsContext | undefined;
-      if (this.uiEffects === undefined) return;
+      if (this.uiEffects === undefined) {
+        this.deactivate(context);
+        return;
+      }
       // prepare data for ui element from inPorts
       const buttons: IButtonGroupProps['buttons'] = [];
       for (const index of [1, 2, 3]) {
@@ -81,6 +84,7 @@ class ButtonGroup extends Component {
         });
       } else {
         this.uiEffects.updateElementProps({ id: this.uiElementID, props });
+        this.deactivate(context);
       }
     });
   }

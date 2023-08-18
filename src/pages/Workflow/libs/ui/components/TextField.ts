@@ -51,14 +51,23 @@ class TextField extends Component {
     });
 
     // Register a process handler for incoming data
-    this.process((input, output) => {
+    this.process((input, output, context) => {
       this.uiEffects ??= input.getData('ui_effects') as UIEffectsContext | undefined;
-      if (this.uiEffects === undefined) return;
+      if (this.uiEffects === undefined) {
+        this.deactivate(context);
+        return;
+      }
       // If 'in' port is not triggered, return
-      if (!input.hasData('control')) return;
+      if (!input.hasData('control')) {
+        this.deactivate(context);
+        return;
+      }
       const control = input.getData('control') as undefined | null | true;
       // rapidly receive null here, still stuck
-      if (control !== true) return;
+      if (control !== true) {
+        this.deactivate(context);
+        return;
+      }
       const props: ITextFieldProps = {
         label: getDataOrDefault('label', input, this.defaultValues),
         description: getDataOrDefault('desc', input, this.defaultValues),
@@ -76,7 +85,15 @@ class TextField extends Component {
         });
       } else {
         this.uiEffects.updateElementProps({ id: this.uiElementID, props });
+        this.deactivate(context);
       }
     });
+  }
+
+  async tearDown() {
+    if (this.uiElementID !== undefined) {
+      // set to submit state
+      this.uiEffects?.submitElement?.(this.uiElementID, null);
+    }
   }
 }
