@@ -54,6 +54,7 @@ class TextField extends Component {
     this.process((input, output, context) => {
       this.uiEffects ??= input.getData('ui_effects') as UIEffectsContext | undefined;
       if (this.uiEffects === undefined) {
+        // TODO: directly return when https://github.com/noflo/noflo/issues/1048 is fixed.
         this.deactivate(context);
         return;
       }
