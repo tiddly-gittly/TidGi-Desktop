@@ -446,8 +446,8 @@ devDependencies:
     specifier: 2.30.0
     version: 2.30.0
   dprint:
-    specifier: ^0.39.0
-    version: 0.39.0
+    specifier: ^0.40.2
+    version: 0.40.2
   electron:
     specifier: 25.2.0
     version: 25.2.0
@@ -2143,20 +2143,18 @@ packages:
       tslib: 2.6.0
     dev: true
 
-  /@dprint/darwin-arm64@0.39.0:
-    resolution: {integrity: sha512-LDj9m4VSGWIHtZKuSZeIP2yQCG8wcsPpFgV/L6HvCxWKquh8F02sTGnHpeIT85NhpmjQ2ejoL1eZNOhRg+TNYA==}
+  /@dprint/darwin-arm64@0.40.2:
+    resolution: {integrity: sha512-qharMFhxpNq9brgvHLbqzzAgVgPWSHLfzNLwWWhKcGOUUDUIilfAo3SlvOz6w4nQiIifLpYZOvZqK7Lpf9mSSw==}
     cpu: [arm64]
     os: [darwin]
-    hasBin: true
     requiresBuild: true
     dev: true
     optional: true
 
-  /@dprint/darwin-x64@0.39.0:
-    resolution: {integrity: sha512-INJsTZn/Uuh2nJCqwnDRYYOFYtAWNa9mtjqVikdddIf8BvVPbAvMT4XUzVsNwhVSumnuVRoWwHN0zjyBCG2zRQ==}
+  /@dprint/darwin-x64@0.40.2:
+    resolution: {integrity: sha512-FPDdOTVr1JfqtLBTCvqlihWslTy3LBUoi3H1gaqIazCKMj2dB9voFWkBiMT+REMHDrlVsoSpFAfsliNr/y7HPA==}
     cpu: [x64]
     os: [darwin]
-    hasBin: true
     requiresBuild: true
     dev: true
     optional: true
@@ -2173,32 +2171,29 @@ packages:
     resolution: {integrity: sha512-9BmvkJRwICKr2hoC+WYtc3ewHi4PRRTmtk3RShpBFDEcYyMVB9+vXyxw/J/oMUlRfMY0jvOM5m+QlxgSo6g88Q==}
     dev: true
 
-  /@dprint/linux-arm64-glibc@0.39.0:
-    resolution: {integrity: sha512-G2hTDyEgC9V6RkaaDzGwwKQe4KMW0CC/gTAoLbPi31VfGKxHpPX3pSL8dyS6Me+husNV7D0ep7yxMF7GVxnqHw==}
+  /@dprint/linux-arm64-glibc@0.40.2:
+    resolution: {integrity: sha512-GmUWfKwEwXA+onvewX9hEJSMcd9V184+uRbEhI5tG28tBP9+IjQhrY7jCjxPvaZA+EvzNPnAy5D1wbJdlNLBNA==}
     cpu: [arm64]
     os: [linux]
     libc: [glibc]
-    hasBin: true
     requiresBuild: true
     dev: true
     optional: true
 
-  /@dprint/linux-x64-glibc@0.39.0:
-    resolution: {integrity: sha512-j4KZTWXr/W9AZdzKiVoUWSJwaacPjXeN71U56r423y4f9SNna9ZcCqnLGN1dg2J/wmWEYRAl7HTnZ+QOn4xZnQ==}
+  /@dprint/linux-x64-glibc@0.40.2:
+    resolution: {integrity: sha512-vMHAHdsOY+2thieSWbIrIioDfPgvipwUgd0MZUWOqycTrXU6kLyi2B+5J/2Jc+QO3CiLIbumQd2FH/0vB1eWqA==}
     cpu: [x64]
     os: [linux]
     libc: [glibc]
-    hasBin: true
     requiresBuild: true
     dev: true
     optional: true
 
-  /@dprint/linux-x64-musl@0.39.0:
-    resolution: {integrity: sha512-jXN/jD4T+2HIx29aprIswcCBwdQe/xpdngYxFIGHZmVLXnPuaHt5B4fQk1gK4gciw1Kj6MX5T5z2w3OgQo4XJA==}
+  /@dprint/linux-x64-musl@0.40.2:
+    resolution: {integrity: sha512-nFSbDWd9ORyOhJ7a+RmE39WbuPoQ3OQutIgfAmfikiu/wENzEwxxv4QJ7aFnBaoZb0wuVEEpXShr8vY4p0exkg==}
     cpu: [x64]
     os: [linux]
     libc: [musl]
-    hasBin: true
     requiresBuild: true
     dev: true
     optional: true
@@ -2215,11 +2210,10 @@ packages:
     resolution: {integrity: sha512-QIdXKI+bbtV7l+k3eBsPtbWFD4ELwY+Hbd9uH2sIOK6ZNzBquTO/EJNX77Pr25kdaj39lPr2Do1YDZM4iQVqXg==}
     dev: true
 
-  /@dprint/win32-x64@0.39.0:
-    resolution: {integrity: sha512-n44OQALUhI/NXosoJ5k6CbGfucFMlz5mL/4fvatzlHrTBhji5GVnMZSf/5gYmp7ND7tHFafFyu+vISFuNH9nfw==}
+  /@dprint/win32-x64@0.40.2:
+    resolution: {integrity: sha512-qF4VCQzFTZYD61lbQqXLU/IwUTbLK22CancO+uVtXmZRoKU9GaVjcBhMUB7URxsa8rvxWHhHT6ldillI/aOWCg==}
     cpu: [x64]
     os: [win32]
-    hasBin: true
     requiresBuild: true
     dev: true
     optional: true
@@ -6880,17 +6874,17 @@ packages:
       - supports-color
     dev: true
 
-  /dprint@0.39.0:
-    resolution: {integrity: sha512-DFWlIbX2nolrPIiIHyVtlw7iFZlR8Yf/7fM0d9HZhubgxPYRGIWwaCbr+TEGpBFgHkZ3YbukjMG2xCPNh/220g==}
+  /dprint@0.40.2:
+    resolution: {integrity: sha512-3LdyUV0itEW59UPtsRA2StOWOu8FyOW+BgvJpH/tACRHKi0z5gaQnvSxdS3mbG7dgtEhdRnGg6JoiQyGib6NTg==}
     hasBin: true
     requiresBuild: true
     optionalDependencies:
-      '@dprint/darwin-arm64': 0.39.0
-      '@dprint/darwin-x64': 0.39.0
-      '@dprint/linux-arm64-glibc': 0.39.0
-      '@dprint/linux-x64-glibc': 0.39.0
-      '@dprint/linux-x64-musl': 0.39.0
-      '@dprint/win32-x64': 0.39.0
+      '@dprint/darwin-arm64': 0.40.2
+      '@dprint/darwin-x64': 0.40.2
+      '@dprint/linux-arm64-glibc': 0.40.2
+      '@dprint/linux-x64-glibc': 0.40.2
+      '@dprint/linux-x64-musl': 0.40.2
+      '@dprint/win32-x64': 0.40.2
     dev: true
 
   /dugite@2.5.1:
@@ -7038,7 +7032,7 @@ packages:
       parse-author: 2.0.0
       plist: 3.0.6
       rcedit: 3.0.1
-      resolve: 1.22.2
+      resolve: 1.22.3
       semver: 7.5.4
       yargs-parser: 21.1.1
     transitivePeerDependencies:
@@ -7652,7 +7646,7 @@ packages:
     resolution: {integrity: sha512-X3Z+dp9nZw7d/y41EDO6JyFw4WVMOT91SFuoJvL0C0/4M1l6NxQ5mLTjXHuYhq0AazW75pAmj25yMk5wPMzjsw==}
     engines: {node: '>=12'}
     peerDependencies:
-      eslint: ^7.2.0 || ^8 || $eslint
+      eslint: ^7.2.0 || ^8
     dependencies:
       debug: 3.2.7
       doctrine: 2.1.0
@@ -10625,7 +10619,7 @@ packages:
     dev: true
 
   /ms@2.0.0:
-    resolution: {integrity: sha1-VgiurfwAvmwpAd9fmGF4jeDVl8g=}
+    resolution: {integrity: sha512-Tpp60P6IUJDTuOq/5Z8cdskzJujfwqfOTkrwIwj7IRISpnkJnT6SyJ4PCPnGMoFjC9ddhal5KVIYtAt97ix05A==}
 
   /ms@2.1.2:
     resolution: {integrity: sha512-sGkPx+VjMtmA6MX27oA4FBFELFCZZ4S4XqeGOXCv68tT+jb3vk/RyaKWP0PTKyWtmLSM0b+adUTEvbs1PEaH2w==}
@@ -12249,7 +12243,7 @@ packages:
     resolution: {integrity: sha512-/vxpCXddiX8NGfGO/mTafwjq4aFa/71pvamip0++IQk3zG8cbCj0fifNPrjjF1XMXUne91jL9OoxmdykoEtifQ==}
     engines: {node: '>= 10.13.0'}
     dependencies:
-      resolve: 1.22.2
+      resolve: 1.22.3
     dev: true
 
   /reflect-metadata@0.1.13:

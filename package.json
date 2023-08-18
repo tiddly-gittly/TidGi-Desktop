@@ -7,7 +7,8 @@
   "scripts": {
     "start": "pnpm run clean && pnpm run init:git-submodule && pnpm run start:without-clean",
     "start:without-clean": "pnpm run build:plugin && cross-env NODE_ENV=development electron-forge start",
-    "clean": "rimraf -- ./out ./userData-dev ./node_modules/@tiddlygit/tiddlywiki/plugins/linonetwo ./.webpack ./node_modules/.cache && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts",
+    "clean": "rimraf -- ./out ./userData-dev ./node_modules/@tiddlygit/tiddlywiki/plugins/linonetwo && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts",
+    "clean:cache": "./.webpack ./node_modules/.cache",
     "start:without-clean:debug-worker": "pnpm run build:plugin && cross-env NODE_ENV=development DEBUG_WORKER=true electron-forge start",
     "start:without-clean:debug-main": "pnpm run build:plugin && cross-env NODE_ENV=development DEBUG_MAIN=true electron-forge start",
     "build:plugin": "zx scripts/compilePlugins.mjs",
@@ -176,7 +177,7 @@
     "csp-html-webpack-plugin": "5.1.0",
     "css-loader": "6.8.1",
     "date-fns": "2.30.0",
-    "dprint": "^0.39.0",
+    "dprint": "^0.40.2",
     "electron": "25.2.0",
     "electron-wix-msi": "^5.0.0",
     "esbuild": "^0.18.11",
