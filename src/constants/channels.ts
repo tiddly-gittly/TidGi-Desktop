@@ -92,6 +92,10 @@ export enum WikiChannel {
   setTiddlerText = 'wiki-set-tiddler-text',
   /** show message inside tiddlywiki to show git sync progress */
   syncProgress = 'wiki-sync-progress',
+  /**
+   * Render wiki text to html
+   */
+  renderWikiText = 'render-wiki-text',
 }
 export enum WikiGitWorkspaceChannel {
   name = 'WikiGitWorkspaceChannel',

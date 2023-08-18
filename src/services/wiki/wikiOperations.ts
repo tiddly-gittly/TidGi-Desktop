@@ -55,5 +55,8 @@ export const wikiOperations = {
   [WikiChannel.setTiddlerText]: async (workspaceID: string, title: string, value: string, options?: { timeout?: number }): Promise<void> => {
     await sendToMainWindowAndAwait(WikiChannel.setTiddlerText, workspaceID, [title, value], options);
   },
+  [WikiChannel.renderWikiText]: async (workspaceID: string, content: string): Promise<string | undefined> => {
+    return await sendToMainWindowAndAwait(WikiChannel.renderWikiText, workspaceID, [content]);
+  },
 };
 export type IWikiOperations = typeof wikiOperations;

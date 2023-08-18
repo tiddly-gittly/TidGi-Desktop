@@ -36,10 +36,14 @@ class StringTemplate extends Component {
         return;
       }
       const compiledTemplate = Handlebars.compile(template);
-      const props = {
+      const data = {
         in: getDataOrDefault('in', input, this.defaultValues),
       };
-      const resultText = compiledTemplate(props);
+      if (!data.in) {
+        this.deactivate(context);
+        return;
+      }
+      const resultText = compiledTemplate(data);
       output.sendDone({ out: resultText });
     });
   }

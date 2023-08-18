@@ -122,6 +122,12 @@ ipcRenderer.on(WikiChannel.setTiddlerText, async (event, nonceReceived: number, 
   `);
   ipcRenderer.send(WikiChannel.setTiddlerText, nonceReceived);
 });
+ipcRenderer.on(WikiChannel.renderWikiText, async (event, nonceReceived: number, content: string) => {
+  const renderResult = await (webFrame.executeJavaScript(`
+    $tw.wiki.renderText("text/html", "text/vnd.tiddlywiki", \`${content.replaceAll('`', '\\`')}\`);
+  `) as Promise<string>);
+  ipcRenderer.send(WikiChannel.renderWikiText, nonceReceived, renderResult);
+});
 // add snackbar to notify user
 ipcRenderer.on(WikiChannel.syncProgress, async (event, message: string) => {
   await executeTWJavaScriptWhenIdle(
