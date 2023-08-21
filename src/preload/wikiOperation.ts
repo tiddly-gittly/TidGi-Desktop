@@ -33,6 +33,8 @@ async function executeTWJavaScriptWhenIdle(script: string, options?: { onlyWhenV
           handler();
         }`
     : `handler();`;
+  // requestIdleCallback won't execute when wiki browser view is invisible https://eric-schaefer.com/til/2023/03/11/the-dark-side-of-requestidlecallback/
+  const idleCallbackOptions = options?.onlyWhenVisible === true ? '' : `{ timeout: 500 }`;
   await webFrame.executeJavaScript(`
     new Promise((resolve, reject) => {
       const handler = () => {
@@ -48,7 +50,7 @@ async function executeTWJavaScriptWhenIdle(script: string, options?: { onlyWhenV
             // wait till $tw is not undefined.
             setTimeout(handler, 500);
           }
-        });
+        }, ${idleCallbackOptions});
       };
       ${executeHandlerCode}
     })
