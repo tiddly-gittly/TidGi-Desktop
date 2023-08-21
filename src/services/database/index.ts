@@ -26,13 +26,13 @@ export class DatabaseService implements IDatabaseService {
     const destinationFilePath = this.getDataBasePath(workspaceID);
     // only create db file for this workspace's wiki if it doesn't exist
     if (await fs.exists(this.getDataBasePath(workspaceID))) {
-      logger.debug(`initializeForWorkspace skip, there already has sqlite database for workspace ${workspaceID} in ${destinationFilePath}`);
+      logger.debug(`DatabaseService.initializeForWorkspace skip, there already has sqlite database for workspace ${workspaceID} in ${destinationFilePath}`);
       return;
     }
     await fs.ensureDir(CACHE_DATABASE_FOLDER);
     try {
       // create a database and table that adapts tiddlywiki usage
-      logger.debug(`initializeForWorkspace create a sqlite database for workspace`, { SQLITE_BINARY_PATH, workspaceID });
+      logger.debug(`DatabaseService.initializeForWorkspace create a sqlite database for workspace`, { SQLITE_BINARY_PATH, workspaceID });
       let database: Sqlite3Database.Database;
       try {
         database = new Sqlite3Database(':memory:', { verbose: logger.debug, nativeBinding: SQLITE_BINARY_PATH });
@@ -41,14 +41,14 @@ export class DatabaseService implements IDatabaseService {
         return;
       }
       try {
-        logger.debug(`initializeForWorkspace load vss for sqlite database`, { PACKAGE_PATH_BASE, workspaceID });
+        logger.debug(`DatabaseService.initializeForWorkspace load vss for sqlite database`, { PACKAGE_PATH_BASE, workspaceID });
         loadSqliteVss(database, PACKAGE_PATH_BASE);
         const vssVersion = database.prepare('select vss_version()').pluck().get() as string;
-        logger.debug(`initializeForWorkspace successfully using sqlite-vss version: ${vssVersion} for workspace ${workspaceID}`);
+        logger.debug(`DatabaseService.initializeForWorkspace successfully using sqlite-vss version: ${vssVersion} for workspace ${workspaceID}`);
       } catch (error) {
         logger.error(`error when loading sqlite-vss for workspace ${workspaceID}: ${(error as Error).message}`);
       }
-      logger.debug(`initializeForWorkspace create a table that adapts tiddlywiki usage for workspace`, { workspaceID });
+      logger.debug(`DatabaseService.initializeForWorkspace create a table that adapts tiddlywiki usage for workspace`, { workspaceID });
       /**
        * Create table storing most commonly used tiddler fields, other fields are stored in `fields` column as a JSON string.
        */
@@ -65,12 +65,12 @@ export class DatabaseService implements IDatabaseService {
           modifier TEXT
           );
       `);
-      logger.debug(`initializeForWorkspace table is created, start backup and close`, { workspaceID });
+      logger.debug(`DatabaseService.initializeForWorkspace table is created, start backup and close`, { workspaceID });
       createTiddlywikiTable.run();
       await database.backup(destinationFilePath);
       database.close();
     } catch (error) {
-      logger.error(`error when creating sqlite cache database for workspace ${workspaceID}: ${(error as Error).message}`);
+      logger.error(`DatabaseService.initializeForWorkspace error when creating sqlite cache database for workspace: ${(error as Error).message}`, { workspaceID });
     }
   }
 

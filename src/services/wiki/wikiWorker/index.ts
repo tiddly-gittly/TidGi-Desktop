@@ -54,7 +54,9 @@ export interface IUtilsWithSqlite extends IUtils {
 function initCacheDatabase(cacheDatabaseConfig: ISqliteDatabasePaths) {
   return new Observable<IWikiLogMessage>((observer) => {
     try {
+      observer.next({ type: 'stdout', message: 'Will new WikiWorkerDatabaseOperations' });
       const cacheDatabase = new WikiWorkerDatabaseOperations(cacheDatabaseConfig);
+      observer.next({ type: 'stdout', message: 'WikiWorkerDatabaseOperations instance created.' });
       setCacheDatabase(cacheDatabase);
     } catch (error) {
       if (error instanceof SqliteDatabaseNotInitializedError) {

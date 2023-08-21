@@ -174,17 +174,19 @@ export class Wiki implements IWikiService {
         }
       });
 
+      logger.debug('startWiki calling initCacheDatabase in the main process', { function: 'wikiWorker.initCacheDatabase' });
       worker.initCacheDatabase({
         databaseFile: this.databaseService.getDataBasePath(workspaceID),
         sqliteBinary: SQLITE_BINARY_PATH,
         packagePathBase: PACKAGE_PATH_BASE,
       }).subscribe(async (message) => {
         if (message.type === 'stderr' || message.type === 'stdout') {
-          logger.info(message.message, { function: 'initCacheDatabase' });
+          logger.info(message.message, { function: 'wikiWorker.initCacheDatabase' });
         }
       });
 
       // subscribe to the Observable that startNodeJSWiki returns, handle messages send by our code
+      logger.debug('startWiki calling startNodeJSWiki in the main process', { function: 'wikiWorker.startNodeJSWiki' });
       worker.startNodeJSWiki(workerData).subscribe(async (message) => {
         if (message.type === 'control') {
           await this.workspaceService.update(workspaceID, { lastNodeJSArgv: message.argv }, true);
@@ -240,6 +242,7 @@ export class Wiki implements IWikiService {
    * @param workspaceID
    */
   private async getWorkerEnsure(workspaceID: string): Promise<ModuleThread<WikiWorker>> {
+    debugger;
     let worker = this.getWorker(workspaceID);
     if (worker === undefined) {
       // wait for wiki worker started
@@ -258,7 +261,7 @@ export class Wiki implements IWikiService {
       logger.error(
         errorMessage,
         {
-          function: 'callWikiIpcServerRoute',
+          function: 'getWorkerEnsure',
         },
       );
       throw new Error(errorMessage);
@@ -640,7 +643,7 @@ export class Wiki implements IWikiService {
    * Record<workspaceID, returnValue<setInterval>>
    * Set this in wikiStartup, and clear it when wiki is down.
    */
-  private wikiSyncIntervals: Record<string, NodeJS.Timer> = {};
+  private wikiSyncIntervals: Record<string, ReturnType<typeof setInterval>> = {};
   /**
    * Trigger git sync interval if needed in config
    */
