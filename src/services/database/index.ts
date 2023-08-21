@@ -32,15 +32,23 @@ export class DatabaseService implements IDatabaseService {
     await fs.ensureDir(CACHE_DATABASE_FOLDER);
     try {
       // create a database and table that adapts tiddlywiki usage
-      logger.debug(`initializeForWorkspace create a sqlite database with vss and table that adapts tiddlywiki usage for workspace ${workspaceID}`);
-      const database = new Sqlite3Database(':memory:', { verbose: logger.debug, nativeBinding: SQLITE_BINARY_PATH });
+      logger.debug(`initializeForWorkspace create a sqlite database for workspace`, { SQLITE_BINARY_PATH, workspaceID });
+      let database: Sqlite3Database.Database;
       try {
+        database = new Sqlite3Database(':memory:', { verbose: logger.debug, nativeBinding: SQLITE_BINARY_PATH });
+      } catch (error) {
+        logger.error(`error when loading sqlite3 for workspace ${workspaceID}, skip because of error to prevent crash: ${(error as Error).message}`);
+        return;
+      }
+      try {
+        logger.debug(`initializeForWorkspace load vss for sqlite database`, { PACKAGE_PATH_BASE, workspaceID });
         loadSqliteVss(database, PACKAGE_PATH_BASE);
         const vssVersion = database.prepare('select vss_version()').pluck().get() as string;
-        logger.debug(`initializeForWorkspace using sqlite-vss version: ${vssVersion} for workspace ${workspaceID}`);
+        logger.debug(`initializeForWorkspace successfully using sqlite-vss version: ${vssVersion} for workspace ${workspaceID}`);
       } catch (error) {
         logger.error(`error when loading sqlite-vss for workspace ${workspaceID}: ${(error as Error).message}`);
       }
+      logger.debug(`initializeForWorkspace create a table that adapts tiddlywiki usage for workspace`, { workspaceID });
       /**
        * Create table storing most commonly used tiddler fields, other fields are stored in `fields` column as a JSON string.
        */
@@ -57,6 +65,7 @@ export class DatabaseService implements IDatabaseService {
           modifier TEXT
           );
       `);
+      logger.debug(`initializeForWorkspace table is created, start backup and close`, { workspaceID });
       createTiddlywikiTable.run();
       await database.backup(destinationFilePath);
       database.close();

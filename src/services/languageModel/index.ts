@@ -69,7 +69,7 @@ export class LanguageModel implements ILanguageModelService {
       logger.error(
         errorMessage,
         {
-          function: 'callWikiIpcServerRoute',
+          function: 'getWorker',
         },
       );
       throw new Error(errorMessage);

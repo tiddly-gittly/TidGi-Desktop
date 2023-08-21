@@ -67,15 +67,15 @@ exports.default = async (
           // not using pnpm, because after using it, it always causing problem here, causing `Error: spawn /bin/sh ENOENT` in github actions
           // it can probably being "working directory didn't exist" in  https://github.com/nodejs/node/issues/9644#issuecomment-282060923
           // await exec(`pnpm i --shamefully-hoist --prod --ignore-scripts`, { cwd: path.join(cwd, 'node_modules', 'zx'), shell });
-          await exec(`npm i --legacy-building --production`, {
+          await exec(`npm i --registry https://registry.npmmirror.com --legacy-building --production`, {
             cwd: path.join(cwd, 'node_modules', 'zx'),
             shell,
           });
-          await exec(`npm i --legacy-building --production`, {
+          await exec(`npm i --registry https://registry.npmmirror.com --legacy-building --production`, {
             cwd: path.join(cwd, 'node_modules', 'zx', 'node_modules', 'globby'),
             shell,
           });
-          await exec(`npm i --legacy-building --production --ignore-scripts`, {
+          await exec(`npm i --registry https://registry.npmmirror.com --legacy-building --production --ignore-scripts`, {
             cwd: path.join(
               cwd,
               'node_modules',
