@@ -493,6 +493,8 @@
     "InPort": "入口",
     "StopWorkflow": "停止工作流",
     "ToggleDebugPanel": "切换开关调试面板",
-    "ClearDebugPanel": "清空调试面板"
+    "ClearDebugPanel": "清空调试面板",
+    "NewChat": "新对话",
+    "DeleteChat": "删除对话"
   }
 }

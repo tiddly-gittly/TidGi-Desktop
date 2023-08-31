@@ -8,9 +8,10 @@ export interface ChatsStoreState {
   chats: Record<string, IChatListItem | undefined>;
 }
 export interface ChatsStoreActions {
-  addChat: (fields: { title?: string; workflowID: string; workspaceID: string }) => string;
+  addChat: (fields: { title?: string; workflowID: string; workspaceID: string }) => IChatListItem;
   addElementToChat: (chatID: string, element: Pick<UIElementState, 'type' | 'props' | 'author'>) => string;
   clearElementsInChat: (chatID: string) => void;
+  getChat: (chatID: string) => IChatListItem | undefined;
   removeChat: (chatID: string) => void;
   removeElementFromChat: (chatID: string, id: string) => void;
   submitElementInChat: (chatID: string, id: string, content: unknown) => void;
@@ -28,12 +29,21 @@ export const chatsStore = createStore(
       });
     },
 
+    getChat: (chatID) => {
+      let result;
+      set((state) => {
+        result = state.chats[chatID];
+      });
+      return result;
+    },
+
     addChat: (fields) => {
       const id = String(Math.random());
+      const newChatItem = { chatJSON: { elements: {} }, id, tags: [], title: 'New Chat', ...fields };
       set((state) => {
-        state.chats[id] = { chatJSON: { elements: {} }, id, tags: [], title: 'New Chat', ...fields };
+        state.chats[id] = newChatItem;
       });
-      return id;
+      return newChatItem;
     },
 
     addElementToChat: (chatID, { type, props, author }) => {

@@ -488,7 +488,9 @@
     "InPort": "In Ports",
     "StopWorkflow": "Stop Workflow",
     "ToggleDebugPanel": "Toggle Debug Panel",
-    "ClearDebugPanel": "Clear Debug Panel"
+    "ClearDebugPanel": "Clear Debug Panel",
+    "NewChat": "New Chat",
+    "DeleteChat": "Delete Chat"
   },
   "Description": "Description",
   "Tags": "Tags",

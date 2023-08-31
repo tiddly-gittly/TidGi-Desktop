@@ -28,6 +28,9 @@ export interface IChatListItem {
    */
   chatJSONString?: string;
   description?: string;
+  /**
+   * Random generated ID
+   */
   id: string;
   image?: string;
   metadata?: {
@@ -35,6 +38,9 @@ export interface IChatListItem {
     workspace: IWorkspaceWithMetadata;
   };
   tags: string[];
+  /**
+   * From caption field, or use ID
+   */
   title: string;
   workflowID: string;
   workspaceID: string;
@@ -67,7 +73,7 @@ export function useChatsFromWiki(workspacesList: IWorkspaceWithMetadata[] | unde
         const chatTiddlersInWorkspace = chatsByWorkspace[workspaceIndex];
         return chatTiddlersInWorkspace.map((tiddler) => {
           const chatItem: IChatListItem = {
-            id: `${workspace.id}:${tiddler.title}`,
+            id: tiddler.title,
             title: (tiddler.caption as string | undefined) ?? tiddler.title,
             chatJSONString: tiddler.text,
             chatJSON: JSON.parse(tiddler.text) as SingleChatState,
@@ -91,14 +97,15 @@ export function useChatsFromWiki(workspacesList: IWorkspaceWithMetadata[] | unde
   return chatItems;
 }
 
-export async function addChatToWiki(newItem: IChatListItem, oldItem?: IChatListItem) {
+export async function addChatToWiki(newItem: IChatListItem) {
   await window.service.wiki.wikiOperation(
     WikiChannel.addTiddler,
     newItem.workspaceID,
-    newItem.title,
+    newItem.id,
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
     newItem.chatJSONString || '[]',
     {
+      caption: newItem.title,
       type: 'application/json',
       tags: [...newItem.tags, chatTiddlerTagName],
       description: newItem.description ?? '',
@@ -107,13 +114,6 @@ export async function addChatToWiki(newItem: IChatListItem, oldItem?: IChatListI
     },
     { withDate: true },
   );
-  if (oldItem !== undefined) {
-    window.service.wiki.wikiOperation(
-      WikiChannel.deleteTiddler,
-      oldItem.workspaceID,
-      oldItem.title,
-    );
-  }
 }
 
 export function sortChat(a: IChatListItem, b: IChatListItem) {
@@ -127,33 +127,20 @@ export function sortChat(a: IChatListItem, b: IChatListItem) {
  * @param workflowID The workflow ID that these chats were generated with.
  */
 export function useChatDataSource(workspacesList: IWorkspaceWithMetadata[] | undefined, workflowID: string | undefined) {
-  const [chats, setChats] = useState<IChatListItem[]>([]);
   const initialChats = useChatsFromWiki(workspacesList, workflowID);
+  const workspaceID = useWorkspaceIDToStoreNewChats(workspacesList);
+  const {
+    updateChats,
+    addChat,
+    removeChat,
+    chatList,
+  } = useChatsStore((state) => ({
+    updateChats: state.updateChats,
+    addChat: state.addChat,
+    removeChat: state.removeChat,
+    chatList: Object.values(state.chats).filter((item): item is IChatListItem => item !== undefined).sort((a, b) => sortChat(a, b)),
+  }));
 
-  useEffect(() => {
-    setChats(initialChats.sort(sortChat));
-  }, [initialChats]);
-
-  const onAddChat = useCallback(async (newItem: IChatListItem, oldItem?: IChatListItem) => {
-    await addChatToWiki(newItem, oldItem);
-    setChats((chats) => [...chats.filter(item => item.title !== newItem.title), newItem].sort(sortChat));
-  }, []);
-
-  const onDeleteChat = useCallback((item: IChatListItem) => {
-    window.service.wiki.wikiOperation(
-      WikiChannel.deleteTiddler,
-      item.workspaceID,
-      item.title,
-    );
-    setChats((chats) => chats.filter(chat => chat.id !== item.id).sort(sortChat));
-  }, []);
-
-  return [chats, onAddChat, onDeleteChat] as const;
-}
-
-export function useLoadInitialChatDataToStore(workspacesList: IWorkspaceWithMetadata[] | undefined, workflowID: string | undefined) {
-  const updateChats = useChatsStore((state) => state.updateChats);
-  const [initialChats] = useChatDataSource(workspacesList, workflowID);
   useEffect(() => {
     const chatsDict = initialChats.reduce<Record<string, IChatListItem>>((accumulator, chat) => {
       accumulator[chat.id] = chat;
@@ -161,4 +148,42 @@ export function useLoadInitialChatDataToStore(workspacesList: IWorkspaceWithMeta
     }, {});
     updateChats(chatsDict);
   }, [initialChats, updateChats]);
+
+  const onAddChat = useCallback(async (newItemFields?: {
+    title?: string | undefined;
+  }) => {
+    if (workspaceID === undefined || workflowID === undefined) return;
+    const newItem = addChat({
+      workflowID,
+      workspaceID,
+      ...newItemFields,
+    });
+    await addChatToWiki(newItem);
+  }, [addChat, workflowID, workspaceID]);
+
+  const onDeleteChat = useCallback((chatID: string) => {
+    if (workspaceID === undefined) return;
+    window.service.wiki.wikiOperation(
+      WikiChannel.deleteTiddler,
+      workspaceID,
+      chatID,
+    );
+    removeChat(chatID);
+  }, [removeChat, workspaceID]);
+
+  return [chatList, onAddChat, onDeleteChat] as const;
+}
+
+// connect store and dataSource
+
+export function useWorkspaceIDToStoreNewChats(workspacesList: IWorkspaceWithMetadata[] | undefined) {
+  const [workspaceIDToStoreNewChats, setWorkspaceIDToStoreNewChats] = useState<string | undefined>();
+  // set workspaceIDToStoreNewChats on initial load && workspacesList has value, make it default to save to first workspace.
+  useEffect(() => {
+    if (workspaceIDToStoreNewChats === undefined && workspacesList?.[0] !== undefined) {
+      const workspaceID = workspacesList[0].id;
+      setWorkspaceIDToStoreNewChats(workspaceID);
+    }
+  }, [workspaceIDToStoreNewChats, workspacesList]);
+  return workspaceIDToStoreNewChats;
 }

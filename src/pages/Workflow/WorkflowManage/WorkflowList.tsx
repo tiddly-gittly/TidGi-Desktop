@@ -14,7 +14,7 @@ import styled from 'styled-components';
 import { useLocation } from 'wouter';
 
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
-import { useHandleOpenInTheGraphEditor } from './useClickHandler';
+import { useHandleOpenInTheGraphEditor, useHandleOpenInTheRunWorkflow } from './useClickHandler';
 import type { IWorkflowTiddler } from './useWorkflowDataSource';
 
 const WorkflowListContainer = styled(Box)`
@@ -81,10 +81,9 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
     window.service.wiki.wikiOperation(WikiChannel.openTiddler, item.workspaceID, item.title);
   }, [item, setLocation]);
 
-  const handleOpenInTheGraphEditorRaw = useHandleOpenInTheGraphEditor();
-  const handleOpenInTheGraphEditor = useCallback(() => {
-    handleOpenInTheGraphEditorRaw(item);
-  }, [handleOpenInTheGraphEditorRaw, item]);
+  const handleOpenInTheGraphEditor = useHandleOpenInTheGraphEditor(item);
+  const handleOpenInTheRunWorkflow = useHandleOpenInTheRunWorkflow(item);
+
   const menuID = `workflow-list-item-menu-${item.id}`;
   return (
     <WorkflowCard>
@@ -108,7 +107,7 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
       </CardActionArea>
       <ItemMenuCardActions>
         <Button onClick={handleOpenInTheGraphEditor}>{t('Open')}</Button>
-        <Button onClick={handleOpenInTheGraphEditor}>{t('Open')}</Button>
+        <Button onClick={handleOpenInTheRunWorkflow}>{t('Workflow.Use')}</Button>
         <Button aria-controls={menuID} aria-haspopup='true' onClick={handleOpenItemMenu}>
           {anchorElement === null ? <MenuIcon /> : <MenuOpenIcon />}
         </Button>
