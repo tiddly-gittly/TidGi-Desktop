@@ -186,6 +186,7 @@
     "fork-ts-checker-webpack-plugin": "8.0.0",
     "glob": "^10.3.3",
     "graphql-hooks": "6.3.0",
+    "immer": "^10.0.2",
     "json5": "^2.2.3",
     "klayjs": "0.4.1",
     "klayjs-noflo": "^0.3.1",
