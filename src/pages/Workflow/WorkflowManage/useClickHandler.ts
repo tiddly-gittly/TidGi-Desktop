@@ -4,6 +4,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { MouseEvent, useCallback, useContext } from 'react';
 import { useLocation } from 'wouter';
 import { WorkflowContext } from '../GraphEditor/hooks/useContext';
+import { runRouteName } from '../RunWorkflow/constants';
 import type { IWorkflowListItem } from './WorkflowList';
 
 export function useHandleOpenInTheGraphEditor(item?: IWorkflowListItem) {
@@ -22,7 +23,7 @@ export function useHandleOpenInTheRunWorkflow(item: IWorkflowListItem) {
   const [, setLocation] = useLocation();
   const workflowContext = useContext(WorkflowContext);
   const handleOpenInTheGraphEditor = useCallback(() => {
-    setLocation(`/${WindowNames.main}/${PageType.workflow}/run/${item.id}/`);
+    setLocation(`/${WindowNames.main}/${PageType.workflow}/${runRouteName}/${item.id}/`);
     workflowContext.setOpenedWorkflowItem(item);
   }, [setLocation, workflowContext, item]);
   return handleOpenInTheGraphEditor;

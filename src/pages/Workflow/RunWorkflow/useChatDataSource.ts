@@ -110,7 +110,7 @@ export async function addChatToWiki(newItem: IChatListItem) {
       tags: [...newItem.tags, chatTiddlerTagName],
       description: newItem.description ?? '',
       'page-cover': newItem.image ?? '',
-      workflowId: newItem.workflowID,
+      workflowID: newItem.workflowID,
     },
     { withDate: true },
   );

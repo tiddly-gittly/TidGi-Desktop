@@ -6,6 +6,7 @@ import { styled } from 'styled-components';
 import { useRoute } from 'wouter';
 import { ChatArea, EmptyChatArea } from './ChatArea';
 import { ChatsList } from './ChatsList';
+import { runRouteName } from './constants';
 
 const Container = styled.div`
     display: flex;
@@ -14,15 +15,13 @@ const Container = styled.div`
 `;
 
 export const RunWorkflow: React.FC = () => {
-  const [, parameters] = useRoute(`/${WindowNames.main}/${PageType.workflow}/run/:workflowID/:runID/`);
+  const [match, parameters] = useRoute(`/${WindowNames.main}/${PageType.workflow}/${runRouteName}/:workflowID/:runID*/`);
   /**
    * This will be the active chat ID if the URL matches, otherwise it'll be undefined.
    */
   const activeRunID = parameters?.runID;
   const workflowID = parameters?.workflowID;
   const workspacesList = useWorkspacesListObservable();
-  // DEBUG: console workflowID
-  console.log(`workflowID`, workflowID, parameters);
 
   return (
     <Container>

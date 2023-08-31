@@ -1,3 +1,4 @@
+import { chatTiddlerTagName } from '@services/wiki/plugin/nofloWorkflow/constants';
 import { mergeWith } from 'lodash';
 import { immer } from 'zustand/middleware/immer';
 import { createStore } from 'zustand/vanilla';
@@ -38,8 +39,8 @@ export const chatsStore = createStore(
     },
 
     addChat: (fields) => {
-      const id = String(Math.random());
-      const newChatItem = { chatJSON: { elements: {} }, id, tags: [], title: 'New Chat', ...fields };
+      const id = String(Math.random()).substring(2);
+      const newChatItem = { chatJSON: { elements: {} }, id, tags: [chatTiddlerTagName], title: 'New Chat', ...fields };
       set((state) => {
         state.chats[id] = newChatItem;
       });
