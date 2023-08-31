@@ -76,7 +76,7 @@ class ButtonGroup extends Component {
       };
       // If we already have an UI element created, update it. Otherwise, create a new one.
       if (this.uiElementID === undefined) {
-        this.uiElementID = this.uiEffects.addElement({ type: 'buttonGroup', props });
+        this.uiElementID = this.uiEffects.addElement({ type: 'buttonGroup', props, author: 'user' });
         // wait for result, and sent to outPort
         void this.uiEffects.onSubmit(this.uiElementID).then(clickedButtonIndex => {
           this.uiElementID = undefined;

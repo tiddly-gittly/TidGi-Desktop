@@ -48,7 +48,7 @@ class ResultText extends Component {
       const props: IResultTextProps = {
         content,
       };
-      this.uiElementID = this.uiEffects.addElement({ type: 'textResult', props });
+      this.uiElementID = this.uiEffects.addElement({ type: 'textResult', props, author: 'agent' });
       output.sendDone({ out: true });
     });
   }

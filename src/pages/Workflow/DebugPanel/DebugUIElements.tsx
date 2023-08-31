@@ -19,7 +19,9 @@ export function DebugUIElements() {
     Object.values(state.elements).filter((element): element is UIElementState => element !== undefined).sort((a, b) => a.timestamp - b.timestamp)
   );
   const onSubmit = useUIStore((state) => state.submitElement);
-  // Ref to the Container element for scrolling
+  /**
+   * Ref to the Container element for scrolling
+   */
   const containerReference = useRef<HTMLDivElement | null>(null);
 
   // Scroll to the bottom when elements list changes

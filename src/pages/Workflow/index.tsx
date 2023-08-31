@@ -5,6 +5,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { useState } from 'react';
 import { GraphEditor } from './GraphEditor';
 import { WorkflowContext } from './GraphEditor/hooks/useContext';
+import { RunWorkflow } from './RunWorkflow';
 import { WorkflowManage } from './WorkflowManage';
 import { IWorkflowListItem } from './WorkflowManage/WorkflowList';
 
@@ -14,7 +15,8 @@ export default function Workflow(): JSX.Element {
   return (
     <WorkflowContext.Provider value={{ openedWorkflowItem, setOpenedWorkflowItem }}>
       <Switch>
-        <Route path={`/${WindowNames.main}/${PageType.workflow}/:id/`} component={GraphEditor} />
+        <Route path={`/${WindowNames.main}/${PageType.workflow}/workflow/:id/`} component={GraphEditor} />
+        <Route path={`/${WindowNames.main}/${PageType.workflow}/run/:workflowID/:runID*`} component={RunWorkflow} />
         <Route path={`/${WindowNames.main}/${PageType.workflow}/`} component={WorkflowManage} />
       </Switch>
     </WorkflowContext.Provider>

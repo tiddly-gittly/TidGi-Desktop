@@ -53,7 +53,7 @@ class TypingText extends Component {
       };
       // If we already have an UI element created, update it. Otherwise, create a new one.
       if (this.uiElementID === undefined) {
-        this.uiElementID = this.uiEffects.addElement({ type: 'textResult', props });
+        this.uiElementID = this.uiEffects.addElement({ type: 'textResult', props, author: 'agent' });
       } else {
         this.uiEffects.updateElementProps({ id: this.uiElementID, props });
       }

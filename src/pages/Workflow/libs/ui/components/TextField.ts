@@ -77,7 +77,7 @@ class TextField extends Component {
       };
       // If we already have an UI element created, update it. Otherwise, create a new one.
       if (this.uiElementID === undefined) {
-        this.uiElementID = this.uiEffects.addElement({ type: 'textField', props });
+        this.uiElementID = this.uiEffects.addElement({ type: 'textField', props, author: 'user' });
         // wait for result, and sent to outPort
         // TODO: change to async await when https://github.com/noflo/noflo/issues/1047 is fixed.
         void this.uiEffects.onSubmit(this.uiElementID).then(resultText => {
