@@ -6,6 +6,7 @@ import { UIElementState } from '../libs/ui/debugUIEffects/store';
 import { IChatListItem } from './useChatDataSource';
 
 export interface ChatsStoreState {
+  activeChatID?: string;
   chats: Record<string, IChatListItem | undefined>;
 }
 export interface ChatsStoreActions {
@@ -15,6 +16,7 @@ export interface ChatsStoreActions {
   getChat: (chatID: string) => IChatListItem | undefined;
   removeChat: (chatID: string) => void;
   removeElementFromChat: (chatID: string, id: string) => void;
+  setActiveChatID: (chatID: string) => void;
   submitElementInChat: (chatID: string, id: string, content: unknown) => void;
   updateChats: (chats: Record<string, IChatListItem | undefined>) => void;
   updateElementPropsInChat: (chatID: string, element: Pick<UIElementState, 'id' | 'props'>) => void;
@@ -23,6 +25,13 @@ export interface ChatsStoreActions {
 export const chatsStore = createStore(
   immer<ChatsStoreState & ChatsStoreActions>((set) => ({
     chats: {},
+    activeChatID: undefined,
+
+    setActiveChatID: (chatID) => {
+      set((state) => {
+        state.activeChatID = chatID;
+      });
+    },
 
     updateChats: (chats) => {
       set((state) => {
@@ -43,6 +52,7 @@ export const chatsStore = createStore(
       const newChatItem = { chatJSON: { elements: {} }, id, tags: [chatTiddlerTagName], title: 'New Chat', ...fields };
       set((state) => {
         state.chats[id] = newChatItem;
+        state.activeChatID = id;
       });
       return newChatItem;
     },
@@ -112,6 +122,9 @@ export const chatsStore = createStore(
     removeChat: (chatID) => {
       set((state) => {
         state.chats[chatID] = undefined;
+        if (chatID === state.activeChatID) {
+          state.activeChatID = undefined;
+        }
       });
     },
   })),

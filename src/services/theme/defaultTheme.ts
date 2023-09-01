@@ -15,6 +15,11 @@ const workflow: ThemeOptions['workflow'] = {
     height: 300,
     cardSpacing: 12,
   },
+  run: {
+    chatsList: {
+      width: 200,
+    },
+  },
 };
 export const lightTheme = merge(cloneDeep(createTheme({
   palette: {

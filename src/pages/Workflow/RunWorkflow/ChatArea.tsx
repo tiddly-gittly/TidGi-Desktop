@@ -5,9 +5,10 @@ import { styled } from 'styled-components';
 import { plugins } from '../DebugPanel/plugins';
 import { useChatsStore } from './useChatsStore';
 
-const Container = styled.div`
+const Container = styled(Box)`
   padding: 0 1em;
   height: 100%;
+  flex: 1;
   overflow-y: auto;
   &::-webkit-scrollbar {
     width: 0;
@@ -60,7 +61,7 @@ export const ChatArea: React.FC<Props> = ({ chatID }) => {
   );
 };
 
-const EmptyContainer = styled(Box)`
+const EmptyContainer = styled(Container)`
   display: flex;
   flex-direction: column;
   align-items: center;

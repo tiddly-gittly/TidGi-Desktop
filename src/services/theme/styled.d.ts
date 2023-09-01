@@ -20,12 +20,17 @@ declare module '@mui/material/styles' {
     };
     workflow: {
       debugPanel: {
+        cardSpacing: number;
         height: number;
         width: number;
-        cardSpacing: number;
       };
       nodeDetailPanel: {
         width: number;
+      };
+      run: {
+        chatsList: {
+          width: number;
+        };
       };
       thumbnail: {
         height: number;
