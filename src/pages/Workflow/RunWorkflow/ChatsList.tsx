@@ -1,13 +1,19 @@
+/* eslint-disable unicorn/no-null */
 /* eslint-disable @typescript-eslint/promise-function-async */
 import CheckIcon from '@mui/icons-material/Check';
 import ClearIcon from '@mui/icons-material/Clear';
 import DeleteIcon from '@mui/icons-material/Delete';
 import EditIcon from '@mui/icons-material/Edit';
-import { Button, IconButton, List, ListItem, Tooltip, Typography } from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import MenuOpenIcon from '@mui/icons-material/MenuOpen';
+import PlayArrowIcon from '@mui/icons-material/PlayArrow';
+import StopIcon from '@mui/icons-material/Stop';
+import { Button, Fade, IconButton, List, ListItem, Menu, MenuItem, Tooltip, Typography } from '@mui/material';
 import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
+import { useHandleOpenInWiki } from '../WorkflowManage/useHandleOpenInWiki';
 import { IChatListItem, sortChat, useLoadInitialChats, useWorkspaceIDToStoreNewChats } from './useChatDataSource';
 import { useChatsStore } from './useChatsStore';
 
@@ -122,6 +128,27 @@ const ChatListItem: React.FC<IChatListItemProps> = ({ chat, onRenameChat, onDele
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [temporaryTitle, setTemporaryTitle] = useState<string>(chat.title);
 
+  const menuID = `chat-list-item-menu-${chat.id}`;
+  const [menuAnchorElement, setMenuAnchorElement] = useState<null | HTMLElement>(null);
+  const handleOpenItemMenu = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
+    setMenuAnchorElement(event.currentTarget);
+  }, []);
+  const handleCloseItemMenu = useCallback(() => {
+    setMenuAnchorElement(null);
+  }, []);
+  const handleRename = useCallback(() => {
+    setMenuAnchorElement(null);
+    setIsEditing(true);
+  }, []);
+  const handleDelete = useCallback(() => {
+    setMenuAnchorElement(null);
+    onDeleteChat(workspaceID, chat.id);
+  }, [onDeleteChat, workspaceID, chat.id]);
+  const handleOpenInWiki = useHandleOpenInWiki({ title: chat.id, workspaceID: chat.workspaceID });
+  // TODO: run graph in background service or in wiki. instead of useRunGraph on frontend
+  const runGraph = useCallback(() => {}, []);
+  const stopGraph = useCallback(() => {}, []);
+
   return (
     <StyledListItem>
       {isEditing
@@ -164,26 +191,49 @@ const ChatListItem: React.FC<IChatListItemProps> = ({ chat, onRenameChat, onDele
             <OpenListItemButton fullWidth>
               <ListItemTitle>{chat.title}</ListItemTitle>
             </OpenListItemButton>
+
             <ListItemActions>
-              <Tooltip title={t('Workflow.RenameChat')}>
-                <ListItemActionButton
-                  onClick={() => {
-                    setIsEditing(true);
-                  }}
-                >
-                  <EditIcon />
-                </ListItemActionButton>
-              </Tooltip>
-              <Tooltip title={t('Workflow.DeleteChat')}>
-                <ListItemActionButton
-                  onClick={() => {
-                    onDeleteChat(workspaceID, chat.id);
-                  }}
-                >
-                  <DeleteIcon />
-                </ListItemActionButton>
-              </Tooltip>
+              {chat.running === true
+                ? (
+                  <Tooltip title={t('Workflow.StopWorkflow')}>
+                    <ListItemActionButton onClick={stopGraph}>
+                      <StopIcon />
+                    </ListItemActionButton>
+                  </Tooltip>
+                )
+                : (
+                  <Tooltip title={t('Workflow.RunWorkflow')}>
+                    <ListItemActionButton onClick={runGraph}>
+                      <PlayArrowIcon />
+                    </ListItemActionButton>
+                  </Tooltip>
+                )}
+              <ListItemActionButton aria-controls={menuID} aria-haspopup='true' onClick={handleOpenItemMenu}>
+                {menuAnchorElement === null ? <MenuIcon /> : <MenuOpenIcon />}
+              </ListItemActionButton>
             </ListItemActions>
+            <Menu
+              id={menuID}
+              anchorEl={menuAnchorElement}
+              keepMounted
+              open={menuAnchorElement !== null}
+              onClose={handleCloseItemMenu}
+              TransitionComponent={Fade}
+            >
+              <MenuItem onClick={handleDelete}>
+                <DeleteIcon />
+                {t('Workflow.DeleteChat')}
+              </MenuItem>
+              <MenuItem
+                onClick={handleRename}
+              >
+                <EditIcon />
+                {t('Workflow.RenameChat')}
+              </MenuItem>
+              <MenuItem onClick={handleOpenInWiki}>
+                {t('Workflow.OpenInWorkspaceTiddler', { title: chat.title, workspace: chat.metadata?.workspace?.name ?? t('AddWorkspace.MainWorkspace') })}
+              </MenuItem>
+            </Menu>
           </>
         )}
     </StyledListItem>

@@ -37,6 +37,7 @@ export interface IChatListItem {
     tiddler: IChatTiddler;
     workspace: IWorkspaceWithMetadata;
   };
+  running?: boolean;
   tags: string[];
   /**
    * From caption field, or use ID

@@ -1,20 +1,17 @@
 /* eslint-disable @typescript-eslint/no-unsafe-assignment */
 /* eslint-disable unicorn/no-null, @typescript-eslint/strict-boolean-expressions, unicorn/no-useless-undefined */
-import { WikiChannel } from '@/constants/channels';
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import { Box, Button, Card, CardActionArea, CardActions, CardContent, CardMedia, Chip, Fade, Menu, MenuItem, Stack, Typography } from '@mui/material';
-import { PageType } from '@services/pages/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Masonry from 'react-masonry-css';
 import styled from 'styled-components';
-import { useLocation } from 'wouter';
 
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
 import { useHandleOpenInTheGraphEditor, useHandleOpenInTheRunWorkflow } from './useClickHandler';
+import { useHandleOpenInWiki } from './useHandleOpenInWiki';
 import type { IWorkflowTiddler } from './useWorkflowDataSource';
 
 const WorkflowListContainer = styled(Box)`
@@ -70,16 +67,7 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
     handleOpenChangeMetadataDialogRaw(item);
   }, [item, handleOpenChangeMetadataDialogRaw]);
 
-  const [, setLocation] = useLocation();
-  const handleOpenInWiki = useCallback(async () => {
-    setAnchorElement(null);
-    if (!item.workspaceID) return;
-    const oldActivePage = await window.service.pages.getActivePage();
-    await window.service.pages.setActivePage(PageType.wiki, oldActivePage?.type);
-    await window.service.workspaceView.setActiveWorkspaceView(item.workspaceID);
-    setLocation(`/${WindowNames.main}/${PageType.wiki}/${item.workspaceID}/`);
-    window.service.wiki.wikiOperation(WikiChannel.openTiddler, item.workspaceID, item.title);
-  }, [item, setLocation]);
+  const handleOpenInWiki = useHandleOpenInWiki(item);
 
   const handleOpenInTheGraphEditor = useHandleOpenInTheGraphEditor(item);
   const handleOpenInTheRunWorkflow = useHandleOpenInTheRunWorkflow(item);
