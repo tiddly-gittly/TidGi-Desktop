@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { PageType } from '@services/pages/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { useLocation, useRoute } from 'wouter';
 import { runRouteName } from './constants';
 import { useChatsStore } from './useChatsStore';
@@ -18,9 +18,11 @@ export function useSyncStoreWithUrl() {
   const [, setLocation] = useLocation();
 
   // When the component first mounts, sync the activeChatID with the runID from the URL
+  const mountedReference = useRef(false);
   useEffect(() => {
-    if (activeRunIDFromUrl && activeRunIDFromUrl !== activeChatID) {
+    if (!mountedReference.current && activeRunIDFromUrl && activeRunIDFromUrl !== activeChatID) {
       setActiveChatID(activeRunIDFromUrl);
+      mountedReference.current = true;
     }
   }, [activeRunIDFromUrl, setActiveChatID, activeChatID]);
 

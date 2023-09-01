@@ -24,7 +24,7 @@ export interface UIElementState {
   type: 'textField' | 'buttonGroup' | 'textResult' | string;
 }
 export interface SingleChatState {
-  elements: Record<string, UIElementState | undefined>;
+  elements?: Record<string, UIElementState | undefined>;
 }
 
 export interface UIStoreState extends SingleChatState {
@@ -64,7 +64,7 @@ export const uiStore = createStore<UIStoreState>((set) => ({
   },
   updateElementProps: ({ id, props }) => {
     set((state) => {
-      const existedElement = state.elements[id];
+      const existedElement = state.elements?.[id];
       if (existedElement !== undefined) {
         mergeWith(existedElement.props, props, (objectValue: unknown, sourceValue) => {
           if (isUndefined(sourceValue)) {
@@ -77,7 +77,7 @@ export const uiStore = createStore<UIStoreState>((set) => ({
   },
   submitElement: (id, content) => {
     set((state) => {
-      const existedElement = state.elements[id];
+      const existedElement = state.elements?.[id];
       if (existedElement !== undefined) {
         existedElement.content = content;
         existedElement.isSubmitted = true;

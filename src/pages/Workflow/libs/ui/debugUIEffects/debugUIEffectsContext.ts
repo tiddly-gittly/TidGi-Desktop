@@ -23,7 +23,7 @@ export const createUIEffectsContext = (uiStore: StoreApi<UIStoreState>): UIEffec
         // Watch for submission of this field
         const unsubscribe = uiStore.subscribe(
           (state) => {
-            const element = state.elements[uiElementID];
+            const element = state.elements?.[uiElementID];
             if (element?.isSubmitted) {
               resolve(element.content);
               unsubscribe();

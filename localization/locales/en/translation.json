@@ -490,7 +490,8 @@
     "ToggleDebugPanel": "Toggle Debug Panel",
     "ClearDebugPanel": "Clear Debug Panel",
     "NewChat": "New Chat",
-    "DeleteChat": "Delete Chat"
+    "DeleteChat": "Delete Chat",
+    "RenameChat": "Rename Chat"
   },
   "Description": "Description",
   "Tags": "Tags",

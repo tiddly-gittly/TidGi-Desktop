@@ -16,7 +16,7 @@ const Container = styled.div`
 
 export function DebugUIElements() {
   const elements = useUIStore((state) =>
-    Object.values(state.elements).filter((element): element is UIElementState => element !== undefined).sort((a, b) => a.timestamp - b.timestamp)
+    Object.values(state.elements ?? {}).filter((element): element is UIElementState => element !== undefined).sort((a, b) => a.timestamp - b.timestamp)
   );
   const onSubmit = useUIStore((state) => state.submitElement);
   /**

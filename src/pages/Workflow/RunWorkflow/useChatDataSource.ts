@@ -2,7 +2,7 @@ import { WikiChannel } from '@/constants/channels';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { chatTiddlerTagName } from '@services/wiki/plugin/nofloWorkflow/constants';
 import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { SingleChatState } from '../libs/ui/debugUIEffects/store';
 import { useChatsStore } from './useChatsStore';
@@ -103,7 +103,7 @@ export async function addChatToWiki(newItem: IChatListItem) {
     newItem.workspaceID,
     newItem.id,
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
-    newItem.chatJSONString || '[]',
+    newItem.chatJSONString || '{}',
     {
       caption: newItem.title,
       type: 'application/json',
@@ -113,6 +113,14 @@ export async function addChatToWiki(newItem: IChatListItem) {
       workflowID: newItem.workflowID,
     },
     { withDate: true },
+  );
+}
+
+export function deleteChatFromWiki(workspaceID: string, chatID: string) {
+  window.service.wiki.wikiOperation(
+    WikiChannel.deleteTiddler,
+    workspaceID,
+    chatID,
   );
 }
 
@@ -126,19 +134,12 @@ export function sortChat(a: IChatListItem, b: IChatListItem) {
  * @param workspacesList Workspaces that the user has access to, as data source.
  * @param workflowID The workflow ID that these chats were generated with.
  */
-export function useChatDataSource(workspacesList: IWorkspaceWithMetadata[] | undefined, workflowID: string | undefined) {
+export function useLoadInitialChats(workspacesList: IWorkspaceWithMetadata[] | undefined, workflowID: string | undefined) {
   const initialChats = useChatsFromWiki(workspacesList, workflowID);
-  const workspaceID = useWorkspaceIDToStoreNewChats(workspacesList);
   const {
     updateChats,
-    addChat,
-    removeChat,
-    chatList,
   } = useChatsStore((state) => ({
     updateChats: state.updateChats,
-    addChat: state.addChat,
-    removeChat: state.removeChat,
-    chatList: Object.values(state.chats).filter((item): item is IChatListItem => item !== undefined).sort((a, b) => sortChat(a, b)),
   }));
 
   useEffect(() => {
@@ -148,30 +149,6 @@ export function useChatDataSource(workspacesList: IWorkspaceWithMetadata[] | und
     }, {});
     updateChats(chatsDict);
   }, [initialChats, updateChats]);
-
-  const onAddChat = useCallback(async (newItemFields?: {
-    title?: string | undefined;
-  }) => {
-    if (workspaceID === undefined || workflowID === undefined) return;
-    const newItem = addChat({
-      workflowID,
-      workspaceID,
-      ...newItemFields,
-    });
-    await addChatToWiki(newItem);
-  }, [addChat, workflowID, workspaceID]);
-
-  const onDeleteChat = useCallback((chatID: string) => {
-    if (workspaceID === undefined) return;
-    window.service.wiki.wikiOperation(
-      WikiChannel.deleteTiddler,
-      workspaceID,
-      chatID,
-    );
-    removeChat(chatID);
-  }, [removeChat, workspaceID]);
-
-  return [chatList, onAddChat, onDeleteChat] as const;
 }
 
 // connect store and dataSource

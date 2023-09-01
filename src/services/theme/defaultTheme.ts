@@ -17,7 +17,7 @@ const workflow: ThemeOptions['workflow'] = {
   },
   run: {
     chatsList: {
-      width: 200,
+      width: 220,
     },
   },
 };
