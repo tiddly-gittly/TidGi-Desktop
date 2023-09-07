@@ -132,7 +132,10 @@ brew install TidGi # Not tested
 
 ## Mobile App
 
-See [Tiddloid](https://github.com/donmor/Tiddloid) for Android App developed by donmor.
+- [TidGi-Mobile](https://github.com/tiddly-gittly/TidGi-Mobile) is the official pair with TidGi-Desktop, developed by [@linonetwo](https://github.com/linonetwo), fast for 100MB+ wiki.
+- See [Tiddloid](https://github.com/donmor/Tiddloid) for Android App developed by [@donmor](https://github.com/donmor). Good for smaller wiki, and you can have access to your HTML wiki.
+
+You can switch between them, and sync data between them and TidGi at any time. All of them are local-first, open-sourced and compatible with TiddlyWiki ecosystem.
 
 ## Data Privacy Protection
 
