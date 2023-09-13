@@ -217,7 +217,7 @@ class TidGiIPCSyncAdaptor {
     }
     try {
       const title = tiddler.fields.title;
-      this.logger.log(`loadTiddler ${title}`);
+      this.logger.log(`saveTiddler ${title}`);
       this.addRecentUpdatedTiddlersFromClient('modifications', title);
       const putTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
         this.workspaceID,
