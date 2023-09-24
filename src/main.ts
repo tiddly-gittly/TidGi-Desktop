@@ -22,6 +22,7 @@ import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
+import { IDatabaseService } from '@services/database/interface';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IUpdaterService } from '@services/updater/interface';
 import { IWikiService } from '@services/wiki/interface';
@@ -58,6 +59,7 @@ const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceI
 const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 app.on('second-instance', () => {
   // Someone tried to run a second instance, we should focus our window.
   const mainWindow = windowService.get(WindowNames.main);
@@ -95,6 +97,7 @@ const commonInit = async (): Promise<void> => {
     preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
       attachToMenubar && await windowService.open(WindowNames.menuBar);
     }),
+    databaseService.initializeForApp(),
   ]);
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();

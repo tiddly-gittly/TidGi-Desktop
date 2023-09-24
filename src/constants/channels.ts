@@ -147,6 +147,10 @@ export enum MetaDataChannel {
   name = 'MetaDataChannel',
 }
 
+export enum WorkflowChannel {
+  name = 'WorkflowChannel',
+}
+
 export type Channels =
   | MainChannel
   | AuthenticationChannel

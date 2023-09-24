@@ -101,6 +101,7 @@
     "strip-ansi": "^7.1.0",
     "threads": "1.7.0",
     "type-fest": "3.13.0",
+    "typeorm": "^0.3.17",
     "typescript-styled-is": "^2.1.0",
     "v8-compile-cache-lib": "^3.0.1",
     "winston": "3.10.0",

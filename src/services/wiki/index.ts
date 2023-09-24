@@ -176,7 +176,7 @@ export class Wiki implements IWikiService {
 
       logger.debug('startWiki calling initCacheDatabase in the main process', { function: 'wikiWorker.initCacheDatabase' });
       worker.initCacheDatabase({
-        databaseFile: this.databaseService.getDataBasePath(workspaceID),
+        databaseFile: this.databaseService.getWorkspaceDataBasePath(workspaceID),
         sqliteBinary: SQLITE_BINARY_PATH,
         packagePathBase: PACKAGE_PATH_BASE,
       }).subscribe(async (message) => {
