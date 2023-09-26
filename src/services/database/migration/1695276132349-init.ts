@@ -2,26 +2,6 @@ import { MigrationInterface, QueryRunner, Table, TableForeignKey } from 'typeorm
 
 export class Init1695276132349 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
-    // User table
-    await queryRunner.createTable(
-      new Table({
-        name: 'user',
-        columns: [
-          {
-            name: 'id',
-            type: 'integer',
-            isPrimary: true,
-            isGenerated: true,
-            generationStrategy: 'increment',
-          },
-          {
-            name: 'username',
-            type: 'varchar',
-          },
-        ],
-      }),
-      true,
-    );
 
     // WorkflowNetwork table
     await queryRunner.createTable(
@@ -30,10 +10,10 @@ export class Init1695276132349 implements MigrationInterface {
         columns: [
           {
             name: 'id',
-            type: 'integer',
+            type: 'text',
             isPrimary: true,
             isGenerated: true,
-            generationStrategy: 'increment',
+            generationStrategy: 'uuid',
           },
           {
             name: 'runningState',
@@ -47,8 +27,8 @@ export class Init1695276132349 implements MigrationInterface {
             type: 'text',
           },
           {
-            name: 'userId',
-            type: 'integer',
+            name: 'graphURI',
+            type: 'text',
           },
         ],
       }),

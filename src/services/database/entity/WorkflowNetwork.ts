@@ -1,5 +1,4 @@
-import { Column, Entity, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
-import { User } from './User';
+import { Column, Entity, PrimaryGeneratedColumn } from 'typeorm';
 
 export enum WorkflowRunningState {
   Idle = 'idle',
@@ -9,8 +8,8 @@ export enum WorkflowRunningState {
 
 @Entity()
 export class WorkflowNetwork {
-  @PrimaryGeneratedColumn()
-  id!: number;
+  @PrimaryGeneratedColumn('uuid')
+  id!: string;
 
   @Column({
     type: 'varchar',
@@ -18,9 +17,14 @@ export class WorkflowNetwork {
   })
   runningState!: WorkflowRunningState;
 
+  @Column('text')
+  /**
+   * Uri with format `tidgi://workspaceID/graphTiddlerTitle`
+   *
+   * Used to fetch fbp graph JSON from wiki
+   */
+  graphURI!: string;
+
   @Column('text') // use text for large JSON string
   serializedState!: string;
-
-  @ManyToOne(() => User, user => user.workflowNetworks)
-  user!: User;
 }
