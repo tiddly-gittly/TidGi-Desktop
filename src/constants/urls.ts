@@ -10,3 +10,14 @@ export const githubDesktopUrl = 'https://desktop.github.com/';
 export const safeModeHash = '#:safe';
 export const getDefaultHTTPServerIP = (port: number) => `http://${defaultServerIP}:${port}`;
 export const getDefaultTidGiUrl = (workspaceID: string) => `tidgi://${workspaceID}`;
+export const getTiddlerTidGiUrl = (workspaceID: string, tiddlerTitle: string) => `${getDefaultTidGiUrl(workspaceID)}/${tiddlerTitle}`;
+const tidGiUrlRegex = /^tidgi:\/\/([\da-f-]+)\/([\da-f-]+)$/i;
+export const getInfoFromTidGiUrl = (tidGiUrl: string) => {
+  const match = tidGiUrl.match(tidGiUrlRegex);
+  if (match !== null) {
+    const workspaceID = match[1];
+    const tiddlerTitle = match[2];
+    return { workspaceID, tiddlerTitle };
+  }
+  return { workspaceID: '', tiddlerTitle: '' };
+};

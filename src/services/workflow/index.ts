@@ -8,6 +8,7 @@ import { ComponentLoader, createNetwork } from 'noflo';
 import { Network } from 'noflo/lib/Network';
 import { IFBPLibrary } from 'the-graph';
 
+import { getInfoFromTidGiUrl, getTiddlerTidGiUrl } from '@/constants/urls';
 import { getBrowserComponentLibrary } from '@/pages/Workflow/GraphEditor/utils/library';
 import { lazyInject } from '@services/container';
 import { WorkflowNetwork, WorkflowRunningState } from '@services/database/entity/WorkflowNetwork';
@@ -52,7 +53,8 @@ export class Workflow implements IWorkflowService {
     // TODO: get fbpGraphString from wiki
   }
 
-  public async addNetworkFromGraphJSON(graphID: string, fbpGraphString: string, options?: { start?: boolean }): Promise<string> {
+  public async addNetworkFromGraphJSON(graph: { fbpGraphString: string; graphID: string; workspaceID: string }, options?: { start?: boolean }): Promise<string> {
+    const { workspaceID, graphID, fbpGraphString } = graph;
     const fbpGraph: FbpGraph = await loadJSON(fbpGraphString);
     /**
      * Similar to noflo-runtime-base's `src/protocol/Network.js`, transform FbpGraph to ~~NofloGraph~~ Network
@@ -65,7 +67,7 @@ export class Workflow implements IWorkflowService {
     const appDatabase = await this.databaseService.getAppDatabase();
     // generate a new id by database
     const workflowNetworkRow = await appDatabase.getRepository(WorkflowNetwork).save({
-      graphURI: `tidgi://workspaceID/${graphID}`,
+      graphURI: getTiddlerTidGiUrl(workspaceID, graphID),
       runningState: WorkflowRunningState.Idle,
     });
     const networkID = workflowNetworkRow.id;
@@ -77,15 +79,17 @@ export class Workflow implements IWorkflowService {
     return networkID;
   }
 
-  public resumeNetwork(networkID: string): Promise<void> {
-
+  public getGraphJSONFromURI(graphURI: string): string {
+    const { tiddlerTitle, workspaceID } = getInfoFromTidGiUrl(graphURI);
   }
+
+  public async resumeNetwork(networkID: string): Promise<Network> {}
 
   public async startNetwork(networkID: string): Promise<void> {
     const appDatabase = await this.databaseService.getAppDatabase();
     const workflowNetworkRow = await appDatabase.getRepository(WorkflowNetwork).findOneOrFail({ where: { id: networkID } });
     if (workflowNetworkRow === undefined) throw new Error('Network not found in database');
-    const network = this.networks[networkID];
+    const network = this.networks[networkID] ?? this.resumeNetwork(networkID);
     await network.start();
     network.once('end', () => {
       this.networkStore.getState().updateNetwork(networkID, { running: false });
