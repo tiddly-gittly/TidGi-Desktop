@@ -23,7 +23,7 @@ import { View } from '@services/view';
 import { Wiki } from '@services/wiki';
 import { WikiGitWorkspace } from '@services/wikiGitWorkspace';
 import { Window } from '@services/windows';
-import { Workflow } from '@services/workflow';
+import { WorkflowService } from '@services/workflow';
 import { Workspace } from '@services/workspaces';
 import { WorkspaceView } from '@services/workspacesView';
 
@@ -85,7 +85,7 @@ export function bindServiceAndProxy(): void {
   container.bind<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace).to(WikiGitWorkspace).inSingletonScope();
   container.bind<IWikiService>(serviceIdentifier.Wiki).to(Wiki).inSingletonScope();
   container.bind<IWindowService>(serviceIdentifier.Window).to(Window).inSingletonScope();
-  container.bind<IWorkflowService>(serviceIdentifier.Workflow).to(Workflow).inSingletonScope();
+  container.bind<IWorkflowService>(serviceIdentifier.Workflow).to(WorkflowService).inSingletonScope();
   container.bind<IWorkspaceService>(serviceIdentifier.Workspace).to(Workspace).inSingletonScope();
   container.bind<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).to(WorkspaceView).inSingletonScope();
 
