@@ -7,6 +7,7 @@ import inspector from 'node:inspector';
 import path from 'path';
 import { Observable } from 'rxjs';
 import { IWikiMessage, WikiControlActions } from '../interface';
+import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import { IStartNodeJSWikiConfigs, IUtilsWithSqlite } from '.';
 import { getCacheDatabase, setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
@@ -151,6 +152,7 @@ export function startNodeJSWiki({
       wikiInstance.boot.startup({ bootPath: TIDDLYWIKI_PACKAGE_FOLDER });
       // after setWikiInstance, ipc server routes will start serving content
       ipcServerRoutes.setWikiInstance(wikiInstance);
+      wikiOperationsInWikiWorker.setWikiInstance(wikiInstance);
       observer.next({
         type: 'control',
         actions: WikiControlActions.booted,

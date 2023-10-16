@@ -14,11 +14,11 @@ export function useAvailableFilterTags(workspacesList: IWorkspaceWithMetadata[] 
     async () => {
       const tasks = workspacesList?.map(async (workspace) => {
         try {
-          const tags = await window.service.wiki.wikiOperation(
+          const tags = await window.service.wiki.wikiOperationInServer(
             WikiChannel.runFilter,
             workspace.id,
             // get workflow tiddlers' tags
-            `[all[tiddlers+shadows]tag[${workflowTiddlerTagName}]tags[]!is[system]]`,
+            [`[all[tiddlers+shadows]tag[${workflowTiddlerTagName}]tags[]!is[system]]`],
           );
           return tags ?? [];
         } catch {
@@ -67,10 +67,10 @@ export function useWorkflowFromWiki(workspacesList: IWorkspaceWithMetadata[] | u
     async () => {
       const tasks = workspacesList?.map(async (workspace) => {
         try {
-          const workflowTiddlers = await window.service.wiki.wikiOperation(
+          const workflowTiddlers = await window.service.wiki.wikiOperationInServer(
             WikiChannel.getTiddlersAsJson,
             workspace.id,
-            `[all[tiddlers+shadows]tag[${workflowTiddlerTagName}]]`,
+            [`[all[tiddlers+shadows]tag[${workflowTiddlerTagName}]]`],
           );
           return (workflowTiddlers ?? []) as IWorkflowTiddler[];
         } catch {
@@ -133,12 +133,12 @@ export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefine
     });
     workflowContext.setOpenedWorkflowItem(newItem);
   }, [setTagsByWorkspace, workflowContext]);
-  const onDeleteWorkflow = useCallback((item: IWorkflowListItem) => {
+  const onDeleteWorkflow = useCallback(async (item: IWorkflowListItem) => {
     // delete workflow from wiki
-    window.service.wiki.wikiOperation(
+    await window.service.wiki.wikiOperationInServer(
       WikiChannel.deleteTiddler,
       item.workspaceID,
-      item.title,
+      [item.title],
     );
     // delete workflow from local state
     setWorkflows((workflows) => workflows.filter(workflow => workflow.id !== item.id).sort(sortWorkflow));
@@ -153,19 +153,23 @@ export function useWorkflows(workspacesList: IWorkspaceWithMetadata[] | undefine
 
 export async function addWorkflowToWiki(newItem: IWorkflowListItem, oldItem?: IWorkflowListItem) {
   // FIXME: this won't resolve if user haven't click on wiki once, the browser view might not initialized (but why we can still read workflow list using filter??)
-  await window.service.wiki.wikiOperation(
+  await window.service.wiki.wikiOperationInServer(
     WikiChannel.addTiddler,
     newItem.workspaceID,
-    newItem.title,
-    // Store the graph json on modify, or only save an initial value at this creation time
-    newItem.graphJSONString || '{}',
-    {
-      type: 'application/json',
-      tags: [...newItem.tags, workflowTiddlerTagName],
-      description: newItem.description ?? '',
-      'page-cover': newItem.image ?? '',
-    } satisfies Omit<IWorkflowTiddler, 'text' | 'title'>,
-    { withDate: true },
+    [
+      newItem.title,
+      // Store the graph json on modify, or only save an initial value at this creation time
+      newItem.graphJSONString || '{}',
+      JSON.stringify(
+        {
+          type: 'application/json',
+          tags: [...newItem.tags, workflowTiddlerTagName],
+          description: newItem.description ?? '',
+          'page-cover': newItem.image ?? '',
+        } satisfies Omit<IWorkflowTiddler, 'text' | 'title'>,
+      ),
+      JSON.stringify({ withDate: true }),
+    ],
   );
   // we sort workflows using workflow.metadata.tiddler.modified, so we need to update it (side effect)
   if (newItem.metadata?.tiddler) {
@@ -174,10 +178,10 @@ export async function addWorkflowToWiki(newItem: IWorkflowListItem, oldItem?: IW
   }
   // when change title, wiki requires delete old tiddler manually
   if (oldItem !== undefined && oldItem.title !== newItem.title) {
-    window.service.wiki.wikiOperation(
+    await window.service.wiki.wikiOperationInServer(
       WikiChannel.deleteTiddler,
       oldItem.workspaceID,
-      oldItem.title,
+      [oldItem.title],
     );
   }
 }

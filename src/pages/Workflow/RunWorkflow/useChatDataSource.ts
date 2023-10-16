@@ -6,6 +6,7 @@ import { useEffect, useState } from 'react';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { SingleChatState } from '../libs/ui/debugUIEffects/store';
 import { useChatsStore } from './useChatsStore';
+import { IWorkerWikiOperations } from '@services/wiki/wikiOperations/executor/wikiOperationInServer';
 
 export interface IChatTiddler extends ITiddlerFields {
   description: string;
@@ -58,10 +59,10 @@ export function useChatsFromWiki(workspacesList: IWorkspaceWithMetadata[] | unde
       if (workflowID === undefined) return [];
       const tasks = workspacesList?.map(async (workspace) => {
         try {
-          const chatTiddlers = await window.service.wiki.wikiOperation(
+          const chatTiddlers = await window.service.wiki.wikiOperationInServer(
             WikiChannel.getTiddlersAsJson,
             workspace.id,
-            `[all[tiddlers]tag[${chatTiddlerTagName}]field:workflowID[${workflowID}]]`,
+            [`[all[tiddlers]tag[${chatTiddlerTagName}]field:workflowID[${workflowID}]]`],
           );
           return (chatTiddlers ?? []) as IChatTiddler[];
         } catch {
@@ -99,29 +100,31 @@ export function useChatsFromWiki(workspacesList: IWorkspaceWithMetadata[] | unde
 }
 
 export async function addChatToWiki(newItem: IChatListItem) {
-  await window.service.wiki.wikiOperation(
+  await window.service.wiki.wikiOperationInServer(
     WikiChannel.addTiddler,
     newItem.workspaceID,
-    newItem.id,
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
-    newItem.chatJSONString || '{}',
-    {
-      caption: newItem.title,
-      type: 'application/json',
-      tags: [...newItem.tags, chatTiddlerTagName],
-      description: newItem.description ?? '',
-      'page-cover': newItem.image ?? '',
-      workflowID: newItem.workflowID,
-    },
-    { withDate: true },
+    [
+      newItem.id,
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions, @typescript-eslint/prefer-nullish-coalescing
+      newItem.chatJSONString || '{}',
+      JSON.stringify({
+        caption: newItem.title,
+        type: 'application/json',
+        tags: [...newItem.tags, chatTiddlerTagName],
+        description: newItem.description ?? '',
+        'page-cover': newItem.image ?? '',
+        workflowID: newItem.workflowID,
+      }),
+      JSON.stringify({ withDate: true }),
+    ] as Parameters<IWorkerWikiOperations[WikiChannel.addTiddler]>,
   );
 }
 
-export function deleteChatFromWiki(workspaceID: string, chatID: string) {
-  window.service.wiki.wikiOperation(
+export async function deleteChatFromWiki(workspaceID: string, chatID: string) {
+  await window.service.wiki.wikiOperationInServer(
     WikiChannel.deleteTiddler,
     workspaceID,
-    chatID,
+    [chatID],
   );
 }
 

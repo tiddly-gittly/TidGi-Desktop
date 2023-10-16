@@ -6,7 +6,8 @@ import type { Observable } from 'rxjs';
 import { ModuleThread } from 'threads';
 import type { IChangedTiddlers } from 'tiddlywiki';
 import type { ISubWikiPluginContent } from './plugin/subWikiPlugin';
-import { IWikiOperations } from './wikiOperations';
+import { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
+import { ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 import { WikiWorker } from './wikiWorker';
 import { IWikiServerRouteResponse } from './wikiWorker/ipcServerRoutes';
 import type { IpcServerRouteMethods, IpcServerRouteNames } from './wikiWorker/ipcServerRoutes';
@@ -80,10 +81,22 @@ export interface IWikiService {
   stopAllWiki(): Promise<void>;
   stopWiki(workspaceID: string): Promise<void>;
   updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void>;
-  wikiOperation<OP extends keyof IWikiOperations>(
+  /**
+   * Runs wiki related JS script in wiki page to control the wiki.
+   */
+  wikiOperationInBrowser<OP extends keyof ISendWikiOperationsToBrowser>(
     operationType: OP,
-    ...arguments_: Parameters<IWikiOperations[OP]>
-  ): undefined | ReturnType<IWikiOperations[OP]>;
+    workspaceID: string,
+    arguments_: Parameters<ISendWikiOperationsToBrowser[OP]>,
+  ): Promise<ReturnType<ISendWikiOperationsToBrowser[OP]>>;
+  /**
+   * Runs wiki related JS script in nodejs server side.
+   */
+  wikiOperationInServer<OP extends keyof IWorkerWikiOperations>(
+    operationType: OP,
+    workspaceID: string,
+    arguments_: Parameters<IWorkerWikiOperations[OP]>,
+  ): Promise<ReturnType<IWorkerWikiOperations[OP]>>;
   /** handle start/restart of wiki/subwiki, will handle wiki sync too */
   wikiStartup(workspace: IWorkspace): Promise<void>;
 }
@@ -113,7 +126,8 @@ export const WikiServiceIPCDescriptor = {
     stopAllWiki: ProxyPropertyType.Function,
     stopWiki: ProxyPropertyType.Function,
     updateSubWikiPluginContent: ProxyPropertyType.Function,
-    wikiOperation: ProxyPropertyType.Function,
+    wikiOperationInBrowser: ProxyPropertyType.Function,
+    wikiOperationInServer: ProxyPropertyType.Function,
     wikiStartup: ProxyPropertyType.Function,
     getWikiChangeObserver$: ProxyPropertyType.Function$,
   },

@@ -371,7 +371,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       logger.debug(`${nextWorkspaceID} is a subwiki, set its main wiki ${newWorkspace.mainWikiID} to active instead.`);
       await this.setActiveWorkspaceView(newWorkspace.mainWikiID);
       if (typeof newWorkspace.tagName === 'string') {
-        this.wikiService.wikiOperation(WikiChannel.openTiddler, newWorkspace.mainWikiID, newWorkspace.tagName);
+        await this.wikiService.wikiOperationInBrowser(WikiChannel.openTiddler, newWorkspace.mainWikiID, [newWorkspace.tagName]);
       }
       return;
     }
@@ -455,7 +455,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       return;
     }
     await this.viewService.reloadViewsWebContents(workspaceToRestart.id);
-    this.wikiService.wikiOperation(WikiChannel.generalNotification, workspaceToRestart.id, i18n.t('ContextMenu.RestartServiceComplete'));
+    await this.wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, workspaceToRestart.id, [i18n.t('ContextMenu.RestartServiceComplete')]);
   }
 
   public async restartAllWorkspaceView(): Promise<void> {

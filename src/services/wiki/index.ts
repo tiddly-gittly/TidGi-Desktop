@@ -43,7 +43,8 @@ import { IDatabaseService } from '@services/database/interface';
 import { IPreferenceService } from '@services/preferences/interface';
 import { mapValues } from 'lodash';
 import { wikiWorkerStartedEventName } from './constants';
-import { IWikiOperations, wikiOperations } from './wikiOperations';
+import { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
+import { getSendWikiOperationsToBrowser, ISendWikiOperationsToBrowser } from './wikiOperations/sender/sendWikiOperationsToBrowser';
 
 @injectable()
 export class Wiki implements IWikiService {
@@ -242,7 +243,6 @@ export class Wiki implements IWikiService {
    * @param workspaceID
    */
   private async getWorkerEnsure(workspaceID: string): Promise<ModuleThread<WikiWorker>> {
-    debugger;
     let worker = this.getWorker(workspaceID);
     if (worker === undefined) {
       // wait for wiki worker started
@@ -604,7 +604,7 @@ export class Wiki implements IWikiService {
         return true;
       }
       try {
-        const draftTitles = await this.wikiOperation(WikiChannel.runFilter, id, '[is[draft]]');
+        const draftTitles = await this.wikiOperationInServer(WikiChannel.runFilter, id, ['[is[draft]]']);
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         if (Array.isArray(draftTitles) && draftTitles.length > 0) {
           return false;
@@ -738,11 +738,13 @@ export class Wiki implements IWikiService {
     updateSubWikiPluginContent(mainWikiPath, newConfig, oldConfig);
   }
 
-  public wikiOperation<OP extends keyof IWikiOperations, T = string[]>(
+  public async wikiOperationInBrowser<OP extends keyof ISendWikiOperationsToBrowser>(
     operationType: OP,
-    ...arguments_: Parameters<IWikiOperations[OP]>
-  ): undefined | ReturnType<IWikiOperations[OP]> {
-    if (typeof wikiOperations[operationType] !== 'function') {
+    workspaceID: string,
+    arguments_: Parameters<ISendWikiOperationsToBrowser[OP]>,
+  ) {
+    const sendWikiOperationsToBrowser = getSendWikiOperationsToBrowser(workspaceID);
+    if (typeof sendWikiOperationsToBrowser[operationType] !== 'function') {
       throw new TypeError(`${operationType} gets no useful handler`);
     }
     if (!Array.isArray(arguments_)) {
@@ -752,14 +754,28 @@ export class Wiki implements IWikiService {
     }
     // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556) this maybe a bug of ts... try remove this comment after upgrade ts. And the result become void is weird too.
     // eslint-disable-next-line @typescript-eslint/no-confusing-void-expression
-    return wikiOperations[operationType]<T>(...arguments_) as unknown as ReturnType<IWikiOperations[OP]>;
+    return await (sendWikiOperationsToBrowser[operationType](workspaceID, ...arguments_) as unknown as ReturnType<ISendWikiOperationsToBrowser[OP]>);
+  }
+
+  public async wikiOperationInServer<OP extends keyof IWorkerWikiOperations>(
+    operationType: OP,
+    workspaceID: string,
+    arguments_: Parameters<IWorkerWikiOperations[OP]>,
+  ) {
+    const worker = await this.getWorkerEnsure(workspaceID);
+    // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556)
+    return await (worker.wikiOperation(operationType, ...arguments_) as unknown as ReturnType<IWorkerWikiOperations[OP]>);
   }
 
   public async setWikiLanguage(workspaceID: string, tiddlywikiLanguageName: string): Promise<void> {
     const twLanguageUpdateTimeout = 15_000;
     // no need to wait setting wiki language, this sometimes cause slow PC to fail on this step
     void backOff(async () => {
-      await (this.wikiOperation(WikiChannel.setTiddlerText, workspaceID, '$:/language', tiddlywikiLanguageName, { timeout: twLanguageUpdateTimeout }) as Promise<void>);
+      await (this.wikiOperationInBrowser(
+        WikiChannel.setTiddlerText,
+        workspaceID,
+        ['$:/language', tiddlywikiLanguageName, { timeout: twLanguageUpdateTimeout }],
+      ));
     }, {
       startingDelay: 2000,
     });

@@ -14,7 +14,7 @@ export function useHandleOpenInWiki(item: { title: string; workspaceID: string }
     await window.service.pages.setActivePage(PageType.wiki, oldActivePage?.type);
     await window.service.workspaceView.setActiveWorkspaceView(item.workspaceID);
     setLocation(`/${WindowNames.main}/${PageType.wiki}/${item.workspaceID}/`);
-    window.service.wiki.wikiOperation(WikiChannel.openTiddler, item.workspaceID, item.title);
+    await window.service.wiki.wikiOperationInBrowser(WikiChannel.openTiddler, item.workspaceID, [item.title]);
   }, [item, setLocation]);
   return handleOpenInWiki;
 }

@@ -134,7 +134,7 @@ export const chatsStore = createStore(
       });
 
       // wiki operation
-      deleteChatFromWiki(workspaceID, chatID);
+      void deleteChatFromWiki(workspaceID, chatID);
     },
 
     renameChat: async (chatID, newTitle) => {

@@ -21,6 +21,7 @@ import { isHtmlWiki } from '@/constants/fileNames';
 import { ISqliteDatabasePaths, SqliteDatabaseNotInitializedError, WikiWorkerDatabaseOperations } from '@services/database/wikiWorkerOperations';
 import { IWikiLogMessage, IZxWorkerMessage, ZxWorkerControlActions } from '../interface';
 import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts, type IVariableContextList } from '../plugin/zxPlugin';
+import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import { getWikiInstance, setCacheDatabase } from './globals';
 import { ipcServerRoutesMethods } from './ipcServerRoutes';
 import { startNodeJSWiki } from './startNodeJSWiki';
@@ -182,6 +183,7 @@ const wikiWorker = {
   packetHTMLFromWikiFolder,
   beforeExit,
   initCacheDatabase,
+  wikiOperation: wikiOperationsInWikiWorker.wikiOperation.bind(wikiOperationsInWikiWorker),
   ...ipcServerRoutesMethods,
 };
 export type WikiWorker = typeof wikiWorker;

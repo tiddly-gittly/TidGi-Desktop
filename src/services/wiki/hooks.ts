@@ -16,7 +16,7 @@ export function useRenderWikiText(wikiText: string, workspaceID?: string): strin
       // TidGi only: try to use wiki to render wiki text (instead of markdown currently)
       // this hook might be used in env that wiki services is not available, so need to check first
       try {
-        if (window.service?.wiki?.wikiOperation !== undefined) {
+        if (window.service?.wiki?.wikiOperationInBrowser !== undefined) {
           let workspaceIDToUse = workspaceID;
           if (workspaceIDToUse === undefined) {
             workspaceIDToUse = await window.service?.workspace?.getActiveWorkspace?.()?.then(async (activeWorkspace) => {
@@ -33,7 +33,7 @@ export function useRenderWikiText(wikiText: string, workspaceID?: string): strin
           if (workspaceIDToUse === undefined) {
             return;
           }
-          const renderedResultText = await window.service.wiki.wikiOperation(WikiChannel.renderWikiText, workspaceIDToUse, wikiText);
+          const renderedResultText = await window.service.wiki.wikiOperationInBrowser(WikiChannel.renderWikiText, workspaceIDToUse, [wikiText]);
           renderedTextSetter(renderedResultText ?? '');
         }
       } catch (error) {

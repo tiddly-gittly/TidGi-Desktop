@@ -2,7 +2,7 @@
 import Transport from 'winston-transport';
 
 import { WikiChannel } from '@/constants/channels';
-import { wikiOperations } from '@services/wiki/wikiOperations';
+import { getSendWikiOperationsToBrowser } from '@services/wiki/wikiOperations/sender/sendWikiOperationsToBrowser';
 
 export interface IInfo {
   /** which method or handler function we are logging for */
@@ -22,9 +22,10 @@ export default class RendererTransport extends Transport {
       this.emit('logged', info);
     });
 
+    const sendWikiOperationsToBrowser = getSendWikiOperationsToBrowser(info.id);
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (info.handler && info.handler in wikiOperations) {
-      void wikiOperations[info.handler](info.id, info.message);
+    if (info.handler && info.handler in sendWikiOperationsToBrowser) {
+      sendWikiOperationsToBrowser[info.handler](info.message);
     }
 
     callback();

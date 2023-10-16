@@ -15,7 +15,7 @@ import { browserViewMetaData } from './common/browserViewMetaData';
 import './common/authingPostMessage';
 import './view';
 import { syncTidgiStateWhenWikiLoads } from './appState';
-import { fixAlertConfirm } from './wikiOperations/fixAlertConfirm';
+import { fixAlertConfirm } from './fixer/fixAlertConfirm';
 
 declare global {
   interface Window {

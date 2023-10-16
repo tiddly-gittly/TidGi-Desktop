@@ -1,8 +1,8 @@
 import { WikiChannel } from '@/constants/channels';
-import { wikiOperations as common } from './common';
+import { wikiOperationScripts as common } from './common';
 
-export const wikiOperations = {
-  ...common
+export const wikiOperationScripts = {
+  ...common,
   [WikiChannel.syncProgress]: (message: string) => `
     $tw.wiki.addTiddler({ title: '$:/state/notification/${WikiChannel.syncProgress}', text: \`${message}\` });
     $tw.notifier.display('$:/state/notification/${WikiChannel.syncProgress}');
@@ -25,11 +25,11 @@ export const wikiOperations = {
   `,
 
   [WikiChannel.printTiddler]: async (tiddlerName: string) => {
-    const printer = await import('../../libs/printer');
+    const printer = await import('../../../../libs/printer');
     return `
       var page = (${printer.printTiddler.toString()})(\`${tiddlerName}\`);
       page?.print?.();
       page?.close?.();
     `;
   },
-};
+} as const;

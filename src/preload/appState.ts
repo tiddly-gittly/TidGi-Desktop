@@ -4,8 +4,8 @@
 
 import { WikiChannel } from '@/constants/channels';
 import { WikiStateKey } from '@/constants/wiki';
+import { wikiOperations } from '../services/wiki/wikiOperations/executor/wikiOperationInBrowser';
 import { preference } from './common/services';
-import { wikiOperations } from './wikiOperation';
 
 export async function syncTidgiStateWhenWikiLoads(): Promise<void> {
   /**

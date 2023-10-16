@@ -24,7 +24,7 @@ interface IWorkspaceMenuRequiredServices {
   native: Pick<INativeService, 'open' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualInfo'>;
   pages: Pick<IPagesService, 'setActivePage' | 'getActivePage'>;
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
-  wiki: Pick<IWikiService, 'wikiOperation' | 'requestWikiSendActionMessage'>;
+  wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer' | 'requestWikiSendActionMessage'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open'>;
   workspace: Pick<IWorkspaceService, 'getActiveWorkspace' | 'getSubWorkspacesAsList'>;
@@ -56,7 +56,7 @@ export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IW
     if (mainWikiID === null || idToActive === undefined || tagName === null) {
       return;
     }
-    service.wiki.wikiOperation(WikiChannel.openTiddler, mainWikiID, tagName);
+    await service.wiki.wikiOperationInBrowser(WikiChannel.openTiddler, mainWikiID, [tagName]);
   } else {
     await service.wiki.requestWikiSendActionMessage('tm-home');
   }

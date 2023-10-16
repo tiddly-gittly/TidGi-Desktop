@@ -294,7 +294,7 @@ export class Workspace implements IWorkspaceService {
         fixingValues.mainWikiID = mainWorkspace.id;
       }
     }
-    // fix WikiChannel.openTiddler in src/preload/wikiOperation.ts have \n on the end
+    // fix WikiChannel.openTiddler in src/services/wiki/wikiOperations/executor/wikiOperationInBrowser.ts have \n on the end
     if (workspaceToSanitize.tagName?.endsWith('\n') === true) {
       fixingValues.tagName = workspaceToSanitize.tagName.replaceAll('\n', '');
     }

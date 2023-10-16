@@ -92,10 +92,10 @@ export class Git implements IGitService {
      */
     const githubRepoName = `${userName}/${repoName}`;
     if (await this.wikiService.getTiddlerText(workspace, '$:/GitHub/Repo') !== githubRepoName) {
-      await this.wikiService.wikiOperation(WikiChannel.addTiddler, workspace.id, '$:/GitHub/Repo', githubRepoName);
+      await this.wikiService.wikiOperationInBrowser(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Repo', githubRepoName]);
     }
     if (await this.wikiService.getTiddlerText(workspace, '$:/GitHub/Branch') !== branch) {
-      await this.wikiService.wikiOperation(WikiChannel.addTiddler, workspace.id, '$:/GitHub/Branch', branch);
+      await this.wikiService.wikiOperationInBrowser(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Branch', branch]);
     }
   }
 
@@ -247,7 +247,7 @@ export class Git implements IGitService {
   });
 
   private createFailedNotification(message: string, workspaceID: string) {
-    this.wikiService.wikiOperation(WikiChannel.generalNotification, workspaceID, `${i18n.t('Log.SynchronizationFailed')} ${message}`);
+    void this.wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, workspaceID, [`${i18n.t('Log.SynchronizationFailed')} ${message}`]);
   }
 
   private createFailedDialog(message: string, wikiFolderPath: string): void {

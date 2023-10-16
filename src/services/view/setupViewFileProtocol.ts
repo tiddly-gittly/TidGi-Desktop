@@ -30,20 +30,20 @@ export function handleOpenFileExternalLink(nextUrl: string, newWindowContext: IN
       void shell.openPath(absoluteFilePath).catch((error) => {
         const message = i18n.t('Log.FailedToOpenDirectory', { path: absoluteFilePath, message: (error as Error).message });
         logger.warn(message, { function: 'handleOpenFileExternalLink' });
-        wikiService.wikiOperation(WikiChannel.generalNotification, newWindowContext.workspace.id, message);
+        void wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, newWindowContext.workspace.id, [message]);
       });
     } else if (fileStat.isFile()) {
       logger.info(`Opening file ${absoluteFilePath}`, { function: 'handleOpenFileExternalLink' });
       void shell.openPath(absoluteFilePath).catch((error) => {
         const message = i18n.t('Log.FailedToOpenFile', { path: absoluteFilePath, message: (error as Error).message });
         logger.warn(message, { function: 'handleOpenFileExternalLink' });
-        wikiService.wikiOperation(WikiChannel.generalNotification, newWindowContext.workspace.id, message);
+        void wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, newWindowContext.workspace.id, [message]);
       });
     }
   } catch (error) {
     const message = `${i18n.t('AddWorkspace.PathNotExist', { path: absoluteFilePath })} ${(error as Error).message}`;
     logger.warn(message, { function: 'handleOpenFileExternalLink' });
-    wikiService.wikiOperation(WikiChannel.generalNotification, newWindowContext.workspace.id, message);
+    void wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, newWindowContext.workspace.id, [message]);
   }
   return {
     action: 'deny',
