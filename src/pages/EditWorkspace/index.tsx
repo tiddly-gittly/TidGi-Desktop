@@ -31,7 +31,7 @@ const Root = styled(Paper)`
   width: 100%;
   padding: 20px;
   /** for SaveCancelButtonsContainer 's height */
-  margin-bottom: 20px;
+  margin-bottom: 40px;
   display: flex;
   flex-direction: column;
   background: ${({ theme }) => theme.palette.background.paper};
@@ -256,26 +256,6 @@ export default function EditWorkspace(): JSX.Element {
           value={userName}
         />
         <Divider />
-        {!isSubWiki && (
-          <>
-            {rememberLastPageVisited && (
-              <TextField
-                id='outlined-full-width'
-                label={t('EditWorkspace.LastVisitState')}
-                helperText={t('Preference.RememberLastVisitState')}
-                placeholder={homeUrl}
-                value={lastUrl}
-                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                  workspaceSetter({
-                    ...workspace,
-                    lastUrl: (event.target.value || homeUrl) ?? '',
-                  });
-                }}
-              />
-            )}
-            <ServerOptions workspace={workspace} workspaceSetter={workspaceSetter} />
-          </>
-        )}
         {isSubWiki && (
           <Autocomplete
             freeSolo
@@ -408,6 +388,28 @@ export default function EditWorkspace(): JSX.Element {
               </ListItemSecondaryAction>
             </ListItem>
           </List>
+        )}
+        {!isSubWiki && rememberLastPageVisited && (
+          <TextField
+            id='outlined-full-width'
+            label={t('EditWorkspace.LastVisitState')}
+            helperText={t('Preference.RememberLastVisitState')}
+            placeholder={homeUrl}
+            value={lastUrl}
+            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+              workspaceSetter({
+                ...workspace,
+                lastUrl: (event.target.value || homeUrl) ?? '',
+              });
+            }}
+          />
+        )}
+        {!isSubWiki && (
+          <>
+            <Divider />
+            <ServerOptions workspace={workspace} workspaceSetter={workspaceSetter} />
+            <Divider />
+          </>
         )}
       </FlexGrow>
       {!isEqual(workspace, originalWorkspace) && (

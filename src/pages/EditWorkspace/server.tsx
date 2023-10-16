@@ -15,6 +15,7 @@ import {
   ListItemSecondaryAction,
   Switch,
   TextField,
+  Tooltip,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
@@ -76,7 +77,11 @@ export function ServerOptions(props: IServerOptionsProps) {
   const alreadyEnableSomeServerOptions = readOnlyMode;
   return (
     <AServerOptionsAccordion defaultExpanded={alreadyEnableSomeServerOptions}>
-      <AServerOptionsAccordionSummary expandIcon={<ExpandMoreIcon />}>{t('EditWorkspace.ServerOptions')}</AServerOptionsAccordionSummary>
+      <Tooltip title={t('EditWorkspace.ClickToExpand')}>
+        <AServerOptionsAccordionSummary expandIcon={<ExpandMoreIcon />}>
+          {t('EditWorkspace.ServerOptions')}
+        </AServerOptionsAccordionSummary>
+      </Tooltip>
       <AccordionDetails>
         <List>
           <ListItem disableGutters>
