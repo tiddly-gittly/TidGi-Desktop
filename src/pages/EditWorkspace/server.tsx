@@ -354,7 +354,7 @@ function ExcludedPluginsAutocomplete(props: { workspace: IWorkspace; workspaceSe
     active,
   } = workspace;
   const pluginsInWiki = usePromiseValue(
-    async () => (await window.service.wiki.wikiOperationInServer(WikiChannel.runFilter, id, ['[!has[draft.of]plugin-type[plugin]sort[]]'])),
+    async () => (await window.service.wiki.wikiOperationInBrowser(WikiChannel.runFilter, id, ['[!has[draft.of]plugin-type[plugin]sort[]]'])),
     [],
     [id, active],
   ) ?? [];

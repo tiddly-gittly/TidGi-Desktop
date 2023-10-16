@@ -24,15 +24,15 @@ export const wikiOperations = {
     ipcRenderer.send(WikiChannel.addTiddler, nonceReceived);
   },
   [WikiChannel.getTiddlerText]: async (nonceReceived: number, title: string) => {
-    const tiddlerText: string = await (webFrame.executeJavaScript(wikiOperationScripts[WikiChannel.getTiddlerText](title)) as Promise<string>);
+    const tiddlerText: string = await (executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.getTiddlerText](title)));
     ipcRenderer.send(WikiChannel.getTiddlerTextDone, nonceReceived, tiddlerText);
   },
   [WikiChannel.runFilter]: async (nonceReceived: number, filter: string) => {
-    const filterResult: string[] = await (webFrame.executeJavaScript(wikiOperationScripts[WikiChannel.runFilter](filter)) as Promise<string[]>);
+    const filterResult: string[] = await (executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.runFilter](filter)));
     ipcRenderer.send(WikiChannel.runFilter, nonceReceived, filterResult);
   },
   [WikiChannel.getTiddlersAsJson]: async (nonceReceived: number, filter: string) => {
-    const filterResult: ITiddlerFields[] = await (webFrame.executeJavaScript(wikiOperationScripts[WikiChannel.getTiddlersAsJson](filter)) as Promise<ITiddlerFields[]>);
+    const filterResult: ITiddlerFields[] = await (executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.getTiddlersAsJson](filter)));
     ipcRenderer.send(WikiChannel.getTiddlersAsJson, nonceReceived, filterResult);
   },
   [WikiChannel.setTiddlerText]: async (nonceReceived: number, title: string, value: string) => {
@@ -40,7 +40,7 @@ export const wikiOperations = {
     ipcRenderer.send(WikiChannel.setTiddlerText, nonceReceived);
   },
   [WikiChannel.renderWikiText]: async (nonceReceived: number, content: string) => {
-    const renderResult = await (webFrame.executeJavaScript(wikiOperationScripts[WikiChannel.renderWikiText](content)) as Promise<string>);
+    const renderResult = await (executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.renderWikiText](content)));
     ipcRenderer.send(WikiChannel.renderWikiText, nonceReceived, renderResult);
   },
   [WikiChannel.openTiddler]: async (tiddlerName: string) => {
@@ -68,9 +68,9 @@ export const wikiOperations = {
 /**
  * Execute statement with $tw when idle, so there won't be significant lagging.
  * Will retry till $tw is not undefined.
- * @param script js statement to be executed, nothing will be returned
+ * @param script js statement to be executed, add `return` if you want the result.
  */
-async function executeTWJavaScriptWhenIdle(script: string, options?: { onlyWhenVisible?: boolean }): Promise<void> {
+async function executeTWJavaScriptWhenIdle<T>(script: string, options?: { onlyWhenVisible?: boolean }): Promise<T> {
   const executeHandlerCode = options?.onlyWhenVisible === true
     ? `
         if (document.visibilityState === 'visible') {
@@ -79,14 +79,16 @@ async function executeTWJavaScriptWhenIdle(script: string, options?: { onlyWhenV
     : `handler();`;
   // requestIdleCallback won't execute when wiki browser view is invisible https://eric-schaefer.com/til/2023/03/11/the-dark-side-of-requestidlecallback/
   const idleCallbackOptions = options?.onlyWhenVisible === true ? '' : `{ timeout: 500 }`;
-  await webFrame.executeJavaScript(`
+  const finalScriptToRun = `
     new Promise((resolve, reject) => {
       const handler = () => {
         requestIdleCallback(() => {
           if (typeof $tw !== 'undefined') {
             try {
-              ${script}
-              resolve();
+              const result = (() => {
+                ${script}
+              })();
+              resolve(result);
             } catch (error) {
               reject(error);
             }
@@ -98,7 +100,14 @@ async function executeTWJavaScriptWhenIdle(script: string, options?: { onlyWhenV
       };
       ${executeHandlerCode}
     })
-  `);
+`;
+  try {
+    const result = await (webFrame.executeJavaScript(finalScriptToRun) as Promise<T>);
+    return result;
+  } catch (error) {
+    console.error(`The script has error ${(error as Error).message}\n\n ${finalScriptToRun}`);
+    throw error;
+  }
 }
 
 // Attaching the ipcRenderer listeners

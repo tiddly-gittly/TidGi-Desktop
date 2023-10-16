@@ -42,17 +42,17 @@ export const wikiOperationScripts = {
     `;
   },
   [WikiChannel.getTiddlerText]: (title: string) => `
-    $tw.wiki.getTiddlerText(\`${title}\`);
+    return $tw.wiki.getTiddlerText(\`${title}\`);
   `,
   [WikiChannel.runFilter]: (filter: string) => `
-    $tw.wiki.compileFilter(\`${filter}\`)()
+    return $tw.wiki.compileFilter(\`${filter}\`)()
   `,
   /**
    * Modified from `$tw.wiki.getTiddlersAsJson` (it will turn tags into string, so we are not using it.)
    * This modified version will return Object
    */
   [WikiChannel.getTiddlersAsJson]: (filter: string) => `
-    $tw.wiki.filterTiddlers(\`${filter}\`).map(title => {
+    return $tw.wiki.filterTiddlers(\`${filter}\`).map(title => {
       const tiddler = $tw.wiki.getTiddler(title);
       return tiddler?.fields;
     }).filter(item => item !== undefined)
@@ -61,7 +61,7 @@ export const wikiOperationScripts = {
     $tw.wiki.setText(\`${title}\`, 'text', undefined, \`${value}\`);
   `,
   [WikiChannel.renderWikiText]: (content: string) => `
-    $tw.wiki.renderText("text/html", "text/vnd.tiddlywiki", \`${content.replaceAll('`', '\\`')}\`);
+    return $tw.wiki.renderText("text/html", "text/vnd.tiddlywiki", \`${content.replaceAll('`', '\\`')}\`);
   `,
   [WikiChannel.openTiddler]: (tiddlerName: string) => `
     let trimmedTiddlerName = \`${tiddlerName.replaceAll('\n', '')}\`;
