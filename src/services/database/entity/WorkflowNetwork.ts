@@ -25,6 +25,15 @@ export class WorkflowNetwork {
    */
   graphURI!: string;
 
-  @Column('text') // use text for large JSON string
+  /**
+   * Serialized state of the network. Containing:
+   *
+   * - chat history
+   * - the node that is running
+   * - packets in the edges
+   *
+   * use text for large JSON string of `SingleChatState` in `src/pages/Workflow/libs/ui/debugUIEffects/store.ts`
+   */
+  @Column('text')
   serializedState!: string;
 }

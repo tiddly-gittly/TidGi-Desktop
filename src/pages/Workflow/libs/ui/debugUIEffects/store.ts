@@ -25,6 +25,7 @@ export interface UIElementState {
 }
 export interface SingleChatState {
   elements?: Record<string, UIElementState | undefined>;
+  // TODO: Add states here, as described in [WorkflowNetwork](src/services/database/entity/WorkflowNetwork.ts)'s `serializedState`
 }
 
 export interface UIStoreState extends SingleChatState {

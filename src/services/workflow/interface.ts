@@ -1,8 +1,10 @@
-import { Network as NofloNetwork } from 'noflo/lib/Network';
-
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import type { Network as NofloNetwork } from 'noflo/lib/Network';
+import type { BehaviorSubject } from 'rxjs';
 
 import { WorkflowChannel } from '@/constants/channels';
+import { SingleChatState } from '@/pages/Workflow/libs/ui/debugUIEffects/store';
+import { ChatsStoreActions } from '@/pages/Workflow/RunWorkflow/store';
 import { WorkflowRunningState } from '@services/database/entity/WorkflowNetwork';
 
 export interface IGraphInfo {
@@ -17,6 +19,32 @@ export interface IGraphInfo {
 }
 
 /**
+ * Update UI elements, when network executes in the server.
+ */
+export interface INetworkServerToClientUpdate {
+  /** param of methods in ChatsStoreActions */
+  payload: Parameters<ChatsStoreActions[keyof ChatsStoreActions]>;
+  type: keyof ChatsStoreActions;
+}
+/**
+ * Send messages from UI to server, to trigger callbacks in network nodes.
+ */
+export interface INetworkClientToServerUpdate {
+  payload: {
+    content: unknown;
+    id: string;
+  };
+  type: 'submit';
+}
+
+export interface INetworkState {
+  /**
+   * State for UI, recording visible chat history.
+   */
+  chat: SingleChatState;
+}
+
+/**
  * Manage running workflows in the memory, and serialize/deserialize them to/from the database
  */
 export interface IWorkflowService {
@@ -24,8 +52,9 @@ export interface IWorkflowService {
    * Add a network to the memory, and add to the database
    * @param workspaceID workspaceID containing the tiddler.
    * @param graphTiddlerTitle Tiddler's title which includes the FBP graph JSON stringified string
+   * @returns new network id (chat id)
    */
-  addNetworkFromGraphTiddlerTitle(workspaceID: string, graphTiddlerTitle: string): Promise<void>;
+  addNetworkFromGraphTiddlerTitle(workspaceID: string, graphTiddlerTitle: string): Promise<string>;
   /**
    * Get NoFlo Network (runtime instance) from fbp Graph (static graph description) that deserialize from a tiddler's text.
    * Add to the memory, and add to the database. Ready to execute, or start immediately.
@@ -54,6 +83,12 @@ export interface IWorkflowService {
    * Stop a network by its id. Save its state to database.
    */
   stopNetwork(networkID: string): Promise<void>;
+  /**
+   * subscribe to the network outcome, to see if we need to update the UI elements
+   * @param networkID The chat ID
+   */
+  subscribeNetworkActions$(networkID: string): BehaviorSubject<INetworkClientToServerUpdate>;
+  triggerNetworkActions(networkID: string, action: INetworkClientToServerUpdate): Promise<void>;
 }
 export const WorkflowServiceIPCDescriptor = {
   channel: WorkflowChannel.name,
@@ -66,5 +101,6 @@ export const WorkflowServiceIPCDescriptor = {
     startNetwork: ProxyPropertyType.Function,
     startWorkflows: ProxyPropertyType.Function,
     stopNetwork: ProxyPropertyType.Function,
+    subscribeNetworkActions$: ProxyPropertyType.Function$,
   },
 };

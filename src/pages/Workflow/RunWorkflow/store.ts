@@ -1,16 +1,27 @@
 import { chatTiddlerTagName } from '@services/wiki/plugin/nofloWorkflow/constants';
+import i18n from 'i18next';
 import { mergeWith } from 'lodash';
 import { immer } from 'zustand/middleware/immer';
 import { createStore } from 'zustand/vanilla';
 import { UIElementState } from '../libs/ui/debugUIEffects/store';
 import { addChatToWiki, deleteChatFromWiki, IChatListItem } from './useChatDataSource';
+import { addNewNetwork } from './useChatNetworkExecute';
 
 export interface ChatsStoreState {
   activeChatID?: string;
   chats: Record<string, IChatListItem | undefined>;
 }
+/**
+ * State is not directly persisted to the database, but store in the `serializedState` field of each networks in `src/services/database/entity/WorkflowNetwork.ts`.
+ */
 export interface ChatsStoreActions {
-  addChat: (fields: { title?: string; workflowID: string; workspaceID: string }) => Promise<IChatListItem>;
+  /**
+   * Create Noflo Network on the server and create an record for chat history in the database.
+   * Optionally, Add a chat tiddler containing the chat history.
+   * @param fields `workflowID` is `graphTiddlerTitle`, just different name, it is the tiddler containing the JSON of fbpGraph.
+   * @returns
+   */
+  addChat: (fields: { title?: string; workflowID: string; workspaceID: string }, options?: { addToWiki?: boolean }) => Promise<IChatListItem>;
   addElementToChat: (chatID: string, element: Pick<UIElementState, 'type' | 'props' | 'author'>) => string;
   clearElementsInChat: (chatID: string) => void;
   getChat: (chatID: string) => IChatListItem | undefined;
@@ -48,16 +59,19 @@ export const chatsStore = createStore(
       return result;
     },
 
-    addChat: async (fields) => {
-      const id = String(Math.random()).substring(2);
-      const newChatItem = { chatJSON: { elements: {} }, id, tags: [chatTiddlerTagName], title: 'New Chat', ...fields };
-      set((state) => {
-        state.chats[id] = newChatItem;
-        state.activeChatID = id;
-      });
-
+    addChat: async (fields, options) => {
+      const { workflowID, workspaceID } = fields;
+      // make sure adding network succeeded before adding chat item, workflowID is the id of the graph to use
+      const newChatID = await addNewNetwork(workspaceID, workflowID);
+      const newChatItem = { chatJSON: { elements: {} }, id: newChatID, tags: [chatTiddlerTagName], title: i18n.t('Workflow.NewChat'), ...fields };
       // wiki operation
-      await addChatToWiki(newChatItem);
+      if (options?.addToWiki === true) {
+        await addChatToWiki(newChatItem);
+      }
+      set((state) => {
+        state.chats[newChatID] = newChatItem;
+        state.activeChatID = newChatID;
+      });
       return newChatItem;
     },
 

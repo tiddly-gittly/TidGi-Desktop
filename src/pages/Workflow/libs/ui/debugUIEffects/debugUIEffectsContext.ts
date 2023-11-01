@@ -3,6 +3,7 @@ import type { StoreApi } from 'zustand/vanilla';
 import type { UIEffectsContext } from '../types/UIEffectsContext';
 import type { UIStoreState } from './store';
 
+// TODO: replace with src/pages/Workflow/WorkflowManage/injectUIEffectsWhenRunGraph.ts, run debug workflow in server side too
 export type IUIEffect = (...payloads: unknown[]) => void;
 export interface IUIEffectPlugin {
   /**

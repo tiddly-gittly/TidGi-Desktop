@@ -15,7 +15,8 @@ import { WorkflowNetwork, WorkflowRunningState } from '@services/database/entity
 import { IDatabaseService } from '@services/database/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
-import type { IGraphInfo, IWorkflowService } from './interface';
+import type { IGraphInfo, INetworkState, INetworkClientToServerUpdate, IWorkflowService, INetworkServerToClientUpdate } from './interface';
+import { BehaviorSubject } from 'rxjs';
 
 @injectable()
 export class WorkflowService implements IWorkflowService {
@@ -26,9 +27,11 @@ export class WorkflowService implements IWorkflowService {
   private readonly wikiService!: IWikiService;
 
   public networks: Record<string, NofloNetwork | undefined>;
+  public networkStates: Record<string, INetworkState | undefined>;
 
   constructor() {
     this.networks = {};
+    this.networkStates = {};
   }
 
   private _componentLoader?: ComponentLoader;
@@ -55,10 +58,43 @@ export class WorkflowService implements IWorkflowService {
     }));
   }
 
-  public async addNetworkFromGraphTiddlerTitle(workspaceID: string, graphTiddlerTitle: string): Promise<void> {
+  public async addNetworkFromGraphTiddlerTitle(workspaceID: string, graphTiddlerTitle: string): Promise<string> {
     const fbpGraphString = await this.wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspaceID, [graphTiddlerTitle]);
     const graphInfo = { graphTiddlerTitle, workspaceID, fbpGraphString };
-    await this.deserializeNetworkAndAdd(graphInfo, { start: true });
+    const { id } = await this.deserializeNetworkAndAdd(graphInfo, { start: true });
+    return id;
+  }
+
+  /**
+   * subscribe to the network outcome, to see if we need to update the UI elements
+   * @param networkID The chat ID
+   */
+  public subscribeNetworkActions$(networkID: string): BehaviorSubject<INetworkServerToClientUpdate> {
+    const network = this.networks[networkID];
+    if (network === undefined) throw new Error('Network not found');
+    const networkState = this.networkStates[networkID];
+    if (networkState === undefined) throw new Error('Network state not found');
+    const networkUIStoreUpdateMessage$ = new BehaviorSubject<INetworkServerToClientUpdate>({
+      type: 'updateNetwork',
+      payload: {
+        networkID,
+        networkState,
+      },
+    });
+    network.on('addedge', (edge) => {
+      networkUIStoreUpdateMessage$.next({
+        type: 'addEdge',
+        payload: {
+          networkID,
+          edge,
+        },
+      });
+    });
+    return networkUIStoreUpdateMessage$;
+  }
+
+  public async triggerNetworkActions(networkID: string, action: INetworkClientToServerUpdate): Promise<void> {
+
   }
 
   public async deserializeNetworkAndAdd(
@@ -75,8 +111,19 @@ export class WorkflowService implements IWorkflowService {
       delay: true,
       componentLoader: await this.componentLoader,
     });
+    newNofloNetwork.on('process-error', (processError: { error: Error }) => {
+      if (typeof console.error === 'function') {
+        console.error(processError.error);
+      } else {
+        console.log(processError.error);
+      }
+    });
+    // node's initial data already being added by UI in src/pages/Workflow/GraphEditor/components/NodeDetailPanel.tsx
+    await newNofloNetwork.connect();
+    injectUIEffectsWhenRunGraph(newNofloNetwork);
+    /** Normally we get the graphInfo from database, so we have ID here. */
     let networkID = network?.id;
-    // if network is not provided, generate a new row for it in the database
+    // but if network ID is not provided, means it is a new one  generate a new row for it in the database
     if (networkID === undefined) {
       const appDatabase = await this.databaseService.getAppDatabase();
       // Add to the db and generate a new id by database
