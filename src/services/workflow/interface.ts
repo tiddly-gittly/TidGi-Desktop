@@ -4,6 +4,7 @@ import type { BehaviorSubject } from 'rxjs';
 
 import { WorkflowChannel } from '@/constants/channels';
 import { WorkflowRunningState } from '@services/database/entity/WorkflowNetwork';
+import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 import type { StoreApi } from 'zustand/vanilla';
 import { SingleChatState, WorkflowViewModelStoreState } from './viewModelStore';
@@ -42,6 +43,42 @@ export interface INetworkState {
   viewModel: SingleChatState;
 }
 
+export interface IChatTiddler extends ITiddlerFields {
+  description: string;
+  ['page-cover']: string;
+  type: 'application/json';
+  /**
+   * Which workflow creates this chat.
+   */
+  workflowID: string;
+}
+
+export interface IChatListItem {
+  /**
+   * Serialized JSON of the SingleChatState.
+   * We store the chat as a JSON tiddler in the wiki, and render the content i18nly from the JSON data.
+   */
+  chatJSONString?: string;
+  description?: string;
+  /**
+   * Random generated ID
+   */
+  id: string;
+  image?: string;
+  metadata?: {
+    tiddler: IChatTiddler;
+    workspace: IWorkspaceWithMetadata;
+  };
+  running?: boolean;
+  tags: string[];
+  /**
+   * From caption field, or use ID
+   */
+  title: string;
+  workflowID: string;
+  workspaceID: string;
+}
+
 /**
  * Manage running workflows in the memory, and serialize/deserialize them to/from the database
  */
@@ -77,8 +114,9 @@ export interface IWorkflowService {
   serializeNetwork(networkID: string): string;
   /**
    * Get graph's runtime state, including viewModel and chat history, etc.
+   * @param providedState Normally we get state from stores, you can provide it here, so we can skip getting it from the store.
    */
-  serializeNetworkState(networkID: string): string;
+  serializeNetworkState(networkID: string, providedState?: Partial<INetworkState> | undefined): string;
   /**
    * Start running a network by its id. Resume its state based on serializedState on database.
    *

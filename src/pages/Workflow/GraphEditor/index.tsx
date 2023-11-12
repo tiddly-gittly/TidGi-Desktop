@@ -23,7 +23,7 @@ import { useMenu } from './hooks/useMenu';
 import { useMouseEvents } from './hooks/useMouseEvents';
 import { useRunGraph } from './hooks/useRunGraph';
 import { useSaveLoadGraph } from './hooks/useSaveLoadGraph';
-import { useLibrary } from './utils/library';
+import { useLibrary } from '../../../services/workflow/library';
 
 const TheGraphContainer = styled.main`
   /**

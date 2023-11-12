@@ -11,41 +11,6 @@ import { useEffect, useState } from 'react';
 import type { ITiddlerFields } from 'tiddlywiki';
 import { useChatsStore } from '../../pages/Workflow/RunWorkflow/useChatsStore';
 
-export interface IChatTiddler extends ITiddlerFields {
-  description: string;
-  ['page-cover']: string;
-  type: 'application/json';
-  /**
-   * Which workflow creates this chat.
-   */
-  workflowID: string;
-}
-
-export interface IChatListItem {
-  /**
-   * Serialized JSON of the SingleChatState.
-   * We store the chat as a JSON tiddler in the wiki, and render the content i18nly from the JSON data.
-   */
-  chatJSONString?: string;
-  description?: string;
-  /**
-   * Random generated ID
-   */
-  id: string;
-  image?: string;
-  metadata?: {
-    tiddler: IChatTiddler;
-    workspace: IWorkspaceWithMetadata;
-  };
-  running?: boolean;
-  tags: string[];
-  /**
-   * From caption field, or use ID
-   */
-  title: string;
-  workflowID: string;
-  workspaceID: string;
-}
 
 /**
  * Get chats from the wiki, based on workflow ID.
@@ -127,11 +92,6 @@ export async function deleteChatFromWiki(workspaceID: string, chatID: string) {
   );
 }
 
-export function sortChat(a: IChatListItem, b: IChatListItem) {
-  // @ts-expect-error The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.ts(2362)
-  return b.metadata.tiddler.created - a.metadata.tiddler.created;
-}
-
 /**
  * Get chats related methods based on workflow ID.
  * @param workspacesList Workspaces that the user has access to, as data source.
@@ -156,14 +116,14 @@ export function useLoadInitialChats(workspacesList: IWorkspaceWithMetadata[] | u
 
 // connect store and dataSource
 
-export function useWorkspaceIDToStoreNewChats(workspacesList: IWorkspaceWithMetadata[] | undefined) {
-  const [workspaceIDToStoreNewChats, setWorkspaceIDToStoreNewChats] = useState<string | undefined>();
-  // set workspaceIDToStoreNewChats on initial load && workspacesList has value, make it default to save to first workspace.
-  useEffect(() => {
-    if (workspaceIDToStoreNewChats === undefined && workspacesList?.[0] !== undefined) {
-      const workspaceID = workspacesList[0].id;
-      setWorkspaceIDToStoreNewChats(workspaceID);
-    }
-  }, [workspaceIDToStoreNewChats, workspacesList]);
-  return workspaceIDToStoreNewChats;
-}
+// export function useWorkspaceIDToStoreNewChats(workspacesList: IWorkspaceWithMetadata[] | undefined) {
+//   const [workspaceIDToStoreNewChats, setWorkspaceIDToStoreNewChats] = useState<string | undefined>();
+//   // set workspaceIDToStoreNewChats on initial load && workspacesList has value, make it default to save to first workspace.
+//   useEffect(() => {
+//     if (workspaceIDToStoreNewChats === undefined && workspacesList?.[0] !== undefined) {
+//       const workspaceID = workspacesList[0].id;
+//       setWorkspaceIDToStoreNewChats(workspaceID);
+//     }
+//   }, [workspaceIDToStoreNewChats, workspacesList]);
+//   return workspaceIDToStoreNewChats;
+// }

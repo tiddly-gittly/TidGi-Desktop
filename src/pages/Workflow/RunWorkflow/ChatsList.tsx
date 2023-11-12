@@ -1,13 +1,17 @@
 /* eslint-disable unicorn/no-null */
 /* eslint-disable @typescript-eslint/promise-function-async */
-import { Button, IconButton, List, ListItem, Typography } from '@mui/material';
-import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
+import { Button, List } from '@mui/material';
+import { IChatListItem } from '@services/workflow/interface';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
 import { ChatListItem } from './ChatListItem';
-import { IChatListItem, sortChat, useLoadInitialChats, useWorkspaceIDToStoreNewChats } from '../../../services/workflow/networkFromWiki';
 import { useChatsStore } from './useChatsStore';
+
+export function sortChat(a: IChatListItem, b: IChatListItem) {
+  // @ts-expect-error The left-hand side of an arithmetic operation must be of type 'any', 'number', 'bigint' or an enum type.ts(2362)
+  return b.metadata.tiddler.created - a.metadata.tiddler.created;
+}
 
 // Styled Components
 const Container = styled.div`
@@ -33,30 +37,21 @@ const StyledList = styled(List)`
 
 interface IChatsListProps {
   workflowID: string | undefined;
-  workspacesList: IWorkspaceWithMetadata[] | undefined;
+  /**
+   * workspaceID containing the graphTiddler (its title is also the workflowID).
+   */
+  workspaceID: string | undefined;
 }
 
-export const ChatsList: React.FC<IChatsListProps> = ({ workflowID, workspacesList }) => {
+export const ChatsList: React.FC<IChatsListProps> = ({ workflowID, workspaceID }) => {
   const { t } = useTranslation();
-  useLoadInitialChats(workspacesList, workflowID);
-  const workspaceID = useWorkspaceIDToStoreNewChats(workspacesList);
-  const {
-    addChat,
-    removeChat,
-    renameChat,
-    chatList,
-  } = useChatsStore((state) => ({
-    addChat: state.addChat,
-    removeChat: state.removeChat,
-    renameChat: state.renameChat,
-    chatList: Object.values(state.chats).filter((item): item is IChatListItem => item !== undefined).sort((a, b) => sortChat(a, b)),
-  }));
-  const [activeChatID, setActiveChatID] = useChatsStore((state) => [state.activeChatID, state.setActiveChatID]);
+
+  const [addChat, activeChatID, setActiveChatID, chatIDs] = useChatsStore((state) => [state.addChat, state.activeChatID, state.setActiveChatID, state.chatIDs]);
   useEffect(() => {
-    if (activeChatID === undefined && chatList.length > 0) {
-      setActiveChatID(chatList[0].id);
+    if (activeChatID === undefined && chatIDs.length > 0) {
+      setActiveChatID(chatIDs[0]);
     }
-  }, [chatList, activeChatID, setActiveChatID]);
+  }, [chatIDs, activeChatID, setActiveChatID]);
 
   return (
     <Container>
@@ -72,7 +67,7 @@ export const ChatsList: React.FC<IChatsListProps> = ({ workflowID, workspacesLis
       </AddChatButton>
       {workspaceID !== undefined && (
         <StyledList>
-          {chatList.map((chat) => <ChatListItem key={chat.id} workspaceID={workspaceID} chat={chat} onRenameChat={renameChat} onDeleteChat={removeChat} />)}
+          {chatIDs.map((chatID) => <ChatListItem key={chatID} workspaceID={workspaceID} chat={chat} onRenameChat={renameChat} onDeleteChat={removeChat} />)}
         </StyledList>
       )}
     </Container>

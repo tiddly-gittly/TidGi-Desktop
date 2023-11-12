@@ -9,7 +9,6 @@ import { Network as NofloNetwork } from 'noflo/lib/Network';
 
 import { WikiChannel } from '@/constants/channels';
 import { getInfoFromTidGiUrl, getTiddlerTidGiUrl } from '@/constants/urls';
-import { getBrowserComponentLibrary } from '@/pages/Workflow/GraphEditor/utils/library';
 import { lazyInject } from '@services/container';
 import { WorkflowNetwork, WorkflowRunningState } from '@services/database/entity/WorkflowNetwork';
 import { IDatabaseService } from '@services/database/interface';
@@ -19,6 +18,7 @@ import { BehaviorSubject } from 'rxjs';
 import { StoreApi } from 'zustand/vanilla';
 import { injectContextWhenRunGraph } from './injectContextWhenRunGraph';
 import type { IGraphInfo, INetworkState, IWorkflowService } from './interface';
+import { getBrowserComponentLibrary } from './library';
 import { getWorkflowViewModelStore, SingleChatState, WorkflowViewModelStoreState } from './viewModelStore';
 
 @injectable()
@@ -156,7 +156,7 @@ export class WorkflowService implements IWorkflowService {
     if (options?.start !== false) {
       await this.startNetwork(id);
     }
-    return { network: newNofloNetwork, id, state: viewModelStore.getState() };
+    return { network: newNofloNetwork, id, state: this.getNetworkState(id, { viewModel: viewModelStore.getState() }) };
   }
 
   public serializeNetwork(networkID: string): string {
@@ -165,7 +165,7 @@ export class WorkflowService implements IWorkflowService {
     return JSON.stringify(network.graph.toJSON());
   }
 
-  public serializeNetworkState(networkID: string): string {
+  public serializeNetworkState(networkID: string, providedState?: Partial<INetworkState> | undefined): string {
     const network = this.networks.get(networkID);
     if (network === undefined) throw new Error(`serializeNetworkState Network not found for ${networkID}`);
     return JSON.stringify(this.getNetworkState(networkID));

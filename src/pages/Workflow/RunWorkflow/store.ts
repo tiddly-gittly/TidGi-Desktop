@@ -6,10 +6,11 @@ import { createStore, StoreApi } from 'zustand/vanilla';
 import { addNewNetwork } from './useChatNetworkExecute';
 
 const chatViewModelObservables = new Map<string, BehaviorSubject<INetworkState>>();
-const chatViewModels = new Map<string, StoreApi<WorkflowViewModelStoreState>>();
+export const chatViewModels = new Map<string, StoreApi<WorkflowViewModelStoreState>>();
 
 export interface ChatsStoreState {
   activeChatID?: string;
+  chatIDs: string[];
 }
 /**
  * State is not directly persisted to the database, but store in the `serializedState` field of each networks in `src/services/database/entity/WorkflowNetwork.ts`.
@@ -29,6 +30,7 @@ export interface ChatsStoreActions {
 export const chatsStore = createStore(
   immer<ChatsStoreState & ChatsStoreActions>((set) => ({
     activeChatID: undefined,
+    chatIDs: [],
 
     setActiveChatID: (chatID) => {
       set((state) => {
@@ -54,6 +56,7 @@ export const chatsStore = createStore(
       chatViewModelObservables.set(newNetworkID, chatViewModelObservable);
       set((state) => {
         state.activeChatID = newNetworkID;
+        state.chatIDs.push(newNetworkID);
       });
       return newNetworkID;
     },
@@ -69,6 +72,7 @@ export const chatsStore = createStore(
         chatViewModelObservables.delete(chatID);
         if (chatID === state.activeChatID) {
           state.activeChatID = undefined;
+          state.chatIDs = state.chatIDs.filter((id) => id !== chatID);
         }
       });
     },
