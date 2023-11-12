@@ -1,9 +1,9 @@
-import { UIElementState } from '@/pages/Workflow/libs/ui/debugUIEffects/store';
 import { Typography } from '@mui/material';
+import type { UIElementState } from '@services/workflow/viewModelStore';
 import { useEffect, useRef } from 'react';
 import { styled } from 'styled-components';
 import { plugins } from './plugins';
-import { useUIStore } from './useUIStore';
+import { useDebugChatStore } from './useDebugChatStore';
 
 const Container = styled.div`
   padding: 0 1em;
@@ -15,10 +15,10 @@ const Container = styled.div`
 `;
 
 export function DebugUIElements() {
-  const elements = useUIStore((state) =>
+  const elements = useDebugChatStore((state) =>
     Object.values(state.elements ?? {}).filter((element): element is UIElementState => element !== undefined).sort((a, b) => a.timestamp - b.timestamp)
   );
-  const onSubmit = useUIStore((state) => state.submitElement);
+  const onSubmit = useDebugChatStore((state) => state.submitElement);
   /**
    * Ref to the Container element for scrolling
    */

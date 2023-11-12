@@ -1,12 +1,15 @@
+/**
+ * // TODO: save/load chat from tiddler instead of from sqlite. Normally most of chats are store in sqlite, and only important chats check by user are saved to wiki here.
+ */
 import { WikiChannel } from '@/constants/channels';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { chatTiddlerTagName } from '@services/wiki/plugin/nofloWorkflow/constants';
 import { IWorkerWikiOperations } from '@services/wiki/wikiOperations/executor/wikiOperationInServer';
+import type { SingleChatState } from '@services/workflow/viewModelStore';
 import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { useEffect, useState } from 'react';
 import type { ITiddlerFields } from 'tiddlywiki';
-import { SingleChatState } from '../libs/ui/debugUIEffects/store';
-import { useChatsStore } from './useChatsStore';
+import { useChatsStore } from '../../pages/Workflow/RunWorkflow/useChatsStore';
 
 export interface IChatTiddler extends ITiddlerFields {
   description: string;
@@ -19,10 +22,6 @@ export interface IChatTiddler extends ITiddlerFields {
 }
 
 export interface IChatListItem {
-  /**
-   * Parsed JSON from chatJSONString, parsed when loaded to store. Not exist in the wiki.
-   */
-  chatJSON?: SingleChatState;
   /**
    * Serialized JSON of the SingleChatState.
    * We store the chat as a JSON tiddler in the wiki, and render the content i18nly from the JSON data.

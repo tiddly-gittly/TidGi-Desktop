@@ -1,4 +1,4 @@
-import { IButtonGroupProps, IResultTextProps, ITextFieldProps } from '@/pages/Workflow/libs/ui/types/UIEffectsContext';
+import type { IButtonGroupProps, IResultTextProps, ITextFieldProps } from '@/pages/Workflow/libs/ui/types/UIEffectsContext';
 import { isUndefined, mergeWith } from 'lodash';
 import { createStore } from 'zustand/vanilla';
 
@@ -28,7 +28,7 @@ export interface SingleChatState {
   // TODO: Add states here, as described in [WorkflowNetwork](src/services/database/entity/WorkflowNetwork.ts)'s `serializedState`
 }
 
-export interface UIStoreState extends SingleChatState {
+export interface WorkflowViewModelStoreState extends SingleChatState {
   /** adds element and returns its ID */
   addElement: (element: Pick<UIElementState, 'type' | 'props' | 'author'>) => string;
   clearElements: () => void;
@@ -47,52 +47,59 @@ export interface IUiElementSubmitProps {
   onSubmit: (id: string, content: unknown) => void;
 }
 
-export const uiStore = createStore<UIStoreState>((set) => ({
-  elements: {},
-  addElement: ({ type, props, author }) => {
-    const id = String(Math.random());
-    const newElement = {
-      author,
-      content: undefined,
-      id,
-      isSubmitted: false,
-      props,
-      timestamp: Date.now(),
-      type,
-    };
-    set((state) => ({ elements: { ...state.elements, [id]: newElement } }));
-    return id;
-  },
-  updateElementProps: ({ id, props }) => {
-    set((state) => {
-      const existedElement = state.elements?.[id];
-      if (existedElement !== undefined) {
-        mergeWith(existedElement.props, props, (objectValue: unknown, sourceValue) => {
-          if (isUndefined(sourceValue)) {
-            return objectValue;
-          }
-        });
-      }
-      return { elements: { ...state.elements, [id]: existedElement } };
-    });
-  },
-  submitElement: (id, content) => {
-    set((state) => {
-      const existedElement = state.elements?.[id];
-      if (existedElement !== undefined) {
-        existedElement.content = content;
-        existedElement.isSubmitted = true;
-      }
-      return { elements: { ...state.elements, [id]: existedElement } };
-    });
-  },
-  removeElement: (id) => {
-    set((state) => {
-      const newElements = { ...state.elements, [id]: undefined };
-      return { elements: newElements };
-    });
-  },
-  clearElements: () => {
-    set({ elements: {} });
-  },
-}));
+/**
+ * Isomorphic store for UI state of a chat, runs in server side and client side. So don't use any browser/electron specific API here.
+ * @param elements Existing UI state from database
+ * @returns A new store for this chat
+ */
+export const getWorkflowViewModelStore = (initialState?: SingleChatState) =>
+  createStore<WorkflowViewModelStoreState>((set) => ({
+    elements: {},
+    ...initialState,
+    addElement: ({ type, props, author }) => {
+      const id = String(Math.random());
+      const newElement = {
+        author,
+        content: undefined,
+        id,
+        isSubmitted: false,
+        props,
+        timestamp: Date.now(),
+        type,
+      };
+      set((state) => ({ elements: { ...state.elements, [id]: newElement } }));
+      return id;
+    },
+    updateElementProps: ({ id, props }) => {
+      set((state) => {
+        const existedElement = state.elements?.[id];
+        if (existedElement !== undefined) {
+          mergeWith(existedElement.props, props, (objectValue: unknown, sourceValue) => {
+            if (isUndefined(sourceValue)) {
+              return objectValue;
+            }
+          });
+        }
+        return { elements: { ...state.elements, [id]: existedElement } };
+      });
+    },
+    submitElement: (id, content) => {
+      set((state) => {
+        const existedElement = state.elements?.[id];
+        if (existedElement !== undefined) {
+          existedElement.content = content;
+          existedElement.isSubmitted = true;
+        }
+        return { elements: { ...state.elements, [id]: existedElement } };
+      });
+    },
+    removeElement: (id) => {
+      set((state) => {
+        const newElements = { ...state.elements, [id]: undefined };
+        return { elements: newElements };
+      });
+    },
+    clearElements: () => {
+      set({ elements: {} });
+    },
+  }));

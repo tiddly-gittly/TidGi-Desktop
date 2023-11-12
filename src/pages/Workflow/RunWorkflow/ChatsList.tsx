@@ -6,7 +6,7 @@ import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
 import { ChatListItem } from './ChatListItem';
-import { IChatListItem, sortChat, useLoadInitialChats, useWorkspaceIDToStoreNewChats } from './useChatDataSource';
+import { IChatListItem, sortChat, useLoadInitialChats, useWorkspaceIDToStoreNewChats } from '../../../services/workflow/networkFromWiki';
 import { useChatsStore } from './useChatsStore';
 
 // Styled Components

@@ -3,45 +3,43 @@ import type { Network as NofloNetwork } from 'noflo/lib/Network';
 import type { BehaviorSubject } from 'rxjs';
 
 import { WorkflowChannel } from '@/constants/channels';
-import { SingleChatState } from '@/pages/Workflow/libs/ui/debugUIEffects/store';
-import { ChatsStoreActions } from '@/pages/Workflow/RunWorkflow/store';
 import { WorkflowRunningState } from '@services/database/entity/WorkflowNetwork';
+import type { ITiddlerFields } from 'tiddlywiki';
+import type { StoreApi } from 'zustand/vanilla';
+import { SingleChatState, WorkflowViewModelStoreState } from './viewModelStore';
 
+/**
+ * Info enough to create a network runtime.
+ */
 export interface IGraphInfo {
   fbpGraphString: string;
   graphTiddlerTitle: string;
   network?: {
     id: string;
     runningState: WorkflowRunningState;
-    serializedState: string;
+    state?: INetworkState;
   };
   workspaceID: string;
 }
 
 /**
- * Update UI elements, when network executes in the server.
+ * Context injected to every node in the network. Including UI effects, and other context.
  */
-export interface INetworkServerToClientUpdate {
-  /** param of methods in ChatsStoreActions */
-  payload: Parameters<ChatsStoreActions[keyof ChatsStoreActions]>;
-  type: keyof ChatsStoreActions;
-}
-/**
- * Send messages from UI to server, to trigger callbacks in network nodes.
- */
-export interface INetworkClientToServerUpdate {
-  payload: {
-    content: unknown;
-    id: string;
-  };
-  type: 'submit';
+export interface IWorkflowContext {
+  /** Workflow ID / Network ID / Chat ID, the same thing. */
+  id: string;
+  store: StoreApi<WorkflowViewModelStoreState>;
 }
 
 export interface INetworkState {
   /**
+   * Title, tags, created, modified...
+   */
+  meta?: ITiddlerFields;
+  /**
    * State for UI, recording visible chat history.
    */
-  chat: SingleChatState;
+  viewModel: SingleChatState;
 }
 
 /**
@@ -52,9 +50,9 @@ export interface IWorkflowService {
    * Add a network to the memory, and add to the database
    * @param workspaceID workspaceID containing the tiddler.
    * @param graphTiddlerTitle Tiddler's title which includes the FBP graph JSON stringified string
-   * @returns new network id (chat id)
+   * @returns new network id (chat id), and latest network state
    */
-  addNetworkFromGraphTiddlerTitle(workspaceID: string, graphTiddlerTitle: string): Promise<string>;
+  addNetworkFromGraphTiddlerTitle(workspaceID: string, graphTiddlerTitle: string): Promise<{ id: string; state: INetworkState }>;
   /**
    * Get NoFlo Network (runtime instance) from fbp Graph (static graph description) that deserialize from a tiddler's text.
    * Add to the memory, and add to the database. Ready to execute, or start immediately.
@@ -64,10 +62,23 @@ export interface IWorkflowService {
   deserializeNetworkAndAdd(
     graphInfo: IGraphInfo,
     options?: { start?: boolean },
-  ): Promise<{ id: string; network: NofloNetwork }>;
+  ): Promise<{ id: string; network: NofloNetwork; state: INetworkState }>;
   getFbpGraphStringFromURI(graphURI: string): Promise<{ fbpGraphString: string; graphTiddlerTitle: string; workspaceID: string }>;
+  /**
+   * Get current state of a network, including viewModel and chat history, etc.
+   * @param networkID The chat ID
+   * @param providedState Normally we get state from stores, you can provide it here, so we can skip getting it from the store.
+   */
+  getNetworkState(networkID: string, providedState?: Partial<INetworkState>): INetworkState;
   listNetworks(): Array<[string, NofloNetwork]>;
+  /**
+   * Get graph's definition, not including the state
+   */
   serializeNetwork(networkID: string): string;
+  /**
+   * Get graph's runtime state, including viewModel and chat history, etc.
+   */
+  serializeNetworkState(networkID: string): string;
   /**
    * Start running a network by its id. Resume its state based on serializedState on database.
    *
@@ -87,8 +98,8 @@ export interface IWorkflowService {
    * subscribe to the network outcome, to see if we need to update the UI elements
    * @param networkID The chat ID
    */
-  subscribeNetworkActions$(networkID: string): BehaviorSubject<INetworkClientToServerUpdate>;
-  triggerNetworkActions(networkID: string, action: INetworkClientToServerUpdate): Promise<void>;
+  subscribeNetworkState$(networkID: string): BehaviorSubject<INetworkState>;
+  updateNetworkState(networkID: string, nextState: INetworkState): Promise<void>;
 }
 export const WorkflowServiceIPCDescriptor = {
   channel: WorkflowChannel.name,
@@ -101,6 +112,7 @@ export const WorkflowServiceIPCDescriptor = {
     startNetwork: ProxyPropertyType.Function,
     startWorkflows: ProxyPropertyType.Function,
     stopNetwork: ProxyPropertyType.Function,
-    subscribeNetworkActions$: ProxyPropertyType.Function$,
+    subscribeNetworkState$: ProxyPropertyType.Function$,
+    updateNetworkState: ProxyPropertyType.Function,
   },
 };

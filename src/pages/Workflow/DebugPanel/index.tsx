@@ -1,19 +1,21 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import ClearAllIcon from '@mui/icons-material/ClearAll';
 import CloseIcon from '@mui/icons-material/Close';
-import { Dispatch, SetStateAction, useRef } from 'react';
+import { Dispatch, SetStateAction, useEffect, useRef } from 'react';
 import { flushSync } from 'react-dom';
 import Moveable from 'react-moveable';
 import { styled } from 'styled-components';
 
 import { Tooltip } from '@mui/material';
+import { INetworkState } from '@services/workflow/interface';
 import { useTranslation } from 'react-i18next';
+import { Observer } from 'rxjs';
 import { DebugUIElements } from './DebugUIElements';
 import { registerPlugin } from './plugins';
 import { ButtonGroupPlugin } from './plugins/ButtonGroup';
 import { TextFieldPlugin } from './plugins/TextField';
 import { TextResultPlugin } from './plugins/TextResult';
-import { useUIStore } from './useUIStore';
+import { debugChatStore, useDebugChatStore } from './useDebugChatStore';
 
 registerPlugin(ButtonGroupPlugin);
 registerPlugin(TextFieldPlugin);
@@ -52,10 +54,32 @@ const DragHandle = styled.div<{ $graphIsRunning: boolean }>`
 `;
 
 export function DebugPanel(
-  { graphIsRunning, debugPanelOpened, setDebugPanelOpened }: { debugPanelOpened: boolean; graphIsRunning: boolean; setDebugPanelOpened: Dispatch<SetStateAction<boolean>> },
+  { graphIsRunning, debugPanelOpened, setDebugPanelOpened, networkID }: {
+    debugPanelOpened: boolean;
+    graphIsRunning: boolean;
+    networkID: string | undefined;
+    setDebugPanelOpened: Dispatch<SetStateAction<boolean>>;
+  },
 ) {
   const { t } = useTranslation();
-  const clearDebugPanelElements = useUIStore((state) => state.clearElements);
+  const clearDebugPanelElements = useDebugChatStore((state) => state.clearElements);
+  useEffect(() => {
+    if (networkID === undefined) {
+      return;
+    }
+    const chatViewModelObservable = window.observables.workflow.subscribeNetworkState$(networkID);
+    const observer: Observer<INetworkState> = {
+      next: (newState) => {
+        debugChatStore.setState(newState.viewModel);
+      },
+      error: () => {},
+      complete: () => {},
+    };
+    chatViewModelObservable.subscribe(observer);
+    return () => {
+      chatViewModelObservable.unsubscribe();
+    };
+  }, [networkID]);
   const moveableReference = useRef(null);
   const draggableReference = useRef(null);
 

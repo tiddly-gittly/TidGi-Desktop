@@ -1,56 +1,36 @@
-import { injectUIEffectsWhenRunGraph } from '@/pages/Workflow/libs/ui/debugUIEffects/injectUIEffectsWhenRunGraph';
-import { Graph as FbpGraph } from 'fbp-graph';
-import { /* Graph as NofloGraph, */ type ComponentLoader, createNetwork } from 'noflo';
-import type { Network } from 'noflo/lib/Network';
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
+import { WorkflowContext } from './useContext';
 
-export function useRunGraph(fbpGraph?: FbpGraph, libraryLoader?: ComponentLoader) {
-  const currentNetworkReference = useRef<Network | undefined>();
+export function useRunGraph() {
+  const [currentNetworkID, setCurrentNetworkID] = useState<string | undefined>();
   const [graphIsRunning, setGraphIsRunning] = useState(false);
+  const workflowContext = useContext(WorkflowContext);
   const runGraph = useCallback(async () => {
-    if (fbpGraph === undefined) return;
+    if (workflowContext.openedWorkflowItem === undefined) return;
     setGraphIsRunning(true);
     try {
-      /**
-       * Similar to noflo-runtime-base's `src/protocol/Network.js`, transform FbpGraph to ~~NofloGraph~~ Network
-       */
-      const nofloNetwork: Network = await createNetwork(fbpGraph, {
-        subscribeGraph: false,
-        delay: true,
-        componentLoader: libraryLoader,
-      });
-      currentNetworkReference.current = nofloNetwork;
-      nofloNetwork.on('process-error', (processError: { error: Error }) => {
-        if (typeof console.error === 'function') {
-          console.error(processError.error);
-        } else {
-          console.log(processError.error);
-        }
-      });
-      // node's initial data already being added by UI in src/pages/Workflow/GraphEditor/components/NodeDetailPanel.tsx
-      await nofloNetwork.connect();
-      injectUIEffectsWhenRunGraph(nofloNetwork);
-      await nofloNetwork.start();
-      nofloNetwork.once('end', () => {
-        setGraphIsRunning(false);
-      });
+      const { workspaceID, title } = workflowContext.openedWorkflowItem;
+      const { id: networkID } = await window.service.workflow.addNetworkFromGraphTiddlerTitle(workspaceID, title);
+      setCurrentNetworkID(networkID);
     } catch (error) {
       // TODO: show error on a debugger panel
       // network.once('process-error', onError);
       console.error(error);
       setGraphIsRunning(false);
     }
-  }, [fbpGraph, libraryLoader]);
+  }, [workflowContext.openedWorkflowItem]);
   const stopGraph = useCallback(async () => {
+    if (currentNetworkID === undefined) return;
     // this may await forever, if some component have process that haven't call `output.done()` or return without calling `this.deactivate(context)`.
-    await currentNetworkReference.current?.stop();
+    await window.service.workflow.stopNetwork(currentNetworkID);
     setGraphIsRunning(false);
-  }, []);
+  }, [currentNetworkID]);
   useEffect(() => {
     return () => {
-      void currentNetworkReference.current?.stop();
-      setGraphIsRunning(false);
+      // stop network when debug panel is closed
+      void stopGraph();
+      // TODO: delete this onetime debug workflow
     };
-  }, [currentNetworkReference]);
-  return [runGraph, stopGraph, graphIsRunning] as const;
+  }, [stopGraph]);
+  return [runGraph, stopGraph, graphIsRunning, currentNetworkID] as const;
 }

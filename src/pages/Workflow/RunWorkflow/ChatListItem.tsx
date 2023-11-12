@@ -12,8 +12,8 @@ import { Button, Fade, IconButton, ListItem, Menu, MenuItem, Tooltip, Typography
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
+import type { IChatListItem } from '../../../services/workflow/networkFromWiki';
 import { useHandleOpenInWiki } from '../WorkflowManage/useHandleOpenInWiki';
-import { IChatListItem } from './useChatDataSource';
 
 const RenameInput = styled.input`
   margin-right: 0.5em;

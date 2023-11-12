@@ -95,7 +95,7 @@ export function GraphEditor() {
   const fBPGraphReference = useFBPGraphReference(graph);
   const { getMenuDef } = useMenu();
   const editorReference = useRef<ITheGraphEditor>();
-  const [runGraph, stopGraph, graphIsRunning] = useRunGraph(graph, libraryLoader);
+  const [runGraph, stopGraph, graphIsRunning, currentNetworkID] = useRunGraph();
   // auto open debug panel when run graph
   useEffect(() => {
     if (graphIsRunning) {
@@ -153,7 +153,7 @@ export function GraphEditor() {
           debugPanelOpened={debugPanelOpened}
           setDebugPanelOpened={setDebugPanelOpened}
         />
-        <DebugPanel graphIsRunning={graphIsRunning} debugPanelOpened={debugPanelOpened} setDebugPanelOpened={setDebugPanelOpened} />
+        <DebugPanel graphIsRunning={graphIsRunning} debugPanelOpened={debugPanelOpened} setDebugPanelOpened={setDebugPanelOpened} networkID={currentNetworkID} />
       </FBPGraphReferenceContext.Provider>
     </ErrorBoundary>
   );

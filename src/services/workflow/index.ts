@@ -15,8 +15,11 @@ import { WorkflowNetwork, WorkflowRunningState } from '@services/database/entity
 import { IDatabaseService } from '@services/database/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
-import type { IGraphInfo, INetworkState, INetworkClientToServerUpdate, IWorkflowService, INetworkServerToClientUpdate } from './interface';
 import { BehaviorSubject } from 'rxjs';
+import { StoreApi } from 'zustand/vanilla';
+import { injectContextWhenRunGraph } from './injectContextWhenRunGraph';
+import type { IGraphInfo, INetworkState, IWorkflowService } from './interface';
+import { getWorkflowViewModelStore, SingleChatState, WorkflowViewModelStoreState } from './viewModelStore';
 
 @injectable()
 export class WorkflowService implements IWorkflowService {
@@ -26,12 +29,15 @@ export class WorkflowService implements IWorkflowService {
   @lazyInject(serviceIdentifier.Wiki)
   private readonly wikiService!: IWikiService;
 
-  public networks: Record<string, NofloNetwork | undefined>;
-  public networkStates: Record<string, INetworkState | undefined>;
+  public networks: Map<string, NofloNetwork | undefined>;
+  /**
+   * UI View Model that is sync with the client. Serialized to database when workflow is stopped. Deserialized from database when workflow is started.
+   */
+  public viewModelStores: Map<string, StoreApi<WorkflowViewModelStoreState>>;
 
   constructor() {
-    this.networks = {};
-    this.networkStates = {};
+    this.networks = new Map();
+    this.viewModelStores = new Map();
   }
 
   private _componentLoader?: ComponentLoader;
@@ -54,54 +60,62 @@ export class WorkflowService implements IWorkflowService {
     const workflowNetworkRow = await appDatabase.getRepository(WorkflowNetwork).find({ where: { runningState: WorkflowRunningState.Running } });
     await Promise.all(workflowNetworkRow.map(async (row) => {
       const graphInfo = await this.getFbpGraphStringFromURI(row.graphURI);
-      await this.deserializeNetworkAndAdd({ ...graphInfo, network: { id: row.id, serializedState: row.serializedState, runningState: row.runningState } }, { start: true });
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      const state = JSON.parse(row.serializedState || '{}') as INetworkState;
+      await this.deserializeNetworkAndAdd({ ...graphInfo, network: { id: row.id, state, runningState: row.runningState } }, { start: true });
     }));
   }
 
-  public async addNetworkFromGraphTiddlerTitle(workspaceID: string, graphTiddlerTitle: string): Promise<string> {
+  public async addNetworkFromGraphTiddlerTitle(workspaceID: string, graphTiddlerTitle: string): Promise<{ id: string; state: INetworkState }> {
     const fbpGraphString = await this.wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspaceID, [graphTiddlerTitle]);
+    // TODO: save UI state in the tiddler, and get it here.
     const graphInfo = { graphTiddlerTitle, workspaceID, fbpGraphString };
-    const { id } = await this.deserializeNetworkAndAdd(graphInfo, { start: true });
-    return id;
+    const { id, state } = await this.deserializeNetworkAndAdd(graphInfo, { start: true });
+    return { id, state };
   }
 
-  /**
-   * subscribe to the network outcome, to see if we need to update the UI elements
-   * @param networkID The chat ID
-   */
-  public subscribeNetworkActions$(networkID: string): BehaviorSubject<INetworkServerToClientUpdate> {
-    const network = this.networks[networkID];
+  public getNetworkState(networkID: string, providedState?: Partial<INetworkState>): INetworkState {
+    const network = this.networks.get(networkID);
     if (network === undefined) throw new Error('Network not found');
-    const networkState = this.networkStates[networkID];
-    if (networkState === undefined) throw new Error('Network state not found');
-    const networkUIStoreUpdateMessage$ = new BehaviorSubject<INetworkServerToClientUpdate>({
-      type: 'updateNetwork',
-      payload: {
-        networkID,
-        networkState,
-      },
-    });
-    network.on('addedge', (edge) => {
-      networkUIStoreUpdateMessage$.next({
-        type: 'addEdge',
-        payload: {
-          networkID,
-          edge,
-        },
-      });
+    let viewModel: SingleChatState;
+    if ((providedState?.viewModel) === undefined) {
+      const viewModelStore = this.viewModelStores.get(networkID);
+      if (viewModelStore === undefined) throw new Error(`Network state (view model) not found for ${networkID}`);
+      viewModel = viewModelStore.getState();
+    } else {
+      viewModel = providedState.viewModel;
+    }
+    return { viewModel };
+  }
+
+  public subscribeNetworkState$(networkID: string): BehaviorSubject<INetworkState> {
+    const network = this.networks.get(networkID);
+    if (network === undefined) throw new Error('Network not found');
+    const viewModelStore = this.viewModelStores.get(networkID);
+    if (viewModelStore === undefined) throw new Error(`Network state (view model) not found for ${networkID}`);
+    const networkUIStoreUpdateMessage$ = new BehaviorSubject<INetworkState>(this.getNetworkState(networkID));
+    viewModelStore.subscribe((state) => {
+      networkUIStoreUpdateMessage$.next(this.getNetworkState(networkID, { viewModel: state }));
     });
     return networkUIStoreUpdateMessage$;
   }
 
-  public async triggerNetworkActions(networkID: string, action: INetworkClientToServerUpdate): Promise<void> {
-
+  public async updateNetworkState(networkID: string, nextState: INetworkState): Promise<void> {
+    const network = this.networks.get(networkID);
+    if (network === undefined) throw new Error(`Network not found for ${networkID}`);
+    const viewModelStore = this.viewModelStores.get(networkID);
+    if (viewModelStore === undefined) throw new Error(`Network state (view model) not found for ${networkID}`);
+    viewModelStore.setState(nextState.viewModel);
   }
 
   public async deserializeNetworkAndAdd(
     graphInfo: IGraphInfo,
     options?: { start?: boolean },
-  ): Promise<{ id: string; network: NofloNetwork }> {
+  ): Promise<{ id: string; network: NofloNetwork; state: INetworkState }> {
     const { workspaceID, graphTiddlerTitle, fbpGraphString, network } = graphInfo;
+    const { state } = network ?? {};
+    /** Normally we get the graphInfo from database, so we have ID here. */
+    let id = network?.id;
     const fbpGraph: FbpGraph = await loadJSON(fbpGraphString);
     /**
      * Similar to noflo-runtime-base's `src/protocol/Network.js`, transform FbpGraph to ~~NofloGraph~~ Network
@@ -120,31 +134,41 @@ export class WorkflowService implements IWorkflowService {
     });
     // node's initial data already being added by UI in src/pages/Workflow/GraphEditor/components/NodeDetailPanel.tsx
     await newNofloNetwork.connect();
-    injectUIEffectsWhenRunGraph(newNofloNetwork);
-    /** Normally we get the graphInfo from database, so we have ID here. */
-    let networkID = network?.id;
     // but if network ID is not provided, means it is a new one  generate a new row for it in the database
-    if (networkID === undefined) {
+    if (id === undefined) {
       const appDatabase = await this.databaseService.getAppDatabase();
       // Add to the db and generate a new id by database
       const workflowNetworkRow = await appDatabase.getRepository(WorkflowNetwork).save({
         graphURI: getTiddlerTidGiUrl(workspaceID, graphTiddlerTitle),
         runningState: WorkflowRunningState.Idle,
+        serializedState: JSON.stringify(state),
       });
-      networkID = workflowNetworkRow.id;
+      id = workflowNetworkRow.id;
     }
+    /**
+     * A new store for UI state
+     */
+    const viewModelStore = getWorkflowViewModelStore(state?.viewModel);
+    this.viewModelStores.set(id, viewModelStore);
+    injectContextWhenRunGraph(id, newNofloNetwork, viewModelStore);
     // put the new network to memory, keep it running.
-    this.networks[networkID] = newNofloNetwork;
+    this.networks.set(id, newNofloNetwork);
     if (options?.start !== false) {
-      await this.startNetwork(networkID);
+      await this.startNetwork(id);
     }
-    return { network: newNofloNetwork, id: networkID };
+    return { network: newNofloNetwork, id, state: viewModelStore.getState() };
   }
 
   public serializeNetwork(networkID: string): string {
-    const network = this.networks[networkID];
+    const network = this.networks.get(networkID);
     if (network === undefined) throw new Error('Network not found');
     return JSON.stringify(network.graph.toJSON());
+  }
+
+  public serializeNetworkState(networkID: string): string {
+    const network = this.networks.get(networkID);
+    if (network === undefined) throw new Error(`serializeNetworkState Network not found for ${networkID}`);
+    return JSON.stringify(this.getNetworkState(networkID));
   }
 
   public async getFbpGraphStringFromURI(graphURI: string): Promise<{ fbpGraphString: string; graphTiddlerTitle: string; workspaceID: string }> {
@@ -157,7 +181,7 @@ export class WorkflowService implements IWorkflowService {
     const appDatabase = await this.databaseService.getAppDatabase();
     const workflowNetworkRow = await appDatabase.getRepository(WorkflowNetwork).findOneOrFail({ where: { id: networkID } });
     if (workflowNetworkRow === undefined) throw new Error(`Network ${networkID} not found in database`);
-    const network = this.networks[networkID];
+    const network = this.networks.get(networkID);
     if (network === undefined) throw new Error(`Network ${networkID} not found in Workflow Service, did you call deserializeNetworkAndAdd ?`);
     await network.start();
     network.once('end', () => {
@@ -169,12 +193,13 @@ export class WorkflowService implements IWorkflowService {
   }
 
   public async stopNetwork(networkID: string): Promise<void> {
-    const network = this.networks[networkID];
+    const network = this.networks.get(networkID);
     if (network === undefined) throw new Error('Network not found');
     await network.stop();
     const appDatabase = await this.databaseService.getAppDatabase();
-    // TODO: also save its `serializedState` to database
-    await appDatabase.getRepository(WorkflowNetwork).update({ id: networkID }, { runningState: WorkflowRunningState.Idle });
+    await appDatabase.getRepository(WorkflowNetwork).update({ id: networkID }, { runningState: WorkflowRunningState.Idle, serializedState: this.serializeNetworkState(networkID) });
+    this.networks.delete(networkID);
+    this.viewModelStores.delete(networkID);
   }
 
   public listNetworks() {
