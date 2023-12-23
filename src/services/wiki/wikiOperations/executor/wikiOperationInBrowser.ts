@@ -80,7 +80,7 @@ async function executeTWJavaScriptWhenIdle<T>(script: string, options?: { onlyWh
   // requestIdleCallback won't execute when wiki browser view is invisible https://eric-schaefer.com/til/2023/03/11/the-dark-side-of-requestidlecallback/
   const idleCallbackOptions = options?.onlyWhenVisible === true ? '' : `{ timeout: 500 }`;
   const finalScriptToRun = `
-    new Promise((resolve, reject) => {
+    (async () => await new Promise((resolve, reject) => {
       const handler = () => {
         requestIdleCallback(() => {
           if (typeof $tw !== 'undefined') {
@@ -99,13 +99,13 @@ async function executeTWJavaScriptWhenIdle<T>(script: string, options?: { onlyWh
         }, ${idleCallbackOptions});
       };
       ${executeHandlerCode}
-    })
+    }))()
 `;
   try {
     const result = await (webFrame.executeJavaScript(finalScriptToRun) as Promise<T>);
     return result;
   } catch (error) {
-    console.error(`The script has error ${(error as Error).message}\n\n ${finalScriptToRun}`);
+    console.warn(`wikiOperationInBrowser.executeTWJavaScriptWhenIdle The script has error ${(error as Error).message}\n\n ${finalScriptToRun}`);
     throw error;
   }
 }
@@ -113,8 +113,16 @@ async function executeTWJavaScriptWhenIdle<T>(script: string, options?: { onlyWh
 // Attaching the ipcRenderer listeners
 for (const [channel, operation] of Object.entries(wikiOperations)) {
   ipcRenderer.on(channel, async (event, ...arguments_) => {
-    // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556) this maybe a bug of ts... try remove this comment after upgrade ts. And the result become void is weird too.
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-    await operation(...arguments_);
+    try {
+      // @ts-expect-error A spread argument must either have a tuple type or be passed to a rest parameter.ts(2556) this maybe a bug of ts... try remove this comment after upgrade ts. And the result become void is weird too.
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
+      await operation(...arguments_);
+    } catch (error) {
+      console.warn(`wikiOperationInBrowser.ipcRenderer.on ${channel} The script has error ${(error as Error).message}\n\n arguments_: ${JSON.stringify(arguments_)}`);
+      const nonceReceived = arguments_[0] as string;
+      // send error back to main thread. This can't handle custom error, but system error is OK.
+      // See src/services/libs/sendToMainWindow.ts 's `listener` for the receiver of error.
+      ipcRenderer.send(channel, nonceReceived, undefined, error);
+    }
   });
 }

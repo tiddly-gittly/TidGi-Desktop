@@ -44,11 +44,15 @@ export async function sendToMainWindowAndAwait<T = string[]>(type: WikiChannel, 
     /**
      * Use nonce to prevent data racing
      */
-    const listener = (_event: Electron.IpcMainEvent, nonceReceived: number, value: T): void => {
+    const listener = (_event: Electron.IpcMainEvent, nonceReceived: number, value: T, error?: Error): void => {
       if (nonce === nonceReceived) {
         clearTimeout(timeoutHandle);
         ipcMain.removeListener(type, listener);
-        resolve(value);
+        if (error === undefined) {
+          resolve(value);
+        } else {
+          reject(error);
+        }
       }
     };
     ipcMain.on(type, listener);
