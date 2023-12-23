@@ -34,10 +34,6 @@
     "@llama-node/core": "^0.1.6",
     "@llama-node/llama-cpp": "^0.1.6",
     "@llama-node/rwkv-cpp": "^0.1.6",
-    "@rjsf/core": "^5.12.1",
-    "@rjsf/mui": "^5.12.1",
-    "@rjsf/utils": "^5.12.1",
-    "@rjsf/validator-ajv8": "^5.12.1",
     "@tiddlygit/tiddlywiki": "^5.3.0-prerelease-2023-06-30",
     "@types/json-schema": "^7.0.12",
     "app-path": "^4.0.0",
@@ -70,24 +66,6 @@
     "menubar": "9.3.0",
     "nanoid": "^4.0.2",
     "node-fetch": "3.3.2",
-    "noflo-adapters": "^0.3.2",
-    "noflo-ajax": "^0.3.0",
-    "noflo-assembly": "^0.3.1",
-    "noflo-assembly-utils": "^0.2.1",
-    "noflo-clmtrackr": "^0.3.0",
-    "noflo-core": "^0.6.1",
-    "noflo-filesystem": "^2.2.0",
-    "noflo-flow": "^0.8.0",
-    "noflo-geometry": "^0.3.0",
-    "noflo-graph": "^0.4.0",
-    "noflo-groups": "^0.3.0",
-    "noflo-interaction": "^0.3.1",
-    "noflo-localstorage": "^0.3.0",
-    "noflo-math": "^0.4.0",
-    "noflo-objects": "^0.7.0",
-    "noflo-packets": "^0.3.0",
-    "noflo-routers": "^0.5.0",
-    "noflo-strings": "^0.5.1",
     "reflect-metadata": "0.1.13",
     "registry-js": "1.15.1",
     "rxjs": "7.8.1",
@@ -164,7 +142,6 @@
     "beautiful-react-hooks": "4.3.0",
     "chai": "4.3.7",
     "circular-dependency-plugin": "5.2.2",
-    "coffee-loader": "^4.0.0",
     "copy-webpack-plugin": "11.0.0",
     "cross-env": "7.0.3",
     "csp-html-webpack-plugin": "5.1.0",
@@ -185,12 +162,8 @@
     "graphql-hooks": "6.3.0",
     "immer": "^10.0.2",
     "json5": "^2.2.3",
-    "klayjs": "0.4.1",
-    "klayjs-noflo": "^0.3.1",
     "node-loader": "2.0.0",
     "node-polyfill-webpack-plugin": "^2.0.1",
-    "noflo": "^1.4.3",
-    "noflo-component-loader": "^0.4.1",
     "path-browserify": "^1.0.1",
     "react": "18.2.0",
     "react-dom": "18.2.0",
@@ -218,16 +191,6 @@
     "webpack5-externals-plugin": "1.0.4",
     "webpackbar": "5.0.2",
     "zustand": "^4.4.1"
-  },
-  "pnpm": {
-    "overrides": {
-      "fbp-graph": "$fbp-graph"
-    },
-    "patchedDependencies": {
-      "the-graph@0.13.1": "patches/the-graph@0.13.1.patch",
-      "klayjs-noflo@0.3.1": "patches/klayjs-noflo@0.3.1.patch",
-      "noflo@1.4.3": "patches/noflo@1.4.3.patch"
-    }
   },
   "private": false
 }

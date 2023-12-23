@@ -8,9 +8,6 @@ export function getBuildInPageIcon(pageType: PageType): JSX.Element {
       // this won't happened, because wiki page is not a build-in page
       return <div>Wiki</div>;
     }
-    case PageType.workflow: {
-      return <AccountTreeIcon />;
-    }
     case PageType.guide: {
       return <InfoIcon />;
     }

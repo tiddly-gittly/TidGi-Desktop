@@ -16,8 +16,6 @@ import { Guide } from '../Guide';
 import { WikiBackground } from '../WikiBackground';
 import { useInitialPage } from './useInitialPage';
 
-const Workflow = lazy(() => import('../Workflow'));
-
 const OuterRoot = styled.div`
   display: flex;
   flex-direction: column;
@@ -81,7 +79,6 @@ export default function Main(): JSX.Element {
           <Switch>
             <Route path={`/${WindowNames.main}/${PageType.wiki}/:id/`} component={WikiBackground} />
             <Route path={`/${WindowNames.main}/${PageType.guide}/`} component={Guide} />
-            <Route path={`/${WindowNames.main}/${PageType.workflow}/:any*/`} component={Workflow} />
             <Route path={`/${WindowNames.main}`} component={Guide} />
             <Route component={Guide} />
           </Switch>

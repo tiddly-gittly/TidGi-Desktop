@@ -11,10 +11,6 @@ export enum PageType {
    * All "workspaces". It is hard to merge workspace concept with page concept, because will need to migrate all user data. So we leave them to be still workspace, but also call them wiki pages. And in event listeners about wiki page, we redirect them to call workspace methods.
    */
   wiki = 'wiki',
-  /**
-   * AI workflow
-   */
-  workflow = 'workflow',
 }
 export interface IPage {
   active: boolean;
@@ -31,7 +27,7 @@ export interface IPage {
 }
 
 /**
- * Handle switch between wiki and build-in pages like Workflow page.
+ * Handle switch between wiki and build-in pages like guide page.
  */
 export interface IPagesService {
   clearActivePage(id: string | PageType | undefined): Promise<void>;

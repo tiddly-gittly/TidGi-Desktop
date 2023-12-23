@@ -18,30 +18,10 @@ declare module '@mui/material/styles' {
     sidebar: {
       width: number;
     };
-    workflow: {
-      debugPanel: {
-        cardSpacing: number;
-        height: number;
-        width: number;
-      };
-      nodeDetailPanel: {
-        width: number;
-      };
-      run: {
-        chatsList: {
-          width: number;
-        };
-      };
-      thumbnail: {
-        height: number;
-        width: number;
-      };
-    };
   }
   // allow configuration using `createTheme`
   interface ThemeOptions {
     searchBar: Theme['searchBar'];
     sidebar: Theme['sidebar'];
-    workflow: Theme['workflow'];
   }
 }

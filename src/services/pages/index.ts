@@ -56,7 +56,7 @@ export class Pages implements IPagesService {
     await Promise.all([
       oldActivePageID !== id && this.clearActivePage(oldActivePageID),
       this.update(id, { active: true }),
-      // if not switch to wiki page, e.g. switch from workspace to workflow page, clear active workspace and close its browser view
+      // if not switch to wiki page, e.g. switch from workspace to guide page, clear active workspace and close its browser view
       id !== PageType.wiki && this.workspaceViewService.clearActiveWorkspaceView(),
     ]);
   }
