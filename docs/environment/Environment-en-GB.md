@@ -5,38 +5,22 @@
 
 System environment: Linux Mint 21.1
 
-Required tools: fastgithub, git, nvm, pnpm, node-gyp, vscode
+Required tools: Watt Toolkit(Steam++), git, nvm, pnpm, node-gyp, vscode
 
-### 1. fastgithub
+## 1. Watt Toolkit (Steam++)
 
-> Only one proxy can be opened for linux and the host.
+Download link: https://github.com/BeyondDimension/SteamTools
 
-The repository & download address: <https://github.com/dotnetcore/FastGithub>
+1. Download and install Watt Toolkit, then open the software. In the Network Acceleration side options page, check GIthub Acceleration and check Enable Scripting.
+2. Select System Proxy for Acceleration Mode and tap One Click Acceleration. After that, set the certificate verification to complete to use it, otherwise you can't use it.
 
-```sh
-sudo . /fastgithub start // install and start with systemd service
-sudo . /fastgithub stop // uninstall and remove with systemd service
-```
+### Certificate verification
 
-Set the system auto-proxy to <http://localhost:38457>, select the auto-proxy method in System Settings - Network - Network Proxy, and fill in the URL <http://localhost:38457>即可. Sometimes inaccessible may need to set their own temporary manual proxy in the terminal, refer to the following written.
+- firefox suggests that there is a potential security problem with the connection:
+    - Settings->Privacy and Security->Certificates->View Certificates->Certificate Authorities, import `/home/username/.local/share/Steam++/SteamTools.Certificate`, and check the box of "Trust this certificate authority to identify the website! Certificate`, check the box "Trust this certificate authority to identify the site".
+- SSL certificate problem with git:
+    - You need to turn off git's certificate verification: `git config --global http.sslverify false`.
 
-Manual proxy http/https is localhost:38457, or just type `export ALL_PROXY=http://localhost:38457`. Only valid in the current terminal.
-
-```sh
-export ALL_PROXY=http://localhost:38457
-export http_proxy=http://localhost:38457
-export https_proxy=https://localhost:38457
-```
-
-You also need to set up certificate validation, otherwise it won't work oh.
-
-### Certificate validation
-
-git operation prompts SSL certificate problem
-You need to turn off git's certificate validation: `git config --global http.sslverify false`
-
-firefox prompts for a potential security issue with the connection
-Settings->Privacy and Security->Certificates->View Certificates->Certificate Authority, import `cacert/fastgithub.cer`, check the box "Trust this certificate authority to identify the site"
 
 ### 2. nvm
 
@@ -91,3 +75,24 @@ Authentication for Git push
 ### 6. vscode
 
 Download: <https://code.visualstudio.com/download>
+
+## Attach fastgithub accelerator tool
+
+> fastgithub: only one proxy for linux and host can be opened.
+
+Repositories & downloads: <https://github.com/dotnetcore/FastGithub>
+
+```sh
+sudo . /fastgithub start // Install and start as systemd service
+sudo . /fastgithub stop // Uninstall and remove as systemd service
+```
+
+To set the system autoproxy to <http://localhost:38457>, select Autoproxy in System Settings - Network - Network Proxy, and enter <http://localhost:38457> as the configuration URL. Sometimes you may need to set up a temporary manual proxy in the terminal, refer to the following.
+
+```sh
+export ALL_PROXY=http://localhost:38457
+export http_proxy=http://localhost:38457
+export https_proxy=https://localhost:38457
+```
+
+Manually proxy http/https to localhost:38457 or just type `export ALL_PROXY=http://localhost:38457`. Only works in the current terminal.

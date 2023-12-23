@@ -4,38 +4,21 @@
 
 系统环境：Linux Mint 21.1
 
-需要的工具：fastgithub、git、nvm、pnpm、node-gyp、vscode
+需要的工具：Watt Toolkit(Steam++)、git、nvm、pnpm、node-gyp、vscode
 
-## 1. fastgithub
+## 1. Watt Toolkit(Steam++)
 
-> linux 和 宿主机的代理只能开一个。
+下载链接：https://github.com/BeyondDimension/SteamTools
 
-仓库&下载地址：<https://github.com/dotnetcore/FastGithub>
-
-```sh
-sudo ./fastgithub start // 以systemd服务安装并启动
-sudo ./fastgithub stop // 以systemd服务卸载并删除
-```
-
-设置系统自动代理为<http://localhost:38457> ， 在系统设置 - 网络 - 网络代理中方法选自动代理，配置URL填入<http://localhost:38457>即可。有时无法访问可能需要自己在终端中设置临时手动代理，参考下面写的。
-
-手动代理http/https为localhost:38457，或者直接输入`export ALL_PROXY=http://localhost:38457`。仅在当前的终端有效。
-
-```sh
-export ALL_PROXY=http://localhost:38457
-export http_proxy=http://localhost:38457
-export https_proxy=https://localhost:38457
-```
-
-你还需要设置证书验证，不然无法使用哦。
+1. 下载安装Watt Toolkit，然后打开软件。在网络加速侧边选项页面中，勾选GIthub加速，勾选启用脚本。
+2. 加速模式选择系统代理，点一键加速。之后设置证书验证完成即可使用，不然无法使用哦。
 
 ### 证书验证
 
-git操作提示SSL certificate problem
-需要关闭git的证书验证：`git config --global http.sslverify false`
-
-firefox提示连接有潜在的安全问题
-设置->隐私与安全->证书->查看证书->证书颁发机构，导入`cacert/fastgithub.cer`，勾选“信任由此证书颁发机构来标识网站”
+-  firefox提示连接有潜在的安全问题：
+    - 设置->隐私与安全->证书->查看证书->证书颁发机构，导入`/home/username/.local/share/Steam++/SteamTools.Certificate`，勾选“信任由此证书颁发机构来标识网站”
+- git操作提示SSL certificate problem：
+    - 需要关闭git的证书验证：`git config --global http.sslverify false`
 
 ## 2. nvm
 
@@ -90,3 +73,24 @@ Git push时的鉴权
 ## 6. vscode
 
 下载地址： <https://code.visualstudio.com/download>
+
+## 附加 fastgithub 加速工具
+
+> fastgithub：linux 和 宿主机的代理只能开一个。
+
+仓库&下载地址：<https://github.com/dotnetcore/FastGithub>
+
+```sh
+sudo ./fastgithub start // 以systemd服务安装并启动
+sudo ./fastgithub stop // 以systemd服务卸载并删除
+```
+
+设置系统自动代理为<http://localhost:38457> ， 在系统设置 - 网络 - 网络代理中方法选自动代理，配置URL填入<http://localhost:38457>即可。有时无法访问可能需要自己在终端中设置临时手动代理，参考下面写的。
+
+```sh
+export ALL_PROXY=http://localhost:38457
+export http_proxy=http://localhost:38457
+export https_proxy=https://localhost:38457
+```
+
+手动代理http/https为localhost:38457，或者直接输入`export ALL_PROXY=http://localhost:38457`。仅在当前的终端有效。
