@@ -12,8 +12,6 @@ import { logger } from '@services/libs/log';
 import fs from 'fs-extra';
 import path from 'path';
 import { DataSource } from 'typeorm';
-import { entities } from './entity';
-import { migrations } from './migration';
 import { loadSqliteVss } from './sqlite-vss';
 
 @injectable()
@@ -94,11 +92,11 @@ export class DatabaseService implements IDatabaseService {
         type: 'better-sqlite3',
         nativeBinding: SQLITE_BINARY_PATH,
         database: destinationFilePath,
-        entities,
+        // entities,
         synchronize: false,
         migrationsRun: true,
         logging: true,
-        migrations,
+        // migrations,
       });
 
       await appDataSource.initialize();
@@ -119,11 +117,11 @@ export class DatabaseService implements IDatabaseService {
         const dataSource = new DataSource({
           type: 'sqlite',
           database: this.getAppDataBasePath(),
-          entities,
+          // entities,
           synchronize: false,
           migrationsRun: false,
           logging: true,
-          migrations,
+          // migrations,
         });
         /**
          * Error `TypeError: Cannot read property 'transaction' of undefined` will show if run any query without initialize.
