@@ -85,13 +85,14 @@ exports.renderer = _.compact([
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
     ? new BundleAnalyzerPlugin({ generateStatsFile: true, analyzerMode: 'disabled', statsFilename: '../../out/webpack-stats-renderer.json' })
     : undefined,
-  new CopyPlugin({
-    patterns: [
-      // similar to noflo-ui's webpack.config.js
-      {
-        from: 'node_modules/klayjs/klay.js',
-        to: 'webWorkers/klayjs/klay.js',
-      },
-    ],
-  }),
+  // Example: copy files for webWorker to use
+  // new CopyPlugin({
+  //   patterns: [
+  //     // similar to noflo-ui's webpack.config.js
+  //     {
+  //       from: 'node_modules/klayjs/klay.js',
+  //       to: 'webWorkers/klayjs/klay.js',
+  //     },
+  //   ],
+  // }),
 ]);

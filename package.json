@@ -34,7 +34,7 @@
     "@llama-node/core": "^0.1.6",
     "@llama-node/llama-cpp": "^0.1.6",
     "@llama-node/rwkv-cpp": "^0.1.6",
-    "@tiddlygit/tiddlywiki": "^5.3.0-prerelease-2023-06-30",
+    "@tiddlygit/tiddlywiki": "^5.3.3-prerelease-2023-12-23-withdestroymethod",
     "@types/json-schema": "^7.0.12",
     "app-path": "^4.0.0",
     "best-effort-json-parser": "1.0.1",

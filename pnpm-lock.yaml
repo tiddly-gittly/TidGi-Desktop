@@ -15,8 +15,8 @@ dependencies:
     specifier: ^0.1.6
     version: 0.1.6
   '@tiddlygit/tiddlywiki':
-    specifier: ^5.3.0-prerelease-2023-06-30
-    version: 5.3.0-prerelease-2023-06-30
+    specifier: ^5.3.3-prerelease-2023-12-23-withdestroymethod
+    version: 5.3.3-prerelease-2023-12-23-withdestroymethod
   '@types/json-schema':
     specifier: ^7.0.12
     version: 7.0.12
@@ -3748,8 +3748,8 @@ packages:
     engines: {node: '>=10.17'}
     dev: true
 
-  /@tiddlygit/tiddlywiki@5.3.0-prerelease-2023-06-30:
-    resolution: {integrity: sha512-3TexdExSS2geLdvtSc0EJawrgxG2NAC5KCbcO871aQwsVNvX4WvlknPFThQ42+YJMgvlozGtWNxBcLIZta/cEQ==}
+  /@tiddlygit/tiddlywiki@5.3.3-prerelease-2023-12-23-withdestroymethod:
+    resolution: {integrity: sha512-Q/sTVBjEjcix0sQlUgBfh9sCGyDXAe/nbk0UhIRrbO7jQOoJ/ZkK63q/fkVtQNniiysE8ggvsNIP+V3sPRsIfw==}
     engines: {node: '>=0.8.2'}
     hasBin: true
     dev: false
@@ -6448,8 +6448,8 @@ packages:
       fs-extra: 9.1.0
       get-folder-size: 2.0.1
       lodash: 4.17.21
-      yargs: 16.2.0
       word-wrap: 1.2.4
+      yargs: 16.2.0
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -13490,6 +13490,13 @@ packages:
   /word-wrap@1.2.4:
     resolution: {integrity: sha512-2V81OA4ugVo5pRo46hAoD2ivUJx8jXmWXfUkY4KFNw0hEptvN0QfH3K4nHiwzGeKl5rFKedV48QVoqYavy4YpA==}
     engines: {node: '>=0.10.0'}
+    requiresBuild: true
+    dev: true
+    optional: true
+
+  /wordwrap@1.0.0:
+    resolution: {integrity: sha512-gvVzJFlPycKc5dZN4yPkP8w7Dc37BtP1yczEneOb4uq34pXZcvrtRTmWV8W+Ume+XCxKgbjM+nevkyFPMybd4Q==}
+    dev: false
 
   /wouter@2.11.0(react@18.2.0):
     resolution: {integrity: sha512-Y2CzNCwIN8kHjR2Q10D+UAgQND6TvBNmwXxgYw5ltXjjTlL7cLDUDpCip3a927Svxrmxr6vJMcPUysFxSvriCw==}
