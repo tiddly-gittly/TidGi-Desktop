@@ -6448,8 +6448,8 @@ packages:
       fs-extra: 9.1.0
       get-folder-size: 2.0.1
       lodash: 4.17.21
-      word-wrap: 1.2.3
       yargs: 16.2.0
+      word-wrap: 1.2.4
     transitivePeerDependencies:
       - supports-color
     dev: true
@@ -6467,7 +6467,7 @@ packages:
       electron-installer-common: 0.10.3
       fs-extra: 9.1.0
       lodash: 4.17.21
-      word-wrap: 1.2.3
+      word-wrap: 1.2.4
       yargs: 16.2.0
     transitivePeerDependencies:
       - supports-color
@@ -13487,16 +13487,9 @@ packages:
       winston-transport: 4.5.0
     dev: false
 
-  /word-wrap@1.2.3:
-    resolution: {integrity: sha512-Hz/mrNwitNRh/HUAtM/VT/5VH+ygD6DV7mYKZAtHOrbs8U7lvPS6xf7EJKMF0uW1KJCl0H701g3ZGus+muE5vQ==}
+  /word-wrap@1.2.4:
+    resolution: {integrity: sha512-2V81OA4ugVo5pRo46hAoD2ivUJx8jXmWXfUkY4KFNw0hEptvN0QfH3K4nHiwzGeKl5rFKedV48QVoqYavy4YpA==}
     engines: {node: '>=0.10.0'}
-    requiresBuild: true
-    dev: true
-    optional: true
-
-  /wordwrap@1.0.0:
-    resolution: {integrity: sha512-gvVzJFlPycKc5dZN4yPkP8w7Dc37BtP1yczEneOb4uq34pXZcvrtRTmWV8W+Ume+XCxKgbjM+nevkyFPMybd4Q==}
-    dev: false
 
   /wouter@2.11.0(react@18.2.0):
     resolution: {integrity: sha512-Y2CzNCwIN8kHjR2Q10D+UAgQND6TvBNmwXxgYw5ltXjjTlL7cLDUDpCip3a927Svxrmxr6vJMcPUysFxSvriCw==}
