@@ -5,9 +5,12 @@
 /* eslint-disable @typescript-eslint/no-unsafe-member-access */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 import esbuild from 'esbuild';
+import { rimraf } from 'rimraf'
 
 // put it here, so it can be loaded via `'+plugins/linonetwo/tidgi'` in cli, and get copied in scripts/afterPack.js when copying tiddlywiki (no need to copy this plugin again)
 const tidgiIpcSyncadaptorOutDir = path.join(__dirname, '../node_modules/@tiddlygit/tiddlywiki/plugins/linonetwo/tidgi-ipc-syncadaptor');
+// delete if exist
+await rimraf(tidgiIpcSyncadaptorOutDir);
 await fs.mkdirp(tidgiIpcSyncadaptorOutDir);
 const tsconfigPath = path.join(__dirname, '../tsconfig.json');
 const tidgiIpcSyncadaptorSourceFolder = '../src/services/wiki/plugin/ipcSyncAdaptor';
@@ -42,4 +45,7 @@ await fs.copy(path.join(__dirname, tidgiIpcSyncadaptorSourceFolder), tidgiIpcSyn
 
 const tidgiIpcSyncadaptorUISourceFolder = '../src/services/wiki/plugin/ipcSyncAdaptorUI';
 const tidgiIpcSyncadaptorUIOutDir = path.join(__dirname, '../node_modules/@tiddlygit/tiddlywiki/plugins/linonetwo/tidgi-ipc-syncadaptor-ui');
+// delete if exist
+await rimraf(tidgiIpcSyncadaptorUIOutDir);
+await fs.mkdirp(tidgiIpcSyncadaptorUIOutDir);
 await fs.copy(path.join(__dirname, tidgiIpcSyncadaptorUISourceFolder), tidgiIpcSyncadaptorUIOutDir, { filter: filterFunc });
