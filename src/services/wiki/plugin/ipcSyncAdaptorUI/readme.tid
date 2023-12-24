@@ -4,3 +4,5 @@ type: text/vnd.tiddlywiki
 !! UI
 
 To fix [[https://github.com/Jermolene/TiddlyWiki5/issues/7553]]
+
+This is basically a copy of tiddly-web plugin, but tiddlers that shadows `$:/core/templates` are not copy here, because they prevents wiki start.
