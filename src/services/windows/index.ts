@@ -109,7 +109,7 @@ export class Window implements IWindowService {
 
   public async open<N extends WindowNames>(
     windowName: N,
-    meta: WindowMeta[N] = {} as WindowMeta[N],
+    windowMeta: WindowMeta[N] = {} as WindowMeta[N],
     config?: {
       recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean);
     },
@@ -117,7 +117,7 @@ export class Window implements IWindowService {
     const { recreate = false } = config ?? {};
     const existedWindow = this.get(windowName);
     // update window meta
-    await this.setWindowMeta(windowName, meta);
+    await this.setWindowMeta(windowName, windowMeta);
     const existedWindowMeta = await this.getWindowMeta(windowName);
 
     if (existedWindow !== undefined) {
@@ -167,7 +167,7 @@ export class Window implements IWindowService {
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
         additionalArguments: [
           `${MetaDataChannel.browserViewMetaData}${windowName}`,
-          `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(meta))}`,
+          `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(windowMeta))}`,
         ],
       },
       parent: isWindowWithBrowserView ? undefined : this.get(WindowNames.main),
@@ -180,7 +180,7 @@ export class Window implements IWindowService {
       }
       newWindow = this.mainWindowMenuBar.window;
     } else {
-      newWindow = await this.handleCreateBasicWindow(windowName, windowConfig);
+      newWindow = await this.handleCreateBasicWindow(windowName, windowConfig, windowMeta);
       if (isWindowWithBrowserView) {
         this.registerMainWindowListeners(newWindow);
         // calling this to redundantly setBounds BrowserView
@@ -195,8 +195,13 @@ export class Window implements IWindowService {
     windowWithBrowserViewState?.manage(newWindow);
   }
 
-  private async handleCreateBasicWindow(windowName: WindowNames, windowConfig: BrowserWindowConstructorOptions): Promise<BrowserWindow> {
+  private async handleCreateBasicWindow<N extends WindowNames>(
+    windowName: N,
+    windowConfig: BrowserWindowConstructorOptions,
+    windowMeta: WindowMeta[N] = {} as WindowMeta[N],
+  ): Promise<BrowserWindow> {
     const newWindow = new BrowserWindow(windowConfig);
+    const newWindowURL = windowMeta !== undefined && 'uri' in windowMeta ? windowMeta.uri : MAIN_WINDOW_WEBPACK_ENTRY;
 
     this.windows[windowName] = newWindow;
 
@@ -230,7 +235,7 @@ export class Window implements IWindowService {
     }
     await this.updateWindowBackground(newWindow);
     // This loading will wait for a while
-    await newWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
+    await newWindow.loadURL(newWindowURL);
     await webContentLoadingPromise;
     return newWindow;
   }

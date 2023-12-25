@@ -3,6 +3,10 @@ import type { PreferenceSections } from '@services/preferences/interface';
 export enum WindowNames {
   about = 'about',
   addWorkspace = 'addWorkspace',
+  /**
+   * Open any website URL, this is a popup window that user can open second wiki window in a popup window. Or used for open a help resource.
+   */
+  any = 'any',
   auth = 'auth',
   editWorkspace = 'editWorkspace',
   /**
@@ -26,6 +30,10 @@ export enum WindowNames {
  */
 export const windowDimension: Record<WindowNames, { height?: number; width?: number }> = {
   [WindowNames.main]: {
+    width: 1200,
+    height: 768,
+  },
+  [WindowNames.any]: {
     width: 1200,
     height: 768,
   },
@@ -77,16 +85,17 @@ export interface IPreferenceWindowMeta {
  * Please make all property partial (?:), so wo can always assign {} as default metadata without type warning
  */
 export interface WindowMeta {
+  [WindowNames.about]: undefined;
+  [WindowNames.addWorkspace]: undefined;
+  [WindowNames.any]: { uri: string };
+  [WindowNames.auth]: undefined;
   [WindowNames.editWorkspace]: { workspaceID?: string };
   [WindowNames.main]: { forceClose?: boolean };
   [WindowNames.menuBar]: undefined;
-  [WindowNames.preferences]: IPreferenceWindowMeta;
-  [WindowNames.about]: undefined;
-  [WindowNames.auth]: undefined;
-  [WindowNames.view]: { workspaceID?: string };
-  [WindowNames.addWorkspace]: undefined;
   [WindowNames.notifications]: undefined;
+  [WindowNames.preferences]: IPreferenceWindowMeta;
   [WindowNames.spellcheck]: undefined;
+  [WindowNames.view]: { workspaceID?: string };
 }
 export type IPossibleWindowMeta<M extends WindowMeta[WindowNames] = WindowMeta[WindowNames.main]> = {
   windowName: WindowNames;
