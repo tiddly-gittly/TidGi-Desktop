@@ -6,6 +6,9 @@ export function getBuildInPageName(pageType: PageType, t: TFunction) {
     case PageType.wiki: {
       return t('Menu.Wiki');
     }
+    case PageType.help: {
+      return t('WorkspaceSelector.Help');
+    }
     case PageType.guide: {
       return t('WorkspaceSelector.Guide');
     }

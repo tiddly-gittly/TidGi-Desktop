@@ -4,6 +4,7 @@
   "WorkspaceSelector": {
     "Add": "添加",
     "Guide": "引导",
+    "Help": "帮助",
     "OpenWorkspaceTagTiddler": "打开 {{tagName}}",
     "DefaultTiddlers": "默认条目",
     "OpenWorkspaceMenuName": "打开工作区",

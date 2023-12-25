@@ -3,6 +3,7 @@
   "WorkspaceSelector": {
     "Add": "Add",
     "Guide": "Guide",
+    "Help": "Help",
     "OpenWorkspaceTagTiddler": "Open {{tagName}}",
     "DefaultTiddlers": "Default Tiddlers",
     "OpenWorkspaceMenuName": "Open Workspace",

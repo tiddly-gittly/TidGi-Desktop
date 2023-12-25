@@ -1,0 +1,10 @@
+{
+  "onlineSources": [
+    "tidgi.fun/recipes/default/tiddlers.json?filter=[tag[HelpPage]]"
+  ],
+  "default": [
+    {"title":"Tiddlywiki XP", "description": "「一个快速体验太微的机会」—— 非常全面、易读，包括了很多非常基础的操作，例如「如何新建第一个笔记」","tags":"Intro","url":"https://keatonlao.gitee.io/tiddlywiki-xp/", "fallbackUrls": "https://keatonlao.github.io/tiddlywiki-xp/", "language": "zh-Hans"},
+    {"title":"Grok TiddlyWiki", "description": "Build a deep, lasting understanding of TiddlyWiki","tags":"Intro FAQ","url":"https://groktiddlywiki.com/read/", "language": "en-GB"},
+    {"title":"太微中文教程", "description": "中文社区共建的TiddlyWiki教程，体验从入门到知识管理大师之路","tags":"Intro","url":"https://tw-cn.netlify.app/", "fallbackUrls": "https://tw-cn.cpolar.top/ https://tiddly-wiki-chinese-tutorial.vercel.app/ https://tiddly-gittly.github.io/TiddlyWiki-Chinese-Tutorial/", "language": "zh-Hans"}
+  ]
+}

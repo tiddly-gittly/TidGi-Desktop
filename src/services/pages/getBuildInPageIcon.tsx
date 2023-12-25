@@ -1,4 +1,4 @@
-import AccountTreeIcon from '@mui/icons-material/AccountTree';
+import HelpIcon from '@mui/icons-material/Help';
 import InfoIcon from '@mui/icons-material/Info';
 import { PageType } from '@services/pages/interface';
 
@@ -7,6 +7,9 @@ export function getBuildInPageIcon(pageType: PageType): JSX.Element {
     case PageType.wiki: {
       // this won't happened, because wiki page is not a build-in page
       return <div>Wiki</div>;
+    }
+    case PageType.help: {
+      return <HelpIcon />;
     }
     case PageType.guide: {
       return <InfoIcon />;

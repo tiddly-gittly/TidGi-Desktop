@@ -1,9 +1,8 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/promise-function-async */
-import { lazy } from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
-import styled, { DefaultTheme } from 'styled-components';
+import { DefaultTheme, styled } from 'styled-components';
 import is, { isNot } from 'typescript-styled-is';
 import { Route, Switch } from 'wouter';
 
@@ -13,6 +12,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import FindInPage from '../../components/FindInPage';
 import { SideBar } from '../../components/Sidebar';
 import { Guide } from '../Guide';
+import { Help } from '../Help';
 import { WikiBackground } from '../WikiBackground';
 import { useInitialPage } from './useInitialPage';
 
@@ -79,6 +79,7 @@ export default function Main(): JSX.Element {
           <Switch>
             <Route path={`/${WindowNames.main}/${PageType.wiki}/:id/`} component={WikiBackground} />
             <Route path={`/${WindowNames.main}/${PageType.guide}/`} component={Guide} />
+            <Route path={`/${WindowNames.main}/${PageType.help}/`} component={Help} />
             <Route path={`/${WindowNames.main}`} component={Guide} />
             <Route component={Guide} />
           </Switch>
