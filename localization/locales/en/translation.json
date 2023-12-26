@@ -462,5 +462,8 @@
   "Title": "Title",
   "Delete": "Delete",
   "Edit": "Edit",
-  "Open": "Open"
+  "Open": "Open",
+  "Help": {
+    "Alternatives": "Alternatives"
+  }
 }

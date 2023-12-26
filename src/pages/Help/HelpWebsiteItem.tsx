@@ -3,6 +3,7 @@ import { Button, Menu, MenuItem } from '@mui/material';
 import { WindowNames } from '@services/windows/WindowProperties';
 import React, { useState } from 'react';
 import { styled } from 'styled-components';
+import { useTranslation } from 'react-i18next';
 
 const StyledGridItem = styled.div`
   // Add styles for your grid item here
@@ -18,6 +19,7 @@ interface HelpWebsiteItemProps {
 }
 
 export const HelpWebsiteItem: React.FC<HelpWebsiteItemProps> = ({ item }) => {
+  const { t } = useTranslation();
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
 
   const openExternalLink = (uri: string) => {
@@ -41,7 +43,7 @@ export const HelpWebsiteItem: React.FC<HelpWebsiteItemProps> = ({ item }) => {
           openExternalLink(item.url);
         }}
       >
-        Open
+        {t('Open')}
       </Button>
       {item.fallbackUrls.length > 0 && (
         <>
@@ -50,7 +52,7 @@ export const HelpWebsiteItem: React.FC<HelpWebsiteItemProps> = ({ item }) => {
             aria-haspopup='true'
             onClick={handleOpenMenu}
           >
-            Alternatives
+            {t('Help.Alternatives')}
           </Button>
           <Menu
             id='fallback-menu'
