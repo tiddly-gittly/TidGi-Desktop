@@ -217,6 +217,11 @@ class TidGiIPCSyncAdaptor {
     }
     try {
       const title = tiddler.fields.title;
+      const tiddlersToNotSave = $tw.utils.parseStringArray(this.wiki.getTiddlerText('$:/plugins/linonetwo/tidgi-ipc-syncadaptor/TiddlersToNotSave') ?? '');
+      if (tiddlersToNotSave.includes(title)) {
+        this.logger.log(`Ignore saveTiddler ${title}, config in TiddlersToNotSave`);
+        return;
+      }
       this.logger.log(`saveTiddler ${title}`);
       this.addRecentUpdatedTiddlersFromClient('modifications', title);
       const putTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(

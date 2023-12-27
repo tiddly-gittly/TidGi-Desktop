@@ -125,7 +125,7 @@ export class IpcServerRoutes {
 
   async getTiddlersJSON(filter = '[all[tiddlers]!is[system]sort[title]]', exclude = ['text']): Promise<IWikiServerRouteResponse> {
     await this.waitForIpcServerRoutesAvailable();
-    if (this.wikiInstance.wiki.getTiddlerText('$:/config/SyncSystemTiddlersFromServer') === 'no') {
+    if (this.wikiInstance.wiki.getTiddlerText('$:/config/SyncSystemTiddlersFromServer') !== 'yes') {
       filter += '+[!is[system]]';
     }
     const titles = this.wikiInstance.wiki.filterTiddlers(filter);
