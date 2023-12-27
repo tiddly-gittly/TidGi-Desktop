@@ -28,10 +28,11 @@ import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import { IThemeService } from '@services/theme/interface';
 import { debounce } from 'lodash';
-import { IWindowService } from './interface';
+import { IWindowOpenConfig, IWindowService } from './interface';
 
 @injectable()
 export class Window implements IWindowService {
+  // TODO: use WeakMap instead
   private windows = {} as Partial<Record<WindowNames, BrowserWindow | undefined>>;
   private windowMeta = {} as Partial<WindowMeta>;
   /** menubar version of main window, if user set openInMenubar to true in preferences */
@@ -107,35 +108,40 @@ export class Window implements IWindowService {
     return this.mainWindowMenuBar?.window?.isFocused?.() ?? false;
   }
 
+  public async open<N extends WindowNames>(windowName: N, meta?: WindowMeta[N], config?: IWindowOpenConfig<N>): Promise<undefined>;
+  public async open<N extends WindowNames>(windowName: N, meta: WindowMeta[N] | undefined, config: IWindowOpenConfig<N> | undefined, returnWindow: true): Promise<BrowserWindow>;
   public async open<N extends WindowNames>(
     windowName: N,
-    windowMeta: WindowMeta[N] = {} as WindowMeta[N],
-    config?: {
-      recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean);
-    },
-  ): Promise<void> {
-    const { recreate = false } = config ?? {};
+    meta: WindowMeta[N] = {} as WindowMeta[N],
+    config?: IWindowOpenConfig<N>,
+    returnWindow?: boolean,
+  ): Promise<undefined | BrowserWindow> {
+    const { recreate = false, multiple = false } = config ?? {};
     const existedWindow = this.get(windowName);
     // update window meta
-    await this.setWindowMeta(windowName, windowMeta);
+    await this.setWindowMeta(windowName, meta);
     const existedWindowMeta = await this.getWindowMeta(windowName);
 
-    if (existedWindow !== undefined) {
+    if (existedWindow !== undefined && !multiple) {
       if (recreate === true || (typeof recreate === 'function' && existedWindowMeta !== undefined && recreate(existedWindowMeta))) {
         existedWindow.close();
       } else {
         existedWindow.show();
-        return;
+        if (returnWindow === true) {
+          return existedWindow;
+        }
       }
     }
 
     // create new window
     let windowWithBrowserViewConfig: Partial<BrowserWindowConstructorOptions> = {};
     let windowWithBrowserViewState: windowStateKeeperState | undefined;
-    const isWindowWithBrowserView = windowName === WindowNames.main || windowName === WindowNames.menuBar;
-    if (isWindowWithBrowserView) {
+    const WindowToKeepPositionState = [WindowNames.main, WindowNames.menuBar];
+    const WindowWithBrowserView = [WindowNames.main, WindowNames.menuBar, WindowNames.secondary];
+    const isWindowWithBrowserView = WindowWithBrowserView.includes(windowName);
+    if (WindowToKeepPositionState.includes(windowName)) {
       windowWithBrowserViewState = windowStateKeeper({
-        file: windowName === WindowNames.main ? 'window-state-main-window.json' : 'window-state-menubar.json',
+        file: `window-state-${windowName}.json`,
         path: SETTINGS_FOLDER,
         defaultWidth: windowDimension[WindowNames.main].width,
         defaultHeight: windowDimension[WindowNames.main].height,
@@ -167,7 +173,7 @@ export class Window implements IWindowService {
         preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY,
         additionalArguments: [
           `${MetaDataChannel.browserViewMetaData}${windowName}`,
-          `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(windowMeta))}`,
+          `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(meta))}`,
         ],
       },
       parent: isWindowWithBrowserView ? undefined : this.get(WindowNames.main),
@@ -180,7 +186,7 @@ export class Window implements IWindowService {
       }
       newWindow = this.mainWindowMenuBar.window;
     } else {
-      newWindow = await this.handleCreateBasicWindow(windowName, windowConfig, windowMeta);
+      newWindow = await this.handleCreateBasicWindow(windowName, windowConfig, meta, config);
       if (isWindowWithBrowserView) {
         this.registerMainWindowListeners(newWindow);
         // calling this to redundantly setBounds BrowserView
@@ -193,17 +199,22 @@ export class Window implements IWindowService {
       }
     }
     windowWithBrowserViewState?.manage(newWindow);
+    if (returnWindow === true) {
+      return newWindow;
+    }
   }
 
   private async handleCreateBasicWindow<N extends WindowNames>(
     windowName: N,
     windowConfig: BrowserWindowConstructorOptions,
     windowMeta: WindowMeta[N] = {} as WindowMeta[N],
+    config?: IWindowOpenConfig<N>,
   ): Promise<BrowserWindow> {
     const newWindow = new BrowserWindow(windowConfig);
     const newWindowURL = windowMeta !== undefined && 'uri' in windowMeta ? windowMeta.uri : MAIN_WINDOW_WEBPACK_ENTRY;
-
-    this.windows[windowName] = newWindow;
+    if (config?.multiple !== true) {
+      this.windows[windowName] = newWindow;
+    }
 
     const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(newWindow.webContents);
     newWindow.on('closed', () => {

@@ -22,6 +22,7 @@ export interface IInitializeWorkspaceOptions {
  * Deal with operations that needs to create a workspace and a browserView at once
  */
 export interface IWorkspaceViewService {
+  addViewForAllBrowserViews(workspace: IWorkspace): Promise<void>;
   /**
    * Hide BrowserView, so page below it will show up.
    */
@@ -49,6 +50,10 @@ export interface IWorkspaceViewService {
    * @param workspaceID
    */
   openUrlInWorkspace(url: string, workspaceID: string): Promise<void>;
+  /**
+   * Create a new separate window, and load wiki for a workspace.
+   */
+  openWorkspaceWindowWithView(workspace: IWorkspace, configs?: { uri?: string }): Promise<void>;
   printTiddler(tiddlerName?: string | undefined): Promise<void>;
   realignActiveWorkspace(id?: string): Promise<void>;
   /**
@@ -76,6 +81,7 @@ export interface IWorkspaceViewService {
 export const WorkspaceViewServiceIPCDescriptor = {
   channel: WorkspaceViewChannel.name,
   properties: {
+    addViewForAllBrowserViews: ProxyPropertyType.Function,
     clearBrowsingData: ProxyPropertyType.Function,
     clearBrowsingDataWithConfirm: ProxyPropertyType.Function,
     hibernateWorkspaceView: ProxyPropertyType.Function,

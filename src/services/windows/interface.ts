@@ -3,6 +3,17 @@ import { BrowserWindow } from 'electron';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { WindowMeta, WindowNames } from './WindowProperties';
 
+export interface IWindowOpenConfig<N extends WindowNames> {
+  /**
+   * Allow multiple window with same name
+   */
+  multiple?: boolean;
+  /**
+   * If recreate is true, we will close the window if it is already opened, and create a new one.
+   */
+  recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean);
+}
+
 /**
  * Create and manage window open and destroy, you can get all opened electron window instance here
  */
@@ -20,13 +31,13 @@ export interface IWindowService {
   isMenubarOpen(): Promise<boolean>;
   loadURL(windowName: WindowNames, newUrl?: string): Promise<void>;
   maximize(): Promise<void>;
-  open<N extends WindowNames>(
-    windowName: N,
-    meta?: WindowMeta[N],
-    config?: {
-      recreate?: boolean | ((windowMeta: WindowMeta[N]) => boolean);
-    },
-  ): Promise<void>;
+  /**
+   * Create a new window.
+   * @param returnWindow Return created window or not. Usually false, so this method can be call IPC way (because window will cause `Failed to serialize arguments`).
+   */
+  open<N extends WindowNames>(windowName: N, meta?: WindowMeta[N], config?: IWindowOpenConfig<N>): Promise<undefined>;
+  open<N extends WindowNames>(windowName: N, meta: WindowMeta[N] | undefined, config: IWindowOpenConfig<N> | undefined, returnWindow: true): Promise<BrowserWindow>;
+  open<N extends WindowNames>(windowName: N, meta?: WindowMeta[N], config?: IWindowOpenConfig<N>, returnWindow?: boolean): Promise<undefined | BrowserWindow>;
   reload(windowName: WindowNames): Promise<void>;
   requestRestart(): Promise<void>;
   sendToAllWindows: (channel: Channels, ...arguments_: unknown[]) => Promise<void>;

@@ -19,9 +19,9 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
+import { ViewLoadUrlError } from './error';
 import { handleNewWindow } from './handleNewWindow';
 import { handleViewFileContentLoading } from './setupViewFileProtocol';
-import { ViewLoadUrlError } from './error';
 
 export interface IViewContext {
   loadInitialUrlWithCatch: () => Promise<void>;

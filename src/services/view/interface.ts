@@ -1,9 +1,9 @@
-import { BrowserView, BrowserWindow } from 'electron';
+import type { BrowserView, BrowserWindow, WebPreferences } from 'electron';
+import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 import { ViewChannel } from '@/constants/channels';
-import { WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspace } from '@services/workspaces/interface';
-import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import type { WindowNames } from '@services/windows/WindowProperties';
+import type { IWorkspace } from '@services/workspaces/interface';
 
 export type INewWindowAction =
   | {
@@ -22,11 +22,11 @@ export interface IViewService {
    * Add a new browserView and load the url
    */
   addView: (workspace: IWorkspace, windowName: WindowNames) => Promise<void>;
-  addViewForAllBrowserViews(workspace: IWorkspace): Promise<void>;
   /**
    * Check if we can skip the addView() for a workspace
    */
   alreadyHaveView(workspace: IWorkspace): Promise<boolean>;
+  createViewAddToWindow(workspace: IWorkspace, browserWindow: BrowserWindow, sharedWebPreferences: WebPreferences): Promise<BrowserView>;
   forEachView: (functionToRun: (view: BrowserView, workspaceID: string, windowName: WindowNames) => void) => void;
   /**
    * If menubar is open, we get menubar browser view, else we get main window browser view
@@ -37,15 +37,17 @@ export interface IViewService {
    */
   getActiveBrowserViews: () => Promise<Array<BrowserView | undefined>>;
   getAllViewOfWorkspace: (workspaceID: string) => BrowserView[];
+  getSharedWebPreferences(workspace: IWorkspace): Promise<WebPreferences>;
   getView: (workspaceID: string, windowName: WindowNames) => BrowserView | undefined;
   getViewCount(): Promise<number>;
   getViewCurrentUrl(workspaceID?: string): Promise<string | undefined>;
   hideView(browserWindow: BrowserWindow): Promise<void>;
+  initializeWorkspaceViewHandlersAndLoad(workspace: IWorkspace, browserWindow: BrowserWindow, view: BrowserView, sharedWebPreferences: WebPreferences, uri?: string): Promise<void>;
   /**
    * Try catch loadUrl, other wise it will throw unhandled promise rejection Error: ERR_CONNECTION_REFUSED (-102) loading 'http://localhost:5212/
    * We will set `didFailLoadErrorMessage`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
    */
-  loadUrlForView(workspace: IWorkspace, view: BrowserView, windowName: WindowNames): Promise<void>;
+  loadUrlForView(workspace: IWorkspace, view: BrowserView): Promise<void>;
   realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;
   reloadActiveBrowserView: () => Promise<void>;
   reloadViewsWebContents(workspaceID?: string | undefined): Promise<void>;
@@ -67,11 +69,11 @@ export const ViewServiceIPCDescriptor = {
   channel: ViewChannel.name,
   properties: {
     addView: ProxyPropertyType.Function,
-    addViewForAllBrowserViews: ProxyPropertyType.Function,
     alreadyHaveView: ProxyPropertyType.Function,
     forEachView: ProxyPropertyType.Function,
     getActiveBrowserView: ProxyPropertyType.Function,
     getAllViewOfWorkspace: ProxyPropertyType.Function,
+    initializeWorkspaceViewHandlersAndLoad: ProxyPropertyType.Function,
     getView: ProxyPropertyType.Function,
     getViewCount: ProxyPropertyType.Function,
     getViewCurrentUrl: ProxyPropertyType.Function,

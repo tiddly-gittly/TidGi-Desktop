@@ -233,15 +233,6 @@ export class View implements IViewService {
   private shouldMuteAudio = false;
   private shouldPauseNotifications = false;
 
-  public async addViewForAllBrowserViews(workspace: IWorkspace): Promise<void> {
-    await Promise.all([
-      this.addView(workspace, WindowNames.main),
-      this.preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
-        return await (attachToMenubar && this.addView(workspace, WindowNames.menuBar));
-      }),
-    ]);
-  }
-
   public async alreadyHaveView(workspace: IWorkspace): Promise<boolean> {
     const checkNotExist = (workspaceToCheck: IWorkspace, windowName: WindowNames): boolean => {
       const existedView = this.getView(workspaceToCheck.id, windowName);
@@ -266,13 +257,19 @@ export class View implements IViewService {
       logger.warn(`BrowserViewService.addView: ${workspace.id} 's browser window is not ready`);
       return;
     }
-    // create a new BrowserView
+    const sharedWebPreferences = await this.getSharedWebPreferences(workspace);
+    const view = await this.createViewAddToWindow(workspace, browserWindow, sharedWebPreferences);
+    this.setView(workspace.id, windowName, view);
+    await this.initializeWorkspaceViewHandlersAndLoad(workspace, browserWindow, view, sharedWebPreferences);
+  }
+
+  public async getSharedWebPreferences(workspace: IWorkspace) {
     const preferences = await this.preferenceService.getPreferences();
     const { spellcheck } = preferences;
 
     const sessionOfView = setupViewSession(workspace, preferences);
     const browserViewMetaData: IBrowserViewMetaData = { workspaceID: workspace.id };
-    const sharedWebPreferences: WebPreferences = {
+    return {
       devTools: true,
       spellcheck,
       nodeIntegration: false,
@@ -287,7 +284,11 @@ export class View implements IViewService {
         `${MetaDataChannel.browserViewMetaData}${WindowNames.view}`,
         `${MetaDataChannel.browserViewMetaData}${encodeURIComponent(JSON.stringify(browserViewMetaData))}`,
       ],
-    };
+    } satisfies WebPreferences;
+  }
+
+  public async createViewAddToWindow(workspace: IWorkspace, browserWindow: BrowserWindow, sharedWebPreferences: WebPreferences): Promise<BrowserView> {
+    // create a new BrowserView
     const view = new BrowserView({
       webPreferences: sharedWebPreferences,
     });
@@ -304,7 +305,6 @@ export class View implements IViewService {
     if (this.shouldMuteAudio !== undefined) {
       view.webContents.audioMuted = this.shouldMuteAudio;
     }
-    this.setView(workspace.id, windowName, view);
     if (workspace.active) {
       browserWindow.setBrowserView(view);
       const contentSize = browserWindow.getContentSize();
@@ -314,25 +314,29 @@ export class View implements IViewService {
         height: true,
       });
     }
+    return view;
+  }
+
+  public async initializeWorkspaceViewHandlersAndLoad(workspace: IWorkspace, browserWindow: BrowserWindow, view: BrowserView, sharedWebPreferences: WebPreferences, uri?: string) {
     setupViewEventHandlers(view, browserWindow, {
       shouldPauseNotifications: this.shouldPauseNotifications,
       workspace,
       sharedWebPreferences,
       loadInitialUrlWithCatch: async () => {
-        await this.loadUrlForView(workspace, view, windowName);
+        await this.loadUrlForView(workspace, view, uri);
       },
     });
     setupIpcServerRoutesHandlers(view, workspace.id);
-    await this.loadUrlForView(workspace, view, windowName);
+    await this.loadUrlForView(workspace, view, uri);
   }
 
-  public async loadUrlForView(workspace: IWorkspace, view: BrowserView, windowName: WindowNames): Promise<void> {
+  public async loadUrlForView(workspace: IWorkspace, view: BrowserView, uri?: string): Promise<void> {
     const { rememberLastPageVisited } = await this.preferenceService.getPreferences();
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/strict-boolean-expressions
-    const urlToLoad = (rememberLastPageVisited ? workspace.lastUrl : workspace.homeUrl) || workspace.homeUrl || getDefaultTidGiUrl(workspace.id);
+    const urlToLoad = uri || (rememberLastPageVisited ? workspace.lastUrl : workspace.homeUrl) || workspace.homeUrl || getDefaultTidGiUrl(workspace.id);
     try {
       logger.debug(
-        `loadUrlForView(): view.webContents: ${String(view.webContents)} urlToLoad: ${urlToLoad} for windowName ${windowName} for workspace ${workspace.name}`,
+        `loadUrlForView(): view.webContents: ${String(view.webContents)} urlToLoad: ${urlToLoad} for workspace ${workspace.name}`,
         { stack: new Error('stack').stack?.replace('Error:', '') },
       );
       // if workspace failed to load, means nodejs server may have plugin error or something. Stop retrying, and show the error message in src/pages/Main/ErrorMessage.tsx

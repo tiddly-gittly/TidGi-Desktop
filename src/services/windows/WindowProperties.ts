@@ -4,7 +4,7 @@ export enum WindowNames {
   about = 'about',
   addWorkspace = 'addWorkspace',
   /**
-   * Open any website URL, this is a popup window that user can open second wiki window in a popup window. Or used for open a help resource.
+   * Open any website URL, this is a popup window that user can open a help resource.
    */
   any = 'any',
   auth = 'auth',
@@ -17,6 +17,10 @@ export enum WindowNames {
   menuBar = 'menuBar',
   notifications = 'notifications',
   preferences = 'preferences',
+  /**
+   * Second wiki window in a popup window.
+   */
+  secondary = 'secondary',
   spellcheck = 'spellcheck',
   /**
    * browserView that loads the wiki webpage
@@ -31,6 +35,10 @@ export enum WindowNames {
 export const windowDimension: Record<WindowNames, { height?: number; width?: number }> = {
   [WindowNames.main]: {
     width: 1200,
+    height: 768,
+  },
+  [WindowNames.secondary]: {
+    width: 600,
     height: 768,
   },
   [WindowNames.any]: {
@@ -95,6 +103,7 @@ export interface WindowMeta {
   [WindowNames.notifications]: undefined;
   [WindowNames.preferences]: IPreferenceWindowMeta;
   [WindowNames.spellcheck]: undefined;
+  [WindowNames.secondary]: undefined;
   [WindowNames.view]: { workspaceID?: string };
 }
 export type IPossibleWindowMeta<M extends WindowMeta[WindowNames] = WindowMeta[WindowNames.main]> = {

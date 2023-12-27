@@ -164,7 +164,7 @@ export class WorkspaceView implements IWorkspaceViewService {
         return;
       }
       // Create browserView, and if user want a menubar, we also create a new window for that
-      await this.viewService.addViewForAllBrowserViews(workspace);
+      await this.addViewForAllBrowserViews(workspace);
       if (isNew && options.from === WikiCreationMethod.Create) {
         const view = this.viewService.getView(workspace.id, WindowNames.main);
         if (view !== undefined) {
@@ -198,6 +198,25 @@ export class WorkspaceView implements IWorkspaceViewService {
       initDatabaseWhenInitializeWorkspaceView(),
     ]);
     void syncGitWhenInitializeWorkspaceView();
+  }
+
+  public async addViewForAllBrowserViews(workspace: IWorkspace): Promise<void> {
+    await Promise.all([
+      this.viewService.addView(workspace, WindowNames.main),
+      this.preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
+        return await (attachToMenubar && this.viewService.addView(workspace, WindowNames.menuBar));
+      }),
+    ]);
+  }
+
+  public async openWorkspaceWindowWithView(workspace: IWorkspace, configs?: { uri?: string }): Promise<void> {
+    const uriToOpen = configs?.uri ?? workspace.lastUrl ?? workspace.homeUrl;
+    logger.debug('Open workspace in new window. uriToOpen here will overwrite the decision in initializeWorkspaceViewHandlersAndLoad.', { id: workspace.id, uriToOpen, function: 'openWorkspaceWindowWithView' });
+    const browserWindow = await this.windowService.open(WindowNames.secondary, undefined, undefined, true);
+    const sharedWebPreferences = await this.viewService.getSharedWebPreferences(workspace);
+    const view = await this.viewService.createViewAddToWindow(workspace, browserWindow, sharedWebPreferences);
+    logger.debug('View created in new window.', { id: workspace.id, uriToOpen, function: 'openWorkspaceWindowWithView' });
+    await this.viewService.initializeWorkspaceViewHandlersAndLoad(workspace, browserWindow, view, sharedWebPreferences, uriToOpen);
   }
 
   public async updateLastUrl(
@@ -335,7 +354,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       });
       await Promise.all([
         this.wikiService.startWiki(workspaceID, userName),
-        this.viewService.addViewForAllBrowserViews(workspace),
+        this.addViewForAllBrowserViews(workspace),
       ]);
     }
   }
@@ -466,7 +485,7 @@ export class WorkspaceView implements IWorkspaceViewService {
           [WindowNames.main, WindowNames.menuBar].map(async (windowName) => {
             const view = this.viewService.getView(workspace.id, windowName);
             if (view !== undefined) {
-              await this.viewService.loadUrlForView(workspace, view, windowName);
+              await this.viewService.loadUrlForView(workspace, view);
             }
           }),
         );
