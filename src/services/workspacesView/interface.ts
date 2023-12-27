@@ -88,6 +88,7 @@ export const WorkspaceViewServiceIPCDescriptor = {
     initializeWorkspaceView: ProxyPropertyType.Function,
     loadURL: ProxyPropertyType.Function,
     openUrlInWorkspace: ProxyPropertyType.Function,
+    openWorkspaceWindowWithView: ProxyPropertyType.Function,
     printTiddler: ProxyPropertyType.Function,
     realignActiveWorkspace: ProxyPropertyType.Function,
     removeWorkspaceView: ProxyPropertyType.Function,

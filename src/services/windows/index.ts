@@ -245,8 +245,12 @@ export class Window implements IWindowService {
       });
     }
     await this.updateWindowBackground(newWindow);
-    // This loading will wait for a while
-    await newWindow.loadURL(newWindowURL);
+    // Not loading main window (like sidebar and background) here. Only load wiki in browserView in the secondary window.
+    const isWindowToLoadURL = windowName !== WindowNames.secondary;
+    if (isWindowToLoadURL) {
+      // This loading will wait for a while
+      await newWindow.loadURL(newWindowURL);
+    }
     await webContentLoadingPromise;
     return newWindow;
   }

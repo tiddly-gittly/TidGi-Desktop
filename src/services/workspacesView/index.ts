@@ -211,7 +211,11 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   public async openWorkspaceWindowWithView(workspace: IWorkspace, configs?: { uri?: string }): Promise<void> {
     const uriToOpen = configs?.uri ?? workspace.lastUrl ?? workspace.homeUrl;
-    logger.debug('Open workspace in new window. uriToOpen here will overwrite the decision in initializeWorkspaceViewHandlersAndLoad.', { id: workspace.id, uriToOpen, function: 'openWorkspaceWindowWithView' });
+    logger.debug('Open workspace in new window. uriToOpen here will overwrite the decision in initializeWorkspaceViewHandlersAndLoad.', {
+      id: workspace.id,
+      uriToOpen,
+      function: 'openWorkspaceWindowWithView',
+    });
     const browserWindow = await this.windowService.open(WindowNames.secondary, undefined, undefined, true);
     const sharedWebPreferences = await this.viewService.getSharedWebPreferences(workspace);
     const view = await this.viewService.createViewAddToWindow(workspace, browserWindow, sharedWebPreferences);
