@@ -4,7 +4,7 @@ import AccessibilityNewIcon from '@mui/icons-material/AccessibilityNew';
 import AltRouteIcon from '@mui/icons-material/AltRoute';
 import OpenInBrowserIcon from '@mui/icons-material/OpenInBrowser';
 import OpenInNewIcon from '@mui/icons-material/OpenInNew';
-import { Button, Card, CardActions, CardContent, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
+import { Button, Card, CardActions, CardContent, Chip, ListItemIcon, ListItemText, Menu, MenuItem, Typography } from '@mui/material';
 import { WindowNames } from '@services/windows/WindowProperties';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -46,8 +46,9 @@ export const HelpWebsiteItem: React.FC<HelpWebsiteItemProps> = ({ item }) => {
   return (
     <StyledCard>
       <CardContent>
-        <h3>{item.title}</h3>
-        <p>{item.description}</p>
+        <Typography variant='h5' component='div'>{item.title}</Typography>
+        <Typography variant='body2'>{item.description}</Typography>
+        {item.tags.map((tag) => <Chip key={tag} label={t(`Help.Tags.${tag}`)} style={{ marginRight: 10, marginTop: 5 }} />)}
       </CardContent>
       <CardActions>
         <Button
