@@ -38,7 +38,7 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     height: 768,
   },
   [WindowNames.secondary]: {
-    width: 600,
+    width: 961,
     height: 768,
   },
   [WindowNames.any]: {
