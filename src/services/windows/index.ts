@@ -79,7 +79,7 @@ export class Window implements IWindowService {
         // adjust bounds to hide the gap for find in page
         if (close === true && mainWindow !== undefined) {
           const contentSize = mainWindow.getContentSize();
-          view.setBounds(await getViewBounds(contentSize as [number, number]));
+          view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
         }
       }
     }
@@ -188,7 +188,7 @@ export class Window implements IWindowService {
     } else {
       newWindow = await this.handleCreateBasicWindow(windowName, windowConfig, meta, config);
       if (isWindowWithBrowserView) {
-        this.registerMainWindowListeners(newWindow);
+        this.registerBrowserViewWindowListeners(newWindow, windowName);
         // calling this to redundantly setBounds BrowserView
         // after the UI is fully loaded
         // if not, BrowserView mouseover event won't work correctly
@@ -255,14 +255,13 @@ export class Window implements IWindowService {
     return newWindow;
   }
 
-  private registerMainWindowListeners(newWindow: BrowserWindow): void {
+  private registerBrowserViewWindowListeners(newWindow: BrowserWindow, windowName: WindowNames): void {
     // Enable swipe to navigate
     void this.preferenceService.get('swipeToNavigate').then((swipeToNavigate) => {
       if (swipeToNavigate) {
-        const mainWindow = this.get(WindowNames.main);
-        if (mainWindow === undefined) return;
-        mainWindow.on('swipe', (_event, direction) => {
-          const view = mainWindow?.getBrowserView();
+        if (newWindow === undefined) return;
+        newWindow.on('swipe', (_event, direction) => {
+          const view = newWindow?.getBrowserView();
           // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
           if (view) {
             if (direction === 'left') {
@@ -277,41 +276,38 @@ export class Window implements IWindowService {
     // Hide window instead closing on macos
     newWindow.on('close', async (event) => {
       const windowMeta = await this.getWindowMeta(WindowNames.main);
-      const mainWindow = this.get(WindowNames.main);
-      if (mainWindow === undefined) return;
+      if (newWindow === undefined) return;
       if (isMac && windowMeta?.forceClose !== true) {
         event.preventDefault();
         // https://github.com/electron/electron/issues/6033#issuecomment-242023295
-        if (mainWindow.isFullScreen()) {
-          mainWindow.once('leave-full-screen', () => {
-            const mainWindow = this.get(WindowNames.main);
-            if (mainWindow !== undefined) {
-              mainWindow.hide();
+        if (newWindow.isFullScreen()) {
+          newWindow.once('leave-full-screen', () => {
+            if (newWindow !== undefined) {
+              newWindow.hide();
             }
           });
-          mainWindow.setFullScreen(false);
+          newWindow.setFullScreen(false);
         } else {
-          mainWindow.hide();
+          newWindow.hide();
         }
       }
     });
 
     newWindow.on('focus', () => {
-      const mainWindow = this.get(WindowNames.main);
-      if (mainWindow === undefined) return;
-      const view = mainWindow?.getBrowserView();
+      if (newWindow === undefined) return;
+      const view = newWindow?.getBrowserView();
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       view?.webContents?.focus();
     });
 
     newWindow.on('enter-full-screen', async () => {
-      const mainWindow = this.get(WindowNames.main);
+      const mainWindow = this.get(windowName);
       if (mainWindow === undefined) return;
       mainWindow?.webContents.send('is-fullscreen-updated', true);
       await this.workspaceViewService.realignActiveWorkspace();
     });
     newWindow.on('leave-full-screen', async () => {
-      const mainWindow = this.get(WindowNames.main);
+      const mainWindow = this.get(windowName);
       if (mainWindow === undefined) return;
       mainWindow?.webContents.send('is-fullscreen-updated', false);
       await this.workspaceViewService.realignActiveWorkspace();
@@ -427,7 +423,7 @@ export class Window implements IWindowService {
               mainWindow.webContents.send(WindowChannel.openFindInPage);
               const contentSize = mainWindow.getContentSize();
               const view = mainWindow.getBrowserView();
-              view?.setBounds(await getViewBounds(contentSize as [number, number], true));
+              view?.setBounds(await getViewBounds(contentSize as [number, number], { findInPage: true }));
             }
           },
           enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,

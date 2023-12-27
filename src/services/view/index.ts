@@ -258,7 +258,7 @@ export class View implements IViewService {
       return;
     }
     const sharedWebPreferences = await this.getSharedWebPreferences(workspace);
-    const view = await this.createViewAddToWindow(workspace, browserWindow, sharedWebPreferences);
+    const view = await this.createViewAddToWindow(workspace, browserWindow, sharedWebPreferences, windowName);
     this.setView(workspace.id, windowName, view);
     await this.initializeWorkspaceViewHandlersAndLoad(workspace, browserWindow, view, sharedWebPreferences);
   }
@@ -287,7 +287,7 @@ export class View implements IViewService {
     } satisfies WebPreferences;
   }
 
-  public async createViewAddToWindow(workspace: IWorkspace, browserWindow: BrowserWindow, sharedWebPreferences: WebPreferences): Promise<BrowserView> {
+  public async createViewAddToWindow(workspace: IWorkspace, browserWindow: BrowserWindow, sharedWebPreferences: WebPreferences, windowName: WindowNames): Promise<BrowserView> {
     // create a new BrowserView
     const view = new BrowserView({
       webPreferences: sharedWebPreferences,
@@ -308,7 +308,7 @@ export class View implements IViewService {
     if (workspace.active) {
       browserWindow.setBrowserView(view);
       const contentSize = browserWindow.getContentSize();
-      view.setBounds(await getViewBounds(contentSize as [number, number]));
+      view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
       view.setAutoResize({
         width: true,
         height: true,
@@ -405,10 +405,10 @@ export class View implements IViewService {
       logger.debug(`setActiveView() setBrowserView`);
       const contentSize = browserWindow.getContentSize();
       if (workspace !== undefined && (await this.workspaceService.workspaceDidFailLoad(workspace.id))) {
-        view.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
+        view.setBounds(await getViewBounds(contentSize as [number, number], { findInPage: false, windowName }, 0, 0)); // hide browserView to show error message
       } else {
         logger.debug(`setActiveView() contentSize ${JSON.stringify(contentSize)}`);
-        view.setBounds(await getViewBounds(contentSize as [number, number]));
+        view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
       }
       view.setAutoResize({
         width: true,
@@ -591,7 +591,7 @@ export class View implements IViewService {
     const view = browserWindow.getBrowserView();
     if (view !== null) {
       const contentSize = browserWindow.getContentSize();
-      view?.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message or other pages
+      view?.setBounds(await getViewBounds(contentSize as [number, number], { findInPage: false }, 0, 0)); // hide browserView to show error message or other pages
     }
   }
 }

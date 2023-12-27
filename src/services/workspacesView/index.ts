@@ -218,7 +218,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     });
     const browserWindow = await this.windowService.open(WindowNames.secondary, undefined, undefined, true);
     const sharedWebPreferences = await this.viewService.getSharedWebPreferences(workspace);
-    const view = await this.viewService.createViewAddToWindow(workspace, browserWindow, sharedWebPreferences);
+    const view = await this.viewService.createViewAddToWindow(workspace, browserWindow, sharedWebPreferences, WindowNames.secondary);
     logger.debug('View created in new window.', { id: workspace.id, uriToOpen, function: 'openWorkspaceWindowWithView' });
     await this.viewService.initializeWorkspaceViewHandlersAndLoad(workspace, browserWindow, view, sharedWebPreferences, uriToOpen);
   }

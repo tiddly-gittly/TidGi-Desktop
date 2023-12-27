@@ -167,7 +167,7 @@ export default function setupViewEventHandlers(
       if (workspaceObject.active && browserWindow !== undefined && !browserWindow.isDestroyed()) {
         // fix https://github.com/atomery/singlebox/issues/228
         const contentSize = browserWindow.getContentSize();
-        view.setBounds(await getViewBounds(contentSize as [number, number], false, 0, 0)); // hide browserView to show error message
+        view.setBounds(await getViewBounds(contentSize as [number, number], { findInPage: false }, 0, 0)); // hide browserView to show error message
       }
     }
     // edge case to handle failed auth, use setTimeout to prevent infinite loop

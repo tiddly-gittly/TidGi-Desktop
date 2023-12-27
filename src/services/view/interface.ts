@@ -26,7 +26,7 @@ export interface IViewService {
    * Check if we can skip the addView() for a workspace
    */
   alreadyHaveView(workspace: IWorkspace): Promise<boolean>;
-  createViewAddToWindow(workspace: IWorkspace, browserWindow: BrowserWindow, sharedWebPreferences: WebPreferences): Promise<BrowserView>;
+  createViewAddToWindow(workspace: IWorkspace, browserWindow: BrowserWindow, sharedWebPreferences: WebPreferences, windowName: WindowNames): Promise<BrowserView>;
   forEachView: (functionToRun: (view: BrowserView, workspaceID: string, windowName: WindowNames) => void) => void;
   /**
    * If menubar is open, we get menubar browser view, else we get main window browser view
