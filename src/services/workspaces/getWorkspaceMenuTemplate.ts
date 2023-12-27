@@ -36,6 +36,7 @@ interface IWorkspaceMenuRequiredServices {
     | 'restartWorkspaceViewService'
     | 'realignActiveWorkspace'
     | 'openUrlInWorkspace'
+    | 'openWorkspaceWindowWithView'
   >;
 }
 
@@ -67,7 +68,7 @@ export async function getWorkspaceMenuTemplate(
   t: TFunction<[_DefaultNamespace, ...Array<Exclude<FlatNamespace, _DefaultNamespace>>]>,
   service: IWorkspaceMenuRequiredServices,
 ): Promise<MenuItemConstructorOptions[]> {
-  const { active, id, mainWikiID, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, name, enableHTTPAPI } = workspace;
+  const { active, id, mainWikiID, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, name, enableHTTPAPI, lastUrl, homeUrl } = workspace;
   /* eslint-disable @typescript-eslint/no-misused-promises */
   const template: MenuItemConstructorOptions[] = [
     {
@@ -76,6 +77,13 @@ export async function getWorkspaceMenuTemplate(
       }),
       click: async () => {
         await openWorkspaceTagTiddler(workspace, service);
+      },
+    },
+    {
+      label: t('ContextMenu.OpenWorkspaceInNewWindow'),
+      enabled: !hibernated,
+      click: async () => {
+        await service.workspaceView.openWorkspaceWindowWithView(workspace, { uri: lastUrl ?? homeUrl });
       },
     },
     {
