@@ -4,11 +4,13 @@ import { useEffect, useState } from 'react';
 import { LastArrayElement } from 'type-fest';
 import helpPages from './helpPages.json';
 
-function makeFallbackUrlsArray(item: LastArrayElement<typeof helpPages.default>): Omit<LastArrayElement<typeof helpPages.default>, 'fallbackUrls'> & { fallbackUrls: string[] } {
-  return { ...item, fallbackUrls: item?.fallbackUrls?.split(' ') ?? [] };
+function makeFallbackUrlsArray(
+  item: LastArrayElement<typeof helpPages.default>,
+): Omit<LastArrayElement<typeof helpPages.default>, 'fallbackUrls' | 'language'> & { fallbackUrls: string[]; language: string[] } {
+  return { ...item, fallbackUrls: item?.fallbackUrls?.split(' ') ?? [], language: item?.language?.split(' ') ?? [] };
 }
 
-export function useLoadHelpPagesList() {
+export function useLoadHelpPagesList(language = 'en-GB') {
   const [items, setItems] = useState(helpPages.default.map(makeFallbackUrlsArray));
   useEffect(() => {
     const loadMoreItems = async () => {
@@ -34,5 +36,5 @@ export function useLoadHelpPagesList() {
     void loadMoreItems();
   }, []);
 
-  return items;
+  return items.filter(item => item.language.includes(language));
 }

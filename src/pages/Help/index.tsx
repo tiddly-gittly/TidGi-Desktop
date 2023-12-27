@@ -1,16 +1,41 @@
-import { Grid } from '@mui/material';
+import { Divider, Grid, Typography } from '@mui/material';
+import { usePreferenceObservable } from '@services/preferences/hooks';
+import { useTranslation } from 'react-i18next';
+import { styled } from 'styled-components';
+import { Languages } from '../Preferences/sections/Languages';
 import { HelpWebsiteItem } from './HelpWebsiteItem';
 import { useLoadHelpPagesList } from './useLoadHelpPagesList';
 
+const InnerContentRoot = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
+  padding: 10px;
+  width: 100%;
+  height: 100%;
+  overflow-y: auto;
+`;
+
 export function Help(): JSX.Element {
-  const items = useLoadHelpPagesList();
+  const { t } = useTranslation();
+  const preference = usePreferenceObservable();
+  const items = useLoadHelpPagesList(preference?.language);
   return (
-    <Grid container spacing={2}>
-      {items.map((item, index) => (
-        <Grid key={index} item xs={12} sm={6} md={4}>
-          <HelpWebsiteItem item={item} />
+    <>
+      <Languages languageSelectorOnly />
+      <InnerContentRoot>
+        <Typography>{t('Help.Description')}</Typography>
+        <Divider>{t('Help.List')}</Divider>
+        <Grid container spacing={2}>
+          {items.map((item, index) => (
+            <Grid key={index} item xs={12} sm={6} md={4}>
+              <HelpWebsiteItem item={item} />
+            </Grid>
+          ))}
         </Grid>
-      ))}
-    </Grid>
+      </InnerContentRoot>
+    </>
   );
 }

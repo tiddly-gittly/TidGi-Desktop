@@ -464,6 +464,9 @@
   "Edit": "Edit",
   "Open": "Open",
   "Help": {
-    "Alternatives": "Alternatives"
+    "Alternatives": "Alternatives",
+    "Description": "Clicking the \"Open\" button will open the page in a new window. The page needs to be loaded from the Internet for the first time (5s - 1min), so it is not available when the network is disconnected. \nYou can modify the content of the opened page at will as a sandbox playground to try out the learned features. If you want to save the modified results, you can click Tiddlywiki's save button to save it as a single-page wiki in HTML format.",
+    "List": "Helps List",
+    "Contribute": "Contribute to this site"
   }
 }

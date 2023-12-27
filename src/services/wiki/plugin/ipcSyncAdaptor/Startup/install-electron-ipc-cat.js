@@ -10,7 +10,7 @@ exports.startup = function() {
     // call setupSSE in `src/services/wiki/plugin/ipcSyncAdaptor/ipc-syncadaptor.ts` of TidGi-Desktop
     if (typeof $tw !== 'undefined') {
       // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      $tw.syncadaptor?.setupSSE();
+      $tw.syncadaptor?.setupSSE?.();
     }
   }
 };
