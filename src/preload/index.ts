@@ -12,7 +12,7 @@ import 'electron-ipc-cat/fixContextIsolation';
 import { ViewChannel } from '@/constants/channels';
 import { IPossibleWindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { browserViewMetaData } from './common/browserViewMetaData';
-import './common/authingPostMessage';
+import './common/authRedirect';
 import './view';
 import { syncTidgiStateWhenWikiLoads } from './appState';
 import { fixAlertConfirm } from './fixer/fixAlertConfirm';

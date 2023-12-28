@@ -25,7 +25,7 @@ async function refresh(): Promise<void> {
     setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);
     return;
   }
-  if (window.location.href === CHROME_ERROR_PATH || window.location.href.startsWith(LOGIN_REDIRECT_PATH)) {
+  if (window.location.href === CHROME_ERROR_PATH || window.location.href.startsWith(`${LOGIN_REDIRECT_PATH}/?code=`)) {
     await windowService.loadURL(windowName, MAIN_WINDOW_WEBPACK_ENTRY);
   } else {
     setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);
@@ -42,7 +42,6 @@ interface IAuthingPostMessageEvent {
 
 if (![WindowNames.main, WindowNames.view].includes(windowName)) {
   setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);
-  // Only passing message that Authing needs to the window https://github.com/Authing/Guard/blob/db9df517c00a5eb51e406377ee4d7bb097054b68/src/views/login/SocialButtonsList.vue#L82-L89
   // https://stackoverflow.com/questions/55544936/communication-between-preload-and-client-given-context-isolation-in-electron
   window.addEventListener(
     'message',
