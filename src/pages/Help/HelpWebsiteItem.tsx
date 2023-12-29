@@ -37,7 +37,7 @@ export const HelpWebsiteItem: React.FC<HelpWebsiteItemProps> = ({ item }) => {
   };
 
   const openExternalLinkInApp = (uri: string) => {
-    void window.service.window.open(WindowNames.any, { uri });
+    void window.service.window.open(WindowNames.any, { uri }, { multiple: true });
   };
   const openExternalLinkInBrowser = (uri: string) => {
     void window.service.native.open(uri);

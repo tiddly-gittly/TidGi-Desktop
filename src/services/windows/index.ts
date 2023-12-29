@@ -130,6 +130,7 @@ export class Window implements IWindowService {
         if (returnWindow === true) {
           return existedWindow;
         }
+        return;
       }
     }
 
@@ -224,10 +225,13 @@ export class Window implements IWindowService {
     let webContentLoadingPromise: Promise<void> | undefined;
     if (windowName === WindowNames.main) {
       // handle window show and Webview/browserView show
-      webContentLoadingPromise = new Promise<void>((resolve) => {
+      webContentLoadingPromise = new Promise<void>((resolve, reject) => {
         newWindow.once('ready-to-show', async () => {
           const mainWindow = this.get(WindowNames.main);
-          if (mainWindow === undefined) return;
+          if (mainWindow === undefined) {
+            reject(new Error("Main window is undefined in newWindow.once('ready-to-show'"));
+            return;
+          }
           const { wasOpenedAsHidden } = app.getLoginItemSettings();
           if (!wasOpenedAsHidden) {
             mainWindow.show();
