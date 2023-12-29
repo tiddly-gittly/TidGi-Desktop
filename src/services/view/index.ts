@@ -349,8 +349,6 @@ export class View implements IViewService {
         didFailLoadErrorMessage: null,
         isLoading: true,
       });
-      // DEBUG devTool
-      // view.webContents.openDevTools({ mode: 'detach' });
       await view.webContents.loadURL(urlToLoad);
       logger.debug('loadUrlForView() await loadURL() done');
       const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(view.webContents);

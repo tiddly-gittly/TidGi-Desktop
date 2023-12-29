@@ -365,7 +365,7 @@ export default class ContextMenuBuilder {
     const inspect = new MenuItem({
       label: this.stringTable.developerTools(),
       click: () => {
-        this.webContents.openDevTools();
+        this.webContents.openDevTools({ mode: 'detach' });
       },
     });
     menu.append(inspect);

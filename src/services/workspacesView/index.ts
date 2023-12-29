@@ -258,7 +258,7 @@ export class WorkspaceView implements IWorkspaceViewService {
       {
         label: () => i18n.t('Menu.DeveloperToolsActiveWorkspace'),
         accelerator: 'CmdOrCtrl+Option+I',
-        click: async () => (await this.viewService.getActiveBrowserView())?.webContents?.openDevTools(),
+        click: async () => (await this.viewService.getActiveBrowserView())?.webContents?.openDevTools?.({ mode: 'detach' }),
         enabled: hasWorkspaces,
       },
     ]);
