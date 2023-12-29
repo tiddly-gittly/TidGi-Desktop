@@ -60,6 +60,7 @@ module.exports = {
     '@llama-node/rwkv-cpp',
     'dugite',
     'zx',
+    ...(process.platform === 'win32' ? [] : ['registry-js']),
   ],
   // externalsType: 'commonjs',
   // externalsPresets: { electronMain: true },

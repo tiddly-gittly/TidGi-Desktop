@@ -1,5 +1,7 @@
+/* eslint-disable unicorn/import-style */
 import * as Path from 'path';
-
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
+// @ts-ignore
 import { enumerateValues, HKEY, RegistryValue, RegistryValueType } from 'registry-js';
 
 import { logger } from '@services/libs/log';
