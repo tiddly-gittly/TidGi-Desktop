@@ -26,7 +26,7 @@ export function FriendLinks(props: ISectionProps): JSX.Element {
           <ListItem
             button
             onClick={async () => {
-              await window.service.native.open('https://github.com/webcatalog/webcatalog-engine');
+              await window.service.native.openURI('https://github.com/webcatalog/webcatalog-engine');
             }}
           >
             <ListItemText secondary={t('Preference.WebCatalogEngineIntro')} />
@@ -36,7 +36,7 @@ export function FriendLinks(props: ISectionProps): JSX.Element {
           <ListItem
             button
             onClick={async () => {
-              await window.service.native.open('https://webcatalogapp.com?utm_source=tidgi_app');
+              await window.service.native.openURI('https://webcatalogapp.com?utm_source=tidgi_app');
             }}
           >
             <ListItemText primary={<Logo src={webcatalogLogo} alt={t('Preference.WebCatalog')} />} secondary={t('Preference.WebCatalogIntro')} />
@@ -46,7 +46,7 @@ export function FriendLinks(props: ISectionProps): JSX.Element {
           <ListItem
             button
             onClick={async () => {
-              await window.service.native.open('https://translatiumapp.com?utm_source=tidgi_app');
+              await window.service.native.openURI('https://translatiumapp.com?utm_source=tidgi_app');
             }}
           >
             <ListItemText primary={<Logo src={translatiumLogo} alt={t('Preference.Translatium')} />} secondary={t('Preference.TranslatiumIntro')} />

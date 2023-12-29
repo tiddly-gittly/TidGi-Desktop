@@ -134,7 +134,7 @@ export function SideBar(): JSX.Element {
             id='update-available'
             aria-label={t('SideBar.UpdateAvailable')}
             onClick={async () => {
-              await window.service.native.open(updaterMetaData.info?.latestReleasePageUrl ?? latestStableUpdateUrl);
+              await window.service.native.openURI(updaterMetaData.info?.latestReleasePageUrl ?? latestStableUpdateUrl);
             }}
           >
             <Tooltip title={<span>{t('SideBar.UpdateAvailable')}</span>} placement='top'>

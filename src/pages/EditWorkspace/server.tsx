@@ -107,7 +107,7 @@ export function ServerOptions(props: IServerOptionsProps) {
                   {t('EditWorkspace.URL')}{' '}
                   <Link
                     onClick={async () => {
-                      actualIP && (await window.service.native.open(actualIP));
+                      actualIP && (await window.service.native.openURI(actualIP));
                     }}
                     style={{ cursor: 'pointer' }}
                   >

@@ -30,7 +30,7 @@ export function Miscellaneous(props: ISectionProps): JSX.Element {
           <ListItem
             button
             onClick={async () => {
-              await window.service.native.open('https://github.com/tiddly-gittly/TidGi-desktop/');
+              await window.service.native.openURI('https://github.com/tiddly-gittly/TidGi-desktop/');
             }}
           >
             <ListItemText primary={t('Preference.WebSite')} />
@@ -40,7 +40,7 @@ export function Miscellaneous(props: ISectionProps): JSX.Element {
           <ListItem
             button
             onClick={async () => {
-              await window.service.native.open('https://github.com/tiddly-gittly/TidGi-desktop/issues');
+              await window.service.native.openURI('https://github.com/tiddly-gittly/TidGi-desktop/issues');
             }}
           >
             <ListItemText primary={t('Preference.Support')} />

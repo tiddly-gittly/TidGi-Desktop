@@ -27,7 +27,7 @@ export function DeveloperTools(props: ISectionProps): JSX.Element {
                 button
                 onClick={() => {
                   if (LOG_FOLDER !== undefined) {
-                    void window.service.native.open(LOG_FOLDER, true);
+                    void window.service.native.openPath(LOG_FOLDER, true);
                   }
                 }}
               >
@@ -38,7 +38,7 @@ export function DeveloperTools(props: ISectionProps): JSX.Element {
                 button
                 onClick={() => {
                   if (SETTINGS_FOLDER !== undefined) {
-                    void window.service.native.open(SETTINGS_FOLDER, true);
+                    void window.service.native.openPath(SETTINGS_FOLDER, true);
                   }
                 }}
               >
@@ -50,7 +50,7 @@ export function DeveloperTools(props: ISectionProps): JSX.Element {
                 onClick={async () => {
                   if (V8_CACHE_FOLDER !== undefined) {
                     try {
-                      await window.service.native.open(V8_CACHE_FOLDER, true);
+                      await window.service.native.openPath(V8_CACHE_FOLDER, true);
                     } catch (error) {
                       console.error(error);
                     }

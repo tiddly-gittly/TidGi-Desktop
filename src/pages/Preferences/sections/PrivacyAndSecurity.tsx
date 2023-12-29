@@ -43,11 +43,11 @@ export function PrivacyAndSecurity(props: Required<ISectionProps>): JSX.Element 
                       <span>Not recommended.</span>
                       <Link
                         onClick={async () => {
-                          await window.service.native.open('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ');
+                          await window.service.native.openURI('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ');
                         }}
                         onKeyDown={(event: React.KeyboardEvent<HTMLSpanElement>) => {
                           if (event.key !== 'Enter') return;
-                          void window.service.native.open('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ');
+                          void window.service.native.openURI('https://groups.google.com/a/chromium.org/d/msg/security-dev/mB2KJv_mMzM/ddMteO9RjXEJ');
                         }}
                       >
                         Learn more
@@ -82,7 +82,7 @@ export function PrivacyAndSecurity(props: Required<ISectionProps>): JSX.Element 
               <ListItem
                 button
                 onClick={async () => {
-                  await window.service.native.open('https://github.com/tiddly-gittly/TidGi-Desktop/blob/master/PrivacyPolicy.md');
+                  await window.service.native.openURI('https://github.com/tiddly-gittly/TidGi-Desktop/blob/master/PrivacyPolicy.md');
                 }}
               >
                 <ListItemText primary='Privacy Policy' />

@@ -27,7 +27,7 @@ export function Updates(props: Required<ISectionProps>): JSX.Element {
                 button
                 onClick={updaterMetaData.status === IUpdaterStatus.updateAvailable
                   ? async () => {
-                    await window.service.native.open(updaterMetaData.info?.latestReleasePageUrl ?? latestStableUpdateUrl);
+                    await window.service.native.openURI(updaterMetaData.info?.latestReleasePageUrl ?? latestStableUpdateUrl);
                   }
                   : async () => {
                     await window.service.updater.checkForUpdates();

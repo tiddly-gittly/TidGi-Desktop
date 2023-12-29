@@ -8,7 +8,7 @@ export function reportErrorToGithubWithTemplates(error: Error): void {
     // eslint-disable-next-line @typescript-eslint/promise-function-async
     .then(({ container }) => {
       const nativeService = container.get<INativeService>(serviceIdentifier.NativeService);
-      return nativeService.open(LOG_FOLDER, true);
+      return nativeService.openPath(LOG_FOLDER, true);
     })
     .catch(async (error) => {
       await import('@services/libs/log').then(({ logger }) => {

@@ -30,7 +30,7 @@ export function LanguageModel(props: Partial<ISectionProps>): JSX.Element {
                 onClick={async () => {
                   if (LANGUAGE_MODEL_FOLDER !== undefined) {
                     await window.service.native.mkdir(LANGUAGE_MODEL_FOLDER);
-                    await window.service.native.open(LANGUAGE_MODEL_FOLDER, true);
+                    await window.service.native.openPath(LANGUAGE_MODEL_FOLDER, true);
                   }
                 }}
               >

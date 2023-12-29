@@ -21,7 +21,7 @@ interface IWorkspaceMenuRequiredServices {
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
   context: Pick<IContextService, 'isOnline'>;
   git: Pick<IGitService, 'commitAndSync'>;
-  native: Pick<INativeService, 'open' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualInfo'>;
+  native: Pick<INativeService, 'openURI' | 'openPath' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualInfo'>;
   pages: Pick<IPagesService, 'setActivePage' | 'getActivePage'>;
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
   wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer' | 'requestWikiSendActionMessage'>;
@@ -101,7 +101,7 @@ export async function getWorkspaceMenuTemplate(
     {
       label: t('WorkspaceSelector.OpenWorkspaceFolder'),
       click: async () => {
-        await service.native.open(wikiFolderLocation, true);
+        await service.native.openPath(wikiFolderLocation);
       },
     },
     {
@@ -117,7 +117,7 @@ export async function getWorkspaceMenuTemplate(
       enabled: enableHTTPAPI,
       click: async () => {
         const actualIP = await service.native.getLocalHostUrlWithActualInfo(getDefaultHTTPServerIP(port), id);
-        await service.native.open(actualIP);
+        await service.native.openURI(actualIP);
       },
     },
   ];

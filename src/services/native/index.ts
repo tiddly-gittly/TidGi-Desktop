@@ -65,7 +65,7 @@ export class NativeService implements INativeService {
     return false;
   }
 
-  public async open(uri: string, showItemInFolder = false): Promise<void> {
+  public async openURI(uri: string, showItemInFolder = false): Promise<void> {
     logger.debug(`NativeService.open() Opening ${uri}`, { showItemInFolder });
     showItemInFolder ? shell.showItemInFolder(uri) : await shell.openExternal(uri);
   }

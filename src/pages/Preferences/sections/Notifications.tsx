@@ -153,11 +153,11 @@ export function Notifications(props: Required<ISectionProps>): JSX.Element {
                       </span>
                       <Link
                         onClick={async () => {
-                          await window.service.native.open('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
+                          await window.service.native.openURI('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
                         }}
                         onKeyDown={(event: React.KeyboardEvent<HTMLSpanElement>) => {
                           if (event.key !== 'Enter') return;
-                          void window.service.native.open('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
+                          void window.service.native.openURI('https://github.com/atomery/webcatalog/wiki/How-to-Enable-Notifications-in-Web-Apps');
                         }}
                       >
                         Learn more

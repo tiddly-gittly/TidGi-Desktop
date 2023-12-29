@@ -99,14 +99,14 @@ export default function About(): JSX.Element {
       <ButtonContainer>
         <GoToTheWebsiteButton
           onClick={async () => {
-            await window.service.native.open('https://github.com/tiddly-gittly/TidGi-Desktop');
+            await window.service.native.openURI('https://github.com/tiddly-gittly/TidGi-Desktop');
           }}
         >
           Website
         </GoToTheWebsiteButton>
         <GoToTheWebsiteButton
           onClick={async () => {
-            await window.service.native.open('https://github.com/tiddly-gittly/TidGi-Desktop/issues/new/choose');
+            await window.service.native.openURI('https://github.com/tiddly-gittly/TidGi-Desktop/issues/new/choose');
           }}
         >
           Support
@@ -123,13 +123,13 @@ export default function About(): JSX.Element {
         </Trans>
         <Link
           onClick={async () => {
-            await window.service.native.open('https://onetwo.ren/wiki/');
+            await window.service.native.openURI('https://onetwo.ren/wiki/');
           }}
           onKeyDown={async (event: React.KeyboardEvent<HTMLSpanElement>) => {
             if (event.key !== 'Enter') {
               return;
             }
-            await window.service.native.open('https://onetwo.ren/wiki/');
+            await window.service.native.openURI('https://onetwo.ren/wiki/');
           }}
           role='link'
           tabIndex={0}
@@ -139,13 +139,13 @@ export default function About(): JSX.Element {
         <span>&&</span>
         <Link
           onClick={async () => {
-            await window.service.native.open('https://webcatalog.app/?utm_source=tidgi_app');
+            await window.service.native.openURI('https://webcatalog.app/?utm_source=tidgi_app');
           }}
           onKeyDown={async (event: React.KeyboardEvent<HTMLSpanElement>) => {
             if (event.key !== 'Enter') {
               return;
             }
-            await window.service.native.open('https://webcatalog.app/?utm_source=tidgi_app');
+            await window.service.native.openURI('https://webcatalog.app/?utm_source=tidgi_app');
           }}
           role='link'
           tabIndex={0}
