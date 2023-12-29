@@ -73,8 +73,10 @@ export default function setupViewEventHandlers(
     });
   });
   view.webContents.on('will-navigate', async (event, newUrl) => {
+    logger.debug(`will-navigate called ${newUrl}`);
     const currentUrl = view.webContents.getURL();
     if (isSameOrigin(newUrl, currentUrl)) {
+      logger.debug(`will-navigate skipped, isSameOrigin("${newUrl}", "${currentUrl}")`);
       return;
     }
     const { homeUrl, lastUrl } = workspace;
@@ -83,6 +85,7 @@ export default function setupViewEventHandlers(
       isSameOrigin(newUrl, homeUrl) ||
       isSameOrigin(newUrl, lastUrl)
     ) {
+      logger.debug(`will-navigate skipped, isSameOrigin("${newUrl}", "${homeUrl}", "${lastUrl ?? ''}")`);
       return;
     }
     // if is external website
@@ -98,11 +101,7 @@ export default function setupViewEventHandlers(
     }
     // event.stopPropagation();
   });
-  view.webContents.on('did-navigate-in-page', async () => {
-    await workspaceViewService.updateLastUrl(workspace.id, view);
-  });
-
-  const throttledDidFinishedLoad = throttle(async () => {
+  const throttledDidFinishedLoad = throttle(async (reason: string) => {
     // if have error, don't realignActiveWorkspace, which will hide the error message
     if (await workspaceService.workspaceDidFailLoad(workspace.id)) {
       return;
@@ -110,7 +109,7 @@ export default function setupViewEventHandlers(
     if (view.webContents === null) {
       return;
     }
-    logger.debug(`throttledDidFinishedLoad() workspace.id: ${workspace.id}, now workspaceViewService.realignActiveWorkspace() then set isLoading to false`);
+    logger.debug(`throttledDidFinishedLoad(), now workspaceViewService.realignActiveWorkspace() then set isLoading to false`, { reason, id: workspace.id });
     // focus on initial load
     // https://github.com/atomery/webcatalog/issues/398
     if (workspace.active && !browserWindow.isDestroyed() && browserWindow.isFocused() && !view.webContents.isFocused()) {
@@ -125,15 +124,15 @@ export default function setupViewEventHandlers(
   }, 2000);
   view.webContents.on('did-finish-load', () => {
     logger.debug('did-finish-load called');
-    void throttledDidFinishedLoad();
+    void throttledDidFinishedLoad('did-finish-load');
   });
   view.webContents.on('did-stop-loading', () => {
     logger.debug('did-stop-loading called');
-    void throttledDidFinishedLoad();
+    void throttledDidFinishedLoad('did-stop-loading');
   });
   view.webContents.on('dom-ready', () => {
     logger.debug('dom-ready called');
-    void throttledDidFinishedLoad();
+    void throttledDidFinishedLoad('dom-ready');
   });
 
   // https://electronjs.org/docs/api/web-contents#event-did-fail-load
@@ -178,6 +177,7 @@ export default function setupViewEventHandlers(
     }
   });
   view.webContents.on('did-navigate', async (_event, url) => {
+    logger.debug(`did-navigate called ${url}`);
     const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
     // even after the workspace obj and BrowserView
@@ -191,6 +191,8 @@ export default function setupViewEventHandlers(
     }
   });
   view.webContents.on('did-navigate-in-page', async (_event, url) => {
+    logger.debug(`did-navigate-in-page called ${url}`);
+    await workspaceViewService.updateLastUrl(workspace.id, view);
     const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
     // even after the workspace obj and BrowserView
