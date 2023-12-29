@@ -211,7 +211,7 @@ export class Window implements IWindowService {
     config?: IWindowOpenConfig<N>,
   ): Promise<BrowserWindow> {
     const newWindow = new BrowserWindow(windowConfig);
-    const newWindowURL = windowMeta !== undefined && 'uri' in windowMeta ? windowMeta.uri : MAIN_WINDOW_WEBPACK_ENTRY;
+    const newWindowURL = (windowMeta !== undefined && 'uri' in windowMeta ? windowMeta.uri : undefined) ?? MAIN_WINDOW_WEBPACK_ENTRY;
     if (config?.multiple !== true) {
       this.windows[windowName] = newWindow;
     }
@@ -303,13 +303,13 @@ export class Window implements IWindowService {
     newWindow.on('enter-full-screen', async () => {
       const mainWindow = this.get(windowName);
       if (mainWindow === undefined) return;
-      mainWindow?.webContents.send('is-fullscreen-updated', true);
+      mainWindow?.webContents?.send?.('is-fullscreen-updated', true);
       await this.workspaceViewService.realignActiveWorkspace();
     });
     newWindow.on('leave-full-screen', async () => {
       const mainWindow = this.get(windowName);
       if (mainWindow === undefined) return;
-      mainWindow?.webContents.send('is-fullscreen-updated', false);
+      mainWindow?.webContents?.send?.('is-fullscreen-updated', false);
       await this.workspaceViewService.realignActiveWorkspace();
     });
   }
@@ -323,11 +323,19 @@ export class Window implements IWindowService {
   }
 
   public async updateWindowMeta<N extends WindowNames>(windowName: N, meta: WindowMeta[N]): Promise<void> {
-    this.windowMeta[windowName] = { ...this.windowMeta[windowName], ...meta };
+    const newMeta = { ...this.windowMeta[windowName], ...meta };
+    this.windowMeta[windowName] = newMeta;
   }
 
   public async getWindowMeta<N extends WindowNames>(windowName: N): Promise<WindowMeta[N] | undefined> {
     return this.windowMeta[windowName] as WindowMeta[N];
+  }
+
+  /**
+   * When using `loadURL`, window meta will be clear. And we can only append meta to a new window. So we need to push meta to window after `loadURL`.
+   */
+  private async pushWindowMetaToWindow<N extends WindowNames>(win: BrowserWindow, meta: WindowMeta[N]): Promise<void> {
+    win?.webContents?.send?.(MetaDataChannel.pushViewMetaData, meta);
   }
 
   /**
@@ -375,12 +383,18 @@ export class Window implements IWindowService {
 
   public async reload(windowName: WindowNames = WindowNames.main): Promise<void> {
     const win = this.get(windowName);
-    win?.getBrowserView()?.webContents?.reload();
+    if (win !== undefined) {
+      win.getBrowserView()?.webContents?.reload?.();
+      await this.pushWindowMetaToWindow(win, this.windowMeta[windowName]);
+    }
   }
 
   async loadURL(windowName: WindowNames, newUrl: string): Promise<void> {
     const win = this.get(windowName);
-    await win?.loadURL(newUrl);
+    if (win !== undefined) {
+      await win.loadURL(newUrl);
+      await this.pushWindowMetaToWindow(win, this.windowMeta[windowName]);
+    }
   }
 
   public async clearStorageData(windowName: WindowNames = WindowNames.main): Promise<void> {

@@ -1,7 +1,6 @@
 import os from 'os';
 import path from 'path';
 import { isMac } from '../helpers/system';
-import { GITHUB_LOGIN_REDIRECT_PATH, GITHUB_OAUTH_APP_CLIENT_ID } from './auth';
 import { isDevelopmentOrTest } from './environment';
 import { developmentWikiFolderName, localizationFolderName } from './fileNames';
 

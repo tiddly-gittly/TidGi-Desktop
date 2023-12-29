@@ -19,7 +19,7 @@ import { fixAlertConfirm } from './fixer/fixAlertConfirm';
 
 declare global {
   interface Window {
-    meta: IPossibleWindowMeta;
+    meta: () => IPossibleWindowMeta;
     observables: IServicesWithOnlyObservables<typeof service>;
     service: IServicesWithoutObservables<typeof service>;
   }

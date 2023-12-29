@@ -41,7 +41,7 @@ export default function Preferences(): JSX.Element {
 
   // handle open preference from other window, and goto some tab
   useEffect(() => {
-    const scrollTo = (window.meta as IPossibleWindowMeta<WindowMeta[WindowNames.preferences]>).gotoTab;
+    const scrollTo = (window.meta() as IPossibleWindowMeta<WindowMeta[WindowNames.preferences]>).preferenceGotoTab;
     if (scrollTo === undefined) return;
     sections[scrollTo].ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [sections]);

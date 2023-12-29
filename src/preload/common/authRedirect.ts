@@ -1,8 +1,10 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 // on production build, if we try to redirect to http://localhost:3012 , we will reach chrome-error://chromewebdata/ , but we can easily get back
 // this happens when we are redirected by OAuth login
+import { CreateWorkspaceTabs } from '@/pages/AddWorkspace/constants';
+import { PreferenceSections } from '@services/preferences/interface';
 import { SupportedStorageServices } from '@services/types';
-import { WindowNames } from '@services/windows/WindowProperties';
+import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { windowName } from './browserViewMetaData';
 import { context, window as windowService } from './services';
 
@@ -62,6 +64,13 @@ async function refresh(): Promise<void> {
       const { access_token: token } = await (response.json() as Promise<{ access_token: string }>);
       await window.service.auth.set(`${SupportedStorageServices.github}-token`, token);
     }
+    await windowService.updateWindowMeta(
+      windowName,
+      {
+        addWorkspaceTab: CreateWorkspaceTabs.CloneOnlineWiki,
+        preferenceGotoTab: PreferenceSections.sync,
+      } satisfies WindowMeta[WindowNames.addWorkspace] & WindowMeta[WindowNames.preferences],
+    );
     await windowService.loadURL(windowName, MAIN_WINDOW_WEBPACK_ENTRY);
   } else if (window.location.href === CHROME_ERROR_PATH) {
     await windowService.loadURL(windowName, MAIN_WINDOW_WEBPACK_ENTRY);

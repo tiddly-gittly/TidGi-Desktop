@@ -145,7 +145,7 @@ export default function Notifications(): JSX.Element {
             <ListItemText
               primary={pauseNotificationsInfo.reason === 'scheduled' ? 'Adjust schedule...' : 'Pause notifications by schedule...'}
               onClick={async () => {
-                await window.service.window.open(WindowNames.preferences, { gotoTab: PreferenceSections.notifications });
+                await window.service.window.open(WindowNames.preferences, { preferenceGotoTab: PreferenceSections.notifications });
                 void window.remote.closeCurrentWindow();
               }}
             />
@@ -179,7 +179,7 @@ export default function Notifications(): JSX.Element {
           <ListItemText
             primary='Pause notifications by schedule...'
             onClick={async () => {
-              await window.service.window.open(WindowNames.preferences, { gotoTab: PreferenceSections.notifications });
+              await window.service.window.open(WindowNames.preferences, { preferenceGotoTab: PreferenceSections.notifications });
               void window.remote.closeCurrentWindow();
             }}
           />
