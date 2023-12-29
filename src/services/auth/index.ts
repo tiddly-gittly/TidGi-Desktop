@@ -2,7 +2,7 @@
 /* eslint-disable unicorn/no-null */
 import { IGitUserInfos } from '@services/git/interface';
 import { logger } from '@services/libs/log';
-import { IAuthingUserInfo, SupportedStorageServices } from '@services/types';
+import { SupportedStorageServices } from '@services/types';
 import { IWorkspace } from '@services/workspaces/interface';
 import settings from 'electron-settings';
 import { injectable } from 'inversify';
@@ -13,7 +13,6 @@ import { IAuthenticationService, IUserInfos, ServiceBranchTypes, ServiceEmailTyp
 
 const defaultUserInfos = {
   userName: '',
-  authing: undefined as IAuthingUserInfo | undefined,
 };
 
 @injectable()

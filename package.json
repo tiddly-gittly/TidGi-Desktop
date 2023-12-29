@@ -66,7 +66,6 @@
     "menubar": "9.3.0",
     "nanoid": "^4.0.2",
     "node-fetch": "3.3.2",
-    "oidc-client-ts": "^2.4.0",
     "reflect-metadata": "0.1.13",
     "registry-js": "1.15.1",
     "rxjs": "7.8.1",

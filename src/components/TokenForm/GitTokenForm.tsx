@@ -6,7 +6,7 @@ import { Button, TextField } from '@mui/material';
 import { useUserInfoObservable } from '@services/auth/hooks';
 import { getServiceBranchTypes, getServiceEmailTypes, getServiceTokenTypes, getServiceUserNameTypes } from '@services/auth/interface';
 import { SupportedStorageServices } from '@services/types';
-import { useAuth } from './gitTokenHooks';
+import { useAuth, useGetGithubUserInfoOnLoad } from './gitTokenHooks';
 
 const AuthingLoginButton = styled(Button)`
   width: 100%;
@@ -33,9 +33,10 @@ export function GitTokenForm(props: {
   const { children, storageService } = props;
   const { t } = useTranslation();
 
-  const [onClickLogin] = useAuth(storageService);
-
   const userInfo = useUserInfoObservable();
+  const [onClickLogin] = useAuth(storageService);
+  useGetGithubUserInfoOnLoad();
+
   if (userInfo === undefined) {
     return <div>{t('Loading')}</div>;
   }
