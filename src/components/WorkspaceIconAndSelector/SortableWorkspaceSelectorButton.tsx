@@ -59,7 +59,7 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
         id={id}
         key={id}
         workspaceName={name}
-        picturePath={picturePath ?? defaultIcon}
+        picturePath={picturePath}
         transparentBackground={transparentBackground}
         index={index}
         hibernated={hibernated}

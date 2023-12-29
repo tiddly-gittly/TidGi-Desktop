@@ -109,16 +109,10 @@ module.exports = [
     },
   {
     test: /\.(woff(2)?|ttf|eot)(\?v=\d+\.\d+\.\d+)?$/,
-    type: 'asset/resource',
-    generator: {
-      filename: 'fonts/[name].[ext]',
-    },
+    type: 'asset',
   },
   {
     test: /\.(png|jpe?g|gif|svg)$/,
-    type: 'asset/resource',
-    generator: {
-      filename: 'images/[name].[ext]',
-    },
+    type: 'asset',
   },
 ];

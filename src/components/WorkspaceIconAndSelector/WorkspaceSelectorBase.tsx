@@ -1,8 +1,9 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import BadgeRaw from '@mui/material/Badge';
 import Promise from 'bluebird';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled, { css, keyframes } from 'styled-components';
+import styled, { keyframes } from 'styled-components';
 import is from 'typescript-styled-is';
 
 import { getAssetsFileUrl } from '@/helpers/url';
@@ -172,7 +173,7 @@ export function WorkspaceSelectorBase({
                 ? (
                   '※'
                 )
-                : <AvatarPicture alt='Icon' $large={!showSidebarTexts} src={getAssetsFileUrl(picturePath ?? defaultIcon)} draggable={false} />)}
+                : <AvatarPicture alt='Icon' $large={!showSidebarTexts} src={picturePath ? getAssetsFileUrl(picturePath) : defaultIcon} draggable={false} />)}
           </Avatar>
         )}
       </Badge>
