@@ -220,6 +220,8 @@ class TidGiIPCSyncAdaptor {
       const tiddlersToNotSave = $tw.utils.parseStringArray(this.wiki.getTiddlerText('$:/plugins/linonetwo/tidgi-ipc-syncadaptor/TiddlersToNotSave') ?? '');
       if (tiddlersToNotSave.includes(title)) {
         this.logger.log(`Ignore saveTiddler ${title}, config in TiddlersToNotSave`);
+        // if not calling callback in sync adaptor, will cause it waiting forever
+        callback(null);
         return;
       }
       this.logger.log(`saveTiddler ${title}`);
@@ -247,6 +249,7 @@ class TidGiIPCSyncAdaptor {
         }
       }
     } catch (error) {
+      console.error(error);
       // eslint-disable-next-line n/no-callback-literal
       callback?.(error as Error);
     }
