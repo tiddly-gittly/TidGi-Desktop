@@ -14,7 +14,7 @@ const SpellcheckLanguages = lazy(() => import('./SpellcheckLanguages'));
 export function Pages(): JSX.Element {
   const [, setLocation] = useLocation();
   useEffect(() => {
-    setLocation(`/${window.meta.windowName}`);
+    setLocation(`/${window.meta().windowName}`);
   }, [setLocation]);
   return (
     <Switch>

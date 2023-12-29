@@ -20,17 +20,12 @@ import { IErrorInWhichComponent, useWikiWorkspaceForm } from './useForm';
 
 import { TokenForm } from '@/components/TokenForm';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { CreateWorkspaceTabs } from './constants';
 import { LocationPickerContainer, LocationPickerInput } from './FormComponents';
 import { GitRepoUrlForm } from './GitRepoUrlForm';
 import { ImportHtmlWikiDoneButton } from './ImportHtmlWikiDoneButton';
 import { ImportHtmlWikiForm } from './ImportHtmlWikiForm';
-
-enum CreateWorkspaceTabs {
-  CloneOnlineWiki = 'CloneOnlineWiki',
-  CreateNewWiki = 'CreateNewWiki',
-  OpenLocalWiki = 'OpenLocalWiki',
-  OpenLocalWikiFromHtml = 'OpenLocalWikiFromHtml',
-}
 
 export const Paper = styled(PaperRaw)`
   border-color: ${({ theme }) => theme.palette.divider};
@@ -78,7 +73,9 @@ const AdvancedSettingsAccordionSummary = styled(AccordionSummary)`
 
 export function AddWorkspace(): JSX.Element {
   const { t } = useTranslation();
-  const [currentTab, currentTabSetter] = useState<CreateWorkspaceTabs>(CreateWorkspaceTabs.CreateNewWiki);
+  const [currentTab, currentTabSetter] = useState<CreateWorkspaceTabs>(
+    (window.meta() as IPossibleWindowMeta<WindowMeta[WindowNames.addWorkspace]>)?.addWorkspaceTab ?? CreateWorkspaceTabs.CreateNewWiki,
+  );
   const isCreateSyncedWorkspace = currentTab === CreateWorkspaceTabs.CloneOnlineWiki;
   const [isCreateMainWorkspace, isCreateMainWorkspaceSetter] = useState(true);
   const form = useWikiWorkspaceForm();

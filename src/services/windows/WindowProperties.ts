@@ -1,3 +1,4 @@
+import type { CreateWorkspaceTabs } from '@/pages/AddWorkspace/constants';
 import type { PreferenceSections } from '@services/preferences/interface';
 
 export enum WindowNames {
@@ -84,7 +85,7 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
 };
 
 export interface IPreferenceWindowMeta {
-  gotoTab?: PreferenceSections;
+  preferenceGotoTab?: PreferenceSections;
   preventClosingWindow?: boolean;
 }
 
@@ -94,8 +95,8 @@ export interface IPreferenceWindowMeta {
  */
 export interface WindowMeta {
   [WindowNames.about]: undefined;
-  [WindowNames.addWorkspace]: undefined;
-  [WindowNames.any]: { uri: string };
+  [WindowNames.addWorkspace]: { addWorkspaceTab?: CreateWorkspaceTabs };
+  [WindowNames.any]: { uri?: string };
   [WindowNames.auth]: undefined;
   [WindowNames.editWorkspace]: { workspaceID?: string };
   [WindowNames.main]: { forceClose?: boolean };

@@ -33,8 +33,6 @@ export function useGetGithubUserInfoOnLoad(): void {
   useEffect(() => {
     void window.service.auth.get(`${SupportedStorageServices.github}-token`).then(async (githubToken) => {
       try {
-        // DEBUG: console githubToken
-        console.log(`githubToken`, githubToken);
         if (githubToken) {
           // get user name and email using github api
           const response = await fetch('https://api.github.com/user', {
@@ -44,8 +42,6 @@ export function useGetGithubUserInfoOnLoad(): void {
             },
           });
           const userInfo = await (response.json() as Promise<{ email: string; login: string; name: string }>);
-          // DEBUG: console userInfo
-          console.log(`userInfo`, userInfo);
           await window.service.auth.set(`${SupportedStorageServices.github}-userName`, userInfo.login);
           await window.service.auth.set('userName', userInfo.name);
           await window.service.auth.set(`${SupportedStorageServices.github}-email`, userInfo.email);

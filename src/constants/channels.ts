@@ -86,16 +86,16 @@ export enum WikiChannel {
   name = 'WikiChannel',
   openTiddler = 'wiki-open-tiddler',
   printTiddler = 'print-tiddler',
+  /**
+   * Render wiki text to html
+   */
+  renderWikiText = 'render-wiki-text',
   runFilter = 'wiki-run-filter',
   sendActionMessage = 'wiki-send-action-message',
   setState = 'wiki-set-state',
   setTiddlerText = 'wiki-set-tiddler-text',
   /** show message inside tiddlywiki to show git sync progress */
   syncProgress = 'wiki-sync-progress',
-  /**
-   * Render wiki text to html
-   */
-  renderWikiText = 'render-wiki-text',
 }
 export enum WikiGitWorkspaceChannel {
   name = 'WikiGitWorkspaceChannel',
@@ -145,6 +145,7 @@ export enum MetaDataChannel {
   browserViewMetaData = 'browserViewMetaData',
   getViewMetaData = 'getViewMetaData',
   name = 'MetaDataChannel',
+  pushViewMetaData = 'pushViewMetaData',
 }
 
 export type Channels =

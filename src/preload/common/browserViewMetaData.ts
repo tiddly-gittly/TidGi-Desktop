@@ -1,5 +1,5 @@
 import { MetaDataChannel } from '@/constants/channels';
-import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { IPossibleWindowMeta, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import { contextBridge, ipcRenderer } from 'electron';
 
 const metaDataArguments = process.argv
@@ -16,8 +16,14 @@ try {
   );
 }
 
-export const browserViewMetaData = { windowName, ...extraMeta };
-contextBridge.exposeInMainWorld('meta', browserViewMetaData);
+export let browserViewMetaData = { windowName, ...extraMeta };
+contextBridge.exposeInMainWorld('meta', () => browserViewMetaData);
 ipcRenderer.on(MetaDataChannel.getViewMetaData, (event, payload?: { ipcToken: string }) => {
   ipcRenderer.send(`${MetaDataChannel.getViewMetaData}-${payload?.ipcToken ?? ''}`, browserViewMetaData);
+});
+/**
+ * Receive update or windowMeta from server service.
+ */
+ipcRenderer.on(MetaDataChannel.pushViewMetaData, (event, payload?: IPossibleWindowMeta) => {
+  browserViewMetaData = { ...browserViewMetaData, ...payload };
 });

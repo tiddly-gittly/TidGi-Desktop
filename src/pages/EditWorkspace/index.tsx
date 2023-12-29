@@ -136,7 +136,7 @@ const getValidIconPath = (iconPath?: string | null): string => {
   return defaultIcon;
 };
 
-const workspaceID = (window.meta as WindowMeta[WindowNames.editWorkspace]).workspaceID as string;
+const workspaceID = (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID as string;
 
 export default function EditWorkspace(): JSX.Element {
   const { t } = useTranslation();
