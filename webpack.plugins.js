@@ -4,16 +4,12 @@
 /* eslint-disable unicorn/prefer-module */
 /* eslint-disable @typescript-eslint/no-var-requires */
 const ForkTsCheckerWebpackPlugin = require('fork-ts-checker-webpack-plugin');
-const CspHtmlWebpackPlugin = require('csp-html-webpack-plugin');
 const CircularDependencyPlugin = require('circular-dependency-plugin');
 const _ = require('lodash');
-const path = require('path');
-const fs = require('fs-extra');
 const webpack = require('webpack');
 const CopyPlugin = require('copy-webpack-plugin');
 const ThreadsPlugin = require('threads-plugin');
 const ExternalsPlugin = require('webpack5-externals-plugin');
-const EventHooksPlugin = require('event-hooks-webpack-plugin');
 const WebpackBar = require('webpackbar');
 // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
 const { BundleAnalyzerPlugin } = require('webpack-bundle-analyzer');
