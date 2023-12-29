@@ -9,6 +9,7 @@ import { injectable } from 'inversify';
 import { debounce } from 'lodash';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject } from 'rxjs';
+import { debouncedSetSettingFile } from './debouncedSetSettingFile';
 import { IAuthenticationService, IUserInfos, ServiceBranchTypes, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
 
 const defaultUserInfos = {
@@ -71,7 +72,7 @@ export class Authentication implements IAuthenticationService {
    * Batch update all UserInfos
    */
   private async setUserInfos(newUserInfos: IUserInfos): Promise<void> {
-    await settings.set(`userInfos`, newUserInfos);
+    await debouncedSetSettingFile(newUserInfos);
   }
 
   /**

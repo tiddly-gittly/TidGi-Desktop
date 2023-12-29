@@ -6,7 +6,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { DEFAULT_USER_NAME } from '@/constants/auth';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { useStorageServiceUserInfoObservable } from '@services/auth/hooks';
 import { SupportedStorageServices } from '@services/types';
@@ -162,10 +161,7 @@ export interface IWikiWorkspaceFormProps {
  * Fill in default value for newly created wiki.
  * @param form New wiki form value
  */
-export async function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreateMainWorkspace: boolean, isCreateSyncedWorkspace: boolean): Promise<INewWorkspaceConfig> {
-  const fallbackUserName = await window.service.auth.get('userName');
-  const userNameIsEmpty = !(fallbackUserName);
-
+export function workspaceConfigFromForm(form: INewWikiRequiredFormData, isCreateMainWorkspace: boolean, isCreateSyncedWorkspace: boolean): INewWorkspaceConfig {
   return {
     gitUrl: isCreateSyncedWorkspace ? form.gitRepoUrl : null,
     isSubWiki: !isCreateMainWorkspace,
@@ -179,7 +175,8 @@ export async function workspaceConfigFromForm(form: INewWikiRequiredFormData, is
     backupOnInterval: true,
     readOnlyMode: false,
     tokenAuth: false,
-    userName: userNameIsEmpty ? DEFAULT_USER_NAME : undefined,
+    // let global config override this
+    userName: undefined,
     excludedPlugins: [],
     enableHTTPAPI: false,
     lastNodeJSArgv: [],
