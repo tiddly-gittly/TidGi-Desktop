@@ -1,6 +1,6 @@
 import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
-import { TabContext, TabList as TabListRaw, TabPanel as TabPanelRaw } from '@mui/lab';
-import { Accordion as AccordionRaw, AccordionDetails, AccordionSummary, AppBar, Paper as PaperRaw, Tab as TabRaw } from '@mui/material';
+import { TabContext, TabPanel as TabPanelRaw } from '@mui/lab';
+import { Accordion as AccordionRaw, AccordionDetails, AccordionSummary, AppBar, Paper as PaperRaw, Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
 import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
@@ -55,7 +55,7 @@ TokenFormContainer.defaultProps = {
   square: true,
   elevation: 2,
 };
-const TabList = styled(TabListRaw)`
+const Tabs = styled(TabsRaw)`
   background: ${({ theme }) => theme.palette.background.paper};
   color: ${({ theme }) => theme.palette.text.secondary};
 `;
@@ -113,7 +113,7 @@ export function AddWorkspace(): JSX.Element {
       </Helmet>
       <AppBar position='static'>
         <Paper square>
-          <TabList
+          <Tabs
             onChange={(_event: React.SyntheticEvent<Element, Event>, newValue: CreateWorkspaceTabs) => {
               currentTabSetter(newValue);
             }}
@@ -125,7 +125,7 @@ export function AddWorkspace(): JSX.Element {
             <Tab label={t(`AddWorkspace.CloneOnlineWiki`)} value={CreateWorkspaceTabs.CloneOnlineWiki} />
             <Tab label={t('AddWorkspace.OpenLocalWiki')} value={CreateWorkspaceTabs.OpenLocalWiki} />
             <Tab label={t('AddWorkspace.OpenLocalWikiFromHTML')} value={CreateWorkspaceTabs.OpenLocalWikiFromHtml} />
-          </TabList>
+          </Tabs>
         </Paper>
       </AppBar>
 

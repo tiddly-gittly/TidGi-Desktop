@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
-import { TabContext, TabList as TabListRaw, TabPanel as TabPanelRaw } from '@mui/lab';
-import { Tab as TabRaw } from '@mui/material';
+import { TabContext, TabPanel as TabPanelRaw } from '@mui/lab';
+import { Tab as TabRaw, Tabs as TabsRaw } from '@mui/material';
 import { SupportedStorageServices } from '@services/types';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -20,7 +20,7 @@ const TabPanel = styled(TabPanelRaw)`
   padding-left: 16px !important;
   background-color: ${({ theme }) => theme.palette.background.paper};
 `;
-const TabList = styled(TabListRaw)`
+const Tabs = styled(TabsRaw)`
   background-color: ${({ theme }) => theme.palette.background.paper};
   & button {
     background-color: ${({ theme }) => theme.palette.background.paper} !important;
@@ -32,7 +32,7 @@ const TabsContainer = styled.div`
   display: flex;
   padding: 15px 0;
   flex-direction: row;
-  & ${TabList} {
+  & ${Tabs} {
     min-width: 160px;
   }
 `;
@@ -76,7 +76,7 @@ export function TokenForm({ storageProvider, storageProviderSetter }: Props): JS
       <ListItemText primary={t('Preference.Token')} secondary={t('Preference.TokenDescription')} />
       <TabContext value={currentTab}>
         <TabsContainer>
-          <TabList
+          <Tabs
             onChange={(event: React.SyntheticEvent<Element, Event>, newValue: SupportedStorageServices) => {
               currentTabSetter(newValue);
             }}
@@ -88,7 +88,7 @@ export function TokenForm({ storageProvider, storageProviderSetter }: Props): JS
             <Tab label='GitHub' value={SupportedStorageServices.github} />
             <Tab label='GitLab' value={SupportedStorageServices.gitlab} />
             <Tab label='Gitee' value={SupportedStorageServices.gitee} />
-          </TabList>
+          </Tabs>
           <TabPanel value={SupportedStorageServices.github}>
             <GitTokenForm storageService={SupportedStorageServices.github} />
           </TabPanel>
