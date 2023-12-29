@@ -65,7 +65,6 @@
     "nanoid": "^5.0.4",
     "node-fetch": "3.3.2",
     "reflect-metadata": "0.2.1",
-    "registry-js": "1.15.1",
     "rxjs": "7.8.1",
     "semver": "7.5.4",
     "source-map-support": "0.5.21",
@@ -83,6 +82,7 @@
     "zx": "7.2.3"
   },
   "optionalDependencies": {
+    "registry-js": "1.15.1",
     "sqlite-vss-darwin-arm64": "0.1.2",
     "sqlite-vss-darwin-x64": "0.1.2",
     "sqlite-vss-linux-x64": "0.1.2"

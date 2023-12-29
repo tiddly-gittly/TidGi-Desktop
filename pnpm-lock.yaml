@@ -111,9 +111,6 @@ dependencies:
   reflect-metadata:
     specifier: 0.2.1
     version: 0.2.1
-  registry-js:
-    specifier: 1.15.1
-    version: 1.15.1
   rxjs:
     specifier: 7.8.1
     version: 7.8.1
@@ -161,6 +158,9 @@ dependencies:
     version: 7.2.3
 
 optionalDependencies:
+  registry-js:
+    specifier: 1.15.1
+    version: 1.15.1
   sqlite-vss-darwin-arm64:
     specifier: 0.1.2
     version: 0.1.2
@@ -3514,6 +3514,7 @@ packages:
   /ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
     engines: {node: '>=8'}
+    requiresBuild: true
 
   /ansi-regex@6.0.1:
     resolution: {integrity: sha512-n5M855fKb2SsfMIiFFoVrABHJC8QtHwVx+mHWP3QcEqBHYienj5dHSgjbxtC0WEZXYt4wcD6zrQElDPhFuZgfA==}
@@ -8266,7 +8267,9 @@ packages:
 
   /node-addon-api@3.2.1:
     resolution: {integrity: sha512-mmcei9JghVNDYydghQmeDX8KoAm0FAiYyIcUt/N4nhyAipB17pllZQDOJD2fotxABnt4Mdz+dKTO7eftLg4d0A==}
+    requiresBuild: true
     dev: false
+    optional: true
 
   /node-api-version@0.1.4:
     resolution: {integrity: sha512-KGXihXdUChwJAOHO53bv9/vXcLmdUsZ6jIptbvYvkpKfth+r7jw44JkVxQFA3kX5nQjzjmGu1uAu/xNNLNlI5g==}
@@ -9395,6 +9398,7 @@ packages:
       node-addon-api: 3.2.1
       prebuild-install: 7.1.1
     dev: false
+    optional: true
 
   /regjsparser@0.10.0:
     resolution: {integrity: sha512-qx+xQGZVsy55CH0a1hiVwHmqjLryfh7wQyF5HO07XJ9f7dQMY/gPQHhlyDkIzJKC+x2fUCpCcUODUUUFrm7SHA==}

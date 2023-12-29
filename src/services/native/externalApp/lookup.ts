@@ -1,10 +1,7 @@
 import { isLinux, isMac, isWin } from '@/helpers/system';
 import { logger } from '@services/libs/log';
-import { getAvailableEditors as getAvailableEditorsDarwin, getAvailableGitGUIApps as getAvailableGitGUIAppsDarwin } from './darwin';
 import { IFoundEditor } from './found-editor';
-import { getAvailableEditors as getAvailableEditorsLinux, getAvailableGitGUIApps as getAvailableGitGUIAppsLinux } from './linux';
 import { ExternalEditorError } from './shared';
-import { getAvailableEditors as getAvailableEditorsWindows, getAvailableGitGUIApps as getAvailableGitGUIAppsWindows } from './win32';
 
 let editorCache: ReadonlyArray<IFoundEditor<string>> | undefined;
 let gitGUIAppCache: ReadonlyArray<IFoundEditor<string>> | undefined;
@@ -32,6 +29,7 @@ export async function getAvailableEditors(editorName?: string): Promise<Readonly
   }
 
   if (isMac) {
+    const { getAvailableEditors: getAvailableEditorsDarwin } = await import('./darwin');
     const editorResult = await getAvailableEditorsDarwin(editorName);
     if (editorName === undefined) {
       editorCache = editorResult;
@@ -40,6 +38,7 @@ export async function getAvailableEditors(editorName?: string): Promise<Readonly
   }
 
   if (isWin) {
+    const { getAvailableEditors: getAvailableEditorsWindows } = await import('./win32');
     const editorResult = await getAvailableEditorsWindows(editorName);
     if (editorName === undefined) {
       editorCache = editorResult;
@@ -48,6 +47,7 @@ export async function getAvailableEditors(editorName?: string): Promise<Readonly
   }
 
   if (isLinux) {
+    const { getAvailableEditors: getAvailableEditorsLinux } = await import('./linux');
     const editorResult = await getAvailableEditorsLinux(editorName);
     if (editorName === undefined) {
       editorCache = editorResult;
@@ -98,16 +98,19 @@ export async function getAvailableGitGUIApps(): Promise<ReadonlyArray<IFoundEdit
   }
 
   if (isMac) {
+    const { getAvailableGitGUIApps: getAvailableGitGUIAppsDarwin } = await import('./darwin');
     gitGUIAppCache = await getAvailableGitGUIAppsDarwin();
     return gitGUIAppCache;
   }
 
   if (isWin) {
+    const { getAvailableGitGUIApps: getAvailableGitGUIAppsWindows } = await import('./win32');
     gitGUIAppCache = await getAvailableGitGUIAppsWindows();
     return gitGUIAppCache;
   }
 
   if (isLinux) {
+    const { getAvailableGitGUIApps: getAvailableGitGUIAppsLinux } = await import('./linux');
     gitGUIAppCache = await getAvailableGitGUIAppsLinux();
     return gitGUIAppCache;
   }
