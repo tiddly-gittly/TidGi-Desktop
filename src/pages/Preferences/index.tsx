@@ -43,7 +43,10 @@ export default function Preferences(): JSX.Element {
   useEffect(() => {
     const scrollTo = (window.meta() as IPossibleWindowMeta<WindowMeta[WindowNames.preferences]>).preferenceGotoTab;
     if (scrollTo === undefined) return;
-    sections[scrollTo].ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    setTimeout(() => {
+      // wait 100ms so page anchors are all loaded. Otherwise scroll will stop halfway.
+      sections[scrollTo].ref?.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   }, [sections]);
 
   return (
