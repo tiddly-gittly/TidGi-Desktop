@@ -95,17 +95,21 @@ const config = {
         An unhandled rejection has occurred inside Forge:
         [object Object]
      */
-    {
-      name: '@reforged/maker-appimage',
-      platforms: ['linux'],
-      config: {
-        options: {
-          maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
-          homepage: 'https://github.com/tiddly-gittly/TidGi-Desktop',
-          icon: 'build-resources/icon.png',
-        },
-      },
-    },
+    /**
+     * TypeError: maker.clone is not a function
+at /home/runner/work/TidGi-Desktop/TidGi-Desktop/node_modules/.pnpm/@electron-forge+core@7.2.0/node_modules/@electron-forge/core/dist/api/make.js:120:45
+     */
+    // {
+    //   name: '@reforged/maker-appimage',
+    //   platforms: ['linux'],
+    //   config: {
+    //     options: {
+    //       maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
+    //       homepage: 'https://github.com/tiddly-gittly/TidGi-Desktop',
+    //       icon: 'build-resources/icon.png',
+    //     },
+    //   },
+    // },
     /**
      * ✖ Making for target: flatpak - On platform: linux - For arch: x64
 
