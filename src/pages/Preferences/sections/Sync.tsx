@@ -1,9 +1,6 @@
 import { Divider, List, ListItemSecondaryAction, Switch } from '@mui/material';
 import { TimePicker } from '@mui/x-date-pickers/TimePicker';
-import fromUnixTime from 'date-fns/fromUnixTime';
-import setDate from 'date-fns/setDate';
-import setMonth from 'date-fns/setMonth';
-import setYear from 'date-fns/setYear';
+import { fromUnixTime, setDate, setMonth, setYear } from 'date-fns';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 

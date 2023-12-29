@@ -135,8 +135,8 @@ dependencies:
     specifier: 1.7.0
     version: 1.7.0
   type-fest:
-    specifier: 3.13.0
-    version: 3.13.0
+    specifier: 4.9.0
+    version: 4.9.0
   typeorm:
     specifier: ^0.3.17
     version: 0.3.17(better-sqlite3@9.2.2)(ts-node@10.9.2)
@@ -285,9 +285,6 @@ devDependencies:
   '@types/react-helmet':
     specifier: 6.1.11
     version: 6.1.11
-  '@types/rimraf':
-    specifier: ^4.0.5
-    version: 4.0.5
   '@types/semver':
     specifier: 7.5.6
     version: 7.5.6
@@ -307,11 +304,11 @@ devDependencies:
     specifier: 1.7.3
     version: 1.7.3
   beautiful-react-hooks:
-    specifier: 4.3.0
-    version: 4.3.0(react-dom@18.2.0)(react-router-dom@6.14.1)(react@18.2.0)(rxjs@7.8.1)
+    specifier: 5.0.1
+    version: 5.0.1(react-dom@18.2.0)(react-router-dom@6.14.1)(react@18.2.0)(rxjs@7.8.1)
   chai:
-    specifier: 4.3.7
-    version: 4.3.7
+    specifier: 5.0.0
+    version: 5.0.0
   circular-dependency-plugin:
     specifier: 5.2.2
     version: 5.2.2(webpack@5.88.1)
@@ -400,8 +397,8 @@ devDependencies:
     specifier: 10.9.2
     version: 10.9.2(@types/node@20.10.5)(typescript@5.3.3)
   tw5-typed:
-    specifier: ^0.4.2
-    version: 0.4.2
+    specifier: ^0.4.3
+    version: 0.4.3
   typescript:
     specifier: 5.3.3
     version: 5.3.3
@@ -523,6 +520,7 @@ packages:
     engines: {node: '>=6.9.0'}
     dependencies:
       regenerator-runtime: 0.13.11
+    dev: true
 
   /@babel/runtime@7.23.6:
     resolution: {integrity: sha512-zHd0eUrf5GZoOWVCXp6koAKQTfZV07eit6bGPmJgnZdnSAvvZee6zniW2XMF7Cmc4ISOOnPy3QaSiIJGJkVEDQ==}
@@ -2928,13 +2926,6 @@ packages:
     resolution: {integrity: sha512-wWKOClTTiizcZhXnPY4wikVAwmdYHp8q6DmC+EJUzAMsycb7HB32Kh9RN4+0gExjmPmZSAQjgURXIGATPegAvA==}
     dev: true
 
-  /@types/rimraf@4.0.5:
-    resolution: {integrity: sha512-DTCZoIQotB2SUJnYgrEx43cQIUYOlNZz0AZPbKU4PSLYTUdML5Gox0++z4F9kQocxStrCmRNhi4x5x/UlwtKUA==}
-    deprecated: This is a stub types definition. rimraf provides its own type definitions, so you do not need this installed.
-    dependencies:
-      rimraf: 5.0.5
-    dev: true
-
   /@types/scheduler@0.16.3:
     resolution: {integrity: sha512-5cJ8CB4yAx7BH1oMvdU0Jh9lrEXyPkar6F9G/ERswkCuvP4KQZfZkSjcMbAICCpQTN4OuZn8tz0HiKv9TGZgrQ==}
 
@@ -3682,8 +3673,9 @@ packages:
       repeat-string: 1.6.1
     dev: true
 
-  /assertion-error@1.1.0:
-    resolution: {integrity: sha512-jgsaNduz+ndvGyFt3uSuWqvy4lCnIJiovtouQN5JZHOKCS2QuhEdbcQHFhVksz2N2U9hXJo8odG7ETyWlEeuDw==}
+  /assertion-error@2.0.1:
+    resolution: {integrity: sha512-Izi8RQcffqCeNVgFigKli1ssklIbpHnCYc6AknXGYoB6grJqyeby7jv12JUQgmTAnIDnbck1uxksT4dzN3PWBA==}
+    engines: {node: '>=12'}
     dev: true
 
   /astral-regex@2.0.0:
@@ -3741,8 +3733,8 @@ packages:
     resolution: {integrity: sha512-x+VAiMRL6UPkx+kudNvxTl6hB2XNNCG2r+7wixVfIYwu/2HKRXimwQyaumLjMveWvT2Hkd/cAJw+QBMfJ/EKVw==}
     dev: true
 
-  /beautiful-react-hooks@4.3.0(react-dom@18.2.0)(react-router-dom@6.14.1)(react@18.2.0)(rxjs@7.8.1):
-    resolution: {integrity: sha512-sCqmVtFPDjo8G/wKBp/wrYTgAZMh/a3vcWKqcbcCXbmkFx+i/Zm5uOUlBeujbnC9uZOsxjChQ8sTnHZak+TdOg==}
+  /beautiful-react-hooks@5.0.1(react-dom@18.2.0)(react-router-dom@6.14.1)(react@18.2.0)(rxjs@7.8.1):
+    resolution: {integrity: sha512-e312biTl93oqHdUjWe8C09CHY0sTZGe8uSoTA2PSCg2xXhKJWGPGjt63MP8suzujQTOyiSihgDR4jnATscbagQ==}
     peerDependencies:
       react: 18.2.0
       react-dom: 18.2.0
@@ -4023,17 +4015,15 @@ packages:
       upper-case-first: 2.0.2
     dev: true
 
-  /chai@4.3.7:
-    resolution: {integrity: sha512-HLnAzZ2iupm25PlN0xFreAlBA5zaBSv3og0DdeGA4Ar6h6rJ3A0rolRUKJhSF2V10GZKDgWF/VmAEsNWjCRB+A==}
-    engines: {node: '>=4'}
+  /chai@5.0.0:
+    resolution: {integrity: sha512-HO5p0oEKd5M6HEcwOkNAThAE3j960vIZvVcc0t2tI06Dd0ATu69cEnMB2wOhC5/ZyQ6m67w3ePjU/HzXsSsdBA==}
+    engines: {node: '>=12'}
     dependencies:
-      assertion-error: 1.1.0
-      check-error: 1.0.2
-      deep-eql: 4.1.3
-      get-func-name: 2.0.0
-      loupe: 2.3.6
-      pathval: 1.1.1
-      type-detect: 4.0.8
+      assertion-error: 2.0.1
+      check-error: 2.0.0
+      deep-eql: 5.0.1
+      loupe: 3.0.1
+      pathval: 2.0.0
     dev: true
 
   /chalk@2.4.2:
@@ -4057,8 +4047,9 @@ packages:
     engines: {node: ^12.17.0 || ^14.13 || >=16.0.0}
     dev: false
 
-  /check-error@1.0.2:
-    resolution: {integrity: sha512-BrgHpW9NURQgzoNyjfq0Wu6VFO6D7IZEmJNdtgNqpzGG8RuNFHt2jQxWlAs4HMe119chBnv+34syEZtc6IhLtA==}
+  /check-error@2.0.0:
+    resolution: {integrity: sha512-tjLAOBHKVxtPoHe/SA7kNOMvhCRdCJ3vETdeY0RuAc9popf+hyaSV6ZEg9hr4cpWF7jmo/JSWEnLDrnijS9Tog==}
+    engines: {node: '>= 16'}
     dev: true
 
   /chokidar@3.5.3:
@@ -4528,7 +4519,7 @@ packages:
     resolution: {integrity: sha512-fnULvOpxnC5/Vg3NCiWelDsLiUc9bRwAPs/+LfTLNvetFCtCTN+yQz15C/fs4AwX1R9K5GLtLfn8QW+dWisaAw==}
     engines: {node: '>=0.11'}
     dependencies:
-      '@babel/runtime': 7.22.6
+      '@babel/runtime': 7.23.6
 
   /debounce@1.2.1:
     resolution: {integrity: sha512-XRRe6Glud4rd/ZGQfiV1ruXSfbvfJedlV9Y6zOlP+2K04vBYiJEte6stfFkCP03aMnY5tsipamumUjL14fofug==}
@@ -4573,11 +4564,9 @@ packages:
     dependencies:
       mimic-response: 3.1.0
 
-  /deep-eql@4.1.3:
-    resolution: {integrity: sha512-WaEtAOpRA1MQ0eohqZjpGD8zdI0Ovsm8mmFhaDN8dvDZzyoUMcYDnf5Y6iu7HTXxf8JDS23qWa4a+hKCDyOPzw==}
+  /deep-eql@5.0.1:
+    resolution: {integrity: sha512-nwQCf6ne2gez3o1MxWifqkciwt0zhl0LO1/UwVu4uMBuPmflWM4oQ70XMqHqnBJA+nhzncaqL9HVL6KkHJ28lw==}
     engines: {node: '>=6'}
-    dependencies:
-      type-detect: 4.0.8
     dev: true
 
   /deep-extend@0.6.0:
@@ -6372,8 +6361,8 @@ packages:
     dev: true
     optional: true
 
-  /get-func-name@2.0.0:
-    resolution: {integrity: sha512-Hm0ixYtaSZ/V7C8FJrtZIuBBI+iSgL+1Aq82zSu8VQNB4S3Gk8e7Qs3VwBDJAhmRZcFqkl3tQu36g/Foh5I5ig==}
+  /get-func-name@2.0.2:
+    resolution: {integrity: sha512-8vXOvuE167CtIc3OyItco7N/dpRtBbYOsPsXCz7X/PMnlGjYjSGuZJgM1Y7mmew7BKf9BqvLX2tnOVy1BBUsxQ==}
     dev: true
 
   /get-installed-path@2.1.1:
@@ -7825,10 +7814,10 @@ packages:
     dependencies:
       js-tokens: 4.0.0
 
-  /loupe@2.3.6:
-    resolution: {integrity: sha512-RaPMZKiMy8/JruncMU5Bt6na1eftNoo++R4Y+N2FrxkDVTrGvcyzFTsaGif4QTeKESheMGegbhw6iUAq+5A8zA==}
+  /loupe@3.0.1:
+    resolution: {integrity: sha512-phbaE2fPsRe8cQ7Cy5Ze5p9JLmpiaqGT45RCUWYYjZgYPBoeC3vqrlYPj4BQ82ln60ZtM3Iq00PPC3FyUdS4Kw==}
     dependencies:
-      get-func-name: 2.0.0
+      get-func-name: 2.0.2
     dev: true
 
   /lower-case@2.0.2:
@@ -8845,8 +8834,9 @@ packages:
     resolution: {integrity: sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==}
     engines: {node: '>=8'}
 
-  /pathval@1.1.1:
-    resolution: {integrity: sha512-Dp6zGqpTdETdR63lehJYPeIOqpiNBNtc7BpWSLrOje7UaIsE5aY92r/AunQA7rsXvet3lrJ3JnZX29UPTKXyKQ==}
+  /pathval@2.0.0:
+    resolution: {integrity: sha512-vE7JKRyES09KiunauX7nd2Q9/L7lhok4smP9RZTDeD4MVs72Dp2qNFVz39Nz5a0FVEW0BJR6C0DYrq6unoziZA==}
+    engines: {node: '>= 14.16'}
     dev: true
 
   /pause-stream@0.0.11:
@@ -10657,8 +10647,8 @@ packages:
       safe-buffer: 5.2.1
     dev: false
 
-  /tw5-typed@0.4.2:
-    resolution: {integrity: sha512-jqVr8vVVyBRKABSs3izjB+bCiQqHYLtWhiXlWw/Nib0+boQJulauI8Fv/XV70XfrOqLeW4JvzKXiORPekHXDhg==}
+  /tw5-typed@0.4.3:
+    resolution: {integrity: sha512-8nYTgN60PhvbDD4nOOMK34KOI4+2IXD4Wc3BvTT0nmLAz+td+FgK2UcDcsvmF4G/pwTQ+vjK7VdrJj+ZBtC52A==}
     dependencies:
       '@types/codemirror': 5.60.8
       '@types/echarts': 4.9.18
@@ -10670,11 +10660,6 @@ packages:
     engines: {node: '>= 0.8.0'}
     dependencies:
       prelude-ls: 1.2.1
-    dev: true
-
-  /type-detect@4.0.8:
-    resolution: {integrity: sha512-0fr/mIH1dlO+x7TlcMy+bIDqKPsw/70tVyeHW787goQjhmqaZe10uwLujubK9q9Lg6Fiho1KUKDYz0Z7k7g5/g==}
-    engines: {node: '>=4'}
     dev: true
 
   /type-fest@0.13.1:
@@ -10706,15 +10691,9 @@ packages:
     resolution: {integrity: sha512-RAH822pAdBgcNMAfWnCBU3CFZcfZ/i1eZjwFU/dsLKumyuuP3niueg2UAukXYF0E2AAoc82ZSSf9J0WQBinzHA==}
     engines: {node: '>=12.20'}
 
-  /type-fest@3.13.0:
-    resolution: {integrity: sha512-Gur3yQGM9qiLNs0KPP7LPgeRbio2QTt4xXouobMCarR0/wyW3F+F/+OWwshg3NG0Adon7uQfSZBpB46NfhoF1A==}
-    engines: {node: '>=14.16'}
-    dev: false
-
   /type-fest@4.9.0:
     resolution: {integrity: sha512-KS/6lh/ynPGiHD/LnAobrEFq3Ad4pBzOlJ1wAnJx9N4EYoqFhMfLIBjUT2UEx4wg5ZE+cC1ob6DCSpppVo+rtg==}
     engines: {node: '>=16'}
-    dev: true
 
   /type-is@1.6.18:
     resolution: {integrity: sha512-TkRKr9sUTxEH8MdfuCSP7VizJyzRNMjj2J2do2Jr3Kym598JVdEksuzPQCnlFPW4ky9Q+iA+ma9BGm06XQBy8g==}
