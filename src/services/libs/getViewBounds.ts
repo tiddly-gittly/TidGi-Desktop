@@ -12,12 +12,10 @@ export default async function getViewBounds(
 ): Promise<{ height: number; width: number; x: number; y: number }> {
   const { findInPage = false, windowName } = config;
   const preferencesService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-  const [showSidebar, showTitleBar] = await Promise.all([preferencesService.get('sidebar'), preferencesService.get('titleBar')]);
+  const [showSidebar] = await Promise.all([preferencesService.get('sidebar'), preferencesService.get('titleBar')]);
   // Now showing sidebar on secondary window
   const secondary = windowName === WindowNames.secondary;
   const x = (showSidebar && !secondary) ? 68 : 0;
-  /** add title bar height, move down 28px https://github.com/electron/electron/pull/34713 */
-  // const y = isMac && showTitleBar ? 28 : 0;
   const y = 0;
 
   if (findInPage) {
