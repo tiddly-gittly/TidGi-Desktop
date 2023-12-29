@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
-import { dialog, ipcMain, shell } from 'electron';
+import { dialog, ipcMain } from 'electron';
 import { backOff } from 'exponential-backoff';
 import fs from 'fs-extra';
 import { injectable } from 'inversify';
@@ -781,13 +781,12 @@ export class Wiki implements IWikiService {
     });
   }
 
-  public async openTiddlerInExternal(title: string, workspaceID?: string): Promise<void> {
+  public async getTiddlerFilePath(title: string, workspaceID?: string): Promise<string | undefined> {
     const wikiWorker = this.getWorker(workspaceID ?? (await this.workspaceService.getActiveWorkspace())?.id ?? '');
     if (wikiWorker !== undefined) {
       const tiddlerFileMetadata = await wikiWorker.getTiddlerFileMetadata(title);
       if (tiddlerFileMetadata?.filepath !== undefined) {
-        logger.debug(`openTiddlerInExternal() Opening ${tiddlerFileMetadata.filepath}`);
-        await shell.openPath(tiddlerFileMetadata.filepath);
+        return tiddlerFileMetadata.filepath;
       }
     }
   }

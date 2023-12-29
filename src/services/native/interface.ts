@@ -44,11 +44,21 @@ export interface INativeService {
   getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   mkdir(absoulutePath: string): Promise<void>;
-  open(uri: string, isDirectory?: boolean): Promise<void>;
+  /**
+   * Open a file or URI in the desktop's default manner, or show in file manager.
+   * @param uri File path or URI starts with any scheme.
+   * @param showItemInFolder Show the given file in a file manager. If possible, select the file.
+   */
+  open(uri: string, showItemInFolder?: boolean): Promise<void>;
   openInEditor(filePath: string, editorName?: string | undefined): Promise<boolean>;
   openInGitGuiApp(filePath: string, editorName?: string | undefined): Promise<boolean>;
   openNewGitHubIssue(error: Error): Promise<void>;
-  openPath(filePath: string): Promise<void>;
+  /**
+   * Open a file path, if is a relative path from wiki folder in the wiki folder, it will open it too.
+   * @param filePath relative path from wiki folder, or an absolute path.
+   * @param showItemInFolder Show the given file in a file manager. If possible, select the file.
+   */
+  openPath(filePath: string, showItemInFolder?: boolean): Promise<void>;
   path(method: 'basename' | 'dirname' | 'join', pathString: string | undefined, ...paths: string[]): Promise<string | undefined>;
   pickDirectory(defaultPath?: string, options?: IPickDirectoryOptions): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;

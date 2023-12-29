@@ -50,6 +50,13 @@ export interface IWikiService {
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
   extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
+  /**
+   * Get tiddler's absolute path. So you can open image or PDF in OS native viewer or some else usage like this, using `window?.service?.native?.openPath?.(filePath)`
+   * @returns absolute path like `'/Users/linonetwo/Desktop/repo/TiddlyGit-Desktop/wiki-dev/wiki/tiddlers/Index.tid'`
+   * @param homePath Workspace home path, used to locate wiki worker
+   * @param title tiddler title to open
+   */
+  getTiddlerFilePath(title: string, workspaceID?: string): Promise<string | undefined>;
   getTiddlerText(workspace: IWorkspace, title: string): Promise<string | undefined>;
   getWikiChangeObserver$(workspaceID: string): Observable<IChangedTiddlers>;
   getWikiErrorLogs(workspaceID: string, wikiName: string): Promise<{ content: string; filePath: string }>;
@@ -59,12 +66,6 @@ export interface IWikiService {
    */
   getWorker(workspaceID: string): ModuleThread<WikiWorker> | undefined;
   linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
-  /**
-   * Open image or PDF in OS native viewer or some else usage like this.
-   * @param homePath Workspace home path, used to locate wiki worker
-   * @param title tiddler title to open
-   */
-  openTiddlerInExternal(title: string, workspaceID: string): Promise<void>;
   packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
   /** send tiddlywiki action message to current active wiki */
@@ -116,7 +117,7 @@ export const WikiServiceIPCDescriptor = {
     getTiddlerText: ProxyPropertyType.Function,
     getWikiErrorLogs: ProxyPropertyType.Function,
     linkWiki: ProxyPropertyType.Function,
-    openTiddlerInExternal: ProxyPropertyType.Function,
+    getTiddlerFilePath: ProxyPropertyType.Function,
     packetHTMLFromWikiFolder: ProxyPropertyType.Function,
     removeWiki: ProxyPropertyType.Function,
     requestWikiSendActionMessage: ProxyPropertyType.Function,
