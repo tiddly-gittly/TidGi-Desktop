@@ -17,6 +17,9 @@ const InnerContentRoot = styled.div`
   height: 100%;
   overflow-y: auto;
 `;
+const StyledDivider = styled(Divider)`
+  margin: 10px 0;
+`;
 
 export function Help(): JSX.Element {
   const { t } = useTranslation();
@@ -27,7 +30,7 @@ export function Help(): JSX.Element {
       <Languages languageSelectorOnly />
       <InnerContentRoot>
         <Typography>{t('Help.Description')}</Typography>
-        <Divider>{t('Help.List')}</Divider>
+        <StyledDivider>{t('Help.List')}</StyledDivider>
         <Grid container spacing={2}>
           {items.map((item, index) => (
             <Grid key={index} item xs={12} sm={6} md={4}>
