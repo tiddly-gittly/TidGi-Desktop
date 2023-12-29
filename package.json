@@ -174,9 +174,6 @@
     "overrides": {
       "node-abi": "latest",
       "prebuild-install": "latest"
-    },
-    "patchedDependencies": {
-      "registry-js@1.15.1": "patches/registry-js@1.15.1.patch"
     }
   },
   "private": false

@@ -8,11 +8,6 @@ overrides:
   node-abi: latest
   prebuild-install: latest
 
-patchedDependencies:
-  registry-js@1.15.1:
-    hash: 7rafcy7utzw5ykwiniqb3nhl5q
-    path: patches/registry-js@1.15.1.patch
-
 dependencies:
   '@llama-node/core':
     specifier: ^0.1.6
@@ -165,7 +160,7 @@ dependencies:
 optionalDependencies:
   registry-js:
     specifier: 1.15.1
-    version: 1.15.1(patch_hash=7rafcy7utzw5ykwiniqb3nhl5q)
+    version: 1.15.1
   sqlite-vss-darwin-arm64:
     specifier: 0.1.2
     version: 0.1.2
@@ -9386,7 +9381,7 @@ packages:
     engines: {node: '>=8'}
     dev: true
 
-  /registry-js@1.15.1(patch_hash=7rafcy7utzw5ykwiniqb3nhl5q):
+  /registry-js@1.15.1:
     resolution: {integrity: sha512-aHEHtbzqusxkhprn7+rf2Cu7z0oPHaXVuOVKTpZigBSRpXUTw7+yWBJyuAREpG1bt2doe+qJzSR+kyZ9uWsj7A==}
     requiresBuild: true
     dependencies:
@@ -9394,7 +9389,6 @@ packages:
       prebuild-install: 7.1.1
     dev: false
     optional: true
-    patched: true
 
   /regjsparser@0.10.0:
     resolution: {integrity: sha512-qx+xQGZVsy55CH0a1hiVwHmqjLryfh7wQyF5HO07XJ9f7dQMY/gPQHhlyDkIzJKC+x2fUCpCcUODUUUFrm7SHA==}
