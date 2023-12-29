@@ -2,7 +2,7 @@
   "name": "tidgi",
   "productName": "TidGi",
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
-  "version": "0.8.1-prerelease8",
+  "version": "0.8.1-prerelease9",
   "license": "MPL 2.0",
   "scripts": {
     "start": "pnpm run clean && pnpm run init:git-submodule && pnpm run start:without-clean",
@@ -175,6 +175,9 @@
     "overrides": {
       "node-abi": "latest",
       "prebuild-install": "latest"
+    },
+    "patchedDependencies": {
+      "registry-js@1.15.1": "patches/registry-js@1.15.1.patch"
     }
   },
   "private": false

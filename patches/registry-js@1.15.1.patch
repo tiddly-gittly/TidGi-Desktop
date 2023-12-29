@@ -1,0 +1,12 @@
+diff --git a/package.json b/package.json
+index c83258354f9997e167ea872b10093f7b22756671..5f04bdd3c89708d59f4fbc450e6fa1dcae5d6960 100644
+--- a/package.json
++++ b/package.json
+@@ -4,6 +4,7 @@
+   "description": "A simple and opinionated library for working with the Windows registry",
+   "main": "dist/lib/index.js",
+   "typings": "dist/lib/index.d.ts",
++  "os": ["win32"],
+   "scripts": {
+     "install": "prebuild-install || node-gyp rebuild",
+     "build": "tsc",
