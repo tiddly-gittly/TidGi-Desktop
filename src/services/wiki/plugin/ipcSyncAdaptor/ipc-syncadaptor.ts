@@ -3,7 +3,7 @@
 import type { IWikiServerStatusObject } from '@services/wiki/wikiWorker/ipcServerRoutes';
 import type { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import debounce from 'lodash/debounce';
-import type { IChangedTiddlers, ITiddlerFields, Logger, Syncer, Tiddler, Wiki } from 'tiddlywiki';
+import type { IChangedTiddlers, ITiddlerFields, IUtils, Syncer, Tiddler, Wiki } from 'tiddlywiki';
 
 type ISyncAdaptorGetStatusCallback = (error: Error | null, isLoggedIn?: boolean, username?: string, isReadOnly?: boolean, isAnonymous?: boolean) => void;
 type ISyncAdaptorGetTiddlersJSONCallback = (error: Error | null, tiddler?: Array<Omit<ITiddlerFields, 'text'>>) => void;
@@ -18,7 +18,7 @@ class TidGiIPCSyncAdaptor {
   supportsLazyLoading = true;
   wiki: Wiki;
   hasStatus: boolean;
-  logger: Logger;
+  logger: IUtils['Logger'];
   isLoggedIn: boolean;
   isAnonymous: boolean;
   isReadOnly: boolean;
@@ -132,7 +132,7 @@ class TidGiIPCSyncAdaptor {
     callback(null, this.updatedTiddlers);
   }
 
-  setLoggerSaveBuffer(loggerForSaving: Logger) {
+  setLoggerSaveBuffer(loggerForSaving: IUtils['Logger']) {
     this.logger.setSaveBuffer(loggerForSaving);
   }
 

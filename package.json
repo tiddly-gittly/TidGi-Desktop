@@ -164,7 +164,7 @@
     "ts-import-plugin": "3.0.0",
     "ts-loader": "9.5.1",
     "ts-node": "10.9.2",
-    "tw5-typed": "^0.4.0",
+    "tw5-typed": "^0.4.2",
     "typescript": "5.3.3",
     "typescript-plugin-styled-components": "3.0.0",
     "typesync": "0.12.0",

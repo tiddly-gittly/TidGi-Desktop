@@ -401,8 +401,8 @@ devDependencies:
     specifier: 10.9.2
     version: 10.9.2(@types/node@20.10.5)(typescript@5.3.3)
   tw5-typed:
-    specifier: ^0.4.0
-    version: 0.4.0
+    specifier: ^0.4.2
+    version: 0.4.2
   typescript:
     specifier: 5.3.3
     version: 5.3.3
@@ -10659,8 +10659,8 @@ packages:
       safe-buffer: 5.2.1
     dev: false
 
-  /tw5-typed@0.4.0:
-    resolution: {integrity: sha512-43k63O+S/VFIxCes8+0Y9/sQHVMdrxj6ODLXUgasl76DL0HkA+LaSZ4ewqzqsfPxN7BxWp8QukgqpOvrKZuKQQ==}
+  /tw5-typed@0.4.2:
+    resolution: {integrity: sha512-jqVr8vVVyBRKABSs3izjB+bCiQqHYLtWhiXlWw/Nib0+boQJulauI8Fv/XV70XfrOqLeW4JvzKXiORPekHXDhg==}
     dependencies:
       '@types/codemirror': 5.60.8
       '@types/echarts': 4.9.18
