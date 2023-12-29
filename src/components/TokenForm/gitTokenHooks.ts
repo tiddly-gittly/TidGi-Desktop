@@ -1,69 +1,58 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { IGitUserInfosWithoutToken } from '@services/git/interface';
 import { SupportedStorageServices } from '@services/types';
-import { UserManager, WebStorageStateStore } from 'oidc-client-ts';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect } from 'react';
 
-export function useAuth(storageService: SupportedStorageServices, userInfo: IGitUserInfosWithoutToken): [() => Promise<void>, () => Promise<void>] {
-  const [userManager, setUserManager] = useState<UserManager>();
-
-  useEffect(() => {
-    void window.service.context.get('LOGIN_REDIRECT_PATH').then( (LOGIN_REDIRECT_PATH) => {
-      const settings = {
-        authority: 'https://github.com/',
-        client_id: userInfo.gitUserName,
-        redirect_uri: LOGIN_REDIRECT_PATH,
-        response_type: 'code',
-        scope: 'openid',
-        // post_logout_redirect_uri: '<YOUR_POST_LOGOUT_REDIRECT_URI>',
-        userStore: new WebStorageStateStore({ store: window.localStorage }),
-      };
-
-      const userManager = new UserManager(settings);
-      setUserManager(userManager);
-
-      userManager.events.addUserLoaded(async user => {
-        // Handle the loaded user information here
-        // Save the access token and other user details
-        if (user.access_token) {
-          await window.service.auth.set(`${storageService}-token`, user.access_token);
-        }
-        if (userInfo.gitUserName) {
-          await window.service.auth.set(`${storageService}-userName`, userInfo.gitUserName);
-        }
-        if (userInfo.email) {
-          await window.service.auth.set(`${storageService}-email`, userInfo.email);
-        }
-        // Additional user information might be available in the user.profile object
-      });
-
-      userManager.events.addSilentRenewError(error => {
-        console.error('Silent renew error', error);
-      });
-
-      // userManager.events.addUserSignedOut(async () => {
-      //   // Handle user sign-out event
-      //   await window.service.window.clearStorageData();
-      // });
-    });
-  }, [storageService, userInfo.email, userInfo.gitUserName]);
-
-  const onClickLogin = useCallback(async () => {
-    try {
-      await userManager?.signinRedirect();
-    } catch (error) {
-      console.error(error);
-    }
-  }, [userManager]);
-
+export function useAuth(storageService: SupportedStorageServices): [() => Promise<void>, () => Promise<void>] {
   const onClickLogout = useCallback(async () => {
     try {
-      await userManager?.signoutRedirect();
+      await window.service.auth.set(`${storageService}-token`, '');
       await window.service.window.clearStorageData();
     } catch (error) {
       console.error(error);
     }
-  }, [userManager]);
+  }, [storageService]);
+
+  const onClickLogin = useCallback(async () => {
+    await onClickLogout();
+    try {
+      // redirect current page to oauth login page
+      switch (storageService) {
+        case SupportedStorageServices.github: {
+          location.href = await window.service.context.get('GITHUB_OAUTH_PATH');
+        }
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  }, [onClickLogout, storageService]);
 
   return [onClickLogin, onClickLogout];
+}
+
+export function useGetGithubUserInfoOnLoad(): void {
+  useEffect(() => {
+    void window.service.auth.get(`${SupportedStorageServices.github}-token`).then(async (githubToken) => {
+      try {
+        // DEBUG: console githubToken
+        console.log(`githubToken`, githubToken);
+        if (githubToken) {
+          // get user name and email using github api
+          const response = await fetch('https://api.github.com/user', {
+            method: 'GET',
+            headers: {
+              Authorization: `Bearer ${githubToken}`,
+            },
+          });
+          const userInfo = await (response.json() as Promise<{ email: string; login: string; name: string }>);
+          // DEBUG: console userInfo
+          console.log(`userInfo`, userInfo);
+          await window.service.auth.set(`${SupportedStorageServices.github}-userName`, userInfo.login);
+          await window.service.auth.set('userName', userInfo.name);
+          await window.service.auth.set(`${SupportedStorageServices.github}-email`, userInfo.email);
+        }
+      } catch (error) {
+        console.error(error);
+      }
+    });
+  }, []);
 }

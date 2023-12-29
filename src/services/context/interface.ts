@@ -10,7 +10,6 @@ export interface IPaths {
   HTTPS_CERT_KEY_FOLDER: string;
   LANGUAGE_MODEL_FOLDER: string;
   LOCALIZATION_FOLDER: string;
-  LOGIN_REDIRECT_PATH: string;
   LOG_FOLDER: string;
   MAIN_WINDOW_WEBPACK_ENTRY: string;
   MENUBAR_ICON_PATH: string;
@@ -18,6 +17,13 @@ export interface IPaths {
   TIDDLERS_PATH: string;
   TIDDLYWIKI_TEMPLATE_FOLDER_PATH: string;
   V8_CACHE_FOLDER: string;
+}
+
+export interface IAuthConstants {
+  GITHUB_LOGIN_REDIRECT_PATH: string;
+  GITHUB_OAUTH_APP_CLIENT_ID: string;
+  GITHUB_OAUTH_APP_CLIENT_SECRET: string;
+  GITHUB_OAUTH_PATH: string;
 }
 /**
  * Available values about running environment
@@ -33,7 +39,7 @@ export interface IConstants {
   tiddlywikiLanguagesMap: Record<string, string | undefined>;
 }
 
-export interface IContext extends IPaths, IConstants {}
+export interface IContext extends IPaths, IConstants, IAuthConstants {}
 
 /**
  * Manage constant value like `isDevelopment` and many else, so you can know about about running environment in main and renderer process easily.
