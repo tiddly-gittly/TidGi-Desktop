@@ -21,9 +21,6 @@ dependencies:
   '@tiddlygit/tiddlywiki':
     specifier: ^5.3.3-prerelease-2023-12-23-withdestroymethod
     version: 5.3.3-prerelease-2023-12-23-withdestroymethod
-  '@types/json-schema':
-    specifier: ^7.0.15
-    version: 7.0.15
   app-path:
     specifier: ^4.0.0
     version: 4.0.0
@@ -352,9 +349,6 @@ devDependencies:
   graphql-hooks:
     specifier: 6.3.2
     version: 6.3.2(react@18.2.0)
-  immer:
-    specifier: ^10.0.3
-    version: 10.0.3
   json5:
     specifier: ^2.2.3
     version: 2.2.3
@@ -424,9 +418,6 @@ devDependencies:
   webpackbar:
     specifier: 6.0.0
     version: 6.0.0(webpack@5.88.1)
-  zustand:
-    specifier: ^4.4.7
-    version: 4.4.7(@types/react@18.2.46)(immer@10.0.3)(react@18.2.0)
 
 packages:
 
@@ -2823,6 +2814,7 @@ packages:
 
   /@types/json-schema@7.0.15:
     resolution: {integrity: sha512-5+fP8P8MFNC+AyZCDxrB2pkZFPGzqQWUzpSeuuVLvm8VMcorNYavBqoFcxK8bQz4Qsbn4oUEEem4wDLfcysGHA==}
+    dev: true
 
   /@types/jsonfile@6.1.1:
     resolution: {integrity: sha512-GSgiRCVeapDN+3pqA35IkQwasaCh/0YFH5dEF6S88iDvEn901DjOeH3/QPY+XYP1DFzDZPvIvfeEgk+7br5png==}
@@ -6985,10 +6977,6 @@ packages:
       '@types/node': 16.9.1
     dev: false
 
-  /immer@10.0.3:
-    resolution: {integrity: sha512-pwupu3eWfouuaowscykeckFmVTpqbzW+rXFCX8rQLkZzM9ftBmU/++Ra+o+L27mz03zJTlyV4UUr+fdKNffo4A==}
-    dev: true
-
   /import-fresh@3.3.0:
     resolution: {integrity: sha512-veYYhQa+D1QBKznvhUHxb8faxlrwUnxseDAbAp457E0wLNio2bOSKnjYDhMj+YiAq61xrMGhQk9iXVk5FzgQMw==}
     engines: {node: '>=6'}
@@ -10942,6 +10930,7 @@ packages:
       react: ^16.8.0 || ^17.0.0 || ^18.0.0
     dependencies:
       react: 18.2.0
+    dev: false
 
   /username@5.1.0:
     resolution: {integrity: sha512-PCKbdWw85JsYMvmCv5GH3kXmM66rCd9m1hBEDutPNv94b/pqCMT4NtcKyeWYvLFiE8b+ha1Jdl8XAaUdPn5QTg==}
@@ -11545,27 +11534,6 @@ packages:
       tiny-case: 1.0.3
       toposort: 2.0.2
       type-fest: 2.19.0
-    dev: true
-
-  /zustand@4.4.7(@types/react@18.2.46)(immer@10.0.3)(react@18.2.0):
-    resolution: {integrity: sha512-QFJWJMdlETcI69paJwhSMJz7PPWjVP8Sjhclxmxmxv/RYI7ZOvR5BHX+ktH0we9gTWQMxcne8q1OY8xxz604gw==}
-    engines: {node: '>=12.7.0'}
-    peerDependencies:
-      '@types/react': '>=16.8'
-      immer: '>=9.0'
-      react: '>=16.8'
-    peerDependenciesMeta:
-      '@types/react':
-        optional: true
-      immer:
-        optional: true
-      react:
-        optional: true
-    dependencies:
-      '@types/react': 18.2.46
-      immer: 10.0.3
-      react: 18.2.0
-      use-sync-external-store: 1.2.0(react@18.2.0)
     dev: true
 
   /zx@7.2.3:

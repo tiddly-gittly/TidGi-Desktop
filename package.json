@@ -35,7 +35,6 @@
     "@llama-node/llama-cpp": "^0.1.6",
     "@llama-node/rwkv-cpp": "^0.1.6",
     "@tiddlygit/tiddlywiki": "^5.3.3-prerelease-2023-12-23-withdestroymethod",
-    "@types/json-schema": "^7.0.15",
     "app-path": "^4.0.0",
     "best-effort-json-parser": "1.0.1",
     "better-sqlite3": "^9.2.2",
@@ -148,7 +147,6 @@
     "fork-ts-checker-webpack-plugin": "9.0.2",
     "glob": "^10.3.10",
     "graphql-hooks": "6.3.2",
-    "immer": "^10.0.3",
     "json5": "^2.2.3",
     "node-loader": "2.0.0",
     "react": "18.2.0",
@@ -171,8 +169,7 @@
     "webpack-bundle-analyzer": "4.10.1",
     "webpack-node-externals": "3.0.0",
     "webpack5-externals-plugin": "1.0.4",
-    "webpackbar": "6.0.0",
-    "zustand": "^4.4.7"
+    "webpackbar": "6.0.0"
   },
   "pnpm": {
     "overrides": {

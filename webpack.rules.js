@@ -1,3 +1,4 @@
+/* eslint-disable security/detect-unsafe-regex */
 /* eslint-disable unicorn/prefer-module */
 /* eslint-disable unicorn/no-null */
 /* eslint-disable @typescript-eslint/no-var-requires */
@@ -119,44 +120,5 @@ module.exports = [
     generator: {
       filename: 'images/[name].[ext]',
     },
-  },
-  {
-    /**
-     * Replace this file in noflo library's content with bundled components pack, so when noflo's internal code require this file, it will get the bundled components pack as result.
-     */
-    test: /noflo(\\+|\/)lib(\\+|\/)loader(\\+|\/)register.js$/,
-    use: [
-      {
-        loader: 'noflo-component-loader',
-        options: {
-          // Only include components used by this graph
-          // Set to NULL if you want all installed components
-          graph: null,
-          // Whether to include the original component sources
-          // in the build
-          debug: true,
-          baseDir: __dirname,
-          manifest: {
-            runtimes: ['noflo'],
-            discover: true,
-            recursive: true,
-          },
-          runtimes: [
-            'noflo',
-            'noflo-browser',
-          ],
-        },
-      },
-    ],
-  },
-  {
-    test: /\.coffee$/,
-    // load noflo-interaction standard lib, which provide some component in this format
-    use: ['coffee-loader'],
-  },
-  {
-    test: /\.fbp$/,
-    // load noflo-strings standard lib, which provide some component in this format
-    use: ['fbp-loader'],
   },
 ];

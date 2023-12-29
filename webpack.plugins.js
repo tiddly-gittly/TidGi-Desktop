@@ -56,9 +56,6 @@ exports.main = _.compact([
 exports.renderer = _.compact([
   new webpack.DefinePlugin({
     'process.env.NODE_ENV': `"${process.env.NODE_ENV ?? 'production'}"`,
-    // some noflo modules use process.env.NODE_DEBUG
-    'process.env.NODE_DEBUG': 'false',
-    // global: {},
   }),
   // new CspHtmlWebpackPlugin(
   //   {
