@@ -281,19 +281,12 @@ class TidGiIPCSyncAdaptor {
   options include:
   tiddlerInfo: the syncer's tiddlerInfo for this tiddler
   */
-  async deleteTiddler(title: string, callback: ISyncAdaptorDeleteTiddlerCallback, options: { tiddlerInfo: { adaptorInfo: { bag?: string } } }) {
+  async deleteTiddler(title: string, callback: ISyncAdaptorDeleteTiddlerCallback) {
     if (this.isReadOnly) {
       callback(null);
       return;
     }
-    // If we don't have a bag it means that the tiddler hasn't been seen by the server, so we don't need to delete it
-    const bag = options?.tiddlerInfo?.adaptorInfo?.bag;
-    this.logger.log('deleteTiddler', bag);
-    // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    if (!bag) {
-      callback(null, options.tiddlerInfo.adaptorInfo);
-      return;
-    }
+    this.logger.log('deleteTiddler');
     this.addRecentUpdatedTiddlersFromClient('deletions', title);
     const getTiddlerResponse = await this.wikiService.callWikiIpcServerRoute(
       this.workspaceID,
