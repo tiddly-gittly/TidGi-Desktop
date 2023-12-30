@@ -27,6 +27,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
+import { CancelError as DownloadCancelError, download } from 'electron-dl';
 import path from 'path';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
 
@@ -252,35 +253,57 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   private async registerMenu(): Promise<void> {
-    const hasWorkspaces = async (): Promise<boolean> => (await this.workspaceService.countWorkspaces()) > 0;
+    const hasActiveWorkspaces = async (): Promise<boolean> => (await this.workspaceService.getActiveWorkspace()) !== undefined;
 
     await this.menuService.insertMenu('Workspaces', [
       {
         label: () => i18n.t('Menu.DeveloperToolsActiveWorkspace'),
         accelerator: 'CmdOrCtrl+Option+I',
         click: async () => (await this.viewService.getActiveBrowserView())?.webContents?.openDevTools?.({ mode: 'detach' }),
-        enabled: hasWorkspaces,
+        enabled: hasActiveWorkspaces,
       },
     ]);
     await this.menuService.insertMenu('Wiki', [
       {
         label: () => i18n.t('Menu.PrintPage'),
         click: async () => {
-          const browserViews = await this.viewService.getActiveBrowserViews();
-          browserViews.forEach((browserView) => {
-            browserView?.webContents?.print();
-          });
+          try {
+            const browserView = await this.viewService.getActiveBrowserView();
+            const win = this.windowService.get(WindowNames.main);
+            logger.info(
+              `print page, browserView printToPDF method is ${browserView?.webContents?.printToPDF === undefined ? 'undefined' : 'define'}, win is ${
+                win === undefined ? 'undefined' : 'define'
+              }`,
+            );
+            if (browserView === undefined || win === undefined) {
+              return;
+            }
+            const pdfBuffer = await browserView?.webContents?.printToPDF({
+              generateTaggedPDF: true,
+            });
+            // turn buffer to data uri
+            const dataUri = `data:application/pdf;base64,${pdfBuffer?.toString('base64')}`;
+            await download(win, dataUri, { filename: 'wiki.pdf', overwrite: false });
+            logger.info(`print page done`);
+          } catch (error) {
+            if (error instanceof DownloadCancelError) {
+              logger.debug('item.cancel() was called');
+            } else {
+              logger.error(`print page error: ${(error as Error).message}`, error);
+            }
+          }
         },
-        enabled: hasWorkspaces,
+        enabled: hasActiveWorkspaces,
       },
-      {
-        label: () => i18n.t('Menu.PrintActiveTiddler'),
-        accelerator: 'CmdOrCtrl+Alt+Shift+P',
-        click: async () => {
-          await this.printTiddler();
-        },
-        enabled: hasWorkspaces,
-      },
+      // TODO: get active tiddler title
+      // {
+      //   label: () => i18n.t('Menu.PrintActiveTiddler'),
+      //   accelerator: 'CmdOrCtrl+Alt+Shift+P',
+      //   click: async () => {
+      //     await this.printTiddler(title);
+      //   },
+      //   enabled: hasActiveWorkspaces,
+      // },
       {
         label: () => i18n.t('Menu.ExportWholeWikiHTML'),
         click: async () => {
@@ -300,7 +323,7 @@ export class WorkspaceView implements IWorkspaceViewService {
             logger.error("Can not export whole wiki, pickDirectory's pathOfNewHTML is empty");
           }
         },
-        enabled: hasWorkspaces,
+        enabled: hasActiveWorkspaces,
       },
       { type: 'separator' },
       {
@@ -327,13 +350,10 @@ export class WorkspaceView implements IWorkspaceViewService {
     ]);
   }
 
-  public async printTiddler(tiddlerName?: string): Promise<void> {
-    const browserViews = await this.viewService.getActiveBrowserViews();
-    browserViews.forEach((browserView) => {
-      if (browserView !== undefined) {
-        browserView.webContents.send(WikiChannel.printTiddler, tiddlerName);
-      }
-    });
+  public async printTiddler(tiddlerName: string): Promise<void> {
+    const browserView = await this.viewService.getActiveBrowserView();
+    logger.info(`printTiddler() printing tiddler ${tiddlerName ?? 'undefined'}, browserView is ${browserView?.webContents === undefined ? 'undefined' : 'define'}`);
+    browserView?.webContents?.send?.(WikiChannel.printTiddler, tiddlerName);
   }
 
   public async setWorkspaceView(workspaceID: string, workspaceOptions: IWorkspace): Promise<void> {

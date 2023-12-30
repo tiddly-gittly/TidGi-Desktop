@@ -529,8 +529,8 @@ export class View implements IViewService {
 
   public async getActiveBrowserView(): Promise<BrowserView | undefined> {
     const workspace = await this.workspaceService.getActiveWorkspace();
-    const isMenubarOpen = await this.windowService.isMenubarOpen();
     if (workspace !== undefined) {
+      const isMenubarOpen = await this.windowService.isMenubarOpen();
       if (isMenubarOpen) {
         return this.getView(workspace.id, WindowNames.menuBar);
       } else {

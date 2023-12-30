@@ -162,7 +162,7 @@ export class Workspace implements IWorkspaceService {
         accelerator: `CmdOrCtrl+${index + 1}`,
       },
       {
-        label: () => `${workspace.name || `Workspace ${index + 1}`} ${i18n.t('ContextMenu.DeveloperTools')}`,
+        label: () => `${workspace.name || `Workspace ${index + 1}`} ${i18n.t('Menu.DeveloperToolsActiveWorkspace')}`,
         id: `${workspace.id}-devtool`,
         click: async () => {
           const view = this.viewService.getView(workspace.id, WindowNames.main);
