@@ -10,6 +10,7 @@ import { Languages } from '../Preferences/sections/Languages';
 import { TiddlyWiki } from '../Preferences/sections/TiddlyWiki';
 import { NewUserMessage } from './NewUserMessage';
 import { useAutoCreateFirstWorkspace } from './useAutoCreateFirstWorkspace';
+import { useRestartSnackbar } from '@/components/RestartSnackbar';
 
 const InnerContentRoot = styled.div`
   flex: 1;
@@ -27,6 +28,7 @@ export function Guide(): JSX.Element {
   const [wikiCreationMessage, wikiCreationMessageSetter] = useState('');
   useAutoCreateFirstWorkspace(workspacesList, wikiCreationMessageSetter);
   const preferences = usePreferenceObservable();
+  const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
   return (
     <>
       <InnerContentRoot>
@@ -36,7 +38,8 @@ export function Guide(): JSX.Element {
         )}
       </InnerContentRoot>
       <Languages languageSelectorOnly />
-      <TiddlyWiki />
+      <TiddlyWiki requestRestartCountDown={requestRestartCountDown} />
+      {RestartSnackbar}
     </>
   );
 }

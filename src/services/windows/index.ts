@@ -135,6 +135,7 @@ export class Window implements IWindowService {
     }
 
     // create new window
+    const { hideMenuBar: autoHideMenuBar, titleBar: showTitleBar, menuBarAlwaysOnTop, alwaysOnTop } = await this.preferenceService.getPreferences();
     let windowWithBrowserViewConfig: Partial<BrowserWindowConstructorOptions> = {};
     let windowWithBrowserViewState: windowStateKeeperState | undefined;
     const WindowToKeepPositionState = [WindowNames.main, WindowNames.menuBar];
@@ -161,10 +162,10 @@ export class Window implements IWindowService {
       maximizable: true,
       minimizable: true,
       fullscreenable: true,
-      autoHideMenuBar: false,
+      autoHideMenuBar,
       // hide titleBar should not take effect on setting window
-      titleBarStyle: ![WindowNames.main, WindowNames.menuBar].includes(windowName) || (await this.preferenceService.get('titleBar')) ? 'default' : 'hidden',
-      alwaysOnTop: windowName === WindowNames.menuBar ? await this.preferenceService.get('menuBarAlwaysOnTop') : await this.preferenceService.get('alwaysOnTop'),
+      titleBarStyle: (![WindowNames.main, WindowNames.menuBar].includes(windowName) || showTitleBar) ? 'default' : 'hidden',
+      alwaysOnTop: windowName === WindowNames.menuBar ? menuBarAlwaysOnTop : alwaysOnTop,
       webPreferences: {
         devTools: !isTest,
         nodeIntegration: false,
