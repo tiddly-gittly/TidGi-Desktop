@@ -2,19 +2,16 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/consistent-destructuring */
 import { mapSeries } from 'bluebird';
-import { app, clipboard, dialog, session } from 'electron';
+import { app, dialog, session } from 'electron';
 import { injectable } from 'inversify';
 
-import { DEFAULT_DOWNLOADS_PATH } from '@/constants/appPaths';
-import { MetaDataChannel, WikiChannel } from '@/constants/channels';
-import { isHtmlWiki, wikiHtmlExtensions } from '@/constants/fileNames';
+import { WikiChannel } from '@/constants/channels';
 import { tiddlywikiLanguagesMap } from '@/constants/languages';
 import { WikiCreationMethod } from '@/constants/wikiCreation';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import type { IGitService } from '@services/git/interface';
-import getFromRenderer from '@services/libs/getFromRenderer';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
@@ -25,11 +22,11 @@ import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
-import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
+import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
-import { CancelError as DownloadCancelError, download } from 'electron-dl';
-import path from 'path';
+
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
+import { registerMenu } from './registerMenu';
 
 @injectable()
 export class WorkspaceView implements IWorkspaceViewService {
@@ -67,7 +64,7 @@ export class WorkspaceView implements IWorkspaceViewService {
   private readonly nativeService!: INativeService;
 
   constructor() {
-    void this.registerMenu();
+    void registerMenu();
   }
 
   public async initializeAllWorkspaceView(): Promise<void> {
@@ -250,104 +247,6 @@ export class WorkspaceView implements IWorkspaceViewService {
         await this.loadURL(url, activeWorkspace.id);
       }
     }
-  }
-
-  private async registerMenu(): Promise<void> {
-    const hasActiveWorkspaces = async (): Promise<boolean> => (await this.workspaceService.getActiveWorkspace()) !== undefined;
-
-    await this.menuService.insertMenu('Workspaces', [
-      {
-        label: () => i18n.t('Menu.DeveloperToolsActiveWorkspace'),
-        accelerator: 'CmdOrCtrl+Option+I',
-        click: async () => (await this.viewService.getActiveBrowserView())?.webContents?.openDevTools?.({ mode: 'detach' }),
-        enabled: hasActiveWorkspaces,
-      },
-    ]);
-    await this.menuService.insertMenu('Wiki', [
-      {
-        label: () => i18n.t('Menu.PrintPage'),
-        click: async () => {
-          try {
-            const browserView = await this.viewService.getActiveBrowserView();
-            const win = this.windowService.get(WindowNames.main);
-            logger.info(
-              `print page, browserView printToPDF method is ${browserView?.webContents?.printToPDF === undefined ? 'undefined' : 'define'}, win is ${
-                win === undefined ? 'undefined' : 'define'
-              }`,
-            );
-            if (browserView === undefined || win === undefined) {
-              return;
-            }
-            const pdfBuffer = await browserView?.webContents?.printToPDF({
-              generateTaggedPDF: true,
-            });
-            // turn buffer to data uri
-            const dataUri = `data:application/pdf;base64,${pdfBuffer?.toString('base64')}`;
-            await download(win, dataUri, { filename: 'wiki.pdf', overwrite: false });
-            logger.info(`print page done`);
-          } catch (error) {
-            if (error instanceof DownloadCancelError) {
-              logger.debug('item.cancel() was called');
-            } else {
-              logger.error(`print page error: ${(error as Error).message}`, error);
-            }
-          }
-        },
-        enabled: hasActiveWorkspaces,
-      },
-      // TODO: get active tiddler title
-      // {
-      //   label: () => i18n.t('Menu.PrintActiveTiddler'),
-      //   accelerator: 'CmdOrCtrl+Alt+Shift+P',
-      //   click: async () => {
-      //     await this.printTiddler(title);
-      //   },
-      //   enabled: hasActiveWorkspaces,
-      // },
-      {
-        label: () => i18n.t('Menu.ExportWholeWikiHTML'),
-        click: async () => {
-          const activeWorkspace = await this.workspaceService.getActiveWorkspace();
-          if (activeWorkspace === undefined) {
-            logger.error('Can not export whole wiki, activeWorkspace is undefined');
-            return;
-          }
-          const pathOfNewHTML = await this.nativeService.pickDirectory(DEFAULT_DOWNLOADS_PATH, {
-            allowOpenFile: true,
-            filters: [{ name: 'HTML', extensions: wikiHtmlExtensions }],
-          });
-          if (pathOfNewHTML.length > 0) {
-            const fileName = isHtmlWiki(pathOfNewHTML[0]) ? pathOfNewHTML[0] : path.join(pathOfNewHTML[0], `${activeWorkspace.name}.html`);
-            await this.wikiService.packetHTMLFromWikiFolder(activeWorkspace.wikiFolderLocation, fileName);
-          } else {
-            logger.error("Can not export whole wiki, pickDirectory's pathOfNewHTML is empty");
-          }
-        },
-        enabled: hasActiveWorkspaces,
-      },
-      { type: 'separator' },
-      {
-        label: () => i18n.t('ContextMenu.CopyLink'),
-        accelerator: 'CmdOrCtrl+L',
-        click: async (_menuItem, browserWindow) => {
-          // if back is called in popup window
-          // copy the popup window URL instead
-          if (browserWindow !== undefined) {
-            const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-            if (isPopup === true) {
-              const url = browserWindow.webContents.getURL();
-              clipboard.writeText(url);
-              return;
-            }
-          }
-          const mainWindow = this.windowService.get(WindowNames.main);
-          const url = mainWindow?.getBrowserView()?.webContents?.getURL();
-          if (typeof url === 'string') {
-            clipboard.writeText(url);
-          }
-        },
-      },
-    ]);
   }
 
   public async printTiddler(tiddlerName: string): Promise<void> {

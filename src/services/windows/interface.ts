@@ -24,9 +24,9 @@ export interface IWindowService {
   /** get window, this should not be called in renderer side */
   get(windowName: WindowNames): BrowserWindow | undefined;
   getWindowMeta<N extends WindowNames>(windowName: N): Promise<WindowMeta[N] | undefined>;
-  goBack(windowName: WindowNames): Promise<void>;
-  goForward(windowName: WindowNames): Promise<void>;
-  goHome(windowName: WindowNames): Promise<void>;
+  goBack(windowName?: WindowNames): Promise<void>;
+  goForward(windowName?: WindowNames): Promise<void>;
+  goHome(windowName?: WindowNames): Promise<void>;
   isFullScreen(windowName?: WindowNames): Promise<boolean | undefined>;
   isMenubarOpen(): Promise<boolean>;
   loadURL(windowName: WindowNames, newUrl?: string): Promise<void>;
@@ -41,6 +41,8 @@ export interface IWindowService {
   reload(windowName: WindowNames): Promise<void>;
   requestRestart(): Promise<void>;
   sendToAllWindows: (channel: Channels, ...arguments_: unknown[]) => Promise<void>;
+  /** set window or delete window object by passing undefined (will not close it, only remove reference), this should not be called in renderer side */
+  set(windowName: WindowNames, win: BrowserWindow | undefined): void;
   setWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;
   stopFindInPage(close?: boolean | undefined, windowName?: WindowNames): Promise<void>;
   updateWindowMeta<N extends WindowNames>(windowName: N, meta?: WindowMeta[N]): Promise<void>;

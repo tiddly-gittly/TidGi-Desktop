@@ -1,14 +1,13 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
-import { app, BrowserWindow, BrowserWindowConstructorOptions, ipcMain, Menu, nativeImage, Tray } from 'electron';
+import { app, BrowserWindow, BrowserWindowConstructorOptions } from 'electron';
 import windowStateKeeper, { State as windowStateKeeperState } from 'electron-window-state';
 import { injectable } from 'inversify';
-import mergeDeep from 'lodash/merge';
-import { Menubar, menubar } from 'menubar';
+import { Menubar } from 'menubar';
 
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IBrowserViewMetaData, windowDimension, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { windowDimension, WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 
 import { Channels, MetaDataChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import type { IMenuService } from '@services/menu/interface';
@@ -18,22 +17,19 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { isTest } from '@/constants/environment';
-import { MENUBAR_ICON_PATH } from '@/constants/paths';
 import { getDefaultTidGiUrl } from '@/constants/urls';
-import { isMac } from '@/helpers/system';
 import { lazyInject } from '@services/container';
-import getFromRenderer from '@services/libs/getFromRenderer';
 import getViewBounds from '@services/libs/getViewBounds';
-import { i18n } from '@services/libs/i18n';
-import { logger } from '@services/libs/log';
 import { IThemeService } from '@services/theme/interface';
-import { debounce } from 'lodash';
+import { handleAttachToMenuBar } from './handleAttachToMenuBar';
+import { handleCreateBasicWindow } from './handleCreateBasicWindow';
 import { IWindowOpenConfig, IWindowService } from './interface';
+import { registerBrowserViewWindowListeners } from './registerBrowserViewWindowListeners';
+import { registerMenu } from './registerMenu';
 
 @injectable()
 export class Window implements IWindowService {
-  // TODO: use WeakMap instead
-  private windows = {} as Partial<Record<WindowNames, BrowserWindow | undefined>>;
+  private readonly windows = new Map<WindowNames, BrowserWindow>();
   private windowMeta = {} as Partial<WindowMeta>;
   /** menubar version of main window, if user set openInMenubar to true in preferences */
   private mainWindowMenuBar?: Menubar;
@@ -54,7 +50,7 @@ export class Window implements IWindowService {
   private readonly themeService!: IThemeService;
 
   constructor() {
-    void this.registerMenu();
+    void registerMenu();
   }
 
   public async findInPage(text: string, forward?: boolean, windowName: WindowNames = WindowNames.main): Promise<void> {
@@ -94,7 +90,15 @@ export class Window implements IWindowService {
     if (windowName === WindowNames.menuBar) {
       return this.mainWindowMenuBar?.window;
     }
-    return this.windows[windowName];
+    return this.windows.get(windowName);
+  }
+
+  public set(windowName: WindowNames = WindowNames.main, win: BrowserWindow | undefined): void {
+    if (win === undefined) {
+      this.windows.delete(windowName);
+    } else {
+      this.windows.set(windowName, win);
+    }
   }
 
   public async close(windowName: WindowNames): Promise<void> {
@@ -182,15 +186,15 @@ export class Window implements IWindowService {
     };
     let newWindow: BrowserWindow;
     if (windowName === WindowNames.menuBar) {
-      this.mainWindowMenuBar = await this.handleAttachToMenuBar(windowConfig, windowWithBrowserViewState);
+      this.mainWindowMenuBar = await handleAttachToMenuBar(windowConfig, windowWithBrowserViewState);
       if (this.mainWindowMenuBar.window === undefined) {
         throw new Error('MenuBar failed to create window.');
       }
       newWindow = this.mainWindowMenuBar.window;
     } else {
-      newWindow = await this.handleCreateBasicWindow(windowName, windowConfig, meta, config);
+      newWindow = await handleCreateBasicWindow(windowName, windowConfig, meta, config);
       if (isWindowWithBrowserView) {
-        this.registerBrowserViewWindowListeners(newWindow, windowName);
+        registerBrowserViewWindowListeners(newWindow, windowName);
         // calling this to redundantly setBounds BrowserView
         // after the UI is fully loaded
         // if not, BrowserView mouseover event won't work correctly
@@ -206,121 +210,8 @@ export class Window implements IWindowService {
     }
   }
 
-  private async handleCreateBasicWindow<N extends WindowNames>(
-    windowName: N,
-    windowConfig: BrowserWindowConstructorOptions,
-    windowMeta: WindowMeta[N] = {} as WindowMeta[N],
-    config?: IWindowOpenConfig<N>,
-  ): Promise<BrowserWindow> {
-    const newWindow = new BrowserWindow(windowConfig);
-    const newWindowURL = (windowMeta !== undefined && 'uri' in windowMeta ? windowMeta.uri : undefined) ?? MAIN_WINDOW_WEBPACK_ENTRY;
-    if (config?.multiple !== true) {
-      this.windows[windowName] = newWindow;
-    }
-
-    const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(newWindow.webContents);
-    newWindow.on('closed', () => {
-      this.windows[windowName] = undefined;
-      unregisterContextMenu();
-    });
-    let webContentLoadingPromise: Promise<void> | undefined;
-    if (windowName === WindowNames.main) {
-      // handle window show and Webview/browserView show
-      webContentLoadingPromise = new Promise<void>((resolve, reject) => {
-        newWindow.once('ready-to-show', async () => {
-          const mainWindow = this.get(WindowNames.main);
-          if (mainWindow === undefined) {
-            reject(new Error("Main window is undefined in newWindow.once('ready-to-show'"));
-            return;
-          }
-          const { wasOpenedAsHidden } = app.getLoginItemSettings();
-          if (!wasOpenedAsHidden) {
-            mainWindow.show();
-          }
-          // ensure redux is loaded first
-          // if not, redux might not be able catch changes sent from ipcMain
-          if (!mainWindow.webContents.isLoading()) {
-            resolve();
-            return;
-          }
-          mainWindow.webContents.once('did-stop-loading', () => {
-            resolve();
-          });
-        });
-      });
-    }
-    await this.updateWindowBackground(newWindow);
-    // Not loading main window (like sidebar and background) here. Only load wiki in browserView in the secondary window.
-    const isWindowToLoadURL = windowName !== WindowNames.secondary;
-    if (isWindowToLoadURL) {
-      // This loading will wait for a while
-      await newWindow.loadURL(newWindowURL);
-    }
-    await webContentLoadingPromise;
-    return newWindow;
-  }
-
-  private registerBrowserViewWindowListeners(newWindow: BrowserWindow, windowName: WindowNames): void {
-    // Enable swipe to navigate
-    void this.preferenceService.get('swipeToNavigate').then((swipeToNavigate) => {
-      if (swipeToNavigate) {
-        if (newWindow === undefined) return;
-        newWindow.on('swipe', (_event, direction) => {
-          const view = newWindow?.getBrowserView();
-          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-          if (view) {
-            if (direction === 'left') {
-              view.webContents.goBack();
-            } else if (direction === 'right') {
-              view.webContents.goForward();
-            }
-          }
-        });
-      }
-    });
-    // Hide window instead closing on macos
-    newWindow.on('close', async (event) => {
-      const windowMeta = await this.getWindowMeta(WindowNames.main);
-      if (newWindow === undefined) return;
-      if (isMac && windowMeta?.forceClose !== true) {
-        event.preventDefault();
-        // https://github.com/electron/electron/issues/6033#issuecomment-242023295
-        if (newWindow.isFullScreen()) {
-          newWindow.once('leave-full-screen', () => {
-            if (newWindow !== undefined) {
-              newWindow.hide();
-            }
-          });
-          newWindow.setFullScreen(false);
-        } else {
-          newWindow.hide();
-        }
-      }
-    });
-
-    newWindow.on('focus', () => {
-      if (newWindow === undefined) return;
-      const view = newWindow?.getBrowserView();
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      view?.webContents?.focus();
-    });
-
-    newWindow.on('enter-full-screen', async () => {
-      const mainWindow = this.get(windowName);
-      if (mainWindow === undefined) return;
-      mainWindow?.webContents?.send?.('is-fullscreen-updated', true);
-      await this.workspaceViewService.realignActiveWorkspace();
-    });
-    newWindow.on('leave-full-screen', async () => {
-      const mainWindow = this.get(windowName);
-      if (mainWindow === undefined) return;
-      mainWindow?.webContents?.send?.('is-fullscreen-updated', false);
-      await this.workspaceViewService.realignActiveWorkspace();
-    });
-  }
-
   public async isFullScreen(windowName = WindowNames.main): Promise<boolean | undefined> {
-    return this.windows[windowName]?.isFullScreen();
+    return this.windows.get(windowName)?.isFullScreen();
   }
 
   public async setWindowMeta<N extends WindowNames>(windowName: N, meta: WindowMeta[N]): Promise<void> {
@@ -408,253 +299,6 @@ export class Window implements IWindowService {
     if (session !== undefined) {
       await session.clearStorageData();
       await session.clearAuthCache();
-    }
-  }
-
-  private async registerMenu(): Promise<void> {
-    await this.menuService.insertMenu('Window', [
-      // `role: 'zoom'` is only supported on macOS
-      isMac
-        ? {
-          role: 'zoom',
-        }
-        : {
-          label: 'Zoom',
-          click: async () => {
-            await this.maximize();
-          },
-        },
-      { role: 'resetZoom' },
-      { role: 'togglefullscreen' },
-      { role: 'close' },
-    ]);
-
-    await this.menuService.insertMenu(
-      'View',
-      [
-        {
-          label: () => i18n.t('Menu.Find'),
-          accelerator: 'CmdOrCtrl+F',
-          click: async () => {
-            const mainWindow = this.get(WindowNames.main);
-            if (mainWindow !== undefined) {
-              mainWindow.webContents.focus();
-              mainWindow.webContents.send(WindowChannel.openFindInPage);
-              const contentSize = mainWindow.getContentSize();
-              const view = mainWindow.getBrowserView();
-              view?.setBounds(await getViewBounds(contentSize as [number, number], { findInPage: true }));
-            }
-          },
-          enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
-        },
-        {
-          label: () => i18n.t('Menu.FindNext'),
-          accelerator: 'CmdOrCtrl+G',
-          click: () => {
-            const mainWindow = this.get(WindowNames.main);
-            mainWindow?.webContents?.send('request-back-find-in-page', true);
-          },
-          enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
-        },
-        {
-          label: () => i18n.t('Menu.FindPrevious'),
-          accelerator: 'Shift+CmdOrCtrl+G',
-          click: () => {
-            const mainWindow = this.get(WindowNames.main);
-            mainWindow?.webContents?.send('request-back-find-in-page', false);
-          },
-          enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
-        },
-        {
-          label: () => `${i18n.t('Preference.AlwaysOnTop')} (${i18n.t('Preference.RequireRestart')})`,
-          checked: async () => await this.preferenceService.get('alwaysOnTop'),
-          click: async () => {
-            const alwaysOnTop = await this.preferenceService.get('alwaysOnTop');
-            await this.preferenceService.set('alwaysOnTop', !alwaysOnTop);
-            await this.requestRestart();
-          },
-        },
-      ],
-      // eslint-disable-next-line unicorn/no-null
-      null,
-      true,
-    );
-
-    await this.menuService.insertMenu('History', [
-      {
-        label: () => i18n.t('Menu.Home'),
-        accelerator: 'Shift+CmdOrCtrl+H',
-        click: async () => {
-          await this.goHome();
-        },
-        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
-      },
-      {
-        label: () => i18n.t('ContextMenu.Back'),
-        accelerator: 'CmdOrCtrl+[',
-        click: async (_menuItem, browserWindow) => {
-          // if back is called in popup window
-          // navigate in the popup window instead
-          if (browserWindow !== undefined) {
-            // TODO: test if we really can get this isPopup value
-            const { isPopup = false } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-            await this.goBack(isPopup ? WindowNames.menuBar : WindowNames.main);
-          }
-          ipcMain.emit('request-go-back');
-        },
-        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
-      },
-      {
-        label: () => i18n.t('ContextMenu.Forward'),
-        accelerator: 'CmdOrCtrl+]',
-        click: async (_menuItem, browserWindow) => {
-          // if back is called in popup window
-          // navigate in the popup window instead
-          if (browserWindow !== undefined) {
-            const { isPopup = false } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-            await this.goForward(isPopup ? WindowNames.menuBar : WindowNames.main);
-          }
-          ipcMain.emit('request-go-forward');
-        },
-        enabled: async () => (await this.workspaceService.countWorkspaces()) > 0,
-      },
-    ]);
-  }
-
-  private async handleAttachToMenuBar(windowConfig: BrowserWindowConstructorOptions, windowWithBrowserViewState: windowStateKeeper.State | undefined): Promise<Menubar> {
-    // setImage after Tray instance is created to avoid
-    // "Segmentation fault (core dumped)" bug on Linux
-    // https://github.com/electron/electron/issues/22137#issuecomment-586105622
-    // https://github.com/atomery/translatium/issues/164
-    const tray = new Tray(nativeImage.createEmpty());
-    // icon template is not supported on Windows & Linux
-    tray.setImage(MENUBAR_ICON_PATH);
-
-    const menuBar = menubar({
-      index: MAIN_WINDOW_WEBPACK_ENTRY,
-      tray,
-      activateWithApp: false,
-      preloadWindow: true,
-      tooltip: i18n.t('Menu.TidGiMenuBar'),
-      browserWindow: mergeDeep(windowConfig, {
-        show: false,
-        minHeight: 100,
-        minWidth: 250,
-      }),
-    });
-
-    menuBar.on('after-create-window', () => {
-      if (menuBar.window !== undefined) {
-        menuBar.window.on('focus', () => {
-          logger.debug('restore window position');
-          if (windowWithBrowserViewState === undefined) {
-            logger.debug('windowWithBrowserViewState is undefined for menuBar');
-          } else {
-            if (menuBar.window === undefined) {
-              logger.debug('menuBar.window is undefined');
-            } else {
-              menuBar.window.setPosition(windowWithBrowserViewState.x, windowWithBrowserViewState.y, false);
-              menuBar.window.setSize(windowWithBrowserViewState.width, windowWithBrowserViewState.height, false);
-            }
-          }
-          const view = menuBar.window?.getBrowserView();
-          if (view?.webContents !== undefined) {
-            view.webContents.focus();
-          }
-        });
-        menuBar.window.removeAllListeners('close');
-        menuBar.window.on('close', (event) => {
-          event.preventDefault();
-          menuBar.hideWindow();
-        });
-      }
-    });
-    // https://github.com/maxogden/menubar/issues/120
-    menuBar.on('after-hide', () => {
-      if (isMac) {
-        menuBar.app.hide();
-      }
-    });
-
-    // manually save window state https://github.com/mawie81/electron-window-state/issues/64
-    const debouncedSaveWindowState = debounce(
-      (event: { sender: BrowserWindow }) => {
-        windowWithBrowserViewState?.saveState(event.sender);
-      },
-      500,
-    );
-    // menubar is hide, not close, so not managed by windowStateKeeper, need to save manually
-    menuBar.window?.on('resize', debouncedSaveWindowState);
-    menuBar.window?.on('move', debouncedSaveWindowState);
-
-    return await new Promise<Menubar>((resolve) => {
-      menuBar.on('ready', async () => {
-        // right on tray icon
-        menuBar.tray.on('right-click', () => {
-          // TODO: restore updater options here
-          const contextMenu = Menu.buildFromTemplate([
-            {
-              label: i18n.t('ContextMenu.OpenTidGi'),
-              click: async () => {
-                await this.open(WindowNames.main);
-              },
-            },
-            {
-              label: i18n.t('ContextMenu.OpenTidGiMenuBar'),
-              click: async () => {
-                await menuBar.showWindow();
-              },
-            },
-            {
-              type: 'separator',
-            },
-            {
-              label: i18n.t('ContextMenu.About'),
-              click: async () => {
-                await this.open(WindowNames.about);
-              },
-            },
-            { type: 'separator' },
-            {
-              label: i18n.t('ContextMenu.Preferences'),
-              click: async () => {
-                await this.open(WindowNames.preferences);
-              },
-            },
-            {
-              label: i18n.t('ContextMenu.Notifications'),
-              click: async () => {
-                await this.open(WindowNames.notifications);
-              },
-            },
-            { type: 'separator' },
-            {
-              label: i18n.t('ContextMenu.Quit'),
-              click: () => {
-                menuBar.app.quit();
-              },
-            },
-          ]);
-
-          menuBar.tray.popUpContextMenu(contextMenu);
-        });
-
-        // right click on window content
-        if (menuBar.window?.webContents !== undefined) {
-          const unregisterContextMenu = await this.menuService.initContextMenuForWindowWebContents(menuBar.window.webContents);
-          menuBar.on('after-close', () => {
-            unregisterContextMenu();
-          });
-        }
-
-        resolve(menuBar);
-      });
-    });
-  }
-
-  private async updateWindowBackground(newWindow: BrowserWindow): Promise<void> {
-    if (await this.themeService.shouldUseDarkColors()) {
-      newWindow.setBackgroundColor('#000000');
     }
   }
 

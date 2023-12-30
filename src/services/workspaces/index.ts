@@ -31,6 +31,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { debouncedSetSettingFile } from './debouncedSetSettingFile';
 import type { INewWorkspaceConfig, IWorkspace, IWorkspaceMetaData, IWorkspaceService, IWorkspaceWithMetadata } from './interface';
+import { registerMenu } from './registerMenu';
 import { workspaceSorter } from './utils';
 
 @injectable()
@@ -67,7 +68,7 @@ export class Workspace implements IWorkspaceService {
 
   constructor() {
     this.workspaces = this.getInitWorkspacesForCache();
-    void this.registerMenu();
+    void registerMenu();
     this.workspaces$ = new BehaviorSubject<Record<string, IWorkspaceWithMetadata>>(this.getWorkspacesWithMetadata());
   }
 
@@ -77,71 +78,6 @@ export class Workspace implements IWorkspaceService {
 
   private async updateWorkspaceSubject(): Promise<void> {
     this.workspaces$.next(this.getWorkspacesWithMetadata());
-  }
-
-  private async registerMenu(): Promise<void> {
-    /* eslint-disable @typescript-eslint/no-misused-promises */
-    await this.menuService.insertMenu('Workspaces', [
-      {
-        label: () => i18n.t('Menu.SelectNextWorkspace'),
-        click: async () => {
-          const currentActiveWorkspace = await this.getActiveWorkspace();
-          if (currentActiveWorkspace === undefined) return;
-          const nextWorkspace = await this.getNextWorkspace(currentActiveWorkspace.id);
-          if (nextWorkspace === undefined) return;
-          await this.workspaceViewService.setActiveWorkspaceView(nextWorkspace.id);
-        },
-        accelerator: 'CmdOrCtrl+Shift+]',
-        enabled: async () => (await this.countWorkspaces()) > 1,
-      },
-      {
-        label: () => i18n.t('Menu.SelectPreviousWorkspace'),
-        click: async () => {
-          const currentActiveWorkspace = await this.getActiveWorkspace();
-          if (currentActiveWorkspace === undefined) return;
-          const previousWorkspace = await this.getPreviousWorkspace(currentActiveWorkspace.id);
-          if (previousWorkspace === undefined) return;
-          await this.workspaceViewService.setActiveWorkspaceView(previousWorkspace.id);
-        },
-        accelerator: 'CmdOrCtrl+Shift+[',
-        enabled: async () => (await this.countWorkspaces()) > 1,
-      },
-      { type: 'separator' },
-      {
-        label: () => i18n.t('WorkspaceSelector.EditCurrentWorkspace'),
-        click: async () => {
-          const currentActiveWorkspace = await this.getActiveWorkspace();
-          if (currentActiveWorkspace === undefined) return;
-          await this.windowService.open(WindowNames.editWorkspace, { workspaceID: currentActiveWorkspace.id });
-        },
-        enabled: async () => (await this.countWorkspaces()) > 0,
-      },
-      {
-        label: () => i18n.t('WorkspaceSelector.ReloadCurrentWorkspace'),
-        click: async () => {
-          const currentActiveWorkspace = await this.getActiveWorkspace();
-          if (currentActiveWorkspace === undefined) return;
-          await this.viewService.reloadActiveBrowserView();
-        },
-        enabled: async () => (await this.countWorkspaces()) > 0,
-      },
-      {
-        label: () => i18n.t('WorkspaceSelector.RemoveCurrentWorkspace'),
-        click: async () => {
-          const currentActiveWorkspace = await this.getActiveWorkspace();
-          if (currentActiveWorkspace === undefined) return;
-          await this.wikiGitWorkspaceService.removeWorkspace(currentActiveWorkspace.id);
-        },
-        enabled: async () => (await this.countWorkspaces()) > 0,
-      },
-      { type: 'separator' },
-      {
-        label: () => i18n.t('AddWorkspace.AddWorkspace'),
-        click: async () => {
-          await this.windowService.open(WindowNames.addWorkspace);
-        },
-      },
-    ]);
   }
 
   /**
