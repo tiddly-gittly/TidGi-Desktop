@@ -37,3 +37,19 @@ export class WikiRuntimeError extends Error {
     this.stack = error.stack;
   }
 }
+
+export class HTMLCanNotLoadError extends Error {
+  constructor(htmlWikiPath?: string) {
+    super(htmlWikiPath);
+    this.name = i18n.t('Error.HTMLCanNotLoadError');
+    this.message = `${i18n.t('Error.HTMLCanNotLoadErrorDescription')} ${htmlWikiPath ?? ''}`;
+  }
+}
+
+export class AlreadyExistError extends Error {
+  constructor(wikiFolderPath?: string) {
+    super(wikiFolderPath);
+    this.name = i18n.t('Error.AlreadyExistError');
+    this.message = `${i18n.t('Error.ALreadyExistErrorDescription')} ${wikiFolderPath ?? ''}`;
+  }
+}

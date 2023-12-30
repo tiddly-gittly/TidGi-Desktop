@@ -408,7 +408,11 @@
     "WikiRuntimeError": "E-13 Wiki Runtime Error",
     "WikiRuntimeErrorDescription": "E-13 There is an error while running the wiki. Please check the log file for the reason, and upload and submit an issue for repair.",
     "SubWikiSMainWikiNotExistError": "The main wiki to which the child wiki is attached does not exist",
-    "SubWikiSMainWikiNotExistErrorDescription": "A sub-wiki must choose a main wiki to attach to when it is created, but now the main wiki that this sub-wiki should be attached to cannot be found and cannot be attached."
+    "SubWikiSMainWikiNotExistErrorDescription": "A sub-wiki must choose a main wiki to attach to when it is created, but now the main wiki that this sub-wiki should be attached to cannot be found and cannot be attached.",
+    "HTMLCanNotLoadError": "Current HTML file path can't be used.",
+    "HTMLCanNotLoadErrorDescription": "Please enter a path to a valid tiddlywiki.html file.",
+    "ALreadyExistErrorDescription": "A folder already exists at this path, and a new knowledge base cannot be created here.",
+    "AlreadyExistError": "Folder already exist here."
   },
   "Loading": "Loading",
   "Yes": "Yes",

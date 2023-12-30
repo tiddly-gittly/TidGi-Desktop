@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
 import { dialog, ipcMain } from 'electron';
 import { backOff } from 'exponential-backoff';
-import fs from 'fs-extra';
+import { copy, createSymlink, exists, mkdir, mkdirp, mkdirs, pathExists, readFile, remove, unlink } from 'fs-extra';
 import { injectable } from 'inversify';
 import path from 'path';
 import { ModuleThread, spawn, Thread, Worker } from 'threads';
@@ -26,7 +26,7 @@ import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interfa
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { Observable } from 'rxjs';
 import type { IChangedTiddlers } from 'tiddlywiki';
-import { CopyWikiTemplateError, DoubleWikiInstanceError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
+import { AlreadyExistError, CopyWikiTemplateError, DoubleWikiInstanceError, HTMLCanNotLoadError, SubWikiSMainWikiNotExistError, WikiRuntimeError } from './error';
 import { IWikiService, WikiControlActions } from './interface';
 import { getSubWikiPluginContent, ISubWikiPluginContent, updateSubWikiPluginContent } from './plugin/subWikiPlugin';
 import type { IStartNodeJSWikiConfigs, WikiWorker } from './wikiWorker';
@@ -38,6 +38,7 @@ import workerURL from 'threads-plugin/dist/loader?name=wikiWorker!./wikiWorker/i
 
 import { LOG_FOLDER } from '@/constants/appPaths';
 import { isDevelopmentOrTest } from '@/constants/environment';
+import { isHtmlWiki } from '@/constants/fileNames';
 import { defaultServerIP } from '@/constants/urls';
 import { IDatabaseService } from '@services/database/interface';
 import { IPreferenceService } from '@services/preferences/interface';
@@ -296,12 +297,16 @@ export class Wiki implements IWikiService {
     // We want the folder where the WIKI is saved to be empty, and we want the input htmlWiki to be an HTML file even if it is a non-wikiHTML file. Otherwise the program will exit abnormally.
     const worker = await spawn<WikiWorker>(new Worker(workerURL as string), { timeout: 1000 * 60 });
     try {
+      if (!isHtmlWiki(htmlWikiPath)) {
+        throw new HTMLCanNotLoadError(htmlWikiPath);
+      }
+      if (await exists(saveWikiFolderPath)) {
+        throw new AlreadyExistError(saveWikiFolderPath);
+      }
       await worker.extractWikiHTML(htmlWikiPath, saveWikiFolderPath, { TIDDLYWIKI_PACKAGE_FOLDER });
     } catch (error) {
-      const result = (error as Error).message;
+      const result = `${(error as Error).name} ${(error as Error).message}`;
       logger.error(result, { worker: 'NodeJSWiki', method: 'extractWikiHTML', htmlWikiPath, saveWikiFolderPath });
-      // removes the folder function that failed to convert.
-      await fs.remove(saveWikiFolderPath);
       return result;
     }
     // this worker is only for one time use. we will spawn a new one for starting wiki later.
@@ -373,10 +378,10 @@ export class Wiki implements IWikiService {
     const subwikiSymlinkPath = path.join(mainWikiTiddlersFolderSubWikisPath, folderName);
     try {
       try {
-        await fs.remove(subwikiSymlinkPath);
+        await remove(subwikiSymlinkPath);
       } catch {}
-      await fs.mkdirp(mainWikiTiddlersFolderSubWikisPath);
-      await fs.createSymlink(subWikiPath, subwikiSymlinkPath, 'junction');
+      await mkdirp(mainWikiTiddlersFolderSubWikisPath);
+      await createSymlink(subWikiPath, subwikiSymlinkPath, 'junction');
       this.logProgress(i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiSucceed'));
     } catch (error: unknown) {
       throw new Error(i18n.t('AddWorkspace.CreateLinkFromSubWikiToMainWikiFailed', { subWikiPath, mainWikiTiddlersFolderPath: subwikiSymlinkPath, error }));
@@ -386,17 +391,17 @@ export class Wiki implements IWikiService {
   private async createWiki(newFolderPath: string, folderName: string): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartUsingTemplateToCreateWiki'));
     const newWikiPath = path.join(newFolderPath, folderName);
-    if (!(await fs.pathExists(newFolderPath))) {
+    if (!(await pathExists(newFolderPath))) {
       throw new Error(i18n.t('AddWorkspace.PathNotExist', { path: newFolderPath }));
     }
-    if (!(await fs.pathExists(TIDDLYWIKI_TEMPLATE_FOLDER_PATH))) {
+    if (!(await pathExists(TIDDLYWIKI_TEMPLATE_FOLDER_PATH))) {
       throw new Error(i18n.t('AddWorkspace.WikiTemplateMissing', { TIDDLYWIKI_TEMPLATE_FOLDER_PATH }));
     }
-    if (await fs.pathExists(newWikiPath)) {
+    if (await pathExists(newWikiPath)) {
       throw new Error(i18n.t('AddWorkspace.WikiExisted', { newWikiPath }));
     }
     try {
-      await fs.copy(TIDDLYWIKI_TEMPLATE_FOLDER_PATH, newWikiPath, {
+      await copy(TIDDLYWIKI_TEMPLATE_FOLDER_PATH, newWikiPath, {
         filter: (source: string, destination: string) => {
           // xxx/template/wiki/.gitignore
           // xxx/template/wiki/.github
@@ -418,15 +423,15 @@ export class Wiki implements IWikiService {
   public async createSubWiki(parentFolderLocation: string, folderName: string, mainWikiPath: string, tagName = '', onlyLink = false): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCreatingSubWiki'));
     const newWikiPath = path.join(parentFolderLocation, folderName);
-    if (!(await fs.pathExists(parentFolderLocation))) {
+    if (!(await pathExists(parentFolderLocation))) {
       throw new Error(i18n.t('AddWorkspace.PathNotExist', { path: parentFolderLocation }));
     }
     if (!onlyLink) {
-      if (await fs.pathExists(newWikiPath)) {
+      if (await pathExists(newWikiPath)) {
         throw new Error(i18n.t('AddWorkspace.WikiExisted', { newWikiPath }));
       }
       try {
-        await fs.mkdirs(newWikiPath);
+        await mkdirs(newWikiPath);
       } catch {
         throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
       }
@@ -444,22 +449,22 @@ export class Wiki implements IWikiService {
   public async removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink = false): Promise<void> {
     if (mainWikiToUnLink !== undefined) {
       const subWikiName = path.basename(wikiPath);
-      await fs.remove(path.join(mainWikiToUnLink, TIDDLERS_PATH, this.folderToContainSymlinks, subWikiName));
+      await remove(path.join(mainWikiToUnLink, TIDDLERS_PATH, this.folderToContainSymlinks, subWikiName));
     }
     if (!onlyRemoveLink) {
-      await fs.remove(wikiPath);
+      await remove(wikiPath);
     }
   }
 
   public async ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void> {
-    if (!(await fs.pathExists(wikiPath))) {
+    if (!(await pathExists(wikiPath))) {
       throw new Error(i18n.t('AddWorkspace.PathNotExist', { path: wikiPath }));
     }
     const wikiInfoPath = path.resolve(wikiPath, 'tiddlywiki.info');
-    if (shouldBeMainWiki && !(await fs.pathExists(wikiInfoPath))) {
+    if (shouldBeMainWiki && !(await pathExists(wikiInfoPath))) {
       throw new Error(i18n.t('AddWorkspace.ThisPathIsNotAWikiFolder', { wikiPath, wikiInfoPath }));
     }
-    if (shouldBeMainWiki && !(await fs.pathExists(path.join(wikiPath, TIDDLERS_PATH)))) {
+    if (shouldBeMainWiki && !(await pathExists(path.join(wikiPath, TIDDLERS_PATH)))) {
       throw new Error(i18n.t('AddWorkspace.ThisPathIsNotAWikiFolder', { wikiPath }));
     }
   }
@@ -510,14 +515,14 @@ export class Wiki implements IWikiService {
   public async cloneWiki(parentFolderLocation: string, wikiFolderName: string, gitRepoUrl: string, gitUserInfo: IGitUserInfos): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCloningWiki'));
     const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
-    if (!(await fs.pathExists(parentFolderLocation))) {
+    if (!(await pathExists(parentFolderLocation))) {
       throw new Error(i18n.t('AddWorkspace.PathNotExist', { path: parentFolderLocation }));
     }
-    if (await fs.pathExists(newWikiPath)) {
+    if (await pathExists(newWikiPath)) {
       throw new Error(i18n.t('AddWorkspace.WikiExisted', { newWikiPath }));
     }
     try {
-      await fs.mkdir(newWikiPath);
+      await mkdir(newWikiPath);
     } catch {
       throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
     }
@@ -534,14 +539,14 @@ export class Wiki implements IWikiService {
   ): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCloningSubWiki'));
     const newWikiPath = path.join(parentFolderLocation, wikiFolderName);
-    if (!(await fs.pathExists(parentFolderLocation))) {
+    if (!(await pathExists(parentFolderLocation))) {
       throw new Error(i18n.t('AddWorkspace.PathNotExist', { path: parentFolderLocation }));
     }
-    if (await fs.pathExists(newWikiPath)) {
+    if (await pathExists(newWikiPath)) {
       throw new Error(i18n.t('AddWorkspace.WikiExisted', { newWikiPath }));
     }
     try {
-      await fs.mkdir(newWikiPath);
+      await mkdir(newWikiPath);
     } catch {
       throw new Error(i18n.t('AddWorkspace.CantCreateFolderHere', { newWikiPath }));
     }
@@ -676,7 +681,7 @@ export class Wiki implements IWikiService {
     // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
     // and it will leak private sub-wiki's opened tiddler title
     try {
-      void fs.unlink(path.resolve(wikiFolderLocation, 'tiddlers', '$__StoryList')).catch(() => {});
+      void unlink(path.resolve(wikiFolderLocation, 'tiddlers', '$__StoryList')).catch(() => {});
     } catch {
       // do nothing
     }
@@ -793,7 +798,7 @@ export class Wiki implements IWikiService {
 
   public async getWikiErrorLogs(workspaceID: string, wikiName: string): Promise<{ content: string; filePath: string }> {
     const filePath = path.join(LOG_FOLDER, getWikiErrorLogFileName(workspaceID, wikiName));
-    const content = await fs.readFile(filePath, 'utf8');
+    const content = await readFile(filePath, 'utf8');
     return {
       content,
       filePath,
