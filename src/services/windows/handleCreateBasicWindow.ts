@@ -54,7 +54,7 @@ export async function handleCreateBasicWindow<N extends WindowNames>(
     });
   }
   await updateWindowBackground(newWindow);
-  // Not loading main window (like sidebar and background) here. Only load wiki in browserView in the secondary window.
+  // Not loading main window (like sidebar and background) here. Only load wiki in browserView in the secondary window. Secondary window will use a BrowserView to load content, and without main content like sidebar and Guide.
   const isWindowToLoadURL = windowName !== WindowNames.secondary;
   if (isWindowToLoadURL) {
     // This loading will wait for a while

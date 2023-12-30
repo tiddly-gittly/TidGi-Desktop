@@ -192,7 +192,8 @@ export async function getWorkspaceMenuTemplate(
   }
 
   if (!active && !isSubWiki) {
-    template.splice(1, 0, {
+    // This is rarely used, put in the middle.
+    template.splice(3, 0, {
       label: hibernated ? t('WorkspaceSelector.WakeUpWorkspace') : t('WorkspaceSelector.HibernateWorkspace'),
       click: async () => {
         if (hibernated) {

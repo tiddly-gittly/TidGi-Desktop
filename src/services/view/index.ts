@@ -305,7 +305,7 @@ export class View implements IViewService {
     if (this.shouldMuteAudio !== undefined) {
       view.webContents.audioMuted = this.shouldMuteAudio;
     }
-    if (workspace.active) {
+    if (workspace.active || windowName === WindowNames.secondary) {
       browserWindow.setBrowserView(view);
       const contentSize = browserWindow.getContentSize();
       view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));

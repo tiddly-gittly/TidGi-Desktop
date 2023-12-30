@@ -32,7 +32,8 @@ export interface IWindowService {
   loadURL(windowName: WindowNames, newUrl?: string): Promise<void>;
   maximize(): Promise<void>;
   /**
-   * Create a new window.
+   * Create a new window. Handles setup of window configs.
+   * See `src/services/windows/handleCreateBasicWindow.ts` for `new BrowserWindow` process.
    * @param returnWindow Return created window or not. Usually false, so this method can be call IPC way (because window will cause `Failed to serialize arguments`).
    */
   open<N extends WindowNames>(windowName: N, meta?: WindowMeta[N], config?: IWindowOpenConfig<N>): Promise<undefined>;
