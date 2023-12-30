@@ -7,7 +7,9 @@ import { writeFile } from 'fs-extra';
 import _ from 'lodash';
 import type { Subscriber } from 'rxjs';
 import vm, { Context } from 'vm';
+import AnsiToHtml from 'ansi-to-html';
 import { IZxWorkerMessage, ZxWorkerControlActions } from '../../interface';
+import { fixZxPath } from './fixZxPath';
 import {
   addVariableIOToContentAPIVersion,
   addVariableIOToContentLogVersion,
@@ -39,13 +41,14 @@ export async function executeScriptInZxScriptContext(
 ): Promise<void> {
   const { filePathToExecute, zxPath } = paths;
   try {
-    const execution = fork(zxPath, [filePathToExecute], { silent: true });
     let contextWithVariableExtraction = '';
     if (content !== undefined) {
       const previousVariableContext = variableContextList?.[(index ?? 0) - 1];
       contextWithVariableExtraction = addVariableIOToContentLogVersion(content, previousVariableContext);
-      await writeFile(filePathToExecute, contextWithVariableExtraction);
+      await writeFile(filePathToExecute, fixZxPath(contextWithVariableExtraction));
     }
+    const execution = fork(zxPath, [filePathToExecute], { silent: true });
+    const ansiConverter = new AnsiToHtml();
     await new Promise<void>((resolve, reject) => {
       execution.on('close', function(code) {
         observer.next({ type: 'control', actions: ZxWorkerControlActions.ended, message: `child process exited with code ${String(code)}` });
@@ -55,7 +58,7 @@ export async function executeScriptInZxScriptContext(
        * zx script may have multiple console.log, we need to extract some of them and execute them in the $tw context (`executeScriptInTWContext`). And send some of them back to frontend.
        */
       execution.stdout?.on('data', (stdout: Buffer) => {
-        const message = String(stdout);
+        const message = ansiConverter.toHtml(String(stdout));
         if (message.startsWith(VARIABLES_MAP_LOG_PREFIX)) {
           // deserialize variables from zx script's context, and prepare to execute them in the next $tw context.
           const variables = extractVariablesFromExecutionLog(message);
@@ -66,8 +69,8 @@ export async function executeScriptInZxScriptContext(
         // send back to frontend.
         observer.next({ type: 'stdout', message });
       });
-      execution.stderr?.on('data', (stdout: Buffer) => {
-        observer.next({ type: 'stderr', message: String(stdout) });
+      execution.stderr?.on('data', (stderr: Buffer) => {
+        observer.next({ type: 'stderr', message: ansiConverter.toHtml(String(stderr)) });
       });
       execution.on('error', (error) => {
         const message = `${error.message} ${error.stack ?? ''}\n${contextWithVariableExtraction}`;

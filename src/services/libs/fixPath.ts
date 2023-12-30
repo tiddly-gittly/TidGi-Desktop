@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { isWin } from '@/helpers/system';
 import { execSync } from 'child_process';
 import { userInfo } from 'os';
@@ -7,11 +8,11 @@ import stripAnsi from 'strip-ansi';
 const defaultShell = (() => {
   const { env, platform } = process;
   if (platform === 'win32') {
-    return env.COMSPEC ?? 'cmd.exe';
+    return env.COMSPEC ?? 'pwsh.exe'; // 'cmd.exe';
   }
   try {
     const { shell } = userInfo();
-    if (shell !== undefined) {
+    if (shell) {
       return shell;
     }
   } catch {}
