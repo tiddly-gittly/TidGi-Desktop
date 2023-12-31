@@ -30,8 +30,7 @@ export function SortablePageSelectorButton({ index, page, showSidebarTexts, show
   const onPageClick = useCallback(async () => {
     pageClickedLoadingSetter(true);
     try {
-      const oldActivePage = await window.service.pages.getActivePage();
-      await window.service.pages.setActivePage(type, oldActivePage?.type);
+      await window.service.pages.setActivePage(type);
       setLocation(`/${WindowNames.main}/${type}/`);
     } catch (error) {
       if (error instanceof Error) {

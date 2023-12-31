@@ -588,8 +588,8 @@ export class View implements IViewService {
   public async hideView(browserWindow: BrowserWindow): Promise<void> {
     const view = browserWindow.getBrowserView();
     if (view !== null) {
-      const contentSize = browserWindow.getContentSize();
-      view?.setBounds(await getViewBounds(contentSize as [number, number], { findInPage: false }, 0, 0)); // hide browserView to show error message or other pages
+      // const contentSize = browserWindow.getContentSize();
+      view?.setBounds(await getViewBounds([0, 0], { findInPage: false }, 0, 0)); // hide browserView to show error message or other pages
     }
   }
 }

@@ -42,9 +42,23 @@ export interface IPagesService {
   getPagesAsListSync(): IPage[];
   getSync(id: string): IPage;
   pages$: BehaviorSubject<IPage[]>;
-  set(id: string, page: IPage): Promise<void>;
-  setActivePage(id: string | PageType, oldActivePageID: string | PageType | undefined): Promise<void>;
+  /**
+   * Overwrite a page, and update setting file.
+   * @param updateSettingFile Default to true. Async update setting file, and let go the promise. So if you want to update multiple pages, don't use this, use `setPages` instead.
+   */
+  set(id: string, page: IPage, updateSettingFile?: boolean): Promise<void>;
+  /**
+   * Set active page, deactivate old active page. and update setting file.
+   * @param id New active page's id
+   */
+  setActivePage(id: string | PageType): Promise<void>;
   setPages(newPages: Record<string, IPage>): Promise<void>;
+  /**
+   * Update a page, merge provided value with existed values, and update setting file.
+   * @param updateSettingFile Default to true. Async update setting file, and let go the promise. So if you want to update multiple pages, don't use this, use `setPages` instead.
+   */
+  update(id: string, page: Partial<IPage>, updateSettingFile?: boolean): Promise<void>;
+  updatePages(newPages: Record<string, Partial<IPage>>): Promise<void>;
 }
 export const PagesServiceIPCDescriptor = {
   channel: PagesChannel.name,
@@ -56,5 +70,7 @@ export const PagesServiceIPCDescriptor = {
     set: ProxyPropertyType.Function,
     setActivePage: ProxyPropertyType.Function,
     setPages: ProxyPropertyType.Function,
+    update: ProxyPropertyType.Function,
+    updatePages: ProxyPropertyType.Function,
   },
 };

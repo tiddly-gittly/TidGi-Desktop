@@ -45,8 +45,7 @@ interface IWorkspaceMenuRequiredServices {
 export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IWorkspaceMenuRequiredServices): Promise<void> {
   const { id: idToActive, isSubWiki, tagName, mainWikiID } = workspace;
   // switch to workspace page
-  const oldActivePage = await service.pages.getActivePage();
-  await service.pages.setActivePage(PageType.wiki, oldActivePage?.id);
+  await service.pages.setActivePage(PageType.wiki);
   const oldActiveWorkspace = await service.workspace.getActiveWorkspace();
   // if is a new main workspace, active its browser view first
   if (!isSubWiki && idToActive !== null && idToActive !== undefined && oldActiveWorkspace?.id !== idToActive) {
@@ -70,7 +69,7 @@ export async function getWorkspaceMenuTemplate(
   t: TFunction<[_DefaultNamespace, ...Array<Exclude<FlatNamespace, _DefaultNamespace>>]>,
   service: IWorkspaceMenuRequiredServices,
 ): Promise<MenuItemConstructorOptions[]> {
-  const { active, id, mainWikiID, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, name, enableHTTPAPI, lastUrl, homeUrl } = workspace;
+  const { active, id, hibernated, tagName, isSubWiki, wikiFolderLocation, gitUrl, storageService, port, name, enableHTTPAPI, lastUrl, homeUrl } = workspace;
   /* eslint-disable @typescript-eslint/no-misused-promises */
   const template: MenuItemConstructorOptions[] = [
     {
