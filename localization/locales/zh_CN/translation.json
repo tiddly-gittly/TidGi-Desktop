@@ -289,7 +289,12 @@
     "StartFetchingFromGithubRemote": "正在拉取Github远端仓库的数据，需要的时间取决于网速和仓库大小，请耐心等待",
     "UsingUrlAndUsername": "使用 Git Url {{githubRepoUrl}} 和用户名 {{username}} 和 accessToken {{accessToken}}",
     "FailedToOpenDirectory": "无法打开文件夹 {{path}} {{errorMessage}}",
-    "FailedToOpenFile": "无法打开文件 {{path}} {{errorMessage}}"
+    "FailedToOpenFile": "无法打开文件 {{path}} {{errorMessage}}",
+    "CantForcePullError": "强制拉取失败，可能仓库处在特殊状态",
+    "StartForcePull": "开始强制拉取远端内容，将完全覆盖本地",
+    "SkipForcePull": "跳过强制拉取，远端没有更新",
+    "StartResettingLocalToRemote": "开始清空本地并用远端内容覆盖",
+    "FinishForcePull": "强制拉取完成"
   },
   "Dialog": {
     "NeedCorrectTiddlywikiFolderPath": "需要传入正确的路径，而此路径无法被 TiddlyWiki 识别。",

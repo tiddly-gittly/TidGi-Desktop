@@ -4,10 +4,12 @@ import { WikiChannel } from '@/constants/channels';
 import type { IWorkspace } from '@services/workspaces/interface';
 import {
   AssumeSyncError,
+  CantForcePullError,
   CantSyncGitNotInitializedError,
   CantSyncInSpecialGitStateAutoFixFailed,
   clone,
   commitAndSync,
+  forcePull,
   getModifiedFileList,
   getRemoteUrl,
   GitPullPushError,
@@ -20,7 +22,7 @@ import {
 import { Observable } from 'rxjs';
 import { expose } from 'threads/worker';
 import { defaultGitInfo } from './defaultGitInfo';
-import type { ICommitAndSyncConfigs, IGitLogMessage, IGitUserInfos } from './interface';
+import type { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitUserInfos } from './interface';
 
 function initWikiGit(
   wikiFolderPath: string,
@@ -134,6 +136,46 @@ function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs
   });
 }
 
+/**
+ * @param {string} wikiFolderPath
+ * @param {string} remoteUrl
+ * @param {{ login: string, email: string, accessToken: string }} userInfo
+ */
+function forcePullWiki(workspace: IWorkspace, configs: IForcePullConfigs, errorI18NDict: Record<string, string>): Observable<IGitLogMessage> {
+  return new Observable<IGitLogMessage>((observer) => {
+    void forcePull({
+      dir: workspace.wikiFolderLocation,
+      ...configs,
+      defaultGitInfo,
+      logger: {
+        debug: (message: string, context: ILoggerContext): void => {
+          observer.next({ message, level: 'debug', meta: { callerFunction: 'forcePull', ...context } });
+        },
+        warn: (message: string, context: ILoggerContext): void => {
+          observer.next({ message, level: 'warn', meta: { callerFunction: 'forcePull', ...context } });
+        },
+        info: (message: GitStep, context: ILoggerContext): void => {
+          observer.next({ message, level: 'info', meta: { handler: WikiChannel.syncProgress, id: workspace.id, callerFunction: 'forcePull', ...context } });
+        },
+      },
+    }).then(
+      () => {
+        observer.complete();
+      },
+      (error) => {
+        if (error instanceof Error) {
+          observer.next({ message: `${error.message} ${error.stack ?? ''}`, level: 'warn', meta: { callerFunction: 'forcePull' } });
+          translateAndLogErrorMessage(error, errorI18NDict);
+          observer.next({ level: 'error', error });
+        } else {
+          observer.next({ message: String(error), level: 'warn', meta: { callerFunction: 'forcePull' } });
+        }
+        observer.complete();
+      },
+    );
+  });
+}
+
 function cloneWiki(repoFolderPath: string, remoteUrl: string, userInfo: IGitUserInfos, errorI18NDict: Record<string, string>): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
     void clone({
@@ -183,9 +225,11 @@ function translateAndLogErrorMessage(error: Error, errorI18NDict: Record<string,
     error.message = errorI18NDict.SyncScriptIsInDeadLoopError;
   } else if (error instanceof CantSyncInSpecialGitStateAutoFixFailed) {
     error.message = errorI18NDict.CantSyncInSpecialGitStateAutoFixFailed;
+  } else if (error instanceof CantForcePullError) {
+    error.message = errorI18NDict.CantForcePullError;
   }
 }
 
-const gitWorker = { initWikiGit, commitAndSyncWiki, cloneWiki, getModifiedFileList, getRemoteUrl };
+const gitWorker = { initWikiGit, commitAndSyncWiki, cloneWiki, forcePullWiki, getModifiedFileList, getRemoteUrl };
 export type GitWorker = typeof gitWorker;
 expose(gitWorker);

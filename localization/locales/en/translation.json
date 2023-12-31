@@ -268,7 +268,12 @@
     "GitTokenExpireOrWrong": "The Git credential (Token) has expired and you need to log in again, or the credential does not correspond to the user name",
     "InitializeWorkspaceViewDone": "Created successfully, content will be loaded soon",
     "FailedToOpenFile": "Failed To Open File {{path}} {{errorMessage}}",
-    "FailedToOpenDirectory": "Failed To Open Directory {{path}} {{errorMessage}}"
+    "FailedToOpenDirectory": "Failed To Open Directory {{path}} {{errorMessage}}",
+    "CantForcePullError": "Failed to force pull, maybe repo is in special state",
+    "StartForcePull": "Start force pull remote, will completely overwrite local",
+    "SkipForcePull": "Skip force pull, no news from remote",
+    "StartResettingLocalToRemote": "Start clearing local and override with remote content",
+    "FinishForcePull": "Finish force pull"
   },
   "Cancel": "Cancel",
   "Preference": {

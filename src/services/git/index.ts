@@ -1,5 +1,5 @@
 import { dialog, net } from 'electron';
-import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList } from 'git-sync-js';
+import { getRemoteName, getRemoteUrl, GitStep, ModifiedFileList, stepsAboutChange } from 'git-sync-js';
 import { inject, injectable } from 'inversify';
 import { Observer } from 'rxjs';
 import { ModuleThread, spawn, Worker } from 'threads';
@@ -23,8 +23,8 @@ import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace } from '@services/workspaces/interface';
 import { GitWorker } from './gitWorker';
-import { ICommitAndSyncConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
-import { stepWithChanges } from './stepWithChanges';
+import { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
+import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
 
 @injectable()
 export class Git implements IGitService {
@@ -99,109 +99,6 @@ export class Git implements IGitService {
     }
   }
 
-  private translateMessage(message: string): string {
-    switch (message) {
-      case GitStep.StartGitInitialization: {
-        return i18n.t('Log.StartGitInitialization');
-      }
-      case GitStep.GitRepositoryConfigurationFinished: {
-        return i18n.t('Log.GitRepositoryConfigurationFinished');
-      }
-      case GitStep.StartConfiguringGithubRemoteRepository: {
-        return i18n.t('Log.StartConfiguringGithubRemoteRepository');
-      }
-      case GitStep.StartBackupToGitRemote: {
-        return i18n.t('Log.StartBackupToGithubRemote');
-      }
-      case GitStep.PrepareCloneOnlineWiki: {
-        return i18n.t('Log.PrepareCloneOnlineWiki');
-      }
-      case GitStep.PrepareSync: {
-        return i18n.t('Log.PrepareSync');
-      }
-      case GitStep.HaveThingsToCommit: {
-        return i18n.t('Log.HaveThingsToCommit');
-      }
-      case GitStep.AddingFiles: {
-        return i18n.t('Log.AddingFiles');
-      }
-      case GitStep.AddComplete: {
-        return i18n.t('Log.AddComplete');
-      }
-      case GitStep.CommitComplete: {
-        return i18n.t('Log.CommitComplete');
-      }
-      case GitStep.PreparingUserInfo: {
-        return i18n.t('Log.PreparingUserInfo');
-      }
-      case GitStep.FetchingData: {
-        return i18n.t('Log.FetchingData');
-      }
-      case GitStep.NoNeedToSync: {
-        return i18n.t('Log.NoNeedToSync');
-      }
-      case GitStep.LocalAheadStartUpload: {
-        return i18n.t('Log.LocalAheadStartUpload');
-      }
-      case GitStep.CheckingLocalSyncState: {
-        return i18n.t('Log.CheckingLocalSyncState');
-      }
-      case GitStep.CheckingLocalGitRepoSanity: {
-        return i18n.t('Log.CheckingLocalGitRepoSanity');
-      }
-      case GitStep.LocalStateBehindSync: {
-        return i18n.t('Log.LocalStateBehindSync');
-      }
-      case GitStep.LocalStateDivergeRebase: {
-        return i18n.t('Log.LocalStateDivergeRebase');
-      }
-      case GitStep.RebaseResultChecking: {
-        return i18n.t('Log.CheckingRebaseStatus');
-      }
-      case GitStep.RebaseConflictNeedsResolve: {
-        return i18n.t('Log.RebaseConflictNeedsResolve');
-      }
-      case GitStep.RebaseSucceed: {
-        return i18n.t('Log.RebaseSucceed');
-      }
-      case GitStep.GitPushFailed: {
-        return i18n.t('Log.GitPushFailed');
-      }
-      case GitStep.GitMergeFailed: {
-        return i18n.t('Log.GitMergeFailed');
-      }
-      case GitStep.SyncFailedAlgorithmWrong: {
-        return i18n.t('Log.SyncFailedSystemError');
-      }
-      case GitStep.PerformLastCheckBeforeSynchronizationFinish: {
-        return i18n.t('Log.PerformLastCheckBeforeSynchronizationFinish');
-      }
-      case GitStep.SynchronizationFinish: {
-        return i18n.t('Log.SynchronizationFinish');
-      }
-      case GitStep.StartFetchingFromGithubRemote: {
-        return i18n.t('Log.StartFetchingFromGithubRemote');
-      }
-      case GitStep.CantSyncInSpecialGitStateAutoFixSucceed: {
-        return i18n.t('Log.CantSyncInSpecialGitStateAutoFixSucceed');
-      }
-      default: {
-        return message;
-      }
-    }
-  }
-
-  private getErrorMessageI18NDict() {
-    return {
-      AssumeSyncError: i18n.t('Log.SynchronizationFailed'),
-      SyncParameterMissingError: i18n.t('Log.GitTokenMissing'), // + error.parameterName,
-      GitPullPushError: i18n.t('Log.SyncFailedSystemError'),
-      CantSyncGitNotInitializedError: i18n.t('Log.CantSyncGitNotInitialized'),
-      SyncScriptIsInDeadLoopError: i18n.t('Log.CantSynchronizeAndSyncScriptIsInDeadLoop'),
-      CantSyncInSpecialGitStateAutoFixFailed: i18n.t('Log.CantSyncInSpecialGitStateAutoFixFailed'),
-    };
-  }
-
   private popGitErrorNotificationToUser(step: GitStep, message: string): void {
     if (step === GitStep.GitPushFailed && message.includes('403')) {
       const mainWindow = this.windowService.get(WindowNames.main);
@@ -235,7 +132,7 @@ export class Git implements IGitService {
       if (typeof meta === 'object' && meta !== null && 'step' in meta) {
         this.popGitErrorNotificationToUser((meta as { step: GitStep }).step, message);
       }
-      logger.log(level, this.translateMessage(message), meta);
+      logger.log(level, translateMessage(message), meta);
     },
     error: (error) => {
       // this normally won't happen. And will become unhandled error. Because Observable error can't be catch, don't know why.
@@ -275,13 +172,14 @@ export class Git implements IGitService {
     const syncImmediately = !!isSyncedWiki && !!isMainWiki;
     await new Promise<void>((resolve, reject) => {
       this.gitWorker
-        ?.initWikiGit(wikiFolderPath, this.getErrorMessageI18NDict(), syncImmediately && net.isOnline(), remoteUrl, userInfo)
+        ?.initWikiGit(wikiFolderPath, getErrorMessageI18NDict(), syncImmediately && net.isOnline(), remoteUrl, userInfo)
         .subscribe(this.getWorkerMessageObserver(wikiFolderPath, resolve, reject));
     });
   }
 
   public async commitAndSync(workspace: IWorkspace, config: ICommitAndSyncConfigs): Promise<boolean> {
     if (!net.isOnline()) {
+      // If not online, will not have any change
       return false;
     }
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
@@ -291,8 +189,9 @@ export class Git implements IGitService {
       } catch (error) {
         logger.error('updateGitInfoTiddler failed when commitAndSync', error);
       }
-      const result = await new Promise<boolean>((resolve, reject) => {
-        const observable = this.gitWorker?.commitAndSyncWiki(workspace, config, this.getErrorMessageI18NDict());
+      // return the `hasChanges` result.
+      return await new Promise<boolean>((resolve, reject) => {
+        const observable = this.gitWorker?.commitAndSyncWiki(workspace, config, getErrorMessageI18NDict());
         observable?.subscribe(this.getWorkerMessageObserver(workspace.wikiFolderLocation, () => {}, reject, workspaceIDToShowNotification));
         let hasChanges = false;
         observable?.subscribe({
@@ -301,7 +200,7 @@ export class Git implements IGitService {
               return;
             }
             const { meta } = messageObject;
-            if (typeof meta === 'object' && meta !== null && 'step' in meta && stepWithChanges.includes((meta as { step: GitStep }).step)) {
+            if (typeof meta === 'object' && meta !== null && 'step' in meta && stepsAboutChange.includes((meta as { step: GitStep }).step)) {
               hasChanges = true;
             }
           },
@@ -311,7 +210,6 @@ export class Git implements IGitService {
         });
         return true;
       });
-      return result;
     } catch (error) {
       this.createFailedNotification((error as Error).message, workspaceIDToShowNotification);
       return true;
@@ -323,7 +221,18 @@ export class Git implements IGitService {
       return;
     }
     await new Promise<void>((resolve, reject) => {
-      this.gitWorker?.cloneWiki(repoFolderPath, remoteUrl, userInfo, this.getErrorMessageI18NDict()).subscribe(this.getWorkerMessageObserver(repoFolderPath, resolve, reject));
+      this.gitWorker?.cloneWiki(repoFolderPath, remoteUrl, userInfo, getErrorMessageI18NDict()).subscribe(this.getWorkerMessageObserver(repoFolderPath, resolve, reject));
+    });
+  }
+
+  public async forcePull(workspace: IWorkspace, configs: IForcePullConfigs): Promise<void> {
+    if (!net.isOnline()) {
+      return;
+    }
+    await new Promise<void>((resolve, reject) => {
+      this.gitWorker?.forcePullWiki(workspace, configs, getErrorMessageI18NDict()).subscribe(
+        this.getWorkerMessageObserver(workspace.wikiFolderLocation, resolve, reject, workspace.id),
+      );
     });
   }
 }

@@ -33,6 +33,11 @@ export interface ICommitAndSyncConfigs {
   userInfo?: IGitUserInfos;
 }
 
+export interface IForcePullConfigs {
+  remoteUrl?: string;
+  userInfo?: IGitUserInfos;
+}
+
 /**
  * System Preferences are not stored in storage but stored in macOS Preferences.
  * It can be retrieved and changed using Electron APIs
@@ -43,22 +48,27 @@ export interface IGitService {
    * Return true if this function's execution causes local changes. Return false if is only push or nothing changed.
    */
   commitAndSync(workspace: IWorkspace, config: ICommitAndSyncConfigs): Promise<boolean>;
+  /**
+   * Ignore all local changes, force reset local to remote.
+   */
+  forcePull(workspace: IWorkspace, configs: IForcePullConfigs): Promise<void>;
   getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]>;
   /** Inspect git's remote url from folder's .git config, return undefined if there is no initialized git */
   getWorkspacesRemote(wikiFolderPath?: string): Promise<string | undefined>;
-  initWikiGit(wikiFolderPath: string, isSyncedWiki?: false): Promise<void>;
   /**
    * Run git init in a folder, prepare remote origin if isSyncedWiki
    */
   initWikiGit(wikiFolderPath: string, isSyncedWiki: true, isMainWiki: boolean, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
+  initWikiGit(wikiFolderPath: string, isSyncedWiki?: false): Promise<void>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,
   properties: {
-    getModifiedFileList: ProxyPropertyType.Function,
-    initWikiGit: ProxyPropertyType.Function,
-    commitAndSync: ProxyPropertyType.Function,
-    getWorkspacesRemote: ProxyPropertyType.Function,
     clone: ProxyPropertyType.Function,
+    commitAndSync: ProxyPropertyType.Function,
+    forcePull: ProxyPropertyType.Function,
+    getModifiedFileList: ProxyPropertyType.Function,
+    getWorkspacesRemote: ProxyPropertyType.Function,
+    initWikiGit: ProxyPropertyType.Function,
   },
 };

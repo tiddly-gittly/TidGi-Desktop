@@ -73,8 +73,8 @@ dependencies:
     specifier: 11.2.0
     version: 11.2.0
   git-sync-js:
-    specifier: ^1.1.0
-    version: 1.1.0
+    specifier: ^2.0.3
+    version: 2.0.3
   i18next:
     specifier: 23.7.12
     version: 23.7.12
@@ -6412,12 +6412,12 @@ packages:
       omggif: 1.0.10
     dev: false
 
-  /git-sync-js@1.1.0:
-    resolution: {integrity: sha512-wuwr5qDOOsYo0aOeiqM4y9Dw0XoG8oXJEwoePI6bpV18LPW3If0Bu7C4eS3PN1xmHOQGKNZqACfntudjS6vdFQ==}
+  /git-sync-js@2.0.3:
+    resolution: {integrity: sha512-YCG/LAVDKaLxU0Af1Ovc06TkuWP3s7yD3uNjRV9ksbLdOko28NHgbzjcTBUIm/KlkKWm8um60x1u+1p4bdxI4g==}
     dependencies:
       dugite: 2.5.2
       fs-extra: 11.2.0
-      isomorphic-git: 1.24.2
+      isomorphic-git: 1.25.2
       lodash: 4.17.21
     dev: false
 
@@ -7287,8 +7287,8 @@ packages:
       - encoding
     dev: false
 
-  /isomorphic-git@1.24.2:
-    resolution: {integrity: sha512-J3TU97JENWUnOgpVMwaRP9a3OQXJq/8fCIzA4yrJ7+ko1IPJwXCYeA69CeC8GtHeBVhcOQrbZGw6fpIpz54Vpw==}
+  /isomorphic-git@1.25.2:
+    resolution: {integrity: sha512-GHMZVujE76NpZ7Za0Kus/46J6Y7UZsY+xcHMLnFHqvcGbJzkXB1LQCzpYaRq+xQinWGdkcjBDQoE+8Tv3StPCg==}
     engines: {node: '>=12'}
     hasBin: true
     dependencies:
