@@ -126,32 +126,35 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         cancelId: 2,
       });
       try {
-        if (response === 0 || response === 1) {
-          const workspace = await this.workspaceService.get(workspaceID);
-          if (workspace === undefined) {
-            throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
+        const removeWorkspaceAndDelete = response === 1;
+        const removeWorkspace = response === 0;
+        if (!removeWorkspace && !removeWorkspaceAndDelete) {
+          return;
+        }
+        const workspace = await this.workspaceService.get(workspaceID);
+        if (workspace === undefined) {
+          throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
+        }
+        const { isSubWiki, mainWikiToLink, wikiFolderLocation, id } = workspace;
+        await this.wikiService.stopWiki(id).catch((error: Error) => logger.error(error.message, error));
+        if (isSubWiki) {
+          if (mainWikiToLink === null) {
+            throw new Error(`workspace.mainWikiToLink is null in WikiGitWorkspace.removeWorkspace ${JSON.stringify(workspace)}`);
           }
-          const { isSubWiki, mainWikiToLink, wikiFolderLocation, id } = workspace;
-          await this.wikiService.stopWiki(id).catch((error: Error) => logger.error(error.message, error));
-          if (isSubWiki) {
-            if (mainWikiToLink === null) {
-              throw new Error(`workspace.mainWikiToLink is null in WikiGitWorkspace.removeWorkspace ${JSON.stringify(workspace)}`);
-            }
-            await this.wikiService.removeWiki(wikiFolderLocation, mainWikiToLink, response === 0);
-            // remove folderName from fileSystemPaths
-            await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, undefined, {
-              ...workspace,
-              subWikiFolderName: path.basename(wikiFolderLocation),
-            });
-          } else if (response === 1) {
-            await this.wikiService.removeWiki(wikiFolderLocation);
-          }
-          await this.workspaceViewService.removeWorkspaceView(workspaceID);
-          // switch to first workspace
-          const firstWorkspace = await this.workspaceService.getFirstWorkspace();
-          if (firstWorkspace !== undefined) {
-            await this.workspaceViewService.setActiveWorkspaceView(firstWorkspace.id);
-          }
+          await this.wikiService.removeWiki(wikiFolderLocation, mainWikiToLink, removeWorkspace);
+          // remove folderName from fileSystemPaths
+          await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, undefined, {
+            ...workspace,
+            subWikiFolderName: path.basename(wikiFolderLocation),
+          });
+        } else if (removeWorkspaceAndDelete) {
+          await this.wikiService.removeWiki(wikiFolderLocation);
+        }
+        await this.workspaceViewService.removeWorkspaceView(workspaceID);
+        // switch to first workspace
+        const firstWorkspace = await this.workspaceService.getFirstWorkspace();
+        if (firstWorkspace !== undefined) {
+          await this.workspaceViewService.setActiveWorkspaceView(firstWorkspace.id);
         }
       } catch (error) {
         logger.error((error as Error).message, error);

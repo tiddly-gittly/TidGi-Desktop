@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
-import { dialog, ipcMain } from 'electron';
+import { dialog, ipcMain, shell } from 'electron';
 import { backOff } from 'exponential-backoff';
 import { copy, createSymlink, exists, mkdir, mkdirp, mkdirs, pathExists, readFile, remove, unlink } from 'fs-extra';
 import { injectable } from 'inversify';
@@ -449,10 +449,10 @@ export class Wiki implements IWikiService {
   public async removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink = false): Promise<void> {
     if (mainWikiToUnLink !== undefined) {
       const subWikiName = path.basename(wikiPath);
-      await remove(path.join(mainWikiToUnLink, TIDDLERS_PATH, this.folderToContainSymlinks, subWikiName));
+      await shell.trashItem(path.join(mainWikiToUnLink, TIDDLERS_PATH, this.folderToContainSymlinks, subWikiName));
     }
     if (!onlyRemoveLink) {
-      await remove(wikiPath);
+      await shell.trashItem(wikiPath);
     }
   }
 
