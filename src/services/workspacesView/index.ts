@@ -140,6 +140,7 @@ export class WorkspaceView implements IWorkspaceViewService {
             });
           } else {
             // sync in non-blocking way
+            // TODO: use syncWikiIfNeeded
             void this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo }).then(async (hasChanges) => {
               if (hasChanges) {
                 await this.workspaceViewService.restartWorkspaceViewService(workspace.id);

@@ -22,6 +22,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace } from '@services/workspaces/interface';
+import { ObservablePromise } from 'threads/dist/observable-promise';
 import { GitWorker } from './gitWorker';
 import { ICommitAndSyncConfigs, IForcePullConfigs, IGitLogMessage, IGitService, IGitUserInfos } from './interface';
 import { getErrorMessageI18NDict, translateMessage } from './translateMessage';
@@ -71,7 +72,7 @@ export class Git implements IGitService {
   }
 
   /**
-   * Update in-wiki settings for git.
+   * Update in-wiki settings for git. Only needed if the wiki is config to synced.
    * @param {string} remoteUrl
    */
   private async updateGitInfoTiddler(workspace: IWorkspace, remoteUrl?: string, branch?: string): Promise<void> {
@@ -177,7 +178,7 @@ export class Git implements IGitService {
     });
   }
 
-  public async commitAndSync(workspace: IWorkspace, config: ICommitAndSyncConfigs): Promise<boolean> {
+  public async commitAndSync(workspace: IWorkspace, configs: ICommitAndSyncConfigs): Promise<boolean> {
     if (!net.isOnline()) {
       // If not online, will not have any change
       return false;
@@ -185,35 +186,53 @@ export class Git implements IGitService {
     const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
     try {
       try {
-        await this.updateGitInfoTiddler(workspace, config.remoteUrl, config.userInfo?.branch);
+        await this.updateGitInfoTiddler(workspace, configs.remoteUrl, configs.userInfo?.branch);
       } catch (error) {
         logger.error('updateGitInfoTiddler failed when commitAndSync', error);
       }
-      // return the `hasChanges` result.
-      return await new Promise<boolean>((resolve, reject) => {
-        const observable = this.gitWorker?.commitAndSyncWiki(workspace, config, getErrorMessageI18NDict());
-        observable?.subscribe(this.getWorkerMessageObserver(workspace.wikiFolderLocation, () => {}, reject, workspaceIDToShowNotification));
-        let hasChanges = false;
-        observable?.subscribe({
-          next: (messageObject) => {
-            if (messageObject.level === 'error') {
-              return;
-            }
-            const { meta } = messageObject;
-            if (typeof meta === 'object' && meta !== null && 'step' in meta && stepsAboutChange.includes((meta as { step: GitStep }).step)) {
-              hasChanges = true;
-            }
-          },
-          complete: () => {
-            resolve(hasChanges);
-          },
-        });
-        return true;
-      });
+      const observable = this.gitWorker?.commitAndSyncWiki(workspace, configs, getErrorMessageI18NDict());
+      return await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
     } catch (error) {
       this.createFailedNotification((error as Error).message, workspaceIDToShowNotification);
       return true;
     }
+  }
+
+  public async forcePull(workspace: IWorkspace, configs: IForcePullConfigs): Promise<boolean> {
+    if (!net.isOnline()) {
+      return false;
+    }
+    const workspaceIDToShowNotification = workspace.isSubWiki ? workspace.mainWikiID! : workspace.id;
+    const observable = this.gitWorker?.forcePullWiki(workspace, configs, getErrorMessageI18NDict());
+    return await this.getHasChangeHandler(observable, workspace.wikiFolderLocation, workspaceIDToShowNotification);
+  }
+
+  /**
+   * Handle methods that checks if there is any change. Return a promise that resolves to a "hasChanges" boolean, resolve on the observable completes.
+   * @param observable return by `this.gitWorker`'s methods.
+   * @returns the `hasChanges` result.
+   */
+  private async getHasChangeHandler(observable: ObservablePromise<IGitLogMessage> | undefined, wikiFolderPath: string, workspaceID?: string | undefined) {
+    // return the `hasChanges` result.
+    return await new Promise<boolean>((resolve, reject) => {
+      observable?.subscribe(this.getWorkerMessageObserver(wikiFolderPath, () => {}, reject, workspaceID));
+      let hasChanges = false;
+      observable?.subscribe({
+        next: (messageObject) => {
+          if (messageObject.level === 'error') {
+            return;
+          }
+          const { meta } = messageObject;
+          if (typeof meta === 'object' && meta !== null && 'step' in meta && stepsAboutChange.includes((meta as { step: GitStep }).step)) {
+            hasChanges = true;
+          }
+        },
+        complete: () => {
+          resolve(hasChanges);
+        },
+      });
+      return true;
+    });
   }
 
   public async clone(remoteUrl: string, repoFolderPath: string, userInfo: IGitUserInfos): Promise<void> {
@@ -225,14 +244,12 @@ export class Git implements IGitService {
     });
   }
 
-  public async forcePull(workspace: IWorkspace, configs: IForcePullConfigs): Promise<void> {
-    if (!net.isOnline()) {
-      return;
+  public async syncOrForcePull(workspace: IWorkspace, configs: IForcePullConfigs & ICommitAndSyncConfigs): Promise<boolean> {
+    // if local is in readonly mode, any things that write to local (by accident) should be completely overwrite by remote.
+    if (workspace.readOnlyMode) {
+      return await this.forcePull(workspace, configs);
+    } else {
+      return await this.commitAndSync(workspace, configs);
     }
-    await new Promise<void>((resolve, reject) => {
-      this.gitWorker?.forcePullWiki(workspace, configs, getErrorMessageI18NDict()).subscribe(
-        this.getWorkerMessageObserver(workspace.wikiFolderLocation, resolve, reject, workspace.id),
-      );
-    });
   }
 }

@@ -47,11 +47,11 @@ export interface IGitService {
   /**
    * Return true if this function's execution causes local changes. Return false if is only push or nothing changed.
    */
-  commitAndSync(workspace: IWorkspace, config: ICommitAndSyncConfigs): Promise<boolean>;
+  commitAndSync(workspace: IWorkspace, configs: ICommitAndSyncConfigs): Promise<boolean>;
   /**
    * Ignore all local changes, force reset local to remote.
    */
-  forcePull(workspace: IWorkspace, configs: IForcePullConfigs): Promise<void>;
+  forcePull(workspace: IWorkspace, configs: IForcePullConfigs): Promise<boolean>;
   getModifiedFileList(wikiFolderPath: string): Promise<ModifiedFileList[]>;
   /** Inspect git's remote url from folder's .git config, return undefined if there is no initialized git */
   getWorkspacesRemote(wikiFolderPath?: string): Promise<string | undefined>;
@@ -60,6 +60,12 @@ export interface IGitService {
    */
   initWikiGit(wikiFolderPath: string, isSyncedWiki: true, isMainWiki: boolean, remoteUrl: string, userInfo: IGitUserInfos): Promise<void>;
   initWikiGit(wikiFolderPath: string, isSyncedWiki?: false): Promise<void>;
+  /**
+   * Decide to use forcePull or commitAndSync according to workspace's `readOnlyMode` setting.
+   *
+   * This does not handle `commitOnly` option, if it is not readonly. You need to use `commitAndSync` directly.
+   */
+  syncOrForcePull(workspace: IWorkspace, configs: IForcePullConfigs & ICommitAndSyncConfigs): Promise<boolean>;
 }
 export const GitServiceIPCDescriptor = {
   channel: GitChannel.name,
@@ -70,5 +76,6 @@ export const GitServiceIPCDescriptor = {
     getModifiedFileList: ProxyPropertyType.Function,
     getWorkspacesRemote: ProxyPropertyType.Function,
     initWikiGit: ProxyPropertyType.Function,
+    syncOrForcePull: ProxyPropertyType.Function,
   },
 };

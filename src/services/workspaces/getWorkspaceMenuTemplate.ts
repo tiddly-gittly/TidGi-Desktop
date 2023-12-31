@@ -131,6 +131,7 @@ export async function getWorkspaceMenuTemplate(
         enabled: isOnline,
         click: async () => {
           if (isSubWiki) {
+            // TODO: use syncWikiIfNeeded
             const hasChanges = await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
             if (hasChanges) {
               if (mainWikiID === null) {

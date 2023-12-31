@@ -599,7 +599,7 @@ export class Wiki implements IWikiService {
 
   /**
    * Trigger git sync
-   * Simply do some check before calling `gitService.commitAndSync`
+   * Simply do some check before calling `gitService.syncOrForcePull`
    */
   private async syncWikiIfNeeded(workspace: IWorkspace): Promise<void> {
     const { gitUrl: githubRepoUrl, storageService, backupOnInterval, id } = workspace;
@@ -633,13 +633,13 @@ export class Wiki implements IWikiService {
       userInfo !== undefined &&
       (await checkCanSyncDueToNoDraft())
     ) {
-      const hasChanges = await this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo });
+      const hasChanges = await this.gitService.syncOrForcePull(workspace, { remoteUrl: githubRepoUrl, userInfo });
       if (hasChanges) {
         await this.workspaceViewService.restartWorkspaceViewService(id);
         await this.viewService.reloadViewsWebContents(id);
       }
     } else if (backupOnInterval && (await checkCanSyncDueToNoDraft())) {
-      // for local workspace, commitOnly
+      // for local workspace, commitOnly, no sync and no force pull.
       await this.gitService.commitAndSync(workspace, { commitOnly: true });
     }
   }

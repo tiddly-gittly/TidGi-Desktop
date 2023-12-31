@@ -58,8 +58,13 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           await Promise.allSettled([
             this.notificationService.show({ title: i18n.t('Preference.SyncBeforeShutdown') }),
             ...workspacesToSync.map(async (workspace) => {
+              // only do this if not readonly
+              if (workspace.readOnlyMode) {
+                return;
+              }
               const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
               if (userInfo !== undefined && workspace.gitUrl !== null) {
+                // TODO: use syncWikiIfNeeded
                 await this.gitService.commitAndSync(workspace, { remoteUrl: workspace.gitUrl, userInfo });
               }
             }),
