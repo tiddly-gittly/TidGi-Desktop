@@ -524,18 +524,19 @@ export class WorkspaceView implements IWorkspaceViewService {
     const menuBarBrowserViewWebContent = menuBarWindow?.getBrowserView()?.webContents;
     const tasks = [];
     if (mainBrowserViewWebContent) {
+      logger.info(`hideWorkspaceView: hide main window browserView.`);
       tasks.push(this.viewService.hideView(mainWindow));
-      logger.debug(`hideActiveWorkspaceView: hide main window browserView.`);
     } else {
-      logger.warn(`hideActiveWorkspaceView: no mainBrowserViewWebContent, skip main window browserView.`);
+      logger.warn(`hideWorkspaceView: no mainBrowserViewWebContent, skip main window browserView.`);
     }
     if (menuBarBrowserViewWebContent) {
-      logger.debug(`hideActiveWorkspaceView: hide menu bar window browserView.`);
+      logger.info(`hideWorkspaceView: hide menu bar window browserView.`);
       tasks.push(this.viewService.hideView(menuBarWindow));
     } else {
-      logger.info(`hideActiveWorkspaceView: no menuBarBrowserViewWebContent, skip menu bar window browserView.`);
+      logger.debug(`hideWorkspaceView: no menuBarBrowserViewWebContent, skip menu bar window browserView.`);
     }
     await Promise.all(tasks);
+    logger.info(`hideWorkspaceView: done.`);
   }
   /* eslint-enable @typescript-eslint/strict-boolean-expressions */
 }

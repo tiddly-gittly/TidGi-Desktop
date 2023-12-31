@@ -202,7 +202,7 @@ export class Window implements IWindowService {
         // after the UI is fully loaded
         // if not, BrowserView mouseover event won't work correctly
         // https://github.com/atomery/webcatalog/issues/812
-        await this.workspaceViewService.realignActiveWorkspace();
+        // await this.workspaceViewService.realignActiveWorkspace();
       } else {
         newWindow.setMenuBarVisibility(false);
       }

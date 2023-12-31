@@ -116,7 +116,7 @@ export default function setupViewEventHandlers(
       view.webContents.focus();
     }
     // fix https://github.com/atomery/webcatalog/issues/870
-    await workspaceViewService.realignActiveWorkspace();
+    // await workspaceViewService.realignActiveWorkspace();
     // update isLoading to false when load succeed
     await workspaceService.updateMetaData(workspace.id, {
       isLoading: false,
