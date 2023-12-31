@@ -2,8 +2,8 @@ import BadgeRaw from '@mui/material/Badge';
 import Promise from 'bluebird';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { keyframes, styled } from 'styled-components';
 import is from 'typescript-styled-is';
-import styled, { css, keyframes } from 'styled-components';
 
 Promise.config({ cancellation: true });
 
@@ -45,6 +45,7 @@ interface IAvatarProps {
   $addAvatar: boolean;
   $highlightAdd: boolean;
   $large?: boolean;
+  $transparent?: boolean;
 }
 const Avatar = styled.div<IAvatarProps>`
   height: 36px;
@@ -60,10 +61,11 @@ const Avatar = styled.div<IAvatarProps>`
     width: 44px;
     line-height: 44px;
   `}
-
-  background: transparent;
-  border: none;
-  border-radius: 0;
+  ${is('$transparent')`
+      background: transparent;
+      border: none;
+      border-radius: 0;
+    `}
 
   &${({ $highlightAdd, $addAvatar }) => ($highlightAdd && $addAvatar ? '' : ':hover')}, &:hover {
     background-color: ${({ theme }) => theme.palette.background.default};
