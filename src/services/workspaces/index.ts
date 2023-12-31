@@ -13,6 +13,7 @@ import path from 'path';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { fixSettingFileWhenError } from '@/helpers/configSetting';
 import { IAuthenticationService } from '@services/auth/interface';
@@ -33,7 +34,6 @@ import { debouncedSetSettingFile } from './debouncedSetSettingFile';
 import type { INewWorkspaceConfig, IWorkspace, IWorkspaceMetaData, IWorkspaceService, IWorkspaceWithMetadata } from './interface';
 import { registerMenu } from './registerMenu';
 import { workspaceSorter } from './utils';
-import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 
 @injectable()
 export class Workspace implements IWorkspaceService {
@@ -212,6 +212,16 @@ export class Workspace implements IWorkspaceService {
     }
   }
 
+  public getMainWorkspace(subWorkspace: IWorkspace): IWorkspace | undefined {
+    const { mainWikiID, isSubWiki, mainWikiToLink } = subWorkspace;
+    if (!isSubWiki) return undefined;
+    if (mainWikiID) return this.getSync(mainWikiID);
+    const mainWorkspace = (this.getWorkspacesAsListSync() ?? []).find(
+      (workspaceToSearch) => mainWikiToLink === workspaceToSearch.wikiFolderLocation,
+    );
+    return mainWorkspace;
+  }
+
   /**
    * Pure function that make sure workspace setting is consistent, or doing migration across updates
    * @param workspaceToSanitize User input workspace or loaded workspace, that may contains bad values
@@ -226,9 +236,7 @@ export class Workspace implements IWorkspaceService {
     const fixingValues: Partial<IWorkspace> = {};
     // we add mainWikiID in creation, we fix this value for old existed workspaces
     if (workspaceToSanitize.isSubWiki && !workspaceToSanitize.mainWikiID) {
-      const mainWorkspace = (this.getWorkspacesAsListSync() ?? []).find(
-        (workspaceToSearch) => workspaceToSanitize.mainWikiToLink === workspaceToSearch.wikiFolderLocation,
-      );
+      const mainWorkspace = this.getMainWorkspace(workspaceToSanitize);
       if (mainWorkspace !== undefined) {
         fixingValues.mainWikiID = mainWorkspace.id;
       }

@@ -16,6 +16,7 @@ import { INativeService, NativeServiceIPCDescriptor } from '@services/native/int
 import { INotificationService, NotificationServiceIPCDescriptor } from '@services/notifications/interface';
 import { IPagesService, PagesServiceIPCDescriptor } from '@services/pages/interface';
 import { IPreferenceService, PreferenceServiceIPCDescriptor } from '@services/preferences/interface';
+import { ISyncService, SyncServiceIPCDescriptor } from '@services/sync/interface';
 import { ISystemPreferenceService, SystemPreferenceServiceIPCDescriptor } from '@services/systemPreferences/interface';
 import { IThemeService, ThemeServiceIPCDescriptor } from '@services/theme/interface';
 import { IUpdaterService, UpdaterServiceIPCDescriptor } from '@services/updater/interface';
@@ -35,6 +36,7 @@ export const native = createProxy<INativeService>(NativeServiceIPCDescriptor);
 export const notification = createProxy<INotificationService>(NotificationServiceIPCDescriptor);
 export const pages = createProxy<IPagesService>(PagesServiceIPCDescriptor);
 export const preference = createProxy<IPreferenceService>(PreferenceServiceIPCDescriptor);
+export const sync = createProxy<ISyncService>(SyncServiceIPCDescriptor);
 export const systemPreference = createProxy<ISystemPreferenceService>(SystemPreferenceServiceIPCDescriptor);
 export const theme = createProxy<IThemeService>(ThemeServiceIPCDescriptor);
 export const updater = createProxy<IUpdaterService>(UpdaterServiceIPCDescriptor);
@@ -55,6 +57,7 @@ export const descriptors = {
   notification: NotificationServiceIPCDescriptor,
   pages: PagesServiceIPCDescriptor,
   preference: PreferenceServiceIPCDescriptor,
+  sync: SyncServiceIPCDescriptor,
   systemPreference: SystemPreferenceServiceIPCDescriptor,
   theme: ThemeServiceIPCDescriptor,
   updater: UpdaterServiceIPCDescriptor,

@@ -28,7 +28,6 @@ export interface IWikiService {
   /** return true if wiki does existed and folder is a valid tiddlywiki folder, return error message (a string) if there is an error checking wiki existence */
   checkWikiExist(workspace: IWorkspace, options?: { shouldBeMainWiki?: boolean; showDialog?: boolean }): Promise<string | true>;
   checkWikiStartLock(wikiFolderLocation: string): boolean;
-  clearAllSyncIntervals(): void;
   cloneSubWiki(
     parentFolderLocation: string,
     wikiFolderName: string,
@@ -106,7 +105,6 @@ export const WikiServiceIPCDescriptor = {
   properties: {
     callWikiIpcServerRoute: ProxyPropertyType.Function,
     checkWikiExist: ProxyPropertyType.Function,
-    clearAllSyncIntervals: ProxyPropertyType.Function,
     cloneSubWiki: ProxyPropertyType.Function,
     cloneWiki: ProxyPropertyType.Function,
     copyWikiTemplate: ProxyPropertyType.Function,

@@ -148,6 +148,10 @@ export enum MetaDataChannel {
   pushViewMetaData = 'pushViewMetaData',
 }
 
+export enum SyncChannel {
+  name = 'SyncChannel',
+}
+
 export type Channels =
   | MainChannel
   | AuthenticationChannel
@@ -167,4 +171,5 @@ export type Channels =
   | WindowChannel
   | ThemeChannel
   | I18NChannels
-  | MetaDataChannel;
+  | MetaDataChannel
+  | SyncChannel;

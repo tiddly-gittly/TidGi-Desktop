@@ -16,6 +16,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { IContextService } from '@services/context/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
+import { ISyncService } from '@services/sync/interface';
 import { SupportedStorageServices } from '@services/types';
 import { updateGhConfig } from '@services/wiki/plugin/ghPages';
 import { hasGit } from 'git-sync-js';
@@ -48,6 +49,9 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   @lazyInject(serviceIdentifier.NotificationService)
   private readonly notificationService!: INotificationService;
 
+  @lazyInject(serviceIdentifier.Sync)
+  private readonly syncService!: ISyncService;
+
   public registerSyncBeforeShutdown(): void {
     const listener = async (event: Event): Promise<void> => {
       event.preventDefault();
@@ -62,11 +66,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
               if (workspace.readOnlyMode) {
                 return;
               }
-              const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
-              if (userInfo !== undefined && workspace.gitUrl !== null) {
-                // TODO: use syncWikiIfNeeded
-                await this.gitService.commitAndSync(workspace, { remoteUrl: workspace.gitUrl, userInfo });
-              }
+              await this.syncService.syncWikiIfNeeded(workspace);
             }),
           ]);
         }

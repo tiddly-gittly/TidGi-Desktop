@@ -178,6 +178,11 @@ export interface IWorkspaceService {
   getAllMetaData: () => Promise<Record<string, Partial<IWorkspaceMetaData>>>;
   getByWikiFolderLocation(wikiFolderLocation: string): Promise<IWorkspace | undefined>;
   getFirstWorkspace: () => Promise<IWorkspace | undefined>;
+  /**
+   * Get parent workspace of a subWorkspace, if the workspace you provided is a main workspace, return undefined.
+   * @param subWorkspace your workspace object
+   */
+  getMainWorkspace(subWorkspace: IWorkspace): IWorkspace | undefined;
   getMetaData: (id: string) => Promise<Partial<IWorkspaceMetaData>>;
   getNextWorkspace: (id: string) => Promise<IWorkspace | undefined>;
   getPreviousWorkspace: (id: string) => Promise<IWorkspace | undefined>;
@@ -206,8 +211,8 @@ export interface IWorkspaceService {
 export const WorkspaceServiceIPCDescriptor = {
   channel: WorkspaceChannel.name,
   properties: {
-    countWorkspaces: ProxyPropertyType.Function,
     clearActiveWorkspace: ProxyPropertyType.Function,
+    countWorkspaces: ProxyPropertyType.Function,
     create: ProxyPropertyType.Function,
     get: ProxyPropertyType.Function,
     get$: ProxyPropertyType.Function$,
@@ -215,6 +220,7 @@ export const WorkspaceServiceIPCDescriptor = {
     getAllMetaData: ProxyPropertyType.Function,
     getByName: ProxyPropertyType.Function,
     getFirstWorkspace: ProxyPropertyType.Function,
+    getMainWorkspace: ProxyPropertyType.Function,
     getMetaData: ProxyPropertyType.Function,
     getNextWorkspace: ProxyPropertyType.Function,
     getPreviousWorkspace: ProxyPropertyType.Function,

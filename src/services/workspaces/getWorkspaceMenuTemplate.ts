@@ -5,6 +5,7 @@ import { IContextService } from '@services/context/interface';
 import { IGitService } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
 import { IPagesService, PageType } from '@services/pages/interface';
+import { ISyncService } from '@services/sync/interface';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
@@ -23,6 +24,7 @@ interface IWorkspaceMenuRequiredServices {
   git: Pick<IGitService, 'commitAndSync'>;
   native: Pick<INativeService, 'openURI' | 'openPath' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualInfo'>;
   pages: Pick<IPagesService, 'setActivePage' | 'getActivePage'>;
+  sync: Pick<ISyncService, 'syncWikiIfNeeded'>;
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
   wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer' | 'requestWikiSendActionMessage'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
@@ -130,37 +132,7 @@ export async function getWorkspaceMenuTemplate(
         label: t('ContextMenu.SyncNow') + (isOnline ? '' : `(${t('ContextMenu.NoNetworkConnection')})`),
         enabled: isOnline,
         click: async () => {
-          if (isSubWiki) {
-            // TODO: use syncWikiIfNeeded
-            const hasChanges = await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
-            if (hasChanges) {
-              if (mainWikiID === null) {
-                await service.workspaceView.restartWorkspaceViewService(id);
-                await service.view.reloadViewsWebContents(id);
-              } else {
-                // reload main workspace to reflect change (do this before watch-fs stable)
-                await service.workspaceView.restartWorkspaceViewService(mainWikiID);
-                await service.view.reloadViewsWebContents(mainWikiID);
-              }
-            }
-          } else {
-            // sync all sub workspace
-            const mainHasChanges = await service.git.commitAndSync(workspace, { remoteUrl: gitUrl, userInfo });
-            const subWorkspaces = await service.workspace.getSubWorkspacesAsList(id);
-            const subHasChangesPromise = subWorkspaces.map(async (subWorkspace) => {
-              const { gitUrl: subGitUrl } = subWorkspace;
-              // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-              if (!subGitUrl) return false;
-              const hasChanges = await service.git.commitAndSync(subWorkspace, { remoteUrl: subGitUrl, userInfo });
-              return hasChanges;
-            });
-            const subHasChange = (await Promise.all(subHasChangesPromise)).some(Boolean);
-            const hasChange = mainHasChanges || subHasChange;
-            if (hasChange) {
-              await service.workspaceView.restartWorkspaceViewService(id);
-              await service.view.reloadViewsWebContents(id);
-            }
-          }
+          await service.sync.syncWikiIfNeeded(workspace);
         },
       });
     }

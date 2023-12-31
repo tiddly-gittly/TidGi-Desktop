@@ -10,6 +10,7 @@ import type { INativeService } from '@services/native/interface';
 import type { IPagesService } from '@services/pages/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { ISyncService } from '@services/sync/interface';
 import type { IUpdaterService } from '@services/updater/interface';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
@@ -69,6 +70,9 @@ export class MenuService implements IMenuService {
 
   @lazyInject(serviceIdentifier.WorkspaceView)
   private readonly workspaceViewService!: IWorkspaceViewService;
+
+  @lazyInject(serviceIdentifier.Sync)
+  private readonly syncService!: ISyncService;
 
   #menuTemplate?: DeferredMenuItemConstructorOptions[];
   private get menuTemplate(): DeferredMenuItemConstructorOptions[] {
@@ -302,6 +306,7 @@ export class MenuService implements IMenuService {
       window: this.windowService,
       workspace: this.workspaceService,
       workspaceView: this.workspaceViewService,
+      sync: this.syncService,
     };
     // workspace menus
     menu.append(new MenuItem({ type: 'separator' }));

@@ -18,7 +18,6 @@ import type { IGitService, IGitUserInfos } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
 import { getWikiErrorLogFileName, logger, startWikiLogger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
@@ -42,6 +41,7 @@ import { isHtmlWiki } from '@/constants/fileNames';
 import { defaultServerIP } from '@/constants/urls';
 import { IDatabaseService } from '@services/database/interface';
 import { IPreferenceService } from '@services/preferences/interface';
+import { ISyncService } from '@services/sync/interface';
 import { mapValues } from 'lodash';
 import { wikiWorkerStartedEventName } from './constants';
 import { IWorkerWikiOperations } from './wikiOperations/executor/wikiOperationInServer';
@@ -72,6 +72,9 @@ export class Wiki implements IWikiService {
 
   @lazyInject(serviceIdentifier.WorkspaceView)
   private readonly workspaceViewService!: IWorkspaceViewService;
+
+  @lazyInject(serviceIdentifier.Sync)
+  private readonly syncService!: ISyncService;
 
   public async getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]> {
     return await getSubWikiPluginContent(mainWikiPath);
@@ -329,7 +332,7 @@ export class Wiki implements IWikiService {
       });
       return;
     }
-    clearInterval(this.wikiSyncIntervals[id]);
+    this.syncService.stopIntervalSync(id);
     try {
       logger.debug(`worker.beforeExit for ${id}`);
       await worker.beforeExit();
@@ -597,84 +600,6 @@ export class Wiki implements IWikiService {
     return textResult;
   }
 
-  /**
-   * Trigger git sync
-   * Simply do some check before calling `gitService.syncOrForcePull`
-   */
-  private async syncWikiIfNeeded(workspace: IWorkspace): Promise<void> {
-    const { gitUrl: githubRepoUrl, storageService, backupOnInterval, id } = workspace;
-    const checkCanSyncDueToNoDraft = async (): Promise<boolean> => {
-      const syncOnlyWhenNoDraft = await this.preferenceService.get('syncOnlyWhenNoDraft');
-      if (!syncOnlyWhenNoDraft) {
-        return true;
-      }
-      try {
-        const draftTitles = await this.wikiOperationInServer(WikiChannel.runFilter, id, ['[is[draft]]']);
-        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-        if (Array.isArray(draftTitles) && draftTitles.length > 0) {
-          return false;
-        }
-        return true;
-      } catch (error) {
-        logger.error(
-          `${(error as Error).message} when checking draft titles. ${
-            (error as Error).stack ?? ''
-          }\n This might because it just will throw error when on Windows and App is at background (BrowserView will disappear and not accessible.)`,
-        );
-        // when app is on background, might have no draft, because user won't edit it. So just return true
-        return true;
-      }
-    };
-    const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
-
-    if (
-      storageService !== SupportedStorageServices.local &&
-      typeof githubRepoUrl === 'string' &&
-      userInfo !== undefined &&
-      (await checkCanSyncDueToNoDraft())
-    ) {
-      const hasChanges = await this.gitService.syncOrForcePull(workspace, { remoteUrl: githubRepoUrl, userInfo });
-      if (hasChanges) {
-        await this.workspaceViewService.restartWorkspaceViewService(id);
-        await this.viewService.reloadViewsWebContents(id);
-      }
-    } else if (backupOnInterval && (await checkCanSyncDueToNoDraft())) {
-      // for local workspace, commitOnly, no sync and no force pull.
-      await this.gitService.commitAndSync(workspace, { commitOnly: true });
-    }
-  }
-
-  /**
-   * Record<workspaceID, returnValue<setInterval>>
-   * Set this in wikiStartup, and clear it when wiki is down.
-   */
-  private wikiSyncIntervals: Record<string, ReturnType<typeof setInterval>> = {};
-  /**
-   * Trigger git sync interval if needed in config
-   */
-  private async startIntervalSyncIfNeeded(workspace: IWorkspace): Promise<void> {
-    const { syncOnInterval, backupOnInterval, id } = workspace;
-    if (syncOnInterval || backupOnInterval) {
-      const syncDebounceInterval = await this.preferenceService.get('syncDebounceInterval');
-      this.wikiSyncIntervals[id] = setInterval(async () => {
-        await this.syncWikiIfNeeded(workspace);
-      }, syncDebounceInterval);
-    }
-  }
-
-  private stopIntervalSync(workspace: IWorkspace): void {
-    const { id } = workspace;
-    if (typeof this.wikiSyncIntervals[id] === 'number') {
-      clearInterval(this.wikiSyncIntervals[id]);
-    }
-  }
-
-  public clearAllSyncIntervals(): void {
-    Object.values(this.wikiSyncIntervals).forEach((interval) => {
-      clearInterval(interval);
-    });
-  }
-
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
     const { id, isSubWiki, name, mainWikiID, wikiFolderLocation } = workspace;
 
@@ -722,7 +647,7 @@ export class Wiki implements IWikiService {
         }
       }
     }
-    await this.startIntervalSyncIfNeeded(workspace);
+    await this.syncService.startIntervalSyncIfNeeded(workspace);
   }
 
   public async restartWiki(workspace: IWorkspace): Promise<void> {
@@ -731,12 +656,12 @@ export class Wiki implements IWikiService {
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     const userName = await this.authService.getUserName(workspace);
 
-    this.stopIntervalSync(workspace);
+    this.syncService.stopIntervalSync(id);
     if (!isSubWiki) {
       await this.stopWiki(id);
       await this.startWiki(id, userName);
     }
-    await this.startIntervalSyncIfNeeded(workspace);
+    await this.syncService.startIntervalSyncIfNeeded(workspace);
   }
 
   public async updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void> {

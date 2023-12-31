@@ -15,7 +15,6 @@ import type { IGitService } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
-import { INativeService } from '@services/native/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
@@ -26,6 +25,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
+import { ISyncService } from '@services/sync/interface';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
 import { registerMenu } from './registerMenu';
 
@@ -61,8 +61,8 @@ export class WorkspaceView implements IWorkspaceViewService {
   @lazyInject(serviceIdentifier.WorkspaceView)
   private readonly workspaceViewService!: IWorkspaceViewService;
 
-  @lazyInject(serviceIdentifier.NativeService)
-  private readonly nativeService!: INativeService;
+  @lazyInject(serviceIdentifier.Sync)
+  private readonly syncService!: ISyncService;
 
   constructor() {
     setTimeout(() => {
@@ -115,8 +115,11 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
     }
     const syncGitWhenInitializeWorkspaceView = async () => {
-      const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService } = workspace;
-
+      const { wikiFolderLocation, gitUrl: githubRepoUrl, storageService, isSubWiki } = workspace;
+      // we are using syncWikiIfNeeded that handles recursive sync for all subwiki, so we only need to pass main wiki to it in this method.
+      if (isSubWiki) {
+        return;
+      }
       // get sync process ready
       try {
         if (workspace.syncOnStartup && storageService !== SupportedStorageServices.local && syncImmediately) {
@@ -129,7 +132,11 @@ export class WorkspaceView implements IWorkspaceViewService {
             throw new Error(i18n.t(`Error.MainWindowMissing`));
           }
           const userInfo = await this.authService.getStorageServiceUserInfo(workspace.storageService);
-          if (userInfo === undefined) {
+          // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+          if (userInfo?.accessToken) {
+            // sync in non-blocking way
+            void this.syncService.syncWikiIfNeeded(workspace);
+          } else {
             // user not login into Github or something else
             void dialog.showMessageBox(mainWindow, {
               title: i18n.t('Dialog.StorageServiceUserInfoNoFound'),
@@ -137,15 +144,6 @@ export class WorkspaceView implements IWorkspaceViewService {
               buttons: ['OK'],
               cancelId: 0,
               defaultId: 0,
-            });
-          } else {
-            // sync in non-blocking way
-            // TODO: use syncWikiIfNeeded
-            void this.gitService.commitAndSync(workspace, { remoteUrl: githubRepoUrl, userInfo }).then(async (hasChanges) => {
-              if (hasChanges) {
-                await this.workspaceViewService.restartWorkspaceViewService(workspace.id);
-                await this.viewService.reloadViewsWebContents(workspace.id);
-              }
             });
           }
         }
