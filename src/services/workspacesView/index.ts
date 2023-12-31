@@ -25,6 +25,7 @@ import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 
+import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import type { IInitializeWorkspaceOptions, IWorkspaceViewService } from './interface';
 import { registerMenu } from './registerMenu';
 
@@ -64,7 +65,9 @@ export class WorkspaceView implements IWorkspaceViewService {
   private readonly nativeService!: INativeService;
 
   constructor() {
-    void registerMenu();
+    setTimeout(() => {
+      void registerMenu();
+    }, DELAY_MENU_REGISTER);
   }
 
   public async initializeAllWorkspaceView(): Promise<void> {

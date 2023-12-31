@@ -26,6 +26,7 @@ import { handleCreateBasicWindow } from './handleCreateBasicWindow';
 import { IWindowOpenConfig, IWindowService } from './interface';
 import { registerBrowserViewWindowListeners } from './registerBrowserViewWindowListeners';
 import { registerMenu } from './registerMenu';
+import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 
 @injectable()
 export class Window implements IWindowService {
@@ -50,7 +51,9 @@ export class Window implements IWindowService {
   private readonly themeService!: IThemeService;
 
   constructor() {
-    void registerMenu();
+    setTimeout(() => {
+      void registerMenu();
+    }, DELAY_MENU_REGISTER);
   }
 
   public async findInPage(text: string, forward?: boolean, windowName: WindowNames = WindowNames.main): Promise<void> {

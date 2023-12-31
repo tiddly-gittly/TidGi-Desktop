@@ -33,6 +33,7 @@ import { debouncedSetSettingFile } from './debouncedSetSettingFile';
 import type { INewWorkspaceConfig, IWorkspace, IWorkspaceMetaData, IWorkspaceService, IWorkspaceWithMetadata } from './interface';
 import { registerMenu } from './registerMenu';
 import { workspaceSorter } from './utils';
+import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 
 @injectable()
 export class Workspace implements IWorkspaceService {
@@ -68,8 +69,10 @@ export class Workspace implements IWorkspaceService {
 
   constructor() {
     this.workspaces = this.getInitWorkspacesForCache();
-    void registerMenu();
     this.workspaces$ = new BehaviorSubject<Record<string, IWorkspaceWithMetadata>>(this.getWorkspacesWithMetadata());
+    setTimeout(() => {
+      void registerMenu();
+    }, DELAY_MENU_REGISTER);
   }
 
   private getWorkspacesWithMetadata(): Record<string, IWorkspaceWithMetadata> {

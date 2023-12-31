@@ -27,6 +27,7 @@ import { IpcSafeMenuItem, mainMenuItemProxy } from './contextMenu/rendererMenuIt
 import { InsertMenuAfterSubMenuIndexError } from './error';
 import type { IMenuService, IOnContextMenuInfo } from './interface';
 import { DeferredMenuItemConstructorOptions } from './interface';
+import { loadDefaultMenuTemplate } from './loadDefaultMenuTemplate';
 
 @injectable()
 export class MenuService implements IMenuService {
@@ -69,12 +70,12 @@ export class MenuService implements IMenuService {
   @lazyInject(serviceIdentifier.WorkspaceView)
   private readonly workspaceViewService!: IWorkspaceViewService;
 
-  private _menuTemplate?: DeferredMenuItemConstructorOptions[];
+  #menuTemplate?: DeferredMenuItemConstructorOptions[];
   private get menuTemplate(): DeferredMenuItemConstructorOptions[] {
-    if (this._menuTemplate === undefined) {
-      this.loadDefaultMenuTemplate();
+    if (this.#menuTemplate === undefined) {
+      this.#menuTemplate = loadDefaultMenuTemplate();
     }
-    return this._menuTemplate!;
+    return this.#menuTemplate;
   }
 
   /**
@@ -145,119 +146,6 @@ export class MenuService implements IMenuService {
           submenu: Array.isArray(item.submenu) ? await this.getCurrentMenuItemConstructorOptions(compact(item.submenu)) : item.submenu,
         })),
     );
-  }
-
-  /**
-   * Defer to i18next ready to call this
-   */
-  private loadDefaultMenuTemplate(): void {
-    this._menuTemplate = [
-      {
-        label: () => i18n.t('Menu.TidGi'),
-        id: 'TidGi',
-        submenu: [
-          {
-            label: () => i18n.t('ContextMenu.About'),
-            click: async () => {
-              await this.windowService.open(WindowNames.about);
-            },
-          },
-          { type: 'separator' },
-          {
-            id: 'update',
-            label: () => i18n.t('Updater.CheckUpdate'),
-            click: async () => {
-              await this.updaterService.checkForUpdates();
-            },
-          },
-          {
-            label: () => i18n.t('ContextMenu.Preferences'),
-            accelerator: 'CmdOrCtrl+,',
-            click: async () => {
-              await this.windowService.open(WindowNames.preferences);
-            },
-          },
-          { type: 'separator' },
-          {
-            label: () => i18n.t('Preference.Notifications'),
-            click: async () => {
-              await this.windowService.open(WindowNames.notifications);
-            },
-            accelerator: 'CmdOrCtrl+Shift+N',
-          },
-          { type: 'separator' },
-          { role: 'services', submenu: [] },
-          { type: 'separator' },
-          { role: 'hide' },
-          { role: 'hideOthers' },
-          { role: 'unhide' },
-          { label: () => i18n.t('ContextMenu.Quit') + i18n.t('Menu.TidGi'), role: 'quit' },
-        ],
-      },
-      {
-        label: () => i18n.t('Menu.Edit'),
-        id: 'Edit',
-        role: 'editMenu',
-      },
-      {
-        label: () => i18n.t('Menu.View'),
-        id: 'View',
-      },
-      {
-        label: () => i18n.t('Menu.Language'),
-        id: 'Language',
-      },
-      {
-        label: () => i18n.t('Menu.History'),
-        id: 'History',
-      },
-      {
-        label: () => i18n.t('Menu.Workspaces'),
-        id: 'Workspaces',
-        submenu: [],
-      },
-      {
-        label: () => i18n.t('Menu.Wiki'),
-        id: 'Wiki',
-        submenu: [],
-      },
-      {
-        label: () => i18n.t('Menu.Window'),
-        role: 'windowMenu',
-        id: 'Window',
-      },
-      {
-        label: () => i18n.t('Menu.Help'),
-        role: 'help',
-        id: 'help',
-        submenu: [
-          {
-            label: () => i18n.t('ContextMenu.TidGiSupport'),
-            click: async () => {
-              await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues');
-            },
-          },
-          {
-            label: () => i18n.t('Menu.ReportBugViaGithub'),
-            click: async () => {
-              await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues');
-            },
-          },
-          {
-            label: () => i18n.t('Menu.RequestFeatureViaGithub'),
-            click: async () => {
-              await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/issues/new?template=feature.md&title=feature%3A+');
-            },
-          },
-          {
-            label: () => i18n.t('Menu.LearnMore'),
-            click: async () => {
-              await shell.openExternal('https://github.com/tiddly-gittly/TidGi-desktop/');
-            },
-          },
-        ],
-      },
-    ];
   }
 
   constructor() {
