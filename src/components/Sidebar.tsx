@@ -10,13 +10,11 @@ import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IconButton as IconButtonRaw, Tooltip } from '@mui/material';
 import { usePagesListObservable } from '@services/pages/hooks';
-import { PageType } from '@services/pages/interface';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { useUpdaterObservable } from '@services/updater/hooks';
 import { IUpdaterStatus } from '@services/updater/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useWorkspacesListObservable } from '@services/workspaces/hooks';
-import { useMemo } from 'react';
 import { SortablePageSelectorList } from './PageIconAndSelector';
 
 const sideBarStyle = css`
@@ -87,18 +85,6 @@ export function SideBar(): JSX.Element {
 
   const workspacesList = useWorkspacesListObservable();
   const pagesList = usePagesListObservable();
-  const noActiveWorkspace = workspacesList?.some((workspace) => workspace.active) === false;
-  const noActiveWorkspaceAndPage = noActiveWorkspace && pagesList?.some((page) => page.active) === false;
-  // when no active workspace and no active page, the guide page is active in src/pages/index.tsx 's route. so we make sidebar icon active too.
-  const pagesListWithProperActiveStatus = useMemo(() =>
-    pagesList?.map?.((page) => {
-      if (page.type === PageType.guide) {
-        // set guide active if no active workspace and page
-        return { ...page, active: page.active || noActiveWorkspaceAndPage };
-      }
-      // active workspace has priority to show, so if a page is also active, don't show it as active because it is hidden
-      return { ...page, active: page.active && noActiveWorkspace };
-    }), [pagesList, noActiveWorkspaceAndPage, noActiveWorkspace]);
   const preferences = usePreferenceObservable();
   const updaterMetaData = useUpdaterObservable();
   if (preferences === undefined) return <div>{t('Loading')}</div>;
@@ -118,12 +104,12 @@ export function SideBar(): JSX.Element {
           showSidebarTexts={showSideBarText}
           onClick={() => void window.service.window.open(WindowNames.addWorkspace)}
         />
-        {pagesListWithProperActiveStatus === undefined
+        {pagesList === undefined
           ? <div>{t('Loading')}</div>
           : (
             <SortablePageSelectorList
               showSideBarText={showSideBarText}
-              pagesList={pagesListWithProperActiveStatus}
+              pagesList={pagesList}
               showSideBarIcon={showSideBarIcon}
             />
           )}

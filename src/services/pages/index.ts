@@ -35,8 +35,6 @@ export class Pages implements IPagesService {
   }
 
   private async updatePageSubject(): Promise<void> {
-    // DEBUG: console this.getPagesAsListSync()
-    logger.info(`updatePageSubject this.getPagesAsListSync() ${JSON.stringify(this.getPagesAsListSync())}`);
     this.pages$.next(this.getPagesAsListSync());
   }
 
@@ -78,8 +76,6 @@ export class Pages implements IPagesService {
     if (id !== PageType.wiki) {
       await this.workspaceViewService.clearActiveWorkspaceView();
     }
-    // DEBUG: console oldActivePageID === id
-    console.log(`oldActivePageID === id`, oldActivePageID, id);
     if (oldActivePageID === id) return;
     if (oldActivePageID === undefined) {
       await this.update(id, { active: true });

@@ -42,7 +42,6 @@ export function SortablePageSelectorList({ pagesList, showSideBarText, showSideB
     >
       <SortableContext items={pageIDs} strategy={verticalListSortingStrategy}>
         {pagesList
-          .sort((a, b) => a.order - b.order)
           .map((page, index) => (
             <SortablePageSelectorButton
               key={`item-${page.id}`}
