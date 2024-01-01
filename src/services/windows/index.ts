@@ -17,6 +17,7 @@ import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { isTest } from '@/constants/environment';
+import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { lazyInject } from '@services/container';
 import getViewBounds from '@services/libs/getViewBounds';
@@ -26,7 +27,6 @@ import { handleCreateBasicWindow } from './handleCreateBasicWindow';
 import { IWindowOpenConfig, IWindowService } from './interface';
 import { registerBrowserViewWindowListeners } from './registerBrowserViewWindowListeners';
 import { registerMenu } from './registerMenu';
-import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 
 @injectable()
 export class Window implements IWindowService {
