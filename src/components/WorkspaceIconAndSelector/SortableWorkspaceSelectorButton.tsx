@@ -6,7 +6,6 @@ import { MouseEvent, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
 
-import defaultIcon from '@/images/default-icon.png';
 import { PageType } from '@services/pages/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import { useLocation } from 'wouter';

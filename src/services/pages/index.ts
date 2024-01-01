@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/require-await */
 import settings from 'electron-settings';
 import { injectable } from 'inversify';
-import { debounce, mapValues, pickBy } from 'lodash';
+import { mapValues, pickBy } from 'lodash';
 
 import { lazyInject } from '@services/container';
 import { logger } from '@services/libs/log';
@@ -31,7 +31,6 @@ export class Pages implements IPagesService {
   constructor() {
     this.pages = this.getInitPagesForCache();
     this.pages$ = new BehaviorSubject<IPage[]>(this.getPagesAsListSync());
-    this.updatePageSubject = debounce(this.updatePageSubject.bind(this), 500) as () => Promise<void>;
   }
 
   private async updatePageSubject(): Promise<void> {
@@ -73,11 +72,8 @@ export class Pages implements IPagesService {
     const oldActivePage = this.getActivePageSync();
     const oldActivePageID = oldActivePage?.id;
     logger.info(`setActivePage() closePage: ${oldActivePageID ?? 'undefined'}`);
-    if (id !== PageType.wiki) {
-      await this.workspaceViewService.clearActiveWorkspaceView();
-    }
     if (oldActivePageID === id) return;
-    if (oldActivePageID === undefined) {
+    if (oldActivePageID === undefined || oldActivePageID === PageType.wiki) {
       await this.update(id, { active: true });
     } else {
       if (id === PageType.wiki) {
@@ -86,6 +82,12 @@ export class Pages implements IPagesService {
       } else {
         await this.updatePages({ [id]: { active: true }, [oldActivePageID]: { active: false } });
       }
+    }
+    if (id !== PageType.wiki) {
+      // delay this so the page state can be updated first
+      setTimeout(() => {
+        void this.workspaceViewService.clearActiveWorkspaceView();
+      }, 0);
     }
   }
 
@@ -113,13 +115,11 @@ export class Pages implements IPagesService {
   }
 
   public async set(id: string | PageType, page: IPage, updateSettingFile = true): Promise<void> {
-    logger.info(`set page ${id} with ${JSON.stringify(page)}`);
+    logger.info(`set page ${id} with ${JSON.stringify(page)}`, { updateSettingFile });
     this.pages[id] = page;
     if (updateSettingFile) {
-      await Promise.all([
-        debouncedSetSettingFile(this.pages),
-        this.updatePageSubject(),
-      ]);
+      await this.updatePageSubject();
+      void debouncedSetSettingFile(this.pages);
     }
   }
 
@@ -136,20 +136,16 @@ export class Pages implements IPagesService {
     for (const id in newPages) {
       await this.set(id, newPages[id], false);
     }
-    await Promise.all([
-      debouncedSetSettingFile(this.pages),
-      this.updatePageSubject(),
-    ]);
+    await this.updatePageSubject();
+    void debouncedSetSettingFile(this.pages);
   }
 
   public async updatePages(newPages: Record<string, Partial<IPage>>): Promise<void> {
     for (const id in newPages) {
       await this.update(id, newPages[id], false);
     }
-    await Promise.all([
-      debouncedSetSettingFile(this.pages),
-      this.updatePageSubject(),
-    ]);
+    await this.updatePageSubject();
+    void debouncedSetSettingFile(this.pages);
   }
 
   /**

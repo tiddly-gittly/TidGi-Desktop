@@ -15,4 +15,5 @@ export const debouncedSetSettingFile = debounce(async (pages: Record<string, IPa
     fixSettingFileWhenError(error as Error);
     await settings.set(`pages`, pages as any);
   }
-}, 500);
+  // set to 800 instead of 500 to fix data race with src/services/workspaces/debouncedSetSettingFile.ts, when switch from wiki workspace to page, both will write to same file, and one will overwrite another
+}, 800);
