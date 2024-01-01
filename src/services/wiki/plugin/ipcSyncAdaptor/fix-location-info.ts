@@ -13,7 +13,7 @@ function getInfoTiddlerFields(updateInfoTiddlersCallback: (infos: Array<{ text: 
   // Basics
   if (!$tw.browser || typeof window === 'undefined') return infoTiddlerFields;
   const isInTidGi = typeof document !== 'undefined' && document?.location?.protocol?.startsWith('tidgi');
-  const workspaceID = (window.meta() as WindowMeta[WindowNames.view] | undefined)?.workspaceID;
+  const workspaceID = (window.meta?.() as WindowMeta[WindowNames.view] | undefined)?.workspaceID;
   infoTiddlerFields.push({ title: '$:/info/tidgi', text: mapBoolean(isInTidGi) });
   if (isInTidGi && workspaceID) {
     infoTiddlerFields.push({ title: '$:/info/tidgi/workspaceID', text: workspaceID });
