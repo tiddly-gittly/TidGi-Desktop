@@ -299,7 +299,6 @@ export class View implements IViewService {
     // always use #FFF as default page background
     // https://github.com/atomery/webcatalog/issues/723
     // https://github.com/electron/electron/issues/16212
-    view.setBackgroundColor('#fafafa');
 
     // Handle audio & notification preferences
     if (this.shouldMuteAudio !== undefined) {
