@@ -15,7 +15,7 @@ import { MainChannel } from '@/constants/channels';
 import { isTest } from '@/constants/environment';
 import { container } from '@services/container';
 import { initRendererI18NHandler } from '@services/libs/i18n';
-import { logger } from '@services/libs/log';
+import { destroyLogger, logger } from '@services/libs/log';
 import { buildLanguageMenu } from '@services/menu/buildLanguageMenu';
 
 import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
@@ -179,13 +179,13 @@ app.on(
       wikiService.stopAllWiki(),
       windowService.clearWindowsReference(),
     ]);
+    destroyLogger();
     app.exit(0);
   },
 );
 app.on('quit', () => {
   uninstall?.uninstall();
   logger.info('App quit');
-  logger.close();
 });
 
 if (!isTest) {

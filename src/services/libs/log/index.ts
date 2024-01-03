@@ -47,3 +47,13 @@ const logger = (
     })
 ) as winston.Logger;
 export { logger };
+
+export function destroyLogger(): void {
+  logger.close();
+  logger.removeAllListeners();
+  logger.destroy();
+  logger.write = (chunk: unknown) => {
+    console.log('Message after logger destroyed', chunk);
+    return true;
+  };
+}
