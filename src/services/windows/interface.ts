@@ -19,6 +19,8 @@ export interface IWindowOpenConfig<N extends WindowNames> {
  */
 export interface IWindowService {
   clearStorageData(windowName?: WindowNames): Promise<void>;
+  /** cleanup all window references for GC */
+  clearWindowsReference(): Promise<void>;
   close(windowName: WindowNames): Promise<void>;
   findInPage(text: string, forward?: boolean | undefined, windowName?: WindowNames): Promise<void>;
   /** get window, this should not be called in renderer side */

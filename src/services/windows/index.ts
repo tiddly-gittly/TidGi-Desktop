@@ -19,6 +19,7 @@ import { SETTINGS_FOLDER } from '@/constants/appPaths';
 import { isTest } from '@/constants/environment';
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
+import { isMac } from '@/helpers/system';
 import { lazyInject } from '@services/container';
 import getViewBounds from '@services/libs/getViewBounds';
 import { IThemeService } from '@services/theme/interface';
@@ -107,8 +108,22 @@ export class Window implements IWindowService {
   public async close(windowName: WindowNames): Promise<void> {
     this.get(windowName)?.close();
     if (windowName === WindowNames.menuBar) {
+      // keep the menubar window instance
       this.mainWindowMenuBar?.app?.hide?.();
+    } else {
+      // remove the window instance, let it GC
+      this.windows.delete(windowName);
     }
+  }
+
+  public async clearWindowsReference(): Promise<void> {
+    // https://github.com/atom/electron/issues/444#issuecomment-76492576
+    if (isMac && this.get(WindowNames.main) !== undefined) {
+      // App force quit on MacOS, ask window not preventDefault
+      await this.updateWindowMeta(WindowNames.main, { forceClose: true });
+    }
+    this.windows.clear();
+    this.mainWindowMenuBar?.app?.quit?.();
   }
 
   public async isMenubarOpen(): Promise<boolean> {

@@ -335,7 +335,8 @@ export class View implements IViewService {
     const urlToLoad = uri || (rememberLastPageVisited ? workspace.lastUrl : workspace.homeUrl) || workspace.homeUrl || getDefaultTidGiUrl(workspace.id);
     try {
       logger.debug(
-        `loadUrlForView(): view.webContents: ${String(view.webContents)} urlToLoad: ${urlToLoad} for workspace ${workspace.name}`,
+        // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+        `loadUrlForView(): view.webContents is ${view.webContents ? 'define' : 'undefined'} urlToLoad: ${urlToLoad} for workspace ${workspace.name}`,
         { stack: new Error('stack').stack?.replace('Error:', '') },
       );
       // if workspace failed to load, means nodejs server may have plugin error or something. Stop retrying, and show the error message in src/pages/Main/ErrorMessage.tsx

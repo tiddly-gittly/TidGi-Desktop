@@ -175,15 +175,10 @@ app.on(
   // eslint-disable-next-line @typescript-eslint/no-misused-promises
   async (): Promise<void> => {
     logger.info('App before-quit');
-    // https://github.com/atom/electron/issues/444#issuecomment-76492576
-    if (isMac) {
-      const mainWindow = windowService.get(WindowNames.main);
-      if (mainWindow !== undefined) {
-        logger.info('App force quit on MacOS, ask window not preventDefault');
-        await windowService.updateWindowMeta(WindowNames.main, { forceClose: true });
-      }
-    }
-    await wikiService.stopAllWiki();
+    await Promise.all([
+      wikiService.stopAllWiki(),
+      windowService.clearWindowsReference(),
+    ]);
     app.exit(0);
   },
 );
