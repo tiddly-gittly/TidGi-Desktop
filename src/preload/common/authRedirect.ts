@@ -22,7 +22,6 @@ const log = (message: string): void => {
 };
 async function refresh(): Promise<void> {
   // get path from src/constants/paths.ts
-  log(`constantsFetched: ${String(constantsFetched)}`);
   if (!constantsFetched) {
     await Promise.all([
       context.get('CHROME_ERROR_PATH').then((pathName) => {
@@ -88,6 +87,7 @@ async function refresh(): Promise<void> {
       await windowService.loadURL(windowName, MAIN_WINDOW_WEBPACK_ENTRY);
     }
   } else if (window.location.href === CHROME_ERROR_PATH) {
+    log(`window.location.href === CHROME_ERROR_PATH`);
     await windowService.loadURL(windowName, MAIN_WINDOW_WEBPACK_ENTRY);
   } else {
     setTimeout(() => void refresh(), CHECK_LOADED_INTERVAL);

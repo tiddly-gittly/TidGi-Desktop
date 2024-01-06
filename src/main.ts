@@ -180,6 +180,7 @@ app.on(
     await Promise.all([
       wikiService.stopAllWiki(),
       windowService.clearWindowsReference(),
+      databaseService.immediatelyStoreSettingsToFile(),
     ]);
     destroyLogger();
     app.exit(0);
