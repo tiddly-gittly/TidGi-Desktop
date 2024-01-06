@@ -31,20 +31,25 @@ export function useAuth(storageService: SupportedStorageServices): [() => Promis
 
 export function useGetGithubUserInfoOnLoad(): void {
   useEffect(() => {
-    void window.service.auth.get(`${SupportedStorageServices.github}-token`).then(async (githubToken) => {
+    void Promise.all([window.service.auth.get('userName'), window.service.auth.getUserInfos()]).then(async ([userName, userInfo]) => {
       try {
-        if (githubToken) {
+        const token = userInfo[`${SupportedStorageServices.github}-token`];
+        if (token) {
           // get user name and email using github api
           const response = await fetch('https://api.github.com/user', {
             method: 'GET',
             headers: {
-              Authorization: `Bearer ${githubToken}`,
+              Authorization: `Bearer ${token}`,
             },
           });
-          const userInfo = await (response.json() as Promise<{ email: string; login: string; name: string }>);
-          await window.service.auth.set(`${SupportedStorageServices.github}-userName`, userInfo.login);
-          await window.service.auth.set('userName', userInfo.name);
-          await window.service.auth.set(`${SupportedStorageServices.github}-email`, userInfo.email);
+          const githubUserInfo = await (response.json() as Promise<{ email: string; login: string; name: string }>);
+          userInfo[`${SupportedStorageServices.github}-userName`] = githubUserInfo.login;
+          userInfo[`${SupportedStorageServices.github}-email`] = githubUserInfo.email;
+          // sometimes user already pick a Chinese username that is different from the one on Github
+          if (userName === undefined) {
+            userInfo.userName = githubUserInfo.name;
+          }
+          window.service.auth.setUserInfos(userInfo);
         }
       } catch (error) {
         console.error(error);

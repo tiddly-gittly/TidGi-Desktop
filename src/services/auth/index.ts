@@ -8,6 +8,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import { IWorkspace } from '@services/workspaces/interface';
 import { injectable } from 'inversify';
+import { truncate } from 'lodash';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject } from 'rxjs';
 import { IAuthenticationService, IUserInfos, ServiceBranchTypes, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
@@ -65,11 +66,11 @@ export class Authentication implements IAuthenticationService {
     return { ...info, 'github-branch': info['github-branch'] ?? 'main' };
   }
 
-  /**
-   * Batch update all UserInfos
-   */
-  private setUserInfos(newUserInfos: IUserInfos): void {
+  public setUserInfos(newUserInfos: IUserInfos): void {
+    logger.debug('Storing authInfos', { function: 'setUserInfos' });
+    this.cachedUserInfo = newUserInfos;
     this.databaseService.setSetting('userInfos', newUserInfos);
+    this.updateUserInfoSubject();
   }
 
   public getUserInfos(): IUserInfos {
@@ -88,16 +89,15 @@ export class Authentication implements IAuthenticationService {
   }
 
   public async set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): Promise<void> {
+    logger.debug('Setting auth', { key, value: `${truncate(value, { length: 6 })}...`, function: 'Authentication.set' });
     let userInfo = this.getUserInfos();
     userInfo[key] = value;
     userInfo = { ...userInfo, ...this.sanitizeUserInfo(userInfo) };
-    this.updateUserInfoSubject();
     this.setUserInfos(userInfo);
   }
 
   public async reset(): Promise<void> {
     this.setUserInfos(defaultUserInfos);
-    this.updateUserInfoSubject();
   }
 
   public async generateOneTimeAdminAuthTokenForWorkspace(workspaceID: string): Promise<string> {

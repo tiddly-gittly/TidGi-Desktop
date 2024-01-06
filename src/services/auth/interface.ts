@@ -59,6 +59,10 @@ export interface IAuthenticationService {
   reset(): Promise<void>;
   set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): Promise<void>;
   /**
+   * Batch update all UserInfos
+   */
+  setUserInfos(newUserInfos: IUserInfos): void;
+  /**
    * Manually refresh the observable's content, that will be received by react component.
    */
   updateUserInfoSubject(): void;
@@ -75,6 +79,7 @@ export const AuthenticationServiceIPCDescriptor = {
     getUserName: ProxyPropertyType.Function,
     reset: ProxyPropertyType.Function,
     set: ProxyPropertyType.Function,
+    setUserInfos: ProxyPropertyType.Function,
     updateUserInfoSubject: ProxyPropertyType.Value$,
     userInfo$: ProxyPropertyType.Value$,
   },
