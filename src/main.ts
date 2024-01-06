@@ -28,6 +28,7 @@ import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IUpdaterService } from '@services/updater/interface';
 import { IWikiService } from '@services/wiki/interface';
 import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
+import EventEmitter from 'events';
 import { isLinux, isMac } from './helpers/system';
 import type { IPreferenceService } from './services/preferences/interface';
 import type { IWindowService } from './services/windows/interface';
@@ -41,6 +42,8 @@ if (process.env.DEBUG_MAIN === 'true') {
   debugger;
 }
 
+// fix (node:9024) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 destroyed listeners added to [WebContents]. Use emitter.setMaxListeners() to increase limit (node:9024) MaxListenersExceededWarning: Possible EventEmitter memory leak detected. 11 devtools-reload-page listeners added to [WebContents]. Use emitter.setMaxListeners() to increase limit
+EventEmitter.defaultMaxListeners = 150;
 app.commandLine.appendSwitch('--disable-web-security');
 protocol.registerSchemesAsPrivileged([
   { scheme: 'http', privileges: { standard: true, bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
