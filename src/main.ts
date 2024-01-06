@@ -4,7 +4,7 @@ import { uninstall } from './helpers/installV8Cache';
 import 'source-map-support/register';
 import 'reflect-metadata';
 import './helpers/singleInstance';
-import './helpers/configSetting';
+import './services/database/configSetting';
 import { app, ipcMain, powerMonitor, protocol } from 'electron';
 import settings from 'electron-settings';
 import unhandled from 'electron-unhandled';
@@ -23,6 +23,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 import { IDatabaseService } from '@services/database/interface';
+import { initializeObservables } from '@services/libs/initializeObservables';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IUpdaterService } from '@services/updater/interface';
 import { IWikiService } from '@services/wiki/interface';
@@ -99,6 +100,7 @@ const commonInit = async (): Promise<void> => {
     }),
     databaseService.initializeForApp(),
   ]);
+  initializeObservables();
   // perform wiki startup and git sync for each workspace
   await workspaceViewService.initializeAllWorkspaceView();
 

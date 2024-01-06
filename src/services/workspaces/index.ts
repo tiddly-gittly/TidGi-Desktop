@@ -3,7 +3,6 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/no-null */
 import { app } from 'electron';
-import settings from 'electron-settings';
 import fsExtra from 'fs-extra';
 import { injectable } from 'inversify';
 import Jimp from 'jimp';
@@ -15,9 +14,9 @@ import { map } from 'rxjs/operators';
 
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
-import { fixSettingFileWhenError } from '@/helpers/configSetting';
 import { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
+import { IDatabaseService } from '@services/database/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
@@ -26,12 +25,9 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
-import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
-import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
-import { debouncedSetSettingFile } from './debouncedSetSettingFile';
-import type { INewWorkspaceConfig, IWorkspace, IWorkspaceMetaData, IWorkspaceService, IWorkspaceWithMetadata } from './interface';
+import type { INewWorkspaceConfig, IWorkspace, IWorkspaceMetaData, IWorkspaceService, IWorkspacesWithMetadata, IWorkspaceWithMetadata } from './interface';
 import { registerMenu } from './registerMenu';
 import { workspaceSorter } from './utils';
 
@@ -40,23 +36,20 @@ export class Workspace implements IWorkspaceService {
   /**
    * Record from workspace id to workspace settings
    */
-  private workspaces: Record<string, IWorkspace> = {};
-  public workspaces$: BehaviorSubject<Record<string, IWorkspaceWithMetadata>>;
+  private workspaces: Record<string, IWorkspace> | undefined;
+  public workspaces$ = new BehaviorSubject<IWorkspacesWithMetadata | undefined>(undefined);
 
   @lazyInject(serviceIdentifier.Wiki)
   private readonly wikiService!: IWikiService;
 
-  @lazyInject(serviceIdentifier.Window)
-  private readonly windowService!: IWindowService;
+  @lazyInject(serviceIdentifier.Database)
+  private readonly databaseService!: IDatabaseService;
 
   @lazyInject(serviceIdentifier.View)
   private readonly viewService!: IViewService;
 
   @lazyInject(serviceIdentifier.WorkspaceView)
   private readonly workspaceViewService!: IWorkspaceViewService;
-
-  @lazyInject(serviceIdentifier.WikiGitWorkspace)
-  private readonly wikiGitWorkspaceService!: IWikiGitWorkspaceService;
 
   @lazyInject(serviceIdentifier.MenuService)
   private readonly menuService!: IMenuService;
@@ -68,18 +61,16 @@ export class Workspace implements IWorkspaceService {
   private readonly pagesService!: IPagesService;
 
   constructor() {
-    this.workspaces = this.getInitWorkspacesForCache();
-    this.workspaces$ = new BehaviorSubject<Record<string, IWorkspaceWithMetadata>>(this.getWorkspacesWithMetadata());
     setTimeout(() => {
       void registerMenu();
     }, DELAY_MENU_REGISTER);
   }
 
-  private getWorkspacesWithMetadata(): Record<string, IWorkspaceWithMetadata> {
+  public getWorkspacesWithMetadata(): IWorkspacesWithMetadata {
     return mapValues(this.getWorkspacesSync(), (workspace: IWorkspace, id): IWorkspaceWithMetadata => ({ ...workspace, metadata: this.getMetaDataSync(id) }));
   }
 
-  private async updateWorkspaceSubject(): Promise<void> {
+  public updateWorkspaceSubject(): void {
     this.workspaces$.next(this.getWorkspacesWithMetadata());
   }
 
@@ -118,23 +109,27 @@ export class Workspace implements IWorkspaceService {
   /**
    * load workspaces in sync, and ensure it is an Object
    */
-  getInitWorkspacesForCache = (): Record<string, IWorkspace> => {
-    const workspacesFromDisk = settings.getSync(`workspaces`) ?? {};
+  private getInitWorkspacesForCache(): Record<string, IWorkspace> {
+    const workspacesFromDisk = this.databaseService.getSetting(`workspaces`) ?? {};
     return typeof workspacesFromDisk === 'object' && !Array.isArray(workspacesFromDisk)
       ? mapValues(pickBy(workspacesFromDisk, (value) => value !== null) as unknown as Record<string, IWorkspace>, (workspace) => this.sanitizeWorkspace(workspace))
       : {};
-  };
+  }
 
   public async getWorkspaces(): Promise<Record<string, IWorkspace>> {
     return this.getWorkspacesSync();
   }
 
   private getWorkspacesSync(): Record<string, IWorkspace> {
+    // store in memory to boost performance
+    if (this.workspaces === undefined) {
+      this.workspaces = this.getInitWorkspacesForCache();
+    }
     return this.workspaces;
   }
 
   public async countWorkspaces(): Promise<number> {
-    return Object.keys(this.workspaces).length;
+    return Object.keys(this.getWorkspacesSync()).length;
   }
 
   /**
@@ -142,7 +137,7 @@ export class Workspace implements IWorkspaceService {
    * Async so proxy type is async
    */
   public async getWorkspacesAsList(): Promise<IWorkspace[]> {
-    return Object.values(this.workspaces).sort(workspaceSorter);
+    return Object.values(this.getWorkspacesSync()).sort(workspaceSorter);
   }
 
   /**
@@ -150,7 +145,7 @@ export class Workspace implements IWorkspaceService {
    * Sync for internal use
    */
   private getWorkspacesAsListSync(): IWorkspace[] {
-    return Object.values(this.workspaces).sort(workspaceSorter);
+    return Object.values(this.getWorkspacesSync()).sort(workspaceSorter);
   }
 
   public async getSubWorkspacesAsList(workspaceID: string): Promise<IWorkspace[]> {
@@ -172,29 +167,25 @@ export class Workspace implements IWorkspaceService {
   }
 
   private getSync(id: string): IWorkspace {
-    return this.workspaces[id];
+    return this.getWorkspacesSync()[id];
   }
 
   public get$(id: string): Observable<IWorkspace | undefined> {
-    return this.workspaces$.pipe(map((workspaces) => workspaces[id]));
+    return this.workspaces$.pipe(map((workspaces) => workspaces?.[id]));
   }
 
   public async set(id: string, workspace: IWorkspace, immediate?: boolean): Promise<void> {
-    this.workspaces[id] = this.sanitizeWorkspace(workspace);
+    const workspaces = this.getWorkspacesSync();
+    workspaces[id] = this.sanitizeWorkspace(workspace);
     await this.reactBeforeWorkspaceChanged(workspace);
+    this.databaseService.setSetting('workspaces', workspaces);
     if (immediate === true) {
-      try {
-        await settings.set(`workspaces.${id}`, { ...workspace });
-      } catch (error) {
-        logger.error('Setting file format bad in public async set, will try again', { workspace });
-        fixSettingFileWhenError(error as Error);
-        await settings.set(`workspaces.${id}`, { ...workspace });
-      }
-    } else {
-      void debouncedSetSettingFile(this.workspaces);
+      await this.databaseService.immediatelyStoreSettingsToFile();
     }
-    await this.updateWorkspaceSubject();
-    await this.updateWorkspaceMenuItems();
+    // update subject so ui can react to it
+    this.updateWorkspaceSubject();
+    // menu is mostly invisible, so we don't need to update it immediately
+    void this.updateWorkspaceMenuItems();
   }
 
   public async update(id: string, workspaceSetting: Partial<IWorkspace>, immediate?: boolean): Promise<void> {
@@ -264,10 +255,11 @@ export class Workspace implements IWorkspaceService {
    * @param newWorkspaceConfig new workspace settings
    */
   private async reactBeforeWorkspaceChanged(newWorkspaceConfig: IWorkspace): Promise<void> {
+    const existedWorkspace = this.getSync(newWorkspaceConfig.id);
     const { id, tagName } = newWorkspaceConfig;
     // when update tagName of subWiki
-    if (this.workspaces[id]?.isSubWiki && typeof tagName === 'string' && tagName.length > 0 && this.workspaces[id].tagName !== tagName) {
-      const { mainWikiToLink } = this.workspaces[id];
+    if (existedWorkspace?.isSubWiki && typeof tagName === 'string' && tagName.length > 0 && existedWorkspace.tagName !== tagName) {
+      const { mainWikiToLink } = existedWorkspace;
       if (typeof mainWikiToLink !== 'string') {
         throw new TypeError(
           `mainWikiToLink is null in reactBeforeWorkspaceChanged when try to updateSubWikiPluginContent, workspacesID: ${id}\n${
@@ -279,7 +271,7 @@ export class Workspace implements IWorkspaceService {
       }
       await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, newWorkspaceConfig, {
         ...newWorkspaceConfig,
-        tagName: this.workspaces[id].tagName,
+        tagName: existedWorkspace.tagName,
       });
       await this.wikiService.wikiStartup(newWorkspaceConfig);
     }
@@ -404,17 +396,16 @@ export class Workspace implements IWorkspaceService {
   }
 
   public async remove(id: string): Promise<void> {
-    if (id in this.workspaces) {
+    const workspaces = this.getWorkspacesSync();
+    if (id in workspaces) {
       // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-      delete this.workspaces[id];
-      await settings.unset(`workspaces.${id}`);
+      delete workspaces[id];
+      this.databaseService.setSetting('workspaces', workspaces);
     } else {
       throw new Error(`Try to remote workspace, but id ${id} is not existed`);
     }
-    // call wiki service
-    await this.wikiService.stopWiki(id);
-    await this.updateWorkspaceMenuItems();
-    await this.updateWorkspaceSubject();
+    this.updateWorkspaceSubject();
+    void this.updateWorkspaceMenuItems();
   }
 
   public async create(newWorkspaceConfig: INewWorkspaceConfig): Promise<IWorkspace> {
@@ -473,7 +464,7 @@ export class Workspace implements IWorkspaceService {
       ...this.metaData[id],
       ...options,
     };
-    await this.updateWorkspaceSubject();
+    this.updateWorkspaceSubject();
   };
 
   public async workspaceDidFailLoad(id: string): Promise<boolean> {

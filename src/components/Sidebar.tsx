@@ -87,6 +87,8 @@ export function SideBar(): JSX.Element {
   const pagesList = usePagesListObservable();
   const preferences = usePreferenceObservable();
   const updaterMetaData = useUpdaterObservable();
+  // DEBUG: console preferences
+  console.log(`preferences`, preferences);
   if (preferences === undefined) return <div>{t('Loading')}</div>;
 
   const { showSideBarText, showSideBarIcon } = preferences;

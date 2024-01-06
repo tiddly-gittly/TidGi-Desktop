@@ -121,7 +121,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
     }
   };
 
-  public removeWorkspace = async (workspaceID: string): Promise<void> => {
+  public async removeWorkspace(workspaceID: string): Promise<void> {
     const mainWindow = this.windowService.get(WindowNames.main);
     if (mainWindow !== undefined) {
       const { response } = await dialog.showMessageBox(mainWindow, {
@@ -156,6 +156,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           await this.wikiService.removeWiki(wikiFolderLocation);
         }
         await this.workspaceViewService.removeWorkspaceView(workspaceID);
+        await this.workspaceService.remove(workspaceID);
         // switch to first workspace
         const firstWorkspace = await this.workspaceService.getFirstWorkspace();
         if (firstWorkspace !== undefined) {
@@ -165,5 +166,5 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         logger.error((error as Error).message, error);
       }
     }
-  };
+  }
 }

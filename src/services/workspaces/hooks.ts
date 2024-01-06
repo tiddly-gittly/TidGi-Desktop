@@ -1,7 +1,7 @@
 import useObservable from 'beautiful-react-hooks/useObservable';
 import { useMemo, useState } from 'react';
 import { map } from 'rxjs/operators';
-import { IWorkspace, IWorkspaceWithMetadata } from './interface';
+import { IWorkspace, IWorkspacesWithMetadata, IWorkspaceWithMetadata } from './interface';
 import { workspaceSorter } from './utils';
 
 export function useWorkspacesListObservable(): IWorkspaceWithMetadata[] | undefined {
@@ -11,7 +11,7 @@ export function useWorkspacesListObservable(): IWorkspaceWithMetadata[] | undefi
   const workspacesList$ = useMemo(
     () =>
       window.observables.workspace.workspaces$.pipe(
-        map<Record<string, IWorkspaceWithMetadata>, IWorkspaceWithMetadata[]>((workspaces) => Object.values(workspaces).sort(workspaceSorter)),
+        map<IWorkspacesWithMetadata | undefined, IWorkspaceWithMetadata[]>((workspaces) => Object.values(workspaces ?? {}).sort(workspaceSorter)),
       ),
     [],
   );

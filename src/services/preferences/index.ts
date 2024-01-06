@@ -1,26 +1,18 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { dialog, nativeTheme } from 'electron';
-import settings from 'electron-settings';
 import { injectable } from 'inversify';
-import { debounce } from 'lodash';
 import { BehaviorSubject } from 'rxjs';
 
 import { lazyInject } from '@services/container';
+import { IDatabaseService } from '@services/database/interface';
 import { i18n } from '@services/libs/i18n';
 import { requestChangeLanguage } from '@services/libs/i18n/requestChangeLanguage';
 import type { INotificationService } from '@services/notifications/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWikiService } from '@services/wiki/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { IWorkspaceService } from '@services/workspaces/interface';
 import { defaultPreferences } from './defaultPreferences';
 import { IPreferences, IPreferenceService } from './interface';
-
-// eslint-disable-next-line @typescript-eslint/no-unsafe-argument
-const debouncedSetPreferenceFile = debounce(async (newPreferences: IPreferences) => {
-  await settings.set(`preferences`, { ...newPreferences } as any);
-}, 500);
 
 @injectable()
 export class Preference implements IPreferenceService {
@@ -30,22 +22,14 @@ export class Preference implements IPreferenceService {
   @lazyInject(serviceIdentifier.NotificationService)
   private readonly notificationService!: INotificationService;
 
-  @lazyInject(serviceIdentifier.Wiki)
-  private readonly wikiService!: IWikiService;
+  @lazyInject(serviceIdentifier.Database)
+  private readonly databaseService!: IDatabaseService;
 
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
+  private cachedPreferences: IPreferences | undefined;
+  public preference$ = new BehaviorSubject<IPreferences | undefined>(undefined);
 
-  private cachedPreferences: IPreferences;
-  public preference$: BehaviorSubject<IPreferences>;
-
-  constructor() {
-    this.cachedPreferences = this.getInitPreferencesForCache();
-    this.preference$ = new BehaviorSubject<IPreferences>(this.cachedPreferences);
-  }
-
-  private updatePreferenceSubject(): void {
-    this.preference$.next(this.cachedPreferences);
+  public updatePreferenceSubject(): void {
+    this.preference$.next(this.getPreferences());
   }
 
   public async resetWithConfirm(): Promise<void> {
@@ -72,7 +56,7 @@ export class Preference implements IPreferenceService {
    * load preferences in sync, and ensure it is an Object
    */
   private readonly getInitPreferencesForCache = (): IPreferences => {
-    let preferencesFromDisk = settings.getSync(`preferences`) ?? {};
+    let preferencesFromDisk = this.databaseService.getSetting(`preferences`) ?? {};
     preferencesFromDisk = typeof preferencesFromDisk === 'object' && !Array.isArray(preferencesFromDisk) ? preferencesFromDisk : {};
     return { ...defaultPreferences, ...this.sanitizePreference(preferencesFromDisk) };
   };
@@ -95,8 +79,9 @@ export class Preference implements IPreferenceService {
   }
 
   public async set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void> {
-    this.cachedPreferences[key] = value;
-    await this.setPreferences({ ...this.cachedPreferences, ...this.sanitizePreference(this.cachedPreferences) });
+    const preferences = this.getPreferences();
+    preferences[key] = value;
+    await this.setPreferences({ ...preferences, ...this.sanitizePreference(preferences) });
     await this.reactWhenPreferencesChanged(key, value);
   }
 
@@ -127,26 +112,23 @@ export class Preference implements IPreferenceService {
   private async setPreferences(newPreferences: IPreferences): Promise<void> {
     this.cachedPreferences = newPreferences;
     // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unsafe-argument
-    await debouncedSetPreferenceFile(newPreferences);
+    this.databaseService.setSetting('preferences', newPreferences);
     this.updatePreferenceSubject();
   }
 
-  public getPreferences = async (): Promise<IPreferences> => {
+  public getPreferences(): IPreferences {
     // store in memory to boost performance
     if (this.cachedPreferences === undefined) {
       return this.getInitPreferencesForCache();
     }
     return this.cachedPreferences;
-  };
+  }
 
   public async get<K extends keyof IPreferences>(key: K): Promise<IPreferences[K]> {
-    return this.cachedPreferences[key];
+    return this.getPreferences()[key];
   }
 
   public async reset(): Promise<void> {
-    await settings.unset();
-    const preferences = await this.getPreferences();
-    this.cachedPreferences = preferences;
-    await this.setPreferences(preferences);
+    await this.setPreferences(defaultPreferences);
   }
 }

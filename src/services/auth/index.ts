@@ -1,15 +1,15 @@
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/no-null */
+import { lazyInject } from '@services/container';
+import { IDatabaseService } from '@services/database/interface';
 import { IGitUserInfos } from '@services/git/interface';
 import { logger } from '@services/libs/log';
+import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import { IWorkspace } from '@services/workspaces/interface';
-import settings from 'electron-settings';
 import { injectable } from 'inversify';
-import { debounce } from 'lodash';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject } from 'rxjs';
-import { debouncedSetSettingFile } from './debouncedSetSettingFile';
 import { IAuthenticationService, IUserInfos, ServiceBranchTypes, ServiceEmailTypes, ServiceTokenTypes, ServiceUserNameTypes } from './interface';
 
 const defaultUserInfos = {
@@ -18,17 +18,14 @@ const defaultUserInfos = {
 
 @injectable()
 export class Authentication implements IAuthenticationService {
-  private cachedUserInfo: IUserInfos;
-  public userInfo$: BehaviorSubject<IUserInfos>;
+  private cachedUserInfo: IUserInfos | undefined;
+  public userInfo$ = new BehaviorSubject<IUserInfos | undefined>(undefined);
 
-  constructor() {
-    this.cachedUserInfo = this.getInitUserInfoForCache();
-    this.userInfo$ = new BehaviorSubject<IUserInfos>(this.cachedUserInfo);
-    this.setUserInfos = debounce(this.setUserInfos.bind(this), 10) as (newUserInfos: IUserInfos) => Promise<void>;
-  }
+  @lazyInject(serviceIdentifier.Database)
+  private readonly databaseService!: IDatabaseService;
 
-  private updateUserInfoSubject(): void {
-    this.userInfo$.next(this.cachedUserInfo);
+  public updateUserInfoSubject(): void {
+    this.userInfo$.next(this.getUserInfos());
   }
 
   public async getStorageServiceUserInfo(serviceName: SupportedStorageServices): Promise<IGitUserInfos | undefined> {
@@ -58,11 +55,11 @@ export class Authentication implements IAuthenticationService {
   /**
    * load UserInfos in sync, and ensure it is an Object
    */
-  private readonly getInitUserInfoForCache = (): IUserInfos => {
-    let userInfosFromDisk = settings.getSync(`userInfos`) ?? {};
-    userInfosFromDisk = typeof userInfosFromDisk === 'object' && !Array.isArray(userInfosFromDisk) ? userInfosFromDisk : {};
+  private getInitUserInfoForCache(): IUserInfos {
+    let userInfosFromDisk: Partial<IUserInfos> = this.databaseService.getSetting('userInfos') ?? {};
+    userInfosFromDisk = typeof userInfosFromDisk === 'object' && !Array.isArray(userInfosFromDisk) ? userInfosFromDisk : ({} satisfies Partial<IUserInfos>);
     return { ...defaultUserInfos, ...this.sanitizeUserInfo(userInfosFromDisk) };
-  };
+  }
 
   private sanitizeUserInfo(info: Partial<IUserInfos>): Partial<IUserInfos> {
     return { ...info, 'github-branch': info['github-branch'] ?? 'main' };
@@ -71,38 +68,35 @@ export class Authentication implements IAuthenticationService {
   /**
    * Batch update all UserInfos
    */
-  private async setUserInfos(newUserInfos: IUserInfos): Promise<void> {
-    await debouncedSetSettingFile(newUserInfos);
+  private setUserInfos(newUserInfos: IUserInfos): void {
+    this.databaseService.setSetting('userInfos', newUserInfos);
   }
 
-  /**
-   * get UserInfos, may return cached version
-   */
-  public getUserInfos = async (): Promise<IUserInfos> => {
+  public getUserInfos(): IUserInfos {
     // store in memory to boost performance
     if (this.cachedUserInfo === undefined) {
-      return this.getInitUserInfoForCache();
+      this.cachedUserInfo = this.getInitUserInfoForCache();
     }
     return this.cachedUserInfo;
-  };
+  }
 
   public async get<K extends keyof IUserInfos>(key: K): Promise<IUserInfos[K] | undefined> {
-    if (this.cachedUserInfo[key] !== null && this.cachedUserInfo[key] !== undefined) {
-      return this.cachedUserInfo[key];
+    const userInfo = this.getUserInfos();
+    if (userInfo[key] !== null && userInfo[key] !== undefined) {
+      return userInfo[key];
     }
   }
 
   public async set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): Promise<void> {
-    this.cachedUserInfo[key] = value;
-    this.cachedUserInfo = { ...this.cachedUserInfo, ...this.sanitizeUserInfo(this.cachedUserInfo) };
+    let userInfo = this.getUserInfos();
+    userInfo[key] = value;
+    userInfo = { ...userInfo, ...this.sanitizeUserInfo(userInfo) };
     this.updateUserInfoSubject();
-    void this.setUserInfos(this.cachedUserInfo);
+    this.setUserInfos(userInfo);
   }
 
   public async reset(): Promise<void> {
-    await settings.unset();
-    this.cachedUserInfo = this.getInitUserInfoForCache();
-    await this.setUserInfos(this.cachedUserInfo);
+    this.setUserInfos(defaultUserInfos);
     this.updateUserInfoSubject();
   }
 

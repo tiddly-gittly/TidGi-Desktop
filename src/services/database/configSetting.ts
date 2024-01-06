@@ -3,7 +3,7 @@ import { logger } from '@services/libs/log';
 import { parse as bestEffortJsonParser } from 'best-effort-json-parser';
 import settings from 'electron-settings';
 import fs from 'fs-extra';
-import { isWin } from './system';
+import { isWin } from '../../helpers/system';
 
 export function fixSettingFileWhenError(jsonError: Error): void {
   logger.error('Setting file format bad: ' + jsonError.message);
@@ -25,13 +25,3 @@ settings.configure({
   dir: SETTINGS_FOLDER,
   atomicSave: !isWin,
 });
-// Fix sometimes JSON is malformed https://github.com/nathanbuchar/electron-settings/issues/160
-if (fs.existsSync(settings.file())) {
-  try {
-    logger.info('Checking Setting file format.');
-    fs.readJsonSync(settings.file());
-    logger.info('Setting file format good.');
-  } catch (jsonError) {
-    fixSettingFileWhenError(jsonError as Error);
-  }
-}

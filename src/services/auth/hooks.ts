@@ -6,7 +6,7 @@ import { IUserInfos } from './interface';
 
 export function useUserInfoObservable(): IUserInfos | undefined {
   const [userInfo, userInfoSetter] = useState<IUserInfos | undefined>();
-  useObservable(window.observables.auth.userInfo$, userInfoSetter as any);
+  useObservable(window.observables.auth.userInfo$, userInfoSetter);
   return userInfo;
 }
 

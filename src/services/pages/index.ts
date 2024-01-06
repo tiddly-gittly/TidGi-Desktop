@@ -1,15 +1,13 @@
 /* eslint-disable @typescript-eslint/require-await */
-import settings from 'electron-settings';
 import { injectable } from 'inversify';
 import { mapValues, pickBy } from 'lodash';
 
 import { lazyInject } from '@services/container';
+import { IDatabaseService } from '@services/database/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
-import { IWorkspaceService } from '@services/workspaces/interface';
 import { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { BehaviorSubject } from 'rxjs';
-import { debouncedSetSettingFile } from './debouncedSetSettingFile';
 import { defaultBuildInPages } from './defaultBuildInPages';
 import { IPage, IPagesService, PageType } from './interface';
 
@@ -18,22 +16,17 @@ export class Pages implements IPagesService {
   /**
    * Record from page id/PageType to page settings. For build-in pages, id is the type.
    */
-  private readonly pages: Record<string | PageType, IPage> = {};
+  private pages: Record<string | PageType, IPage> | undefined;
 
-  public pages$: BehaviorSubject<IPage[]>;
+  public pages$ = new BehaviorSubject<IPage[] | undefined>(undefined);
 
   @lazyInject(serviceIdentifier.WorkspaceView)
   private readonly workspaceViewService!: IWorkspaceViewService;
 
-  @lazyInject(serviceIdentifier.Workspace)
-  private readonly workspaceService!: IWorkspaceService;
+  @lazyInject(serviceIdentifier.Database)
+  private readonly databaseService!: IDatabaseService;
 
-  constructor() {
-    this.pages = this.getInitPagesForCache();
-    this.pages$ = new BehaviorSubject<IPage[]>(this.getPagesAsListSync());
-  }
-
-  private async updatePageSubject(): Promise<void> {
+  public updatePageSubject(): void {
     this.pages$.next(this.getPagesAsListSync());
   }
 
@@ -41,7 +34,7 @@ export class Pages implements IPagesService {
    * load pages in sync, and ensure it is an Object
    */
   private getInitPagesForCache(): Record<string | PageType, IPage> {
-    const pagesFromDisk = settings.getSync(`pages`) ?? {};
+    const pagesFromDisk = this.databaseService.getSetting('pages');
     const loadedPages = typeof pagesFromDisk === 'object' && !Array.isArray(pagesFromDisk)
       ? pickBy(pagesFromDisk, (value) => value !== null) as unknown as Record<string | PageType, IPage>
       : {};
@@ -111,15 +104,16 @@ export class Pages implements IPagesService {
   }
 
   public getSync(id: string | PageType): IPage {
-    return this.pages[id];
+    return this.getPages()[id];
   }
 
   public async set(id: string | PageType, page: IPage, updateSettingFile = true): Promise<void> {
     logger.info(`set page ${id} with ${JSON.stringify(page)}`, { updateSettingFile });
-    this.pages[id] = page;
+    const pages = this.getPages();
+    pages[id] = page;
     if (updateSettingFile) {
-      await this.updatePageSubject();
-      void debouncedSetSettingFile(this.pages);
+      this.updatePageSubject();
+      this.databaseService.setSetting('pages', pages);
     }
   }
 
@@ -136,16 +130,16 @@ export class Pages implements IPagesService {
     for (const id in newPages) {
       await this.set(id, newPages[id], false);
     }
-    await this.updatePageSubject();
-    void debouncedSetSettingFile(this.pages);
+    this.updatePageSubject();
+    this.databaseService.setSetting('pages', this.getPages());
   }
 
   public async updatePages(newPages: Record<string, Partial<IPage>>): Promise<void> {
     for (const id in newPages) {
       await this.update(id, newPages[id], false);
     }
-    await this.updatePageSubject();
-    void debouncedSetSettingFile(this.pages);
+    this.updatePageSubject();
+    this.databaseService.setSetting('pages', this.getPages());
   }
 
   /**
@@ -161,6 +155,13 @@ export class Pages implements IPagesService {
    * Sync for internal use
    */
   public getPagesAsListSync(): IPage[] {
-    return Object.values(this.pages);
+    return Object.values(this.getPages());
+  }
+
+  private getPages(): Record<string | PageType, IPage> {
+    if (this.pages === undefined) {
+      this.pages = this.getInitPagesForCache();
+    }
+    return this.pages;
   }
 }

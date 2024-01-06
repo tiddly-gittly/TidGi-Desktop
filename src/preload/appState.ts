@@ -18,8 +18,11 @@ export async function syncTidgiStateWhenWikiLoads(): Promise<void> {
   ]);
   // listen on changes that needs immediate update
   window.observables.preference.preference$.subscribe({
-    next: async ({ sidebar }) => {
-      await wikiOperations[WikiChannel.setState](WikiStateKey.sideBarOpened, sidebar ? 'yes' : 'no');
+    next: async (preference) => {
+      if (preference !== undefined) {
+        const { sidebar } = preference;
+        await wikiOperations[WikiChannel.setState](WikiStateKey.sideBarOpened, sidebar ? 'yes' : 'no');
+      }
     },
   });
 }

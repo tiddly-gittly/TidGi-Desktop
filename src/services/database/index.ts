@@ -1,23 +1,33 @@
 import Sqlite3Database from 'better-sqlite3';
-import { injectable } from 'inversify';
-
-import type { INativeService } from '@services/native/interface';
-import serviceIdentifier from '@services/serviceIdentifier';
-import { IDatabaseService } from './interface';
-
-import { CACHE_DATABASE_FOLDER } from '@/constants/appPaths';
-import { PACKAGE_PATH_BASE, SQLITE_BINARY_PATH } from '@/constants/paths';
-import { lazyInject } from '@services/container';
-import { logger } from '@services/libs/log';
+import settings from 'electron-settings';
 import fs from 'fs-extra';
+import { injectable } from 'inversify';
+import { debounce } from 'lodash';
 import path from 'path';
 import { DataSource } from 'typeorm';
+
+import { CACHE_DATABASE_FOLDER } from '@/constants/appPaths';
+import { DEBOUNCE_SAVE_SETTING_FILE } from '@/constants/parameters';
+import { PACKAGE_PATH_BASE, SQLITE_BINARY_PATH } from '@/constants/paths';
+import { logger } from '@services/libs/log';
+import { fixSettingFileWhenError } from './configSetting';
+import { IDatabaseService, ISettingFile } from './interface';
 import { loadSqliteVss } from './sqlite-vss';
 
 @injectable()
 export class DatabaseService implements IDatabaseService {
-  @lazyInject(serviceIdentifier.NativeService)
-  private readonly nativeService!: INativeService;
+  constructor() {
+    // Fix sometimes JSON is malformed https://github.com/nathanbuchar/electron-settings/issues/160
+    if (fs.existsSync(settings.file())) {
+      try {
+        logger.info('Checking Setting file format.');
+        fs.readJsonSync(settings.file());
+        logger.info('Setting file format good.');
+      } catch (jsonError) {
+        fixSettingFileWhenError(jsonError as Error);
+      }
+    }
+  }
 
   // tiddlywiki require methods to be sync, so direct run them in the main process. But later we can use worker_thread to run heavier search queries, as a readonly slave db, and do some data sync between them.
   // many operations has to be done in wikiWorker, so can be accessed by nodejs wiki in a sync way.
@@ -200,5 +210,33 @@ export class DatabaseService implements IDatabaseService {
 
   getAppDataBasePath(): string {
     return path.resolve(CACHE_DATABASE_FOLDER, `app-tidgi-sqlite3-cache.db`);
+  }
+
+  private settingFileContent: ISettingFile = settings.getSync() as unknown as ISettingFile;
+
+  public setSetting<K extends keyof ISettingFile>(key: K, value: ISettingFile[K]) {
+    this.settingFileContent[key] = value;
+    void this.debouncedStoreSettingsToFile();
+  }
+
+  public setSettingImmediately<K extends keyof ISettingFile>(key: K, value: ISettingFile[K]) {
+    this.settingFileContent[key] = value;
+    void this.debouncedStoreSettingsToFile();
+  }
+
+  public getSetting<K extends keyof ISettingFile>(key: K): ISettingFile[K] | undefined {
+    return this.settingFileContent[key];
+  }
+
+  private readonly debouncedStoreSettingsToFile = debounce(this.immediatelyStoreSettingsToFile.bind(this), DEBOUNCE_SAVE_SETTING_FILE);
+  public async immediatelyStoreSettingsToFile() {
+    /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
+    try {
+      await settings.set(this.settingFileContent as any);
+    } catch (error) {
+      logger.error('Setting file format bad in debouncedSetSettingFile, will try again', { error, settingFileContent: JSON.stringify(this.settingFileContent) });
+      fixSettingFileWhenError(error as Error);
+      await settings.set(this.settingFileContent as any);
+    }
   }
 }

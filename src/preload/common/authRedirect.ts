@@ -5,6 +5,7 @@ import { CreateWorkspaceTabs } from '@/pages/AddWorkspace/constants';
 import { PreferenceSections } from '@services/preferences/interface';
 import { SupportedStorageServices } from '@services/types';
 import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
+import { truncate } from 'lodash';
 import { windowName } from './browserViewMetaData';
 import { context, window as windowService } from './services';
 
@@ -16,8 +17,12 @@ let MAIN_WINDOW_WEBPACK_ENTRY: string | undefined;
 let GITHUB_OAUTH_APP_CLIENT_SECRET: string | undefined;
 let GITHUB_OAUTH_APP_CLIENT_ID: string | undefined;
 
+const log = (message: string): void => {
+  void window.service.native.log('debug', message, { function: 'authRedirect.refresh' });
+};
 async function refresh(): Promise<void> {
   // get path from src/constants/paths.ts
+  log(`constantsFetched: ${String(constantsFetched)}`);
   if (!constantsFetched) {
     await Promise.all([
       context.get('CHROME_ERROR_PATH').then((pathName) => {
@@ -41,37 +46,47 @@ async function refresh(): Promise<void> {
     return;
   }
   if (window.location.href.startsWith(GITHUB_LOGIN_REDIRECT_PATH!)) {
+    log(`window.location.href.startsWith(GITHUB_LOGIN_REDIRECT_PATH!)`);
     // currently content will be something like `/tidgi-auth/github 404 not found`, we need to write something to tell user we are handling login, this is normal.
     // center the text and make it large
     document.body.innerHTML = '<div style="text-align: center; font-size: 2rem;">Handling Github login, please wait...</div>';
     // get the code
-    const code = window.location.href.split('code=')[1];
-    if (code) {
-      // exchange the code for an access token in github
-      const response = await fetch('https://github.com/login/oauth/access_token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          Accept: 'application/json',
-        },
-        body: JSON.stringify({
-          client_id: GITHUB_OAUTH_APP_CLIENT_ID,
-          client_secret: GITHUB_OAUTH_APP_CLIENT_SECRET,
-          code,
-        }),
-      });
-      // get the access token from the response
-      const { access_token: token } = await (response.json() as Promise<{ access_token: string }>);
-      await window.service.auth.set(`${SupportedStorageServices.github}-token`, token);
+    try {
+      const code = window.location.href.split('code=')[1];
+      log(`code: ${truncate(code ?? '', { length: 6 })}...`);
+      if (code) {
+        // exchange the code for an access token in github
+        const response = await fetch('https://github.com/login/oauth/access_token', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+          body: JSON.stringify({
+            client_id: GITHUB_OAUTH_APP_CLIENT_ID,
+            client_secret: GITHUB_OAUTH_APP_CLIENT_SECRET,
+            code,
+          }),
+        });
+        // get the access token from the response
+        const { access_token: token } = await (response.json() as Promise<{ access_token: string }>);
+        log(`code: ${truncate(token ?? '', { length: 6 })}...`);
+        await window.service.auth.set(`${SupportedStorageServices.github}-token`, token);
+      }
+      log('updateWindowMeta');
+      await windowService.updateWindowMeta(
+        windowName,
+        {
+          addWorkspaceTab: CreateWorkspaceTabs.CloneOnlineWiki,
+          preferenceGotoTab: PreferenceSections.sync,
+        } satisfies WindowMeta[WindowNames.addWorkspace] & WindowMeta[WindowNames.preferences],
+      );
+      log('Done handling Github login, redirecting to main window');
+      await windowService.loadURL(windowName, MAIN_WINDOW_WEBPACK_ENTRY);
+    } catch (error) {
+      await window.service.native.log('error', 'Github login failed', { function: 'authRedirect.refresh', error });
+      await windowService.loadURL(windowName, MAIN_WINDOW_WEBPACK_ENTRY);
     }
-    await windowService.updateWindowMeta(
-      windowName,
-      {
-        addWorkspaceTab: CreateWorkspaceTabs.CloneOnlineWiki,
-        preferenceGotoTab: PreferenceSections.sync,
-      } satisfies WindowMeta[WindowNames.addWorkspace] & WindowMeta[WindowNames.preferences],
-    );
-    await windowService.loadURL(windowName, MAIN_WINDOW_WEBPACK_ENTRY);
   } else if (window.location.href === CHROME_ERROR_PATH) {
     await windowService.loadURL(windowName, MAIN_WINDOW_WEBPACK_ENTRY);
   } else {

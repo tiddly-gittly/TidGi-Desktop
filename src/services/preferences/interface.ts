@@ -13,7 +13,6 @@ export interface IPreferences {
   downloadPath: string;
   hibernateUnusedWorkspacesAtLaunch: boolean;
   hideMenuBar: boolean;
-  showSideBarIcon: boolean;
   ignoreCertificateErrors: boolean;
   language: string;
   languageModel: ILanguageModelPreferences;
@@ -25,8 +24,9 @@ export interface IPreferences {
   pauseNotificationsMuteAudio: boolean;
   rememberLastPageVisited: boolean;
   shareWorkspaceBrowsingData: boolean;
-  sidebar: boolean;
+  showSideBarIcon: boolean;
   showSideBarText: boolean;
+  sidebar: boolean;
   spellcheck: boolean;
   spellcheckLanguages: HunspellLanguages[];
   swipeToNavigate: boolean;
@@ -68,15 +68,19 @@ export interface IPreferenceService {
   /**
    * get preferences, may return cached version
    */
-  getPreferences: () => Promise<IPreferences>;
+  getPreferences(): IPreferences;
   /** Subscribable stream to get react component updated with latest preferences */
-  preference$: BehaviorSubject<IPreferences>;
+  preference$: BehaviorSubject<IPreferences | undefined>;
   reset(): Promise<void>;
   resetWithConfirm(): Promise<void>;
   /**
    * Update preferences, update cache and observable
    */
   set<K extends keyof IPreferences>(key: K, value: IPreferences[K]): Promise<void>;
+  /**
+   * Manually refresh the observable's content, that will be received by react component.
+   */
+  updatePreferenceSubject(): void;
 }
 export const PreferenceServiceIPCDescriptor = {
   channel: PreferenceChannel.name,
@@ -87,5 +91,6 @@ export const PreferenceServiceIPCDescriptor = {
     get: ProxyPropertyType.Function,
     reset: ProxyPropertyType.Function,
     resetWithConfirm: ProxyPropertyType.Function,
+    updatePreferenceSubject: ProxyPropertyType.Function,
   },
 };

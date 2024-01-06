@@ -374,8 +374,6 @@ export class WorkspaceView implements IWorkspaceViewService {
         await this.setActiveWorkspaceView(previousWorkspace.id);
       }
     }
-
-    await this.workspaceService.remove(workspaceID);
     // TODO: seems a window can only have a browser view, and is shared between workspaces
     // this.viewService.removeAllViewOfWorkspace(workspaceID);
   }

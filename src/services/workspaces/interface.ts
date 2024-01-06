@@ -148,6 +148,7 @@ export interface IWorkspaceMetaData {
 export interface IWorkspaceWithMetadata extends IWorkspace {
   metadata: IWorkspaceMetaData;
 }
+export type IWorkspacesWithMetadata = Record<string, IWorkspaceWithMetadata>;
 
 /**
  * Ignore some field that will assign default value in workspaceService.create, these field don't require to be filled in AddWorkspace form
@@ -193,6 +194,7 @@ export interface IWorkspaceService {
   getSubWorkspacesAsListSync(workspaceID: string): IWorkspace[];
   getWorkspaces(): Promise<Record<string, IWorkspace>>;
   getWorkspacesAsList(): Promise<IWorkspace[]>;
+  getWorkspacesWithMetadata(): IWorkspacesWithMetadata;
   remove(id: string): Promise<void>;
   removeWorkspacePicture(id: string): Promise<void>;
   set(id: string, workspace: IWorkspace, immediate?: boolean): Promise<void>;
@@ -205,8 +207,12 @@ export interface IWorkspaceService {
   setWorkspaces(newWorkspaces: Record<string, IWorkspace>): Promise<void>;
   update(id: string, workspaceSetting: Partial<IWorkspace>, immediate?: boolean): Promise<void>;
   updateMetaData: (id: string, options: Partial<IWorkspaceMetaData>) => Promise<void>;
+  /**
+   * Manually refresh the observable's content, that will be received by react component.
+   */
+  updateWorkspaceSubject(): void;
   workspaceDidFailLoad(id: string): Promise<boolean>;
-  workspaces$: BehaviorSubject<Record<string, IWorkspaceWithMetadata>>;
+  workspaces$: BehaviorSubject<IWorkspacesWithMetadata | undefined>;
 }
 export const WorkspaceServiceIPCDescriptor = {
   channel: WorkspaceChannel.name,
@@ -226,6 +232,7 @@ export const WorkspaceServiceIPCDescriptor = {
     getPreviousWorkspace: ProxyPropertyType.Function,
     getWorkspaces: ProxyPropertyType.Function,
     getWorkspacesAsList: ProxyPropertyType.Function,
+    getWorkspacesWithMetadata: ProxyPropertyType.Function,
     remove: ProxyPropertyType.Function,
     removeWorkspacePicture: ProxyPropertyType.Function,
     set: ProxyPropertyType.Function,
@@ -234,6 +241,7 @@ export const WorkspaceServiceIPCDescriptor = {
     setWorkspaces: ProxyPropertyType.Function,
     update: ProxyPropertyType.Function,
     updateMetaData: ProxyPropertyType.Function,
+    updateWorkspaceSubject: ProxyPropertyType.Value$,
     workspaceDidFailLoad: ProxyPropertyType.Function,
     workspaces$: ProxyPropertyType.Value$,
   },

@@ -51,11 +51,18 @@ export interface IAuthenticationService {
    */
   getRandomStorageServiceUserInfo(): Promise<{ info: IGitUserInfos; name: SupportedStorageServices } | undefined>;
   getStorageServiceUserInfo(serviceName: SupportedStorageServices): Promise<IGitUserInfos | undefined>;
-  getUserInfos: () => Promise<IUserInfos>;
+  /**
+   * get UserInfos, return cached version from service.
+   */
+  getUserInfos(): IUserInfos;
   getUserName(workspace: IWorkspace): Promise<string>;
   reset(): Promise<void>;
   set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): Promise<void>;
-  userInfo$: BehaviorSubject<IUserInfos>;
+  /**
+   * Manually refresh the observable's content, that will be received by react component.
+   */
+  updateUserInfoSubject(): void;
+  userInfo$: BehaviorSubject<IUserInfos | undefined>;
 }
 export const AuthenticationServiceIPCDescriptor = {
   channel: AuthenticationChannel.name,
@@ -68,6 +75,7 @@ export const AuthenticationServiceIPCDescriptor = {
     getUserName: ProxyPropertyType.Function,
     reset: ProxyPropertyType.Function,
     set: ProxyPropertyType.Function,
+    updateUserInfoSubject: ProxyPropertyType.Value$,
     userInfo$: ProxyPropertyType.Value$,
   },
 };

@@ -41,7 +41,7 @@ export interface IPagesService {
   getPagesAsList(): Promise<IPage[]>;
   getPagesAsListSync(): IPage[];
   getSync(id: string): IPage;
-  pages$: BehaviorSubject<IPage[]>;
+  pages$: BehaviorSubject<IPage[] | undefined>;
   /**
    * Overwrite a page, and update setting file.
    * @param updateSettingFile Default to true. Async update setting file, and let go the promise. So if you want to update multiple pages, don't use this, use `setPages` instead.
@@ -58,6 +58,10 @@ export interface IPagesService {
    * @param updateSettingFile Default to true. Async update setting file, and let go the promise. So if you want to update multiple pages, don't use this, use `setPages` instead.
    */
   update(id: string, page: Partial<IPage>, updateSettingFile?: boolean): Promise<void>;
+  /**
+   * Manually refresh the observable's content, that will be received by react component.
+   */
+  updatePageSubject(): void;
   updatePages(newPages: Record<string, Partial<IPage>>): Promise<void>;
 }
 export const PagesServiceIPCDescriptor = {
@@ -72,5 +76,6 @@ export const PagesServiceIPCDescriptor = {
     setPages: ProxyPropertyType.Function,
     update: ProxyPropertyType.Function,
     updatePages: ProxyPropertyType.Function,
+    updatePageSubject: ProxyPropertyType.Function,
   },
 };
