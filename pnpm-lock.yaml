@@ -73,8 +73,8 @@ dependencies:
     specifier: 11.2.0
     version: 11.2.0
   git-sync-js:
-    specifier: ^2.0.4
-    version: 2.0.4
+    specifier: ^2.0.5
+    version: 2.0.5
   i18next:
     specifier: 23.7.12
     version: 23.7.12
@@ -6415,8 +6415,8 @@ packages:
       omggif: 1.0.10
     dev: false
 
-  /git-sync-js@2.0.4:
-    resolution: {integrity: sha512-/hVkTQPTumqkz5E6ZafVSGWjdkVHlH2pPj90TgNLxvjeWnGa/Z0wzDHQUoG/gOGZrx3w6JyM2X/6BwT6JHchNw==}
+  /git-sync-js@2.0.5:
+    resolution: {integrity: sha512-lKwKd6IwFU2Ne0AJLlPCm6yz5tu5R92C47HCet3LbKeSFDK5p3PTpfyIayv7BVBAs73sCLWGYaDrMrbZ/95KIw==}
     dependencies:
       dugite: 2.5.2
       fs-extra: 11.2.0
