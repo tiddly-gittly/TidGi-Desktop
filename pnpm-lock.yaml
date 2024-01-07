@@ -19,8 +19,8 @@ dependencies:
     specifier: ^0.1.6
     version: 0.1.6
   '@tiddlygit/tiddlywiki':
-    specifier: 5.3.3-2024-01-08
-    version: 5.3.3-2024-01-08
+    specifier: 5.3.3-2024-01-08-destroy-method
+    version: 5.3.3-2024-01-08-destroy-method
   ansi-to-html:
     specifier: ^0.7.2
     version: 0.7.2
@@ -2620,8 +2620,8 @@ packages:
     engines: {node: '>=14'}
     dev: true
 
-  /@tiddlygit/tiddlywiki@5.3.3-2024-01-08:
-    resolution: {integrity: sha512-5obcA5GQh1vXbi//6486UC9MIxU1+3vkfqXYv0C8Oug4GpSW6whb1wGcCuYCr0lgRWamNp1aGGpyeiCxqvVHRQ==}
+  /@tiddlygit/tiddlywiki@5.3.3-2024-01-08-destroy-method:
+    resolution: {integrity: sha512-AQ0Mg7QDu/Zw8Q+vSmhYvNFRNIv37r4Wa6HFSVAk0OsHSL0IW/VE/8+Ohd9Lqs69iVTpHESLzSG9PfP5fKyarA==}
     engines: {node: '>=0.8.2'}
     hasBin: true
     dev: false
