@@ -140,7 +140,7 @@ export async function getWorkspaceMenuTemplate(
     template.push({
       label: t('ContextMenu.BackupNow'),
       click: async () => {
-        await service.git.commitAndSync(workspace, { commitOnly: true });
+        await service.git.commitAndSync(workspace, { commitOnly: true, dir: wikiFolderLocation });
       },
     });
   }
