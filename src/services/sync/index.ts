@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/prevent-abbreviations */
 import { injectable } from 'inversify';
 
 import { WikiChannel } from '@/constants/channels';
@@ -13,6 +14,7 @@ import type { IWikiService } from '@services/wiki/interface';
 import { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { ISyncService } from './interface';
+import { i18n } from '@services/libs/i18n';
 
 @injectable()
 export class Sync implements ISyncService {
@@ -38,16 +40,17 @@ export class Sync implements ISyncService {
   private readonly workspaceService!: IWorkspaceService;
 
   public async syncWikiIfNeeded(workspace: IWorkspace): Promise<void> {
-    const { gitUrl, storageService, backupOnInterval, id, isSubWiki } = workspace;
+    const { gitUrl, storageService, backupOnInterval, id, isSubWiki, wikiFolderLocation: dir } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
-
+    const defaultCommitMessage = i18n.t('LOG.CommitMessage');
+    const defaultCommitBackupMessage = i18n.t('LOG.CommitBackupMessage');
     if (
       storageService !== SupportedStorageServices.local &&
       typeof gitUrl === 'string' &&
       userInfo !== undefined &&
       (await this.checkCanSyncDueToNoDraft(id))
     ) {
-      const syncOrForcePullConfigs = { remoteUrl: gitUrl, userInfo } satisfies ICommitAndSyncConfigs;
+      const syncOrForcePullConfigs = { remoteUrl: gitUrl, userInfo, dir, commitMessage: defaultCommitMessage } satisfies ICommitAndSyncConfigs;
       // sync current workspace first
       const hasChanges = await this.gitService.syncOrForcePull(workspace, syncOrForcePullConfigs);
       if (isSubWiki) {
@@ -65,7 +68,7 @@ export class Sync implements ISyncService {
           // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
           if (!subGitUrl) return false;
           const subUserInfo = await this.authService.getStorageServiceUserInfo(subStorageService);
-          const hasChanges = await this.gitService.syncOrForcePull(subWorkspace, { remoteUrl: subGitUrl, userInfo: subUserInfo });
+          const hasChanges = await this.gitService.syncOrForcePull(subWorkspace, { remoteUrl: subGitUrl, userInfo: subUserInfo, dir, commitMessage: defaultCommitMessage });
           return hasChanges;
         });
         const subHasChange = (await Promise.all(subHasChangesPromise)).some(Boolean);
@@ -77,7 +80,7 @@ export class Sync implements ISyncService {
       }
     } else if (backupOnInterval && (await this.checkCanSyncDueToNoDraft(id))) {
       // for local workspace, commitOnly, no sync and no force pull.
-      await this.gitService.commitAndSync(workspace, { commitOnly: true });
+      await this.gitService.commitAndSync(workspace, { commitOnly: true, dir, commitMessage: defaultCommitBackupMessage });
     }
   }
 

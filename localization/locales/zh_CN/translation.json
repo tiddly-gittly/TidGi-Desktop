@@ -483,5 +483,9 @@
       "FAQ": "答疑",
       "Docs": "文档"
     }
+  },
+  "LOG": {
+    "CommitMessage": "使用太记桌面版同步",
+    "CommitBackupMessage": "使用太记桌面版备份"
   }
 }

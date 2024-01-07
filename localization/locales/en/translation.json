@@ -483,5 +483,9 @@
       "FAQ": "FAQ",
       "Intro": "Intro"
     }
+  },
+  "LOG": {
+    "CommitMessage": "Sync with TidGi-Desktop",
+    "CommitBackupMessage": "Backup with TidGi-Desktop\t"
   }
 }

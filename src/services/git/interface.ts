@@ -1,7 +1,7 @@
 import { GitChannel } from '@/constants/channels';
 import type { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import { ModifiedFileList } from 'git-sync-js';
+import { ICommitAndSyncOptions, ModifiedFileList } from 'git-sync-js';
 
 export interface IGitUserInfos extends IGitUserInfosWithoutToken {
   /** Github Login: token */
@@ -27,10 +27,7 @@ export interface IErrorGitLogMessage {
   level: 'error';
 }
 
-export interface ICommitAndSyncConfigs {
-  commitOnly?: boolean;
-  remoteUrl?: string;
-  userInfo?: IGitUserInfos;
+export interface ICommitAndSyncConfigs extends ICommitAndSyncOptions {
 }
 
 export interface IForcePullConfigs {
