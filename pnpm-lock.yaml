@@ -19,7 +19,7 @@ dependencies:
     specifier: ^0.1.6
     version: 0.1.6
   '@tiddlygit/tiddlywiki':
-    specifier: ^5.3.3-prerelease-2023-12-23-withdestroymethod
+    specifier: ^5.3.3-2024-01-08
     version: 5.3.3-prerelease-2023-12-23-withdestroymethod
   ansi-to-html:
     specifier: ^0.7.2
