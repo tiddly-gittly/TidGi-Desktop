@@ -103,7 +103,6 @@ function initWikiGit(
 function commitAndSyncWiki(workspace: IWorkspace, configs: ICommitAndSyncConfigs, errorI18NDict: Record<string, string>): Observable<IGitLogMessage> {
   return new Observable<IGitLogMessage>((observer) => {
     void commitAndSync({
-      dir: workspace.wikiFolderLocation,
       ...configs,
       defaultGitInfo,
       logger: {
