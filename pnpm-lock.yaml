@@ -19,8 +19,8 @@ dependencies:
     specifier: ^0.1.6
     version: 0.1.6
   '@tiddlygit/tiddlywiki':
-    specifier: ^5.3.3-2024-01-08
-    version: 5.3.3-prerelease-2023-12-23-withdestroymethod
+    specifier: 5.3.3-2024-01-08
+    version: 5.3.3-2024-01-08
   ansi-to-html:
     specifier: ^0.7.2
     version: 0.7.2
@@ -2620,8 +2620,8 @@ packages:
     engines: {node: '>=14'}
     dev: true
 
-  /@tiddlygit/tiddlywiki@5.3.3-prerelease-2023-12-23-withdestroymethod:
-    resolution: {integrity: sha512-Q/sTVBjEjcix0sQlUgBfh9sCGyDXAe/nbk0UhIRrbO7jQOoJ/ZkK63q/fkVtQNniiysE8ggvsNIP+V3sPRsIfw==}
+  /@tiddlygit/tiddlywiki@5.3.3-2024-01-08:
+    resolution: {integrity: sha512-5obcA5GQh1vXbi//6486UC9MIxU1+3vkfqXYv0C8Oug4GpSW6whb1wGcCuYCr0lgRWamNp1aGGpyeiCxqvVHRQ==}
     engines: {node: '>=0.8.2'}
     hasBin: true
     dev: false
