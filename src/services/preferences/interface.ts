@@ -23,6 +23,7 @@ export interface IPreferences {
   pauseNotificationsByScheduleTo: string;
   pauseNotificationsMuteAudio: boolean;
   rememberLastPageVisited: boolean;
+  runOnBackground: boolean;
   shareWorkspaceBrowsingData: boolean;
   showSideBarIcon: boolean;
   showSideBarText: boolean;

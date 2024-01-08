@@ -1,4 +1,3 @@
-import { isMac } from '@/helpers/system';
 import { container } from '@services/container';
 import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -34,7 +33,8 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
     // only do this for main window
     if (windowName !== WindowNames.main || newWindow === undefined) return;
     const windowMeta = await windowService.getWindowMeta(WindowNames.main);
-    if (isMac && windowMeta?.forceClose !== true) {
+    const runOnBackground = await preferenceService.get('runOnBackground');
+    if (runOnBackground && windowMeta?.forceClose !== true) {
       event.preventDefault();
       // https://github.com/electron/electron/issues/6033#issuecomment-242023295
       if (newWindow.isFullScreen()) {

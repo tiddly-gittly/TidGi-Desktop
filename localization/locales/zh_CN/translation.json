@@ -421,7 +421,10 @@
       "TimeoutDuration": "超时时长",
       "OpenModelFolder": "打开模型文件夹",
       "OpenModelFolderDescription": "推理程序将在这个文件夹里寻找模型，请将你下载的模型放到这里（或使用命令行创建软链接到这里）"
-    }
+    },
+    "RunOnBackground": "保持后台运行",
+    "RunOnBackgroundDetail": "在窗口关闭时不退出，继续保持后台运行。再次打开应用时快速还原窗口。",
+    "RunOnBackgroundDetailNotMac": "建议开启太记小窗，以便通过菜单栏/任务栏图标重新打开窗口。"
   },
   "Error": {
     "InitWikiGitError": "E-1 笔记仓库初始化失败错误",

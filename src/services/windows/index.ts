@@ -148,6 +148,9 @@ export class Window implements IWindowService {
       if (recreate === true || (typeof recreate === 'function' && existedWindowMeta !== undefined && recreate(existedWindowMeta))) {
         existedWindow.close();
       } else {
+        if (existedWindow.isMinimized()) {
+          existedWindow.restore();
+        }
         existedWindow.show();
         if (returnWindow === true) {
           return existedWindow;

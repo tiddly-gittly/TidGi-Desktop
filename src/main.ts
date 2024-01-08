@@ -64,15 +64,13 @@ const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
-app.on('second-instance', () => {
-  // Someone tried to run a second instance, we should focus our window.
-  const mainWindow = windowService.get(WindowNames.main);
-  if (mainWindow !== undefined) {
-    if (mainWindow.isMinimized()) {
-      mainWindow.restore();
-    }
-    mainWindow.focus();
-  }
+app.on('second-instance', async () => {
+  // see also src/helpers/singleInstance.ts
+  // Someone tried to run a second instance, for example, when `runOnBackground` is true, we should focus our window.
+  await windowService.open(WindowNames.main);
+});
+app.on('activate', async () => {
+  await windowService.open(WindowNames.main);
 });
 // make sure "Settings" file exists
 // if not, ignore this chunk of code
@@ -171,9 +169,6 @@ app.on(MainChannel.windowAllClosed, () => {
   if (!isMac || isTest) {
     app.quit();
   }
-});
-app.on('activate', async () => {
-  await windowService.open(WindowNames.main);
 });
 app.on(
   'before-quit',

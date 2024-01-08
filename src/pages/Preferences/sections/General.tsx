@@ -1,5 +1,5 @@
-import { Divider, List, ListItemSecondaryAction, MenuItem, Switch } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { Divider, List, ListItemSecondaryAction, MenuItem, Switch } from '@mui/material';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
@@ -197,6 +197,22 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                     onChange={async (event) => {
                       await window.service.preference.set('attachToMenubar', event.target.checked);
                       props.requestRestartCountDown();
+                    }}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
+              <ListItem>
+                <ListItemText
+                  primary={t('Preference.RunOnBackground')}
+                  secondary={t('Preference.RunOnBackgroundDetail') + (platform === 'darwin' ? '' : t('Preference.RunOnBackgroundDetailNotMac'))}
+                />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge='end'
+                    color='primary'
+                    checked={preference.runOnBackground}
+                    onChange={async (event) => {
+                      await window.service.preference.set('runOnBackground', event.target.checked);
                     }}
                   />
                 </ListItemSecondaryAction>

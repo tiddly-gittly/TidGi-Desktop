@@ -384,7 +384,10 @@
       "UpdateTimeoutDuration": "Unit (Second). If a language model does not respond after so long, it will automatically terminate the conversation and stop waiting, as this basically means that it has stopped running. It needs to be greater than 0 and not too small, otherwise it will not be output properly.",
       "OpenModelFolder": "Open Model Folder",
       "OpenModelFolderDescription": "The inference program will look for models in this folder, please put your downloaded models here (or use the command line to create a soft link to here)"
-    }
+    },
+    "RunOnBackground": "Run On Background",
+    "RunOnBackgroundDetail": "When window is closed, Continue to run in the background without exiting. Quickly restore the window when opening the app again.",
+    "RunOnBackgroundDetailNotMac": "Recommend to enable Attach To Taskbar. So you can restore window use it."
   },
   "Error": {
     "InitWikiGitError": "E-1 InitWikiGitError",
