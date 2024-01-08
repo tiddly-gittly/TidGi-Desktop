@@ -106,7 +106,7 @@ export class Window implements IWindowService {
   }
 
   public async close(windowName: WindowNames): Promise<void> {
-    this.get(windowName)?.close();
+    this.get(windowName)?.close?.();
     if (windowName === WindowNames.menuBar) {
       // keep the menubar window instance
       this.mainWindowMenuBar?.app?.hide?.();
@@ -157,7 +157,7 @@ export class Window implements IWindowService {
     }
 
     // create new window
-    const { hideMenuBar: autoHideMenuBar, titleBar: showTitleBar, menuBarAlwaysOnTop, alwaysOnTop } = await this.preferenceService.getPreferences();
+    const { hideMenuBar: autoHideMenuBar, titleBar: showTitleBar, menuBarAlwaysOnTop, alwaysOnTop } = this.preferenceService.getPreferences();
     let windowWithBrowserViewConfig: Partial<BrowserWindowConstructorOptions> = {};
     let windowWithBrowserViewState: windowStateKeeperState | undefined;
     const WindowToKeepPositionState = [WindowNames.main, WindowNames.menuBar];

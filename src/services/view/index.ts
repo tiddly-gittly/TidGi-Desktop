@@ -264,7 +264,7 @@ export class View implements IViewService {
   }
 
   public async getSharedWebPreferences(workspace: IWorkspace) {
-    const preferences = await this.preferenceService.getPreferences();
+    const preferences = this.preferenceService.getPreferences();
     const { spellcheck } = preferences;
 
     const sessionOfView = setupViewSession(workspace, preferences);
@@ -330,7 +330,7 @@ export class View implements IViewService {
   }
 
   public async loadUrlForView(workspace: IWorkspace, view: BrowserView, uri?: string): Promise<void> {
-    const { rememberLastPageVisited } = await this.preferenceService.getPreferences();
+    const { rememberLastPageVisited } = this.preferenceService.getPreferences();
     // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing, @typescript-eslint/strict-boolean-expressions
     const urlToLoad = uri || (rememberLastPageVisited ? workspace.lastUrl : workspace.homeUrl) || workspace.homeUrl || getDefaultTidGiUrl(workspace.id);
     try {

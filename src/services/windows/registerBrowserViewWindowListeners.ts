@@ -17,7 +17,7 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
     if (swipeToNavigate) {
       if (newWindow === undefined) return;
       newWindow.on('swipe', (_event, direction) => {
-        const view = newWindow?.getBrowserView();
+        const view = newWindow?.getBrowserView?.();
         // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
         if (view) {
           if (direction === 'left') {
@@ -31,8 +31,9 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
   });
   // Hide window instead closing on macos
   newWindow.on('close', async (event) => {
+    // only do this for main window
+    if (windowName !== WindowNames.main || newWindow === undefined) return;
     const windowMeta = await windowService.getWindowMeta(WindowNames.main);
-    if (newWindow === undefined) return;
     if (isMac && windowMeta?.forceClose !== true) {
       event.preventDefault();
       // https://github.com/electron/electron/issues/6033#issuecomment-242023295
@@ -50,22 +51,20 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
   });
 
   newWindow.on('focus', () => {
-    if (newWindow === undefined) return;
-    const view = newWindow?.getBrowserView();
+    if (windowName !== WindowNames.main || newWindow === undefined) return;
+    const view = newWindow?.getBrowserView?.();
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-    view?.webContents?.focus();
+    view?.webContents?.focus?.();
   });
 
   newWindow.on('enter-full-screen', async () => {
-    const mainWindow = windowService.get(windowName);
-    if (mainWindow === undefined) return;
-    mainWindow?.webContents?.send?.('is-fullscreen-updated', true);
+    if (windowName !== WindowNames.main || newWindow === undefined) return;
+    newWindow?.webContents?.send?.('is-fullscreen-updated', true);
     await workspaceViewService.realignActiveWorkspace();
   });
   newWindow.on('leave-full-screen', async () => {
-    const mainWindow = windowService.get(windowName);
-    if (mainWindow === undefined) return;
-    mainWindow?.webContents?.send?.('is-fullscreen-updated', false);
+    if (windowName !== WindowNames.main || newWindow === undefined) return;
+    newWindow?.webContents?.send?.('is-fullscreen-updated', false);
     await workspaceViewService.realignActiveWorkspace();
   });
 }
