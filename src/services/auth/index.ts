@@ -89,7 +89,7 @@ export class Authentication implements IAuthenticationService {
   }
 
   public async set<K extends keyof IUserInfos>(key: K, value: IUserInfos[K]): Promise<void> {
-    logger.debug('Setting auth', { key, value: `${truncate(value, { length: 6 })}...`, function: 'Authentication.set' });
+    logger.debug('Setting auth, debug value is truncated for privacy', { key, value: truncate(value, { length: 10 }), function: 'Authentication.set' });
     let userInfo = this.getUserInfos();
     userInfo[key] = value;
     userInfo = { ...userInfo, ...this.sanitizeUserInfo(userInfo) };

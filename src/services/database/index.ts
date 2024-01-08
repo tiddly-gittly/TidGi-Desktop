@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import Sqlite3Database from 'better-sqlite3';
 import settings from 'electron-settings';
 import fs from 'fs-extra';
@@ -212,7 +213,7 @@ export class DatabaseService implements IDatabaseService {
     return path.resolve(CACHE_DATABASE_FOLDER, `app-tidgi-sqlite3-cache.db`);
   }
 
-  private settingFileContent: ISettingFile = settings.getSync() as unknown as ISettingFile;
+  private settingFileContent: ISettingFile = settings.getSync() as unknown as ISettingFile || {};
 
   public setSetting<K extends keyof ISettingFile>(key: K, value: ISettingFile[K]) {
     this.settingFileContent[key] = value;
@@ -229,14 +230,21 @@ export class DatabaseService implements IDatabaseService {
   }
 
   private readonly debouncedStoreSettingsToFile = debounce(this.immediatelyStoreSettingsToFile.bind(this), DEBOUNCE_SAVE_SETTING_FILE);
+  private storeSettingsToFileLock = false;
   public async immediatelyStoreSettingsToFile() {
     /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
     try {
+      logger.debug('Saving settings to file start', { function: 'immediatelyStoreSettingsToFile', storeSettingsToFileLock: this.storeSettingsToFileLock });
+      if (this.storeSettingsToFileLock) return;
+      this.storeSettingsToFileLock = true;
       await settings.set(this.settingFileContent as any);
     } catch (error) {
-      logger.error('Setting file format bad in debouncedSetSettingFile, will try again', { error, settingFileContent: JSON.stringify(this.settingFileContent) });
+      logger.error('Setting file format bad in debouncedSetSettingFile, will try force writing', { error, settingFileContent: JSON.stringify(this.settingFileContent) });
       fixSettingFileWhenError(error as Error);
-      await settings.set(this.settingFileContent as any);
+      fs.writeJSONSync(settings.file(), this.settingFileContent);
+    } finally {
+      this.storeSettingsToFileLock = false;
+      logger.debug('Saving settings to file done', { function: 'immediatelyStoreSettingsToFile' });
     }
   }
 }
