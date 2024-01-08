@@ -5,6 +5,7 @@ import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 import { ICommitAndSyncConfigs, IGitService } from '@services/git/interface';
+import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -14,7 +15,6 @@ import type { IWikiService } from '@services/wiki/interface';
 import { IWorkspace, IWorkspaceService } from '@services/workspaces/interface';
 import { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { ISyncService } from './interface';
-import { i18n } from '@services/libs/i18n';
 
 @injectable()
 export class Sync implements ISyncService {
@@ -64,11 +64,16 @@ export class Sync implements ISyncService {
         // sync all sub workspace
         const subWorkspaces = await this.workspaceService.getSubWorkspacesAsList(id);
         const subHasChangesPromise = subWorkspaces.map(async (subWorkspace) => {
-          const { gitUrl: subGitUrl, storageService: subStorageService } = subWorkspace;
+          const { gitUrl: subGitUrl, storageService: subStorageService, wikiFolderLocation: subGitDir } = subWorkspace;
           // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
           if (!subGitUrl) return false;
           const subUserInfo = await this.authService.getStorageServiceUserInfo(subStorageService);
-          const hasChanges = await this.gitService.syncOrForcePull(subWorkspace, { remoteUrl: subGitUrl, userInfo: subUserInfo, dir, commitMessage: defaultCommitMessage });
+          const hasChanges = await this.gitService.syncOrForcePull(subWorkspace, {
+            remoteUrl: subGitUrl,
+            userInfo: subUserInfo,
+            dir: subGitDir,
+            commitMessage: defaultCommitMessage,
+          });
           return hasChanges;
         });
         const subHasChange = (await Promise.all(subHasChangesPromise)).some(Boolean);
