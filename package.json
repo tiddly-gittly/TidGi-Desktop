@@ -2,7 +2,7 @@
   "name": "tidgi",
   "productName": "TidGi",
   "description": "Customizable personal knowledge-base with Github as unlimited storage and blogging platform.",
-  "version": "0.9.0-prerelease4",
+  "version": "0.9.0",
   "license": "MPL 2.0",
   "scripts": {
     "start": "pnpm run clean && pnpm run init:git-submodule && pnpm run start:without-clean",
