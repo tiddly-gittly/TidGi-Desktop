@@ -36,11 +36,14 @@ export interface IViewService {
    * Get active workspace's main window and menubar browser view.
    */
   getActiveBrowserViews: () => Promise<Array<BrowserView | undefined>>;
-  getAllViewOfWorkspace: (workspaceID: string) => BrowserView[];
   getSharedWebPreferences(workspace: IWorkspace): Promise<WebPreferences>;
   getView: (workspaceID: string, windowName: WindowNames) => BrowserView | undefined;
   getViewCount(): Promise<number>;
   getViewCurrentUrl(workspaceID?: string): Promise<string | undefined>;
+  /**
+   * Move the view to the side to hide it.
+   * This won't destroy view or remove it from the window, but if you add another view to the window now, this will be replaced safely. To completely remove the view, use `removeView`.
+   */
   hideView(browserWindow: BrowserWindow): Promise<void>;
   initializeWorkspaceViewHandlersAndLoad(workspace: IWorkspace, browserWindow: BrowserWindow, view: BrowserView, sharedWebPreferences: WebPreferences, uri?: string): Promise<void>;
   /**
@@ -52,8 +55,16 @@ export interface IViewService {
   reloadActiveBrowserView: () => Promise<void>;
   reloadViewsWebContents(workspaceID?: string | undefined): Promise<void>;
   reloadViewsWebContentsIfDidFailLoad: () => Promise<void>;
-  removeAllViewOfWorkspace: (workspaceID: string) => void;
-  removeView: (workspaceID: string, windowName: WindowNames) => void;
+  /**
+   * @param workspaceID 
+   * @param permanent Do you still need views later? If this is true, view will be destroyed. If this is false, view will be hidden by remove them from the window, but can still be fast add back later..
+   */
+  removeAllViewOfWorkspace(workspaceID: string, permanent?: boolean): void;
+  /**
+   * Each window can only have one browser view, we remove current one, and add another one later. But don't need to destroy current one, we can add it back when user switch back.
+   * This won't destroy view or remove it from `views` array, just hide it, but this is more complete than `hideView`.
+   */
+  removeView(workspaceID: string, windowName: WindowNames): void;
   /**
    * Bring an already created view to the front. If it happened to not created, will call `addView()` to create one.
    * @param workspaceID id, can only be main workspace id, because only main workspace will have view created.
@@ -72,7 +83,6 @@ export const ViewServiceIPCDescriptor = {
     alreadyHaveView: ProxyPropertyType.Function,
     forEachView: ProxyPropertyType.Function,
     getActiveBrowserView: ProxyPropertyType.Function,
-    getAllViewOfWorkspace: ProxyPropertyType.Function,
     getSharedWebPreferences: ProxyPropertyType.Function,
     getView: ProxyPropertyType.Function,
     getViewCount: ProxyPropertyType.Function,

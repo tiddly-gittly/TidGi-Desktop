@@ -1,7 +1,7 @@
 /* eslint-disable n/no-callback-literal */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/consistent-type-assertions */
-import { BrowserView, BrowserWindow, ipcMain, session, WebPreferences } from 'electron';
+import { BrowserView, BrowserWindow, ipcMain, WebPreferences } from 'electron';
 import { injectable } from 'inversify';
 
 import type { IMenuService } from '@services/menu/interface';
@@ -210,23 +210,25 @@ export class View implements IViewService {
    *
    * Each workspace can have several windows to render its view (main window and menu bar)
    */
-  private views: Record<string, Record<WindowNames, BrowserView> | undefined> = {};
+  private readonly views = new Map<string, Map<WindowNames, BrowserView> | undefined>();
   public async getViewCount(): Promise<number> {
     // eslint-disable-next-line @typescript-eslint/return-await
     return await Promise.resolve(Object.keys(this.views).length);
   }
 
-  public getView = (workspaceID: string, windowName: WindowNames): BrowserView | undefined => this.views[workspaceID]?.[windowName];
-  public getAllViewOfWorkspace = (workspaceID: string): BrowserView[] => Object.values(this.views[workspaceID] ?? {});
-  public setView = (workspaceID: string, windowName: WindowNames, newView: BrowserView): void => {
-    const workspaceOwnedViews = this.views[workspaceID];
+  public getView(workspaceID: string, windowName: WindowNames): BrowserView | undefined {
+    return this.views.get(workspaceID)?.get(windowName);
+  }
+
+  public setView(workspaceID: string, windowName: WindowNames, newView: BrowserView): void {
+    const workspaceOwnedViews = this.views.get(workspaceID);
     if (workspaceOwnedViews === undefined) {
-      this.views[workspaceID] = { [windowName]: newView } as Record<WindowNames, BrowserView>;
+      this.views.set(workspaceID, new Map([[windowName, newView]]));
       this.setViewEventTarget.dispatchEvent(new Event(setViewEventName(workspaceID, windowName)));
     } else {
-      workspaceOwnedViews[windowName] = newView;
+      workspaceOwnedViews.set(windowName, newView);
     }
-  };
+  }
 
   private readonly setViewEventTarget = new EventTarget();
 
@@ -361,13 +363,13 @@ export class View implements IViewService {
   }
 
   public forEachView(functionToRun: (view: BrowserView, workspaceID: string, windowName: WindowNames) => unknown): void {
-    Object.keys(this.views).forEach((id) => {
-      const workspaceOwnedViews = this.views[id];
+    [...this.views.keys()].forEach((workspaceID) => {
+      const workspaceOwnedViews = this.views.get(workspaceID);
       if (workspaceOwnedViews !== undefined) {
-        (Object.keys(workspaceOwnedViews) as WindowNames[]).forEach((name) => {
-          const view = this.getView(id, name);
+        [...workspaceOwnedViews.keys()].forEach((windowName) => {
+          const view = workspaceOwnedViews.get(windowName);
           if (view !== undefined) {
-            functionToRun(view, id, name);
+            functionToRun(view, workspaceID, windowName);
           }
         });
       }
@@ -419,41 +421,31 @@ export class View implements IViewService {
     }
   }
 
-  public removeView = (workspaceID: string, windowName: WindowNames): void => {
+  public removeView(workspaceID: string, windowName: WindowNames): void {
     logger.debug(`Remove view for workspaceID ${workspaceID} via ${new Error('stack').stack ?? 'no stack'}`);
     const view = this.getView(workspaceID, windowName);
     const browserWindow = this.windowService.get(windowName);
     if (view !== undefined && browserWindow !== undefined) {
-      void session.fromPartition(`persist:${workspaceID}`).clearStorageData();
       // stop find in page when switching workspaces
       view.webContents.stopFindInPage('clearSelection');
       view.webContents.send(WindowChannel.closeFindInPage);
 
-      // don't set activate browserView to null here, the "current browser view" may point to other workspace's view now, it will close other workspace's view when switching workspaces.
-      // eslint-disable-next-line unicorn/no-null
-      // browserWindow.setBrowserView(null);
+      // don't set activate browserView to null here `browserWindow.setBrowserView(null);`, the "current browser view" may point to other workspace's view now, it will close other workspace's view when switching workspaces.
       browserWindow.removeBrowserView(view);
-
-      // currently use workaround https://github.com/electron/electron/issues/10096
-      // @ts-expect-error Property 'destroy' does not exist on type 'WebContents'.ts(2339)
-      // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-      view.webContents.destroy();
     } else {
       logger.error(`removeView() view or browserWindow is undefined for workspaceID ${workspaceID} windowName ${windowName}, not destroying view properly.`);
     }
-    // eslint-disable-next-line @typescript-eslint/no-dynamic-delete
-    delete this.views[workspaceID]![windowName];
-  };
+  }
 
-  public removeAllViewOfWorkspace = (workspaceID: string): void => {
-    const views = this.views[workspaceID];
+  public removeAllViewOfWorkspace(workspaceID: string): void {
+    const views = this.views.get(workspaceID);
     if (views !== undefined) {
-      Object.keys(views).forEach((name) => {
-        this.removeView(workspaceID, name as WindowNames);
+      [...views.keys()].forEach((windowName) => {
+        this.removeView(workspaceID, windowName);
       });
+      views.clear();
     }
-    this.views[workspaceID] = undefined;
-  };
+  }
 
   public setViewsAudioPref = (_shouldMuteAudio?: boolean): void => {
     if (_shouldMuteAudio !== undefined) {

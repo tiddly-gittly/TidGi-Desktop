@@ -294,7 +294,7 @@ export class WorkspaceView implements IWorkspaceViewService {
           hibernated: true,
         }),
       ]);
-      this.viewService.removeAllViewOfWorkspace(workspaceID);
+      this.viewService.removeAllViewOfWorkspace(workspaceID, true);
     }
   }
 
@@ -360,12 +360,11 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async removeWorkspaceView(workspaceID: string): Promise<void> {
+    this.viewService.removeAllViewOfWorkspace(workspaceID, true);
     const mainWindow = this.windowService.get(WindowNames.main);
     // if there's only one workspace left, clear all
     if ((await this.workspaceService.countWorkspaces()) === 1) {
       if (mainWindow !== undefined) {
-        // eslint-disable-next-line unicorn/no-null
-        mainWindow.setBrowserView(null);
         mainWindow.setTitle(app.name);
       }
     } else if ((await this.workspaceService.countWorkspaces()) > 1 && (await this.workspaceService.get(workspaceID))?.active === true) {
@@ -374,8 +373,6 @@ export class WorkspaceView implements IWorkspaceViewService {
         await this.setActiveWorkspaceView(previousWorkspace.id);
       }
     }
-    // TODO: seems a window can only have a browser view, and is shared between workspaces
-    // this.viewService.removeAllViewOfWorkspace(workspaceID);
   }
 
   public async restartWorkspaceViewService(id?: string): Promise<void> {
