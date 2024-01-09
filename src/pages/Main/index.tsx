@@ -63,8 +63,6 @@ export default function Main(): JSX.Element {
   const { t } = useTranslation();
   useInitialPage();
   const preferences = usePreferenceObservable();
-  // DEBUG: console preferences
-  console.log(`preferences1`, preferences);
   if (preferences === undefined) return <div>{t('Loading')}</div>;
   const { sidebar } = preferences;
 
