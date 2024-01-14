@@ -92,8 +92,12 @@ export function setupIpcServerRoutesHandlers(view: BrowserView, workspaceID: str
     const parsedUrl = new URL(request.url);
     // parsedUrl.host is the actual workspaceID, sometimes we get workspaceID1 here, but in the handler callback we found `workspaceID` from the `setupIpcServerRoutesHandlers` param is workspaceID2, seems `view.webContents.session.protocol.handle` will mistakenly handle request from other views.
     const workspaceIDFromHost = parsedUrl.host;
-    if (workspaceIDFromHost !== workspaceID) {
-      logger.warn(`setupIpcServerRoutesHandlers.handlerCallback: workspaceIDFromHost !== workspaceID`, { workspaceIDFromHost, workspaceID });
+    // When using `standard: true` in `registerSchemesAsPrivileged`, workspaceIDFromHost is lower cased, and cause this
+    if (workspaceIDFromHost !== workspaceID.toLowerCase()) {
+      logger.warn(`setupIpcServerRoutesHandlers.handlerCallback: workspaceIDFromHost !== workspaceID`, {
+        workspaceIDFromHost,
+        workspaceID,
+      });
     }
     // Iterate through methods to find matching routes
     try {
@@ -103,7 +107,7 @@ export function setupIpcServerRoutesHandlers(view: BrowserView, workspaceID: str
           const parameters = parsedUrl.pathname.match(route.path);
           logger.debug(`setupIpcServerRoutesHandlers.handlerCallback: started`, { name: route.name, parsedUrl, parameters });
           // Call the handler of the route to process the request and return the result
-          const responseData = await route.handler(request, workspaceIDFromHost, parameters);
+          const responseData = await route.handler(request, workspaceID, parameters);
           if (responseData === undefined) {
             const statusText = `setupIpcServerRoutesHandlers.handlerCallback: responseData is undefined ${request.url}`;
             logger.warn(statusText);
