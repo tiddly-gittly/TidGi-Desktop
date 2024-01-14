@@ -120,7 +120,7 @@ export function setupIpcServerRoutesHandlers(view: BrowserView, workspaceID: str
     } catch (error) {
       return new Response(undefined, { status: 500, statusText: `${(error as Error).message} ${(error as Error).stack ?? ''}` });
     }
-    const statusText = `setupIpcServerRoutesHandlers.handlerCallback: tidgi protocol is not handled ${request.url}`;
+    const statusText = `setupIpcServerRoutesHandlers.handlerCallback: tidgi protocol 404 ${request.url}`;
     logger.warn(statusText);
     return new Response(undefined, { status: 404, statusText });
   }
