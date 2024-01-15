@@ -15,7 +15,7 @@ import type { ITiddlerFields } from 'tiddlywiki';
 const sendNoWait = sendToMainWindowNoWait;
 const sendAndWait = sendToMainWindowAndAwait;
 /**
- * Handle sending message to trigger operations defined in `src/preload/wikiOperation.ts`
+ * Handle sending message to trigger operations defined in `src/services/wiki/wikiOperations/executor/wikiOperationInBrowser.ts`
  */
 export const getSendWikiOperationsToBrowser = (workspaceID: string) =>
   ({
@@ -56,6 +56,9 @@ export const getSendWikiOperationsToBrowser = (workspaceID: string) =>
     },
     [WikiChannel.setTiddlerText]: async (title: string, value: string, options?: { timeout?: number }): Promise<void> => {
       await sendAndWait(WikiChannel.setTiddlerText, workspaceID, [title, value], options);
+    },
+    [WikiChannel.getTiddlerText]: async (title: string): Promise<void> => {
+      return await sendAndWait(WikiChannel.getTiddlerText, workspaceID, [title]);
     },
     [WikiChannel.renderWikiText]: async (content: string): Promise<string | undefined> => {
       return await sendAndWait(WikiChannel.renderWikiText, workspaceID, [content]);

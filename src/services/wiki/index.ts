@@ -2,7 +2,7 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
-import { dialog, ipcMain, shell } from 'electron';
+import { dialog, shell } from 'electron';
 import { backOff } from 'exponential-backoff';
 import { copy, createSymlink, exists, mkdir, mkdirp, mkdirs, pathExists, readFile, remove, unlink } from 'fs-extra';
 import { injectable } from 'inversify';
@@ -575,29 +575,6 @@ export class Wiki implements IWikiService {
 
   public checkWikiStartLock(id: string): boolean {
     return this.justStartedWiki[id] ?? false;
-  }
-
-  public async getTiddlerText(workspace: IWorkspace, title: string): Promise<string | undefined> {
-    const textResult: string = await new Promise((resolve) => {
-      /**
-       * Use nonce to prevent data racing
-       */
-      const nonce = Math.random();
-      const listener = (_event: Electron.IpcMainEvent, nonceReceived: number, value: string): void => {
-        if (nonce === nonceReceived) {
-          ipcMain.removeListener(WikiChannel.getTiddlerTextDone, listener);
-          resolve(value);
-        }
-      };
-      ipcMain.on(WikiChannel.getTiddlerTextDone, listener);
-      const browserView = this.viewService.getView(workspace.id, WindowNames.main);
-      if (!browserView?.webContents) {
-        logger.error(`browserView is undefined in getTiddlerText ${workspace.id} when running title ${title}`);
-        return;
-      }
-      browserView.webContents.send(WikiChannel.getTiddlerText, nonce, title);
-    });
-    return textResult;
   }
 
   public async wikiStartup(workspace: IWorkspace): Promise<void> {

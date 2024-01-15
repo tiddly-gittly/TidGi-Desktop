@@ -12,7 +12,11 @@ import { wikiOperationScripts } from '@services/wiki/wikiOperations/executor/scr
 import { ipcRenderer, webFrame } from 'electron';
 import type { ITiddlerFields } from 'tiddlywiki';
 
-// use scripts from wikiOperationScripts
+/**
+ * Use scripts from wikiOperationScripts.
+ *
+ * Also need to modify `src/services/wiki/wikiOperations/sender/sendWikiOperationsToBrowser.ts`
+ */
 export const wikiOperations = {
   [WikiChannel.setState]: async (stateKey: string, content: string) => {
     await executeTWJavaScriptWhenIdle(
@@ -25,7 +29,7 @@ export const wikiOperations = {
   },
   [WikiChannel.getTiddlerText]: async (nonceReceived: number, title: string) => {
     const tiddlerText: string = await (executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.getTiddlerText](title)));
-    ipcRenderer.send(WikiChannel.getTiddlerTextDone, nonceReceived, tiddlerText);
+    ipcRenderer.send(WikiChannel.getTiddlerText, nonceReceived, tiddlerText);
   },
   [WikiChannel.runFilter]: async (nonceReceived: number, filter: string) => {
     const filterResult: string[] = await (executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.runFilter](filter)));

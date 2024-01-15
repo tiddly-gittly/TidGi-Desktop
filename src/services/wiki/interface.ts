@@ -56,7 +56,6 @@ export interface IWikiService {
    * @param title tiddler title to open
    */
   getTiddlerFilePath(title: string, workspaceID?: string): Promise<string | undefined>;
-  getTiddlerText(workspace: IWorkspace, title: string): Promise<string | undefined>;
   getWikiChangeObserver$(workspaceID: string): Observable<IChangedTiddlers>;
   getWikiErrorLogs(workspaceID: string, wikiName: string): Promise<{ content: string; filePath: string }>;
   /**
@@ -112,7 +111,6 @@ export const WikiServiceIPCDescriptor = {
     ensureWikiExist: ProxyPropertyType.Function,
     extractWikiHTML: ProxyPropertyType.Function,
     getSubWikiPluginContent: ProxyPropertyType.Function,
-    getTiddlerText: ProxyPropertyType.Function,
     getWikiErrorLogs: ProxyPropertyType.Function,
     linkWiki: ProxyPropertyType.Function,
     getTiddlerFilePath: ProxyPropertyType.Function,

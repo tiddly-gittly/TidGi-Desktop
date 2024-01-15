@@ -92,10 +92,10 @@ export class Git implements IGitService {
      * similar to "linonetwo/wiki", string after "https://com/"
      */
     const githubRepoName = `${userName}/${repoName}`;
-    if (await this.wikiService.getTiddlerText(workspace, '$:/GitHub/Repo') !== githubRepoName) {
+    if (await this.wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Repo']) !== githubRepoName) {
       await this.wikiService.wikiOperationInBrowser(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Repo', githubRepoName]);
     }
-    if (await this.wikiService.getTiddlerText(workspace, '$:/GitHub/Branch') !== branch) {
+    if (await this.wikiService.wikiOperationInServer(WikiChannel.getTiddlerText, workspace.id, ['$:/GitHub/Branch']) !== branch) {
       await this.wikiService.wikiOperationInBrowser(WikiChannel.addTiddler, workspace.id, ['$:/GitHub/Branch', branch]);
     }
   }
