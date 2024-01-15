@@ -5,12 +5,12 @@ export const wikiOperationScripts = {
   ...common,
   [WikiChannel.syncProgress]: (message: string) => `
     $tw.wiki.addTiddler({ title: '$:/state/notification/${WikiChannel.syncProgress}', text: \`${message}\` });
-    $tw.notifier.display('$:/state/notification/${WikiChannel.syncProgress}');
+    return $tw.notifier.display('$:/state/notification/${WikiChannel.syncProgress}');
   `,
 
   [WikiChannel.generalNotification]: (message: string) => `
     $tw.wiki.addTiddler({ title: \`$:/state/notification/${WikiChannel.generalNotification}\`, text: \`${message}\` });
-    $tw.notifier.display(\`$:/state/notification/${WikiChannel.generalNotification}\`);
+    return $tw.notifier.display(\`$:/state/notification/${WikiChannel.generalNotification}\`);
   `,
 
   [WikiChannel.openTiddler]: (tiddlerName: string) => `
@@ -22,6 +22,7 @@ export const wikiOperationScripts = {
       handled = !bubbled;
       currentHandlerWidget = currentHandlerWidget.children?.[0];
     }
+    return handled;
   `,
 
   [WikiChannel.printTiddler]: async (tiddlerName: string) => {

@@ -6,7 +6,7 @@ interface IAddTiddlerOptionOptions {
 
 export const wikiOperationScripts = {
   [WikiChannel.setState]: (stateKey: string, content: string) => `
-      $tw.wiki.addTiddler({ title: '$:/state/${stateKey}', text: \`${content}\` });
+    return $tw.wiki.addTiddler({ title: '$:/state/${stateKey}', text: \`${content}\` });
     `,
   /**
    * add tiddler
@@ -38,7 +38,7 @@ export const wikiOperationScripts = {
       `
         : ''
     }
-      $tw.wiki.addTiddler({ title: \`${title}\`, text: \`${text}\`, ...${extraMeta}, ...dateObject });
+      return $tw.wiki.addTiddler({ title: \`${title}\`, text: \`${text}\`, ...${extraMeta}, ...dateObject });
     `;
   },
   [WikiChannel.getTiddlerText]: (title: string) => `
@@ -58,25 +58,18 @@ export const wikiOperationScripts = {
     }).filter(item => item !== undefined)
   `,
   [WikiChannel.setTiddlerText]: (title: string, value: string) => `
-    $tw.wiki.setText(\`${title}\`, 'text', undefined, \`${value}\`);
+    return $tw.wiki.setText(\`${title}\`, 'text', undefined, \`${value}\`);
   `,
   [WikiChannel.renderWikiText]: (content: string) => `
     return $tw.wiki.renderText("text/html", "text/vnd.tiddlywiki", \`${content.replaceAll('`', '\\`')}\`);
   `,
-  [WikiChannel.openTiddler]: (tiddlerName: string) => `
-    let trimmedTiddlerName = \`${tiddlerName.replaceAll('\n', '')}\`;
-    let currentHandlerWidget = $tw.rootWidget;
-    let handled = false;
-    while (currentHandlerWidget && !handled) {
-      const bubbled = currentHandlerWidget.dispatchEvent({ type: "tm-navigate", navigateTo: trimmedTiddlerName, param: trimmedTiddlerName });
-      handled = !bubbled;
-      currentHandlerWidget = currentHandlerWidget.children?.[0];
-    }
-  `,
   [WikiChannel.sendActionMessage]: (actionMessage: string) => `
-    $tw.rootWidget.dispatchEvent({ type: \`${actionMessage}\` });
+    return $tw.rootWidget.dispatchEvent({ type: \`${actionMessage}\` });
   `,
   [WikiChannel.deleteTiddler]: (title: string) => `
-    $tw.wiki.deleteTiddler(\`${title}\`);
+    return $tw.wiki.deleteTiddler(\`${title}\`);
+  `,
+  [WikiChannel.getTiddler]: (title: string) => `
+    return $tw.wiki.getTiddler(\`${title}\`);
   `,
 } as const;

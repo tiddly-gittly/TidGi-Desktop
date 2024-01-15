@@ -10,7 +10,7 @@
 import { WikiChannel } from '@/constants/channels';
 import { wikiOperationScripts } from '@services/wiki/wikiOperations/executor/scripts/web';
 import { ipcRenderer, webFrame } from 'electron';
-import type { ITiddlerFields } from 'tiddlywiki';
+import type { ITiddlerFields, Tiddler } from 'tiddlywiki';
 
 /**
  * Use scripts from wikiOperationScripts.
@@ -30,6 +30,10 @@ export const wikiOperations = {
   [WikiChannel.getTiddlerText]: async (nonceReceived: number, title: string) => {
     const tiddlerText: string = await (executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.getTiddlerText](title)));
     ipcRenderer.send(WikiChannel.getTiddlerText, nonceReceived, tiddlerText);
+  },
+  [WikiChannel.getTiddler]: async (nonceReceived: number, title: string) => {
+    const tiddler: Tiddler = await (executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.getTiddler](title)));
+    ipcRenderer.send(WikiChannel.getTiddler, nonceReceived, tiddler);
   },
   [WikiChannel.runFilter]: async (nonceReceived: number, filter: string) => {
     const filterResult: string[] = await (executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.runFilter](filter)));

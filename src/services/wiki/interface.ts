@@ -82,6 +82,9 @@ export interface IWikiService {
   updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void>;
   /**
    * Runs wiki related JS script in wiki page to control the wiki.
+   *
+   * Some data may not be available in browser, for example, getTiddlerText will return `null` for the first time, and trigger lazy loading, and return text on second call. In such case, you may want to use `wikiOperationInServer` instead.
+   * @example `await window.service.wiki.wikiOperationInBrowser('wiki-get-tiddler-text', window.meta().workspaceID, ['TiddlyWikiIconBlack.png'])`
    */
   wikiOperationInBrowser<OP extends keyof ISendWikiOperationsToBrowser>(
     operationType: OP,

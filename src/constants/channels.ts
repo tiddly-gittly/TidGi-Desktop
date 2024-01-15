@@ -55,6 +55,7 @@ export enum WikiChannel {
   createProgress = 'wiki-create-progress',
   deleteTiddler = 'wiki-delete-tiddler',
   generalNotification = 'wiki-notification-tiddly-git',
+  getTiddler = 'wiki-get-tiddler',
   getTiddlerText = 'wiki-get-tiddler-text',
   /**
    * `$tw.wiki.getTiddlersAsJson('[all[]]')`

@@ -6,7 +6,7 @@
  */
 
 import { WikiChannel } from '@/constants/channels';
-import type { ITiddlerFields, ITiddlyWiki } from 'tiddlywiki';
+import type { ITiddlerFields, ITiddlyWiki, Tiddler } from 'tiddlywiki';
 import { wikiOperationScripts } from './scripts/common';
 
 export type IWorkerWikiOperations = typeof wikiOperationsInWikiWorker.wikiOperationsInServer;
@@ -61,6 +61,10 @@ export class WikiOperationsInWikiWorker {
       const tiddlerText: string = await (this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.getTiddlerText](title)) as Promise<string>);
       return tiddlerText;
     },
+    [WikiChannel.getTiddler]: async (title: string) => {
+      const tiddler: Tiddler = await (this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.getTiddler](title)) as Promise<Tiddler>);
+      return tiddler;
+    },
     [WikiChannel.runFilter]: async (filter: string) => {
       const filterResult: string[] = await (this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.runFilter](filter)) as Promise<string[]>);
       return filterResult;
@@ -75,9 +79,6 @@ export class WikiOperationsInWikiWorker {
     [WikiChannel.renderWikiText]: async (content: string) => {
       const renderResult = await (this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.renderWikiText](content)) as Promise<string>);
       return renderResult;
-    },
-    [WikiChannel.openTiddler]: async (tiddlerName: string) => {
-      await this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.openTiddler](tiddlerName));
     },
     [WikiChannel.sendActionMessage]: async (actionMessage: string) => {
       await this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.sendActionMessage](actionMessage));

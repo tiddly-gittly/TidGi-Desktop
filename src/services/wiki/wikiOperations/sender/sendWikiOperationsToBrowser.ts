@@ -60,6 +60,9 @@ export const getSendWikiOperationsToBrowser = (workspaceID: string) =>
     [WikiChannel.getTiddlerText]: async (title: string): Promise<void> => {
       return await sendAndWait(WikiChannel.getTiddlerText, workspaceID, [title]);
     },
+    [WikiChannel.getTiddler]: async (title: string): Promise<void> => {
+      return await sendAndWait(WikiChannel.getTiddler, workspaceID, [title]);
+    },
     [WikiChannel.renderWikiText]: async (content: string): Promise<string | undefined> => {
       return await sendAndWait(WikiChannel.renderWikiText, workspaceID, [content]);
     },
