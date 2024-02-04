@@ -29,7 +29,7 @@ import type { IUpdaterService } from '@services/updater/interface';
 import { IWikiService } from '@services/wiki/interface';
 import { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import EventEmitter from 'events';
-import { isLinux, isMac } from './helpers/system';
+import { isLinux } from './helpers/system';
 import type { IPreferenceService } from './services/preferences/interface';
 import type { IWindowService } from './services/windows/interface';
 import type { IWorkspaceViewService } from './services/workspacesView/interface';
@@ -163,9 +163,9 @@ app.on('ready', async () => {
     logger.error(`Error when app.on('ready'): ${(error as Error).message}`);
   }
 });
-app.on(MainChannel.windowAllClosed, () => {
+app.on(MainChannel.windowAllClosed, async () => {
   // prevent quit on MacOS. But also quit if we are in test.
-  if (!isMac || isTest) {
+  if (isTest || !(await preferenceService.get('runOnBackground'))) {
     app.quit();
   }
 });
