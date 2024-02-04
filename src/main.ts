@@ -175,9 +175,9 @@ app.on(
   async (): Promise<void> => {
     logger.info('App before-quit');
     await Promise.all([
+      databaseService.immediatelyStoreSettingsToFile(),
       wikiService.stopAllWiki(),
       windowService.clearWindowsReference(),
-      databaseService.immediatelyStoreSettingsToFile(),
     ]);
     destroyLogger();
     app.exit(0);

@@ -107,13 +107,8 @@ export class Window implements IWindowService {
 
   public async close(windowName: WindowNames): Promise<void> {
     this.get(windowName)?.close?.();
-    if (windowName === WindowNames.menuBar) {
-      // keep the menubar window instance
-      this.mainWindowMenuBar?.app?.hide?.();
-    } else {
-      // remove the window instance, let it GC
-      this.windows.delete(windowName);
-    }
+    // remove the window instance, let it GC
+    this.windows.delete(windowName);
   }
 
   public async clearWindowsReference(): Promise<void> {
@@ -123,7 +118,6 @@ export class Window implements IWindowService {
       await this.updateWindowMeta(WindowNames.main, { forceClose: true });
     }
     this.windows.clear();
-    this.mainWindowMenuBar?.app?.quit?.();
   }
 
   public async isMenubarOpen(): Promise<boolean> {
