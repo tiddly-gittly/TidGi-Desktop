@@ -69,6 +69,15 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
       });
     }
   });
+  menuBar.on('hide', async () => {
+    // on mac, calling `menuBar.app.hide()` with main window open will bring background main window up, which we don't want. We want to bring previous other app up. So close main window first.
+    if (isMac) {
+      const mainWindow = windowService.get(WindowNames.main);
+      if (mainWindow?.isVisible() === true) {
+        await windowService.close(WindowNames.main);
+      }
+    }
+  });
   // https://github.com/maxogden/menubar/issues/120
   menuBar.on('after-hide', () => {
     if (isMac) {
