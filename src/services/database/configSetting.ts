@@ -18,6 +18,7 @@ export function fixEmptyAndErrorSettingFileOnStartUp() {
     }
   } else {
     // create an empty JSON file if not exist, to prevent error when reading it. fixes https://github.com/tiddly-gittly/TidGi-Desktop/issues/507
+    fs.ensureFileSync(settings.file());
     fs.writeJSONSync(settings.file(), {});
   }
 }
@@ -25,6 +26,7 @@ export function fixEmptyAndErrorSettingFileOnStartUp() {
 export function fixSettingFileWhenError(jsonError: Error, providedJSONContent?: string): void {
   logger.error('Setting file format bad: ' + jsonError.message);
   // fix empty content or empty string
+  fs.ensureFileSync(settings.file());
   const jsonContent = providedJSONContent || fs.readFileSync(settings.file(), 'utf8').trim() || '{}';
   logger.info('Try to fix JSON content.');
   try {
