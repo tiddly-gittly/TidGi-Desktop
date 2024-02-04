@@ -17,6 +17,7 @@ import { isSameOrigin } from '@services/libs/url';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWindowService } from '@services/windows/interface';
+import { WindowNames } from '@services/windows/WindowProperties';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { ViewLoadUrlError } from './error';
@@ -27,6 +28,7 @@ export interface IViewContext {
   loadInitialUrlWithCatch: () => Promise<void>;
   sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
   shouldPauseNotifications: boolean;
+  windowName: WindowNames;
   workspace: IWorkspace;
 }
 
@@ -40,7 +42,7 @@ export interface IViewMeta {
 export default function setupViewEventHandlers(
   view: BrowserView,
   browserWindow: BrowserWindow,
-  { workspace, sharedWebPreferences, loadInitialUrlWithCatch }: IViewContext,
+  { workspace, sharedWebPreferences, loadInitialUrlWithCatch, windowName }: IViewContext,
 ): void {
   // metadata and state about current BrowserView
   const viewMeta: IViewMeta = {
@@ -64,7 +66,7 @@ export default function setupViewEventHandlers(
     if (workspaceObject.active && (await workspaceService.workspaceDidFailLoad(workspace.id)) && browserWindow !== undefined && !browserWindow.isDestroyed()) {
       // fix https://github.com/webcatalog/singlebox-legacy/issues/228
       const contentSize = browserWindow.getContentSize();
-      view.setBounds(await getViewBounds(contentSize as [number, number]));
+      view.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
     }
     await workspaceService.updateMetaData(workspace.id, {
       // eslint-disable-next-line unicorn/no-null
@@ -232,8 +234,8 @@ export default function setupViewEventHandlers(
   );
   // Handle downloads
   // https://electronjs.org/docs/api/download-item
-  view.webContents.session.on('will-download', async (_event, item) => {
-    const { askForDownloadPath, downloadPath } = await preferenceService.getPreferences();
+  view.webContents.session.on('will-download', (_event, item) => {
+    const { askForDownloadPath, downloadPath } = preferenceService.getPreferences();
     // Set the save path, making Electron not to prompt a save dialog.
     if (askForDownloadPath) {
       // set preferred path for save dialog

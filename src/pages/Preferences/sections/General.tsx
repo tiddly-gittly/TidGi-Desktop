@@ -203,6 +203,23 @@ export function General(props: Required<ISectionProps>): JSX.Element {
               </ListItem>
               <ListItem>
                 <ListItemText
+                  primary={platform === 'win32' ? t('Preference.AttachToTaskbarShowSidebar') : t('Preference.AttachToMenuBarShowSidebar')}
+                  secondary={platform === 'linux' ? undefined : t('Preference.AttachToMenuBarShowSidebarTip')}
+                />
+                <ListItemSecondaryAction>
+                  <Switch
+                    edge='end'
+                    color='primary'
+                    checked={preference.sidebarOnMenubar}
+                    onChange={async (event) => {
+                      await window.service.preference.set('sidebarOnMenubar', event.target.checked);
+                    }}
+                  />
+                </ListItemSecondaryAction>
+              </ListItem>
+              <Divider />
+              <ListItem>
+                <ListItemText
                   primary={t('Preference.RunOnBackground')}
                   secondary={t('Preference.RunOnBackgroundDetail') + (platform === 'darwin' ? '' : t('Preference.RunOnBackgroundDetailNotMac'))}
                 />

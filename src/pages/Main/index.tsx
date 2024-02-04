@@ -59,13 +59,15 @@ const ContentRoot = styled.div<{ $sidebar: boolean }>`
   height: 100%;
 `;
 
+const windowName = window.meta().windowName;
+
 export default function Main(): JSX.Element {
   const { t } = useTranslation();
   useInitialPage();
   const preferences = usePreferenceObservable();
   if (preferences === undefined) return <div>{t('Loading')}</div>;
-  const { sidebar } = preferences;
-
+  const { sidebar, sidebarOnMenubar } = preferences;
+  const showSidebar = windowName === WindowNames.menuBar ? sidebarOnMenubar : sidebar;
   return (
     <OuterRoot>
       <div id='test' data-usage='For spectron automating testing' />
@@ -73,8 +75,9 @@ export default function Main(): JSX.Element {
         <title>{t('Menu.TidGi')}</title>
       </Helmet>
       <Root>
-        {sidebar && <SideBar />}
-        <ContentRoot $sidebar={sidebar}>
+        {/* //TODO: add preference, and set view width */}
+        {showSidebar && <SideBar />}
+        <ContentRoot $sidebar={showSidebar}>
           <FindInPage />
           <Switch>
             <Route path={`/${WindowNames.main}/${PageType.wiki}/:id/`} component={WikiBackground} />

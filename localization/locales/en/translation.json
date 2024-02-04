@@ -387,7 +387,10 @@
     },
     "RunOnBackground": "Run On Background",
     "RunOnBackgroundDetail": "When window is closed, Continue to run in the background without exiting. Quickly restore the window when opening the app again.",
-    "RunOnBackgroundDetailNotMac": "Recommend to enable Attach To Taskbar. So you can restore window use it."
+    "RunOnBackgroundDetailNotMac": "Recommend to enable Attach To Taskbar. So you can restore window use it.",
+    "AttachToTaskbarShowSidebar": "Attach To Taskbar Show Sidebar",
+    "AttachToMenuBarShowSidebar": "Attach To Menu Bar Show Sidebar",
+    "AttachToMenuBarShowSidebarTip": "Generally, TidGi small window is only used to quickly view the current workspace, so the default synchronization with the main window workspace, do not need a sidebar, the default hidden sidebar."
   },
   "Error": {
     "InitWikiGitError": "E-1 InitWikiGitError",

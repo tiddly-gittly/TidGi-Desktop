@@ -262,7 +262,7 @@ export class View implements IViewService {
     const sharedWebPreferences = await this.getSharedWebPreferences(workspace);
     const view = await this.createViewAddToWindow(workspace, browserWindow, sharedWebPreferences, windowName);
     this.setView(workspace.id, windowName, view);
-    await this.initializeWorkspaceViewHandlersAndLoad(workspace, browserWindow, view, sharedWebPreferences);
+    await this.initializeWorkspaceViewHandlersAndLoad(browserWindow, view, { workspace, sharedWebPreferences, windowName });
   }
 
   public async getSharedWebPreferences(workspace: IWorkspace) {
@@ -318,7 +318,12 @@ export class View implements IViewService {
     return view;
   }
 
-  public async initializeWorkspaceViewHandlersAndLoad(workspace: IWorkspace, browserWindow: BrowserWindow, view: BrowserView, sharedWebPreferences: WebPreferences, uri?: string) {
+  public async initializeWorkspaceViewHandlersAndLoad(
+    browserWindow: BrowserWindow,
+    view: BrowserView,
+    configs: { sharedWebPreferences: WebPreferences; uri?: string; windowName: WindowNames; workspace: IWorkspace },
+  ) {
+    const { sharedWebPreferences, uri, workspace, windowName } = configs;
     setupViewEventHandlers(view, browserWindow, {
       shouldPauseNotifications: this.shouldPauseNotifications,
       workspace,
@@ -326,6 +331,7 @@ export class View implements IViewService {
       loadInitialUrlWithCatch: async () => {
         await this.loadUrlForView(workspace, view, uri);
       },
+      windowName,
     });
     setupIpcServerRoutesHandlers(view, workspace.id);
     await this.loadUrlForView(workspace, view, uri);
@@ -553,7 +559,7 @@ export class View implements IViewService {
     });
   }
 
-  public realignActiveView = async (browserWindow: BrowserWindow, activeId: string, isRetry?: boolean): Promise<void> => {
+  public async realignActiveView(browserWindow: BrowserWindow, activeId: string, windowName: WindowNames, isRetry?: boolean): Promise<void> {
     const view = browserWindow.getBrowserView();
     if (view?.webContents !== null && view?.webContents !== undefined) {
       const contentSize = browserWindow.getContentSize();
@@ -562,7 +568,7 @@ export class View implements IViewService {
         await this.hideView(browserWindow);
       } else {
         logger.debug(`realignActiveView() contentSize set to ${JSON.stringify(contentSize)}`);
-        view?.setBounds(await getViewBounds(contentSize as [number, number]));
+        view?.setBounds(await getViewBounds(contentSize as [number, number], { windowName }));
       }
     } else if (isRetry === true) {
       logger.error(
@@ -573,9 +579,9 @@ export class View implements IViewService {
     } else {
       // retry one time later if webContent is not ready yet
       logger.debug(`realignActiveView() retry one time later`);
-      setTimeout(() => void this.realignActiveView(browserWindow, activeId, true), 1000);
+      setTimeout(() => void this.realignActiveView(browserWindow, activeId, windowName, true), 1000);
     }
-  };
+  }
 
   public async hideView(browserWindow: BrowserWindow): Promise<void> {
     const view = browserWindow.getBrowserView();

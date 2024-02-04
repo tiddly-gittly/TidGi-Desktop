@@ -35,6 +35,7 @@ export const defaultPreferences: IPreferences = {
   showSideBarIcon: true,
   showSideBarText: true,
   sidebar: true,
+  sidebarOnMenubar: false,
   spellcheck: true,
   spellcheckLanguages: ['en-US'],
   swipeToNavigate: true,

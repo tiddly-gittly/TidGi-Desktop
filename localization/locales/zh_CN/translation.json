@@ -424,7 +424,10 @@
     },
     "RunOnBackground": "保持后台运行",
     "RunOnBackgroundDetail": "在窗口关闭时不退出，继续保持后台运行。再次打开应用时快速还原窗口。",
-    "RunOnBackgroundDetailNotMac": "建议开启太记小窗，以便通过菜单栏/任务栏图标重新打开窗口。"
+    "RunOnBackgroundDetailNotMac": "建议开启太记小窗，以便通过菜单栏/任务栏图标重新打开窗口。",
+    "AttachToTaskbarShowSidebar": "附加到任务栏的窗口包含侧边栏",
+    "AttachToMenuBarShowSidebar": "附加到菜单栏的窗口包含侧边栏",
+    "AttachToMenuBarShowSidebarTip": "一般太记小窗仅用于快速查看当前工作区，所以默认与主窗口工作区同步，不需要侧边栏，默认隐藏侧边栏。"
   },
   "Error": {
     "InitWikiGitError": "E-1 笔记仓库初始化失败错误",

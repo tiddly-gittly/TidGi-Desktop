@@ -27,7 +27,14 @@ export interface IPreferences {
   shareWorkspaceBrowsingData: boolean;
   showSideBarIcon: boolean;
   showSideBarText: boolean;
+  /**
+   * Should show sidebar on main window?
+   */
   sidebar: boolean;
+  /**
+   * Should show sidebar on menubar window?
+   */
+  sidebarOnMenubar: boolean;
   spellcheck: boolean;
   spellcheckLanguages: HunspellLanguages[];
   swipeToNavigate: boolean;

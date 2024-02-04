@@ -45,18 +45,22 @@ export interface IViewService {
    * This won't destroy view or remove it from the window, but if you add another view to the window now, this will be replaced safely. To completely remove the view, use `removeView`.
    */
   hideView(browserWindow: BrowserWindow): Promise<void>;
-  initializeWorkspaceViewHandlersAndLoad(workspace: IWorkspace, browserWindow: BrowserWindow, view: BrowserView, sharedWebPreferences: WebPreferences, uri?: string): Promise<void>;
+  initializeWorkspaceViewHandlersAndLoad(
+    browserWindow: BrowserWindow,
+    view: BrowserView,
+    configs: { sharedWebPreferences: WebPreferences; uri?: string; windowName: WindowNames; workspace: IWorkspace },
+  ): Promise<void>;
   /**
    * Try catch loadUrl, other wise it will throw unhandled promise rejection Error: ERR_CONNECTION_REFUSED (-102) loading 'http://localhost:5212/
    * We will set `didFailLoadErrorMessage`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
    */
   loadUrlForView(workspace: IWorkspace, view: BrowserView): Promise<void>;
-  realignActiveView: (browserWindow: BrowserWindow, activeId: string) => Promise<void>;
+  realignActiveView(browserWindow: BrowserWindow, activeId: string, windowName: WindowNames, isRetry?: boolean): Promise<void>;
   reloadActiveBrowserView: () => Promise<void>;
   reloadViewsWebContents(workspaceID?: string | undefined): Promise<void>;
   reloadViewsWebContentsIfDidFailLoad: () => Promise<void>;
   /**
-   * @param workspaceID 
+   * @param workspaceID
    * @param permanent Do you still need views later? If this is true, view will be destroyed. If this is false, view will be hidden by remove them from the window, but can still be fast add back later..
    */
   removeAllViewOfWorkspace(workspaceID: string, permanent?: boolean): void;

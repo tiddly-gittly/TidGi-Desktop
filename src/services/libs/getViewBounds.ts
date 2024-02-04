@@ -1,4 +1,3 @@
-import { isMac } from '@/helpers/system';
 import { container } from '@services/container';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
@@ -6,13 +5,14 @@ import { WindowNames } from '@services/windows/WindowProperties';
 
 export default async function getViewBounds(
   contentSize: [number, number],
-  config: { findInPage?: boolean; windowName?: WindowNames } = {},
+  config: { findInPage?: boolean; windowName?: WindowNames },
   height?: number,
   width?: number,
 ): Promise<{ height: number; width: number; x: number; y: number }> {
   const { findInPage = false, windowName } = config;
   const preferencesService = container.get<IPreferenceService>(serviceIdentifier.Preference);
-  const [showSidebar] = await Promise.all([preferencesService.get('sidebar'), preferencesService.get('titleBar')]);
+  const [sidebar, sidebarOnMenubar] = await Promise.all([preferencesService.get('sidebar'), preferencesService.get('sidebarOnMenubar')]);
+  const showSidebar = windowName === WindowNames.menuBar ? sidebarOnMenubar : sidebar;
   // Now showing sidebar on secondary window
   const secondary = windowName === WindowNames.secondary;
   const x = (showSidebar && !secondary) ? 68 : 0;

@@ -220,7 +220,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     const sharedWebPreferences = await this.viewService.getSharedWebPreferences(workspace);
     const view = await this.viewService.createViewAddToWindow(workspace, browserWindow, sharedWebPreferences, WindowNames.secondary);
     logger.debug('View created in new window.', { id: workspace.id, uriToOpen, function: 'openWorkspaceWindowWithView' });
-    await this.viewService.initializeWorkspaceViewHandlersAndLoad(workspace, browserWindow, view, sharedWebPreferences, uriToOpen);
+    await this.viewService.initializeWorkspaceViewHandlersAndLoad(browserWindow, view, { workspace, sharedWebPreferences, windowName: WindowNames.secondary, uri: uriToOpen });
   }
 
   public async updateLastUrl(
@@ -497,14 +497,14 @@ export class WorkspaceView implements IWorkspaceViewService {
       }
       const tasks = [];
       if (mainBrowserViewWebContent) {
-        tasks.push(this.viewService.realignActiveView(mainWindow, workspaceToRealign.id));
+        tasks.push(this.viewService.realignActiveView(mainWindow, workspaceToRealign.id, WindowNames.main));
         logger.debug(`realignActiveWorkspaceView: realign main window for ${workspaceToRealign.id}.`);
       } else {
         logger.warn(`realignActiveWorkspaceView: no mainBrowserViewWebContent, skip main window for ${workspaceToRealign.id}.`);
       }
       if (menuBarBrowserViewWebContent) {
         logger.debug(`realignActiveWorkspaceView: realign menu bar window for ${workspaceToRealign.id}.`);
-        tasks.push(this.viewService.realignActiveView(menuBarWindow, workspaceToRealign.id));
+        tasks.push(this.viewService.realignActiveView(menuBarWindow, workspaceToRealign.id, WindowNames.menuBar));
       } else {
         logger.info(`realignActiveWorkspaceView: no menuBarBrowserViewWebContent, skip menu bar window for ${workspaceToRealign.id}.`);
       }
