@@ -164,8 +164,8 @@ export class Window implements IWindowService {
       windowWithBrowserViewState = windowStateKeeper({
         file: `window-state-${windowName}.json`,
         path: SETTINGS_FOLDER,
-        defaultWidth: windowDimension[WindowNames.main].width,
-        defaultHeight: windowDimension[WindowNames.main].height,
+        defaultWidth: windowDimension[windowName].width,
+        defaultHeight: windowDimension[windowName].height,
       });
       windowWithBrowserViewConfig = {
         x: windowWithBrowserViewState.x,

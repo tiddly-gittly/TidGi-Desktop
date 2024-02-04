@@ -47,8 +47,14 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
           if (menuBar.window === undefined) {
             logger.debug('menuBar.window is undefined');
           } else {
-            menuBar.window.setPosition(windowWithBrowserViewState.x, windowWithBrowserViewState.y, false);
-            menuBar.window.setSize(windowWithBrowserViewState.width, windowWithBrowserViewState.height, false);
+            const haveXYValue = [windowWithBrowserViewState.x, windowWithBrowserViewState.y].every((value) => Number.isFinite(value));
+            const haveWHValue = [windowWithBrowserViewState.width, windowWithBrowserViewState.height].every((value) => Number.isFinite(value));
+            if (haveXYValue) {
+              menuBar.window.setPosition(windowWithBrowserViewState.x, windowWithBrowserViewState.y, false);
+            }
+            if (haveWHValue) {
+              menuBar.window.setSize(windowWithBrowserViewState.width, windowWithBrowserViewState.height, false);
+            }
           }
         }
         const view = menuBar.window?.getBrowserView();
