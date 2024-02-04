@@ -74,7 +74,7 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
     if (isMac) {
       const mainWindow = windowService.get(WindowNames.main);
       if (mainWindow?.isVisible() === true) {
-        await windowService.close(WindowNames.main);
+        await windowService.hide(WindowNames.main);
       }
     }
   });
@@ -100,7 +100,6 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
     menuBar.on('ready', async () => {
       // right on tray icon
       menuBar.tray.on('right-click', () => {
-        // TODO: restore updater options here
         const contextMenu = Menu.buildFromTemplate([
           {
             label: i18n.t('ContextMenu.OpenTidGi'),

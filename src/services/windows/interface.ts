@@ -21,6 +21,9 @@ export interface IWindowService {
   clearStorageData(windowName?: WindowNames): Promise<void>;
   /** cleanup all window references for GC */
   clearWindowsReference(): Promise<void>;
+  /**
+   * Completely close a window, destroy its all state and BrowserView. Need more time to restore. Use `hide` if you want to hide it temporarily.
+   */
   close(windowName: WindowNames): Promise<void>;
   findInPage(text: string, forward?: boolean | undefined, windowName?: WindowNames): Promise<void>;
   /** get window, this should not be called in renderer side */
@@ -29,6 +32,10 @@ export interface IWindowService {
   goBack(windowName?: WindowNames): Promise<void>;
   goForward(windowName?: WindowNames): Promise<void>;
   goHome(windowName?: WindowNames): Promise<void>;
+  /**
+   * Temporarily hide window, it will not be destroyed, and can be shown again very quick, with BrowserView restored immediately.
+   */
+  hide(windowName: WindowNames): Promise<void>;
   isFullScreen(windowName?: WindowNames): Promise<boolean | undefined>;
   isMenubarOpen(): Promise<boolean>;
   loadURL(windowName: WindowNames, newUrl?: string): Promise<void>;

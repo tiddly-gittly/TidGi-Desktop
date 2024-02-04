@@ -32,21 +32,11 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
   newWindow.on('close', async (event) => {
     // only do this for main window
     if (windowName !== WindowNames.main || newWindow === undefined) return;
-    const windowMeta = await windowService.getWindowMeta(WindowNames.main);
+    const windowMeta = await windowService.getWindowMeta(windowName);
     const runOnBackground = await preferenceService.get('runOnBackground');
     if (runOnBackground && windowMeta?.forceClose !== true) {
       event.preventDefault();
-      // https://github.com/electron/electron/issues/6033#issuecomment-242023295
-      if (newWindow.isFullScreen()) {
-        newWindow.once('leave-full-screen', () => {
-          if (newWindow !== undefined) {
-            newWindow.hide();
-          }
-        });
-        newWindow.setFullScreen(false);
-      } else {
-        newWindow.hide();
-      }
+      await windowService.hide(windowName);
     }
   });
 

@@ -75,7 +75,6 @@ export default function Main(): JSX.Element {
         <title>{t('Menu.TidGi')}</title>
       </Helmet>
       <Root>
-        {/* //TODO: add preference, and set view width */}
         {showSidebar && <SideBar />}
         <ContentRoot $sidebar={showSidebar}>
           <FindInPage />

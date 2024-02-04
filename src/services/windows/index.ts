@@ -28,6 +28,7 @@ import { handleCreateBasicWindow } from './handleCreateBasicWindow';
 import { IWindowOpenConfig, IWindowService } from './interface';
 import { registerBrowserViewWindowListeners } from './registerBrowserViewWindowListeners';
 import { registerMenu } from './registerMenu';
+import { logger } from '@services/libs/log';
 
 @injectable()
 export class Window implements IWindowService {
@@ -109,6 +110,25 @@ export class Window implements IWindowService {
     this.get(windowName)?.close?.();
     // remove the window instance, let it GC
     this.windows.delete(windowName);
+  }
+
+  public async hide(windowName: WindowNames): Promise<void> {
+    const windowToHide = this.get(windowName);
+    if (windowToHide === undefined) {
+      logger.error(`Window ${windowName} is not found`, { function: 'Window.hide' });
+      return;
+    }
+    // https://github.com/electron/electron/issues/6033#issuecomment-242023295
+    if (windowToHide.isFullScreen()) {
+      windowToHide.once('leave-full-screen', () => {
+        if (windowToHide !== undefined) {
+          windowToHide.hide();
+        }
+      });
+      windowToHide.setFullScreen(false);
+    } else {
+      windowToHide.hide();
+    }
   }
 
   public async clearWindowsReference(): Promise<void> {
