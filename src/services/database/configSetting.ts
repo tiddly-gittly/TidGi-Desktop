@@ -6,6 +6,22 @@ import settings from 'electron-settings';
 import fs from 'fs-extra';
 import { isWin } from '../../helpers/system';
 
+export function fixEmptyAndErrorSettingFileOnStartUp() {
+  // Fix sometimes JSON is malformed https://github.com/nathanbuchar/electron-settings/issues/160
+  if (fs.existsSync(settings.file())) {
+    try {
+      logger.info('Checking Setting file format.');
+      fs.readJsonSync(settings.file());
+      logger.info('Setting file format good.');
+    } catch (jsonError) {
+      fixSettingFileWhenError(jsonError as Error);
+    }
+  } else {
+    // create an empty JSON file if not exist, to prevent error when reading it. fixes https://github.com/tiddly-gittly/TidGi-Desktop/issues/507
+    fs.writeJSONSync(settings.file(), {});
+  }
+}
+
 export function fixSettingFileWhenError(jsonError: Error, providedJSONContent?: string): void {
   logger.error('Setting file format bad: ' + jsonError.message);
   // fix empty content or empty string
@@ -25,3 +41,4 @@ settings.configure({
   dir: SETTINGS_FOLDER,
   atomicSave: !isWin,
 });
+fixEmptyAndErrorSettingFileOnStartUp();

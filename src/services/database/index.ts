@@ -17,22 +17,6 @@ import { loadSqliteVss } from './sqlite-vss';
 
 @injectable()
 export class DatabaseService implements IDatabaseService {
-  constructor() {
-    // Fix sometimes JSON is malformed https://github.com/nathanbuchar/electron-settings/issues/160
-    if (fs.existsSync(settings.file())) {
-      try {
-        logger.info('Checking Setting file format.');
-        fs.readJsonSync(settings.file());
-        logger.info('Setting file format good.');
-      } catch (jsonError) {
-        fixSettingFileWhenError(jsonError as Error);
-      }
-    } else {
-      // create an empty JSON file if not exist, to prevent error when reading it. fixes https://github.com/tiddly-gittly/TidGi-Desktop/issues/507
-      fs.writeJSONSync(settings.file(), {});
-    }
-  }
-
   // tiddlywiki require methods to be sync, so direct run them in the main process. But later we can use worker_thread to run heavier search queries, as a readonly slave db, and do some data sync between them.
   // many operations has to be done in wikiWorker, so can be accessed by nodejs wiki in a sync way.
   // private readonly dbWorker?: ModuleThread<GitWorker>;

@@ -6,7 +6,6 @@ import 'reflect-metadata';
 import './helpers/singleInstance';
 import './services/database/configSetting';
 import { app, ipcMain, powerMonitor, protocol } from 'electron';
-import settings from 'electron-settings';
 import unhandled from 'electron-unhandled';
 import fs from 'fs-extra';
 import inspector from 'node:inspector';
@@ -71,25 +70,17 @@ app.on('second-instance', async () => {
 app.on('activate', async () => {
   await windowService.open(WindowNames.main);
 });
-// make sure "Settings" file exists
-// if not, ignore this chunk of code
-// as using electron-settings before app.on('ready') and "Settings" is created
-// would return error
-// https://github.com/nathanbuchar/electron-settings/issues/111
-if (fs.existsSync(settings.file())) {
-  void preferenceService.get('useHardwareAcceleration').then((useHardwareAcceleration) => {
-    if (!useHardwareAcceleration) {
-      app.disableHardwareAcceleration();
-    }
-  });
-  void preferenceService.get('ignoreCertificateErrors').then((ignoreCertificateErrors) => {
-    if (ignoreCertificateErrors) {
-      // https://www.electronjs.org/docs/api/command-line-switches
-      app.commandLine.appendSwitch('ignore-certificate-errors');
-    }
-  });
-}
-
+void preferenceService.get('useHardwareAcceleration').then((useHardwareAcceleration) => {
+  if (!useHardwareAcceleration) {
+    app.disableHardwareAcceleration();
+  }
+});
+void preferenceService.get('ignoreCertificateErrors').then((ignoreCertificateErrors) => {
+  if (ignoreCertificateErrors) {
+    // https://www.electronjs.org/docs/api/command-line-switches
+    app.commandLine.appendSwitch('ignore-certificate-errors');
+  }
+});
 const commonInit = async (): Promise<void> => {
   await app.whenReady();
   // if user want a menubar, we create a new window for that
