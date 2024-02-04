@@ -5,10 +5,11 @@ import fs from 'fs-extra';
 import { injectable } from 'inversify';
 import { debounce } from 'lodash';
 import path from 'path';
+import * as rotateFs from 'rotating-file-stream';
 import { DataSource } from 'typeorm';
 
 import { CACHE_DATABASE_FOLDER } from '@/constants/appPaths';
-import { DEBOUNCE_SAVE_SETTING_FILE } from '@/constants/parameters';
+import { DEBOUNCE_SAVE_SETTING_BACKUP_FILE, DEBOUNCE_SAVE_SETTING_FILE } from '@/constants/parameters';
 import { PACKAGE_PATH_BASE, SQLITE_BINARY_PATH } from '@/constants/paths';
 import { logger } from '@services/libs/log';
 import { fixSettingFileWhenError } from './configSetting';
@@ -201,10 +202,17 @@ export class DatabaseService implements IDatabaseService {
   }
 
   private settingFileContent: ISettingFile = settings.getSync() as unknown as ISettingFile || {};
+  private readonly settingBackupStream = rotateFs.createStream(`${settings.file()}.bak`, {
+    size: '10M',
+    interval: '1d',
+    maxFiles: 3,
+  });
 
   public setSetting<K extends keyof ISettingFile>(key: K, value: ISettingFile[K]) {
     this.settingFileContent[key] = value;
     void this.debouncedStoreSettingsToFile();
+    // make infrequent backup of setting file, preventing re-install/upgrade from corrupting the file.
+    void this.debouncedStoreSettingsToBackupFile();
   }
 
   public setSettingImmediately<K extends keyof ISettingFile>(key: K, value: ISettingFile[K]) {
@@ -217,7 +225,13 @@ export class DatabaseService implements IDatabaseService {
   }
 
   private readonly debouncedStoreSettingsToFile = debounce(this.immediatelyStoreSettingsToFile.bind(this), DEBOUNCE_SAVE_SETTING_FILE);
+  private readonly debouncedStoreSettingsToBackupFile = debounce(this.immediatelyStoreSettingsToBackupFile.bind(this), DEBOUNCE_SAVE_SETTING_BACKUP_FILE);
   private storeSettingsToFileLock = false;
+
+  public immediatelyStoreSettingsToBackupFile() {
+    this.settingBackupStream.write(JSON.stringify(this.settingFileContent) + '\n', 'utf8');
+  }
+
   public async immediatelyStoreSettingsToFile() {
     /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any */
     try {

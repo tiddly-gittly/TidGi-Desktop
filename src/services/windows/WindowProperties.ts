@@ -47,8 +47,8 @@ export const windowDimension: Record<WindowNames, { height?: number; width?: num
     height: 768,
   },
   [WindowNames.menuBar]: {
-    width: 400,
-    height: 500,
+    width: 500,
+    height: 600,
   },
   [WindowNames.about]: {
     width: 400,

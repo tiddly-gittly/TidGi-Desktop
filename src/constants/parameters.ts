@@ -7,3 +7,4 @@ export const DELAY_MENU_REGISTER = 500;
  * debounce the usage of electron-settings, to prevent corrupting the file, and improve performance.
  */
 export const DEBOUNCE_SAVE_SETTING_FILE = 500;
+export const DEBOUNCE_SAVE_SETTING_BACKUP_FILE = 3000;
