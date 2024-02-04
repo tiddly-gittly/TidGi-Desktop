@@ -240,6 +240,23 @@ export class Wiki implements IWikiService {
         }
       });
     });
+    void this.afterWikiStart(workspaceID);
+  }
+
+  private async afterWikiStart(workspaceID: string): Promise<void> {
+    const workspace = await this.workspaceService.get(workspaceID);
+    if (workspace === undefined) {
+      logger.error('afterWikiStart() get workspace failed', { workspaceID });
+      return;
+    }
+    const { isSubWiki, enableHTTPAPI } = workspace;
+    if (!isSubWiki && enableHTTPAPI) {
+      // Auto enable server filters if HTTP API is enabled. So this feature immediately available to 3rd party apps, reduce user confusion.
+      await this.wikiOperationInServer(WikiChannel.addTiddler, workspaceID, [
+        '$:/config/Server/AllowAllExternalFilters',
+        'yes',
+      ]);
+    }
   }
 
   /**
