@@ -9,7 +9,7 @@ import { isWin } from '../../helpers/system';
 export function fixSettingFileWhenError(jsonError: Error, providedJSONContent?: string): void {
   logger.error('Setting file format bad: ' + jsonError.message);
   // fix empty content or empty string
-  const jsonContent = providedJSONContent || (fs.readFileSync(settings.file(), 'utf8').trim() || '{}');
+  const jsonContent = providedJSONContent || fs.readFileSync(settings.file(), 'utf8').trim() || '{}';
   logger.info('Try to fix JSON content.');
   try {
     const repaired = bestEffortJsonParser(jsonContent) as Record<string, unknown>;

@@ -27,6 +27,9 @@ export class DatabaseService implements IDatabaseService {
       } catch (jsonError) {
         fixSettingFileWhenError(jsonError as Error);
       }
+    } else {
+      // create an empty JSON file if not exist, to prevent error when reading it. fixes https://github.com/tiddly-gittly/TidGi-Desktop/issues/507
+      fs.writeJSONSync(settings.file(), {});
     }
   }
 
