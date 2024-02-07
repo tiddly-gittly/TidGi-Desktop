@@ -337,7 +337,7 @@ class TidGiIPCSyncAdaptor {
 if ($tw.browser && typeof window !== 'undefined') {
   const isInTidGi = typeof document !== 'undefined' && document?.location?.protocol?.startsWith('tidgi');
   const servicesExposed = Boolean(window.service?.wiki);
-  const hasWorkspaceIDinMeta = Boolean((window.meta() as WindowMeta[WindowNames.view] | undefined)?.workspaceID);
+  const hasWorkspaceIDinMeta = Boolean((window.meta?.() as WindowMeta[WindowNames.view] | undefined)?.workspaceID);
   if (isInTidGi && servicesExposed && hasWorkspaceIDinMeta) {
     // eslint-disable-next-line @typescript-eslint/no-unsafe-member-access
     exports.adaptorClass = TidGiIPCSyncAdaptor;
