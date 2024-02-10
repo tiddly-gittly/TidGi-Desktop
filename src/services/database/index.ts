@@ -105,6 +105,17 @@ export class DatabaseService implements IDatabaseService {
     } catch (error) {
       logger.error(`DatabaseService.initializeForApp error when initializing TypeORM connection and running migrations for app: ${(error as Error).message}`);
     }
+
+    // init config
+    try {
+      this.settingBackupStream = rotateFs.createStream(`${settings.file()}.bak`, {
+        size: '10M',
+        interval: '1d',
+        maxFiles: 3,
+      });
+    } catch (error) {
+      logger.error(`DatabaseService.initializeForApp error when initializing setting backup file: ${(error as Error).message}`);
+    }
   }
 
   private readonly dataSources = new Map<string, DataSource>();
@@ -202,11 +213,7 @@ export class DatabaseService implements IDatabaseService {
   }
 
   private settingFileContent: ISettingFile = settings.getSync() as unknown as ISettingFile || {};
-  private readonly settingBackupStream = rotateFs.createStream(`${settings.file()}.bak`, {
-    size: '10M',
-    interval: '1d',
-    maxFiles: 3,
-  });
+  private settingBackupStream: rotateFs.RotatingFileStream | undefined;
 
   public setSetting<K extends keyof ISettingFile>(key: K, value: ISettingFile[K]) {
     this.settingFileContent[key] = value;
@@ -229,7 +236,7 @@ export class DatabaseService implements IDatabaseService {
   private storeSettingsToFileLock = false;
 
   public immediatelyStoreSettingsToBackupFile() {
-    this.settingBackupStream.write(JSON.stringify(this.settingFileContent) + '\n', 'utf8');
+    this.settingBackupStream?.write?.(JSON.stringify(this.settingFileContent) + '\n', 'utf8');
   }
 
   public async immediatelyStoreSettingsToFile() {
