@@ -90,3 +90,9 @@ Some library doesn't fit electron usage, we move their code to this repo and mod
 [FileProtocol](./features/FileProtocol.md)
 
 TBD
+
+## FAQ
+
+### `Uncaught ReferenceError: require is not defined`
+
+`pnpm run clean:cache` can fix this.

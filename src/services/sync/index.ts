@@ -40,17 +40,26 @@ export class Sync implements ISyncService {
   private readonly workspaceService!: IWorkspaceService;
 
   public async syncWikiIfNeeded(workspace: IWorkspace): Promise<void> {
-    const { gitUrl, storageService, backupOnInterval, id, isSubWiki, wikiFolderLocation: dir } = workspace;
+    const { gitUrl, storageService, id, isSubWiki, wikiFolderLocation: dir } = workspace;
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
     const defaultCommitMessage = i18n.t('LOG.CommitMessage');
     const defaultCommitBackupMessage = i18n.t('LOG.CommitBackupMessage');
     const syncOnlyWhenNoDraft = await this.preferenceService.get('syncOnlyWhenNoDraft');
-    // we can only run filter on main wiki (tw don't know what is sub-wiki)
-    if (!isSubWiki && syncOnlyWhenNoDraft && (await this.checkCanSyncDueToNoDraft(id))) {
+    const mainWorkspace = isSubWiki ? this.workspaceService.getMainWorkspace(workspace) : undefined;
+    if (isSubWiki && mainWorkspace === undefined) {
+      logger.error(`Main workspace not found for sub workspace ${id}`, { function: 'syncWikiIfNeeded' });
       return;
     }
-    if (
-      storageService !== SupportedStorageServices.local &&
+    const idToUse = isSubWiki ? mainWorkspace!.id : id;
+    // we can only run filter on main wiki (tw don't know what is sub-wiki)
+    if (syncOnlyWhenNoDraft && !(await this.checkCanSyncDueToNoDraft(idToUse))) {
+      await this.wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, idToUse, [i18n.t('Preference.SyncOnlyWhenNoDraft')]);
+      return;
+    }
+    if (storageService === SupportedStorageServices.local) {
+      // for local workspace, commitOnly, no sync and no force pull.
+      await this.gitService.commitAndSync(workspace, { commitOnly: true, dir, commitMessage: defaultCommitBackupMessage });
+    } else if (
       typeof gitUrl === 'string' &&
       userInfo !== undefined
     ) {
@@ -59,10 +68,9 @@ export class Sync implements ISyncService {
       const hasChanges = await this.gitService.syncOrForcePull(workspace, syncOrForcePullConfigs);
       if (isSubWiki) {
         // after sync this sub wiki, reload its main workspace
-        const mainWorkspace = this.workspaceService.getMainWorkspace(workspace);
-        if (hasChanges && mainWorkspace !== undefined) {
-          await this.workspaceViewService.restartWorkspaceViewService(mainWorkspace.id);
-          await this.viewService.reloadViewsWebContents(mainWorkspace.id);
+        if (hasChanges) {
+          await this.workspaceViewService.restartWorkspaceViewService(idToUse);
+          await this.viewService.reloadViewsWebContents(idToUse);
         }
       } else {
         // sync all sub workspace
@@ -87,9 +95,6 @@ export class Sync implements ISyncService {
           await this.viewService.reloadViewsWebContents(id);
         }
       }
-    } else if (backupOnInterval) {
-      // for local workspace, commitOnly, no sync and no force pull.
-      await this.gitService.commitAndSync(workspace, { commitOnly: true, dir, commitMessage: defaultCommitBackupMessage });
     }
   }
 
