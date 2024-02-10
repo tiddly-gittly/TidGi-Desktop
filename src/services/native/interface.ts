@@ -87,6 +87,8 @@ export const NativeServiceIPCDescriptor = {
     openInGitGuiApp: ProxyPropertyType.Function,
     openNewGitHubIssue: ProxyPropertyType.Function,
     openPath: ProxyPropertyType.Function,
+    openURI: ProxyPropertyType.Function,
+    formatFileUrlToAbsolutePath: ProxyPropertyType.Function,
     path: ProxyPropertyType.Function,
     pickDirectory: ProxyPropertyType.Function,
     pickFile: ProxyPropertyType.Function,
