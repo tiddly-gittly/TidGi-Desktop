@@ -78,7 +78,11 @@ export function startNodeJSWiki({
        *
        * @url https://wiki.zhiheng.io/static/TiddlyWiki%253A%2520Readonly%2520for%2520Node.js%2520Server.html
        */
-      const readonlyArguments = readOnlyMode === true ? ['gzip=yes', 'readers=(anon)', `writers=${userName}`, `username=${userName}`, `password=${nanoid()}`] : [];
+      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
+      const readonlyArguments = readOnlyMode === true ? ['gzip=yes', 'readers=(anon)', `writers=${userName || nanoid()}`, `username=${userName}`, `password=${nanoid()}`] : [];
+      if (readOnlyMode === true) {
+        wikiInstance.preloadTiddler({ title: '$:/info/tidgi/readOnlyMode', text: 'yes' });
+      }
       /**
        * Use authenticated-user-header to provide `TIDGI_AUTH_TOKEN_HEADER` as header key to receive a value as username (we use it as token).
        *
@@ -151,6 +155,7 @@ export function startNodeJSWiki({
       });
       wikiInstance.boot.startup({ bootPath: TIDDLYWIKI_PACKAGE_FOLDER });
       // after setWikiInstance, ipc server routes will start serving content
+      ipcServerRoutes.setConfig({ readOnlyMode });
       ipcServerRoutes.setWikiInstance(wikiInstance);
       wikiOperationsInWikiWorker.setWikiInstance(wikiInstance);
       observer.next({

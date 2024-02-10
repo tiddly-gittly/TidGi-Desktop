@@ -26,6 +26,11 @@ export interface IWikiServerRouteResponse {
 export class IpcServerRoutes {
   private wikiInstance!: ITiddlyWiki;
   private readonly pendingIpcServerRoutesRequests: Array<(value: void | PromiseLike<void>) => void> = [];
+  #readonlyMode = false;
+
+  setConfig({ readOnlyMode }: { readOnlyMode?: boolean }) {
+    this.#readonlyMode = Boolean(readOnlyMode);
+  }
 
   setWikiInstance(wikiInstance: ITiddlyWiki) {
     this.wikiInstance = wikiInstance;
@@ -95,7 +100,7 @@ export class IpcServerRoutes {
     const data: IWikiServerStatusObject = {
       username: userName,
       anonymous: false,
-      read_only: false,
+      read_only: this.#readonlyMode,
       space: {
         recipe: 'default',
       },
