@@ -44,11 +44,15 @@ export class Sync implements ISyncService {
     const userInfo = await this.authService.getStorageServiceUserInfo(storageService);
     const defaultCommitMessage = i18n.t('LOG.CommitMessage');
     const defaultCommitBackupMessage = i18n.t('LOG.CommitBackupMessage');
+    const syncOnlyWhenNoDraft = await this.preferenceService.get('syncOnlyWhenNoDraft');
+    // we can only run filter on main wiki (tw don't know what is sub-wiki)
+    if (!isSubWiki && syncOnlyWhenNoDraft && (await this.checkCanSyncDueToNoDraft(id))) {
+      return;
+    }
     if (
       storageService !== SupportedStorageServices.local &&
       typeof gitUrl === 'string' &&
-      userInfo !== undefined &&
-      (await this.checkCanSyncDueToNoDraft(id))
+      userInfo !== undefined
     ) {
       const syncOrForcePullConfigs = { remoteUrl: gitUrl, userInfo, dir, commitMessage: defaultCommitMessage } satisfies ICommitAndSyncConfigs;
       // sync current workspace first
@@ -83,20 +87,15 @@ export class Sync implements ISyncService {
           await this.viewService.reloadViewsWebContents(id);
         }
       }
-    } else if (backupOnInterval && (await this.checkCanSyncDueToNoDraft(id))) {
+    } else if (backupOnInterval) {
       // for local workspace, commitOnly, no sync and no force pull.
       await this.gitService.commitAndSync(workspace, { commitOnly: true, dir, commitMessage: defaultCommitBackupMessage });
     }
   }
 
   public async checkCanSyncDueToNoDraft(workspaceID: string): Promise<boolean> {
-    const syncOnlyWhenNoDraft = await this.preferenceService.get('syncOnlyWhenNoDraft');
-    if (!syncOnlyWhenNoDraft) {
-      return true;
-    }
     try {
-      // TODO: check this, seems not working.
-      const draftTitles = await this.wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, ['[is[draft]]']);
+      const draftTitles = await this.wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, ['[all[]is[draft]]']);
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (Array.isArray(draftTitles) && draftTitles.length > 0) {
         return false;
