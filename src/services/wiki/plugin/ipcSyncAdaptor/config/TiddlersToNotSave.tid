@@ -1,4 +1,4 @@
 creator: LinOnetwo
 title: $:/plugins/linonetwo/tidgi-ipc-syncadaptor/TiddlersToNotSave
 
-$:/StoryList $:/HistoryList
+$:/StoryList $:/HistoryList $:/layout
