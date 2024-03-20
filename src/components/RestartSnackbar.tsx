@@ -1,5 +1,6 @@
-import { Button, IconButton, Snackbar, Tooltip } from '@mui/material';
 import { Close as CloseIcon } from '@mui/icons-material';
+import { Button, IconButton, Snackbar, Tooltip } from '@mui/material';
+import { IWorkspace } from '@services/workspaces/interface';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -14,28 +15,49 @@ const progressAnimation = keyframes`
     width: 100%;
   }
 `;
-const RestartButton = styled(Button)<{ currentWaitBeforeRestart: number }>`
+const RestartButton = styled(Button)<{ time: number }>`
   .MuiButton-label {
     z-index: 1;
   }
   .MuiTouchRipple-root {
     z-index: 0;
     background-color: white;
-    animation: ${progressAnimation} ${({ currentWaitBeforeRestart }) => currentWaitBeforeRestart}ms linear;
+    animation: ${progressAnimation} ${({ time }) => time}ms linear;
   }
 `;
+const anchorOrigin = { vertical: 'bottom', horizontal: 'center' } as const;
 
-export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart = 10_000): [() => void, JSX.Element] {
+export enum RestartSnackbarType {
+  App = 'App',
+  Wiki = 'Wiki',
+}
+
+export function useRestartSnackbar(
+  configs?: { restartType?: RestartSnackbarType; waitBeforeCountDown?: number; waitBeforeRestart?: number; workspace?: IWorkspace },
+): [() => void, JSX.Element] {
+  const { waitBeforeCountDown = 1000, waitBeforeRestart = 10_000, restartType = RestartSnackbarType.App, workspace } = configs ?? {};
   const { t } = useTranslation();
   const [opened, openedSetter] = useState(false);
   const [inCountDown, inCountDownSetter] = useState(false);
   const [currentWaitBeforeRestart, currentWaitBeforeRestartSetter] = useState(waitBeforeRestart);
 
-  const handleCloseAndRestart = useCallback(() => {
+  const handleCloseAndRestart = useCallback(async () => {
     openedSetter(false);
     inCountDownSetter(false);
-    void window.service.window.requestRestart();
-  }, [openedSetter]);
+    switch (restartType) {
+      case RestartSnackbarType.App: {
+        await window.service.window.requestRestart();
+        break;
+      }
+      case RestartSnackbarType.Wiki: {
+        if (workspace !== undefined) {
+          await window.service.workspaceView.restartWorkspaceViewService(workspace.id);
+          await window.service.workspaceView.realignActiveWorkspace(workspace.id);
+        }
+        break;
+      }
+    }
+  }, [restartType, workspace]);
 
   const handleCancelRestart = useCallback(() => {
     openedSetter(false);
@@ -67,13 +89,13 @@ export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart
     requestRestartCountDown,
     <div key='RestartSnackbar'>
       <Snackbar
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'center' }}
+        anchorOrigin={anchorOrigin}
         open={opened}
         onClose={(event, reason) => {
           switch (reason) {
             case 'timeout': {
               if (inCountDown) {
-                handleCloseAndRestart();
+                void handleCloseAndRestart();
               }
               break;
             }
@@ -89,12 +111,12 @@ export function useRestartSnackbar(waitBeforeCountDown = 1000, waitBeforeRestart
           <>
             <RestartButton
               key={currentWaitBeforeRestart}
-              currentWaitBeforeRestart={currentWaitBeforeRestart}
+              time={currentWaitBeforeRestart}
               color='secondary'
               size='small'
               onClick={handleCloseAndRestart}
             >
-              {t('Dialog.RestartNow')}
+              {restartType === RestartSnackbarType.App ? t('Dialog.RestartAppNow') : t('Dialog.RestartWikiNow')}
             </RestartButton>
             <Tooltip title={<span>{t('Dialog.Later')}</span>}>
               <IconButton size='small' aria-label='close' color='inherit' onClick={handleCancelRestart}>

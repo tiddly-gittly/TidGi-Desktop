@@ -7,7 +7,7 @@ import { AutocompleteRenderInputParams, Button as ButtonRaw, Divider, ListItemSe
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
-import styled, { css } from 'styled-components';
+import { css, styled } from 'styled-components';
 import defaultIcon from '../../images/default-icon.png';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
@@ -17,7 +17,7 @@ import { useWorkspaceObservable } from '@services/workspaces/hooks';
 import { useForm } from './useForm';
 
 import { List, ListItem, ListItemText } from '@/components/ListItem';
-import { useRestartSnackbar } from '@/components/RestartSnackbar';
+import { RestartSnackbarType, useRestartSnackbar } from '@/components/RestartSnackbar';
 import { TokenForm } from '@/components/TokenForm';
 import { wikiPictureExtensions } from '@/constants/fileNames';
 import { SupportedStorageServices } from '@services/types';
@@ -136,12 +136,12 @@ const getValidIconPath = (iconPath?: string | null): string => {
   return defaultIcon;
 };
 
-const workspaceID = (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID as string;
+const workspaceID = (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID!;
 
 export default function EditWorkspace(): JSX.Element {
   const { t } = useTranslation();
   const originalWorkspace = useWorkspaceObservable(workspaceID);
-  const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();
+  const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar({ waitBeforeCountDown: 0, workspace: originalWorkspace, restartType: RestartSnackbarType.Wiki });
   const [workspace, workspaceSetter, onSave] = useForm(originalWorkspace, requestRestartCountDown);
   const {
     backupOnInterval,
@@ -168,8 +168,8 @@ export default function EditWorkspace(): JSX.Element {
     async () => (mainWikiToLink ? await window.service.wiki.getSubWikiPluginContent(mainWikiToLink) : []),
     [],
     [mainWikiToLink],
-  ) as ISubWikiPluginContent[];
-  const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName')) as string, '');
+  )!;
+  const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName'))!, '');
 
   const rememberLastPageVisited = usePromiseValue(async () => await window.service.preference.get('rememberLastPageVisited'));
   if (workspaceID === undefined) {
@@ -271,7 +271,6 @@ export default function EditWorkspace(): JSX.Element {
           isCreateSyncedWorkspace={isCreateSyncedWorkspace}
           isCreateSyncedWorkspaceSetter={(isSynced: boolean) => {
             workspaceSetter({ ...workspace, storageService: isSynced ? SupportedStorageServices.github : SupportedStorageServices.local });
-            // requestRestartCountDown();
           }}
         />
         {isCreateSyncedWorkspace && (
