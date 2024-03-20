@@ -143,6 +143,10 @@ export interface IWorkspaceMetaData {
    * indicating server or webpage is still loading
    */
   isLoading?: boolean;
+  /**
+   * Is restarting service for this workspace.
+   */
+  isRestarting?: boolean;
 }
 
 export interface IWorkspaceWithMetadata extends IWorkspace {

@@ -309,6 +309,7 @@
     "RestartMessage": "您需要重新启动本程序才能使此更改生效。",
     "RestartAppNow": "现在重启应用",
     "RestartWikiNow": "现在重启知识库",
+    "Restarting": "重启中",
     "ReportBug": "报告错误",
     "ReportBugDetail": "如果你看过教程了解操作流程，并仔细读过报错内容并思考，仔细检查了自己的输入觉得没问题，可以点击按钮。",
     "MadeWithLove": "<0>有</0><1> ❤ </1><2>的开发者：</2>"

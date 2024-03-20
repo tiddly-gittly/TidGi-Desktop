@@ -378,7 +378,8 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
     logger.info(`Restarting workspace ${workspaceToRestart.id}`);
     await this.updateLastUrl(workspaceToRestart.id);
-    await this.workspaceService.updateMetaData(workspaceToRestart.id, { didFailLoadErrorMessage: null, isLoading: false });
+    // start restarting. Set isLoading to false, and it will be set by some callback elsewhere to true.
+    await this.workspaceService.updateMetaData(workspaceToRestart.id, { didFailLoadErrorMessage: null, isLoading: false, isRestarting: true });
     await this.wikiService.stopWiki(workspaceToRestart.id);
     await this.initializeWorkspaceView(workspaceToRestart, { syncImmediately: false });
     if (await this.workspaceService.workspaceDidFailLoad(workspaceToRestart.id)) {
@@ -387,6 +388,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     }
     await this.viewService.reloadViewsWebContents(workspaceToRestart.id);
     await this.wikiService.wikiOperationInBrowser(WikiChannel.generalNotification, workspaceToRestart.id, [i18n.t('ContextMenu.RestartServiceComplete')]);
+    await this.workspaceService.updateMetaData(workspaceToRestart.id, { isRestarting: false });
   }
 
   public async restartAllWorkspaceView(): Promise<void> {

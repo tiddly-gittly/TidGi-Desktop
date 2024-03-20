@@ -1,7 +1,7 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/workspaces/getWorkspaceMenuTemplate';
-import { IWorkspace } from '@services/workspaces/interface';
+import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { MouseEvent, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
@@ -14,7 +14,7 @@ export interface ISortableItemProps {
   index: number;
   showSideBarIcon: boolean;
   showSidebarTexts: boolean;
-  workspace: IWorkspace;
+  workspace: IWorkspaceWithMetadata;
 }
 
 export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarTexts, showSideBarIcon }: ISortableItemProps): JSX.Element {
@@ -52,6 +52,7 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     <div ref={setNodeRef} style={style} {...attributes} {...listeners} onContextMenu={onWorkspaceContextMenu}>
       <WorkspaceSelectorBase
         workspaceClickedLoading={workspaceClickedLoading}
+        restarting={workspace.metadata.isRestarting}
         showSideBarIcon={showSideBarIcon}
         onClick={onWorkspaceClick}
         active={active}

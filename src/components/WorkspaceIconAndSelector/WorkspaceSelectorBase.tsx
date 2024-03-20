@@ -1,12 +1,14 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
+import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import BadgeRaw from '@mui/material/Badge';
 import Promise from 'bluebird';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled, { keyframes } from 'styled-components';
+import { keyframes, styled } from 'styled-components';
 import is from 'typescript-styled-is';
 
 import { getAssetsFileUrl } from '@/helpers/url';
+import { Tooltip } from '@mui/material';
 import defaultIcon from '../../images/default-icon.png';
 
 Promise.config({ cancellation: true });
@@ -121,6 +123,7 @@ interface Props {
   index?: number;
   onClick?: () => void;
   picturePath?: string | null;
+  restarting?: boolean;
   showSideBarIcon: boolean;
   showSidebarTexts?: boolean;
   transparentBackground?: boolean;
@@ -130,6 +133,7 @@ interface Props {
 }
 export function WorkspaceSelectorBase({
   active = false,
+  restarting: loading = false,
   badgeCount = 0,
   hibernated = false,
   showSideBarIcon = true,
@@ -146,9 +150,35 @@ export function WorkspaceSelectorBase({
   const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {
     void window.service.native.path('basename', workspaceName).then((baseName) => {
-      shortWorkspaceNameSetter(baseName === undefined ? t('WorkspaceSelector.BadWorkspacePath') : baseName);
+      shortWorkspaceNameSetter(baseName ?? t('WorkspaceSelector.BadWorkspacePath'));
     });
   }, [workspaceName, t]);
+  let icon = showSideBarIcon && (
+    <Avatar
+      $large={!showSidebarTexts}
+      $transparent={transparentBackground}
+      $addAvatar={id === 'add'}
+      $highlightAdd={index === 0}
+      id={id === 'add' || id === 'guide' ? 'add-workspace-button' : `workspace-avatar-${id}`}
+    >
+      {id === 'add'
+        ? (
+          '+'
+        )
+        : (id === 'guide'
+          ? (
+            '※'
+          )
+          : <AvatarPicture alt='Icon' $large={!showSidebarTexts} src={picturePath ? getAssetsFileUrl(picturePath) : defaultIcon} draggable={false} />)}
+    </Avatar>
+  );
+  if (loading) {
+    icon = (
+      <Tooltip title={<span>{t('Dialog.Restarting')}</span>}>
+        <RestartAltIcon />
+      </Tooltip>
+    );
+  }
   return (
     <Root
       $hibernated={hibernated}
@@ -157,25 +187,7 @@ export function WorkspaceSelectorBase({
       onClick={workspaceClickedLoading ? () => {} : onClick}
     >
       <Badge color='secondary' badgeContent={badgeCount} max={99}>
-        {showSideBarIcon && (
-          <Avatar
-            $large={!showSidebarTexts}
-            $transparent={transparentBackground}
-            $addAvatar={id === 'add'}
-            $highlightAdd={index === 0}
-            id={id === 'add' || id === 'guide' ? 'add-workspace-button' : `workspace-avatar-${id}`}
-          >
-            {id === 'add'
-              ? (
-                '+'
-              )
-              : (id === 'guide'
-                ? (
-                  '※'
-                )
-                : <AvatarPicture alt='Icon' $large={!showSidebarTexts} src={picturePath ? getAssetsFileUrl(picturePath) : defaultIcon} draggable={false} />)}
-          </Avatar>
-        )}
+        {icon}
       </Badge>
       {showSidebarTexts && (
         <ShortcutText $active={active}>
