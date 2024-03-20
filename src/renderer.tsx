@@ -9,7 +9,7 @@ import { Router } from 'wouter';
 
 import CssBaseline from '@mui/material/CssBaseline';
 import StyledEngineProvider from '@mui/material/StyledEngineProvider';
-import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFns';
+import { AdapterDateFns } from '@mui/x-date-pickers/AdapterDateFnsV3';
 import { LocalizationProvider } from '@mui/x-date-pickers/LocalizationProvider';
 import '@fontsource/roboto/300.css';
 import '@fontsource/roboto/400.css';
@@ -21,8 +21,8 @@ import { darkTheme, lightTheme } from '@services/theme/defaultTheme';
 import { useThemeObservable } from '@services/theme/hooks';
 import { initI18N } from './i18n';
 import 'electron-ipc-cat/fixContextIsolation';
+import { useHashLocation } from 'wouter/use-hash-location';
 import { RootStyle } from './components/RootStyle';
-import { useHashLocation } from './helpers/router';
 import { Pages } from './pages';
 
 function App(): JSX.Element {

@@ -10,7 +10,7 @@ import { NativeChannel } from '@/constants/channels';
 import { ZX_FOLDER } from '@/constants/paths';
 import { githubDesktopUrl } from '@/constants/urls';
 import { lazyInject } from '@services/container';
-import { ILogLevels, logger } from '@services/libs/log';
+import { logger } from '@services/libs/log';
 import { getLocalHostUrlWithActualIP, getUrlWithCorrectProtocol, replaceUrlPortWithSettingPort } from '@services/libs/url';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService, ZxWorkerControlActions } from '@services/wiki/interface';
@@ -217,7 +217,7 @@ ${message.message}
     app.quit();
   }
 
-  public async log(level: ILogLevels, message: string, meta?: Record<string, unknown>): Promise<void> {
+  public async log(level: string, message: string, meta?: Record<string, unknown>): Promise<void> {
     logger.log(level, message, meta);
   }
 

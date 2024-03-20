@@ -1,7 +1,6 @@
 import { LOG_FOLDER } from '@/constants/appPaths';
 import winston, { format } from 'winston';
 import 'winston-daily-rotate-file';
-import { levels } from '@/constants/logger';
 
 function getWikiLogFileName(workspaceID: string, wikiName: string): string {
   const logFileName = wikiName.replaceAll(/["*/:<>?\\|]/g, '_');
@@ -33,7 +32,6 @@ export function startWikiLogger(workspaceID: string, wikiName: string) {
         close: () => {},
       })
       : winston.createLogger({
-        levels,
         transports: [
           new winston.transports.Console(),
           new winston.transports.DailyRotateFile({

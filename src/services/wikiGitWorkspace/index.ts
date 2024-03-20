@@ -106,7 +106,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
     } catch (error) {
       // prepare to rollback changes
       const errorMessage = `initWikiGitTransaction failed, ${(error as Error).message} ${(error as Error).stack ?? ''}`;
-      logger.crit(errorMessage);
+      logger.error(errorMessage);
       await this.workspaceService.remove(workspaceID);
       try {
         if (!isSubWiki) {

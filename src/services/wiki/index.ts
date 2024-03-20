@@ -332,7 +332,7 @@ export class Wiki implements IWikiService {
   public async stopWiki(id: string): Promise<void> {
     const worker = this.getWorker(id);
     if (worker === undefined) {
-      logger.warning(`No wiki for ${id}. No running worker, means maybe tiddlywiki server in this workspace failed to start`, {
+      logger.warn(`No wiki for ${id}. No running worker, means maybe tiddlywiki server in this workspace failed to start`, {
         function: 'stopWiki',
         stack: new Error('stack').stack?.replace('Error:', '') ?? 'no stack',
       });
@@ -371,7 +371,7 @@ export class Wiki implements IWikiService {
    * @param message will show in the UI
    */
   private readonly logProgress = (message: string): void => {
-    logger.notice(message, { handler: WikiChannel.createProgress });
+    logger.info(message, { handler: WikiChannel.createProgress });
   };
 
   private readonly folderToContainSymlinks = 'subwiki';
