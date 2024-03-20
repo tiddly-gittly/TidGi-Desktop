@@ -8,8 +8,8 @@ import path from 'path';
 import { Observable } from 'rxjs';
 import { IWikiMessage, WikiControlActions } from '../interface';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
-import { IStartNodeJSWikiConfigs, IUtilsWithSqlite } from '.';
-import { getCacheDatabase, setWikiInstance } from './globals';
+import { IStartNodeJSWikiConfigs } from '.';
+import { setWikiInstance } from './globals';
 import { ipcServerRoutes } from './ipcServerRoutes';
 import { authTokenIsProvided } from './wikiWorkerUtils';
 
@@ -50,12 +50,6 @@ export function startNodeJSWiki({
     try {
       const wikiInstance = TiddlyWiki();
       setWikiInstance(wikiInstance);
-      const cacheDatabase = getCacheDatabase();
-      // mount database to $tw
-      if (wikiInstance !== undefined && cacheDatabase !== undefined) {
-        (wikiInstance.utils as IUtilsWithSqlite).TidgiCacheDB = cacheDatabase;
-        (wikiInstance.utils as IUtilsWithSqlite).Sqlite = cacheDatabase.database;
-      }
       process.env.TIDDLYWIKI_PLUGIN_PATH = path.resolve(homePath, 'plugins');
       process.env.TIDDLYWIKI_THEME_PATH = path.resolve(homePath, 'themes');
       // don't add `+` prefix to plugin name here. `+` only used in args[0], but we are not prepend this list to the args list.

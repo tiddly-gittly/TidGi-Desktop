@@ -183,19 +183,11 @@ export class WorkspaceView implements IWorkspaceViewService {
         }
       }
     };
-    const initDatabaseWhenInitializeWorkspaceView = async (): Promise<void> => {
-      if (workspace.isSubWiki) {
-        return;
-      }
-      // after all init finished, create cache database if there is no one
-      await this.databaseService.initializeForWorkspace(workspace.id);
-    };
 
     logger.debug(`initializeWorkspaceView() calling wikiStartup()`);
     await Promise.all([
       this.wikiService.wikiStartup(workspace),
       addViewWhenInitializeWorkspaceView(),
-      initDatabaseWhenInitializeWorkspaceView(),
     ]);
     void syncGitWhenInitializeWorkspaceView();
   }

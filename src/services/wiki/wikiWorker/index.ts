@@ -9,19 +9,16 @@
 import { uninstall } from '@/helpers/installV8Cache';
 import './preload';
 import 'source-map-support/register';
-import { type IUtils } from '@tiddlygit/tiddlywiki';
-import Sqlite3Database from 'better-sqlite3';
 import { mkdtemp } from 'fs-extra';
 import { tmpdir } from 'os';
 import path from 'path';
 import { Observable } from 'rxjs';
 import { expose } from 'threads/worker';
 
-import { ISqliteDatabasePaths, SqliteDatabaseNotInitializedError, WikiWorkerDatabaseOperations } from '@services/database/wikiWorkerOperations';
-import { IWikiLogMessage, IZxWorkerMessage, ZxWorkerControlActions } from '../interface';
+import { IZxWorkerMessage, ZxWorkerControlActions } from '../interface';
 import { executeScriptInTWContext, executeScriptInZxScriptContext, extractTWContextScripts, type IVariableContextList } from '../plugin/zxPlugin';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
-import { getWikiInstance, setCacheDatabase } from './globals';
+import { getWikiInstance } from './globals';
 import { extractWikiHTML, packetHTMLFromWikiFolder } from './htmlWiki';
 import { ipcServerRoutesMethods } from './ipcServerRoutes';
 import { startNodeJSWiki } from './startNodeJSWiki';
@@ -45,30 +42,6 @@ export interface IStartNodeJSWikiConfigs {
   tiddlyWikiPort: number;
   tokenAuth?: boolean;
   userName: string;
-}
-
-export interface IUtilsWithSqlite extends IUtils {
-  Sqlite: Sqlite3Database.Database;
-  TidgiCacheDB: WikiWorkerDatabaseOperations;
-}
-
-function initCacheDatabase(cacheDatabaseConfig: ISqliteDatabasePaths) {
-  return new Observable<IWikiLogMessage>((observer) => {
-    try {
-      observer.next({ type: 'stdout', message: 'Will new WikiWorkerDatabaseOperations' });
-      const cacheDatabase = new WikiWorkerDatabaseOperations(cacheDatabaseConfig);
-      observer.next({ type: 'stdout', message: 'WikiWorkerDatabaseOperations instance created.' });
-      setCacheDatabase(cacheDatabase);
-    } catch (error) {
-      if (error instanceof SqliteDatabaseNotInitializedError) {
-        // this is usual for first time
-        observer.next({ type: 'stdout', message: error.message });
-      } else {
-        // unexpected error
-        observer.next({ type: 'stderr', message: (error as Error)?.message });
-      }
-    }
-  });
 }
 
 export type IZxFileInput = { fileContent: string; fileName: string } | { filePath: string };
@@ -131,7 +104,6 @@ const wikiWorker = {
   extractWikiHTML,
   packetHTMLFromWikiFolder,
   beforeExit,
-  initCacheDatabase,
   wikiOperation: wikiOperationsInWikiWorker.wikiOperation.bind(wikiOperationsInWikiWorker),
   ...ipcServerRoutesMethods,
 };

@@ -88,7 +88,6 @@ exports.default = async (
         }),
     );
     const packagePathsToCopyDereferenced = [
-      [`sqlite-vss-${process.platform}-${process.arch}`],
       ['@tiddlygit', 'tiddlywiki', 'package.json'],
       ['@tiddlygit', 'tiddlywiki', 'boot'],
       ['@tiddlygit', 'tiddlywiki', 'core'],
@@ -106,7 +105,6 @@ exports.default = async (
       ['@llama-node', 'rwkv-cpp', 'package.json'],
       ['@llama-node', 'llama-cpp', 'index.js'],
       ['@llama-node', 'llama-cpp', 'package.json'],
-      ['better-sqlite3', 'build', 'Release', 'better_sqlite3.node'],
       // we only need its `main` binary, no need its dependency and code, because we already copy it to src/services/native/externalApp
       ['app-path', 'main'],
     ];

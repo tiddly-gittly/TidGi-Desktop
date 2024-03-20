@@ -11,7 +11,7 @@ import { ModuleThread, spawn, Thread, Worker } from 'threads';
 import type { WorkerEvent } from 'threads/dist/types/master';
 
 import { WikiChannel } from '@/constants/channels';
-import { PACKAGE_PATH_BASE, SQLITE_BINARY_PATH, TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
+import { TIDDLERS_PATH, TIDDLYWIKI_PACKAGE_FOLDER, TIDDLYWIKI_TEMPLATE_FOLDER_PATH } from '@/constants/paths';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 import type { IGitService, IGitUserInfos } from '@services/git/interface';
@@ -176,17 +176,6 @@ export class Wiki implements IWikiService {
           logger.info(warningMessage, loggerMeta);
           logger.info(`startWiki() rejected with message.type === 'message' and event.type === 'termination'`, loggerMeta);
           resolve();
-        }
-      });
-
-      logger.debug('startWiki calling initCacheDatabase in the main process', { function: 'wikiWorker.initCacheDatabase' });
-      worker.initCacheDatabase({
-        databaseFile: this.databaseService.getWorkspaceDataBasePath(workspaceID),
-        sqliteBinary: SQLITE_BINARY_PATH,
-        packagePathBase: PACKAGE_PATH_BASE,
-      }).subscribe(async (message) => {
-        if (message.type === 'stderr' || message.type === 'stdout') {
-          logger.info(message.message, { function: 'wikiWorker.initCacheDatabase' });
         }
       });
 

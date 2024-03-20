@@ -19,7 +19,6 @@ const logger = (
       close: () => {},
     })
     : winston.createLogger({
-      levels,
       transports: [
         new winston.transports.Console(),
         new winston.transports.DailyRotateFile({

@@ -82,8 +82,6 @@ Some library doesn't fit electron usage, we move their code to this repo and mod
 - [app-path](https://github.com/sindresorhus/app-path): Need to be installed, so we can copy its binary to the resource folder. This lib is used by `externalApp` below.
   - When not installed in package.json, when make release, forge will throw error `An unhandled rejection has occurred inside Forge: Error: ENOENT: no such file or directory, stat '/Users/linonetwo/Desktop/repo/TiddlyGit-Desktop/node_modules/app-path/main'`
 - [externalApp](https://github.com/desktop/desktop/blob/742b4c44c39d64d01048f1e85364d395432e3413/app/src/lib/editors/lookup.ts): This was used by [Github Desktop](https://github.com/desktop/desktop) to lookup the location of editors like VSCode, we use it in context menu to "open in default text editor"
-- [sqlite-vss](https://github.com/asg017/sqlite-vss): The path from its method `loadablePathResolver` maybe incorrect after electron app packaged. (It will be in `.webpack/main/index.js` in the dist folder instead of in `node_modules/sqlite-vss` folder.)
-  - Still need to install its `optionalDependencies` like `sqlite-vss-darwin-x64` in package.json
 
 ## Code Tour
 
