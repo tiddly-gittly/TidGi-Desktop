@@ -292,6 +292,13 @@ export default function EditWorkspace(): JSX.Element {
             isCreateMainWorkspace={!isSubWiki}
           />
         )}
+        {!isSubWiki && (
+          <>
+            <Divider />
+            <ServerOptions workspace={workspace} workspaceSetter={workspaceSetter} />
+            <Divider />
+          </>
+        )}
         {storageService !== SupportedStorageServices.local && (
           <>
             <List>
@@ -402,13 +409,6 @@ export default function EditWorkspace(): JSX.Element {
               });
             }}
           />
-        )}
-        {!isSubWiki && (
-          <>
-            <Divider />
-            <ServerOptions workspace={workspace} workspaceSetter={workspaceSetter} />
-            <Divider />
-          </>
         )}
       </FlexGrow>
       {!isEqual(workspace, originalWorkspace) && (

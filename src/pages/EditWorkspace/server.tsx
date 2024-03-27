@@ -79,7 +79,7 @@ export function ServerOptions(props: IServerOptionsProps) {
     <AServerOptionsAccordion defaultExpanded={alreadyEnableSomeServerOptions}>
       <Tooltip title={t('EditWorkspace.ClickToExpand')}>
         <AServerOptionsAccordionSummary expandIcon={<ExpandMoreIcon />}>
-          {t('EditWorkspace.ServerOptions')}
+          {t('EditWorkspace.ServerOptions')} ({t('EditWorkspace.EnableHTTPAPI')})
         </AServerOptionsAccordionSummary>
       </Tooltip>
       <AccordionDetails>

@@ -136,18 +136,6 @@ export function AddWorkspace(): JSX.Element {
           {/* Force it only show sync option when clone online wiki, because many user encounter sync problem here. Recommend them create local first and sync later. */}
           {isCreateSyncedWorkspace && <SyncedWikiDescription isCreateSyncedWorkspace={isCreateSyncedWorkspace} isCreateSyncedWorkspaceSetter={() => {}} />}
           <MainSubWikiDescription isCreateMainWorkspace={isCreateMainWorkspace} isCreateMainWorkspaceSetter={isCreateMainWorkspaceSetter} />
-          {isCreateMainWorkspace && (
-            <LocationPickerContainer>
-              <LocationPickerInput
-                error={errorInWhichComponent.wikiPort}
-                onChange={(event: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-                  form.wikiPortSetter(Number(event.target.value));
-                }}
-                label={t('AddWorkspace.WikiServerPort')}
-                value={wikiPort}
-              />
-            </LocationPickerContainer>
-          )}
         </AccordionDetails>
       </Accordion>
 
