@@ -7,6 +7,9 @@ import fs from 'fs-extra';
 import { isWin } from '../../helpers/system';
 
 export function fixEmptyAndErrorSettingFileOnStartUp() {
+  if (!fs.existsSync(SETTINGS_FOLDER)) {
+    fs.mkdirSync(SETTINGS_FOLDER, { recursive: true });
+  }
   // Fix sometimes JSON is malformed https://github.com/nathanbuchar/electron-settings/issues/160
   if (fs.existsSync(settings.file())) {
     try {
