@@ -1,10 +1,7 @@
 import { LanguageModelChannel } from '@/constants/channels';
-import type { Generate as LLamaInvocation } from '@llama-node/llama-cpp';
-import type { RwkvInvocation } from '@llama-node/rwkv-cpp';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import type { LoadConfig as LLamaLoadConfig } from 'llama-node/dist/llm/llama-cpp';
-import type { LoadConfig as RwkvLoadConfig } from 'llama-node/dist/llm/rwkv-cpp';
 import type { Observable } from 'rxjs';
+import {getLlama, LlamaChatSession} from "node-llama-cpp";
 
 export enum LanguageModelRunner {
   llamaCpp = 'llama.cpp',

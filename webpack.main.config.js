@@ -54,7 +54,6 @@ module.exports = {
     //   allowlist: [/(threads-plugin)/],
     // }),
     '@tiddlygit/tiddlywiki',
-    'llama-node',
     // 'node-llama-cpp',
     'dugite',
     'zx',

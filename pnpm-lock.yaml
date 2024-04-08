@@ -87,9 +87,6 @@ dependencies:
   jimp:
     specifier: 0.22.12
     version: 0.22.12
-  llama-node:
-    specifier: ^0.1.6
-    version: 0.1.6(@llama-node/cli@0.1.6)
   lodash:
     specifier: 4.17.21
     version: 4.17.21
@@ -2373,32 +2370,6 @@ packages:
   /@leichtgewicht/ip-codec@2.0.4:
     resolution: {integrity: sha512-Hcv+nVC0kZnQ3tD9GVu5xSMR4VVYOteQIr/hwFPVEvPdlXqgGEuRjiheChHgdM+JyqdgNcmzZOX/tnl0JOiI7A==}
     dev: true
-
-  /@llama-node/cli@0.1.6:
-    resolution: {integrity: sha512-cTlSHfGgBBTPtieX5bd6SvtY0Xp/IcXTzaCKWoMgCQprnwpe/UyMadW15lOPjByXf/Fxo6O+hH5l/QucxJK6dQ==}
-    hasBin: true
-    dependencies:
-      '@llama-node/core': 0.1.6
-      yargs: 17.7.2
-    dev: false
-
-  /@llama-node/core@0.1.6:
-    resolution: {integrity: sha512-Mg6lZ0jjOhK2AhvUOPZ4WDb0Rap02gwUbcm4Q4gIV1WsLpB/bGlgxq0z7uXF+3NExAvkcv3/bb1MujrE6re34g==}
-    engines: {node: '>= 10'}
-    requiresBuild: true
-    dev: false
-
-  /@llama-node/llama-cpp@0.1.6:
-    resolution: {integrity: sha512-AzU2Gc5bX5V74SnO9E17IA5N/Rbd8trd7qkzp/H4zmmz/Chh7MmaiUhAewUt7kPuk3/LahGiDxxAOjiKtMJiNQ==}
-    engines: {node: '>= 10'}
-    dev: false
-    optional: true
-
-  /@llama-node/rwkv-cpp@0.1.6:
-    resolution: {integrity: sha512-kaB01kfwthz/euHE67MWDzrZacFL9CSPsDcQx4ZLJii98HQCiuQ24g6CU8cVFYRm45a/o0qCjR4G/j1TyPIl8g==}
-    engines: {node: '>= 10'}
-    dev: false
-    optional: true
 
   /@malept/cross-spawn-promise@1.1.1:
     resolution: {integrity: sha512-RTBGWL5FWQcg9orDOCcp4LvItNzUPcyEU9bwaeJX0rJ1IQxzucC48Y0/sQLp/g6t99IQgAlGIaesJS+gTn7tVQ==}
@@ -8615,19 +8586,6 @@ packages:
       rxjs: 7.8.1
       through: 2.3.8
       wrap-ansi: 7.0.0
-
-  /llama-node@0.1.6(@llama-node/cli@0.1.6):
-    resolution: {integrity: sha512-LZIEG0RNyqX21C5Ms8kc40syy2ZMYR5plRFkw9flziEx9y659k16HvB+2Dt3dJfhsqJB2Ji/QFfRJ6DUb0Trcg==}
-    engines: {node: '>=16.0.0', npm: '>=7.0.0', pnpm: '>=6.0.0'}
-    peerDependencies:
-      '@llama-node/cli': 0.1.6
-    dependencies:
-      '@llama-node/cli': 0.1.6
-    optionalDependencies:
-      '@llama-node/core': 0.1.6
-      '@llama-node/llama-cpp': 0.1.6
-      '@llama-node/rwkv-cpp': 0.1.6
-    dev: false
 
   /load-bmfont@1.4.1:
     resolution: {integrity: sha512-8UyQoYmdRDy81Brz6aLAUhfZLwr5zV0L3taTQ4hju7m6biuwiWiJXjPhBJxbUQJA8PrkvJ/7Enqmwk2sM14soA==}

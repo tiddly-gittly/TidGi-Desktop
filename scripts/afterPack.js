@@ -53,7 +53,7 @@ exports.default = async (
       await fs.remove(dir);
     }));
   }
-  /** copy npm packages with node-worker dependencies with binary (dugite, llama-node) or __filename usages (tiddlywiki), which can't be prepare properly by webpack */
+  /** copy npm packages with node-worker dependencies with binary (dugite, node-llama-cpp) or __filename usages (tiddlywiki), which can't be prepare properly by webpack */
   const tasks = [];
   if (['production', 'test'].includes(process.env.NODE_ENV)) {
     console.log('Copying tiddlywiki dependency to dist');

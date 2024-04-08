@@ -26,7 +26,6 @@ export const PACKAGE_PATH_BASE = isDevelopmentOrTest
   : path.resolve(process.resourcesPath, 'node_modules');
 export const ZX_FOLDER = path.resolve(PACKAGE_PATH_BASE, 'zx', 'build', 'cli.js');
 export const TIDDLYWIKI_PACKAGE_FOLDER = path.resolve(PACKAGE_PATH_BASE, '@tiddlygit', 'tiddlywiki', 'boot');
-export const RWKV_CPP_TOKENIZER_PATH = path.resolve(PACKAGE_PATH_BASE, 'llama-node', '20B_tokenizer.json');
 
 export const LOCALIZATION_FOLDER = isDevelopmentOrTest
   ? path.resolve(sourcePath, '..', localizationFolderName)

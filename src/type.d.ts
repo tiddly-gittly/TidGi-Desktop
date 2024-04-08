@@ -9,14 +9,6 @@ declare module '@tiddlygit/tiddlywiki' {
   export * from 'tiddlywiki';
 }
 
-declare module 'llama-node/dist/llm/llama-cpp.cjs' {
-  export { LLamaCpp } from 'llama-node/dist/llm/llama-cpp';
-}
-declare module 'llama-node/dist/llm/rwkv-cpp.cjs' {
-  export { RwkvCpp } from 'llama-node/dist/llm/rwkv-cpp';
-}
-
-
 declare module 'espree' {
   // https://github.com/eslint/espree#options
   export interface Options {
