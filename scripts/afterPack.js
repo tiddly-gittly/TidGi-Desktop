@@ -42,14 +42,16 @@ exports.default = async (
   const appParentPath = path.resolve(buildPath, '..', '..', '..', '..');
   const appPath = path.join(appParentPath, 'Electron.app');
   const shell = platform === 'darwin' ? '/bin/zsh' : undefined;
-
+  const winMacLinuxPlatformName = platform === 'darwin' ? 'mac' : (platform === 'win32' ? 'win' : 'linux');
   /** delete useless lproj files to make it clean */
   const lproj = glob.sync('*.lproj', { cwd });
   const pathsToRemove = lproj
     .filter((dir) => !keepingLprojRegEx.test(dir))
     .map((dir) => path.join(cwd, dir));
   if (platform === 'darwin') {
-    await Promise.all(pathsToRemove.map((dir) => fs.remove(dir)));
+    await Promise.all(pathsToRemove.map(async (dir) => {
+      await fs.remove(dir);
+    }));
   }
   /** copy npm packages with node-worker dependencies with binary (dugite, llama-node) or __filename usages (tiddlywiki), which can't be prepare properly by webpack */
   const tasks = [];
@@ -95,37 +97,25 @@ exports.default = async (
       ['@tiddlygit', 'tiddlywiki', 'themes'],
       ['@tiddlygit', 'tiddlywiki', 'languages'],
       ['@tiddlygit', 'tiddlywiki', 'tiddlywiki.js'],
-      // llama-node and @llama-node/core etc. include too many source code, so only copy its binary
-      ['llama-node', 'dist'],
-      ['llama-node', 'package.json'],
-      ['llama-node', '20B_tokenizer.json'],
-      ['@llama-node', 'core', 'index.js'],
-      ['@llama-node', 'core', 'package.json'],
-      ['@llama-node', 'rwkv-cpp', 'index.js'],
-      ['@llama-node', 'rwkv-cpp', 'package.json'],
-      ['@llama-node', 'llama-cpp', 'index.js'],
-      ['@llama-node', 'llama-cpp', 'package.json'],
+      // node-llama-cpp etc. include too many source code, so only copy its binary
+      ['node-llama-cpp', 'node_modules'],
       // we only need its `main` binary, no need its dependency and code, because we already copy it to src/services/native/externalApp
       ['app-path', 'main'],
     ];
     // it by default pack files for all platforms, we only copy what current platform needs
-    const llamaCore = ['@llama-node', 'core', '@llama-node'];
-    const llamaRwkv = ['@llama-node', 'rwkv-cpp', '@llama-node'];
-    const llamaCpp = ['@llama-node', 'llama-cpp', '@llama-node'];
+    const llamaCpp = ['node-llama-cpp', 'llamaBins'];
     await Promise.all(
-      [llamaCore, llamaRwkv, llamaCpp].map(async (llamaPath) => {
-        const llamaBinaryFiles = await fs.readdir(
+      [llamaCpp].map(async (llamaPath) => {
+        // ['mac-arm64-metal', 'mac-x64', ...]
+        const llamaBinaryFolders = await fs.readdir(
           path.resolve(sourceNodeModulesFolder, ...llamaPath),
         );
         /**
-         * 'core.darwin-arm64.node',
-         * 'core.darwin-x64.node',
-         * 'core.linux-x64-gnu.node',
-         * 'core.linux-x64-musl.node',
-         * 'core.win32-x64-msvc.node'
+         * 'llama-addon.node',
+         * 'default.metallib',
          */
-        const filesInPlatform = llamaBinaryFiles.filter(
-          (file) => file.includes(platform) && file.includes(arch),
+        const filesInPlatform = llamaBinaryFolders.filter(
+          (file) => file.includes(winMacLinuxPlatformName) && file.includes(arch),
         );
         filesInPlatform.forEach((fileName) => {
           packagePathsToCopyDereferenced.push([...llamaPath, fileName]);
