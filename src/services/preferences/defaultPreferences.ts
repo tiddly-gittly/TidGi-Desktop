@@ -17,9 +17,7 @@ export const defaultPreferences: IPreferences = {
   language: 'zh_CN',
   languageModel: {
     defaultModel: {
-      [LanguageModelRunner.llmRs]: 'llama.bin',
-      [LanguageModelRunner.llamaCpp]: 'llama.bin',
-      [LanguageModelRunner.rwkvCpp]: 'rwkv.bin',
+      [LanguageModelRunner.llamaCpp]: 'llama.gguf',
     },
     timeoutDuration: DEFAULT_TIMEOUT_DURATION,
   },

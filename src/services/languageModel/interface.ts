@@ -1,12 +1,11 @@
 import { LanguageModelChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import { LLamaChatPromptOptions, LlamaModelOptions } from 'node-llama-cpp';
 import type { Observable } from 'rxjs';
-import {getLlama, LlamaChatSession} from "node-llama-cpp";
 
 export enum LanguageModelRunner {
   llamaCpp = 'llama.cpp',
-  llmRs = 'llm-rs',
-  rwkvCpp = 'rwkv.cpp',
+  // rwkvCpp = 'rwkv.cpp',
 }
 export interface ILanguageModelPreferences {
   /**
@@ -14,9 +13,7 @@ export interface ILanguageModelPreferences {
    * @url https://github.com/Atome-FE/llama-node#supported-models
    */
   defaultModel: {
-    [LanguageModelRunner.llmRs]: string;
     [LanguageModelRunner.llamaCpp]: string;
-    [LanguageModelRunner.rwkvCpp]: string;
   };
   /**
    * If a llm stop responding for this long, we will kill the conversation. This basically means it stopped responding.
@@ -32,7 +29,7 @@ export interface ILLMResultBase {
    */
   id: string;
 }
-export type ILanguageModelWorkerResponse = INormalLanguageModelLogMessage | ILanguageModelWorkerResult;
+export type ILanguageModelWorkerResponse = INormalLanguageModelLogMessage | ILanguageModelWorkerResult | ILanguageModelLoadProgress;
 export interface INormalLanguageModelLogMessage extends ILLMResultBase {
   /** for error, use `observer.error` instead */
   level: 'debug' | 'warn' | 'info';
@@ -41,6 +38,10 @@ export interface INormalLanguageModelLogMessage extends ILLMResultBase {
 }
 export interface ILanguageModelWorkerResult extends ILLMResultPart {
   type: 'result';
+}
+export interface ILanguageModelLoadProgress extends ILLMResultBase {
+  percentage: number;
+  type: 'progress';
 }
 
 /**
@@ -51,13 +52,8 @@ export interface ILLMResultPart extends ILLMResultBase {
 }
 
 export interface IRunLLAmaOptions extends ILLMResultBase {
-  completionOptions: Partial<LLamaInvocation> & { prompt: string };
-  loadConfig?: Partial<LLamaLoadConfig>;
-  modelName?: string;
-}
-export interface IRunRwkvOptions extends ILLMResultBase {
-  completionOptions: Partial<RwkvInvocation> & { prompt: string };
-  loadConfig?: Partial<RwkvLoadConfig>;
+  completionOptions: Partial<LLamaChatPromptOptions> & { prompt: string };
+  loadConfig: Partial<LlamaModelOptions> & Pick<LlamaModelOptions, 'modelPath'>;
   modelName?: string;
 }
 
@@ -74,7 +70,6 @@ export interface IRunRwkvOptions extends ILLMResultBase {
 export interface ILanguageModelService {
   abortLanguageModel(runner: LanguageModelRunner, id: string): Promise<void>;
   runLanguageModel$(runner: LanguageModelRunner.llamaCpp, options: IRunLLAmaOptions): Observable<ILLMResultPart>;
-  runLanguageModel$(runner: LanguageModelRunner.rwkvCpp, options: IRunRwkvOptions): Observable<ILLMResultPart>;
 }
 export const LanguageModelServiceIPCDescriptor = {
   channel: LanguageModelChannel.name,
@@ -83,6 +78,3 @@ export const LanguageModelServiceIPCDescriptor = {
     runLanguageModel$: ProxyPropertyType.Function$,
   },
 };
-
-export type { Generate as LLamaInvocation } from '@llama-node/llama-cpp';
-export type { RwkvInvocation } from '@llama-node/rwkv-cpp';

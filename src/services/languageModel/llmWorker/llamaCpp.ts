@@ -1,51 +1,64 @@
-import type { LLama } from '@llama-node/llama-cpp';
-import type { LLM } from 'llama-node';
-import type { LoadConfig } from 'llama-node/dist/llm/llama-cpp';
+import { getLlama, Llama, LlamaChatSession, LlamaContext, LlamaContextSequence, LlamaModel, LlamaModelOptions } from 'node-llama-cpp';
 import { Observable, type Subscriber } from 'rxjs';
-import { ILanguageModelWorkerResponse, LLamaInvocation } from '../interface';
+import { ILanguageModelWorkerResponse, IRunLLAmaOptions } from '../interface';
 import { DEFAULT_TIMEOUT_DURATION } from './constants';
 
-let runnerInstance: undefined | LLM<LLama, LoadConfig, LLamaInvocation>;
-export async function loadLLama(
-  loadConfigOverwrite: Partial<LoadConfig> & Pick<LoadConfig, 'modelPath'>,
-  subscriber?: Subscriber<ILanguageModelWorkerResponse>,
+let llamaInstance: undefined | Llama;
+let modalInstance: undefined | LlamaModel;
+let contextInstance: undefined | LlamaContext;
+let contextSequenceInstance: undefined | LlamaContextSequence;
+export async function loadLLamaAndModal(
+  loadConfigOverwrite: Partial<LlamaModelOptions> & Pick<LlamaModelOptions, 'modelPath'>,
+  conversationID: string,
+  subscriber: Subscriber<ILanguageModelWorkerResponse>,
 ) {
   const loggerCommonMeta = { level: 'info' as const, meta: { function: 'llmWorker.loadLLama' }, id: 'loadLLama' };
-  subscriber?.next({ message: 'async importing library', ...loggerCommonMeta });
-  const { LLM } = await import('llama-node');
-  // use dynamic import cjs version to fix https://github.com/andywer/threads.js/issues/478
-  const { LLamaCpp } = await import('llama-node/dist/llm/llama-cpp.cjs');
-  subscriber?.next({ message: 'library loaded, new LLM now', ...loggerCommonMeta });
+  // TODO: maybe use dynamic import cjs version to fix https://github.com/andywer/threads.js/issues/478 ? If get `Timeout: Did not receive an init message from worker`.
+  // subscriber.next({ message: 'async importing library', ...loggerCommonMeta });
+  subscriber.next({ message: 'library loaded, new LLM now', ...loggerCommonMeta });
   try {
-    runnerInstance = new LLM(LLamaCpp);
-    const loadConfig: LoadConfig = {
-      enableLogging: true,
-      nCtx: 1024,
-      seed: 0,
-      f16Kv: false,
-      logitsAll: false,
-      vocabOnly: false,
-      useMlock: false,
-      embedding: false,
-      useMmap: true,
-      nGpuLayers: 0,
+    llamaInstance = await getLlama({
+      skipDownload: true,
+      vramPadding: 0,
+      logger: (level, message) => {
+        subscriber.next({ message, ...loggerCommonMeta });
+      },
+    });
+    subscriber.next({ message: 'prepared to load modal', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, loadConfigOverwrite } });
+    const loadConfig: LlamaModelOptions = {
+      onLoadProgress: (loadProgress) => {
+        subscriber.next({
+          type: 'progress',
+          percentage: loadProgress,
+          id: conversationID,
+        });
+      },
       ...loadConfigOverwrite,
     };
-    subscriber?.next({ message: 'prepared to load instance', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, loadConfigOverwrite } });
-    await runnerInstance.load(loadConfig);
-    subscriber?.next({ message: 'instance loaded', ...loggerCommonMeta });
-    return runnerInstance;
+    modalInstance = await llamaInstance.loadModel(loadConfig);
+    subscriber.next({ message: 'instance loaded', ...loggerCommonMeta });
+    return modalInstance;
   } catch (error) {
-    unloadLLama();
+    await unloadLLama();
     throw error;
   }
 }
-export function unloadLLama() {
-  runnerInstance = undefined;
+export async function unloadLLama() {
+  await contextInstance?.dispose();
+  contextSequenceInstance?.dispose();
+  await modalInstance?.dispose();
+  await llamaInstance?.dispose();
+  contextSequenceInstance = undefined;
+  llamaInstance = undefined;
+  modalInstance = undefined;
 }
 const runnerAbortControllers = new Map<string, AbortController>();
 export function runLLama(
-  options: { completionOptions: Partial<LLamaInvocation> & { prompt: string }; conversationID: string; loadConfig: Partial<LoadConfig> & Pick<LoadConfig, 'modelPath'> },
+  options: {
+    completionOptions: IRunLLAmaOptions['completionOptions'];
+    conversationID: IRunLLAmaOptions['id'];
+    loadConfig: IRunLLAmaOptions['loadConfig'];
+  },
   texts: { timeout: string },
 ): Observable<ILanguageModelWorkerResponse> {
   const { conversationID, completionOptions, loadConfig } = options;
@@ -54,8 +67,8 @@ export function runLLama(
   return new Observable<ILanguageModelWorkerResponse>((subscriber) => {
     void (async function runLLamaObservableIIFE() {
       try {
-        if (runnerInstance === undefined) {
-          runnerInstance = await loadLLama(loadConfig, subscriber);
+        if (modalInstance === undefined) {
+          modalInstance = await loadLLamaAndModal(loadConfig, conversationID, subscriber);
         }
       } catch (error) {
         subscriber.error(error);
@@ -76,28 +89,30 @@ export function runLLama(
         updateTimeout();
         subscriber.next({ message: 'ready to createCompletion', ...loggerCommonMeta });
         runnerAbortControllers.set(conversationID, abortController);
-        await runnerInstance.createCompletion(
-          {
-            nThreads: 4,
-            nTokPredict: 2048,
-            topK: 40,
-            topP: 0.1,
-            temp: 0.2,
-            repeatPenalty: 1.5,
-            ...completionOptions,
-          },
-          (response) => {
-            const { completed, token } = response;
+        if (contextInstance === undefined) {
+          contextInstance = await modalInstance.createContext({
+            contextSize: Math.min(4096, modalInstance.trainContextSize),
+          });
+        }
+        if (contextSequenceInstance === undefined) {
+          contextSequenceInstance = contextInstance.getSequence();
+        }
+        const session = new LlamaChatSession({
+          contextSequence: contextSequenceInstance,
+          autoDisposeSequence: false,
+        });
+        await session.prompt(completionOptions.prompt, {
+          ...completionOptions,
+          signal: abortController.signal,
+          onToken: (tokens) => {
             updateTimeout();
             subscriber.next({ type: 'result', token, id: conversationID });
-            if (completed) {
-              clearTimeout(respondTimeout);
-              runnerAbortControllers.delete(conversationID);
-              subscriber.complete();
-            }
           },
-          abortController.signal,
-        );
+        });
+        // completed
+        clearTimeout(respondTimeout);
+        runnerAbortControllers.delete(conversationID);
+        subscriber.complete();
         subscriber.next({ message: 'createCompletion completed', ...loggerCommonMeta });
       } catch (error) {
         runnerAbortControllers.delete(conversationID);

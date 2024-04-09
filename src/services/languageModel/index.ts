@@ -10,7 +10,6 @@ import { ModuleThread, spawn, Worker } from 'threads';
 import workerURL from 'threads-plugin/dist/loader?name=llmWorker!./llmWorker/index.ts';
 
 import { LANGUAGE_MODEL_FOLDER } from '@/constants/appPaths';
-import { RWKV_CPP_TOKENIZER_PATH } from '@/constants/paths';
 import { getExistingParentDirectory } from '@/helpers/findPath';
 import { lazyInject } from '@services/container';
 import { i18n } from '@services/libs/i18n';
@@ -20,7 +19,7 @@ import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { ILanguageModelService, ILLMResultPart, IRunLLAmaOptions, IRunRwkvOptions, LanguageModelRunner } from './interface';
+import { ILanguageModelService, ILLMResultPart, IRunLLAmaOptions, LanguageModelRunner } from './interface';
 import { LLMWorker } from './llmWorker/index';
 
 @injectable()
@@ -109,8 +108,7 @@ export class LanguageModel implements ILanguageModelService {
   }
 
   public runLanguageModel$(runner: LanguageModelRunner.llamaCpp, options: IRunLLAmaOptions): Observable<ILLMResultPart>;
-  public runLanguageModel$(runner: LanguageModelRunner.rwkvCpp, options: IRunRwkvOptions): Observable<ILLMResultPart>;
-  public runLanguageModel$(runner: LanguageModelRunner, options: IRunLLAmaOptions | IRunRwkvOptions): Observable<ILLMResultPart> {
+  public runLanguageModel$(runner: LanguageModelRunner, options: IRunLLAmaOptions): Observable<ILLMResultPart> {
     const { id: conversationID, completionOptions, modelName, loadConfig: config } = options;
     return new Observable<ILLMResultPart>((subscriber) => {
       const runLanguageModelObserverIIFE = async () => {
@@ -125,19 +123,11 @@ export class LanguageModel implements ILanguageModelService {
         const texts = { timeout: i18n.t('LanguageModel.GenerationTimeout') };
         switch (runner) {
           case LanguageModelRunner.llamaCpp: {
-            observable = worker.runLLama({ completionOptions, loadConfig: { modelPath, ...config }, conversationID }, texts);
+            observable = worker.runLLama({ completionOptions, loadConfig: { ...config, modelPath }, conversationID }, texts);
             break;
-          }
-          case LanguageModelRunner.rwkvCpp: {
-            observable = worker.runRwkv({ completionOptions, loadConfig: { modelPath, tokenizerPath: RWKV_CPP_TOKENIZER_PATH, ...config }, conversationID }, texts);
-            break;
-          }
-          case LanguageModelRunner.llmRs: {
-            logger.error(`llmRs haven't implemented yet.`);
-            return;
           }
         }
-        observable.subscribe({
+        observable?.subscribe({
           next: (result) => {
             const loggerCommonMeta = { id: result.id, function: 'LanguageModel.runLanguageModel$' };
 
@@ -170,13 +160,6 @@ export class LanguageModel implements ILanguageModelService {
       case LanguageModelRunner.llamaCpp: {
         await this.llmWorker?.abortLLama(id);
         break;
-      }
-      case LanguageModelRunner.rwkvCpp: {
-        await this.llmWorker?.abortRwkv(id);
-        break;
-      }
-      case LanguageModelRunner.llmRs: {
-        logger.error(`llmRs haven't implemented yet.`);
       }
     }
   }
