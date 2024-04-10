@@ -120,7 +120,7 @@ export class LanguageModel implements ILanguageModelService {
           return;
         }
         let observable;
-        const texts = { timeout: i18n.t('LanguageModel.GenerationTimeout') };
+        const texts = { timeout: i18n.t('LanguageModel.GenerationTimeout'), disposed: i18n.t('LanguageModel.ModalDisposed') };
         switch (runner) {
           case LanguageModelRunner.llamaCpp: {
             observable = worker.runLLama({ completionOptions, loadConfig: { ...config, modelPath }, conversationID }, texts);

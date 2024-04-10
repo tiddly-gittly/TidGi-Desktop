@@ -59,7 +59,7 @@ export function runLLama(
     conversationID: IRunLLAmaOptions['id'];
     loadConfig: IRunLLAmaOptions['loadConfig'];
   },
-  texts: { timeout: string },
+  texts: { disposed: string; timeout: string },
 ): Observable<ILanguageModelWorkerResponse> {
   const { conversationID, completionOptions, loadConfig } = options;
 
@@ -105,8 +105,15 @@ export function runLLama(
           ...completionOptions,
           signal: abortController.signal,
           onToken: (tokens) => {
+            if (modalInstance === undefined) {
+              abortController.abort();
+              runnerAbortControllers.delete(conversationID);
+              subscriber.next({ type: 'result', token: texts.timeout, id: conversationID });
+              subscriber.complete();
+              return;
+            }
             updateTimeout();
-            subscriber.next({ type: 'result', token, id: conversationID });
+            subscriber.next({ type: 'result', token: modalInstance.detokenize(tokens), id: conversationID });
           },
         });
         // completed
