@@ -2,7 +2,7 @@ import { dialog } from 'electron';
 import fs from 'fs-extra';
 import { injectable } from 'inversify';
 import path from 'path';
-import { Observable } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 import { ModuleThread, spawn, Worker } from 'threads';
 
 // @ts-expect-error it don't want .ts
@@ -19,7 +19,7 @@ import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { ILanguageModelService, ILLMResultPart, IRunLLAmaOptions, LanguageModelRunner } from './interface';
+import { ILanguageModelAPIResponse, ILanguageModelService, IRunLLAmaOptions, LanguageModelRunner } from './interface';
 import { LLMWorker } from './llmWorker/index';
 
 @injectable()
@@ -35,6 +35,26 @@ export class LanguageModel implements ILanguageModelService {
 
   private llmWorker?: ModuleThread<LLMWorker>;
 
+  private modalLoaded: Record<LanguageModelRunner, boolean> = {
+    [LanguageModelRunner.llamaCpp]: false,
+  };
+
+  public modalLoaded$ = new BehaviorSubject<Record<LanguageModelRunner, boolean>>(this.modalLoaded);
+  public updateModalLoaded(update: Partial<Record<LanguageModelRunner, boolean>>): void {
+    this.modalLoaded = { ...this.modalLoaded, ...update };
+    this.modalLoaded$.next(this.modalLoaded);
+  }
+
+  private modalLoadProgress: Record<LanguageModelRunner, number> = {
+    [LanguageModelRunner.llamaCpp]: 0,
+  };
+
+  public modalLoadProgress$ = new BehaviorSubject<Record<LanguageModelRunner, number>>(this.modalLoadProgress);
+  public updateModalLoadProgress(update: Partial<Record<LanguageModelRunner, number>>): void {
+    this.modalLoadProgress = { ...this.modalLoadProgress, ...update };
+    this.modalLoadProgress$.next(this.modalLoadProgress);
+  }
+
   private async initWorker(): Promise<void> {
     logger.debug(`initial llmWorker with  ${workerURL as string}`, { function: 'LanguageModel.initWorker' });
     try {
@@ -47,7 +67,7 @@ export class LanguageModel implements ILanguageModelService {
         logger.warn(`initWorker() handle "${(error as Error)?.message}", will try recreate worker.`, { function: 'LanguageModel.initWorker' });
         await this.initWorker();
       } else {
-        logger.warn('initWorker() unexpected error, throw it', { function: 'LanguageModel.initWorker' });
+        logger.error('initWorker() unexpected error, throw it', { function: 'LanguageModel.initWorker', error: (error as Error).message, stack: (error as Error).stack });
         throw error;
       }
     }
@@ -107,10 +127,10 @@ export class LanguageModel implements ILanguageModelService {
     return exists;
   }
 
-  public runLanguageModel$(runner: LanguageModelRunner.llamaCpp, options: IRunLLAmaOptions): Observable<ILLMResultPart>;
-  public runLanguageModel$(runner: LanguageModelRunner, options: IRunLLAmaOptions): Observable<ILLMResultPart> {
+  public runLanguageModel$(runner: LanguageModelRunner.llamaCpp, options: IRunLLAmaOptions): Observable<ILanguageModelAPIResponse>;
+  public runLanguageModel$(runner: LanguageModelRunner, options: IRunLLAmaOptions): Observable<ILanguageModelAPIResponse> {
     const { id: conversationID, completionOptions, modelName, loadConfig: config } = options;
-    return new Observable<ILLMResultPart>((subscriber) => {
+    return new Observable<ILanguageModelAPIResponse>((subscriber) => {
       const runLanguageModelObserverIIFE = async () => {
         const worker = await this.getWorker();
         const { defaultModel } = await this.preferenceService.get('languageModel');
@@ -135,8 +155,12 @@ export class LanguageModel implements ILanguageModelService {
               switch (result.type) {
                 case 'progress': {
                   const { percentage, id } = result;
+                  if (percentage === 1) {
+                    this.updateModalLoaded({ [runner]: true });
+                  }
+                  this.updateModalLoadProgress({ [runner]: percentage });
                   if (id === conversationID) {
-                    subscriber.next({ token: `${i18n.t('LanguageModel.ModelLoadingProgress')} ${(percentage * 100).toFixed(1)}%`, id });
+                    subscriber.next(result);
                   }
                   break;
                 }
@@ -183,5 +207,6 @@ export class LanguageModel implements ILanguageModelService {
         break;
       }
     }
+    this.updateModalLoaded({ [runner]: false });
   }
 }
