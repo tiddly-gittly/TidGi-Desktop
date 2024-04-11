@@ -480,7 +480,8 @@
     "ModelNotExistDescription": "尝试使用你给的这个路径加载模型，但在这个位置其实没有所需要的模型",
     "OpenThisPath": "打开该位置",
     "GenerationTimeout": "模型生成超时，已中止。",
-    "ModalDisposed": "模型已卸载，生成中止，需要重新加载模型。"
+    "ModalDisposed": "模型已卸载，生成中止，需要重新加载模型。",
+    "ModelLoadingProgress": "模型加载进度"
   },
   "Help": {
     "Alternatives": "其它源",

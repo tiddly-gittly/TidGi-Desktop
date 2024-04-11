@@ -131,11 +131,23 @@ export class LanguageModel implements ILanguageModelService {
           next: (result) => {
             const loggerCommonMeta = { id: result.id, function: 'LanguageModel.runLanguageModel$' };
 
-            if ('type' in result && result.type === 'result') {
-              const { token, id } = result;
-              // prevent the case that the result is from previous or next conversation, where its Observable is not properly closed.
-              if (id === conversationID) {
-                subscriber.next({ token, id });
+            if ('type' in result) {
+              switch (result.type) {
+                case 'progress': {
+                  const { percentage, id } = result;
+                  if (id === conversationID) {
+                    subscriber.next({ token: `${i18n.t('LanguageModel.ModelLoadingProgress')} ${(percentage * 100).toFixed(1)}%`, id });
+                  }
+                  break;
+                }
+                case 'result': {
+                  const { token, id } = result;
+                  // prevent the case that the result is from previous or next conversation, where its Observable is not properly closed.
+                  if (id === conversationID) {
+                    subscriber.next({ token, id });
+                  }
+                  break;
+                }
               }
             } else if ('level' in result) {
               logger.log(result.level, `${result.message}`, loggerCommonMeta);
@@ -159,6 +171,15 @@ export class LanguageModel implements ILanguageModelService {
     switch (runner) {
       case LanguageModelRunner.llamaCpp: {
         await this.llmWorker?.abortLLama(id);
+        break;
+      }
+    }
+  }
+
+  public async unloadLanguageModel(runner: LanguageModelRunner): Promise<void> {
+    switch (runner) {
+      case LanguageModelRunner.llamaCpp: {
+        await this.llmWorker?.unloadLLama();
         break;
       }
     }

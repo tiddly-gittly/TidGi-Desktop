@@ -68,13 +68,24 @@ export interface IRunLLAmaOptions extends ILLMResultBase {
  * Run language model on a shared worker, and queue requests to the worker.
  */
 export interface ILanguageModelService {
+  /**
+   * Abort a chat response generation.
+   */
   abortLanguageModel(runner: LanguageModelRunner, id: string): Promise<void>;
+  /**
+   * Generate text based on options (including prompt).
+   */
   runLanguageModel$(runner: LanguageModelRunner.llamaCpp, options: IRunLLAmaOptions): Observable<ILLMResultPart>;
+  /**
+   * Unload model from memory. So it is possible to load another model, or to free up memory.
+   */
+  unloadLanguageModel(runner: LanguageModelRunner): Promise<void>;
 }
 export const LanguageModelServiceIPCDescriptor = {
   channel: LanguageModelChannel.name,
   properties: {
     abortLanguageModel: ProxyPropertyType.Function,
     runLanguageModel$: ProxyPropertyType.Function$,
+    unloadLanguageModel: ProxyPropertyType.Function,
   },
 };

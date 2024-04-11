@@ -1,3 +1,4 @@
+import debounce from 'lodash/debounce';
 import { getLlama, Llama, LlamaChatSession, LlamaContext, LlamaContextSequence, LlamaModel, LlamaModelOptions } from 'node-llama-cpp';
 import { Observable, type Subscriber } from 'rxjs';
 import { ILanguageModelWorkerResponse, IRunLLAmaOptions } from '../interface';
@@ -25,14 +26,15 @@ export async function loadLLamaAndModal(
       },
     });
     subscriber.next({ message: 'prepared to load modal', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, loadConfigOverwrite } });
+    const onLoadProgress = debounce((percentage: number) => {
+      subscriber.next({
+        type: 'progress',
+        percentage,
+        id: conversationID,
+      });
+    });
     const loadConfig: LlamaModelOptions = {
-      onLoadProgress: (loadProgress) => {
-        subscriber.next({
-          type: 'progress',
-          percentage: loadProgress,
-          id: conversationID,
-        });
-      },
+      onLoadProgress,
       ...loadConfigOverwrite,
     };
     modalInstance = await llamaInstance.loadModel(loadConfig);
@@ -108,7 +110,7 @@ export function runLLama(
             if (modalInstance === undefined) {
               abortController.abort();
               runnerAbortControllers.delete(conversationID);
-              subscriber.next({ type: 'result', token: texts.timeout, id: conversationID });
+              subscriber.next({ type: 'result', token: texts.disposed, id: conversationID });
               subscriber.complete();
               return;
             }
