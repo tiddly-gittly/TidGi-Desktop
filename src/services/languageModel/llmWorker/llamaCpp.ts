@@ -25,7 +25,7 @@ export async function loadLLamaAndModel(
         subscriber.next({ message, ...loggerCommonMeta });
       },
     });
-    subscriber.next({ message: 'prepared to load model', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, loadConfigOverwrite } });
+    subscriber.next({ message: 'prepared to load model', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, config: JSON.stringify(loadConfigOverwrite) } });
     const onLoadProgress = debounce((percentage: number) => {
       subscriber.next({
         type: 'progress',

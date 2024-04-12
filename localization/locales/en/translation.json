@@ -481,7 +481,8 @@
     "ModelNotExistDescription": "Try to load the model using this path you gave, but there is actually no model needed at this location",
     "GenerationTimeout": "Generation Timeout, Terminated",
     "ModelLoadingProgress": "Model Loading",
-    "ModelDisposed": "Model Disposed, Terminated (Need to reload language model)"
+    "ModelDisposed": "Model Disposed, Terminated (Need to reload language model)",
+    "RunModelError": "Run Model Error"
   },
   "Description": "Description",
   "Tags": "Tags",

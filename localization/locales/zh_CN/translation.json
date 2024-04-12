@@ -487,7 +487,8 @@
     "OpenThisPath": "打开该位置",
     "GenerationTimeout": "模型生成超时，已中止。",
     "ModelLoadingProgress": "模型加载进度",
-    "ModelDisposed": "模型已卸载，生成中止（需要重新加载语言模型）"
+    "ModelDisposed": "模型已卸载，生成中止（需要重新加载语言模型）",
+    "RunModelError": "运行模型出错"
   },
   "Help": {
     "Alternatives": "其它源",
