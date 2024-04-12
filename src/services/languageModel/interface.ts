@@ -54,7 +54,7 @@ export interface ILLMResultPart extends ILLMResultBase {
 
 export interface IRunLLAmaOptions extends ILLMResultBase {
   completionOptions: Partial<LLamaChatPromptOptions> & { prompt: string };
-  loadConfig: Partial<LlamaModelOptions> & Pick<LlamaModelOptions, 'modelPath'>;
+  loadConfig: Partial<LlamaModelOptions>;
   /**
    * Load model to test if it's loadable, or preload model to speed up (when `autoDisposeSequence: false,`).
    * Without generating text.

@@ -59,7 +59,7 @@ export function runLLama(
   options: {
     completionOptions: IRunLLAmaOptions['completionOptions'];
     conversationID: IRunLLAmaOptions['id'];
-    loadConfig: IRunLLAmaOptions['loadConfig'];
+    loadConfig: IRunLLAmaOptions['loadConfig'] & Pick<LlamaModelOptions, 'modelPath'>;
   },
   texts: { disposed: string; timeout: string },
 ): Observable<ILanguageModelWorkerResponse> {
