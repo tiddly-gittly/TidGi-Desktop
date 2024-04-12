@@ -34,6 +34,7 @@ exports.main = _.compact([
   }),
   new webpack.DefinePlugin({
     'process.env.NODE_ENV': `"${process.env.NODE_ENV ?? 'production'}"`,
+    'const __dirname = path.dirname(fileURLToPath(import.meta.url));': '',
   }),
   new ExternalsPlugin({
     type: 'commonjs',
