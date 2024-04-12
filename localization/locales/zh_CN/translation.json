@@ -422,7 +422,13 @@
       "UpdateTimeoutDuration": "单位（秒）。如果一个语言模型这么久了还没回应，将自动终止对话停止等待，因为这基本上意味着它停止运行了。需要大于0，且不能太小，不然无法正常输出。",
       "TimeoutDuration": "超时时长",
       "OpenModelFolder": "打开模型文件夹",
-      "OpenModelFolderDescription": "推理程序将在这个文件夹里寻找模型，请将你下载的模型放到这里（或使用命令行创建软链接到这里）"
+      "OpenModelFolderDescription": "推理程序将在这个文件夹里寻找模型，请将你下载的模型放到这里（或使用命令行创建软链接到这里）",
+      "ModelLoaded": "模型已加载",
+      "ModelNotLoaded": "模型未加载",
+      "LoadModel": "加载模型",
+      "UnLoadModel": "卸载模型",
+      "UnLoadModelDescription": "点击卸载模型释放内存，但再次使用时需要重新加载，会消耗额外时间",
+      "LoadModelDescription": "点击尝试加载模型，可用于检测模型是否可以正常使用。或预加载供太微内使用，但此处的参数可能和太微内插件提供的参数不一样，导致行为不一致。"
     },
     "RunOnBackground": "保持后台运行",
     "RunOnBackgroundDetail": "在窗口关闭时不退出，继续保持后台运行。再次打开应用时快速还原窗口。",
@@ -480,8 +486,8 @@
     "ModelNotExistDescription": "尝试使用你给的这个路径加载模型，但在这个位置其实没有所需要的模型",
     "OpenThisPath": "打开该位置",
     "GenerationTimeout": "模型生成超时，已中止。",
-    "ModalDisposed": "模型已卸载，生成中止，需要重新加载模型。",
-    "ModelLoadingProgress": "模型加载进度"
+    "ModelLoadingProgress": "模型加载进度",
+    "ModelDisposed": "模型已卸载，生成中止（需要重新加载语言模型）"
   },
   "Help": {
     "Alternatives": "其它源",

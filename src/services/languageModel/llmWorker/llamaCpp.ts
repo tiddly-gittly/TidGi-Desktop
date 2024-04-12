@@ -5,10 +5,10 @@ import { ILanguageModelWorkerResponse, IRunLLAmaOptions } from '../interface';
 import { DEFAULT_TIMEOUT_DURATION } from './constants';
 
 let llamaInstance: undefined | Llama;
-let modalInstance: undefined | LlamaModel;
+let modelInstance: undefined | LlamaModel;
 let contextInstance: undefined | LlamaContext;
 let contextSequenceInstance: undefined | LlamaContextSequence;
-export async function loadLLamaAndModal(
+export async function loadLLamaAndModel(
   loadConfigOverwrite: Partial<LlamaModelOptions> & Pick<LlamaModelOptions, 'modelPath'>,
   conversationID: string,
   subscriber: Subscriber<ILanguageModelWorkerResponse>,
@@ -25,7 +25,7 @@ export async function loadLLamaAndModal(
         subscriber.next({ message, ...loggerCommonMeta });
       },
     });
-    subscriber.next({ message: 'prepared to load modal', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, loadConfigOverwrite } });
+    subscriber.next({ message: 'prepared to load model', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, loadConfigOverwrite } });
     const onLoadProgress = debounce((percentage: number) => {
       subscriber.next({
         type: 'progress',
@@ -37,9 +37,9 @@ export async function loadLLamaAndModal(
       onLoadProgress,
       ...loadConfigOverwrite,
     };
-    modalInstance = await llamaInstance.loadModel(loadConfig);
+    modelInstance = await llamaInstance.loadModel(loadConfig);
     subscriber.next({ message: 'instance loaded', ...loggerCommonMeta });
-    return modalInstance;
+    return modelInstance;
   } catch (error) {
     await unloadLLama();
     throw error;
@@ -48,11 +48,11 @@ export async function loadLLamaAndModal(
 export async function unloadLLama() {
   await contextInstance?.dispose();
   contextSequenceInstance?.dispose();
-  await modalInstance?.dispose();
+  await modelInstance?.dispose();
   await llamaInstance?.dispose();
   contextSequenceInstance = undefined;
   llamaInstance = undefined;
-  modalInstance = undefined;
+  modelInstance = undefined;
 }
 const runnerAbortControllers = new Map<string, AbortController>();
 export function runLLama(
@@ -69,8 +69,8 @@ export function runLLama(
   return new Observable<ILanguageModelWorkerResponse>((subscriber) => {
     void (async function runLLamaObservableIIFE() {
       try {
-        if (modalInstance === undefined) {
-          modalInstance = await loadLLamaAndModal(loadConfig, conversationID, subscriber);
+        if (modelInstance === undefined) {
+          modelInstance = await loadLLamaAndModel(loadConfig, conversationID, subscriber);
         }
       } catch (error) {
         subscriber.error(error);
@@ -92,8 +92,8 @@ export function runLLama(
         subscriber.next({ message: 'ready to createCompletion', ...loggerCommonMeta });
         runnerAbortControllers.set(conversationID, abortController);
         if (contextInstance === undefined) {
-          contextInstance = await modalInstance.createContext({
-            contextSize: Math.min(4096, modalInstance.trainContextSize),
+          contextInstance = await modelInstance.createContext({
+            contextSize: Math.min(4096, modelInstance.trainContextSize),
           });
         }
         if (contextSequenceInstance === undefined) {
@@ -107,7 +107,7 @@ export function runLLama(
           ...completionOptions,
           signal: abortController.signal,
           onToken: (tokens) => {
-            if (modalInstance === undefined) {
+            if (modelInstance === undefined) {
               abortController.abort();
               runnerAbortControllers.delete(conversationID);
               subscriber.next({ type: 'result', token: texts.disposed, id: conversationID });
@@ -115,7 +115,7 @@ export function runLLama(
               return;
             }
             updateTimeout();
-            subscriber.next({ type: 'result', token: modalInstance.detokenize(tokens), id: conversationID });
+            subscriber.next({ type: 'result', token: modelInstance.detokenize(tokens), id: conversationID });
           },
         });
         // completed

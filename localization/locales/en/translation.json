@@ -385,7 +385,13 @@
       "TimeoutDuration": "Timeout Duration",
       "UpdateTimeoutDuration": "Unit (Second). If a language model does not respond after so long, it will automatically terminate the conversation and stop waiting, as this basically means that it has stopped running. It needs to be greater than 0 and not too small, otherwise it will not be output properly.",
       "OpenModelFolder": "Open Model Folder",
-      "OpenModelFolderDescription": "The inference program will look for models in this folder, please put your downloaded models here (or use the command line to create a soft link to here)"
+      "OpenModelFolderDescription": "The inference program will look for models in this folder, please put your downloaded models here (or use the command line to create a soft link to here)",
+      "ModelLoaded": "Model Loaded",
+      "ModelNotLoaded": "Model Not Loaded",
+      "LoadModel": "Load Model",
+      "UnLoadModel": "UnLoad Model",
+      "UnLoadModelDescription": "Clicking to unload the model releases memory, but it needs to be reloaded when used again, which consumes additional time",
+      "LoadModelDescription": "Clicking Try to load a model can be used to check if the model is ready for use. or pre-loaded for use within Tiddlywiki, but the parameters here may not be the same as those provided by the plugin within Tiddlywiki, resulting in inconsistent behavior."
     },
     "RunOnBackground": "Run On Background",
     "RunOnBackgroundDetail": "When window is closed, Continue to run in the background without exiting. Quickly restore the window when opening the app again.",
@@ -474,7 +480,8 @@
     "OpenThisPath": "Open This Path",
     "ModelNotExistDescription": "Try to load the model using this path you gave, but there is actually no model needed at this location",
     "GenerationTimeout": "Generation Timeout, Terminated",
-    "ModelLoadingProgress": "Model Loading"
+    "ModelLoadingProgress": "Model Loading",
+    "ModelDisposed": "Model Disposed, Terminated (Need to reload language model)"
   },
   "Description": "Description",
   "Tags": "Tags",

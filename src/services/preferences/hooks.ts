@@ -4,6 +4,6 @@ import { IPreferences } from './interface';
 
 export function usePreferenceObservable(): IPreferences | undefined {
   const [preference, preferenceSetter] = useState<IPreferences | undefined>();
-  useObservable(window.observables.preference.preference$, preferenceSetter as any);
+  useObservable(window.observables.preference.preference$, preferenceSetter);
   return preference;
 }

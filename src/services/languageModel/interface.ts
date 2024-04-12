@@ -55,6 +55,11 @@ export interface ILLMResultPart extends ILLMResultBase {
 export interface IRunLLAmaOptions extends ILLMResultBase {
   completionOptions: Partial<LLamaChatPromptOptions> & { prompt: string };
   loadConfig: Partial<LlamaModelOptions> & Pick<LlamaModelOptions, 'modelPath'>;
+  /**
+   * Load model to test if it's loadable, or preload model to speed up (when `autoDisposeSequence: false,`).
+   * Without generating text.
+   */
+  loadModelOnly?: boolean;
   modelName?: string;
 }
 
@@ -73,6 +78,8 @@ export interface ILanguageModelService {
    * Abort a chat response generation.
    */
   abortLanguageModel(runner: LanguageModelRunner, id: string): Promise<void>;
+  modelLoadProgress$: Observable<Record<LanguageModelRunner, number>>;
+  modelLoaded$: Observable<Record<LanguageModelRunner, boolean>>;
   /**
    * Generate text based on options (including prompt).
    */
@@ -86,6 +93,8 @@ export const LanguageModelServiceIPCDescriptor = {
   channel: LanguageModelChannel.name,
   properties: {
     abortLanguageModel: ProxyPropertyType.Function,
+    modelLoaded$: ProxyPropertyType.Value$,
+    modelLoadProgress$: ProxyPropertyType.Value$,
     runLanguageModel$: ProxyPropertyType.Function$,
     unloadLanguageModel: ProxyPropertyType.Function,
   },
