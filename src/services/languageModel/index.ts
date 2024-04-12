@@ -21,7 +21,7 @@ import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { ILanguageModelAPIResponse, ILanguageModelService, ILanguageModelWorkerResponse, IRunLLAmaOptions, LanguageModelRunner } from './interface';
+import { ILanguageModelAPIResponse, ILanguageModelService, IRunLLAmaOptions, LanguageModelRunner } from './interface';
 import { LLMWorker } from './llmWorker/index';
 
 @injectable()
@@ -143,17 +143,7 @@ export class LanguageModel implements ILanguageModelService {
         }
         let observable;
         if (options.loadModelOnly === true) {
-          observable = new Observable<ILanguageModelWorkerResponse>((subscriber) => {
-            async function loadLLamaIIFE() {
-              switch (runner) {
-                case LanguageModelRunner.llamaCpp: {
-                  await worker.loadLLama({ ...config, modelPath }, conversationID, subscriber);
-                  break;
-                }
-              }
-            }
-            void loadLLamaIIFE();
-          });
+          observable = worker.loadLLama({ ...config, modelPath }, conversationID);
         } else {
           // load and run model
           const texts = { timeout: i18n.t('LanguageModel.GenerationTimeout'), disposed: i18n.t('LanguageModel.ModelDisposed') };

@@ -1,6 +1,6 @@
 import debounce from 'lodash/debounce';
 import { getLlama, Llama, LlamaChatSession, LlamaContext, LlamaContextSequence, LlamaModel, LlamaModelOptions } from 'node-llama-cpp';
-import { Observable, type Subscriber } from 'rxjs';
+import { Observable } from 'rxjs';
 import { ILanguageModelWorkerResponse, IRunLLAmaOptions } from '../interface';
 import { DEFAULT_TIMEOUT_DURATION } from './constants';
 
@@ -8,43 +8,62 @@ let llamaInstance: undefined | Llama;
 let modelInstance: undefined | LlamaModel;
 let contextInstance: undefined | LlamaContext;
 let contextSequenceInstance: undefined | LlamaContextSequence;
-export async function loadLLamaAndModel(
+export function loadLLamaAndModel(
   loadConfigOverwrite: Partial<LlamaModelOptions> & Pick<LlamaModelOptions, 'modelPath'>,
   conversationID: string,
-  subscriber: Subscriber<ILanguageModelWorkerResponse>,
-) {
+): Observable<ILanguageModelWorkerResponse> {
   const loggerCommonMeta = { level: 'info' as const, meta: { function: 'llmWorker.loadLLama' }, id: 'loadLLama' };
   // TODO: maybe use dynamic import cjs version to fix https://github.com/andywer/threads.js/issues/478 ? If get `Timeout: Did not receive an init message from worker`.
   // subscriber.next({ message: 'async importing library', ...loggerCommonMeta });
-  subscriber.next({ message: 'library loaded, new LLM now', ...loggerCommonMeta });
-  try {
-    llamaInstance = await getLlama({
-      skipDownload: true,
-      vramPadding: 0,
-      logger: (level, message) => {
-        subscriber.next({ message, ...loggerCommonMeta });
-      },
-    });
-    subscriber.next({ message: 'prepared to load model', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, config: JSON.stringify(loadConfigOverwrite) } });
-    const onLoadProgress = debounce((percentage: number) => {
-      subscriber.next({
-        type: 'progress',
-        percentage,
-        id: conversationID,
-      });
-    });
-    const loadConfig: LlamaModelOptions = {
-      onLoadProgress,
-      ...loadConfigOverwrite,
-    };
-    modelInstance = await llamaInstance.loadModel(loadConfig);
-    subscriber.next({ message: 'instance loaded', ...loggerCommonMeta });
-    return modelInstance;
-  } catch (error) {
-    await unloadLLama();
-    throw error;
-  }
+  return new Observable<ILanguageModelWorkerResponse>((subscriber) => {
+    subscriber.next({ message: 'library loaded, new LLM now', ...loggerCommonMeta });
+    async function loadLLamaAndModelIIFE() {
+      try {
+        llamaInstance = await getLlama({
+          skipDownload: true,
+          vramPadding: 0,
+          build: 'never',
+          logger: (level, message) => {
+            subscriber.next({ message, ...loggerCommonMeta });
+          },
+        });
+        subscriber.next({ message: 'prepared to load model', ...loggerCommonMeta, meta: { ...loggerCommonMeta.meta, config: JSON.stringify(loadConfigOverwrite) } });
+        const onLoadProgress = debounce((percentage: number) => {
+          subscriber.next({
+            type: 'progress',
+            percentage,
+            id: conversationID,
+          });
+        });
+        const loadConfig: LlamaModelOptions = {
+          onLoadProgress,
+          ...loadConfigOverwrite,
+        };
+        modelInstance = await llamaInstance.loadModel(loadConfig);
+        subscriber.next({ message: 'instance loaded', ...loggerCommonMeta });
+        subscriber.complete();
+      } catch (error) {
+        await unloadLLama();
+        throw error;
+      }
+    }
+    void loadLLamaAndModelIIFE();
+  });
 }
+async function waitLoadLLamaAndModel(
+  loadConfigOverwrite: Partial<LlamaModelOptions> & Pick<LlamaModelOptions, 'modelPath'>,
+  conversationID: string,
+): Promise<LlamaModel> {
+  return await new Promise((resolve, reject) => {
+    loadLLamaAndModel(loadConfigOverwrite, conversationID).subscribe({
+      complete: () => {
+        resolve(modelInstance!);
+      },
+      error: reject,
+    });
+  });
+}
+
 export async function unloadLLama() {
   await contextInstance?.dispose();
   contextSequenceInstance?.dispose();
@@ -70,7 +89,7 @@ export function runLLama(
     void (async function runLLamaObservableIIFE() {
       try {
         if (modelInstance === undefined) {
-          modelInstance = await loadLLamaAndModel(loadConfig, conversationID, subscriber);
+          modelInstance = await waitLoadLLamaAndModel(loadConfig, conversationID);
         }
       } catch (error) {
         subscriber.error(error);
