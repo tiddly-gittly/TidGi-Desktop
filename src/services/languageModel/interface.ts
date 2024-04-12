@@ -60,7 +60,6 @@ export interface IRunLLAmaOptions extends ILLMResultBase {
    * Without generating text.
    */
   loadModelOnly?: boolean;
-  modelName?: string;
 }
 
 /**

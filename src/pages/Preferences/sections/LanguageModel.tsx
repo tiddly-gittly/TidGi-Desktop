@@ -129,7 +129,6 @@ function ModelLoadProgressBar({ runner, modelLoaded, modelPath }: { modelLoaded:
                 onClick={() => {
                   loadModal(runner, {
                     loadModelOnly: true,
-                    modelName: runner,
                     id: 'tidgi-preference-page-load-model',
                     completionOptions: { prompt: '-' },
                     loadConfig: { modelPath },

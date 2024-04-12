@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { dialog } from 'electron';
 import fs from 'fs-extra';
 import { injectable } from 'inversify';
@@ -129,12 +131,12 @@ export class LanguageModel implements ILanguageModelService {
 
   public runLanguageModel$(runner: LanguageModelRunner.llamaCpp, options: IRunLLAmaOptions): Observable<ILanguageModelAPIResponse>;
   public runLanguageModel$(runner: LanguageModelRunner, options: IRunLLAmaOptions): Observable<ILanguageModelAPIResponse> {
-    const { id: conversationID, completionOptions, modelName, loadConfig: config } = options;
+    const { id: conversationID, completionOptions, loadConfig: config } = options;
     return new Observable<ILanguageModelAPIResponse>((subscriber) => {
       const runLanguageModelObserverIIFE = async () => {
         const worker = await this.getWorker();
         const { defaultModel } = await this.preferenceService.get('languageModel');
-        const modelPath = path.join(LANGUAGE_MODEL_FOLDER, modelName ?? defaultModel[runner]);
+        const modelPath = config.modelPath || path.join(LANGUAGE_MODEL_FOLDER, defaultModel[runner]);
         if (!(await this.checkModelExistsAndWarnUser(modelPath))) {
           subscriber.error(new Error(`${i18n.t('LanguageModel.ModelNotExist')} ${modelPath}`));
           return;
@@ -202,7 +204,9 @@ export class LanguageModel implements ILanguageModelService {
           },
         });
       };
-      void runLanguageModelObserverIIFE();
+      void runLanguageModelObserverIIFE().catch(error => {
+        logger.error(`${(error as Error).message} ${(error as Error).stack ?? 'no stack'}`, { id: conversationID, function: 'LanguageModel.runLanguageModel$.error' });
+      });
     });
   }
 
