@@ -280,7 +280,8 @@ export class Wiki implements IWikiService {
   }
 
   public async callWikiIpcServerRoute<NAME extends IpcServerRouteNames>(workspaceID: string, route: NAME, ...arguments_: Parameters<IpcServerRouteMethods[NAME]>) {
-    logger.debug(`callWikiIpcServerRoute get ${route}`, { arguments_, workspaceID });
+    // don't log full `arguments_` here, it might contains huge text
+    logger.debug(`callWikiIpcServerRoute get ${route}`, { workspaceID });
     const worker = await this.getWorkerEnsure(workspaceID);
     logger.debug(`callWikiIpcServerRoute got worker`);
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
