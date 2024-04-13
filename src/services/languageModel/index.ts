@@ -222,7 +222,7 @@ export class LanguageModel implements ILanguageModelService {
       };
       void runLanguageModelObserverIIFE().catch(error => {
         const message = `${(error as Error).message} ${(error as Error).stack ?? 'no stack'}`;
-        logger.error(message, { id: conversationID, function: 'LanguageModel.runLanguageModel$.error' });
+        logger.error(message, { id: conversationID, function: 'runLanguageModelObserverIIFE.error' });
         void this.nativeService.showElectronMessageBox({
           title: i18n.t('LanguageModel.RunModelError'),
           message,

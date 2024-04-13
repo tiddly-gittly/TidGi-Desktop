@@ -21,6 +21,12 @@ export function loadLLamaAndModel(
     async function loadLLamaAndModelIIFE() {
       subscriber.next({ message: `library loaded, new LLM now with LLAMA_PREBUILT_BINS_DIRECTORY ${LLAMA_PREBUILT_BINS_DIRECTORY}`, ...loggerCommonMeta });
       try {
+        // add an initial progress, so user immediately know load is started.
+        subscriber.next({
+          type: 'progress',
+          percentage: 0.0001,
+          id: conversationID,
+        });
         llamaInstance = await getLlama({
           skipDownload: true,
           vramPadding: 0,
@@ -160,8 +166,12 @@ export function runLLama(
         subscriber.complete();
         subscriber.next({ message: 'createCompletion completed', ...loggerCommonMeta });
       } catch (error) {
-        runnerAbortControllers.delete(conversationID);
-        subscriber.error(error);
+        if ((error as Error).message.includes('aborted')) {
+          console.info('abortLLama', conversationID);
+        } else {
+          runnerAbortControllers.delete(conversationID);
+          subscriber.error(error);
+        }
       }
     })();
   });
