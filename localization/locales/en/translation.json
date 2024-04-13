@@ -391,7 +391,8 @@
       "LoadModel": "Load Model",
       "UnLoadModel": "UnLoad Model",
       "UnLoadModelDescription": "Clicking to unload the model releases memory, but it needs to be reloaded when used again, which consumes additional time",
-      "LoadModelDescription": "Clicking Try to load a model can be used to check if the model is ready for use. or pre-loaded for use within Tiddlywiki, but the parameters here may not be the same as those provided by the plugin within Tiddlywiki, resulting in inconsistent behavior."
+      "LoadModelDescription": "Clicking Try to load a model can be used to check if the model is ready for use. or pre-loaded for use within Tiddlywiki, but the parameters here may not be the same as those provided by the plugin within Tiddlywiki, resulting in inconsistent behavior.",
+      "LoadingModel": "Loading Model"
     },
     "RunOnBackground": "Run On Background",
     "RunOnBackgroundDetail": "When window is closed, Continue to run in the background without exiting. Quickly restore the window when opening the app again.",
@@ -482,7 +483,8 @@
     "GenerationTimeout": "Generation Timeout, Terminated",
     "ModelLoadingProgress": "Model Loading",
     "ModelDisposed": "Model Disposed, Terminated (Need to reload language model)",
-    "RunModelError": "Run Model Error"
+    "RunModelError": "Run Model Error",
+    "NoBinaryFoundError": "TidGi's built-in model loader cannot be found. There may be a bug."
   },
   "Description": "Description",
   "Tags": "Tags",

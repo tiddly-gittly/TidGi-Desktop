@@ -16,8 +16,8 @@ export function loadLLamaAndModel(
   // TODO: maybe use dynamic import cjs version to fix https://github.com/andywer/threads.js/issues/478 ? If get `Timeout: Did not receive an init message from worker`.
   // subscriber.next({ message: 'async importing library', ...loggerCommonMeta });
   return new Observable<ILanguageModelWorkerResponse>((subscriber) => {
-    subscriber.next({ message: 'library loaded, new LLM now', ...loggerCommonMeta });
     async function loadLLamaAndModelIIFE() {
+      subscriber.next({ message: 'library loaded, new LLM now', ...loggerCommonMeta });
       try {
         llamaInstance = await getLlama({
           skipDownload: true,
@@ -43,11 +43,14 @@ export function loadLLamaAndModel(
         subscriber.next({ message: 'instance loaded', ...loggerCommonMeta });
         subscriber.complete();
       } catch (error) {
+        console.error(error);
         await unloadLLama();
         throw error;
       }
     }
-    void loadLLamaAndModelIIFE();
+    void loadLLamaAndModelIIFE().catch(error => {
+      subscriber.error(error);
+    });
   });
 }
 async function waitLoadLLamaAndModel(
@@ -65,10 +68,12 @@ async function waitLoadLLamaAndModel(
 }
 
 export async function unloadLLama() {
+  console.info('unloadLLama');
   await contextInstance?.dispose();
   contextSequenceInstance?.dispose();
   await modelInstance?.dispose();
   await llamaInstance?.dispose();
+  contextInstance = undefined;
   contextSequenceInstance = undefined;
   llamaInstance = undefined;
   modelInstance = undefined;
@@ -90,6 +95,13 @@ export function runLLama(
       try {
         if (modelInstance === undefined) {
           modelInstance = await waitLoadLLamaAndModel(loadConfig, conversationID);
+        } else {
+          // tell UI we have model loaded already.
+          subscriber.next({
+            type: 'progress',
+            percentage: 1,
+            id: conversationID,
+          });
         }
       } catch (error) {
         subscriber.error(error);

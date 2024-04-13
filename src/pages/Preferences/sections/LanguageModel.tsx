@@ -71,7 +71,7 @@ export function LanguageModel(props: Partial<ISectionProps>): JSX.Element {
                         }}
                         value={modelFileName}
                       />
-                      <ModelLoadProgressBar runner={runner} modelLoaded={modelLoaded?.[runner] === true} modelPath={modelPath} />
+                      <ModelLoadProgressBar runner={runner} modelLoaded={modelLoaded?.[runner]} modelPath={modelPath} />
                     </Box>
                   );
                 })}
@@ -99,47 +99,61 @@ export function LanguageModel(props: Partial<ISectionProps>): JSX.Element {
   );
 }
 
-function ModelLoadProgressBar({ runner, modelLoaded, modelPath }: { modelLoaded: boolean; modelPath: string; runner: LanguageModelRunner }) {
+function ModelLoadProgressBar({ runner, modelLoaded, modelPath }: { modelLoaded?: boolean | null; modelPath: string; runner: LanguageModelRunner }) {
   const { t } = useTranslation();
   const modelLoadProgress = useModelLoadProgressObservable();
-  const progress = modelLoadProgress?.[runner] ?? 0;
+  const progress = (modelLoadProgress?.[runner] ?? 0) * 100;
   const [loadModal] = useLoadModelObservable();
   const unloadModal = useCallback(async (runner: LanguageModelRunner) => {
     await window.service.languageModel.unloadLanguageModel(runner);
   }, []);
   return (
     <Box display='flex' flexDirection='column' justifyContent='flex-end' alignItems='center' width='10em'>
-      {progress > 0 && progress < 1 && <LinearProgress variant='determinate' value={progress} />}
-      <Box display='flex'>
-        {modelLoaded
-          ? (
-            <Tooltip title={`${t('Preference.LanguageModel.ModelLoaded')} ${t('Preference.LanguageModel.UnLoadModelDescription')}`}>
-              <Button
-                onClick={async () => {
-                  await unloadModal(runner);
-                }}
-              >
-                {t('Preference.LanguageModel.UnLoadModel')}
-              </Button>
-            </Tooltip>
-          )
-          : (
-            <Tooltip title={`${t('Preference.LanguageModel.ModelNotLoaded')} ${t('Preference.LanguageModel.LoadModelDescription')}`}>
-              <Button
-                onClick={() => {
-                  loadModal(runner, {
-                    loadModelOnly: true,
-                    id: 'tidgi-preference-page-load-model',
-                    completionOptions: { prompt: '-' },
-                    loadConfig: { modelPath },
-                  });
-                }}
-              >
-                {t('Preference.LanguageModel.LoadModel')}
-              </Button>
-            </Tooltip>
-          )}
-      </Box>
+      {modelLoaded === null && (
+        <Box width='100%'>
+          {progress > 0 && progress < 100 ? <LinearProgress variant='determinate' value={progress} /> : <LinearProgress />}
+        </Box>
+      )}
+      {modelLoaded !== undefined && (
+        <Box display='flex'>
+          {modelLoaded === true
+            ? (
+              <Tooltip title={`${t('Preference.LanguageModel.ModelLoaded')} ${t('Preference.LanguageModel.UnLoadModelDescription')}`}>
+                <Button
+                  onClick={async () => {
+                    await unloadModal(runner);
+                  }}
+                >
+                  {t('Preference.LanguageModel.UnLoadModel')}
+                </Button>
+              </Tooltip>
+            )
+            : (modelLoaded === null
+              ? (
+                <Button
+                  disabled={modelLoaded === null}
+                >
+                  {t('Preference.LanguageModel.LoadingModel')}
+                </Button>
+              )
+              : (
+                <Tooltip title={`${t('Preference.LanguageModel.ModelNotLoaded')} ${t('Preference.LanguageModel.LoadModelDescription')}`}>
+                  <Button
+                    onClick={() => {
+                      loadModal(runner, {
+                        loadModelOnly: true,
+                        id: 'tidgi-preference-page-load-model',
+                        completionOptions: { prompt: '-' },
+                        loadConfig: { modelPath },
+                      });
+                    }}
+                  >
+                    {t('Preference.LanguageModel.LoadModel')}
+                  </Button>
+                </Tooltip>
+              ))}
+        </Box>
+      )}
     </Box>
   );
 }

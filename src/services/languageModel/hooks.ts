@@ -18,8 +18,11 @@ export function useModelLoadProgressObservable() {
   return value;
 }
 
+/**
+ * Null means started loading, but not finished yet.
+ */
 export function useModelLoadedObservable() {
-  const [value, valueSetter] = useState<Record<LanguageModelRunner, boolean> | undefined>();
+  const [value, valueSetter] = useState<Record<LanguageModelRunner, boolean | null> | undefined>();
   useObservable(window.observables.languageModel.modelLoaded$, valueSetter);
   return value;
 }

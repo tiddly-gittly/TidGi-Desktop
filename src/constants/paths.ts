@@ -33,3 +33,9 @@ export const LOCALIZATION_FOLDER = isDevelopmentOrTest
 export const DEFAULT_WIKI_FOLDER = isDevelopmentOrTest ? path.resolve(sourcePath, '..', developmentWikiFolderName) : DESKTOP_PATH;
 export const DEFAULT_FIRST_WIKI_NAME = 'wiki';
 export const DEFAULT_FIRST_WIKI_PATH = path.join(DEFAULT_WIKI_FOLDER, DEFAULT_FIRST_WIKI_NAME);
+
+const WEBPACK_MAIN_THREAD_DIST_PATH = isDevelopmentOrTest
+  ? path.resolve(sourcePath, '..', '.webpack', 'main')
+  : path.resolve(process.resourcesPath, '.webpack', 'main');
+// Path to native_modules
+export const NATIVE_MODULES_PATH = path.resolve(WEBPACK_MAIN_THREAD_DIST_PATH, 'native_modules');

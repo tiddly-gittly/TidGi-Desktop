@@ -428,7 +428,8 @@
       "LoadModel": "加载模型",
       "UnLoadModel": "卸载模型",
       "UnLoadModelDescription": "点击卸载模型释放内存，但再次使用时需要重新加载，会消耗额外时间",
-      "LoadModelDescription": "点击尝试加载模型，可用于检测模型是否可以正常使用。或预加载供太微内使用，但此处的参数可能和太微内插件提供的参数不一样，导致行为不一致。"
+      "LoadModelDescription": "点击尝试加载模型，可用于检测模型是否可以正常使用。或预加载供太微内使用，但此处的参数可能和太微内插件提供的参数不一样，导致行为不一致。",
+      "LoadingModel": "正在读取模型"
     },
     "RunOnBackground": "保持后台运行",
     "RunOnBackgroundDetail": "在窗口关闭时不退出，继续保持后台运行。再次打开应用时快速还原窗口。",
@@ -488,7 +489,8 @@
     "GenerationTimeout": "模型生成超时，已中止。",
     "ModelLoadingProgress": "模型加载进度",
     "ModelDisposed": "模型已卸载，生成中止（需要重新加载语言模型）",
-    "RunModelError": "运行模型出错"
+    "RunModelError": "运行模型出错",
+    "NoBinaryFoundError": "找不到太记内置的模型加载器，可能有Bug"
   },
   "Help": {
     "Alternatives": "其它源",

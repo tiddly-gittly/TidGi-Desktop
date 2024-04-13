@@ -1,3 +1,4 @@
+/* eslint-disable unicorn/no-null */
 /* eslint-disable @typescript-eslint/prefer-nullish-coalescing */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { dialog } from 'electron';
@@ -21,6 +22,7 @@ import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
+import { NoBinaryFoundError } from 'node-llama-cpp';
 import { ILanguageModelAPIResponse, ILanguageModelService, IRunLLAmaOptions, LanguageModelRunner } from './interface';
 import { LLMWorker } from './llmWorker/index';
 
@@ -37,12 +39,15 @@ export class LanguageModel implements ILanguageModelService {
 
   private llmWorker?: ModuleThread<LLMWorker>;
 
-  private modelLoaded: Record<LanguageModelRunner, boolean> = {
+  /**
+   * Null means started loading, but not finished yet.
+   */
+  private modelLoaded: Record<LanguageModelRunner, boolean | null> = {
     [LanguageModelRunner.llamaCpp]: false,
   };
 
-  public modelLoaded$ = new BehaviorSubject<Record<LanguageModelRunner, boolean>>(this.modelLoaded);
-  public updateModelLoaded(update: Partial<Record<LanguageModelRunner, boolean>>): void {
+  public modelLoaded$ = new BehaviorSubject<Record<LanguageModelRunner, boolean | null>>(this.modelLoaded);
+  public updateModelLoaded(update: Partial<Record<LanguageModelRunner, boolean | null>>): void {
     this.modelLoaded = { ...this.modelLoaded, ...update };
     this.modelLoaded$.next(this.modelLoaded);
   }
@@ -132,6 +137,7 @@ export class LanguageModel implements ILanguageModelService {
   public runLanguageModel$(runner: LanguageModelRunner.llamaCpp, options: IRunLLAmaOptions): Observable<ILanguageModelAPIResponse>;
   public runLanguageModel$(runner: LanguageModelRunner, options: IRunLLAmaOptions): Observable<ILanguageModelAPIResponse> {
     const { id: conversationID, completionOptions, loadConfig: config } = options;
+    this.updateModelLoaded({ [runner]: null });
     return new Observable<ILanguageModelAPIResponse>((subscriber) => {
       const runLanguageModelObserverIIFE = async () => {
         const worker = await this.getWorker();
@@ -172,6 +178,7 @@ export class LanguageModel implements ILanguageModelService {
                   break;
                 }
                 case 'result': {
+                  this.updateModelLoaded({ [runner]: true });
                   const { token, id } = result;
                   // prevent the case that the result is from previous or next conversation, where its Observable is not properly closed.
                   if (id === conversationID) {
@@ -187,6 +194,20 @@ export class LanguageModel implements ILanguageModelService {
           error: (error) => {
             logger.error(`${(error as Error).message} ${(error as Error).stack ?? 'no stack'}`, { id: conversationID, function: 'LanguageModel.runLanguageModel$.error' });
             subscriber.error(error);
+            this.updateModelLoaded({ [runner]: false });
+            this.updateModelLoadProgress({ [runner]: 0 });
+            const message = `${(error as Error).message} ${(error as Error).stack ?? 'no stack'}`;
+            if (error instanceof NoBinaryFoundError) {
+              void this.nativeService.showElectronMessageBox({
+                title: i18n.t('LanguageModel.NoBinaryFoundError'),
+                message,
+              });
+              return;
+            }
+            void this.nativeService.showElectronMessageBox({
+              title: i18n.t('LanguageModel.RunModelError'),
+              message,
+            });
           },
           complete: () => {
             logger.info(`worker observable completed`, { function: 'LanguageModel.runLanguageModel$.complete' });
@@ -222,5 +243,6 @@ export class LanguageModel implements ILanguageModelService {
       }
     }
     this.updateModelLoaded({ [runner]: false });
+    this.updateModelLoadProgress({ [runner]: 0 });
   }
 }
