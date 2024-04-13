@@ -22,7 +22,6 @@ import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { NoBinaryFoundError } from 'node-llama-cpp';
 import { ILanguageModelAPIResponse, ILanguageModelService, IRunLLAmaOptions, LanguageModelRunner } from './interface';
 import { LLMWorker } from './llmWorker/index';
 
@@ -150,6 +149,12 @@ export class LanguageModel implements ILanguageModelService {
         let observable;
         if (options.loadModelOnly === true) {
           observable = worker.loadLLama({ ...config, modelPath }, conversationID);
+          observable.subscribe({
+            complete: () => {
+              this.updateModelLoaded({ [runner]: true });
+              this.updateModelLoadProgress({ [runner]: 1 });
+            },
+          });
         } else {
           // load and run model
           const texts = { timeout: i18n.t('LanguageModel.GenerationTimeout'), disposed: i18n.t('LanguageModel.ModelDisposed') };
@@ -197,7 +202,7 @@ export class LanguageModel implements ILanguageModelService {
             this.updateModelLoaded({ [runner]: false });
             this.updateModelLoadProgress({ [runner]: 0 });
             const message = `${(error as Error).message} ${(error as Error).stack ?? 'no stack'}`;
-            if (error instanceof NoBinaryFoundError) {
+            if (message.includes('NoBinaryFound')) {
               void this.nativeService.showElectronMessageBox({
                 title: i18n.t('LanguageModel.NoBinaryFoundError'),
                 message,

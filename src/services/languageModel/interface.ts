@@ -1,6 +1,6 @@
 import { LanguageModelChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import { LLamaChatPromptOptions, LlamaModelOptions } from 'node-llama-cpp';
+import type { LLamaChatPromptOptions, LlamaModelOptions } from 'node-llama-cpp';
 import type { Observable } from 'rxjs';
 
 export enum LanguageModelRunner {

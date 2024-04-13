@@ -2,7 +2,7 @@ import { LLAMA_PREBUILT_BINS_DIRECTORY } from './preload';
 
 import debounce from 'lodash/debounce';
 import { getLlama, Llama, LlamaChatSession, LlamaContext, LlamaContextSequence, LlamaModel, LlamaModelOptions } from 'node-llama-cpp';
-import { Observable } from 'rxjs';
+import { Observable, Subscriber } from 'rxjs';
 import { ILanguageModelWorkerResponse, IRunLLAmaOptions } from '../interface';
 import { DEFAULT_TIMEOUT_DURATION } from './constants';
 
@@ -19,7 +19,7 @@ export function loadLLamaAndModel(
   // subscriber.next({ message: 'async importing library', ...loggerCommonMeta });
   return new Observable<ILanguageModelWorkerResponse>((subscriber) => {
     async function loadLLamaAndModelIIFE() {
-      subscriber.next({ message: 'library loaded, new LLM now', ...loggerCommonMeta });
+      subscriber.next({ message: `library loaded, new LLM now with LLAMA_PREBUILT_BINS_DIRECTORY ${LLAMA_PREBUILT_BINS_DIRECTORY}`, ...loggerCommonMeta });
       try {
         llamaInstance = await getLlama({
           skipDownload: true,
@@ -42,7 +42,7 @@ export function loadLLamaAndModel(
           ...loadConfigOverwrite,
         };
         modelInstance = await llamaInstance.loadModel(loadConfig);
-        subscriber.next({ message: 'instance loaded', ...loggerCommonMeta });
+        subscriber.next({ message: 'loadLLamaAndModel instance loaded', ...loggerCommonMeta });
         subscriber.complete();
       } catch (error) {
         console.error(error);
@@ -58,9 +58,11 @@ export function loadLLamaAndModel(
 async function waitLoadLLamaAndModel(
   loadConfigOverwrite: Partial<LlamaModelOptions> & Pick<LlamaModelOptions, 'modelPath'>,
   conversationID: string,
+  subscriber: Subscriber<ILanguageModelWorkerResponse>,
 ): Promise<LlamaModel> {
   return await new Promise((resolve, reject) => {
     loadLLamaAndModel(loadConfigOverwrite, conversationID).subscribe({
+      next: subscriber.next.bind(subscriber),
       complete: () => {
         resolve(modelInstance!);
       },
@@ -96,7 +98,8 @@ export function runLLama(
     void (async function runLLamaObservableIIFE() {
       try {
         if (modelInstance === undefined) {
-          modelInstance = await waitLoadLLamaAndModel(loadConfig, conversationID);
+          subscriber.next({ message: `waitLoadLLamaAndModel with LLAMA_PREBUILT_BINS_DIRECTORY ${LLAMA_PREBUILT_BINS_DIRECTORY}`, ...loggerCommonMeta });
+          modelInstance = await waitLoadLLamaAndModel(loadConfig, conversationID, subscriber);
         } else {
           // tell UI we have model loaded already.
           subscriber.next({
