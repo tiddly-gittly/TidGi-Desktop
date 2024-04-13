@@ -1,6 +1,6 @@
 import { LanguageModelChannel } from '@/constants/channels';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import type { LLamaChatPromptOptions, LlamaModelOptions } from 'node-llama-cpp';
+import type { LLamaChatPromptOptions, LlamaChatSessionOptions, LlamaModelOptions, JinjaTemplateChatWrapperOptions } from 'node-llama-cpp';
 import type { Observable } from 'rxjs';
 
 export enum LanguageModelRunner {
@@ -60,6 +60,8 @@ export interface IRunLLAmaOptions extends ILLMResultBase {
    * Without generating text.
    */
   loadModelOnly?: boolean;
+  sessionOptions?: Pick<LlamaChatSessionOptions, 'systemPrompt'>;
+  templates?: Partial<Pick<JinjaTemplateChatWrapperOptions, 'template' | 'systemRoleName'>>;
 }
 
 /**

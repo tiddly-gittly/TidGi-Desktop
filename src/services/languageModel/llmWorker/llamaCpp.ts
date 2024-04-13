@@ -1,7 +1,7 @@
 import { LLAMA_PREBUILT_BINS_DIRECTORY } from './preload';
 
 import debounce from 'lodash/debounce';
-import { getLlama, Llama, LlamaChatSession, LlamaContext, LlamaContextSequence, LlamaModel, LlamaModelOptions } from 'node-llama-cpp';
+import { getLlama, Llama, LlamaChatSession, LlamaContext, LlamaContextSequence, LlamaModel, LlamaModelOptions, JinjaTemplateChatWrapper } from 'node-llama-cpp';
 import { Observable, Subscriber } from 'rxjs';
 import { ILanguageModelWorkerResponse, IRunLLAmaOptions } from '../interface';
 import { DEFAULT_TIMEOUT_DURATION } from './constants';
@@ -90,14 +90,10 @@ export async function unloadLLama() {
 }
 const runnerAbortControllers = new Map<string, AbortController>();
 export function runLLama(
-  options: {
-    completionOptions: IRunLLAmaOptions['completionOptions'];
-    conversationID: IRunLLAmaOptions['id'];
-    loadConfig: IRunLLAmaOptions['loadConfig'] & Pick<LlamaModelOptions, 'modelPath'>;
-  },
+  options: IRunLLAmaOptions & { conversationID: IRunLLAmaOptions['id']; loadConfig: IRunLLAmaOptions['loadConfig'] & Pick<LlamaModelOptions, 'modelPath'> },
   texts: { disposed: string; timeout: string },
 ): Observable<ILanguageModelWorkerResponse> {
-  const { conversationID, completionOptions, loadConfig } = options;
+  const { conversationID, completionOptions, sessionOptions, loadConfig, templates } = options;
 
   const loggerCommonMeta = { level: 'debug' as const, meta: { function: 'llmWorker.runLLama' }, id: conversationID };
   return new Observable<ILanguageModelWorkerResponse>((subscriber) => {
@@ -141,9 +137,15 @@ export function runLLama(
         if (contextSequenceInstance === undefined) {
           contextSequenceInstance = contextInstance.getSequence();
         }
+        const chatWrapper = new JinjaTemplateChatWrapper({
+          template: "{{ 'System: ' + systemPrompt if systemPrompt else '' }}{{ 'User: ' + userInput if userInput else '' }}",
+          ...templates,
+        });
         const session = new LlamaChatSession({
           contextSequence: contextSequenceInstance,
           autoDisposeSequence: false,
+          systemPrompt: sessionOptions?.systemPrompt,
+          chatWrapper,
         });
         await session.prompt(completionOptions.prompt, {
           ...completionOptions,
@@ -167,7 +169,7 @@ export function runLLama(
         subscriber.next({ message: 'createCompletion completed', ...loggerCommonMeta });
       } catch (error) {
         if ((error as Error).message.includes('aborted')) {
-          console.info('abortLLama', conversationID);
+          console.info(`abortLLama ${(error as Error).message}`, conversationID);
         } else {
           runnerAbortControllers.delete(conversationID);
           subscriber.error(error);

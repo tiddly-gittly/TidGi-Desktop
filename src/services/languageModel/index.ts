@@ -135,7 +135,7 @@ export class LanguageModel implements ILanguageModelService {
 
   public runLanguageModel$(runner: LanguageModelRunner.llamaCpp, options: IRunLLAmaOptions): Observable<ILanguageModelAPIResponse>;
   public runLanguageModel$(runner: LanguageModelRunner, options: IRunLLAmaOptions): Observable<ILanguageModelAPIResponse> {
-    const { id: conversationID, completionOptions, loadConfig: config } = options;
+    const { id: conversationID, loadConfig: config } = options;
     this.updateModelLoaded({ [runner]: null });
     return new Observable<ILanguageModelAPIResponse>((subscriber) => {
       const runLanguageModelObserverIIFE = async () => {
@@ -158,9 +158,10 @@ export class LanguageModel implements ILanguageModelService {
         } else {
           // load and run model
           const texts = { timeout: i18n.t('LanguageModel.GenerationTimeout'), disposed: i18n.t('LanguageModel.ModelDisposed') };
+          logger.info(options.sessionOptions?.systemPrompt ?? '', { tag: 'options.sessionOptions?.systemPrompt' });
           switch (runner) {
             case LanguageModelRunner.llamaCpp: {
-              observable = worker.runLLama({ completionOptions, loadConfig: { ...config, modelPath }, conversationID }, texts);
+              observable = worker.runLLama({ ...options, loadConfig: { ...config, modelPath }, conversationID }, texts);
               break;
             }
           }
