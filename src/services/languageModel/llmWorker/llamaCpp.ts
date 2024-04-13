@@ -1,3 +1,5 @@
+import { LLAMA_PREBUILT_BINS_DIRECTORY } from './preload';
+
 import debounce from 'lodash/debounce';
 import { getLlama, Llama, LlamaChatSession, LlamaContext, LlamaContextSequence, LlamaModel, LlamaModelOptions } from 'node-llama-cpp';
 import { Observable } from 'rxjs';
