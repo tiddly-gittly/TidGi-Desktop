@@ -169,6 +169,16 @@ export function runLLama(
 export function abortLLama(conversationID: string) {
   const abortController = runnerAbortControllers.get(conversationID);
   if (abortController !== undefined) {
-    abortController.abort();
+    try {
+      abortController.abort();
+      runnerAbortControllers.delete(conversationID);
+    } catch (error) {
+      const message = `${(error as Error).message} ${(error as Error).stack ?? 'no stack'}`;
+      if (message.includes('AbortError')) {
+        console.info('abortLLama', conversationID);
+      } else {
+        throw error;
+      }
+    }
   }
 }
