@@ -167,6 +167,9 @@
     "overrides": {
       "node-abi": "latest",
       "prebuild-install": "latest"
+    },
+    "patchedDependencies": {
+      "node-llama-cpp@3.0.0-beta.15": "patches/node-llama-cpp@3.0.0-beta.15.patch"
     }
   },
   "private": false

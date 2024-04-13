@@ -8,6 +8,11 @@ overrides:
   node-abi: latest
   prebuild-install: latest
 
+patchedDependencies:
+  node-llama-cpp@3.0.0-beta.15:
+    hash: c4p366nlvlfimyxqzunbtxrrvi
+    path: patches/node-llama-cpp@3.0.0-beta.15.patch
+
 dependencies:
   '@tiddlygit/tiddlywiki':
     specifier: 5.3.4-prerelease-2024-03-20
@@ -101,7 +106,7 @@ dependencies:
     version: 3.3.2
   node-llama-cpp:
     specifier: 3.0.0-beta.15
-    version: 3.0.0-beta.15(typescript@5.4.2)
+    version: 3.0.0-beta.15(patch_hash=c4p366nlvlfimyxqzunbtxrrvi)(typescript@5.4.2)
   reflect-metadata:
     specifier: 0.2.1
     version: 0.2.1
@@ -9346,7 +9351,7 @@ packages:
     transitivePeerDependencies:
       - supports-color
 
-  /node-llama-cpp@3.0.0-beta.15(typescript@5.4.2):
+  /node-llama-cpp@3.0.0-beta.15(patch_hash=c4p366nlvlfimyxqzunbtxrrvi)(typescript@5.4.2):
     resolution: {integrity: sha512-4U7QNAKkeJu+1Rxonhdr41o/+s09v+EvoDIoZKn5BRKvIMu9VIarXTQQ56clYKiIyN97QJLSojlUigeT4sYToQ==}
     engines: {node: '>=18.0.0'}
     hasBin: true
@@ -9385,6 +9390,7 @@ packages:
     transitivePeerDependencies:
       - supports-color
     dev: false
+    patched: true
 
   /node-loader@2.0.0(webpack@5.88.1):
     resolution: {integrity: sha512-I5VN34NO4/5UYJaUBtkrODPWxbobrE4hgDqPrjB25yPkonFhCmZ146vTH+Zg417E9Iwoh1l/MbRs1apc5J295Q==}
