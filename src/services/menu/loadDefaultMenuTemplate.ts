@@ -14,7 +14,7 @@ import { DeferredMenuItemConstructorOptions } from './interface';
  */
 export function loadDefaultMenuTemplate(): DeferredMenuItemConstructorOptions[] {
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-  const updaterService = container.get<IUpdaterService>(serviceIdentifier.View);
+  const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater);
 
   return [
     {
