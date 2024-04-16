@@ -8,7 +8,7 @@ import * as rotateFs from 'rotating-file-stream';
 
 import { DEBOUNCE_SAVE_SETTING_BACKUP_FILE, DEBOUNCE_SAVE_SETTING_FILE } from '@/constants/parameters';
 import { logger } from '@services/libs/log';
-import { fixSettingFileWhenError } from './configSetting';
+import { ensureSettingFolderExist, fixSettingFileWhenError } from './configSetting';
 import { IDatabaseService, ISettingFile } from './interface';
 
 @injectable()
@@ -16,6 +16,7 @@ export class DatabaseService implements IDatabaseService {
   async initializeForApp(): Promise<void> {
     // init config
     try {
+      ensureSettingFolderExist();
       this.settingBackupStream = rotateFs.createStream(`${settings.file()}.bak`, {
         size: '10M',
         interval: '1d',
@@ -62,6 +63,7 @@ export class DatabaseService implements IDatabaseService {
       await settings.set(this.settingFileContent as any);
     } catch (error) {
       logger.error('Setting file format bad in debouncedSetSettingFile, will try force writing', { error, settingFileContent: JSON.stringify(this.settingFileContent) });
+      ensureSettingFolderExist();
       fixSettingFileWhenError(error as Error);
       fs.writeJSONSync(settings.file(), this.settingFileContent);
     } finally {
