@@ -163,6 +163,8 @@ export class Wiki implements IWikiService {
         reject(new WikiRuntimeError(error, name, false));
       });
       Thread.events(worker).subscribe((event: WorkerEvent) => {
+        // can't import WorkerEventType from 'threads/dist/types/master' because it's causing error
+        // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
         if (event.type === 'message') {
           wikiLogger.info('', {
             ...mapValues(
@@ -170,6 +172,7 @@ export class Wiki implements IWikiService {
               (value: unknown) => typeof value === 'string' ? (value.length > 200 ? `${value.substring(0, 200)}... (substring(0, 200))` : value) : String(value),
             ),
           });
+          // eslint-disable-next-line @typescript-eslint/no-unsafe-enum-comparison
         } else if (event.type === 'termination') {
           delete this.wikiWorkers[workspaceID];
           const warningMessage = `NodeJSWiki ${workspaceID} Worker stopped (can be normal quit, or unexpected error, see other logs to determine)`;
@@ -350,6 +353,7 @@ export class Wiki implements IWikiService {
       logger.error(`Wiki-worker have error ${(error as Error).message} when try to stop`, { function: 'stopWiki' });
       // await worker.terminate();
     }
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this.wikiWorkers[id] as any) = undefined;
     logger.info(`Wiki-worker for ${id} stopped`, { function: 'stopWiki' });
   }
@@ -430,7 +434,7 @@ export class Wiki implements IWikiService {
     this.logProgress(i18n.t('AddWorkspace.WikiTemplateCopyCompleted') + newWikiPath);
   }
 
-  public async createSubWiki(parentFolderLocation: string, folderName: string, mainWikiPath: string, tagName = '', onlyLink = false): Promise<void> {
+  public async createSubWiki(parentFolderLocation: string, folderName: string, subWikiFolderName: string, mainWikiPath: string, tagName = '', onlyLink = false): Promise<void> {
     this.logProgress(i18n.t('AddWorkspace.StartCreatingSubWiki'));
     const newWikiPath = path.join(parentFolderLocation, folderName);
     if (!(await pathExists(parentFolderLocation))) {
@@ -450,7 +454,7 @@ export class Wiki implements IWikiService {
     await this.linkWiki(mainWikiPath, folderName, newWikiPath);
     if (typeof tagName === 'string' && tagName.length > 0) {
       this.logProgress(i18n.t('AddWorkspace.AddFileSystemPath'));
-      updateSubWikiPluginContent(mainWikiPath, { tagName, subWikiFolderName: folderName });
+      updateSubWikiPluginContent(mainWikiPath, newWikiPath, { tagName, subWikiFolderName });
     }
 
     this.logProgress(i18n.t('AddWorkspace.SubWikiCreationCompleted'));
@@ -565,7 +569,7 @@ export class Wiki implements IWikiService {
     await this.linkWiki(mainWikiPath, wikiFolderName, path.join(parentFolderLocation, wikiFolderName));
     if (typeof tagName === 'string' && tagName.length > 0) {
       this.logProgress(i18n.t('AddWorkspace.AddFileSystemPath'));
-      updateSubWikiPluginContent(mainWikiPath, { tagName, subWikiFolderName: wikiFolderName });
+      updateSubWikiPluginContent(mainWikiPath, newWikiPath, { tagName, subWikiFolderName: wikiFolderName });
     }
   }
 
@@ -648,8 +652,8 @@ export class Wiki implements IWikiService {
     await this.syncService.startIntervalSyncIfNeeded(workspace);
   }
 
-  public async updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void> {
-    updateSubWikiPluginContent(mainWikiPath, newConfig, oldConfig);
+  public async updateSubWikiPluginContent(mainWikiPath: string, subWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void> {
+    updateSubWikiPluginContent(mainWikiPath, subWikiPath, newConfig, oldConfig);
   }
 
   public async wikiOperationInBrowser<OP extends keyof ISendWikiOperationsToBrowser>(

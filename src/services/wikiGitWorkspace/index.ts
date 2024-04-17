@@ -1,6 +1,5 @@
 import { app, dialog, powerMonitor } from 'electron';
 import { injectable } from 'inversify';
-import path from 'path';
 
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
@@ -81,10 +80,10 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
 
   public initWikiGitTransaction = async (newWorkspaceConfig: INewWorkspaceConfig, userInfo?: IGitUserInfos): Promise<IWorkspace | undefined> => {
     const newWorkspace = await this.workspaceService.create(newWorkspaceConfig);
-    await this.workspaceService.setActiveWorkspace(newWorkspace.id, this.workspaceService.getActiveWorkspaceSync()?.id);
     const { gitUrl, storageService, wikiFolderLocation, isSubWiki, id: workspaceID, mainWikiToLink } = newWorkspace;
-    const isSyncedWiki = storageService !== SupportedStorageServices.local;
     try {
+      await this.workspaceService.setActiveWorkspace(newWorkspace.id, this.workspaceService.getActiveWorkspaceSync()?.id);
+      const isSyncedWiki = storageService !== SupportedStorageServices.local;
       if (await hasGit(wikiFolderLocation)) {
         logger.warn('Skip git init because it already has a git setup.', { wikiFolderLocation });
       } else {
@@ -148,10 +147,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
           }
           await this.wikiService.removeWiki(wikiFolderLocation, mainWikiToLink, onlyRemoveWorkspace);
           // remove folderName from fileSystemPaths
-          await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, undefined, {
-            ...workspace,
-            subWikiFolderName: path.basename(wikiFolderLocation),
-          });
+          await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, wikiFolderLocation, undefined, workspace);
         } else {
           // is main wiki, also delete all sub wikis
           const subWikis = this.workspaceService.getSubWorkspacesAsListSync(id);

@@ -45,7 +45,7 @@ export interface IWikiService {
    * @param mainWikiToLink
    * @param onlyLink not creating new subwiki folder, just link existed subwiki folder to main wiki folder
    */
-  createSubWiki(parentFolderLocation: string, folderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
+  createSubWiki(parentFolderLocation: string, folderName: string, subWikiFolderName: string, mainWikiPath: string, tagName?: string, onlyLink?: boolean): Promise<void>;
   ensureWikiExist(wikiPath: string, shouldBeMainWiki: boolean): Promise<void>;
   extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string): Promise<string | undefined>;
   getSubWikiPluginContent(mainWikiPath: string): Promise<ISubWikiPluginContent[]>;
@@ -79,7 +79,7 @@ export interface IWikiService {
   startWiki(workspaceID: string, userName: string): Promise<void>;
   stopAllWiki(): Promise<void>;
   stopWiki(workspaceID: string): Promise<void>;
-  updateSubWikiPluginContent(mainWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void>;
+  updateSubWikiPluginContent(mainWikiPath: string, subWikiPath: string, newConfig?: IWorkspace, oldConfig?: IWorkspace): Promise<void>;
   /**
    * Runs wiki related JS script in wiki page to control the wiki.
    *

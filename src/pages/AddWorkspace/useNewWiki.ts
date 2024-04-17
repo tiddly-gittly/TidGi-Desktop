@@ -81,7 +81,7 @@ export function useNewWiki(
           await window.service.wiki.copyWikiTemplate(form.parentFolderLocation, form.wikiFolderName);
         }
       } else {
-        await window.service.wiki.createSubWiki(form.parentFolderLocation, form.wikiFolderName, form.mainWikiToLink?.wikiFolderLocation, form.tagName);
+        await window.service.wiki.createSubWiki(form.parentFolderLocation, form.wikiFolderName, 'subwiki', form.mainWikiToLink?.wikiFolderLocation, form.tagName);
       }
       await callWikiInitialization(newWorkspaceConfig, wikiCreationMessageSetter, t, form.gitUserInfo, { notClose: options?.notClose, from: WikiCreationMethod.Create });
     } catch (error) {

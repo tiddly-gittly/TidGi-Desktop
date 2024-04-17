@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/promise-function-async */
 /* eslint-disable unicorn/no-null */
 /* eslint-disable @typescript-eslint/require-await */
@@ -373,6 +374,10 @@ export class WorkspaceView implements IWorkspaceViewService {
       return;
     }
     if (workspaceToRestart.isSubWiki) {
+      const mainWikiIDToRestart = workspaceToRestart.mainWikiID;
+      if (mainWikiIDToRestart) {
+        await this.restartWorkspaceViewService(mainWikiIDToRestart);
+      }
       return;
     }
     logger.info(`Restarting workspace ${workspaceToRestart.id}`);
@@ -470,6 +475,13 @@ export class WorkspaceView implements IWorkspaceViewService {
   private async realignActiveWorkspaceView(id?: string): Promise<void> {
     const workspaceToRealign = id === undefined ? await this.workspaceService.getActiveWorkspace() : await this.workspaceService.get(id);
     logger.debug(`realignActiveWorkspaceView() activeWorkspace.id: ${workspaceToRealign?.id ?? 'undefined'}`, { stack: new Error('stack').stack?.replace('Error:', '') });
+    if (workspaceToRealign?.isSubWiki) {
+      logger.debug(`realignActiveWorkspaceView() skip because ${workspaceToRealign.id} is a subwiki. Realign main wiki instead.`);
+      if (workspaceToRealign.mainWikiID) {
+        await this.realignActiveWorkspaceView(workspaceToRealign.mainWikiID);
+      }
+      return;
+    }
     const mainWindow = this.windowService.get(WindowNames.main);
     const menuBarWindow = this.windowService.get(WindowNames.menuBar);
     const mainBrowserViewWebContent = mainWindow?.getBrowserView()?.webContents;

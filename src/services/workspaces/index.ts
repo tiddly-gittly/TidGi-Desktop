@@ -166,7 +166,7 @@ export class Workspace implements IWorkspaceService {
     return this.getSync(id);
   }
 
-  private getSync(id: string): IWorkspace {
+  private getSync(id: string): IWorkspace | undefined {
     return this.getWorkspacesSync()[id];
   }
 
@@ -176,8 +176,9 @@ export class Workspace implements IWorkspaceService {
 
   public async set(id: string, workspace: IWorkspace, immediate?: boolean): Promise<void> {
     const workspaces = this.getWorkspacesSync();
-    workspaces[id] = this.sanitizeWorkspace(workspace);
-    await this.reactBeforeWorkspaceChanged(workspace);
+    const workspaceToSave = this.sanitizeWorkspace(workspace);
+    await this.reactBeforeWorkspaceChanged(workspaceToSave);
+    workspaces[id] = workspaceToSave;
     this.databaseService.setSetting('workspaces', workspaces);
     if (immediate === true) {
       await this.databaseService.immediatelyStoreSettingsToFile();
@@ -258,8 +259,8 @@ export class Workspace implements IWorkspaceService {
     const existedWorkspace = this.getSync(newWorkspaceConfig.id);
     const { id, tagName } = newWorkspaceConfig;
     // when update tagName of subWiki
-    if (existedWorkspace?.isSubWiki && typeof tagName === 'string' && tagName.length > 0 && existedWorkspace.tagName !== tagName) {
-      const { mainWikiToLink } = existedWorkspace;
+    if (existedWorkspace !== undefined && existedWorkspace.isSubWiki && typeof tagName === 'string' && tagName.length > 0 && existedWorkspace.tagName !== tagName) {
+      const { mainWikiToLink, wikiFolderLocation } = existedWorkspace;
       if (typeof mainWikiToLink !== 'string') {
         throw new TypeError(
           `mainWikiToLink is null in reactBeforeWorkspaceChanged when try to updateSubWikiPluginContent, workspacesID: ${id}\n${
@@ -269,7 +270,7 @@ export class Workspace implements IWorkspaceService {
           }`,
         );
       }
-      await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, newWorkspaceConfig, {
+      await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, wikiFolderLocation, newWorkspaceConfig, {
         ...newWorkspaceConfig,
         tagName: existedWorkspace.tagName,
       });

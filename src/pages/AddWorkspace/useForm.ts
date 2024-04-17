@@ -3,7 +3,7 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/explicit-function-return-type */
 /* eslint-disable @typescript-eslint/explicit-module-boundary-types */
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
@@ -26,7 +26,7 @@ export function useIsCreateSyncedWorkspace(): [boolean, React.Dispatch<React.Set
 export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
   const { t } = useTranslation();
 
-  const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList()) ?? [];
+  const workspaceList = usePromiseValue(async () => await window.service.workspace.getWorkspacesAsList(), []);
 
   const [wikiPort, wikiPortSetter] = useState(5212);
   useEffect(() => {
@@ -46,7 +46,7 @@ export function useWikiWorkspaceForm(options?: { fromExisted: boolean }) {
   /**
    * For sub-wiki, we need to link it to a main wiki's folder, so all wiki contents can be loaded together.
    */
-  const mainWorkspaceList = workspaceList.filter((workspace) => !workspace.isSubWiki);
+  const mainWorkspaceList = useMemo(() => workspaceList?.filter((workspace) => !workspace.isSubWiki) ?? [], [workspaceList]);
   const [mainWikiToLink, mainWikiToLinkSetter] = useState<Pick<IWorkspace, 'wikiFolderLocation' | 'port' | 'id'>>(
     mainWorkspaceList[0] ?? { wikiFolderLocation: '', port: 0, id: '' },
   );

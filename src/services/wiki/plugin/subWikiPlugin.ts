@@ -1,3 +1,5 @@
+/* eslint-disable unicorn/prevent-abbreviations */
+/* eslint-disable security/detect-unsafe-regex */
 import { TIDDLERS_PATH } from '@/constants/paths';
 import { logger } from '@services/libs/log';
 import { IWorkspace } from '@services/workspaces/interface';
@@ -5,11 +7,15 @@ import fs from 'fs-extra';
 import { compact, drop, take } from 'lodash';
 import path from 'path';
 
+/**
+ * [in-tagtree-of[APrivateContent]]:and[search-replace:g[/],[_]search-replace:g[:],[_]addprefix[/]addprefix[private-wiki]addprefix[/]addprefix[subwiki]]
+ */
 const REPLACE_SYSTEM_TIDDLER_SYMBOL = 'search-replace:g[/],[_]search-replace:g[:],[_]';
-const getMatchPart = (tagToMatch: string): string => `kin::to[${tagToMatch}]`;
-const getPathPart = (folderToPlace: string): string => `${REPLACE_SYSTEM_TIDDLER_SYMBOL}addprefix[/]addprefix[${folderToPlace}]addprefix[/]addprefix[subwiki]]`;
+const getMatchPart = (tagToMatch: string): string => `in-tagtree-of[${tagToMatch}]`;
+const andPart = ']:and[';
+const getPathPart = (subWikiFolderName: string, subWikiPathDirName: string): string => `${REPLACE_SYSTEM_TIDDLER_SYMBOL}addprefix[/]addprefix[${subWikiPathDirName}]addprefix[/]addprefix[${subWikiFolderName}]]`;
 const getTagNameFromMatchPart = (matchPart: string): string =>
-  matchPart.replace(/\[(!is\[system]\s*)?kin::to\[/, '').replace(/](search-replace:g\[\/],\[_]search-replace:g\[:],\[_])?.*/, '');
+  matchPart.replace(/\[(!is\[system]\s*)?in-tagtree-of\[/, '').replace(/](search-replace:g\[\/],\[_]search-replace:g\[:],\[_])?.*/, '');
 const getFolderNamePathPart = (pathPart: string): string => pathPart.replace(']addprefix[/]addprefix[subwiki]]', '').replace(/.+addprefix\[/, '');
 
 /**
@@ -21,19 +27,19 @@ function getFileSystemPathsTiddlerPath(mainWikiPath: string): string {
   return path.join(mainWikiPath, TIDDLERS_PATH, 'FileSystemPaths.tid');
 }
 
-const emptyFileSystemPathsTiddler = `tags: $:/plugins/linonetwo/sub-wiki/readme
-title: $:/config/FileSystemPaths
-type: text/vnd.tiddlywiki
+const emptyFileSystemPathsTiddler = `title: $:/config/FileSystemPaths
 `;
 
 /**
  * update $:/config/FileSystemPaths programmatically to make private tiddlers goto the sub-wiki
  * @param {string} mainWikiPath main wiki's location path
- * @param {Object} newConfig { "tagName": Tag to indicate that a tiddler belongs to a sub-wiki, "subWikiFolderName": folder name inside the subwiki/ folder }
+ * @param {string} subWikiPath sub wiki's location path
+ * @param {Object} newConfig { "tagName": Tag to indicate that a tiddler belongs to a sub-wiki, "subWikiFolderName": folder name containing all subwiki, default to `/subwiki` }
  * @param {Object} oldConfig if you need to replace a line, you need to pass-in what old line looks like, so here we can find and replace it
  */
 export function updateSubWikiPluginContent(
   mainWikiPath: string,
+  subWikiPath: string,
   newConfig?: Pick<IWorkspace, 'tagName' | 'subWikiFolderName'>,
   oldConfig?: Pick<IWorkspace, 'tagName' | 'subWikiFolderName'>,
 ): void {
@@ -42,8 +48,9 @@ export function updateSubWikiPluginContent(
   const FileSystemPathsFile = fs.existsSync(FileSystemPathsTiddlerPath) ? fs.readFileSync(FileSystemPathsTiddlerPath, 'utf8') : emptyFileSystemPathsTiddler;
   let newFileSystemPathsFile = '';
   // ignore the tags, title and type, 3 lines, and an empty line
-  const header = take(FileSystemPathsFile.split('\n'), 3);
-  const FileSystemPaths = compact(drop(FileSystemPathsFile.split('\n'), 3));
+  const header = take(FileSystemPathsFile.split('\n\n'), 1);
+  const FileSystemPaths = compact(drop(FileSystemPathsFile.split('\n\n'), 1));
+  const subWikiPathDirName = path.basename(subWikiPath);
   // if newConfig is undefined, but oldConfig is provided, we delete the old config
   if (newConfig === undefined) {
     if (oldConfig === undefined) {
@@ -54,7 +61,7 @@ export function updateSubWikiPluginContent(
       throw new Error('tagName or subWikiFolderName is not string for in the updateSubWikiPluginContent() for\n' + JSON.stringify(mainWikiPath));
     }
     // find the old line, delete it
-    const newFileSystemPaths = FileSystemPaths.filter((line) => !(line.includes(getMatchPart(tagName)) && line.includes(getPathPart(subWikiFolderName))));
+    const newFileSystemPaths = FileSystemPaths.filter((line) => !(line.includes(getMatchPart(tagName)) && line.includes(getPathPart(subWikiFolderName, subWikiPathDirName))));
 
     newFileSystemPathsFile = `${header.join('\n')}\n\n${newFileSystemPaths.join('\n')}`;
   } else {
@@ -63,17 +70,17 @@ export function updateSubWikiPluginContent(
     if (typeof tagName !== 'string' || subWikiFolderName === undefined) {
       throw new Error('tagName or subWikiFolderName is not string for in the updateSubWikiPluginContent() for\n' + JSON.stringify(mainWikiPath));
     }
-    if (FileSystemPaths.some((line) => line.includes(getMatchPart(tagName)) && line.includes(getPathPart(subWikiFolderName)))) {
+    if (FileSystemPaths.some((line) => line.includes(tagName) && line.includes(subWikiFolderName))) {
       return;
     }
     // prepare new line
-    const newConfigLine = '[' + getMatchPart(tagName) + getPathPart(subWikiFolderName);
+    const newConfigLine = '[' + getMatchPart(tagName) + andPart + getPathPart(subWikiFolderName, subWikiPathDirName);
     // if we are just to add a new config, just append it to the end of the file
     const oldConfigTagName = oldConfig?.tagName;
     if (oldConfig !== undefined && typeof oldConfigTagName === 'string') {
       // find the old line, replace it with the new line
       const newFileSystemPaths = FileSystemPaths.map((line) => {
-        if (line.includes(getMatchPart(oldConfigTagName)) && line.includes(getPathPart(oldConfig.subWikiFolderName))) {
+        if (line.includes(oldConfigTagName) && line.includes(oldConfig.subWikiFolderName)) {
           return newConfigLine;
         }
         return line;
@@ -105,7 +112,7 @@ export async function getSubWikiPluginContent(mainWikiPath: string): Promise<ISu
   const FileSystemPathsTiddlerPath = getFileSystemPathsTiddlerPath(mainWikiPath);
   try {
     const FileSystemPathsFile = await fs.readFile(FileSystemPathsTiddlerPath, 'utf8');
-    const FileSystemPaths = compact(drop(FileSystemPathsFile.split('\n'), 3));
+    const FileSystemPaths = compact(drop(FileSystemPathsFile.split('\n\n'), 1));
     return FileSystemPaths.map((line) => ({
       tagName: getTagNameFromMatchPart(line),
       folderName: getFolderNamePathPart(line),

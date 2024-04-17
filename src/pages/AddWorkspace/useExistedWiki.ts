@@ -84,6 +84,7 @@ export function useExistedWiki(
         await window.service.wiki.createSubWiki(
           parentFolderLocationForExistedFolder,
           wikiFolderNameForExistedFolder,
+          'subwiki',
           form.mainWikiToLink?.wikiFolderLocation,
           form.tagName,
           true,
