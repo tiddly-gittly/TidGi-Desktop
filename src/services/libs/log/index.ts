@@ -50,4 +50,8 @@ export function destroyLogger(): void {
     console.log('Message after logger destroyed', chunk);
     return true;
   };
+  logger.error = (message: unknown) => {
+    console.log('Error Message after logger destroyed', message);
+    return logger;
+  };
 }
