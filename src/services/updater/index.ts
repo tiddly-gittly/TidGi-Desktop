@@ -89,9 +89,12 @@ export class Updater implements IUpdaterService {
     }
     logger.debug('Get release data', { latestVersion });
     const currentVersion = await this.contextService.get('appVersion');
-    const isLatestRelease = semver.gt(latestVersion, currentVersion);
-    logger.debug('Compare version', { currentVersion, isLatestRelease });
-    if (isLatestRelease) {
+    /**
+     * Note that vx.x.x-fix > vx.x.x, and this version is get from github tag, not from package.json, so make sure always bump version, otherwise user will always see "has new release"
+     */
+    const hasNewRelease = semver.gt(latestVersion, currentVersion);
+    logger.debug('Compare version', { currentVersion, isLatestRelease: hasNewRelease });
+    if (hasNewRelease) {
       this.setMetaData({ status: IUpdaterStatus.updateAvailable, info: { version: latestVersion, latestReleasePageUrl } });
       await this.menuService.insertMenu('TidGi', [
         {
