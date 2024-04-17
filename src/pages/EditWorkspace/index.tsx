@@ -190,6 +190,13 @@ export default function EditWorkspace(): JSX.Element {
         </title>
       </Helmet>
       <FlexGrow>
+        {!isSubWiki && (
+          <>
+            <Divider />
+            <ServerOptions workspace={workspace} workspaceSetter={workspaceSetter} />
+            <Divider />
+          </>
+        )}
         <TextField
           id='outlined-full-width'
           label={t('EditWorkspace.Name')}
@@ -292,13 +299,6 @@ export default function EditWorkspace(): JSX.Element {
             }}
             isCreateMainWorkspace={!isSubWiki}
           />
-        )}
-        {!isSubWiki && (
-          <>
-            <Divider />
-            <ServerOptions workspace={workspace} workspaceSetter={workspaceSetter} />
-            <Divider />
-          </>
         )}
         {storageService !== SupportedStorageServices.local && (
           <>

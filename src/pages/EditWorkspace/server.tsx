@@ -36,6 +36,7 @@ const AServerOptionsAccordion = styled(Accordion)`
 `;
 const AServerOptionsAccordionSummary = styled(AccordionSummary)`
   padding: 0;
+  flex-direction: row-reverse;
 `;
 const HttpsCertKeyListItem: typeof ListItem = styled(ListItem)`
   flex-direction: row;
@@ -72,7 +73,7 @@ export function ServerOptions(props: IServerOptionsProps) {
   const actualIP = useActualIp(getDefaultHTTPServerIP(port), id);
   // some feature need a username to work, so if userName is empty, assign a fallbackUserName DEFAULT_USER_NAME
   // eslint-disable-next-line @typescript-eslint/prefer-nullish-coalescing
-  const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName')) as string, '');
+  const fallbackUserName = usePromiseValue<string>(async () => (await window.service.auth.get('userName'))!, '');
   const userNameIsEmpty = !(userName || fallbackUserName);
   const alreadyEnableSomeServerOptions = readOnlyMode;
   return (
