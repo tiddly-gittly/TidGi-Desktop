@@ -47,11 +47,12 @@ export function destroyLogger(): void {
   logger.removeAllListeners();
   logger.destroy();
   logger.write = (chunk: unknown) => {
-    console.log('Message after logger destroyed', chunk);
+    // no console here, otherwise will cause `Error: write EIO`
+    // console.log('Message after logger destroyed', chunk);
     return true;
   };
   logger.error = (message: unknown) => {
-    console.log('Error Message after logger destroyed', message);
+    // console.log('Error Message after logger destroyed', message);
     return logger;
   };
 }
