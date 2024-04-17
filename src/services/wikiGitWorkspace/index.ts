@@ -124,36 +124,43 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   public async removeWorkspace(workspaceID: string): Promise<void> {
     const mainWindow = this.windowService.get(WindowNames.main);
     if (mainWindow !== undefined) {
+      const workspace = await this.workspaceService.get(workspaceID);
+      if (workspace === undefined) {
+        throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
+      }
+      const { isSubWiki, mainWikiToLink, wikiFolderLocation, id, name } = workspace;
       const { response } = await dialog.showMessageBox(mainWindow, {
         type: 'question',
         buttons: [i18n.t('WorkspaceSelector.RemoveWorkspace'), i18n.t('WorkspaceSelector.RemoveWorkspaceAndDelete'), i18n.t('Cancel')],
-        message: i18n.t('WorkspaceSelector.AreYouSure'),
+        message: `${i18n.t('EditWorkspace.Name')} ${name} ${isSubWiki ? i18n.t('EditWorkspace.IsSubWorkspace') : ''} ${i18n.t('WorkspaceSelector.AreYouSure')}`,
         cancelId: 2,
       });
       try {
         const removeWorkspaceAndDelete = response === 1;
-        const removeWorkspace = response === 0;
-        if (!removeWorkspace && !removeWorkspaceAndDelete) {
+        const onlyRemoveWorkspace = response === 0;
+        if (!onlyRemoveWorkspace && !removeWorkspaceAndDelete) {
           return;
         }
-        const workspace = await this.workspaceService.get(workspaceID);
-        if (workspace === undefined) {
-          throw new Error(`Need to get workspace with id ${workspaceID} but failed`);
-        }
-        const { isSubWiki, mainWikiToLink, wikiFolderLocation, id } = workspace;
         await this.wikiService.stopWiki(id).catch((error: Error) => logger.error(error.message, error));
         if (isSubWiki) {
           if (mainWikiToLink === null) {
             throw new Error(`workspace.mainWikiToLink is null in WikiGitWorkspace.removeWorkspace ${JSON.stringify(workspace)}`);
           }
-          await this.wikiService.removeWiki(wikiFolderLocation, mainWikiToLink, removeWorkspace);
+          await this.wikiService.removeWiki(wikiFolderLocation, mainWikiToLink, onlyRemoveWorkspace);
           // remove folderName from fileSystemPaths
           await this.wikiService.updateSubWikiPluginContent(mainWikiToLink, undefined, {
             ...workspace,
             subWikiFolderName: path.basename(wikiFolderLocation),
           });
-        } else if (removeWorkspaceAndDelete) {
-          await this.wikiService.removeWiki(wikiFolderLocation);
+        } else {
+          // is main wiki, also delete all sub wikis
+          const subWikis = this.workspaceService.getSubWorkspacesAsListSync(id);
+          await Promise.all(subWikis.map(async (subWiki) => {
+            await this.removeWorkspace(subWiki.id);
+          }));
+          if (removeWorkspaceAndDelete) {
+            await this.wikiService.removeWiki(wikiFolderLocation);
+          }
         }
         await this.workspaceViewService.removeWorkspaceView(workspaceID);
         await this.workspaceService.remove(workspaceID);

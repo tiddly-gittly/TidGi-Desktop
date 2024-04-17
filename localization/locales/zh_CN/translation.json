@@ -243,7 +243,8 @@
     "TokenAuthCurrentTokenDescription": "机密信息，泄露给敌意实体后需要重新生成，重新生成后需要为连接的第三方应用更新凭证",
     "Generate": "生成",
     "ClickToExpand": "点击展开",
-    "MainWorkspacePath": "主工作区路径"
+    "MainWorkspacePath": "主工作区路径",
+    "IsSubWorkspace": "是子工作区"
   },
   "Scripting": {
     "ExecutingScript": "正在执行脚本"
