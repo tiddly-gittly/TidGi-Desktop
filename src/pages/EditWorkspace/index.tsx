@@ -21,7 +21,8 @@ import { RestartSnackbarType, useRestartSnackbar } from '@/components/RestartSna
 import { TokenForm } from '@/components/TokenForm';
 import { wikiPictureExtensions } from '@/constants/fileNames';
 import { SupportedStorageServices } from '@services/types';
-import { isEqual } from 'lodash';
+import { nonConfigFields } from '@services/workspaces/interface';
+import { isEqual, omit } from 'lodash';
 import { SyncedWikiDescription } from '../AddWorkspace/Description';
 import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
 import { ServerOptions } from './server';
@@ -411,7 +412,7 @@ export default function EditWorkspace(): JSX.Element {
           />
         )}
       </FlexGrow>
-      {!isEqual(workspace, originalWorkspace) && (
+      {!isEqual(omit(workspace, nonConfigFields), omit(originalWorkspace, nonConfigFields)) && (
         <SaveCancelButtonsContainer>
           <Button color='primary' variant='contained' disableElevation onClick={onSave}>
             {t('EditWorkspace.Save')}

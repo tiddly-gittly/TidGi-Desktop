@@ -5,6 +5,10 @@ import { BehaviorSubject, Observable } from 'rxjs';
 import { SetOptional } from 'type-fest';
 
 /**
+ * Fields that not part of config that user can edit. Change of these field won't show "save" button on edit page.
+ */
+export const nonConfigFields = ['metadata', 'lastNodeJSArgv'];
+/**
  * A workspace is basically a TiddlyWiki instance, it can be a local/online wiki (depends on git related config). Can be a mainWiki that starts a a TiddlyWiki instance or subwiki that link to a main wiki.
  *
  * New value added here can be init in `sanitizeWorkspace`
