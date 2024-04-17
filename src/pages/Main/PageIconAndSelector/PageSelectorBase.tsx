@@ -56,6 +56,10 @@ const Avatar = styled.div<IAvatarProps>`
   font-weight: 500;
   text-transform: uppercase;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   ${is('$large')`
     height: 44px;
     width: 44px;
@@ -140,7 +144,7 @@ export function PageSelectorBase({
   const [shortPageName, shortPageNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {
     void window.service.native.path('basename', pageName).then((baseName) => {
-      shortPageNameSetter(baseName === undefined ? t('WorkspaceSelector.BadWorkspacePath') : baseName);
+      shortPageNameSetter(baseName ?? t('WorkspaceSelector.BadWorkspacePath'));
     });
   }, [pageName, t]);
   return (

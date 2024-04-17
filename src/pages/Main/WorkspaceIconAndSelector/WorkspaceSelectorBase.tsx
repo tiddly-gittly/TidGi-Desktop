@@ -9,7 +9,7 @@ import is from 'typescript-styled-is';
 
 import { getAssetsFileUrl } from '@/helpers/url';
 import { Tooltip } from '@mui/material';
-import defaultIcon from '../../images/default-icon.png';
+import defaultIcon from '../../../images/default-icon.png';
 
 Promise.config({ cancellation: true });
 
@@ -51,8 +51,8 @@ from {background-color: #dddddd;}
   to {background-color: #eeeeee}
 `;
 interface IAvatarProps {
-  $addAvatar: boolean;
-  $highlightAdd: boolean;
+  $addAvatar?: boolean;
+  $highlightAdd?: boolean;
   $large?: boolean;
   $transparent?: boolean;
 }
@@ -65,6 +65,10 @@ const Avatar = styled.div<IAvatarProps>`
   font-weight: 500;
   text-transform: uppercase;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   ${is('$large')`
     height: 44px;
     width: 44px;
@@ -76,7 +80,7 @@ const Avatar = styled.div<IAvatarProps>`
       border-radius: 0;
     `}
 
-  &${({ $highlightAdd, $addAvatar }) => ($highlightAdd && $addAvatar ? '' : ':hover')}, &:hover {
+  &${({ $highlightAdd, $addAvatar }) => (($highlightAdd && $addAvatar) ? '' : ':hover')}, &:hover {
     background-color: ${({ theme }) => theme.palette.background.default};
     animation: ${backgroundColorShift} 5s infinite;
     animation-direction: alternate;
@@ -175,7 +179,9 @@ export function WorkspaceSelectorBase({
   if (loading) {
     icon = (
       <Tooltip title={<span>{t('Dialog.Restarting')}</span>}>
-        <RestartAltIcon />
+        <Avatar>
+          <RestartAltIcon />
+        </Avatar>
       </Tooltip>
     );
   }
