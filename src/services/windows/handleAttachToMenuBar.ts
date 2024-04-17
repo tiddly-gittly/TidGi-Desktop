@@ -28,6 +28,7 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
     index: MAIN_WINDOW_WEBPACK_ENTRY,
     tray,
     activateWithApp: false,
+    showDockIcon: true,
     preloadWindow: true,
     tooltip: i18n.t('Menu.TidGiMenuBar'),
     browserWindow: mergeDeep(windowConfig, {
