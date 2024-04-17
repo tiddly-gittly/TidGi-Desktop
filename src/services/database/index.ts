@@ -17,7 +17,7 @@ export class DatabaseService implements IDatabaseService {
     // init config
     try {
       ensureSettingFolderExist();
-      this.settingBackupStream = rotateFs.createStream(`${settings.file()}.bak`, {
+      this.settingBackupStream = rotateFs.createStream(`settings.json.bak`, {
         size: '10M',
         interval: '1d',
         maxFiles: 3,
