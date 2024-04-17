@@ -52,22 +52,23 @@ export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IW
     window.service.native.log('debug', 'openWorkspaceTagTiddler', { workspace }),
   ]);
   // if is a new main workspace, active its browser view first
-  if (!isSubWiki && idToActive !== null && idToActive !== undefined && oldActiveWorkspace?.id !== idToActive) {
-    await service.workspaceView.setActiveWorkspaceView(idToActive);
+  if (!isSubWiki && idToActive) {
+    if (oldActiveWorkspace?.id !== idToActive) {
+      await service.workspaceView.setActiveWorkspaceView(idToActive);
+    }
+    // not closing all opened tiddlers when click on workspace icon (old behavior).
+    // await service.wiki.requestWikiSendActionMessage('tm-home');
     return;
   }
   // is not a new main workspace
   // open tiddler in the active view
-  if (isSubWiki) {
-    if (!mainWikiID || !idToActive) {
-      return;
+  if (isSubWiki && mainWikiID) {
+    if (oldActiveWorkspace?.id !== mainWikiID) {
+      await service.workspaceView.setActiveWorkspaceView(mainWikiID);
     }
-    await service.workspaceView.setActiveWorkspaceView(mainWikiID);
     if (tagName) {
       await service.wiki.wikiOperationInBrowser(WikiChannel.openTiddler, mainWikiID, [tagName]);
     }
-  } else {
-    await service.wiki.requestWikiSendActionMessage('tm-home');
   }
 }
 
