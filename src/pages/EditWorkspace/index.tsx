@@ -253,6 +253,15 @@ export default function EditWorkspace(): JSX.Element {
             workspaceSetter({ ...workspace, wikiFolderLocation: event.target.value });
           }}
         />
+        {isSubWiki && mainWikiToLink && (
+          <TextField
+            id='outlined-full-width'
+            label={t('EditWorkspace.MainWorkspacePath')}
+            helperText={t('EditWorkspace.PathDescription')}
+            value={mainWikiToLink}
+            disabled
+          />
+        )}
         <TextField
           helperText={t('AddWorkspace.WorkspaceUserNameDetail')}
           fullWidth

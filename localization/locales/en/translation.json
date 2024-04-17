@@ -208,7 +208,8 @@
     "TokenAuthCurrentTokenDescription": "This token is confidential, which needs to be regenerated after being leaked to a hostile entity, and credentials need to be updated for connected third-party applications after regeneration",
     "Generate": "Generate",
     "TokenAuthCurrentTokenEmptyText": "Click the Generate button to generate a new credential",
-    "ClickToExpand": "Click To Expand"
+    "ClickToExpand": "Click To Expand",
+    "MainWorkspacePath": "Main Workspace Path"
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed, or there is no wiki in this folder! \nDo you want to remove the workspace?",
