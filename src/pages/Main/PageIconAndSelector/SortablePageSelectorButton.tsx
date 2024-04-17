@@ -7,7 +7,7 @@ import { useLocation } from 'wouter';
 
 import { getBuildInPageName } from '@services/pages/getBuildInPageName';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { getBuildInPageIcon } from '../../services/pages/getBuildInPageIcon';
+import { getBuildInPageIcon } from '../../../services/pages/getBuildInPageIcon';
 import { PageSelectorBase } from './PageSelectorBase';
 
 export interface ISortableItemProps {

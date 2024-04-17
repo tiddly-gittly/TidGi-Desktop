@@ -9,11 +9,11 @@ import { Route, Switch } from 'wouter';
 import { PageType } from '@services/pages/interface';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { WindowNames } from '@services/windows/WindowProperties';
-import FindInPage from '../../components/FindInPage';
-import { SideBar } from '../../components/Sidebar';
 import { Guide } from '../Guide';
 import { Help } from '../Help';
 import { WikiBackground } from '../WikiBackground';
+import FindInPage from './FindInPage';
+import { SideBar } from './Sidebar';
 import { useInitialPage } from './useInitialPage';
 
 const OuterRoot = styled.div`

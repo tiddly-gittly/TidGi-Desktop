@@ -5,9 +5,9 @@ import SimpleBar from 'simplebar-react';
 import styled, { css } from 'styled-components';
 import is, { isNot } from 'typescript-styled-is';
 
-import { SortableWorkspaceSelectorList, WorkspaceSelectorBase } from '@/components/WorkspaceIconAndSelector';
 import { latestStableUpdateUrl } from '@/constants/urls';
 import { usePromiseValue } from '@/helpers/useServiceValue';
+import { SortableWorkspaceSelectorList, WorkspaceSelectorBase } from '@/pages/Main/WorkspaceIconAndSelector';
 import { IconButton as IconButtonRaw, Tooltip } from '@mui/material';
 import { usePagesListObservable } from '@services/pages/hooks';
 import { usePreferenceObservable } from '@services/preferences/hooks';
