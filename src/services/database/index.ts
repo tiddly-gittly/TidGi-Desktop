@@ -21,6 +21,7 @@ export class DatabaseService implements IDatabaseService {
         size: '10M',
         interval: '1d',
         maxFiles: 3,
+        path: settings.file().replace(/settings\.json$/, ''),
       });
     } catch (error) {
       logger.error(`DatabaseService.initializeForApp error when initializing setting backup file: ${(error as Error).message}`);
