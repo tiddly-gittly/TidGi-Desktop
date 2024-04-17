@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/promise-function-async */
 /* eslint-disable unicorn/no-null */
 /* eslint-disable @typescript-eslint/require-await */
 /* eslint-disable unicorn/consistent-destructuring */
@@ -264,13 +265,11 @@ export class WorkspaceView implements IWorkspaceViewService {
   public async wakeUpWorkspaceView(workspaceID: string): Promise<void> {
     const workspace = await this.workspaceService.get(workspaceID);
     if (workspace !== undefined) {
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
-      const userName = await this.authService.getUserName(workspace);
-      await this.workspaceService.update(workspaceID, {
-        hibernated: false,
-      });
       await Promise.all([
-        this.wikiService.startWiki(workspaceID, userName),
+        this.workspaceService.update(workspaceID, {
+          hibernated: false,
+        }),
+        this.authService.getUserName(workspace).then(userName => this.wikiService.startWiki(workspaceID, userName)),
         this.addViewForAllBrowserViews(workspace),
       ]);
     }
@@ -291,8 +290,8 @@ export class WorkspaceView implements IWorkspaceViewService {
   }
 
   public async setActiveWorkspaceView(nextWorkspaceID: string): Promise<void> {
-    const oldActiveWorkspace = await this.workspaceService.getActiveWorkspace();
-    const newWorkspace = await this.workspaceService.get(nextWorkspaceID);
+    logger.debug('setActiveWorkspaceView', { nextWorkspaceID });
+    const [oldActiveWorkspace, newWorkspace] = await Promise.all([this.workspaceService.getActiveWorkspace(), this.workspaceService.get(nextWorkspaceID)]);
     if (newWorkspace === undefined) {
       throw new Error(`Workspace id ${nextWorkspaceID} does not exist. When setActiveWorkspaceView().`);
     }
@@ -485,25 +484,26 @@ export class WorkspaceView implements IWorkspaceViewService {
     );
     if (workspaceToRealign === undefined) {
       logger.warn('realignActiveWorkspaceView: no active workspace');
-    } else {
-      if (mainWindow === undefined && menuBarWindow === undefined) {
-        logger.warn('realignActiveWorkspaceView: no active window');
-      }
-      const tasks = [];
-      if (mainBrowserViewWebContent) {
-        tasks.push(this.viewService.realignActiveView(mainWindow, workspaceToRealign.id, WindowNames.main));
-        logger.debug(`realignActiveWorkspaceView: realign main window for ${workspaceToRealign.id}.`);
-      } else {
-        logger.warn(`realignActiveWorkspaceView: no mainBrowserViewWebContent, skip main window for ${workspaceToRealign.id}.`);
-      }
-      if (menuBarBrowserViewWebContent) {
-        logger.debug(`realignActiveWorkspaceView: realign menu bar window for ${workspaceToRealign.id}.`);
-        tasks.push(this.viewService.realignActiveView(menuBarWindow, workspaceToRealign.id, WindowNames.menuBar));
-      } else {
-        logger.info(`realignActiveWorkspaceView: no menuBarBrowserViewWebContent, skip menu bar window for ${workspaceToRealign.id}.`);
-      }
-      await Promise.all(tasks);
+      return;
     }
+    if (mainWindow === undefined && menuBarWindow === undefined) {
+      logger.warn('realignActiveWorkspaceView: no active window');
+      return;
+    }
+    const tasks = [];
+    if (mainBrowserViewWebContent) {
+      tasks.push(this.viewService.realignActiveView(mainWindow, workspaceToRealign.id, WindowNames.main));
+      logger.debug(`realignActiveWorkspaceView: realign main window for ${workspaceToRealign.id}.`);
+    } else {
+      logger.warn(`realignActiveWorkspaceView: no mainBrowserViewWebContent, skip main window for ${workspaceToRealign.id}.`);
+    }
+    if (menuBarBrowserViewWebContent) {
+      logger.debug(`realignActiveWorkspaceView: realign menu bar window for ${workspaceToRealign.id}.`);
+      tasks.push(this.viewService.realignActiveView(menuBarWindow, workspaceToRealign.id, WindowNames.menuBar));
+    } else {
+      logger.info(`realignActiveWorkspaceView: no menuBarBrowserViewWebContent, skip menu bar window for ${workspaceToRealign.id}.`);
+    }
+    await Promise.all(tasks);
   }
 
   private async hideWorkspaceView(): Promise<void> {

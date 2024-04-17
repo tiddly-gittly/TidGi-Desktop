@@ -30,14 +30,15 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
   const onWorkspaceClick = useCallback(async () => {
     workspaceClickedLoadingSetter(true);
     try {
-      await openWorkspaceTagTiddler(workspace, window.service);
       setLocation(`/${WindowNames.main}/${PageType.wiki}/${id}/`);
+      await openWorkspaceTagTiddler(workspace, window.service);
     } catch (error) {
       if (error instanceof Error) {
         await window.service.native.log('error', error.message);
       }
+    } finally {
+      workspaceClickedLoadingSetter(false);
     }
-    workspaceClickedLoadingSetter(false);
   }, [id, setLocation, workspace]);
   const onWorkspaceContextMenu = useCallback(
     async (event: MouseEvent<HTMLDivElement>) => {

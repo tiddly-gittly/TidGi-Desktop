@@ -45,8 +45,11 @@ interface IWorkspaceMenuRequiredServices {
 export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IWorkspaceMenuRequiredServices): Promise<void> {
   const { id: idToActive, isSubWiki, tagName, mainWikiID } = workspace;
   // switch to workspace page
-  await service.pages.setActivePage(PageType.wiki);
-  const oldActiveWorkspace = await service.workspace.getActiveWorkspace();
+  const [oldActiveWorkspace] = await Promise.all([
+    service.workspace.getActiveWorkspace(),
+    service.pages.setActivePage(PageType.wiki),
+    window.service.native.log('debug', 'openWorkspaceTagTiddler', { workspace }),
+  ]);
   // if is a new main workspace, active its browser view first
   if (!isSubWiki && idToActive !== null && idToActive !== undefined && oldActiveWorkspace?.id !== idToActive) {
     await service.workspaceView.setActiveWorkspaceView(idToActive);
