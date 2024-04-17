@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { WikiChannel } from '@/constants/channels';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
@@ -58,10 +59,13 @@ export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IW
   // is not a new main workspace
   // open tiddler in the active view
   if (isSubWiki) {
-    if (mainWikiID === null || idToActive === undefined || tagName === null) {
+    if (!mainWikiID || !idToActive) {
       return;
     }
-    await service.wiki.wikiOperationInBrowser(WikiChannel.openTiddler, mainWikiID, [tagName]);
+    await service.workspaceView.setActiveWorkspaceView(mainWikiID);
+    if (tagName) {
+      await service.wiki.wikiOperationInBrowser(WikiChannel.openTiddler, mainWikiID, [tagName]);
+    }
   } else {
     await service.wiki.requestWikiSendActionMessage('tm-home');
   }
