@@ -221,14 +221,14 @@ export class WorkspaceView implements IWorkspaceViewService {
     workspaceID: string,
     view: Electron.CrossProcessExports.BrowserView | undefined = this.viewService.getView(workspaceID, WindowNames.main),
   ): Promise<void> {
-    if (view === undefined) {
-      logger.warn(`Can't update lastUrl for workspace ${workspaceID}, view is not found`);
-    } else {
+    if (view?.webContents) {
       const currentUrl = view.webContents.getURL();
       logger.debug(`updateLastUrl() Updating lastUrl for workspace ${workspaceID} to ${currentUrl}`);
       await this.workspaceService.update(workspaceID, {
         lastUrl: currentUrl,
       });
+    } else {
+      logger.warn(`Can't update lastUrl for workspace ${workspaceID}, view is not found`);
     }
   }
 
@@ -449,7 +449,7 @@ export class WorkspaceView implements IWorkspaceViewService {
     const activeWorkspaceID = id ?? activeWorkspace?.id;
     if (mainWindow !== undefined && activeWorkspaceID !== undefined) {
       const browserView = mainWindow.getBrowserView();
-      if (browserView !== null) {
+      if (browserView?.webContents) {
         browserView.webContents.focus();
         await browserView.webContents.loadURL(url);
       }
