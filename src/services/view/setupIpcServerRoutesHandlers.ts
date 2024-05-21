@@ -38,7 +38,12 @@ export function setupIpcServerRoutesHandlers(view: BrowserView, workspaceID: str
       path: /^\/recipes\/default\/tiddlers\/(.+)$/,
       name: 'getTiddlersJSON',
       handler: async (request: GlobalRequest, workspaceIDFromHost: string, _parameters: RegExpMatchArray | null) =>
-        await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'getTiddlersJSON', new URL(request.url).searchParams.get('filter') ?? ''),
+        await wikiService.callWikiIpcServerRoute(
+          workspaceIDFromHost,
+          'getTiddlersJSON',
+          new URL(request.url).searchParams.get('filter') ?? '',
+          new URL(request.url).searchParams.get('exclude')?.split?.(' ') ?? undefined,
+        ),
     },
     {
       method: 'PUT',
