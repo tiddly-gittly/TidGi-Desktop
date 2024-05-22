@@ -128,9 +128,9 @@ export class IpcServerRoutes {
     return { statusCode: 200, headers: { 'Content-Type': 'application/json; charset=utf8' }, data: tiddlerFields as ITiddlerFields };
   }
 
-  async getTiddlersJSON(filter = '[all[tiddlers]!is[system]sort[title]]', exclude = ['text']): Promise<IWikiServerRouteResponse> {
+  async getTiddlersJSON(filter = '[all[tiddlers]!is[system]sort[title]]', exclude = ['text'], options?: { ignoreSyncSystemConfig?: boolean }): Promise<IWikiServerRouteResponse> {
     await this.waitForIpcServerRoutesAvailable();
-    if (this.wikiInstance.wiki.getTiddlerText('$:/config/SyncSystemTiddlersFromServer') !== 'yes') {
+    if (!(options?.ignoreSyncSystemConfig === true) && this.wikiInstance.wiki.getTiddlerText('$:/config/SyncSystemTiddlersFromServer') !== 'yes') {
       filter += '+[!is[system]]';
     }
     const titles = this.wikiInstance.wiki.filterTiddlers(filter);
