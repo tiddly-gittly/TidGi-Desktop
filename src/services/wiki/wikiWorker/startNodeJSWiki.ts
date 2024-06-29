@@ -23,7 +23,7 @@ export function startNodeJSWiki({
   isDev,
   openDebugger,
   readOnlyMode,
-  rootTiddler = '$:/core/save/lazy-images',
+  rootTiddler = '$:/core/save/all',
   tiddlyWikiHost = defaultServerIP,
   tiddlyWikiPort = 5112,
   tokenAuth,

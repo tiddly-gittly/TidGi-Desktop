@@ -213,6 +213,11 @@
     "NameDescription": "工作区的名字，将显示在侧边栏上，可以与工作区Git仓库的实际文件夹名不同",
     "WikiRootTiddler": "知识库根条目",
     "WikiRootTiddlerDescription": "Wiki 的根条目（root-tiddler）决定了系统的核心行为，修改前请阅读官方文档来了解",
+    "WikiRootTiddlerItems": {
+      "all": "全量加载",
+      "lazy-images": "按需加载图片",
+      "lazy-all": "按需加载图片和文本"
+    },
     "ReadOnlyMode": "只读模式",
     "ReadOnlyModeDescription": "可用于配合内网穿透，让太记作为服务器程序部署博客。打开后将只能通过直接改文件的方式修改知识库内容（包括git同步），网页上将不能修改内容，但任何人都可以访问。",
     "TokenAuth": "凭证鉴权",

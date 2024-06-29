@@ -1,1 +1,1 @@
-export const rootTiddlers = ['$:/core/save/lazy-images', '$:/core/save/all', '$:/core/save/lazy-all'];
+export const rootTiddlers = ['$:/core/save/all', '$:/core/save/lazy-images', '$:/core/save/lazy-all'];

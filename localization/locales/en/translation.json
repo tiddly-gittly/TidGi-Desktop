@@ -179,6 +179,11 @@
     "BackupOnIntervalDescription": "When enabled, data will be automatically backed up with local Git at regular intervals (interval in global settings), so that even if no cloud git synchronization address is configured, it will be automatically backed up locally.",
     "WikiRootTiddler": "Wiki Root Tiddler",
     "WikiRootTiddlerDescription": "Wiki's root tiddler determines the core behavior of the system, please read the official documentation to understand before modifying",
+    "WikiRootTiddlerItems": {
+      "all": "Load all at once",
+      "lazy-images": "Load images on demand",
+      "lazy-all": "Load images and text on demand"
+    },
     "ReadOnlyModeDescription": "Can be used with intranet penetration, allowing TidGi work as a server program  to deploy blogs. After opening, wiki can only be modified by directly modifying the file on the disk  (including using git synchronization). The content cannot be modified on the web page, but anyone can access it.",
     "ReadOnlyMode": "ReadOnly Mode",
     "TokenAuth": "Token Authenticate",
