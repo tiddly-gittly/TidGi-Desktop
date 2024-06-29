@@ -14,7 +14,6 @@
 const path = require('path');
 const fs = require('fs');
 const packageJSON = require('../package.json');
-const exec = require('child_process').execSync;
 
 /**
  * Specific which lproj you want to keep
@@ -28,7 +27,7 @@ const keepingLprojRegEx = /(en|zh_CN)\.lproj/g;
  * @param {*} arch x64
  * @returns
  */
-exports.default = async (
+exports.default = (
   buildPath,
   electronVersion,
   platform,
@@ -39,7 +38,7 @@ exports.default = async (
   const projectRoot = path.resolve(__dirname, '..');
   // const appParentPath = path.resolve(buildPath, '..', '..', '..', '..');
   // const appPath = path.join(appParentPath, 'Electron.app');
-  const shell = platform === 'darwin' ? '/bin/zsh' : undefined;
+  // const shell = platform === 'darwin' ? '/bin/zsh' : undefined;
   // const winMacLinuxPlatformName = platform === 'darwin' ? 'mac' : (platform === 'win32' ? 'win' : 'linux');
   /** delete useless lproj files to make it clean */
   // const lproj = glob.sync('*.lproj', { cwd });
@@ -48,9 +47,9 @@ exports.default = async (
     .filter((dir) => !keepingLprojRegEx.test(dir))
     .map((dir) => path.join(cwd, dir));
   if (platform === 'darwin') {
-    await Promise.all(pathsToRemove.map(async (dir) => {
-      await fs.remove(dir);
-    }));
+    pathsToRemove.forEach((dir) => {
+      fs.unlinkSync(dir);
+    });
   }
   console.log(`copy npm packages with node-worker dependencies with binary (dugite) or __filename usages (tiddlywiki), which can't be prepare properly by webpack`);
   if (['production', 'test'].includes(process.env.NODE_ENV)) {
