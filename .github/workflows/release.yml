@@ -215,8 +215,8 @@ jobs:
       - name: Install dependencies
         run: pnpm install --no-frozen-lockfile
         
-      - name: Add msi to path
-        run: echo "${env:wix}bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+      # - name: Add msi to path
+      #   run: echo "${env:wix}bin" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
       # Enable x32 if someone still need it
       # - name: Make Windows (ia32)
       #   run: pnpm run make:win-ia32
@@ -238,10 +238,10 @@ jobs:
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Rename (x64)
-        run: |
-          Get-ChildItem out/make/wix/x64
-          Rename-Item -Path "out/make/wix/x64/TidGi.msi" -NewName "Install-TidGi-Windows-x64.msi"
+      # - name: Rename (x64)
+      #   run: |
+      #     Get-ChildItem out/make/wix/x64
+      #     Rename-Item -Path "out/make/wix/x64/TidGi.msi" -NewName "Install-TidGi-Windows-x64.msi"
       - name: Make Windows (arm64)
         run: pnpm run make:win-arm
         env:
@@ -250,10 +250,10 @@ jobs:
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-      - name: Rename (arm64)
-        run: |
-          Get-ChildItem out/make/wix/arm64
-          Rename-Item -Path "out/make/wix/arm64/TidGi.msi" -NewName "Install-TidGi-Windows-arm64.msi"
+      # - name: Rename (arm64)
+      #   run: |
+      #     Get-ChildItem out/make/wix/arm64
+      #     Rename-Item -Path "out/make/wix/arm64/TidGi.msi" -NewName "Install-TidGi-Windows-arm64.msi"
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -261,9 +261,9 @@ jobs:
         with:
           draft: true
           generate_release_notes: true
+          # out/make/**/*.msi
           files: |
             out/make/**/*.exe
-            out/make/**/*.msi
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

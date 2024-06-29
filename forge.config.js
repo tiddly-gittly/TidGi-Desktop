@@ -46,27 +46,28 @@ const config = {
         };
       },
     },
-    {
-      name: '@electron-forge/maker-wix',
-      config: (arch) => {
-        return {
-          language: 1033,
-          manufacturer: 'tiddlywiki.org',
-          programFilesFolderName: 'TiddlyWiki',
-          shortcutFolderName: 'TiddlyWiki',
-          description,
-          exe: 'TidGi',
-          name: 'TidGi',
-          ui: {
-            chooseDirectory: true,
-          },
-          appIconPath: 'build-resources/icon.ico',
-          // WiX distributables do not handle prerelease information in the app version, removing it from the MSI (-prerelease3.4)
-          // and https://github.com/felixrieseberg/electron-wix-msi/issues/110 ask use to use fixed number
-          version: '1.0.0',
-        };
-      },
-    },
+    //  ✖ Preparing native dependencies: 0 / 1 [FAILED: node-gyp failed to rebuild '/Users/runner/work/TidGi-Desktop/TidGi-Desktop/node_modules/.pnpm/@bitdisaster+exe-icon-extractor@1.0.10/node_modules/@bitdisaster/exe-icon-extractor']
+    // {
+    //   name: '@electron-forge/maker-wix',
+    //   config: (arch) => {
+    //     return {
+    //       language: 1033,
+    //       manufacturer: 'tiddlywiki.org',
+    //       programFilesFolderName: 'TiddlyWiki',
+    //       shortcutFolderName: 'TiddlyWiki',
+    //       description,
+    //       exe: 'TidGi',
+    //       name: 'TidGi',
+    //       ui: {
+    //         chooseDirectory: true,
+    //       },
+    //       appIconPath: 'build-resources/icon.ico',
+    //       // WiX distributables do not handle prerelease information in the app version, removing it from the MSI (-prerelease3.4)
+    //       // and https://github.com/felixrieseberg/electron-wix-msi/issues/110 ask use to use fixed number
+    //       version: '1.0.0',
+    //     };
+    //   },
+    // },
     {
       name: '@electron-forge/maker-zip',
       platforms: ['darwin'],
