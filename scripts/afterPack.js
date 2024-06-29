@@ -13,6 +13,7 @@
  */
 const path = require('path');
 const fs = require('fs');
+const fsExtra = require('fs-extra');
 const packageJSON = require('../package.json');
 
 /**
@@ -27,7 +28,7 @@ const keepingLprojRegEx = /(en|zh_CN)\.lproj/g;
  * @param {*} arch x64
  * @returns
  */
-exports.default = (
+exports.default = async (
   buildPath,
   electronVersion,
   platform,
@@ -38,7 +39,7 @@ exports.default = (
   const projectRoot = path.resolve(__dirname, '..');
   // const appParentPath = path.resolve(buildPath, '..', '..', '..', '..');
   // const appPath = path.join(appParentPath, 'Electron.app');
-  // const shell = platform === 'darwin' ? '/bin/zsh' : undefined;
+  const shell = platform === 'darwin' ? '/bin/zsh' : undefined;
   // const winMacLinuxPlatformName = platform === 'darwin' ? 'mac' : (platform === 'win32' ? 'win' : 'linux');
   /** delete useless lproj files to make it clean */
   // const lproj = glob.sync('*.lproj', { cwd });
@@ -47,9 +48,9 @@ exports.default = (
     .filter((dir) => !keepingLprojRegEx.test(dir))
     .map((dir) => path.join(cwd, dir));
   if (platform === 'darwin') {
-    pathsToRemove.forEach((dir) => {
-      fs.unlinkSync(dir);
-    });
+    await Promise.all(pathsToRemove.map(async (dir) => {
+      await fsExtra.remove(dir);
+    }));
   }
   console.log(`copy npm packages with node-worker dependencies with binary (dugite) or __filename usages (tiddlywiki), which can't be prepare properly by webpack`);
   if (['production', 'test'].includes(process.env.NODE_ENV)) {
