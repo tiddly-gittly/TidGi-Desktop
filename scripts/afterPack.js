@@ -12,7 +12,6 @@
  * Adapted for electron forge https://github.com/electron-userland/electron-forge/issues/2248
  */
 const path = require('path');
-const glob = require('glob');
 const fs = require('fs-extra');
 const util = require('util');
 const packageJSON = require('../package.json');
@@ -39,12 +38,13 @@ exports.default = async (
 ) => {
   const cwd = path.resolve(buildPath, '..');
   const projectRoot = path.resolve(__dirname, '..');
-  const appParentPath = path.resolve(buildPath, '..', '..', '..', '..');
-  const appPath = path.join(appParentPath, 'Electron.app');
+  // const appParentPath = path.resolve(buildPath, '..', '..', '..', '..');
+  // const appPath = path.join(appParentPath, 'Electron.app');
   const shell = platform === 'darwin' ? '/bin/zsh' : undefined;
   const winMacLinuxPlatformName = platform === 'darwin' ? 'mac' : (platform === 'win32' ? 'win' : 'linux');
   /** delete useless lproj files to make it clean */
-  const lproj = glob.sync('*.lproj', { cwd });
+  // const lproj = glob.sync('*.lproj', { cwd });
+  const lproj = fs.readdirSync(cwd).filter((dir) => dir.endsWith('.lproj'));
   const pathsToRemove = lproj
     .filter((dir) => !keepingLprojRegEx.test(dir))
     .map((dir) => path.join(cwd, dir));

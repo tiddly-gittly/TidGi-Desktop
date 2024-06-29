@@ -1,3 +1,5 @@
+/* eslint-disable @typescript-eslint/no-confusing-void-expression */
+/* eslint-disable @typescript-eslint/promise-function-async */
 /* eslint-disable @typescript-eslint/no-unsafe-call */
 /* eslint-disable unicorn/import-style */
 /* eslint-disable @typescript-eslint/no-var-requires */
@@ -10,9 +12,7 @@
  * Adapted for electron forge https://github.com/electron-userland/electron-forge/issues/2248
  */
 const path = require('path');
-const glob = require('glob');
 const fs = require('fs-extra');
-const util = require('util');
 
 /**
  * @param {*} buildPath /var/folders/qj/7j0zx32d0l75zmnrl1w3m3b80000gn/T/electron-packager/darwin-x64/TidGi-darwin-x64/Electron.app/Contents/Resources/app
@@ -23,12 +23,7 @@ const util = require('util');
  */
 exports.default = async (buildPath, electronVersion, platform, arch, callback) => {
   const cwd = path.resolve(buildPath, '..');
-
-  /** delete useless lproj files to make it clean */
-  const duplicatedLocalization = glob.sync('**/.webpack/main/localization/**', { cwd });
-  const duplicatedElectronDist = glob.sync('**/.webpack/main/native_modules/dist/**', { cwd });
-  const outFiles = glob.sync('**/.webpack/out/**', { cwd });
-  const pathsToRemove = [...duplicatedLocalization, ...duplicatedElectronDist, ...outFiles].map((directory) => path.join(cwd, directory));
+  const pathsToRemove = ['.webpack/main/localization/', '.webpack/main/native_modules/dist/', '.webpack/out/'].map((directory) => path.join(cwd, directory));
   await Promise.all(pathsToRemove.map((directory) => fs.remove(directory).catch((error) => console.error(error))));
 
   /** complete this hook */
