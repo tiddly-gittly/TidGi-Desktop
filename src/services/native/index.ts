@@ -270,7 +270,7 @@ ${message.message}
      * hostname: `.`, pathname: `/files/xxx.png`
      */
     let filePath = decodeURIComponent(`${hostname}${pathname}`);
-    // get "/D:/" on windows
+    // get "D:/" instead of "/D:/" on windows
     if (process.platform === 'win32' && filePath.startsWith('/')) {
       filePath = filePath.substring(1);
     }
