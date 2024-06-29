@@ -27,8 +27,8 @@ export function SortablePageSelectorList({ pagesList, showSideBarText, showSideB
       modifiers={[restrictToVerticalAxis]}
       onDragEnd={async ({ active, over }) => {
         if (over === null || active.id === over.id) return;
-        const oldIndex = pageIDs.indexOf(active.id);
-        const newIndex = pageIDs.indexOf(over.id);
+        const oldIndex = pageIDs.indexOf(String(active.id));
+        const newIndex = pageIDs.indexOf(String(over.id));
 
         const newPagesList = arrayMove(pagesList, oldIndex, newIndex);
         const newPages: Record<string, IPage> = {};

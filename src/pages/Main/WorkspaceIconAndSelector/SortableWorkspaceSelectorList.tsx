@@ -27,8 +27,8 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
       modifiers={[restrictToVerticalAxis]}
       onDragEnd={async ({ active, over }) => {
         if (over === null || active.id === over.id) return;
-        const oldIndex = workspaceIDs.indexOf(active.id);
-        const newIndex = workspaceIDs.indexOf(over.id);
+        const oldIndex = workspaceIDs.indexOf(String(active.id));
+        const newIndex = workspaceIDs.indexOf(String(over.id));
 
         const newWorkspacesList = arrayMove(workspacesList, oldIndex, newIndex);
         const newWorkspaces: Record<string, IWorkspace> = {};
