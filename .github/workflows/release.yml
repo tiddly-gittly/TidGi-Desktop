@@ -42,7 +42,7 @@ jobs:
           node-version: 20
       - uses: pnpm/action-setup@v2
         with:
-          version: 8.5.1
+          version: 9
       - name: Get pnpm store directory
         id: pnpm-cache
         shell: bash
@@ -120,7 +120,7 @@ jobs:
           node-version: 20
       - uses: pnpm/action-setup@v2
         with:
-          version: 8.5.1
+          version: 9
           
       - name: Get pnpm store directory
         id: pnpm-cache
@@ -197,7 +197,7 @@ jobs:
           node-version: 20
       - uses: pnpm/action-setup@v2
         with:
-          version: 8.5.1
+          version: 9
       - name: Get pnpm store directory
         id: pnpm-cache
         shell: bash
