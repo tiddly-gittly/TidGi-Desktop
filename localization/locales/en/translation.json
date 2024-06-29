@@ -208,14 +208,17 @@
     "HTTPSKeyPathDescription": "The location of the private key file with the suffix .key.",
     "LastNodeJSArgv": "Command line arguments from the latest startup",
     "EnableHTTPAPI": "Enable HTTP APIs",
-    "EnableHTTPAPIDescription": "Allow third-party programs such as Tiddloid, MaoXianWebclipper clipper, etc. to read and modify your notes through the HTTP network interface.",
+    "EnableHTTPAPIDescription": "Allow third-party programs such as TidGi-Mobile, Tiddlywiki-Collector webclipper, etc. to read and modify your notes through the HTTP network interface.",
     "TokenAuthCurrentToken": "Current Token of Token Auth",
     "TokenAuthCurrentTokenDescription": "This token is confidential, which needs to be regenerated after being leaked to a hostile entity, and credentials need to be updated for connected third-party applications after regeneration",
     "Generate": "Generate",
     "TokenAuthCurrentTokenEmptyText": "Click the Generate button to generate a new credential",
     "ClickToExpand": "Click To Expand",
     "MainWorkspacePath": "Main Workspace Path",
-    "IsSubWorkspace": "Is SubWorkspace"
+    "IsSubWorkspace": "Is SubWorkspace",
+    "AppearanceOptions": "Appearance Options",
+    "SaveAndSyncOptions": "Save And Sync",
+    "MiscOptions": "Misc"
   },
   "Dialog": {
     "CantFindWorkspaceFolderRemoveWorkspace": "Cannot find the workspace folder that was still there before! \nThe folders that should have existed here may have been removed, or there is no wiki in this folder! \nDo you want to remove the workspace?",

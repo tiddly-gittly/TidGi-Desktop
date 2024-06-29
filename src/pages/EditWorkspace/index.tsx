@@ -2,8 +2,22 @@
 /* eslint-disable unicorn/no-useless-undefined */
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/no-null */
+import { ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
 import { Autocomplete } from '@mui/lab';
-import { AutocompleteRenderInputParams, Button as ButtonRaw, Divider, ListItemSecondaryAction, Paper, Switch, TextField as TextFieldRaw, Tooltip, Typography } from '@mui/material';
+import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
+  AutocompleteRenderInputParams,
+  Button as ButtonRaw,
+  Divider,
+  ListItemSecondaryAction,
+  Paper,
+  Switch,
+  TextField as TextFieldRaw,
+  Tooltip,
+  Typography,
+} from '@mui/material';
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
@@ -27,6 +41,14 @@ import { SyncedWikiDescription } from '../AddWorkspace/Description';
 import { GitRepoUrlForm } from '../AddWorkspace/GitRepoUrlForm';
 import { ServerOptions } from './server';
 
+const OptionsAccordion = styled(Accordion)`
+  box-shadow: unset;
+  background-color: unset;
+`;
+const OptionsAccordionSummary = styled(AccordionSummary)`
+  padding: 0;
+  flex-direction: row-reverse;
+`;
 const Root = styled(Paper)`
   height: 100%;
   width: 100%;
@@ -197,229 +219,258 @@ export default function EditWorkspace(): JSX.Element {
             <Divider />
           </>
         )}
-        <TextField
-          id='outlined-full-width'
-          label={t('EditWorkspace.Name')}
-          helperText={t('EditWorkspace.NameDescription')}
-          placeholder='Optional'
-          value={name}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            workspaceSetter({ ...workspace, name: event.target.value });
-          }}
-        />
-        <Divider />
-        <AvatarFlex>
-          <AvatarLeft>
-            <Avatar transparentBackground={transparentBackground}>
-              <AvatarPicture alt='Icon' src={getValidIconPath(picturePath)} />
-            </Avatar>
-          </AvatarLeft>
-          <AvatarRight>
-            <Tooltip title={wikiPictureExtensions.join(', ')} placement='top'>
-              <PictureButton
-                variant='outlined'
-                size='small'
-                onClick={async () => {
-                  const filePaths = await window.service.native.pickFile([{ name: 'Images', extensions: wikiPictureExtensions }]);
-                  if (filePaths.length > 0) {
-                    workspaceSetter({ ...workspace, picturePath: filePaths[0] });
-                  }
-                }}
-              >
-                {t('EditWorkspace.SelectLocal')}
-              </PictureButton>
-            </Tooltip>
-
-            <Tooltip title={t('EditWorkspace.NoRevert') ?? ''} placement='bottom'>
-              <PictureButton
-                onClick={() => {
-                  workspaceSetter({ ...workspace, picturePath: null });
-                }}
-                disabled={!picturePath}
-              >
-                {t('EditWorkspace.ResetDefaultIcon')}
-              </PictureButton>
-            </Tooltip>
-          </AvatarRight>
-        </AvatarFlex>
-        <TextField
-          id='outlined-full-width'
-          label={t('EditWorkspace.Path')}
-          helperText={t('EditWorkspace.PathDescription')}
-          placeholder='Optional'
-          disabled
-          value={wikiFolderLocation}
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            workspaceSetter({ ...workspace, wikiFolderLocation: event.target.value });
-          }}
-        />
-        {isSubWiki && mainWikiToLink && (
-          <TextField
-            id='outlined-full-width'
-            label={t('EditWorkspace.MainWorkspacePath')}
-            helperText={t('EditWorkspace.PathDescription')}
-            value={mainWikiToLink}
-            disabled
-          />
-        )}
-        <TextField
-          helperText={t('AddWorkspace.WorkspaceUserNameDetail')}
-          fullWidth
-          onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-            workspaceSetter({ ...workspace, userName: event.target.value }, true);
-          }}
-          label={t('AddWorkspace.WorkspaceUserName')}
-          placeholder={fallbackUserName}
-          value={userName}
-        />
-        <Divider />
-        {isSubWiki && (
-          <Autocomplete
-            freeSolo
-            options={fileSystemPaths?.map((fileSystemPath) => fileSystemPath.tagName)}
-            value={tagName}
-            onInputChange={(event: React.SyntheticEvent, value: string) => {
-              workspaceSetter({ ...workspace, tagName: value }, true);
-            }}
-            renderInput={(parameters: AutocompleteRenderInputParams) => <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />}
-          />
-        )}
-        <SyncedWikiDescription
-          isCreateSyncedWorkspace={isCreateSyncedWorkspace}
-          isCreateSyncedWorkspaceSetter={(isSynced: boolean) => {
-            workspaceSetter({ ...workspace, storageService: isSynced ? SupportedStorageServices.github : SupportedStorageServices.local });
-          }}
-        />
-        {isCreateSyncedWorkspace && (
-          <TokenForm
-            storageProvider={storageService}
-            storageProviderSetter={(nextStorageService: SupportedStorageServices) => {
-              workspaceSetter({ ...workspace, storageService: nextStorageService });
-              // requestRestartCountDown();
-            }}
-          />
-        )}
-        {storageService !== SupportedStorageServices.local && (
-          <GitRepoUrlForm
-            storageProvider={storageService}
-            gitRepoUrl={gitUrl ?? ''}
-            gitRepoUrlSetter={(nextGitUrl: string) => {
-              workspaceSetter({ ...workspace, gitUrl: nextGitUrl });
-            }}
-            isCreateMainWorkspace={!isSubWiki}
-          />
-        )}
-        {storageService !== SupportedStorageServices.local && (
-          <>
-            <List>
-              <ListItem disableGutters>
-                <ListItemText primary={t('EditWorkspace.SyncOnInterval')} secondary={t('EditWorkspace.SyncOnIntervalDescription')} />
-                <ListItemSecondaryAction>
-                  <Switch
-                    edge='end'
-                    color='primary'
-                    checked={syncOnInterval}
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                      workspaceSetter({ ...workspace, syncOnInterval: event.target.checked });
-                    }}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-              <ListItem disableGutters>
-                <ListItemText primary={t('EditWorkspace.SyncOnStartup')} secondary={t('EditWorkspace.SyncOnStartupDescription')} />
-                <ListItemSecondaryAction>
-                  <Switch
-                    edge='end'
-                    color='primary'
-                    checked={syncOnStartup}
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                      workspaceSetter({ ...workspace, syncOnStartup: event.target.checked });
-                    }}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-            </List>
-          </>
-        )}
-        {storageService === SupportedStorageServices.local && (
-          <>
-            <List>
-              <Divider />
-              <ListItem disableGutters>
-                <ListItemText primary={t('EditWorkspace.BackupOnInterval')} secondary={t('EditWorkspace.BackupOnIntervalDescription')} />
-                <ListItemSecondaryAction>
-                  <Switch
-                    edge='end'
-                    color='primary'
-                    checked={backupOnInterval}
-                    onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                      workspaceSetter({ ...workspace, backupOnInterval: event.target.checked });
-                    }}
-                  />
-                </ListItemSecondaryAction>
-              </ListItem>
-            </List>
-          </>
-        )}
-        {!isSubWiki && (
-          <List>
+        <OptionsAccordion defaultExpanded>
+          <Tooltip title={t('EditWorkspace.ClickToExpand')}>
+            <OptionsAccordionSummary expandIcon={<ExpandMoreIcon />}>
+              {t('EditWorkspace.AppearanceOptions')}
+            </OptionsAccordionSummary>
+          </Tooltip>
+          <AccordionDetails>
+            <TextField
+              id='outlined-full-width'
+              label={t('EditWorkspace.Name')}
+              helperText={t('EditWorkspace.NameDescription')}
+              placeholder='Optional'
+              value={name}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                workspaceSetter({ ...workspace, name: event.target.value });
+              }}
+            />
             <Divider />
-            <ListItem disableGutters>
-              <ListItemText primary={t('EditWorkspace.HibernateTitle')} secondary={t('EditWorkspace.HibernateDescription')} />
-              <ListItemSecondaryAction>
-                <Switch
-                  edge='end'
-                  color='primary'
-                  checked={hibernateWhenUnused}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    workspaceSetter({ ...workspace, hibernateWhenUnused: event.target.checked });
-                  }}
-                />
-              </ListItemSecondaryAction>
-            </ListItem>
-            <ListItem disableGutters>
-              <ListItemText primary={t('EditWorkspace.DisableNotificationTitle')} secondary={t('EditWorkspace.DisableNotification')} />
-              <ListItemSecondaryAction>
-                <Switch
-                  edge='end'
-                  color='primary'
-                  checked={disableNotifications}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    workspaceSetter({ ...workspace, disableNotifications: event.target.checked });
-                  }}
-                />
-              </ListItemSecondaryAction>
-            </ListItem>
-            <ListItem disableGutters>
-              <ListItemText primary={t('EditWorkspace.DisableAudioTitle')} secondary={t('EditWorkspace.DisableAudio')} />
-              <ListItemSecondaryAction>
-                <Switch
-                  edge='end'
-                  color='primary'
-                  checked={disableAudio}
-                  onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-                    workspaceSetter({ ...workspace, disableAudio: event.target.checked });
-                  }}
-                />
-              </ListItemSecondaryAction>
-            </ListItem>
-          </List>
-        )}
-        {!isSubWiki && rememberLastPageVisited && (
-          <TextField
-            id='outlined-full-width'
-            label={t('EditWorkspace.LastVisitState')}
-            helperText={t('Preference.RememberLastVisitState')}
-            placeholder={homeUrl}
-            value={lastUrl}
-            onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
-              workspaceSetter({
-                ...workspace,
-                lastUrl: (event.target.value || homeUrl) ?? '',
-              });
-            }}
-          />
-        )}
+            <AvatarFlex>
+              <AvatarLeft>
+                <Avatar transparentBackground={transparentBackground}>
+                  <AvatarPicture alt='Icon' src={getValidIconPath(picturePath)} />
+                </Avatar>
+              </AvatarLeft>
+              <AvatarRight>
+                <Tooltip title={wikiPictureExtensions.join(', ')} placement='top'>
+                  <PictureButton
+                    variant='outlined'
+                    size='small'
+                    onClick={async () => {
+                      const filePaths = await window.service.native.pickFile([{ name: 'Images', extensions: wikiPictureExtensions }]);
+                      if (filePaths.length > 0) {
+                        workspaceSetter({ ...workspace, picturePath: filePaths[0] });
+                      }
+                    }}
+                  >
+                    {t('EditWorkspace.SelectLocal')}
+                  </PictureButton>
+                </Tooltip>
+
+                <Tooltip title={t('EditWorkspace.NoRevert') ?? ''} placement='bottom'>
+                  <PictureButton
+                    onClick={() => {
+                      workspaceSetter({ ...workspace, picturePath: null });
+                    }}
+                    disabled={!picturePath}
+                  >
+                    {t('EditWorkspace.ResetDefaultIcon')}
+                  </PictureButton>
+                </Tooltip>
+              </AvatarRight>
+            </AvatarFlex>
+          </AccordionDetails>
+        </OptionsAccordion>
+        <OptionsAccordion>
+          <Tooltip title={t('EditWorkspace.ClickToExpand')}>
+            <OptionsAccordionSummary expandIcon={<ExpandMoreIcon />}>
+              {t('EditWorkspace.SaveAndSyncOptions')}
+            </OptionsAccordionSummary>
+          </Tooltip>
+          <AccordionDetails>
+            <TextField
+              id='outlined-full-width'
+              label={t('EditWorkspace.Path')}
+              helperText={t('EditWorkspace.PathDescription')}
+              placeholder='Optional'
+              disabled
+              value={wikiFolderLocation}
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                workspaceSetter({ ...workspace, wikiFolderLocation: event.target.value });
+              }}
+            />
+            {isSubWiki && mainWikiToLink && (
+              <TextField
+                id='outlined-full-width'
+                label={t('EditWorkspace.MainWorkspacePath')}
+                helperText={t('EditWorkspace.PathDescription')}
+                value={mainWikiToLink}
+                disabled
+              />
+            )}
+            <TextField
+              helperText={t('AddWorkspace.WorkspaceUserNameDetail')}
+              fullWidth
+              onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                workspaceSetter({ ...workspace, userName: event.target.value }, true);
+              }}
+              label={t('AddWorkspace.WorkspaceUserName')}
+              placeholder={fallbackUserName}
+              value={userName}
+            />
+            <Divider />
+            {isSubWiki && (
+              <Autocomplete
+                freeSolo
+                options={fileSystemPaths?.map((fileSystemPath) => fileSystemPath.tagName)}
+                value={tagName}
+                onInputChange={(event: React.SyntheticEvent, value: string) => {
+                  workspaceSetter({ ...workspace, tagName: value }, true);
+                }}
+                renderInput={(parameters: AutocompleteRenderInputParams) => (
+                  <TextField {...parameters} label={t('AddWorkspace.TagName')} helperText={t('AddWorkspace.TagNameHelp')} />
+                )}
+              />
+            )}
+            <SyncedWikiDescription
+              isCreateSyncedWorkspace={isCreateSyncedWorkspace}
+              isCreateSyncedWorkspaceSetter={(isSynced: boolean) => {
+                workspaceSetter({ ...workspace, storageService: isSynced ? SupportedStorageServices.github : SupportedStorageServices.local });
+              }}
+            />
+            {isCreateSyncedWorkspace && (
+              <TokenForm
+                storageProvider={storageService}
+                storageProviderSetter={(nextStorageService: SupportedStorageServices) => {
+                  workspaceSetter({ ...workspace, storageService: nextStorageService });
+                  // requestRestartCountDown();
+                }}
+              />
+            )}
+            {storageService !== SupportedStorageServices.local && (
+              <GitRepoUrlForm
+                storageProvider={storageService}
+                gitRepoUrl={gitUrl ?? ''}
+                gitRepoUrlSetter={(nextGitUrl: string) => {
+                  workspaceSetter({ ...workspace, gitUrl: nextGitUrl });
+                }}
+                isCreateMainWorkspace={!isSubWiki}
+              />
+            )}
+            {storageService !== SupportedStorageServices.local && (
+              <>
+                <List>
+                  <ListItem disableGutters>
+                    <ListItemText primary={t('EditWorkspace.SyncOnInterval')} secondary={t('EditWorkspace.SyncOnIntervalDescription')} />
+                    <ListItemSecondaryAction>
+                      <Switch
+                        edge='end'
+                        color='primary'
+                        checked={syncOnInterval}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                          workspaceSetter({ ...workspace, syncOnInterval: event.target.checked });
+                        }}
+                      />
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                  <ListItem disableGutters>
+                    <ListItemText primary={t('EditWorkspace.SyncOnStartup')} secondary={t('EditWorkspace.SyncOnStartupDescription')} />
+                    <ListItemSecondaryAction>
+                      <Switch
+                        edge='end'
+                        color='primary'
+                        checked={syncOnStartup}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                          workspaceSetter({ ...workspace, syncOnStartup: event.target.checked });
+                        }}
+                      />
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                </List>
+              </>
+            )}
+            {storageService === SupportedStorageServices.local && (
+              <>
+                <List>
+                  <Divider />
+                  <ListItem disableGutters>
+                    <ListItemText primary={t('EditWorkspace.BackupOnInterval')} secondary={t('EditWorkspace.BackupOnIntervalDescription')} />
+                    <ListItemSecondaryAction>
+                      <Switch
+                        edge='end'
+                        color='primary'
+                        checked={backupOnInterval}
+                        onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                          workspaceSetter({ ...workspace, backupOnInterval: event.target.checked });
+                        }}
+                      />
+                    </ListItemSecondaryAction>
+                  </ListItem>
+                </List>
+              </>
+            )}
+          </AccordionDetails>
+        </OptionsAccordion>
+        <OptionsAccordion>
+          <Tooltip title={t('EditWorkspace.ClickToExpand')}>
+            <OptionsAccordionSummary expandIcon={<ExpandMoreIcon />}>
+              {t('EditWorkspace.MiscOptions')}
+            </OptionsAccordionSummary>
+          </Tooltip>
+          <AccordionDetails>
+            {!isSubWiki && (
+              <List>
+                <Divider />
+                <ListItem disableGutters>
+                  <ListItemText primary={t('EditWorkspace.HibernateTitle')} secondary={t('EditWorkspace.HibernateDescription')} />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge='end'
+                      color='primary'
+                      checked={hibernateWhenUnused}
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                        workspaceSetter({ ...workspace, hibernateWhenUnused: event.target.checked });
+                      }}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <ListItem disableGutters>
+                  <ListItemText primary={t('EditWorkspace.DisableNotificationTitle')} secondary={t('EditWorkspace.DisableNotification')} />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge='end'
+                      color='primary'
+                      checked={disableNotifications}
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                        workspaceSetter({ ...workspace, disableNotifications: event.target.checked });
+                      }}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+                <ListItem disableGutters>
+                  <ListItemText primary={t('EditWorkspace.DisableAudioTitle')} secondary={t('EditWorkspace.DisableAudio')} />
+                  <ListItemSecondaryAction>
+                    <Switch
+                      edge='end'
+                      color='primary'
+                      checked={disableAudio}
+                      onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                        workspaceSetter({ ...workspace, disableAudio: event.target.checked });
+                      }}
+                    />
+                  </ListItemSecondaryAction>
+                </ListItem>
+              </List>
+            )}
+            {!isSubWiki && rememberLastPageVisited && (
+              <TextField
+                id='outlined-full-width'
+                label={t('EditWorkspace.LastVisitState')}
+                helperText={t('Preference.RememberLastVisitState')}
+                placeholder={homeUrl}
+                value={lastUrl}
+                onChange={(event: React.ChangeEvent<HTMLInputElement>) => {
+                  workspaceSetter({
+                    ...workspace,
+                    lastUrl: (event.target.value || homeUrl) ?? '',
+                  });
+                }}
+              />
+            )}
+          </AccordionDetails>
+        </OptionsAccordion>
       </FlexGrow>
       {!isEqual(omit(workspace, nonConfigFields), omit(originalWorkspace, nonConfigFields)) && (
         <SaveCancelButtonsContainer>
