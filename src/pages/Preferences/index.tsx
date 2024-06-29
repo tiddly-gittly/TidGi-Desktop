@@ -12,7 +12,7 @@ import { FriendLinks } from './sections/FriendLinks';
 import { General } from './sections/General';
 import { Languages } from './sections/Languages';
 import { Miscellaneous } from './sections/Miscellaneous';
-import { Network } from './sections/Network';
+// import { Network } from './sections/Network';
 import { Notifications } from './sections/Notifications';
 import { Performance } from './sections/Performance';
 import { PrivacyAndSecurity } from './sections/PrivacyAndSecurity';
@@ -67,7 +67,7 @@ export default function Preferences(): JSX.Element {
         <Languages sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <DeveloperTools sections={sections} />
         <Downloads sections={sections} requestRestartCountDown={requestRestartCountDown} />
-        <Network sections={sections} />
+        {/* <Network sections={sections} /> */}
         <PrivacyAndSecurity sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <Performance sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <Updates sections={sections} requestRestartCountDown={requestRestartCountDown} />

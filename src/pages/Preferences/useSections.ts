@@ -72,11 +72,11 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
       Icon: CloudDownloadIcon,
       ref: useRef<SectionTitleElement>(null),
     },
-    [PreferenceSections.network]: {
-      text: t('Preference.Network'),
-      Icon: RouterIcon,
-      ref: useRef<SectionTitleElement>(null),
-    },
+    // [PreferenceSections.network]: {
+    //   text: t('Preference.Network'),
+    //   Icon: RouterIcon,
+    //   ref: useRef<SectionTitleElement>(null),
+    // },
     [PreferenceSections.privacy]: {
       text: t('Preference.PrivacyAndSecurity'),
       Icon: SecurityIcon,

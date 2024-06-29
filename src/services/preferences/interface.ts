@@ -55,7 +55,7 @@ export enum PreferenceSections {
   general = 'general',
   languages = 'languages',
   misc = 'misc',
-  network = 'network',
+  // network = 'network',
   notifications = 'notifications',
   performance = 'performance',
   privacy = 'privacy',
