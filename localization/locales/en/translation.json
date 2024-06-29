@@ -380,22 +380,6 @@
     "HideSideBarIconDetail": "Hide the icon and only display the name of the workspace to make the workspace list more compact",
     "OpenV8CacheFolder": "Open the V8 cache folder",
     "OpenV8CacheFolderDetail": "The V8 cache folder stores cached files that accelerate application startup",
-    "LanguageModel": {
-      "Title": "Language Model",
-      "DefaultModel": "Default language model file name",
-      "DefaultModelDescription": "Each runner can load different models. This is the default model file name for each runner.",
-      "TimeoutDuration": "Timeout Duration",
-      "UpdateTimeoutDuration": "Unit (Second). If a language model does not respond after so long, it will automatically terminate the conversation and stop waiting, as this basically means that it has stopped running. It needs to be greater than 0 and not too small, otherwise it will not be output properly.",
-      "OpenModelFolder": "Open Model Folder",
-      "OpenModelFolderDescription": "The inference program will look for models in this folder, please put your downloaded models here (or use the command line to create a soft link to here)",
-      "ModelLoaded": "Model Loaded",
-      "ModelNotLoaded": "Model Not Loaded",
-      "LoadModel": "Load Model",
-      "UnLoadModel": "UnLoad Model",
-      "UnLoadModelDescription": "Clicking to unload the model releases memory, but it needs to be reloaded when used again, which consumes additional time",
-      "LoadModelDescription": "Clicking Try to load a model can be used to check if the model is ready for use. or pre-loaded for use within Tiddlywiki, but the parameters here may not be the same as those provided by the plugin within Tiddlywiki, resulting in inconsistent behavior.",
-      "LoadingModel": "Loading Model"
-    },
     "RunOnBackground": "Run On Background",
     "RunOnBackgroundDetail": "When window is closed, Continue to run in the background without exiting. Quickly restore the window when opening the app again.",
     "RunOnBackgroundDetailNotMac": "Recommend to enable Attach To Taskbar. So you can restore window use it.",
@@ -477,16 +461,6 @@
   "ClickForDetails": "Click For Details",
   "Scripting": {
     "ExecutingScript": "Executing Script"
-  },
-  "LanguageModel": {
-    "ModelNotExist": "Model Not Exist",
-    "OpenThisPath": "Open This Path",
-    "ModelNotExistDescription": "Try to load the model using this path you gave, but there is actually no model needed at this location",
-    "GenerationTimeout": "Generation Timeout, Terminated",
-    "ModelLoadingProgress": "Model Loading",
-    "ModelDisposed": "Model Disposed, Terminated (Need to reload language model)",
-    "RunModelError": "Run Model Error",
-    "NoBinaryFoundError": "TidGi's built-in model loader cannot be found. There may be a bug."
   },
   "Description": "Description",
   "Tags": "Tags",

@@ -53,7 +53,7 @@ exports.default = async (
       await fs.remove(dir);
     }));
   }
-  /** copy npm packages with node-worker dependencies with binary (dugite, node-llama-cpp) or __filename usages (tiddlywiki), which can't be prepare properly by webpack */
+  /** copy npm packages with node-worker dependencies with binary (dugite) or __filename usages (tiddlywiki), which can't be prepare properly by webpack */
   const tasks = [];
   if (['production', 'test'].includes(process.env.NODE_ENV)) {
     console.log('Copying tiddlywiki dependency to dist');
@@ -97,31 +97,9 @@ exports.default = async (
       ['@tiddlygit', 'tiddlywiki', 'themes'],
       ['@tiddlygit', 'tiddlywiki', 'languages'],
       ['@tiddlygit', 'tiddlywiki', 'tiddlywiki.js'],
-      // node-llama-cpp etc. include too many source code, so only copy its binary
-      // ['node-llama-cpp', 'node_modules'],
       // we only need its `main` binary, no need its dependency and code, because we already copy it to src/services/native/externalApp
       ['app-path', 'main'],
     ];
-    // it by default pack files for all platforms, we only copy what current platform needs
-    const llamaCpp = ['node-llama-cpp', 'llamaBins'];
-    await Promise.all(
-      [llamaCpp].map(async (llamaPath) => {
-        // ['mac-arm64-metal', 'mac-x64', ...]
-        const llamaBinaryFolders = await fs.readdir(
-          path.resolve(sourceNodeModulesFolder, ...llamaPath),
-        );
-        /**
-         * 'llama-addon.node',
-         * 'default.metallib',
-         */
-        const filesInPlatform = llamaBinaryFolders.filter(
-          (file) => file.includes(winMacLinuxPlatformName) && file.includes(arch),
-        );
-        filesInPlatform.forEach((fileName) => {
-          packagePathsToCopyDereferenced.push([...llamaPath, fileName]);
-        });
-      }),
-    );
 
     for (const packagePathInNodeModules of packagePathsToCopyDereferenced) {
       // some binary may not exist in other platforms, so allow failing here.

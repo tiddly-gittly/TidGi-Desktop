@@ -54,7 +54,6 @@ module.exports = {
     //   allowlist: [/(threads-plugin)/],
     // }),
     '@tiddlygit/tiddlywiki',
-    // 'node-llama-cpp',
     'dugite',
     'zx',
     ...(process.platform === 'win32' ? [] : ['registry-js']),

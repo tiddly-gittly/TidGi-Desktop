@@ -3,7 +3,6 @@ export default {
   Context: Symbol.for('Context'),
   Database: Symbol.for('Database'),
   Git: Symbol.for('Git'),
-  LanguageModel: Symbol.for('LanguageModel'),
   MenuService: Symbol.for('MenuService'),
   NativeService: Symbol.for('NativeService'),
   NotificationService: Symbol.for('NotificationService'),

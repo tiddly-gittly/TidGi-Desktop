@@ -1,7 +1,6 @@
 export const settingFolderName = 'settings';
 export const httpsCertKeyFolderName = 'https-keys';
 export const cacheDatabaseFolderName = 'cache-database';
-export const languageModelFolderName = 'language-model';
 /** Used to place mock wiki during dev and testing */
 export const developmentWikiFolderName = 'wiki-dev';
 export const localizationFolderName = 'localization';

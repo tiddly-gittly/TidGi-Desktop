@@ -66,6 +66,5 @@ out/
 .cache/
 deb2appimage_cache/
 deb2appimage.json
-language-model-dev/
 userData-dev/
 wiki-dev/
