@@ -7,7 +7,6 @@ import './helpers/singleInstance';
 import './services/database/configSetting';
 import { app, ipcMain, powerMonitor, protocol } from 'electron';
 import unhandled from 'electron-unhandled';
-import fs from 'fs-extra';
 import inspector from 'node:inspector';
 
 import { MainChannel } from '@/constants/channels';
@@ -101,7 +100,7 @@ const commonInit = async (): Promise<void> => {
   // https://github.com/atomery/webcatalog/issues/561
   // run it here not in mainWindow.createAsync()
   // because if the `mainWindow` is maximized or minimized
-  // before the workspaces's BrowserView fully loaded
+  // before the workspaces's WebContentsView fully loaded
   // error will occur
   // see https://github.com/atomery/webcatalog/issues/637
   // eslint-disable-next-line promise/always-return

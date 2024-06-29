@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/ban-types */
 /**
  * Provide API from main services to GUI (for example, preference window), and tiddlywiki
- * This file should be required by BrowserView's preload script to work
+ * This file should be required by WebContentsView's preload script to work
  */
 
 import { createProxy } from 'electron-ipc-cat/client';

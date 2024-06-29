@@ -1,4 +1,4 @@
-import { BrowserView } from 'electron';
+import { WebContentsView } from 'electron';
 
 import { IAuthenticationService } from '@services/auth/interface';
 import { container } from '@services/container';
@@ -8,7 +8,7 @@ import { IWikiService } from '@services/wiki/interface';
 import { IWorkspaceService } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
 
-export function setupIpcServerRoutesHandlers(view: BrowserView, workspaceID: string) {
+export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID: string) {
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);

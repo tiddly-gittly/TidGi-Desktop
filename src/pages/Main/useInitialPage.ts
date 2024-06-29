@@ -7,7 +7,7 @@ import { useLocation } from 'wouter';
 
 export function useInitialPage() {
   const [, setLocation] = useLocation();
-  // when first open the TidGi and no workspace is active (so no BrowserView will be on top of the React), goto the active pages route
+  // when first open the TidGi and no workspace is active (so no WebContentsView will be on top of the React), goto the active pages route
   const initialActivePage = usePromiseValue(async () => await window.service.pages.getActivePage(), null);
   const initialActiveWorkspace = usePromiseValue(async () => await window.service.workspace.getActiveWorkspace(), null);
   // only do this once, and not triggering unnecessary rerender by using ref.

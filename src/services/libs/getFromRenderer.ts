@@ -1,12 +1,12 @@
 import { Channels } from '@/constants/channels';
-import { BrowserView, BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow, ipcMain, WebContentsView } from 'electron';
 
 /**
- * Get data from a BrowserView
+ * Get data from a WebContentsView
  * @param channel
  * @param viewToGetData
  */
-export default async function getFromRenderer<T>(channel: Channels, viewToGetData: BrowserView | BrowserWindow): Promise<T> {
+export default async function getFromRenderer<T>(channel: Channels, viewToGetData: WebContentsView | BrowserWindow): Promise<T> {
   // prevent several ipc happened together, and later return too early so first get the result that is for later one
   const ipcToken = String(Math.random());
   viewToGetData.webContents.send(channel, { ipcToken });

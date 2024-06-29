@@ -24,7 +24,7 @@ export interface IInitializeWorkspaceOptions {
 export interface IWorkspaceViewService {
   addViewForAllBrowserViews(workspace: IWorkspace): Promise<void>;
   /**
-   * Hide BrowserView, so page below it will show up.
+   * Hide WebContentsView, so page below it will show up.
    */
   clearActiveWorkspaceView(): Promise<void>;
   clearBrowsingData(): Promise<void>;
@@ -75,7 +75,7 @@ export interface IWorkspaceViewService {
   setWorkspaceView(workspaceID: string, workspaceOptions: IWorkspace): Promise<void>;
   setWorkspaceViews(workspaces: Record<string, IWorkspace>): Promise<void>;
   /** get view's current url, store into the workspace. Can provide a designated view to operate  */
-  updateLastUrl(workspaceID: string, view?: Electron.CrossProcessExports.BrowserView | undefined): Promise<void>;
+  updateLastUrl(workspaceID: string, view?: Electron.CrossProcessExports.WebContentsView | undefined): Promise<void>;
   wakeUpWorkspaceView(workspaceID: string): Promise<void>;
 }
 export const WorkspaceViewServiceIPCDescriptor = {

@@ -5,6 +5,7 @@ import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { IViewService } from '@services/view/interface';
 import { BrowserWindow, BrowserWindowConstructorOptions, Menu, nativeImage, Tray } from 'electron';
 import windowStateKeeper from 'electron-window-state';
 import { debounce, merge as mergeDeep } from 'lodash';
@@ -15,6 +16,7 @@ import { WindowNames } from './WindowProperties';
 export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstructorOptions, windowWithBrowserViewState: windowStateKeeper.State | undefined): Promise<Menubar> {
   const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+  const viewService = container.get<IViewService>(serviceIdentifier.View);
 
   // setImage after Tray instance is created to avoid
   // "Segmentation fault (core dumped)" bug on Linux
@@ -40,7 +42,7 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
 
   menuBar.on('after-create-window', () => {
     if (menuBar.window !== undefined) {
-      menuBar.window.on('focus', () => {
+      menuBar.window.on('focus', async () => {
         logger.debug('restore window position');
         if (windowWithBrowserViewState === undefined) {
           logger.debug('windowWithBrowserViewState is undefined for menuBar');
@@ -58,10 +60,8 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
             }
           }
         }
-        const view = menuBar.window?.getBrowserView();
-        if (view?.webContents !== undefined) {
-          view.webContents.focus();
-        }
+        const view = await viewService.getActiveBrowserView();
+        view?.webContents?.focus?.();
       });
       menuBar.window.removeAllListeners('close');
       menuBar.window.on('close', (event) => {

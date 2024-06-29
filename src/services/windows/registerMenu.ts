@@ -1,20 +1,21 @@
-import { MetaDataChannel, WindowChannel } from '@/constants/channels';
+import { WindowChannel } from '@/constants/channels';
 import { isMac } from '@/helpers/system';
 import { container } from '@services/container';
-import getFromRenderer from '@services/libs/getFromRenderer';
 import getViewBounds from '@services/libs/getViewBounds';
 import { i18n } from '@services/libs/i18n';
 import { IMenuService } from '@services/menu/interface';
 import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { IViewService } from '@services/view/interface';
 import { IWorkspaceService } from '@services/workspaces/interface';
 import { ipcMain } from 'electron';
 import { IWindowService } from './interface';
-import { IBrowserViewMetaData, WindowNames } from './WindowProperties';
+import { WindowNames } from './WindowProperties';
 
 export async function registerMenu(): Promise<void> {
   const menuService = container.get<IMenuService>(serviceIdentifier.MenuService);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
+  const viewService = container.get<IViewService>(serviceIdentifier.View);
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 
@@ -47,7 +48,7 @@ export async function registerMenu(): Promise<void> {
             mainWindow.webContents.focus();
             mainWindow.webContents.send(WindowChannel.openFindInPage);
             const contentSize = mainWindow.getContentSize();
-            const view = mainWindow.getBrowserView();
+            const view = await viewService.getActiveBrowserView();
             view?.setBounds(await getViewBounds(contentSize as [number, number], { findInPage: true }));
           }
         },
@@ -102,9 +103,7 @@ export async function registerMenu(): Promise<void> {
         // if back is called in popup window
         // navigate in the popup window instead
         if (browserWindow !== undefined) {
-          // TODO: test if we really can get this isPopup value
-          const { isPopup = false } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-          await windowService.goBack(isPopup ? WindowNames.menuBar : WindowNames.main);
+          await windowService.goBack();
         }
         ipcMain.emit('request-go-back');
       },
@@ -117,8 +116,10 @@ export async function registerMenu(): Promise<void> {
         // if back is called in popup window
         // navigate in the popup window instead
         if (browserWindow !== undefined) {
-          const { isPopup = false } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
-          await windowService.goForward(isPopup ? WindowNames.menuBar : WindowNames.main);
+          // TODO: test if we really can get this isPopup value, and it works for help page popup and menubar window
+          // const { isPopup = false } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
+          // const windowName = isPopup ? WindowNames.menuBar : WindowNames.main
+          await windowService.goForward();
         }
         ipcMain.emit('request-go-forward');
       },

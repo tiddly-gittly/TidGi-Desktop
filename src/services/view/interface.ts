@@ -1,4 +1,4 @@
-import type { BrowserView, BrowserWindow, WebPreferences } from 'electron';
+import type { BrowserWindow, WebContentsView, WebPreferences } from 'electron';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
 
 import { ViewChannel } from '@/constants/channels';
@@ -15,7 +15,7 @@ export type INewWindowAction =
   };
 
 /**
- * BrowserView related things, the BrowserView is the webview like frame that renders our wiki website.
+ * WebContentsView related things, the WebContentsView is the webview like frame that renders our wiki website.
  */
 export interface IViewService {
   /**
@@ -26,35 +26,35 @@ export interface IViewService {
    * Check if we can skip the addView() for a workspace
    */
   alreadyHaveView(workspace: IWorkspace): Promise<boolean>;
-  createViewAddToWindow(workspace: IWorkspace, browserWindow: BrowserWindow, sharedWebPreferences: WebPreferences, windowName: WindowNames): Promise<BrowserView>;
-  forEachView: (functionToRun: (view: BrowserView, workspaceID: string, windowName: WindowNames) => void) => void;
+  createViewAddToWindow(workspace: IWorkspace, browserWindow: BrowserWindow, sharedWebPreferences: WebPreferences, windowName: WindowNames): Promise<WebContentsView>;
+  forEachView: (functionToRun: (view: WebContentsView, workspaceID: string, windowName: WindowNames) => void) => void;
   /**
    * If menubar is open, we get menubar browser view, else we get main window browser view
    */
-  getActiveBrowserView: () => Promise<BrowserView | undefined>;
+  getActiveBrowserView: () => Promise<WebContentsView | undefined>;
   /**
    * Get active workspace's main window and menubar browser view.
    */
-  getActiveBrowserViews: () => Promise<Array<BrowserView | undefined>>;
+  getActiveBrowserViews: () => Promise<Array<WebContentsView | undefined>>;
   getSharedWebPreferences(workspace: IWorkspace): Promise<WebPreferences>;
-  getView: (workspaceID: string, windowName: WindowNames) => BrowserView | undefined;
+  getView: (workspaceID: string, windowName: WindowNames) => WebContentsView | undefined;
   getViewCount(): Promise<number>;
   getViewCurrentUrl(workspaceID?: string): Promise<string | undefined>;
   /**
    * Move the view to the side to hide it.
    * This won't destroy view or remove it from the window, but if you add another view to the window now, this will be replaced safely. To completely remove the view, use `removeView`.
    */
-  hideView(browserWindow: BrowserWindow): Promise<void>;
+  hideView(browserWindow: BrowserWindow, windowName: WindowNames, idToDeactivate: string): Promise<void>;
   initializeWorkspaceViewHandlersAndLoad(
     browserWindow: BrowserWindow,
-    view: BrowserView,
+    view: WebContentsView,
     configs: { sharedWebPreferences: WebPreferences; uri?: string; windowName: WindowNames; workspace: IWorkspace },
   ): Promise<void>;
   /**
    * Try catch loadUrl, other wise it will throw unhandled promise rejection Error: ERR_CONNECTION_REFUSED (-102) loading 'http://localhost:5212/
    * We will set `didFailLoadErrorMessage`, it will set didFailLoadErrorMessage, and we throw actuarial error after that
    */
-  loadUrlForView(workspace: IWorkspace, view: BrowserView): Promise<void>;
+  loadUrlForView(workspace: IWorkspace, view: WebContentsView): Promise<void>;
   realignActiveView(browserWindow: BrowserWindow, activeId: string, windowName: WindowNames, isRetry?: boolean): Promise<void>;
   reloadActiveBrowserView: () => Promise<void>;
   reloadViewsWebContents(workspaceID?: string | undefined): Promise<void>;

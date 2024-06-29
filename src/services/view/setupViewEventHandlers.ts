@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable unicorn/consistent-destructuring */
-import { app, BrowserView, BrowserWindow, BrowserWindowConstructorOptions, nativeImage, shell } from 'electron';
+import { app, BrowserWindow, BrowserWindowConstructorOptions, nativeImage, shell, WebContentsView } from 'electron';
 import fsExtra from 'fs-extra';
 import { throttle } from 'lodash';
 import path from 'path';
@@ -40,11 +40,11 @@ export interface IViewMeta {
  * Bind workspace related event handler to view.webContent
  */
 export default function setupViewEventHandlers(
-  view: BrowserView,
+  view: WebContentsView,
   browserWindow: BrowserWindow,
   { workspace, sharedWebPreferences, loadInitialUrlWithCatch, windowName }: IViewContext,
 ): void {
-  // metadata and state about current BrowserView
+  // metadata and state about current WebContentsView
   const viewMeta: IViewMeta = {
     forceNewWindow: false,
   };
@@ -58,7 +58,7 @@ export default function setupViewEventHandlers(
   view.webContents.on('did-start-loading', async () => {
     const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
-    // even after the workspace obj and BrowserView
+    // even after the workspace obj and WebContentsView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
     if (workspaceObject === undefined) {
       return;
@@ -145,7 +145,7 @@ export default function setupViewEventHandlers(
       workspaceService.workspaceDidFailLoad(workspace.id),
     ]);
     // this event might be triggered
-    // even after the workspace obj and BrowserView
+    // even after the workspace obj and WebContentsView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
     if (workspaceObject === undefined) {
       return;
@@ -182,7 +182,7 @@ export default function setupViewEventHandlers(
     logger.debug(`did-navigate called ${url}`);
     const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
-    // even after the workspace obj and BrowserView
+    // even after the workspace obj and WebContentsView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
     if (workspaceObject === undefined) {
       return;
@@ -197,7 +197,7 @@ export default function setupViewEventHandlers(
     await workspaceViewService.updateLastUrl(workspace.id, view);
     const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
-    // even after the workspace obj and BrowserView
+    // even after the workspace obj and WebContentsView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
     if (workspaceObject === undefined) {
       return;
@@ -210,7 +210,7 @@ export default function setupViewEventHandlers(
   view.webContents.on('page-title-updated', async (_event, title) => {
     const workspaceObject = await workspaceService.get(workspace.id);
     // this event might be triggered
-    // even after the workspace obj and BrowserView
+    // even after the workspace obj and WebContentsView
     // are destroyed. See https://github.com/atomery/webcatalog/issues/836
     if (workspaceObject === undefined) {
       return;

@@ -5,7 +5,7 @@ import { logger } from '@services/libs/log';
 import { INativeService } from '@services/native/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import type { IWikiService } from '@services/wiki/interface';
-import { BrowserView, shell } from 'electron';
+import { shell, WebContentsView } from 'electron';
 import fs from 'fs-extra';
 import type { INewWindowContext } from './handleNewWindow';
 import { INewWindowAction } from './interface';
@@ -54,7 +54,7 @@ export function handleOpenFileExternalLink(nextUrl: string, newWindowContext: IN
 /**
  * Handle file protocol in webview to request file content and show in the view.
  */
-export function handleViewFileContentLoading(view: BrowserView) {
+export function handleViewFileContentLoading(view: WebContentsView) {
   view.webContents.session.webRequest.onBeforeRequest((details, callback) => {
     if (details.url.startsWith('file://')) {
       handleFileLink(details, callback);

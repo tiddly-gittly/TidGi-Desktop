@@ -22,13 +22,14 @@ import { getDefaultTidGiUrl } from '@/constants/urls';
 import { isMac } from '@/helpers/system';
 import { lazyInject } from '@services/container';
 import getViewBounds from '@services/libs/getViewBounds';
+import { logger } from '@services/libs/log';
 import { IThemeService } from '@services/theme/interface';
+import { IViewService } from '@services/view/interface';
 import { handleAttachToMenuBar } from './handleAttachToMenuBar';
 import { handleCreateBasicWindow } from './handleCreateBasicWindow';
 import { IWindowOpenConfig, IWindowService } from './interface';
 import { registerBrowserViewWindowListeners } from './registerBrowserViewWindowListeners';
 import { registerMenu } from './registerMenu';
-import { logger } from '@services/libs/log';
 
 @injectable()
 export class Window implements IWindowService {
@@ -52,15 +53,17 @@ export class Window implements IWindowService {
   @lazyInject(serviceIdentifier.ThemeService)
   private readonly themeService!: IThemeService;
 
+  @lazyInject(serviceIdentifier.View)
+  private readonly viewService!: IViewService;
+
   constructor() {
     setTimeout(() => {
       void registerMenu();
     }, DELAY_MENU_REGISTER);
   }
 
-  public async findInPage(text: string, forward?: boolean, windowName: WindowNames = WindowNames.main): Promise<void> {
-    const mainWindow = this.get(windowName);
-    const contents = mainWindow?.getBrowserView()?.webContents;
+  public async findInPage(text: string, forward?: boolean): Promise<void> {
+    const contents = (await this.viewService.getActiveBrowserView())?.webContents;
     if (contents !== undefined) {
       contents.findInPage(text, {
         forward,
@@ -70,7 +73,7 @@ export class Window implements IWindowService {
 
   public async stopFindInPage(close?: boolean, windowName: WindowNames = WindowNames.main): Promise<void> {
     const mainWindow = this.get(windowName);
-    const view = mainWindow?.getBrowserView();
+    const view = await this.viewService.getActiveBrowserView();
     // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
     if (view) {
       const contents = view.webContents;
@@ -230,9 +233,9 @@ export class Window implements IWindowService {
       newWindow = await handleCreateBasicWindow(windowName, windowConfig, meta, config);
       if (isWindowWithBrowserView) {
         registerBrowserViewWindowListeners(newWindow, windowName);
-        // calling this to redundantly setBounds BrowserView
+        // calling this to redundantly setBounds WebContentsView
         // after the UI is fully loaded
-        // if not, BrowserView mouseover event won't work correctly
+        // if not, WebContentsView mouseover event won't work correctly
         // https://github.com/atomery/webcatalog/issues/812
         // await this.workspaceViewService.realignActiveWorkspace();
       } else {
@@ -281,20 +284,18 @@ export class Window implements IWindowService {
     });
   };
 
-  public async goHome(windowName: WindowNames = WindowNames.main): Promise<void> {
-    const win = this.get(windowName);
-    const contents = win?.getBrowserView()?.webContents;
+  public async goHome(): Promise<void> {
+    const contents = (await this.viewService.getActiveBrowserView())?.webContents;
     const activeWorkspace = await this.workspaceService.getActiveWorkspace();
-    if (contents !== undefined && activeWorkspace !== undefined && win !== undefined) {
+    if (contents !== undefined && activeWorkspace !== undefined) {
       await contents.loadURL(getDefaultTidGiUrl(activeWorkspace.id));
       contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
       contents.send(WindowChannel.updateCanGoForward, contents.canGoForward());
     }
   }
 
-  public async goBack(windowName: WindowNames = WindowNames.main): Promise<void> {
-    const win = this.get(windowName);
-    const contents = win?.getBrowserView()?.webContents;
+  public async goBack(): Promise<void> {
+    const contents = (await this.viewService.getActiveBrowserView())?.webContents;
     if (contents?.canGoBack() === true) {
       contents.goBack();
       contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
@@ -302,9 +303,8 @@ export class Window implements IWindowService {
     }
   }
 
-  public async goForward(windowName: WindowNames = WindowNames.main): Promise<void> {
-    const win = this.get(windowName);
-    const contents = win?.getBrowserView()?.webContents;
+  public async goForward(): Promise<void> {
+    const contents = (await this.viewService.getActiveBrowserView())?.webContents;
     if (contents?.canGoForward() === true) {
       contents.goForward();
       contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
@@ -315,7 +315,6 @@ export class Window implements IWindowService {
   public async reload(windowName: WindowNames = WindowNames.main): Promise<void> {
     const win = this.get(windowName);
     if (win !== undefined) {
-      win.getBrowserView()?.webContents?.reload?.();
       await this.pushWindowMetaToWindow(win, this.windowMeta[windowName]);
     }
   }
@@ -328,9 +327,9 @@ export class Window implements IWindowService {
     }
   }
 
-  public async clearStorageData(windowName: WindowNames = WindowNames.main): Promise<void> {
-    const win = this.get(windowName);
-    const session = win?.getBrowserView()?.webContents?.session;
+  public async clearStorageData(workspaceID: string, windowName: WindowNames = WindowNames.main): Promise<void> {
+    const view = this.viewService.getView(workspaceID, windowName);
+    const session = view?.webContents?.session;
     if (session !== undefined) {
       await session.clearStorageData();
       await session.clearAuthCache();

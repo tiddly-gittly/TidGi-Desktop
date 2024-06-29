@@ -9,7 +9,7 @@ export function useAuth(storageService: SupportedStorageServices): [() => Promis
   const onClickLogout = useCallback(async () => {
     try {
       await window.service.auth.set(`${storageService}-token`, '');
-      await window.service.window.clearStorageData();
+      // await window.service.window.clearStorageData();
     } catch (error) {
       console.error(error);
     }

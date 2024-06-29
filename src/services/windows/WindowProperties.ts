@@ -112,7 +112,7 @@ export type IPossibleWindowMeta<M extends WindowMeta[WindowNames] = WindowMeta[W
 } & M;
 
 /**
- * Similar to WindowMeta, but is for BrowserView (workspace web content) and popup window from the BrowserView
+ * Similar to WindowMeta, but is for WebContentsView (workspace web content) and popup window from the WebContentsView
  */
 export interface IBrowserViewMetaData {
   isPopup?: boolean;

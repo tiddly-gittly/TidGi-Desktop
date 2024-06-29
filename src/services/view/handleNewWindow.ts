@@ -1,4 +1,4 @@
-import { BrowserView, BrowserWindowConstructorOptions, shell } from 'electron';
+import { BrowserWindowConstructorOptions, shell, WebContentsView } from 'electron';
 import windowStateKeeper from 'electron-window-state';
 
 import { SETTINGS_FOLDER } from '@/constants/appPaths';
@@ -17,7 +17,7 @@ import { handleOpenFileExternalLink } from './setupViewFileProtocol';
 export interface INewWindowContext {
   meta: IViewMeta;
   sharedWebPreferences: BrowserWindowConstructorOptions['webPreferences'];
-  view: BrowserView;
+  view: WebContentsView;
   workspace: IWorkspace;
 }
 

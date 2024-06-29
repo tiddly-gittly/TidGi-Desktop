@@ -110,7 +110,7 @@ export class Sync implements ISyncService {
       logger.error(
         `${(error as Error).message} when checking draft titles. ${
           (error as Error).stack ?? ''
-        }\n This might because it just will throw error when on Windows and App is at background (BrowserView will disappear and not accessible.)`,
+        }\n This might because it just will throw error when on Windows and App is at background (WebContentsView will disappear and not accessible.)`,
       );
       // when app is on background, might have no draft, because user won't edit it. So just return true
       return true;

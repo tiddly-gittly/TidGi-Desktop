@@ -112,8 +112,8 @@ export async function registerMenu(): Promise<void> {
             return;
           }
         }
-        const mainWindow = windowService.get(WindowNames.main);
-        const url = mainWindow?.getBrowserView()?.webContents?.getURL();
+        const view = await viewService.getActiveBrowserView();
+        const url = view?.webContents?.getURL();
         if (typeof url === 'string') {
           clipboard.writeText(url);
         }

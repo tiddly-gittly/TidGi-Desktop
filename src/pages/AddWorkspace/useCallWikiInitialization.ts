@@ -22,7 +22,7 @@ export async function callWikiInitialization(
   }
   // start wiki on startup, or on sub-wiki creation
   wikiCreationMessageSetter(t('Log.InitializeWorkspaceView'));
-  /** create workspace from workspaceService to store workspace configs, and create a BrowserView to actually display wiki web content from viewService */
+  /** create workspace from workspaceService to store workspace configs, and create a WebContentsView to actually display wiki web content from viewService */
   await window.service.workspaceView.initializeWorkspaceView(newWorkspace, { isNew: true, from: configs.from });
   wikiCreationMessageSetter(t('Log.InitializeWorkspaceViewDone'));
   await window.service.workspaceView.setActiveWorkspaceView(newWorkspace.id);

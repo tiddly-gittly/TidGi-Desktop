@@ -18,22 +18,22 @@ export interface IWindowOpenConfig<N extends WindowNames> {
  * Create and manage window open and destroy, you can get all opened electron window instance here
  */
 export interface IWindowService {
-  clearStorageData(windowName?: WindowNames): Promise<void>;
+  clearStorageData(workspaceID: string, windowName?: WindowNames): Promise<void>;
   /** cleanup all window references for GC */
   clearWindowsReference(): Promise<void>;
   /**
-   * Completely close a window, destroy its all state and BrowserView. Need more time to restore. Use `hide` if you want to hide it temporarily.
+   * Completely close a window, destroy its all state and WebContentsView. Need more time to restore. Use `hide` if you want to hide it temporarily.
    */
   close(windowName: WindowNames): Promise<void>;
-  findInPage(text: string, forward?: boolean | undefined, windowName?: WindowNames): Promise<void>;
+  findInPage(text: string, forward?: boolean | undefined): Promise<void>;
   /** get window, this should not be called in renderer side */
   get(windowName: WindowNames): BrowserWindow | undefined;
   getWindowMeta<N extends WindowNames>(windowName: N): Promise<WindowMeta[N] | undefined>;
-  goBack(windowName?: WindowNames): Promise<void>;
-  goForward(windowName?: WindowNames): Promise<void>;
-  goHome(windowName?: WindowNames): Promise<void>;
+  goBack(): Promise<void>;
+  goForward(): Promise<void>;
+  goHome(): Promise<void>;
   /**
-   * Temporarily hide window, it will not be destroyed, and can be shown again very quick, with BrowserView restored immediately.
+   * Temporarily hide window, it will not be destroyed, and can be shown again very quick, with WebContentsView restored immediately.
    */
   hide(windowName: WindowNames): Promise<void>;
   isFullScreen(windowName?: WindowNames): Promise<boolean | undefined>;
