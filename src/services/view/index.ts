@@ -24,6 +24,7 @@ import { logger } from '@services/libs/log';
 import { INativeService } from '@services/native/interface';
 import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspace } from '@services/workspaces/interface';
+import debounce from 'lodash/debounce';
 import { setViewEventName } from './constants';
 import { ViewLoadUrlError } from './error';
 import { IViewService } from './interface';
@@ -149,6 +150,7 @@ export class View implements IViewService {
           // if item is called in popup window
           // modify menu bar in the popup window instead
           if (browserWindow === undefined) return;
+          // TODO: on popup (secondary) window, browserWindow here seems can't get the correct webContent, so this never returns. And can't set zoom of popup.
           const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
           if (isPopup === true) {
             const contents = browserWindow.webContents;
@@ -308,11 +310,18 @@ export class View implements IViewService {
       const contentSize = browserWindow.getContentSize();
       const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
       view.setBounds(newViewBounds);
-      // view.setAutoResize({
-      //   width: true,
-      //   height: true,
-      // });
     }
+    // handle autoResize on user drag the window's edge
+    const debouncedOnResize = debounce(async () => {
+      logger.debug('debouncedOnResize');
+      if (browserWindow === undefined) return;
+      if (windowName === WindowNames.secondary || windowName === WindowNames.main) {
+        const contentSize = browserWindow.getContentSize();
+        const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
+        view.setBounds(newViewBounds);
+      }
+    }, 200);
+    browserWindow.on('resize', debouncedOnResize);
     return view;
   }
 

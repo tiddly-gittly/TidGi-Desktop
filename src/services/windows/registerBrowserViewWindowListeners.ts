@@ -1,11 +1,9 @@
 import { container } from '@services/container';
-import { logger } from '@services/libs/log';
 import { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IViewService } from '@services/view/interface';
 import { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { BrowserWindow } from 'electron';
-import debounce from 'lodash/debounce';
 import { IWindowService } from './interface';
 import { WindowNames } from './WindowProperties';
 
@@ -61,10 +59,4 @@ export function registerBrowserViewWindowListeners(newWindow: BrowserWindow, win
     newWindow?.webContents?.send?.('is-fullscreen-updated', false);
     await workspaceViewService.realignActiveWorkspace();
   });
-  const debouncedOnResize = debounce(() => {
-    logger.debug('debouncedOnResize');
-    if (windowName !== WindowNames.main || newWindow === undefined) return;
-    void workspaceViewService.realignActiveWorkspace();
-  }, 250);
-  newWindow.on('resize', debouncedOnResize);
 }
