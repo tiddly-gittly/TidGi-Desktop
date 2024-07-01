@@ -18,7 +18,9 @@ export function setupViewSession(workspace: IWorkspace, preferences: IPreference
     sessionOfView.setSpellCheckerLanguages(spellcheckLanguages);
   }
   sessionOfView.webRequest.onBeforeSendHeaders((details, callback) => {
-    assignFakeUserAgent(details);
+    if (!details.frame?.url || details.frame?.url.startsWith('tidgi://')) {
+      assignFakeUserAgent(details);
+    }
     callback({ cancel: false, requestHeaders: details.requestHeaders });
   });
   return sessionOfView;
