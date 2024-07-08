@@ -272,8 +272,8 @@ importers:
         specifier: 3.0.4
         version: 3.0.4(esbuild@0.21.5)
       '@vercel/webpack-asset-relocator-loader':
-        specifier: 1.7.4
-        version: 1.7.4
+        specifier: 1.7.3
+        version: 1.7.3
       beautiful-react-hooks:
         specifier: 5.0.2
         version: 5.0.2(react-dom@18.3.1(react@18.3.1))(react-router-dom@6.14.1(react-dom@18.3.1(react@18.3.1))(react@18.3.1))(react@18.3.1)(rxjs@7.8.1)
@@ -1790,8 +1790,8 @@ packages:
   '@ungap/structured-clone@1.2.0':
     resolution: {integrity: sha512-zuVdFrMJiuCDQUMCzQaD6KL28MjnqqN8XnAqiEq9PNm/hCPTSGfrXCOfwj1ow4LFb/tNymJPwsNbVePc1xFqrQ==}
 
-  '@vercel/webpack-asset-relocator-loader@1.7.4':
-    resolution: {integrity: sha512-RFFite6v51Qhj/eERru3qwUNCLybnceSChI5yiu9bhLpTemWbKPORAOExOgpO2W7IE/0UEh3aX6wTSHgDE/fdQ==}
+  '@vercel/webpack-asset-relocator-loader@1.7.3':
+    resolution: {integrity: sha512-vizrI18v8Lcb1PmNNUBz7yxPxxXoOeuaVEjTG9MjvDrphjiSxFZrRJ5tIghk+qdLFRCXI5HBCshgobftbmrC5g==}
 
   '@webassemblyjs/ast@1.11.6':
     resolution: {integrity: sha512-IN1xI7PwOvLPgjcf180gC1bqn3q/QaOCwYUahIOhbYUu8KA/3tw2RT/T0Gidi1l7Hhj5D/INhJxiICObqpMu4Q==}
@@ -8082,7 +8082,7 @@ snapshots:
 
   '@ungap/structured-clone@1.2.0': {}
 
-  '@vercel/webpack-asset-relocator-loader@1.7.4':
+  '@vercel/webpack-asset-relocator-loader@1.7.3':
     dependencies:
       resolve: 1.22.8
 

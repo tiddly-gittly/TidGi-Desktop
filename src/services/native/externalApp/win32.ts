@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable unicorn/import-style */
 import * as Path from 'path';
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment, @typescript-eslint/prefer-ts-expect-error
@@ -94,8 +95,7 @@ const registryKeysForJetBrainsIDE = (product: string): readonly RegistryKey[] =>
         if (minorRelease > 0) {
           key = `${key}.${minorRelease}`;
         }
-        result.push(Wow64LocalMachineUninstallKey(key));
-        result.push(CurrentUserUninstallKey(key));
+        result.push(Wow64LocalMachineUninstallKey(key), CurrentUserUninstallKey(key));
       }
     }
   }
@@ -389,7 +389,7 @@ export async function getAvailableEditors(editorName?: string): Promise<Readonly
       results.push({
         editor: editor.name,
         path,
-        usesShell: path.endsWith('.cmd'),
+        usesShell: path.endsWith('.cmd') || path.endsWith('.bat'),
       });
     }
   }
@@ -411,7 +411,7 @@ export async function getAvailableGitGUIApps(): Promise<ReadonlyArray<IFoundEdit
       results.push({
         editor: guiApp.name,
         path,
-        usesShell: path.endsWith('.cmd'),
+        usesShell: path.endsWith('.cmd') || path.endsWith('.bat'),
       });
     }
   }

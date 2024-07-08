@@ -120,7 +120,7 @@
     "@types/styled-components": "5.1.34",
     "@types/webpack-bundle-analyzer": "4.7.0",
     "@types/webpack-node-externals": "3.0.4",
-    "@vercel/webpack-asset-relocator-loader": "1.7.4",
+    "@vercel/webpack-asset-relocator-loader": "1.7.3",
     "beautiful-react-hooks": "5.0.2",
     "chai": "5.1.1",
     "circular-dependency-plugin": "5.2.2",

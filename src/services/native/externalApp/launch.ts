@@ -27,7 +27,7 @@ export async function launchExternalEditor(fullPath: string, editor: FoundEditor
     detached: true,
   };
 
-  if (editor.usesShell) {
+  if (editor.usesShell === true) {
     spawn(`"${editorPath}"`, [`"${fullPath}"`], { ...options, shell: true });
   } else if (isMac) {
     // In macOS we can use `open`, which will open the right executable file
