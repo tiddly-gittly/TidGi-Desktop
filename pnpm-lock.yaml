@@ -107,6 +107,9 @@ importers:
       reflect-metadata:
         specifier: 0.2.2
         version: 0.2.2
+      registry-js:
+        specifier: 1.16.0
+        version: 1.16.0
       rotating-file-stream:
         specifier: ^3.2.3
         version: 3.2.3
@@ -168,9 +171,6 @@ importers:
       '@electron-forge/maker-zip':
         specifier: 7.4.0
         version: 7.4.0
-      registry-js:
-        specifier: 1.16.0
-        version: 1.16.0
     devDependencies:
       '@cucumber/cucumber':
         specifier: 10.8.0
@@ -8613,8 +8613,7 @@ snapshots:
     optionalDependencies:
       fsevents: 2.3.2
 
-  chownr@1.1.4:
-    optional: true
+  chownr@1.1.4: {}
 
   chownr@2.0.0: {}
 
@@ -8934,8 +8933,7 @@ snapshots:
 
   deep-eql@5.0.1: {}
 
-  deep-extend@0.6.0:
-    optional: true
+  deep-extend@0.6.0: {}
 
   deep-is@0.1.4: {}
 
@@ -9785,8 +9783,7 @@ snapshots:
 
   exif-parser@0.1.12: {}
 
-  expand-template@2.0.3:
-    optional: true
+  expand-template@2.0.3: {}
 
   expand-tilde@2.0.2:
     dependencies:
@@ -10004,8 +10001,7 @@ snapshots:
 
   fresh@0.5.2: {}
 
-  fs-constants@1.0.0:
-    optional: true
+  fs-constants@1.0.0: {}
 
   fs-extra@10.1.0:
     dependencies:
@@ -10150,8 +10146,7 @@ snapshots:
       isomorphic-git: 1.25.2
       lodash: 4.17.21
 
-  github-from-package@0.0.0:
-    optional: true
+  github-from-package@0.0.0: {}
 
   glob-parent@5.1.2:
     dependencies:
@@ -11224,8 +11219,7 @@ snapshots:
 
   mitt@3.0.1: {}
 
-  mkdirp-classic@0.5.3:
-    optional: true
+  mkdirp-classic@0.5.3: {}
 
   mkdirp@0.5.6:
     dependencies:
@@ -11260,8 +11254,7 @@ snapshots:
 
   nanoid@5.0.7: {}
 
-  napi-build-utils@1.0.2:
-    optional: true
+  napi-build-utils@1.0.2: {}
 
   natural-compare-lite@1.4.0: {}
 
@@ -11286,8 +11279,7 @@ snapshots:
 
   node-abort-controller@3.1.1: {}
 
-  node-addon-api@3.2.1:
-    optional: true
+  node-addon-api@3.2.1: {}
 
   node-api-version@0.2.0:
     dependencies:
@@ -11700,7 +11692,6 @@ snapshots:
       simple-get: 4.0.1
       tar-fs: 2.1.1
       tunnel-agent: 0.6.0
-    optional: true
 
   prelude-ls@1.2.1: {}
 
@@ -11779,7 +11770,6 @@ snapshots:
       ini: 1.3.8
       minimist: 1.2.8
       strip-json-comments: 2.0.1
-    optional: true
 
   rcedit@4.0.1:
     dependencies:
@@ -11940,7 +11930,6 @@ snapshots:
     dependencies:
       node-addon-api: 3.2.1
       prebuild-install: 7.1.2
-    optional: true
 
   regjsparser@0.10.0:
     dependencies:
@@ -12470,8 +12459,7 @@ snapshots:
     dependencies:
       min-indent: 1.0.1
 
-  strip-json-comments@2.0.1:
-    optional: true
+  strip-json-comments@2.0.1: {}
 
   strip-json-comments@3.1.1: {}
 
@@ -12538,7 +12526,6 @@ snapshots:
       mkdirp-classic: 0.5.3
       pump: 3.0.0
       tar-stream: 2.2.0
-    optional: true
 
   tar-stream@2.2.0:
     dependencies:
@@ -12547,7 +12534,6 @@ snapshots:
       fs-constants: 1.0.0
       inherits: 2.0.4
       readable-stream: 3.6.2
-    optional: true
 
   tar@6.1.15:
     dependencies:
@@ -12724,7 +12710,6 @@ snapshots:
   tunnel-agent@0.6.0:
     dependencies:
       safe-buffer: 5.2.1
-    optional: true
 
   tw5-typed@0.5.11:
     dependencies:

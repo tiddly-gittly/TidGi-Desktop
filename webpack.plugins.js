@@ -43,6 +43,12 @@ exports.main = _.compact([
     // when using npm, we can use this. But with pnpm, this won't work ↓
     // include: path.join(__dirname, 'node_modules', '.pnpm', '@tiddlygit', 'tiddlywiki'),
   }),
+  platform === 'win32'
+    ? undefined
+    : new ExternalsPlugin({
+      type: 'commonjs',
+      include: /registry-js(.+)/,
+    }),
   new ThreadsPlugin({
     target: 'electron-node-worker',
     plugins: ['ExternalsPlugin'],
@@ -50,7 +56,11 @@ exports.main = _.compact([
   process.env.NODE_ENV === 'production' ? undefined : new WebpackBar(),
   process.env.NODE_ENV === 'production'
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    ? new BundleAnalyzerPlugin({ generateStatsFile: true, analyzerMode: 'disabled', statsFilename: '../../out/webpack-stats-main.json' })
+    ? new BundleAnalyzerPlugin({
+      generateStatsFile: true,
+      analyzerMode: 'disabled',
+      statsFilename: '../../out/webpack-stats-main.json',
+    })
     : undefined,
 ]);
 
@@ -77,7 +87,11 @@ exports.renderer = _.compact([
   process.env.NODE_ENV === 'production' ? undefined : new WebpackBar(),
   process.env.NODE_ENV === 'production'
     // eslint-disable-next-line @typescript-eslint/no-unsafe-call
-    ? new BundleAnalyzerPlugin({ generateStatsFile: true, analyzerMode: 'disabled', statsFilename: '../../out/webpack-stats-renderer.json' })
+    ? new BundleAnalyzerPlugin({
+      generateStatsFile: true,
+      analyzerMode: 'disabled',
+      statsFilename: '../../out/webpack-stats-renderer.json',
+    })
     : undefined,
   // Example: copy files for webWorker to use
   // new CopyPlugin({
