@@ -43,7 +43,7 @@ exports.main = _.compact([
     // when using npm, we can use this. But with pnpm, this won't work ↓
     // include: path.join(__dirname, 'node_modules', '.pnpm', '@tiddlygit', 'tiddlywiki'),
   }),
-  platform === 'win32'
+  process.platform === 'win32'
     ? undefined
     : new ExternalsPlugin({
       type: 'commonjs',
