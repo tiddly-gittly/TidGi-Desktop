@@ -138,6 +138,8 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+      - name: Remove buggy dependencies
+        run: pnpm remove registry-js
 
       - name: Make macOS (x64)
         run: pnpm run make:mac-x64
