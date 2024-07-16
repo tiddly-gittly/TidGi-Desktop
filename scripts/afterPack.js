@@ -1,3 +1,4 @@
+/* eslint-disable security-node/detect-crlf */
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 /* eslint-disable unicorn/import-style */
 /* eslint-disable @typescript-eslint/no-unsafe-argument */
