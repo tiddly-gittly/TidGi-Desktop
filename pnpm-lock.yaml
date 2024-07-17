@@ -15,8 +15,8 @@ importers:
   .:
     dependencies:
       '@tiddlygit/tiddlywiki':
-        specifier: 5.3.4
-        version: 5.3.4
+        specifier: 5.3.5
+        version: 5.3.5
       ansi-to-html:
         specifier: ^0.7.2
         version: 0.7.2
@@ -1457,11 +1457,10 @@ packages:
     resolution: {integrity: sha512-ID7fosbc50TbT0MK0EG12O+gAP3W3Aa/Pz4DaTtQtEvlc9Odaqi0de+xuZ7Li2GtK4HzEX7IuRWS/JmZLksR3Q==}
     engines: {node: '>=14'}
 
-  '@tiddlygit/tiddlywiki@5.3.4':
-    resolution: {integrity: sha512-sY2qfanIyM/TiIckBgkFbYN2oZFZZYm4rKzwqhPQa/hnmuuJiyDCeTvvY8I7GAS3ObCJGCq/HDdbOJXzaYuvIw==}
+  '@tiddlygit/tiddlywiki@5.3.5':
+    resolution: {integrity: sha512-P8pqC6DFVLFRSxvGsV9ZCVaQXg5OIm11nAZt0r1bKANYKKpHHqd+MkoQGM2plGB0id2mC0BLYg65bLL9C2El0w==}
     engines: {node: '>=0.8.2'}
     hasBin: true
-    bundledDependencies: []
 
   '@tokenizer/token@0.3.0':
     resolution: {integrity: sha512-OvjF+z51L3ov0OyAU0duzsYuvO01PH7x4t6DJx+guahgTnBHkhJdG7soQeTSFLWN3efnHyibZ4Z8l2EuWwJN3A==}
@@ -7648,7 +7647,7 @@ snapshots:
 
   '@teppeis/multimaps@3.0.0': {}
 
-  '@tiddlygit/tiddlywiki@5.3.4': {}
+  '@tiddlygit/tiddlywiki@5.3.5': {}
 
   '@tokenizer/token@0.3.0': {}
 

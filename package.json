@@ -31,7 +31,7 @@
   "author": "Lin Onetwo <linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
   "main": ".webpack/main",
   "dependencies": {
-    "@tiddlygit/tiddlywiki": "5.3.4",
+    "@tiddlygit/tiddlywiki": "5.3.5",
     "ansi-to-html": "^0.7.2",
     "app-path": "^4.0.0",
     "best-effort-json-parser": "1.1.2",
