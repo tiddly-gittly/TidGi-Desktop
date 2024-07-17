@@ -13,8 +13,7 @@
  * Adapted for electron forge https://github.com/electron-userland/electron-forge/issues/2248
  */
 const path = require('path');
-const fs = require('fs');
-const fsExtra = require('fs-extra');
+const fs = require('fs-extra');
 const packageJSON = require('../package.json');
 
 /**
@@ -40,7 +39,7 @@ exports.default = async (
   const projectRoot = path.resolve(__dirname, '..');
   // const appParentPath = path.resolve(buildPath, '..', '..', '..', '..');
   // const appPath = path.join(appParentPath, 'Electron.app');
-  const shell = platform === 'darwin' ? '/bin/zsh' : undefined;
+  // const shell = platform === 'darwin' ? '/bin/zsh' : undefined;
   // const winMacLinuxPlatformName = platform === 'darwin' ? 'mac' : (platform === 'win32' ? 'win' : 'linux');
   /** delete useless lproj files to make it clean */
   // const lproj = glob.sync('*.lproj', { cwd });
@@ -50,7 +49,7 @@ exports.default = async (
     .map((dir) => path.join(cwd, dir));
   if (platform === 'darwin') {
     await Promise.all(pathsToRemove.map(async (dir) => {
-      await fsExtra.remove(dir);
+      await fs.remove(dir);
     }));
   }
   console.log(`copy npm packages with node-worker dependencies with binary (dugite) or __filename usages (tiddlywiki), which can't be prepare properly by webpack`);
@@ -98,7 +97,7 @@ exports.default = async (
     for (const packagePathInNodeModules of packagePathsToCopyDereferenced) {
       // some binary may not exist in other platforms, so allow failing here.
       try {
-        fs.cpSync(
+        fs.copySync(
           path.resolve(sourceNodeModulesFolder, ...packagePathInNodeModules),
           path.resolve(cwd, 'node_modules', ...packagePathInNodeModules),
           { dereference: true, recursive: true },
@@ -117,7 +116,7 @@ exports.default = async (
     console.log('Copy dugite');
     // it has things like `git/bin/libexec/git-core/git-add` link to `git/bin/libexec/git-core/git`, to reduce size, so can't use `dereference: true, recursive: true` here.
     // And pnpm will have node_modules/dugite to be a shortcut, can't just copy it with `dereference: false`, have to copy from .pnpm folder
-    fs.cpSync(
+    fs.copySync(
       path.join(
         sourceNodeModulesFolder,
         '.pnpm',
