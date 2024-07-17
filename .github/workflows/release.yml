@@ -72,12 +72,15 @@ jobs:
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # for dugute, see node_modules/.pnpm/dugite@2.7.1/node_modules/dugite/script/config.js
+          npm_config_arch: linux-x64
       - name: Make Linux (arm64)
         run: pnpm run make:linux-arm
         env:
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm_config_arch: linux-arm64
 
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
@@ -136,10 +139,10 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-pnpm-store-
 
-      - name: Install dependencies
-        run: pnpm install
       - name: Remove buggy dependencies
         run: pnpm remove registry-js
+      - name: Install dependencies
+        run: pnpm install
 
       - name: Make macOS (x64)
         run: pnpm run make:mac-x64
@@ -149,6 +152,7 @@ jobs:
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm_config_arch: darwin-x64
       - name: Make macOS (arm64)
         run: pnpm run make:mac-arm
         env:
@@ -157,6 +161,7 @@ jobs:
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm_config_arch: darwin-arm64
 
       - name: Create Release
         uses: softprops/action-gh-release@v1
@@ -240,6 +245,7 @@ jobs:
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          npm_config_arch: win32-x64
       # - name: Rename (x64)
       #   run: |
       #     Get-ChildItem out/make/wix/x64
@@ -252,6 +258,8 @@ jobs:
           CI: true
           CI_PULL_REQUEST: ${{ github.event_name == 'pull_request' }}
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # based on TiddlyGit-Desktop/node_modules/.pnpm/dugite@2.7.1/node_modules/dugite/script/config.js
+          npm_config_arch: win32-ia32
       # - name: Rename (arm64)
       #   run: |
       #     Get-ChildItem out/make/wix/arm64
