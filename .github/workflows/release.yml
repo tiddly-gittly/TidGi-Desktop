@@ -64,7 +64,7 @@ jobs:
           languages: javascript
 
       - name: Install dependencies (x64)
-        run: pnpm install
+        run: pnpm install && pnpm remove registry-js
         env:
           # for dugute, see node_modules/.pnpm/dugite@2.7.1/node_modules/dugite/script/config.js
           npm_config_arch: x64
@@ -129,12 +129,11 @@ jobs:
         with:
           version: 9
           
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
+      # - name: Get pnpm store directory
+      #   id: pnpm-cache
+      #   shell: bash
+      #   run: |
+      #     echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
       # - uses: actions/cache@v3
       #   name: Setup pnpm cache
       #   with:
@@ -143,11 +142,8 @@ jobs:
       #     restore-keys: |
       #       ${{ runner.os }}-pnpm-store-
 
-      - name: Remove buggy dependencies
-        run: pnpm remove registry-js
-
       - name: Install dependencies (x64)
-        run: pnpm install
+        run: pnpm install && pnpm remove registry-js
         env:
           npm_config_arch: x64
       - name: Make macOS (x64)
