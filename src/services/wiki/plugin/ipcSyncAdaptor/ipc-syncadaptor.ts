@@ -188,6 +188,9 @@ class TidGiIPCSyncAdaptor {
   async getSkinnyTiddlers(callback: ISyncAdaptorGetTiddlersJSONCallback) {
     try {
       this.logger.log('getSkinnyTiddlers');
+      /**
+       * This by default omit the text field.
+       */
       const tiddlersJSONResponse = await this.wikiService.callWikiIpcServerRoute(
         this.workspaceID,
         'getTiddlersJSON',
