@@ -46,6 +46,16 @@ const config = {
         };
       },
     },
+    {
+      name: '@rabbitholesyndrome/electron-forge-maker-portable',
+      platforms: ['win32'],
+      config: (arch) => {
+        return {
+          artifactName: `Portable-TidGi-Windows-${arch}.exe`,
+          installerIcon: 'build-resources/icon-installer.ico',
+        };
+      },
+    },
     //  ✖ Preparing native dependencies: 0 / 1 [FAILED: node-gyp failed to rebuild '/Users/runner/work/TidGi-Desktop/TidGi-Desktop/node_modules/.pnpm/@bitdisaster+exe-icon-extractor@1.0.10/node_modules/@bitdisaster/exe-icon-extractor']
     // {
     //   name: '@electron-forge/maker-wix',
