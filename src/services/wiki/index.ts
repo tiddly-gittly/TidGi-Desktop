@@ -80,15 +80,6 @@ export class Wiki implements IWikiService {
     return await getSubWikiPluginContent(mainWikiPath);
   }
 
-  public async requestWikiSendActionMessage(actionMessage: string): Promise<void> {
-    const browserViews = await this.viewService.getActiveBrowserViews();
-    browserViews.forEach((browserView) => {
-      if (browserView?.webContents) {
-        browserView.webContents.send(WikiChannel.sendActionMessage, actionMessage);
-      }
-    });
-  }
-
   // handlers
   public async copyWikiTemplate(newFolderPath: string, folderName: string): Promise<void> {
     try {

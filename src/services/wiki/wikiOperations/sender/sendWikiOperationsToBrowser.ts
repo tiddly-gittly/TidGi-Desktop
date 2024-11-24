@@ -66,5 +66,11 @@ export const getSendWikiOperationsToBrowser = (workspaceID: string) =>
     [WikiChannel.renderWikiText]: async (content: string): Promise<string | undefined> => {
       return await sendAndWait(WikiChannel.renderWikiText, workspaceID, [content]);
     },
+    [WikiChannel.dispatchEvent]: async (content: string): Promise<string | undefined> => {
+      return await sendAndWait(WikiChannel.dispatchEvent, workspaceID, [content]);
+    },
+    [WikiChannel.invokeActionsByTag]: async (tag: string, data: Record<string, unknown>): Promise<string | undefined> => {
+      return await sendAndWait(WikiChannel.invokeActionsByTag, workspaceID, [tag, JSON.stringify(data)]);
+    },
   }) as const;
 export type ISendWikiOperationsToBrowser = ReturnType<typeof getSendWikiOperationsToBrowser>;

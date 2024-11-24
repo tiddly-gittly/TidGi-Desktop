@@ -63,7 +63,7 @@ export const wikiOperationScripts = {
   [WikiChannel.renderWikiText]: (content: string) => `
     return $tw.wiki.renderText("text/html", "text/vnd.tiddlywiki", \`${content.replaceAll('`', '\\`')}\`);
   `,
-  [WikiChannel.sendActionMessage]: (actionMessage: string) => `
+  [WikiChannel.dispatchEvent]: (actionMessage: string) => `
     return $tw.rootWidget.dispatchEvent({ type: \`${actionMessage}\` });
   `,
   [WikiChannel.deleteTiddler]: (title: string) => `
@@ -71,5 +71,9 @@ export const wikiOperationScripts = {
   `,
   [WikiChannel.getTiddler]: (title: string) => `
     return $tw.wiki.getTiddler(\`${title}\`);
+  `,
+  [WikiChannel.invokeActionsByTag]: (tag: string, stringifiedData: string) => `
+    const event = new Event('TidGi-invokeActionByTag');
+    return $tw.rootWidget.invokeActionsByTag("${tag}",event,${stringifiedData});
   `,
 } as const;

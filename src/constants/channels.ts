@@ -51,6 +51,7 @@ export enum WikiChannel {
   /** used to show wiki creation messages in the TidGi UI for user to read */
   createProgress = 'wiki-create-progress',
   deleteTiddler = 'wiki-delete-tiddler',
+  dispatchEvent = 'wiki-send-action-message',
   generalNotification = 'wiki-notification-tiddly-git',
   getTiddler = 'wiki-get-tiddler',
   getTiddlerText = 'wiki-get-tiddler-text',
@@ -80,6 +81,7 @@ export enum WikiChannel {
    * ```
    */
   getTiddlersAsJson = 'get-tiddlers-as-json',
+  invokeActionsByTag = 'wiki-invoke-actions-by-tag',
   name = 'WikiChannel',
   openTiddler = 'wiki-open-tiddler',
   printTiddler = 'print-tiddler',
@@ -88,7 +90,6 @@ export enum WikiChannel {
    */
   renderWikiText = 'render-wiki-text',
   runFilter = 'wiki-run-filter',
-  sendActionMessage = 'wiki-send-action-message',
   setState = 'wiki-set-state',
   setTiddlerText = 'wiki-set-tiddler-text',
   /** show message inside tiddlywiki to show git sync progress */

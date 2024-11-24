@@ -51,23 +51,26 @@ export const wikiOperations = {
     const renderResult = await (executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.renderWikiText](content)));
     ipcRenderer.send(WikiChannel.renderWikiText, nonceReceived, renderResult);
   },
-  [WikiChannel.openTiddler]: async (tiddlerName: string) => {
+  [WikiChannel.openTiddler]: async (nonceReceived: number, tiddlerName: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.openTiddler](tiddlerName));
   },
-  [WikiChannel.sendActionMessage]: async (actionMessage: string) => {
-    await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.sendActionMessage](actionMessage));
+  [WikiChannel.dispatchEvent]: async (nonceReceived: number, actionMessage: string) => {
+    await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.dispatchEvent](actionMessage));
   },
-  [WikiChannel.deleteTiddler]: async (title: string) => {
+  [WikiChannel.invokeActionsByTag]: async (nonceReceived: number, tag: string, stringifiedData: string) => {
+    await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.invokeActionsByTag](tag, stringifiedData));
+  },
+  [WikiChannel.deleteTiddler]: async (nonceReceived: number, title: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.deleteTiddler](title));
   },
   // web only methods from src/services/wiki/wikiOperations/web.ts
-  [WikiChannel.syncProgress]: async (message: string) => {
+  [WikiChannel.syncProgress]: async (nonceReceived: number, message: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.syncProgress](message));
   },
-  [WikiChannel.generalNotification]: async (message: string) => {
+  [WikiChannel.generalNotification]: async (nonceReceived: number, message: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.generalNotification](message));
   },
-  [WikiChannel.printTiddler]: async (tiddlerName: string) => {
+  [WikiChannel.printTiddler]: async (nonceReceived: number, tiddlerName: string) => {
     const printScript = await wikiOperationScripts[WikiChannel.printTiddler](tiddlerName);
     await executeTWJavaScriptWhenIdle(printScript);
   },

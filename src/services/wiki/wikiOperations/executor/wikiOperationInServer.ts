@@ -80,8 +80,11 @@ export class WikiOperationsInWikiWorker {
       const renderResult = await (this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.renderWikiText](content)) as Promise<string>);
       return renderResult;
     },
-    [WikiChannel.sendActionMessage]: async (actionMessage: string) => {
-      await this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.sendActionMessage](actionMessage));
+    [WikiChannel.dispatchEvent]: async (actionMessage: string) => {
+      await this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.dispatchEvent](actionMessage));
+    },
+    [WikiChannel.invokeActionsByTag]: async (tag: string, data: Record<string, unknown>) => {
+      await this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.invokeActionsByTag](tag, JSON.stringify(data)));
     },
     [WikiChannel.deleteTiddler]: async (title: string) => {
       await this.executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.deleteTiddler](title));

@@ -66,8 +66,6 @@ export interface IWikiService {
   linkWiki(mainWikiPath: string, folderName: string, subWikiPath: string): Promise<void>;
   packetHTMLFromWikiFolder(wikiFolderLocation: string, pathOfNewHTML: string): Promise<void>;
   removeWiki(wikiPath: string, mainWikiToUnLink?: string, onlyRemoveLink?: boolean): Promise<void>;
-  /** send tiddlywiki action message to current active wiki */
-  requestWikiSendActionMessage(actionMessage: string): Promise<void>;
   restartWiki(workspace: IWorkspace): Promise<void>;
   setAllWikiStartLockOff(): void;
   setWikiLanguage(workspaceID: string, tiddlywikiLanguageName: string): Promise<void>;
@@ -119,7 +117,6 @@ export const WikiServiceIPCDescriptor = {
     getTiddlerFilePath: ProxyPropertyType.Function,
     packetHTMLFromWikiFolder: ProxyPropertyType.Function,
     removeWiki: ProxyPropertyType.Function,
-    requestWikiSendActionMessage: ProxyPropertyType.Function,
     restartWiki: ProxyPropertyType.Function,
     setWikiLanguage: ProxyPropertyType.Function,
     startWiki: ProxyPropertyType.Function,

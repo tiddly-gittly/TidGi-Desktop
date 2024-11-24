@@ -27,7 +27,7 @@ interface IWorkspaceMenuRequiredServices {
   pages: Pick<IPagesService, 'setActivePage' | 'getActivePage'>;
   sync: Pick<ISyncService, 'syncWikiIfNeeded'>;
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
-  wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer' | 'requestWikiSendActionMessage'>;
+  wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open'>;
   workspace: Pick<IWorkspaceService, 'getActiveWorkspace' | 'getSubWorkspacesAsList'>;
@@ -56,8 +56,6 @@ export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IW
     if (oldActiveWorkspace?.id !== idToActive) {
       await service.workspaceView.setActiveWorkspaceView(idToActive);
     }
-    // not closing all opened tiddlers when click on workspace icon (old behavior).
-    // await service.wiki.requestWikiSendActionMessage('tm-home');
     return;
   }
   // is not a new main workspace
