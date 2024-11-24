@@ -16,7 +16,8 @@ import { WindowNames } from '@services/windows/WindowProperties';
 export function sendToMainWindowNoWait(type: WikiChannel, workspaceID: string, messages: string[]): void {
   const viewService = container.get<IViewService>(serviceIdentifier.View);
   const browserView = viewService.getView(workspaceID, WindowNames.main);
-  browserView?.webContents?.send?.(type, ...messages);
+  // second param is always a nonce, but in this case we don't need it
+  browserView?.webContents?.send?.(type, undefined, ...messages);
 }
 /**
  * Send to main window renderer (preload script) and wait for response.
