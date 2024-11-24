@@ -108,6 +108,29 @@ export class NativeService implements INativeService {
     return toFilePath;
   }
 
+  public async movePath(fromFilePath: string, toFilePath: string, options?: { fileToDir?: boolean }): Promise<false | string> {
+    if (!fromFilePath.trim() || !toFilePath.trim()) {
+      logger.error('NativeService.movePath() fromFilePath or toFilePath is empty', { fromFilePath, toFilePath });
+      return false;
+    }
+    if (!(await fs.exists(fromFilePath))) {
+      logger.error('NativeService.movePath() fromFilePath not exists', { fromFilePath, toFilePath });
+      return false;
+    }
+    logger.debug(`NativeService.movePath() move from ${fromFilePath} to ${toFilePath}`, options);
+    try {
+      if (options?.fileToDir === true) {
+        const folderPath = path.dirname(toFilePath);
+        await fs.ensureDir(folderPath);
+      }
+      await fs.move(fromFilePath, toFilePath);
+      return toFilePath;
+    } catch (error) {
+      logger.error('NativeService.movePath() failed', { error });
+      return false;
+    }
+  }
+
   public executeZxScript$(zxWorkerArguments: IZxFileInput, workspaceID?: string): Observable<string> {
     const zxWorker = this.wikiService.getWorker(workspaceID ?? this.workspaceService.getActiveWorkspaceSync()?.id ?? '');
     if (zxWorker === undefined) {

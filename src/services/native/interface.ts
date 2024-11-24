@@ -44,6 +44,14 @@ export interface INativeService {
   getLocalHostUrlWithActualInfo(urlToReplace: string, workspaceID: string): Promise<string>;
   log(level: string, message: string, meta?: Record<string, unknown>): Promise<void>;
   mkdir(absoulutePath: string): Promise<void>;
+  /**
+   * Move a file or directory. The directory can have contents.
+   * @param fromFilePath Note that if src is a directory it will copy everything inside of this directory, not the entire directory itself (see fs.extra issue #537).
+   * @param toFilePath Note that if src is a file, dest cannot be a directory (see fs.extra issue #323). (but you can set `options.fileToDir` to true)
+   * @param options.fileToDir true means dest is a directory, create if not exist
+   * @returns false if failed. If success, returns the absolute path of the copied file or directory.
+   */
+  movePath(fromFilePath: string, toFilePath: string, options?: { fileToDir?: boolean }): Promise<false | string>;
   openInEditor(filePath: string, editorName?: string | undefined): Promise<boolean>;
   openInGitGuiApp(filePath: string, editorName?: string | undefined): Promise<boolean>;
   openNewGitHubIssue(error: Error): Promise<void>;
@@ -79,16 +87,17 @@ export const NativeServiceIPCDescriptor = {
   properties: {
     copyPath: ProxyPropertyType.Function,
     executeZxScript$: ProxyPropertyType.Function$,
+    formatFileUrlToAbsolutePath: ProxyPropertyType.Function,
     getLocalHostUrlWithActualInfo: ProxyPropertyType.Function,
     log: ProxyPropertyType.Function,
-    open: ProxyPropertyType.Function,
     mkdir: ProxyPropertyType.Function,
+    movePath: ProxyPropertyType.Function,
+    open: ProxyPropertyType.Function,
     openInEditor: ProxyPropertyType.Function,
     openInGitGuiApp: ProxyPropertyType.Function,
     openNewGitHubIssue: ProxyPropertyType.Function,
     openPath: ProxyPropertyType.Function,
     openURI: ProxyPropertyType.Function,
-    formatFileUrlToAbsolutePath: ProxyPropertyType.Function,
     path: ProxyPropertyType.Function,
     pickDirectory: ProxyPropertyType.Function,
     pickFile: ProxyPropertyType.Function,

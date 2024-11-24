@@ -1,7 +1,7 @@
 import { NativeChannel, ViewChannel, WindowChannel } from '@/constants/channels';
 import { rendererMenuItemProxy } from '@services/menu/contextMenu/rendererMenuItemProxy';
 import { IOnContextMenuInfo } from '@services/menu/interface';
-import { contextBridge, ipcRenderer, MenuItemConstructorOptions, webFrame } from 'electron';
+import { contextBridge, ipcRenderer, MenuItemConstructorOptions, webFrame, webUtils } from 'electron';
 
 import { WindowNames } from '@services/windows/WindowProperties';
 import { windowName } from './browserViewMetaData';
@@ -41,6 +41,7 @@ export const remoteMethods = {
     }
     return -1;
   },
+  getPathForFile: (file: File) => webUtils.getPathForFile(file),
 };
 contextBridge.exposeInMainWorld('remote', remoteMethods);
 
