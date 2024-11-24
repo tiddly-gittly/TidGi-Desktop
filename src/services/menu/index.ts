@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-misused-promises */
 /* eslint-disable @typescript-eslint/require-await */
+import { WikiChannel } from '@/constants/channels';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
 import type { IContextService } from '@services/context/interface';
@@ -347,15 +348,6 @@ export class MenuService implements IMenuService {
         }),
       );
     } else {
-      menu.append(
-        new MenuItem({
-          label: i18n.t('ContextMenu.OpenCommandPalette'),
-          enabled: workspaces.length > 0,
-          click: () => {
-            void this.wikiService.requestWikiSendActionMessage('open-command-palette');
-          },
-        }),
-      );
       if (activeWorkspace !== undefined) {
         const currentWorkspaceContextMenuTemplate = await getWorkspaceMenuTemplate(activeWorkspace, i18n.t.bind(i18n), services);
         currentWorkspaceContextMenuTemplate.forEach((menuItem) => {
@@ -398,6 +390,17 @@ export class MenuService implements IMenuService {
         }),
       );
     }
+    menu.append(
+      new MenuItem({
+        label: i18n.t('ContextMenu.OpenCommandPalette'),
+        enabled: workspaces.length > 0,
+        click: () => {
+          if (activeWorkspace !== undefined) {
+            void this.wikiService.wikiOperationInBrowser(WikiChannel.dispatchEvent, activeWorkspace.id, ['open-command-palette']);
+          }
+        },
+      }),
+    );
     menu.append(new MenuItem({ type: 'separator' }));
     menu.append(
       new MenuItem({
