@@ -100,7 +100,10 @@ export class Sync implements ISyncService {
 
   public async checkCanSyncDueToNoDraft(workspaceID: string): Promise<boolean> {
     try {
-      const draftTitles = await this.wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, ['[all[]is[draft]]']);
+      const draftTitles = (await Promise.all([
+        this.wikiService.wikiOperationInServer(WikiChannel.runFilter, workspaceID, ['[all[]is[draft]]']),
+        this.wikiService.wikiOperationInBrowser(WikiChannel.runFilter, workspaceID, ['[list[$:/StoryList]has:field[wysiwyg]]']),
+      ])).flat();
       // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (Array.isArray(draftTitles) && draftTitles.length > 0) {
         return false;
