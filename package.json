@@ -78,18 +78,16 @@
     "zx": "8.2.2"
   },
   "optionalDependencies": {
-    
     "@electron-forge/maker-deb": "7.5.0",
     "@electron-forge/maker-flatpak": "7.5.0",
     "@electron-forge/maker-rpm": "7.5.0",
     "@electron-forge/maker-snap": "7.5.0",
     "@electron-forge/maker-squirrel": "7.5.0",
     "@electron-forge/maker-zip": "7.5.0",
-    "@rabbitholesyndrome/electron-forge-maker-portable": "^0.2.0",
-
     "electron-squirrel-startup": "1.0.1"
   },
   "devDependencies": {
+    "@rabbitholesyndrome/electron-forge-maker-portable": "^0.2.0",
     "@cucumber/cucumber": "11.1.0",
     "@dnd-kit/core": "6.2.0",
     "@dnd-kit/modifiers": "8.0.0",
