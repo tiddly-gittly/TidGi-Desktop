@@ -47,15 +47,16 @@ const config = {
         };
       },
     },
-    {
-      name: '@rabbitholesyndrome/electron-forge-maker-portable',
-      platforms: ['win32'],
-      config: (arch) => {
-        return {
-          artifactName: `Portable-TidGi-Windows-${arch}.exe`,
-        };
-      },
-    },
+    // Env WIN_CSC_LINK is not correct https://github.com/rabbit-hole-syndrome/electron-forge-maker-portable/issues/7
+    // {
+    //   name: '@rabbitholesyndrome/electron-forge-maker-portable',
+    //   platforms: ['win32'],
+    //   config: (arch) => {
+    //     return {
+    //       artifactName: `Portable-TidGi-Windows-${arch}.exe`,
+    //     };
+    //   },
+    // },
     //  ✖ Preparing native dependencies: 0 / 1 [FAILED: node-gyp failed to rebuild '/Users/runner/work/TidGi-Desktop/TidGi-Desktop/node_modules/.pnpm/@bitdisaster+exe-icon-extractor@1.0.10/node_modules/@bitdisaster/exe-icon-extractor']
     // {
     //   name: '@electron-forge/maker-wix',

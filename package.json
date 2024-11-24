@@ -87,7 +87,6 @@
     "electron-squirrel-startup": "1.0.1"
   },
   "devDependencies": {
-    "@rabbitholesyndrome/electron-forge-maker-portable": "^0.2.0",
     "@cucumber/cucumber": "11.1.0",
     "@dnd-kit/core": "6.2.0",
     "@dnd-kit/modifiers": "8.0.0",
