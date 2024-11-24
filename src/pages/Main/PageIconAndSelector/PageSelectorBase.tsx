@@ -144,9 +144,9 @@ export function PageSelectorBase({
   const [shortPageName, shortPageNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {
     void window.service.native.path('basename', pageName).then((baseName) => {
-      shortPageNameSetter(baseName ?? t('WorkspaceSelector.BadWorkspacePath'));
+      shortPageNameSetter(baseName ?? (id + t('WorkspaceSelector.BadWorkspacePath')));
     });
-  }, [pageName, t]);
+  }, [id, pageName, t]);
   return (
     <Root
       $active={active}

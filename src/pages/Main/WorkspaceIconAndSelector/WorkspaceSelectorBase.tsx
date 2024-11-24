@@ -154,9 +154,9 @@ export function WorkspaceSelectorBase({
   const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {
     void window.service.native.path('basename', workspaceName).then((baseName) => {
-      shortWorkspaceNameSetter(baseName ?? t('WorkspaceSelector.BadWorkspacePath'));
+      shortWorkspaceNameSetter(baseName ?? (id + t('WorkspaceSelector.BadWorkspacePath')));
     });
-  }, [workspaceName, t]);
+  }, [workspaceName, t, id]);
   let icon = showSideBarIcon && (
     <Avatar
       $large={!showSidebarTexts}
