@@ -289,26 +289,26 @@ export class Window implements IWindowService {
     const activeWorkspace = await this.workspaceService.getActiveWorkspace();
     if (contents !== undefined && activeWorkspace !== undefined) {
       await contents.loadURL(getDefaultTidGiUrl(activeWorkspace.id));
-      contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
-      contents.send(WindowChannel.updateCanGoForward, contents.canGoForward());
+      contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
+      contents.send(WindowChannel.updateCanGoForward, contents.navigationHistory.canGoForward());
     }
   }
 
   public async goBack(): Promise<void> {
     const contents = (await this.viewService.getActiveBrowserView())?.webContents;
-    if (contents?.canGoBack() === true) {
-      contents.goBack();
-      contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
-      contents.send(WindowChannel.updateCanGoForward, contents.canGoForward());
+    if (contents?.navigationHistory?.canGoBack?.() === true) {
+      contents.navigationHistory.goBack();
+      contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
+      contents.send(WindowChannel.updateCanGoForward, contents.navigationHistory.canGoForward());
     }
   }
 
   public async goForward(): Promise<void> {
     const contents = (await this.viewService.getActiveBrowserView())?.webContents;
-    if (contents?.canGoForward() === true) {
-      contents.goForward();
-      contents.send(WindowChannel.updateCanGoBack, contents.canGoBack());
-      contents.send(WindowChannel.updateCanGoForward, contents.canGoForward());
+    if (contents?.navigationHistory?.canGoForward?.() === true) {
+      contents.navigationHistory.goForward();
+      contents.send(WindowChannel.updateCanGoBack, contents.navigationHistory.canGoBack());
+      contents.send(WindowChannel.updateCanGoForward, contents.navigationHistory.canGoForward());
     }
   }
 

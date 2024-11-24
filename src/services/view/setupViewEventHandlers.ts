@@ -188,8 +188,8 @@ export default function setupViewEventHandlers(
       return;
     }
     if (workspaceObject.active) {
-      await windowService.sendToAllWindows(WindowChannel.updateCanGoBack, view.webContents.canGoBack());
-      await windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.canGoForward());
+      await windowService.sendToAllWindows(WindowChannel.updateCanGoBack, view.webContents.navigationHistory.canGoBack());
+      await windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.navigationHistory.canGoForward());
     }
   });
   view.webContents.on('did-navigate-in-page', async (_event, url) => {
@@ -203,8 +203,8 @@ export default function setupViewEventHandlers(
       return;
     }
     if (workspaceObject.active) {
-      await windowService.sendToAllWindows(WindowChannel.updateCanGoBack, view.webContents.canGoBack());
-      await windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.canGoForward());
+      await windowService.sendToAllWindows(WindowChannel.updateCanGoBack, view.webContents.navigationHistory.canGoBack());
+      await windowService.sendToAllWindows(WindowChannel.updateCanGoForward, view.webContents.navigationHistory.canGoForward());
     }
   });
   view.webContents.on('page-title-updated', async (_event, title) => {

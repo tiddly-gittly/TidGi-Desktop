@@ -402,18 +402,18 @@ export class MenuService implements IMenuService {
     menu.append(
       new MenuItem({
         label: i18n.t('ContextMenu.Back'),
-        enabled: webContents.canGoBack(),
+        enabled: webContents.navigationHistory.canGoBack(),
         click: () => {
-          webContents.goBack();
+          webContents.navigationHistory.goBack();
         },
       }),
     );
     menu.append(
       new MenuItem({
         label: i18n.t('ContextMenu.Forward'),
-        enabled: webContents.canGoForward(),
+        enabled: webContents.navigationHistory.canGoForward(),
         click: () => {
-          webContents.goForward();
+          webContents.navigationHistory.goForward();
         },
       }),
     );
