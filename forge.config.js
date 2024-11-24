@@ -1,8 +1,9 @@
 /* eslint-disable @typescript-eslint/restrict-template-expressions */
 const packageJson = require('./package.json');
-const beforeAsar = require('./scripts/beforeAsar');
+const beforeAsar = require('./scripts/beforeAsar').default;
+const afterPack = require('./scripts/afterPack').default;
 
-const { version, description } = packageJson;
+const { description } = packageJson;
 
 const config = {
   packagerConfig: {
@@ -30,8 +31,8 @@ const config = {
       electronLanguages: ['zh_CN', 'en', 'ja'],
     },
     appBundleId: 'com.tidgi',
-    afterPrune: ['scripts/afterPack.js'],
-    beforeAsar: [beforeAsar.default],
+    afterPrune: [afterPack],
+    beforeAsar: [beforeAsar],
   },
   makers: [
     {
@@ -52,7 +53,6 @@ const config = {
       config: (arch) => {
         return {
           artifactName: `Portable-TidGi-Windows-${arch}.exe`,
-          installerIcon: 'build-resources/icon-installer.ico',
         };
       },
     },

@@ -20,6 +20,7 @@ import { lazyInject } from '@services/container';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import getViewBounds from '@services/libs/getViewBounds';
 import { i18n } from '@services/libs/i18n';
+import { isBrowserWindow } from '@services/libs/isBrowserWindow';
 import { logger } from '@services/libs/log';
 import { INativeService } from '@services/native/interface';
 import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
@@ -111,7 +112,7 @@ export class View implements IViewService {
         click: async (_menuItem, browserWindow) => {
           // if back is called in popup window
           // open menu bar in the popup window instead
-          if (browserWindow === undefined) return;
+          if (!isBrowserWindow(browserWindow)) return;
           const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
           if (isPopup === true) {
             browserWindow.setMenuBarVisibility(!browserWindow.isMenuBarVisible());
@@ -129,7 +130,7 @@ export class View implements IViewService {
         click: async (_menuItem, browserWindow) => {
           // if item is called in popup window
           // modify menu bar in the popup window instead
-          if (browserWindow === undefined) return;
+          if (!isBrowserWindow(browserWindow)) return;
           const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
           if (isPopup === true) {
             const contents = browserWindow.webContents;
@@ -149,7 +150,7 @@ export class View implements IViewService {
         click: async (_menuItem, browserWindow) => {
           // if item is called in popup window
           // modify menu bar in the popup window instead
-          if (browserWindow === undefined) return;
+          if (!isBrowserWindow(browserWindow)) return;
           // TODO: on popup (secondary) window, browserWindow here seems can't get the correct webContent, so this never returns. And can't set zoom of popup.
           const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
           if (isPopup === true) {
@@ -169,7 +170,7 @@ export class View implements IViewService {
         click: async (_menuItem, browserWindow) => {
           // if item is called in popup window
           // modify menu bar in the popup window instead
-          if (browserWindow === undefined) return;
+          if (!isBrowserWindow(browserWindow)) return;
           const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
           if (isPopup === true) {
             const contents = browserWindow.webContents;
@@ -189,7 +190,7 @@ export class View implements IViewService {
         click: async (_menuItem, browserWindow) => {
           // if item is called in popup window
           // modify menu bar in the popup window instead
-          if (browserWindow === undefined) return;
+          if (!isBrowserWindow(browserWindow)) return;
           const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
           if (isPopup === true) {
             browserWindow.webContents.reload();

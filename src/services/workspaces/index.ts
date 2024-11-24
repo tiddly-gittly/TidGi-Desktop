@@ -5,7 +5,7 @@
 import { app } from 'electron';
 import fsExtra from 'fs-extra';
 import { injectable } from 'inversify';
-import Jimp from 'jimp';
+import { Jimp } from 'jimp';
 import { mapValues, pickBy } from 'lodash';
 import { nanoid } from 'nanoid';
 import path from 'path';
@@ -363,12 +363,10 @@ export class Workspace implements IWorkspaceService {
       return;
     }
 
-    const destinationPicturePath = path.join(app.getPath('userData'), 'pictures', `${pictureID}.png`);
+    const destinationPicturePath = path.join(app.getPath('userData'), 'pictures', `${pictureID}.png`) as `${string}.${string}`;
 
     const newImage = await Jimp.read(sourcePicturePath);
-    await new Promise((resolve) => {
-      newImage.clone().resize(128, 128).quality(100).write(destinationPicturePath, resolve);
-    });
+    await newImage.clone().resize({ w: 128, h: 128 }).write(destinationPicturePath);
     const currentPicturePath = this.getSync(id)?.picturePath;
     await this.update(id, {
       picturePath: destinationPicturePath,

@@ -6,7 +6,7 @@ import { logger } from '@services/libs/log';
 import { IMenuService } from '@services/menu/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IViewService } from '@services/view/interface';
-import { BrowserWindow, BrowserWindowConstructorOptions, Menu, nativeImage, Tray } from 'electron';
+import { BrowserWindowConstructorOptions, Menu, nativeImage, Tray } from 'electron';
 import windowStateKeeper from 'electron-window-state';
 import { debounce, merge as mergeDeep } from 'lodash';
 import { Menubar, menubar } from 'menubar';
@@ -88,8 +88,10 @@ export async function handleAttachToMenuBar(windowConfig: BrowserWindowConstruct
 
   // manually save window state https://github.com/mawie81/electron-window-state/issues/64
   const debouncedSaveWindowState = debounce(
-    (event: { sender: BrowserWindow }) => {
-      windowWithBrowserViewState?.saveState(event.sender);
+    () => {
+      if (menuBar.window !== undefined) {
+        windowWithBrowserViewState?.saveState(menuBar.window);
+      }
     },
     500,
   );

@@ -4,6 +4,7 @@ import { isHtmlWiki, wikiHtmlExtensions } from '@/constants/fileNames';
 import { container } from '@services/container';
 import getFromRenderer from '@services/libs/getFromRenderer';
 import { i18n } from '@services/libs/i18n';
+import { isBrowserWindow } from '@services/libs/isBrowserWindow';
 import { logger } from '@services/libs/log';
 import { IMenuService } from '@services/menu/interface';
 import { INativeService } from '@services/native/interface';
@@ -104,7 +105,7 @@ export async function registerMenu(): Promise<void> {
       click: async (_menuItem, browserWindow) => {
         // if back is called in popup window
         // copy the popup window URL instead
-        if (browserWindow !== undefined) {
+        if (isBrowserWindow(browserWindow)) {
           const { isPopup } = await getFromRenderer<IBrowserViewMetaData>(MetaDataChannel.getViewMetaData, browserWindow);
           if (isPopup === true) {
             const url = browserWindow.webContents.getURL();

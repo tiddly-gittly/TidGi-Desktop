@@ -52,8 +52,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
   private readonly syncService!: ISyncService;
 
   public registerSyncBeforeShutdown(): void {
-    const listener = async (event: Event): Promise<void> => {
-      event.preventDefault();
+    const listener = async (): Promise<void> => {
       try {
         if (await this.contextService.isOnline()) {
           const workspaces = await this.workspaceService.getWorkspacesAsList();
@@ -75,6 +74,7 @@ export class WikiGitWorkspace implements IWikiGitWorkspaceService {
         app.quit();
       }
     };
+    // only on linux,darwin, and can't prevent default
     powerMonitor.addListener('shutdown', listener);
   }
 
