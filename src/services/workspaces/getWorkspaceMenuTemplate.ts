@@ -23,7 +23,7 @@ interface IWorkspaceMenuRequiredServices {
   auth: Pick<IAuthenticationService, 'getStorageServiceUserInfo'>;
   context: Pick<IContextService, 'isOnline'>;
   git: Pick<IGitService, 'commitAndSync'>;
-  native: Pick<INativeService, 'openURI' | 'openPath' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualInfo'>;
+  native: Pick<INativeService, 'log' | 'openURI' | 'openPath' | 'openInEditor' | 'openInGitGuiApp' | 'getLocalHostUrlWithActualInfo'>;
   pages: Pick<IPagesService, 'setActivePage' | 'getActivePage'>;
   sync: Pick<ISyncService, 'syncWikiIfNeeded'>;
   view: Pick<IViewService, 'reloadViewsWebContents' | 'getViewCurrentUrl'>;
@@ -49,7 +49,7 @@ export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IW
   const [oldActiveWorkspace] = await Promise.all([
     service.workspace.getActiveWorkspace(),
     service.pages.setActivePage(PageType.wiki),
-    window.service.native.log('debug', 'openWorkspaceTagTiddler', { workspace }),
+    service.native.log('debug', 'openWorkspaceTagTiddler', { workspace }),
   ]);
   // if is a new main workspace, active its browser view first
   if (!isSubWiki && idToActive) {
