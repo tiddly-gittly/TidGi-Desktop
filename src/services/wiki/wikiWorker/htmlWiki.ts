@@ -1,6 +1,6 @@
 import { isHtmlWiki } from '@/constants/fileNames';
-import { TiddlyWiki } from '@tiddlygit/tiddlywiki';
 import { remove } from 'fs-extra';
+import { TiddlyWiki } from 'tiddlywiki';
 
 export async function extractWikiHTML(htmlWikiPath: string, saveWikiFolderPath: string, constants: { TIDDLYWIKI_PACKAGE_FOLDER: string }): Promise<void> {
   // tiddlywiki --load ./mywiki.html --savewikifolder ./mywikifolder

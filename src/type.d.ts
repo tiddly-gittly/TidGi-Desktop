@@ -5,10 +5,6 @@ declare module 'errio' {
   export function register(error: ErrorConstructor): void;
 }
 
-declare module '@tiddlygit/tiddlywiki' {
-  export * from 'tiddlywiki';
-}
-
 declare module 'espree' {
   // https://github.com/eslint/espree#options
   export interface Options {

@@ -1,13 +1,13 @@
 /**
  * Can't use logger in this file, because it runs in the worker.
  */
-import type { ITiddlyWiki } from '@tiddlygit/tiddlywiki';
+import AnsiToHtml from 'ansi-to-html';
 import { fork } from 'child_process';
 import { writeFile } from 'fs-extra';
 import _ from 'lodash';
 import type { Subscriber } from 'rxjs';
+import type { ITiddlyWiki } from 'tiddlywiki';
 import vm, { Context } from 'vm';
-import AnsiToHtml from 'ansi-to-html';
 import { IZxWorkerMessage, ZxWorkerControlActions } from '../../interface';
 import { fixZxPath } from './fixZxPath';
 import {

@@ -83,13 +83,14 @@ exports.default = async (
     //   shell,
     // });
     const packagePathsToCopyDereferenced = [
-      ['@tiddlygit', 'tiddlywiki', 'package.json'],
-      ['@tiddlygit', 'tiddlywiki', 'boot'],
-      ['@tiddlygit', 'tiddlywiki', 'core'],
-      ['@tiddlygit', 'tiddlywiki', 'plugins'],
-      ['@tiddlygit', 'tiddlywiki', 'themes'],
-      ['@tiddlygit', 'tiddlywiki', 'languages'],
-      ['@tiddlygit', 'tiddlywiki', 'tiddlywiki.js'],
+      ['tiddlywiki', 'package.json'],
+      ['tiddlywiki', 'boot'],
+      ['tiddlywiki', 'core'],
+      // only copy plugins that is used in src/services/wiki/wikiWorker/startNodeJSWiki.ts , other plugins can be installed via JSON from online plugin library
+      ['tiddlywiki', 'plugins', 'linonetwo'],
+      ['tiddlywiki', 'plugins', 'tiddlywiki', 'filesystem'],
+      ['tiddlywiki', 'plugins', 'tiddlywiki', 'tiddlyweb'],
+      ['tiddlywiki', 'tiddlywiki.js'],
       // we only need its `main` binary, no need its dependency and code, because we already copy it to src/services/native/externalApp
       ['app-path', 'main'],
     ];

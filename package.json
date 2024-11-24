@@ -7,7 +7,7 @@
   "scripts": {
     "start": "pnpm run clean && pnpm run init:git-submodule && pnpm run start:without-clean",
     "start:without-clean": "pnpm run build:plugin && cross-env NODE_ENV=development electron-forge start",
-    "clean": "rimraf -- ./out ./userData-dev ./node_modules/@tiddlygit/tiddlywiki/plugins/linonetwo && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts",
+    "clean": "rimraf -- ./out ./userData-dev ./node_modules/tiddlywiki/plugins/linonetwo && cross-env NODE_ENV=development npx ts-node scripts/developmentMkdir.ts",
     "clean:cache": "rimraf -- ./.webpack ./node_modules/.cache",
     "start:without-clean:debug-worker": "pnpm run build:plugin && cross-env NODE_ENV=development DEBUG_WORKER=true electron-forge start",
     "start:without-clean:debug-main": "pnpm run build:plugin && cross-env NODE_ENV=development DEBUG_MAIN=true electron-forge start",
@@ -31,7 +31,7 @@
   "author": "Lin Onetwo <linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
   "main": ".webpack/main",
   "dependencies": {
-    "@tiddlygit/tiddlywiki": "5.3.5",
+    "tiddlywiki": "5.3.6",
     "ansi-to-html": "^0.7.2",
     "app-path": "^4.0.0",
     "best-effort-json-parser": "1.1.2",

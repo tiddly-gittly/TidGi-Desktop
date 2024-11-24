@@ -1,11 +1,11 @@
 import { getTidGiAuthHeaderWithToken } from '@/constants/auth';
 import { defaultServerIP } from '@/constants/urls';
-import { TiddlyWiki } from '@tiddlygit/tiddlywiki';
 import intercept from 'intercept-stdout';
 import { nanoid } from 'nanoid';
 import inspector from 'node:inspector';
 import path from 'path';
 import { Observable } from 'rxjs';
+import { TiddlyWiki } from 'tiddlywiki';
 import { IWikiMessage, WikiControlActions } from '../interface';
 import { wikiOperationsInWikiWorker } from '../wikiOperations/executor/wikiOperationInServer';
 import { IStartNodeJSWikiConfigs } from '.';
