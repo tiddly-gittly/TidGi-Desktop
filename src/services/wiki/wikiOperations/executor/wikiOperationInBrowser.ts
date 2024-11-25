@@ -94,7 +94,7 @@ async function executeTWJavaScriptWhenIdle<T>(script: string, options?: { onlyWh
     (async () => await new Promise((resolve, reject) => {
       const handler = () => {
         requestIdleCallback(() => {
-          if (typeof $tw !== 'undefined') {
+          if (typeof $tw?.rootWidget !== 'undefined' && typeof $tw?.wiki !== 'undefined') {
             try {
               const result = (() => {
                 ${script}
