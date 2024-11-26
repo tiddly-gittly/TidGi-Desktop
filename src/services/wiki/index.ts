@@ -652,6 +652,9 @@ export class Wiki implements IWikiService {
     workspaceID: string,
     arguments_: Parameters<ISendWikiOperationsToBrowser[OP]>,
   ) {
+    // At least wait for wiki started. Otherwise some services like theme may try to call this method even on app start.
+    await this.getWorkerEnsure(workspaceID);
+    await this.viewService.getLoadedViewEnsure(workspaceID, WindowNames.main);
     const sendWikiOperationsToBrowser = getSendWikiOperationsToBrowser(workspaceID);
     if (typeof sendWikiOperationsToBrowser[operationType] !== 'function') {
       throw new TypeError(`${operationType} gets no useful handler`);

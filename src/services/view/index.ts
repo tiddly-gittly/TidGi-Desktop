@@ -608,4 +608,25 @@ export class View implements IViewService {
       });
     }
   }
+
+  public async getLoadedViewEnsure(workspaceID: string, windowName: WindowNames): Promise<WebContentsView> {
+    let view = this.getView(workspaceID, windowName);
+    if (view === undefined) {
+      // wait for view to be set
+      await new Promise<void>(resolve => {
+        this.setViewEventTarget.addEventListener(setViewEventName(workspaceID, windowName), () => {
+          resolve();
+        });
+      });
+    } else {
+      return view;
+    }
+    view = this.getView(workspaceID, windowName);
+    if (view === undefined) {
+      const errorMessage = `Still no view for ${workspaceID} in window ${windowName} after waiting.`;
+      logger.error(errorMessage, { function: 'getLoadedViewEnsure' });
+      throw new Error(errorMessage);
+    }
+    return view;
+  }
 }

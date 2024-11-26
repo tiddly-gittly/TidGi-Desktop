@@ -36,6 +36,7 @@ export interface IViewService {
    * Get active workspace's main window and menubar browser view.
    */
   getActiveBrowserViews: () => Promise<Array<WebContentsView | undefined>>;
+  getLoadedViewEnsure(workspaceID: string, windowName: WindowNames): Promise<WebContentsView>;
   getSharedWebPreferences(workspace: IWorkspace): Promise<WebPreferences>;
   getView: (workspaceID: string, windowName: WindowNames) => WebContentsView | undefined;
   getViewCount(): Promise<number>;
