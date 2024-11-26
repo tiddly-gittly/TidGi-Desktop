@@ -31,7 +31,6 @@
   "author": "Lin Onetwo <linonetwo012@gmail.com>, Quang Lam <quang.lam2807@gmail.com>",
   "main": ".webpack/main",
   "dependencies": {
-    "tiddlywiki": "5.3.6",
     "ansi-to-html": "^0.7.2",
     "app-path": "^4.0.0",
     "best-effort-json-parser": "1.1.2",
@@ -68,6 +67,7 @@
     "source-map-support": "0.5.21",
     "strip-ansi": "^7.1.0",
     "threads": "1.7.0",
+    "tiddlywiki": "5.3.6",
     "type-fest": "4.27.1",
     "typescript-styled-is": "^2.1.0",
     "v8-compile-cache-lib": "^3.0.1",
