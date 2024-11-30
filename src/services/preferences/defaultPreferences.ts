@@ -8,6 +8,8 @@ export const defaultPreferences: IPreferences = {
   alwaysOnTop: false,
   askForDownloadPath: true,
   attachToMenubar: false,
+  disableAntiAntiLeech: false,
+  disableAntiAntiLeechForUrls: [],
   downloadPath: DEFAULT_DOWNLOADS_PATH,
   hibernateUnusedWorkspacesAtLaunch: false,
   hideMenuBar: false,

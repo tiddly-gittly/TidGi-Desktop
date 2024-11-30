@@ -9,6 +9,14 @@ export interface IPreferences {
   alwaysOnTop: boolean;
   askForDownloadPath: boolean;
   attachToMenubar: boolean;
+  /**
+   * 完全关闭反盗链
+   */
+  disableAntiAntiLeech: boolean;
+  /**
+   * Only disable anti-leech for these urls
+   */
+  disableAntiAntiLeechForUrls: string[];
   downloadPath: string;
   hibernateUnusedWorkspacesAtLaunch: boolean;
   hideMenuBar: boolean;
@@ -55,7 +63,7 @@ export enum PreferenceSections {
   general = 'general',
   languages = 'languages',
   misc = 'misc',
-  // network = 'network',
+  network = 'network',
   notifications = 'notifications',
   performance = 'performance',
   privacy = 'privacy',

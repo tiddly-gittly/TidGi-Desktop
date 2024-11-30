@@ -57,6 +57,11 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
       Icon: BuildIcon,
       ref: useRef<SectionTitleElement>(null),
     },
+    [PreferenceSections.network]: {
+      text: t('Preference.Network'),
+      Icon: RouterIcon,
+      ref: useRef<SectionTitleElement>(null),
+    },
     [PreferenceSections.languages]: {
       text: t('Preference.Languages'),
       Icon: LanguageIcon,
