@@ -48,6 +48,7 @@ export function Network(props: ISectionProps): JSX.Element {
                   <ListItem>
                     <TextField
                       label={t('Preference.DisableAntiAntiLeechForUrls')}
+                      helperText={t('Preference.AntiAntiLeech')}
                       multiline
                       fullWidth
                       minRows={3}

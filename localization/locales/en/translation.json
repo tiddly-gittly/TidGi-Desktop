@@ -333,7 +333,7 @@
     "AskDownloadLocation": "Ask where to save each file before downloading",
     "RememberLastVisitState": "Remember last page visited, restore last visit state on open",
     "Network": "Network",
-    "AntiAntiLeech": "Anti-Leech will prevent some images from being displayed on your wiki, we use anti-anti-leech to bypass this protection.",
+    "AntiAntiLeech": "Some website has Anti-Leech, will prevent some images from being displayed on your wiki, we simulate a request header that looks like visiting that website to bypass this protection.",
     "DisableAntiAntiLeech": "Disable Anti-Anti-Leech",
     "DisableAntiAntiLeechDetail": "Enable this option to completely disable anti-anti-leech functionality.",
     "DisableAntiAntiLeechForUrls": "Disable Anti-Anti-Leech for URLs",

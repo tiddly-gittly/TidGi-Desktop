@@ -391,7 +391,7 @@
     "IgnoreCertificateErrors": "忽略网络证书错误",
     "ItIsWorking": "好使的！",
     "Network": "网络",
-    "AntiAntiLeech": "防盗链会阻止某些图片在你的Wiki上显示，我们使用反防盗链来绕过这种保护。",
+    "AntiAntiLeech": "有的网站做了防盗链，会阻止某些图片在你的Wiki上显示，我们通过模拟访问该网站的请求头来绕过这种限制。",
     "DisableAntiAntiLeech": "禁用反防盗链",
     "DisableAntiAntiLeechDetail": "勾选以完全禁用反防盗链功能",
     "DisableAntiAntiLeechForUrls": "为以下网址禁用反防盗链",
