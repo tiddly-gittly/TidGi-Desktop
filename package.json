@@ -56,7 +56,7 @@
     "jimp": "1.6.0",
     "lodash": "4.17.21",
     "menubar": "9.5.1",
-    "nanoid": "^5.0.8",
+    "nanoid": "^5.0.9",
     "new-github-issue-url": "^1.0.0",
     "node-fetch": "3.3.2",
     "reflect-metadata": "0.2.2",
