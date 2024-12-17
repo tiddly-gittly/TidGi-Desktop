@@ -582,14 +582,6 @@ export class Wiki implements IWikiService {
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
     const { id, isSubWiki, name, mainWikiID, wikiFolderLocation } = workspace;
 
-    // remove $:/StoryList, otherwise it sometimes cause $__StoryList_1.tid to be generated
-    // and it will leak private sub-wiki's opened tiddler title
-    try {
-      void unlink(path.resolve(wikiFolderLocation, 'tiddlers', '$__StoryList')).catch(() => {});
-    } catch {
-      // do nothing
-    }
-
     const userName = await this.authService.getUserName(workspace);
 
     // if is main wiki
