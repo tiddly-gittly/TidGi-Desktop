@@ -57,7 +57,7 @@ interface Props {
  * Create storage provider's token.
  * @returns
  */
-export function TokenForm({ storageProvider, storageProviderSetter }: Props): JSX.Element {
+export function TokenForm({ storageProvider, storageProviderSetter }: Props): React.JSX.Element {
   const { t } = useTranslation();
   let [currentTab, currentTabSetter] = useState<SupportedStorageServices>(SupportedStorageServices.github);
   // use external controls if provided

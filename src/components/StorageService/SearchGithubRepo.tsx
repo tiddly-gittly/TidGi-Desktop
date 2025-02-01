@@ -66,7 +66,7 @@ interface Props {
   isCreateMainWorkspace: boolean;
   wikiFolderNameSetter?: (value: string) => void;
 }
-export default function SearchGithubRepo(props: Props): JSX.Element {
+export default function SearchGithubRepo(props: Props): React.JSX.Element {
   const userInfos = useUserInfoObservable();
   const githubUsername = userInfos?.['github-userName'];
   const accessToken = userInfos?.['github-token'];
@@ -105,7 +105,7 @@ function SearchGithubRepoResultList({
   isCreateMainWorkspace,
   githubUsername,
   accessToken,
-}: Props & ITokens): JSX.Element {
+}: Props & ITokens): React.JSX.Element {
   const { t } = useTranslation();
 
   const onSelectRepo = useCallback(

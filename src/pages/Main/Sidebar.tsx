@@ -70,7 +70,7 @@ const IconButton = styled(IconButtonRaw)`
   color: ${({ theme }) => theme.palette.action.active};
 `;
 
-const SidebarContainer = ({ children }: { children: React.ReactNode }): JSX.Element => {
+const SidebarContainer = ({ children }: { children: React.ReactNode }): React.JSX.Element => {
   const platform = usePromiseValue(async () => await window.service.context.get('platform'));
   // use native scroll bar on macOS
   if (platform === 'darwin') {
@@ -79,7 +79,7 @@ const SidebarContainer = ({ children }: { children: React.ReactNode }): JSX.Elem
   return <SidebarWithStyle>{children}</SidebarWithStyle>;
 };
 
-export function SideBar(): JSX.Element {
+export function SideBar(): React.JSX.Element {
   /** is title bar on. This only take effect after reload, so we don't want to get this preference from observable */
   const titleBar = usePromiseValue<boolean>(async () => await window.service.preference.get('titleBar'), false)!;
 

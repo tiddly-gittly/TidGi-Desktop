@@ -61,7 +61,7 @@ export interface IProps {
   themeSource: IPreferences['themeSource'];
 }
 
-export function NewUserMessage(props: IProps): JSX.Element {
+export function NewUserMessage(props: IProps): React.JSX.Element {
   const { t } = useTranslation();
   return (
     <AddWorkspaceGuideInfoContainer

@@ -2,7 +2,7 @@
 import { ForwardedRef, forwardRef } from 'react';
 import { SVGContainer } from './SVGContainer';
 
-function CommandPaletteSVG(): JSX.Element {
+function CommandPaletteSVG(): React.JSX.Element {
   return (
     <svg width='22pt' height='22pt' viewBox='0 0 512 512' style={{ transform: 'rotate(225deg)' }} fill='currentColor'>
       <path

@@ -34,7 +34,7 @@ export enum RestartSnackbarType {
 
 export function useRestartSnackbar(
   configs?: { restartType?: RestartSnackbarType; waitBeforeCountDown?: number; waitBeforeRestart?: number; workspace?: IWorkspace },
-): [() => void, JSX.Element] {
+): [() => void, React.JSX.Element] {
   const { waitBeforeCountDown = 1000, waitBeforeRestart = 10_000, restartType = RestartSnackbarType.App, workspace } = configs ?? {};
   const { t } = useTranslation();
   const [opened, openedSetter] = useState(false);

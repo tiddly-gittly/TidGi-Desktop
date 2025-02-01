@@ -8,7 +8,7 @@ import type { ISectionProps } from '../useSections';
 
 import { WindowNames } from '@services/windows/WindowProperties';
 
-export function Miscellaneous(props: ISectionProps): JSX.Element {
+export function Miscellaneous(props: ISectionProps): React.JSX.Element {
   const { t } = useTranslation();
 
   return (

@@ -160,7 +160,7 @@ const getValidIconPath = (iconPath?: string | null): string => {
 
 const workspaceID = (window.meta() as WindowMeta[WindowNames.editWorkspace]).workspaceID!;
 
-export default function EditWorkspace(): JSX.Element {
+export default function EditWorkspace(): React.JSX.Element {
   const { t } = useTranslation();
   const originalWorkspace = useWorkspaceObservable(workspaceID);
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar({ waitBeforeCountDown: 0, workspace: originalWorkspace, restartType: RestartSnackbarType.Wiki });

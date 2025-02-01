@@ -10,7 +10,7 @@ import { IUpdaterStatus } from '@services/updater/interface';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
-export function Updates(props: Required<ISectionProps>): JSX.Element {
+export function Updates(props: Required<ISectionProps>): React.JSX.Element {
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();

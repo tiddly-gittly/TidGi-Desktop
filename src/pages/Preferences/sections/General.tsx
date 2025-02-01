@@ -17,7 +17,7 @@ const getThemeString = (theme: IPreferences['themeSource']): string => {
   return 'System default';
 };
 
-export function General(props: Required<ISectionProps>): JSX.Element {
+export function General(props: Required<ISectionProps>): React.JSX.Element {
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();

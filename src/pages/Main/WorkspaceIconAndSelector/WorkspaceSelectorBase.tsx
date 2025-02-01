@@ -149,7 +149,7 @@ export function WorkspaceSelectorBase({
   workspaceName,
   workspaceClickedLoading = false,
   onClick = () => {},
-}: Props): JSX.Element {
+}: Props): React.JSX.Element {
   const { t } = useTranslation();
   const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {

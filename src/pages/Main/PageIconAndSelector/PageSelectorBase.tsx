@@ -139,7 +139,7 @@ export function PageSelectorBase({
   pageClickedLoading = false,
   onClick = () => {},
   icon,
-}: Props): JSX.Element {
+}: Props): React.JSX.Element {
   const { t } = useTranslation();
   const [shortPageName, shortPageNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {

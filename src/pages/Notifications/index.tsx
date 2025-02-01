@@ -67,7 +67,7 @@ const pauseNotification = (tilDate: Date): void => {
   void window.remote.closeCurrentWindow();
 };
 
-export default function Notifications(): JSX.Element {
+export default function Notifications(): React.JSX.Element {
   const { t } = useTranslation();
   const preference = usePreferenceObservable();
   const pauseNotificationsInfo = useNotificationInfoObservable();
@@ -76,7 +76,7 @@ export default function Notifications(): JSX.Element {
     return <Root>{t('Loading')}</Root>;
   }
 
-  const renderList = (): JSX.Element => {
+  const renderList = (): React.JSX.Element => {
     if (pauseNotificationsInfo !== undefined) {
       return (
         <List>

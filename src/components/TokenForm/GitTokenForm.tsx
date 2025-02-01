@@ -28,9 +28,9 @@ GitTokenInput.defaultProps = {
 };
 
 export function GitTokenForm(props: {
-  children?: JSX.Element | Array<JSX.Element | undefined | string>;
+  children?: React.JSX.Element | Array<React.JSX.Element | undefined | string>;
   storageService: SupportedStorageServices;
-}): JSX.Element {
+}): React.JSX.Element {
   const { children, storageService } = props;
   const { t } = useTranslation();
 

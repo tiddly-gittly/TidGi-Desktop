@@ -10,7 +10,7 @@ export interface ISortableListProps {
   workspacesList: IWorkspaceWithMetadata[];
 }
 
-export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText, showSideBarIcon }: ISortableListProps): JSX.Element {
+export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText, showSideBarIcon }: ISortableListProps): React.JSX.Element {
   const dndSensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {

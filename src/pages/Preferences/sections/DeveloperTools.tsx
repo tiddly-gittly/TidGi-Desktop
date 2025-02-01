@@ -8,7 +8,7 @@ import { usePromiseValue } from '@/helpers/useServiceValue';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
-export function DeveloperTools(props: ISectionProps): JSX.Element {
+export function DeveloperTools(props: ISectionProps): React.JSX.Element {
   const { t } = useTranslation();
 
   const [LOG_FOLDER, SETTINGS_FOLDER, V8_CACHE_FOLDER] = usePromiseValue<[string | undefined, string | undefined, string | undefined]>(

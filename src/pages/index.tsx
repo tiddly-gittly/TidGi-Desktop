@@ -11,7 +11,7 @@ const DialogNotifications = lazy(() => import('./Notifications'));
 const DialogPreferences = lazy(() => import('./Preferences'));
 const SpellcheckLanguages = lazy(() => import('./SpellcheckLanguages'));
 
-export function Pages(): JSX.Element {
+export function Pages(): React.JSX.Element {
   const [, setLocation] = useLocation();
   useEffect(() => {
     setLocation(`/${window.meta().windowName}`);

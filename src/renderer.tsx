@@ -25,7 +25,7 @@ import { useHashLocation } from 'wouter/use-hash-location';
 import { RootStyle } from './components/RootStyle';
 import { Pages } from './pages';
 
-function App(): JSX.Element {
+function App(): React.JSX.Element {
   const theme = useThemeObservable();
 
   return (

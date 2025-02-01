@@ -9,7 +9,7 @@ import { CreateContainer, LocationPickerButton, LocationPickerContainer, Locatio
 import { useValidateCloneWiki } from './useCloneWiki';
 import type { IWikiWorkspaceFormProps } from './useForm';
 
-export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichComponent, errorInWhichComponentSetter }: IWikiWorkspaceFormProps): JSX.Element {
+export function CloneWikiForm({ form, isCreateMainWorkspace, errorInWhichComponent, errorInWhichComponentSetter }: IWikiWorkspaceFormProps): React.JSX.Element {
   const { t } = useTranslation();
   useValidateCloneWiki(isCreateMainWorkspace, form, errorInWhichComponentSetter);
   return (

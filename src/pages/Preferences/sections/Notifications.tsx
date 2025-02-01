@@ -12,7 +12,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { Link, ListItemVertical, Paper, SectionTitle, TimePickerContainer } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
-export function Notifications(props: Required<ISectionProps>): JSX.Element {
+export function Notifications(props: Required<ISectionProps>): React.JSX.Element {
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();

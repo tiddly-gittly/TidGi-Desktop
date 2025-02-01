@@ -56,7 +56,7 @@ export const WikiLocation = styled(Typography)`
 `;
 WikiLocation.defaultProps = { variant: 'body2', noWrap: true, display: 'inline', align: 'center' };
 
-export function ReportErrorButton(props: { message: string }): JSX.Element {
+export function ReportErrorButton(props: { message: string }): React.JSX.Element {
   const { t } = useTranslation();
   return (
     <Tooltip title={(t('Dialog.ReportBugDetail') ?? '') + (t('Menu.ReportBugViaGithub') ?? '')}>
@@ -81,7 +81,7 @@ const AbsoluteFab = styled(Fab)`
   color: rgba(0, 0, 0, 0.2);
   font-size: 10px;
 `;
-export function ReportErrorFabButton(props: { message: string }): JSX.Element {
+export function ReportErrorFabButton(props: { message: string }): React.JSX.Element {
   const { t } = useTranslation();
   return (
     <Tooltip title={(t('Dialog.ReportBugDetail') ?? '') + (t('Menu.ReportBugViaGithub') ?? '')}>

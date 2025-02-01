@@ -14,7 +14,7 @@ export function NewWikiForm({
   isCreateSyncedWorkspace,
   errorInWhichComponent,
   errorInWhichComponentSetter,
-}: IWikiWorkspaceFormProps & { isCreateSyncedWorkspace: boolean }): JSX.Element {
+}: IWikiWorkspaceFormProps & { isCreateSyncedWorkspace: boolean }): React.JSX.Element {
   const { t } = useTranslation();
   useValidateNewWiki(isCreateMainWorkspace, isCreateSyncedWorkspace, form, errorInWhichComponentSetter);
   return (

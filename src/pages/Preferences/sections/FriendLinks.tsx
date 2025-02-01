@@ -14,7 +14,7 @@ const Logo = styled.img`
   height: 28px;
 `;
 
-export function FriendLinks(props: ISectionProps): JSX.Element {
+export function FriendLinks(props: ISectionProps): React.JSX.Element {
   const { t } = useTranslation();
 
   return (

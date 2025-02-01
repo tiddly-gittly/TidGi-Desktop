@@ -19,7 +19,7 @@ const InfoContainer = styled.div`
   padding: 0 12px;
 `;
 
-export default function FindInPage(): JSX.Element | null {
+export default function FindInPage(): React.JSX.Element | null {
   const { t } = useTranslation();
   const [open, openSetter] = useState(false);
   const [text, textSetter] = useState('');

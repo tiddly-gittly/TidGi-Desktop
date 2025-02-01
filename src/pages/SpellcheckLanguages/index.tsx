@@ -45,7 +45,7 @@ Button.defaultProps = {
   disableElevation: true,
 };
 
-export default function SpellcheckLanguages(): JSX.Element {
+export default function SpellcheckLanguages(): React.JSX.Element {
   const { t } = useTranslation();
   const preference = usePreferenceObservable();
   if (preference === undefined) {

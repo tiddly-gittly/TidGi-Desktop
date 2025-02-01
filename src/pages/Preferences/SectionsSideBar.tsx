@@ -37,7 +37,7 @@ const SideMenuListItem = styled(ListItemButton)<{ index: number }>`
   animation-delay: ${({ index }) => index * 0.05}s;
 `;
 
-export function SectionSideBar(props: ISectionProps): JSX.Element {
+export function SectionSideBar(props: ISectionProps): React.JSX.Element {
   return (
     <SideBar>
       <List dense>

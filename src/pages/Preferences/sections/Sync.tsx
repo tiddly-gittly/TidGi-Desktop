@@ -11,7 +11,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { Paper, SectionTitle, TimePickerContainer } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
-export function Sync(props: Required<ISectionProps>): JSX.Element {
+export function Sync(props: Required<ISectionProps>): React.JSX.Element {
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();

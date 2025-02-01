@@ -8,7 +8,7 @@ import { usePreferenceObservable } from '@services/preferences/hooks';
 import { Link, Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
-export function PrivacyAndSecurity(props: Required<ISectionProps>): JSX.Element {
+export function PrivacyAndSecurity(props: Required<ISectionProps>): React.JSX.Element {
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();

@@ -29,7 +29,7 @@ export function MainSubWikiDescription({
 }: {
   isCreateMainWorkspace: boolean;
   isCreateMainWorkspaceSetter: (is: boolean) => void;
-}): JSX.Element {
+}): React.JSX.Element {
   const { t } = useTranslation();
   const label = isCreateMainWorkspace ? t('AddWorkspace.MainWorkspace') : t('AddWorkspace.SubWorkspace');
   const description = isCreateMainWorkspace ? t('AddWorkspace.MainWorkspaceDescription') : t('AddWorkspace.SubWorkspaceDescription');
@@ -63,7 +63,7 @@ export function SyncedWikiDescription({
 }: {
   isCreateSyncedWorkspace: boolean;
   isCreateSyncedWorkspaceSetter: (is: boolean) => void;
-}): JSX.Element {
+}): React.JSX.Element {
   const { t } = useTranslation();
   const label = isCreateSyncedWorkspace ? t('AddWorkspace.SyncedWorkspace') : t('AddWorkspace.LocalWorkspace');
   const description = isCreateSyncedWorkspace ? t('AddWorkspace.SyncedWorkspaceDescription') : t('AddWorkspace.LocalWorkspaceDescription');

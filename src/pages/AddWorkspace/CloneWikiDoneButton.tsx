@@ -9,7 +9,7 @@ import { useCloneWiki, useValidateCloneWiki } from './useCloneWiki';
 import type { IWikiWorkspaceFormProps } from './useForm';
 import { useWikiCreationProgress } from './useIndicator';
 
-export function CloneWikiDoneButton({ form, isCreateMainWorkspace, errorInWhichComponentSetter }: IWikiWorkspaceFormProps): JSX.Element {
+export function CloneWikiDoneButton({ form, isCreateMainWorkspace, errorInWhichComponentSetter }: IWikiWorkspaceFormProps): React.JSX.Element {
   const { t } = useTranslation();
   const [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateCloneWiki(
     isCreateMainWorkspace,

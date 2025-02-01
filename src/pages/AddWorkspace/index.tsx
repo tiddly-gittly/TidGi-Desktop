@@ -71,7 +71,7 @@ const AdvancedSettingsAccordionSummary = styled(AccordionSummary)`
   margin-top: 10px;
 `;
 
-export function AddWorkspace(): JSX.Element {
+export function AddWorkspace(): React.JSX.Element {
   const { t } = useTranslation();
   const [currentTab, currentTabSetter] = useState<CreateWorkspaceTabs>(
     (window.meta() as IPossibleWindowMeta<WindowMeta[WindowNames.addWorkspace]>)?.addWorkspaceTab ?? CreateWorkspaceTabs.CreateNewWiki,

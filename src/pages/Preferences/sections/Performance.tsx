@@ -6,7 +6,7 @@ import { usePreferenceObservable } from '@services/preferences/hooks';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
-export function Performance(props: Required<ISectionProps>): JSX.Element {
+export function Performance(props: Required<ISectionProps>): React.JSX.Element {
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();

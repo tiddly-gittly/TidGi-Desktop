@@ -8,7 +8,7 @@ import { getOpenAtLoginString, useSystemPreferenceObservable } from '@services/s
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
-export function System(props: ISectionProps): JSX.Element {
+export function System(props: ISectionProps): React.JSX.Element {
   const { t } = useTranslation();
 
   const systemPreference = useSystemPreferenceObservable();

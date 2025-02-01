@@ -61,7 +61,7 @@ const ContentRoot = styled.div<{ $sidebar: boolean }>`
 
 const windowName = window.meta().windowName;
 
-export default function Main(): JSX.Element {
+export default function Main(): React.JSX.Element {
   const { t } = useTranslation();
   useInitialPage();
   const preferences = usePreferenceObservable();

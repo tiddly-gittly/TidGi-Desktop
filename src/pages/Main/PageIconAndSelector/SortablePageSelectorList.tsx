@@ -10,7 +10,7 @@ export interface ISortableListProps {
   showSideBarText: boolean;
 }
 
-export function SortablePageSelectorList({ pagesList, showSideBarText, showSideBarIcon }: ISortableListProps): JSX.Element {
+export function SortablePageSelectorList({ pagesList, showSideBarText, showSideBarIcon }: ISortableListProps): React.JSX.Element {
   const dndSensors = useSensors(
     useSensor(PointerSensor, {
       activationConstraint: {

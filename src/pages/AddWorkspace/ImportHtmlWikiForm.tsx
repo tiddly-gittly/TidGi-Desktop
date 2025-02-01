@@ -13,7 +13,7 @@ export function ImportHtmlWikiForm({
   isCreateSyncedWorkspace,
   errorInWhichComponent,
   errorInWhichComponentSetter,
-}: IWikiWorkspaceFormProps & { isCreateSyncedWorkspace: boolean }): JSX.Element {
+}: IWikiWorkspaceFormProps & { isCreateSyncedWorkspace: boolean }): React.JSX.Element {
   const { t } = useTranslation();
   const { wikiHtmlPathSetter, wikiFolderLocation, wikiFolderName, wikiHtmlPath, parentFolderLocation, wikiFolderNameSetter } = form;
 

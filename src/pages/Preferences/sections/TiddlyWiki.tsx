@@ -9,7 +9,7 @@ import { useUserInfoObservable } from '@services/auth/hooks';
 import { ListItemVertical, Paper, SectionTitle, TextField } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
-export function TiddlyWiki(props: Partial<ISectionProps>): JSX.Element {
+export function TiddlyWiki(props: Partial<ISectionProps>): React.JSX.Element {
   const { t } = useTranslation();
 
   const userInfo = useUserInfoObservable();

@@ -33,7 +33,7 @@ const Inner = styled.div`
   float: right;
 `;
 
-export default function Preferences(): JSX.Element {
+export default function Preferences(): React.JSX.Element {
   const { t } = useTranslation();
   const sections = usePreferenceSections();
   const [requestRestartCountDown, RestartSnackbar] = useRestartSnackbar();

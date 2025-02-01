@@ -21,7 +21,7 @@ export function GitRepoUrlForm({
   isCreateMainWorkspace: boolean;
   storageProvider?: SupportedStorageServices;
   wikiFolderNameSetter?: (nextName: string) => void;
-}): JSX.Element {
+}): React.JSX.Element {
   const { t } = useTranslation();
   return (
     <CreateContainer elevation={2} square>

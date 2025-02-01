@@ -10,7 +10,7 @@ import { WindowNames } from '@services/windows/WindowProperties';
 import { InputLabel, Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
-export function Languages(props: Partial<ISectionProps> & { languageSelectorOnly?: boolean }): JSX.Element {
+export function Languages(props: Partial<ISectionProps> & { languageSelectorOnly?: boolean }): React.JSX.Element {
   const { t } = useTranslation();
 
   const preference = usePreferenceObservable();

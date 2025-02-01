@@ -17,7 +17,7 @@ export interface ISortableItemProps {
   showSidebarTexts: boolean;
 }
 
-export function SortablePageSelectorButton({ index, page, showSidebarTexts, showSideBarIcon }: ISortableItemProps): JSX.Element {
+export function SortablePageSelectorButton({ index, page, showSidebarTexts, showSideBarIcon }: ISortableItemProps): React.JSX.Element {
   const { t } = useTranslation();
   const { active, id, type } = page;
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });

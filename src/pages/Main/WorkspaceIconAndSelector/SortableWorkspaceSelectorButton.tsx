@@ -17,7 +17,7 @@ export interface ISortableItemProps {
   workspace: IWorkspaceWithMetadata;
 }
 
-export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarTexts, showSideBarIcon }: ISortableItemProps): JSX.Element {
+export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarTexts, showSideBarIcon }: ISortableItemProps): React.JSX.Element {
   const { t } = useTranslation();
   const { active, id, name, picturePath, hibernated, transparentBackground } = workspace;
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });

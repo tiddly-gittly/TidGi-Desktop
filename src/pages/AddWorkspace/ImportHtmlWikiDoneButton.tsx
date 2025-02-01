@@ -13,7 +13,7 @@ export function ImportHtmlWikiDoneButton({
   isCreateMainWorkspace,
   isCreateSyncedWorkspace,
   errorInWhichComponentSetter,
-}: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean; isCreateSyncedWorkspace: boolean }): JSX.Element {
+}: IWikiWorkspaceFormProps & { isCreateMainWorkspace: boolean; isCreateSyncedWorkspace: boolean }): React.JSX.Element {
   const { t } = useTranslation();
   const [hasError, wikiCreationMessage, wikiCreationMessageSetter, hasErrorSetter] = useValidateHtmlWiki(
     isCreateMainWorkspace,
