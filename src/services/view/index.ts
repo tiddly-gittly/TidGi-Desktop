@@ -312,11 +312,11 @@ export class View implements IViewService {
       const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
       view.setBounds(newViewBounds);
     }
-    // handle autoResize on user drag the window's edge
+    // handle autoResize on user drag the window's edge https://github.com/electron/electron/issues/22174#issuecomment-2628884143
     const debouncedOnResize = debounce(async () => {
       logger.debug('debouncedOnResize');
       if (browserWindow === undefined) return;
-      if (windowName === WindowNames.secondary || windowName === WindowNames.main) {
+      if ([WindowNames.secondary, WindowNames.main, WindowNames.menuBar].includes(windowName)) {
         const contentSize = browserWindow.getContentSize();
         const newViewBounds = await getViewBounds(contentSize as [number, number], { windowName });
         view.setBounds(newViewBounds);
