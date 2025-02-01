@@ -48,6 +48,6 @@ function assignFakeUserAgent(details: Electron.OnBeforeSendHeadersListenerDetail
     return;
   }
   details.requestHeaders.Origin = url.origin;
-  details.requestHeaders.Referer = details.url;
+  details.requestHeaders.Referer = url.origin;
   details.requestHeaders['User-Agent'] = FAKE_USER_AGENT;
 }
