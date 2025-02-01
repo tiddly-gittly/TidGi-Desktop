@@ -280,6 +280,7 @@ export default function EditWorkspace(): React.JSX.Element {
           </Tooltip>
           <AccordionDetails>
             <TextField
+              fullWidth
               id='outlined-full-width'
               label={t('EditWorkspace.Path')}
               helperText={t('EditWorkspace.PathDescription')}
@@ -292,6 +293,7 @@ export default function EditWorkspace(): React.JSX.Element {
             />
             {isSubWiki && mainWikiToLink && (
               <TextField
+                fullWidth
                 id='outlined-full-width'
                 label={t('EditWorkspace.MainWorkspacePath')}
                 helperText={t('EditWorkspace.PathDescription')}
