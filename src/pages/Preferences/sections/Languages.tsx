@@ -1,5 +1,5 @@
-import { Divider, List, ListItemSecondaryAction, MenuItem, Select, Switch } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { Divider, List, ListItemButton, MenuItem, Select, Switch } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
@@ -51,9 +51,8 @@ export function Languages(props: Partial<ISectionProps> & { languageSelectorOnly
               {props.languageSelectorOnly !== true && (
                 <>
                   <Divider />
-                  <ListItem>
-                    <ListItemText primary={t('Preference.SpellCheck')} />
-                    <ListItemSecondaryAction>
+                  <ListItem
+                    secondaryAction={
                       <Switch
                         edge='end'
                         color='primary'
@@ -63,13 +62,14 @@ export function Languages(props: Partial<ISectionProps> & { languageSelectorOnly
                           props?.requestRestartCountDown?.();
                         }}
                       />
-                    </ListItemSecondaryAction>
+                    }
+                  >
+                    <ListItemText primary={t('Preference.SpellCheck')} />
                   </ListItem>
                   {platform !== 'darwin' && (
                     <>
                       <Divider />
-                      <ListItem
-                        button
+                      <ListItemButton
                         onClick={async () => {
                           await window.service.window.open(WindowNames.spellcheck);
                         }}
@@ -79,7 +79,7 @@ export function Languages(props: Partial<ISectionProps> & { languageSelectorOnly
                           secondary={preference.spellcheckLanguages.map((code) => hunspellLanguagesMap[code]).join(' | ')}
                         />
                         <ChevronRightIcon color='action' />
-                      </ListItem>
+                      </ListItemButton>
                     </>
                   )}
                 </>

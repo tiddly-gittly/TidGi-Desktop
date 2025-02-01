@@ -11,7 +11,6 @@ import {
   AutocompleteRenderInputParams,
   Button as ButtonRaw,
   Divider,
-  ListItemSecondaryAction,
   Paper,
   Switch,
   TextField as TextFieldRaw,
@@ -352,9 +351,9 @@ export default function EditWorkspace(): JSX.Element {
             {storageService !== SupportedStorageServices.local && (
               <>
                 <List>
-                  <ListItem disableGutters>
-                    <ListItemText primary={t('EditWorkspace.SyncOnInterval')} secondary={t('EditWorkspace.SyncOnIntervalDescription')} />
-                    <ListItemSecondaryAction>
+                  <ListItem
+                    disableGutters
+                    secondaryAction={
                       <Switch
                         edge='end'
                         color='primary'
@@ -363,11 +362,13 @@ export default function EditWorkspace(): JSX.Element {
                           workspaceSetter({ ...workspace, syncOnInterval: event.target.checked });
                         }}
                       />
-                    </ListItemSecondaryAction>
+                    }
+                  >
+                    <ListItemText primary={t('EditWorkspace.SyncOnInterval')} secondary={t('EditWorkspace.SyncOnIntervalDescription')} />
                   </ListItem>
-                  <ListItem disableGutters>
-                    <ListItemText primary={t('EditWorkspace.SyncOnStartup')} secondary={t('EditWorkspace.SyncOnStartupDescription')} />
-                    <ListItemSecondaryAction>
+                  <ListItem
+                    disableGutters
+                    secondaryAction={
                       <Switch
                         edge='end'
                         color='primary'
@@ -376,7 +377,9 @@ export default function EditWorkspace(): JSX.Element {
                           workspaceSetter({ ...workspace, syncOnStartup: event.target.checked });
                         }}
                       />
-                    </ListItemSecondaryAction>
+                    }
+                  >
+                    <ListItemText primary={t('EditWorkspace.SyncOnStartup')} secondary={t('EditWorkspace.SyncOnStartupDescription')} />
                   </ListItem>
                 </List>
               </>
@@ -385,9 +388,9 @@ export default function EditWorkspace(): JSX.Element {
               <>
                 <List>
                   <Divider />
-                  <ListItem disableGutters>
-                    <ListItemText primary={t('EditWorkspace.BackupOnInterval')} secondary={t('EditWorkspace.BackupOnIntervalDescription')} />
-                    <ListItemSecondaryAction>
+                  <ListItem
+                    disableGutters
+                    secondaryAction={
                       <Switch
                         edge='end'
                         color='primary'
@@ -396,7 +399,9 @@ export default function EditWorkspace(): JSX.Element {
                           workspaceSetter({ ...workspace, backupOnInterval: event.target.checked });
                         }}
                       />
-                    </ListItemSecondaryAction>
+                    }
+                  >
+                    <ListItemText primary={t('EditWorkspace.BackupOnInterval')} secondary={t('EditWorkspace.BackupOnIntervalDescription')} />
                   </ListItem>
                 </List>
               </>
@@ -413,9 +418,9 @@ export default function EditWorkspace(): JSX.Element {
             {!isSubWiki && (
               <List>
                 <Divider />
-                <ListItem disableGutters>
-                  <ListItemText primary={t('EditWorkspace.HibernateTitle')} secondary={t('EditWorkspace.HibernateDescription')} />
-                  <ListItemSecondaryAction>
+                <ListItem
+                  disableGutters
+                  secondaryAction={
                     <Switch
                       edge='end'
                       color='primary'
@@ -424,11 +429,13 @@ export default function EditWorkspace(): JSX.Element {
                         workspaceSetter({ ...workspace, hibernateWhenUnused: event.target.checked });
                       }}
                     />
-                  </ListItemSecondaryAction>
+                  }
+                >
+                  <ListItemText primary={t('EditWorkspace.HibernateTitle')} secondary={t('EditWorkspace.HibernateDescription')} />
                 </ListItem>
-                <ListItem disableGutters>
-                  <ListItemText primary={t('EditWorkspace.DisableNotificationTitle')} secondary={t('EditWorkspace.DisableNotification')} />
-                  <ListItemSecondaryAction>
+                <ListItem
+                  disableGutters
+                  secondaryAction={
                     <Switch
                       edge='end'
                       color='primary'
@@ -437,11 +444,13 @@ export default function EditWorkspace(): JSX.Element {
                         workspaceSetter({ ...workspace, disableNotifications: event.target.checked });
                       }}
                     />
-                  </ListItemSecondaryAction>
+                  }
+                >
+                  <ListItemText primary={t('EditWorkspace.DisableNotificationTitle')} secondary={t('EditWorkspace.DisableNotification')} />
                 </ListItem>
-                <ListItem disableGutters>
-                  <ListItemText primary={t('EditWorkspace.DisableAudioTitle')} secondary={t('EditWorkspace.DisableAudio')} />
-                  <ListItemSecondaryAction>
+                <ListItem
+                  disableGutters
+                  secondaryAction={
                     <Switch
                       edge='end'
                       color='primary'
@@ -450,7 +459,9 @@ export default function EditWorkspace(): JSX.Element {
                         workspaceSetter({ ...workspace, disableAudio: event.target.checked });
                       }}
                     />
-                  </ListItemSecondaryAction>
+                  }
+                >
+                  <ListItemText primary={t('EditWorkspace.DisableAudioTitle')} secondary={t('EditWorkspace.DisableAudio')} />
                 </ListItem>
               </List>
             )}

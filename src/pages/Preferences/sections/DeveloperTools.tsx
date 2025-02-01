@@ -1,4 +1,4 @@
-import { Divider, List } from '@mui/material';
+import { Divider, List, ListItemButton } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
@@ -23,8 +23,7 @@ export function DeveloperTools(props: ISectionProps): JSX.Element {
         <List dense disablePadding>
           {LOG_FOLDER === undefined || SETTINGS_FOLDER === undefined ? <ListItem>{t('Loading')}</ListItem> : (
             <>
-              <ListItem
-                button
+              <ListItemButton
                 onClick={() => {
                   if (LOG_FOLDER !== undefined) {
                     void window.service.native.openPath(LOG_FOLDER, true);
@@ -33,9 +32,8 @@ export function DeveloperTools(props: ISectionProps): JSX.Element {
               >
                 <ListItemText primary={t('Preference.OpenLogFolder')} secondary={t('Preference.OpenLogFolderDetail')} />
                 <ChevronRightIcon color='action' />
-              </ListItem>
-              <ListItem
-                button
+              </ListItemButton>
+              <ListItemButton
                 onClick={() => {
                   if (SETTINGS_FOLDER !== undefined) {
                     void window.service.native.openPath(SETTINGS_FOLDER, true);
@@ -44,9 +42,8 @@ export function DeveloperTools(props: ISectionProps): JSX.Element {
               >
                 <ListItemText primary={t('Preference.OpenMetaDataFolder')} secondary={t('Preference.OpenMetaDataFolderDetail')} />
                 <ChevronRightIcon color='action' />
-              </ListItem>
-              <ListItem
-                button
+              </ListItemButton>
+              <ListItemButton
                 onClick={async () => {
                   if (V8_CACHE_FOLDER !== undefined) {
                     try {
@@ -59,17 +56,16 @@ export function DeveloperTools(props: ISectionProps): JSX.Element {
               >
                 <ListItemText primary={t('Preference.OpenV8CacheFolder')} secondary={t('Preference.OpenV8CacheFolderDetail')} />
                 <ChevronRightIcon color='action' />
-              </ListItem>
+              </ListItemButton>
               <Divider />
-              <ListItem
-                button
+              <ListItemButton
                 onClick={async () => {
                   await window.service.preference.resetWithConfirm();
                 }}
               >
                 <ListItemText primary={t('Preference.RestorePreferences')} />
                 <ChevronRightIcon color='action' />
-              </ListItem>
+              </ListItemButton>
             </>
           )}
         </List>

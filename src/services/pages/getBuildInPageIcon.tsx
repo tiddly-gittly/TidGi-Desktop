@@ -2,7 +2,7 @@ import HelpIcon from '@mui/icons-material/Help';
 import InfoIcon from '@mui/icons-material/Info';
 import { PageType } from '@services/pages/interface';
 
-export function getBuildInPageIcon(pageType: PageType): JSX.Element {
+export function getBuildInPageIcon(pageType: PageType): React.JSX.Element {
   switch (pageType) {
     case PageType.wiki: {
       // this won't happened, because wiki page is not a build-in page

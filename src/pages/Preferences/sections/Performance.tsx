@@ -1,5 +1,4 @@
-import { Divider, List, ListItemSecondaryAction, Switch } from '@mui/material';
-import React from 'react';
+import { Divider, List, Switch } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
@@ -19,9 +18,8 @@ export function Performance(props: Required<ISectionProps>): JSX.Element {
         <List dense disablePadding>
           {preference === undefined ? <ListItem>{t('Loading')}</ListItem> : (
             <>
-              <ListItem>
-                <ListItemText primary={t('Preference.HibernateAllUnusedWorkspaces')} secondary={t('Preference.HibernateAllUnusedWorkspacesDescription')} />
-                <ListItemSecondaryAction>
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -30,13 +28,14 @@ export function Performance(props: Required<ISectionProps>): JSX.Element {
                       await window.service.preference.set('hibernateUnusedWorkspacesAtLaunch', event.target.checked);
                     }}
                   />
-                </ListItemSecondaryAction>
+                }
+              >
+                <ListItemText primary={t('Preference.HibernateAllUnusedWorkspaces')} secondary={t('Preference.HibernateAllUnusedWorkspacesDescription')} />
               </ListItem>
 
               <Divider />
-              <ListItem>
-                <ListItemText primary={t('Preference.hardwareAcceleration')} />
-                <ListItemSecondaryAction>
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -46,7 +45,9 @@ export function Performance(props: Required<ISectionProps>): JSX.Element {
                       props.requestRestartCountDown();
                     }}
                   />
-                </ListItemSecondaryAction>
+                }
+              >
+                <ListItemText primary={t('Preference.hardwareAcceleration')} />
               </ListItem>
             </>
           )}

@@ -5,10 +5,10 @@ import { ClientContext, GraphQLClient, useMutation, useQuery } from 'graphql-hoo
 import { trim } from 'lodash';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
-import { Button, LinearProgress, List, ListItem, ListItemIcon, ListItemText, TextField } from '@mui/material';
 import { Cached as CachedIcon, CreateNewFolder as CreateNewFolderIcon, Folder as FolderIcon } from '@mui/icons-material';
+import { Button, LinearProgress, List, ListItemButton, ListItemIcon, ListItemText, TextField } from '@mui/material';
 
 import { GITHUB_GRAPHQL_API } from '@/constants/auth';
 import { useUserInfoObservable } from '@services/auth/hooks';
@@ -197,8 +197,7 @@ function SearchGithubRepoResultList({
 
       <List component='nav' aria-label='main mailbox folders'>
         {repoList.map(({ name, url }) => (
-          <ListItem
-            button
+          <ListItemButton
             key={url}
             onClick={() => {
               onSelectRepo(url, name);
@@ -209,11 +208,10 @@ function SearchGithubRepoResultList({
               <FolderIcon />
             </ListItemIcon>
             <ListItemText primary={name} />
-          </ListItem>
+          </ListItemButton>
         ))}
-        {error === undefined && !loading && !isCreatingRepo && !repoList.some(({ url }) => trim(url) === wikiUrlToCreate) && githubRepoSearchString && (
-          <ListItem
-            button
+        {error === undefined && !loading && !isCreatingRepo && !repoList.some(({ url }) => trim(url) === wikiUrlToCreate) && githubRepoSearchString !== '' && (
+          <ListItemButton
             key={wikiUrlToCreate}
             onClick={async () => {
               isCreatingRepoSetter(true);
@@ -239,7 +237,7 @@ function SearchGithubRepoResultList({
             <ListItemText
               primary={`${isCreateMainWorkspace ? t('AddWorkspace.CreatePublicRepository') : t('AddWorkspace.CreatePrivateRepository')} ${githubRepoSearchString}`}
             />
-          </ListItem>
+          </ListItemButton>
         )}
       </List>
       {repoList.length === 0 && (

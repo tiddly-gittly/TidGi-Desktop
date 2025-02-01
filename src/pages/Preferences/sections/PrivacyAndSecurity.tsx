@@ -1,11 +1,11 @@
-import { Divider, List, ListItemSecondaryAction, Switch } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { Divider, List, ListItemButton, Switch } from '@mui/material';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
+import { ListItem, ListItemText } from '@/components/ListItem';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { Link, Paper, SectionTitle } from '../PreferenceComponents';
-import { ListItem, ListItemText } from '@/components/ListItem';
 import type { ISectionProps } from '../useSections';
 
 export function PrivacyAndSecurity(props: Required<ISectionProps>): JSX.Element {
@@ -20,9 +20,8 @@ export function PrivacyAndSecurity(props: Required<ISectionProps>): JSX.Element 
         <List dense disablePadding>
           {preference === undefined ? <ListItem>{t('Loading')}</ListItem> : (
             <>
-              <ListItem>
-                <ListItemText primary={t('Preference.ShareBrowsingData')} />
-                <ListItemSecondaryAction>
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -32,10 +31,24 @@ export function PrivacyAndSecurity(props: Required<ISectionProps>): JSX.Element 
                       props.requestRestartCountDown();
                     }}
                   />
-                </ListItemSecondaryAction>
+                }
+              >
+                <ListItemText primary={t('Preference.ShareBrowsingData')} />
               </ListItem>
               <Divider />
-              <ListItem>
+              <ListItem
+                secondaryAction={
+                  <Switch
+                    edge='end'
+                    color='primary'
+                    checked={preference.ignoreCertificateErrors}
+                    onChange={async (event) => {
+                      await window.service.preference.set('ignoreCertificateErrors', event.target.checked);
+                      props.requestRestartCountDown();
+                    }}
+                  />
+                }
+              >
                 <ListItemText
                   primary={t('Preference.IgnoreCertificateErrors')}
                   secondary={
@@ -56,37 +69,24 @@ export function PrivacyAndSecurity(props: Required<ISectionProps>): JSX.Element 
                     </Trans>
                   }
                 />
-                <ListItemSecondaryAction>
-                  <Switch
-                    edge='end'
-                    color='primary'
-                    checked={preference.ignoreCertificateErrors}
-                    onChange={async (event) => {
-                      await window.service.preference.set('ignoreCertificateErrors', event.target.checked);
-                      props.requestRestartCountDown();
-                    }}
-                  />
-                </ListItemSecondaryAction>
               </ListItem>
               <Divider />
-              <ListItem
-                button
+              <ListItemButton
                 onClick={async () => {
                   await window.service.workspaceView.clearBrowsingDataWithConfirm();
                 }}
               >
                 <ListItemText primary={t('Preference.ClearBrowsingData')} secondary={t('Preference.ClearBrowsingDataDescription')} />
                 <ChevronRightIcon color='action' />
-              </ListItem>
+              </ListItemButton>
               <Divider />
-              <ListItem
-                button
+              <ListItemButton
                 onClick={async () => {
                   await window.service.native.openURI('https://github.com/tiddly-gittly/TidGi-Desktop/blob/master/PrivacyPolicy.md');
                 }}
               >
                 <ListItemText primary='Privacy Policy' />
-              </ListItem>
+              </ListItemButton>
             </>
           )}
         </List>

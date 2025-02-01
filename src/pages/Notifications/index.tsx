@@ -4,7 +4,7 @@
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
 import Container from '@mui/material/Container';
 import Divider from '@mui/material/Divider';
@@ -12,16 +12,15 @@ import ListRaw from '@mui/material/List';
 import ListItem from '@mui/material/ListItem';
 import ListItemText from '@mui/material/ListItemText';
 import ListSubheader from '@mui/material/ListSubheader';
+import Menu from '@mui/material/Menu';
 import MenuItem from '@mui/material/MenuItem';
+import PopupState, { bindMenu, bindTrigger } from 'material-ui-popup-state';
 
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 
 import { DateTimePicker } from '@mui/x-date-pickers/DateTimePicker';
 import { WindowNames } from '@services/windows/WindowProperties';
 
-import PopUpMenuItem from '@/components/PopUpMenuItem';
-
-// https://www.sketchappsources.com/free-source/2501-iphone-app-background-sketch-freebie-resource.html
 import { ListItemButton } from '@mui/material';
 import { formatDate } from '@services/libs/formatDate';
 import { useNotificationInfoObservable } from '@services/notifications/hooks';
@@ -84,7 +83,7 @@ export default function Notifications(): JSX.Element {
           <PausingHeader>
             <PausingHeaderText primary={`Notifications paused until ${formatDate(new Date(pauseNotificationsInfo.tilDate))}.`} />
           </PausingHeader>
-          <ListItem button>
+          <ListItemButton>
             <ListItemText
               primary='Resume notifications'
               onClick={async () => {
@@ -105,39 +104,43 @@ export default function Notifications(): JSX.Element {
                 void window.remote.closeCurrentWindow();
               }}
             />
-          </ListItem>
+          </ListItemButton>
           {pauseNotificationsInfo.reason !== 'scheduled' && (
             <>
               <Divider />
-              <PopUpMenuItem
-                id='adjustTime'
-                buttonElement={
-                  <ListItem button>
-                    <ListItemText primary='Adjust time' />
-                    <ChevronRightIcon color='action' />
-                  </ListItem>
-                }
-              >
-                {quickShortcuts.map((shortcut) => (
-                  <MenuItem
-                    dense
-                    key={shortcut.name}
-                    onClick={() => {
-                      pauseNotification(shortcut.calcDate());
-                    }}
-                  >
-                    {shortcut.name}
-                  </MenuItem>
-                ))}
-                <MenuItem
-                  dense
-                  onClick={() => {
-                    showDateTimePickerSetter(true);
-                  }}
-                >
-                  Custom...
-                </MenuItem>
-              </PopUpMenuItem>
+              <PopupState variant='popover' popupId='adjust-time-popup-menu'>
+                {(popupState) => (
+                  <>
+                    <ListItemButton {...bindTrigger(popupState)}>
+                      <ListItemText primary='Adjust time' />
+                      <ChevronRightIcon color='action' />
+                    </ListItemButton>
+                    <Menu {...bindMenu(popupState)}>
+                      {quickShortcuts.map((shortcut) => (
+                        <MenuItem
+                          dense
+                          key={shortcut.name}
+                          onClick={() => {
+                            pauseNotification(shortcut.calcDate());
+                            popupState.close();
+                          }}
+                        >
+                          {shortcut.name}
+                        </MenuItem>
+                      ))}
+                      <MenuItem
+                        dense
+                        onClick={() => {
+                          showDateTimePickerSetter(true);
+                          popupState.close();
+                        }}
+                      >
+                        Custom...
+                      </MenuItem>
+                    </Menu>
+                  </>
+                )}
+              </PopupState>
             </>
           )}
           <Divider />
@@ -166,16 +169,15 @@ export default function Notifications(): JSX.Element {
             <ListItemText primary={shortcut.name} />
           </ListItemButton>
         ))}
-        <ListItem
-          button
+        <ListItemButton
           onClick={() => {
             showDateTimePickerSetter(true);
           }}
         >
           <ListItemText primary='Custom...' />
-        </ListItem>
+        </ListItemButton>
         <Divider />
-        <ListItem button>
+        <ListItemButton>
           <ListItemText
             primary='Pause notifications by schedule...'
             onClick={async () => {
@@ -183,7 +185,7 @@ export default function Notifications(): JSX.Element {
               void window.remote.closeCurrentWindow();
             }}
           />
-        </ListItem>
+        </ListItemButton>
       </List>
     );
   };

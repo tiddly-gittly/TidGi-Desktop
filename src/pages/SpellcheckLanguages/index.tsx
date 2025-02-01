@@ -1,15 +1,15 @@
 import React from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
 import ButtonRaw from '@mui/material/Button';
 import Checkbox from '@mui/material/Checkbox';
 import List from '@mui/material/List';
-import ListItem from '@mui/material/ListItem';
 import ListItemIcon from '@mui/material/ListItemIcon';
 import ListItemText from '@mui/material/ListItemText';
 
+import { ListItemButton } from '@mui/material';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { HunspellLanguages, hunspellLanguagesMap } from '../../constants/hunspellLanguages';
 
@@ -59,10 +59,9 @@ export default function SpellcheckLanguages(): JSX.Element {
       </Helmet>
       <Top>
         {(Object.keys(hunspellLanguagesMap) as HunspellLanguages[]).map((code) => (
-          <ListItem
+          <ListItemButton
             dense
             key={code}
-            button
             onClick={() => {
               if (preference.spellcheckLanguages.includes(code)) {
                 void window.service.preference.set(
@@ -82,7 +81,7 @@ export default function SpellcheckLanguages(): JSX.Element {
               />
             </ListItemIcon>
             <ListItemText primary={hunspellLanguagesMap[code]} />
-          </ListItem>
+          </ListItemButton>
         ))}
       </Top>
       <Bottom>

@@ -1,5 +1,5 @@
-import { Divider, List, ListItemSecondaryAction, Switch } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
+import { Divider, List, ListItemButton, Switch } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
@@ -23,8 +23,7 @@ export function Updates(props: Required<ISectionProps>): JSX.Element {
         <List dense disablePadding>
           {preference === undefined || updaterMetaData === undefined ? <ListItem>{t('Loading')}</ListItem> : (
             <>
-              <ListItem
-                button
+              <ListItemButton
                 onClick={updaterMetaData.status === IUpdaterStatus.updateAvailable
                   ? async () => {
                     await window.service.native.openURI(updaterMetaData.info?.latestReleasePageUrl ?? latestStableUpdateUrl);
@@ -41,11 +40,10 @@ export function Updates(props: Required<ISectionProps>): JSX.Element {
                   />
                 )}
                 <ChevronRightIcon color='action' />
-              </ListItem>
+              </ListItemButton>
               <Divider />
-              <ListItem>
-                <ListItemText primary={t('Preference.ReceivePreReleaseUpdates')} />
-                <ListItemSecondaryAction>
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -55,7 +53,9 @@ export function Updates(props: Required<ISectionProps>): JSX.Element {
                       await window.service.updater.checkForUpdates();
                     }}
                   />
-                </ListItemSecondaryAction>
+                }
+              >
+                <ListItemText primary={t('Preference.ReceivePreReleaseUpdates')} />
               </ListItem>
             </>
           )}

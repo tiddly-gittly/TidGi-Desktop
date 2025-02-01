@@ -1,7 +1,7 @@
 import { Button, TextField } from '@mui/material';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
 import { useUserInfoObservable } from '@services/auth/hooks';
 import { IUserInfos } from '@services/auth/interface';

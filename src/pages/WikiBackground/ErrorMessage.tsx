@@ -2,7 +2,7 @@
 import { Accordion, AccordionDetails, AccordionSummary, Button, Typography } from '@mui/material';
 import { useCallback } from 'react';
 import { Trans, useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { IWorkspaceMetaData, IWorkspaceWithMetadata } from '@services/workspaces/interface';

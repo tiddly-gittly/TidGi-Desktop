@@ -1,4 +1,4 @@
-import { Divider, List, ListItemSecondaryAction, Switch, TextField } from '@mui/material';
+import { Divider, List, Switch, TextField } from '@mui/material';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
@@ -25,9 +25,8 @@ export function Network(props: ISectionProps): JSX.Element {
         <List dense disablePadding>
           {preference === undefined ? <ListItem>{t('Loading')}</ListItem> : (
             <>
-              <ListItem>
-                <ListItemText primary={t('Preference.DisableAntiAntiLeech')} secondary={t('Preference.DisableAntiAntiLeechDetail')} />
-                <ListItemSecondaryAction>
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -36,7 +35,9 @@ export function Network(props: ISectionProps): JSX.Element {
                       await window.service.preference.set('disableAntiAntiLeech', event.target.checked);
                     }}
                   />
-                </ListItemSecondaryAction>
+                }
+              >
+                <ListItemText primary={t('Preference.DisableAntiAntiLeech')} secondary={t('Preference.DisableAntiAntiLeechDetail')} />
               </ListItem>
 
               {!preference.disableAntiAntiLeech && (

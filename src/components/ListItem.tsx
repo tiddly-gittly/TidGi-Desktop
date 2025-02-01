@@ -1,5 +1,5 @@
 import { List as ListRaw, ListItem as ListItemRaw, ListItemText as ListItemTextRaw } from '@mui/material';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
 export const List = styled(ListRaw)`
   & > li > div {

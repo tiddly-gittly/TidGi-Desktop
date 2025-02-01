@@ -1,10 +1,9 @@
-import { Divider, List } from '@mui/material';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import React from 'react';
+import { Divider, List, ListItemButton } from '@mui/material';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
-import { ListItem, ListItemText } from '@/components/ListItem';
+import { ListItemText } from '@/components/ListItem';
 import { Paper, SectionTitle } from '../PreferenceComponents';
 import type { ISectionProps } from '../useSections';
 
@@ -23,35 +22,32 @@ export function FriendLinks(props: ISectionProps): JSX.Element {
       <SectionTitle ref={props.sections.friendLinks.ref}>{t('Preference.FriendLinks')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
-          <ListItem
-            button
+          <ListItemButton
             onClick={async () => {
               await window.service.native.openURI('https://github.com/webcatalog/webcatalog-engine');
             }}
           >
             <ListItemText secondary={t('Preference.WebCatalogEngineIntro')} />
             <ChevronRightIcon color='action' />
-          </ListItem>
+          </ListItemButton>
           <Divider />
-          <ListItem
-            button
+          <ListItemButton
             onClick={async () => {
               await window.service.native.openURI('https://webcatalogapp.com?utm_source=tidgi_app');
             }}
           >
             <ListItemText primary={<Logo src={webcatalogLogo} alt={t('Preference.WebCatalog')} />} secondary={t('Preference.WebCatalogIntro')} />
             <ChevronRightIcon color='action' />
-          </ListItem>
+          </ListItemButton>
           <Divider />
-          <ListItem
-            button
+          <ListItemButton
             onClick={async () => {
               await window.service.native.openURI('https://translatiumapp.com?utm_source=tidgi_app');
             }}
           >
             <ListItemText primary={<Logo src={translatiumLogo} alt={t('Preference.Translatium')} />} secondary={t('Preference.TranslatiumIntro')} />
             <ChevronRightIcon color='action' />
-          </ListItem>
+          </ListItemButton>
         </List>
       </Paper>
     </>

@@ -1,10 +1,10 @@
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
-import { Divider, List, ListItemSecondaryAction, MenuItem, Switch } from '@mui/material';
+import { Divider, List, ListItemButton, Menu, MenuItem, Switch } from '@mui/material';
+import PopupState, { bindMenu, bindTrigger } from 'material-ui-popup-state';
 import React from 'react';
 import { Trans, useTranslation } from 'react-i18next';
 
 import { ListItem, ListItemText } from '@/components/ListItem';
-import PopUpMenuItem from '@/components/PopUpMenuItem';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { usePreferenceObservable } from '@services/preferences/hooks';
 import { IPreferences } from '@services/preferences/interface';
@@ -30,9 +30,8 @@ export function General(props: Required<ISectionProps>): JSX.Element {
         <List dense disablePadding>
           {preference === undefined || platform === undefined ? <ListItem>{t('Loading')}</ListItem> : (
             <>
-              <ListItem>
-                <ListItemText primary={t('Preference.RememberLastVisitState')} />
-                <ListItemSecondaryAction>
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -42,47 +41,53 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                       props.requestRestartCountDown();
                     }}
                   />
-                </ListItemSecondaryAction>
-              </ListItem>
-              <Divider />
-              <PopUpMenuItem
-                id='theme'
-                buttonElement={
-                  <ListItem button>
-                    <ListItemText primary={t('Preference.Theme')} secondary={getThemeString(preference.themeSource)} />
-                    <ChevronRightIcon color='action' />
-                  </ListItem>
                 }
               >
-                <MenuItem
-                  dense
-                  onClick={async () => {
-                    await window.service.preference.set('themeSource', 'system');
-                  }}
-                >
-                  {t('Preference.SystemDefaultTheme')}
-                </MenuItem>
-                <MenuItem
-                  dense
-                  onClick={async () => {
-                    await window.service.preference.set('themeSource', 'light');
-                  }}
-                >
-                  {t('Preference.LightTheme')}
-                </MenuItem>
-                <MenuItem
-                  dense
-                  onClick={async () => {
-                    await window.service.preference.set('themeSource', 'dark');
-                  }}
-                >
-                  {t('Preference.DarkTheme')}
-                </MenuItem>
-              </PopUpMenuItem>
+                <ListItemText primary={t('Preference.RememberLastVisitState')} />
+              </ListItem>
               <Divider />
-              <ListItem>
-                <ListItemText primary={t('Preference.ShowSideBar')} secondary={t('Preference.ShowSideBarDetail')} />
-                <ListItemSecondaryAction>
+              <PopupState variant='popover' popupId='theme-popup-menu'>
+                {(popupState) => (
+                  <>
+                    <ListItemButton {...bindTrigger(popupState)}>
+                      <ListItemText primary={t('Preference.Theme')} secondary={getThemeString(preference.themeSource)} />
+                      <ChevronRightIcon color='action' />
+                    </ListItemButton>
+                    <Menu {...bindMenu(popupState)}>
+                      <MenuItem
+                        dense
+                        onClick={async () => {
+                          await window.service.preference.set('themeSource', 'system');
+                          popupState.close();
+                        }}
+                      >
+                        {t('Preference.SystemDefaultTheme')}
+                      </MenuItem>
+                      <MenuItem
+                        dense
+                        onClick={async () => {
+                          await window.service.preference.set('themeSource', 'light');
+                          popupState.close();
+                        }}
+                      >
+                        {t('Preference.LightTheme')}
+                      </MenuItem>
+                      <MenuItem
+                        dense
+                        onClick={async () => {
+                          await window.service.preference.set('themeSource', 'dark');
+                          popupState.close();
+                        }}
+                      >
+                        {t('Preference.DarkTheme')}
+                      </MenuItem>
+                    </Menu>
+                  </>
+                )}
+              </PopupState>
+              <Divider />
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -92,11 +97,12 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                       await window.service.workspaceView.realignActiveWorkspace();
                     }}
                   />
-                </ListItemSecondaryAction>
+                }
+              >
+                <ListItemText primary={t('Preference.ShowSideBar')} secondary={t('Preference.ShowSideBarDetail')} />
               </ListItem>
-              <ListItem>
-                <ListItemText primary={t('Preference.ShowSideBarIcon')} secondary={t('Preference.HideSideBarIconDetail')} />
-                <ListItemSecondaryAction>
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -109,11 +115,12 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                       }
                     }}
                   />
-                </ListItemSecondaryAction>
+                }
+              >
+                <ListItemText primary={t('Preference.ShowSideBarIcon')} secondary={t('Preference.HideSideBarIconDetail')} />
               </ListItem>
-              <ListItem>
-                <ListItemText primary={t('Preference.ShowSideBarText')} />
-                <ListItemSecondaryAction>
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -126,14 +133,15 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                       }
                     }}
                   />
-                </ListItemSecondaryAction>
+                }
+              >
+                <ListItemText primary={t('Preference.ShowSideBarText')} />
               </ListItem>
               {platform === 'darwin' && (
                 <>
                   <Divider />
-                  <ListItem>
-                    <ListItemText primary={t('Preference.ShowTitleBar')} secondary={t('Preference.ShowTitleBarDetail')} />
-                    <ListItemSecondaryAction>
+                  <ListItem
+                    secondaryAction={
                       <Switch
                         edge='end'
                         color='primary'
@@ -145,16 +153,17 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                           props.requestRestartCountDown();
                         }}
                       />
-                    </ListItemSecondaryAction>
+                    }
+                  >
+                    <ListItemText primary={t('Preference.ShowTitleBar')} secondary={t('Preference.ShowTitleBarDetail')} />
                   </ListItem>
                 </>
               )}
               {platform !== 'darwin' && (
                 <>
                   <Divider />
-                  <ListItem>
-                    <ListItemText primary={t('Preference.HideMenuBar')} secondary={t('Preference.HideMenuBarDetail')} />
-                    <ListItemSecondaryAction>
+                  <ListItem
+                    secondaryAction={
                       <Switch
                         edge='end'
                         color='primary'
@@ -164,14 +173,15 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                           props.requestRestartCountDown();
                         }}
                       />
-                    </ListItemSecondaryAction>
+                    }
+                  >
+                    <ListItemText primary={t('Preference.HideMenuBar')} secondary={t('Preference.HideMenuBarDetail')} />
                   </ListItem>
                 </>
               )}
               <Divider />
-              <ListItem>
-                <ListItemText primary={t('Preference.AlwaysOnTop')} secondary={t('Preference.AlwaysOnTopDetail')} />
-                <ListItemSecondaryAction>
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -181,15 +191,13 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                       props.requestRestartCountDown();
                     }}
                   />
-                </ListItemSecondaryAction>
+                }
+              >
+                <ListItemText primary={t('Preference.AlwaysOnTop')} secondary={t('Preference.AlwaysOnTopDetail')} />
               </ListItem>
               <Divider />
-              <ListItem>
-                <ListItemText
-                  primary={platform === 'win32' ? t('Preference.AttachToTaskbar') : t('Preference.AttachToMenuBar')}
-                  secondary={platform === 'linux' ? undefined : t('Preference.AttachToMenuBarTip')}
-                />
-                <ListItemSecondaryAction>
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -199,14 +207,15 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                       props.requestRestartCountDown();
                     }}
                   />
-                </ListItemSecondaryAction>
-              </ListItem>
-              <ListItem>
+                }
+              >
                 <ListItemText
-                  primary={platform === 'win32' ? t('Preference.AttachToTaskbarShowSidebar') : t('Preference.AttachToMenuBarShowSidebar')}
-                  secondary={platform === 'linux' ? undefined : t('Preference.AttachToMenuBarShowSidebarTip')}
+                  primary={platform === 'win32' ? t('Preference.AttachToTaskbar') : t('Preference.AttachToMenuBar')}
+                  secondary={platform === 'linux' ? undefined : t('Preference.AttachToMenuBarTip')}
                 />
-                <ListItemSecondaryAction>
+              </ListItem>
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -215,15 +224,16 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                       await window.service.preference.set('sidebarOnMenubar', event.target.checked);
                     }}
                   />
-                </ListItemSecondaryAction>
+                }
+              >
+                <ListItemText
+                  primary={platform === 'win32' ? t('Preference.AttachToTaskbarShowSidebar') : t('Preference.AttachToMenuBarShowSidebar')}
+                  secondary={platform === 'linux' ? undefined : t('Preference.AttachToMenuBarShowSidebarTip')}
+                />
               </ListItem>
               <Divider />
-              <ListItem>
-                <ListItemText
-                  primary={t('Preference.RunOnBackground')}
-                  secondary={t('Preference.RunOnBackgroundDetail') + (platform === 'darwin' ? '' : t('Preference.RunOnBackgroundDetailNotMac'))}
-                />
-                <ListItemSecondaryAction>
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -232,11 +242,15 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                       await window.service.preference.set('runOnBackground', event.target.checked);
                     }}
                   />
-                </ListItemSecondaryAction>
+                }
+              >
+                <ListItemText
+                  primary={t('Preference.RunOnBackground')}
+                  secondary={t('Preference.RunOnBackgroundDetail') + (platform === 'darwin' ? '' : t('Preference.RunOnBackgroundDetailNotMac'))}
+                />
               </ListItem>
-              <ListItem>
-                <ListItemText primary={t('Preference.MenubarAlwaysOnTop')} secondary={t('Preference.MenubarAlwaysOnTopDetail')} />
-                <ListItemSecondaryAction>
+              <ListItem
+                secondaryAction={
                   <Switch
                     edge='end'
                     color='primary'
@@ -246,12 +260,26 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                       props.requestRestartCountDown();
                     }}
                   />
-                </ListItemSecondaryAction>
+                }
+              >
+                <ListItemText primary={t('Preference.MenubarAlwaysOnTop')} secondary={t('Preference.MenubarAlwaysOnTopDetail')} />
               </ListItem>
               {platform === 'darwin' && (
                 <>
                   <Divider />
-                  <ListItem>
+                  <ListItem
+                    secondaryAction={
+                      <Switch
+                        edge='end'
+                        color='primary'
+                        checked={preference.swipeToNavigate}
+                        onChange={async (event) => {
+                          await window.service.preference.set('swipeToNavigate', event.target.checked);
+                          props.requestRestartCountDown();
+                        }}
+                      />
+                    }
+                  >
                     <ListItemText
                       primary={t('Preference.SwipeWithThreeFingersToNavigate')}
                       secondary={
@@ -267,17 +295,6 @@ export function General(props: Required<ISectionProps>): JSX.Element {
                         </Trans>
                       }
                     />
-                    <ListItemSecondaryAction>
-                      <Switch
-                        edge='end'
-                        color='primary'
-                        checked={preference.swipeToNavigate}
-                        onChange={async (event) => {
-                          await window.service.preference.set('swipeToNavigate', event.target.checked);
-                          props.requestRestartCountDown();
-                        }}
-                      />
-                    </ListItemSecondaryAction>
                   </ListItem>
                 </>
               )}
