@@ -104,7 +104,7 @@
     "DeveloperToolsActiveWorkspace": "打开当前工作区的开发者工具",
     "LearnMore": "了解更多...",
     "PrintPage": "打印页面",
-    "PrintActiveTiddler": "打印当前笔记",
+    "ExportActiveTiddler": "导出当前笔记",
     "Wiki": "Wiki",
     "ExportWholeWikiHTML": "导出整个Wiki为HTML存入文件夹"
   },
@@ -322,7 +322,9 @@
     "Restarting": "重启中",
     "ReportBug": "报告错误",
     "ReportBugDetail": "如果你看过教程了解操作流程，并仔细读过报错内容并思考，仔细检查了自己的输入觉得没问题，可以点击按钮。",
-    "MadeWithLove": "<0>有</0><1> ❤ </1><2>的开发者：</2>"
+    "MadeWithLove": "<0>有</0><1> ❤ </1><2>的开发者：</2>",
+    "FocusedTiddlerNotFoundTitle": "无法查询到当前聚焦的条目",
+    "FocusedTiddlerNotFoundTitleDetail": "可以到 CPL 安装 FocusedTiddler 插件"
   },
   "Cancel": "取消",
   "Preference": {

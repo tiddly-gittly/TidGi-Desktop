@@ -1,5 +1,5 @@
 import { DEFAULT_DOWNLOADS_PATH } from '@/constants/appPaths';
-import { MetaDataChannel } from '@/constants/channels';
+import { MetaDataChannel, WikiChannel } from '@/constants/channels';
 import { isHtmlWiki, wikiHtmlExtensions } from '@/constants/fileNames';
 import { container } from '@services/container';
 import getFromRenderer from '@services/libs/getFromRenderer';
@@ -14,8 +14,9 @@ import { IWikiService } from '@services/wiki/interface';
 import { IWindowService } from '@services/windows/interface';
 import { IBrowserViewMetaData, WindowNames } from '@services/windows/WindowProperties';
 import { IWorkspaceService } from '@services/workspaces/interface';
-import { clipboard } from 'electron';
+import { clipboard, dialog } from 'electron';
 import { CancelError as DownloadCancelError, download } from 'electron-dl';
+import { minify } from 'html-minifier-terser';
 import path from 'path';
 
 export async function registerMenu(): Promise<void> {
@@ -68,15 +69,45 @@ export async function registerMenu(): Promise<void> {
       },
       enabled: hasActiveWorkspaces,
     },
-    // TODO: get active tiddler title
-    // {
-    //   label: () => i18n.t('Menu.PrintActiveTiddler'),
-    //   accelerator: 'CmdOrCtrl+Alt+Shift+P',
-    //   click: async () => {
-    //     await printTiddler(title);
-    //   },
-    //   enabled: hasActiveWorkspaces,
-    // },
+    {
+      label: () => i18n.t('Menu.ExportActiveTiddler'),
+      accelerator: 'CmdOrCtrl+Alt+Shift+P',
+      click: async () => {
+        const activeWorkspace = await workspaceService.getActiveWorkspace();
+        if (activeWorkspace === undefined) {
+          logger.error('Can not print active tiddler, activeWorkspace is undefined');
+          return;
+        }
+        const title = await wikiService.wikiOperationInBrowser(WikiChannel.getTiddlerText, activeWorkspace.id, ['$:/temp/focussedTiddler']);
+        if (title === undefined) {
+          const mainWindow = windowService.get(WindowNames.main);
+          if (mainWindow === undefined) return;
+          void dialog.showMessageBox(mainWindow, {
+            title: i18n.t('Dialog.FocusedTiddlerNotFoundTitle'),
+            message: i18n.t('Dialog.FocusedTiddlerNotFoundTitleDetail'),
+            buttons: ['OK'],
+            cancelId: 0,
+            defaultId: 0,
+          });
+          return;
+        }
+        const htmlContent = await wikiService.wikiOperationInBrowser(WikiChannel.renderTiddlerOuterHTML, activeWorkspace.id, [title]);
+        // download html content
+        const win = windowService.get(WindowNames.main);
+        if (win === undefined || htmlContent === undefined) return;
+        const minified = await minify(htmlContent, {
+          minifyCSS: {
+            level: 2,
+          },
+          collapseWhitespace: true,
+          collapseInlineTagWhitespace: true,
+          continueOnParseError: true,
+          removeComments: true,
+        });
+        await download(win, `data:text/html,${encodeURIComponent(minified)}`, { filename: `${title}.html`, saveAs: true });
+      },
+      enabled: hasActiveWorkspaces,
+    },
     {
       label: () => i18n.t('Menu.ExportWholeWikiHTML'),
       click: async () => {

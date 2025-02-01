@@ -12,8 +12,6 @@ import { tiddlywikiLanguagesMap } from '@/constants/languages';
 import { WikiCreationMethod } from '@/constants/wikiCreation';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { lazyInject } from '@services/container';
-import { IDatabaseService } from '@services/database/interface';
-import type { IGitService } from '@services/git/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
@@ -39,12 +37,6 @@ export class WorkspaceView implements IWorkspaceViewService {
   @lazyInject(serviceIdentifier.View)
   private readonly viewService!: IViewService;
 
-  @lazyInject(serviceIdentifier.Git)
-  private readonly gitService!: IGitService;
-
-  @lazyInject(serviceIdentifier.Database)
-  private readonly databaseService!: IDatabaseService;
-
   @lazyInject(serviceIdentifier.Wiki)
   private readonly wikiService!: IWikiService;
 
@@ -59,9 +51,6 @@ export class WorkspaceView implements IWorkspaceViewService {
 
   @lazyInject(serviceIdentifier.MenuService)
   private readonly menuService!: IMenuService;
-
-  @lazyInject(serviceIdentifier.WorkspaceView)
-  private readonly workspaceViewService!: IWorkspaceViewService;
 
   @lazyInject(serviceIdentifier.Sync)
   private readonly syncService!: ISyncService;
@@ -243,12 +232,6 @@ export class WorkspaceView implements IWorkspaceViewService {
         await this.loadURL(url, activeWorkspace.id);
       }
     }
-  }
-
-  public async printTiddler(tiddlerName: string): Promise<void> {
-    const browserView = await this.viewService.getActiveBrowserView();
-    logger.info(`printTiddler() printing tiddler ${tiddlerName ?? 'undefined'}, browserView is ${browserView?.webContents === undefined ? 'undefined' : 'define'}`);
-    browserView?.webContents?.send?.(WikiChannel.printTiddler, tiddlerName);
   }
 
   public async setWorkspaceView(workspaceID: string, workspaceOptions: IWorkspace): Promise<void> {

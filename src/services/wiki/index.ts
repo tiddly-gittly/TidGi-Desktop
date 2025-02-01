@@ -4,7 +4,7 @@
 /* eslint-disable @typescript-eslint/no-dynamic-delete */
 import { dialog, shell } from 'electron';
 import { backOff } from 'exponential-backoff';
-import { copy, createSymlink, exists, mkdir, mkdirp, mkdirs, pathExists, readFile, remove, unlink } from 'fs-extra';
+import { copy, createSymlink, exists, mkdir, mkdirp, mkdirs, pathExists, readFile, remove } from 'fs-extra';
 import { injectable } from 'inversify';
 import path from 'path';
 import { ModuleThread, spawn, Thread, Worker } from 'threads';
@@ -580,7 +580,7 @@ export class Wiki implements IWikiService {
   }
 
   public async wikiStartup(workspace: IWorkspace): Promise<void> {
-    const { id, isSubWiki, name, mainWikiID, wikiFolderLocation } = workspace;
+    const { id, isSubWiki, name, mainWikiID } = workspace;
 
     const userName = await this.authService.getUserName(workspace);
 

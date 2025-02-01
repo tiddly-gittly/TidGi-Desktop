@@ -14,6 +14,7 @@ import type { ITiddlerFields, Tiddler } from 'tiddlywiki';
 
 /**
  * Use scripts from wikiOperationScripts.
+ * This runs in preload script.
  *
  * Also need to modify `src/services/wiki/wikiOperations/sender/sendWikiOperationsToBrowser.ts`
  */
@@ -51,6 +52,10 @@ export const wikiOperations = {
     const renderResult = await (executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.renderWikiText](content)));
     ipcRenderer.send(WikiChannel.renderWikiText, nonceReceived, renderResult);
   },
+  [WikiChannel.renderTiddlerOuterHTML]: async (nonceReceived: number, content: string) => {
+    const renderResult = await (executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.renderTiddlerOuterHTML](content)));
+    ipcRenderer.send(WikiChannel.renderTiddlerOuterHTML, nonceReceived, renderResult);
+  },
   [WikiChannel.openTiddler]: async (nonceReceived: number, tiddlerName: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.openTiddler](tiddlerName));
   },
@@ -69,10 +74,6 @@ export const wikiOperations = {
   },
   [WikiChannel.generalNotification]: async (nonceReceived: number, message: string) => {
     await executeTWJavaScriptWhenIdle(wikiOperationScripts[WikiChannel.generalNotification](message));
-  },
-  [WikiChannel.printTiddler]: async (nonceReceived: number, tiddlerName: string) => {
-    const printScript = await wikiOperationScripts[WikiChannel.printTiddler](tiddlerName);
-    await executeTWJavaScriptWhenIdle(printScript);
   },
 };
 
@@ -93,10 +94,10 @@ async function executeTWJavaScriptWhenIdle<T>(script: string, options?: { onlyWh
   const finalScriptToRun = `
     (async () => await new Promise((resolve, reject) => {
       const handler = () => {
-        requestIdleCallback(() => {
+        requestIdleCallback(async () => {
           if (typeof $tw?.rootWidget !== 'undefined' && typeof $tw?.wiki !== 'undefined') {
             try {
-              const result = (() => {
+              const result = await (async () => {
                 ${script}
               })();
               resolve(result);

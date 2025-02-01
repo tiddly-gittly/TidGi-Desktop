@@ -467,7 +467,7 @@
     "Close": "Fermer",
     "FindMatches": "correspondances",
     "PrintPage": "Imprimer la page",
-    "PrintActiveTiddler": "Imprimer le Tiddler actif",
+    "ExportActiveTiddler": "Exporter le Tiddler actif",
     "Wiki": "Wiki",
     "ExportWholeWikiHTML": "Exporter tout le Wiki en HTML vers un dossier"
   },

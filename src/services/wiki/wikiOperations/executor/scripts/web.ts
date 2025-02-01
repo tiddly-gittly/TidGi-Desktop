@@ -1,6 +1,43 @@
 import { WikiChannel } from '@/constants/channels';
 import { wikiOperationScripts as common } from './common';
 
+async function generateHTML(title: string, tiddlerDiv: HTMLElement): Promise<string> {
+  /* eslint-disable unicorn/prefer-spread */
+  const clonedDiv = tiddlerDiv.cloneNode(true) as HTMLElement;
+  const styleTags = Array.from(document.querySelectorAll('style')).map(style => style.outerHTML).join('\\n');
+
+  const imgTags = clonedDiv.querySelectorAll('img');
+  for (const img of Array.from(imgTags)) {
+    const source = img.getAttribute('src');
+    if (source !== null && !(source.startsWith('http') || source.startsWith('data'))) {
+      const response = await fetch(source);
+      const blob = await response.blob();
+      const reader = new FileReader();
+      await new Promise<void>(resolve => {
+        reader.onloadend = () => {
+          img.setAttribute('src', reader.result as string);
+          resolve();
+        };
+        reader.readAsDataURL(blob);
+      });
+    }
+  }
+
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <title>${title}</title>
+        ${styleTags}
+      </head>
+      <body>
+        ${clonedDiv.outerHTML}
+      </body>
+    </html>
+  `;
+  /* eslint-enable unicorn/prefer-spread */
+}
+
 export const wikiOperationScripts = {
   ...common,
   [WikiChannel.syncProgress]: (message: string) => `
@@ -24,13 +61,11 @@ export const wikiOperationScripts = {
     }
     return handled;
   `,
-
-  [WikiChannel.printTiddler]: async (tiddlerName: string) => {
-    const printer = await import('../../../../libs/printer');
-    return `
-      var page = (${printer.printTiddler.toString()})(\`${tiddlerName}\`);
-      page?.print?.();
-      page?.close?.();
-    `;
-  },
+  [WikiChannel.renderTiddlerOuterHTML]: (title: string) => `
+    const tiddlerDiv = document.querySelector('div[data-tiddler-title="${title}"]');
+    if (tiddlerDiv) {
+      return await (${generateHTML.toString()})('${title}', tiddlerDiv);
+    }
+    return '';
+  `,
 } as const;

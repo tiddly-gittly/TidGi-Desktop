@@ -54,7 +54,6 @@ export interface IWorkspaceViewService {
    * Create a new separate window, and load wiki for a workspace.
    */
   openWorkspaceWindowWithView(workspace: IWorkspace, configs?: { uri?: string }): Promise<void>;
-  printTiddler(tiddlerName?: string | undefined): Promise<void>;
   realignActiveWorkspace(id?: string): Promise<void>;
   /**
    * Remove workspace metadata and its view (if it is started and have a browser view)
@@ -89,7 +88,6 @@ export const WorkspaceViewServiceIPCDescriptor = {
     loadURL: ProxyPropertyType.Function,
     openUrlInWorkspace: ProxyPropertyType.Function,
     openWorkspaceWindowWithView: ProxyPropertyType.Function,
-    printTiddler: ProxyPropertyType.Function,
     realignActiveWorkspace: ProxyPropertyType.Function,
     removeWorkspaceView: ProxyPropertyType.Function,
     restartAllWorkspaceView: ProxyPropertyType.Function,

@@ -128,7 +128,9 @@
     "Restarting": "再起動中",
     "MadeWithLove": "<0>❤</0><1>で作られました</1>",
     "ReportBug": "バグを報告",
-    "ReportBugDetail": "チュートリアルを読み、エラーメッセージを注意深く読み、入力を確認した場合は、ボタンをクリックしてください。"
+    "ReportBugDetail": "チュートリアルを読み、エラーメッセージを注意深く読み、入力を確認した場合は、ボタンをクリックしてください。",
+    "FocusedTiddlerNotFoundTitle": "現在フォーカス中のチドラーを検索できません",
+    "FocusedTiddlerNotFoundTitleDetail": "CPL にて FocusedTiddler プラグインをインストールすることができます。"
   },
   "Loading": "読み込み中",
   "SideBar": {
@@ -211,7 +213,7 @@
     "DeveloperToolsActiveWorkspace": "アクティブなワークスペースの開発者ツールを開く",
     "LearnMore": "もっと詳しく...",
     "PrintPage": "ページを印刷",
-    "PrintActiveTiddler": "アクティブなTiddlerを印刷",
+    "ExportActiveTiddler": "アクティブなTiddlerをエクスポート",
     "Wiki": "Wiki",
     "ExportWholeWikiHTML": "Wiki全体をHTMLとしてエクスポート"
   },

@@ -84,7 +84,7 @@ export enum WikiChannel {
   invokeActionsByTag = 'wiki-invoke-actions-by-tag',
   name = 'WikiChannel',
   openTiddler = 'wiki-open-tiddler',
-  printTiddler = 'print-tiddler',
+  renderTiddlerOuterHTML = 'render-tiddler',
   /**
    * Render wiki text to html
    */
