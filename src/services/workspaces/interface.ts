@@ -186,6 +186,10 @@ export interface IWorkspaceService {
   getActiveWorkspaceSync: () => IWorkspace | undefined;
   getAllMetaData: () => Promise<Record<string, Partial<IWorkspaceMetaData>>>;
   getByWikiFolderLocation(wikiFolderLocation: string): Promise<IWorkspace | undefined>;
+  /**
+   * Get workspace by human readable wiki name, if no workspace found, return undefined. If multiple workspace with same name, return the first one order by sidebar.
+   */
+  getByWikiName(wikiName: string): Promise<IWorkspace | undefined>;
   getFirstWorkspace: () => Promise<IWorkspace | undefined>;
   /**
    * Get parent workspace of a subWorkspace, if the workspace you provided is a main workspace, return undefined.
@@ -236,7 +240,7 @@ export const WorkspaceServiceIPCDescriptor = {
     get$: ProxyPropertyType.Function$,
     getActiveWorkspace: ProxyPropertyType.Function,
     getAllMetaData: ProxyPropertyType.Function,
-    getByName: ProxyPropertyType.Function,
+    getByWikiName: ProxyPropertyType.Function,
     getFirstWorkspace: ProxyPropertyType.Function,
     getMainWorkspace: ProxyPropertyType.Function,
     getMetaData: ProxyPropertyType.Function,

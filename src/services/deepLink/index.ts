@@ -18,18 +18,23 @@ export class DeepLinkService implements IDeepLinkService {
    */
   private readonly deepLinkHandler: (requestUrl: string) => Promise<void> = async (requestUrl) => {
     logger.info(`Receiving deep link`, { requestUrl, function: 'deepLinkHandler' });
-    const url = new URL(requestUrl);
-    const workspaceId = url.hostname;
-    const workspace = await this.workspaceService.get(workspaceId);
+    // hostname is workspace id or name
+    const { hostname, hash } = new URL(requestUrl);
+    let workspace = await this.workspaceService.get(hostname);
     if (workspace === undefined) {
-      logger.error(`Workspace not found`, { workspaceId, function: 'deepLinkHandler' });
-      return;
+      logger.error(`Workspace not found, try get by name`, { hostname, function: 'deepLinkHandler' });
+      workspace = await this.workspaceService.getByWikiName(hostname);
+      if (workspace === undefined) {
+        return;
+      }
     }
-    let tiddlerName = url.hash.substring(1); // remove '#:'
+    let tiddlerName = hash.substring(1); // remove '#:'
     if (tiddlerName.includes(':')) {
       tiddlerName = tiddlerName.split(':')[1];
     }
-    logger.info(`Open deep link`, { workspaceId, tiddlerName, function: 'deepLinkHandler' });
+    // Support CJK
+    tiddlerName = decodeURIComponent(tiddlerName);
+    logger.info(`Open deep link`, { workspaceId: workspace.id, tiddlerName, function: 'deepLinkHandler' });
     await this.workspaceService.openWorkspaceTiddler(workspace, tiddlerName);
   };
 

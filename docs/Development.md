@@ -107,6 +107,8 @@ TBD
 
 ### `Uncaught ReferenceError: require is not defined`
 
+Or `Uncaught TypeError: Cannot read properties of undefined (reading 'call')    at __webpack_require__ (index.js:4317:33)`
+
 `pnpm run clean:cache` can fix this.
 
 ### Electron download slow

@@ -289,6 +289,12 @@ export class Workspace implements IWorkspaceService {
     return (await this.getWorkspacesAsList()).find((workspace) => workspace.wikiFolderLocation === wikiFolderLocation);
   }
 
+  public async getByWikiName(wikiName: string): Promise<IWorkspace | undefined> {
+    return (await this.getWorkspacesAsList())
+      .sort((a, b) => a.order - b.order)
+      .find((workspace) => workspace.name === wikiName);
+  }
+
   public getPreviousWorkspace = async (id: string): Promise<IWorkspace | undefined> => {
     const workspaceList = await this.getWorkspacesAsList();
     let currentWorkspaceIndex = 0;
