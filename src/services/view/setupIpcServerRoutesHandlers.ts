@@ -73,8 +73,22 @@ export function setupIpcServerRoutesHandlers(view: WebContentsView, workspaceID:
       method: 'GET',
       path: /^\/files\/(.+)$/,
       name: 'getFile',
-      handler: async (_request: GlobalRequest, workspaceIDFromHost: string, parameters: RegExpMatchArray | null) =>
-        await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'getFile', parameters?.[1] ?? ''),
+      handler: async (_request: GlobalRequest, workspaceIDFromHost: string, parameters: RegExpMatchArray | null) => {
+        /**
+         * ```
+         * parameters [
+            '/files/%E4%B8%9C%E5%90%B413%E5%B2%81%E7%99%BB%E9%95%BF%E5%9F%8E%E7%85%A7.JPG',
+            '%E4%B8%9C%E5%90%B413%E5%B2%81%E7%99%BB%E9%95%BF%E5%9F%8E%E7%85%A7.JPG',
+            index: 0,
+            input: '/files/%E4%B8%9C%E5%90%B413%E5%B2%81%E7%99%BB%E9%95%BF%E5%9F%8E%E7%85%A7.JPG',
+            groups: undefined
+          ]
+          ```
+
+          Decode Chinese similar to src/services/view/setupViewFileProtocol.ts
+         */
+        return await wikiService.callWikiIpcServerRoute(workspaceIDFromHost, 'getFile', decodeURI(parameters?.[1] ?? ''));
+      },
     },
     {
       method: 'GET',

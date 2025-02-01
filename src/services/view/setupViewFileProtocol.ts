@@ -53,6 +53,8 @@ export function handleOpenFileExternalLink(nextUrl: string, newWindowContext: IN
 /* eslint-disable n/no-callback-literal */
 /**
  * Handle file protocol in webview to request file content and show in the view.
+ *
+ * Similar to src/services/view/setupIpcServerRoutesHandlers.ts where it is redirect and handled by tiddlywiki server.
  */
 export function handleViewFileContentLoading(view: WebContentsView) {
   view.webContents.session.webRequest.onBeforeRequest((details, callback) => {
