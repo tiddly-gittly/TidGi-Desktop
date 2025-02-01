@@ -9,6 +9,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { Authentication } from '@services/auth';
 import { ContextService } from '@services/context';
 import { DatabaseService } from '@services/database';
+import { DeepLinkService } from '@services/deepLink';
 import { Git } from '@services/git';
 import { MenuService } from '@services/menu';
 import { NativeService } from '@services/native';
@@ -32,6 +33,8 @@ import type { IContextService } from '@services/context/interface';
 import { ContextServiceIPCDescriptor } from '@services/context/interface';
 import type { IDatabaseService } from '@services/database/interface';
 import { DatabaseServiceIPCDescriptor } from '@services/database/interface';
+import type { IDeepLinkService } from '@services/deepLink/interface';
+import { DeepLinkServiceIPCDescriptor } from '@services/deepLink/interface';
 import type { IGitService } from '@services/git/interface';
 import { GitServiceIPCDescriptor } from '@services/git/interface';
 import type { IMenuService } from '@services/menu/interface';
@@ -85,6 +88,7 @@ export function bindServiceAndProxy(): void {
   container.bind<IWindowService>(serviceIdentifier.Window).to(Window).inSingletonScope();
   container.bind<IWorkspaceService>(serviceIdentifier.Workspace).to(Workspace).inSingletonScope();
   container.bind<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).to(WorkspaceView).inSingletonScope();
+  container.bind<IDeepLinkService>(serviceIdentifier.DeepLink).to(DeepLinkService).inSingletonScope();
 
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
   const contextService = container.get<IContextService>(serviceIdentifier.Context);
@@ -105,6 +109,7 @@ export function bindServiceAndProxy(): void {
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
+  const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
 
   registerProxy(authService, AuthenticationServiceIPCDescriptor);
   registerProxy(contextService, ContextServiceIPCDescriptor);
@@ -125,4 +130,5 @@ export function bindServiceAndProxy(): void {
   registerProxy(windowService, WindowServiceIPCDescriptor);
   registerProxy(workspaceService, WorkspaceServiceIPCDescriptor);
   registerProxy(workspaceViewService, WorkspaceViewServiceIPCDescriptor);
+  registerProxy(deepLinkService, DeepLinkServiceIPCDescriptor);
 }

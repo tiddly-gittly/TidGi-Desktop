@@ -18,4 +18,5 @@ export default {
   Window: Symbol.for('Window'),
   Workspace: Symbol.for('Workspace'),
   WorkspaceView: Symbol.for('WorkspaceView'),
+  DeepLink: Symbol.for('DeepLinkService'),
 };

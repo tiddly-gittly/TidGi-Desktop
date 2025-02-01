@@ -12,6 +12,7 @@ import path from 'path';
 import { BehaviorSubject, Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+import { WikiChannel } from '@/constants/channels';
 import { DELAY_MENU_REGISTER } from '@/constants/parameters';
 import { getDefaultTidGiUrl } from '@/constants/urls';
 import { IAuthenticationService } from '@services/auth/interface';
@@ -20,7 +21,7 @@ import { IDatabaseService } from '@services/database/interface';
 import { i18n } from '@services/libs/i18n';
 import { logger } from '@services/libs/log';
 import type { IMenuService } from '@services/menu/interface';
-import { IPagesService } from '@services/pages/interface';
+import { IPagesService, PageType } from '@services/pages/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
@@ -167,7 +168,13 @@ export class Workspace implements IWorkspaceService {
   }
 
   private getSync(id: string): IWorkspace | undefined {
-    return this.getWorkspacesSync()[id];
+    const workspaces = this.getWorkspacesSync();
+    if (id in workspaces) {
+      return workspaces[id];
+    }
+    // Try find with lowercased key. sometimes user will use id that is all lowercased. Because tidgi:// url is somehow lowercased.
+    const foundKey = Object.keys(workspaces).find((key) => key.toLowerCase() === id.toLowerCase());
+    return foundKey ? workspaces[foundKey] : undefined;
   }
 
   public get$(id: string): Observable<IWorkspace | undefined> {
@@ -469,5 +476,32 @@ export class Workspace implements IWorkspaceService {
   public async workspaceDidFailLoad(id: string): Promise<boolean> {
     const workspaceMetaData = this.getMetaDataSync(id);
     return typeof workspaceMetaData?.didFailLoadErrorMessage === 'string' && workspaceMetaData.didFailLoadErrorMessage.length > 0;
+  }
+
+  public async openWorkspaceTiddler(workspace: IWorkspace, title?: string): Promise<void> {
+    const { id: idToActive, isSubWiki, mainWikiID } = workspace;
+    const oldActiveWorkspace = await this.getActiveWorkspace();
+    await this.pagesService.setActivePage(PageType.wiki);
+    logger.log('debug', 'openWorkspaceTiddler', { workspace });
+    // If is main wiki, open the wiki, and open provided title, or simply switch to it if no title provided
+    if (!isSubWiki && idToActive) {
+      if (oldActiveWorkspace?.id !== idToActive) {
+        await this.workspaceViewService.setActiveWorkspaceView(idToActive);
+      }
+      if (title) {
+        await this.wikiService.wikiOperationInBrowser(WikiChannel.openTiddler, idToActive, [title]);
+      }
+      return;
+    }
+    // If is sub wiki, open the main wiki first and open the tag or provided title
+    if (isSubWiki && mainWikiID) {
+      if (oldActiveWorkspace?.id !== mainWikiID) {
+        await this.workspaceViewService.setActiveWorkspaceView(mainWikiID);
+      }
+      const subWikiTag = title ?? workspace.tagName;
+      if (subWikiTag) {
+        await this.wikiService.wikiOperationInBrowser(WikiChannel.openTiddler, mainWikiID, [subWikiTag]);
+      }
+    }
   }
 }

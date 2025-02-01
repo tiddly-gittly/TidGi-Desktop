@@ -9,6 +9,7 @@ import { AsyncifyProxy } from 'electron-ipc-cat/common';
 
 import { AuthenticationServiceIPCDescriptor, IAuthenticationService } from '@services/auth/interface';
 import { ContextServiceIPCDescriptor, IContextService } from '@services/context/interface';
+import { DeepLinkServiceIPCDescriptor, IDeepLinkService } from '@services/deepLink/interface';
 import { GitServiceIPCDescriptor, IGitService } from '@services/git/interface';
 import { IMenuService, MenuServiceIPCDescriptor } from '@services/menu/interface';
 import { INativeService, NativeServiceIPCDescriptor } from '@services/native/interface';
@@ -44,6 +45,7 @@ export const wikiGitWorkspace = createProxy<IWikiGitWorkspaceService>(WikiGitWor
 export const window = createProxy<IWindowService>(WindowServiceIPCDescriptor);
 export const workspace = createProxy<AsyncifyProxy<IWorkspaceService>>(WorkspaceServiceIPCDescriptor);
 export const workspaceView = createProxy<IWorkspaceViewService>(WorkspaceViewServiceIPCDescriptor);
+export const deepLink = createProxy<IDeepLinkService>(DeepLinkServiceIPCDescriptor);
 
 export const descriptors = {
   auth: AuthenticationServiceIPCDescriptor,
@@ -64,4 +66,5 @@ export const descriptors = {
   window: WindowServiceIPCDescriptor,
   workspace: WorkspaceServiceIPCDescriptor,
   workspaceView: WorkspaceViewServiceIPCDescriptor,
+  deepLink: DeepLinkServiceIPCDescriptor,
 };

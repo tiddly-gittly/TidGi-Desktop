@@ -203,6 +203,10 @@ export interface IWorkspaceService {
   getWorkspaces(): Promise<Record<string, IWorkspace>>;
   getWorkspacesAsList(): Promise<IWorkspace[]>;
   getWorkspacesWithMetadata(): IWorkspacesWithMetadata;
+  /**
+   * Open a tiddler in the workspace, open workspace's tag by default.
+   */
+  openWorkspaceTiddler(workspace: IWorkspace, title?: string): Promise<void>;
   remove(id: string): Promise<void>;
   removeWorkspacePicture(id: string): Promise<void>;
   set(id: string, workspace: IWorkspace, immediate?: boolean): Promise<void>;
@@ -241,6 +245,7 @@ export const WorkspaceServiceIPCDescriptor = {
     getWorkspaces: ProxyPropertyType.Function,
     getWorkspacesAsList: ProxyPropertyType.Function,
     getWorkspacesWithMetadata: ProxyPropertyType.Function,
+    openWorkspaceTiddler: ProxyPropertyType.Function,
     remove: ProxyPropertyType.Function,
     removeWorkspacePicture: ProxyPropertyType.Function,
     set: ProxyPropertyType.Function,

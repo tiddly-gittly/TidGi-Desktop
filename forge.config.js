@@ -89,6 +89,7 @@ const config = {
       executableName: 'tidgi',
       config: {
         maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
+        mimeType: ['x-scheme-handler/tidgi'],
       },
     },
     {
@@ -97,6 +98,7 @@ const config = {
       executableName: 'tidgi',
       config: {
         maintainer: 'Lin Onetwo <linonetwo012@gmail.com>',
+        mimeType: ['x-scheme-handler/tidgi'],
       },
     },
     /**

@@ -12,13 +12,12 @@ import type { IPagesService } from '@services/pages/interface';
 import type { IPreferenceService } from '@services/preferences/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { ISyncService } from '@services/sync/interface';
-import type { IUpdaterService } from '@services/updater/interface';
 import type { IViewService } from '@services/view/interface';
 import type { IWikiService } from '@services/wiki/interface';
 import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowNames } from '@services/windows/WindowProperties';
-import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/workspaces/getWorkspaceMenuTemplate';
+import { getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { app, ContextMenuParams, Menu, MenuItem, MenuItemConstructorOptions, shell, WebContents } from 'electron';
@@ -50,9 +49,6 @@ export class MenuService implements IMenuService {
 
   @lazyInject(serviceIdentifier.Preference)
   private readonly preferenceService!: IPreferenceService;
-
-  @lazyInject(serviceIdentifier.Updater)
-  private readonly updaterService!: IUpdaterService;
 
   @lazyInject(serviceIdentifier.View)
   private readonly viewService!: IViewService;
@@ -384,7 +380,7 @@ export class MenuService implements IMenuService {
               tagName: workspace.tagName ?? (workspace.isSubWiki ? workspace.name : `${workspace.name} ${i18n.t('WorkspaceSelector.DefaultTiddlers')}`),
             }),
             click: async () => {
-              await openWorkspaceTagTiddler(workspace, services);
+              await this.workspaceService.openWorkspaceTiddler(workspace);
             },
           })),
         }),

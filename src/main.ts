@@ -21,6 +21,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
 import { IDatabaseService } from '@services/database/interface';
+import { IDeepLinkService } from '@services/deepLink/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
 import { reportErrorToGithubWithTemplates } from '@services/native/reportError';
 import type { IUpdaterService } from '@services/updater/interface';
@@ -51,8 +52,6 @@ protocol.registerSchemesAsPrivileged([
   { scheme: 'file', privileges: { bypassCSP: true, allowServiceWorkers: true, supportFetchAPI: true, corsEnabled: true, stream: true } },
   { scheme: 'mailto', privileges: { standard: true } },
 ]);
-// TODO: handle workspace name + tiddler name in uri https://www.electronjs.org/docs/latest/tutorial/launch-app-from-url-in-another-app
-app.setAsDefaultProtocolClient('tidgi');
 bindServiceAndProxy();
 const preferenceService = container.get<IPreferenceService>(serviceIdentifier.Preference);
 const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater);
@@ -61,6 +60,7 @@ const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
 const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
+const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
 app.on('second-instance', async () => {
   // see also src/helpers/singleInstance.ts
   // Someone tried to run a second instance, for example, when `runOnBackground` is true, we should focus our window.
@@ -83,6 +83,8 @@ void preferenceService.get('ignoreCertificateErrors').then((ignoreCertificateErr
 const commonInit = async (): Promise<void> => {
   await app.whenReady();
   // if user want a menubar, we create a new window for that
+  // handle workspace name + tiddler name in uri https://www.electronjs.org/docs/latest/tutorial/launch-app-from-url-in-another-app
+  deepLinkService.initializeDeepLink('tidgi');
   await Promise.all([
     windowService.open(WindowNames.main),
     preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {

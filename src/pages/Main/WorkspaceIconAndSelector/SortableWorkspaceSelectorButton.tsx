@@ -1,6 +1,6 @@
 import { useSortable } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import { getWorkspaceMenuTemplate, openWorkspaceTagTiddler } from '@services/workspaces/getWorkspaceMenuTemplate';
+import { getWorkspaceMenuTemplate } from '@services/workspaces/getWorkspaceMenuTemplate';
 import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { MouseEvent, useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -31,7 +31,7 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
     workspaceClickedLoadingSetter(true);
     try {
       setLocation(`/${WindowNames.main}/${PageType.wiki}/${id}/`);
-      await openWorkspaceTagTiddler(workspace, window.service);
+      await window.service.workspace.openWorkspaceTiddler(workspace);
     } catch (error) {
       if (error instanceof Error) {
         await window.service.native.log('error', error.message);

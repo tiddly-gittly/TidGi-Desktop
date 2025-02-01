@@ -1,11 +1,10 @@
 /* eslint-disable @typescript-eslint/strict-boolean-expressions */
-import { WikiChannel } from '@/constants/channels';
 import { getDefaultHTTPServerIP } from '@/constants/urls';
 import type { IAuthenticationService } from '@services/auth/interface';
 import { IContextService } from '@services/context/interface';
 import { IGitService } from '@services/git/interface';
 import type { INativeService } from '@services/native/interface';
-import { IPagesService, PageType } from '@services/pages/interface';
+import { IPagesService } from '@services/pages/interface';
 import { ISyncService } from '@services/sync/interface';
 import { SupportedStorageServices } from '@services/types';
 import type { IViewService } from '@services/view/interface';
@@ -30,7 +29,7 @@ interface IWorkspaceMenuRequiredServices {
   wiki: Pick<IWikiService, 'wikiOperationInBrowser' | 'wikiOperationInServer'>;
   wikiGitWorkspace: Pick<IWikiGitWorkspaceService, 'removeWorkspace'>;
   window: Pick<IWindowService, 'open'>;
-  workspace: Pick<IWorkspaceService, 'getActiveWorkspace' | 'getSubWorkspacesAsList'>;
+  workspace: Pick<IWorkspaceService, 'getActiveWorkspace' | 'getSubWorkspacesAsList' | 'openWorkspaceTiddler'>;
   workspaceView: Pick<
     IWorkspaceViewService,
     | 'wakeUpWorkspaceView'
@@ -41,33 +40,6 @@ interface IWorkspaceMenuRequiredServices {
     | 'openUrlInWorkspace'
     | 'openWorkspaceWindowWithView'
   >;
-}
-
-export async function openWorkspaceTagTiddler(workspace: IWorkspace, service: IWorkspaceMenuRequiredServices): Promise<void> {
-  const { id: idToActive, isSubWiki, tagName, mainWikiID } = workspace;
-  // switch to workspace page
-  const [oldActiveWorkspace] = await Promise.all([
-    service.workspace.getActiveWorkspace(),
-    service.pages.setActivePage(PageType.wiki),
-    service.native.log('debug', 'openWorkspaceTagTiddler', { workspace }),
-  ]);
-  // if is a new main workspace, active its browser view first
-  if (!isSubWiki && idToActive) {
-    if (oldActiveWorkspace?.id !== idToActive) {
-      await service.workspaceView.setActiveWorkspaceView(idToActive);
-    }
-    return;
-  }
-  // is not a new main workspace
-  // open tiddler in the active view
-  if (isSubWiki && mainWikiID) {
-    if (oldActiveWorkspace?.id !== mainWikiID) {
-      await service.workspaceView.setActiveWorkspaceView(mainWikiID);
-    }
-    if (tagName) {
-      await service.wiki.wikiOperationInBrowser(WikiChannel.openTiddler, mainWikiID, [tagName]);
-    }
-  }
 }
 
 export async function getWorkspaceMenuTemplate(
@@ -83,7 +55,7 @@ export async function getWorkspaceMenuTemplate(
         tagName: tagName ?? (isSubWiki ? name : `${name} ${t('WorkspaceSelector.DefaultTiddlers')}`),
       }),
       click: async () => {
-        await openWorkspaceTagTiddler(workspace, service);
+        await service.workspace.openWorkspaceTiddler(workspace);
       },
     },
     {
