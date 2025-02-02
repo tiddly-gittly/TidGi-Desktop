@@ -19,11 +19,17 @@ export class DeepLinkService implements IDeepLinkService {
   private readonly deepLinkHandler: (requestUrl: string) => Promise<void> = async (requestUrl) => {
     logger.info(`Receiving deep link`, { requestUrl, function: 'deepLinkHandler' });
     // hostname is workspace id or name
-    const { hostname, hash } = new URL(requestUrl);
+    const { hostname, hash, pathname } = new URL(requestUrl);
     let workspace = await this.workspaceService.get(hostname);
     if (workspace === undefined) {
-      logger.error(`Workspace not found, try get by name`, { hostname, function: 'deepLinkHandler' });
-      workspace = await this.workspaceService.getByWikiName(hostname);
+      logger.info(`Workspace not found, try get by name`, { hostname, function: 'deepLinkHandler' });
+      let workspaceName = hostname;
+      // Host name can't use Chinese or it becomes `xn--1-376ap73a`, so use `w` host, and get workspace name from path
+      if (hostname === 'w') {
+        workspaceName = decodeURIComponent(pathname.split('/')[1] ?? '');
+        logger.info(`Workspace name from w/`, { hostname, pathname, workspaceName, function: 'deepLinkHandler' });
+      }
+      workspace = await this.workspaceService.getByWikiName(workspaceName);
       if (workspace === undefined) {
         return;
       }
@@ -57,7 +63,7 @@ export class DeepLinkService implements IDeepLinkService {
   private setupMacOSHandler(): void {
     app.on('open-url', (event, url) => {
       event.preventDefault();
-      this.deepLinkHandler(url);
+      void this.deepLinkHandler(url);
     });
   }
 
@@ -68,7 +74,7 @@ export class DeepLinkService implements IDeepLinkService {
       app.on('second-instance', (event, commandLine) => {
         const url = commandLine.pop();
         if (url !== undefined && url !== '') {
-          this.deepLinkHandler(url);
+          void this.deepLinkHandler(url);
         }
       });
     } else {
