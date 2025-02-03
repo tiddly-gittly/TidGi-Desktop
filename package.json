@@ -77,7 +77,7 @@
     "winston-daily-rotate-file": "5.0.0",
     "winston-transport": "4.9.0",
     "wouter": "^3.5.1",
-    "zx": "8.3.1"
+    "zx": "8.3.2"
   },
   "optionalDependencies": {
     "@electron-forge/maker-deb": "7.6.1",
