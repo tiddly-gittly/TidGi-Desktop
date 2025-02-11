@@ -18,30 +18,34 @@ export class DeepLinkService implements IDeepLinkService {
    */
   private readonly deepLinkHandler: (requestUrl: string) => Promise<void> = async (requestUrl) => {
     logger.info(`Receiving deep link`, { requestUrl, function: 'deepLinkHandler' });
-    // hostname is workspace id or name
-    const { hostname, hash, pathname } = new URL(requestUrl);
-    let workspace = await this.workspaceService.get(hostname);
-    if (workspace === undefined) {
-      logger.info(`Workspace not found, try get by name`, { hostname, function: 'deepLinkHandler' });
-      let workspaceName = hostname;
-      // Host name can't use Chinese or it becomes `xn--1-376ap73a`, so use `w` host, and get workspace name from path
-      if (hostname === 'w') {
-        workspaceName = decodeURIComponent(pathname.split('/')[1] ?? '');
-        logger.info(`Workspace name from w/`, { hostname, pathname, workspaceName, function: 'deepLinkHandler' });
-      }
-      workspace = await this.workspaceService.getByWikiName(workspaceName);
+    try {
+      // hostname is workspace id or name
+      const { hostname, hash, pathname } = new URL(requestUrl);
+      let workspace = await this.workspaceService.get(hostname);
       if (workspace === undefined) {
-        return;
+        logger.info(`Workspace not found, try get by name`, { hostname, function: 'deepLinkHandler' });
+        let workspaceName = hostname;
+        // Host name can't use Chinese or it becomes `xn--1-376ap73a`, so use `w` host, and get workspace name from path
+        if (hostname === 'w') {
+          workspaceName = decodeURIComponent(pathname.split('/')[1] ?? '');
+          logger.info(`Workspace name from w/`, { hostname, pathname, workspaceName, function: 'deepLinkHandler' });
+        }
+        workspace = await this.workspaceService.getByWikiName(workspaceName);
+        if (workspace === undefined) {
+          return;
+        }
       }
+      let tiddlerName = hash.substring(1); // remove '#:'
+      if (tiddlerName.includes(':')) {
+        tiddlerName = tiddlerName.split(':')[1];
+      }
+      // Support CJK
+      tiddlerName = decodeURIComponent(tiddlerName);
+      logger.info(`Open deep link`, { workspaceId: workspace.id, tiddlerName, function: 'deepLinkHandler' });
+      await this.workspaceService.openWorkspaceTiddler(workspace, tiddlerName);
+    } catch (error) {
+      logger.error(`Invalid URL`, { requestUrl, error, function: 'deepLinkHandler' });
     }
-    let tiddlerName = hash.substring(1); // remove '#:'
-    if (tiddlerName.includes(':')) {
-      tiddlerName = tiddlerName.split(':')[1];
-    }
-    // Support CJK
-    tiddlerName = decodeURIComponent(tiddlerName);
-    logger.info(`Open deep link`, { workspaceId: workspace.id, tiddlerName, function: 'deepLinkHandler' });
-    await this.workspaceService.openWorkspaceTiddler(workspace, tiddlerName);
   };
 
   public initializeDeepLink(protocol: string) {
