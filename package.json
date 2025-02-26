@@ -133,7 +133,7 @@
     "date-fns": "3.6.0",
     "dprint": "^0.48.0",
     "electron": "34.0.2",
-    "esbuild": "^0.24.2",
+    "esbuild": "^0.25.0",
     "esbuild-loader": "^4.2.2",
     "eslint-config-tidgi": "1.2.3",
     "fork-ts-checker-webpack-plugin": "9.0.2",
