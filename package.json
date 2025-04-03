@@ -111,7 +111,7 @@
     "@types/circular-dependency-plugin": "5.0.8",
     "@types/fs-extra": "11.0.4",
     "@types/html-minifier-terser": "^7.0.2",
-    "@types/i18next-fs-backend": "1.2.0",
+    "@types/i18next-fs-backend": "1.1.5",
     "@types/intercept-stdout": "0.1.3",
     "@types/lodash": "4.17.15",
     "@types/node": "22.13.0",
@@ -135,7 +135,7 @@
     "electron": "34.0.2",
     "esbuild": "^0.24.2",
     "esbuild-loader": "^4.2.2",
-    "eslint-config-tidgi": "1.2.3",
+    "eslint-config-tidgi": "2.0.7",
     "fork-ts-checker-webpack-plugin": "9.0.2",
     "graphql-hooks": "8.2.0",
     "json5": "^2.2.3",
@@ -164,9 +164,16 @@
   },
   "pnpm": {
     "overrides": {
-      "node-abi": "latest",
       "prebuild-install": "latest"
-    }
+    },
+    "onlyBuiltDependencies": [
+      "dprint",
+      "dugite",
+      "electron",
+      "electron-winstaller",
+      "esbuild",
+      "registry-js"
+    ]
   },
   "private": false
 }
