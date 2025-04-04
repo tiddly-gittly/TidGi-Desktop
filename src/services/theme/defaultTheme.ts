@@ -2,6 +2,25 @@ import { createTheme, Theme } from '@mui/material';
 import { ThemeOptions } from '@mui/material/styles';
 import { cloneDeep, merge } from 'lodash';
 
+const workflow: ThemeOptions['workflow'] = {
+  thumbnail: {
+    width: 216,
+    height: 162,
+  },
+  nodeDetailPanel: {
+    width: 350,
+  },
+  debugPanel: {
+    width: 350,
+    height: 300,
+    cardSpacing: 12,
+  },
+  run: {
+    chatsList: {
+      width: 220,
+    },
+  },
+};
 export const lightTheme = merge(cloneDeep(createTheme({
   palette: {
     background: {
@@ -14,6 +33,7 @@ export const lightTheme = merge(cloneDeep(createTheme({
   searchBar: {
     width: 300,
   },
+  workflow,
 }))) as Theme;
 export const darkTheme = merge(
   cloneDeep(
@@ -27,6 +47,7 @@ export const darkTheme = merge(
       },
       sidebar: lightTheme.sidebar,
       searchBar: lightTheme.searchBar,
+      workflow,
     }),
   ),
 ) as Theme;

@@ -1,5 +1,4 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
-/* eslint-disable @typescript-eslint/promise-function-async */
+import { lazy } from 'react';
 import { Helmet } from 'react-helmet';
 import { useTranslation } from 'react-i18next';
 import { DefaultTheme, styled } from 'styled-components';
@@ -15,6 +14,8 @@ import { WikiBackground } from '../WikiBackground';
 import FindInPage from './FindInPage';
 import { SideBar } from './Sidebar';
 import { useInitialPage } from './useInitialPage';
+
+const Workflow = lazy(() => import('../Workflow'));
 
 const OuterRoot = styled.div`
   display: flex;
@@ -80,6 +81,7 @@ export default function Main(): React.JSX.Element {
           <FindInPage />
           <Switch>
             <Route path={`/${WindowNames.main}/${PageType.wiki}/:id/`} component={WikiBackground} />
+            <Route path={`/${WindowNames.main}/${PageType.workflow}/:any*/`} component={Workflow} />
             <Route path={`/${WindowNames.main}/${PageType.guide}/`} component={Guide} />
             <Route path={`/${WindowNames.main}/${PageType.help}/`} component={Help} />
             <Route path={`/${WindowNames.main}`} component={Guide} />

@@ -16,6 +16,7 @@ export default {
   Wiki: Symbol.for('Wiki'),
   WikiGitWorkspace: Symbol.for('WikiGitWorkspace'),
   Window: Symbol.for('Window'),
+  Workflow: Symbol.for('Workflow'),
   Workspace: Symbol.for('Workspace'),
   WorkspaceView: Symbol.for('WorkspaceView'),
   DeepLink: Symbol.for('DeepLinkService'),

@@ -24,6 +24,7 @@ import { IViewService, ViewServiceIPCDescriptor } from '@services/view/interface
 import { IWikiService, WikiServiceIPCDescriptor } from '@services/wiki/interface';
 import { IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
 import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows/interface';
+import { IWorkflowService, WorkflowServiceIPCDescriptor } from '@services/workflow/interface';
 import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
@@ -43,6 +44,7 @@ export const view = createProxy<AsyncifyProxy<IViewService>>(ViewServiceIPCDescr
 export const wiki = createProxy<IWikiService>(WikiServiceIPCDescriptor);
 export const wikiGitWorkspace = createProxy<IWikiGitWorkspaceService>(WikiGitWorkspaceServiceIPCDescriptor);
 export const window = createProxy<IWindowService>(WindowServiceIPCDescriptor);
+export const workflow = createProxy<AsyncifyProxy<IWorkflowService>>(WorkflowServiceIPCDescriptor);
 export const workspace = createProxy<AsyncifyProxy<IWorkspaceService>>(WorkspaceServiceIPCDescriptor);
 export const workspaceView = createProxy<IWorkspaceViewService>(WorkspaceViewServiceIPCDescriptor);
 export const deepLink = createProxy<IDeepLinkService>(DeepLinkServiceIPCDescriptor);
@@ -63,6 +65,7 @@ export const descriptors = {
   view: ViewServiceIPCDescriptor,
   wiki: WikiServiceIPCDescriptor,
   wikiGitWorkspace: WikiGitWorkspaceServiceIPCDescriptor,
+  workflow: WorkflowServiceIPCDescriptor,
   window: WindowServiceIPCDescriptor,
   workspace: WorkspaceServiceIPCDescriptor,
   workspaceView: WorkspaceViewServiceIPCDescriptor,

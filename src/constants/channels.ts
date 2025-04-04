@@ -150,6 +150,10 @@ export enum SyncChannel {
   name = 'SyncChannel',
 }
 
+export enum WorkflowChannel {
+  name = 'WorkflowChannel',
+}
+
 export type Channels =
   | MainChannel
   | AuthenticationChannel
@@ -165,9 +169,12 @@ export type Channels =
   | WikiGitWorkspaceChannel
   | WorkspaceChannel
   | WorkspaceViewChannel
+  | PagesChannel
+  | DatabaseChannel
   | PreferenceChannel
   | WindowChannel
   | ThemeChannel
   | I18NChannels
   | MetaDataChannel
-  | SyncChannel;
+  | SyncChannel
+  | WorkflowChannel;

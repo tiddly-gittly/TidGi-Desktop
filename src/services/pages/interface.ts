@@ -15,6 +15,10 @@ export enum PageType {
    * All "workspaces". It is hard to merge workspace concept with page concept, because will need to migrate all user data. So we leave them to be still workspace, but also call them wiki pages. And in event listeners about wiki page, we redirect them to call workspace methods.
    */
   wiki = 'wiki',
+  /**
+   * Workflow page for AI agents.
+   */
+  workflow = 'workflow',
 }
 export interface IPage {
   active: boolean;
