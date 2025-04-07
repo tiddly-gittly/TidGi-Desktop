@@ -1,5 +1,5 @@
 import React from 'react';
-import { StyledChat } from './components/StyledChat';
+import { ChatSessionUI } from './ChatSessionUI';
 import { useAgentStore } from './store';
 
 export function AgentSessions(): React.JSX.Element {
@@ -32,7 +32,7 @@ export function AgentSessions(): React.JSX.Element {
   };
 
   return (
-    <StyledChat
+    <ChatSessionUI
       sessions={formattedSessions}
       activeSessionId={activeSessionId}
       onNewSession={createNewSession}
