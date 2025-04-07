@@ -1,0 +1,19 @@
+{
+  "Chat": {
+    "NewSession": "新建会话",
+    "Session": "会话",
+    "SessionGroup": {
+      "Today": "今天",
+      "Yesterday": "昨天",
+      "Older": "更早"
+    },
+    "Thinking": "正在思考...",
+    "InputPlaceholder": "输入消息，Ctrl+Enter 发送",
+    "Send": "发送",
+    "StartNewConversation": "开始一个新的对话",
+    "EmptyStateDescription": "创建一个新会话或者从左侧选择一个已有会话来开始对话。",
+    "Use": "使用",
+    "ChangeMetadata": "修改元数据",
+    "OpenInWorkspaceTiddler": "在{{workspace}}工作区中打开{{title}}"
+  }
+}

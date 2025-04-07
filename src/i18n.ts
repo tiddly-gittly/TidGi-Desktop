@@ -13,12 +13,10 @@ export async function initI18N(): Promise<void> {
       // eslint-disable-next-line @typescript-eslint/consistent-type-assertions
       backend: {
         loadPath: 'locales/{{lng}}/{{ns}}.json',
-        addPath: 'locales/{{lng}}/{{ns}}.missing.json',
       },
       debug: isDevelopment,
       interpolation: { escapeValue: false },
-      saveMissing: isDevelopment,
-      saveMissingTo: 'current',
+      saveMissing: false,
       // namespace: 'translation',
       lng: language,
       fallbackLng: isDevelopment ? false : 'en',
