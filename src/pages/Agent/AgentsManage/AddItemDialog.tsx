@@ -4,7 +4,7 @@ import { Button, Chip, Dialog, DialogActions, DialogContent, DialogContentText, 
 import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import type { IWorkflowListItem } from './WorkflowList';
+import type { IWorkflowListItem } from './AgentsList';
 
 interface AddItemDialogProps {
   availableFilterTags: string[];

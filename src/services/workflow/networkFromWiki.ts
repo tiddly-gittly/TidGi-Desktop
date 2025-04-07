@@ -5,11 +5,11 @@ import { WikiChannel } from '@/constants/channels';
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { chatTiddlerTagName } from '@services/wiki/plugin/nofloWorkflow/constants';
 import { IWorkerWikiOperations } from '@services/wiki/wikiOperations/executor/wikiOperationInServer';
-import type { SingleChatState } from '@services/workflow/viewModelStore';
+import type { AgentState } from '@services/workflow/viewModelStore';
 import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { useEffect, useState } from 'react';
 import type { ITiddlerFields } from 'tiddlywiki';
-import { useChatsStore } from '../../pages/Workflow/RunWorkflow/useChatsStore';
+import { useChatsStore } from '../../pages/Agent/RunWorkflow/useChatsStore';
 
 
 /**
@@ -42,7 +42,7 @@ export function useChatsFromWiki(workspacesList: IWorkspaceWithMetadata[] | unde
             id: tiddler.title,
             title: (tiddler.caption as string | undefined) ?? tiddler.title,
             chatJSONString: tiddler.text,
-            chatJSON: JSON.parse(tiddler.text) as SingleChatState,
+            chatJSON: JSON.parse(tiddler.text) as AgentState,
             description: tiddler.description,
             tags: tiddler.tags.filter(item => item !== chatTiddlerTagName),
             workspaceID: workspace.id,

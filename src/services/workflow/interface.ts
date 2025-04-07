@@ -1,56 +1,92 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import type { Network as NofloNetwork } from 'noflo/lib/Network';
 import type { BehaviorSubject } from 'rxjs';
 
 import { WorkflowChannel } from '@/constants/channels';
-import { WorkflowRunningState } from '@services/database/entity/WorkflowNetwork';
 import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
-import type { StoreApi } from 'zustand/vanilla';
-import { SingleChatState, WorkflowViewModelStoreState } from './viewModelStore';
+import { AgentState } from './viewModelStore';
 
 /**
- * Info enough to create a network runtime.
+ * Base interface for agent definition
  */
-export interface IGraphInfo {
-  fbpGraphString: string;
-  graphTiddlerTitle: string;
-  network?: {
-    id: string;
-    runningState: WorkflowRunningState;
-    state?: INetworkState;
-  };
-  workspaceID: string;
-}
-
-/**
- * Context injected to every node in the network. Including UI effects, and other context.
- */
-export interface IWorkflowContext {
-  /** Workflow ID / Network ID / Chat ID, the same thing. */
+export interface IAgentDefinition {
   id: string;
-  store: StoreApi<WorkflowViewModelStoreState>;
+  name: string;
+  description: string;
+  version: string;
+  author?: string;
+  /** URL to icon image */
+  icon?: string;
+  /** URI pointing to callback definition, could be remote URL or local file */
+  callbackURI?: string;
 }
 
-export interface INetworkState {
-  /**
-   * Title, tags, created, modified...
-   */
-  meta?: ITiddlerFields;
-  /**
-   * State for UI, recording visible chat history.
-   */
-  viewModel: SingleChatState;
+/**
+ * Chat agent handles conversations with users
+ * ChatAgent - 对话型智能体
+ * 中文名：对话助手，直接表明基础聊天功能，用户认知成本低
+ * 适用场景：即时交互场景
+ */
+export interface IChatAgentDefinition extends IAgentDefinition {
+  type: 'chat';
+  /** URI pointing to message handler callback */
+  onUserSendMessageURI: string;
+  /** Optional URIs to additional callbacks */
+  callbacks?: {
+    onInit?: string;
+    onExit?: string;
+    onError?: string;
+  };
+  /** Default system prompt or configuration */
+  defaultSystemPrompt?: string;
+  /** Model configuration */
+  modelConfig?: {
+    provider?: string;
+    model?: string;
+    temperature?: number;
+    maxTokens?: number;
+  };
 }
+
+/**
+ * Service agent performs scheduled or event-triggered tasks
+ * RoutineAgent - 任务型智能体
+ * 中文名：任务管家，理由："管家"比"代理"更凸显自动化服务属性
+ * 适用场景：定时任务/自动化处理
+ */
+export interface IRoutineAgentDefinition extends IAgentDefinition {
+  type: 'routine';
+  callbacks: {
+    /** Main execution callback */
+    onExecute: string;
+    /** Triggered at scheduled intervals */
+    onSchedule?: string;
+    /** Triggered on specific events */
+    onEvent?: string;
+    onInit?: string;
+    onExit?: string;
+    onError?: string;
+  };
+  schedule?: {
+    /** Cron expression or interval in ms */
+    interval?: string | number;
+    /** Random execution between min and max interval */
+    randomInterval?: { min: number; max: number };
+  };
+  /** Event types this agent listens to */
+  listenEvents?: string[];
+}
+
+export type AgentDefinition = IChatAgentDefinition | IRoutineAgentDefinition;
 
 export interface IChatTiddler extends ITiddlerFields {
   description: string;
   ['page-cover']: string;
   type: 'application/json';
   /**
-   * Which workflow creates this chat.
+   * Which agent creates this chat.
    */
-  workflowID: string;
+  agentID: string;
 }
 
 export interface IChatListItem {
@@ -75,82 +111,92 @@ export interface IChatListItem {
    * From caption field, or use ID
    */
   title: string;
-  workflowID: string;
+  agentID: string;
   workspaceID: string;
 }
 
 /**
- * Manage running workflows in the memory, and serialize/deserialize them to/from the database
+ * Agent service to manage chat agents and service agents
  */
-export interface IWorkflowService {
+export interface IAgentService {
   /**
-   * Add a network to the memory, and add to the database
-   * @param workspaceID workspaceID containing the tiddler.
-   * @param graphTiddlerTitle Tiddler's title which includes the FBP graph JSON stringified string
-   * @returns new network id (chat id), and latest network state
-   */
-  addNetworkFromGraphTiddlerTitle(workspaceID: string, graphTiddlerTitle: string): Promise<{ id: string; state: INetworkState }>;
-  /**
-   * Get NoFlo Network (runtime instance) from fbp Graph (static graph description) that deserialize from a tiddler's text.
+   * Create agent from definition
    * Add to the memory, and add to the database. Ready to execute, or start immediately.
    *
-   * @param graphInfo Please provide `networkID` if this network is already in the database, so we can resume its state.
+   * @param agentInfo Please provide `agentID` if this agent is already in the database, so we can resume its state.
    */
-  deserializeNetworkAndAdd(
-    graphInfo: IGraphInfo,
+  createAgentAndAdd(
+    agentInfo: { definition: AgentDefinition; agentID?: string; workspaceID: string },
     options?: { start?: boolean },
-  ): Promise<{ id: string; network: NofloNetwork; state: INetworkState }>;
-  getFbpGraphStringFromURI(graphURI: string): Promise<{ fbpGraphString: string; graphTiddlerTitle: string; workspaceID: string }>;
+  ): Promise<{ id: string; state: AgentState }>;
+  getAgentDefinitionFromURI(definitionURI: string): Promise<{ definition: AgentDefinition; definitionTiddlerTitle: string; workspaceID: string }>;
   /**
-   * Get current state of a network, including viewModel and chat history, etc.
-   * @param networkID The chat ID
+   * Get current state of an agent, including viewModel and chat history, etc.
+   * @param agentID The agent/chat ID
    * @param providedState Normally we get state from stores, you can provide it here, so we can skip getting it from the store.
    */
-  getNetworkState(networkID: string, providedState?: Partial<INetworkState>): INetworkState;
-  listNetworks(): Array<[string, NofloNetwork]>;
+  getAgentState(agentID: string, providedState?: Partial<AgentState>): AgentState;
+  listAgents(): Array<[string, AgentDefinition]>;
   /**
-   * Get graph's definition, not including the state
+   * Get agent's definition
    */
-  serializeNetwork(networkID: string): string;
+  serializeAgent(agentID: string): string;
   /**
-   * Get graph's runtime state, including viewModel and chat history, etc.
+   * Get agent's runtime state, including viewModel and chat history, etc.
    * @param providedState Normally we get state from stores, you can provide it here, so we can skip getting it from the store.
    */
-  serializeNetworkState(networkID: string, providedState?: Partial<INetworkState> | undefined): string;
+  serializeAgentState(agentID: string, providedState?: Partial<AgentState>): string;
   /**
-   * Start running a network by its id. Resume its state based on serializedState on database.
+   * Start running an agent by its id. Resume its state based on serializedState on database.
    *
-   * The network must be added to the memory and database (by `deserializeNetworkAndAdd`) before calling this method.
-   * You can pass `start: true` to `deserializeNetworkAndAdd` to start the network immediately by automatically calling this method.
+   * The agent must be added to the memory and database (by `createAgentAndAdd`) before calling this method.
+   * You can pass `start: true` to `createAgentAndAdd` to start the agent immediately by automatically calling this method.
    */
-  startNetwork(networkID: string): Promise<void>;
+  startAgent(agentID: string): Promise<void>;
   /**
-   * Start all workflows that are marked as running in the database. Resume their state based on serializedState on database.
+   * Start all agents that are marked as running in the database. Resume their state based on serializedState on database.
    */
   startWorkflows(): Promise<void>;
   /**
-   * Stop a network by its id. Save its state to database.
+   * Stop an agent by its id. Save its state to database.
    */
-  stopNetwork(networkID: string): Promise<void>;
+  stopAgent(agentID: string): Promise<void>;
   /**
-   * subscribe to the network outcome, to see if we need to update the UI elements
-   * @param networkID The chat ID
+   * subscribe to the agent state, to see if we need to update the UI elements
+   * @param agentID The agent/chat ID
    */
-  subscribeNetworkState$(networkID: string): BehaviorSubject<INetworkState>;
-  updateNetworkState(networkID: string, nextState: INetworkState): Promise<void>;
+  subscribeAgentState$(agentID: string): BehaviorSubject<AgentState>;
+  updateAgentState(agentID: string, nextState: AgentState): Promise<void>;
+  /**
+   * Send a message to a chat agent
+   * @param agentID Agent ID to send message to
+   * @param message User message to send
+   */
+  sendMessageToAgent(agentID: string, message: string): Promise<void>;
+  /**
+   * Trigger execution of a service agent
+   * @param agentID Agent ID to execute
+   * @param params Optional parameters for execution
+   */
+  executeServiceAgent(agentID: string, parameters?: Record<string, any>): Promise<any>;
 }
-export const WorkflowServiceIPCDescriptor = {
+
+export const AgentServiceIPCDescriptor = {
   channel: WorkflowChannel.name,
   properties: {
-    addNetworkFromGraphTiddlerTitle: ProxyPropertyType.Function,
-    deserializeNetworkAndAdd: ProxyPropertyType.Function,
-    getFbpGraphStringFromURI: ProxyPropertyType.Function,
-    listNetworks: ProxyPropertyType.Function,
-    serializeNetwork: ProxyPropertyType.Function,
-    startNetwork: ProxyPropertyType.Function,
+    addAgentFromDefinitionTiddlerTitle: ProxyPropertyType.Function,
+    createAgentAndAdd: ProxyPropertyType.Function,
+    getAgentDefinitionFromURI: ProxyPropertyType.Function,
+    getAgentState: ProxyPropertyType.Function,
+    listAgents: ProxyPropertyType.Function,
+    serializeAgent: ProxyPropertyType.Function,
+    serializeAgentState: ProxyPropertyType.Function,
+    startAgent: ProxyPropertyType.Function,
     startWorkflows: ProxyPropertyType.Function,
-    stopNetwork: ProxyPropertyType.Function,
-    subscribeNetworkState$: ProxyPropertyType.Function$,
-    updateNetworkState: ProxyPropertyType.Function,
+    stopAgent: ProxyPropertyType.Function,
+    subscribeAgentState$: ProxyPropertyType.Function$,
+    updateAgentState: ProxyPropertyType.Function,
+    sendMessageToAgent: ProxyPropertyType.Function,
+    executeServiceAgent: ProxyPropertyType.Function,
   },
 };

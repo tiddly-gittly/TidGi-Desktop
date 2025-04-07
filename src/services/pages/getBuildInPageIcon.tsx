@@ -15,7 +15,7 @@ export function getBuildInPageIcon(pageType: PageType): React.JSX.Element {
     case PageType.guide: {
       return <InfoIcon />;
     }
-    case PageType.workflow: {
+    case PageType.agent: {
       return <AccountTreeIcon />;
     }
   }

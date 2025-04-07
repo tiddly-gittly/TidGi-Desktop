@@ -24,7 +24,7 @@ import { View } from '@services/view';
 import { Wiki } from '@services/wiki';
 import { WikiGitWorkspace } from '@services/wikiGitWorkspace';
 import { Window } from '@services/windows';
-import { WorkflowService } from '@services/workflow';
+import { AgentService } from '@services/workflow';
 import { Workspace } from '@services/workspaces';
 import { WorkspaceView } from '@services/workspacesView';
 
@@ -62,9 +62,9 @@ import type { IWikiService } from '@services/wiki/interface';
 import { WikiServiceIPCDescriptor } from '@services/wiki/interface';
 import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interface';
 import { WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
-import { IWorkflowService, WorkflowServiceIPCDescriptor } from '@services/workflow/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowServiceIPCDescriptor } from '@services/windows/interface';
+import { AgentServiceIPCDescriptor, IAgentService } from '@services/workflow/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
@@ -86,12 +86,12 @@ export function bindServiceAndProxy(): void {
   container.bind<IViewService>(serviceIdentifier.View).to(View).inSingletonScope();
   container.bind<ISyncService>(serviceIdentifier.Sync).to(Sync).inSingletonScope();
   container.bind<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace).to(WikiGitWorkspace).inSingletonScope();
-  container.bind<IWorkflowService>(serviceIdentifier.Workflow).to(WorkflowService).inSingletonScope();
   container.bind<IWikiService>(serviceIdentifier.Wiki).to(Wiki).inSingletonScope();
   container.bind<IWindowService>(serviceIdentifier.Window).to(Window).inSingletonScope();
   container.bind<IWorkspaceService>(serviceIdentifier.Workspace).to(Workspace).inSingletonScope();
   container.bind<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).to(WorkspaceView).inSingletonScope();
   container.bind<IDeepLinkService>(serviceIdentifier.DeepLink).to(DeepLinkService).inSingletonScope();
+  container.bind<IAgentService>(serviceIdentifier.Workflow).to(AgentService).inSingletonScope();
 
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
   const contextService = container.get<IContextService>(serviceIdentifier.Context);
@@ -107,13 +107,13 @@ export function bindServiceAndProxy(): void {
   const updaterService = container.get<IUpdaterService>(serviceIdentifier.Updater);
   const syncService = container.get<ISyncService>(serviceIdentifier.Sync);
   const viewService = container.get<IViewService>(serviceIdentifier.View);
-  const workflowService = container.get<IWorkflowService>(serviceIdentifier.Workflow);
   const wikiGitWorkspaceService = container.get<IWikiGitWorkspaceService>(serviceIdentifier.WikiGitWorkspace);
   const wikiService = container.get<IWikiService>(serviceIdentifier.Wiki);
   const windowService = container.get<IWindowService>(serviceIdentifier.Window);
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
   const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
+  const agentService = container.get<IAgentService>(serviceIdentifier.Workflow);
 
   registerProxy(authService, AuthenticationServiceIPCDescriptor);
   registerProxy(contextService, ContextServiceIPCDescriptor);
@@ -128,7 +128,6 @@ export function bindServiceAndProxy(): void {
   registerProxy(systemPreferenceService, SystemPreferenceServiceIPCDescriptor);
   registerProxy(themeService, ThemeServiceIPCDescriptor);
   registerProxy(updaterService, UpdaterServiceIPCDescriptor);
-  registerProxy(workflowService, WorkflowServiceIPCDescriptor);
   registerProxy(viewService, ViewServiceIPCDescriptor);
   registerProxy(wikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor);
   registerProxy(wikiService, WikiServiceIPCDescriptor);
@@ -136,4 +135,5 @@ export function bindServiceAndProxy(): void {
   registerProxy(workspaceService, WorkspaceServiceIPCDescriptor);
   registerProxy(workspaceViewService, WorkspaceViewServiceIPCDescriptor);
   registerProxy(deepLinkService, DeepLinkServiceIPCDescriptor);
+  registerProxy(agentService, AgentServiceIPCDescriptor);
 }

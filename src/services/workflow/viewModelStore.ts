@@ -2,49 +2,52 @@ import type { IButtonGroupProps, IResultTextProps, ITextFieldProps } from '@/pag
 import { isUndefined, mergeWith } from 'lodash';
 import { createStore } from 'zustand/vanilla';
 
-export interface UIElementState {
+export interface UIChatItemState {
   /**
    * This message is created by who. Or is meant to be created by who (sometimes, text input's content may not set yet, still waiting for user's input, but it is still set to "created by user")
    */
   author: 'user' | 'agent';
   /**
-   * The data to submit to the noflo node.
-   * can be string for textField or clicked index of buttons for buttonGroup, etc.
-   * Same content may also exist in the props for user generated message, but it is not guaranteed.
+   * nanoid and prefix by increasing number, so that it is unique in this chat and easy to sort.
    */
-  content: unknown;
   id: string;
-  isSubmitted: boolean;
   /**
-   * Additional Props for UI element. See ITextFieldProps and IButtonGroupProps for example, this can be added by plugin, so can't be statically typed, just as an example here.
+   * Additional Props for React UI element depending on type. See ITextFieldProps and IButtonGroupProps for example, this can be added by plugin, so can't be statically typed, just as an example here.
    * Structured data of this message. For TextResult, it can be just `{ content: string }`, but for more complex widgets, it can be a more complex object.
    */
-  props: ITextFieldProps | IButtonGroupProps | IResultTextProps | Record<string, unknown>;
+  content: ITextFieldProps | IButtonGroupProps | IResultTextProps | Record<string, unknown>;
+  type: 'textField' | 'buttonGroup' | 'textResult';
   timestamp: number;
-  type: 'textField' | 'buttonGroup' | 'textResult' | string;
-}
-export interface SingleChatState {
-  elements?: Record<string, UIElementState | undefined>;
-  // TODO: Add states here, as described in [WorkflowNetwork](src/services/database/entity/WorkflowNetwork.ts)'s `serializedState`
-}
-
-export interface WorkflowViewModelStoreState extends SingleChatState {
-  /** adds element and returns its ID */
-  addElement: (element: Pick<UIElementState, 'type' | 'props' | 'author'>) => string;
-  clearElements: () => void;
-  removeElement: (id: string) => void;
-  submitElement: (id: string, content: unknown) => void;
-  /** update existing element with new props, props will merge with old props, undefined value will be omitted (to use old value) */
-  updateElementProps: (element: Pick<UIElementState, 'id' | 'props'>) => void;
 }
 
 /**
- * Props for UI element to support submit
+ * Represents the state machine execution state of a callback, not including the result, results that is valuable to user should be stored in UIElementState.content.
  */
-export interface IUiElementSubmitProps {
-  id: string;
-  isSubmitted: boolean;
-  onSubmit: (id: string, content: unknown) => void;
+export interface IExecutionState {
+  /** The callback method name */
+  method: string;
+  state: 'running' | 'success' | 'error';
+  /** The execution state of this callback, may based on xstate's serialized state */
+  fullState: unknown;
+}
+
+/**
+ * All state from database to restore an agent's back to alive.
+ */
+export interface AgentState {
+  /** Chat items created during a chat and persisted execution result. Key is the id, for easy CRUD and sorting. */
+  ui?: Record<string, UIChatItemState | undefined>;
+  /** All callback's execution states, key is callback method name, value is array of state machine serialized state, because callback might execute multiple times. */
+  execution?: Record<string, IExecutionState[]>;
+}
+
+export interface WorkflowViewModelStoreState extends AgentState {
+  /** adds element and returns its ID */
+  addChatItem: (element: Omit<UIChatItemState, 'timestamp' | 'id'>) => string;
+  clearChatItem: () => void;
+  removeChatItem: (id: string) => void;
+  /** update existing Chat Item with new content (react props), content will merge with old content, undefined value will be omitted (to use old value) */
+  updateChatItemContent: (element: Pick<UIChatItemState, 'id' | 'content'>) => void;
 }
 
 /**
@@ -52,54 +55,41 @@ export interface IUiElementSubmitProps {
  * @param elements Existing UI state from database
  * @returns A new store for this chat
  */
-export const getWorkflowViewModelStore = (initialState?: SingleChatState) =>
+export const getWorkflowViewModelStore = (initialState?: AgentState) =>
   createStore<WorkflowViewModelStoreState>((set) => ({
-    elements: {},
+    ui: {},
+    execution: {},
     ...initialState,
-    addElement: ({ type, props, author }) => {
+    addChatItem: (element) => {
       const id = String(Math.random());
       const newElement = {
-        author,
-        content: undefined,
+        ...element,
         id,
-        isSubmitted: false,
-        props,
         timestamp: Date.now(),
-        type,
       };
-      set((state) => ({ elements: { ...state.elements, [id]: newElement } }));
+      set((state) => ({ ui: { ...state.ui, [id]: newElement } }));
       return id;
     },
-    updateElementProps: ({ id, props }) => {
+    updateChatItemContent: ({ id, content }) => {
       set((state) => {
-        const existedElement = state.elements?.[id];
+        const existedElement = state.ui?.[id];
         if (existedElement !== undefined) {
-          mergeWith(existedElement.props, props, (objectValue: unknown, sourceValue) => {
+          mergeWith(existedElement.content, content, (objectValue: unknown, sourceValue) => {
             if (isUndefined(sourceValue)) {
               return objectValue;
             }
           });
         }
-        return { elements: { ...state.elements, [id]: existedElement } };
+        return { ui: { ...state.ui, [id]: existedElement } };
       });
     },
-    submitElement: (id, content) => {
+    removeChatItem: (id) => {
       set((state) => {
-        const existedElement = state.elements?.[id];
-        if (existedElement !== undefined) {
-          existedElement.content = content;
-          existedElement.isSubmitted = true;
-        }
-        return { elements: { ...state.elements, [id]: existedElement } };
+        const newUi = { ...state.ui, [id]: undefined };
+        return { ui: newUi };
       });
     },
-    removeElement: (id) => {
-      set((state) => {
-        const newElements = { ...state.elements, [id]: undefined };
-        return { elements: newElements };
-      });
-    },
-    clearElements: () => {
-      set({ elements: {} });
+    clearChatItem: () => {
+      set({ ui: {} });
     },
   }));

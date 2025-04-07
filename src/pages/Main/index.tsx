@@ -15,7 +15,7 @@ import FindInPage from './FindInPage';
 import { SideBar } from './Sidebar';
 import { useInitialPage } from './useInitialPage';
 
-const Workflow = lazy(() => import('../Workflow'));
+const Workflow = lazy(() => import('../Agent'));
 
 const OuterRoot = styled.div`
   display: flex;
@@ -81,7 +81,7 @@ export default function Main(): React.JSX.Element {
           <FindInPage />
           <Switch>
             <Route path={`/${WindowNames.main}/${PageType.wiki}/:id/`} component={WikiBackground} />
-            <Route path={`/${WindowNames.main}/${PageType.workflow}/:any*/`} component={Workflow} />
+            <Route path={`/${WindowNames.main}/${PageType.agent}/:any*/`} component={Workflow} />
             <Route path={`/${WindowNames.main}/${PageType.guide}/`} component={Guide} />
             <Route path={`/${WindowNames.main}/${PageType.help}/`} component={Help} />
             <Route path={`/${WindowNames.main}`} component={Guide} />

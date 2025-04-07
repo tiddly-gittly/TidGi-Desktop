@@ -16,9 +16,9 @@ export enum PageType {
    */
   wiki = 'wiki',
   /**
-   * Workflow page for AI agents.
+   * Chat page for AI agents.
    */
-  workflow = 'workflow',
+  agent = 'agent',
 }
 export interface IPage {
   active: boolean;

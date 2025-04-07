@@ -1,5 +1,3 @@
-/* eslint-disable @typescript-eslint/no-unsafe-assignment */
-/* eslint-disable unicorn/no-null, @typescript-eslint/strict-boolean-expressions, unicorn/no-useless-undefined */
 import MenuIcon from '@mui/icons-material/Menu';
 import MenuOpenIcon from '@mui/icons-material/MenuOpen';
 import { Box, Button, Card, CardActionArea, CardActions, CardContent, CardMedia, Chip, Fade, Menu, MenuItem, Stack, Typography } from '@mui/material';
@@ -10,11 +8,11 @@ import Masonry from 'react-masonry-css';
 import styled from 'styled-components';
 
 import { DeleteConfirmationDialog } from './DeleteConfirmationDialog';
-import { useHandleOpenInTheGraphEditor, useHandleOpenInTheRunWorkflow } from './useClickHandler';
+import type { IAgentTiddler } from './useAgentDataSource';
+import { useHandleOpenInTheGraphEditor, useHandleOpenInTheRunAgent } from './useClickHandler';
 import { useHandleOpenInWiki } from './useHandleOpenInWiki';
-import type { IWorkflowTiddler } from './useWorkflowDataSource';
 
-const WorkflowListContainer = styled(Box)`
+const AgentListContainer = styled(Box)`
   width: 100%;
   .masonry-grid {
     display: flex;
@@ -26,7 +24,7 @@ const WorkflowListContainer = styled(Box)`
     background-clip: padding-box;
   }
 `;
-const WorkflowCard = styled(Card)`
+const AgentCard = styled(Card)`
   display: flex;
   flex-direction: column;
   position: relative;
@@ -41,14 +39,14 @@ const ItemMenuCardActions = styled(CardActions)`
   justify-content: space-between;
 `;
 
-interface IWorkflowListItemProps {
-  handleOpenChangeMetadataDialog: (item: IWorkflowListItem) => void;
-  item: IWorkflowListItem;
-  onDeleteWorkflow: (item: IWorkflowListItem) => void;
+interface IAgentListItemProps {
+  handleOpenChangeMetadataDialog: (item: IAgentListItem) => void;
+  item: IAgentListItem;
+  onDeleteAgent: (item: IAgentListItem) => void;
 }
-export function WorkflowListItem(props: IWorkflowListItemProps) {
+export function AgentListItem(props: IAgentListItemProps) {
   const { t } = useTranslation();
-  const { onDeleteWorkflow, item, handleOpenChangeMetadataDialog: handleOpenChangeMetadataDialogRaw } = props;
+  const { onDeleteAgent, item, handleOpenChangeMetadataDialog: handleOpenChangeMetadataDialogRaw } = props;
   const [anchorElement, setAnchorElement] = useState<null | HTMLElement>(null);
 
   const handleOpenItemMenu = useCallback((event: React.MouseEvent<HTMLButtonElement>) => {
@@ -60,8 +58,8 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
   }, []);
   const handleDelete = useCallback(() => {
     setAnchorElement(null);
-    onDeleteWorkflow(item);
-  }, [item, onDeleteWorkflow]);
+    onDeleteAgent(item);
+  }, [item, onDeleteAgent]);
   const handleOpenChangeMetadataDialog = useCallback(() => {
     setAnchorElement(null);
     handleOpenChangeMetadataDialogRaw(item);
@@ -70,18 +68,18 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
   const handleOpenInWiki = useHandleOpenInWiki(item);
 
   const handleOpenInTheGraphEditor = useHandleOpenInTheGraphEditor(item);
-  const handleOpenInTheRunWorkflow = useHandleOpenInTheRunWorkflow(item);
+  const handleOpenInTheRunAgent = useHandleOpenInTheRunAgent(item);
 
-  const menuID = `workflow-list-item-menu-${item.id}`;
+  const menuID = `agent-list-item-menu-${item.id}`;
   return (
-    <WorkflowCard>
+    <AgentCard>
       <CardActionArea onClick={handleOpenInTheGraphEditor}>
         {item.image && (
           <CardMedia
             component='img'
             height='140'
             image={item.image}
-            alt={`screenshot of workflow ${item.title}`}
+            alt={`screenshot of agent ${item.title}`}
           />
         )}
         <CardContent>
@@ -95,7 +93,7 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
       </CardActionArea>
       <ItemMenuCardActions>
         <Button onClick={handleOpenInTheGraphEditor}>{t('Open')}</Button>
-        <Button onClick={handleOpenInTheRunWorkflow}>{t('Workflow.Use')}</Button>
+        <Button onClick={handleOpenInTheRunAgent}>{t('Agent.Use')}</Button>
         <Button aria-controls={menuID} aria-haspopup='true' onClick={handleOpenItemMenu}>
           {anchorElement === null ? <MenuIcon /> : <MenuOpenIcon />}
         </Button>
@@ -112,17 +110,17 @@ export function WorkflowListItem(props: IWorkflowListItemProps) {
         <MenuItem
           onClick={handleOpenChangeMetadataDialog}
         >
-          {t('Workflow.ChangeMetadata')}
+          {t('Agent.ChangeMetadata')}
         </MenuItem>
         <MenuItem onClick={handleOpenInWiki}>
-          {t('Workflow.OpenInWorkspaceTiddler', { title: item.title, workspace: item.metadata?.workspace?.name ?? t('AddWorkspace.MainWorkspace') })}
+          {t('Agent.OpenInWorkspaceTiddler', { title: item.title, workspace: item.metadata?.workspace?.name ?? t('AddWorkspace.MainWorkspace') })}
         </MenuItem>
       </Menu>
-    </WorkflowCard>
+    </AgentCard>
   );
 }
 
-export interface IWorkflowListItem {
+export interface IAgentListItem {
   description?: string;
   /**
    * Map to tiddler's text field. Store the JSON format of the graph.
@@ -134,7 +132,7 @@ export interface IWorkflowListItem {
    * Things that only exist on runtime, and won't be persisted.
    */
   metadata?: {
-    tiddler?: IWorkflowTiddler;
+    tiddler?: IAgentTiddler;
     workspace?: IWorkspaceWithMetadata;
   };
   tags: string[];
@@ -142,21 +140,21 @@ export interface IWorkflowListItem {
   workspaceID: string;
 }
 
-interface IWorkflowListProps {
-  handleOpenChangeMetadataDialog: (item: IWorkflowListItem) => void;
-  onDeleteWorkflow: (item: IWorkflowListItem) => void;
-  workflows: IWorkflowListItem[];
+interface IAgentListProps {
+  handleOpenChangeMetadataDialog: (item: IAgentListItem) => void;
+  onDeleteAgent: (item: IAgentListItem) => void;
+  agents: IAgentListItem[];
 }
 
-export const WorkflowList: React.FC<IWorkflowListProps> = ({ workflows, onDeleteWorkflow, handleOpenChangeMetadataDialog }) => {
-  const [itemToDelete, setDeleteItem] = useState<IWorkflowListItem | undefined>();
+export const AgentList: React.FC<IAgentListProps> = ({ agents, onDeleteAgent, handleOpenChangeMetadataDialog }) => {
+  const [itemToDelete, setDeleteItem] = useState<IAgentListItem | undefined>();
   const handleDeleteConfirmed = useCallback(() => {
     if (itemToDelete) {
-      onDeleteWorkflow(itemToDelete);
+      onDeleteAgent(itemToDelete);
       setDeleteItem(undefined);
     }
-  }, [itemToDelete, onDeleteWorkflow]);
-  const handleDeleteWithConfirmation = useCallback((item: IWorkflowListItem) => {
+  }, [itemToDelete, onDeleteAgent]);
+  const handleDeleteWithConfirmation = useCallback((item: IAgentListItem) => {
     setDeleteItem(item);
   }, []);
   const handleDeleteCancel = useCallback(() => {
@@ -165,19 +163,19 @@ export const WorkflowList: React.FC<IWorkflowListProps> = ({ workflows, onDelete
 
   return (
     <>
-      <WorkflowListContainer>
+      <AgentListContainer>
         <Masonry
           breakpointCols={{ default: 4, 1320: 3, 990: 2, 680: 1 }}
           className='masonry-grid'
           columnClassName='masonry-grid_column'
         >
-          {workflows.map((workflow) => (
-            <div key={workflow.id}>
-              <WorkflowListItem key={workflow.id} item={workflow} onDeleteWorkflow={handleDeleteWithConfirmation} handleOpenChangeMetadataDialog={handleOpenChangeMetadataDialog} />
+          {agents.map((agent) => (
+            <div key={agent.id}>
+              <AgentListItem key={agent.id} item={agent} onDeleteAgent={handleDeleteWithConfirmation} handleOpenChangeMetadataDialog={handleOpenChangeMetadataDialog} />
             </div>
           ))}
         </Masonry>
-      </WorkflowListContainer>
+      </AgentListContainer>
       <DeleteConfirmationDialog
         open={itemToDelete !== undefined}
         onCancel={handleDeleteCancel}

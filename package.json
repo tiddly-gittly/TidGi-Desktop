@@ -50,6 +50,7 @@
     "i18next": "24.2.2",
     "i18next-electron-fs-backend": "3.0.3",
     "i18next-fs-backend": "2.6.0",
+    "immer": "^10.1.1",
     "intercept-stdout": "0.1.2",
     "inversify": "6.2.1",
     "inversify-inject-decorators": "3.1.0",
@@ -61,6 +62,7 @@
     "nanoid": "^5.0.9",
     "new-github-issue-url": "^1.0.0",
     "node-fetch": "3.3.2",
+    "react-masonry-css": "^1.0.16",
     "reflect-metadata": "0.2.2",
     "registry-js": "1.16.0",
     "rotating-file-stream": "^3.2.5",
@@ -77,6 +79,7 @@
     "winston-daily-rotate-file": "5.0.0",
     "winston-transport": "4.9.0",
     "wouter": "^3.5.1",
+    "zustand": "^5.0.3",
     "zx": "8.3.1"
   },
   "optionalDependencies": {

@@ -7,11 +7,11 @@ import SimpleBar from 'simplebar-react';
 import styled from 'styled-components';
 
 import { AddItemDialog } from './AddItemDialog';
+import { AgentList, IAgentListItem } from './AgentsList';
+import { useAgents, useAvailableFilterTags } from './useAgentDataSource';
 import { useHandleOpenInTheGraphEditor } from './useClickHandler';
-import { useAvailableFilterTags, useWorkflows } from './useWorkflowDataSource';
-import { IWorkflowListItem, WorkflowList } from './WorkflowList';
 
-const WorkflowManageContainer = styled(Box)`
+const AgentManageContainer = styled(Box)`
   display: flex;
   flex-direction: column;
   margin: 1em;
@@ -38,7 +38,7 @@ const AddNewItemFloatingButton = styled(Fab)`
   right: 1em;
 `;
 
-export const WorkflowManage: React.FC = () => {
+export const AgentsManage: React.FC = () => {
   const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [selectedIncludedTags, setSelectedIncludedTags] = useState<string[]>([]);
@@ -47,24 +47,24 @@ export const WorkflowManage: React.FC = () => {
 
   const workspacesList = useWorkspacesListObservable();
   const [availableFilterTags, setTagsByWorkspace] = useAvailableFilterTags(workspacesList);
-  const [workflows, onAddWorkflow, onDeleteWorkflow] = useWorkflows(workspacesList, setTagsByWorkspace);
+  const [agents, onAddAgent, onDeleteAgent] = useAgents(workspacesList, setTagsByWorkspace);
 
-  const [itemSelectedForDialog, setItemSelectedForDialog] = useState<IWorkflowListItem | undefined>();
-  const handleOpenDialog = useCallback((item?: IWorkflowListItem) => {
+  const [itemSelectedForDialog, setItemSelectedForDialog] = useState<IAgentListItem | undefined>();
+  const handleOpenDialog = useCallback((item?: IAgentListItem) => {
     setItemSelectedForDialog(item);
     setDialogOpen(true);
   }, []);
   const handleCloseDialog = useCallback(() => {
     setDialogOpen(false);
-    // eslint-disable-next-line unicorn/no-useless-undefined
+
     setItemSelectedForDialog(undefined);
   }, []);
   const handleOpenInTheGraphEditor = useHandleOpenInTheGraphEditor();
-  const handleDialogAddWorkflow = useCallback(async (newItem: IWorkflowListItem, oldItem?: IWorkflowListItem) => {
-    await onAddWorkflow(newItem, oldItem);
+  const handleDialogAddAgent = useCallback(async (newItem: IAgentListItem, oldItem?: IAgentListItem) => {
+    await onAddAgent(newItem, oldItem);
     handleOpenInTheGraphEditor(newItem);
     handleCloseDialog();
-  }, [handleCloseDialog, handleOpenInTheGraphEditor, onAddWorkflow]);
+  }, [handleCloseDialog, handleOpenInTheGraphEditor, onAddAgent]);
 
   const handleTagClick = useCallback((tag: string) => {
     // if included, set it as excluded
@@ -80,17 +80,17 @@ export const WorkflowManage: React.FC = () => {
     }
   }, [selectedIncludedTags, selectedExcludedTags]);
 
-  const filteredWorkflows = workflows
-    .filter(workflow => search.length > 0 ? workflow.title.includes(search) : workflow)
-    .filter(workflow => selectedIncludedTags.length > 0 ? selectedIncludedTags.some(tag => workflow.tags.includes(tag)) : workflow)
-    .filter(workflow => selectedExcludedTags.length > 0 ? selectedExcludedTags.every(tag => !workflow.tags.includes(tag)) : workflow);
+  const filteredAgents = agents
+    .filter(agent => search.length > 0 ? agent.title.includes(search) : agent)
+    .filter(agent => selectedIncludedTags.length > 0 ? selectedIncludedTags.some(tag => agent.tags.includes(tag)) : agent)
+    .filter(agent => selectedExcludedTags.length > 0 ? selectedExcludedTags.every(tag => !agent.tags.includes(tag)) : agent);
 
   return (
-    <WorkflowManageContainer>
+    <AgentManageContainer>
       <SimpleBar>
         <SearchRegionContainer>
           <SearchBar
-            label={t('Workflow.SearchWorkflows')}
+            label={t('Agent.SearchAgents')}
             value={search}
             onChange={(event: ChangeEvent<HTMLInputElement>) => {
               setSearch(event.target.value);
@@ -99,8 +99,8 @@ export const WorkflowManage: React.FC = () => {
           <Stack direction='row' spacing={1}>
             {availableFilterTags.map(tag => {
               const tooltip = selectedIncludedTags.includes(tag)
-                ? t('Workflow.FilteringIncludeClickToExclude')
-                : (selectedExcludedTags.includes(tag) ? t('Workflow.FilteringExcludeClickToRemove') : t('Workflow.NotFilteringClickToInclude'));
+                ? t('Agent.FilteringIncludeClickToExclude')
+                : (selectedExcludedTags.includes(tag) ? t('Agent.FilteringExcludeClickToRemove') : t('Agent.NotFilteringClickToInclude'));
               const color = selectedIncludedTags.includes(tag) ? 'primary' : (selectedExcludedTags.includes(tag) ? 'warning' : 'default');
               return (
                 <Tooltip title={tooltip} key={tag}>
@@ -117,7 +117,7 @@ export const WorkflowManage: React.FC = () => {
             })}
           </Stack>
         </SearchRegionContainer>
-        <WorkflowList workflows={filteredWorkflows} onDeleteWorkflow={onDeleteWorkflow} handleOpenChangeMetadataDialog={handleOpenDialog} />
+        <AgentList agents={filteredAgents} onDeleteAgent={onDeleteAgent} handleOpenChangeMetadataDialog={handleOpenDialog} />
       </SimpleBar>
       <AddNewItemFloatingButton
         color='primary'
@@ -131,11 +131,11 @@ export const WorkflowManage: React.FC = () => {
       <AddItemDialog
         open={dialogOpen}
         onClose={handleCloseDialog}
-        onAdd={handleDialogAddWorkflow}
+        onAdd={handleDialogAddAgent}
         availableFilterTags={availableFilterTags}
         workspacesList={workspacesList}
         item={itemSelectedForDialog}
       />
-    </WorkflowManageContainer>
+    </AgentManageContainer>
   );
 };
