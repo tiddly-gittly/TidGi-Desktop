@@ -21,7 +21,8 @@
     "OpenWorkspaceFolderInEditor": "Open Folder In External Editor",
     "OpenWorkspaceFolderInGitGUI": "Open in Git GUI",
     "OpenInBrowser": "Open in browser",
-    "OpenInBrowserDisabledHint": "(Config→EnableHTTPAPI to enable)"
+    "OpenInBrowserDisabledHint": "(Config→EnableHTTPAPI to enable)",
+    "Agent": "agent"
   },
   "SideBar": {
     "CommandPalette": "CmdPal",

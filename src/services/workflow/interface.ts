@@ -4,7 +4,7 @@ import type { BehaviorSubject } from 'rxjs';
 import { WorkflowChannel } from '@/constants/channels';
 import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import type { ITiddlerFields } from 'tiddlywiki';
-import { AgentState } from './viewModelStore';
+import { AgentState } from '../../pages/Agent/AgentSessions/store';
 
 /**
  * Base interface for agent definition

@@ -22,7 +22,8 @@
     "OpenWorkspaceFolderInEditor": "用外部编辑器打开文件夹",
     "OpenWorkspaceFolderInGitGUI": "用可视化Git工具打开",
     "OpenInBrowser": "用浏览器打开",
-    "OpenInBrowserDisabledHint": "（启用 HTTP API 才能使用）"
+    "OpenInBrowserDisabledHint": "（启用 HTTP API 才能使用）",
+    "Agent": "智能体"
   },
   "SideBar": {
     "CommandPalette": "搜索/命令",

@@ -1,6 +1,7 @@
 import BadgeRaw from '@mui/material/Badge';
+import { PageType } from '@services/pages/interface';
 import Promise from 'bluebird';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { keyframes, styled } from 'styled-components';
 import is from 'typescript-styled-is';
@@ -119,7 +120,7 @@ interface Props {
   active?: boolean;
   badgeCount?: number;
   icon: React.ReactNode;
-  id: string;
+  id: PageType;
   index?: number;
   onClick?: () => void;
   pageClickedLoading?: boolean;
@@ -141,12 +142,23 @@ export function PageSelectorBase({
   icon,
 }: Props): React.JSX.Element {
   const { t } = useTranslation();
-  const [shortPageName, shortPageNameSetter] = useState<string>(t('Loading'));
   useEffect(() => {
-    void window.service.native.path('basename', pageName).then((baseName) => {
-      shortPageNameSetter(baseName ?? (id + t('WorkspaceSelector.BadWorkspacePath')));
-    });
   }, [id, pageName, t]);
+  let displayName = pageName;
+  switch (id) {
+    case PageType.guide: {
+      displayName = t('WorkspaceSelector.Guide');
+      break;
+    }
+    case PageType.help: {
+      displayName = t('WorkspaceSelector.Help');
+      break;
+    }
+    case PageType.agent: {
+      displayName = t('WorkspaceSelector.Agent');
+      break;
+    }
+  }
   return (
     <Root
       $active={active}
@@ -157,9 +169,9 @@ export function PageSelectorBase({
         {showSideBarIcon && (
           <Avatar
             $large={!showSidebarTexts}
-            $addAvatar={id === 'add'}
+            $addAvatar={false}
             $highlightAdd={index === 0}
-            id={id === 'add' || id === 'guide' ? 'add-workspace-button' : `workspace-avatar-${id}`}
+            id={`workspace-avatar-${id}`}
           >
             <AvatarPicture $large={!showSidebarTexts} draggable={false}>
               {icon}
@@ -169,7 +181,7 @@ export function PageSelectorBase({
       </Badge>
       {showSidebarTexts && (
         <ShortcutText $active={active}>
-          {id === 'add' ? t('WorkspaceSelector.Add') : (id === 'guide' ? t('WorkspaceSelector.Guide') : shortPageName)}
+          {displayName}
         </ShortcutText>
       )}
     </Root>

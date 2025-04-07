@@ -85,7 +85,7 @@ export function useAgentFromWiki(workspacesList: IWorkspaceWithMetadata[] | unde
             title: tiddler.title,
             graphJSONString: tiddler.text,
             description: tiddler.description,
-            tags: tiddler.tags.filter(item => item !== AGENT_DEFINITION_TIDDLER_TAG_NAME),
+            tags: tiddler.tags?.filter(item => item !== AGENT_DEFINITION_TIDDLER_TAG_NAME) ?? [],
             workspaceID: workspace.id,
             image: tiddler['page-cover'],
             metadata: {

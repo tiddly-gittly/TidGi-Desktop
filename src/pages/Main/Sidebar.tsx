@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import { Settings as SettingsIcon, Upgrade as UpgradeIcon } from '@mui/icons-material';
 import { t } from 'i18next';
 import SimpleBar from 'simplebar-react';
-import { styled, css } from 'styled-components';
+import { css, styled } from 'styled-components';
 import is, { isNot } from 'typescript-styled-is';
 
 import { latestStableUpdateUrl } from '@/constants/urls';

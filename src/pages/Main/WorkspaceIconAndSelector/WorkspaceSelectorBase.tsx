@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 import RestartAltIcon from '@mui/icons-material/RestartAlt';
 import BadgeRaw from '@mui/material/Badge';
 import Promise from 'bluebird';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { keyframes, styled } from 'styled-components';
 import is from 'typescript-styled-is';
@@ -151,12 +150,6 @@ export function WorkspaceSelectorBase({
   onClick = () => {},
 }: Props): React.JSX.Element {
   const { t } = useTranslation();
-  const [shortWorkspaceName, shortWorkspaceNameSetter] = useState<string>(t('Loading'));
-  useEffect(() => {
-    void window.service.native.path('basename', workspaceName).then((baseName) => {
-      shortWorkspaceNameSetter(baseName ?? (id + t('WorkspaceSelector.BadWorkspacePath')));
-    });
-  }, [workspaceName, t, id]);
   let icon = showSideBarIcon && (
     <Avatar
       $large={!showSidebarTexts}
@@ -185,6 +178,13 @@ export function WorkspaceSelectorBase({
       </Tooltip>
     );
   }
+  let displayName = workspaceName;
+  switch (id) {
+    case 'add': {
+      displayName = t('WorkspaceSelector.Add');
+      break;
+    }
+  }
   return (
     <Root
       $hibernated={hibernated}
@@ -197,7 +197,7 @@ export function WorkspaceSelectorBase({
       </Badge>
       {showSidebarTexts && (
         <ShortcutText $active={active}>
-          {id === 'add' ? t('WorkspaceSelector.Add') : (id === 'guide' ? t('WorkspaceSelector.Guide') : shortWorkspaceName)}
+          {displayName}
         </ShortcutText>
       )}
     </Root>

@@ -21,7 +21,8 @@
     "OpenWorkspaceFolderInEditor": "Открыть папку во внешнем редакторе",
     "OpenWorkspaceFolderInGitGUI": "Открыть в Git GUI",
     "OpenInBrowser": "Открыть в браузере",
-    "OpenInBrowserDisabledHint": "(Настройки→Включить HTTP API)"
+    "OpenInBrowserDisabledHint": "(Настройки→Включить HTTP API)",
+    "Agent": "агент"
   },
   "SideBar": {
     "CommandPalette": "Палитра команд",

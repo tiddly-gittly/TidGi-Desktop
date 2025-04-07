@@ -27,9 +27,9 @@ export interface IPage {
    */
   hide: boolean;
   /**
-   * Wiki's workspaceID, or just be build-in page's type.
+   * Page's ID (If we allow user create custom pages in the future), or just be build-in page's type.
    */
-  id: string;
+  id: PageType;
   order: number;
   type: PageType;
 }

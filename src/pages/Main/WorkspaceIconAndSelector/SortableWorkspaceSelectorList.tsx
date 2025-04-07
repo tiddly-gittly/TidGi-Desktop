@@ -19,7 +19,7 @@ export function SortableWorkspaceSelectorList({ workspacesList, showSideBarText,
     }),
   );
 
-  const workspaceIDs = workspacesList?.map((workspace) => workspace.id) ?? [];
+  const workspaceIDs = workspacesList.map((workspace) => workspace.id);
 
   return (
     <DndContext

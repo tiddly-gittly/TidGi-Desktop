@@ -21,7 +21,8 @@
     "OpenWorkspaceFolderInEditor": "Ouvrir le dossier dans un éditeur externe",
     "OpenWorkspaceFolderInGitGUI": "Ouvrir dans Git GUI",
     "OpenInBrowser": "Ouvrir dans le navigateur",
-    "OpenInBrowserDisabledHint": "(Configurer→ActiverHTTPAPI pour activer)"
+    "OpenInBrowserDisabledHint": "(Configurer→ActiverHTTPAPI pour activer)",
+    "Agent": "agent"
   },
   "SideBar": {
     "CommandPalette": "CmdPal",
