@@ -1,4 +1,4 @@
-import { Conversation, Session } from 'reachat';
+import { Conversation, Session } from '@services/agent/interface';
 import { shallow } from 'zustand/shallow';
 import { createWithEqualityFn } from 'zustand/traditional';
 import { createStore } from 'zustand/vanilla';

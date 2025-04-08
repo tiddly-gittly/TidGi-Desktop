@@ -1,6 +1,6 @@
 import { WikiChannel } from '@/constants/channels';
 import { usePromiseValue } from '@/helpers/useServiceValue';
-import { AGENT_DEFINITION_TIDDLER_TAG_NAME } from '@services/workflow/constants';
+import { AGENT_DEFINITION_TIDDLER_TAG_NAME } from '@services/agent/constants';
 import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { ITiddlerFields } from 'tiddlywiki';

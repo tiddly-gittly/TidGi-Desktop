@@ -24,7 +24,7 @@ import { View } from '@services/view';
 import { Wiki } from '@services/wiki';
 import { WikiGitWorkspace } from '@services/wikiGitWorkspace';
 import { Window } from '@services/windows';
-import { AgentService } from '@services/workflow';
+import { AgentService } from '@services/agent';
 import { Workspace } from '@services/workspaces';
 import { WorkspaceView } from '@services/workspacesView';
 
@@ -64,7 +64,7 @@ import type { IWikiGitWorkspaceService } from '@services/wikiGitWorkspace/interf
 import { WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
 import type { IWindowService } from '@services/windows/interface';
 import { WindowServiceIPCDescriptor } from '@services/windows/interface';
-import { AgentServiceIPCDescriptor, IAgentService } from '@services/workflow/interface';
+import { AgentServiceIPCDescriptor, IAgentService } from '@services/agent/interface';
 import type { IWorkspaceService } from '@services/workspaces/interface';
 import { WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';

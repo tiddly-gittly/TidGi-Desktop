@@ -38,7 +38,6 @@ function App(): React.JSX.Element {
               <RootStyle>
                 <Router hook={useHashLocation}>
                   <Pages />
-                  aaa
                 </Router>
               </RootStyle>
             </I18nextProvider>

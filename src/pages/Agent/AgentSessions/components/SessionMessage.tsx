@@ -1,4 +1,4 @@
-import { Conversation } from 'reachat';
+import { Conversation } from '@services/agent/interface';
 import React from 'react';
 import styled from 'styled-components';
 

@@ -63,7 +63,6 @@
     "new-github-issue-url": "^1.0.0",
     "node-fetch": "3.3.2",
     "reablocks": "^9.0.1",
-    "reachat": "^2.0.0",
     "react-masonry-css": "^1.0.16",
     "reflect-metadata": "0.2.2",
     "registry-js": "1.16.0",

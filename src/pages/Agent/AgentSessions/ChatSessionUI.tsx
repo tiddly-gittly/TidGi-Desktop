@@ -1,8 +1,8 @@
-import { Conversation } from 'reachat';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
 
+import { Session } from '@services/agent/interface';
 import { ChatInput } from './components/ChatInput';
 import { EmptyState } from './components/EmptyState';
 import { LoadingIndicator } from './components/LoadingIndicator';
@@ -23,17 +23,8 @@ const ChatContainer = styled.div`
   overflow: hidden;
 `;
 
-// 组件实现
-export interface ChatSession {
-  id: string;
-  title?: string;
-  createdAt?: Date;
-  updatedAt?: Date;
-  conversations: Conversation[];
-}
-
 interface ChatProps {
-  sessions: ChatSession[];
+  sessions: Session[];
   activeSessionId?: string;
   isLoading?: boolean;
   onNewSession: () => void;
@@ -56,9 +47,9 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
 
   // 根据创建日期对会话进行分组
   const groupSessions = () => {
-    const today: ChatSession[] = [];
-    const yesterday: ChatSession[] = [];
-    const older: ChatSession[] = [];
+    const today: Session[] = [];
+    const yesterday: Session[] = [];
+    const older: Session[] = [];
 
     const now = new Date();
     const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();

@@ -24,7 +24,7 @@ import { IViewService, ViewServiceIPCDescriptor } from '@services/view/interface
 import { IWikiService, WikiServiceIPCDescriptor } from '@services/wiki/interface';
 import { IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
 import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows/interface';
-import { AgentServiceIPCDescriptor, IAgentService } from '@services/workflow/interface';
+import { AgentServiceIPCDescriptor, IAgentService } from '@services/agent/interface';
 import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
