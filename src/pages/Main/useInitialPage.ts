@@ -1,7 +1,5 @@
-/* eslint-disable unicorn/no-null */
 import { usePromiseValue } from '@/helpers/useServiceValue';
 import { PageType } from '@services/pages/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
 import { useEffect, useState } from 'react';
 import { useLocation } from 'wouter';
 
@@ -17,10 +15,10 @@ export function useInitialPage() {
     if (initialActivePage !== null && initialActiveWorkspace !== null && !alreadyInitialized) {
       if (initialActiveWorkspace === undefined) {
         if (initialActivePage !== undefined) {
-          setLocation(`/${WindowNames.main}/${initialActivePage.type}/`);
+          setLocation(`/${initialActivePage.type}/`);
         }
       } else {
-        setLocation(`/${WindowNames.main}/${PageType.wiki}/${initialActiveWorkspace.id}/`);
+        setLocation(`/${PageType.wiki}/${initialActiveWorkspace.id}/`);
       }
       alreadyInitializedSetter(true);
     }

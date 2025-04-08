@@ -6,7 +6,6 @@ import { useTranslation } from 'react-i18next';
 import { useLocation } from 'wouter';
 
 import { getBuildInPageName } from '@services/pages/getBuildInPageName';
-import { WindowNames } from '@services/windows/WindowProperties';
 import { getBuildInPageIcon } from '../../../services/pages/getBuildInPageIcon';
 import { PageSelectorBase } from './PageSelectorBase';
 
@@ -27,11 +26,12 @@ export function SortablePageSelectorButton({ index, page, showSidebarTexts, show
   };
   const [pageClickedLoading, pageClickedLoadingSetter] = useState(false);
   const [, setLocation] = useLocation();
+
   const onPageClick = useCallback(async () => {
     pageClickedLoadingSetter(true);
     try {
+      setLocation(`/${type}/`);
       await window.service.pages.setActivePage(type);
-      setLocation(`/${WindowNames.main}/${type}/`);
     } catch (error) {
       if (error instanceof Error) {
         await window.service.native.log('error', error.message);

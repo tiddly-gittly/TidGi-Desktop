@@ -14,7 +14,6 @@ import { WikiBackground } from '../WikiBackground';
 import FindInPage from './FindInPage';
 import { SideBar } from './Sidebar';
 import { useInitialPage } from './useInitialPage';
-import { useSyncRouteWithService } from './useSyncRouteWithService';
 
 const Agent = lazy(() => import('../Agent'));
 
@@ -66,7 +65,6 @@ const windowName = window.meta().windowName;
 export default function Main(): React.JSX.Element {
   const { t } = useTranslation();
   useInitialPage();
-  useSyncRouteWithService();
   const preferences = usePreferenceObservable();
   if (preferences === undefined) return <div>{t('Loading')}</div>;
   const { sidebar, sidebarOnMenubar } = preferences;
@@ -82,11 +80,12 @@ export default function Main(): React.JSX.Element {
         <ContentRoot $sidebar={showSidebar}>
           <FindInPage />
           <Switch>
-            <Route path={`/${WindowNames.main}/${PageType.wiki}/:id/`} component={WikiBackground} />
-            <Route path={`/${WindowNames.main}/${PageType.agent}/`} component={Agent} />
-            <Route path={`/${WindowNames.main}/${PageType.guide}/`} component={Guide} />
-            <Route path={`/${WindowNames.main}/${PageType.help}/`} component={Help} />
-            <Route path={`/${WindowNames.main}`} component={Guide} />
+            {/* 使用 nest 属性创建嵌套路由上下文 */}
+            <Route path={`/${PageType.wiki}/:id/`} component={WikiBackground} />
+            <Route path={`/${PageType.agent}`} component={Agent} nest />
+            <Route path={`/${PageType.guide}`} component={Guide} />
+            <Route path={`/${PageType.help}`} component={Help} />
+            <Route path='/' component={Guide} />
             <Route component={Guide} />
           </Switch>
         </ContentRoot>

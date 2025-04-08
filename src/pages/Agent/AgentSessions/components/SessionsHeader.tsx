@@ -1,6 +1,5 @@
 import { getBuildInPageIcon } from '@services/pages/getBuildInPageIcon';
 import { PageType } from '@services/pages/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
@@ -59,7 +58,7 @@ export const SessionsHeader: React.FC<SessionsHeaderProps> = ({ onNewSession }) 
       <NewSessionButton onClick={onNewSession}>
         {t('Chat.NewSession', { ns: 'agent' })}
       </NewSessionButton>
-      <NewAgentButton href={`/${WindowNames.main}/${PageType.agent}/agents`}>
+      <NewAgentButton to='/agents'>
         {getBuildInPageIcon(PageType.agent)}
       </NewAgentButton>
     </Header>

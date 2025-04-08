@@ -9,7 +9,8 @@ export function useHandleOpenInTheGraphEditor(item?: IAgentListItem) {
   const handleOpenInTheGraphEditor = useCallback((item1?: IAgentListItem | MouseEvent<HTMLButtonElement>) => {
     const agentID = item?.id ?? (item1 as IAgentListItem)?.id;
     if (!agentID) return;
-    setLocation(`/${WindowNames.main}/${PageType.agent}/agent/${agentID}/`);
+    // 使用相对路径 - 在嵌套路由上下文中
+    setLocation(`/agent/${agentID}/`);
   }, [setLocation, item]);
   return handleOpenInTheGraphEditor;
 }
@@ -17,7 +18,8 @@ export function useHandleOpenInTheGraphEditor(item?: IAgentListItem) {
 export function useHandleOpenInTheRunAgent(item: IAgentListItem) {
   const [, setLocation] = useLocation();
   const handleOpenInTheGraphEditor = useCallback(() => {
-    setLocation(`/${WindowNames.main}/${PageType.agent}/session/${item.id}/`);
+    // 使用相对路径 - 在嵌套路由上下文中
+    setLocation(`/session/${item.id}/`);
   }, [setLocation, item]);
   return handleOpenInTheGraphEditor;
 }

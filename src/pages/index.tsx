@@ -24,8 +24,9 @@ export function Pages(): React.JSX.Element {
       <Route path={`/${WindowNames.notifications}`} component={DialogNotifications} />
       <Route path={`/${WindowNames.preferences}`} component={DialogPreferences} />
       <Route path={`/${WindowNames.spellcheck}`} component={SpellcheckLanguages} />
-      <Route path={`/${WindowNames.main}/:any*/:any*`} component={Main} />
-      <Route component={Main} />
+      {/* 为主窗口使用 nest 属性创建嵌套路由上下文 */}
+      <Route path={`/${WindowNames.main}`} component={Main} nest />
+      <Route path='/' component={Main} />
     </Switch>
   );
 }

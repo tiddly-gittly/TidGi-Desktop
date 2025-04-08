@@ -81,7 +81,7 @@
     "winston": "3.17.0",
     "winston-daily-rotate-file": "5.0.0",
     "winston-transport": "4.9.0",
-    "wouter": "^3.5.1",
+    "wouter": "^3.6.0",
     "zustand": "^5.0.3",
     "zx": "8.3.1"
   },

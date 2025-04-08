@@ -7,7 +7,6 @@ import { useTranslation } from 'react-i18next';
 import { WorkspaceSelectorBase } from './WorkspaceSelectorBase';
 
 import { PageType } from '@services/pages/interface';
-import { WindowNames } from '@services/windows/WindowProperties';
 import { useLocation } from 'wouter';
 
 export interface ISortableItemProps {
@@ -30,7 +29,8 @@ export function SortableWorkspaceSelectorButton({ index, workspace, showSidebarT
   const onWorkspaceClick = useCallback(async () => {
     workspaceClickedLoadingSetter(true);
     try {
-      setLocation(`/${WindowNames.main}/${PageType.wiki}/${id}/`);
+      // 使用相对路径, 适配嵌套路由
+      setLocation(`/${PageType.wiki}/${id}/`);
       await window.service.workspace.openWorkspaceTiddler(workspace);
     } catch (error) {
       if (error instanceof Error) {
