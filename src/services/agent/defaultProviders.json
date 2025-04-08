@@ -1,0 +1,27 @@
+{
+  "providers": [
+    {
+      "provider": "openai",
+      "models": ["gpt-4o", "gpt-4-turbo", "gpt-3.5-turbo"]
+    },
+    {
+      "provider": "siliconflow",
+      "baseURL": "https://api.siliconflow.cn/v1",
+      "models": ["Qwen/Qwen2.5-7B-Instruct", "deepseek-ai/DeepSeek-R1-Distill-Qwen-7B"]
+    },
+    {
+      "provider": "deepseek",
+      "models": ["deepseek-chat", "deepseek-coder"]
+    },
+    {
+      "provider": "anthropic",
+      "models": ["claude-3-opus-20240229", "claude-3-sonnet-20240229", "claude-3-haiku-20240307"]
+    }
+  ],
+  "defaultConfig": {
+    "provider": "siliconflow",
+    "model": "Qwen/Qwen2.5-7B-Instruct",
+    "temperature": 0.7,
+    "systemPrompt": "You are a helpful assistant."
+  }
+}

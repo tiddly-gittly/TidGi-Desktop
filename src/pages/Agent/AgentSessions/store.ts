@@ -1,98 +1,129 @@
-import { Conversation, Session } from '@services/agent/interface';
+import { AgentState, AIProviderConfig, AISessionConfig, Conversation } from '@services/agent/interface';
 import { omit } from 'lodash';
+import { useEffect } from 'react';
 import { create } from 'zustand';
 
-/**
- * Represents the state machine execution state of a callback, not including the result, results that is valuable to user should be stored in UIElementState.content.
- */
-export interface IExecutionState {
-  /** The callback method name */
-  method: string;
-  state: 'running' | 'success' | 'error';
-  /** The execution state of this callback, may based on xstate's serialized state */
-  fullState: unknown;
-}
-
-/**
- * All state from database to restore an agent's back to alive.
- */
-export interface AgentState {
-  /** Chat items created during a chat and persisted execution result. */
-  ui?: Session;
-  /** All callback's execution states, key is callback method name, value is array of state machine serialized state, because callback might execute multiple times. */
-  execution?: Record<string, IExecutionState[]>;
-  /** Session id */
-  id?: string;
-  /** Session title */
-  title?: string;
-  /** Created timestamp */
-  createdAt?: Date;
-  /** Updated timestamp */
-  updatedAt?: Date;
-  /** 会话内的对话列表 */
-  conversations?: Conversation[];
-}
-
 export interface AgentViewModelStoreState {
-  // 会话管理状态
+  // Session management state
   sessions: AgentState[];
   activeSessionId?: string;
-  // 针对每个session的loading状态
+  // Loading states for each session
   loadingStates: Record<string, boolean>;
+  // AI response streaming states
+  streamingStates: Record<string, boolean>;
+  // Available AI models
+  availableModels: string[];
+  selectedModel: string;
+  // AI providers and models state
+  providers: AIProviderConfig[];
 
-  // 操作方法
-  createNewSession: () => string;
+  // Operations
+  createNewSession: () => Promise<string>;
   deleteSession: (id: string) => void;
   selectSession: (id: string) => void;
   sendMessage: (message: string, sessionId?: string) => void;
 
-  // 获取session是否正在加载
+  // AI-related methods
+  sendMessageToAI: (message: string, sessionId?: string) => Promise<void>;
+  cancelAIRequest: (sessionId?: string) => Promise<void>;
+  loadAvailableAIModels: () => Promise<void>;
+  selectAIModel: (model: string) => void;
+  /**
+   * Load all supported AI providers
+   */
+  loadAIProviders: () => Promise<void>;
+  /**
+   * Update session AI configuration
+   */
+  updateSessionAIConfig: (sessionId: string | undefined, config: AISessionConfig) => Promise<void>;
+  /**
+   * Get session AI configuration
+   */
+  getSessionAIConfig: (sessionId: string | undefined) => AISessionConfig | undefined;
+
+  // Initialization
+  initialize: () => Promise<void>;
+
+  // Initialize AI response stream subscription
+  initAIResponseStreamSubscription: () => void;
+
+  // Initialize session sync subscription
+  initSessionSyncSubscription: () => void;
+
+  // Check if session is loading
   isSessionLoading: (sessionId: string) => boolean;
+  // Check if session is streaming
+  isSessionStreaming: (sessionId: string) => boolean;
 }
 
-// 使用 create 直接创建 store hook，符合 zustand 标准模式
+// Use create to directly create store hook, following zustand standard pattern
 export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
   sessions: [],
   loadingStates: {},
+  streamingStates: {},
+  availableModels: ['gpt-4o'],
+  selectedModel: 'gpt-4o',
+  providers: [],
 
-  createNewSession: () => {
-    const { sessions } = get();
-    const newId = (sessions.length + 1).toString();
+  // Initialization method, load all sessions
+  initialize: async () => {
+    try {
+      // Initialize subscriptions
+      get().initAIResponseStreamSubscription();
+      get().initSessionSyncSubscription();
 
-    // 先确保会话有一个唯一ID
-    let uniqueId = newId;
-    while (sessions.some(s => s.id === uniqueId)) {
-      // 如果ID已存在，生成一个新的ID
-      uniqueId = `${parseInt(uniqueId) + 1}`;
+      // Load AI model list
+      get().loadAvailableAIModels();
+
+      // Load AI providers
+      get().loadAIProviders();
+
+      // Load sessions from server
+      if (typeof window !== 'undefined' && window.service.agent) {
+        const sessions = await window.service.agent.getAllSessions();
+        set({ sessions });
+      }
+    } catch (error) {
+      console.error('Failed to initialize agent store:', error);
     }
+  },
 
-    const newSession: AgentState = {
-      id: uniqueId,
-      title: `新会话 #${uniqueId}`,
-      createdAt: new Date(),
-      updatedAt: new Date(),
-      conversations: [],
-    };
+  createNewSession: async () => {
+    try {
+      // Call server to create session and get complete session object (including generated ID)
+      const createdSession = await window.service.agent.createSession();
 
-    set(state => ({
-      sessions: [...state.sessions, newSession],
-      activeSessionId: uniqueId,
-    }));
+      // Update frontend state
+      set(state => ({
+        sessions: [...state.sessions, createdSession],
+        activeSessionId: createdSession.id,
+      }));
 
-    return uniqueId;
+      return createdSession.id;
+    } catch (error) {
+      console.error('Failed to create session:', error);
+      return '';
+    }
   },
 
   deleteSession: (id: string) => {
     const { sessions, activeSessionId, loadingStates } = get();
 
-    // 创建一个新的loadingStates副本并删除对应session的loading状态
+    // Create a new copy of loadingStates and delete the loading state of the corresponding session
     const newLoadingStates = { ...omit(loadingStates, id) };
 
+    // First update the frontend state for immediate feedback
     set({
       sessions: sessions.filter((session) => session.id !== id),
       activeSessionId: id === activeSessionId ? undefined : activeSessionId,
       loadingStates: newLoadingStates,
     });
+
+    // Simultaneously delete the session on the server
+    window.service.agent.deleteSession(id)
+      .catch(error => {
+        console.error('Failed to delete session in service:', error);
+      });
   },
 
   selectSession: (id: string) => {
@@ -107,42 +138,10 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
     const { sessions, activeSessionId } = get();
     const targetSessionId = sessionId || activeSessionId;
 
-    // 如果未指定sessionId且没有activeSessionId，创建新会话
-    if (!targetSessionId) {
-      const newId = (sessions.length + 1).toString();
-
-      // 设置这个新会话为加载状态
-      set(state => ({
-        loadingStates: { ...state.loadingStates, [newId]: true },
-      }));
-
-      const newSession: AgentState = {
-        id: newId,
-        title: `新会话 #${newId}`,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        conversations: [{
-          id: `${newId}-0`,
-          question: message,
-          response: '这是一个示例响应',
-          createdAt: new Date(),
-          updatedAt: new Date(),
-        }],
-      };
-
-      set(state => ({
-        sessions: [...state.sessions, newSession],
-        activeSessionId: newId,
-        loadingStates: { ...state.loadingStates, [newId]: false },
-      }));
-
-      return;
-    }
-
-    // 找到目标会话
+    // Find the target session
     const current = sessions.find((s) => s.id === targetSessionId);
-    if (current) {
-      // 设置该会话为加载状态
+    if (targetSessionId && current) {
+      // Set the session to loading state
       set(state => ({
         loadingStates: { ...state.loadingStates, [targetSessionId]: true },
       }));
@@ -151,7 +150,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
       const newMessage: Conversation = {
         id: `${targetSessionId}-${conversations.length}`,
         question: message,
-        response: '这是一个示例响应',
+        response: 'This is a sample response',
         createdAt: new Date(),
         updatedAt: new Date(),
       };
@@ -168,4 +167,206 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
       }));
     }
   },
+
+  isSessionStreaming: (sessionId: string) => {
+    return get().streamingStates[sessionId] || false;
+  },
+
+  sendMessageToAI: async (message: string, sessionId?: string) => {
+    const { activeSessionId } = get();
+    const targetSessionId = sessionId || activeSessionId;
+    if (!targetSessionId) {
+      console.error('No active session ID provided');
+      return;
+    }
+
+    // Set session to streaming state
+    set(state => ({
+      streamingStates: { ...state.streamingStates, [targetSessionId]: true },
+    }));
+
+    try {
+      // Call server-side method to handle the entire process
+      await window.service.agent.sendMessageToAI(targetSessionId, message);
+    } catch (error) {
+      console.error('Failed to send message to AI:', error);
+      // Reset streaming state on error
+      set(state => ({
+        streamingStates: { ...state.streamingStates, [targetSessionId]: false },
+      }));
+    }
+  },
+
+  cancelAIRequest: async (sessionId?: string) => {
+    const targetSessionId = sessionId || get().activeSessionId;
+    if (targetSessionId) {
+      try {
+        await window.service.agent.cancelAIRequest(targetSessionId);
+        // Reset streaming state
+        set(state => ({
+          streamingStates: { ...state.streamingStates, [targetSessionId]: false },
+        }));
+      } catch (error) {
+        console.error('Failed to cancel AI request:', error);
+      }
+    }
+  },
+
+  loadAIProviders: async () => {
+    const providers = await window.service.agent.getAIProviders();
+    set({ providers });
+  },
+
+  updateSessionAIConfig: async (sessionId, config) => {
+    if (!sessionId) {
+      return;
+    }
+
+    try {
+      // First update frontend state
+      const { sessions } = get();
+      const session = sessions.find(s => s.id === sessionId);
+
+      if (session) {
+        const updatedSession = {
+          ...session,
+          aiConfig: { ...config },
+          updatedAt: new Date(),
+        };
+
+        set({
+          sessions: [
+            ...sessions.filter(s => s.id !== sessionId),
+            updatedSession,
+          ],
+        });
+
+        // Then update server state
+        await window.service.agent.updateSessionAIConfig(sessionId, config);
+      }
+    } catch (error) {
+      console.error('Failed to update session AI config:', error);
+    }
+  },
+
+  getSessionAIConfig: (sessionId) => {
+    if (!sessionId) {
+      return undefined;
+    }
+
+    const { sessions } = get();
+    const session = sessions.find(s => s.id === sessionId);
+
+    return session?.aiConfig;
+  },
+
+  loadAvailableAIModels: async () => {
+    const models = await window.service.agent.getAvailableAIModels();
+    set({ availableModels: models });
+  },
+
+  selectAIModel: (model: string) => {
+    set({ selectedModel: model });
+  },
+
+  // Initialize AI response stream subscription
+  initAIResponseStreamSubscription: () => {
+    // Subscribe to AI streaming response
+    window.observables.agent.aiResponseStream$.subscribe({
+      next: (response) => {
+        if (!response) return;
+
+        const { sessionId, content, status } = response;
+        const { sessions, streamingStates } = get();
+        const current = sessions.find(s => s.id === sessionId);
+
+        if (current && current.conversations?.length) {
+          const conversations = current.conversations;
+          const lastConversation = conversations[conversations.length - 1];
+
+          // Update session based on status
+          if (status === 'start') {
+            // Mark session as streaming state
+            set({
+              streamingStates: { ...streamingStates, [sessionId]: true },
+            });
+          }
+
+          // For all statuses, update if there is content
+          if (content !== undefined) {
+            const updatedSession = {
+              ...current,
+              conversations: [
+                ...conversations.slice(0, -1),
+                { ...lastConversation, response: content },
+              ],
+            };
+
+            set({
+              sessions: [...sessions.filter(s => s.id !== sessionId), updatedSession],
+            });
+          }
+
+          // On completion/error/cancellation, close streaming state
+          if (status === 'done' || status === 'error' || status === 'cancel') {
+            set({
+              streamingStates: { ...get().streamingStates, [sessionId]: false },
+            });
+          }
+        } else {
+          console.warn('No matching session or conversation found:', sessionId);
+        }
+      },
+      error: (error) => {
+        console.error('AI response stream error:', error);
+      },
+    });
+  },
+
+  // Initialize session sync subscription
+  initSessionSyncSubscription: () => {
+    // Subscribe to session sync, note to use window.observables instead of window.service
+    window.observables.agent.sessionSync$.subscribe({
+      next: (syncData) => {
+        if (!syncData) return;
+
+        const { session, action } = syncData;
+        const { sessions, activeSessionId } = get();
+
+        // Handle sync based on action type
+        if (action === 'create' || action === 'update') {
+          // Update or add session
+          set({
+            sessions: [
+              ...sessions.filter(s => s.id !== session.id),
+              session,
+            ],
+          });
+        } else if (action === 'delete') {
+          // Delete session
+          set({
+            sessions: sessions.filter(s => s.id !== session.id),
+            // If the deleted session is the current active session, clear activeSessionId
+            activeSessionId: session.id === activeSessionId ? undefined : activeSessionId,
+          });
+        }
+      },
+    });
+  },
 }));
+
+// Use React Hook to initialize store
+export const useAgentStoreInitialization = () => {
+  const initialize = useAgentStore(state => state.initialize);
+
+  useEffect(() => {
+    initialize();
+  }, [initialize]);
+};
+
+// Remove old event listener code, use React Hook to perform initialization
+export const useAIResponseStreamSubscription = () => {
+  useEffect(() => {
+    useAgentStore.getState().initAIResponseStreamSubscription();
+  }, []);
+};

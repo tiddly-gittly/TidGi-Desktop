@@ -66,19 +66,34 @@ const Button = styled.button`
   }
 `;
 
+const CancelButton = styled(Button)`
+  background-color: ${props => props.theme.palette.error.main};
+  
+  &:hover {
+    background-color: ${props => props.theme.palette.error.dark};
+  }
+`;
+
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
+  onCancelRequest: () => void;
   isLoading?: boolean;
+  isStreaming?: boolean;
 }
 
-export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }) => {
+export const ChatInput: React.FC<ChatInputProps> = ({
+  onSendMessage,
+  onCancelRequest,
+  isLoading,
+  isStreaming,
+}) => {
   const { t } = useTranslation('agent');
   const [inputValue, setInputValue] = useState<string>('');
   const inputReference = useRef<HTMLTextAreaElement>(null);
 
   const handleSubmit = (event: FormEvent) => {
     event.preventDefault();
-    if (!inputValue.trim() || isLoading) return;
+    if (!inputValue.trim() || isLoading || isStreaming) return;
 
     onSendMessage(inputValue);
     setInputValue('');
@@ -110,12 +125,20 @@ export const ChatInput: React.FC<ChatInputProps> = ({ onSendMessage, isLoading }
           }}
           onKeyDown={handleKeyDown}
           placeholder={t('Chat.InputPlaceholder', { ns: 'agent' })}
-          disabled={isLoading}
+          disabled={isLoading || isStreaming}
           rows={1}
         />
-        <Button type='submit' disabled={isLoading || !inputValue.trim()}>
-          {t('Chat.Send', { ns: 'agent' })}
-        </Button>
+        {isStreaming
+          ? (
+            <CancelButton type='button' onClick={onCancelRequest}>
+              {t('Chat.Cancel', { ns: 'agent', defaultValue: '取消' })}
+            </CancelButton>
+          )
+          : (
+            <Button type='submit' disabled={isLoading || isStreaming || !inputValue.trim()}>
+              {t('Chat.Send', { ns: 'agent' })}
+            </Button>
+          )}
       </InputForm>
     </Container>
   );

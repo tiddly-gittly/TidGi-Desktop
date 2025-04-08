@@ -2,6 +2,8 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
 
+import { AgentState } from '@services/agent/interface';
+import { AIModelSelector } from './components/AIModelSelector';
 import { ChatInput } from './components/ChatInput';
 import { EmptyState } from './components/EmptyState';
 import { LoadingIndicator } from './components/LoadingIndicator';
@@ -13,7 +15,6 @@ import { SessionMessagesHeader } from './components/SessionMessagesHeader';
 import { SessionsGroup } from './components/SessionsGroup';
 import { SessionsHeader } from './components/SessionsHeader';
 import { SessionsList } from './components/SessionsList';
-import { AgentState } from './store';
 
 const ChatContainer = styled.div`
   display: flex;
@@ -27,20 +28,24 @@ interface ChatProps {
   sessions: AgentState[];
   activeSessionId?: string;
   isLoading?: boolean;
+  isStreaming?: boolean;
   onNewSession: () => void;
   onSelectSession: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
   onSendMessage: (message: string) => void;
+  onCancelRequest: () => void;
 }
 
 export const ChatSessionUI: React.FC<ChatProps> = ({
   sessions,
   activeSessionId,
   isLoading,
+  isStreaming,
   onNewSession,
   onSelectSession,
   onDeleteSession,
   onSendMessage,
+  onCancelRequest,
 }) => {
   const { t } = useTranslation('agent');
   const activeSession = sessions.find(session => session.id === activeSessionId);
@@ -128,16 +133,26 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
         ? (
           <SessionMessagePanel>
             <SessionMessagesHeader title={activeSession.title || `${t('Chat.Session', { ns: 'agent' })} ${activeSession.id}`} />
+
+            {/* 添加AI模型选择器 */}
+            <AIModelSelector sessionId={activeSessionId} />
+
             <SessionMessages>
               {(activeSession.conversations || []).map(conversation => (
                 <SessionMessage
                   key={conversation.id}
                   conversation={conversation}
+                  isStreaming={isStreaming && conversation.id === `${activeSession.id}-${(activeSession.conversations || []).length - 1}`}
                 />
               ))}
               {isLoading && <LoadingIndicator message={t('Chat.Thinking', { ns: 'agent' })} />}
             </SessionMessages>
-            <ChatInput onSendMessage={onSendMessage} isLoading={isLoading} />
+            <ChatInput
+              onSendMessage={onSendMessage}
+              onCancelRequest={onCancelRequest}
+              isLoading={isLoading}
+              isStreaming={isStreaming}
+            />
           </SessionMessagePanel>
         )
         : (

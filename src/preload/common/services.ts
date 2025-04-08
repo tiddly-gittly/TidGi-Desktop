@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/ban-types */
 /**
  * Provide API from main services to GUI (for example, preference window), and tiddlywiki
  * This file should be required by WebContentsView's preload script to work
@@ -7,6 +6,7 @@
 import { createProxy } from 'electron-ipc-cat/client';
 import { AsyncifyProxy } from 'electron-ipc-cat/common';
 
+import { AgentServiceIPCDescriptor, IAgentService } from '@services/agent/interface';
 import { AuthenticationServiceIPCDescriptor, IAuthenticationService } from '@services/auth/interface';
 import { ContextServiceIPCDescriptor, IContextService } from '@services/context/interface';
 import { DeepLinkServiceIPCDescriptor, IDeepLinkService } from '@services/deepLink/interface';
@@ -24,12 +24,13 @@ import { IViewService, ViewServiceIPCDescriptor } from '@services/view/interface
 import { IWikiService, WikiServiceIPCDescriptor } from '@services/wiki/interface';
 import { IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '@services/wikiGitWorkspace/interface';
 import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows/interface';
-import { AgentServiceIPCDescriptor, IAgentService } from '@services/agent/interface';
 import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 
+export const agent = createProxy<AsyncifyProxy<IAgentService>>(AgentServiceIPCDescriptor);
 export const auth = createProxy<IAuthenticationService>(AuthenticationServiceIPCDescriptor);
 export const context = createProxy<IContextService>(ContextServiceIPCDescriptor);
+export const deepLink = createProxy<IDeepLinkService>(DeepLinkServiceIPCDescriptor);
 export const git = createProxy<IGitService>(GitServiceIPCDescriptor);
 export const menu = createProxy<IMenuService>(MenuServiceIPCDescriptor);
 export const native = createProxy<INativeService>(NativeServiceIPCDescriptor);
@@ -44,14 +45,14 @@ export const view = createProxy<AsyncifyProxy<IViewService>>(ViewServiceIPCDescr
 export const wiki = createProxy<IWikiService>(WikiServiceIPCDescriptor);
 export const wikiGitWorkspace = createProxy<IWikiGitWorkspaceService>(WikiGitWorkspaceServiceIPCDescriptor);
 export const window = createProxy<IWindowService>(WindowServiceIPCDescriptor);
-export const workflow = createProxy<AsyncifyProxy<IAgentService>>(AgentServiceIPCDescriptor);
 export const workspace = createProxy<AsyncifyProxy<IWorkspaceService>>(WorkspaceServiceIPCDescriptor);
 export const workspaceView = createProxy<IWorkspaceViewService>(WorkspaceViewServiceIPCDescriptor);
-export const deepLink = createProxy<IDeepLinkService>(DeepLinkServiceIPCDescriptor);
 
 export const descriptors = {
+  agent: AgentServiceIPCDescriptor,
   auth: AuthenticationServiceIPCDescriptor,
   context: ContextServiceIPCDescriptor,
+  deepLink: DeepLinkServiceIPCDescriptor,
   git: GitServiceIPCDescriptor,
   menu: MenuServiceIPCDescriptor,
   native: NativeServiceIPCDescriptor,
@@ -65,9 +66,7 @@ export const descriptors = {
   view: ViewServiceIPCDescriptor,
   wiki: WikiServiceIPCDescriptor,
   wikiGitWorkspace: WikiGitWorkspaceServiceIPCDescriptor,
-  workflow: AgentServiceIPCDescriptor,
   window: WindowServiceIPCDescriptor,
   workspace: WorkspaceServiceIPCDescriptor,
   workspaceView: WorkspaceViewServiceIPCDescriptor,
-  deepLink: DeepLinkServiceIPCDescriptor,
 };

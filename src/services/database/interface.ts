@@ -4,12 +4,14 @@ import { IPage } from '@services/pages/interface';
 import { IPreferences } from '@services/preferences/interface';
 import { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
+import type { AgentSettings } from '@services/agent/interface';
 
 export interface ISettingFile {
   pages: Record<string, IPage>;
   preferences: IPreferences;
   userInfos: IUserInfos;
   workspaces: Record<string, IWorkspace>;
+  agentSettings?: AgentSettings;
 }
 
 /**
