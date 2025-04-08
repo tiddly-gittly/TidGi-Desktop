@@ -1,7 +1,7 @@
+import { Session } from '@services/agent/interface';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { ChatSession } from '../ChatSessionUI';
 
 const Item = styled.div<{ active?: boolean }>`
   padding: 10px 16px;
@@ -42,7 +42,7 @@ const DeleteButton = styled.button`
 `;
 
 interface SessionListItemProps {
-  session: ChatSession;
+  session: Session;
   isActive: boolean;
   onSelect: (sessionId: string) => void;
   onDelete: (sessionId: string) => void;

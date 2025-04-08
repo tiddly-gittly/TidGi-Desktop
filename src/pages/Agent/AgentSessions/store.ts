@@ -1,7 +1,6 @@
 import { Conversation, Session } from '@services/agent/interface';
-import { shallow } from 'zustand/shallow';
-import { createWithEqualityFn } from 'zustand/traditional';
-import { createStore } from 'zustand/vanilla';
+import { omit } from 'lodash';
+import { create } from 'zustand';
 
 /**
  * Represents the state machine execution state of a callback, not including the result, results that is valuable to user should be stored in UIElementState.content.
@@ -42,7 +41,7 @@ export interface AgentViewModelStoreState {
   loadingStates: Record<string, boolean>;
 
   // 操作方法
-  createNewSession: () => void;
+  createNewSession: () => string;
   deleteSession: (id: string) => void;
   selectSession: (id: string) => void;
   sendMessage: (message: string, sessionId?: string) => void;
@@ -51,127 +50,122 @@ export interface AgentViewModelStoreState {
   isSessionLoading: (sessionId: string) => boolean;
 }
 
-/**
- * Isomorphic store for UI state of a chat, runs in server side and client side. So don't use any browser/electron specific API here.
- * @param elements Existing UI state from database
- * @returns A new store for this chat
- */
-export const getWorkflowViewModelStore = (initialState?: AgentState) =>
-  createStore<AgentViewModelStoreState>((set, get) => ({
-    ui: {},
-    execution: {},
-    sessions: [],
-    loadingStates: {},
-    ...initialState,
+// 使用 create 直接创建 store hook，符合 zustand 标准模式
+export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
+  sessions: [],
+  loadingStates: {},
 
-    createNewSession: () => {
-      const { sessions } = get();
+  createNewSession: () => {
+    const { sessions } = get();
+    const newId = (sessions.length + 1).toString();
+
+    // 先确保会话有一个唯一ID
+    let uniqueId = newId;
+    while (sessions.some(s => s.id === uniqueId)) {
+      // 如果ID已存在，生成一个新的ID
+      uniqueId = `${parseInt(uniqueId) + 1}`;
+    }
+
+    const newSession: AgentState = {
+      id: uniqueId,
+      title: `新会话 #${uniqueId}`,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+      conversations: [],
+    };
+
+    set(state => ({
+      sessions: [...state.sessions, newSession],
+      activeSessionId: uniqueId,
+    }));
+
+    return uniqueId;
+  },
+
+  deleteSession: (id: string) => {
+    const { sessions, activeSessionId, loadingStates } = get();
+
+    // 创建一个新的loadingStates副本并删除对应session的loading状态
+    const newLoadingStates = { ...omit(loadingStates, id) };
+
+    set({
+      sessions: sessions.filter((session) => session.id !== id),
+      activeSessionId: id === activeSessionId ? undefined : activeSessionId,
+      loadingStates: newLoadingStates,
+    });
+  },
+
+  selectSession: (id: string) => {
+    set({ activeSessionId: id });
+  },
+
+  isSessionLoading: (sessionId: string) => {
+    return get().loadingStates[sessionId] || false;
+  },
+
+  sendMessage: (message: string, sessionId?: string) => {
+    const { sessions, activeSessionId } = get();
+    const targetSessionId = sessionId || activeSessionId;
+
+    // 如果未指定sessionId且没有activeSessionId，创建新会话
+    if (!targetSessionId) {
       const newId = (sessions.length + 1).toString();
-      set({
-        sessions: [
-          ...sessions,
-          {
-            id: newId,
-            title: `新会话 #${newId}`,
-            createdAt: new Date(),
-            updatedAt: new Date(),
-            conversations: [],
-          },
-        ],
-      });
-    },
 
-    deleteSession: (id: string) => {
-      const { sessions, activeSessionId, loadingStates } = get();
+      // 设置这个新会话为加载状态
+      set(state => ({
+        loadingStates: { ...state.loadingStates, [newId]: true },
+      }));
 
-      // 创建一个新的loadingStates副本并删除对应session的loading状态
-      const newLoadingStates = { ...loadingStates };
-      delete newLoadingStates[id];
-
-      set({
-        sessions: sessions.filter((session) => session.id !== id),
-        activeSessionId: id === activeSessionId ? undefined : activeSessionId,
-        loadingStates: newLoadingStates,
-      });
-    },
-
-    selectSession: (id: string) => {
-      set({ activeSessionId: id });
-    },
-
-    isSessionLoading: (sessionId: string) => {
-      return get().loadingStates[sessionId] || false;
-    },
-
-    sendMessage: (message: string, sessionId?: string) => {
-      const { sessions, activeSessionId } = get();
-      const targetSessionId = sessionId || activeSessionId;
-
-      // 如果未指定sessionId且没有activeSessionId，创建新会话
-      if (!targetSessionId) {
-        const newId = (sessions.length + 1).toString();
-
-        // 设置这个新会话为加载状态
-        set(state => ({
-          loadingStates: { ...state.loadingStates, [newId]: true },
-        }));
-
-        const newSession: AgentState = {
-          id: newId,
-          title: `新会话 #${newId}`,
-          createdAt: new Date(),
-          updatedAt: new Date(),
-          conversations: [{
-            id: `${newId}-0`,
-            question: message,
-            response: '这是一个示例响应',
-            createdAt: new Date(),
-            updatedAt: new Date(),
-          }],
-        };
-
-        set(state => ({
-          sessions: [...state.sessions, newSession],
-          activeSessionId: newId,
-          loadingStates: { ...state.loadingStates, [newId]: false },
-        }));
-
-        return;
-      }
-
-      // 找到目标会话
-      const current = sessions.find((s) => s.id === targetSessionId);
-      if (current) {
-        // 设置该会话为加载状态
-        set(state => ({
-          loadingStates: { ...state.loadingStates, [targetSessionId]: true },
-        }));
-
-        const conversations = current.conversations || [];
-        const newMessage: Conversation = {
-          id: `${targetSessionId}-${conversations.length}`,
+      const newSession: AgentState = {
+        id: newId,
+        title: `新会话 #${newId}`,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+        conversations: [{
+          id: `${newId}-0`,
           question: message,
           response: '这是一个示例响应',
           createdAt: new Date(),
           updatedAt: new Date(),
-        };
+        }],
+      };
 
-        const updated = {
-          ...current,
-          conversations: [...conversations, newMessage],
-          updatedAt: new Date(),
-        };
+      set(state => ({
+        sessions: [...state.sessions, newSession],
+        activeSessionId: newId,
+        loadingStates: { ...state.loadingStates, [newId]: false },
+      }));
 
-        set(state => ({
-          sessions: [...state.sessions.filter((s) => s.id !== targetSessionId), updated],
-          loadingStates: { ...state.loadingStates, [targetSessionId]: false },
-        }));
-      }
-    },
-  }));
+      return;
+    }
 
-// 创建一个React hooks友好的store
-export const useAgentStore = createWithEqualityFn<AgentViewModelStoreState>()(
-  (set, get) => getWorkflowViewModelStore().getState(),
-  shallow,
-);
+    // 找到目标会话
+    const current = sessions.find((s) => s.id === targetSessionId);
+    if (current) {
+      // 设置该会话为加载状态
+      set(state => ({
+        loadingStates: { ...state.loadingStates, [targetSessionId]: true },
+      }));
+
+      const conversations = current.conversations || [];
+      const newMessage: Conversation = {
+        id: `${targetSessionId}-${conversations.length}`,
+        question: message,
+        response: '这是一个示例响应',
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      };
+
+      const updated = {
+        ...current,
+        conversations: [...conversations, newMessage],
+        updatedAt: new Date(),
+      };
+
+      set(state => ({
+        sessions: [...state.sessions.filter((s) => s.id !== targetSessionId), updated],
+        loadingStates: { ...state.loadingStates, [targetSessionId]: false },
+      }));
+    }
+  },
+}));
