@@ -1,4 +1,4 @@
-import { Conversation } from '@services/agent/interface';
+import { Conversation } from '@services/externalAPI/interface';
 import React, { useEffect, useState } from 'react';
 import styled from 'styled-components';
 

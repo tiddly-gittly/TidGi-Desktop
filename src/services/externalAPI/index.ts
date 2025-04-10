@@ -9,8 +9,8 @@ import { IDatabaseService } from '@services/database/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
-import rawDefaultProvidersConfig from './defaultProviders.json';
 import { streamFromProvider } from './callProviderAPI';
+import rawDefaultProvidersConfig from './defaultProviders.json';
 import type { AgentSettings, AgentState, AIMessage, AIProviderConfig, AISessionConfig, AIStreamResponse, IExternalAPIService, ModelFeature, SessionSyncData } from './interface';
 
 // 创建经过类型转换的配置对象
@@ -20,9 +20,9 @@ const defaultProvidersConfig = {
     ...provider,
     models: provider.models.map(model => ({
       ...model,
-      features: model.features as unknown as ModelFeature[]
-    }))
-  }))
+      features: model.features as unknown as ModelFeature[],
+    })),
+  })),
 };
 
 @injectable()
@@ -77,7 +77,7 @@ export class ExternalAPIService implements IExternalAPIService {
           if (userProvider.models) {
             userProvider.models.forEach(model => {
               if (model.features) {
-                model.features = model.features as ModelFeature[];
+                model.features = model.features;
               }
             });
           }
@@ -121,30 +121,30 @@ export class ExternalAPIService implements IExternalAPIService {
    */
   async getAIConfig(partialConfig?: Partial<AISessionConfig>): Promise<AISessionConfig> {
     const mergedSettings = this.mergeWithDefaults(this.userSettings);
-    const defaultConfig: AISessionConfig = { 
+    const defaultConfig: AISessionConfig = {
       provider: mergedSettings.defaultConfig.provider,
       model: mergedSettings.defaultConfig.model,
       modelParameters: {
         temperature: 0.7,
-        systemPrompt: 'You are a helpful assistant.'
-      }
+        systemPrompt: 'You are a helpful assistant.',
+      },
     };
 
     if (partialConfig) {
       // Merge top-level properties
       const result: AISessionConfig = {
         ...defaultConfig,
-        ...partialConfig
+        ...partialConfig,
       };
-      
+
       // Separately merge model parameters if they exist
       if (partialConfig.modelParameters || defaultConfig.modelParameters) {
         result.modelParameters = {
           ...defaultConfig.modelParameters,
-          ...partialConfig.modelParameters
+          ...partialConfig.modelParameters,
         };
       }
-      
+
       return result;
     }
 
@@ -194,7 +194,7 @@ export class ExternalAPIService implements IExternalAPIService {
     if (config.provider !== undefined) {
       this.userSettings.defaultConfig.provider = config.provider;
     }
-    
+
     if (config.model !== undefined) {
       this.userSettings.defaultConfig.model = config.model;
     }
@@ -265,17 +265,17 @@ export class ExternalAPIService implements IExternalAPIService {
 
     try {
       this.emitResponseUpdate(sessionId, '', 'start');
-      
+
       // Build complete message history from conversation history
       const messages: AIMessage[] = session.conversations.flatMap(conv => [
         { role: 'user', content: conv.question },
         ...(conv.response ? [{ role: 'assistant', content: conv.response }] : []) as AIMessage[],
       ]);
-      
+
       // Get AI configuration with session-specific overrides if available
       const aiConfig = await this.getAIConfig(session.aiConfig);
       const providerConfig = await this.getProviderConfig(aiConfig.provider);
-      
+
       const result = streamFromProvider(
         aiConfig,
         messages,
@@ -373,7 +373,7 @@ export class ExternalAPIService implements IExternalAPIService {
     if (this.activeStreams.has(sessionId)) {
       await this.cancelAIRequest(sessionId);
     }
-    
+
     const session = this.sessions.get(sessionId);
     if (session) {
       this.sessions.delete(sessionId);

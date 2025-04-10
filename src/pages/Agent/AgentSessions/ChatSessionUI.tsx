@@ -2,8 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
 
-import { AgentState } from '@services/agent/interface';
-import { AIModelSelector } from './components/AIModelSelector';
+import { AgentState } from '@services/externalAPI/interface';
 import { ChatInput } from './components/ChatInput';
 import { EmptyState } from './components/EmptyState';
 import { LoadingIndicator } from './components/LoadingIndicator';
@@ -132,8 +131,10 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
       {activeSession
         ? (
           <SessionMessagePanel>
-            <SessionMessagesHeader title={activeSession.title || `${t('Chat.Session', { ns: 'agent' })} ${activeSession.id}`} />
-            <AIModelSelector sessionId={activeSessionId} />
+            <SessionMessagesHeader
+              title={activeSession.title || `${t('Chat.Session', { ns: 'agent' })} ${activeSession.id}`}
+              sessionId={activeSessionId}
+            />
             <SessionMessages>
               {(activeSession.conversations || []).map(conversation => (
                 <SessionMessage

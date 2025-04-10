@@ -38,6 +38,7 @@
     "ModelFeatures": "モデル機能",
     "SelectFromPresets": "プリセットモデルから選択",
     "PresetModels": "プリセットモデル",
+    "Preferences": "設定…",
     "OrCreateCustom": "またはカスタムモデルを作成",
     "CreateCustomModel": "カスタムモデルを作成",
     "AddCustomModel": "カスタムモデルを追加",

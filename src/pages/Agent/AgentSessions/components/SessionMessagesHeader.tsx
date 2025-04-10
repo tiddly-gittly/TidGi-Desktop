@@ -1,5 +1,6 @@
 import React from 'react';
 import styled from 'styled-components';
+import { AIModelSelector } from './AIModelSelector';
 
 const Header = styled.div`
   padding: 16px;
@@ -15,14 +16,24 @@ const Title = styled.h2`
   color: ${props => props.theme.palette.text.primary};
 `;
 
+const HeaderContent = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+
 interface SessionMessagesHeaderProps {
   title: string;
+  sessionId?: string;
 }
 
-export const SessionMessagesHeader: React.FC<SessionMessagesHeaderProps> = ({ title }) => {
+export const SessionMessagesHeader: React.FC<SessionMessagesHeaderProps> = ({ title, sessionId }) => {
   return (
     <Header>
-      <Title>{title}</Title>
+      <HeaderContent>
+        <Title>{title}</Title>
+      </HeaderContent>
+      <AIModelSelector sessionId={sessionId} />
     </Header>
   );
 };

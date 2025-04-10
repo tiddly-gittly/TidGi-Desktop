@@ -54,6 +54,7 @@
     "NoProvidersAvailable": "Нет доступных поставщиков",
     "AddNewProvider": "Добавить нового поставщика",
     "CancelAddProvider": "Отменить добавление",
+    "Preferences": "Настройки...",
     "ProviderName": "Имя поставщика",
     "ProviderClass": "Тип интерфейса поставщика",
     "OpenAICompatible": "Совместимый с OpenAI интерфейс",

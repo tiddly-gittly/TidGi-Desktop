@@ -28,6 +28,7 @@
   "Preference": {
     "AIModelSelection": "AI 模型选择",
     "AIModelSelectionDescription": "选择您想要使用的 AI 提供商和模型",
+    "Preferences": "设置...",
     "AITemperature": "温度参数",
     "AITemperatureDescription": "较低的值使回答更加确定和一致，较高的值使回答更加多样化和创造性",
     "APIKey": "API 密钥",

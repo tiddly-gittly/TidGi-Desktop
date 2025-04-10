@@ -1,4 +1,4 @@
-import { AgentState, AIProviderConfig, AISessionConfig, Conversation } from '@services/agent/interface';
+import { AgentState, AIProviderConfig, AISessionConfig, Conversation } from '@services/externalAPI/interface';
 import { omit } from 'lodash';
 import { useEffect } from 'react';
 import { create } from 'zustand';
