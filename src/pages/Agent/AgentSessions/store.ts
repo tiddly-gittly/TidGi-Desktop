@@ -68,21 +68,12 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
   // Initialization method, load all sessions
   initialize: async () => {
     try {
-      // Initialize subscriptions
       get().initAIResponseStreamSubscription();
       get().initSessionSyncSubscription();
-
-      // Load AI model list
       get().loadAvailableAIModels();
-
-      // Load AI providers
       get().loadAIProviders();
-
-      // Load sessions from server
-      if (typeof window !== 'undefined' && window.service.agent) {
-        const sessions = await window.service.agent.getAllSessions();
-        set({ sessions });
-      }
+      const sessions = await window.service.agent.getAllSessions();
+      set({ sessions });
     } catch (error) {
       console.error('Failed to initialize agent store:', error);
     }
@@ -228,6 +219,11 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
       const session = sessions.find(s => s.id === sessionId);
 
       if (session) {
+        // 确保有 modelParameters 结构
+        if (!config.modelParameters && session.aiConfig?.modelParameters) {
+          config.modelParameters = { ...session.aiConfig.modelParameters };
+        }
+
         const updatedSession = {
           ...session,
           aiConfig: { ...config },
@@ -292,20 +288,17 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
             });
           }
 
-          // For all statuses, update if there is content
-          if (content !== undefined) {
-            const updatedSession = {
-              ...current,
-              conversations: [
-                ...conversations.slice(0, -1),
-                { ...lastConversation, response: content },
-              ],
-            };
+          const updatedSession = {
+            ...current,
+            conversations: [
+              ...conversations.slice(0, -1),
+              { ...lastConversation, response: content },
+            ],
+          };
 
-            set({
-              sessions: [...sessions.filter(s => s.id !== sessionId), updatedSession],
-            });
-          }
+          set({
+            sessions: [...sessions.filter(s => s.id !== sessionId), updatedSession],
+          });
 
           // On completion/error/cancellation, close streaming state
           if (status === 'done' || status === 'error' || status === 'cancel') {

@@ -1,8 +1,6 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
-import { SvgIconTypeMap } from '@mui/material';
-import { OverridableComponent } from '@mui/material/OverridableComponent';
 import BuildIcon from '@mui/icons-material/Build';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CodeIcon from '@mui/icons-material/Code';
@@ -14,23 +12,26 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import PowerIcon from '@mui/icons-material/Power';
 import RouterIcon from '@mui/icons-material/Router';
 import SecurityIcon from '@mui/icons-material/Security';
+import SmartButtonIcon from '@mui/icons-material/SmartButton';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
 import WidgetsIcon from '@mui/icons-material/Widgets';
+import { SvgIconTypeMap } from '@mui/material';
+import { OverridableComponent } from '@mui/material/OverridableComponent';
 
 import { PreferenceSections } from '@services/preferences/interface';
 
 export type ISectionRecord<SectionTitleElement = HTMLSpanElement> = Record<
   PreferenceSections,
   {
-    Icon: OverridableComponent<SvgIconTypeMap<unknown, 'svg'>>;
+    Icon: OverridableComponent<SvgIconTypeMap<unknown>>;
     hidden?: boolean;
     ref: React.MutableRefObject<SectionTitleElement | null>;
     text: string;
   }
 >;
 export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): ISectionRecord<SectionTitleElement> {
-  const { t } = useTranslation();
+  const { t } = useTranslation(['translation', 'agent']);
   const sections = {
     [PreferenceSections.wiki]: {
       text: t('Preference.TiddlyWiki'),
@@ -45,6 +46,11 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
     [PreferenceSections.sync]: {
       text: t('Preference.Sync'),
       Icon: GitHubIcon,
+      ref: useRef<SectionTitleElement>(null),
+    },
+    [PreferenceSections.externalAPI]: {
+      text: t('Preference.ExternalAPI', { ns: 'agent' }),
+      Icon: SmartButtonIcon,
       ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.notifications]: {
@@ -77,11 +83,6 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
       Icon: CloudDownloadIcon,
       ref: useRef<SectionTitleElement>(null),
     },
-    // [PreferenceSections.network]: {
-    //   text: t('Preference.Network'),
-    //   Icon: RouterIcon,
-    //   ref: useRef<SectionTitleElement>(null),
-    // },
     [PreferenceSections.privacy]: {
       text: t('Preference.PrivacyAndSecurity'),
       Icon: SecurityIcon,

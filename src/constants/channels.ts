@@ -150,8 +150,12 @@ export enum SyncChannel {
   name = 'SyncChannel',
 }
 
-export enum WorkflowChannel {
-  name = 'WorkflowChannel',
+export enum AgentChannel {
+  name = 'AgentChannel',
+}
+
+export enum ExternalAPIChannel {
+  name = 'ExternalAPIChannel',
 }
 
 export type Channels =
@@ -177,4 +181,4 @@ export type Channels =
   | I18NChannels
   | MetaDataChannel
   | SyncChannel
-  | WorkflowChannel;
+  | AgentChannel;

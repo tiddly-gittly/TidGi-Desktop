@@ -22,6 +22,7 @@ import { TiddlyWiki } from './sections/TiddlyWiki';
 import { Updates } from './sections/Updates';
 import { SectionSideBar } from './SectionsSideBar';
 import { usePreferenceSections } from './useSections';
+import { ExternalAPI } from './sections/ExternalAPI';
 
 const Root = styled.div`
   padding: 20px;
@@ -62,6 +63,7 @@ export default function Preferences(): React.JSX.Element {
         <TiddlyWiki sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <General sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <Sync sections={sections} requestRestartCountDown={requestRestartCountDown} />
+        <ExternalAPI sections={sections} />
         <Notifications sections={sections} requestRestartCountDown={requestRestartCountDown} />
         <System sections={sections} />
         <Languages sections={sections} requestRestartCountDown={requestRestartCountDown} />

@@ -2,29 +2,43 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
+import { createOllama } from 'ollama-ai-provider';
 import { logger } from '@services/libs/log';
 import { streamText } from 'ai';
 
-import type { AIMessage, AIProvider, AISessionConfig } from './interface';
+import type { AIMessage, AIProviderConfig, AISessionConfig } from './interface';
 
 type AIStreamResult = ReturnType<typeof streamText>;
 
-export function createProviderClient(provider: AIProvider, apiKey: string) {
-  switch (provider) {
+export function createProviderClient(providerConfig: { provider: string; providerClass?: string; baseURL?: string }, apiKey?: string) {
+  // 首先检查 providerClass，如果没有则回退到基于名称的判断
+  const providerClass = providerConfig.providerClass || providerConfig.provider;
+
+  switch (providerClass) {
     case 'openai':
       return createOpenAI({ apiKey });
-    case 'siliconflow':
+    case 'openAICompatible':
+      if (!providerConfig.baseURL) {
+        throw new Error(`OpenAI-compatible provider ${providerConfig.provider} requires baseURL`);
+      }
       return createOpenAICompatible({
-        name: 'siliconflow',
+        name: providerConfig.provider,
         apiKey,
-        baseURL: 'https://api.siliconflow.cn/v1',
+        baseURL: providerConfig.baseURL,
       });
     case 'deepseek':
       return createDeepSeek({ apiKey });
     case 'anthropic':
       return createAnthropic({ apiKey });
+    case 'ollama':
+      if (!providerConfig.baseURL) {
+        throw new Error(`Ollama provider ${providerConfig.provider} requires baseURL`);
+      }
+      return createOllama({
+        baseURL: providerConfig.baseURL,
+      });
     default:
-      throw new Error(`Unsupported AI provider: ${provider as unknown as string}`);
+      throw new Error(`Unsupported AI provider: ${providerConfig.provider}`);
   }
 }
 
@@ -32,18 +46,23 @@ export function streamFromProvider(
   config: AISessionConfig,
   messages: AIMessage[],
   signal: AbortSignal,
-  apiKey: string,
+  providerConfig?: AIProviderConfig,
 ): AIStreamResult {
-  const { provider, model, temperature = 0.7, systemPrompt = 'You are a helpful assistant.' } = config;
+  const { provider, model, modelParameters = {} } = config;
+  const { temperature = 0.7, systemPrompt = 'You are a helpful assistant.' } = modelParameters;
 
   logger.info(`Using AI provider: ${provider}, model: ${model}`);
 
   try {
-    if (!apiKey) {
+    if (!providerConfig?.apiKey && providerConfig?.providerClass !== 'ollama') {
+      // Ollama doesn't require API key
       throw new Error(`API key for ${provider} not found`);
     }
 
-    const client = createProviderClient(provider, apiKey);
+    const client = createProviderClient(
+      providerConfig,
+      providerConfig.apiKey
+    );
 
     return streamText({
       model: client(model),

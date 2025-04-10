@@ -71,6 +71,7 @@ export enum PreferenceSections {
   system = 'system',
   updates = 'updates',
   wiki = 'wiki',
+  externalAPI = 'externalAPI',
 }
 
 /**

@@ -133,10 +133,7 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
         ? (
           <SessionMessagePanel>
             <SessionMessagesHeader title={activeSession.title || `${t('Chat.Session', { ns: 'agent' })} ${activeSession.id}`} />
-
-            {/* 添加AI模型选择器 */}
             <AIModelSelector sessionId={activeSessionId} />
-
             <SessionMessages>
               {(activeSession.conversations || []).map(conversation => (
                 <SessionMessage
