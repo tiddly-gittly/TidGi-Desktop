@@ -1,6 +1,6 @@
 import AddIcon from '@mui/icons-material/Add';
 import { Box, Button, Chip, FormControlLabel, Switch, Typography } from '@mui/material';
-import { AIProviderConfig } from '@services/agent/interface';
+import { AIProviderConfig } from '@services/externalAPI/interface';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextField } from '../../../PreferenceComponents';

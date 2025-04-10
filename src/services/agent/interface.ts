@@ -1,11 +1,8 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import { ReactElement } from 'react';
 import type { BehaviorSubject } from 'rxjs';
-import type { ITiddlerFields } from 'tiddlywiki';
 
 import { AgentChannel } from '@/constants/channels';
-import { IWorkspaceWithMetadata } from '@services/workspaces/interface';
-
+import { AgentDefinition, AgentState } from '@services/externalAPI/interface';
 
 /**
  * Agent service to manage chat agents and service agents

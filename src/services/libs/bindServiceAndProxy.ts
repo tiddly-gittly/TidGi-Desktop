@@ -69,6 +69,8 @@ import type { IWorkspaceService } from '@services/workspaces/interface';
 import { WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import type { IWorkspaceViewService } from '@services/workspacesView/interface';
 import { WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
+import { ExternalAPIServiceIPCDescriptor, IExternalAPIService } from '../externalAPI/interface';
+import { ExternalAPIService } from '../externalAPI';
 
 export function bindServiceAndProxy(): void {
   container.bind<IAuthenticationService>(serviceIdentifier.Authentication).to(Authentication).inSingletonScope();
@@ -92,6 +94,7 @@ export function bindServiceAndProxy(): void {
   container.bind<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).to(WorkspaceView).inSingletonScope();
   container.bind<IDeepLinkService>(serviceIdentifier.DeepLink).to(DeepLinkService).inSingletonScope();
   container.bind<IAgentService>(serviceIdentifier.Workflow).to(AgentService).inSingletonScope();
+  container.bind<IExternalAPIService>(serviceIdentifier.ExternalAPI).to(ExternalAPIService).inSingletonScope();
 
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
   const contextService = container.get<IContextService>(serviceIdentifier.Context);
@@ -114,6 +117,7 @@ export function bindServiceAndProxy(): void {
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
   const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
   const agentService = container.get<IAgentService>(serviceIdentifier.Workflow);
+  const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
 
   registerProxy(authService, AuthenticationServiceIPCDescriptor);
   registerProxy(contextService, ContextServiceIPCDescriptor);
@@ -136,4 +140,5 @@ export function bindServiceAndProxy(): void {
   registerProxy(workspaceViewService, WorkspaceViewServiceIPCDescriptor);
   registerProxy(deepLinkService, DeepLinkServiceIPCDescriptor);
   registerProxy(agentService, AgentServiceIPCDescriptor);
+  registerProxy(externalAPIService, ExternalAPIServiceIPCDescriptor);
 }

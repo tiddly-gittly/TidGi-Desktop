@@ -1,6 +1,7 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
+import ApiIcon from '@mui/icons-material/Api';
 import BuildIcon from '@mui/icons-material/Build';
 import CloudDownloadIcon from '@mui/icons-material/CloudDownload';
 import CodeIcon from '@mui/icons-material/Code';
@@ -12,7 +13,6 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import PowerIcon from '@mui/icons-material/Power';
 import RouterIcon from '@mui/icons-material/Router';
 import SecurityIcon from '@mui/icons-material/Security';
-import SmartButtonIcon from '@mui/icons-material/SmartButton';
 import StorefrontIcon from '@mui/icons-material/Storefront';
 import SystemUpdateAltIcon from '@mui/icons-material/SystemUpdateAlt';
 import WidgetsIcon from '@mui/icons-material/Widgets';
@@ -50,7 +50,7 @@ export function usePreferenceSections<SectionTitleElement = HTMLSpanElement>(): 
     },
     [PreferenceSections.externalAPI]: {
       text: t('Preference.ExternalAPI', { ns: 'agent' }),
-      Icon: SmartButtonIcon,
+      Icon: ApiIcon,
       ref: useRef<SectionTitleElement>(null),
     },
     [PreferenceSections.notifications]: {

@@ -369,6 +369,19 @@ export class ExternalAPIService implements IExternalAPIService {
     return Array.from(this.sessions.values());
   }
 
+  async deleteSession(sessionId: string): Promise<void> {
+    if (this.activeStreams.has(sessionId)) {
+      await this.cancelAIRequest(sessionId);
+    }
+    
+    const session = this.sessions.get(sessionId);
+    if (session) {
+      this.sessions.delete(sessionId);
+      this.emitSessionSync(session, 'delete');
+      await this.deleteSessionFromDatabase(sessionId);
+    }
+  }
+
   private emitResponseUpdate(sessionId: string, content: string, status: 'start' | 'update' | 'done' | 'error' | 'cancel'): void {
     if (status === 'done' && (!content || content.trim() === '')) {
       content = '(No response, please check API settings and network connection)';

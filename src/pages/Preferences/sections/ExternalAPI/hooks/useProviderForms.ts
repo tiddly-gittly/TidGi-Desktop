@@ -1,5 +1,5 @@
-import defaultProvidersConfig from '@services/agent/defaultProviders.json';
-import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/agent/interface';
+import defaultProvidersConfig from '@services/externalAPI/defaultProviders.json';
+import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
 import useDebouncedCallback from 'beautiful-react-hooks/useDebouncedCallback';
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
@@ -40,7 +40,7 @@ export function useProviderForms(
   const debouncedUpdateProvider = useDebouncedCallback(
     async (provider: string, config: Partial<AIProviderConfig>) => {
       try {
-        await window.service.agent.updateProvider(provider, config);
+        await window.service.externalAPI.updateProvider(provider, config);
         showMessage(t('Preference.ProviderConfigUpdated'), 'success');
       } catch (error) {
         console.error('Failed to update provider config:', error);
@@ -53,9 +53,9 @@ export function useProviderForms(
 
   // Handle form field changes
   const handleFormChange = async (
-    provider: string, 
-    field: keyof ProviderFormState, 
-    value: string | NewModelFormState
+    provider: string,
+    field: keyof ProviderFormState,
+    value: string | NewModelFormState,
   ) => {
     // Do not save newModel field immediately, it is just a temporary state
     if (field === 'newModel') {
@@ -123,14 +123,14 @@ export function useProviderForms(
       // Filter out models that are already added
       const currentModels = providerForms[provider].models || [];
       const currentModelNames = currentModels.map(model => model.name);
-      
+
       const filteredModels = defaultProvider.models
         .filter(model => !currentModelNames.includes(model.name))
         .map(model => ({
           ...model,
-          features: model.features as ModelFeature[]
+          features: model.features as ModelFeature[],
         }));
-        
+
       setAvailableDefaultModels(filteredModels);
 
       // Default to empty selection

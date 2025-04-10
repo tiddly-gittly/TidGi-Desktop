@@ -67,8 +67,8 @@ export function NewProviderForm({ formState, providerClasses, onChange, onSubmit
       </FormControl>
 
       {/* 只有特定提供方类型需要 baseURL */}
-      {(formState.providerClass === 'openAICompatible' || 
-        formState.providerClass === 'ollama' || 
+      {(formState.providerClass === 'openAICompatible' ||
+        formState.providerClass === 'ollama' ||
         formState.providerClass === 'custom') && (
         <TextField
           label={t('Preference.BaseURL')}
@@ -78,11 +78,9 @@ export function NewProviderForm({ formState, providerClasses, onChange, onSubmit
           }}
           fullWidth
           margin='normal'
-          placeholder={
-            formState.providerClass === 'ollama' ? 
-              'http://localhost:11434' : 
-              'https://api.example.com/v1'
-          }
+          placeholder={formState.providerClass === 'ollama'
+            ? 'http://localhost:11434'
+            : 'https://api.example.com/v1'}
         />
       )}
 

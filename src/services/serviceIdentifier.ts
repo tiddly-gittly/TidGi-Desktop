@@ -20,4 +20,5 @@ export default {
   Workspace: Symbol.for('Workspace'),
   WorkspaceView: Symbol.for('WorkspaceView'),
   DeepLink: Symbol.for('DeepLinkService'),
+  ExternalAPI: Symbol.for('ExternalAPI'),
 };

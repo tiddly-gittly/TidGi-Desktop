@@ -28,7 +28,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
     const loadData = async () => {
       try {
         setLoading(true);
-        const config = await window.service.agent.getAIConfig();
+        const config = await window.service.externalAPI.getAIConfig();
 
         setDefaultConfig({
           provider: config.provider,
@@ -52,7 +52,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
         [key]: value,
       }));
 
-      await window.service.agent.updateDefaultAIConfig({ [key]: value });
+      await window.service.externalAPI.updateDefaultAIConfig({ [key]: value });
     } catch (error) {
       console.error(`Failed to update ${key}:`, error);
     }
@@ -69,7 +69,7 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
 
   return (
     <>
-      <SectionTitle ref={props.sections?.languageModel.ref}>{t('Preference.ExternalAPI')}</SectionTitle>
+      <SectionTitle ref={props.sections?.externalAPI.ref}>{t('Preference.ExternalAPI')}</SectionTitle>
       <Paper elevation={0}>
         <List dense disablePadding>
           {loading ? <ListItemVertical>{t('Loading')}</ListItemVertical> : (

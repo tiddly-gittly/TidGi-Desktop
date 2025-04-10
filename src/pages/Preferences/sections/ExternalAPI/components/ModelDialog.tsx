@@ -15,8 +15,8 @@ import {
   TextField,
   Typography,
 } from '@mui/material';
-import defaultProvidersConfig from '@services/agent/defaultProviders.json';
-import { ModelFeature, ModelInfo } from '@services/agent/interface';
+import defaultProvidersConfig from '@services/externalAPI/defaultProviders.json';
+import { ModelFeature, ModelInfo } from '@services/externalAPI/interface';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { NewModelFormState } from '../types';

@@ -1,4 +1,4 @@
-import { ModelFeature, ModelInfo } from '@services/agent/interface';
+import { ModelFeature, ModelInfo } from '@services/externalAPI/interface';
 
 export interface ModelOption {
   provider: string;

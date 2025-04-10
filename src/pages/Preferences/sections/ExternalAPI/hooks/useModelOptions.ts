@@ -1,4 +1,4 @@
-import { AIProviderConfig } from '@services/agent/interface';
+import { AIProviderConfig } from '@services/externalAPI/interface';
 import { useEffect, useState } from 'react';
 import { ModelOption } from '../types';
 
@@ -10,9 +10,9 @@ export function useModelOptions() {
   useEffect(() => {
     const loadProviders = async () => {
       try {
-        const allProviders = await window.service.agent.getAIProviders();
+        const allProviders = await window.service.externalAPI.getAIProviders();
         setProviders(allProviders);
-        const config = await window.service.agent.getAIConfig();
+        const config = await window.service.externalAPI.getAIConfig();
         // Create model options array - only for enabled providers
         const options: ModelOption[] = [];
         const enabledProviders = allProviders.filter(provider => provider.enabled !== false);
@@ -43,7 +43,7 @@ export function useModelOptions() {
           setSelectedModelOption(options[0]);
 
           // Update default config
-          await window.service.agent.updateDefaultAIConfig({
+          await window.service.externalAPI.updateDefaultAIConfig({
             provider: options[0].provider,
             model: options[0].model,
           });

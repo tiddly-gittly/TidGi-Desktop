@@ -5,8 +5,8 @@ import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
 import { ListItemText } from '@/components/ListItem';
-import defaultProvidersConfig from '@services/agent/defaultProviders.json';
-import { AIProviderConfig } from '@services/agent/interface';
+import defaultProvidersConfig from '@services/externalAPI/defaultProviders.json';
+import { AIProviderConfig } from '@services/externalAPI/interface';
 import { ListItemVertical } from '../../../PreferenceComponents';
 import { useProviderForms } from '../hooks/useProviderForms';
 import { ModelDialog } from './ModelDialog';
@@ -123,7 +123,7 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
       };
 
       // Update server and local state
-      await window.service.agent.updateProvider(newProviderForm.provider, newProvider);
+      await window.service.externalAPI.updateProvider(newProviderForm.provider, newProvider);
       setLocalProviders(previous => [...previous, newProvider]);
 
       // Reset form and show success

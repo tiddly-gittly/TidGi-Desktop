@@ -72,7 +72,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
       get().initSessionSyncSubscription();
       get().loadAvailableAIModels();
       get().loadAIProviders();
-      const sessions = await window.service.agent.getAllSessions();
+      const sessions = await window.service.externalAPI.getAllSessions();
       set({ sessions });
     } catch (error) {
       console.error('Failed to initialize agent store:', error);
@@ -82,7 +82,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
   createNewSession: async () => {
     try {
       // Call server to create session and get complete session object (including generated ID)
-      const createdSession = await window.service.agent.createSession();
+      const createdSession = await window.service.externalAPI.createSession();
 
       // Update frontend state
       set(state => ({
@@ -111,7 +111,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
     });
 
     // Simultaneously delete the session on the server
-    window.service.agent.deleteSession(id)
+    window.service.externalAPI.deleteSession(id)
       .catch(error => {
         console.error('Failed to delete session in service:', error);
       });
@@ -178,7 +178,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
 
     try {
       // Call server-side method to handle the entire process
-      await window.service.agent.sendMessageToAI(targetSessionId, message);
+      await window.service.externalAPI.sendMessageToAI(targetSessionId, message);
     } catch (error) {
       console.error('Failed to send message to AI:', error);
       // Reset streaming state on error
@@ -192,7 +192,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
     const targetSessionId = sessionId || get().activeSessionId;
     if (targetSessionId) {
       try {
-        await window.service.agent.cancelAIRequest(targetSessionId);
+        await window.service.externalAPI.cancelAIRequest(targetSessionId);
         // Reset streaming state
         set(state => ({
           streamingStates: { ...state.streamingStates, [targetSessionId]: false },
@@ -204,7 +204,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
   },
 
   loadAIProviders: async () => {
-    const providers = await window.service.agent.getAIProviders();
+    const providers = await window.service.externalAPI.getAIProviders();
     set({ providers });
   },
 
@@ -238,7 +238,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
         });
 
         // Then update server state
-        await window.service.agent.updateSessionAIConfig(sessionId, config);
+        await window.service.externalAPI.updateSessionAIConfig(sessionId, config);
       }
     } catch (error) {
       console.error('Failed to update session AI config:', error);
@@ -257,7 +257,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
   },
 
   loadAvailableAIModels: async () => {
-    const models = await window.service.agent.getAvailableAIModels();
+    const models = await window.service.externalAPI.getAvailableAIModels();
     set({ availableModels: models });
   },
 
@@ -268,7 +268,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
   // Initialize AI response stream subscription
   initAIResponseStreamSubscription: () => {
     // Subscribe to AI streaming response
-    window.observables.agent.aiResponseStream$.subscribe({
+    window.observables.externalAPI.aiResponseStream$.subscribe({
       next: (response) => {
         if (!response) return;
 
@@ -319,7 +319,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
   // Initialize session sync subscription
   initSessionSyncSubscription: () => {
     // Subscribe to session sync, note to use window.observables instead of window.service
-    window.observables.agent.sessionSync$.subscribe({
+    window.observables.externalAPI.sessionSync$.subscribe({
       next: (syncData) => {
         if (!syncData) return;
 

@@ -26,11 +26,13 @@ import { IWikiGitWorkspaceService, WikiGitWorkspaceServiceIPCDescriptor } from '
 import { IWindowService, WindowServiceIPCDescriptor } from '@services/windows/interface';
 import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/workspaces/interface';
 import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
+import { ExternalAPIServiceIPCDescriptor, IExternalAPIService } from '../../services/externalAPI/interface';
 
 export const agent = createProxy<AsyncifyProxy<IAgentService>>(AgentServiceIPCDescriptor);
 export const auth = createProxy<IAuthenticationService>(AuthenticationServiceIPCDescriptor);
 export const context = createProxy<IContextService>(ContextServiceIPCDescriptor);
 export const deepLink = createProxy<IDeepLinkService>(DeepLinkServiceIPCDescriptor);
+export const externalAPI = createProxy<IExternalAPIService>(ExternalAPIServiceIPCDescriptor);
 export const git = createProxy<IGitService>(GitServiceIPCDescriptor);
 export const menu = createProxy<IMenuService>(MenuServiceIPCDescriptor);
 export const native = createProxy<INativeService>(NativeServiceIPCDescriptor);
@@ -69,4 +71,5 @@ export const descriptors = {
   window: WindowServiceIPCDescriptor,
   workspace: WorkspaceServiceIPCDescriptor,
   workspaceView: WorkspaceViewServiceIPCDescriptor,
+  externalAPI: ExternalAPIServiceIPCDescriptor,
 };

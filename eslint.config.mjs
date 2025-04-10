@@ -17,8 +17,10 @@ export default [
       },
     },
   },
-  rules: {
-    // allow Defensive programming
-    "@typescript-eslint/no-unnecessary-condition": "warn"
+  {
+    rules: {
+      // allow Defensive programming
+      "@typescript-eslint/no-unnecessary-condition": "warn"
+    }
   }
 ];
