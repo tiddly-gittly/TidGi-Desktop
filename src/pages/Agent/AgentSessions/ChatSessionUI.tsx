@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
 
-import { AgentState } from '@services/externalAPI/interface';
+import { AgentSession } from '@services/agent/interface';
 import { ChatInput } from './components/ChatInput';
 import { EmptyState } from './components/EmptyState';
 import { LoadingIndicator } from './components/LoadingIndicator';
@@ -14,6 +14,7 @@ import { SessionMessagesHeader } from './components/SessionMessagesHeader';
 import { SessionsGroup } from './components/SessionsGroup';
 import { SessionsHeader } from './components/SessionsHeader';
 import { SessionsList } from './components/SessionsList';
+import { Conversation, useAgentStore } from './store';
 
 const ChatContainer = styled.div`
   display: flex;
@@ -24,15 +25,18 @@ const ChatContainer = styled.div`
 `;
 
 interface ChatProps {
-  sessions: AgentState[];
+  sessions: AgentSession[];
   activeSessionId?: string;
   isLoading?: boolean;
   isStreaming?: boolean;
+  availableAgents?: { id: string; name: string }[];
+  selectedAgentId?: string;
   onNewSession: () => void;
   onSelectSession: (sessionId: string) => void;
   onDeleteSession: (sessionId: string) => void;
   onSendMessage: (message: string) => void;
   onCancelRequest: () => void;
+  onSelectAgent?: (agentId: string) => void;
 }
 
 export const ChatSessionUI: React.FC<ChatProps> = ({
@@ -40,20 +44,24 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
   activeSessionId,
   isLoading,
   isStreaming,
+  availableAgents = [],
+  selectedAgentId,
   onNewSession,
   onSelectSession,
   onDeleteSession,
   onSendMessage,
   onCancelRequest,
+  onSelectAgent,
 }) => {
   const { t } = useTranslation('agent');
   const activeSession = sessions.find(session => session.id === activeSessionId);
+  const getSessionConversations = useAgentStore(state => state.getSessionConversations);
 
   // 根据创建日期对会话进行分组
   const groupSessions = () => {
-    const today: AgentState[] = [];
-    const yesterday: AgentState[] = [];
-    const older: AgentState[] = [];
+    const today: AgentSession[] = [];
+    const yesterday: AgentSession[] = [];
+    const older: AgentSession[] = [];
 
     const now = new Date();
     const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
@@ -77,7 +85,7 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
     });
 
     // 按照日期倒序排序每个组中的会话，让最新的会话显示在最上面
-    const sortSessionsByDate = (sessions: AgentState[]) => {
+    const sortSessionsByDate = (sessions: AgentSession[]) => {
       return [...sessions].sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
@@ -103,6 +111,18 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
     return result;
   };
 
+  // 将AgentSession转换为适合SessionListItem的格式
+  const convertSessionForDisplay = (session: AgentSession) => {
+    const conversations = getSessionConversations(session.id) || [];
+    return {
+      id: session.id || '',
+      title: session.title || conversations[0]?.question?.slice(0, 30) || session.id,
+      createdAt: session.createdAt,
+      updatedAt: session.updatedAt,
+      conversations: conversations,
+    };
+  };
+
   return (
     <ChatContainer>
       <SessionsList>
@@ -112,13 +132,7 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
             {group.sessions.map(session => (
               <SessionListItem
                 key={session.id || ''}
-                session={{
-                  id: session.id || '',
-                  title: session.title || '',
-                  createdAt: session.createdAt,
-                  updatedAt: session.updatedAt,
-                  conversations: session.conversations || [],
-                }}
+                session={convertSessionForDisplay(session)}
                 isActive={session.id === activeSessionId}
                 onSelect={onSelectSession}
                 onDelete={onDeleteSession}
@@ -132,15 +146,17 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
         ? (
           <SessionMessagePanel>
             <SessionMessagesHeader
-              title={activeSession.title || `${t('Chat.Session', { ns: 'agent' })} ${activeSession.id}`}
-              sessionId={activeSessionId}
+              title={activeSession.title ||
+                getSessionConversations(activeSession.id)[0]?.question?.slice(0, 30) ||
+                `${t('Chat.Session', { ns: 'agent' })} ${activeSession.id}`}
+              sessionId={activeSession.id}
             />
             <SessionMessages>
-              {(activeSession.conversations || []).map(conversation => (
+              {getSessionConversations(activeSession.id).map((conversation: Conversation) => (
                 <SessionMessage
                   key={conversation.id}
                   conversation={conversation}
-                  isStreaming={isStreaming && conversation.id === `${activeSession.id}-${(activeSession.conversations || []).length - 1}`}
+                  isStreaming={isStreaming && conversation.id === `${activeSession.id}-${getSessionConversations(activeSession.id).length - 1}`}
                 />
               ))}
               {isLoading && <LoadingIndicator message={t('Chat.Thinking', { ns: 'agent' })} />}

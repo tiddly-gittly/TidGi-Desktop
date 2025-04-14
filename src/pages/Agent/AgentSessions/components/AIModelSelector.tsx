@@ -17,9 +17,9 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({ sessionId }) =
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const providers = useAgentStore(state => state.providers);
   const updateSessionAIConfig = useAgentStore(state => state.updateSessionAIConfig);
-  const currentConfig = useAgentStore(state => state.getSessionAIConfig(sessionId));
+  // const currentConfig = useAgentStore(state => state.getSessionAIConfig(sessionId));
 
-  const config: AISessionConfig = currentConfig || {
+  const config: AISessionConfig = {
     provider: 'siliconflow',
     model: 'Qwen/Qwen2.5-7B-Instruct',
     modelParameters: {
@@ -30,18 +30,18 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({ sessionId }) =
 
   const modelOptions: ModelOption[] = useMemo(() => {
     const options: ModelOption[] = [];
-    providers.forEach(provider => {
-      if (!provider.enabled) return;
-      provider.models.forEach(model => {
-        options.push({
-          provider: provider.provider,
-          model: model.name,
-          caption: model.caption || model.name,
-          features: model.features || [],
-          groupLabel: provider.provider,
-        });
-      });
-    });
+    // providers.forEach(provider => {
+    //   if (!provider.enabled) return;
+    //   provider.models.forEach(model => {
+    //     options.push({
+    //       provider: provider.provider,
+    //       model: model.name,
+    //       caption: model.caption || model.name,
+    //       features: model.features || [],
+    //       groupLabel: provider.provider,
+    //     });
+    //   });
+    // });
     return options;
   }, [providers]);
 
