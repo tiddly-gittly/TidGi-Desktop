@@ -23,23 +23,25 @@ module.exports = [
     use: [{ loader: 'style-loader' }, { loader: 'css-loader' }],
   },
   // TODO: until I have time to add https://github.com/linjiajian999/esbuild-plugin-import , only do this in development mode
+  // TODO: disable esbuild to support typeorm https://github.com/evanw/esbuild/issues/104#issuecomment-2638332848, and I find the time for compile is not much different
   // eslint-disable-next-line no-constant-condition
-  isDevelopmentOrTest
-    ? {
-      test: /\.(t|j)sx?$/,
-      exclude: /(node_modules|\.webpack)/,
-      use: {
-        loader: 'esbuild-loader',
-        options: {
-          loader: 'tsx', // Or 'ts' if you don't need tsx
-          /* ES2022/ESNEXT work well with inversifyjs, Wait until https://github.com/inversify/InversifyJS/pull/1499 fixed */
-          target: 'ES2021',
-          // tsconfigRaw: ts.readConfigFile('tsconfig.json', ts.sys.readFile.bind(ts.sys)),
-          tsconfigRaw: JSON5.parse(fs.readFileSync('./tsconfig.json')),
-        },
-      },
-    }
-    : {
+  // isDevelopmentOrTest
+  //   ? {
+  //     test: /\.(t|j)sx?$/,
+  //     exclude: /(node_modules|\.webpack)/,
+  //     use: {
+  //       loader: 'esbuild-loader',
+  //       options: {
+  //         loader: 'tsx', // Or 'ts' if you don't need tsx
+  //         /* ES2022/ESNEXT work well with inversifyjs, Wait until https://github.com/inversify/InversifyJS/pull/1499 fixed */
+  //         target: 'ES2021',
+  //         // tsconfigRaw: ts.readConfigFile('tsconfig.json', ts.sys.readFile.bind(ts.sys)),
+  //         tsconfigRaw: JSON5.parse(fs.readFileSync('./tsconfig.json')),
+  //       },
+  //     },
+  //   }
+  //   : 
+    {
       test: /\.(t|j)sx?$/,
       exclude: /(node_modules|\.webpack)/,
       use: {
