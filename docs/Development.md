@@ -124,4 +124,6 @@ and run `node node_modules/electron/install.js` manually.
 
 ### Preparing native dependencies `Error: ENOENT: no such file or directory, stat 'xxx/node_modules/.pnpm/node_modules/@types/lodash-es'`
 
-run `rm 'xxx/node_modules/.pnpm/node_modules/@types/lodash-es'` fixes it. Maybe pnpm install gets interrupted, and make a file-like symlink, get recognized as binary file. Remove it will work.
+Or `[FAILED: ENOENT: no such file or directory, stat 'C:\Users\linonetwo\Documents\repo-c\TidGi-Desktop\node_modules\.pnpm\node_modules\@radix-ui\react-compose-refs']`
+
+Remove it by run `rm 'xxx/node_modules/.pnpm/node_modules/@types/lodash-es'` fixes it. Maybe pnpm install gets interrupted, and make a file-like symlink, get recognized as binary file. Remove it will work.

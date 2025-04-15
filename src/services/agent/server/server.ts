@@ -493,8 +493,10 @@ export class A2AServer {
 
     if (!data) {
       // Create new task and history
-      const initialTask: schema.Task = {
+      const initialTask: schema.Task & { agentId?: string | null } = {
         id: taskId,
+        // Add agentId for database compatibility
+        agentId: null,
         // 不设置sessionId，每个task就是一个独立的会话
         status: {
           state: 'submitted', // Start as submitted

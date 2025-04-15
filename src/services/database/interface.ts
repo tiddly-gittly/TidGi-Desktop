@@ -1,10 +1,11 @@
 import { DatabaseChannel } from '@/constants/channels';
+import type { AgentSettings } from '@services/agent/interface';
 import { IUserInfos } from '@services/auth/interface';
 import { IPage } from '@services/pages/interface';
 import { IPreferences } from '@services/preferences/interface';
 import { IWorkspace } from '@services/workspaces/interface';
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import type { AgentSettings } from '@services/agent/interface';
+import { DataSource } from 'typeorm';
 
 export interface ISettingFile {
   pages: Record<string, IPage>;
@@ -35,11 +36,19 @@ export interface IDatabaseService {
    * @param value whole setting from a service
    */
   setSetting<K extends keyof ISettingFile>(key: K, value: ISettingFile[K]): void;
+  initializeDatabase(key: string): Promise<void>;
+  /**
+   * Get a database connection for the app db, which is a sqlite manages by TypeORM for all app level data
+   */
+  getDatabase(key: string, isRetry?: boolean): Promise<DataSource>;
+  closeAppDatabase(key: string, drop?: boolean): void;
 }
 export const DatabaseServiceIPCDescriptor = {
   channel: DatabaseChannel.name,
   properties: {
     getDataBasePath: ProxyPropertyType.Function,
     initializeForApp: ProxyPropertyType.Function,
+    getDatabase: ProxyPropertyType.Function,
+    closeAppDatabase: ProxyPropertyType.Function,
   },
 };

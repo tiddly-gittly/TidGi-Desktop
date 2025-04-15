@@ -9,11 +9,11 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
 import type { Agent, AgentServiceConfig, AgentSession, IAgentService } from './interface';
+import { TaskYieldUpdate } from './server';
 import { AgentHttpServer } from './server/http-server';
 import * as schema from './server/schema';
 import { A2AServer } from './server/server';
-import { InMemoryTaskStore } from './server/store';
-import { TaskYieldUpdate } from './server';
+import { SQLiteTaskStore } from './server/store';
 
 @injectable()
 export class AgentService implements IAgentService {
@@ -23,41 +23,41 @@ export class AgentService implements IAgentService {
   @lazyInject(serviceIdentifier.Wiki)
   private readonly wikiService!: IWikiService;
 
-  // 存储所有智能体
+  // Store all agents
   private agents: Map<string, Agent> = new Map();
 
-  // 存储所有智能体服务器实例
+  // Store all agent server instances
   private agentServers: Map<string, A2AServer> = new Map();
 
-  // HTTP服务器实例
+  // HTTP server instance
   private httpServer: AgentHttpServer | null = null;
 
-  // 会话更新流 - 只会发送已更新的会话
+  // Session updates stream - only sends updated sessions
   public sessionUpdates$ = new BehaviorSubject<Record<string, AgentSession>>({});
 
   constructor() {
-    // 初始化智能体
+    // Initialize agents
     this.registerDefaultAgents();
   }
 
   /**
-   * 注册默认智能体
+   * Register default agents
    */
   private registerDefaultAgents(): void {
     try {
-      // 打印注册信息
+      // Print registration info
       console.log('Registering default agents');
 
-      // 示例：注册一个简单的回显智能体
+      // Example: Register a simple echo agent
       const echoAgent: Agent = {
         id: 'echo-agent',
         name: 'Echo Agent',
-        description: '简单的回显智能体，将发送的消息返回给用户',
+        description: 'Simple echo agent that returns user messages',
         avatarUrl: 'https://example.com/echo-agent.png',
         handler: this.createEchoHandler(),
         card: {
           name: 'Echo Agent',
-          description: '简单的回显智能体',
+          description: 'Simple echo agent',
           url: 'http://localhost:41241/echo-agent',
           version: '1.0.0',
           capabilities: {
@@ -67,14 +67,14 @@ export class AgentService implements IAgentService {
             {
               id: 'echo',
               name: 'Echo',
-              description: '回显用户输入',
+              description: 'Echo user input',
             },
           ],
         },
       };
 
       this.agents.set(echoAgent.id, echoAgent);
-      this.createAgentServer(echoAgent);
+      void this.createAgentServer(echoAgent);
 
       console.log('Registered default agent:', echoAgent.id);
     } catch (error) {
@@ -83,7 +83,7 @@ export class AgentService implements IAgentService {
   }
 
   /**
-   * 创建回显处理器
+   * Create echo handler
    */
   private createEchoHandler() {
     return async function* echoHandler(context: any) {
@@ -100,22 +100,22 @@ export class AgentService implements IAgentService {
 
       // 等待一会儿模拟处理
       await new Promise(resolve => setTimeout(resolve, 1000));
-// DEBUG: console context
-console.log(`context`, context);
+      // DEBUG: console context
+      console.log(`context`, context);
       // 检查是否取消
       if (context.isCancelled()) {
         yield { state: 'canceled' } as TaskYieldUpdate;
         return;
       }
-// DEBUG: console context.userMessage.parts
-console.log(`context.userMessage.parts`, context.userMessage.parts);
+      // DEBUG: console context.userMessage.parts
+      console.log(`context.userMessage.parts`, context.userMessage.parts);
       // 获取用户消息文本
       const userText = context.userMessage.parts
         .filter((part: any) => part.text)
         .map((part: any) => part.text)
         .join(' ');
-        // DEBUG: console userText
-        console.log(`userText`, userText);
+      // DEBUG: console userText
+      console.log(`userText`, userText);
 
       // 回显用户消息
       yield {
@@ -129,32 +129,40 @@ console.log(`context.userMessage.parts`, context.userMessage.parts);
   }
 
   /**
-   * 为智能体创建一个服务器实例
+   * Create a server instance for an agent
    */
-  private createAgentServer(agent: Agent): A2AServer {
-    // 检查是否已经存在此智能体的服务器
+  private async createAgentServer(agent: Agent): Promise<A2AServer> {
+    // Check if server already exists for this agent
     if (this.agentServers.has(agent.id)) {
       return this.agentServers.get(agent.id)!;
     }
 
-    // 创建任务存储
-    const taskStore = new InMemoryTaskStore();
+    try {
+      // Get database connection
+      const dataSource = await this.databaseService.getDatabase('agent-default');
 
-    // 创建A2A服务器实例
-    const server = new A2AServer(agent.handler, {
-      taskStore,
-      card: agent.card,
-    });
+      // Create SQLite task store
+      const taskStore = new SQLiteTaskStore(dataSource);
 
-    // 存储服务器实例
-    this.agentServers.set(agent.id, server);
-    
-    console.log(`Created A2A server for agent: ${agent.id}`);
-    return server;
+      // Create A2A server instance
+      const server = new A2AServer(agent.handler, {
+        taskStore,
+        card: agent.card,
+      });
+
+      // Store server instance
+      this.agentServers.set(agent.id, server);
+
+      console.log(`Created A2A server for agent: ${agent.id}`);
+      return server;
+    } catch (error) {
+      logger.error(`Failed to create agent server for ${agent.id}:`, error);
+      throw error;
+    }
   }
 
   /**
-   * 通知会话更新（只更新指定会话）
+   * Notify session update (only updates specified session)
    */
   private notifySessionUpdate(agentId: string, sessionId: string, session: AgentSession | null): void {
     if (session === null) {
@@ -167,7 +175,7 @@ console.log(`context.userMessage.parts`, context.userMessage.parts);
   }
 
   /**
-   * 将A2A任务转换为会话对象
+   * Convert A2A task to session object
    */
   private convertTaskToSession(agentId: string, task: schema.Task, history: schema.Message[]): AgentSession {
     const timestamp = task.status.timestamp
@@ -185,11 +193,11 @@ console.log(`context.userMessage.parts`, context.userMessage.parts);
   }
 
   /**
-   * 获取任务及其历史记录
+   * Get task and its history
    */
   private async getTaskWithHistory(agentId: string, taskId: string): Promise<{ task: schema.Task; history: schema.Message[] } | null> {
     try {
-      const server = this.getOrCreateAgentServer(agentId);
+      const server = await this.getOrCreateAgentServer(agentId);
 
       // 请求获取任务
       const getTaskRequest: schema.GetTaskRequest = {
@@ -209,11 +217,11 @@ console.log(`context.userMessage.parts`, context.userMessage.parts);
 
       // 获取历史记录 - 使用服务器的方法获取完整历史
       let history: schema.Message[] = [];
-      
+
       try {
         // 直接从A2A服务器获取
         history = await server.getTaskHistory(taskId);
-        
+
         // 如果历史为空但有当前消息，确保至少包含当前消息
         if (history.length === 0 && task.status.message) {
           history.push(task.status.message);
@@ -233,7 +241,7 @@ console.log(`context.userMessage.parts`, context.userMessage.parts);
     }
   }
 
-  // 实现IAgentService接口
+  // Implement IAgentService interface methods
 
   async getAgents(): Promise<Omit<Agent, 'handler'>[]> {
     // 返回不含handler的Agent对象列表，确保可以通过IPC传输
@@ -252,7 +260,7 @@ console.log(`context.userMessage.parts`, context.userMessage.parts);
   }
 
   /**
-   * 创建新会话
+   * Create new session
    */
   async createSession(agentId: string): Promise<AgentSession> {
     if (!this.agents.has(agentId)) {
@@ -280,11 +288,11 @@ console.log(`context.userMessage.parts`, context.userMessage.parts);
   }
 
   /**
-   * 发送消息到会话
+   * Send message to session
    */
   async sendMessage(agentId: string, sessionId: string, messageText: string): Promise<schema.JSONRPCResponse> {
-    // 获取服务器实例
-    const server = this.getOrCreateAgentServer(agentId);
+    // Get server instance
+    const server = await this.getOrCreateAgentServer(agentId);
 
     // 创建消息对象
     const message: schema.Message = {
@@ -319,92 +327,96 @@ console.log(`context.userMessage.parts`, context.userMessage.parts);
   }
 
   /**
-   * 流式发送消息到会话
+   * Stream message to session
    */
   handleStreamingRequest(agentId: string, sessionId: string, messageText: string): Observable<schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent> {
-    // 获取服务器实例
-    const server = this.getOrCreateAgentServer(agentId);
-
-    // 创建消息对象
-    const message: schema.Message = {
-      role: 'user',
-      parts: [{ text: messageText }],
-    };
-
-    // 构建A2A流式请求
-    const request: schema.SendTaskStreamingRequest = {
-      jsonrpc: '2.0',
-      id: nanoid(),
-      method: 'tasks/sendSubscribe',
-      params: {
-        id: sessionId, // 会话ID即任务ID
-        message,
-      },
-    };
-
-    // 创建观察者
+    // Create observable
     return new Observable<schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent>(subscriber => {
-      // 调用服务器的流式处理方法
-      const eventEmitter = server.handleStreamingRequest(request);
+      // Get server instance asynchronously
+      this.getOrCreateAgentServer(agentId)
+        .then(server => {
+          // 创建消息对象
+          const message: schema.Message = {
+            role: 'user',
+            parts: [{ text: messageText }],
+          };
 
-      // 订阅事件流
-      eventEmitter.on('update', async (event: schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent) => {
-        console.log(`[Agent Service] Received event:`, event); // 添加日志
-        subscriber.next(event);
+          // 构建A2A流式请求
+          const request: schema.SendTaskStreamingRequest = {
+            jsonrpc: '2.0',
+            id: nanoid(),
+            method: 'tasks/sendSubscribe',
+            params: {
+              id: sessionId, // 会话ID即任务ID
+              message,
+            },
+          };
 
-        // 如果更新包含消息，刷新会话
-        if ('status' in event && event.status.message) {
-          console.log(`[Agent Service] Event contains message:`, event.status.message); // 添加日志
-          const taskData = await this.getTaskWithHistory(agentId, sessionId);
-          if (taskData) {
-            const session = this.convertTaskToSession(agentId, taskData.task, taskData.history);
-            console.log(`[Agent Service] Updated session:`, session); // 添加日志
-            this.notifySessionUpdate(agentId, sessionId, session);
-          }
-        }
+          // 调用服务器的流式处理方法
+          const eventEmitter = server.handleStreamingRequest(request);
 
-        // 如果是最终事件，完成流
-        if (event.final) {
-          console.log(`[Agent Service] Final event received`); // 添加日志
-          // 一次性获取完整会话状态
-          const taskData = await this.getTaskWithHistory(agentId, sessionId);
-          if (taskData) {
-            console.log(`[Agent Service] Final session history:`, taskData.history); // 添加日志
-            const session = this.convertTaskToSession(agentId, taskData.task, taskData.history);
-            this.notifySessionUpdate(agentId, sessionId, session);
-          }
-          subscriber.complete();
-        }
-      });
+          // 订阅事件流
+          eventEmitter.on('update', async (event: schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent) => {
+            console.log(`[Agent Service] Received event:`, event); // 添加日志
+            subscriber.next(event);
 
-      eventEmitter.on('error', (error: Error) => {
-        subscriber.error(error);
-      });
+            // 如果更新包含消息，刷新会话
+            if ('status' in event && event.status.message) {
+              console.log(`[Agent Service] Event contains message:`, event.status.message); // 添加日志
+              const taskData = await this.getTaskWithHistory(agentId, sessionId);
+              if (taskData) {
+                const session = this.convertTaskToSession(agentId, taskData.task, taskData.history);
+                console.log(`[Agent Service] Updated session:`, session); // 添加日志
+                this.notifySessionUpdate(agentId, sessionId, session);
+              }
+            }
 
-      // 返回清理函数
+            // 如果是最终事件，完成流
+            if (event.final) {
+              console.log(`[Agent Service] Final event received`); // 添加日志
+              // 一次性获取完整会话状态
+              const taskData = await this.getTaskWithHistory(agentId, sessionId);
+              if (taskData) {
+                console.log(`[Agent Service] Final session history:`, taskData.history); // 添加日志
+                const session = this.convertTaskToSession(agentId, taskData.task, taskData.history);
+                this.notifySessionUpdate(agentId, sessionId, session);
+              }
+              subscriber.complete();
+            }
+          });
+
+          eventEmitter.on('error', (error: Error) => {
+            subscriber.error(error);
+          });
+        })
+        .catch(error => {
+          subscriber.error(error);
+        });
+
+      // Return cleanup function
       return () => {
-        eventEmitter.removeAllListeners();
+        // Cleanup logic
       };
     });
   }
 
   /**
-   * 获取或创建智能体服务器实例
+   * Get or create agent server instance
    */
-  private getOrCreateAgentServer(agentId: string): A2AServer {
+  private async getOrCreateAgentServer(agentId: string): Promise<A2AServer> {
     if (!this.agents.has(agentId)) {
       throw new Error(`Agent with ID ${agentId} not found`);
     }
 
     if (!this.agentServers.has(agentId)) {
-      this.createAgentServer(this.agents.get(agentId)!);
+      await this.createAgentServer(this.agents.get(agentId)!);
     }
 
     return this.agentServers.get(agentId)!;
   }
 
   /**
-   * 获取指定会话
+   * Get session by ID
    */
   async getSession(sessionId: string): Promise<AgentSession | undefined> {
     // 遍历所有智能体服务器，查找匹配的会话
@@ -423,12 +435,12 @@ console.log(`context.userMessage.parts`, context.userMessage.parts);
   }
 
   /**
-   * 获取智能体的所有会话 - 按需加载
+   * Get all sessions for an agent
    */
   async getAgentSessions(agentId: string): Promise<AgentSession[]> {
-    const server = this.getOrCreateAgentServer(agentId);
-
     try {
+      const server = await this.getOrCreateAgentServer(agentId);
+
       // 获取所有任务（每个任务即一个会话）
       const tasks = await server.getAllTasks();
 
@@ -451,12 +463,12 @@ console.log(`context.userMessage.parts`, context.userMessage.parts);
   }
 
   /**
-   * 删除会话
+   * Delete session
    */
   async deleteSession(agentId: string, sessionId: string): Promise<void> {
     try {
-      // 获取服务器实例
-      const server = this.getOrCreateAgentServer(agentId);
+      // Get server instance
+      const server = await this.getOrCreateAgentServer(agentId);
 
       // 构建请求
       const request: schema.CancelTaskRequest = {

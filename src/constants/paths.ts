@@ -33,3 +33,4 @@ export const LOCALIZATION_FOLDER = isDevelopmentOrTest
 export const DEFAULT_WIKI_FOLDER = isDevelopmentOrTest ? path.resolve(sourcePath, '..', developmentWikiFolderName) : DESKTOP_PATH;
 export const DEFAULT_FIRST_WIKI_NAME = 'wiki';
 export const DEFAULT_FIRST_WIKI_PATH = path.join(DEFAULT_WIKI_FOLDER, DEFAULT_FIRST_WIKI_NAME);
+export const SQLITE_BINARY_PATH = path.resolve(PACKAGE_PATH_BASE, 'better-sqlite3', 'build', 'Release', 'better_sqlite3.node');
