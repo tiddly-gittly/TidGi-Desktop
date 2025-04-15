@@ -1,32 +1,15 @@
-import { DataSource } from 'typeorm';
+import { DataSource, Repository } from 'typeorm';
 import * as schema from './schema';
+import { SessionEntity, SessionMessageEntity } from '@services/database/schema/agent';
 
 // Helper type for the simplified store
-export interface TaskAndHistory {
-  task: schema.Task & { agentId?: string | null };
+export interface SessionAndHistory {
+  session: schema.Task & { agentId: string };
   history: schema.Message[];
 }
 
-// Database row types
-interface AgentTaskRow {
-  id: string;
-  agentId: string | null;
-  state: string;
-  status: string;
-  artifacts?: string | null;
-  metadata?: string | null;
-  createdAt?: string;
-  updatedAt?: string;
-}
-
-interface AgentTaskMessageRow {
-  id: number;
-  taskId: string;
-  role: string;
-  parts: string;
-  metadata?: string | null;
-  timestamp: string;
-}
+// Rename for compatibility
+export type TaskAndHistory = SessionAndHistory;
 
 // Typed JSON parsing helpers
 function parseJSON<T>(json: string | null | undefined, defaultValue: T): T {
@@ -46,215 +29,212 @@ interface TaskStatusData {
   timestamp?: string;
 }
 
-// Interface for transaction
-interface Transaction {
-  query<T = any>(query: string, parameters?: any[]): Promise<T[]>;
-  commitTransaction(): Promise<void>;
-  rollbackTransaction(): Promise<void>;
+/**
+ * Session storage interface (renamed from TaskStore)
+ */
+export interface SessionStore {
+  /**
+   * Save session and its related history
+   */
+  save(data: SessionAndHistory): Promise<void>;
+
+  /**
+   * Load session and its history
+   */
+  load(sessionId: string): Promise<SessionAndHistory | null>;
+
+  /**
+   * Get all session IDs
+   */
+  getAllSessionIds(): Promise<string[]>;
+
+  /**
+   * Get all sessions
+   */
+  getAllSessions(): Promise<(schema.Task & { agentId: string })[]>;
+
+  /**
+   * Get history for a session
+   */
+  getSessionHistory(sessionId: string): Promise<schema.Message[]>;
 }
 
-/**
- * Task storage interface
- */
-export interface TaskStore {
-  /**
-   * Save task and its related history
-   */
-  save(data: TaskAndHistory): Promise<void>;
-
-  /**
-   * Load task and its history
-   */
-  load(taskId: string): Promise<TaskAndHistory | null>;
-
-  /**
-   * Get all task IDs
-   */
+// For compatibility
+export interface TaskStore extends SessionStore {
   getAllTaskIds(): Promise<string[]>;
-
-  /**
-   * Get all tasks
-   */
-  getAllTasks(): Promise<(schema.Task & { agentId?: string | null })[]>;
-
-  /**
-   * Get history for a task
-   */
+  getAllTasks(): Promise<(schema.Task & { agentId: string })[]>;
   getTaskHistory(taskId: string): Promise<schema.Message[]>;
 }
 
 /**
- * SQLite implementation of task store
+ * SQLite implementation of session store using TypeORM
  */
-export class SQLiteTaskStore implements TaskStore {
+export class SQLiteSessionStore implements SessionStore, TaskStore {
   private dataSource: DataSource;
+  private sessionRepository: Repository<SessionEntity>;
+  private messageRepository: Repository<SessionMessageEntity>;
 
   constructor(dataSource: DataSource) {
     this.dataSource = dataSource;
+    this.sessionRepository = dataSource.getRepository(SessionEntity);
+    this.messageRepository = dataSource.getRepository(SessionMessageEntity);
   }
 
-  async load(taskId: string): Promise<TaskAndHistory | null> {
+  async load(sessionId: string): Promise<SessionAndHistory | null> {
     try {
-      // Query task
-      const taskRows = await this.dataSource.query<AgentTaskRow[]>(
-        `SELECT * FROM agent_tasks WHERE id = ?`,
-        [taskId],
-      );
-      const task = taskRows[0];
-      if (!task) {
+      // Find session by ID
+      const sessionEntity = await this.sessionRepository.findOne({ 
+        where: { id: sessionId },
+        relations: ['agent'] // 加载关联的agent实体
+      });
+      
+      if (!sessionEntity) {
         return null;
       }
 
-      // Query messages
-      const messages = await this.dataSource.query<AgentTaskMessageRow[]>(
-        `SELECT * FROM agent_task_messages WHERE taskId = ? ORDER BY timestamp ASC`,
-        [taskId],
-      );
+      // Find associated messages
+      const messageEntities = await this.messageRepository.find({
+        where: { sessionId: sessionId },
+        order: { timestamp: 'ASC' }
+      });
 
-      // Parse JSON with proper typing
-      const status = parseJSON<TaskStatusData>(task.status, { state: 'unknown' });
-      const artifacts = parseJSON<schema.Artifact[] | null>(task.artifacts, null);
-      const metadata = parseJSON<Record<string, unknown> | null>(task.metadata, null);
-
-      const taskData: schema.Task & { agentId?: string | null } = {
-        id: task.id,
-        agentId: task.agentId,
-        status: status,
-        artifacts: artifacts,
-        metadata: metadata,
+      // Convert entity to schema object
+      const sessionData: schema.Task & { agentId: string } = {
+        id: sessionEntity.id,
+        agentId: sessionEntity.agentId,
+        status: parseJSON<TaskStatusData>(sessionEntity.status, { state: 'unknown' }),
+        artifacts: parseJSON<schema.Artifact[] | null>(sessionEntity.artifacts || null, null),
+        metadata: parseJSON<Record<string, unknown> | null>(sessionEntity.metadata || null, null),
       };
 
-      const history: schema.Message[] = messages.map((message) => ({
+      // Convert message entities to schema messages
+      const history: schema.Message[] = messageEntities.map(message => ({
         role: message.role as 'user' | 'agent',
         parts: parseJSON<schema.Part[]>(message.parts, []),
         metadata: message.metadata ? parseJSON<Record<string, unknown>>(message.metadata, {}) : undefined,
       }));
 
-      return { task: taskData, history };
+      return { session: sessionData, history };
     } catch (error) {
-      console.error(`Failed to load task ${taskId} from SQLite:`, error);
+      console.error(`Failed to load session ${sessionId} from database:`, error);
       return null;
     }
   }
 
-  async save(data: TaskAndHistory): Promise<void> {
+  async save(data: SessionAndHistory): Promise<void> {
+    const { session, history } = data;
+
     try {
-      const { task, history } = data;
+      await this.dataSource.transaction(async transactionalEntityManager => {
+        // 检查指定的agentId是否存在
+        const agentExists = await transactionalEntityManager.findOne('agents', {
+          where: { id: session.agentId }
+        });
 
-      // Start a transaction
-      await this.dataSource.transaction(async (entityManager) => {
-        const transaction = entityManager as unknown as Transaction;
-
-        // Check if task exists
-        const existsResult = await transaction.query<{ exists: number }[]>(
-          'SELECT COUNT(*) as exists FROM agent_tasks WHERE id = ?',
-          [task.id],
-        );
-        const exists = existsResult[0]?.exists > 0;
-
-        if (exists) {
-          // Update existing task
-          await transaction.query(
-            `UPDATE agent_tasks SET 
-              agentId = ?, 
-              state = ?, 
-              status = ?, 
-              artifacts = ?, 
-              metadata = ?,
-              updatedAt = CURRENT_TIMESTAMP
-            WHERE id = ?`,
-            [
-              task.agentId || null,
-              task.status.state,
-              JSON.stringify(task.status),
-              task.artifacts ? JSON.stringify(task.artifacts) : null,
-              task.metadata ? JSON.stringify(task.metadata) : null,
-              task.id,
-            ],
-          );
-        } else {
-          // Insert new task
-          await transaction.query(
-            `INSERT INTO agent_tasks (id, agentId, state, status, artifacts, metadata) 
-            VALUES (?, ?, ?, ?, ?, ?)`,
-            [
-              task.id,
-              task.agentId || null,
-              task.status.state,
-              JSON.stringify(task.status),
-              task.artifacts ? JSON.stringify(task.artifacts) : null,
-              task.metadata ? JSON.stringify(task.metadata) : null,
-            ],
-          );
+        if (!agentExists) {
+          console.error(`Agent with ID "${session.agentId}" does not exist in the database`);
+          throw new Error(`Foreign key constraint failed: Agent with ID "${session.agentId}" does not exist`);
         }
 
-        // Delete existing messages for this task to avoid duplicates
-        await transaction.query('DELETE FROM agent_task_messages WHERE taskId = ?', [task.id]);
+        // Check if session exists
+        const existingSession = await transactionalEntityManager.findOne(SessionEntity, {
+          where: { id: session.id }
+        });
 
-        // Insert all messages
+        // Create session entity
+        const sessionEntity = existingSession || new SessionEntity();
+        sessionEntity.id = session.id;
+        sessionEntity.agentId = session.agentId;
+        sessionEntity.state = session.status.state;
+        sessionEntity.status = JSON.stringify(session.status);
+        sessionEntity.artifacts = session.artifacts ? JSON.stringify(session.artifacts) : null;
+        sessionEntity.metadata = session.metadata ? JSON.stringify(session.metadata) : null;
+
+        // Save session
+        await transactionalEntityManager.save(sessionEntity);
+
+        // Delete existing messages
+        if (existingSession) {
+          await transactionalEntityManager.delete(SessionMessageEntity, { sessionId: session.id });
+        }
+
+        // Save messages
         for (const message of history) {
-          await transaction.query(
-            `INSERT INTO agent_task_messages (taskId, role, parts, metadata) 
-            VALUES (?, ?, ?, ?)`,
-            [
-              task.id,
-              message.role,
-              JSON.stringify(message.parts),
-              message.metadata ? JSON.stringify(message.metadata) : null,
-            ],
-          );
+          const messageEntity = new SessionMessageEntity();
+          messageEntity.sessionId = session.id; // 修改: 使用sessionId替代taskId
+          messageEntity.role = message.role;
+          messageEntity.parts = JSON.stringify(message.parts);
+          messageEntity.metadata = message.metadata ? JSON.stringify(message.metadata) : null;
+          
+          await transactionalEntityManager.save(messageEntity);
         }
       });
     } catch (error) {
-      console.error(`Failed to save task ${data.task.id} to SQLite:`, error);
-      throw new Error(`Failed to save task: ${(error as Error).message}`);
+      console.error(`Failed to save session ${session.id} to database:`, error);
+      throw new Error(`Failed to save session: ${(error as Error).message}`);
     }
   }
 
-  async getAllTaskIds(): Promise<string[]> {
+  async getAllSessionIds(): Promise<string[]> {
     try {
-      const rows = await this.dataSource.query<Pick<AgentTaskRow, 'id'>[]>(
-        'SELECT id FROM agent_tasks',
-      );
-      return rows.map((t) => t.id);
+      const sessions = await this.sessionRepository.find({
+        select: ['id']
+      });
+      return sessions.map(session => session.id);
     } catch (error) {
-      console.error('Failed to get all task IDs from SQLite:', error);
+      console.error('Failed to get all session IDs from database:', error);
       return [];
     }
   }
 
-  async getAllTasks(): Promise<(schema.Task & { agentId?: string | null })[]> {
+  async getAllSessions(): Promise<(schema.Task & { agentId: string })[]> {
     try {
-      const rows = await this.dataSource.query<AgentTaskRow[]>(
-        'SELECT * FROM agent_tasks',
-      );
-      return rows.map((task) => ({
-        id: task.id,
-        agentId: task.agentId,
-        status: parseJSON<TaskStatusData>(task.status, { state: 'unknown' }),
-        artifacts: parseJSON<schema.Artifact[] | null>(task.artifacts, null),
-        metadata: parseJSON<Record<string, unknown> | null>(task.metadata, null),
+      const sessions = await this.sessionRepository.find();
+      
+      return sessions.map(session => ({
+        id: session.id,
+        agentId: session.agentId,
+        status: parseJSON<TaskStatusData>(session.status, { state: 'unknown' }),
+        artifacts: parseJSON<schema.Artifact[] | null>(session.artifacts || null, null),
+        metadata: parseJSON<Record<string, unknown> | null>(session.metadata || null, null),
       }));
     } catch (error) {
-      console.error('Failed to get all tasks from SQLite:', error);
+      console.error('Failed to get all sessions from database:', error);
       return [];
     }
   }
 
-  async getTaskHistory(taskId: string): Promise<schema.Message[]> {
+  async getSessionHistory(sessionId: string): Promise<schema.Message[]> {
     try {
-      const messages = await this.dataSource.query<AgentTaskMessageRow[]>(
-        'SELECT * FROM agent_task_messages WHERE taskId = ? ORDER BY timestamp ASC',
-        [taskId],
-      );
-      return messages.map((message) => ({
+      const messages = await this.messageRepository.find({
+        where: { sessionId: sessionId }, // 修改: 使用sessionId替代taskId
+        order: { timestamp: 'ASC' }
+      });
+      
+      return messages.map(message => ({
         role: message.role as 'user' | 'agent',
         parts: parseJSON<schema.Part[]>(message.parts, []),
         metadata: message.metadata ? parseJSON<Record<string, unknown>>(message.metadata, {}) : undefined,
       }));
     } catch (error) {
-      console.error(`Failed to get history for task ${taskId} from SQLite:`, error);
+      console.error(`Failed to get history for session ${sessionId} from database:`, error);
       return [];
     }
   }
+
+  // Compatibility methods
+  getAllTaskIds(): Promise<string[]> {
+    return this.getAllSessionIds();
+  }
+
+  getAllTasks(): Promise<(schema.Task & { agentId: string })[]> {
+    return this.getAllSessions();
+  }
+
+  getTaskHistory(taskId: string): Promise<schema.Message[]> {
+    return this.getSessionHistory(taskId);
+  }
 }
+
+// Replace the existing SQLiteTaskStore with our renamed store
+export const SQLiteTaskStore = SQLiteSessionStore;

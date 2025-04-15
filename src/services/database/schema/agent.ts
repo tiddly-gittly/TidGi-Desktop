@@ -1,4 +1,4 @@
-import { Column, CreateDateColumn, Entity, ManyToOne, OneToMany, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
 
 /**
  * Agent entity, represents a chat agent.
@@ -18,29 +18,29 @@ export class AgentEntity {
   avatarUrl?: string;
 
   @Column({ type: 'simple-json', nullable: true })
-  card?: object;
+  card?: string;
 
-  @OneToMany(() => TaskEntity, task => task.agent)
-  tasks!: TaskEntity[];
+  @OneToMany(() => SessionEntity, session => session.agent)
+  sessions!: SessionEntity[];
 }
 
 /**
- * Task entity, represents a task in the A2A protocol.
- * Each task acts as a session in the conversation.
+ * Session entity, represents a session in the A2A protocol.
  */
-@Entity('agent_tasks')
-export class TaskEntity {
+@Entity('agent_sessions')
+export class SessionEntity {
   @PrimaryColumn()
   id!: string;
 
   @Column()
   agentId!: string;
 
-  @ManyToOne(() => AgentEntity, agent => agent.tasks)
+  @ManyToOne(() => AgentEntity, agent => agent.sessions)
+  @JoinColumn({ name: 'agentId' })
   agent!: AgentEntity;
 
   @Column('text')
-  state!: string; // TaskState
+  state!: string; // 等价于 TaskState (保持与A2A协议兼容)
 
   @Column({ type: 'text' })
   status!: string; // JSON string of TaskStatus
@@ -57,24 +57,24 @@ export class TaskEntity {
   @UpdateDateColumn()
   updatedAt!: Date;
 
-  @OneToMany(() => TaskMessageEntity, message => message.task)
-  messages!: TaskMessageEntity[];
+  @OneToMany(() => SessionMessageEntity, message => message.session)
+  messages!: SessionMessageEntity[];
 }
 
 /**
- * Task message entity, represents a message in a task's history.
- * Each message is part of the conversation in a task.
+ * Session message entity, represents a message in a session's history.
  */
-@Entity('agent_task_messages')
-export class TaskMessageEntity {
+@Entity('agent_session_messages')
+export class SessionMessageEntity {
   @PrimaryGeneratedColumn()
   id!: number;
 
   @Column()
-  taskId!: string;
+  sessionId!: string;
 
-  @ManyToOne(() => TaskEntity, task => task.messages)
-  task!: TaskEntity;
+  @ManyToOne(() => SessionEntity, session => session.messages)
+  @JoinColumn({ name: 'sessionId' })
+  session!: SessionEntity;
 
   @Column('text')
   role!: string; // 'user' | 'agent'

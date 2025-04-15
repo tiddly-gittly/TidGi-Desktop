@@ -11,6 +11,7 @@ interface AgentHttpServerOptions {
 
 /**
  * 基于Node.js原生HTTP模块的A2A HTTP服务器
+ * 这个文件是唯一需要保留兼容性函数的地方，因为它处理的是对外的通信
  */
 export class AgentHttpServer {
   private server: http.Server | null = null;
@@ -155,7 +156,7 @@ export class AgentHttpServer {
   }
 
   /**
-   * 处理A2A API请求
+   * 处理A2A API请求 - 这里需要保持A2A协议命名，以便与外部系统兼容
    */
   private async handleA2ARequest(request: http.IncomingMessage, res: http.ServerResponse, agentId: string): Promise<void> {
     // 检查智能体是否存在
@@ -180,18 +181,21 @@ export class AgentHttpServer {
       request.on('end', async () => {
         try {
           // 解析JSON-RPC请求
-          const request = JSON.parse(body) as schema.JSONRPCRequest;
+          const jsonRpcRequest = JSON.parse(body) as schema.JSONRPCRequest;
 
           // 检查是否是流式请求
-          if (request.method === 'tasks/sendSubscribe') {
-            await this.handleStreamingRequest(
+          if (jsonRpcRequest.method === 'tasks/sendSubscribe') {
+            await this.handleStreamingSession(
               res,
               agentId,
-              request as schema.SendTaskStreamingRequest,
+              jsonRpcRequest as schema.SendTaskStreamingRequest,
             );
           } else {
-            // 处理常规请求
-            const response = await this.options.agentService.handleRequest(agentId, request);
+            // 在这里我们将会话概念转换为A2A协议中的任务概念
+            const response = await this.convertSessionRequestToTaskRequest(
+              agentId, 
+              jsonRpcRequest
+            );
 
             res.statusCode = 200;
             res.setHeader('Content-Type', 'application/json');
@@ -219,9 +223,100 @@ export class AgentHttpServer {
   }
 
   /**
-   * 处理流式请求（SSE）
+   * 将内部会话请求转换为A2A协议中的任务请求
+   * 这个函数只存在于http-server.ts中，用于协议兼容
    */
-  private async handleStreamingRequest(
+  private async convertSessionRequestToTaskRequest(
+    agentId: string, 
+    request: schema.JSONRPCRequest
+  ): Promise<schema.JSONRPCResponse> {
+    // 处理不同类型的请求
+    switch (request.method) {
+      case 'tasks/send':
+        return this.options.agentService.sendMessage(
+          agentId,
+          (request as schema.SendTaskRequest).params.id,
+          (request as schema.SendTaskRequest).params.message.parts[0].text
+        );
+      
+      case 'tasks/get':
+        const session = await this.options.agentService.getSession(
+          (request as schema.GetTaskRequest).params.id
+        );
+        
+        if (!session) {
+          return {
+            jsonrpc: '2.0',
+            id: request.id || null,
+            error: {
+              code: -32001,
+              message: `Session not found: ${(request as schema.GetTaskRequest).params.id}`
+            }
+          };
+        }
+        
+        // 将会话转换为任务格式
+        return {
+          jsonrpc: '2.0',
+          id: request.id || null,
+          result: this.convertAgentSessionToA2ATask(session)
+        };
+        
+      case 'tasks/cancel':
+        await this.options.agentService.deleteSession(
+          agentId,
+          (request as schema.CancelTaskRequest).params.id
+        );
+        return {
+          jsonrpc: '2.0',
+          id: request.id || null,
+          result: { 
+            id: (request as schema.CancelTaskRequest).params.id,
+            status: { 
+              state: 'canceled', 
+              timestamp: new Date().toISOString() 
+            }
+          }
+        };
+        
+      default:
+        return {
+          jsonrpc: '2.0',
+          id: request.id || null,
+          error: {
+            code: -32601,
+            message: `Method not found: ${request.method}`
+          }
+        };
+    }
+  }
+
+  /**
+   * 将AgentSession转换为A2A协议中的Task
+   * 这个函数只存在于http-server.ts中，用于协议兼容
+   */
+  private convertAgentSessionToA2ATask(session: any): schema.Task {
+    const lastAgentMessage = session.messages
+      .filter((m: any) => m.role === 'agent')
+      .pop();
+    
+    return {
+      id: session.id,
+      sessionId: session.id,
+      status: {
+        state: lastAgentMessage ? 'completed' : 'submitted',
+        timestamp: session.updatedAt.toISOString(),
+        message: lastAgentMessage
+      },
+      artifacts: [],
+      metadata: {}
+    };
+  }
+
+  /**
+   * 处理流式会话
+   */
+  private async handleStreamingSession(
     res: http.ServerResponse,
     agentId: string,
     request: schema.SendTaskStreamingRequest,
@@ -234,17 +329,22 @@ export class AgentHttpServer {
 
     try {
       // 获取流式响应
-      const stream = this.options.agentService.handleStreamingRequest(agentId, request);
+      const stream = this.options.agentService.handleStreamingRequest(
+        agentId,
+        request.params.id,
+        request.params.message.parts[0].text
+      );
 
-      // 订阅流
+      // 创建订阅
       const subscription = stream.subscribe({
         next: (event) => {
-          const response = {
+          // 将事件转换为SSE格式并发送
+          const eventData = JSON.stringify({
             jsonrpc: '2.0',
             id: request.id,
-            result: event,
-          };
-          res.write(`data: ${JSON.stringify(response)}\n\n`);
+            result: event
+          });
+          res.write(`data: ${eventData}\n\n`);
 
           // 如果是最终事件，结束连接
           if (event.final) {
@@ -253,38 +353,39 @@ export class AgentHttpServer {
         },
         error: (error) => {
           console.error('Error in stream:', error);
-          const errorResponse = {
+          // 发送错误事件
+          const errorData = JSON.stringify({
             jsonrpc: '2.0',
             id: request.id,
             error: {
               code: -32603,
-              message: error instanceof Error ? error.message : 'Stream error',
-            },
-          };
-          res.write(`data: ${JSON.stringify(errorResponse)}\n\n`);
+              message: error instanceof Error ? error.message : 'Stream error'
+            }
+          });
+          res.write(`data: ${errorData}\n\n`);
           res.end();
         },
         complete: () => {
           // 流完成
           res.end();
-        },
+        }
       });
 
-      // 当连接关闭时取消订阅
-      req.on('close', () => {
+      // 当请求关闭时取消订阅
+      request.on('close', () => {
         subscription.unsubscribe();
       });
     } catch (error) {
       console.error('Error setting up stream:', error);
-      const errorResponse = {
+      const errorData = JSON.stringify({
         jsonrpc: '2.0',
         id: request.id,
         error: {
           code: -32603,
-          message: error instanceof Error ? error.message : 'Stream error',
-        },
-      };
-      res.write(`data: ${JSON.stringify(errorResponse)}\n\n`);
+          message: error instanceof Error ? error.message : 'Stream error'
+        }
+      });
+      res.write(`data: ${errorData}\n\n`);
       res.end();
     }
   }

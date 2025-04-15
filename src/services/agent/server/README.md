@@ -8,15 +8,15 @@ This directory contains a TypeScript server implementation for the Agent-to-Agen
 import {
   A2AServer,
   InMemoryTaskStore,
-  TaskContext,
-  TaskYieldUpdate,
+  SessionContext,  // Renamed from TaskContext
+  SessionYieldUpdate,  // Renamed from TaskYieldUpdate
 } from "./index"; // Assuming imports from the server package
 
-// 1. Define your agent's logic as a TaskHandler
+// 1. Define your agent's logic as a SessionHandler
 async function* myAgentLogic(
-  context: TaskContext
-): AsyncGenerator<TaskYieldUpdate> {
-  console.log(`Handling task: ${context.task.id}`);
+  context: SessionContext
+): AsyncGenerator<SessionYieldUpdate> {
+  console.log(`Handling session: ${context.task.id}`);
   yield {
     state: "working",
     message: { role: "agent", parts: [{ text: "Processing..." }] },
@@ -26,7 +26,7 @@ async function* myAgentLogic(
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
   if (context.isCancelled()) {
-    console.log("Task cancelled!");
+    console.log("Session cancelled!");
     yield { state: "canceled" };
     return;
   }
@@ -35,7 +35,7 @@ async function* myAgentLogic(
   yield {
     name: "result.txt",
     mimeType: "text/plain",
-    parts: [{ text: `Task ${context.task.id} completed.` }],
+    parts: [{ text: `Session ${context.task.id} completed.` }],
   };
 
   // Yield final status

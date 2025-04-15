@@ -6,55 +6,55 @@ import { TaskHandler } from './server/handler';
 import * as schema from './server/schema';
 
 /**
- * 智能体定义，包含智能体的基本信息和处理逻辑
+ * Agent definition, including basic information and processing logic
  */
 export interface Agent {
-  /** 智能体唯一标识符 */
+  /** Unique identifier for the agent */
   id: string;
-  /** 智能体名称 */
+  /** Agent name */
   name: string;
-  /** 智能体描述 */
+  /** Agent description */
   description?: string;
-  /** 智能体图标或头像URL */
+  /** Agent icon or avatar URL */
   avatarUrl?: string;
-  /** 智能体处理器函数 */
+  /** Agent handler function */
   handler: TaskHandler;
-  /** 智能体特性卡片 */
+  /** Agent feature card */
   card?: schema.AgentCard;
 }
 
 /**
- * 智能体服务配置
+ * Agent service configuration
  */
 export interface AgentServiceConfig {
-  /** 是否启用HTTP服务器 */
+  /** Whether to enable HTTP server */
   enableHttpServer?: boolean;
-  /** HTTP服务器端口 */
+  /** HTTP server port */
   httpServerPort?: number;
-  /** HTTP服务基础路径 */
+  /** HTTP server base path */
   httpServerBasePath?: string;
 }
 
 /**
- * 智能体会话信息
+ * Agent session information
  */
 export interface AgentSession {
-  /** 会话ID */
+  /** Session ID */
   id: string;
-  /** 智能体ID */
+  /** Agent ID */
   agentId: string;
-  /** 消息历史 */
+  /** Message history */
   messages: schema.Message[];
-  /** 当前任务ID */
-  currentTaskId?: string;
-  /** 会话创建时间 */
+  /** Current session ID - used as reference to task in A2A protocol */
+  currentSessionId: string;
+  /** Session creation time */
   createdAt: Date;
-  /** 上次更新时间 */
+  /** Last update time */
   updatedAt: Date;
 }
 
 /**
- * 智能体请求结果
+ * Agent request result
  */
 export interface AgentRequestResult<T = any> {
   data?: T;
@@ -66,69 +66,69 @@ export interface AgentRequestResult<T = any> {
  */
 export interface IAgentService {
   /**
-   * 获取所有可用智能体列表（简化版，不包含handler）
+   * Get all available agents (simplified, without handler)
    */
   getAgents(): Promise<Omit<Agent, 'handler'>[]>;
 
   /**
-   * 获取指定智能体
-   * @param id 智能体ID
+   * Get a specific agent
+   * @param id Agent ID
    */
   getAgent(id: string): Promise<Agent | undefined>;
 
   /**
-   * 创建新会话
-   * @param agentId 智能体ID
+   * Create a new session
+   * @param agentId Agent ID
    */
   createSession(agentId: string): Promise<AgentSession>;
 
   /**
-   * 发送消息到会话
-   * @param agentId 智能体ID
-   * @param sessionId 会话ID
-   * @param messageText 消息文本
+   * Send a message to a session
+   * @param agentId Agent ID
+   * @param sessionId Session ID
+   * @param messageText Message text
    */
   sendMessage(agentId: string, sessionId: string, messageText: string): Promise<schema.JSONRPCResponse>;
 
   /**
-   * 流式发送消息到会话并订阅结果
-   * @param agentId 智能体ID
-   * @param sessionId 会话ID
-   * @param messageText 消息文本
+   * Stream a message to a session and subscribe to results
+   * @param agentId Agent ID
+   * @param sessionId Session ID
+   * @param messageText Message text
    */
   handleStreamingRequest(agentId: string, sessionId: string, messageText: string): Observable<schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent>;
 
   /**
-   * 获取指定会话
-   * @param sessionId 会话ID
+   * Get a specific session
+   * @param sessionId Session ID
    */
   getSession(sessionId: string): Promise<AgentSession | undefined>;
 
   /**
-   * 获取智能体的所有会话
-   * @param agentId 智能体ID
+   * Get all sessions for an agent
+   * @param agentId Agent ID
    */
   getAgentSessions(agentId: string): Promise<AgentSession[]>;
 
   /**
-   * 删除会话
-   * @param agentId 智能体ID
-   * @param sessionId 会话ID
+   * Delete a session
+   * @param agentId Agent ID
+   * @param sessionId Session ID
    */
   deleteSession(agentId: string, sessionId: string): Promise<void>;
 
   /**
-   * 启动HTTP服务器
-   * @param config 服务器配置
+   * Start HTTP server
+   * @param config Server configuration
    */
   startHttpServer(config: AgentServiceConfig): Promise<void>;
 
   /**
-   * 停止HTTP服务器
+   * Stop HTTP server
    */
   stopHttpServer(): Promise<void>;
 
-  /** 会话更新流 - 只包含变更的会话 */
+  /** Session updates stream - only includes changed sessions */
   sessionUpdates$: BehaviorSubject<Record<string, AgentSession>>;
 }
 

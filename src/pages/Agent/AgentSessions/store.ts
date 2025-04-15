@@ -124,7 +124,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
       });
   },
 
-  // 创建新会话 - 确保智能体已选择
+  // 创建新会话 - 确保使用正确的智能体ID
   createNewSession: async () => {
     let { selectedAgentId, availableAgents } = get();
     // 如果没有选择的智能体，尝试加载可用智能体
@@ -150,6 +150,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
       set(state => ({ creatingSession: true }));
 
       // 调用服务器创建会话并等待完成
+      // 确保使用id属性而不是name属性，确保与数据库中的记录匹配
       const createdSession = await window.service.agent.createSession(selectedAgentId);
 
       // 更新前端状态
