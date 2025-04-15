@@ -57,6 +57,11 @@ export interface SessionStore {
    * Get history for a session
    */
   getSessionHistory(sessionId: string): Promise<schema.Message[]>;
+
+  /**
+   * Delete a session and its history
+   */
+  deleteSession(sessionId: string): Promise<boolean>;
 }
 
 // For compatibility
@@ -64,6 +69,7 @@ export interface TaskStore extends SessionStore {
   getAllTaskIds(): Promise<string[]>;
   getAllTasks(): Promise<(schema.Task & { agentId: string })[]>;
   getTaskHistory(taskId: string): Promise<schema.Message[]>;
+  deleteTask(taskId: string): Promise<boolean>;
 }
 
 /**
@@ -220,6 +226,42 @@ export class SQLiteSessionStore implements SessionStore, TaskStore {
       console.error(`Failed to get history for session ${sessionId} from database:`, error);
       return [];
     }
+  }
+
+  /**
+   * Delete a session and all its related messages
+   */
+  async deleteSession(sessionId: string): Promise<boolean> {
+    try {
+      return await this.dataSource.transaction(async transactionalEntityManager => {
+        // First delete all messages
+        await transactionalEntityManager.delete(SessionMessageEntity, { 
+          sessionId: sessionId 
+        });
+        
+        // Then delete the session
+        const result = await transactionalEntityManager.delete(SessionEntity, { 
+          id: sessionId 
+        });
+        
+        const deleted = result.affected && result.affected > 0;
+        if (deleted) {
+          console.log(`Successfully deleted session ${sessionId} from database`);
+        } else {
+          console.log(`No session found to delete with ID ${sessionId}`);
+        }
+        
+        return deleted;
+      });
+    } catch (error) {
+      console.error(`Failed to delete session ${sessionId} from database:`, error);
+      return false;
+    }
+  }
+
+  // Compatibility method
+  deleteTask(taskId: string): Promise<boolean> {
+    return this.deleteSession(taskId);
   }
 
   // Compatibility methods

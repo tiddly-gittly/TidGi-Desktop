@@ -124,9 +124,16 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
       });
   },
 
-  // 创建新会话 - 确保使用正确的智能体ID
+  // 创建新会话 - 使用乐观更新模式并确保后端同步
   createNewSession: async () => {
-    let { selectedAgentId, availableAgents } = get();
+    let { selectedAgentId, availableAgents, creatingSession } = get();
+    
+    // 防止重复点击创建
+    if (creatingSession) {
+      console.log('Already creating a session, please wait...');
+      return '';
+    }
+    
     // 如果没有选择的智能体，尝试加载可用智能体
     if (!selectedAgentId || availableAgents.length === 0) {
       availableAgents = await get().loadAvailableAgents();
@@ -147,23 +154,58 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
       console.log(`Creating new session with agent: ${selectedAgentId}`);
 
       // 设置创建中的加载状态
-      set(state => ({ creatingSession: true }));
+      set({ creatingSession: true });
 
-      // 调用服务器创建会话并等待完成
-      // 确保使用id属性而不是name属性，确保与数据库中的记录匹配
-      const createdSession = await window.service.agent.createSession(selectedAgentId);
+      // 创建临时ID - 后端会返回实际ID，但我们先在UI上显示
+      const tempId = `temp-${Date.now()}`;
+      
+      // 创建临时会话对象用于UI立即显示（乐观更新）
+      const now = new Date();
+      const tempSession: AgentSession = {
+        id: tempId,
+        agentId: selectedAgentId,
+        messages: [],
+        currentSessionId: tempId,
+        createdAt: now,
+        updatedAt: now,
+      };
 
-      // 更新前端状态
+      // 立即更新UI，显示临时会话
       set(state => ({
-        sessions: [...state.sessions, createdSession],
-        activeSessionId: createdSession.id,
-        creatingSession: false,
+        activeSessionId: tempId,
+        sessions: [...state.sessions, tempSession],
       }));
+
+      // 向后端发送创建会话的请求
+      const createdSession = await window.service.agent.createSession(selectedAgentId);
+      console.log('Received backend session creation response:', createdSession);
+
+      // 当后端返回创建的会话时，替换临时会话
+      set(state => {
+        // 先删除临时会话
+        const filteredSessions = state.sessions.filter(s => s.id !== tempId);
+        
+        // 检查是否已经通过sessionUpdates$添加了实际会话
+        const alreadyAdded = state.sessions.some(s => s.id === createdSession.id);
+        
+        return {
+          // 只在未被添加的情况下添加新会话
+          sessions: alreadyAdded ? filteredSessions : [...filteredSessions, createdSession],
+          activeSessionId: createdSession.id,
+          creatingSession: false
+        };
+      });
 
       return createdSession.id;
     } catch (error) {
       console.error('Failed to create session:', error);
-      set({ creatingSession: false });
+      
+      // 出错时，移除临时会话
+      set(state => ({
+        sessions: state.sessions.filter(s => !s.id.startsWith('temp-')),
+        creatingSession: false
+      }));
+      
       return '';
     }
   },
@@ -342,17 +384,18 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
     }
   },
 
-  // 初始化会话同步订阅
+  // 初始化会话同步订阅 - 确保正确处理后端更新
   initSessionSyncSubscription: () => {
     // 订阅会话更新
     window.observables.agent.sessionUpdates$.subscribe({
       next: (sessionUpdates) => {
-        if (!sessionUpdates) return;
+        if (!sessionUpdates || Object.keys(sessionUpdates).length === 0) return;
         console.log('[Store] Received session updates:', sessionUpdates);
 
         // 获取当前状态
-        const { sessions } = get();
+        const { sessions, activeSessionId } = get();
         const updatedSessions = [...sessions];
+        let updatedActiveSessionId = activeSessionId;
 
         // 处理每个更新的会话
         Object.entries(sessionUpdates).forEach(([sessionId, sessionUpdate]) => {
@@ -361,28 +404,46 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
           if (sessionUpdate === null) {
             // 会话被删除
             if (sessionIndex >= 0) {
+              console.log(`[Store] Removing session ${sessionId} from frontend state`);
               updatedSessions.splice(sessionIndex, 1);
+              
+              // 如果删除的是当前活动会话，清除activeSessionId
+              if (activeSessionId === sessionId) {
+                updatedActiveSessionId = undefined;
+              }
             }
           } else {
             // 会话被更新或创建
             if (sessionIndex >= 0) {
               console.log(`[Store] Updating existing session ${sessionId} with new messages:`, 
-                sessionUpdate.messages.length, 'messages'); // 添加日志
+                sessionUpdate.messages.length, 'messages');
               updatedSessions[sessionIndex] = sessionUpdate;
             } else {
-              console.log(`[Store] Adding new session ${sessionId}`); // 添加日志
+              console.log(`[Store] Adding new session ${sessionId} from backend`);
               updatedSessions.push(sessionUpdate);
+              
+              // 如果当前没有活动的会话，将这个新会话设为活动
+              if (!updatedActiveSessionId || updatedActiveSessionId.startsWith('temp-')) {
+                updatedActiveSessionId = sessionId;
+              }
             }
           }
         });
 
-        // 更新状态
-        set({ sessions: updatedSessions });
+        // 移除所有临时会话（它们已被后端的实际会话所取代）
+        const finalSessions = updatedSessions.filter(s => !s.id.startsWith('temp-'));
         
-        // 为了调试，打印最新的会话转换结果
-        const { activeSessionId } = get();
-        if (activeSessionId) {
-          const conversations = get().getSessionConversations(activeSessionId);
+        // 更新状态
+        set({ 
+          sessions: finalSessions,
+          activeSessionId: updatedActiveSessionId
+        });
+        
+        // 为了调试，打印最新的会话状态
+        console.log(`[Store] Updated sessions (${finalSessions.length})`, 
+          finalSessions.map(s => ({ id: s.id, messages: s.messages.length })));
+        if (updatedActiveSessionId) {
+          const conversations = get().getSessionConversations(updatedActiveSessionId);
           console.log(`[Store] Current conversations for active session:`, conversations);
         }
       },

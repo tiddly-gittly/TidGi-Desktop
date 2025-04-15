@@ -560,24 +560,23 @@ export class AgentService implements IAgentService {
       // Get server instance
       const server = await this.getOrCreateAgentServer(agentId);
 
-      // Build request
-      const request: schema.CancelTaskRequest = {
+      // 先取消任务（如果正在运行）
+      const cancelRequest: schema.CancelTaskRequest = {
         jsonrpc: '2.0',
         id: nanoid(),
         method: 'tasks/cancel',
         params: {
-          id: sessionId, // Session ID is task ID
+          id: sessionId,
         },
       };
+      await server.handleRequest(cancelRequest);
 
-      // Attempt to cancel task (if running)
-      await server.handleRequest(request);
+      // 然后从数据库中删除会话记录
+      const deleted = await server.deleteSession(sessionId);
+      logger.info(`Deleted session ${sessionId} from database: ${deleted}`);
 
-      // Notify deletion
+      // 通知前端会话已删除
       this.notifySessionUpdate(agentId, sessionId, null);
-
-      // Note: A2A protocol itself does not support task deletion, this just notifies frontend
-      // Actual task deletion from storage may require extending A2A server implementation
     } catch (error) {
       logger.error(`Failed to delete session ${sessionId}:`, error);
     }

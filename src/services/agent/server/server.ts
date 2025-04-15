@@ -460,6 +460,24 @@ export class A2AServer {
     return data.session;
   }
 
+  /**
+   * Delete a session from storage
+   * 注意：这不是A2A协议的标准部分，是我们添加的扩展功能
+   */
+  async deleteSession(sessionId: string): Promise<boolean> {
+    try {
+      // 从会话存储中删除会话
+      if ('deleteSession' in this.sessionStore) {
+        const result = await this.sessionStore.deleteSession(sessionId);
+        return result;
+      }
+      return false;
+    } catch (error) {
+      console.error(`Failed to delete session ${sessionId}:`, error);
+      return false;
+    }
+  }
+
   // --- Helper Methods ---
 
   /**

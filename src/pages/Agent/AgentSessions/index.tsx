@@ -44,6 +44,12 @@ export function AgentSessions(): React.JSX.Element {
         selectAgent(availableAgents[0].id);
       }
       
+      // 检查是否正在创建会话，避免重复点击
+      if (isCreatingSession) {
+        console.log('Already creating a session, please wait...');
+        return;
+      }
+      
       const sessionId = await createNewSession();
       console.log('Created new session with ID:', sessionId);
       
@@ -53,7 +59,7 @@ export function AgentSessions(): React.JSX.Element {
     } catch (error) {
       console.error('Failed to create new session:', error);
     }
-  }, [createNewSession, selectedAgentId, availableAgents, selectAgent]);
+  }, [createNewSession, selectedAgentId, availableAgents, selectAgent, isCreatingSession]);
 
   // 包装sendMessage方法，带错误处理
   const handleSendMessage = useCallback(async (message: string) => {
