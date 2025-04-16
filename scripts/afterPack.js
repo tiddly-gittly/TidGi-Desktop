@@ -93,6 +93,8 @@ exports.default = async (
       ['tiddlywiki', 'tiddlywiki.js'],
       // we only need its `main` binary, no need its dependency and code, because we already copy it to src/services/native/externalApp
       ['app-path', 'main'],
+      // node binary
+      ['better-sqlite3', 'build', 'Release', 'better_sqlite3.node'],
     ];
     console.log(`Copying packagePathsToCopyDereferenced`);
     for (const packagePathInNodeModules of packagePathsToCopyDereferenced) {
