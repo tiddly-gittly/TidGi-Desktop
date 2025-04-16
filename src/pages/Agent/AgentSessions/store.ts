@@ -1,10 +1,10 @@
-import { AgentSession } from '@services/agent/interface';
+import { AgentTask } from '@services/agent/interface';
 import * as schema from '@services/agent/server/schema';
 import { omit } from 'lodash';
 import { useEffect } from 'react';
 import { create } from 'zustand';
 
-// 为了保持与旧UI兼容，创建会话映射函数
+// 对话界面使用的简化数据结构
 export interface Conversation {
   id: string;
   question: string;
@@ -13,48 +13,47 @@ export interface Conversation {
   updatedAt?: Date;
 }
 
-// 添加creatingSession标志到store状态中
-export interface AgentViewModelStoreState {
-  // 会话管理状态
-  sessions: AgentSession[];
-  activeSessionId?: string;
-  // 每个会话的加载状态
+export interface AgentStoreState {
+  // 任务管理状态
+  tasks: AgentTask[];
+  activeTaskId?: string;
+  // 每个任务的加载状态
   loadingStates: Record<string, boolean>;
   // AI响应流式状态
   streamingStates: Record<string, boolean>;
-  // 创建会话状态
-  creatingSession?: boolean;
+  // 创建任务状态
+  creatingTask?: boolean;
   // 可用智能体
   availableAgents: { id: string; name: string }[];
   selectedAgentId?: string;
 
   // 操作方法
-  createNewSession: () => Promise<string>;
-  deleteSession: (id: string) => void;
-  selectSession: (id: string) => void;
-  sendMessage: (message: string, sessionId?: string) => void;
-  sendMessageToAI: (message: string, sessionId?: string) => Promise<void>;
-  cancelAIRequest: (sessionId?: string) => Promise<void>;
+  createNewTask: () => Promise<string>;
+  deleteTask: (id: string) => void;
+  selectTask: (id: string) => void;
+  sendMessage: (message: string, taskId?: string) => void;
+  sendMessageToAI: (message: string, taskId?: string) => Promise<void>;
+  cancelAIRequest: (taskId?: string) => Promise<void>;
 
   // 加载可用智能体
-  loadAvailableAgents: () => Promise<void>;
+  loadAvailableAgents: () => Promise<{ id: string; name: string }[]>;
   selectAgent: (agentId: string) => void;
 
   // 初始化
   initialize: () => Promise<void>;
-  initSessionSyncSubscription: () => void;
+  initTaskSyncSubscription: () => void;
 
-  // 检查会话状态
-  isSessionLoading: (sessionId: string) => boolean;
-  isSessionStreaming: (sessionId: string) => boolean;
+  // 检查任务状态
+  isTaskLoading: (taskId: string) => boolean;
+  isTaskStreaming: (taskId: string) => boolean;
 
   // 辅助方法
-  getSessionConversations: (sessionId: string) => Conversation[];
+  getTaskConversations: (taskId: string) => Conversation[];
 }
 
 // 创建store hook
-export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
-  sessions: [],
+export const useAgentStore = create<AgentStoreState>((set, get) => ({
+  tasks: [],
   loadingStates: {},
   streamingStates: {},
   availableAgents: [],
@@ -64,7 +63,7 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
   initialize: async () => {
     try {
       // 初始化订阅
-      get().initSessionSyncSubscription();
+      get().initTaskSyncSubscription();
 
       // 首先加载可用智能体
       await get().loadAvailableAgents();
@@ -112,28 +111,28 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
   // 选择智能体
   selectAgent: (agentId: string) => {
     set({ selectedAgentId: agentId });
-    
-    // 从服务器加载该智能体的所有会话
-    window.service.agent.getAgentSessions(agentId)
-      .then(sessions => {
-        // 完全替换当前会话列表，而不是将其持久化
-        set({ sessions });
+
+    // 从服务器加载该智能体的所有任务
+    window.service.agent.getAgentTasks(agentId)
+      .then(tasks => {
+        // 完全替换当前任务列表
+        set({ tasks });
       })
       .catch(error => {
-        console.error(`Failed to load sessions for agent ${agentId}:`, error);
+        console.error(`Failed to load tasks for agent ${agentId}:`, error);
       });
   },
 
-  // 创建新会话 - 使用乐观更新模式并确保后端同步
-  createNewSession: async () => {
-    let { selectedAgentId, availableAgents, creatingSession } = get();
-    
+  // 创建新任务
+  createNewTask: async () => {
+    let { selectedAgentId, availableAgents, creatingTask } = get();
+
     // 防止重复点击创建
-    if (creatingSession) {
-      console.log('Already creating a session, please wait...');
+    if (creatingTask) {
+      console.log('Already creating a task, please wait...');
       return '';
     }
-    
+
     // 如果没有选择的智能体，尝试加载可用智能体
     if (!selectedAgentId || availableAgents.length === 0) {
       availableAgents = await get().loadAvailableAgents();
@@ -146,118 +145,121 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
     }
 
     if (!selectedAgentId) {
-      console.error('No agent available to create session');
+      console.error('No agent available to create task');
       return '';
     }
 
     try {
-      console.log(`Creating new session with agent: ${selectedAgentId}`);
+      console.log(`Creating new task with agent: ${selectedAgentId}`);
 
       // 设置创建中的加载状态
-      set({ creatingSession: true });
+      set({ creatingTask: true });
 
       // 创建临时ID - 后端会返回实际ID，但我们先在UI上显示
-      const tempId = `temp-${Date.now()}`;
-      
-      // 创建临时会话对象用于UI立即显示（乐观更新）
+      const temporaryId = `temp-${Date.now()}`;
+
+      // 创建临时任务对象用于UI立即显示（乐观更新）
       const now = new Date();
-      const tempSession: AgentSession = {
-        id: tempId,
+      const temporaryTask: AgentTask = {
+        id: temporaryId,
         agentId: selectedAgentId,
         messages: [],
-        currentSessionId: tempId,
+        status: {
+          state: 'submitted',
+          timestamp: now.toISOString(),
+        },
         createdAt: now,
         updatedAt: now,
       };
 
-      // 立即更新UI，显示临时会话
+      // 立即更新UI，显示临时任务
       set(state => ({
-        activeSessionId: tempId,
-        sessions: [...state.sessions, tempSession],
+        activeTaskId: temporaryId,
+        tasks: [...state.tasks, temporaryTask],
       }));
 
-      // 向后端发送创建会话的请求
-      const createdSession = await window.service.agent.createSession(selectedAgentId);
-      console.log('Received backend session creation response:', createdSession);
+      // 向后端发送创建任务的请求
+      const createdTask = await window.service.agent.createTask(selectedAgentId);
+      console.log('Received backend task creation response:', createdTask);
 
-      // 当后端返回创建的会话时，替换临时会话
+      // 当后端返回创建的任务时，替换临时任务
       set(state => {
-        // 先删除临时会话
-        const filteredSessions = state.sessions.filter(s => s.id !== tempId);
-        
-        // 检查是否已经通过sessionUpdates$添加了实际会话
-        const alreadyAdded = state.sessions.some(s => s.id === createdSession.id);
-        
+        // 先删除临时任务
+        const filteredTasks = state.tasks.filter(s => s.id !== temporaryId);
+
+        // 检查是否已经通过sessionUpdates$添加了实际任务
+        const alreadyAdded = state.tasks.some(s => s.id === createdTask.id);
+
         return {
-          // 只在未被添加的情况下添加新会话
-          sessions: alreadyAdded ? filteredSessions : [...filteredSessions, createdSession],
-          activeSessionId: createdSession.id,
-          creatingSession: false
+          // 只在未被添加的情况下添加新任务
+          tasks: alreadyAdded ? filteredTasks : [...filteredTasks, createdTask],
+          activeTaskId: createdTask.id,
+          creatingTask: false,
         };
       });
 
-      return createdSession.id;
+      return createdTask.id;
     } catch (error) {
-      console.error('Failed to create session:', error);
-      
-      // 出错时，移除临时会话
+      console.error('Failed to create task:', error);
+
+      // 出错时，移除临时任务
       set(state => ({
-        sessions: state.sessions.filter(s => !s.id.startsWith('temp-')),
-        creatingSession: false
+        tasks: state.tasks.filter(s => !s.id.startsWith('temp-')),
+        creatingTask: false,
       }));
-      
+
       return '';
     }
   },
 
-  // 删除会话
-  deleteSession: (id: string) => {
-    const { sessions, activeSessionId, loadingStates, selectedAgentId } = get();
+  // 删除任务
+  deleteTask: (id: string) => {
+    const { tasks, activeTaskId, loadingStates, selectedAgentId } = get();
 
     if (!selectedAgentId) {
       console.error('No agent selected.');
       return;
     }
 
-    // 创建新的loadingStates并删除对应会话的加载状态
+    // 创建新的loadingStates并删除对应任务的加载状态
     const newLoadingStates = { ...omit(loadingStates, id) };
 
     // 首先更新前端状态以提供即时反馈
     set({
-      sessions: sessions.filter((session) => session.id !== id),
-      activeSessionId: id === activeSessionId ? undefined : activeSessionId,
+      tasks: tasks.filter((task) => task.id !== id),
+      activeTaskId: id === activeTaskId ? undefined : activeTaskId,
       loadingStates: newLoadingStates,
     });
 
-    // 同时在服务器上删除会话
-    window.service.agent.deleteSession(selectedAgentId, id)
+    // 同时在服务器上删除任务
+    window.service.agent.deleteTask(selectedAgentId, id)
       .catch(error => {
-        console.error('Failed to delete session in service:', error);
+        console.error('Failed to delete task in service:', error);
       });
   },
 
-  // 选择会话
-  selectSession: (id: string) => {
-    set({ activeSessionId: id });
+  // 选择任务
+  selectTask: (id: string) => {
+    set({ activeTaskId: id });
   },
 
-  // 检查会话是否正在加载
-  isSessionLoading: (sessionId: string) => {
-    return get().loadingStates[sessionId] || false;
+  // 检查任务是否正在加载
+  isTaskLoading: (taskId: string) => {
+    return get().loadingStates[taskId] || false;
   },
 
-  // 检查会话是否正在流式传输
-  isSessionStreaming: (sessionId: string) => {
-    return get().streamingStates[sessionId] || false;
+  // 检查任务是否正在流式传输
+  isTaskStreaming: (taskId: string) => {
+    return get().streamingStates[taskId] || false;
   },
 
   // 向AI发送消息
-  sendMessageToAI: async (message: string, sessionId?: string) => {
-    const { activeSessionId, selectedAgentId } = get();
-    const targetSessionId = sessionId || activeSessionId;
-    
-    if (!targetSessionId) {
-      console.error('No active session ID provided');
+  sendMessageToAI: async (message: string, taskId?: string) => {
+    const { activeTaskId, selectedAgentId } = get();
+    const targetTaskId = taskId || activeTaskId;
+
+    if (!targetTaskId) {
+      console.error('No active task ID provided');
       return;
     }
 
@@ -266,91 +268,89 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
       return;
     }
 
-    // 设置会话为流式状态
+    // 设置任务为流式状态
     set(state => ({
-      streamingStates: { ...state.streamingStates, [targetSessionId]: true },
-      loadingStates: { ...state.loadingStates, [targetSessionId]: true },
+      streamingStates: { ...state.streamingStates, [targetTaskId]: true },
+      loadingStates: { ...state.loadingStates, [targetTaskId]: true },
     }));
 
     try {
       // 先临时更新UI状态，显示用户消息
-      // 注意：这不会持久化到服务器，只是为了UI响应性
-      const session = get().sessions.find(s => s.id === targetSessionId);
-      if (session) {
+      const task = get().tasks.find(s => s.id === targetTaskId);
+      if (task) {
         // 创建新的用户消息
         const userMessage: schema.Message = {
           role: 'user',
           parts: [{ text: message }],
         };
-        
-        // 临时更新会话消息列表，实际会话状态将通过sessionUpdates$同步
-        const updatedSession = {
-          ...session,
-          messages: [...session.messages, userMessage],
+
+        // 临时更新任务消息列表，实际任务状态将通过sessionUpdates$同步
+        const updatedTask = {
+          ...task,
+          messages: [...task.messages, userMessage],
           updatedAt: new Date(),
         };
-        
-        // 更新会话列表
+
+        // 更新任务列表
         set(state => ({
-          sessions: [
-            ...state.sessions.filter(s => s.id !== targetSessionId),
-            updatedSession,
+          tasks: [
+            ...state.tasks.filter(s => s.id !== targetTaskId),
+            updatedTask,
           ],
         }));
       }
 
-      console.log(`Sending message to agent ${selectedAgentId}, session ${targetSessionId}: ${message}`);
+      console.log(`Sending message to agent ${selectedAgentId}, task ${targetTaskId}: ${message}`);
 
       // 调用流式请求API，会触发服务器端处理
       const stream = window.observables.agent.handleStreamingRequest(
         selectedAgentId,
-        targetSessionId,
+        targetTaskId,
         message,
       );
 
       // 订阅流式更新
       stream.subscribe({
         next: (event) => {
-          // 服务器已经在处理会话更新，这里不需要手动更新会话
           console.log(`Received stream event:`, event);
         },
         complete: () => {
-          // 重置会话状态
+          // 重置任务状态
           set(state => ({
-            streamingStates: { ...state.streamingStates, [targetSessionId]: false },
-            loadingStates: { ...state.loadingStates, [targetSessionId]: false },
+            streamingStates: { ...state.streamingStates, [targetTaskId]: false },
+            loadingStates: { ...state.loadingStates, [targetTaskId]: false },
           }));
-          
-          // 流完成后刷新获取一次最新会话
+
+          // 流完成后刷新获取一次最新任务
           if (selectedAgentId) {
-            window.service.agent.getSession(targetSessionId)
-              .then(latestSession => {
-                if (latestSession) {
-                  // 更新当前会话
+            window.service.agent.getTask(targetTaskId)
+              .then(latestTask => {
+                if (latestTask) {
+                  // 更新当前任务
                   set(state => {
-                    const updatedSessions = [...state.sessions];
-                    const sessionIndex = updatedSessions.findIndex(s => s.id === latestSession.id);
-                    
-                    if (sessionIndex >= 0) {
-                      updatedSessions[sessionIndex] = latestSession;
+                    const updatedTasks = [...state.tasks];
+                    const taskIndex = updatedTasks.findIndex(s => s.id === latestTask.id);
+
+                    if (taskIndex >= 0) {
+                      updatedTasks[taskIndex] = latestTask;
                     } else {
-                      updatedSessions.push(latestSession);
+                      updatedTasks.push(latestTask);
                     }
-                    
-                    return { sessions: updatedSessions };
+
+                    return { tasks: updatedTasks };
                   });
                 }
               })
               .catch(error => {
-                console.error('Failed to refresh session after completion:', error);
+                console.error('Failed to refresh task after completion:', error);
               });
           }
         },
         error: (error) => {
           console.error('Error in streaming response:', error);
           set(state => ({
-            streamingStates: { ...state.streamingStates, [targetSessionId]: false },
-            loadingStates: { ...state.loadingStates, [targetSessionId]: false },
+            streamingStates: { ...state.streamingStates, [targetTaskId]: false },
+            loadingStates: { ...state.loadingStates, [targetTaskId]: false },
           }));
         },
       });
@@ -358,25 +358,25 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
       console.error('Failed to send message to AI:', error);
       // 重置状态
       set(state => ({
-        streamingStates: { ...state.streamingStates, [targetSessionId]: false },
-        loadingStates: { ...state.loadingStates, [targetSessionId]: false },
+        streamingStates: { ...state.streamingStates, [targetTaskId]: false },
+        loadingStates: { ...state.loadingStates, [targetTaskId]: false },
       }));
     }
   },
 
   // 取消AI请求
-  cancelAIRequest: async (sessionId?: string) => {
-    const targetSessionId = sessionId || get().activeSessionId;
+  cancelAIRequest: async (taskId?: string) => {
+    const targetTaskId = taskId || get().activeTaskId;
     const { selectedAgentId } = get();
 
-    if (targetSessionId && selectedAgentId) {
+    if (targetTaskId && selectedAgentId) {
       try {
         // 发送取消请求
-        await window.service.agent.deleteSession(selectedAgentId, targetSessionId);
+        await window.service.agent.deleteTask(selectedAgentId, targetTaskId);
         // 重置状态
         set(state => ({
-          streamingStates: { ...state.streamingStates, [targetSessionId]: false },
-          loadingStates: { ...state.loadingStates, [targetSessionId]: false },
+          streamingStates: { ...state.streamingStates, [targetTaskId]: false },
+          loadingStates: { ...state.loadingStates, [targetTaskId]: false },
         }));
       } catch (error) {
         console.error('Failed to cancel AI request:', error);
@@ -384,152 +384,150 @@ export const useAgentStore = create<AgentViewModelStoreState>((set, get) => ({
     }
   },
 
-  // 初始化会话同步订阅 - 确保正确处理后端更新
-  initSessionSyncSubscription: () => {
-    // 订阅会话更新
-    window.observables.agent.sessionUpdates$.subscribe({
-      next: (sessionUpdates) => {
-        if (!sessionUpdates || Object.keys(sessionUpdates).length === 0) return;
-        console.log('[Store] Received session updates:', sessionUpdates);
+  // 初始化任务同步订阅
+  initTaskSyncSubscription: () => {
+    // 订阅任务更新
+    window.observables.agent.taskUpdates$.subscribe({
+      next: (taskUpdates) => {
+        if (!taskUpdates || Object.keys(taskUpdates).length === 0) return;
+        console.log('[Store] Received task updates:', taskUpdates);
 
         // 获取当前状态
-        const { sessions, activeSessionId } = get();
-        const updatedSessions = [...sessions];
-        let updatedActiveSessionId = activeSessionId;
+        const { tasks, activeTaskId } = get();
+        const updatedTasks = [...tasks];
+        let updatedActiveTaskId = activeTaskId;
 
-        // 处理每个更新的会话
-        Object.entries(sessionUpdates).forEach(([sessionId, sessionUpdate]) => {
-          const sessionIndex = updatedSessions.findIndex(s => s.id === sessionId);
-          
-          if (sessionUpdate === null) {
-            // 会话被删除
-            if (sessionIndex >= 0) {
-              console.log(`[Store] Removing session ${sessionId} from frontend state`);
-              updatedSessions.splice(sessionIndex, 1);
-              
-              // 如果删除的是当前活动会话，清除activeSessionId
-              if (activeSessionId === sessionId) {
-                updatedActiveSessionId = undefined;
+        // 处理每个更新的任务
+        Object.entries(taskUpdates).forEach(([taskId, taskUpdate]) => {
+          const taskIndex = updatedTasks.findIndex(s => s.id === taskId);
+
+          if (taskUpdate === null) {
+            // 任务被删除
+            if (taskIndex >= 0) {
+              console.log(`[Store] Removing task ${taskId} from frontend state`);
+              updatedTasks.splice(taskIndex, 1);
+
+              // 如果删除的是当前活动任务，清除activeTaskId
+              if (activeTaskId === taskId) {
+                updatedActiveTaskId = undefined;
               }
             }
           } else {
-            // 会话被更新或创建
-            if (sessionIndex >= 0) {
-              console.log(`[Store] Updating existing session ${sessionId} with new messages:`, 
-                sessionUpdate.messages.length, 'messages');
-              updatedSessions[sessionIndex] = sessionUpdate;
+            // 任务被更新或创建
+            if (taskIndex >= 0) {
+              console.log(`[Store] Updating existing task ${taskId} with new messages:`, taskUpdate.messages.length, 'messages');
+              updatedTasks[taskIndex] = taskUpdate;
             } else {
-              console.log(`[Store] Adding new session ${sessionId} from backend`);
-              updatedSessions.push(sessionUpdate);
-              
-              // 如果当前没有活动的会话，将这个新会话设为活动
-              if (!updatedActiveSessionId || updatedActiveSessionId.startsWith('temp-')) {
-                updatedActiveSessionId = sessionId;
+              console.log(`[Store] Adding new task ${taskId} from backend`);
+              updatedTasks.push(taskUpdate);
+
+              // 如果当前没有活动的任务，将这个新任务设为活动
+              if (!updatedActiveTaskId || updatedActiveTaskId.startsWith('temp-')) {
+                updatedActiveTaskId = taskId;
               }
             }
           }
         });
 
-        // 移除所有临时会话（它们已被后端的实际会话所取代）
-        const finalSessions = updatedSessions.filter(s => !s.id.startsWith('temp-'));
-        
+        // 移除所有临时任务（它们已被后端的实际任务所取代）
+        const finalTasks = updatedTasks.filter(s => !s.id.startsWith('temp-'));
+
         // 更新状态
-        set({ 
-          sessions: finalSessions,
-          activeSessionId: updatedActiveSessionId
+        set({
+          tasks: finalTasks,
+          activeTaskId: updatedActiveTaskId,
         });
-        
-        // 为了调试，打印最新的会话状态
-        console.log(`[Store] Updated sessions (${finalSessions.length})`, 
-          finalSessions.map(s => ({ id: s.id, messages: s.messages.length })));
-        if (updatedActiveSessionId) {
-          const conversations = get().getSessionConversations(updatedActiveSessionId);
-          console.log(`[Store] Current conversations for active session:`, conversations);
+
+        // 为了调试，打印最新的任务状态
+        console.log(`[Store] Updated tasks (${finalTasks.length})`, finalTasks.map(s => ({ id: s.id, messages: s.messages.length })));
+        if (updatedActiveTaskId) {
+          const conversations = get().getTaskConversations(updatedActiveTaskId);
+          console.log(`[Store] Current conversations for active task:`, conversations);
         }
       },
       error: (error) => {
-        console.error('Session updates subscription error:', error);
+        console.error('Task updates subscription error:', error);
       },
     });
   },
 
-  // 获取会话的对话列表（兼容旧的UI格式）
-  getSessionConversations: (sessionId: string): Conversation[] => {
-    const session = get().sessions.find(s => s.id === sessionId);
-    if (!session) return [];
-    
-    console.log(`[Store] Converting session ${sessionId} with ${session.messages.length} messages`); // 添加日志
-    
-    // 将AgentSession的消息格式转换为Conversation格式
+  // 获取任务的对话列表（UI友好格式）
+  getTaskConversations: (taskId: string): Conversation[] => {
+    const task = get().tasks.find(s => s.id === taskId);
+    if (!task) return [];
+
+    console.log(`[Store] Converting task ${taskId} with ${task.messages.length} messages`); // 添加日志
+
+    // 将AgentTask的消息格式转换为Conversation格式
     const conversations: Conversation[] = [];
     let userMessage: schema.Message | null = null;
     let lastProcessedIndex = -1;
 
-    for (let index = 0; index < session.messages.length; index++) {
-      const message = session.messages[index];
-      console.log(`[Store] Processing message ${index}:`, message.role, message.parts.map(p => 'text' in p ? p.text : '').join('')); 
+    for (let index = 0; index < task.messages.length; index++) {
+      const message = task.messages[index];
+      console.log(`[Store] Processing message ${index}:`, message.role, message.parts.map(p => 'text' in p ? p.text : '').join(''));
 
       if (message.role === 'user') {
         // 如果有上一个未处理的用户消息，先创建一个没有回复的对话
         if (userMessage && lastProcessedIndex < index - 1) {
           conversations.push({
-            id: `${session.id}-${index-1}`,
+            id: `${task.id}-${index - 1}`,
             question: userMessage.parts.map(part => 'text' in part ? part.text : '').join(''),
-            createdAt: session.createdAt,
-            updatedAt: session.updatedAt,
+            createdAt: task.createdAt,
+            updatedAt: task.updatedAt,
           });
         }
-        
+
         // 保存新的用户消息
         userMessage = message;
         lastProcessedIndex = index;
       } else if (message.role === 'agent') {
         // 如果这是最后一条消息，或者下一条也是智能体消息
-        const isLastMessage = index === session.messages.length - 1;
-        const nextIsAgentToo = !isLastMessage && session.messages[index + 1].role === 'agent';
-        
+        const isLastMessage = index === task.messages.length - 1;
+        const nextIsAgentToo = !isLastMessage && task.messages[index + 1].role === 'agent';
+
         // 如果不是最后一条消息，且下一条也是智能体消息，则跳过当前消息（除非是最终回复）
         if (!isLastMessage && nextIsAgentToo && !message.parts[0].text.includes('You said:')) {
           console.log(`[Store] Skipping intermediate agent message: ${message.parts[0].text}`);
           continue;
         }
-        
+
         // 有用户消息和智能体回复时，创建一个完整对话
         if (userMessage) {
           const response = message.parts.map(part => 'text' in part ? part.text : '').join('');
           console.log(`[Store] Created conversation with response: ${response}`);
-          
+
           conversations.push({
-            id: `${session.id}-${lastProcessedIndex}-${index}`,
+            id: `${task.id}-${lastProcessedIndex}-${index}`,
             question: userMessage.parts.map(part => 'text' in part ? part.text : '').join(''),
             response: response,
-            createdAt: session.createdAt,
-            updatedAt: session.updatedAt,
+            createdAt: task.createdAt,
+            updatedAt: task.updatedAt,
           });
-          
+
           userMessage = null;
           lastProcessedIndex = index;
         }
       }
     }
-    
+
     // 处理最后一个没有回复的用户消息
     if (userMessage) {
       conversations.push({
-        id: `${session.id}-${session.messages.length-1}`,
+        id: `${task.id}-${task.messages.length - 1}`,
         question: userMessage.parts.map(part => 'text' in part ? part.text : '').join(''),
-        createdAt: session.createdAt,
-        updatedAt: session.updatedAt,
+        createdAt: task.createdAt,
+        updatedAt: task.updatedAt,
       });
     }
-    
+
     console.log(`[Store] Produced ${conversations.length} conversations`);
     return conversations;
   },
 
-  // 发送消息（兼容旧接口）
-  sendMessage: (message: string, sessionId?: string) => {
-    get().sendMessageToAI(message, sessionId);
+  // 发送消息（简单封装）
+  sendMessage: (message: string, taskId?: string) => {
+    get().sendMessageToAI(message, taskId);
   },
 }));
 

@@ -21,7 +21,7 @@ export interface JSONRPCMessage extends JSONRPCMessageIdentifier {
    * @default "2.0"
    * @const "2.0"
    */
-  jsonrpc?: "2.0";
+  jsonrpc?: '2.0';
 }
 
 /**
@@ -66,8 +66,7 @@ export interface JSONRPCError<Data = unknown | null, Code = number> {
 /**
  * Represents a JSON-RPC response object.
  */
-export interface JSONRPCResponse<R = unknown | null, E = unknown | null>
-  extends JSONRPCMessage {
+export interface JSONRPCResponse<R = unknown | null, E = unknown | null> extends JSONRPCMessage {
   /**
    * The result of the method invocation. Required on success.
    * Should be null or omitted if an error occurred.
@@ -90,13 +89,13 @@ export interface JSONRPCResponse<R = unknown | null, E = unknown | null>
  * @description An enumeration.
  */
 export type TaskState =
-  | "submitted"
-  | "working"
-  | "input-required"
-  | "completed"
-  | "canceled"
-  | "failed"
-  | "unknown";
+  | 'submitted'
+  | 'working'
+  | 'input-required'
+  | 'completed'
+  | 'canceled'
+  | 'failed'
+  | 'unknown';
 
 /**
  * Defines the authentication schemes and credentials for an agent.
@@ -310,7 +309,7 @@ export type FileContent = FileContentBytes | FileContentUri;
  * Represents a part of a message containing text content.
  */
 export interface TextPart {
-  type?: "text";
+  type?: 'text';
 
   /**
    * The text content.
@@ -330,7 +329,7 @@ export interface FilePart {
   /**
    * Type identifier for this part.
    */
-  type?: "file";
+  type?: 'file';
 
   /**
    * The file content, provided either inline or via URI.
@@ -350,7 +349,7 @@ export interface DataPart {
   /**
    * Type identifier for this part.
    */
-  type?: "data";
+  type?: 'data';
 
   /**
    * The structured data content as a JSON object.
@@ -421,7 +420,7 @@ export interface Message {
   /**
    * The role of the sender (user or agent).
    */
-  role: "user" | "agent";
+  role: 'user' | 'agent';
 
   /**
    * The content of the message, composed of one or more parts.
@@ -584,12 +583,10 @@ export const ErrorCodeTaskNotCancelable = -32002;
 export type ErrorCodeTaskNotCancelable = typeof ErrorCodeTaskNotCancelable;
 /** Error code for Push Notification Not Supported (-32003). Push Notifications are not supported for this operation or agent. */
 export const ErrorCodePushNotificationNotSupported = -32003;
-export type ErrorCodePushNotificationNotSupported =
-  typeof ErrorCodePushNotificationNotSupported;
+export type ErrorCodePushNotificationNotSupported = typeof ErrorCodePushNotificationNotSupported;
 /** Error code for Unsupported Operation (-32004). The requested operation is not supported by the agent. */
 export const ErrorCodeUnsupportedOperation = -32004;
-export type ErrorCodeUnsupportedOperation =
-  typeof ErrorCodeUnsupportedOperation;
+export type ErrorCodeUnsupportedOperation = typeof ErrorCodeUnsupportedOperation;
 
 /**
  * Union of all well-known A2A and standard JSON-RPC error codes defined in this schema.
@@ -607,7 +604,7 @@ export type KnownErrorCode =
   | typeof ErrorCodePushNotificationNotSupported
   | typeof ErrorCodeUnsupportedOperation;
 
-export type A2AError = JSONRPCError<unknown | null, KnownErrorCode | number>;
+export type A2AError = JSONRPCError;
 
 // === Push Notifications and Authentication Info
 
@@ -662,7 +659,7 @@ export interface TaskPushNotificationConfig {
 /**
  * Parameters for the `tasks/send` method.
  */
-export interface TaskSendParams {
+export interface TaskSendParameters {
   /**
    * Unique identifier for the task being initiated or continued.
    */
@@ -701,7 +698,7 @@ export interface TaskSendParams {
  * Basic parameters used for task ID operations.
  * Used by: `tasks/cancel`, `tasks/pushNotification/get`.
  */
-export interface TaskIdParams {
+export interface TaskIdParameters {
   /**
    * The unique identifier of the task.
    */
@@ -718,7 +715,7 @@ export interface TaskIdParams {
  * Parameters used for querying task-related information by ID.
  * Used by: `tasks/get`, `tasks/getHistory`, `tasks/subscribe`, `tasks/resubscribe`.
  */
-export interface TaskQueryParams extends TaskIdParams {
+export interface TaskQueryParameters extends TaskIdParameters {
   /**
    * Optional history length to retrieve for the task.
    * @default null
@@ -735,11 +732,11 @@ export interface SendTaskRequest extends JSONRPCRequest {
   /**
    * Method name for sending a task message.
    */
-  method: "tasks/send";
+  method: 'tasks/send';
   /**
    * Parameters for the send task method.
    */
-  params: TaskSendParams;
+  params: TaskSendParameters;
 }
 
 /**
@@ -749,11 +746,11 @@ export interface GetTaskRequest extends JSONRPCRequest {
   /**
    * Method name for getting task status.
    */
-  method: "tasks/get";
+  method: 'tasks/get';
   /**
    * Parameters for the get task method.
    */
-  params: TaskQueryParams;
+  params: TaskQueryParameters;
 }
 
 /**
@@ -763,11 +760,11 @@ export interface CancelTaskRequest extends JSONRPCRequest {
   /**
    * Method name for canceling a task.
    */
-  method: "tasks/cancel";
+  method: 'tasks/cancel';
   /**
    * Parameters for the cancel task method.
    */
-  params: TaskIdParams;
+  params: TaskIdParameters;
 }
 
 /**
@@ -777,7 +774,7 @@ export interface SetTaskPushNotificationRequest extends JSONRPCRequest {
   /**
    * Method name for setting a task notifications.
    */
-  method: "tasks/pushNotification/set";
+  method: 'tasks/pushNotification/set';
   /**
    * Parameters for the set task push notification method.
    */
@@ -791,11 +788,11 @@ export interface GetTaskPushNotificationRequest extends JSONRPCRequest {
   /**
    * Method name for getting task notification configuration.
    */
-  method: "tasks/pushNotification/get";
+  method: 'tasks/pushNotification/get';
   /**
    * Parameters for the get task push notification config method.
    */
-  params: TaskIdParams;
+  params: TaskIdParameters;
 }
 
 /**
@@ -805,11 +802,11 @@ export interface TaskResubscriptionRequest extends JSONRPCRequest {
   /**
    * Method name for resubscribing to task updates.
    */
-  method: "tasks/resubscribe";
+  method: 'tasks/resubscribe';
   /**
    * Parameters for the task resubscription method.
    */
-  params: TaskQueryParams;
+  params: TaskQueryParameters;
 }
 
 /**
@@ -819,11 +816,11 @@ export interface SendTaskStreamingRequest extends JSONRPCRequest {
   /**
    * Method name for sending a task message and subscribing to updates.
    */
-  method: "tasks/sendSubscribe";
+  method: 'tasks/sendSubscribe';
   /**
    * Parameters for the streaming task send method.
    */
-  params: TaskSendParams;
+  params: TaskSendParameters;
 }
 
 // === A2A Response Interfaces

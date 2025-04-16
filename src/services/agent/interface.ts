@@ -2,6 +2,7 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { BehaviorSubject, Observable } from 'rxjs';
 
 import { AgentChannel } from '@/constants/channels';
+import { AISessionConfig } from '@services/externalAPI/interface'; // 添加这一行导入
 import { TaskHandler } from './server/handler';
 import * as schema from './server/schema';
 
@@ -36,21 +37,19 @@ export interface AgentServiceConfig {
 }
 
 /**
- * Agent session information
+ * Agent task information - adapted from schema.Task with UI-specific additions
  */
-export interface AgentSession {
-  /** Session ID */
-  id: string;
-  /** Agent ID */
+export interface AgentTask extends Omit<schema.Task, 'artifacts'> {
+  /** Agent ID that owns this task */
   agentId: string;
   /** Message history */
   messages: schema.Message[];
-  /** Current session ID - used as reference to task in A2A protocol */
-  currentSessionId: string;
-  /** Session creation time */
+  /** Task creation time (converted from ISO string) */
   createdAt: Date;
-  /** Last update time */
+  /** Last update time (converted from ISO string) */
   updatedAt: Date;
+  /** Optional artifacts */
+  artifacts?: schema.Artifact[];
 }
 
 /**
@@ -62,7 +61,22 @@ export interface AgentRequestResult<T = any> {
 }
 
 /**
- * Agent service to manage chat agents and service agents
+ * Agent settings type
+ */
+export interface AgentSettings {
+  /** Default agent ID to use */
+  defaultAgentId?: string;
+  /** UI preferences */
+  uiPreferences?: {
+    /** Show welcome message */
+    showWelcomeMessage: boolean;
+    /** Default input mode */
+    defaultInputMode: string;
+  };
+}
+
+/**
+ * Agent service to manage chat agents and tasks
  */
 export interface IAgentService {
   /**
@@ -77,45 +91,45 @@ export interface IAgentService {
   getAgent(id: string): Promise<Agent | undefined>;
 
   /**
-   * Create a new session
+   * Create a new task (session)
    * @param agentId Agent ID
    */
-  createSession(agentId: string): Promise<AgentSession>;
+  createTask(agentId: string): Promise<AgentTask>;
 
   /**
-   * Send a message to a session
+   * Send a message to a task
    * @param agentId Agent ID
-   * @param sessionId Session ID
+   * @param taskId Task ID
    * @param messageText Message text
    */
-  sendMessage(agentId: string, sessionId: string, messageText: string): Promise<schema.JSONRPCResponse>;
+  sendMessage(agentId: string, taskId: string, messageText: string): Promise<schema.JSONRPCResponse>;
 
   /**
-   * Stream a message to a session and subscribe to results
+   * Stream a message to a task and subscribe to results
    * @param agentId Agent ID
-   * @param sessionId Session ID
+   * @param taskId Task ID
    * @param messageText Message text
    */
-  handleStreamingRequest(agentId: string, sessionId: string, messageText: string): Observable<schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent>;
+  handleStreamingRequest(agentId: string, taskId: string, messageText: string): Observable<schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent>;
 
   /**
-   * Get a specific session
-   * @param sessionId Session ID
+   * Get a specific task
+   * @param taskId Task ID
    */
-  getSession(sessionId: string): Promise<AgentSession | undefined>;
+  getTask(taskId: string): Promise<AgentTask | undefined>;
 
   /**
-   * Get all sessions for an agent
+   * Get all tasks for an agent
    * @param agentId Agent ID
    */
-  getAgentSessions(agentId: string): Promise<AgentSession[]>;
+  getAgentTasks(agentId: string): Promise<AgentTask[]>;
 
   /**
-   * Delete a session
+   * Delete a task
    * @param agentId Agent ID
-   * @param sessionId Session ID
+   * @param taskId Task ID
    */
-  deleteSession(agentId: string, sessionId: string): Promise<void>;
+  deleteTask(agentId: string, taskId: string): Promise<void>;
 
   /**
    * Start HTTP server
@@ -128,8 +142,33 @@ export interface IAgentService {
    */
   stopHttpServer(): Promise<void>;
 
-  /** Session updates stream - only includes changed sessions */
-  sessionUpdates$: BehaviorSubject<Record<string, AgentSession>>;
+  /** Task updates stream - only includes changed tasks */
+  taskUpdates$: BehaviorSubject<Record<string, AgentTask | null>>;
+
+  /**
+   * Get default agent ID
+   */
+  getDefaultAgentId(): Promise<string | undefined>;
+
+  /**
+   * Get agent-specific AI configuration
+   */
+  getAgentAIConfig(agentId: string): Promise<AISessionConfig | undefined>;
+
+  /**
+   * Update agent-specific AI configuration
+   */
+  updateAgentAIConfig(agentId: string, config: Partial<AISessionConfig>): Promise<void>;
+
+  /**
+   * Get task-specific AI configuration
+   */
+  getTaskAIConfig(taskId: string): Promise<AISessionConfig | undefined>;
+
+  /**
+   * Update task-specific AI configuration
+   */
+  updateTaskAIConfig(taskId: string, config: Partial<AISessionConfig>): Promise<void>;
 }
 
 export const AgentServiceIPCDescriptor = {
@@ -137,14 +176,19 @@ export const AgentServiceIPCDescriptor = {
   properties: {
     getAgents: ProxyPropertyType.Function,
     getAgent: ProxyPropertyType.Function,
-    createSession: ProxyPropertyType.Function,
+    createTask: ProxyPropertyType.Function, // 原 createSession
     sendMessage: ProxyPropertyType.Function,
     handleStreamingRequest: ProxyPropertyType.Function$,
-    getSession: ProxyPropertyType.Function,
-    getAgentSessions: ProxyPropertyType.Function,
-    deleteSession: ProxyPropertyType.Function,
+    getTask: ProxyPropertyType.Function, // 原 getSession
+    getAgentTasks: ProxyPropertyType.Function, // 原 getAgentSessions
+    deleteTask: ProxyPropertyType.Function, // 原 deleteSession
     startHttpServer: ProxyPropertyType.Function,
     stopHttpServer: ProxyPropertyType.Function,
-    sessionUpdates$: ProxyPropertyType.Value$,
+    taskUpdates$: ProxyPropertyType.Value$, // 原 sessionUpdates$
+    getDefaultAgentId: ProxyPropertyType.Function,
+    getAgentAIConfig: ProxyPropertyType.Function,
+    updateAgentAIConfig: ProxyPropertyType.Function,
+    getTaskAIConfig: ProxyPropertyType.Function,
+    updateTaskAIConfig: ProxyPropertyType.Function,
   },
 };

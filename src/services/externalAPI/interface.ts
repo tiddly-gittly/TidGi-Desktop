@@ -2,40 +2,63 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { Observable } from 'rxjs';
 
 import { ExternalAPIChannel } from '@/constants/channels';
+import * as schema from '@services/agent/server/schema';
+import { CoreMessage, Message } from 'ai';
 
-export interface AIMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
+// We'll use schema.Message but need a simpler subset for API calls
+export type AIMessage = schema.Message;
 
+/**
+ * AI streaming response status interface
+ */
 export interface AIStreamResponse {
   requestId: string;
   content: string;
   status: 'start' | 'update' | 'done' | 'error' | 'cancel';
 }
 
+/**
+ * Supported AI providers
+ */
 export type AIProvider = string;
 
+/**
+ * Model feature types
+ */
 export type ModelFeature = 'language' | 'imageGeneration' | 'toolCalling' | 'reasoning' | 'vision' | 'embedding';
 
+/**
+ * Extended model information
+ */
 export interface ModelInfo {
+  /** Unique identifier for the model */
   name: string;
+  /** Display name for the model */
   caption?: string;
+  /** Features supported by the model */
   features?: ModelFeature[];
+  /** Additional metadata */
   metadata?: Record<string, any>;
 }
 
+/**
+ * AI provider configuration
+ */
 export interface AIProviderConfig {
   provider: string;
   apiKey?: string;
   baseURL?: string;
   models: ModelInfo[];
+  /** Type of provider API interface */
   providerClass?: string; // e.g. 'openai', 'openAICompatible', 'anthropic', 'deepseek', 'ollama', 'custom'
   isPreset?: boolean;
   enabled?: boolean;
   showBaseURLField?: boolean;
 }
 
+/**
+ * AI session configuration
+ */
 export interface AISessionConfig {
   provider: string;
   model: string;
@@ -48,8 +71,13 @@ export interface AISessionConfig {
   };
 }
 
+/**
+ * AI settings type
+ */
 export interface AISettings {
+  /** Providers configuration including API keys and base URLs */
   providers: AIProviderConfig[];
+  /** Default AI configuration */
   defaultConfig: AISessionConfig;
 }
 
@@ -61,7 +89,7 @@ export interface IExternalAPIService {
    * Send messages to AI provider and get streaming response as an Observable
    * requestId will be automatically generated and returned in the AIStreamResponse
    */
-  streamFromAI(messages: AIMessage[], config: AISessionConfig): Observable<AIStreamResponse>;
+  streamFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AISessionConfig): Observable<AIStreamResponse>;
 
   /**
    * Cancel an ongoing AI request

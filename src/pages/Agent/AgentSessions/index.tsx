@@ -6,36 +6,36 @@ export function AgentSessions(): React.JSX.Element {
   // 初始化store
   useAgentStoreInitialization();
 
-  const sessions = useAgentStore(state => state.sessions);
-  const activeSessionId = useAgentStore(state => state.activeSessionId);
+  const tasks = useAgentStore(state => state.tasks);
+  const activeTaskId = useAgentStore(state => state.activeTaskId);
   const availableAgents = useAgentStore(state => state.availableAgents);
   const selectedAgentId = useAgentStore(state => state.selectedAgentId);
-  const createNewSession = useAgentStore(state => state.createNewSession);
-  const selectSession = useAgentStore(state => state.selectSession);
-  const deleteSession = useAgentStore(state => state.deleteSession);
+  const createNewTask = useAgentStore(state => state.createNewTask);
+  const selectTask = useAgentStore(state => state.selectTask);
+  const deleteTask = useAgentStore(state => state.deleteTask);
   const sendMessage = useAgentStore(state => state.sendMessageToAI);
   const cancelRequest = useAgentStore(state => state.cancelAIRequest);
   const selectAgent = useAgentStore(state => state.selectAgent);
-  const isSessionLoading = useAgentStore(state => state.isSessionLoading);
-  const isSessionStreaming = useAgentStore(state => state.isSessionStreaming);
-  const isCreatingSession = useAgentStore(state => state.creatingSession);
+  const isTaskLoading = useAgentStore(state => state.isTaskLoading);
+  const isTaskStreaming = useAgentStore(state => state.isTaskStreaming);
+  const isCreatingTask = useAgentStore(state => state.creatingTask);
 
-  // 获取当前活跃会话的状态
-  const isLoading = activeSessionId ? isSessionLoading(activeSessionId) : false;
-  const isStreaming = activeSessionId ? isSessionStreaming(activeSessionId) : false;
+  // 获取当前活跃任务的状态
+  const isLoading = activeTaskId ? isTaskLoading(activeTaskId) : false;
+  const isStreaming = activeTaskId ? isTaskStreaming(activeTaskId) : false;
 
-  // 处理会话选择
-  const handleSelectSession = useCallback((id: string) => {
-    selectSession(id);
-  }, [selectSession]);
+  // 处理任务选择
+  const handleSelectTask = useCallback((id: string) => {
+    selectTask(id);
+  }, [selectTask]);
 
   // 处理智能体选择
   const handleSelectAgent = useCallback((agentId: string) => {
     selectAgent(agentId);
   }, [selectAgent]);
 
-  // 包装创建会话方法，使用async/await处理
-  const handleNewSession = useCallback(async () => {
+  // 包装创建任务方法，使用async/await处理
+  const handleNewTask = useCallback(async () => {
     try {
       // 检查是否有选定的智能体
       const currentAgentId = selectedAgentId;
@@ -44,64 +44,64 @@ export function AgentSessions(): React.JSX.Element {
         selectAgent(availableAgents[0].id);
       }
       
-      // 检查是否正在创建会话，避免重复点击
-      if (isCreatingSession) {
-        console.log('Already creating a session, please wait...');
+      // 检查是否正在创建任务，避免重复点击
+      if (isCreatingTask) {
+        console.log('Already creating a task, please wait...');
         return;
       }
       
-      const sessionId = await createNewSession();
-      console.log('Created new session with ID:', sessionId);
+      const taskId = await createNewTask();
+      console.log('Created new task with ID:', taskId);
       
-      if (!sessionId) {
-        console.error('Failed to create session: Empty session ID returned');
+      if (!taskId) {
+        console.error('Failed to create task: Empty task ID returned');
       }
     } catch (error) {
-      console.error('Failed to create new session:', error);
+      console.error('Failed to create new task:', error);
     }
-  }, [createNewSession, selectedAgentId, availableAgents, selectAgent, isCreatingSession]);
+  }, [createNewTask, selectedAgentId, availableAgents, selectAgent, isCreatingTask]);
 
   // 包装sendMessage方法，带错误处理
   const handleSendMessage = useCallback(async (message: string) => {
     try {
-      if (!activeSessionId) {
-        // 如果没有活跃会话，先创建一个
-        const newSessionId = await createNewSession();
-        if (newSessionId) {
-          await sendMessage(message, newSessionId);
+      if (!activeTaskId) {
+        // 如果没有活跃任务，先创建一个
+        const newTaskId = await createNewTask();
+        if (newTaskId) {
+          await sendMessage(message, newTaskId);
         }
       } else {
-        await sendMessage(message, activeSessionId);
+        await sendMessage(message, activeTaskId);
       }
     } catch (error) {
       console.error('发送消息失败:', error);
     }
-  }, [activeSessionId, createNewSession, sendMessage]);
+  }, [activeTaskId, createNewTask, sendMessage]);
 
   // 包装cancelRequest方法，带错误处理
   const handleCancelRequest = useCallback(async () => {
     try {
-      if (activeSessionId) {
-        await cancelRequest(activeSessionId);
+      if (activeTaskId) {
+        await cancelRequest(activeTaskId);
       }
     } catch (error) {
       console.error('取消请求失败:', error);
     }
-  }, [activeSessionId, cancelRequest]);
+  }, [activeTaskId, cancelRequest]);
 
   return (
     <ChatSessionUI
-      sessions={sessions}
-      activeSessionId={activeSessionId}
+      tasks={tasks}
+      activeTaskId={activeTaskId}
       availableAgents={availableAgents}
       selectedAgentId={selectedAgentId}
-      onNewSession={handleNewSession}
-      onSelectSession={handleSelectSession}
-      onDeleteSession={deleteSession}
+      onNewTask={handleNewTask}
+      onSelectTask={handleSelectTask}
+      onDeleteTask={deleteTask}
       onSendMessage={handleSendMessage}
       onCancelRequest={handleCancelRequest}
       onSelectAgent={handleSelectAgent}
-      isLoading={isLoading || isCreatingSession}
+      isLoading={isLoading || isCreatingTask}
       isStreaming={isStreaming}
     />
   );

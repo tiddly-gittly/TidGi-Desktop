@@ -13,7 +13,6 @@ export interface ISettingFile {
   preferences: IPreferences;
   userInfos: IUserInfos;
   workspaces: Record<string, IWorkspace>;
-  agentSettings?: AgentSettings;
   aiSettings?: AISettings;
 }
 

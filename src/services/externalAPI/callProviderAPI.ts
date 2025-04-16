@@ -2,11 +2,11 @@ import { createAnthropic } from '@ai-sdk/anthropic';
 import { createDeepSeek } from '@ai-sdk/deepseek';
 import { createOpenAI } from '@ai-sdk/openai';
 import { createOpenAICompatible } from '@ai-sdk/openai-compatible';
-import { createOllama } from 'ollama-ai-provider';
 import { logger } from '@services/libs/log';
-import { streamText } from 'ai';
+import { CoreMessage, Message, streamText } from 'ai';
+import { createOllama } from 'ollama-ai-provider';
 
-import type { AIMessage, AIProviderConfig, AISessionConfig } from './interface';
+import type { AIProviderConfig, AISessionConfig } from './interface';
 
 type AIStreamResult = ReturnType<typeof streamText>;
 
@@ -44,7 +44,7 @@ export function createProviderClient(providerConfig: { provider: string; provide
 
 export function streamFromProvider(
   config: AISessionConfig,
-  messages: AIMessage[],
+  messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>,
   signal: AbortSignal,
   providerConfig?: AIProviderConfig,
 ): AIStreamResult {
@@ -61,7 +61,7 @@ export function streamFromProvider(
 
     const client = createProviderClient(
       providerConfig,
-      providerConfig.apiKey
+      providerConfig.apiKey,
     );
 
     return streamText({

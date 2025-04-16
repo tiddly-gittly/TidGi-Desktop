@@ -240,30 +240,30 @@ export class AgentHttpServer {
         );
       
       case 'tasks/get':
-        const session = await this.options.agentService.getSession(
+        const task = await this.options.agentService.getTask(
           (request as schema.GetTaskRequest).params.id
         );
         
-        if (!session) {
+        if (!task) {
           return {
             jsonrpc: '2.0',
             id: request.id || null,
             error: {
               code: -32001,
-              message: `Session not found: ${(request as schema.GetTaskRequest).params.id}`
+              message: `Task not found: ${(request as schema.GetTaskRequest).params.id}`
             }
           };
         }
         
-        // 将会话转换为任务格式
+        // 将任务转换为A2A格式返回
         return {
           jsonrpc: '2.0',
           id: request.id || null,
-          result: this.convertAgentSessionToA2ATask(session)
+          result: this.convertAgentTaskToA2ATask(task)
         };
         
       case 'tasks/cancel':
-        await this.options.agentService.deleteSession(
+        await this.options.agentService.deleteTask(
           agentId,
           (request as schema.CancelTaskRequest).params.id
         );
@@ -289,6 +289,27 @@ export class AgentHttpServer {
           }
         };
     }
+  }
+
+  /**
+   * 将AgentTask转换为A2A协议中的Task
+   */
+  private convertAgentTaskToA2ATask(task: any): schema.Task {
+    const lastAgentMessage = task.messages
+      .filter((m: any) => m.role === 'agent')
+      .pop();
+    
+    return {
+      id: task.id,
+      sessionId: task.id,
+      status: {
+        state: lastAgentMessage ? 'completed' : 'submitted',
+        timestamp: task.updatedAt.toISOString(),
+        message: lastAgentMessage
+      },
+      artifacts: task.artifacts || [],
+      metadata: task.metadata || {}
+    };
   }
 
   /**

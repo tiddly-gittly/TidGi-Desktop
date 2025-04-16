@@ -1,9 +1,9 @@
-import { Column, CreateDateColumn, Entity, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, PrimaryGeneratedColumn, UpdateDateColumn } from 'typeorm';
+import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
 /**
- * Agent entity, represents a chat agent.
+ * Agent entity - stores information about available agents
  */
-@Entity('agents')
+@Entity({ name: 'agents' })
 export class AgentEntity {
   @PrimaryColumn()
   id!: string;
@@ -17,74 +17,157 @@ export class AgentEntity {
   @Column({ nullable: true })
   avatarUrl?: string;
 
-  @Column({ type: 'simple-json', nullable: true })
+  /**
+   * Agent card configuration (JSON)
+   */
+  @Column({ type: 'text', nullable: true })
   card?: string;
 
-  @OneToMany(() => SessionEntity, session => session.agent)
-  sessions!: SessionEntity[];
+  /**
+   * AI configuration for this agent (JSON)
+   * Contains provider, model, and model parameters (temperature, topP, etc.)
+   */
+  @Column({ type: 'text', nullable: true })
+  aiConfig?: string;
+
+  /**
+   * Creation timestamp
+   */
+  @CreateDateColumn({ type: 'datetime' })
+  createdAt!: Date;
+
+  /**
+   * Last update timestamp
+   */
+  @UpdateDateColumn({ type: 'datetime' })
+  updatedAt!: Date;
+
+  /**
+   * Tasks belonging to this agent
+   */
+  @OneToMany(() => TaskEntity, task => task.agent)
+  tasks!: TaskEntity[];
 }
 
 /**
- * Session entity, represents a session in the A2A protocol.
+ * Task entity - stores information about agent tasks (formerly sessions)
  */
-@Entity('agent_sessions')
-export class SessionEntity {
+@Entity({ name: 'tasks' })
+export class TaskEntity {
   @PrimaryColumn()
   id!: string;
 
+  /**
+   * Reference to the agent that owns this task
+   */
   @Column()
+  @Index()
   agentId!: string;
 
-  @ManyToOne(() => AgentEntity, agent => agent.sessions)
+  /**
+   * Task state
+   */
+  @Column()
+  state!: string;
+
+  /**
+   * Task status (JSON)
+   */
+  @Column({ type: 'text' })
+  status!: string;
+
+  /**
+   * Task artifacts (JSON)
+   */
+  @Column({ type: 'text', nullable: true })
+  artifacts?: string;
+
+  /**
+   * Task metadata (JSON)
+   */
+  @Column({ type: 'text', nullable: true })
+  metadata?: string;
+
+  /**
+   * Task-specific AI configuration (JSON)
+   * Overrides agent-level configuration
+   */
+  @Column({ type: 'text', nullable: true })
+  aiConfig?: string;
+
+  /**
+   * Creation timestamp
+   */
+  @CreateDateColumn({ type: 'datetime' })
+  createdAt!: Date;
+
+  /**
+   * Last update timestamp
+   */
+  @UpdateDateColumn({ type: 'datetime' })
+  updatedAt!: Date;
+
+  /**
+   * Agent this task belongs to
+   */
+  @ManyToOne(() => AgentEntity, agent => agent.tasks)
   @JoinColumn({ name: 'agentId' })
   agent!: AgentEntity;
 
-  @Column('text')
-  state!: string; // 等价于 TaskState (保持与A2A协议兼容)
-
-  @Column({ type: 'text' })
-  status!: string; // JSON string of TaskStatus
-
-  @Column({ type: 'text', nullable: true })
-  artifacts?: string; // JSON string of Artifact[]
-
-  @Column({ type: 'text', nullable: true })
-  metadata?: string; // JSON string of metadata
-
-  @CreateDateColumn()
-  createdAt!: Date;
-
-  @UpdateDateColumn()
-  updatedAt!: Date;
-
-  @OneToMany(() => SessionMessageEntity, message => message.session)
-  messages!: SessionMessageEntity[];
+  /**
+   * Messages in this task
+   */
+  @OneToMany(() => TaskMessageEntity, message => message.task)
+  messages!: TaskMessageEntity[];
 }
 
 /**
- * Session message entity, represents a message in a session's history.
+ * Task Message entity - stores message history
  */
-@Entity('agent_session_messages')
-export class SessionMessageEntity {
-  @PrimaryGeneratedColumn()
-  id!: number;
+@Entity({ name: 'task_messages' })
+export class TaskMessageEntity {
+  @PrimaryColumn()
+  id!: string;
 
+  /**
+   * Reference to the task this message belongs to
+   */
   @Column()
-  sessionId!: string;
+  @Index()
+  taskId!: string;
 
-  @ManyToOne(() => SessionEntity, session => session.messages)
-  @JoinColumn({ name: 'sessionId' })
-  session!: SessionEntity;
+  /**
+   * Message role (user/agent)
+   */
+  @Column()
+  role!: string;
 
-  @Column('text')
-  role!: string; // 'user' | 'agent'
+  /**
+   * Message parts (JSON)
+   */
+  @Column({ type: 'text' })
+  parts!: string;
 
-  @Column('text')
-  parts!: string; // JSON string of message parts
-
+  /**
+   * Message metadata (JSON)
+   */
   @Column({ type: 'text', nullable: true })
-  metadata?: string; // JSON string of metadata
+  metadata?: string;
 
-  @CreateDateColumn()
+  /**
+   * Creation timestamp
+   */
+  @CreateDateColumn({ type: 'datetime' })
   timestamp!: Date;
+
+  /**
+   * Task this message belongs to
+   */
+  @ManyToOne(() => TaskEntity, task => task.messages)
+  @JoinColumn({ name: 'taskId' })
+  task!: TaskEntity;
 }
+
+// Alias for backward compatibility
+export const SessionEntity = TaskEntity;
+export const SessionMessageEntity = TaskMessageEntity;

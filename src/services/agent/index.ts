@@ -1,16 +1,17 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { injectable } from 'inversify';
 import { nanoid } from 'nanoid';
-import { BehaviorSubject, Observable, Subscription } from 'rxjs';
+import { BehaviorSubject, Observable } from 'rxjs';
 
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
-import { AIMessage, AIStreamResponse } from '@services/externalAPI/interface';
+import { AIMessage, AISessionConfig } from '@services/externalAPI/interface'; // 添加AISessionConfig导入
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
-import type { Agent, AgentServiceConfig, AgentSession, IAgentService } from './interface';
+import { AgentEntity, TaskEntity } from '@services/database/schema/agent'; // 添加数据库实体导入
+import type { Agent, AgentServiceConfig, AgentTask, IAgentService } from './interface';
 import { TaskYieldUpdate } from './server';
 import { AgentHttpServer } from './server/http-server';
 import * as schema from './server/schema';
@@ -37,8 +38,8 @@ export class AgentService implements IAgentService {
   // HTTP server instance
   private httpServer: AgentHttpServer | null = null;
 
-  // Session updates stream - only sends updated sessions
-  public sessionUpdates$ = new BehaviorSubject<Record<string, AgentSession>>({});
+  // 重命名流式更新订阅
+  public taskUpdates$ = new BehaviorSubject<Record<string, AgentTask>>({});
 
 
   // Database initialization flag
@@ -237,22 +238,16 @@ export class AgentService implements IAgentService {
   }
 
   /**
-   * Notify session update (only updates specified session)
+   * Notify task update 
    */
-  private notifySessionUpdate(agentId: string, sessionId: string, session: AgentSession | null): void {
-    if (session === null) {
-      // Send delete session notification
-      this.sessionUpdates$.next({ [sessionId]: null as any });
-    } else {
-      // Send session update notification
-      this.sessionUpdates$.next({ [sessionId]: session });
-    }
+  private notifyTaskUpdate(agentId: string, taskId: string, task: AgentTask | null): void {
+    this.taskUpdates$.next({ [taskId]: task });
   }
 
   /**
-   * Convert A2A session to UI session object
+   * Convert A2A session to UI task object
    */
-  private convertSessionToAgentSession(agentId: string, task: schema.Task, history: schema.Message[]): AgentSession {
+  private convertToAgentTask(agentId: string, task: schema.Task, history: schema.Message[]): AgentTask {
     const timestamp = task.status.timestamp
       ? new Date(task.status.timestamp)
       : new Date();
@@ -261,28 +256,30 @@ export class AgentService implements IAgentService {
       id: task.id,
       agentId,
       messages: history || [],
-      currentSessionId: task.id, // Renamed from currentTaskId
+      status: task.status, 
+      metadata: task.metadata,
       createdAt: timestamp,
       updatedAt: timestamp,
+      artifacts: task.artifacts,
     };
   }
 
   /**
-   * Get session and its history
+   * Get task and its history
    */
-  private async getSessionWithHistory(agentId: string, sessionId: string): Promise<{ task: schema.Task; history: schema.Message[] } | null> {
+  private async getTaskWithHistory(agentId: string, taskId: string): Promise<{ task: schema.Task; history: schema.Message[] } | null> {
     try {
       const server = await this.getOrCreateAgentServer(agentId);
 
-      // Request to get session
-      const getSessionRequest: schema.GetTaskRequest = {
+      // Request to get task
+      const getTaskRequest: schema.GetTaskRequest = {
         jsonrpc: '2.0',
         id: nanoid(),
         method: 'tasks/get',
-        params: { id: sessionId },
+        params: { id: taskId },
       };
 
-      const response = await server.handleRequest(getSessionRequest);
+      const response = await server.handleRequest(getTaskRequest);
 
       if (response.error || !response.result) {
         return null;
@@ -294,15 +291,14 @@ export class AgentService implements IAgentService {
       let history: schema.Message[] = [];
 
       try {
-        // Get directly from A2A server
-        history = await server.getSessionHistory(sessionId);
+        history = await server.getTaskHistory(taskId);
 
         // If history is empty but there is a current message, ensure it is included
         if (history.length === 0 && task.status.message) {
           history.push(task.status.message);
         }
       } catch (historyError) {
-        console.error(`Failed to get history for session ${sessionId}:`, historyError);
+        console.error(`Failed to get history for task ${taskId}:`, historyError);
         // Fallback: at least capture current status message
         if (task.status.message) {
           history.push(task.status.message);
@@ -311,7 +307,7 @@ export class AgentService implements IAgentService {
 
       return { task, history };
     } catch (error) {
-      console.error(`Failed to get session ${sessionId} for agent ${agentId}:`, error);
+      console.error(`Failed to get task ${taskId} for agent ${agentId}:`, error);
       return null;
     }
   }
@@ -339,39 +335,42 @@ export class AgentService implements IAgentService {
   }
 
   /**
-   * Create new session
+   * Create new task (session)
    */
-  async createSession(agentId: string): Promise<AgentSession> {
+  async createTask(agentId: string): Promise<AgentTask> {
     await this.ensureAgentsRegistered();
     
     if (!this.agents.has(agentId)) {
       throw new Error(`Agent with ID ${agentId} not found`);
     }
 
-    // Generate session ID (also task ID)
-    const sessionId = nanoid();
+    // Generate task ID
+    const taskId = nanoid();
 
-    // Create an empty session object
+    // Create an empty task object
     const now = new Date();
-    const session: AgentSession = {
-      id: sessionId,
+    const task: AgentTask = {
+      id: taskId,
       agentId,
       messages: [],
-      currentTaskId: sessionId,
+      status: {
+        state: 'submitted',
+        timestamp: now.toISOString(),
+      },
       createdAt: now,
       updatedAt: now,
     };
 
     // Update cache and notify
-    this.notifySessionUpdate(agentId, sessionId, session);
+    this.notifyTaskUpdate(agentId, taskId, task);
 
-    return session;
+    return task;
   }
 
   /**
-   * Send message to session
+   * Send message to a task
    */
-  async sendMessage(agentId: string, sessionId: string, messageText: string): Promise<schema.JSONRPCResponse> {
+  async sendMessage(agentId: string, taskId: string, messageText: string): Promise<schema.JSONRPCResponse> {
     await this.ensureAgentsRegistered();
     
     // Get server instance
@@ -389,7 +388,7 @@ export class AgentService implements IAgentService {
       id: nanoid(),
       method: 'tasks/send',
       params: {
-        id: sessionId, // Session ID is task ID
+        id: taskId, // Session ID is task ID
         message,
       },
     };
@@ -399,10 +398,10 @@ export class AgentService implements IAgentService {
 
     // On successful request, get latest session status and update
     if (response.result && !response.error) {
-      const taskData = await this.getSessionWithHistory(agentId, sessionId);
+      const taskData = await this.getTaskWithHistory(agentId, taskId);
       if (taskData) {
-        const session = this.convertSessionToAgentSession(agentId, taskData.task, taskData.history);
-        this.notifySessionUpdate(agentId, sessionId, session);
+        const task = this.convertToAgentTask(agentId, taskData.task, taskData.history);
+        this.notifyTaskUpdate(agentId, taskId, task);
       }
     }
 
@@ -410,9 +409,9 @@ export class AgentService implements IAgentService {
   }
 
   /**
-   * Stream message to session
+   * Stream message to a task
    */
-  handleStreamingRequest(agentId: string, sessionId: string, messageText: string): Observable<schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent> {
+  handleStreamingRequest(agentId: string, taskId: string, messageText: string): Observable<schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent> {
     // Create observable
     return new Observable<schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent>(subscriber => {
       // Get server instance asynchronously
@@ -430,7 +429,7 @@ export class AgentService implements IAgentService {
             id: nanoid(),
             method: 'tasks/sendSubscribe',
             params: {
-              id: sessionId, // Session ID is task ID
+              id: taskId, // Session ID is task ID
               message,
             },
           };
@@ -446,11 +445,11 @@ export class AgentService implements IAgentService {
             // If update contains message, refresh session
             if ('status' in event && event.status.message) {
               console.log(`[Agent Service] Event contains message:`, event.status.message); // Add log
-              const sessionData = await this.getSessionWithHistory(agentId, sessionId);
+              const sessionData = await this.getTaskWithHistory(agentId, taskId);
               if (sessionData) {
-                const session = this.convertSessionToAgentSession(agentId, sessionData.task, sessionData.history);
-                console.log(`[Agent Service] Updated session:`, session); // Add log
-                this.notifySessionUpdate(agentId, sessionId, session);
+                const task = this.convertToAgentTask(agentId, sessionData.task, sessionData.history);
+                console.log(`[Agent Service] Updated session:`, task); // Add log
+                this.notifyTaskUpdate(agentId, taskId, task);
               }
             }
 
@@ -458,11 +457,11 @@ export class AgentService implements IAgentService {
             if (event.final) {
               console.log(`[Agent Service] Final event received`); // Add log
               // Get complete session status once
-              const sessionData = await this.getSessionWithHistory(agentId, sessionId);
+              const sessionData = await this.getTaskWithHistory(agentId, taskId);
               if (sessionData) {
                 console.log(`[Agent Service] Final session history:`, sessionData.history); // Add log
-                const session = this.convertSessionToAgentSession(agentId, sessionData.task, sessionData.history);
-                this.notifySessionUpdate(agentId, sessionId, session);
+                const task = this.convertToAgentTask(agentId, sessionData.task, sessionData.history);
+                this.notifyTaskUpdate(agentId, taskId, task);
               }
               subscriber.complete();
             }
@@ -501,18 +500,18 @@ export class AgentService implements IAgentService {
   }
 
   /**
-   * Get session by ID
+   * Get task by ID
    */
-  async getSession(sessionId: string): Promise<AgentSession | undefined> {
+  async getTask(taskId: string): Promise<AgentTask | undefined> {
     await this.ensureAgentsRegistered();
     
-    // Traverse all agent servers to find matching session
+    // Traverse all agent servers to find matching task
     for (const [agentId, server] of this.agentServers.entries()) {
       try {
-        const sessionData = await this.getSessionWithHistory(agentId, sessionId);
-        if (sessionData) {
-          // Found matching session, convert and return
-          return this.convertSessionToAgentSession(agentId, sessionData.task, sessionData.history);
+        const taskData = await this.getTaskWithHistory(agentId, taskId);
+        if (taskData) {
+          // Found matching task, convert and return
+          return this.convertToAgentTask(agentId, taskData.task, taskData.history);
         }
       } catch (error) {
         // Continue to next agent
@@ -522,39 +521,39 @@ export class AgentService implements IAgentService {
   }
 
   /**
-   * Get all sessions for an agent
+   * Get all tasks for an agent
    */
-  async getAgentSessions(agentId: string): Promise<AgentSession[]> {
+  async getAgentTasks(agentId: string): Promise<AgentTask[]> {
     await this.ensureAgentsRegistered();
     
     try {
       const server = await this.getOrCreateAgentServer(agentId);
 
-      // Get all tasks (each task is a session)
+      // Get all tasks
       const tasks = await server.getAllTasks();
 
-      // Convert to session objects
-      const sessions: AgentSession[] = [];
+      // Convert to AgentTask objects
+      const agentTasks: AgentTask[] = [];
 
       for (const task of tasks) {
-        const taskData = await this.getSessionWithHistory(agentId, task.id);
+        const taskData = await this.getTaskWithHistory(agentId, task.id);
         if (!taskData) continue;
 
-        const session = this.convertSessionToAgentSession(agentId, taskData.task, taskData.history);
-        sessions.push(session);
+        const agentTask = this.convertToAgentTask(agentId, taskData.task, taskData.history);
+        agentTasks.push(agentTask);
       }
 
-      return sessions;
+      return agentTasks;
     } catch (error) {
-      logger.error(`Failed to get sessions for agent ${agentId}:`, error);
+      logger.error(`Failed to get tasks for agent ${agentId}:`, error);
       return [];
     }
   }
 
   /**
-   * Delete session
+   * Delete a task
    */
-  async deleteSession(agentId: string, sessionId: string): Promise<void> {
+  async deleteTask(agentId: string, taskId: string): Promise<void> {
     await this.ensureAgentsRegistered();
     
     try {
@@ -567,19 +566,19 @@ export class AgentService implements IAgentService {
         id: nanoid(),
         method: 'tasks/cancel',
         params: {
-          id: sessionId,
+          id: taskId,
         },
       };
       await server.handleRequest(cancelRequest);
 
-      // Then delete session record from database
-      const deleted = await server.deleteSession(sessionId);
-      logger.info(`Deleted session ${sessionId} from database: ${deleted}`);
+      // Then delete task record from database
+      const deleted = await server.deleteTask(taskId);
+      logger.info(`Deleted task ${taskId} from database: ${deleted}`);
 
-      // Notify frontend about session deletion
-      this.notifySessionUpdate(agentId, sessionId, null);
+      // Notify frontend about task deletion
+      this.notifyTaskUpdate(agentId, taskId, null);
     } catch (error) {
-      logger.error(`Failed to delete session ${sessionId}:`, error);
+      logger.error(`Failed to delete task ${taskId}:`, error);
     }
   }
 
@@ -603,6 +602,197 @@ export class AgentService implements IAgentService {
     if (this.httpServer) {
       await this.httpServer.stop();
       this.httpServer = null;
+    }
+  }
+
+  /**
+   * Get default agent ID if set
+   */
+  public async getDefaultAgentId(): Promise<string | undefined> {
+    const dataSource = await this.databaseService.getDatabase('agent-default');
+    
+    // Get agent with most recent activity
+    const result = await dataSource.getRepository(TaskEntity)
+      .createQueryBuilder('task')
+      .innerJoinAndSelect('task.agent', 'agent')
+      .orderBy('task.updatedAt', 'DESC')
+      .take(1)
+      .getOne();
+    
+    if (result) {
+      return result.agentId;
+    }
+    
+    // If no tasks, get any available agent
+    const agent = await dataSource.getRepository(AgentEntity)
+      .createQueryBuilder('agent')
+      .orderBy('agent.createdAt', 'DESC')
+      .take(1)
+      .getOne();
+    
+    return agent?.id;
+  }
+
+  /**
+   * Get agent-specific AI configuration
+   */
+  public async getAgentAIConfig(agentId: string): Promise<AISessionConfig | undefined> {
+    try {
+      const dataSource = await this.databaseService.getDatabase('agent-default');
+      const repository = dataSource.getRepository(AgentEntity);
+      
+      const agent = await repository.findOne({ where: { id: agentId } });
+      
+      if (!agent || !agent.aiConfig) {
+        // If no specific config exists, return undefined to use global defaults
+        return undefined;
+      }
+      
+      // Parse stored JSON config
+      return JSON.parse(agent.aiConfig) as AISessionConfig;
+    } catch (error) {
+      logger.error(`Failed to get AI config for agent ${agentId}:`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Update agent-specific AI configuration
+   */
+  public async updateAgentAIConfig(agentId: string, config: Partial<AISessionConfig>): Promise<void> {
+    try {
+      const dataSource = await this.databaseService.getDatabase('agent-default');
+      const repository = dataSource.getRepository(AgentEntity);
+      
+      const agent = await repository.findOne({ where: { id: agentId } });
+      
+      if (!agent) {
+        throw new Error(`Agent with ID ${agentId} not found`);
+      }
+      
+      // Merge with existing config if it exists
+      let currentConfig: AISessionConfig = agent.aiConfig ? 
+        JSON.parse(agent.aiConfig) : 
+        { provider: '', model: '' };
+      
+      // Get defaults for any missing fields from externalAPIService
+      const defaults = await this.externalAPIService.getAIConfig();
+      
+      // Merge in this order: defaults -> current -> new config
+      const mergedConfig = {
+        ...defaults,
+        ...currentConfig,
+        ...config,
+        // Handle nested modelParameters separately
+        modelParameters: {
+          ...(defaults.modelParameters || {}),
+          ...(currentConfig.modelParameters || {}),
+          ...(config.modelParameters || {})
+        }
+      };
+      
+      // Store the updated config
+      agent.aiConfig = JSON.stringify(mergedConfig);
+      
+      await repository.save(agent);
+      
+      logger.info(`Updated AI config for agent ${agentId}`);
+    } catch (error) {
+      logger.error(`Failed to update AI config for agent ${agentId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get task-specific AI configuration
+   */
+  public async getTaskAIConfig(taskId: string): Promise<AISessionConfig | undefined> {
+    try {
+      const dataSource = await this.databaseService.getDatabase('agent-default');
+      const repository = dataSource.getRepository(TaskEntity);
+      
+      const task = await repository.findOne({ 
+        where: { id: taskId },
+        relations: ['agent'] // Load the related agent
+      });
+      
+      if (!task) {
+        return undefined;
+      }
+      
+      // First try task-specific config
+      if (task.aiConfig) {
+        return JSON.parse(task.aiConfig) as AISessionConfig;
+      }
+      
+      // Then try agent-level config
+      if (task.agent && task.agent.aiConfig) {
+        return JSON.parse(task.agent.aiConfig) as AISessionConfig;
+      }
+      
+      // Fall back to global defaults
+      return undefined;
+    } catch (error) {
+      logger.error(`Failed to get AI config for task ${taskId}:`, error);
+      return undefined;
+    }
+  }
+
+  /**
+   * Update task-specific AI configuration
+   */
+  public async updateTaskAIConfig(taskId: string, config: Partial<AISessionConfig>): Promise<void> {
+    try {
+      const dataSource = await this.databaseService.getDatabase('agent-default');
+      const repository = dataSource.getRepository(TaskEntity);
+      
+      const task = await repository.findOne({ 
+        where: { id: taskId },
+        relations: ['agent'] // Load the related agent
+      });
+      
+      if (!task) {
+        throw new Error(`Task with ID ${taskId} not found`);
+      }
+      
+      // Start with agent config or empty config
+      let baseConfig: AISessionConfig = { provider: '', model: '' };
+      
+      // Try to use agent config if available
+      if (task.agent && task.agent.aiConfig) {
+        baseConfig = JSON.parse(task.agent.aiConfig);
+      } else {
+        // Otherwise get global defaults
+        baseConfig = await this.externalAPIService.getAIConfig();
+      }
+      
+      // Get existing task config if any
+      let currentConfig: Partial<AISessionConfig> = {};
+      if (task.aiConfig) {
+        currentConfig = JSON.parse(task.aiConfig);
+      }
+      
+      // Merge in this order: base (agent or global) -> current task -> new config
+      const mergedConfig = {
+        ...baseConfig,
+        ...currentConfig,
+        ...config,
+        // Handle nested modelParameters separately
+        modelParameters: {
+          ...(baseConfig.modelParameters || {}),
+          ...(currentConfig.modelParameters || {}),
+          ...(config.modelParameters || {})
+        }
+      };
+      
+      task.aiConfig = JSON.stringify(mergedConfig);
+      
+      await repository.save(task);
+      
+      logger.info(`Updated AI config for task ${taskId}`);
+    } catch (error) {
+      logger.error(`Failed to update AI config for task ${taskId}:`, error);
+      throw error;
     }
   }
 }

@@ -13,7 +13,7 @@ import { logger } from '@services/libs/log';
 import { BaseDataSourceOptions } from 'typeorm/data-source/BaseDataSourceOptions';
 import { ensureSettingFolderExist, fixSettingFileWhenError } from './configSetting';
 import { IDatabaseService, ISettingFile } from './interface';
-import { AgentEntity, SessionEntity, SessionMessageEntity } from './schema/agent';
+import { AgentEntity, TaskEntity, TaskMessageEntity } from './schema/agent';
 import { WikiTiddler } from './schema/wiki';
 
 // Schema config interface
@@ -74,8 +74,8 @@ export class DatabaseService implements IDatabaseService {
     this.registerSchema('agent', {
       entities: [
         AgentEntity,
-        SessionEntity,
-        SessionMessageEntity,
+        TaskEntity,
+        TaskMessageEntity,
       ],
       synchronize: true,
       migrationsRun: false,

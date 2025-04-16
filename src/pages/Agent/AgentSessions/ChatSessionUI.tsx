@@ -2,7 +2,7 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { styled } from 'styled-components';
 
-import { AgentSession } from '@services/agent/interface';
+import { AgentTask } from '@services/agent/interface';
 import { ChatInput } from './components/ChatInput';
 import { EmptyState } from './components/EmptyState';
 import { LoadingIndicator } from './components/LoadingIndicator';
@@ -25,100 +25,100 @@ const ChatContainer = styled.div`
 `;
 
 interface ChatProps {
-  sessions: AgentSession[];
-  activeSessionId?: string;
+  tasks: AgentTask[];
+  activeTaskId?: string;
   isLoading?: boolean;
   isStreaming?: boolean;
   availableAgents?: { id: string; name: string }[];
   selectedAgentId?: string;
-  onNewSession: () => void;
-  onSelectSession: (sessionId: string) => void;
-  onDeleteSession: (sessionId: string) => void;
+  onNewTask: () => void;
+  onSelectTask: (taskId: string) => void;
+  onDeleteTask: (taskId: string) => void;
   onSendMessage: (message: string) => void;
   onCancelRequest: () => void;
   onSelectAgent?: (agentId: string) => void;
 }
 
 export const ChatSessionUI: React.FC<ChatProps> = ({
-  sessions,
-  activeSessionId,
+  tasks,
+  activeTaskId,
   isLoading,
   isStreaming,
   availableAgents = [],
   selectedAgentId,
-  onNewSession,
-  onSelectSession,
-  onDeleteSession,
+  onNewTask,
+  onSelectTask,
+  onDeleteTask,
   onSendMessage,
   onCancelRequest,
   onSelectAgent,
 }) => {
   const { t } = useTranslation('agent');
-  const activeSession = sessions.find(session => session.id === activeSessionId);
-  const getSessionConversations = useAgentStore(state => state.getSessionConversations);
+  const activeTask = tasks.find(task => task.id === activeTaskId);
+  const getTaskConversations = useAgentStore(state => state.getTaskConversations);
 
-  // 根据创建日期对会话进行分组
-  const groupSessions = () => {
-    const today: AgentSession[] = [];
-    const yesterday: AgentSession[] = [];
-    const older: AgentSession[] = [];
+  // 根据创建日期对任务进行分组
+  const groupTasks = () => {
+    const today: AgentTask[] = [];
+    const yesterday: AgentTask[] = [];
+    const older: AgentTask[] = [];
 
     const now = new Date();
     const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
     const yesterdayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).getTime();
 
-    sessions.forEach(session => {
-      if (!session.createdAt) {
-        today.push(session);
+    tasks.forEach(task => {
+      if (!task.createdAt) {
+        today.push(task);
         return;
       }
 
-      const sessionDate = new Date(session.createdAt).getTime();
+      const taskDate = new Date(task.createdAt).getTime();
 
-      if (sessionDate >= todayDate) {
-        today.push(session);
-      } else if (sessionDate >= yesterdayDate) {
-        yesterday.push(session);
+      if (taskDate >= todayDate) {
+        today.push(task);
+      } else if (taskDate >= yesterdayDate) {
+        yesterday.push(task);
       } else {
-        older.push(session);
+        older.push(task);
       }
     });
 
-    // 按照日期倒序排序每个组中的会话，让最新的会话显示在最上面
-    const sortSessionsByDate = (sessions: AgentSession[]) => {
-      return [...sessions].sort((a, b) => {
+    // 按照日期倒序排序每个组中的任务，让最新的任务显示在最上面
+    const sortTasksByDate = (tasks: AgentTask[]) => {
+      return [...tasks].sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
         const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
         return dateB - dateA; // 倒序排列
       });
     };
 
-    // 返回分组，今天的会话显示在最上面，昨天的会话其次，最旧的会话最下面
+    // 返回分组，今天的任务显示在最上面，昨天的任务其次，最旧的任务最下面
     const result = [];
 
     if (today.length > 0) {
-      result.push({ heading: t('Chat.SessionGroup.Today', { ns: 'agent' }), sessions: sortSessionsByDate(today) });
+      result.push({ heading: t('Chat.SessionGroup.Today', { ns: 'agent' }), sessions: sortTasksByDate(today) });
     }
 
     if (yesterday.length > 0) {
-      result.push({ heading: t('Chat.SessionGroup.Yesterday', { ns: 'agent' }), sessions: sortSessionsByDate(yesterday) });
+      result.push({ heading: t('Chat.SessionGroup.Yesterday', { ns: 'agent' }), sessions: sortTasksByDate(yesterday) });
     }
 
     if (older.length > 0) {
-      result.push({ heading: t('Chat.SessionGroup.Older', { ns: 'agent' }), sessions: sortSessionsByDate(older) });
+      result.push({ heading: t('Chat.SessionGroup.Older', { ns: 'agent' }), sessions: sortTasksByDate(older) });
     }
 
     return result;
   };
 
-  // 将AgentSession转换为适合SessionListItem的格式
-  const convertSessionForDisplay = (session: AgentSession) => {
-    const conversations = getSessionConversations(session.id) || [];
+  // 将AgentTask转换为适合SessionListItem的格式
+  const convertTaskForDisplay = (task: AgentTask) => {
+    const conversations = getTaskConversations(task.id) || [];
     return {
-      id: session.id || '',
-      title: session.title || conversations[0]?.question?.slice(0, 30) || session.id,
-      createdAt: session.createdAt,
-      updatedAt: session.updatedAt,
+      id: task.id || '',
+      title: task.title || conversations[0]?.question?.slice(0, 30) || task.id,
+      createdAt: task.createdAt,
+      updatedAt: task.updatedAt,
       conversations: conversations,
     };
   };
@@ -126,37 +126,37 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
   return (
     <ChatContainer>
       <SessionsList>
-        <SessionsHeader onNewSession={onNewSession} />
-        {groupSessions().map(group => (
+        <SessionsHeader onNewSession={onNewTask} />
+        {groupTasks().map(group => (
           <SessionsGroup key={group.heading} heading={group.heading}>
-            {group.sessions.map(session => (
+            {group.sessions.map(task => (
               <SessionListItem
-                key={session.id || ''}
-                session={convertSessionForDisplay(session)}
-                isActive={session.id === activeSessionId}
-                onSelect={onSelectSession}
-                onDelete={onDeleteSession}
+                key={task.id || ''}
+                session={convertTaskForDisplay(task)}
+                isActive={task.id === activeTaskId}
+                onSelect={onSelectTask}
+                onDelete={onDeleteTask}
               />
             ))}
           </SessionsGroup>
         ))}
       </SessionsList>
 
-      {activeSession
+      {activeTask
         ? (
           <SessionMessagePanel>
             <SessionMessagesHeader
-              title={activeSession.title ||
-                getSessionConversations(activeSession.id)[0]?.question?.slice(0, 30) ||
-                `${t('Chat.Session', { ns: 'agent' })} ${activeSession.id}`}
-              sessionId={activeSession.id}
+              title={activeTask.title ||
+                getTaskConversations(activeTask.id)[0]?.question?.slice(0, 30) ||
+                `${t('Chat.Session', { ns: 'agent' })} ${activeTask.id}`}
+              sessionId={activeTask.id}
             />
             <SessionMessages>
-              {getSessionConversations(activeSession.id).map((conversation: Conversation) => (
+              {getTaskConversations(activeTask.id).map((conversation: Conversation) => (
                 <SessionMessage
                   key={conversation.id}
                   conversation={conversation}
-                  isStreaming={isStreaming && conversation.id === `${activeSession.id}-${getSessionConversations(activeSession.id).length - 1}`}
+                  isStreaming={isStreaming && conversation.id === `${activeTask.id}-${getTaskConversations(activeTask.id).length - 1}`}
                 />
               ))}
               {isLoading && <LoadingIndicator message={t('Chat.Thinking', { ns: 'agent' })} />}

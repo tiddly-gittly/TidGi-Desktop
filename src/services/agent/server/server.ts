@@ -1,15 +1,15 @@
 import { EventEmitter } from 'events';
 import { A2AError } from './error';
-import { SessionContext as OldSessionContext, TaskHandler } from './handler';
+import { TaskHandler } from './handler';
 import * as schema from './schema';
-import { InMemoryTaskStore, SessionAndHistory, TaskAndHistory, TaskStore } from './store';
+import { InMemoryTaskStore, TaskAndHistory, TaskStore } from './store';
 import { getCurrentTimestamp, isArtifactUpdate, isTaskStatusUpdate } from './utils';
 
 /**
  * Options for configuring the A2AServer.
  */
 export interface A2AServerOptions {
-  /** Session storage implementation. Defaults to InMemoryTaskStore. */
+  /** Task storage implementation. Defaults to InMemoryTaskStore. */
   taskStore?: TaskStore;
   /** Agent Card for the agent being served. */
   card?: schema.AgentCard;
@@ -17,15 +17,26 @@ export interface A2AServerOptions {
   agentId?: string;
 }
 
-// 定义新的SessionContext接口，不包含store
-export interface SessionContext extends Omit<OldSessionContext, 'taskStore'> {}
+/**
+ * Task context interface for handlers
+ */
+export interface TaskContext {
+  /** The current task state */
+  task: schema.Task;
+  /** The user message that triggered this task */
+  userMessage: schema.Message;
+  /** The full message history for this task */
+  history: schema.Message[];
+  /** Function to check if task was cancelled */
+  isCancelled: () => boolean;
+}
 
 /**
  * Implements an A2A specification compliant server.
  */
 export class A2AServer {
   private taskHandler: TaskHandler;
-  private sessionStore: TaskStore;
+  private taskStore: TaskStore;
   // Track active cancellations
   private activeCancellations: Set<string> = new Set();
   card: schema.AgentCard;
@@ -34,28 +45,26 @@ export class A2AServer {
 
   constructor(handler: TaskHandler, options: A2AServerOptions = {}) {
     this.taskHandler = handler;
-    this.sessionStore = options.taskStore ?? new InMemoryTaskStore();
+    this.taskStore = options.taskStore ?? new InMemoryTaskStore();
     if (options.card) this.card = options.card;
     
-    // 优先使用传入的agentId，如果没有则使用默认值
-    // 确保不使用card.name，因为它是显示名称而不是数据库ID
     this.agentId = options.agentId || 'echo-agent';
     
     console.log(`A2AServer initialized with agentId: ${this.agentId}`);
   }
 
-  // Helper to apply updates (status or artifact) immutably
-  private applyUpdateToSessionAndHistory(
-    current: SessionAndHistory,
+  // Helper to apply updates immutably
+  private applyUpdateToTaskAndHistory(
+    current: TaskAndHistory,
     update: Omit<schema.TaskStatus, 'timestamp'> | schema.Artifact,
-  ): SessionAndHistory {
-    const newSession = { ...current.session }; // Shallow copy session
+  ): TaskAndHistory {
+    const newTask = { ...current.task }; // Shallow copy task
     const newHistory = [...current.history]; // Shallow copy history
 
     if (isTaskStatusUpdate(update)) {
       // Merge status update
-      newSession.status = {
-        ...newSession.status, // Keep existing properties if not overwritten
+      newTask.status = {
+        ...newTask.status, // Keep existing properties if not overwritten
         ...update, // Apply updates
         timestamp: getCurrentTimestamp(), // Always update timestamp
       };
@@ -90,18 +99,18 @@ export class A2AServer {
       }
     } else if (isArtifactUpdate(update)) {
       // Handle artifact update
-      if (!newSession.artifacts) {
-        newSession.artifacts = [];
+      if (!newTask.artifacts) {
+        newTask.artifacts = [];
       } else {
         // Ensure we're working with a copy of the artifacts array
-        newSession.artifacts = [...newSession.artifacts];
+        newTask.artifacts = [...newTask.artifacts];
       }
 
       const existingIndex = update.index ?? -1; // Use index if provided
       let replaced = false;
 
-      if (existingIndex >= 0 && existingIndex < newSession.artifacts.length) {
-        const existingArtifact = newSession.artifacts[existingIndex];
+      if (existingIndex >= 0 && existingIndex < newTask.artifacts.length) {
+        const existingArtifact = newTask.artifacts[existingIndex];
         if (update.append) {
           // Create a deep copy for modification to avoid mutating original
           const appendedArtifact = JSON.parse(JSON.stringify(existingArtifact));
@@ -118,33 +127,33 @@ export class A2AServer {
           if (update.description) {
             appendedArtifact.description = update.description;
           }
-          newSession.artifacts[existingIndex] = appendedArtifact; // Replace with appended version
+          newTask.artifacts[existingIndex] = appendedArtifact; // Replace with appended version
           replaced = true;
         } else {
           // Overwrite artifact at index (with a copy of the update)
-          newSession.artifacts[existingIndex] = { ...update };
+          newTask.artifacts[existingIndex] = { ...update };
           replaced = true;
         }
       } else if (update.name) {
-        const namedIndex = newSession.artifacts.findIndex(
+        const namedIndex = newTask.artifacts.findIndex(
           (a) => a.name === update.name,
         );
         if (namedIndex >= 0) {
-          newSession.artifacts[namedIndex] = { ...update }; // Replace by name (with copy)
+          newTask.artifacts[namedIndex] = { ...update }; // Replace by name (with copy)
           replaced = true;
         }
       }
 
       if (!replaced) {
-        newSession.artifacts.push({ ...update }); // Add as a new artifact (copy)
+        newTask.artifacts.push({ ...update }); // Add as a new artifact (copy)
         // Sort if indices are present
-        if (newSession.artifacts.some((a) => a.index !== undefined)) {
-          newSession.artifacts.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
+        if (newTask.artifacts.some((a) => a.index !== undefined)) {
+          newTask.artifacts.sort((a, b) => (a.index ?? 0) - (b.index ?? 0));
         }
       }
     }
 
-    return { session: newSession, history: newHistory };
+    return { task: newTask, history: newHistory };
   }
 
   /**
@@ -157,23 +166,23 @@ export class A2AServer {
         throw A2AError.invalidRequest('Invalid JSON-RPC request structure.');
       }
 
-      const sessionId: string | undefined = (request.params as any)?.id;
+      const taskId: string | undefined = (request.params as any)?.id;
       let result: any;
 
       // 2. 基于方法处理请求 - 保持A2A协议命名约定
       switch (request.method) {
         case 'tasks/send':
-          result = await this.processSessionSend(request as schema.SendTaskRequest);
+          result = await this.processTaskSend(request as schema.SendTaskRequest);
           break;
         case 'tasks/get':
-          result = await this.processSessionGet(request as schema.GetTaskRequest);
+          result = await this.processTaskGet(request as schema.GetTaskRequest);
           break;
         case 'tasks/cancel':
-          result = await this.processSessionCancel(request as schema.CancelTaskRequest);
+          result = await this.processTaskCancel(request as schema.CancelTaskRequest);
           break;
         case 'tasks/list':
-          // 获取所有会话列表
-          result = await this.processListSessions();
+          // 获取所有任务列表
+          result = await this.processListTasks();
           break;
         default:
           throw A2AError.methodNotFound(request.method);
@@ -201,8 +210,8 @@ export class A2AServer {
       return eventEmitter;
     }
 
-    // 获取会话ID
-    const sessionId = (request.params).id;
+    // 获取任务ID
+    const taskId = (request.params).id;
 
     // 异步处理流请求
     this.processStreamingSession(request, eventEmitter).catch((error) => {
@@ -219,20 +228,20 @@ export class A2AServer {
     request: schema.SendTaskStreamingRequest,
     emitter: EventEmitter,
   ): Promise<void> {
-    const { id: sessionId, message, sessionId: requestSessionId, metadata } = request.params;
+    const { id: taskId, message, sessionId: requestSessionId, metadata } = request.params;
 
     try {
-      // 加载或创建会话
-      let currentData = await this.loadOrCreateSessionAndHistory(
-        sessionId,
+      // 加载或创建任务
+      let currentData = await this.loadOrCreateTaskAndHistory(
+        taskId,
         message,
         requestSessionId,
         metadata,
       );
 
-      // 创建会话上下文
-      const context = this.createSessionContext(
-        currentData.session,
+      // 创建任务上下文
+      const context = this.createTaskContext(
+        currentData.task,
         message,
         currentData.history,
       );
@@ -251,11 +260,11 @@ export class A2AServer {
         }
 
         // 应用更新
-        currentData = this.applyUpdateToSessionAndHistory(currentData, yieldValue);
+        currentData = this.applyUpdateToTaskAndHistory(currentData, yieldValue);
         // 保存更新后的状态
-        await this.sessionStore.save(currentData);
+        await this.taskStore.save(currentData);
         // 更新上下文
-        context.task = currentData.session;
+        context.task = currentData.task;
 
         let event;
         let isFinal = false;
@@ -268,19 +277,19 @@ export class A2AServer {
             'canceled',
             'input-required',
           ];
-          isFinal = terminalStates.includes(currentData.session.status.state);
+          isFinal = terminalStates.includes(currentData.task.status.state);
           event = this.createTaskStatusEvent(
-            sessionId,
-            currentData.session.status,
+            taskId,
+            currentData.task.status,
             isFinal,
           );
         } else if (isArtifactUpdate(yieldValue)) {
-          const updatedArtifact = currentData.session.artifacts?.find(
+          const updatedArtifact = currentData.task.artifacts?.find(
             (a) =>
               (a.index !== undefined && a.index === yieldValue.index) ||
               (a.name && a.name === yieldValue.name),
           ) ?? yieldValue;
-          event = this.createTaskArtifactEvent(sessionId, updatedArtifact, false);
+          event = this.createTaskArtifactEvent(taskId, updatedArtifact, false);
         } else {
           console.warn('[Stream] Handler yielded unknown value:', yieldValue);
           continue;
@@ -296,68 +305,68 @@ export class A2AServer {
 
       // 处理结束，确保有最终事件
       if (!lastEventWasFinal) {
-        // 确保会话处于最终状态
+        // 确保任务处于最终状态
         const finalStates: schema.TaskState[] = [
           'completed',
           'failed',
           'canceled',
           'input-required',
         ];
-        if (!finalStates.includes(currentData.session.status.state)) {
-          currentData = this.applyUpdateToSessionAndHistory(currentData, {
+        if (!finalStates.includes(currentData.task.status.state)) {
+          currentData = this.applyUpdateToTaskAndHistory(currentData, {
             state: 'completed',
           });
-          await this.sessionStore.save(currentData);
+          await this.taskStore.save(currentData);
         }
         // 发送最终状态事件
         const finalEvent = this.createTaskStatusEvent(
-          sessionId,
-          currentData.session.status,
+          taskId,
+          currentData.task.status,
           true,
         );
         emitter.emit('update', finalEvent);
       }
     } catch (error) {
-      console.error(`[Stream ${sessionId}] Error:`, error);
+      console.error(`[Stream ${taskId}] Error:`, error);
       emitter.emit('error', error);
     }
   }
 
   /**
-   * 获取所有会话列表
+   * 获取所有任务列表
    * 注意：这个不是标准A2A API的一部分，但对客户端非常有用
    */
-  private async processListSessions(): Promise<schema.Task[]> {
-    // 获取所有会话ID
-    const sessionIds = await this.getAllSessionIds();
-    const sessions: schema.Task[] = [];
+  private async processListTasks(): Promise<schema.Task[]> {
+    // 获取所有任务ID
+    const taskIds = await this.getAllTaskIds();
+    const tasks: schema.Task[] = [];
 
-    // 加载每个会话的详细信息
-    for (const sessionId of sessionIds) {
-      const sessionAndHistory = await this.sessionStore.load(sessionId);
-      if (sessionAndHistory) {
-        sessions.push({ ...sessionAndHistory.session });
+    // 加载每个任务的详细信息
+    for (const taskId of taskIds) {
+      const taskAndHistory = await this.taskStore.load(taskId);
+      if (taskAndHistory) {
+        tasks.push({ ...taskAndHistory.task });
       }
     }
 
-    return sessions;
+    return tasks;
   }
 
-  // 处理会话发送请求 (tasks/send)
-  private async processSessionSend(request: schema.SendTaskRequest): Promise<schema.Task> {
-    this.validateSessionSendParams(request.params);
-    const { id: sessionId, message, metadata } = request.params;
+  // 处理任务发送请求 (tasks/send)
+  private async processTaskSend(request: schema.SendTaskRequest): Promise<schema.Task> {
+    this.validateTaskSendParams(request.params);
+    const { id: taskId, message, metadata } = request.params;
 
-    // 加载或创建会话
-    let currentData = await this.loadOrCreateSessionAndHistory(
-      sessionId,
+    // 加载或创建任务
+    let currentData = await this.loadOrCreateTaskAndHistory(
+      taskId,
       message,
       undefined, // 不使用传入的sessionId参数
       metadata,
     );
 
-    const context = this.createSessionContext(
-      currentData.session,
+    const context = this.createTaskContext(
+      currentData.task,
       message,
       currentData.history,
     );
@@ -366,9 +375,9 @@ export class A2AServer {
     // 处理生成器产出
     try {
       for await (const yieldValue of generator) {
-        currentData = this.applyUpdateToSessionAndHistory(currentData, yieldValue);
-        await this.sessionStore.save(currentData);
-        context.task = currentData.session;
+        currentData = this.applyUpdateToTaskAndHistory(currentData, yieldValue);
+        await this.taskStore.save(currentData);
+        context.task = currentData.task;
       }
     } catch (handlerError) {
       // 处理器错误
@@ -387,59 +396,59 @@ export class A2AServer {
           ],
         },
       };
-      currentData = this.applyUpdateToSessionAndHistory(
+      currentData = this.applyUpdateToTaskAndHistory(
         currentData,
         failureStatusUpdate,
       );
       try {
-        await this.sessionStore.save(currentData);
+        await this.taskStore.save(currentData);
       } catch (saveError) {
         console.error(
-          `Failed to save session ${sessionId} after handler error:`,
+          `Failed to save task ${taskId} after handler error:`,
           saveError,
         );
       }
-      throw this.normalizeError(handlerError, request.id, sessionId);
+      throw this.normalizeError(handlerError, request.id, taskId);
     }
 
-    return currentData.session;
+    return currentData.task;
   }
 
-  // 处理获取会话请求 (tasks/get)
-  private async processSessionGet(request: schema.GetTaskRequest): Promise<schema.Task> {
-    const { id: sessionId } = request.params;
-    if (!sessionId) throw A2AError.invalidParams('Missing session ID.');
+  // 处理获取任务请求 (tasks/get)
+  private async processTaskGet(request: schema.GetTaskRequest): Promise<schema.Task> {
+    const { id: taskId } = request.params;
+    if (!taskId) throw A2AError.invalidParams('Missing task ID.');
 
-    const data = await this.sessionStore.load(sessionId);
+    const data = await this.taskStore.load(taskId);
     if (!data) {
-      throw A2AError.taskNotFound(sessionId);
+      throw A2AError.taskNotFound(taskId);
     }
 
-    return data.session;
+    return data.task;
   }
 
-  // 处理取消会话请求 (tasks/cancel)
-  private async processSessionCancel(request: schema.CancelTaskRequest): Promise<schema.Task> {
-    const { id: sessionId } = request.params;
-    if (!sessionId) throw A2AError.invalidParams('Missing session ID.');
+  // 处理取消任务请求 (tasks/cancel)
+  private async processTaskCancel(request: schema.CancelTaskRequest): Promise<schema.Task> {
+    const { id: taskId } = request.params;
+    if (!taskId) throw A2AError.invalidParams('Missing task ID.');
 
-    // 加载会话
-    let data = await this.sessionStore.load(sessionId);
+    // 加载任务
+    let data = await this.taskStore.load(taskId);
     if (!data) {
-      throw A2AError.taskNotFound(sessionId);
+      throw A2AError.taskNotFound(taskId);
     }
 
     // 检查是否可取消
     const finalStates: schema.TaskState[] = ['completed', 'failed', 'canceled'];
-    if (finalStates.includes(data.session.status.state)) {
+    if (finalStates.includes(data.task.status.state)) {
       console.log(
-        `Session ${sessionId} already in final state ${data.session.status.state}, cannot cancel.`,
+        `Task ${taskId} already in final state ${data.task.status.state}, cannot cancel.`,
       );
-      return data.session;
+      return data.task;
     }
 
     // 标记取消
-    this.activeCancellations.add(sessionId);
+    this.activeCancellations.add(taskId);
 
     // 更新状态为已取消
     const cancelUpdate: Omit<schema.TaskStatus, 'timestamp'> = {
@@ -449,78 +458,93 @@ export class A2AServer {
         parts: [{ text: 'Task cancelled by request.' }],
       },
     };
-    data = this.applyUpdateToSessionAndHistory(data, cancelUpdate);
+    data = this.applyUpdateToTaskAndHistory(data, cancelUpdate);
 
     // 保存更新状态
-    await this.sessionStore.save(data);
+    await this.taskStore.save(data);
 
     // 移除活跃取消标记
-    this.activeCancellations.delete(sessionId);
+    this.activeCancellations.delete(taskId);
 
-    return data.session;
+    return data.task;
   }
 
   /**
-   * Delete a session from storage
+   * Delete a task from storage
    * 注意：这不是A2A协议的标准部分，是我们添加的扩展功能
    */
-  async deleteSession(sessionId: string): Promise<boolean> {
+  async deleteTask(taskId: string): Promise<boolean> {
     try {
-      // 从会话存储中删除会话
-      if ('deleteSession' in this.sessionStore) {
-        const result = await this.sessionStore.deleteSession(sessionId);
+      // 从任务存储中删除任务
+      if ('deleteTask' in this.taskStore) {
+        const result = await this.taskStore.deleteTask(taskId);
         return result;
       }
       return false;
     } catch (error) {
-      console.error(`Failed to delete session ${sessionId}:`, error);
+      console.error(`Failed to delete task ${taskId}:`, error);
       return false;
     }
+  }
+
+  /**
+   * @deprecated 使用 deleteTask 代替
+   */
+  async deleteSession(sessionId: string): Promise<boolean> {
+    return this.deleteTask(sessionId);
   }
 
   // --- Helper Methods ---
 
   /**
-   * 获取所有会话的ID列表
+   * 获取所有任务的ID列表
    */
-  async getAllSessionIds(): Promise<string[]> {
-    if ('getAllSessionIds' in this.sessionStore) {
-      return (this.sessionStore as any).getAllSessionIds();
-    }
-    return [];
+  async getAllTaskIds(): Promise<string[]> {
+    return this.taskStore.getAllTaskIds();
   }
 
   /**
-   * 获取所有会话
+   * 获取所有任务
    */
   async getAllTasks(): Promise<schema.Task[]> {
-    const sessionIds = await this.getAllSessionIds();
-    const sessions: schema.Task[] = [];
+    const taskIds = await this.getAllTaskIds();
+    const tasks: schema.Task[] = [];
 
-    for (const sessionId of sessionIds) {
-      const data = await this.sessionStore.load(sessionId);
+    for (const taskId of taskIds) {
+      const data = await this.taskStore.load(taskId);
       if (data) {
-        sessions.push(data.session);
+        tasks.push(data.task);
       }
     }
 
-    return sessions;
+    return tasks;
   }
 
-  // 加载或创建会话及其历史记录
-  private async loadOrCreateSessionAndHistory(
-    sessionId: string,
+  /**
+   * 获取任务历史记录
+   */
+  async getTaskHistory(taskId: string): Promise<schema.Message[]> {
+    const data = await this.taskStore.load(taskId);
+    if (!data) {
+      return [];
+    }
+    return data.history;
+  }
+
+  // 加载或创建任务及其历史记录
+  private async loadOrCreateTaskAndHistory(
+    taskId: string,
     initialMessage: schema.Message,
     _sessionIdParam?: string | null, // 忽略sessionId参数，不再使用
     metadata?: Record<string, unknown> | null, // 允许为null
-  ): Promise<SessionAndHistory> {
-    let data = await this.sessionStore.load(sessionId);
+  ): Promise<TaskAndHistory> {
+    let data = await this.taskStore.load(taskId);
     let needsSave = false;
 
     if (!data) {
-      // 创建新会话和历史记录
-      const initialSession: schema.Task & { agentId: string } = {
-        id: sessionId,
+      // 创建新任务和历史记录
+      const initialTask: schema.Task & { agentId: string } = {
+        id: taskId,
         // 使用当前agentId
         agentId: this.agentId,
         status: {
@@ -532,53 +556,53 @@ export class A2AServer {
         metadata: metadata ?? undefined, // null转为undefined
       };
       const initialHistory: schema.Message[] = [initialMessage]; // 历史记录以用户消息开始
-      data = { session: initialSession, history: initialHistory };
+      data = { task: initialTask, history: initialHistory };
       needsSave = true; // 标记需要保存
-      console.log(`[Session ${sessionId}] Created new session and history.`);
+      console.log(`[Task ${taskId}] Created new task and history.`);
     } else {
-      console.log(`[Session ${sessionId}] Loaded existing session and history.`);
+      console.log(`[Task ${taskId}] Loaded existing task and history.`);
       // 将当前用户消息添加到历史记录
       // 在可能修改前创建副本
-      data = { session: data.session, history: [...data.history, initialMessage] };
+      data = { task: data.task, history: [...data.history, initialMessage] };
       needsSave = true; // 历史记录已更新，标记需要保存
 
-      // 如果加载的现有会话没有agentId，设置为当前agentId
-      if (!data.session.agentId) {
-        data.session.agentId = this.agentId;
+      // 如果加载的现有任务没有agentId，设置为当前agentId
+      if (!data.task.agentId) {
+        data.task.agentId = this.agentId;
         needsSave = true;
       }
 
-      // 处理现有会话的状态转换
+      // 处理现有任务的状态转换
       const finalStates: schema.TaskState[] = [
         'completed',
         'failed',
         'canceled',
       ];
-      if (finalStates.includes(data.session.status.state)) {
+      if (finalStates.includes(data.task.status.state)) {
         console.warn(
-          `[Session ${sessionId}] Received message for session already in final state ${data.session.status.state}. Handling as new submission (keeping history).`,
+          `[Task ${taskId}] Received message for task already in final state ${data.task.status.state}. Handling as new submission (keeping history).`,
         );
         // 选项1：重置状态为'submitted'（保留历史记录，实际上是重新启动）
         const resetUpdate: Omit<schema.TaskStatus, 'timestamp'> = {
           state: 'submitted',
           message: null, // 清除旧的智能体消息
         };
-        data = this.applyUpdateToSessionAndHistory(data, resetUpdate);
+        data = this.applyUpdateToTaskAndHistory(data, resetUpdate);
         // needsSave已为true
-      } else if (data.session.status.state === 'input-required') {
+      } else if (data.task.status.state === 'input-required') {
         console.log(
-          `[Session ${sessionId}] Received message while 'input-required', changing state to 'working'.`,
+          `[Task ${taskId}] Received message while 'input-required', changing state to 'working'.`,
         );
         // 如果它在等待输入，将状态更新为'working'
         const workingUpdate: Omit<schema.TaskStatus, 'timestamp'> = {
           state: 'working',
         };
-        data = this.applyUpdateToSessionAndHistory(data, workingUpdate);
+        data = this.applyUpdateToTaskAndHistory(data, workingUpdate);
         // needsSave已为true
-      } else if (data.session.status.state === 'working') {
+      } else if (data.task.status.state === 'working') {
         // 如果已经在工作，可能发出警告但允许继续
         console.warn(
-          `[Session ${sessionId}] Received message while already 'working'. Proceeding.`,
+          `[Task ${taskId}] Received message while already 'working'. Proceeding.`,
         );
         // 不需要状态更改，但历史记录已更新，所以needsSave为true
       }
@@ -587,25 +611,24 @@ export class A2AServer {
 
     // 如果创建或修改过，保存再返回
     if (needsSave) {
-      await this.sessionStore.save(data);
+      await this.taskStore.save(data);
     }
 
     // 返回副本以防止处理程序运行前被调用者修改
-    return { session: { ...data.session }, history: [...data.history] };
+    return { task: { ...data.task }, history: [...data.history] };
   }
 
-  // 更新创建上下文的方法名和实现
-  private createSessionContext(
-    session: schema.Task,
+  // 创建任务上下文
+  private createTaskContext(
+    task: schema.Task,
     userMessage: schema.Message,
     history: schema.Message[], // 添加历史记录参数
-  ): SessionContext {
+  ): TaskContext {
     return {
-      task: { ...session }, // 保持字段名为task以兼容handler
+      task: { ...task },
       userMessage: userMessage,
       history: [...history], // 传递历史记录副本
-      isCancelled: () => this.activeCancellations.has(session.id),
-      // taskStore 已删除
+      isCancelled: () => this.activeCancellations.has(task.id),
     };
   }
 
@@ -624,7 +647,7 @@ export class A2AServer {
     );
   }
 
-  private validateSessionSendParams(
+  private validateTaskSendParams(
     parameters: any,
   ): asserts parameters is schema.TaskSendParams {
     if (!parameters || typeof parameters !== 'object') {
@@ -697,12 +720,12 @@ export class A2AServer {
     return this.createErrorResponse(requestId, a2aError.toJSONRPCError());
   }
 
-  private normalizeError(error: any, requestId: any, sessionId: string): A2AError {
+  private normalizeError(error: any, requestId: any, taskId: string): A2AError {
     if (error instanceof A2AError) {
       return error;
     }
     console.error(
-      `Handler error for request ${requestId ?? 'N/A'}, session ${sessionId}:`,
+      `Handler error for request ${requestId ?? 'N/A'}, task ${taskId}:`,
       error,
     );
     return A2AError.internalError(
@@ -733,27 +756,5 @@ export class A2AServer {
       artifact: artifact,
       final: final, // 通常为false，除非是最后一件事
     };
-  }
-
-  /**
-   * 获取会话的消息历史记录
-   * 这不是A2A协议的标准部分，但对客户端很有用
-   */
-  async getSessionHistory(sessionId: string): Promise<schema.Message[]> {
-    try {
-      const data = await this.sessionStore.load(sessionId);
-      if (!data) {
-        throw A2AError.taskNotFound(sessionId);
-      }
-      return [...data.history]; // 返回副本以防止修改
-    } catch (error) {
-      console.error(`Failed to get history for session ${sessionId}:`, error);
-      return [];
-    }
-  }
-
-  // A2A协议兼容方法 - 只保留必要的，其他应该移到http-server.ts
-  async getTaskHistory(taskId: string): Promise<schema.Message[]> {
-    return this.getSessionHistory(taskId);
   }
 }

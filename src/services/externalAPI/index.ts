@@ -8,9 +8,10 @@ import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { CoreMessage, Message } from 'ai';
 import { streamFromProvider } from './callProviderAPI';
 import rawDefaultProvidersConfig from './defaultProviders.json';
-import type { AIMessage, AIProviderConfig, AISessionConfig, AISettings, AIStreamResponse, IExternalAPIService, ModelFeature } from './interface';
+import type { AIProviderConfig, AISessionConfig, AISettings, AIStreamResponse, IExternalAPIService, ModelFeature } from './interface';
 
 // Create typed config object
 const defaultProvidersConfig = {
@@ -184,11 +185,11 @@ export class ExternalAPIService implements IExternalAPIService {
     this.saveSettingsToDatabase();
   }
 
-  streamFromAI(messages: AIMessage[], config: AISessionConfig): Observable<AIStreamResponse> {
+  streamFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AISessionConfig): Observable<AIStreamResponse> {
     return new Observable<AIStreamResponse>(observer => {
       // Generate unique request ID internally
       const requestId = nanoid();
-      
+
       // Cancel existing request with same ID (shouldn't happen but as precaution)
       if (this.activeRequests.has(requestId)) {
         this.cancelAIRequest(requestId)
@@ -245,7 +246,7 @@ export class ExternalAPIService implements IExternalAPIService {
                     fullResponse += chunk;
                     emitEvent(fullResponse, 'update');
                   }
-                  
+
                   // Complete
                   emitEvent(fullResponse, 'done');
                   observer.complete();
