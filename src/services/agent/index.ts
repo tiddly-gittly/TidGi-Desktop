@@ -1,10 +1,12 @@
 /* eslint-disable @typescript-eslint/require-await */
 import { injectable } from 'inversify';
 import { nanoid } from 'nanoid';
-import { BehaviorSubject, Observable } from 'rxjs';
+import { BehaviorSubject, Observable, Subscription } from 'rxjs';
 
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
+import { AIMessage, AIStreamResponse } from '@services/externalAPI/interface';
+import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
@@ -19,6 +21,9 @@ import { SQLiteTaskStore } from './server/store';
 export class AgentService implements IAgentService {
   @lazyInject(serviceIdentifier.Database)
   private readonly databaseService!: IDatabaseService;
+
+  @lazyInject(serviceIdentifier.ExternalAPI)
+  private readonly externalAPIService!: IExternalAPIService;
 
   @lazyInject(serviceIdentifier.Wiki)
   private readonly wikiService!: IWikiService;
@@ -35,10 +40,6 @@ export class AgentService implements IAgentService {
   // Session updates stream - only sends updated sessions
   public sessionUpdates$ = new BehaviorSubject<Record<string, AgentSession>>({});
 
-  // Remove database initialization and agent registration from constructor
-  constructor() {
-    // Do not initialize in constructor
-  }
 
   // Database initialization flag
   private databaseInitialized = false;
@@ -560,7 +561,7 @@ export class AgentService implements IAgentService {
       // Get server instance
       const server = await this.getOrCreateAgentServer(agentId);
 
-      // 先取消任务（如果正在运行）
+      // First cancel the task if running
       const cancelRequest: schema.CancelTaskRequest = {
         jsonrpc: '2.0',
         id: nanoid(),
@@ -571,11 +572,11 @@ export class AgentService implements IAgentService {
       };
       await server.handleRequest(cancelRequest);
 
-      // 然后从数据库中删除会话记录
+      // Then delete session record from database
       const deleted = await server.deleteSession(sessionId);
       logger.info(`Deleted session ${sessionId} from database: ${deleted}`);
 
-      // 通知前端会话已删除
+      // Notify frontend about session deletion
       this.notifySessionUpdate(agentId, sessionId, null);
     } catch (error) {
       logger.error(`Failed to delete session ${sessionId}:`, error);

@@ -1,6 +1,7 @@
 import { DatabaseChannel } from '@/constants/channels';
 import type { AgentSettings } from '@services/agent/interface';
 import { IUserInfos } from '@services/auth/interface';
+import { AISettings } from '@services/externalAPI/interface';
 import { IPage } from '@services/pages/interface';
 import { IPreferences } from '@services/preferences/interface';
 import { IWorkspace } from '@services/workspaces/interface';
@@ -13,6 +14,7 @@ export interface ISettingFile {
   userInfos: IUserInfos;
   workspaces: Record<string, IWorkspace>;
   agentSettings?: AgentSettings;
+  aiSettings?: AISettings;
 }
 
 /**
@@ -20,15 +22,20 @@ export interface ISettingFile {
  */
 export interface IDatabaseService {
   /**
-   * Get setting that used by services
-   * @param key setting file top level key like `userInfos`
+   * Get setting from configuration
    */
   getSetting<K extends keyof ISettingFile>(key: K): ISettingFile[K] | undefined;
+
   /**
    * Save settings to FS. Due to bugs of electron-settings, you should mostly use `setSetting` instead.
    */
   immediatelyStoreSettingsToFile(): Promise<void>;
+
+  /**
+   * Initialize database and settings for application
+   */
   initializeForApp(): Promise<void>;
+
   /**
    * Save setting that used by services to same file, will handle data race.
    * Normally you should use methods on other services instead of this, and they will can this method instead.
@@ -36,13 +43,23 @@ export interface IDatabaseService {
    * @param value whole setting from a service
    */
   setSetting<K extends keyof ISettingFile>(key: K, value: ISettingFile[K]): void;
-  initializeDatabase(key: string): Promise<void>;
+
   /**
-   * Get a database connection for the app db, which is a sqlite manages by TypeORM for all app level data
+   * Initialize database for specific key
+   */
+  initializeDatabase(key: string): Promise<void>;
+
+  /**
+   * Get database connection for specific key
    */
   getDatabase(key: string, isRetry?: boolean): Promise<DataSource>;
+
+  /**
+   * Close database connection
+   */
   closeAppDatabase(key: string, drop?: boolean): void;
 }
+
 export const DatabaseServiceIPCDescriptor = {
   channel: DatabaseChannel.name,
   properties: {
