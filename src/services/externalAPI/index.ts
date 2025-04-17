@@ -71,15 +71,6 @@ export class ExternalAPIService implements IExternalAPIService {
       if (isProvider(key, objectValue) && isProvider(key, sourceValue)) {
         // For each provider in user settings
         sourceValue.forEach((userProvider: AIProviderConfig) => {
-          // Ensure features type is correct
-          if (userProvider.models) {
-            userProvider.models.forEach(model => {
-              if (model.features) {
-                model.features = model.features;
-              }
-            });
-          }
-
           // Find matching provider in default settings
           const defaultProvider = objectValue.find((p: AIProviderConfig) => p.provider === userProvider.provider);
           if (defaultProvider) {

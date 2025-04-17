@@ -91,9 +91,8 @@ export async function* echoHandler(context: TaskContext) {
     // Handle any unexpected errors
     const errorMessage = error instanceof Error ? error.message : String(error);
     console.error('Error in echoHandler:', errorMessage);
-    
     yield {
-      state: 'completed',
+      state: 'failed',
       message: {
         role: 'agent',
         parts: [{ text: `You said: ${userText}\n\nError processing AI response: ${errorMessage}` }],

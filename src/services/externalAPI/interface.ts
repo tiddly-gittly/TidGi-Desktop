@@ -38,7 +38,7 @@ export interface ModelInfo {
   /** Features supported by the model */
   features?: ModelFeature[];
   /** Additional metadata */
-  metadata?: Record<string, any>;
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -67,7 +67,7 @@ export interface AISessionConfig {
     maxTokens?: number;
     systemPrompt?: string;
     topP?: number;
-    [key: string]: any;
+    [key: string]: unknown;
   };
 }
 
