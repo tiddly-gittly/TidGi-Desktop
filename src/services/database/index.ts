@@ -123,7 +123,7 @@ export class DatabaseService implements IDatabaseService {
         migrations: schemaConfig.migrations,
         synchronize: schemaConfig.synchronize,
         migrationsRun: schemaConfig.migrationsRun,
-        logging: true,
+        logging: false,
         nativeBinding: SQLITE_BINARY_PATH,
       });
 
@@ -156,7 +156,7 @@ export class DatabaseService implements IDatabaseService {
           migrations: schemaConfig.migrations,
           synchronize: schemaConfig.synchronize,
           migrationsRun: false, // Do not run migrations on connect
-          logging: true,
+          logging: false,
           nativeBinding: SQLITE_BINARY_PATH,
         });
 

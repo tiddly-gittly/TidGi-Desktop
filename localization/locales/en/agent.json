@@ -15,7 +15,21 @@
     },
     "StartNewConversation": "Start a new conversation",
     "Thinking": "Thinking...",
-    "Use": "Use"
+    "Use": "Use",
+    "Cancel": "Cancel",
+    "Typing": "Typing...",
+    "WaitingForResponse": "Waiting for response...",
+    "ConfigError": {
+      "Title": "Configuration Issue",
+      "GoToSettings": "Go to Settings",
+      "MissingAPIKey": "API key for {{provider}} is required to use this feature.",
+      "MissingBaseURL": "Base URL for {{provider}} is required to use this feature.",
+      "AuthenticationFailed": "Authentication failed for {{provider}}, please check your settings.",
+      "ModelNotFound": "Model not found for {{provider}}, please check your settings.",
+      "RateLimitExceeded": "Rate limit exceeded for {{provider}}, please try again later.",
+      "ProviderNotFound": "Provider {{provider}} not found, please check your settings.",
+      "GeneralError": "There's an issue with {{provider}} configuration, please check your settings."
+    }
   },
   "ModelFeature": {
     "Embedding": "Embedding",
@@ -64,7 +78,7 @@
     "OpenAICompatible": "OpenAI-Compatible Interface",
     "Openai": "OpenAI Official Interface",
     "OrCreateCustom": "Or Create a Custom Model",
-    "Preferences": "Pref...",
+    "Preferences": "Preferences",
     "PresetBaseURL": "Preset API Base URL, cannot be modified",
     "PresetModels": "Preset Models",
     "PresetProvider": "Preset Provider",

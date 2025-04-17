@@ -4,30 +4,41 @@ import { omit } from 'lodash';
 import { useEffect } from 'react';
 import { create } from 'zustand';
 
-// 对话界面使用的简化数据结构
+/**
+ * Simplified conversation structure for UI display
+ * Integrates a user question and agent response into a single UI conversation unit
+ * Leverages the schema.Message type from the A2A server protocol
+ */
 export interface Conversation {
+  /** Unique conversation identifier */
   id: string;
+  /** User question - extracted from schema.Message text content */
   question: string;
+  /** Agent response - extracted from schema.Message text content */
   response?: string;
+  /** Conversation creation timestamp */
   createdAt: Date;
+  /** Conversation update timestamp */
   updatedAt?: Date;
+  /** Optional original message object - for accessing additional metadata */
+  message?: Pick<schema.Message, 'parts' | 'metadata'>;
 }
 
 export interface AgentStoreState {
-  // 任务管理状态
+  // Task management state
   tasks: AgentTask[];
   activeTaskId?: string;
-  // 每个任务的加载状态
+  // Loading states for each task
   loadingStates: Record<string, boolean>;
-  // AI响应流式状态
+  // Streaming states for tasks
   streamingStates: Record<string, boolean>;
-  // 创建任务状态
+  // Task creation state
   creatingTask?: boolean;
-  // 可用智能体
+  // Available agents
   availableAgents: { id: string; name: string }[];
   selectedAgentId?: string;
 
-  // 操作方法
+  // Actions
   createNewTask: () => Promise<string>;
   deleteTask: (id: string) => void;
   selectTask: (id: string) => void;
@@ -35,23 +46,23 @@ export interface AgentStoreState {
   sendMessageToAI: (message: string, taskId?: string) => Promise<void>;
   cancelAIRequest: (taskId?: string) => Promise<void>;
 
-  // 加载可用智能体
+  // Agent management
   loadAvailableAgents: () => Promise<{ id: string; name: string }[]>;
   selectAgent: (agentId: string) => void;
 
-  // 初始化
+  // Initialization
   initialize: () => Promise<void>;
   initTaskSyncSubscription: () => void;
 
-  // 检查任务状态
+  // Status checking
   isTaskLoading: (taskId: string) => boolean;
   isTaskStreaming: (taskId: string) => boolean;
 
-  // 辅助方法
+  // Helpers
   getTaskConversations: (taskId: string) => Conversation[];
 }
 
-// 创建store hook
+// Create store hook
 export const useAgentStore = create<AgentStoreState>((set, get) => ({
   tasks: [],
   loadingStates: {},
@@ -59,43 +70,33 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
   availableAgents: [],
   selectedAgentId: undefined,
 
-  // 初始化方法
+  // Initialize the store
   initialize: async () => {
     try {
-      // 初始化订阅
+      // Setup subscriptions first
       get().initTaskSyncSubscription();
 
-      // 首先加载可用智能体
-      await get().loadAvailableAgents();
+      // Load available agents
+      const agents = await get().loadAvailableAgents();
 
-      // 确保有可用智能体后再继续
-      const { availableAgents } = get();
-      console.log('Available agents:', availableAgents);
-
-      // 如果有可用智能体，选择第一个作为默认
-      if (availableAgents.length > 0) {
-        console.log('Selecting default agent:', availableAgents[0].id);
-        get().selectAgent(availableAgents[0].id);
-      } else {
-        console.warn('No available agents found during initialization');
+      // Select default agent if available
+      if (agents.length > 0) {
+        get().selectAgent(agents[0].id);
       }
     } catch (error) {
       console.error('Failed to initialize agent store:', error);
     }
   },
 
-  // 加载可用智能体
+  // Load all available agents
   loadAvailableAgents: async () => {
     try {
-      // DEBUG: console
-      console.log(`getAgents`);
       const agents = await window.service.agent.getAgents();
-      console.log('Loaded agents:', agents);
-
       const mappedAgents = agents.map(agent => ({ id: agent.id, name: agent.name }));
+
       set({ availableAgents: mappedAgents });
 
-      // 如果没有选择的智能体但有可用智能体，自动选择第一个
+      // Auto-select first agent if none selected
       const currentSelectedAgentId = get().selectedAgentId;
       if (!currentSelectedAgentId && mappedAgents.length > 0) {
         set({ selectedAgentId: mappedAgents[0].id });
@@ -108,111 +109,62 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
     }
   },
 
-  // 选择智能体
+  // Select an agent and load its tasks
   selectAgent: (agentId: string) => {
     set({ selectedAgentId: agentId });
 
-    // 从服务器加载该智能体的所有任务
+    // Load tasks for the selected agent
     window.service.agent.getAgentTasks(agentId)
       .then(tasks => {
-        // 完全替换当前任务列表
         set({ tasks });
       })
-      .catch(error => {
+      .catch((error: unknown) => {
         console.error(`Failed to load tasks for agent ${agentId}:`, error);
       });
   },
 
-  // 创建新任务
+  // Create a new task
   createNewTask: async () => {
-    let { selectedAgentId, availableAgents, creatingTask } = get();
+    const { selectedAgentId, availableAgents, creatingTask } = get();
 
-    // 防止重复点击创建
+    // Prevent duplicate creation
     if (creatingTask) {
-      console.log('Already creating a task, please wait...');
       return '';
     }
 
-    // 如果没有选择的智能体，尝试加载可用智能体
-    if (!selectedAgentId || availableAgents.length === 0) {
-      availableAgents = await get().loadAvailableAgents();
+    // Ensure we have a selected agent
+    let agentId = selectedAgentId;
+    if (!agentId && availableAgents.length > 0) {
+      agentId = availableAgents[0].id;
+      set({ selectedAgentId: agentId });
     }
 
-    // 如果还是没有选择的智能体但有可用智能体，使用第一个
-    if (!selectedAgentId && availableAgents.length > 0) {
-      selectedAgentId = availableAgents[0].id;
-      set({ selectedAgentId });
-    }
-
-    if (!selectedAgentId) {
+    if (!agentId) {
       console.error('No agent available to create task');
       return '';
     }
 
     try {
-      console.log(`Creating new task with agent: ${selectedAgentId}`);
-
-      // 设置创建中的加载状态
+      // Set creation state
       set({ creatingTask: true });
 
-      // 创建临时ID - 后端会返回实际ID，但我们先在UI上显示
-      const temporaryId = `temp-${Date.now()}`;
+      // Create the task directly - no need for temporary objects in Electron
+      const createdTask = await window.service.agent.createTask(agentId);
 
-      // 创建临时任务对象用于UI立即显示（乐观更新）
-      const now = new Date();
-      const temporaryTask: AgentTask = {
-        id: temporaryId,
-        agentId: selectedAgentId,
-        messages: [],
-        status: {
-          state: 'submitted',
-          timestamp: now.toISOString(),
-        },
-        createdAt: now,
-        updatedAt: now,
-      };
-
-      // 立即更新UI，显示临时任务
-      set(state => ({
-        activeTaskId: temporaryId,
-        tasks: [...state.tasks, temporaryTask],
-      }));
-
-      // 向后端发送创建任务的请求
-      const createdTask = await window.service.agent.createTask(selectedAgentId);
-      console.log('Received backend task creation response:', createdTask);
-
-      // 当后端返回创建的任务时，替换临时任务
-      set(state => {
-        // 先删除临时任务
-        const filteredTasks = state.tasks.filter(s => s.id !== temporaryId);
-
-        // 检查是否已经通过sessionUpdates$添加了实际任务
-        const alreadyAdded = state.tasks.some(s => s.id === createdTask.id);
-
-        return {
-          // 只在未被添加的情况下添加新任务
-          tasks: alreadyAdded ? filteredTasks : [...filteredTasks, createdTask],
-          activeTaskId: createdTask.id,
-          creatingTask: false,
-        };
+      set({
+        activeTaskId: createdTask.id,
+        creatingTask: false,
       });
 
       return createdTask.id;
     } catch (error) {
       console.error('Failed to create task:', error);
-
-      // 出错时，移除临时任务
-      set(state => ({
-        tasks: state.tasks.filter(s => !s.id.startsWith('temp-')),
-        creatingTask: false,
-      }));
-
+      set({ creatingTask: false });
       return '';
     }
   },
 
-  // 删除任务
+  // Delete a task
   deleteTask: (id: string) => {
     const { tasks, activeTaskId, loadingStates, selectedAgentId } = get();
 
@@ -221,130 +173,80 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
       return;
     }
 
-    // 创建新的loadingStates并删除对应任务的加载状态
+    // Create new loadingStates without the deleted task
     const newLoadingStates = { ...omit(loadingStates, id) };
 
-    // 首先更新前端状态以提供即时反馈
+    // Update frontend state immediately
     set({
       tasks: tasks.filter((task) => task.id !== id),
       activeTaskId: id === activeTaskId ? undefined : activeTaskId,
       loadingStates: newLoadingStates,
     });
 
-    // 同时在服务器上删除任务
+    // Delete on server
     window.service.agent.deleteTask(selectedAgentId, id)
-      .catch(error => {
-        console.error('Failed to delete task in service:', error);
+      .catch((error: unknown) => {
+        console.error('Failed to delete task:', error);
       });
   },
 
-  // 选择任务
+  // Select a task as active
   selectTask: (id: string) => {
     set({ activeTaskId: id });
   },
 
-  // 检查任务是否正在加载
+  // Check if a task is loading
   isTaskLoading: (taskId: string) => {
     return get().loadingStates[taskId] || false;
   },
 
-  // 检查任务是否正在流式传输
+  // Check if a task is streaming
   isTaskStreaming: (taskId: string) => {
     return get().streamingStates[taskId] || false;
   },
 
-  // 向AI发送消息
-  sendMessageToAI: async (message: string, taskId?: string) => {
+  // Send a message to the AI
+  sendMessageToAI: (message: string, taskId?: string) => {
     const { activeTaskId, selectedAgentId } = get();
     const targetTaskId = taskId || activeTaskId;
 
-    if (!targetTaskId) {
-      console.error('No active task ID provided');
-      return;
+    if (!targetTaskId || !selectedAgentId) {
+      console.error('Missing task ID or agent ID');
+      return Promise.resolve();
     }
 
-    if (!selectedAgentId) {
-      console.error('No agent selected');
-      return;
-    }
-
-    // 设置任务为流式状态
+    // Set task states
     set(state => ({
       streamingStates: { ...state.streamingStates, [targetTaskId]: true },
       loadingStates: { ...state.loadingStates, [targetTaskId]: true },
     }));
 
     try {
-      // 先临时更新UI状态，显示用户消息
-      const task = get().tasks.find(s => s.id === targetTaskId);
-      if (task) {
-        // 创建新的用户消息
-        const userMessage: schema.Message = {
-          role: 'user',
-          parts: [{ text: message }],
-        };
-
-        // 临时更新任务消息列表，实际任务状态将通过sessionUpdates$同步
-        const updatedTask = {
-          ...task,
-          messages: [...task.messages, userMessage],
-          updatedAt: new Date(),
-        };
-
-        // 更新任务列表
-        set(state => ({
-          tasks: [
-            ...state.tasks.filter(s => s.id !== targetTaskId),
-            updatedTask,
-          ],
-        }));
-      }
-
-      console.log(`Sending message to agent ${selectedAgentId}, task ${targetTaskId}: ${message}`);
-
-      // 调用流式请求API，会触发服务器端处理
+      // Call streaming API
       const stream = window.observables.agent.handleStreamingRequest(
         selectedAgentId,
         targetTaskId,
         message,
       );
 
-      // 订阅流式更新
+      // Subscribe to stream updates
       stream.subscribe({
-        next: (event) => {
-          console.log(`Received stream event:`, event);
+        next: (update) => {
+          // Check if this is a status update with 'completed' state
+          if (update && 'status' in update && update.status && update.status.state === 'completed') {
+            // Reset loading and streaming states when the task is completed
+            set(state => ({
+              streamingStates: { ...state.streamingStates, [targetTaskId]: false },
+              loadingStates: { ...state.loadingStates, [targetTaskId]: false },
+            }));
+          }
         },
         complete: () => {
-          // 重置任务状态
+          // Reset task states
           set(state => ({
             streamingStates: { ...state.streamingStates, [targetTaskId]: false },
             loadingStates: { ...state.loadingStates, [targetTaskId]: false },
           }));
-
-          // 流完成后刷新获取一次最新任务
-          if (selectedAgentId) {
-            window.service.agent.getTask(targetTaskId)
-              .then(latestTask => {
-                if (latestTask) {
-                  // 更新当前任务
-                  set(state => {
-                    const updatedTasks = [...state.tasks];
-                    const taskIndex = updatedTasks.findIndex(s => s.id === latestTask.id);
-
-                    if (taskIndex >= 0) {
-                      updatedTasks[taskIndex] = latestTask;
-                    } else {
-                      updatedTasks.push(latestTask);
-                    }
-
-                    return { tasks: updatedTasks };
-                  });
-                }
-              })
-              .catch(error => {
-                console.error('Failed to refresh task after completion:', error);
-              });
-          }
         },
         error: (error) => {
           console.error('Error in streaming response:', error);
@@ -354,26 +256,27 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
           }));
         },
       });
+
+      return Promise.resolve();
     } catch (error) {
       console.error('Failed to send message to AI:', error);
-      // 重置状态
+      // Reset states
       set(state => ({
         streamingStates: { ...state.streamingStates, [targetTaskId]: false },
         loadingStates: { ...state.loadingStates, [targetTaskId]: false },
       }));
+      return Promise.reject(error);
     }
   },
 
-  // 取消AI请求
+  // Cancel an active AI request
   cancelAIRequest: async (taskId?: string) => {
     const targetTaskId = taskId || get().activeTaskId;
     const { selectedAgentId } = get();
 
     if (targetTaskId && selectedAgentId) {
       try {
-        // 发送取消请求
         await window.service.agent.deleteTask(selectedAgentId, targetTaskId);
-        // 重置状态
         set(state => ({
           streamingStates: { ...state.streamingStates, [targetTaskId]: false },
           loadingStates: { ...state.loadingStates, [targetTaskId]: false },
@@ -384,66 +287,51 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
     }
   },
 
-  // 初始化任务同步订阅
+  // Initialize task update subscription
   initTaskSyncSubscription: () => {
-    // 订阅任务更新
     window.observables.agent.taskUpdates$.subscribe({
       next: (taskUpdates) => {
         if (!taskUpdates || Object.keys(taskUpdates).length === 0) return;
-        console.log('[Store] Received task updates:', taskUpdates);
 
-        // 获取当前状态
+        // Get current state
         const { tasks, activeTaskId } = get();
         const updatedTasks = [...tasks];
         let updatedActiveTaskId = activeTaskId;
 
-        // 处理每个更新的任务
+        // Process each updated task
         Object.entries(taskUpdates).forEach(([taskId, taskUpdate]) => {
           const taskIndex = updatedTasks.findIndex(s => s.id === taskId);
 
           if (taskUpdate === null) {
-            // 任务被删除
+            // Task was deleted
             if (taskIndex >= 0) {
-              console.log(`[Store] Removing task ${taskId} from frontend state`);
               updatedTasks.splice(taskIndex, 1);
 
-              // 如果删除的是当前活动任务，清除activeTaskId
+              // Clear activeTaskId if it was deleted
               if (activeTaskId === taskId) {
                 updatedActiveTaskId = undefined;
               }
             }
           } else {
-            // 任务被更新或创建
+            // Task was updated or created
             if (taskIndex >= 0) {
-              console.log(`[Store] Updating existing task ${taskId} with new messages:`, taskUpdate.messages.length, 'messages');
               updatedTasks[taskIndex] = taskUpdate;
             } else {
-              console.log(`[Store] Adding new task ${taskId} from backend`);
               updatedTasks.push(taskUpdate);
 
-              // 如果当前没有活动的任务，将这个新任务设为活动
-              if (!updatedActiveTaskId || updatedActiveTaskId.startsWith('temp-')) {
+              // Set as active if no active task
+              if (!updatedActiveTaskId) {
                 updatedActiveTaskId = taskId;
               }
             }
           }
         });
 
-        // 移除所有临时任务（它们已被后端的实际任务所取代）
-        const finalTasks = updatedTasks.filter(s => !s.id.startsWith('temp-'));
-
-        // 更新状态
+        // Update state
         set({
-          tasks: finalTasks,
+          tasks: updatedTasks,
           activeTaskId: updatedActiveTaskId,
         });
-
-        // 为了调试，打印最新的任务状态
-        console.log(`[Store] Updated tasks (${finalTasks.length})`, finalTasks.map(s => ({ id: s.id, messages: s.messages.length })));
-        if (updatedActiveTaskId) {
-          const conversations = get().getTaskConversations(updatedActiveTaskId);
-          console.log(`[Store] Current conversations for active task:`, conversations);
-        }
       },
       error: (error) => {
         console.error('Task updates subscription error:', error);
@@ -451,91 +339,66 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
     });
   },
 
-  // 获取任务的对话列表（UI友好格式）
+  // Convert task messages to UI-friendly conversations
   getTaskConversations: (taskId: string): Conversation[] => {
     const task = get().tasks.find(s => s.id === taskId);
     if (!task) return [];
 
-    console.log(`[Store] Converting task ${taskId} with ${task.messages.length} messages`); // 添加日志
-
-    // 将AgentTask的消息格式转换为Conversation格式
+    // Simplified conversation creation from task messages
     const conversations: Conversation[] = [];
-    let userMessage: schema.Message | null = null;
-    let lastProcessedIndex = -1;
-
     for (let index = 0; index < task.messages.length; index++) {
       const message = task.messages[index];
-      console.log(`[Store] Processing message ${index}:`, message.role, message.parts.map(p => 'text' in p ? p.text : '').join(''));
 
+      // Process user messages
       if (message.role === 'user') {
-        // 如果有上一个未处理的用户消息，先创建一个没有回复的对话
-        if (userMessage && lastProcessedIndex < index - 1) {
-          conversations.push({
-            id: `${task.id}-${index - 1}`,
-            question: userMessage.parts.map(part => 'text' in part ? part.text : '').join(''),
-            createdAt: task.createdAt,
-            updatedAt: task.updatedAt,
-          });
+        // Find the next agent response if any
+        const responseIndex = task.messages.findIndex(
+          (m, index_) => index_ > index && m.role === 'agent',
+        );
+
+        const conversation: Conversation = {
+          id: `${task.id}-${index}${responseIndex > -1 ? `-${responseIndex}` : ''}`,
+          question: message.parts.map(part => 'text' in part ? part.text : '').join(''),
+          createdAt: task.createdAt,
+          updatedAt: task.updatedAt,
+          message: { parts: message.parts, metadata: message.metadata },
+        };
+
+        // Add response if found
+        if (responseIndex > -1) {
+          const responseMessage = task.messages[responseIndex];
+          conversation.response = responseMessage.parts
+            .map(part => 'text' in part ? part.text : '')
+            .join('');
+
+          // 保存完整的消息结构，包括任何错误部分
+          conversation.message = {
+            parts: responseMessage.parts,
+            metadata: responseMessage.metadata,
+          };
+          // Skip the response message in the next iteration
+          index = responseIndex;
         }
 
-        // 保存新的用户消息
-        userMessage = message;
-        lastProcessedIndex = index;
-      } else if (message.role === 'agent') {
-        // 如果这是最后一条消息，或者下一条也是智能体消息
-        const isLastMessage = index === task.messages.length - 1;
-        const nextIsAgentToo = !isLastMessage && task.messages[index + 1].role === 'agent';
 
-        // 如果不是最后一条消息，且下一条也是智能体消息，则跳过当前消息（除非是最终回复）
-        if (!isLastMessage && nextIsAgentToo && !message.parts[0].text.includes('You said:')) {
-          console.log(`[Store] Skipping intermediate agent message: ${message.parts[0].text}`);
-          continue;
-        }
-
-        // 有用户消息和智能体回复时，创建一个完整对话
-        if (userMessage) {
-          const response = message.parts.map(part => 'text' in part ? part.text : '').join('');
-          console.log(`[Store] Created conversation with response: ${response}`);
-
-          conversations.push({
-            id: `${task.id}-${lastProcessedIndex}-${index}`,
-            question: userMessage.parts.map(part => 'text' in part ? part.text : '').join(''),
-            response: response,
-            createdAt: task.createdAt,
-            updatedAt: task.updatedAt,
-          });
-
-          userMessage = null;
-          lastProcessedIndex = index;
-        }
+        conversations.push(conversation);
       }
     }
 
-    // 处理最后一个没有回复的用户消息
-    if (userMessage) {
-      conversations.push({
-        id: `${task.id}-${task.messages.length - 1}`,
-        question: userMessage.parts.map(part => 'text' in part ? part.text : '').join(''),
-        createdAt: task.createdAt,
-        updatedAt: task.updatedAt,
-      });
-    }
-
-    console.log(`[Store] Produced ${conversations.length} conversations`);
     return conversations;
   },
 
-  // 发送消息（简单封装）
+  // Send message (simple wrapper)
   sendMessage: (message: string, taskId?: string) => {
-    get().sendMessageToAI(message, taskId);
+    void get().sendMessageToAI(message, taskId);
   },
 }));
 
-// 使用React Hook初始化store
+// React Hook to initialize store
 export const useAgentStoreInitialization = () => {
   const initialize = useAgentStore(state => state.initialize);
 
   useEffect(() => {
-    initialize();
+    void initialize();
   }, [initialize]);
 };

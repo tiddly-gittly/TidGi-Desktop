@@ -7,6 +7,7 @@ import { CoreMessage, Message, streamText } from 'ai';
 import { createOllama } from 'ollama-ai-provider';
 
 import type { AIProviderConfig, AISessionConfig } from './interface';
+import { MissingAPIKeyError, MissingBaseURLError, AuthenticationError, parseProviderError } from './errors';
 
 type AIStreamResult = ReturnType<typeof streamText>;
 
@@ -19,7 +20,7 @@ export function createProviderClient(providerConfig: { provider: string; provide
       return createOpenAI({ apiKey });
     case 'openAICompatible':
       if (!providerConfig.baseURL) {
-        throw new Error(`OpenAI-compatible provider ${providerConfig.provider} requires baseURL`);
+        throw new MissingBaseURLError(providerConfig.provider);
       }
       return createOpenAICompatible({
         name: providerConfig.provider,
@@ -32,7 +33,7 @@ export function createProviderClient(providerConfig: { provider: string; provide
       return createAnthropic({ apiKey });
     case 'ollama':
       if (!providerConfig.baseURL) {
-        throw new Error(`Ollama provider ${providerConfig.provider} requires baseURL`);
+        throw new MissingBaseURLError(providerConfig.provider);
       }
       return createOllama({
         baseURL: providerConfig.baseURL,
@@ -56,7 +57,7 @@ export function streamFromProvider(
   try {
     if (!providerConfig?.apiKey && providerConfig?.providerClass !== 'ollama') {
       // Ollama doesn't require API key
-      throw new Error(`API key for ${provider} not found！！！`);
+      throw new MissingAPIKeyError(provider);
     }
 
     const client = createProviderClient(
@@ -76,14 +77,15 @@ export function streamFromProvider(
       logger.error(`${provider} streaming error:`, error);
       throw new Error(`${provider} error: Unknown error`);
     } else if ((error as Error).message.includes('401')) {
-      throw new Error(`${provider} authentication failed: Invalid API key`);
+      throw new AuthenticationError(provider);
     } else if ((error as Error).message.includes('404')) {
       throw new Error(`${provider} error: Model "${model}" not found`);
     } else if ((error as Error).message.includes('429')) {
       throw new Error(`${provider} too many requests: Reduce request frequency or check API limits`);
     } else {
       logger.error(`${provider} streaming error:`, error);
-      throw new Error(`${provider} error: ${(error as Error).message || 'Unknown error'}`);
+      // Try to parse the error into a more specific type if possible
+      throw parseProviderError(error as Error, provider);
     }
   }
 }

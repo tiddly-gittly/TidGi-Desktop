@@ -97,15 +97,15 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
     const result = [];
 
     if (today.length > 0) {
-      result.push({ heading: t('Chat.SessionGroup.Today', { ns: 'agent' }), sessions: sortTasksByDate(today) });
+      result.push({ heading: t('Chat.SessionGroup.Today'), sessions: sortTasksByDate(today) });
     }
 
     if (yesterday.length > 0) {
-      result.push({ heading: t('Chat.SessionGroup.Yesterday', { ns: 'agent' }), sessions: sortTasksByDate(yesterday) });
+      result.push({ heading: t('Chat.SessionGroup.Yesterday'), sessions: sortTasksByDate(yesterday) });
     }
 
     if (older.length > 0) {
-      result.push({ heading: t('Chat.SessionGroup.Older', { ns: 'agent' }), sessions: sortTasksByDate(older) });
+      result.push({ heading: t('Chat.SessionGroup.Older'), sessions: sortTasksByDate(older) });
     }
 
     return result;
@@ -148,7 +148,7 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
             <SessionMessagesHeader
               title={activeTask.title ||
                 getTaskConversations(activeTask.id)[0]?.question?.slice(0, 30) ||
-                `${t('Chat.Session', { ns: 'agent' })} ${activeTask.id}`}
+                `${t('Chat.Session')} ${activeTask.id}`}
               sessionId={activeTask.id}
             />
             <SessionMessages>
@@ -159,7 +159,7 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
                   isStreaming={isStreaming && conversation.id === `${activeTask.id}-${getTaskConversations(activeTask.id).length - 1}`}
                 />
               ))}
-              {isLoading && <LoadingIndicator message={t('Chat.Thinking', { ns: 'agent' })} />}
+              {isLoading && <LoadingIndicator message={t('Chat.Thinking')} />}
             </SessionMessages>
             <ChatInput
               onSendMessage={onSendMessage}
@@ -171,8 +171,8 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
         )
         : (
           <EmptyState
-            heading={t('Chat.StartNewConversation', { ns: 'agent' })}
-            description={t('Chat.EmptyStateDescription', { ns: 'agent' })}
+            heading={t('Chat.StartNewConversation')}
+            description={t('Chat.EmptyStateDescription')}
           />
         )}
     </ChatContainer>

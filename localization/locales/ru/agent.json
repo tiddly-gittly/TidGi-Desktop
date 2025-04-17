@@ -15,7 +15,21 @@
     "EmptyStateDescription": "Создайте новую сессию или выберите существующую слева, чтобы начать общение.",
     "Use": "Использовать",
     "ChangeMetadata": "Изменить метаданные",
-    "OpenInWorkspaceTiddler": "Открыть {{title}} в рабочей области {{workspace}}"
+    "OpenInWorkspaceTiddler": "Открыть {{title}} в рабочей области {{workspace}}",
+    "Cancel": "Отмена",
+    "Typing": "Печатает...",
+    "WaitingForResponse": "Ожидание ответа...",
+    "ConfigError": {
+      "Title": "Проблема с конфигурацией",
+      "GoToSettings": "Перейти к настройкам",
+      "MissingAPIKey": "Для использования этой функции требуется ключ API для {{provider}}.",
+      "MissingBaseURL": "Для использования этой функции требуется базовый URL для {{provider}}.",
+      "AuthenticationFailed": "Не удалось выполнить аутентификацию для {{provider}}, пожалуйста, проверьте настройки.",
+      "ModelNotFound": "Не удалось найти модель для {{provider}}, пожалуйста, проверьте настройки.",
+      "RateLimitExceeded": "Превышен лимит запросов для {{provider}}, пожалуйста, повторите попытку позже.",
+      "ProviderNotFound": "Провайдер {{provider}} не найден, пожалуйста, проверьте настройки.",
+      "GeneralError": "Возникла проблема с конфигурацией {{provider}}, пожалуйста, проверьте настройки."
+    }
   },
   "Preference": {
     "ExternalAPI": "Внешний API",

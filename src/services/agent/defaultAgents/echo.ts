@@ -2,7 +2,7 @@ import { container } from '@services/container';
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { TaskContext, TaskYieldUpdate } from '../server';
-import { TextPart } from '../server/schema';
+import { Part, TextPart } from '../server/schema';
 
 export async function* echoHandler(context: TaskContext) {
   // Send working status first
@@ -22,14 +22,14 @@ export async function* echoHandler(context: TaskContext) {
     yield { state: 'canceled' } as TaskYieldUpdate;
     return;
   }
-  
+
   // Get user message text
   const userText = (context.userMessage.parts as TextPart[])
     .filter((part) => part.text)
     .map((part) => part.text)
     .join(' ');
 
-  // Echo user message
+  // Echo user message (initial feedback)
   yield {
     state: 'working',
     message: {
@@ -40,34 +40,35 @@ export async function* echoHandler(context: TaskContext) {
 
   // Get AI configuration
   const aiConfig = await externalAPIService.getAIConfig();
-  
-  // Use generateFromAI instead of streamFromAI with observable-to-async-generator
+
+  // Use generateFromAI with improved error handling
   let currentRequestId: string | null = null;
-  
+
   try {
-    // Directly use the async generator
-    for await (const response of externalAPIService.generateFromAI(
-      [{ role: 'user', content: userText }],
-      aiConfig
-    )) {
-      // Store requestId for cancellation
+    // Directly use the async generator with simplified error handling
+    for await (
+      const response of externalAPIService.generateFromAI(
+        [{ role: 'user', content: userText }],
+        aiConfig,
+      )
+    ) {
+      // Store requestId for potential cancellation
       if (!currentRequestId && response.requestId) {
         currentRequestId = response.requestId;
       }
-      
+
       // Check for cancellation
       if (context.isCancelled()) {
-        // Cancel the current request if we have a requestId
         if (currentRequestId) {
           await externalAPIService.cancelAIRequest(currentRequestId);
         }
         yield { state: 'canceled' } as TaskYieldUpdate;
         return;
       }
-      
+
       // Handle different response states
       if (response.status === 'update' || response.status === 'done') {
-        // Update UI
+        // Normal response update
         yield {
           state: response.status === 'done' ? 'completed' : 'working',
           message: {
@@ -76,26 +77,45 @@ export async function* echoHandler(context: TaskContext) {
           },
         } as TaskYieldUpdate;
       } else if (response.status === 'error') {
-        // Handle error case
+        // Error with structured error details
+        const parts: Part[] = [
+          { text: `You said: ${userText}` },
+        ];
+
+        // DEBUG: console response.errorDetail
+        console.log(`response.errorDetail`, response.errorDetail);
+
+        // If we have structured error details, add them as an error part
+        if (response.errorDetail) {
+          parts.push({
+            type: 'error',
+            error: {
+              name: response.errorDetail.name,
+              code: response.errorDetail.code,
+              provider: response.errorDetail.provider,
+            },
+          });
+        }
+
         yield {
           state: 'completed',
           message: {
             role: 'agent',
-            parts: [{ text: `You said: ${userText}\n\nError getting AI response: ${response.content}` }],
+            parts,
           },
         } as TaskYieldUpdate;
         return;
       }
     }
   } catch (error) {
-    // Handle any unexpected errors
+    // This should rarely happen since most errors are now handled in generateFromAI
     const errorMessage = error instanceof Error ? error.message : String(error);
-    console.error('Error in echoHandler:', errorMessage);
+
     yield {
-      state: 'failed',
+      state: 'completed',
       message: {
         role: 'agent',
-        parts: [{ text: `You said: ${userText}\n\nError processing AI response: ${errorMessage}` }],
+        parts: [{ text: `You said: ${userText}\n\nUnexpected error: ${errorMessage}` }],
       },
     } as TaskYieldUpdate;
   } finally {

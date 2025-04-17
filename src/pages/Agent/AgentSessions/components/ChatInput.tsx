@@ -131,7 +131,7 @@ export const ChatInput: React.FC<ChatInputProps> = ({
         {isStreaming
           ? (
             <CancelButton type='button' onClick={onCancelRequest}>
-              {t('Chat.Cancel', { ns: 'agent', defaultValue: '取消' })}
+              {t('Chat.Cancel', { ns: 'agent' })}
             </CancelButton>
           )
           : (

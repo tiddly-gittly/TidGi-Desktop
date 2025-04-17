@@ -363,9 +363,49 @@ export interface DataPart {
 }
 
 /**
- * Represents a single part of a multi-part message. Can be text, file, or data.
+ * Represents a structured provider error, allowing typed error passing between components
  */
-export type Part = TextPart | FilePart | DataPart;
+export interface ProviderError {
+  /**
+   * Error type name
+   */
+  name: string;
+
+  /**
+   * Error code - common codes include 'MISSING_API_KEY', 'MISSING_BASE_URL', 'AUTHENTICATION_FAILED'
+   */
+  code: string;
+
+  /**
+   * The provider name associated with this error
+   */
+  provider: string;
+}
+
+/**
+ * Represents a part of a message containing structured error information
+ */
+export interface ErrorPart {
+  /**
+   * Type identifier for this part
+   */
+  type?: 'error';
+
+  /**
+   * The structured error information
+   */
+  error: ProviderError;
+
+  /**
+   * Optional metadata associated with this error part
+   */
+  metadata?: Record<string, unknown> | null;
+}
+
+/**
+ * Represents a single part of a multi-part message. Can be text, file, data, or error.
+ */
+export type Part = TextPart | FilePart | DataPart | ErrorPart;
 
 /**
  * Represents an artifact generated or used by a task, potentially composed of multiple parts.

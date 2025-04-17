@@ -15,7 +15,21 @@
     "EmptyStateDescription": "新しいセッションを作成するか、左から既存のセッションを選択して会話を開始してください。",
     "Use": "使用",
     "ChangeMetadata": "メタデータを変更",
-    "OpenInWorkspaceTiddler": "{{workspace}}ワークスペースで{{title}}を開く"
+    "OpenInWorkspaceTiddler": "{{workspace}}ワークスペースで{{title}}を開く",
+    "Cancel": "キャンセル",
+    "Typing": "入力中...",
+    "WaitingForResponse": "応答を待っています...",
+    "ConfigError": {
+      "Title": "設定の問題",
+      "GoToSettings": "設定へ移動",
+      "MissingAPIKey": "この機能を使用するには{{provider}}のAPIキーが必要です。",
+      "MissingBaseURL": "この機能を使用するには{{provider}}のベースURLが必要です。",
+      "AuthenticationFailed": "{{provider}}の認証に失敗しました。設定を確認してください。",
+      "ModelNotFound": "{{provider}}のモデルが見つかりません。設定を確認してください。",
+      "RateLimitExceeded": "{{provider}}のレート制限を超過しました。後でもう一度お試しください。",
+      "ProviderNotFound": "プロバイダー{{provider}}が見つかりません。設定を確認してください。",
+      "GeneralError": "{{provider}}の設定に問題があります。設定を確認してください。"
+    }
   },
   "Preference": {
     "ExternalAPI": "がいぶ API",

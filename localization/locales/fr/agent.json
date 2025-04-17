@@ -15,7 +15,21 @@
     },
     "StartNewConversation": "Commencer une nouvelle conversation",
     "Thinking": "En réflexion...",
-    "Use": "Utiliser"
+    "Use": "Utiliser",
+    "Cancel": "Annuler",
+    "Typing": "En train d'écrire...",
+    "WaitingForResponse": "En attente de réponse...",
+    "ConfigError": {
+      "Title": "Problème de configuration",
+      "GoToSettings": "Aller aux paramètres",
+      "MissingAPIKey": "La clé API pour {{provider}} est requise pour utiliser cette fonctionnalité.",
+      "MissingBaseURL": "L'URL de base pour {{provider}} est requise pour utiliser cette fonctionnalité.",
+      "AuthenticationFailed": "L'authentification a échoué pour {{provider}}, veuillez vérifier vos paramètres.",
+      "ModelNotFound": "Modèle non trouvé pour {{provider}}, veuillez vérifier vos paramètres.",
+      "RateLimitExceeded": "Limite de débit dépassée pour {{provider}}, veuillez réessayer plus tard.",
+      "ProviderNotFound": "Fournisseur {{provider}} introuvable, veuillez vérifier vos paramètres.",
+      "GeneralError": "Il y a un problème avec la configuration de {{provider}}, veuillez vérifier vos paramètres."
+    }
   },
   "ModelFeature": {
     "Embedding": "Intégration",

@@ -15,7 +15,21 @@
     },
     "StartNewConversation": "开始一个新的对话",
     "Thinking": "正在思考...",
-    "Use": "使用"
+    "Use": "使用",
+    "Cancel": "取消",
+    "Typing": "正在输入中...",
+    "WaitingForResponse": "等待响应中...",
+    "ConfigError": {
+      "Title": "配置问题",
+      "GoToSettings": "前往设置",
+      "MissingAPIKey": "需要设置 {{provider}} 的 API 密钥才能使用此功能。",
+      "MissingBaseURL": "需要设置 {{provider}} 的服务器地址(Base URL)才能使用此功能。",
+      "AuthenticationFailed": "{{provider}} 的 API 密钥验证失败，请检查设置。",
+      "ModelNotFound": "找不到指定的 {{provider}} 模型，请检查设置。",
+      "RateLimitExceeded": "{{provider}} 的调用频率限制已超出，请稍后再试。",
+      "ProviderNotFound": "找不到 {{provider}} 提供商，请检查设置。",
+      "GeneralError": "配置 {{provider}} 时出现问题，请检查设置。"
+    }
   },
   "ModelFeature": {
     "Embedding": "嵌入",

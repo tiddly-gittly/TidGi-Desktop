@@ -12,6 +12,7 @@ import serviceIdentifier from '@services/serviceIdentifier';
 import { CoreMessage, Message } from 'ai';
 import { streamFromProvider } from './callProviderAPI';
 import rawDefaultProvidersConfig from './defaultProviders.json';
+import { isProviderConfigError } from './errors';
 import type { AIProviderConfig, AISessionConfig, AISettings, AIStreamResponse, IExternalAPIService, ModelFeature } from './interface';
 
 // Create typed config object
@@ -243,41 +244,159 @@ export class ExternalAPIService implements IExternalAPIService {
       // Get provider configuration
       const providerConfig = await this.getProviderConfig(config.provider);
       if (!providerConfig) {
+        const errorMessage = `Provider ${config.provider} not found or not configured`;
         yield {
           requestId,
-          content: `Provider ${config.provider} not found or not configured`,
+          content: errorMessage,
           status: 'error',
+          errorDetail: {
+            name: 'MissingProviderError',
+            code: 'PROVIDER_NOT_FOUND',
+            provider: config.provider,
+          },
         };
         return;
       }
 
       // Create the stream
-      const result = streamFromProvider(
-        config,
-        messages,
-        controller.signal,
-        providerConfig,
-      );
+      let result: any;
+      try {
+        result = streamFromProvider(
+          config,
+          messages,
+          controller.signal,
+          providerConfig,
+        );
+      } catch (providerError) {
+        // DEBUG: console providerError
+        console.log(`providerError`, providerError);
+        // Handle provider creation errors directly
+        const errorDetail = this.extractErrorDetails(providerError, config.provider);
+
+        yield {
+          requestId,
+          content: `Error: ${errorDetail.message || errorDetail.name}`,
+          status: 'error',
+          errorDetail,
+        };
+        return;
+      }
 
       // Process the stream
       let fullResponse = '';
 
       // Iterate through stream chunks
       for await (const chunk of result.textStream) {
-        // Accumulate response and yield updates
+        // Check cancellation
+        if (controller.signal.aborted) {
+          yield {
+            requestId,
+            content: 'Request cancelled',
+            status: 'error',
+          };
+          return;
+        }
+
+        // Process content
         fullResponse += chunk;
-        yield { requestId, content: fullResponse, status: 'update' };
+        yield {
+          requestId,
+          content: fullResponse,
+          status: 'update',
+        };
       }
 
       // Stream completed
       yield { requestId, content: fullResponse, status: 'done' };
     } catch (error) {
-      // Basic error handling
-      const errorMessage = error instanceof Error ? error.message : String(error);
-      yield { requestId, content: `Error: ${errorMessage}`, status: 'error' };
+      // DEBUG: console error
+      console.log(`error`, error);
+      // Handle errors and categorize them
+      const errorDetail = this.extractErrorDetails(error, config.provider);
+
+      // Yield error with details
+      yield {
+        requestId,
+        content: `Error: ${errorDetail.message || errorDetail.name}`,
+        status: 'error',
+        errorDetail,
+      };
     } finally {
       this.cleanupAIRequest(requestId);
     }
+  }
+
+  /**
+   * Extract structured error details from various error types
+   */
+  private extractErrorDetails(error: unknown, provider: string): {
+    name: string;
+    code: string;
+    provider: string;
+    message?: string;
+  } {
+    // Check if it's already a known provider error type
+    if (isProviderConfigError(error)) {
+      // DEBUG: console
+      console.log(`isProviderConfigError`);
+      return {
+        name: error.name,
+        code: error.code,
+        provider: error.provider,
+        message: error.message,
+      };
+    }
+
+    // Convert error to string for analysis
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    // DEBUG: console errorMessage
+    console.log(`errorMessage`, errorMessage);
+
+    // Check common error patterns
+    if (errorMessage.includes('API key') && errorMessage.includes('not found')) {
+      return {
+        name: 'MissingAPIKeyError',
+        code: 'MISSING_API_KEY',
+        provider,
+        message: `API key for ${provider} not found`,
+      };
+    } else if (errorMessage.includes('requires baseURL')) {
+      return {
+        name: 'MissingBaseURLError',
+        code: 'MISSING_BASE_URL',
+        provider,
+        message: `${provider} provider requires baseURL`,
+      };
+    } else if (errorMessage.includes('authentication failed') || errorMessage.includes('401')) {
+      return {
+        name: 'AuthenticationError',
+        code: 'AUTHENTICATION_FAILED',
+        provider,
+        message: `${provider} authentication failed: Invalid API key`,
+      };
+    } else if (errorMessage.includes('404')) {
+      return {
+        name: 'ModelNotFoundError',
+        code: 'MODEL_NOT_FOUND',
+        provider,
+        message: `Model not found for ${provider}`,
+      };
+    } else if (errorMessage.includes('429')) {
+      return {
+        name: 'RateLimitError',
+        code: 'RATE_LIMIT_EXCEEDED',
+        provider,
+        message: `${provider} rate limit exceeded. Reduce request frequency or check API limits.`,
+      };
+    }
+
+    // Generic error
+    return {
+      name: 'AIProviderError',
+      code: 'UNKNOWN_ERROR',
+      provider,
+      message: errorMessage,
+    };
   }
 
   async cancelAIRequest(requestId: string): Promise<void> {

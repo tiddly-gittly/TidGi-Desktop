@@ -15,6 +15,19 @@ export interface AIStreamResponse {
   requestId: string;
   content: string;
   status: 'start' | 'update' | 'done' | 'error' | 'cancel';
+  /**
+   * Structured error details, provided when status is 'error'
+   */
+  errorDetail?: {
+    /** Error type name */
+    name: string;
+    /** Error code */
+    code: string;
+    /** Provider name associated with the error */
+    provider: string;
+    /** Human readable error message */
+    message?: string;
+  };
 }
 
 /**
