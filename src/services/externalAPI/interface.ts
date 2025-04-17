@@ -92,6 +92,13 @@ export interface IExternalAPIService {
   streamFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AISessionConfig): Observable<AIStreamResponse>;
 
   /**
+   * Send messages to AI provider and get streaming response as an AsyncGenerator
+   * This is a more direct approach than Observable for certain use cases
+   * requestId will be automatically generated and returned in the AIStreamResponse
+   */
+  generateFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AISessionConfig): AsyncGenerator<AIStreamResponse, void, unknown>;
+
+  /**
    * Cancel an ongoing AI request
    */
   cancelAIRequest(requestId: string): Promise<void>;
@@ -132,5 +139,7 @@ export const ExternalAPIServiceIPCDescriptor = {
     getAIConfig: ProxyPropertyType.Function,
     updateProvider: ProxyPropertyType.Function,
     updateDefaultAIConfig: ProxyPropertyType.Function,
+    // generateFromAI is intentionally not exposed via IPC as AsyncGenerators
+    // aren't directly supported by electron-ipc-cat
   },
 };

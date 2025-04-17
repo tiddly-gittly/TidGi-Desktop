@@ -4,21 +4,21 @@
  */
 
 // Export the main server class and its options
-export { A2AServer } from "./server";
-export type { A2AServerOptions } from "./server";
+export { A2AServer } from './server';
+export type { A2AServerOptions } from './server';
 
 // Export handler-related types
-export type { TaskHandler, TaskContext, TaskYieldUpdate } from "./handler";
+export type { TaskContext, TaskHandler, TaskYieldUpdate } from './handler';
 
 // Export store-related types and implementations
-export type { TaskStore } from "./store";
-export { InMemoryTaskStore, FileStore } from "./store";
+export type { TaskStore } from './store';
+export { InMemoryTaskStore } from './store';
 
 // Export the custom error class
-export { A2AError } from "./error";
+export { A2AError } from './error';
 
 // Re-export all schema types for convenience
-export * as schema from "./schema";
+export * as schema from './schema';
 
 // Example basic usage (for documentation or testing)
 /*

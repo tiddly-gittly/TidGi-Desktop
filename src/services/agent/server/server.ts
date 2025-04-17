@@ -47,9 +47,9 @@ export class A2AServer {
     this.taskHandler = handler;
     this.taskStore = options.taskStore ?? new InMemoryTaskStore();
     if (options.card) this.card = options.card;
-    
+
     this.agentId = options.agentId || 'echo-agent';
-    
+
     console.log(`A2AServer initialized with agentId: ${this.agentId}`);
   }
 
@@ -113,7 +113,7 @@ export class A2AServer {
         const existingArtifact = newTask.artifacts[existingIndex];
         if (update.append) {
           // Create a deep copy for modification to avoid mutating original
-          const appendedArtifact = JSON.parse(JSON.stringify(existingArtifact));
+          const appendedArtifact = JSON.parse(JSON.stringify(existingArtifact)) as schema.Artifact;
           appendedArtifact.parts.push(...update.parts);
           if (update.metadata) {
             appendedArtifact.metadata = {
@@ -535,7 +535,7 @@ export class A2AServer {
   private async loadOrCreateTaskAndHistory(
     taskId: string,
     initialMessage: schema.Message,
-    _sessionIdParam?: string | null, // 忽略sessionId参数，不再使用
+    _sessionIdParameter?: string | null, // 忽略sessionId参数，不再使用
     metadata?: Record<string, unknown> | null, // 允许为null
   ): Promise<TaskAndHistory> {
     let data = await this.taskStore.load(taskId);

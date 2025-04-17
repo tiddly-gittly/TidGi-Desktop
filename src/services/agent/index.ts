@@ -1,18 +1,16 @@
-/* eslint-disable @typescript-eslint/require-await */
 import { injectable } from 'inversify';
 import { nanoid } from 'nanoid';
 import { BehaviorSubject, Observable } from 'rxjs';
 
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
-import { AIMessage, AISessionConfig } from '@services/externalAPI/interface'; // 添加AISessionConfig导入
+import { AISessionConfig } from '@services/externalAPI/interface'; // 添加AISessionConfig导入
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
-import { AgentEntity, TaskEntity } from '@services/database/schema/agent'; // 添加数据库实体导入
+import { echoHandler } from './defaultAgents/echo';
 import type { Agent, AgentServiceConfig, AgentTask, IAgentService } from './interface';
-import { TaskYieldUpdate } from './server';
 import { AgentHttpServer } from './server/http-server';
 import * as schema from './server/schema';
 import { A2AServer } from './server/server';
@@ -41,16 +39,15 @@ export class AgentService implements IAgentService {
   // 重命名流式更新订阅
   public taskUpdates$ = new BehaviorSubject<Record<string, AgentTask>>({});
 
-
   // Database initialization flag
   private databaseInitialized = false;
-  
+
   /**
    * Ensure database is initialized
    */
   private async ensureDatabaseInitialized(): Promise<void> {
     if (this.databaseInitialized) return;
-    
+
     try {
       // Initialize the database
       await this.databaseService.initializeDatabase('agent-default');
@@ -64,13 +61,13 @@ export class AgentService implements IAgentService {
 
   // Agent registration flag
   private agentsRegistered = false;
-  
+
   /**
    * Ensure agents are registered
    */
   private async ensureAgentsRegistered(): Promise<void> {
     if (this.agentsRegistered) return;
-    
+
     try {
       // Register default agents
       await this.registerDefaultAgents();
@@ -88,10 +85,10 @@ export class AgentService implements IAgentService {
     try {
       // Ensure database is initialized
       await this.ensureDatabaseInitialized();
-      
+
       // Get database connection for agent operations
       const dataSource = await this.databaseService.getDatabase('agent-default');
-      
+
       // Register agent logic
       console.log('Registering default agents');
 
@@ -101,7 +98,7 @@ export class AgentService implements IAgentService {
         name: 'Echo Agent',
         description: 'Simple echo agent that returns user messages',
         avatarUrl: 'https://example.com/echo-agent.png',
-        handler: this.createEchoHandler(),
+        handler: echoHandler,
         card: {
           name: 'Echo Agent',
           description: 'Simple echo agent',
@@ -122,13 +119,13 @@ export class AgentService implements IAgentService {
 
       // Store agent in memory
       this.agents.set(echoAgent.id, echoAgent);
-      
+
       // Store agent in database to satisfy foreign key constraints
       const agentRepository = dataSource.getRepository('agents');
       try {
         // Check if agent already exists in database
         const existingAgent = await agentRepository.findOne({ where: { id: echoAgent.id } });
-        
+
         if (!existingAgent) {
           // Insert agent record into database
           await agentRepository.save({
@@ -136,17 +133,17 @@ export class AgentService implements IAgentService {
             name: echoAgent.name,
             description: echoAgent.description || null,
             avatarUrl: echoAgent.avatarUrl || null,
-            card: echoAgent.card ? JSON.stringify(echoAgent.card) : null
+            card: echoAgent.card ? JSON.stringify(echoAgent.card) : null,
           });
           console.log(`Inserted agent record into database: ${echoAgent.id}`);
         } else {
           console.log(`Agent record already exists in database: ${echoAgent.id}`);
         }
-      } catch (dbError) {
-        console.error(`Failed to store agent in database: ${echoAgent.id}`, dbError);
+      } catch (databaseError) {
+        console.error(`Failed to store agent in database: ${echoAgent.id}`, databaseError);
         // Continue anyway - the agent is in memory
       }
-      
+
       // Create server instance
       await this.createAgentServer(echoAgent);
 
@@ -155,52 +152,6 @@ export class AgentService implements IAgentService {
       console.error('Error registering default agents:', error);
       throw error;
     }
-  }
-
-  /**
-   * Create echo handler
-   */
-  private createEchoHandler() {
-    return async function* echoHandler(context: any) {
-      // DEBUG: console
-      console.log(`echoHandler`);
-      // Send working status first
-      yield {
-        state: 'working',
-        message: {
-          role: 'agent',
-          parts: [{ text: 'Processing your message...' }],
-        },
-      } as TaskYieldUpdate;
-
-      // Wait a while to simulate processing
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      // DEBUG: console context
-      console.log(`context`, context);
-      // Check if cancelled
-      if (context.isCancelled()) {
-        yield { state: 'canceled' } as TaskYieldUpdate;
-        return;
-      }
-      // DEBUG: console context.userMessage.parts
-      console.log(`context.userMessage.parts`, context.userMessage.parts);
-      // Get user message text
-      const userText = context.userMessage.parts
-        .filter((part: any) => part.text)
-        .map((part: any) => part.text)
-        .join(' ');
-      // DEBUG: console userText
-      console.log(`userText`, userText);
-
-      // Echo user message
-      yield {
-        state: 'completed',
-        message: {
-          role: 'agent',
-          parts: [{ text: `You said: ${userText}` }],
-        },
-      } as TaskYieldUpdate;
-    };
   }
 
   /**
@@ -238,7 +189,7 @@ export class AgentService implements IAgentService {
   }
 
   /**
-   * Notify task update 
+   * Notify task update
    */
   private notifyTaskUpdate(agentId: string, taskId: string, task: AgentTask | null): void {
     this.taskUpdates$.next({ [taskId]: task });
@@ -256,7 +207,7 @@ export class AgentService implements IAgentService {
       id: task.id,
       agentId,
       messages: history || [],
-      status: task.status, 
+      status: task.status,
       metadata: task.metadata,
       createdAt: timestamp,
       updatedAt: timestamp,
@@ -316,7 +267,7 @@ export class AgentService implements IAgentService {
 
   async getAgents(): Promise<Omit<Agent, 'handler'>[]> {
     await this.ensureAgentsRegistered();
-    
+
     // Return list of Agent objects without handler, ensuring they can be transferred via IPC
     return Array.from(this.agents.values()).map(agent => ({
       id: agent.id,
@@ -330,7 +281,7 @@ export class AgentService implements IAgentService {
 
   async getAgent(id: string): Promise<Agent | undefined> {
     await this.ensureAgentsRegistered();
-    
+
     return this.agents.get(id);
   }
 
@@ -339,7 +290,7 @@ export class AgentService implements IAgentService {
    */
   async createTask(agentId: string): Promise<AgentTask> {
     await this.ensureAgentsRegistered();
-    
+
     if (!this.agents.has(agentId)) {
       throw new Error(`Agent with ID ${agentId} not found`);
     }
@@ -372,7 +323,7 @@ export class AgentService implements IAgentService {
    */
   async sendMessage(agentId: string, taskId: string, messageText: string): Promise<schema.JSONRPCResponse> {
     await this.ensureAgentsRegistered();
-    
+
     // Get server instance
     const server = await this.getOrCreateAgentServer(agentId);
 
@@ -487,7 +438,7 @@ export class AgentService implements IAgentService {
    */
   private async getOrCreateAgentServer(agentId: string): Promise<A2AServer> {
     await this.ensureAgentsRegistered();
-    
+
     if (!this.agents.has(agentId)) {
       throw new Error(`Agent with ID ${agentId} not found`);
     }
@@ -504,7 +455,7 @@ export class AgentService implements IAgentService {
    */
   async getTask(taskId: string): Promise<AgentTask | undefined> {
     await this.ensureAgentsRegistered();
-    
+
     // Traverse all agent servers to find matching task
     for (const [agentId, server] of this.agentServers.entries()) {
       try {
@@ -525,7 +476,7 @@ export class AgentService implements IAgentService {
    */
   async getAgentTasks(agentId: string): Promise<AgentTask[]> {
     await this.ensureAgentsRegistered();
-    
+
     try {
       const server = await this.getOrCreateAgentServer(agentId);
 
@@ -555,7 +506,7 @@ export class AgentService implements IAgentService {
    */
   async deleteTask(agentId: string, taskId: string): Promise<void> {
     await this.ensureAgentsRegistered();
-    
+
     try {
       // Get server instance
       const server = await this.getOrCreateAgentServer(agentId);
@@ -584,7 +535,7 @@ export class AgentService implements IAgentService {
 
   async startHttpServer(config: AgentServiceConfig): Promise<void> {
     await this.ensureAgentsRegistered();
-    
+
     if (this.httpServer) {
       await this.stopHttpServer();
     }
@@ -610,7 +561,7 @@ export class AgentService implements IAgentService {
    */
   public async getDefaultAgentId(): Promise<string | undefined> {
     const dataSource = await this.databaseService.getDatabase('agent-default');
-    
+
     // Get agent with most recent activity
     const result = await dataSource.getRepository(TaskEntity)
       .createQueryBuilder('task')
@@ -618,18 +569,18 @@ export class AgentService implements IAgentService {
       .orderBy('task.updatedAt', 'DESC')
       .take(1)
       .getOne();
-    
+
     if (result) {
       return result.agentId;
     }
-    
+
     // If no tasks, get any available agent
     const agent = await dataSource.getRepository(AgentEntity)
       .createQueryBuilder('agent')
       .orderBy('agent.createdAt', 'DESC')
       .take(1)
       .getOne();
-    
+
     return agent?.id;
   }
 
@@ -640,14 +591,14 @@ export class AgentService implements IAgentService {
     try {
       const dataSource = await this.databaseService.getDatabase('agent-default');
       const repository = dataSource.getRepository(AgentEntity);
-      
+
       const agent = await repository.findOne({ where: { id: agentId } });
-      
+
       if (!agent || !agent.aiConfig) {
         // If no specific config exists, return undefined to use global defaults
         return undefined;
       }
-      
+
       // Parse stored JSON config
       return JSON.parse(agent.aiConfig) as AISessionConfig;
     } catch (error) {
@@ -663,21 +614,21 @@ export class AgentService implements IAgentService {
     try {
       const dataSource = await this.databaseService.getDatabase('agent-default');
       const repository = dataSource.getRepository(AgentEntity);
-      
+
       const agent = await repository.findOne({ where: { id: agentId } });
-      
+
       if (!agent) {
         throw new Error(`Agent with ID ${agentId} not found`);
       }
-      
+
       // Merge with existing config if it exists
-      let currentConfig: AISessionConfig = agent.aiConfig ? 
-        JSON.parse(agent.aiConfig) : 
-        { provider: '', model: '' };
-      
+      const currentConfig: AISessionConfig = agent.aiConfig
+        ? JSON.parse(agent.aiConfig)
+        : { provider: '', model: '' };
+
       // Get defaults for any missing fields from externalAPIService
       const defaults = await this.externalAPIService.getAIConfig();
-      
+
       // Merge in this order: defaults -> current -> new config
       const mergedConfig = {
         ...defaults,
@@ -687,15 +638,15 @@ export class AgentService implements IAgentService {
         modelParameters: {
           ...(defaults.modelParameters || {}),
           ...(currentConfig.modelParameters || {}),
-          ...(config.modelParameters || {})
-        }
+          ...(config.modelParameters || {}),
+        },
       };
-      
+
       // Store the updated config
       agent.aiConfig = JSON.stringify(mergedConfig);
-      
+
       await repository.save(agent);
-      
+
       logger.info(`Updated AI config for agent ${agentId}`);
     } catch (error) {
       logger.error(`Failed to update AI config for agent ${agentId}:`, error);
@@ -710,26 +661,26 @@ export class AgentService implements IAgentService {
     try {
       const dataSource = await this.databaseService.getDatabase('agent-default');
       const repository = dataSource.getRepository(TaskEntity);
-      
-      const task = await repository.findOne({ 
+
+      const task = await repository.findOne({
         where: { id: taskId },
-        relations: ['agent'] // Load the related agent
+        relations: ['agent'], // Load the related agent
       });
-      
+
       if (!task) {
         return undefined;
       }
-      
+
       // First try task-specific config
       if (task.aiConfig) {
         return JSON.parse(task.aiConfig) as AISessionConfig;
       }
-      
+
       // Then try agent-level config
       if (task.agent && task.agent.aiConfig) {
         return JSON.parse(task.agent.aiConfig) as AISessionConfig;
       }
-      
+
       // Fall back to global defaults
       return undefined;
     } catch (error) {
@@ -745,19 +696,19 @@ export class AgentService implements IAgentService {
     try {
       const dataSource = await this.databaseService.getDatabase('agent-default');
       const repository = dataSource.getRepository(TaskEntity);
-      
-      const task = await repository.findOne({ 
+
+      const task = await repository.findOne({
         where: { id: taskId },
-        relations: ['agent'] // Load the related agent
+        relations: ['agent'], // Load the related agent
       });
-      
+
       if (!task) {
         throw new Error(`Task with ID ${taskId} not found`);
       }
-      
+
       // Start with agent config or empty config
       let baseConfig: AISessionConfig = { provider: '', model: '' };
-      
+
       // Try to use agent config if available
       if (task.agent && task.agent.aiConfig) {
         baseConfig = JSON.parse(task.agent.aiConfig);
@@ -765,13 +716,13 @@ export class AgentService implements IAgentService {
         // Otherwise get global defaults
         baseConfig = await this.externalAPIService.getAIConfig();
       }
-      
+
       // Get existing task config if any
       let currentConfig: Partial<AISessionConfig> = {};
       if (task.aiConfig) {
         currentConfig = JSON.parse(task.aiConfig);
       }
-      
+
       // Merge in this order: base (agent or global) -> current task -> new config
       const mergedConfig = {
         ...baseConfig,
@@ -781,14 +732,14 @@ export class AgentService implements IAgentService {
         modelParameters: {
           ...(baseConfig.modelParameters || {}),
           ...(currentConfig.modelParameters || {}),
-          ...(config.modelParameters || {})
-        }
+          ...(config.modelParameters || {}),
+        },
       };
-      
+
       task.aiConfig = JSON.stringify(mergedConfig);
-      
+
       await repository.save(task);
-      
+
       logger.info(`Updated AI config for task ${taskId}`);
     } catch (error) {
       logger.error(`Failed to update AI config for task ${taskId}:`, error);

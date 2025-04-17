@@ -49,7 +49,7 @@ export interface AgentTask extends Omit<schema.Task, 'artifacts'> {
   /** Last update time (converted from ISO string) */
   updatedAt: Date;
   /** Optional artifacts */
-  artifacts?: schema.Artifact[];
+  artifacts?: schema.Artifact[] | null;
 }
 
 /**

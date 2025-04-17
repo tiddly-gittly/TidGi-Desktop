@@ -56,7 +56,7 @@ export function streamFromProvider(
   try {
     if (!providerConfig?.apiKey && providerConfig?.providerClass !== 'ollama') {
       // Ollama doesn't require API key
-      throw new Error(`API key for ${provider} not found`);
+      throw new Error(`API key for ${provider} not found！！！`);
     }
 
     const client = createProviderClient(

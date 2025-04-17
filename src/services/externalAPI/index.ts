@@ -2,7 +2,8 @@
 import { injectable } from 'inversify';
 import { cloneDeep, mergeWith } from 'lodash';
 import { nanoid } from 'nanoid';
-import { Observable } from 'rxjs';
+import { defer, from, Observable } from 'rxjs';
+import { filter, finalize, startWith } from 'rxjs/operators';
 
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
@@ -24,6 +25,14 @@ const defaultProvidersConfig = {
     })),
   })),
 };
+
+/**
+ * Simplified request context
+ */
+interface AIRequestContext {
+  requestId: string;
+  controller: AbortController;
+}
 
 @injectable()
 export class ExternalAPIService implements IExternalAPIService {
@@ -185,104 +194,99 @@ export class ExternalAPIService implements IExternalAPIService {
     this.saveSettingsToDatabase();
   }
 
-  streamFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AISessionConfig): Observable<AIStreamResponse> {
-    return new Observable<AIStreamResponse>(observer => {
-      // Generate unique request ID internally
-      const requestId = nanoid();
+  /**
+   * Prepare a new AI request with minimal initialization
+   */
+  private prepareAIRequest(): AIRequestContext {
+    const requestId = nanoid();
+    const controller = new AbortController();
 
-      // Cancel existing request with same ID (shouldn't happen but as precaution)
-      if (this.activeRequests.has(requestId)) {
-        this.cancelAIRequest(requestId)
-          .catch(error => logger.error(`Error canceling previous request ${requestId}:`, error));
+    this.activeRequests.set(requestId, controller);
+
+    return { requestId, controller };
+  }
+
+  /**
+   * Clean up resources for an AI request
+   */
+  private cleanupAIRequest(requestId: string): void {
+    this.activeRequests.delete(requestId);
+  }
+
+  streamFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AISessionConfig): Observable<AIStreamResponse> {
+    // Use defer to create a new observable stream for each subscription
+    return defer(() => {
+      // Prepare request context
+      const { requestId, controller } = this.prepareAIRequest();
+
+      // Get AsyncGenerator from generateFromAI and convert to Observable
+      return from(this.generateFromAI(messages, config)).pipe(
+        // Skip the first 'start' event since we'll emit our own
+        // to ensure it happens immediately (AsyncGenerator might delay it)
+        filter((response, index) => !(index === 0 && response.status === 'start')),
+        // Ensure we emit a start event immediately
+        startWith({ requestId, content: '', status: 'start' as const }),
+        // Ensure cleanup happens on completion, error, or unsubscribe
+        finalize(() => {
+          if (this.activeRequests.has(requestId)) {
+            controller.abort();
+            this.cleanupAIRequest(requestId);
+            logger.debug(`[${requestId}] Cleaned up in streamFromAI finalize`);
+          }
+        }),
+      );
+    });
+  }
+
+  async *generateFromAI(
+    messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>,
+    config: AISessionConfig,
+  ): AsyncGenerator<AIStreamResponse, void, unknown> {
+    // Prepare request with minimal context
+    const { requestId, controller } = this.prepareAIRequest();
+
+    try {
+      // Send start event
+      yield { requestId, content: '', status: 'start' };
+
+      // Get provider configuration
+      const providerConfig = await this.getProviderConfig(config.provider);
+      if (!providerConfig) {
+        yield {
+          requestId,
+          content: `Provider ${config.provider} not found or not configured`,
+          status: 'error',
+        };
+        return;
       }
 
-      // Create controller for this request
-      const controller = new AbortController();
-      this.activeRequests.set(requestId, controller);
+      // Create the stream
+      const result = streamFromProvider(
+        config,
+        messages,
+        controller.signal,
+        providerConfig,
+      );
 
-      // Helper function to emit events via the observer
-      const emitEvent = (content: string, status: 'start' | 'update' | 'done' | 'error' | 'cancel') => {
-        if (status === 'done' && (!content || content.trim() === '')) {
-          content = '(No response, please check API settings and network connection)';
-        }
-        observer.next({ requestId, content, status });
-      };
+      // Process the stream
+      let fullResponse = '';
 
-      // Get provider configuration asynchronously
-      this.getProviderConfig(config.provider)
-        .then(providerConfig => {
-          // Emit start event
-          emitEvent('', 'start');
+      // Iterate through stream chunks
+      for await (const chunk of result.textStream) {
+        // Accumulate response and yield updates
+        fullResponse += chunk;
+        yield { requestId, content: fullResponse, status: 'update' };
+      }
 
-          const result = streamFromProvider(
-            config,
-            messages,
-            controller.signal,
-            providerConfig,
-          );
-
-          let fullResponse = '';
-          let firstChunkReceived = false;
-          let timeoutId: NodeJS.Timeout | undefined;
-
-          // Set timeout for initial response
-          const responseTimeout = new Promise<never>((_, reject) => {
-            timeoutId = setTimeout(() => {
-              reject(new Error(`${config.provider} model ${config.model} response timeout`));
-            }, 30000);
-          });
-
-          // Process stream
-          const processStream = async () => {
-            try {
-              await Promise.race([
-                (async () => {
-                  for await (const chunk of result.textStream) {
-                    if (!firstChunkReceived) {
-                      if (timeoutId) clearTimeout(timeoutId);
-                      firstChunkReceived = true;
-                    }
-
-                    fullResponse += chunk;
-                    emitEvent(fullResponse, 'update');
-                  }
-
-                  // Complete
-                  emitEvent(fullResponse, 'done');
-                  observer.complete();
-                })(),
-                responseTimeout,
-              ]);
-            } catch (streamError) {
-              if (timeoutId) clearTimeout(timeoutId);
-              throw streamError;
-            }
-          };
-
-          // Start processing
-          processStream().catch(error => {
-            const errorMessage = `Error: ${error instanceof Error ? error.message : String(error)}`;
-            emitEvent(errorMessage, 'error');
-            observer.error(error);
-          }).finally(() => {
-            this.activeRequests.delete(requestId);
-          });
-        })
-        .catch(error => {
-          const errorMessage = `Error: ${error instanceof Error ? error.message : String(error)}`;
-          emitEvent(errorMessage, 'error');
-          observer.error(error);
-          this.activeRequests.delete(requestId);
-        });
-
-      // Return cleanup function
-      return () => {
-        if (this.activeRequests.has(requestId)) {
-          this.activeRequests.get(requestId)?.abort();
-          this.activeRequests.delete(requestId);
-        }
-      };
-    });
+      // Stream completed
+      yield { requestId, content: fullResponse, status: 'done' };
+    } catch (error) {
+      // Basic error handling
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      yield { requestId, content: `Error: ${errorMessage}`, status: 'error' };
+    } finally {
+      this.cleanupAIRequest(requestId);
+    }
   }
 
   async cancelAIRequest(requestId: string): Promise<void> {
