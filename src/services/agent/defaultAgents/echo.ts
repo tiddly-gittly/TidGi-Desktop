@@ -82,9 +82,6 @@ export async function* echoHandler(context: TaskContext) {
           { text: `You said: ${userText}` },
         ];
 
-        // DEBUG: console response.errorDetail
-        console.log(`response.errorDetail`, response.errorDetail);
-
         // If we have structured error details, add them as an error part
         if (response.errorDetail) {
           parts.push({
