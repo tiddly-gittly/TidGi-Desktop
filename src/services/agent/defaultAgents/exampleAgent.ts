@@ -1,218 +1,308 @@
 import { container } from '@services/container';
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
-import * as fs from 'fs/promises';
-import path from 'path';
+import { CoreMessage } from 'ai';
+import { cloneDeep, pick } from 'lodash';
 import { TaskContext, TaskYieldUpdate } from '../server';
-import * as schema from '../server/schema';
-import { AgentPromptDescription, DefaultAgentsSchema } from './defaultAgentsSchema';
+import { TextPart } from '../server/schema';
+import { DefaultAgentsSchema, Prompt, PromptDynamicModification, PromptPart } from './schemas';
+
+/**
+ * 提示词动态修改处理器函数类型
+ */
+type PromptDynamicModificationHandler = (
+  prompts: Prompt[],
+  modification: PromptDynamicModification,
+  context: TaskContext,
+) => Prompt[];
+
+/**
+ * 提示词动态修改处理器注册表
+ */
+const promptDynamicModificationHandlers: Record<string, PromptDynamicModificationHandler | undefined> = {};
+
+/**
+ * 注册提示词动态修改处理器
+ * @param type 处理器类型
+ * @param handler 处理函数
+ */
+function registerPromptDynamicModificationHandler(
+  type: string,
+  handler: PromptDynamicModificationHandler,
+): void {
+  promptDynamicModificationHandlers[type] = handler;
+}
+
+/**
+ * 根据ID在提示词数组中查找提示词
+ * @param prompts 提示词数组
+ * @param id 目标ID
+ * @returns 找到的提示词对象及其所在的父数组和索引
+ */
+function findPromptById(
+  prompts: Prompt[] | PromptPart[],
+  id: string,
+): { prompt: Prompt | PromptPart; parent: (Prompt | PromptPart)[]; index: number } | undefined {
+  for (let index = 0; index < prompts.length; index++) {
+    const prompt = prompts[index];
+    if (prompt.id === id) {
+      return { prompt, parent: prompts, index: index };
+    }
+    if (prompt.children) {
+      const found = findPromptById(prompt.children, id);
+      if (found) {
+        return found;
+      }
+    }
+  }
+  return undefined;
+}
+
+/**
+ * 将树状提示词结构转换为一维数组，用于语言模型输入
+ * @param prompts 树状提示词数组
+ * @returns 一维提示词数组
+ */
+function flattenPrompts(prompts: Prompt[]): CoreMessage[] {
+  const result: CoreMessage[] = [];
+
+  // 递归处理提示词树
+  function processPrompt(prompt: Prompt | PromptPart): string {
+    let text = prompt.text || '';
+    if (prompt.children) {
+      for (const child of prompt.children) {
+        text += processPrompt(child);
+      }
+    }
+    return text;
+  }
+
+  // 处理每个顶层提示词
+  for (const prompt of prompts) {
+    if (!prompt.enabled) continue;
+
+    const content = processPrompt(prompt);
+    if (content.trim()) {
+      result.push({
+        role: prompt.role || 'system',
+        content,
+      });
+    }
+  }
+
+  return result;
+}
+
+// 注册 fullReplacement 处理器
+registerPromptDynamicModificationHandler('fullReplacement', (prompts, modification, context) => {
+  if (!modification.fullReplacementParam) return prompts;
+
+  const { targetId, sourceType } = modification.fullReplacementParam;
+  const target = findPromptById(prompts, targetId);
+
+  if (!target) return prompts;
+
+  // 根据源类型获取内容
+  let content = '';
+  if (sourceType === 'historyOfSession' && context.history) {
+    // 将历史消息转换为文本
+    content = context.history
+      .map(message => {
+        const role = message.role === 'agent' ? 'assistant' : message.role;
+        const text = message.parts
+          .filter(part => 'text' in part && part.text)
+          .map(part => (part as any).text)
+          .join('\n');
+        return `${role}: ${text}`;
+      })
+      .join('\n\n');
+  }
+
+  // 更新目标提示词
+  target.prompt.text = content;
+  return prompts;
+});
+
+// 注册 dynamicPosition 处理器
+registerPromptDynamicModificationHandler('dynamicPosition', (prompts, modification, context) => {
+  if (!modification.dynamicPositionParam || !modification.content) return prompts;
+
+  const { targetId, position } = modification.dynamicPositionParam;
+  const target = findPromptById(prompts, targetId);
+
+  if (!target) return prompts;
+
+  // 创建新的提示词部分
+  const newPart: PromptPart = {
+    id: `dynamic-${Date.now()}`,
+    text: modification.content,
+  };
+
+  // 根据位置插入
+  if (position === 'before') {
+    target.parent.splice(target.index, 0, newPart);
+  } else if (position === 'after') {
+    target.parent.splice(target.index + 1, 0, newPart);
+  } else if (position === 'relative') {
+    // 简化实现，仅考虑添加到目标提示词的children
+    if (!target.prompt.children) {
+      target.prompt.children = [];
+    }
+    target.prompt.children.push(newPart);
+  }
+
+  return prompts;
+});
+
+// 这里可以注册更多处理器...
 
 /**
  * 示例代理处理器
- * 根据 defaultAgents.json 中的配置来处理用户消息并生成响应
+ * 根据 TaskContext 中的 promptConfig 来处理用户消息并生成响应
  *
  * @param context - 任务上下文，包含用户消息和任务信息
  */
 export async function* exampleAgentHandler(context: TaskContext) {
-  // 发送工作中状态
+  // Send working status first
   yield {
     state: 'working',
     message: {
       role: 'agent',
-      parts: [{ text: '正在处理您的消息...' }],
+      parts: [{ text: 'Processing your message...' }],
     },
   } as TaskYieldUpdate;
 
-  // 获取 AI API 服务
+  // Get external API service
   const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
 
-  // 检查是否被取消
+  // 1. 从 context 中获取 promptConfig
+  if (!context.task.aiConfig) {
+    yield {
+      state: 'completed',
+      message: {
+        role: 'agent',
+        parts: [{ text: 'AI configuration not found. Please check agent setup.' }],
+      },
+    } as TaskYieldUpdate;
+    return;
+  }
+
+  // 解析 aiConfig 中的 promptConfig
+  let aiConfig;
+  let agentConfig;
+  
+  try {
+    aiConfig = JSON.parse(context.task.aiConfig);
+    
+    if (!aiConfig.promptConfig) {
+      yield {
+        state: 'completed',
+        message: {
+          role: 'agent',
+          parts: [{ text: 'Prompt configuration not found in AI config. Please check agent setup.' }],
+        },
+      } as TaskYieldUpdate;
+      return;
+    }
+
+    // 使用 Zod 验证 promptConfig
+    agentConfig = DefaultAgentsSchema.parse([aiConfig.promptConfig])[0];
+  } catch (error) {
+    yield {
+      state: 'completed',
+      message: {
+        role: 'agent',
+        parts: [{ text: `Error parsing configuration: ${error instanceof Error ? error.message : String(error)}` }],
+      },
+    } as TaskYieldUpdate;
+    return;
+  }
+
+  // Check if cancelled
   if (context.isCancelled()) {
     yield { state: 'canceled' } as TaskYieldUpdate;
     return;
   }
 
-  try {
-    // 读取默认代理配置文件
-    const agentsConfigPath = path.join(__dirname, '../defaultAgents.json');
-    const agentsConfigContent = await fs.readFile(agentsConfigPath, 'utf-8');
+  // Get user message text
+  const userText = context.userMessage.parts
+    .filter((part): part is TextPart => 'text' in part && part.text !== undefined)
+    .map((part) => part.text)
+    .join(' ');
 
-    // 解析配置文件
-    const agentsConfig = DefaultAgentsSchema.parse(JSON.parse(agentsConfigContent));
+  // 1. 复制提示词配置，以便进行修改
+  const promptsCopy = cloneDeep(agentConfig.prompts);
 
-    // 查找示例代理配置
-    const exampleAgent = agentsConfig.find(agent => agent.id === 'example-agent');
-
-    if (!exampleAgent) {
-      throw new Error('找不到示例代理配置');
+  // 2. 应用所有提示词动态修改
+  let modifiedPrompts = promptsCopy;
+  for (const modification of agentConfig.promptDynamicModification || []) {
+    const handler = promptDynamicModificationHandlers[modification.dynamicModificationType];
+    if (handler) {
+      modifiedPrompts = handler(modifiedPrompts, modification, context);
     }
+  }
 
-    // 获取用户消息文本
-    const userText = (context.userMessage.parts as schema.TextPart[])
-      .filter((part) => part.text)
-      .map((part) => part.text)
-      .join(' ');
+  // 3. 将树状提示词转换为一维数组
+  const flatPrompts = flattenPrompts(modifiedPrompts);
 
-    // 提供初步反馈
-    yield {
-      state: 'working',
-      message: {
-        role: 'agent',
-        parts: [{ text: `您说: ${userText}\n\n正在使用 ${exampleAgent.provider} 的 ${exampleAgent.model} 模型生成回复...` }],
-      },
-    } as TaskYieldUpdate;
+  // 4. 添加用户消息
+  flatPrompts.push({ role: 'user', content: userText });
 
-    // 构建提示词
-    const systemPrompt = generateSystemPrompt(exampleAgent);
+  // 获取AI配置 - 合并 aiConfig 中的 modelParameters
+  const modelParams = aiConfig.modelParameters || {};
+  const modelConfig = {
+    ...agentConfig.modelParameters,
+    ...modelParams,
+  };
 
-    // 获取 AI 配置
-    const aiConfig = await externalAPIService.getAIConfig({
-      provider: exampleAgent.provider,
-      model: exampleAgent.model,
-      modelParameters: {
-        temperature: exampleAgent.modelParameters.temperature,
-        maxTokens: exampleAgent.modelParameters.max_tokens,
-        topP: exampleAgent.modelParameters.top_p,
-      },
-    });
+  // 生成AI响应
+  let currentRequestId: string | null = null;
 
-    // 跟踪当前请求 ID 用于可能的取消
-    let currentRequestId: string | null = null;
-
-    try {
-      // 使用 AI 服务生成回复
-      for await (
-        const response of externalAPIService.generateFromAI(
-          [
-            { role: 'system', content: systemPrompt },
-            { role: 'user', content: userText },
-          ],
-          aiConfig,
-        )
-      ) {
-        // 存储请求 ID 用于潜在的取消
-        if (!currentRequestId && response.requestId) {
-          currentRequestId = response.requestId;
-        }
-
-        // 检查取消
-        if (context.isCancelled()) {
-          if (currentRequestId) {
-            await externalAPIService.cancelAIRequest(currentRequestId);
-          }
-          yield { state: 'canceled' } as TaskYieldUpdate;
-          return;
-        }
-
-        // 处理不同的响应状态
-        if (response.status === 'update' || response.status === 'done') {
-          yield {
-            state: response.status === 'done' ? 'completed' : 'working',
-            message: {
-              role: 'agent',
-              parts: [{ text: response.content }],
-            },
-          } as TaskYieldUpdate;
-        } else if (response.status === 'error') {
-          // 处理错误响应
-          const parts: schema.Part[] = [
-            { text: `遇到错误: ${response.errorDetail?.message || '未知错误'}` },
-          ];
-
-          // 如果有结构化错误详情，添加它们
-          if (response.errorDetail) {
-            parts.push({
-              type: 'error',
-              error: {
-                name: response.errorDetail.name,
-                code: response.errorDetail.code,
-                provider: response.errorDetail.provider,
-              },
-            });
-          }
-
-          yield {
-            state: 'failed',
-            message: {
-              role: 'agent',
-              parts,
-            },
-          } as TaskYieldUpdate;
-          return;
-        }
+  try {
+    for await (const response of externalAPIService.generateFromAI(flatPrompts, modelConfig)) {
+      if (!currentRequestId && response.requestId) {
+        currentRequestId = response.requestId;
       }
-    } catch (error) {
-      // 处理未预期的错误
-      const errorMessage = error instanceof Error ? error.message : String(error);
 
-      yield {
-        state: 'failed',
-        message: {
-          role: 'agent',
-          parts: [{ text: `处理时遇到意外错误: ${errorMessage}` }],
-        },
-      } as TaskYieldUpdate;
-    } finally {
-      // 确保在需要时取消请求
-      if (context.isCancelled() && currentRequestId) {
-        await externalAPIService.cancelAIRequest(currentRequestId);
+      if (context.isCancelled()) {
+        if (currentRequestId) {
+          await externalAPIService.cancelAIRequest(currentRequestId);
+        }
+        yield { state: 'canceled' } as TaskYieldUpdate;
+        return;
+      }
+
+      if (response.status === 'update' || response.status === 'done') {
+        yield {
+          state: response.status === 'done' ? 'completed' : 'working',
+          message: {
+            role: 'agent',
+            parts: [{ text: response.content }],
+          },
+        } as TaskYieldUpdate;
+      } else if (response.status === 'error') {
+        yield {
+          state: 'completed',
+          message: {
+            role: 'agent',
+            parts: [{ text: `Error: ${response.errorDetail?.message || 'Unknown error'}` }],
+          },
+        } as TaskYieldUpdate;
+        return;
       }
     }
   } catch (error) {
-    // 处理配置文件处理错误
     const errorMessage = error instanceof Error ? error.message : String(error);
-
     yield {
-      state: 'failed',
+      state: 'completed',
       message: {
         role: 'agent',
-        parts: [{ text: `配置处理错误: ${errorMessage}` }],
+        parts: [{ text: `Unexpected error: ${errorMessage}` }],
       },
     } as TaskYieldUpdate;
-  }
-}
-
-/**
- * 根据代理配置生成系统提示词
- *
- * @param agent - 代理配置
- * @returns 构建好的系统提示词
- */
-function generateSystemPrompt(agent: AgentPromptDescription): string {
-  // 查找系统提示词
-  const systemPrompt = agent.prompts.find(prompt => prompt.id === 'system');
-  if (!systemPrompt || !systemPrompt.children) {
-    return '你是一个AI助手，请回答用户的问题。';
-  }
-
-  // 构建提示词
-  let finalPrompt = '';
-
-  // 添加主要提示词
-  const mainPrompt = systemPrompt.children.find(child => child.id === 'default-main');
-  if (mainPrompt && mainPrompt.text) {
-    finalPrompt = `${mainPrompt.text}\n\n`;
-  }
-
-  // 添加其他标记为 SystemPrompt 的提示词
-  systemPrompt.children
-    .filter(child => child.tags?.includes('SystemPrompt') && child.id !== 'default-main')
-    .forEach(prompt => {
-      if (prompt.text) {
-        finalPrompt = `${finalPrompt}${prompt.text}\n\n`;
-      }
-    });
-
-  // 添加工具提示词，如果存在
-  const toolsPrompt = systemPrompt.children.find(child => child.id === 'default-tools');
-  if (toolsPrompt && toolsPrompt.children) {
-    const beforeTool = toolsPrompt.children.find(child => child.id === 'default-before-tool');
-    const postTool = toolsPrompt.children.find(child => child.id === 'default-post-tool');
-
-    if (beforeTool && beforeTool.text && postTool && postTool.text) {
-      finalPrompt = `${finalPrompt}${beforeTool.text}\n\n${postTool.text}\n\n`;
+  } finally {
+    if (context.isCancelled() && currentRequestId) {
+      await externalAPIService.cancelAIRequest(currentRequestId);
     }
   }
-
-  return finalPrompt.trim();
 }
