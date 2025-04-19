@@ -1,7 +1,10 @@
 export default {
+  Agent: Symbol.for('Agent'),
   Authentication: Symbol.for('Authentication'),
   Context: Symbol.for('Context'),
   Database: Symbol.for('Database'),
+  DeepLink: Symbol.for('DeepLinkService'),
+  ExternalAPI: Symbol.for('ExternalAPI'),
   Git: Symbol.for('Git'),
   MenuService: Symbol.for('MenuService'),
   NativeService: Symbol.for('NativeService'),
@@ -16,9 +19,6 @@ export default {
   Wiki: Symbol.for('Wiki'),
   WikiGitWorkspace: Symbol.for('WikiGitWorkspace'),
   Window: Symbol.for('Window'),
-  Workflow: Symbol.for('Workflow'),
   Workspace: Symbol.for('Workspace'),
   WorkspaceView: Symbol.for('WorkspaceView'),
-  DeepLink: Symbol.for('DeepLinkService'),
-  ExternalAPI: Symbol.for('ExternalAPI'),
 };

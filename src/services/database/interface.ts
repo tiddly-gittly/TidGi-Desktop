@@ -1,7 +1,6 @@
 import { DatabaseChannel } from '@/constants/channels';
-import type { AgentSettings } from '@services/agent/interface';
 import { IUserInfos } from '@services/auth/interface';
-import { AISettings } from '@services/externalAPI/interface';
+import { AIGlobalSettings } from '@services/externalAPI/interface';
 import { IPage } from '@services/pages/interface';
 import { IPreferences } from '@services/preferences/interface';
 import { IWorkspace } from '@services/workspaces/interface';
@@ -13,7 +12,7 @@ export interface ISettingFile {
   preferences: IPreferences;
   userInfos: IUserInfos;
   workspaces: Record<string, IWorkspace>;
-  aiSettings?: AISettings;
+  aiSettings?: AIGlobalSettings;
 }
 
 /**

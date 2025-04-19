@@ -1,6 +1,8 @@
 import React, { FormEvent, KeyboardEvent, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
+import { IconButton, Tooltip } from '@mui/material';
+import VisibilityIcon from '@mui/icons-material/Visibility';
 
 const Container = styled.div`
   padding: 16px;
@@ -38,6 +40,12 @@ const TextArea = styled.textarea`
   }
 `;
 
+const ButtonGroup = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+`;
+
 const Button = styled.button`
   padding: 0 16px;
   background-color: ${props => props.theme.palette.primary.main};
@@ -48,6 +56,7 @@ const Button = styled.button`
   display: flex;
   align-items: center;
   justify-content: center;
+  height: 100%;
   
   &:hover {
     background-color: ${props => props.theme.palette.primary.dark};
@@ -74,9 +83,14 @@ const CancelButton = styled(Button)`
   }
 `;
 
+const PreviewButton = styled(IconButton)`
+  color: ${props => props.theme.palette.primary.main};
+`;
+
 interface ChatInputProps {
   onSendMessage: (message: string) => void;
   onCancelRequest: () => void;
+  onPreviewPrompts?: () => void;
   isLoading?: boolean;
   isStreaming?: boolean;
 }
@@ -84,6 +98,7 @@ interface ChatInputProps {
 export const ChatInput: React.FC<ChatInputProps> = ({
   onSendMessage,
   onCancelRequest,
+  onPreviewPrompts,
   isLoading,
   isStreaming,
 }) => {
@@ -128,17 +143,30 @@ export const ChatInput: React.FC<ChatInputProps> = ({
           disabled={isLoading || isStreaming}
           rows={1}
         />
-        {isStreaming
-          ? (
-            <CancelButton type='button' onClick={onCancelRequest}>
-              {t('Chat.Cancel', { ns: 'agent' })}
-            </CancelButton>
-          )
-          : (
-            <Button type='submit' disabled={isLoading || isStreaming || !inputValue.trim()}>
-              {t('Chat.Send', { ns: 'agent' })}
-            </Button>
+        <ButtonGroup>
+          {onPreviewPrompts && (
+            <Tooltip title={t('Chat.PromptPreview.ButtonTooltip', { ns: 'agent' })}>
+              <PreviewButton
+                size="small"
+                onClick={onPreviewPrompts}
+                disabled={isLoading || isStreaming}
+              >
+                <VisibilityIcon />
+              </PreviewButton>
+            </Tooltip>
           )}
+          {isStreaming
+            ? (
+              <CancelButton type='button' onClick={onCancelRequest}>
+                {t('Chat.Cancel', { ns: 'agent' })}
+              </CancelButton>
+            )
+            : (
+              <Button type='submit' disabled={isLoading || isStreaming || !inputValue.trim()}>
+                {t('Chat.Send', { ns: 'agent' })}
+              </Button>
+            )}
+        </ButtonGroup>
       </InputForm>
     </Container>
   );

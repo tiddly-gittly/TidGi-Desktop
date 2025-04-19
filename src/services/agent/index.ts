@@ -4,17 +4,21 @@ import { BehaviorSubject, Observable } from 'rxjs';
 
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
-import { AISessionConfig } from '@services/externalAPI/interface'; // 添加AISessionConfig导入
+import { AiAPIConfig } from '@services/agent/defaultAgents/schemas';
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
+
 import { echoHandler } from './defaultAgents/echo';
+import { AgentConfigSchema } from './defaultAgents/schemas';
 import type { Agent, AgentServiceConfig, AgentTask, IAgentService } from './interface';
-import { AgentHttpServer } from './server/http-server';
 import * as schema from './server/schema';
-import { A2AServer } from './server/server';
-import { SQLiteTaskStore } from './server/store';
+
+// Import the new manager classes
+import { AgentDatabaseManager } from './AgentDatabaseManager';
+import { AgentServerManager } from './AgentServerManager';
+import { AgentConfigManager } from './AgentConfigManager';
 
 @injectable()
 export class AgentService implements IAgentService {
@@ -30,50 +34,40 @@ export class AgentService implements IAgentService {
   // Store all agents
   private agents: Map<string, Agent> = new Map();
 
-  // Store all agent server instances
-  private agentServers: Map<string, A2AServer> = new Map();
+  // Managers for different responsibilities
+  private dbManager?: AgentDatabaseManager;
+  private serverManager?: AgentServerManager;
+  private configManager?: AgentConfigManager;
 
-  // HTTP server instance
-  private httpServer: AgentHttpServer | null = null;
-
-  // 重命名流式更新订阅
-  public taskUpdates$ = new BehaviorSubject<Record<string, AgentTask>>({});
+  // Task updates observable
+  public taskUpdates$ = new BehaviorSubject<Record<string, AgentTask | null>>({});
 
   // Database initialization flag
-  private databaseInitialized = false;
+  private initialized = false;
 
   /**
-   * Ensure database is initialized
+   * Initialize the service
    */
-  private async ensureDatabaseInitialized(): Promise<void> {
-    if (this.databaseInitialized) return;
+  private async initialize(): Promise<void> {
+    if (this.initialized) return;
 
     try {
       // Initialize the database
       await this.databaseService.initializeDatabase('agent-default');
       logger.info('Agent database initialized');
-      this.databaseInitialized = true;
-    } catch (error) {
-      logger.error('Failed to initialize agent database:', error);
-      throw error;
-    }
-  }
 
-  // Agent registration flag
-  private agentsRegistered = false;
+      // Initialize managers
+      const dataSource = await this.databaseService.getDatabase('agent-default');
+      this.dbManager = new AgentDatabaseManager(dataSource);
+      this.serverManager = new AgentServerManager(dataSource);
+      this.configManager = new AgentConfigManager(this.dbManager, this.externalAPIService);
 
-  /**
-   * Ensure agents are registered
-   */
-  private async ensureAgentsRegistered(): Promise<void> {
-    if (this.agentsRegistered) return;
-
-    try {
       // Register default agents
       await this.registerDefaultAgents();
-      this.agentsRegistered = true;
+
+      this.initialized = true;
     } catch (error) {
-      logger.error('Failed to register default agents:', error);
+      logger.error('Failed to initialize agent service:', error);
       throw error;
     }
   }
@@ -83,14 +77,7 @@ export class AgentService implements IAgentService {
    */
   private async registerDefaultAgents(): Promise<void> {
     try {
-      // Ensure database is initialized
-      await this.ensureDatabaseInitialized();
-
-      // Get database connection for agent operations
-      const dataSource = await this.databaseService.getDatabase('agent-default');
-
-      // Register agent logic
-      console.log('Registering default agents');
+      logger.info('Registering default agents');
 
       // Example: Register a simple echo agent
       const echoAgent: Agent = {
@@ -120,70 +107,25 @@ export class AgentService implements IAgentService {
       // Store agent in memory
       this.agents.set(echoAgent.id, echoAgent);
 
-      // Store agent in database to satisfy foreign key constraints
-      const agentRepository = dataSource.getRepository('agents');
-      try {
-        // Check if agent already exists in database
-        const existingAgent = await agentRepository.findOne({ where: { id: echoAgent.id } });
-
-        if (!existingAgent) {
-          // Insert agent record into database
-          await agentRepository.save({
-            id: echoAgent.id,
-            name: echoAgent.name,
-            description: echoAgent.description || null,
-            avatarUrl: echoAgent.avatarUrl || null,
-            card: echoAgent.card ? JSON.stringify(echoAgent.card) : null,
-          });
-          console.log(`Inserted agent record into database: ${echoAgent.id}`);
-        } else {
-          console.log(`Agent record already exists in database: ${echoAgent.id}`);
-        }
-      } catch (databaseError) {
-        console.error(`Failed to store agent in database: ${echoAgent.id}`, databaseError);
-        // Continue anyway - the agent is in memory
+      // Store agent in database
+      if (this.dbManager) {
+        await this.dbManager.saveAgent({
+          id: echoAgent.id,
+          name: echoAgent.name,
+          description: echoAgent.description,
+          avatarUrl: echoAgent.avatarUrl,
+          card: echoAgent.card,
+        });
       }
 
       // Create server instance
-      await this.createAgentServer(echoAgent);
+      if (this.serverManager) {
+        await this.serverManager.getOrCreateServer(echoAgent);
+      }
 
-      console.log('Registered default agent:', echoAgent.id);
+      logger.info('Registered default agent:', echoAgent.id);
     } catch (error) {
-      console.error('Error registering default agents:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Create a server instance for an agent
-   */
-  private async createAgentServer(agent: Agent): Promise<A2AServer> {
-    // Check if server already exists for this agent
-    if (this.agentServers.has(agent.id)) {
-      return this.agentServers.get(agent.id)!;
-    }
-
-    try {
-      // Get database connection
-      const dataSource = await this.databaseService.getDatabase('agent-default');
-
-      // Create SQLite task store
-      const taskStore = new SQLiteTaskStore(dataSource);
-
-      // Create A2A server instance
-      const server = new A2AServer(agent.handler, {
-        taskStore,
-        card: agent.card,
-        agentId: agent.id, // 添加这一行，传递正确的agent.id而不是使用card.name
-      });
-
-      // Store server instance
-      this.agentServers.set(agent.id, server);
-
-      console.log(`Created A2A server for agent: ${agent.id}`);
-      return server;
-    } catch (error) {
-      logger.error(`Failed to create agent server for ${agent.id}:`, error);
+      logger.error('Error registering default agents:', error);
       throw error;
     }
   }
@@ -195,78 +137,13 @@ export class AgentService implements IAgentService {
     this.taskUpdates$.next({ [taskId]: task });
   }
 
-  /**
-   * Convert A2A session to UI task object
-   */
-  private convertToAgentTask(agentId: string, task: schema.Task, history: schema.Message[]): AgentTask {
-    const timestamp = task.status.timestamp
-      ? new Date(task.status.timestamp)
-      : new Date();
-
-    return {
-      id: task.id,
-      agentId,
-      messages: history || [],
-      status: task.status,
-      metadata: task.metadata,
-      createdAt: timestamp,
-      updatedAt: timestamp,
-      artifacts: task.artifacts,
-    };
-  }
+  // IAgentService interface implementation
 
   /**
-   * Get task and its history
+   * Get all available agents
    */
-  private async getTaskWithHistory(agentId: string, taskId: string): Promise<{ task: schema.Task; history: schema.Message[] } | null> {
-    try {
-      const server = await this.getOrCreateAgentServer(agentId);
-
-      // Request to get task
-      const getTaskRequest: schema.GetTaskRequest = {
-        jsonrpc: '2.0',
-        id: nanoid(),
-        method: 'tasks/get',
-        params: { id: taskId },
-      };
-
-      const response = await server.handleRequest(getTaskRequest);
-
-      if (response.error || !response.result) {
-        return null;
-      }
-
-      const task = response.result as schema.Task;
-
-      // Get history - use server method to get full history
-      let history: schema.Message[] = [];
-
-      try {
-        history = await server.getTaskHistory(taskId);
-
-        // If history is empty but there is a current message, ensure it is included
-        if (history.length === 0 && task.status.message) {
-          history.push(task.status.message);
-        }
-      } catch (historyError) {
-        console.error(`Failed to get history for task ${taskId}:`, historyError);
-        // Fallback: at least capture current status message
-        if (task.status.message) {
-          history.push(task.status.message);
-        }
-      }
-
-      return { task, history };
-    } catch (error) {
-      console.error(`Failed to get task ${taskId} for agent ${agentId}:`, error);
-      return null;
-    }
-  }
-
-  // Implement IAgentService interface methods
-
   async getAgents(): Promise<Omit<Agent, 'handler'>[]> {
-    await this.ensureAgentsRegistered();
+    await this.initialize();
 
     // Return list of Agent objects without handler, ensuring they can be transferred via IPC
     return Array.from(this.agents.values()).map(agent => ({
@@ -275,45 +152,46 @@ export class AgentService implements IAgentService {
       description: agent.description,
       avatarUrl: agent.avatarUrl,
       card: agent.card,
-      // Do not include handler property, as functions cannot be transferred via IPC
     }));
   }
 
+  /**
+   * Get a specific agent
+   */
   async getAgent(id: string): Promise<Agent | undefined> {
-    await this.ensureAgentsRegistered();
-
+    await this.initialize();
     return this.agents.get(id);
   }
 
   /**
-   * Create new task (session)
+   * Create a new task
    */
   async createTask(agentId: string): Promise<AgentTask> {
-    await this.ensureAgentsRegistered();
+    await this.initialize();
 
     if (!this.agents.has(agentId)) {
       throw new Error(`Agent with ID ${agentId} not found`);
     }
 
-    // Generate task ID
-    const taskId = nanoid();
+    // Create task in database
+    const taskEntity = await this.dbManager!.createTask(agentId);
 
-    // Create an empty task object
+    // Create agent task object
     const now = new Date();
+    const taskStatus = JSON.parse(taskEntity.status) as schema.TaskStatus;
+
     const task: AgentTask = {
-      id: taskId,
+      id: taskEntity.id,
       agentId,
       messages: [],
-      status: {
-        state: 'submitted',
-        timestamp: now.toISOString(),
-      },
-      createdAt: now,
-      updatedAt: now,
+      status: taskStatus,
+      state: taskEntity.state,
+      createdAt: taskEntity.createdAt || now,
+      updatedAt: taskEntity.updatedAt || now,
     };
 
-    // Update cache and notify
-    this.notifyTaskUpdate(agentId, taskId, task);
+    // Notify about new task
+    this.notifyTaskUpdate(agentId, task.id, task);
 
     return task;
   }
@@ -322,36 +200,22 @@ export class AgentService implements IAgentService {
    * Send message to a task
    */
   async sendMessage(agentId: string, taskId: string, messageText: string): Promise<schema.JSONRPCResponse> {
-    await this.ensureAgentsRegistered();
+    await this.initialize();
 
-    // Get server instance
-    const server = await this.getOrCreateAgentServer(agentId);
+    // Get agent
+    const agent = this.agents.get(agentId);
+    if (!agent) {
+      throw new Error(`Agent with ID ${agentId} not found`);
+    }
 
-    // Create message object
-    const message: schema.Message = {
-      role: 'user',
-      parts: [{ text: messageText }],
-    };
+    // Send message using server manager
+    const response = await this.serverManager!.sendMessage(agent, taskId, messageText);
 
-    // Build A2A request
-    const request: schema.SendTaskRequest = {
-      jsonrpc: '2.0',
-      id: nanoid(),
-      method: 'tasks/send',
-      params: {
-        id: taskId, // Session ID is task ID
-        message,
-      },
-    };
-
-    // Send request
-    const response = await server.handleRequest(request);
-
-    // On successful request, get latest session status and update
+    // On successful request, get latest task status and update
     if (response.result && !response.error) {
-      const taskData = await this.getTaskWithHistory(agentId, taskId);
+      const taskData = await this.serverManager!.getTaskWithHistory(agentId, taskId);
       if (taskData) {
-        const task = this.convertToAgentTask(agentId, taskData.task, taskData.history);
+        const task = this.serverManager!.convertToAgentTask(agentId, taskData.task, taskData.history);
         this.notifyTaskUpdate(agentId, taskId, task);
       }
     }
@@ -363,106 +227,79 @@ export class AgentService implements IAgentService {
    * Stream message to a task
    */
   handleStreamingRequest(agentId: string, taskId: string, messageText: string): Observable<schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent> {
+    // Initialize is called in the observer to avoid blocking
     // Create observable
     return new Observable<schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent>(subscriber => {
-      // Get server instance asynchronously
-      this.getOrCreateAgentServer(agentId)
-        .then(server => {
-          // Create message object
-          const message: schema.Message = {
-            role: 'user',
-            parts: [{ text: messageText }],
-          };
+      // Initialize asynchronously
+      this.initialize()
+        .then(() => {
+          // Get agent
+          const agent = this.agents.get(agentId);
+          if (!agent) {
+            subscriber.error(new Error(`Agent with ID ${agentId} not found`));
+            return;
+          }
 
-          // Build A2A streaming request
-          const request: schema.SendTaskStreamingRequest = {
-            jsonrpc: '2.0',
-            id: nanoid(),
-            method: 'tasks/sendSubscribe',
-            params: {
-              id: taskId, // Session ID is task ID
-              message,
-            },
-          };
-
-          // Call server's streaming handling method
-          const eventEmitter = server.handleStreamingRequest(request);
+          // Create streaming observable
+          const observable = this.serverManager!.handleStreamingRequest(agent, taskId, messageText);
 
           // Subscribe to event stream
-          eventEmitter.on('update', async (event: schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent) => {
-            console.log(`[Agent Service] Received event:`, event); // Add log
-            subscriber.next(event);
+          const subscription = observable.subscribe({
+            next: async (event) => {
+              subscriber.next(event);
 
-            // If update contains message, refresh session
-            if ('status' in event && event.status.message) {
-              console.log(`[Agent Service] Event contains message:`, event.status.message); // Add log
-              const sessionData = await this.getTaskWithHistory(agentId, taskId);
-              if (sessionData) {
-                const task = this.convertToAgentTask(agentId, sessionData.task, sessionData.history);
-                console.log(`[Agent Service] Updated session:`, task); // Add log
-                this.notifyTaskUpdate(agentId, taskId, task);
+              // If update contains message, refresh task
+              if ('status' in event && event.status.message) {
+                const taskData = await this.serverManager!.getTaskWithHistory(agentId, taskId);
+                if (taskData) {
+                  const task = this.serverManager!.convertToAgentTask(agentId, taskData.task, taskData.history);
+                  this.notifyTaskUpdate(agentId, taskId, task);
+                }
               }
-            }
 
-            // If final event, complete stream
-            if (event.final) {
-              console.log(`[Agent Service] Final event received`); // Add log
-              // Get complete session status once
-              const sessionData = await this.getTaskWithHistory(agentId, taskId);
-              if (sessionData) {
-                console.log(`[Agent Service] Final session history:`, sessionData.history); // Add log
-                const task = this.convertToAgentTask(agentId, sessionData.task, sessionData.history);
-                this.notifyTaskUpdate(agentId, taskId, task);
+              // If final event, complete stream
+              if (event.final) {
+                // Get complete task status once
+                const taskData = await this.serverManager!.getTaskWithHistory(agentId, taskId);
+                if (taskData) {
+                  const task = this.serverManager!.convertToAgentTask(agentId, taskData.task, taskData.history);
+                  this.notifyTaskUpdate(agentId, taskId, task);
+                }
+                subscriber.complete();
               }
+            },
+            error: (error) => {
+              subscriber.error(error);
+            },
+            complete: () => {
               subscriber.complete();
-            }
+            },
           });
 
-          eventEmitter.on('error', (error: Error) => {
-            subscriber.error(error);
-          });
+          // Return cleanup function
+          return () => {
+            subscription.unsubscribe();
+          };
         })
         .catch(error => {
           subscriber.error(error);
         });
-
-      // Return cleanup function
-      return () => {
-        // Cleanup logic
-      };
     });
-  }
-
-  /**
-   * Get or create agent server instance
-   */
-  private async getOrCreateAgentServer(agentId: string): Promise<A2AServer> {
-    await this.ensureAgentsRegistered();
-
-    if (!this.agents.has(agentId)) {
-      throw new Error(`Agent with ID ${agentId} not found`);
-    }
-
-    if (!this.agentServers.has(agentId)) {
-      await this.createAgentServer(this.agents.get(agentId)!);
-    }
-
-    return this.agentServers.get(agentId)!;
   }
 
   /**
    * Get task by ID
    */
   async getTask(taskId: string): Promise<AgentTask | undefined> {
-    await this.ensureAgentsRegistered();
+    await this.initialize();
 
-    // Traverse all agent servers to find matching task
-    for (const [agentId, server] of this.agentServers.entries()) {
+    // Traverse all agent servers to find task
+    for (const agentId of this.agents.keys()) {
       try {
-        const taskData = await this.getTaskWithHistory(agentId, taskId);
+        const taskData = await this.serverManager!.getTaskWithHistory(agentId, taskId);
         if (taskData) {
-          // Found matching task, convert and return
-          return this.convertToAgentTask(agentId, taskData.task, taskData.history);
+          // Found task, convert and return
+          return this.serverManager!.convertToAgentTask(agentId, taskData.task, taskData.history);
         }
       } catch (error) {
         // Continue to next agent
@@ -475,22 +312,24 @@ export class AgentService implements IAgentService {
    * Get all tasks for an agent
    */
   async getAgentTasks(agentId: string): Promise<AgentTask[]> {
-    await this.ensureAgentsRegistered();
+    await this.initialize();
 
     try {
-      const server = await this.getOrCreateAgentServer(agentId);
+      if (!this.agents.has(agentId)) {
+        throw new Error(`Agent with ID ${agentId} not found`);
+      }
 
-      // Get all tasks
-      const tasks = await server.getAllTasks();
+      // Get all tasks using server manager
+      const tasks = await this.serverManager!.getAllTasks(agentId);
 
       // Convert to AgentTask objects
       const agentTasks: AgentTask[] = [];
 
       for (const task of tasks) {
-        const taskData = await this.getTaskWithHistory(agentId, task.id);
+        const taskData = await this.serverManager!.getTaskWithHistory(agentId, task.id);
         if (!taskData) continue;
 
-        const agentTask = this.convertToAgentTask(agentId, taskData.task, taskData.history);
+        const agentTask = this.serverManager!.convertToAgentTask(agentId, taskData.task, taskData.history);
         agentTasks.push(agentTask);
       }
 
@@ -505,245 +344,87 @@ export class AgentService implements IAgentService {
    * Delete a task
    */
   async deleteTask(agentId: string, taskId: string): Promise<void> {
-    await this.ensureAgentsRegistered();
+    await this.initialize();
 
     try {
-      // Get server instance
-      const server = await this.getOrCreateAgentServer(agentId);
+      // Delete task using server manager
+      const deleted = await this.serverManager!.deleteTask(agentId, taskId);
 
-      // First cancel the task if running
-      const cancelRequest: schema.CancelTaskRequest = {
-        jsonrpc: '2.0',
-        id: nanoid(),
-        method: 'tasks/cancel',
-        params: {
-          id: taskId,
-        },
-      };
-      await server.handleRequest(cancelRequest);
-
-      // Then delete task record from database
-      const deleted = await server.deleteTask(taskId);
-      logger.info(`Deleted task ${taskId} from database: ${deleted}`);
-
-      // Notify frontend about task deletion
-      this.notifyTaskUpdate(agentId, taskId, null);
+      if (deleted) {
+        // Notify about task deletion
+        this.notifyTaskUpdate(agentId, taskId, null);
+      }
     } catch (error) {
       logger.error(`Failed to delete task ${taskId}:`, error);
     }
   }
 
+  /**
+   * Start HTTP server
+   */
   async startHttpServer(config: AgentServiceConfig): Promise<void> {
-    await this.ensureAgentsRegistered();
+    await this.initialize();
 
-    if (this.httpServer) {
-      await this.stopHttpServer();
-    }
-
-    this.httpServer = new AgentHttpServer({
+    await this.serverManager!.startHttpServer({
       port: config.httpServerPort || 41241,
       basePath: config.httpServerBasePath || '/',
       agentService: this,
     });
-
-    await this.httpServer.start();
   }
 
+  /**
+   * Stop HTTP server
+   */
   async stopHttpServer(): Promise<void> {
-    if (this.httpServer) {
-      await this.httpServer.stop();
-      this.httpServer = null;
+    if (this.serverManager) {
+      await this.serverManager.stopHttpServer();
     }
   }
 
   /**
-   * Get default agent ID if set
+   * Get default agent ID
    */
-  public async getDefaultAgentId(): Promise<string | undefined> {
-    const dataSource = await this.databaseService.getDatabase('agent-default');
-
-    // Get agent with most recent activity
-    const result = await dataSource.getRepository(TaskEntity)
-      .createQueryBuilder('task')
-      .innerJoinAndSelect('task.agent', 'agent')
-      .orderBy('task.updatedAt', 'DESC')
-      .take(1)
-      .getOne();
-
-    if (result) {
-      return result.agentId;
-    }
-
-    // If no tasks, get any available agent
-    const agent = await dataSource.getRepository(AgentEntity)
-      .createQueryBuilder('agent')
-      .orderBy('agent.createdAt', 'DESC')
-      .take(1)
-      .getOne();
-
-    return agent?.id;
+  async getDefaultAgentId(): Promise<string | undefined> {
+    await this.initialize();
+    return this.dbManager!.getDefaultAgentId();
   }
 
   /**
-   * Get agent-specific AI configuration
+   * Get AI configuration based on task and agent IDs
    */
-  public async getAgentAIConfig(agentId: string): Promise<AISessionConfig | undefined> {
-    try {
-      const dataSource = await this.databaseService.getDatabase('agent-default');
-      const repository = dataSource.getRepository(AgentEntity);
-
-      const agent = await repository.findOne({ where: { id: agentId } });
-
-      if (!agent || !agent.aiConfig) {
-        // If no specific config exists, return undefined to use global defaults
-        return undefined;
-      }
-
-      // Parse stored JSON config
-      return JSON.parse(agent.aiConfig) as AISessionConfig;
-    } catch (error) {
-      logger.error(`Failed to get AI config for agent ${agentId}:`, error);
-      return undefined;
-    }
+  async getAIConfigByIds(taskId?: string, agentId?: string): Promise<AiAPIConfig> {
+    await this.initialize();
+    return this.configManager!.getAIConfigByIds(taskId, agentId);
   }
 
   /**
    * Update agent-specific AI configuration
    */
-  public async updateAgentAIConfig(agentId: string, config: Partial<AISessionConfig>): Promise<void> {
-    try {
-      const dataSource = await this.databaseService.getDatabase('agent-default');
-      const repository = dataSource.getRepository(AgentEntity);
+  async updateAgentAIConfig(agentId: string, config: Partial<AiAPIConfig>): Promise<void> {
+    await this.initialize();
 
-      const agent = await repository.findOne({ where: { id: agentId } });
+    // Update configuration using config manager
+    await this.configManager!.updateAgentAIConfig(agentId, config);
 
-      if (!agent) {
-        throw new Error(`Agent with ID ${agentId} not found`);
-      }
+    // Recreate server instance if needed
+    if (this.agents.has(agentId) && this.serverManager) {
+      const agent = this.agents.get(agentId)!;
 
-      // Merge with existing config if it exists
-      const currentConfig: AISessionConfig = agent.aiConfig
-        ? JSON.parse(agent.aiConfig)
-        : { provider: '', model: '' };
+      // Close existing server
+      await this.serverManager.closeServer(agentId);
 
-      // Get defaults for any missing fields from externalAPIService
-      const defaults = await this.externalAPIService.getAIConfig();
+      // Create new server with updated config
+      await this.serverManager.getOrCreateServer(agent);
 
-      // Merge in this order: defaults -> current -> new config
-      const mergedConfig = {
-        ...defaults,
-        ...currentConfig,
-        ...config,
-        // Handle nested modelParameters separately
-        modelParameters: {
-          ...(defaults.modelParameters || {}),
-          ...(currentConfig.modelParameters || {}),
-          ...(config.modelParameters || {}),
-        },
-      };
-
-      // Store the updated config
-      agent.aiConfig = JSON.stringify(mergedConfig);
-
-      await repository.save(agent);
-
-      logger.info(`Updated AI config for agent ${agentId}`);
-    } catch (error) {
-      logger.error(`Failed to update AI config for agent ${agentId}:`, error);
-      throw error;
-    }
-  }
-
-  /**
-   * Get task-specific AI configuration
-   */
-  public async getTaskAIConfig(taskId: string): Promise<AISessionConfig | undefined> {
-    try {
-      const dataSource = await this.databaseService.getDatabase('agent-default');
-      const repository = dataSource.getRepository(TaskEntity);
-
-      const task = await repository.findOne({
-        where: { id: taskId },
-        relations: ['agent'], // Load the related agent
-      });
-
-      if (!task) {
-        return undefined;
-      }
-
-      // First try task-specific config
-      if (task.aiConfig) {
-        return JSON.parse(task.aiConfig) as AISessionConfig;
-      }
-
-      // Then try agent-level config
-      if (task.agent && task.agent.aiConfig) {
-        return JSON.parse(task.agent.aiConfig) as AISessionConfig;
-      }
-
-      // Fall back to global defaults
-      return undefined;
-    } catch (error) {
-      logger.error(`Failed to get AI config for task ${taskId}:`, error);
-      return undefined;
+      logger.info(`Recreated agent server for ${agentId} with updated configuration`);
     }
   }
 
   /**
    * Update task-specific AI configuration
    */
-  public async updateTaskAIConfig(taskId: string, config: Partial<AISessionConfig>): Promise<void> {
-    try {
-      const dataSource = await this.databaseService.getDatabase('agent-default');
-      const repository = dataSource.getRepository(TaskEntity);
-
-      const task = await repository.findOne({
-        where: { id: taskId },
-        relations: ['agent'], // Load the related agent
-      });
-
-      if (!task) {
-        throw new Error(`Task with ID ${taskId} not found`);
-      }
-
-      // Start with agent config or empty config
-      let baseConfig: AISessionConfig = { provider: '', model: '' };
-
-      // Try to use agent config if available
-      if (task.agent && task.agent.aiConfig) {
-        baseConfig = JSON.parse(task.agent.aiConfig);
-      } else {
-        // Otherwise get global defaults
-        baseConfig = await this.externalAPIService.getAIConfig();
-      }
-
-      // Get existing task config if any
-      let currentConfig: Partial<AISessionConfig> = {};
-      if (task.aiConfig) {
-        currentConfig = JSON.parse(task.aiConfig);
-      }
-
-      // Merge in this order: base (agent or global) -> current task -> new config
-      const mergedConfig = {
-        ...baseConfig,
-        ...currentConfig,
-        ...config,
-        // Handle nested modelParameters separately
-        modelParameters: {
-          ...(baseConfig.modelParameters || {}),
-          ...(currentConfig.modelParameters || {}),
-          ...(config.modelParameters || {}),
-        },
-      };
-
-      task.aiConfig = JSON.stringify(mergedConfig);
-
-      await repository.save(task);
-
-      logger.info(`Updated AI config for task ${taskId}`);
-    } catch (error) {
-      logger.error(`Failed to update AI config for task ${taskId}:`, error);
-      throw error;
-    }
+  async updateTaskAIConfig(taskId: string, config: Partial<AiAPIConfig>): Promise<void> {
+    await this.initialize();
+    await this.configManager!.updateTaskAIConfig(taskId, config);
   }
 }

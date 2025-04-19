@@ -6,39 +6,59 @@ import { ResponseSchema } from './response';
 import { ResponseDynamicModificationSchema } from './responseDynamicModification';
 
 /**
+ * Base API configuration schema
+ * Contains common fields shared between AIConfigSchema and AgentConfigSchema
+ */
+export const BaseAPIConfigSchema = z.object({
+  api: ProviderModelSchema.describe('API provider and model configuration'),
+  modelParameters: ModelParametersSchema.describe('Model parameters configuration'),
+}).describe('Base API configuration');
+
+/**
+ * AI configuration schema for session settings
+ */
+export const AIConfigSchema = BaseAPIConfigSchema
+  .describe('AI configuration');
+
+/**
  * Agent configuration schema
  * @example
  * ```json
  * {
  *   "id": "example-agent",
- *   "provider": "siliconflow",
- *   "model": "Qwen/Qwen2.5-7B-Instruct",
+ *   "api": {
+ *     "provider": "siliconflow",
+ *     "model": "Qwen/Qwen2.5-7B-Instruct"
+ *   },
  *   "modelParameters": { ... },
- *   "prompts": [ ... ],
- *   "promptDynamicModification": [ ... ],
- *   "response": [ ... ],
- *   "responseDynamicModification": [ ... ]
+ *   "promptConfig": {
+ *     "prompts": [ ... ],
+ *     "promptDynamicModification": [ ... ],
+ *     "response": [ ... ],
+ *     "responseDynamicModification": [ ... ]
+ *   }
  * }
  * ```
  */
-export const AgentSchema = z.object({
-  id: z.string().describe('代理唯一标识符'),
-  api: ProviderModelSchema.describe('API 提供商和模型名称配置'),
-  modelParameters: ModelParametersSchema.describe('模型参数配置'),
-  prompts: z.array(PromptSchema).describe('提示词配置列表'),
-  promptDynamicModification: z.array(PromptDynamicModificationSchema).describe('提示词动态修改配置列表'),
-  response: z.array(ResponseSchema).describe('响应配置列表'),
-  responseDynamicModification: z.array(ResponseDynamicModificationSchema).describe('响应动态修改配置列表'),
-}).describe('代理配置');
+export const AgentConfigSchema = BaseAPIConfigSchema.extend({
+  id: z.string().describe('Agent unique identifier'),
+  promptConfig: z.object({
+    prompts: z.array(PromptSchema).describe('List of prompt configurations'),
+    promptDynamicModification: z.array(PromptDynamicModificationSchema).describe('List of prompt dynamic modification configurations'),
+    response: z.array(ResponseSchema).describe('List of response configurations'),
+    responseDynamicModification: z.array(ResponseDynamicModificationSchema).describe('List of response dynamic modification configurations'),
+  }).describe('Prompt configuration'),
+}).describe('Agent configuration');
 
 /**
  * Default agents list schema
  * Contains an array of agent configurations
  */
-export const DefaultAgentsSchema = z.array(AgentSchema).describe('默认代理配置列表');
+export const DefaultAgentsSchema = z.array(AgentConfigSchema).describe('List of default agent configurations');
 
 export type DefaultAgents = z.infer<typeof DefaultAgentsSchema>;
-export type AgentPromptDescription = z.infer<typeof AgentSchema>;
+export type AgentPromptDescription = z.infer<typeof AgentConfigSchema>;
+export type AiAPIConfig = z.infer<typeof AIConfigSchema>;
 
 // Re-export all schemas and types
 export * from './modelParameters';

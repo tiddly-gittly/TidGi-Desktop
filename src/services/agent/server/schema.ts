@@ -500,33 +500,18 @@ export interface TaskStatus {
  * Represents a task being processed by an agent.
  */
 export interface Task {
-  /**
-   * Unique identifier for the task.
-   */
+  /** Unique identifier for the task */
   id: string;
-
-  /**
-   * Optional identifier for the session this task belongs to.
-   * @default null
-   */
-  sessionId?: string | null;
-
-  /**
-   * The current status of the task.
-   */
+  /** Agent ID that owns this task */
+  agentId?: string;
+  /** Current task status */
   status: TaskStatus;
-
-  /**
-   * Optional list of artifacts associated with the task (e.g., outputs, intermediate files).
-   * @default null
-   */
-  artifacts?: Artifact[] | null;
-
-  /**
-   * Optional metadata associated with the task.
-   * @default null
-   */
-  metadata?: Record<string, unknown> | null;
+  /** Optional artifacts produced during task execution */
+  artifacts?: Artifact[];
+  /** Optional metadata for the task */
+  metadata?: Record<string, unknown>;
+  /** AI configuration for this task */
+  aiConfig?: import('../defaultAgents/schemas').AgentPromptDescription;
 }
 
 /**

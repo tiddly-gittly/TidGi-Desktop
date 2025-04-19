@@ -6,7 +6,7 @@ import { logger } from '@services/libs/log';
 import { CoreMessage, Message, streamText } from 'ai';
 import { createOllama } from 'ollama-ai-provider';
 
-import type { AIProviderConfig, AISessionConfig } from './interface';
+import type { AIProviderConfig, AiAPIConfig } from './interface';
 import { MissingAPIKeyError, MissingBaseURLError, AuthenticationError, parseProviderError } from './errors';
 
 type AIStreamResult = ReturnType<typeof streamText>;
@@ -44,7 +44,7 @@ export function createProviderClient(providerConfig: { provider: string; provide
 }
 
 export function streamFromProvider(
-  config: AISessionConfig,
+  config: AiAPIConfig,
   messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>,
   signal: AbortSignal,
   providerConfig?: AIProviderConfig,

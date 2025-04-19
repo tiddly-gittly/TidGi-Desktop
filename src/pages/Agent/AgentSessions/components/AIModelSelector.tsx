@@ -1,8 +1,7 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
 import { ModelOption } from '@/pages/Preferences/sections/ExternalAPI/types';
 import TuneIcon from '@mui/icons-material/Tune';
 import { Autocomplete, Box, Button, TextField } from '@mui/material';
-import { AISessionConfig } from '@services/externalAPI/interface';
+import { AiAPIConfig } from '@services/agent/defaultAgents/schemas';
 import React, { useCallback, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useAgentStore } from '../store';
@@ -19,9 +18,11 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({ sessionId }) =
   const updateSessionAIConfig = useAgentStore(state => state.updateSessionAIConfig);
   // const currentConfig = useAgentStore(state => state.getSessionAIConfig(sessionId));
 
-  const config: AISessionConfig = {
-    provider: 'siliconflow',
-    model: 'Qwen/Qwen2.5-7B-Instruct',
+  const config: AiAPIConfig = {
+    api: {
+      provider: 'siliconflow',
+      model: 'Qwen/Qwen2.5-7B-Instruct',
+    },
     modelParameters: {
       temperature: 0.7,
       systemPrompt: 'You are a helpful assistant.',
@@ -46,20 +47,22 @@ export const AIModelSelector: React.FC<AIModelSelectorProps> = ({ sessionId }) =
   }, [providers]);
 
   const selectedModelOption = useMemo(() => {
-    return modelOptions.find(option => option.provider === config.provider && option.model === config.model) || null;
-  }, [modelOptions, config.provider, config.model]);
+    return modelOptions.find(option => option.provider === config.api.provider && option.model === config.api.model) || null;
+  }, [modelOptions, config.api.provider, config.api.model]);
 
   const handleModelChange = useCallback((option: ModelOption | null) => {
     if (option) {
       updateSessionAIConfig(sessionId, {
         ...config,
-        provider: option.provider,
-        model: option.model,
+        api: {
+          provider: option.provider,
+          model: option.model,
+        },
       });
     }
   }, [config, sessionId, updateSessionAIConfig]);
 
-  const handleConfigChange = useCallback((newConfig: AISessionConfig) => {
+  const handleConfigChange = useCallback((newConfig: AiAPIConfig) => {
     updateSessionAIConfig(sessionId, newConfig);
   }, [sessionId, updateSessionAIConfig]);
 

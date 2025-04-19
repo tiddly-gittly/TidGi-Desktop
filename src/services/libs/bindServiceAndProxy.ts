@@ -93,7 +93,7 @@ export function bindServiceAndProxy(): void {
   container.bind<IWorkspaceService>(serviceIdentifier.Workspace).to(Workspace).inSingletonScope();
   container.bind<IWorkspaceViewService>(serviceIdentifier.WorkspaceView).to(WorkspaceView).inSingletonScope();
   container.bind<IDeepLinkService>(serviceIdentifier.DeepLink).to(DeepLinkService).inSingletonScope();
-  container.bind<IAgentService>(serviceIdentifier.Workflow).to(AgentService).inSingletonScope();
+  container.bind<IAgentService>(serviceIdentifier.Agent).to(AgentService).inSingletonScope();
   container.bind<IExternalAPIService>(serviceIdentifier.ExternalAPI).to(ExternalAPIService).inSingletonScope();
 
   const authService = container.get<IAuthenticationService>(serviceIdentifier.Authentication);
@@ -116,7 +116,7 @@ export function bindServiceAndProxy(): void {
   const workspaceService = container.get<IWorkspaceService>(serviceIdentifier.Workspace);
   const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
   const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
-  const agentService = container.get<IAgentService>(serviceIdentifier.Workflow);
+  const agentService = container.get<IAgentService>(serviceIdentifier.Agent);
   const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
 
   registerProxy(authService, AuthenticationServiceIPCDescriptor);

@@ -13,7 +13,7 @@ import { CoreMessage, Message } from 'ai';
 import { streamFromProvider } from './callProviderAPI';
 import rawDefaultProvidersConfig from './defaultProviders.json';
 import { isProviderConfigError } from './errors';
-import type { AIProviderConfig, AISessionConfig, AISettings, AIStreamResponse, IExternalAPIService, ModelFeature } from './interface';
+import type { AIProviderConfig, AiAPIConfig, AIGlobalSettings, AIStreamResponse, IExternalAPIService, ModelFeature } from './interface';
 
 // Create typed config object
 const defaultProvidersConfig = {
@@ -42,9 +42,9 @@ export class ExternalAPIService implements IExternalAPIService {
 
   private activeRequests: Map<string, AbortController> = new Map();
 
-  private userSettings: AISettings = {
+  private userSettings: AIGlobalSettings = {
     providers: [],
-    defaultConfig: {} as AISessionConfig,
+    defaultConfig: {} as AiAPIConfig,
   };
 
   constructor() {
@@ -54,13 +54,13 @@ export class ExternalAPIService implements IExternalAPIService {
   /**
    * Merge user settings with default settings without modifying stored data
    */
-  private mergeWithDefaults(settings: AISettings): AISettings {
-    const defaultSettings: AISettings = {
+  private mergeWithDefaults(settings: AIGlobalSettings): AIGlobalSettings {
+    const defaultSettings: AIGlobalSettings = {
       providers: cloneDeep(defaultProvidersConfig.providers),
       defaultConfig: { ...defaultProvidersConfig.defaultConfig },
     };
 
-    return mergeWith({} as AISettings, defaultSettings, settings, (
+    return mergeWith({} as AIGlobalSettings, defaultSettings, settings, (
       objectValue: unknown,
       sourceValue: unknown,
       key: string,
@@ -107,9 +107,9 @@ export class ExternalAPIService implements IExternalAPIService {
   /**
    * Get AI configuration with default values and optional overrides
    */
-  async getAIConfig(partialConfig?: Partial<AISessionConfig>): Promise<AISessionConfig> {
+  async getAIConfig(partialConfig?: Partial<AiAPIConfig>): Promise<AiAPIConfig> {
     const mergedSettings = this.mergeWithDefaults(this.userSettings);
-    const defaultConfig: AISessionConfig = {
+    const defaultConfig: AiAPIConfig = {
       provider: mergedSettings.defaultConfig.provider,
       model: mergedSettings.defaultConfig.model,
       modelParameters: {
@@ -121,7 +121,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
     if (partialConfig) {
       // Merge top-level properties
-      const result: AISessionConfig = {
+      const result: AiAPIConfig = {
         ...defaultConfig,
         ...partialConfig,
       };
@@ -166,7 +166,7 @@ export class ExternalAPIService implements IExternalAPIService {
     this.saveSettingsToDatabase();
   }
 
-  async updateDefaultAIConfig(config: Partial<AISessionConfig>): Promise<void> {
+  async updateDefaultAIConfig(config: Partial<AiAPIConfig>): Promise<void> {
     // Update config properties
     if (config.provider !== undefined) {
       this.userSettings.defaultConfig.provider = config.provider;
@@ -205,7 +205,7 @@ export class ExternalAPIService implements IExternalAPIService {
     this.activeRequests.delete(requestId);
   }
 
-  streamFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AISessionConfig): Observable<AIStreamResponse> {
+  streamFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AiAPIConfig): Observable<AIStreamResponse> {
     // Use defer to create a new observable stream for each subscription
     return defer(() => {
       // Prepare request context
@@ -232,7 +232,7 @@ export class ExternalAPIService implements IExternalAPIService {
 
   async *generateFromAI(
     messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>,
-    config: AISessionConfig,
+    config: AiAPIConfig,
   ): AsyncGenerator<AIStreamResponse, void, unknown> {
     // Prepare request with minimal context
     const { requestId, controller } = this.prepareAIRequest();

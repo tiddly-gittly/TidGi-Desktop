@@ -2,6 +2,7 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { Observable } from 'rxjs';
 
 import { ExternalAPIChannel } from '@/constants/channels';
+import { AiAPIConfig } from '@services/agent/defaultAgents/schemas';
 import * as schema from '@services/agent/server/schema';
 import { CoreMessage, Message } from 'ai';
 
@@ -70,28 +71,13 @@ export interface AIProviderConfig {
 }
 
 /**
- * AI session configuration
- */
-export interface AISessionConfig {
-  provider: string;
-  model: string;
-  modelParameters?: {
-    temperature?: number;
-    maxTokens?: number;
-    systemPrompt?: string;
-    topP?: number;
-    [key: string]: unknown;
-  };
-}
-
-/**
  * AI settings type
  */
-export interface AISettings {
+export interface AIGlobalSettings {
   /** Providers configuration including API keys and base URLs */
   providers: AIProviderConfig[];
   /** Default AI configuration */
-  defaultConfig: AISessionConfig;
+  defaultConfig: AiAPIConfig;
 }
 
 /**
@@ -102,14 +88,14 @@ export interface IExternalAPIService {
    * Send messages to AI provider and get streaming response as an Observable
    * requestId will be automatically generated and returned in the AIStreamResponse
    */
-  streamFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AISessionConfig): Observable<AIStreamResponse>;
+  streamFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AiAPIConfig): Observable<AIStreamResponse>;
 
   /**
    * Send messages to AI provider and get streaming response as an AsyncGenerator
    * This is a more direct approach than Observable for certain use cases
    * requestId will be automatically generated and returned in the AIStreamResponse
    */
-  generateFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AISessionConfig): AsyncGenerator<AIStreamResponse, void, unknown>;
+  generateFromAI(messages: Array<CoreMessage> | Array<Omit<Message, 'id'>>, config: AiAPIConfig): AsyncGenerator<AIStreamResponse, void, unknown>;
 
   /**
    * Cancel an ongoing AI request
@@ -129,7 +115,7 @@ export interface IExternalAPIService {
   /**
    * Get AI configuration for providers with optional overrides
    */
-  getAIConfig(partialConfig?: Partial<AISessionConfig>): Promise<AISessionConfig>;
+  getAIConfig(partialConfig?: Partial<AiAPIConfig>): Promise<AiAPIConfig>;
 
   /**
    * Update provider configuration
@@ -139,7 +125,7 @@ export interface IExternalAPIService {
   /**
    * Update default AI configuration settings
    */
-  updateDefaultAIConfig(config: Partial<AISessionConfig>): Promise<void>;
+  updateDefaultAIConfig(config: Partial<AiAPIConfig>): Promise<void>;
 }
 
 export const ExternalAPIServiceIPCDescriptor = {

@@ -30,6 +30,12 @@ export interface TaskContext {
    */
   history?: schema.Message[];
 
+  /**
+   * The ID of the agent that owns this task.
+   * Provides context for the handler to look up agent-specific configurations.
+   */
+  agentId: string;
+
   // taskStore is removed as the server now handles loading/saving directly.
   // If a handler specifically needs history, it would need to be passed differently
   // or the handler pattern might need adjustment based on use case.

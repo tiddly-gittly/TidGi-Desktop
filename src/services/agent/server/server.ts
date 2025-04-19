@@ -1,6 +1,7 @@
 import { EventEmitter } from 'events';
+import { AgentPromptDescription } from '../defaultAgents/schemas';
 import { A2AError } from './error';
-import { TaskHandler } from './handler';
+import { TaskContext, TaskHandler } from './handler';
 import * as schema from './schema';
 import { InMemoryTaskStore, TaskAndHistory, TaskStore } from './store';
 import { getCurrentTimestamp, isArtifactUpdate, isTaskStatusUpdate } from './utils';
@@ -15,20 +16,8 @@ export interface A2AServerOptions {
   card?: schema.AgentCard;
   /** Database ID of the agent this server instance belongs to */
   agentId?: string;
-}
-
-/**
- * Task context interface for handlers
- */
-export interface TaskContext {
-  /** The current task state */
-  task: schema.Task;
-  /** The user message that triggered this task */
-  userMessage: schema.Message;
-  /** The full message history for this task */
-  history: schema.Message[];
-  /** Function to check if task was cancelled */
-  isCancelled: () => boolean;
+  /** AI Configuration for the agent (parsed JSON object) */
+  aiConfig?: AgentPromptDescription;
 }
 
 /**
@@ -42,11 +31,14 @@ export class A2AServer {
   card: schema.AgentCard;
   // Agent ID - this should be the database ID
   private agentId: string;
+  // AI Configuration
+  private aiConfig?: AgentPromptDescription;
 
   constructor(handler: TaskHandler, options: A2AServerOptions = {}) {
     this.taskHandler = handler;
     this.taskStore = options.taskStore ?? new InMemoryTaskStore();
     if (options.card) this.card = options.card;
+    this.aiConfig = options.aiConfig;
 
     this.agentId = options.agentId || 'echo-agent';
 
@@ -238,6 +230,12 @@ export class A2AServer {
         requestSessionId,
         metadata,
       );
+
+      // 如果有全局 aiConfig，并且任务没有配置，则添加全局配置
+      if (this.aiConfig && !currentData.task.aiConfig) {
+        currentData.task.aiConfig = this.aiConfig;
+        await this.taskStore.save(currentData);
+      }
 
       // 创建任务上下文
       const context = this.createTaskContext(
@@ -554,6 +552,8 @@ export class A2AServer {
         },
         artifacts: [],
         metadata: metadata ?? undefined, // null转为undefined
+        // 如果有全局 aiConfig，则添加到任务中
+        aiConfig: this.aiConfig,
       };
       const initialHistory: schema.Message[] = [initialMessage]; // 历史记录以用户消息开始
       data = { task: initialTask, history: initialHistory };
@@ -629,6 +629,7 @@ export class A2AServer {
       userMessage: userMessage,
       history: [...history], // 传递历史记录副本
       isCancelled: () => this.activeCancellations.has(task.id),
+      agentId: this.agentId, // 添加 agentId
     };
   }
 

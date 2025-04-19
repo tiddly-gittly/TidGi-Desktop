@@ -2,7 +2,7 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import type { BehaviorSubject, Observable } from 'rxjs';
 
 import { AgentChannel } from '@/constants/channels';
-import { AISessionConfig } from '@services/externalAPI/interface'; // 添加这一行导入
+import { AiAPIConfig } from './defaultAgents/schemas';
 import { TaskHandler } from './server/handler';
 import * as schema from './server/schema';
 
@@ -58,21 +58,6 @@ export interface AgentTask extends Omit<schema.Task, 'artifacts'> {
 export interface AgentRequestResult<T = any> {
   data?: T;
   error?: Error;
-}
-
-/**
- * Agent settings type
- */
-export interface AgentSettings {
-  /** Default agent ID to use */
-  defaultAgentId?: string;
-  /** UI preferences */
-  uiPreferences?: {
-    /** Show welcome message */
-    showWelcomeMessage: boolean;
-    /** Default input mode */
-    defaultInputMode: string;
-  };
 }
 
 /**
@@ -151,24 +136,23 @@ export interface IAgentService {
   getDefaultAgentId(): Promise<string | undefined>;
 
   /**
-   * Get agent-specific AI configuration
+   * 根据任务ID和代理ID获取AI配置
+   * 级联获取: task -> agent -> global defaults
+   * @param taskId 可选的任务ID
+   * @param agentId 可选的代理ID（如果提供了taskId，可以不提供）
+   * @returns 合并后的AI配置
    */
-  getAgentAIConfig(agentId: string): Promise<AISessionConfig | undefined>;
+  getAIConfigByIds(taskId?: string, agentId?: string): Promise<AiAPIConfig>;
 
   /**
    * Update agent-specific AI configuration
    */
-  updateAgentAIConfig(agentId: string, config: Partial<AISessionConfig>): Promise<void>;
-
-  /**
-   * Get task-specific AI configuration
-   */
-  getTaskAIConfig(taskId: string): Promise<AISessionConfig | undefined>;
+  updateAgentAIConfig(agentId: string, config: Partial<AiAPIConfig>): Promise<void>;
 
   /**
    * Update task-specific AI configuration
    */
-  updateTaskAIConfig(taskId: string, config: Partial<AISessionConfig>): Promise<void>;
+  updateTaskAIConfig(taskId: string, config: Partial<AiAPIConfig>): Promise<void>;
 }
 
 export const AgentServiceIPCDescriptor = {
@@ -186,9 +170,8 @@ export const AgentServiceIPCDescriptor = {
     stopHttpServer: ProxyPropertyType.Function,
     taskUpdates$: ProxyPropertyType.Value$, // 原 sessionUpdates$
     getDefaultAgentId: ProxyPropertyType.Function,
-    getAgentAIConfig: ProxyPropertyType.Function,
+    getAIConfigByIds: ProxyPropertyType.Function,
     updateAgentAIConfig: ProxyPropertyType.Function,
-    getTaskAIConfig: ProxyPropertyType.Function,
     updateTaskAIConfig: ProxyPropertyType.Function,
   },
 };
