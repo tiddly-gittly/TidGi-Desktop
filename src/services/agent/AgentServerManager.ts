@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/require-await */
 import { EventEmitter } from 'events';
 import { nanoid } from 'nanoid';
 import { Observable } from 'rxjs';
@@ -6,21 +7,17 @@ import { DataSource } from 'typeorm';
 import { logger } from '@services/libs/log';
 import { AgentDatabaseManager } from './AgentDatabaseManager';
 import { AgentConfigSchema, AgentPromptDescription } from './defaultAgents/schemas';
-import { Agent, AgentTask, IAgentService } from './interface';
-import { AgentHttpServer } from './server/http-server';
+import { Agent, AgentTask } from './interface';
 import * as schema from './server/schema';
 import { A2AServer } from './server/server';
 import { SQLiteTaskStore } from './server/store';
 
 /**
- * Manages agent server instances and HTTP server
+ * Manages agent server instances
  */
 export class AgentServerManager {
   // Store all agent server instances
   private agentServers: Map<string, A2AServer> = new Map();
-
-  // HTTP server instance
-  private httpServer: AgentHttpServer | null = null;
 
   // Database manager
   private dbManager: AgentDatabaseManager;
@@ -245,39 +242,6 @@ export class AgentServerManager {
       updatedAt: timestamp,
       artifacts: task.artifacts,
     };
-  }
-
-  /**
-   * Start HTTP server
-   */
-  async startHttpServer(config: {
-    port: number;
-    basePath: string;
-    agentService: IAgentService;
-  }): Promise<void> {
-    if (this.httpServer) {
-      await this.stopHttpServer();
-    }
-
-    this.httpServer = new AgentHttpServer({
-      port: config.port,
-      basePath: config.basePath,
-      agentService: config.agentService,
-    });
-
-    await this.httpServer.start();
-    logger.info(`HTTP server started on port ${config.port}`);
-  }
-
-  /**
-   * Stop HTTP server
-   */
-  async stopHttpServer(): Promise<void> {
-    if (this.httpServer) {
-      await this.httpServer.stop();
-      this.httpServer = null;
-      logger.info('HTTP server stopped');
-    }
   }
 
   /**

@@ -469,6 +469,12 @@ export interface Message {
 
   /**
    * Optional metadata associated with the message.
+   * Common metadata fields include:
+   * - id: Unique identifier for the message
+   * - created: Creation timestamp in ISO format (preferred)
+   * - timestamp: Alternative timestamp field 
+   * - time: Alternative field for timestamp
+   * - updated: Last modification timestamp
    * @default null
    */
   metadata?: Record<string, unknown> | null;

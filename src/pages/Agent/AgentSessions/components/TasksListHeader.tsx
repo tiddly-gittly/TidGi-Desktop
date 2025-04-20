@@ -50,7 +50,7 @@ interface SessionsHeaderProps {
   onNewSession: () => void;
 }
 
-export const SessionsHeader: React.FC<SessionsHeaderProps> = ({ onNewSession }) => {
+export const TasksListHeader: React.FC<SessionsHeaderProps> = ({ onNewSession }) => {
   const { t } = useTranslation('agent');
 
   return (

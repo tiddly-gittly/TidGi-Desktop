@@ -3,19 +3,27 @@ import { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { TaskContext, TaskYieldUpdate } from '../server';
 import { Part, TextPart } from '../server/schema';
+import { IAgentService } from '../interface';
 
 export async function* echoHandler(context: TaskContext) {
+  // 创建当前时间戳，将用于所有消息的 metadata
+  const now = new Date();
+
   // Send working status first
   yield {
     state: 'working',
     message: {
       role: 'agent',
       parts: [{ text: 'Processing your message...' }],
+      metadata: {
+        created: now.toISOString(),
+      },
     },
   } as TaskYieldUpdate;
 
   // Get ai api service
   const externalAPIService = container.get<IExternalAPIService>(serviceIdentifier.ExternalAPI);
+  const agentService = container.get<IAgentService>(serviceIdentifier.Agent);
 
   // Check if cancelled
   if (context.isCancelled()) {
@@ -35,12 +43,16 @@ export async function* echoHandler(context: TaskContext) {
     message: {
       role: 'agent',
       parts: [{ text: `You said: ${userText}\n\nGetting AI response...` }],
+      metadata: {
+        created: new Date().toISOString(),
+      },
     },
   } as TaskYieldUpdate;
 
   // Get AI configuration
-  const aiConfig = await externalAPIService.getAIConfig();
-
+  const aiConfig = await agentService.getAIConfigByIds(context.task.id, context.agentId);
+// DEBUG: console aiConfig
+console.log(`aiConfig`, aiConfig);
   // Use generateFromAI with improved error handling
   let currentRequestId: string | null = null;
 
@@ -74,6 +86,9 @@ export async function* echoHandler(context: TaskContext) {
           message: {
             role: 'agent',
             parts: [{ text: `You said: ${userText}\n\nAI response: ${response.content}` }],
+            metadata: {
+              created: new Date().toISOString(),
+            },
           },
         } as TaskYieldUpdate;
       } else if (response.status === 'error') {
@@ -99,6 +114,9 @@ export async function* echoHandler(context: TaskContext) {
           message: {
             role: 'agent',
             parts,
+            metadata: {
+              created: new Date().toISOString(),
+            },
           },
         } as TaskYieldUpdate;
         return;
@@ -113,6 +131,9 @@ export async function* echoHandler(context: TaskContext) {
       message: {
         role: 'agent',
         parts: [{ text: `You said: ${userText}\n\nUnexpected error: ${errorMessage}` }],
+        metadata: {
+          created: new Date().toISOString(),
+        },
       },
     } as TaskYieldUpdate;
   } finally {

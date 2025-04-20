@@ -1,5 +1,6 @@
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
+import { get, merge } from 'lodash';
 import { AgentDatabaseManager } from './AgentDatabaseManager';
 import { AgentConfigSchema, AgentPromptDescription, AiAPIConfig } from './defaultAgents/schemas';
 
@@ -23,7 +24,7 @@ export class AgentConfigManager {
       const agent = await this.dbManager.getAgent(agentId);
 
       if (agent && agent.aiConfig) {
-        // 直接让 Zod 处理解析和验证，不需要额外的类型断言
+        // Let Zod handle parsing and validation directly, no need for extra type assertions
         return AgentConfigSchema.parse(JSON.parse(agent.aiConfig));
       }
 
@@ -43,23 +44,21 @@ export class AgentConfigManager {
    */
   async getAIConfigByIds(taskId?: string, agentId?: string): Promise<AiAPIConfig> {
     try {
-      // Get configuration cascade
-      const { taskConfig, agentConfig, effectiveAgentId } = await this.dbManager.getAIConfigCascade(taskId, agentId);
-
       // Get global default configuration
       const defaultConfig = await this.externalAPIService.getAIConfig();
+      // DEBUG: console defaultConfig
+      console.log(`defaultConfig`, defaultConfig);
+      // Get configuration cascade
+      const { taskConfig, agentConfig } = await this.dbManager.getAIConfigCascade(taskId, agentId);
 
       // Merge configurations with precedence: task > agent > defaults
       const finalConfig: AiAPIConfig = {
         api: {
-          provider: taskConfig?.api?.provider || agentConfig?.api?.provider || defaultConfig.api.provider,
-          model: taskConfig?.api?.model || agentConfig?.api?.model || defaultConfig.api.model,
+          provider: get(taskConfig, 'api.provider') || get(agentConfig, 'api.provider') || defaultConfig.api.provider,
+          model: get(taskConfig, 'api.model') || get(agentConfig, 'api.model') || defaultConfig.api.model,
         },
-        modelParameters: {
-          ...(defaultConfig.modelParameters || {}),
-          ...(agentConfig?.modelParameters || {}),
-          ...(taskConfig?.modelParameters || {}),
-        },
+        // Use merge to combine model parameters according to priority
+        modelParameters: merge({}, defaultConfig.modelParameters, agentConfig?.modelParameters, taskConfig?.modelParameters),
       };
 
       return finalConfig;
@@ -79,18 +78,10 @@ export class AgentConfigManager {
       const currentConfig = await this.getAgentAIConfig(agentId) || {} as AgentPromptDescription;
 
       // Create update object conforming to AgentPromptDescription
-      const updateObject: Partial<AgentPromptDescription> = {
-        ...currentConfig,
-        // Map AiAPIConfig to AgentPromptDescription structure
-        api: {
-          ...(currentConfig.api || {}),
-          ...(config.api || {}),
-        },
-        modelParameters: {
-          ...(currentConfig.modelParameters || {}),
-          ...(config.modelParameters || {}),
-        },
-      };
+      const updateObject: Partial<AgentPromptDescription> = merge({}, currentConfig, {
+        api: config.api || {},
+        modelParameters: config.modelParameters || {},
+      });
 
       // Update agent configuration in database
       await this.dbManager.updateAgentAIConfig(agentId, updateObject);

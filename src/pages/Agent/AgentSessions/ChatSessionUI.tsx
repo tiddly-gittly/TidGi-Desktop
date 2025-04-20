@@ -7,14 +7,13 @@ import { ChatInput } from './components/ChatInput';
 import { EmptyState } from './components/EmptyState';
 import { LoadingIndicator } from './components/LoadingIndicator';
 import { SessionListItem } from './components/SessionListItem';
-import { SessionMessage } from './components/SessionMessage';
-import { SessionMessagePanel } from './components/SessionMessagePanel';
-import { SessionMessages } from './components/SessionMessages';
-import { SessionMessagesHeader } from './components/SessionMessagesHeader';
-import { SessionsGroup } from './components/SessionsGroup';
-import { SessionsHeader } from './components/SessionsHeader';
-import { SessionsList } from './components/SessionsList';
-import { Conversation, useAgentStore } from './store';
+import { TaskMessage } from './components/SessionMessage';
+import { TaskMessages } from './components/TaskMessages';
+import { TaskMessagesHeader } from './components/TaskMessagesHeader';
+import { TasksGroup } from './components/TasksGroup';
+import { TasksList } from './components/TasksList';
+import { TasksListHeader } from './components/TasksListHeader';
+import { useAgentStore } from './store';
 
 const ChatContainer = styled.div`
   display: flex;
@@ -23,6 +22,18 @@ const ChatContainer = styled.div`
   color: ${props => props.theme.palette.text.primary};
   overflow: hidden;
 `;
+
+const Panel = styled.div`
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+`;
+const SessionMessagePanel: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
+  return <Panel>{children}</Panel>;
+};
 
 interface ChatProps {
   tasks: AgentTask[];
@@ -55,7 +66,7 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
 }) => {
   const { t } = useTranslation('agent');
   const activeTask = tasks.find(task => task.id === activeTaskId);
-  const getTaskConversations = useAgentStore(state => state.getTaskConversations);
+  const getTaskMessages = useAgentStore(state => state.getTaskMessages);
 
   // 根据创建日期对任务进行分组
   const groupTasks = () => {
@@ -84,7 +95,6 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
       }
     });
 
-    // 按照日期倒序排序每个组中的任务，让最新的任务显示在最上面
     const sortTasksByDate = (tasks: AgentTask[]) => {
       return [...tasks].sort((a, b) => {
         const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
@@ -111,56 +121,55 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
     return result;
   };
 
-  // 将AgentTask转换为适合SessionListItem的格式
-  const convertTaskForDisplay = (task: AgentTask) => {
-    const conversations = getTaskConversations(task.id) || [];
-    return {
-      id: task.id || '',
-      title: task.title || conversations[0]?.question?.slice(0, 30) || task.id,
-      createdAt: task.createdAt,
-      updatedAt: task.updatedAt,
-      conversations: conversations,
-    };
-  };
-
   return (
     <ChatContainer>
-      <SessionsList>
-        <SessionsHeader onNewSession={onNewTask} />
+      <TasksList>
+        <TasksListHeader onNewSession={onNewTask} />
         {groupTasks().map(group => (
-          <SessionsGroup key={group.heading} heading={group.heading}>
+          <TasksGroup key={group.heading} heading={group.heading}>
             {group.sessions.map(task => (
               <SessionListItem
                 key={task.id || ''}
-                session={convertTaskForDisplay(task)}
+                task={task}
                 isActive={task.id === activeTaskId}
                 onSelect={onSelectTask}
                 onDelete={onDeleteTask}
               />
             ))}
-          </SessionsGroup>
+          </TasksGroup>
         ))}
-      </SessionsList>
+      </TasksList>
 
       {activeTask
         ? (
           <SessionMessagePanel>
-            <SessionMessagesHeader
+            <TaskMessagesHeader
               title={activeTask.name ||
-                getTaskConversations(activeTask.id)[0]?.question?.slice(0, 30) ||
+                // 获取第一条用户消息作为标题
+                getTaskMessages(activeTask.id).find(m => m.role === 'user')?.parts
+                  .filter(part => 'text' in part)
+                  .map(part => 'text' in part ? part.text : '')
+                  .join('')
+                  .slice(0, 30) ||
                 `${t('Chat.Session')} ${activeTask.id}`}
               taskId={activeTask.id}
             />
-            <SessionMessages>
-              {getTaskConversations(activeTask.id).map((conversation: Conversation) => (
-                <SessionMessage
-                  key={conversation.id}
-                  conversation={conversation}
-                  isStreaming={isStreaming && conversation.id === `${activeTask.id}-${getTaskConversations(activeTask.id).length - 1}`}
+            <TaskMessages>
+              {getTaskMessages(activeTask.id).map((message) => (
+                <TaskMessage
+                  key={`${activeTask.id}-${
+                    // Try to get a unique identifier from the message
+                    String(message.metadata?.id) ||
+                    String(message.metadata?.created) ||
+                    String(Math.random())}`}
+                  message={message}
+                  isStreaming={isStreaming &&
+                    message.role === 'agent' &&
+                    message === getTaskMessages(activeTask.id).filter(m => m.role === 'agent').slice(-1)[0]}
                 />
               ))}
               {isLoading && <LoadingIndicator message={t('Chat.Thinking')} />}
-            </SessionMessages>
+            </TaskMessages>
             <ChatInput
               onSendMessage={onSendMessage}
               onCancelRequest={onCancelRequest}

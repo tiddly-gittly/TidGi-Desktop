@@ -4,26 +4,6 @@ import { omit } from 'lodash';
 import { useEffect } from 'react';
 import { create } from 'zustand';
 
-/**
- * Simplified conversation structure for UI display
- * Integrates a user question and agent response into a single UI conversation unit
- * Leverages the schema.Message type from the A2A server protocol
- */
-export interface Conversation {
-  /** Unique conversation identifier */
-  id: string;
-  /** User question - extracted from schema.Message text content */
-  question: string;
-  /** Agent response - extracted from schema.Message text content */
-  response?: string;
-  /** Conversation creation timestamp */
-  createdAt: Date;
-  /** Conversation update timestamp */
-  updatedAt?: Date;
-  /** Optional original message object - for accessing additional metadata */
-  message?: Pick<schema.Message, 'parts' | 'metadata'>;
-}
-
 export interface AgentStoreState {
   // Task management state
   tasks: AgentTask[];
@@ -59,7 +39,7 @@ export interface AgentStoreState {
   isTaskStreaming: (taskId: string) => boolean;
 
   // Helpers
-  getTaskConversations: (taskId: string) => Conversation[];
+  getTaskMessages: (taskId: string) => schema.Message[];
 }
 
 // Create store hook
@@ -150,8 +130,6 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
 
       // Create the task directly - no need for temporary objects in Electron
       const createdTask = await window.service.agent.createTask(agentId);
-      // DEBUG: console createdTask
-      console.log(`createdTask`, createdTask);
 
       set({
         activeTaskId: createdTask.id,
@@ -341,53 +319,13 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
     });
   },
 
-  // Convert task messages to UI-friendly conversations
-  getTaskConversations: (taskId: string): Conversation[] => {
+  // 直接返回任务的消息，不再做转换
+  getTaskMessages: (taskId: string): schema.Message[] => {
     const task = get().tasks.find(s => s.id === taskId);
     if (!task) return [];
-
-    // Simplified conversation creation from task messages
-    const conversations: Conversation[] = [];
-    for (let index = 0; index < task.messages.length; index++) {
-      const message = task.messages[index];
-
-      // Process user messages
-      if (message.role === 'user') {
-        // Find the next agent response if any
-        const responseIndex = task.messages.findIndex(
-          (m, index_) => index_ > index && m.role === 'agent',
-        );
-
-        const conversation: Conversation = {
-          id: `${task.id}-${index}${responseIndex > -1 ? `-${responseIndex}` : ''}`,
-          question: message.parts.map(part => 'text' in part ? part.text : '').join(''),
-          createdAt: task.createdAt,
-          updatedAt: task.updatedAt,
-          message: { parts: message.parts, metadata: message.metadata },
-        };
-
-        // Add response if found
-        if (responseIndex > -1) {
-          const responseMessage = task.messages[responseIndex];
-          conversation.response = responseMessage.parts
-            .map(part => 'text' in part ? part.text : '')
-            .join('');
-
-          // 保存完整的消息结构，包括任何错误部分
-          conversation.message = {
-            parts: responseMessage.parts,
-            metadata: responseMessage.metadata,
-          };
-          // Skip the response message in the next iteration
-          index = responseIndex;
-        }
-
-
-        conversations.push(conversation);
-      }
-    }
-
-    return conversations;
+    
+    // 直接返回消息
+    return task.messages;
   },
 
   // Send message (simple wrapper)

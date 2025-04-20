@@ -93,10 +93,10 @@ export function isProviderConfigError(error: unknown): error is ProviderConfigEr
   return Boolean(error) &&
     typeof error === 'object' &&
     (error instanceof ProviderConfigError ||
-      error?.name === 'ProviderConfigError' ||
-      error?.name === 'MissingAPIKeyError' ||
-      error?.name === 'MissingBaseURLError' ||
-      error?.name === 'AuthenticationError');
+      (error as (ProviderConfigError | undefined))?.name === 'ProviderConfigError' ||
+      (error as (ProviderConfigError | undefined))?.name === 'MissingAPIKeyError' ||
+      (error as (ProviderConfigError | undefined))?.name === 'MissingBaseURLError' ||
+      (error as (ProviderConfigError | undefined))?.name === 'AuthenticationError');
 }
 
 /**

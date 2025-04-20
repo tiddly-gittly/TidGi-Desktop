@@ -19,7 +19,7 @@ interface SessionsListProps {
   children: React.ReactNode;
 }
 
-export const SessionsList: React.FC<SessionsListProps> = ({ children }) => {
+export const TasksList: React.FC<SessionsListProps> = ({ children }) => {
   // 将第一个子元素作为头部，其余作为列表项
   const header = React.Children.toArray(children)[0];
   const items = React.Children.toArray(children).slice(1);

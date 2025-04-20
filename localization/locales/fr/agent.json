@@ -98,6 +98,14 @@
     "SelectProvider": "Sélectionner un fournisseur",
     "SystemPrompt": "Invite système",
     "SystemPromptDescription": "Définissez les instructions système envoyées à l'AI pour définir son comportement et ses capacités",
-    "Temperature": "Température"
+    "Temperature": "Température",
+    "FailedToSaveSettings": "Échec de l'enregistrement des paramètres",
+    "SettingsSaved": "Paramètres enregistrés",
+    "FailedToUpdateProviderStatus": "Échec de la mise à jour du statut du fournisseur",
+    "ModelAddedSuccessfully": "Modèle ajouté avec succès",
+    "ModelAlreadyExists": "Le modèle existe déjà",
+    "FailedToAddModel": "Échec de l'ajout du modèle",
+    "ModelRemovedSuccessfully": "Modèle supprimé avec succès",
+    "FailedToRemoveModel": "Échec de la suppression du modèle"
   }
 }

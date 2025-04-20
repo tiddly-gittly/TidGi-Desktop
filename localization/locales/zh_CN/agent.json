@@ -98,6 +98,14 @@
     "SelectProvider": "选择提供商",
     "SystemPrompt": "系统提示词",
     "SystemPromptDescription": "设置发送给 AI 的系统指令，定义其行为和能力",
-    "Temperature": "温度"
+    "Temperature": "温度",
+    "FailedToSaveSettings": "无法保存设置",
+    "SettingsSaved": "设置已保存",
+    "FailedToUpdateProviderStatus": "无法更新提供商状态",
+    "ModelAddedSuccessfully": "模型添加成功",
+    "ModelAlreadyExists": "模型已存在",
+    "FailedToAddModel": "无法添加模型",
+    "ModelRemovedSuccessfully": "模型删除成功",
+    "FailedToRemoveModel": "无法删除模型"
   }
 }

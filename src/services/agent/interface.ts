@@ -42,6 +42,8 @@ export interface AgentServiceConfig {
 export interface AgentTask extends Omit<schema.Task, 'artifacts'> {
   /** Agent ID that owns this task */
   agentId: string;
+  /** Task name */
+  name?: string;
   /** Message history */
   messages: schema.Message[];
   /** Task creation time (converted from ISO string) */

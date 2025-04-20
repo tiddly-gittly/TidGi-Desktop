@@ -23,15 +23,9 @@ export const useTaskConfigManagement = ({ taskId }: UseAIConfigManagementProps =
   useEffect(() => {
     const fetchConfig = async () => {
       try {
-        if (taskId) {
-          // Get task-specific configuration
-          const taskConfig = await window.service.agent.getAIConfigByIds(taskId);
-          setConfig(taskConfig);
-        } else {
-          // Get default configuration
-          const defaultConfig = await window.service.agent.getAIConfigByIds();
-          setConfig(defaultConfig);
-        }
+        // Get task-specific configuration
+        const taskConfig = await window.service.agent.getAIConfigByIds(taskId);
+        setConfig(taskConfig);
 
         // Get AI providers list
         const providersData = await window.service.externalAPI.getAIProviders();
@@ -53,10 +47,12 @@ export const useTaskConfigManagement = ({ taskId }: UseAIConfigManagementProps =
 
     try {
       // For task-specific configuration
-      const updatedConfig = {
+      const updatedConfig: AiAPIConfig = {
         ...config,
-        provider,
-        model,
+        api: {
+          provider,
+          model,
+        }
       };
 
       // Update local state
@@ -64,6 +60,9 @@ export const useTaskConfigManagement = ({ taskId }: UseAIConfigManagementProps =
       if (taskId) {
         // Update backend
         await window.service.agent.updateTaskAIConfig(taskId, updatedConfig);
+      } else {
+        // update global config
+        await window.service.externalAPI.updateDefaultAIConfig(updatedConfig);
       }
     } catch (error) {
       console.error('Failed to update model configuration:', error);

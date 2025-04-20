@@ -17,7 +17,7 @@ interface SessionsGroupProps {
   children: React.ReactNode;
 }
 
-export const SessionsGroup: React.FC<SessionsGroupProps> = ({ heading, children }) => {
+export const TasksGroup: React.FC<SessionsGroupProps> = ({ heading, children }) => {
   return (
     <Group>
       <GroupHeading>{heading}</GroupHeading>

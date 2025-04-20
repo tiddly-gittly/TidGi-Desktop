@@ -90,7 +90,15 @@
     "ProviderEnabled": "Поставщик включен",
     "ProviderDisabled": "Поставщик отключен",
     "ModelDetails": "Детали модели",
-    "NoPresetSelected": "Предустановленная модель не выбрана"
+    "NoPresetSelected": "Предустановленная модель не выбрана",
+    "FailedToSaveSettings": "Не удалось сохранить настройки",
+    "SettingsSaved": "Настройки сохранены",
+    "FailedToUpdateProviderStatus": "Не удалось обновить статус поставщика",
+    "ModelAddedSuccessfully": "Модель успешно добавлена",
+    "ModelAlreadyExists": "Модель уже существует",
+    "FailedToAddModel": "Не удалось добавить модель",
+    "ModelRemovedSuccessfully": "Модель успешно удалена",
+    "FailedToRemoveModel": "Не удалось удалить модель"
   },
   "ModelFeature": {
     "Language": "Язык",

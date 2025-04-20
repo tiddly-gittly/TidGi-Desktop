@@ -98,6 +98,14 @@
     "SelectProvider": "Select Provider",
     "SystemPrompt": "System Prompt",
     "SystemPromptDescription": "Set the system instructions sent to the AI to define its behavior and capabilities",
-    "Temperature": "Temperature"
+    "Temperature": "Temperature",
+    "FailedToSaveSettings": "Failed to save settings",
+    "SettingsSaved": "Settings saved",
+    "FailedToUpdateProviderStatus": "Failed to update provider status",
+    "ModelAddedSuccessfully": "Model added successfully",
+    "ModelAlreadyExists": "Model already exists",
+    "FailedToAddModel": "Failed to add model",
+    "ModelRemovedSuccessfully": "Model removed successfully",
+    "FailedToRemoveModel": "Failed to remove model"
   }
 }

@@ -1,7 +1,7 @@
-import { Session } from '@services/externalAPI/interface';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
+import { AgentTask } from '@services/agent/interface';
 
 const Item = styled.div<{ active?: boolean }>`
   padding: 10px 16px;
@@ -42,14 +42,14 @@ const DeleteButton = styled.button`
 `;
 
 interface SessionListItemProps {
-  session: Session;
+  task: AgentTask;
   isActive: boolean;
   onSelect: (sessionId: string) => void;
   onDelete: (sessionId: string) => void;
 }
 
 export const SessionListItem: React.FC<SessionListItemProps> = ({
-  session,
+  task,
   isActive,
   onSelect,
   onDelete,
@@ -60,14 +60,14 @@ export const SessionListItem: React.FC<SessionListItemProps> = ({
     <Item
       active={isActive}
       onClick={() => {
-        onSelect(session.id);
+        onSelect(task.id);
       }}
     >
-      <Title>{session.title || `${t('Chat.Session', { ns: 'agent' })} ${session.id}`}</Title>
+      <Title>{task.name || `${t('Chat.Session', { ns: 'agent' })} ${task.id}`}</Title>
       <DeleteButton
         onClick={(event) => {
           event.stopPropagation();
-          onDelete(session.id);
+          onDelete(task.id);
         }}
       >
         ✕

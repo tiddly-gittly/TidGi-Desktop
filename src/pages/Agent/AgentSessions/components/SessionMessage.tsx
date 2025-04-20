@@ -1,12 +1,11 @@
 import SettingsIcon from '@mui/icons-material/Settings';
 import { Button } from '@mui/material';
-import { ProviderError } from '@services/agent/server/schema';
+import { Message, ProviderError } from '@services/agent/server/schema';
 import { PreferenceSections } from '@services/preferences/interface';
 import { WindowMeta, WindowNames } from '@services/windows/WindowProperties';
 import React, { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
-import { Conversation } from '../store';
 
 const MessageBubble = styled.div<{ isUser?: boolean; isStreaming?: boolean; isError?: boolean }>`
   max-width: 80%;
@@ -82,13 +81,13 @@ const SettingsButton = styled(Button)`
   text-transform: none;
 `;
 
-interface SessionMessageProps {
-  conversation: Conversation;
+interface TaskMessageProps {
+  message: Message;
   isStreaming?: boolean;
 }
 
-export const SessionMessage: React.FC<SessionMessageProps> = ({
-  conversation,
+export const TaskMessage: React.FC<TaskMessageProps> = ({
+  message,
   isStreaming,
 }) => {
   const [isError, setIsError] = useState(false);
@@ -96,49 +95,35 @@ export const SessionMessage: React.FC<SessionMessageProps> = ({
   const [displayText, setDisplayText] = useState('');
   const { t } = useTranslation('agent');
 
-  // 检测是否包含配置错误信息
+  // 从消息部分提取文本内容
   useEffect(() => {
     // 重置错误状态
     setIsError(false);
     setConfigError(null);
 
-    // DEBUG: console conversation
-    console.log(`conversation`, conversation);
-    // 如果有完整的消息对象，先检查是否有错误部分
-    if (conversation.message?.parts && Array.isArray(conversation.message.parts)) {
-      // 查找错误类型的部分
-      const errorPart = conversation.message.parts.find(part => part.type === 'error' && 'error' in part);
+    // 提取文本内容
+    const textContent = message.parts
+      .filter(part => 'text' in part)
+      .map(part => ('text' in part ? part.text : ''))
+      .join('\n');
 
-      if (errorPart && 'error' in errorPart) {
-        // 找到错误信息，设置错误状态
-        setIsError(true);
-        setConfigError(errorPart.error);
+    // 检查是否有错误部分
+    const errorPart = message.parts.find(part => part.type === 'error' && 'error' in part);
 
-        // 保留纯文本内容显示
-        const textParts = conversation.message.parts
-          .filter(part => 'text' in part)
-          .map(part => (part as any).text)
-          .join('\n');
-
-        setDisplayText(textParts || conversation.response || '');
-        return;
-      }
-    }
-
-    // 如果消息中没有结构化错误但响应以"Error:"开头，也标记为错误
-    const hasErrorPrefix = conversation.response &&
-      (conversation.response.includes('Error:') ||
-        conversation.response.includes('(无响应'));
-
-    if (hasErrorPrefix) {
+    if (errorPart && 'error' in errorPart) {
       setIsError(true);
-      // 没有结构化错误信息，但仍然是错误
-      setDisplayText(conversation.response || '');
-    } else {
-      // 普通消息
-      setDisplayText(conversation.response || '');
+      setConfigError(errorPart.error);
+    } else if (
+      textContent && (
+        textContent.includes('Error:') ||
+        textContent.includes('(无响应')
+      )
+    ) {
+      setIsError(true);
     }
-  }, [conversation.response, conversation.message]);
+
+    setDisplayText(textContent);
+  }, [message]);
 
   // 格式化配置错误消息
   const getConfigErrorMessage = (error: ProviderError) => {
@@ -167,38 +152,45 @@ export const SessionMessage: React.FC<SessionMessageProps> = ({
       : new Date(date).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
+  // 尝试从 metadata 中获取时间戳
+  const getMessageTime = () => {
+    // 首先尝试从 metadata 中获取时间戳，优先使用 created 字段
+    if (message.metadata && typeof message.metadata === 'object') {
+      const timestamp = message.metadata.created;
+      if (timestamp) {
+        return formatTime(new Date(timestamp as string | number | Date));
+      }
+    }
+
+    // 如果 metadata 中没有时间信息，则返回当前时间
+    return formatTime(new Date());
+  };
+
   return (
-    <>
-      <MessageBubble isUser>
-        {conversation.question}
-        <MessageTime>{formatTime(conversation.createdAt)}</MessageTime>
-      </MessageBubble>
+    <MessageBubble isUser={message.role === 'user'} isStreaming={isStreaming} isError={isError && message.role === 'agent'}>
+      {isError && message.role === 'agent' && <ErrorIcon>⚠️</ErrorIcon>}
+      {displayText || (isStreaming ? '' : t('Chat.WaitingForResponse'))}
 
-      <MessageBubble isStreaming={isStreaming} isError={isError}>
-        {isError && <ErrorIcon>⚠️</ErrorIcon>}
-        {displayText || (isStreaming ? '' : t('Chat.WaitingForResponse'))}
+      {configError && message.role === 'agent' && (
+        <ConfigErrorBox>
+          <ConfigErrorTitle>{t('Chat.ConfigError.Title')}</ConfigErrorTitle>
+          <ConfigErrorMessage>{getConfigErrorMessage(configError)}</ConfigErrorMessage>
+          <SettingsButton
+            variant='outlined'
+            size='small'
+            color='warning'
+            startIcon={<SettingsIcon />}
+            onClick={async () => {
+              await window.service.window.open(WindowNames.preferences, { preferenceGotoTab: PreferenceSections.externalAPI } as WindowMeta[WindowNames.preferences]);
+            }}
+          >
+            {t('Chat.ConfigError.GoToSettings')}
+          </SettingsButton>
+        </ConfigErrorBox>
+      )}
 
-        {configError && (
-          <ConfigErrorBox>
-            <ConfigErrorTitle>{t('Chat.ConfigError.Title')}</ConfigErrorTitle>
-            <ConfigErrorMessage>{getConfigErrorMessage(configError)}</ConfigErrorMessage>
-            <SettingsButton
-              variant='outlined'
-              size='small'
-              color='warning'
-              startIcon={<SettingsIcon />}
-              onClick={async () => {
-                await window.service.window.open(WindowNames.preferences, { preferenceGotoTab: PreferenceSections.externalAPI } as WindowMeta[WindowNames.preferences]);
-              }}
-            >
-              {t('Chat.ConfigError.GoToSettings')}
-            </SettingsButton>
-          </ConfigErrorBox>
-        )}
-
-        {isStreaming && <StreamingIndicator>{t('Chat.Typing')}</StreamingIndicator>}
-        <MessageTime>{formatTime(conversation.updatedAt)}</MessageTime>
-      </MessageBubble>
-    </>
+      {isStreaming && message.role === 'agent' && <StreamingIndicator>{t('Chat.Typing')}</StreamingIndicator>}
+      <MessageTime>{getMessageTime()}</MessageTime>
+    </MessageBubble>
   );
 };

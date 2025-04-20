@@ -265,7 +265,7 @@ export class SQLiteTaskStore implements TaskStore {
    */
   async deleteTask(taskId: string): Promise<boolean> {
     try {
-      return await this.dataSource.transaction(async transactionalEntityManager => {
+      await this.dataSource.transaction(async transactionalEntityManager => {
         // First delete all messages
         await transactionalEntityManager.delete(TaskMessageEntity, {
           taskId: taskId,
@@ -285,6 +285,7 @@ export class SQLiteTaskStore implements TaskStore {
 
         return deleted;
       });
+      return true;
     } catch (error) {
       console.error(`Failed to delete task ${taskId} from database:`, error);
       return false;

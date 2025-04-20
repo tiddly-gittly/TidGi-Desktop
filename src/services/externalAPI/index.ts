@@ -12,21 +12,8 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { CoreMessage, Message } from 'ai';
 import { streamFromProvider } from './callProviderAPI';
-import rawDefaultProvidersConfig from './defaultProviders.json';
-import { isProviderConfigError } from './errors';
-import type { AIGlobalSettings, AIProviderConfig, AIStreamResponse, IExternalAPIService, ModelFeature } from './interface';
-
-// Create typed config object
-const defaultProvidersConfig = {
-  ...rawDefaultProvidersConfig,
-  providers: rawDefaultProvidersConfig.providers.map(provider => ({
-    ...provider,
-    models: provider.models.map(model => ({
-      ...model,
-      features: model.features as unknown as ModelFeature[],
-    })),
-  })),
-};
+import { extractErrorDetails } from './errorHandlers';
+import type { AIGlobalSettings, AIProviderConfig, AIStreamResponse, IExternalAPIService } from './interface';
 
 /**
  * Simplified request context
@@ -42,6 +29,7 @@ export class ExternalAPIService implements IExternalAPIService {
   private readonly databaseService!: IDatabaseService;
 
   private activeRequests: Map<string, AbortController> = new Map();
+  private settingsLoaded = false;
 
   private userSettings: AIGlobalSettings = {
     providers: [],
@@ -58,52 +46,16 @@ export class ExternalAPIService implements IExternalAPIService {
     },
   };
 
-  constructor() {
-    this.loadSettingsFromDatabase();
-  }
-
-  /**
-   * Merge user settings with default settings without modifying stored data
-   */
-  private mergeWithDefaults(settings: AIGlobalSettings): AIGlobalSettings {
-    const defaultSettings: AIGlobalSettings = {
-      providers: cloneDeep(defaultProvidersConfig.providers),
-      defaultConfig: { ...defaultProvidersConfig.defaultConfig },
-    };
-
-    return mergeWith({} as AIGlobalSettings, defaultSettings, settings, (
-      objectValue: unknown,
-      sourceValue: unknown,
-      key: string,
-    ) => {
-      const isProvider = (
-        key: string,
-        objectValue: unknown,
-      ): objectValue is AIProviderConfig[] => (key === 'providers' && Array.isArray(objectValue) && Array.isArray(sourceValue));
-      if (isProvider(key, objectValue) && isProvider(key, sourceValue)) {
-        // For each provider in user settings
-        sourceValue.forEach((userProvider: AIProviderConfig) => {
-          // Find matching provider in default settings
-          const defaultProvider = objectValue.find((p: AIProviderConfig) => p.provider === userProvider.provider);
-          if (defaultProvider) {
-            // Merge properties from user provider to default provider
-            Object.assign(defaultProvider, userProvider);
-          } else {
-            // If provider doesn't exist in defaults, add it
-            objectValue.push(userProvider);
-          }
-        });
-        // Return objValue to prevent default array merging
-        return objectValue;
-      }
-      // Use default merging for other properties
-      return undefined;
-    });
-  }
-
   private loadSettingsFromDatabase(): void {
     const savedSettings = this.databaseService.getSetting('aiSettings');
     this.userSettings = savedSettings ?? this.userSettings;
+    this.settingsLoaded = true;
+  }
+
+  private ensureSettingsLoaded(): void {
+    if (!this.settingsLoaded) {
+      this.loadSettingsFromDatabase();
+    }
   }
 
   private saveSettingsToDatabase(): void {
@@ -111,71 +63,29 @@ export class ExternalAPIService implements IExternalAPIService {
   }
 
   async getAIProviders(): Promise<AIProviderConfig[]> {
-    const mergedSettings = this.mergeWithDefaults(this.userSettings);
-    return mergedSettings.providers;
+    this.ensureSettingsLoaded();
+    return cloneDeep(this.userSettings.providers);
   }
 
-  /**
-   * Get AI configuration with default values and optional overrides
-   */
-  async getAIConfig(partialConfig?: Partial<AiAPIConfig>): Promise<AiAPIConfig> {
-    const mergedSettings = this.mergeWithDefaults(this.userSettings);
-    const defaultConfig: AiAPIConfig = {
-      api: {
-        provider: mergedSettings.defaultConfig.api?.provider || '',
-        model: mergedSettings.defaultConfig.api?.model || '',
-      },
-      modelParameters: {
-        temperature: 0.7,
-        systemPrompt: 'You are a helpful assistant.',
-        topP: 0.95,
-      },
-    };
-
-    if (partialConfig) {
-      // Merge top-level properties
-      const result: AiAPIConfig = {
-        ...defaultConfig,
-      };
-
-      // Separately merge model parameters if they exist
-      if (partialConfig.modelParameters) {
-        result.modelParameters = {
-          ...defaultConfig.modelParameters,
-          ...partialConfig.modelParameters,
-        };
-      }
-
-      // Separately merge api if it exists
-      if (partialConfig.api) {
-        result.api = {
-          ...defaultConfig.api,
-          ...partialConfig.api,
-        };
-      }
-
-      return result;
-    }
-
-    return defaultConfig;
+  async getAIConfig(): Promise<AiAPIConfig> {
+    this.ensureSettingsLoaded();
+    return cloneDeep(this.userSettings.defaultConfig);
   }
 
   /**
    * Get provider configuration by provider name
    */
   private async getProviderConfig(providerName: string): Promise<AIProviderConfig | undefined> {
+    this.ensureSettingsLoaded();
     const providers = await this.getAIProviders();
     return providers.find(p => p.provider === providerName);
   }
 
   async updateProvider(provider: string, config: Partial<AIProviderConfig>): Promise<void> {
-    // Find if the provider already exists in user settings
-    const providerIndex = this.userSettings.providers.findIndex(p => p.provider === provider);
-    if (providerIndex !== -1) {
-      this.userSettings.providers[providerIndex] = {
-        ...this.userSettings.providers[providerIndex],
-        ...config,
-      };
+    this.ensureSettingsLoaded();
+    const existingProvider = this.userSettings.providers.find(p => p.provider === provider);
+    if (existingProvider) {
+      Object.assign(existingProvider, config);
     } else {
       this.userSettings.providers.push({
         provider,
@@ -183,41 +93,17 @@ export class ExternalAPIService implements IExternalAPIService {
         ...config,
       });
     }
+
     this.saveSettingsToDatabase();
   }
 
   async updateDefaultAIConfig(config: Partial<AiAPIConfig>): Promise<void> {
-    // Initialize api if it doesn't exist
-    if (!this.userSettings.defaultConfig.api) {
-      this.userSettings.defaultConfig.api = {
-        provider: '',
-        model: '',
-      };
-    }
-
-    // Update api properties
-    if (config.api) {
-      if (config.api.provider !== undefined) {
-        this.userSettings.defaultConfig.api.provider = config.api.provider;
-      }
-
-      if (config.api.model !== undefined) {
-        this.userSettings.defaultConfig.api.model = config.api.model;
-      }
-    }
-
-    // Update modelParameters
-    if (config.modelParameters) {
-      if (!this.userSettings.defaultConfig.modelParameters) {
-        this.userSettings.defaultConfig.modelParameters = {};
-      }
-      
-      this.userSettings.defaultConfig.modelParameters = {
-        ...this.userSettings.defaultConfig.modelParameters,
-        ...config.modelParameters,
-      };
-    }
-
+    this.ensureSettingsLoaded();
+    this.userSettings.defaultConfig = mergeWith(
+      {},
+      this.userSettings.defaultConfig,
+      config,
+    ) as typeof this.userSettings.defaultConfig;
     this.saveSettingsToDatabase();
   }
 
@@ -227,9 +113,7 @@ export class ExternalAPIService implements IExternalAPIService {
   private prepareAIRequest(): AIRequestContext {
     const requestId = nanoid();
     const controller = new AbortController();
-
     this.activeRequests.set(requestId, controller);
-
     return { requestId, controller };
   }
 
@@ -294,7 +178,7 @@ export class ExternalAPIService implements IExternalAPIService {
       }
 
       // Create the stream
-      let result: any;
+      let result: ReturnType<typeof streamFromProvider>;
       try {
         result = streamFromProvider(
           config,
@@ -303,10 +187,8 @@ export class ExternalAPIService implements IExternalAPIService {
           providerConfig,
         );
       } catch (providerError) {
-        // DEBUG: console providerError
-        console.log(`providerError`, providerError);
         // Handle provider creation errors directly
-        const errorDetail = this.extractErrorDetails(providerError, config.api.provider);
+        const errorDetail = extractErrorDetails(providerError, config.api.provider);
 
         yield {
           requestId,
@@ -344,10 +226,8 @@ export class ExternalAPIService implements IExternalAPIService {
       // Stream completed
       yield { requestId, content: fullResponse, status: 'done' };
     } catch (error) {
-      // DEBUG: console error
-      console.log(`error`, error);
       // Handle errors and categorize them
-      const errorDetail = this.extractErrorDetails(error, config.api.provider);
+      const errorDetail = extractErrorDetails(error, config.api.provider);
 
       // Yield error with details
       yield {
@@ -361,95 +241,11 @@ export class ExternalAPIService implements IExternalAPIService {
     }
   }
 
-  /**
-   * Extract structured error details from various error types
-   */
-  private extractErrorDetails(error: unknown, provider: string): {
-    name: string;
-    code: string;
-    provider: string;
-    message?: string;
-  } {
-    // Check if it's already a known provider error type
-    if (isProviderConfigError(error)) {
-      // DEBUG: console
-      console.log(`isProviderConfigError`);
-      return {
-        name: error.name,
-        code: error.code,
-        provider: error.provider,
-        message: error.message,
-      };
-    }
-
-    // Convert error to string for analysis
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    // DEBUG: console errorMessage
-    console.log(`errorMessage`, errorMessage);
-
-    // Check common error patterns
-    if (errorMessage.includes('API key') && errorMessage.includes('not found')) {
-      return {
-        name: 'MissingAPIKeyError',
-        code: 'MISSING_API_KEY',
-        provider,
-        message: `API key for ${provider} not found`,
-      };
-    } else if (errorMessage.includes('requires baseURL')) {
-      return {
-        name: 'MissingBaseURLError',
-        code: 'MISSING_BASE_URL',
-        provider,
-        message: `${provider} provider requires baseURL`,
-      };
-    } else if (errorMessage.includes('authentication failed') || errorMessage.includes('401')) {
-      return {
-        name: 'AuthenticationError',
-        code: 'AUTHENTICATION_FAILED',
-        provider,
-        message: `${provider} authentication failed: Invalid API key`,
-      };
-    } else if (errorMessage.includes('404')) {
-      return {
-        name: 'ModelNotFoundError',
-        code: 'MODEL_NOT_FOUND',
-        provider,
-        message: `Model not found for ${provider}`,
-      };
-    } else if (errorMessage.includes('429')) {
-      return {
-        name: 'RateLimitError',
-        code: 'RATE_LIMIT_EXCEEDED',
-        provider,
-        message: `${provider} rate limit exceeded. Reduce request frequency or check API limits.`,
-      };
-    }
-
-    // Generic error
-    return {
-      name: 'AIProviderError',
-      code: 'UNKNOWN_ERROR',
-      provider,
-      message: errorMessage,
-    };
-  }
-
   async cancelAIRequest(requestId: string): Promise<void> {
     const controller = this.activeRequests.get(requestId);
     if (controller) {
       controller.abort();
       this.activeRequests.delete(requestId);
     }
-  }
-
-  /**
-   * Get available AI models from enabled providers
-   */
-  async getAvailableAIModels(): Promise<string[]> {
-    const mergedSettings = this.mergeWithDefaults(this.userSettings);
-    // Only include models from enabled providers
-    return mergedSettings.providers
-      .filter(provider => provider.enabled !== false)
-      .flatMap(provider => provider.models.map(model => `${provider.provider}/${model.name}`));
   }
 }

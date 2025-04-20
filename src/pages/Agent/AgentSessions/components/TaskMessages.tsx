@@ -11,11 +11,11 @@ const MessagesContainer = styled.div`
   background-color: ${props => props.theme.palette.background.default};
 `;
 
-interface SessionMessagesProps {
+interface TaskMessagesProps {
   children: React.ReactNode;
 }
 
-export const SessionMessages: React.FC<SessionMessagesProps> = ({ children }) => {
+export const TaskMessages: React.FC<TaskMessagesProps> = ({ children }) => {
   const messagesEndReference = useRef<HTMLDivElement>(null);
 
   // 自动滚动到消息底部

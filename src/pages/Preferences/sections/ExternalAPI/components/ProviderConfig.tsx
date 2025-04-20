@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/no-floating-promises */
 import AddIcon from '@mui/icons-material/Add';
 import { Alert, Box, Button, Snackbar, Tab, Tabs } from '@mui/material';
 import React, { useEffect, useState } from 'react';
@@ -25,7 +24,6 @@ const AddProviderButton = styled(Button)`
   width: 100%;
 `;
 
-// 表单状态接口
 interface ProviderFormState {
   apiKey: string;
   baseURL: string;
@@ -44,7 +42,6 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
   const [snackbarMessage, setSnackbarMessage] = useState('');
   const [snackbarSeverity, setSnackbarSeverity] = useState<'success' | 'error' | 'info'>('success');
 
-  // Add new provider state
   const [showAddProviderForm, setShowAddProviderForm] = useState(false);
   const [newProviderForm, setNewProviderForm] = useState({
     provider: '',
@@ -52,85 +49,70 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
     baseURL: '',
   });
 
-  // Maintain local providers list
+  const [availableDefaultProviders, setAvailableDefaultProviders] = useState<AIProviderConfig[]>([]);
+  const [selectedDefaultProvider, setSelectedDefaultProvider] = useState('');
+
   const [localProviders, setLocalProviders] = useState<AIProviderConfig[]>(providers);
-
-  // 表单状态
   const [providerForms, setProviderForms] = useState<Record<string, ProviderFormState>>({});
-
-  // 模型对话框状态
   const [modelDialogOpen, setModelDialogOpen] = useState(false);
   const [currentProvider, setCurrentProvider] = useState<string | null>(null);
   const [selectedDefaultModel, setSelectedDefaultModel] = useState('');
   const [availableDefaultModels, setAvailableDefaultModels] = useState<ModelInfo[]>([]);
 
-  // 当提供者列表变化时更新本地状态
+  // Update local providers and initialize form states
   useEffect(() => {
     setLocalProviders(providers);
-
-    // 初始化每个提供者的表单状态
     const forms: Record<string, ProviderFormState> = {};
     providers.forEach(provider => {
       forms[provider.provider] = {
         apiKey: provider.apiKey || '',
         baseURL: provider.baseURL || '',
         models: [...provider.models],
-        newModel: {
-          name: '',
-          caption: '',
-          features: ['language' as ModelFeature],  // 显式指定类型
-        },
+        newModel: { name: '', caption: '', features: ['language' as ModelFeature] },
       };
     });
     setProviderForms(forms);
   }, [providers]);
 
-  // Show message helper
+  // Update available default providers
+  useEffect(() => {
+    const currentProviderNames = new Set(localProviders.map(p => p.provider));
+    const filteredDefaultProviders = defaultProvidersConfig.providers.filter(
+      p => !currentProviderNames.has(p.provider),
+    ) as AIProviderConfig[];
+    setAvailableDefaultProviders(filteredDefaultProviders);
+  }, [localProviders]);
+
   const showMessage = (message: string, severity: 'success' | 'error' | 'info') => {
     setSnackbarMessage(message);
     setSnackbarSeverity(severity);
     setSnackbarOpen(true);
   };
 
-  // Handle Snackbar close
-  const handleSnackbarClose = (event?: React.SyntheticEvent | Event, reason?: string) => {
+  const handleSnackbarClose = (_event?: React.SyntheticEvent | Event, reason?: string) => {
     if (reason === 'clickaway') return;
     setSnackbarOpen(false);
   };
 
-  // 从配置文件中提取所有唯一提供方类型
   const providerClasses = React.useMemo(() => {
     const classes = new Set<string>();
     defaultProvidersConfig.providers.forEach(p => {
-      if (p.providerClass) {
-        classes.add(p.providerClass);
-      }
+      if (p.providerClass) classes.add(p.providerClass);
     });
     return Array.from(classes);
   }, []);
 
-  // Handle tab change
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setSelectedTabIndex(newValue);
   };
 
-  // 处理表单字段变更
   const handleFormChange = async (providerName: string, field: keyof AIProviderConfig, value: string) => {
     try {
-      // 更新本地状态
       setProviderForms(previous => ({
         ...previous,
-        [providerName]: {
-          ...previous[providerName],
-          [field]: value,
-        },
+        [providerName]: { ...previous[providerName], [field]: value },
       }));
-
-      // 更新服务器状态
-      const providerToUpdate: AIProviderConfig = { ...localProviders.find(p => p.provider === providerName)! };
-      providerToUpdate[field] = value;
       await window.service.externalAPI.updateProvider(providerName, { [field]: value });
-
       showMessage(t('Preference.SettingsSaved'), 'success');
     } catch (error) {
       console.error('Failed to update provider:', error);
@@ -138,58 +120,37 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
     }
   };
 
-  // 处理启用/禁用提供者
   const handleProviderEnabledChange = async (providerName: string, enabled: boolean) => {
     try {
-      // 更新本地状态
       setLocalProviders(previous => previous.map(p => p.provider === providerName ? { ...p, enabled } : p));
-
-      // 更新服务器状态
       await window.service.externalAPI.updateProvider(providerName, { enabled });
-
-      showMessage(
-        enabled
-          ? t('Preference.ProviderEnabled')
-          : t('Preference.ProviderDisabled'),
-        'success',
-      );
+      showMessage(enabled ? t('Preference.ProviderEnabled') : t('Preference.ProviderDisabled'), 'success');
     } catch (error) {
       console.error('Failed to update provider status:', error);
       showMessage(t('Preference.FailedToUpdateProviderStatus'), 'error');
     }
   };
 
-  // 打开添加模型对话框
   const openAddModelDialog = (providerName: string) => {
     setCurrentProvider(providerName);
-
-    // 获取当前提供者的默认模型列表，排除已添加的
-    const provider = defaultProvidersConfig.providers.find(p => p.provider === providerName);
+    const provider = defaultProvidersConfig.providers.find(p => p.provider === providerName) as AIProviderConfig | undefined;
     const currentModels = providerForms[providerName].models || [];
     const currentModelNames = new Set(currentModels.map(m => m.name));
 
     if (provider) {
-      // 如果是预设提供者，从默认配置获取模型
-      setAvailableDefaultModels(
-        provider.models.filter(m => !currentModelNames.has(m.name)),
-      );
+      setAvailableDefaultModels(provider.models.filter(m => !currentModelNames.has(m.name)));
     } else {
-      // 否则尝试找到相同providerClass的提供者获取模型
       const localProvider = localProviders.find(p => p.provider === providerName);
       if (localProvider) {
         const similarProviders = defaultProvidersConfig.providers.filter(
           p => p.providerClass === localProvider.providerClass,
         );
-
         const allModels: ModelInfo[] = [];
         similarProviders.forEach(p => {
           p.models.forEach(m => {
-            if (!currentModelNames.has(m.name)) {
-              allModels.push(m);
-            }
+            if (!currentModelNames.has(m.name)) allModels.push(m);
           });
         });
-
         setAvailableDefaultModels(allModels);
       } else {
         setAvailableDefaultModels([]);
@@ -200,13 +161,11 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
     setModelDialogOpen(true);
   };
 
-  // 关闭模型对话框
   const closeModelDialog = () => {
     setModelDialogOpen(false);
     setCurrentProvider(null);
   };
 
-  // 处理模型表单变更
   const handleModelFormChange = (providerName: string, field: string, value: string | ModelFeature[]) => {
     setProviderForms(previous => ({
       ...previous,
@@ -220,7 +179,6 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
     }));
   };
 
-  // 处理模型特性变更
   const handleFeatureChange = (providerName: string, feature: ModelFeature, checked: boolean) => {
     setProviderForms(previous => {
       const newFeatures = [...previous[providerName].newModel.features];
@@ -247,17 +205,15 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
     });
   };
 
-  // 添加模型
   const handleAddModel = async () => {
     if (!currentProvider) return;
 
     try {
       const form = providerForms[currentProvider];
-      // 直接使用已正确类型化的features
       const newModel: ModelInfo = {
         name: form.newModel.name,
         caption: form.newModel.caption || undefined,
-        features: form.newModel.features,  // 已经是 ModelFeature[]，不需要映射
+        features: form.newModel.features,
       };
 
       if (!newModel.name) {
@@ -265,13 +221,11 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
         return;
       }
 
-      // 检查是否已有同名模型
       if (form.models.some(m => m.name === newModel.name)) {
         showMessage(t('Preference.ModelAlreadyExists'), 'error');
         return;
       }
 
-      // 更新本地状态
       const updatedModels = [...form.models, newModel];
       setProviderForms(previous => ({
         ...previous,
@@ -281,19 +235,17 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
           newModel: {
             name: '',
             caption: '',
-            features: ['language' as ModelFeature],  // 显式指定类型
+            features: ['language' as ModelFeature],
           },
         },
       }));
 
-      // 更新服务器状态
       const provider = localProviders.find(p => p.provider === currentProvider);
       if (provider) {
         await window.service.externalAPI.updateProvider(currentProvider, {
           models: updatedModels,
         });
 
-        // 更新本地providers
         setLocalProviders(previous => previous.map(p => p.provider === currentProvider ? { ...p, models: updatedModels } : p));
 
         showMessage(t('Preference.ModelAddedSuccessfully'), 'success');
@@ -305,13 +257,11 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
     }
   };
 
-  // 移除模型
   const removeModel = async (providerName: string, modelName: string) => {
     try {
       const form = providerForms[providerName];
       const updatedModels = form.models.filter(m => m.name !== modelName);
 
-      // 更新本地状态
       setProviderForms(previous => ({
         ...previous,
         [providerName]: {
@@ -320,12 +270,10 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
         },
       }));
 
-      // 更新服务器状态
       await window.service.externalAPI.updateProvider(providerName, {
         models: updatedModels,
       });
 
-      // 更新本地providers
       setLocalProviders(previous => previous.map(p => p.provider === providerName ? { ...p, models: updatedModels } : p));
 
       showMessage(t('Preference.ModelRemovedSuccessfully'), 'success');
@@ -335,10 +283,8 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
     }
   };
 
-  // Add new provider
   const handleAddProvider = async () => {
     try {
-      // Validation
       if (!newProviderForm.provider.trim()) {
         showMessage(t('Preference.ProviderNameRequired'), 'error');
         return;
@@ -354,7 +300,6 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
         return;
       }
 
-      // Create new provider
       const newProvider: AIProviderConfig = {
         provider: newProviderForm.provider,
         providerClass: newProviderForm.providerClass,
@@ -364,11 +309,9 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
         enabled: true,
       };
 
-      // Update server and local state
       await window.service.externalAPI.updateProvider(newProviderForm.provider, newProvider);
       setLocalProviders(previous => [...previous, newProvider]);
 
-      // 初始化该提供者的表单状态
       setProviderForms(previous => ({
         ...previous,
         [newProvider.provider]: {
@@ -378,12 +321,11 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
           newModel: {
             name: '',
             caption: '',
-            features: ['language' as ModelFeature],  // 显式指定类型
+            features: ['language' as ModelFeature],
           },
         },
       }));
 
-      // Reset form and show success
       setSelectedTabIndex(localProviders.length);
       setNewProviderForm({ provider: '', providerClass: 'openAICompatible', baseURL: '' });
       setShowAddProviderForm(false);
@@ -394,6 +336,49 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
     }
   };
 
+  const handleDefaultProviderSelect = (providerName: string) => {
+    setSelectedDefaultProvider(providerName);
+    if (!providerName) {
+      setNewProviderForm({ provider: '', providerClass: 'openAICompatible', baseURL: '' });
+      return;
+    }
+    const selectedProvider = availableDefaultProviders.find(p => p.provider === providerName);
+    if (selectedProvider) {
+      setNewProviderForm({
+        provider: selectedProvider.provider,
+        providerClass: selectedProvider.providerClass || 'openAICompatible',
+        baseURL: selectedProvider.baseURL || '',
+      });
+    }
+  };
+
+  const addProviderSection = (
+    <>
+      <AddProviderButton
+        variant='outlined'
+        startIcon={<AddIcon />}
+        onClick={() => {
+          setShowAddProviderForm(!showAddProviderForm);
+        }}
+      >
+        {showAddProviderForm ? t('Preference.CancelAddProvider') : t('Preference.AddNewProvider')}
+      </AddProviderButton>
+      {showAddProviderForm && (
+        <NewProviderForm
+          formState={newProviderForm}
+          providerClasses={providerClasses}
+          availableDefaultProviders={availableDefaultProviders}
+          selectedDefaultProvider={selectedDefaultProvider}
+          onDefaultProviderSelect={handleDefaultProviderSelect}
+          onChange={updates => {
+            setNewProviderForm(previous => ({ ...previous, ...updates }));
+          }}
+          onSubmit={handleAddProvider}
+        />
+      )}
+    </>
+  );
+
   if (providers.length === 0) {
     return (
       <ListItemVertical>
@@ -401,6 +386,7 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
           primary={t('Preference.ProviderConfiguration')}
           secondary={t('Preference.NoProvidersAvailable')}
         />
+        {addProviderSection}
       </ListItemVertical>
     );
   }
@@ -411,31 +397,7 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
         primary={t('Preference.ProviderConfiguration')}
         secondary={t('Preference.ProviderConfigurationDescription')}
       />
-
-      {/* Add new provider button */}
-      <AddProviderButton
-        variant='outlined'
-        startIcon={<AddIcon />}
-        onClick={() => {
-          setShowAddProviderForm(!showAddProviderForm);
-        }}
-      >
-        {showAddProviderForm ? t('Preference.CancelAddProvider') : t('Preference.AddNewProvider')}
-      </AddProviderButton>
-
-      {/* New provider form */}
-      {showAddProviderForm && (
-        <NewProviderForm
-          formState={newProviderForm}
-          providerClasses={providerClasses}
-          onChange={updates => {
-            setNewProviderForm(previous => ({ ...previous, ...updates }));
-          }}
-          onSubmit={handleAddProvider}
-        />
-      )}
-
-      {/* Providers tabs */}
+      {addProviderSection}
       <Box sx={{ flexGrow: 1, bgcolor: 'background.paper', display: 'flex', width: '100%', marginTop: 2 }}>
         <Tabs
           orientation='vertical'
@@ -447,11 +409,7 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
             borderRight: 1,
             borderColor: 'divider',
             minWidth: 120,
-            '& .MuiTab-root': {
-              alignItems: 'flex-start',
-              textAlign: 'left',
-              paddingLeft: 2,
-            },
+            '& .MuiTab-root': { alignItems: 'flex-start', textAlign: 'left', paddingLeft: 2 },
           }}
         >
           {localProviders.map((provider, index) => (
@@ -466,11 +424,8 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
             />
           ))}
         </Tabs>
-
-        {/* Provider content panels */}
         {localProviders.map((provider, index) => {
           const formState = providerForms[provider.provider];
-
           if (!formState) {
             return (
               <TabPanel key={provider.provider} value={selectedTabIndex} index={index}>
@@ -478,21 +433,14 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
               </TabPanel>
             );
           }
-
           return (
             <TabPanel key={provider.provider} value={selectedTabIndex} index={index}>
               <ProviderPanel
                 provider={provider}
                 formState={formState}
-                onFormChange={(field, value) => {
-                  handleFormChange(provider.provider, field, value);
-                }}
-                onEnabledChange={(enabled) => {
-                  handleProviderEnabledChange(provider.provider, enabled);
-                }}
-                onRemoveModel={(modelName) => {
-                  removeModel(provider.provider, modelName);
-                }}
+                onFormChange={(field, value) => handleFormChange(provider.provider, field as keyof AIProviderConfig, value)}
+                onEnabledChange={enabled => handleProviderEnabledChange(provider.provider, enabled)}
+                onRemoveModel={modelName => removeModel(provider.provider, modelName)}
                 onOpenAddModelDialog={() => {
                   openAddModelDialog(provider.provider);
                 }}
@@ -501,8 +449,6 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
           );
         })}
       </Box>
-
-      {/* Model dialog */}
       <ModelDialog
         open={modelDialogOpen}
         onClose={closeModelDialog}
@@ -515,18 +461,12 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
         selectedDefaultModel={selectedDefaultModel}
         onSelectDefaultModel={setSelectedDefaultModel}
         onModelFormChange={(field, value) => {
-          if (currentProvider) {
-            handleModelFormChange(currentProvider, field, value);
-          }
+          if (currentProvider) handleModelFormChange(currentProvider, field, value);
         }}
         onFeatureChange={(feature, checked) => {
-          if (currentProvider) {
-            handleFeatureChange(currentProvider, feature, checked);
-          }
+          if (currentProvider) handleFeatureChange(currentProvider, feature, checked);
         }}
       />
-
-      {/* Notifications */}
       <Snackbar
         open={snackbarOpen}
         autoHideDuration={2000}

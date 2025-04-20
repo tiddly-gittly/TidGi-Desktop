@@ -28,12 +28,12 @@ const HeaderContent = styled.div`
   gap: 16px;
 `;
 
-interface SessionMessagesHeaderProps {
+interface TaskMessagesHeaderProps {
   title: string;
   taskId?: string;
 }
 
-export const SessionMessagesHeader: React.FC<SessionMessagesHeaderProps> = ({ title, taskId }) => {
+export const TaskMessagesHeader: React.FC<TaskMessagesHeaderProps> = ({ title, taskId }) => {
   const { t } = useTranslation('agent');
   const [configDialogOpen, setConfigDialogOpen] = useState(false);
   const { loading, config, providers, handleModelChange, handleConfigChange } = useTaskConfigManagement({ taskId });

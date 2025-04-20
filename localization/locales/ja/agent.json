@@ -90,7 +90,15 @@
     "ProviderEnabled": "プロバイダーが有効になりました",
     "ProviderDisabled": "プロバイダーが無効になりました",
     "ModelDetails": "モデルの詳細",
-    "NoPresetSelected": "プリセットモデルが選択されていません"
+    "NoPresetSelected": "プリセットモデルが選択されていません",
+    "FailedToSaveSettings": "設定の保存に失敗しました",
+    "SettingsSaved": "設定が保存されました",
+    "FailedToUpdateProviderStatus": "プロバイダーのステータス更新に失敗しました",
+    "ModelAddedSuccessfully": "モデルが正常に追加されました",
+    "ModelAlreadyExists": "モデルは既に存在します",
+    "FailedToAddModel": "モデルの追加に失敗しました",
+    "ModelRemovedSuccessfully": "モデルが正常に削除されました",
+    "FailedToRemoveModel": "モデルの削除に失敗しました"
   },
   "ModelFeature": {
     "Language": "言語",

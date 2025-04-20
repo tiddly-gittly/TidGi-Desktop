@@ -157,9 +157,7 @@ export class A2AServer {
       if (!this.isValidJsonRpcRequest(request)) {
         throw A2AError.invalidRequest('Invalid JSON-RPC request structure.');
       }
-
-      const taskId: string | undefined = (request.params as any)?.id;
-      let result: any;
+      let result;
 
       // 2. 基于方法处理请求 - 保持A2A协议命名约定
       switch (request.method) {
@@ -181,7 +179,7 @@ export class A2AServer {
       }
 
       // 3. 返回成功响应
-      return this.createSuccessResponse(request.id, result);
+      return this.createSuccessResponse(request.id as string, result);
     } catch (error) {
       // 4. 处理错误
       return this.normalizeErrorResponse(error, request.id ?? null);
@@ -202,11 +200,8 @@ export class A2AServer {
       return eventEmitter;
     }
 
-    // 获取任务ID
-    const taskId = (request.params).id;
-
     // 异步处理流请求
-    this.processStreamingSession(request, eventEmitter).catch((error) => {
+    this.processStreamingSession(request, eventEmitter).catch((error: unknown) => {
       eventEmitter.emit('error', error);
     });
 

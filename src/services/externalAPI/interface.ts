@@ -56,7 +56,7 @@ export interface ModelInfo {
 }
 
 /**
- * AI provider configuration
+ * AI provider configuration like uri and api key
  */
 export interface AIProviderConfig {
   provider: string;
@@ -71,7 +71,7 @@ export interface AIProviderConfig {
 }
 
 /**
- * AI settings type
+ * AI settings store in user's JSON config file. As global AI related config that can edit in preferences.
  */
 export interface AIGlobalSettings {
   /** Providers configuration including API keys and base URLs */
@@ -103,19 +103,14 @@ export interface IExternalAPIService {
   cancelAIRequest(requestId: string): Promise<void>;
 
   /**
-   * Get available AI models list
-   */
-  getAvailableAIModels(): Promise<string[]>;
-
-  /**
-   * Get all supported AI providers and their models
+   * Get readonly all supported AI providers and their models
    */
   getAIProviders(): Promise<AIProviderConfig[]>;
 
   /**
-   * Get AI configuration for providers with optional overrides
+   * Get readonly AI configuration default values
    */
-  getAIConfig(partialConfig?: Partial<AiAPIConfig>): Promise<AiAPIConfig>;
+  getAIConfig(): Promise<AiAPIConfig>;
 
   /**
    * Update provider configuration
@@ -133,7 +128,6 @@ export const ExternalAPIServiceIPCDescriptor = {
   properties: {
     streamFromAI: ProxyPropertyType.Function$,
     cancelAIRequest: ProxyPropertyType.Function,
-    getAvailableAIModels: ProxyPropertyType.Function,
     getAIProviders: ProxyPropertyType.Function,
     getAIConfig: ProxyPropertyType.Function,
     updateProvider: ProxyPropertyType.Function,
