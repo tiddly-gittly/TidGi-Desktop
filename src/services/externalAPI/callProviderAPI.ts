@@ -6,8 +6,9 @@ import { logger } from '@services/libs/log';
 import { CoreMessage, Message, streamText } from 'ai';
 import { createOllama } from 'ollama-ai-provider';
 
-import type { AIProviderConfig, AiAPIConfig } from './interface';
-import { MissingAPIKeyError, MissingBaseURLError, AuthenticationError, parseProviderError } from './errors';
+import { AiAPIConfig } from '@services/agent/defaultAgents/schemas';
+import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError, parseProviderError } from './errors';
+import type { AIProviderConfig } from './interface';
 
 type AIStreamResult = ReturnType<typeof streamText>;
 
@@ -49,7 +50,9 @@ export function streamFromProvider(
   signal: AbortSignal,
   providerConfig?: AIProviderConfig,
 ): AIStreamResult {
-  const { provider, model, modelParameters = {} } = config;
+  const provider = config.api.provider;
+  const model = config.api.model;
+  const modelParameters = config.modelParameters || {};
   const { temperature = 0.7, systemPrompt = 'You are a helpful assistant.' } = modelParameters;
 
   logger.info(`Using AI provider: ${provider}, model: ${model}`);

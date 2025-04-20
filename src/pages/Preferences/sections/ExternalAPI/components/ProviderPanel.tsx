@@ -1,15 +1,23 @@
 import AddIcon from '@mui/icons-material/Add';
 import { Box, Button, Chip, FormControlLabel, Switch, Typography } from '@mui/material';
-import { AIProviderConfig } from '@services/externalAPI/interface';
+import { AIProviderConfig, ModelInfo, ModelFeature } from '@services/externalAPI/interface';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextField } from '../../../PreferenceComponents';
-import { ProviderFormState } from '../types';
 
 interface ProviderPanelProps {
   provider: AIProviderConfig;
-  formState: ProviderFormState;
-  onFormChange: (field: keyof ProviderFormState, value: string) => void;
+  formState: {
+    apiKey: string;
+    baseURL: string;
+    models: ModelInfo[];
+    newModel?: {
+      name: string;
+      caption: string;
+      features: ModelFeature[];
+    };
+  };
+  onFormChange: (field: string, value: string) => void;
   onEnabledChange: (enabled: boolean) => void;
   onRemoveModel: (modelName: string) => void;
   onOpenAddModelDialog: () => void;
@@ -21,18 +29,11 @@ export function ProviderPanel({
   onFormChange,
   onEnabledChange,
   onRemoveModel,
-  onOpenAddModelDialog,
+  onOpenAddModelDialog
 }: ProviderPanelProps) {
   const { t } = useTranslation('agent');
-
-  // Check if this is a preset provider
-  const isPreset = !!provider.isPreset;
-
-  // Check if this provider is enabled
-  const isEnabled = formState.enabled !== false;
-
-  // Check if we need to show baseURL
-  const shouldShowBaseURL = !isPreset || provider.showBaseURLField;
+  const isEnabled = provider.enabled !== false;
+  const shouldShowBaseURL = provider.showBaseURLField || provider.providerClass === 'openAICompatible';
 
   return (
     <>

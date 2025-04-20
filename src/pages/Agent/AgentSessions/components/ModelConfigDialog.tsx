@@ -18,38 +18,40 @@ export const ModelConfigDialog: React.FC<ModelConfigDialogProps> = ({
 }) => {
   const { t } = useTranslation('agent');
 
-  const handleTemperatureChange = useCallback((_event: Event, value: number | number[]) => {
-    const temperature = typeof value === 'number' ? value : value[0];
-    onConfigChange({
+  const handleTemperatureChange = useCallback((_event: Event, newValue: number | number[]) => {
+    const temperature = newValue as number;
+    const updatedConfig = {
       ...config,
       modelParameters: {
         ...config.modelParameters,
         temperature,
       },
-    });
-  }, [config, onConfigChange]);
-
-  const handleSystemPromptChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    onConfigChange({
-      ...config,
-      modelParameters: {
-        ...config.modelParameters,
-        systemPrompt: event.target.value,
-      },
-    });
+    };
+    onConfigChange(updatedConfig);
   }, [config, onConfigChange]);
 
   const handleMaxTokensChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const maxTokens = parseInt(event.target.value, 10);
-    if (!isNaN(maxTokens)) {
-      onConfigChange({
-        ...config,
-        modelParameters: {
-          ...config.modelParameters,
-          maxTokens,
-        },
-      });
-    }
+    const maxTokens = parseInt(event.target.value, 10) || undefined;
+    const updatedConfig = {
+      ...config,
+      modelParameters: {
+        ...config.modelParameters,
+        maxTokens,
+      },
+    };
+    onConfigChange(updatedConfig);
+  }, [config, onConfigChange]);
+
+  const handleSystemPromptChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const systemPrompt = event.target.value;
+    const updatedConfig = {
+      ...config,
+      modelParameters: {
+        ...config.modelParameters,
+        systemPrompt,
+      },
+    };
+    onConfigChange(updatedConfig);
   }, [config, onConfigChange]);
 
   return (

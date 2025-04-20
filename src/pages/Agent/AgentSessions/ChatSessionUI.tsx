@@ -146,10 +146,10 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
         ? (
           <SessionMessagePanel>
             <SessionMessagesHeader
-              title={activeTask.title ||
+              title={activeTask.name ||
                 getTaskConversations(activeTask.id)[0]?.question?.slice(0, 30) ||
                 `${t('Chat.Session')} ${activeTask.id}`}
-              sessionId={activeTask.id}
+              taskId={activeTask.id}
             />
             <SessionMessages>
               {getTaskConversations(activeTask.id).map((conversation: Conversation) => (

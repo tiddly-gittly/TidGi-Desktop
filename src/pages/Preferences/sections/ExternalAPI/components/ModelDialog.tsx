@@ -19,18 +19,21 @@ import defaultProvidersConfig from '@services/externalAPI/defaultProviders.json'
 import { ModelFeature, ModelInfo } from '@services/externalAPI/interface';
 import React, { useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
-import { NewModelFormState } from '../types';
 
 interface ModelDialogProps {
   open: boolean;
   onClose: () => void;
   onAddModel: () => void;
-  currentProvider: string;
-  newModelForm: NewModelFormState;
+  currentProvider: string | null;
+  newModelForm: {
+    name: string;
+    caption: string;
+    features: ModelFeature[];
+  };
   availableDefaultModels: ModelInfo[];
   selectedDefaultModel: string;
   onSelectDefaultModel: (model: string) => void;
-  onModelFormChange: (field: keyof NewModelFormState, value: string | ModelFeature[]) => void;
+  onModelFormChange: (field: string, value: string | ModelFeature[]) => void;
   onFeatureChange: (feature: ModelFeature, checked: boolean) => void;
 }
 
@@ -44,7 +47,7 @@ export function ModelDialog({
   selectedDefaultModel,
   onSelectDefaultModel,
   onModelFormChange,
-  onFeatureChange,
+  onFeatureChange
 }: ModelDialogProps) {
   const { t } = useTranslation('agent');
 
@@ -55,7 +58,7 @@ export function ModelDialog({
       if (selectedModel) {
         onModelFormChange('name', selectedModel.name);
         onModelFormChange('caption', selectedModel.caption || '');
-        onModelFormChange('features', selectedModel.features || ['language']);
+        onModelFormChange('features', selectedModel.features || ['language' as ModelFeature]);
       }
     }
   }, [selectedDefaultModel, availableDefaultModels, onModelFormChange]);

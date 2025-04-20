@@ -115,8 +115,15 @@
     }
   ],
   "defaultConfig": {
-    "provider": "siliconflow",
-    "model": "Qwen/Qwen2.5-7B-Instruct"
+    "api": {
+      "provider": "siliconflow",
+      "model": "Qwen/Qwen2.5-7B-Instruct"
+    },
+    "modelParameters": {
+      "temperature": 0.7,
+      "systemPrompt": "You are a helpful assistant.",
+      "topP": 0.95
+    }
   },
   "modelFeatures": [
     {

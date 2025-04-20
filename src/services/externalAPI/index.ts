@@ -5,6 +5,7 @@ import { nanoid } from 'nanoid';
 import { defer, from, Observable } from 'rxjs';
 import { filter, finalize, startWith } from 'rxjs/operators';
 
+import { AiAPIConfig } from '@services/agent/defaultAgents/schemas';
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
 import { logger } from '@services/libs/log';
@@ -13,7 +14,7 @@ import { CoreMessage, Message } from 'ai';
 import { streamFromProvider } from './callProviderAPI';
 import rawDefaultProvidersConfig from './defaultProviders.json';
 import { isProviderConfigError } from './errors';
-import type { AIProviderConfig, AiAPIConfig, AIGlobalSettings, AIStreamResponse, IExternalAPIService, ModelFeature } from './interface';
+import type { AIGlobalSettings, AIProviderConfig, AIStreamResponse, IExternalAPIService, ModelFeature } from './interface';
 
 // Create typed config object
 const defaultProvidersConfig = {
@@ -44,7 +45,17 @@ export class ExternalAPIService implements IExternalAPIService {
 
   private userSettings: AIGlobalSettings = {
     providers: [],
-    defaultConfig: {} as AiAPIConfig,
+    defaultConfig: {
+      api: {
+        provider: '',
+        model: '',
+      },
+      modelParameters: {
+        temperature: 0.7,
+        systemPrompt: 'You are a helpful assistant.',
+        topP: 0.95,
+      },
+    },
   };
 
   constructor() {
@@ -110,8 +121,10 @@ export class ExternalAPIService implements IExternalAPIService {
   async getAIConfig(partialConfig?: Partial<AiAPIConfig>): Promise<AiAPIConfig> {
     const mergedSettings = this.mergeWithDefaults(this.userSettings);
     const defaultConfig: AiAPIConfig = {
-      provider: mergedSettings.defaultConfig.provider,
-      model: mergedSettings.defaultConfig.model,
+      api: {
+        provider: mergedSettings.defaultConfig.api?.provider || '',
+        model: mergedSettings.defaultConfig.api?.model || '',
+      },
       modelParameters: {
         temperature: 0.7,
         systemPrompt: 'You are a helpful assistant.',
@@ -123,14 +136,21 @@ export class ExternalAPIService implements IExternalAPIService {
       // Merge top-level properties
       const result: AiAPIConfig = {
         ...defaultConfig,
-        ...partialConfig,
       };
 
       // Separately merge model parameters if they exist
-      if (partialConfig.modelParameters || defaultConfig.modelParameters) {
+      if (partialConfig.modelParameters) {
         result.modelParameters = {
           ...defaultConfig.modelParameters,
           ...partialConfig.modelParameters,
+        };
+      }
+
+      // Separately merge api if it exists
+      if (partialConfig.api) {
+        result.api = {
+          ...defaultConfig.api,
+          ...partialConfig.api,
         };
       }
 
@@ -167,16 +187,31 @@ export class ExternalAPIService implements IExternalAPIService {
   }
 
   async updateDefaultAIConfig(config: Partial<AiAPIConfig>): Promise<void> {
-    // Update config properties
-    if (config.provider !== undefined) {
-      this.userSettings.defaultConfig.provider = config.provider;
+    // Initialize api if it doesn't exist
+    if (!this.userSettings.defaultConfig.api) {
+      this.userSettings.defaultConfig.api = {
+        provider: '',
+        model: '',
+      };
     }
 
-    if (config.model !== undefined) {
-      this.userSettings.defaultConfig.model = config.model;
+    // Update api properties
+    if (config.api) {
+      if (config.api.provider !== undefined) {
+        this.userSettings.defaultConfig.api.provider = config.api.provider;
+      }
+
+      if (config.api.model !== undefined) {
+        this.userSettings.defaultConfig.api.model = config.api.model;
+      }
     }
 
-    if (config.modelParameters !== undefined) {
+    // Update modelParameters
+    if (config.modelParameters) {
+      if (!this.userSettings.defaultConfig.modelParameters) {
+        this.userSettings.defaultConfig.modelParameters = {};
+      }
+      
       this.userSettings.defaultConfig.modelParameters = {
         ...this.userSettings.defaultConfig.modelParameters,
         ...config.modelParameters,
@@ -242,9 +277,9 @@ export class ExternalAPIService implements IExternalAPIService {
       yield { requestId, content: '', status: 'start' };
 
       // Get provider configuration
-      const providerConfig = await this.getProviderConfig(config.provider);
+      const providerConfig = await this.getProviderConfig(config.api.provider);
       if (!providerConfig) {
-        const errorMessage = `Provider ${config.provider} not found or not configured`;
+        const errorMessage = `Provider ${config.api.provider} not found or not configured`;
         yield {
           requestId,
           content: errorMessage,
@@ -252,7 +287,7 @@ export class ExternalAPIService implements IExternalAPIService {
           errorDetail: {
             name: 'MissingProviderError',
             code: 'PROVIDER_NOT_FOUND',
-            provider: config.provider,
+            provider: config.api.provider,
           },
         };
         return;
@@ -271,7 +306,7 @@ export class ExternalAPIService implements IExternalAPIService {
         // DEBUG: console providerError
         console.log(`providerError`, providerError);
         // Handle provider creation errors directly
-        const errorDetail = this.extractErrorDetails(providerError, config.provider);
+        const errorDetail = this.extractErrorDetails(providerError, config.api.provider);
 
         yield {
           requestId,
@@ -312,7 +347,7 @@ export class ExternalAPIService implements IExternalAPIService {
       // DEBUG: console error
       console.log(`error`, error);
       // Handle errors and categorize them
-      const errorDetail = this.extractErrorDetails(error, config.provider);
+      const errorDetail = this.extractErrorDetails(error, config.api.provider);
 
       // Yield error with details
       yield {

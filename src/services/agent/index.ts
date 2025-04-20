@@ -1,24 +1,22 @@
 import { injectable } from 'inversify';
-import { nanoid } from 'nanoid';
 import { BehaviorSubject, Observable } from 'rxjs';
 
+import { AiAPIConfig } from '@services/agent/defaultAgents/schemas';
 import { lazyInject } from '@services/container';
 import { IDatabaseService } from '@services/database/interface';
-import { AiAPIConfig } from '@services/agent/defaultAgents/schemas';
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
 
 import { echoHandler } from './defaultAgents/echo';
-import { AgentConfigSchema } from './defaultAgents/schemas';
 import type { Agent, AgentServiceConfig, AgentTask, IAgentService } from './interface';
 import * as schema from './server/schema';
 
 // Import the new manager classes
+import { AgentConfigManager } from './AgentConfigManager';
 import { AgentDatabaseManager } from './AgentDatabaseManager';
 import { AgentServerManager } from './AgentServerManager';
-import { AgentConfigManager } from './AgentConfigManager';
 
 @injectable()
 export class AgentService implements IAgentService {

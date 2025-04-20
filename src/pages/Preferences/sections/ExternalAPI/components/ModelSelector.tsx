@@ -1,27 +1,39 @@
 import { Autocomplete } from '@mui/material';
+import { AiAPIConfig } from '@services/agent/defaultAgents/schemas';
+import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { TextField } from '../../../PreferenceComponents';
-import { ModelOption } from '../types';
 
 interface ModelSelectorProps {
-  modelOptions: ModelOption[];
-  selectedModelOption: ModelOption | null;
-  onChange: (option: ModelOption | null) => void;
+  selectedConfig: AiAPIConfig | null;
+  modelOptions: Array<[AIProviderConfig, ModelInfo]>;
+  onChange: (provider: string, model: string) => void;
+  onlyShowEnabled?: boolean;
 }
 
-export function ModelSelector({ modelOptions, selectedModelOption, onChange }: ModelSelectorProps) {
+export function ModelSelector({ selectedConfig, modelOptions, onChange, onlyShowEnabled }: ModelSelectorProps) {
   const { t } = useTranslation('agent');
+
+  const selectedValue = selectedConfig
+    ? modelOptions.find(m => m[0].provider === selectedConfig.api.provider && m[1].name === selectedConfig.api.model) || null
+    : null;
+
+  const filteredModelOptions = onlyShowEnabled
+    ? modelOptions.filter(m => m[0].enabled)
+    : modelOptions;
 
   return (
     <Autocomplete
-      value={selectedModelOption}
+      value={selectedValue}
       onChange={(_, value) => {
-        onChange(value);
+        if (value) {
+          onChange(value[0].provider, value[1].name);
+        }
       }}
-      options={modelOptions}
-      groupBy={(option) => option.provider}
-      getOptionLabel={(option) => `${option.provider} - ${option.model}`}
+      options={filteredModelOptions}
+      groupBy={(option) => option[0].provider}
+      getOptionLabel={(option) => option[1].name}
       renderInput={(parameters) => (
         <TextField
           {...parameters}
@@ -31,7 +43,7 @@ export function ModelSelector({ modelOptions, selectedModelOption, onChange }: M
         />
       )}
       fullWidth
-      style={{ marginTop: 16 }}
+      sx={{ minWidth: 250 }}
     />
   );
 }

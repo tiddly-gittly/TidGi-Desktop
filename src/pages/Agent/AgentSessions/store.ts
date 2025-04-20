@@ -150,6 +150,8 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
 
       // Create the task directly - no need for temporary objects in Electron
       const createdTask = await window.service.agent.createTask(agentId);
+      // DEBUG: console createdTask
+      console.log(`createdTask`, createdTask);
 
       set({
         activeTaskId: createdTask.id,

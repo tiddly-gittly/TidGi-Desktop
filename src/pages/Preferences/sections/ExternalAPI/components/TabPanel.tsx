@@ -7,23 +7,17 @@ interface TabPanelProps {
   value: number;
 }
 
-export function TabPanel(props: TabPanelProps) {
-  const { children, value, index, ...other } = props;
-
+export function TabPanel({ children, value, index, ...other }: TabPanelProps) {
   return (
     <div
       role='tabpanel'
       hidden={value !== index}
       id={`provider-tabpanel-${index}`}
       aria-labelledby={`provider-tab-${index}`}
-      style={{ width: '100%' }}
+      style={{ width: '100%', padding: '16px' }}
       {...other}
     >
-      {value === index && (
-        <Box sx={{ p: 2 }}>
-          {children}
-        </Box>
-      )}
+      {value === index && <Box>{children}</Box>}
     </div>
   );
 }
