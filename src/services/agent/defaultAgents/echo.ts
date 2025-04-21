@@ -77,16 +77,28 @@ export async function* echoHandler(context: TaskContext) {
       }
 
       // Handle different response states
-      if (response.status === 'update' || response.status === 'done') {
+      if (response.status === 'update') {
         // Normal response update
         yield {
-          state: response.status === 'done' ? 'completed' : 'working',
+          state: 'working',
           message: {
             role: 'agent',
             parts: [{ text: `You said: ${userText}\n\nAI response: ${response.content}` }],
             metadata: {
               created: new Date().toISOString(),
               id: currentRequestId,
+            },
+          },
+        } as TaskYieldUpdate;
+      } else if (response.status === 'done') {
+        // When done, return empty parts, because above result is already updated by ID to perform stream response, so no need to return full result here.
+        yield {
+          state: 'completed',
+          message: {
+            role: 'agent',
+            parts: [], // Empty parts when done
+            metadata: {
+              created: new Date().toISOString(),
             },
           },
         } as TaskYieldUpdate;
