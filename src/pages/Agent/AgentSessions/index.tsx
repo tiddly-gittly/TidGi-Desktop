@@ -85,7 +85,7 @@ export function AgentSessions(): React.JSX.Element {
         await cancelRequest(activeTaskId);
       }
     } catch (error) {
-      console.error('取消请求失败:', error);
+      console.error('Failed to cancel request:', error);
     }
   }, [activeTaskId, cancelRequest]);
 

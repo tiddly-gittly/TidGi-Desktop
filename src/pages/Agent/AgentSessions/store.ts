@@ -256,7 +256,9 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
 
     if (targetTaskId && selectedAgentId) {
       try {
-        await window.service.agent.deleteTask(selectedAgentId, targetTaskId);
+        // Use cancelTask instead of deleteTask to preserve history
+        await window.service.agent.cancelTask(selectedAgentId, targetTaskId);
+        // Reset UI states for the task
         set(state => ({
           streamingStates: { ...state.streamingStates, [targetTaskId]: false },
           loadingStates: { ...state.loadingStates, [targetTaskId]: false },
@@ -323,7 +325,7 @@ export const useAgentStore = create<AgentStoreState>((set, get) => ({
   getTaskMessages: (taskId: string): schema.Message[] => {
     const task = get().tasks.find(s => s.id === taskId);
     if (!task) return [];
-    
+
     // 直接返回消息
     return task.messages;
   },

@@ -6,8 +6,8 @@ import { AgentTask } from '@services/agent/interface';
 import { ChatInput } from './components/ChatInput';
 import { EmptyState } from './components/EmptyState';
 import { LoadingIndicator } from './components/LoadingIndicator';
-import { SessionListItem } from './components/SessionListItem';
-import { TaskMessage } from './components/SessionMessage';
+import { TaskListItem } from './components/TaskListItem';
+import { TaskMessage } from './components/TaskMessage';
 import { TaskMessages } from './components/TaskMessages';
 import { TaskMessagesHeader } from './components/TaskMessagesHeader';
 import { TasksGroup } from './components/TasksGroup';
@@ -128,7 +128,7 @@ export const ChatSessionUI: React.FC<ChatProps> = ({
         {groupTasks().map(group => (
           <TasksGroup key={group.heading} heading={group.heading}>
             {group.sessions.map(task => (
-              <SessionListItem
+              <TaskListItem
                 key={task.id || ''}
                 task={task}
                 isActive={task.id === activeTaskId}

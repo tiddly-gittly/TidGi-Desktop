@@ -358,6 +358,34 @@ export class AgentService implements IAgentService {
   }
 
   /**
+   * Cancel a task without deleting it
+   */
+  async cancelTask(agentId: string, taskId: string): Promise<void> {
+    await this.initialize();
+
+    try {
+      // Get agent
+      const agent = this.agents.get(agentId);
+      if (!agent) {
+        throw new Error(`Agent with ID ${agentId} not found`);
+      }
+
+      // Cancel task using server manager
+      await this.serverManager!.cancelTask(agentId, taskId);
+
+      // Get updated task status and notify
+      const taskData = await this.serverManager!.getTaskWithHistory(agentId, taskId);
+      if (taskData) {
+        const task = this.serverManager!.convertToAgentTask(agentId, taskData.task, taskData.history);
+        this.notifyTaskUpdate(agentId, taskId, task);
+      }
+    } catch (error) {
+      logger.error(`Failed to cancel task ${taskId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Start HTTP server
    */
   async startHttpServer(config: AgentServiceConfig): Promise<void> {

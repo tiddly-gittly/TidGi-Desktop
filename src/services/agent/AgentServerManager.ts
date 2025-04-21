@@ -278,6 +278,41 @@ export class AgentServerManager {
   }
 
   /**
+   * Cancel a task without deleting it
+   */
+  async cancelTask(agentId: string, taskId: string): Promise<schema.Task> {
+    try {
+      // Get server instance
+      const server = this.agentServers.get(agentId);
+      if (!server) {
+        throw new Error(`Server for agent ${agentId} not found`);
+      }
+
+      // Send cancel request
+      const cancelRequest: schema.CancelTaskRequest = {
+        jsonrpc: '2.0',
+        id: nanoid(),
+        method: 'tasks/cancel',
+        params: {
+          id: taskId,
+        },
+      };
+
+      const response = await server.handleRequest(cancelRequest);
+
+      if (response.error) {
+        throw new Error(`Failed to cancel task ${taskId}: ${response.error.message}`);
+      }
+
+      logger.info(`Canceled task ${taskId} for agent ${agentId}`);
+      return response.result as schema.Task;
+    } catch (error) {
+      logger.error(`Failed to cancel task ${taskId}:`, error);
+      throw error;
+    }
+  }
+
+  /**
    * Get all tasks for an agent
    */
   async getAllTasks(agentId: string): Promise<schema.Task[]> {

@@ -1,12 +1,12 @@
 import { container } from '@services/container';
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
+import { IAgentService } from '../interface';
 import { TaskContext, TaskYieldUpdate } from '../server';
 import { Part, TextPart } from '../server/schema';
-import { IAgentService } from '../interface';
 
 export async function* echoHandler(context: TaskContext) {
-  // 创建当前时间戳，将用于所有消息的 metadata
+  // Create timestamp for all message metadata
   const now = new Date();
 
   // Send working status first
@@ -86,6 +86,7 @@ export async function* echoHandler(context: TaskContext) {
             parts: [{ text: `You said: ${userText}\n\nAI response: ${response.content}` }],
             metadata: {
               created: new Date().toISOString(),
+              id: currentRequestId,
             },
           },
         } as TaskYieldUpdate;
@@ -113,6 +114,7 @@ export async function* echoHandler(context: TaskContext) {
             role: 'agent',
             parts,
             metadata: {
+              id: currentRequestId,
               created: new Date().toISOString(),
             },
           },
@@ -130,6 +132,7 @@ export async function* echoHandler(context: TaskContext) {
         role: 'agent',
         parts: [{ text: `You said: ${userText}\n\nUnexpected error: ${errorMessage}` }],
         metadata: {
+          id: currentRequestId,
           created: new Date().toISOString(),
         },
       },

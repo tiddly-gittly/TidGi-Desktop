@@ -41,14 +41,14 @@ const DeleteButton = styled.button`
   }
 `;
 
-interface SessionListItemProps {
+interface TaskListItemProps {
   task: AgentTask;
   isActive: boolean;
   onSelect: (sessionId: string) => void;
   onDelete: (sessionId: string) => void;
 }
 
-export const SessionListItem: React.FC<SessionListItemProps> = ({
+export const TaskListItem: React.FC<TaskListItemProps> = ({
   task,
   isActive,
   onSelect,

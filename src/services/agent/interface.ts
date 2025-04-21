@@ -119,6 +119,13 @@ export interface IAgentService {
   deleteTask(agentId: string, taskId: string): Promise<void>;
 
   /**
+   * Cancel a task without deleting it
+   * @param agentId Agent ID
+   * @param taskId Task ID
+   */
+  cancelTask(agentId: string, taskId: string): Promise<void>;
+
+  /**
    * Start HTTP server
    * @param config Server configuration
    */
@@ -168,6 +175,7 @@ export const AgentServiceIPCDescriptor = {
     getTask: ProxyPropertyType.Function, // 原 getSession
     getAgentTasks: ProxyPropertyType.Function, // 原 getAgentSessions
     deleteTask: ProxyPropertyType.Function, // 原 deleteSession
+    cancelTask: ProxyPropertyType.Function,
     startHttpServer: ProxyPropertyType.Function,
     stopHttpServer: ProxyPropertyType.Function,
     taskUpdates$: ProxyPropertyType.Value$, // 原 sessionUpdates$
