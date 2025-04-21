@@ -17,7 +17,7 @@ import {
 } from '@mui/material';
 import defaultProvidersConfig from '@services/externalAPI/defaultProviders.json';
 import { ModelFeature, ModelInfo } from '@services/externalAPI/interface';
-import React, { useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 
 interface ModelDialogProps {
@@ -49,42 +49,48 @@ export function NewModelDialog({
   onModelFormChange,
   onFeatureChange,
 }: ModelDialogProps) {
-  const { t } = useTranslation('agent');
+  const { t } = useTranslation(['translation', 'agent']);
+  const lastSelectedModelReference = useRef<string | null>(null);
 
   // When a preset model is selected, fill in its details to the form
   useEffect(() => {
-    if (selectedDefaultModel) {
-      const selectedModel = availableDefaultModels.find(m => m.name === selectedDefaultModel);
-      if (selectedModel) {
-        onModelFormChange('name', selectedModel.name);
-        onModelFormChange('caption', selectedModel.caption || '');
-        onModelFormChange('features', selectedModel.features || ['language' as ModelFeature]);
+    // 只有当选择的模型与上次不同时才进行更新
+    if (selectedDefaultModel !== lastSelectedModelReference.current) {
+      lastSelectedModelReference.current = selectedDefaultModel;
+
+      if (selectedDefaultModel) {
+        const selectedModel = availableDefaultModels.find(m => m.name === selectedDefaultModel);
+        if (selectedModel) {
+          onModelFormChange('name', selectedModel.name);
+          onModelFormChange('caption', selectedModel.caption || '');
+          onModelFormChange('features', selectedModel.features || ['language' as ModelFeature]);
+        }
       }
     }
   }, [selectedDefaultModel, availableDefaultModels, onModelFormChange]);
 
   return (
     <Dialog open={open} onClose={onClose} maxWidth='sm' fullWidth>
-      <DialogTitle>{t('Preference.AddNewModel')}</DialogTitle>
+      <DialogTitle>{t('Preference.AddNewModel', { ns: 'agent' })}</DialogTitle>
       <DialogContent>
         {currentProvider && (
           <>
             {availableDefaultModels.length > 0 && (
               <Box sx={{ mb: 3, mt: 1 }}>
                 <Typography variant='subtitle2' gutterBottom>
-                  {t('Preference.SelectFromPresets')}
+                  {t('Preference.SelectFromPresets', { ns: 'agent' })}
                 </Typography>
 
                 <FormControl fullWidth margin='dense'>
-                  <InputLabel>{t('Preference.PresetModels')}</InputLabel>
+                  <InputLabel>{t('Preference.PresetModels', { ns: 'agent' })}</InputLabel>
                   <Select
                     value={selectedDefaultModel}
                     onChange={(event) => {
                       onSelectDefaultModel(event.target.value);
                     }}
-                    label={t('Preference.PresetModels')}
+                    label={t('Preference.PresetModels', { ns: 'agent' })}
                   >
-                    <MenuItem value=''>{t('Preference.NoPresetSelected')}</MenuItem>
+                    <MenuItem value=''>{t('Preference.NoPresetSelected', { ns: 'agent' })}</MenuItem>
                     {availableDefaultModels.map((model) => (
                       <MenuItem key={model.name} value={model.name}>
                         {model.caption || model.name}
@@ -97,11 +103,11 @@ export function NewModelDialog({
 
             <Box sx={{ mt: 2 }}>
               <Typography variant='subtitle2' gutterBottom>
-                {t('Preference.ModelDetails')}
+                {t('Preference.ModelDetails', { ns: 'agent' })}
               </Typography>
 
               <TextField
-                label={t('Preference.ModelName')}
+                label={t('Preference.ModelName', { ns: 'agent' })}
                 value={newModelForm.name}
                 onChange={(event) => {
                   onModelFormChange('name', event.target.value);
@@ -111,18 +117,18 @@ export function NewModelDialog({
               />
 
               <TextField
-                label={t('Preference.ModelCaption')}
+                label={t('Preference.ModelCaption', { ns: 'agent' })}
                 value={newModelForm.caption}
                 onChange={(event) => {
                   onModelFormChange('caption', event.target.value);
                 }}
                 fullWidth
                 margin='normal'
-                helperText={t('Preference.ModelCaptionHelp')}
+                helperText={t('Preference.ModelCaptionHelp', { ns: 'agent' })}
               />
 
               <Typography variant='subtitle2' sx={{ mt: 2, mb: 1 }}>
-                {t('Preference.ModelFeatures')}
+                {t('Preference.ModelFeatures', { ns: 'agent' })}
               </Typography>
 
               <FormGroup>
@@ -137,7 +143,7 @@ export function NewModelDialog({
                         }}
                       />
                     }
-                    label={t(feature.i18nKey)}
+                    label={t(feature.i18nKey, { ns: 'agent' })}
                   />
                 ))}
               </FormGroup>
@@ -148,7 +154,7 @@ export function NewModelDialog({
       <DialogActions>
         <Button onClick={onClose}>{t('Cancel')}</Button>
         <Button onClick={onAddModel} variant='contained' color='primary'>
-          {t('Add')}
+          {t('Save')}
         </Button>
       </DialogActions>
     </Dialog>

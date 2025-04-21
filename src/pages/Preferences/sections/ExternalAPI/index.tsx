@@ -13,8 +13,7 @@ import { ProviderConfig } from './components/ProviderConfig';
 
 export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
   const { t } = useTranslation('agent');
-  const { loading, config, providers, handleModelChange } = useTaskConfigManagement();
-
+  const { loading, config, providers, setProviders, handleModelChange } = useTaskConfigManagement();
   return (
     <>
       <SectionTitle ref={props.sections?.externalAPI.ref}>{t('Preference.ExternalAPI')}</SectionTitle>
@@ -36,7 +35,8 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
 
               <ProviderConfig
                 providers={providers}
-                onModelChange={handleModelChange}
+                changeDefaultModel={handleModelChange}
+                setProviders={setProviders}
               />
             </>
           )}

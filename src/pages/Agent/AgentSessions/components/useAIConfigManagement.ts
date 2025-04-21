@@ -10,6 +10,7 @@ interface UseAIConfigManagementResult {
   loading: boolean;
   config: AiAPIConfig | null;
   providers: AIProviderConfig[];
+  setProviders: React.Dispatch<React.SetStateAction<AIProviderConfig[]>>;
   handleModelChange: (provider: string, model: string) => Promise<void>;
   handleConfigChange: (newConfig: AiAPIConfig) => Promise<void>;
 }
@@ -55,13 +56,11 @@ export const useTaskConfigManagement = ({ taskId }: UseAIConfigManagementProps =
         },
       };
 
-      // Update local state
       setConfig(updatedConfig);
       if (taskId) {
-        // Update backend
         await window.service.agent.updateTaskAIConfig(taskId, updatedConfig);
       } else {
-        // update global config
+        // update global config when no taskID provided
         await window.service.externalAPI.updateDefaultAIConfig(updatedConfig);
       }
     } catch (error) {
@@ -88,6 +87,7 @@ export const useTaskConfigManagement = ({ taskId }: UseAIConfigManagementProps =
     loading,
     config,
     providers,
+    setProviders,
     handleModelChange,
     handleConfigChange,
   };

@@ -328,6 +328,7 @@
     "FocusedTiddlerNotFoundTitleDetail": "可以到 CPL 安装 FocusedTiddler 插件"
   },
   "Cancel": "取消",
+  "Save": "保存",
   "Preference": {
     "ClearBrowsingData": "清空浏览器数据（不影响Git内容）",
     "DefaultUserNameDetail": "在 Wiki 中默认使用的编辑者名，将在创建或编辑 Tiddler 时填入 creator 字段。可以被工作区内设置的编辑者名覆盖。",

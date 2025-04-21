@@ -51,8 +51,6 @@ export async function* echoHandler(context: TaskContext) {
 
   // Get AI configuration
   const aiConfig = await agentService.getAIConfigByIds(context.task.id, context.agentId);
-// DEBUG: console aiConfig
-console.log(`aiConfig`, aiConfig);
   // Use generateFromAI with improved error handling
   let currentRequestId: string | null = null;
 

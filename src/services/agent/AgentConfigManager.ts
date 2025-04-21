@@ -46,8 +46,6 @@ export class AgentConfigManager {
     try {
       // Get global default configuration
       const defaultConfig = await this.externalAPIService.getAIConfig();
-      // DEBUG: console defaultConfig
-      console.log(`defaultConfig`, defaultConfig);
       // Get configuration cascade
       const { taskConfig, agentConfig } = await this.dbManager.getAIConfigCascade(taskId, agentId);
 

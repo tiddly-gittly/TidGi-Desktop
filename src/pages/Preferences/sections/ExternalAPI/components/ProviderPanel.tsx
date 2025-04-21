@@ -125,7 +125,7 @@ export function ProviderPanel({
         </Box>
 
         <Button
-          variant='outlined'
+          variant='contained'
           startIcon={<AddIcon />}
           onClick={onOpenAddModelDialog}
           fullWidth

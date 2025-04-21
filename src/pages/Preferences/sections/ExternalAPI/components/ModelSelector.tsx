@@ -14,15 +14,12 @@ interface ModelSelectorProps {
 
 export function ModelSelector({ selectedConfig, modelOptions, onChange, onlyShowEnabled }: ModelSelectorProps) {
   const { t } = useTranslation('agent');
-
   const selectedValue = selectedConfig
     ? modelOptions.find(m => m[0].provider === selectedConfig.api.provider && m[1].name === selectedConfig.api.model) || null
     : null;
-
   const filteredModelOptions = onlyShowEnabled
     ? modelOptions.filter(m => m[0].enabled)
     : modelOptions;
-
   return (
     <Autocomplete
       value={selectedValue}

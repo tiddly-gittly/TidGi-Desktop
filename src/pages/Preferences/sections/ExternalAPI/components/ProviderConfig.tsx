@@ -15,7 +15,8 @@ import { a11yProps, TabPanel } from './TabPanel';
 
 interface ProviderConfigProps {
   providers: AIProviderConfig[];
-  onModelChange?: (provider: string, model: string) => Promise<void>;
+  setProviders: React.Dispatch<React.SetStateAction<AIProviderConfig[]>>;
+  changeDefaultModel?: (provider: string, model: string) => Promise<void>;
 }
 
 // Add provider button styling
@@ -36,7 +37,7 @@ interface ProviderFormState {
   };
 }
 
-export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps) {
+export function ProviderConfig({ providers, setProviders, changeDefaultModel }: ProviderConfigProps) {
   const { t } = useTranslation('agent');
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -53,7 +54,6 @@ export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps
   const [availableDefaultProviders, setAvailableDefaultProviders] = useState<AIProviderConfig[]>([]);
   const [selectedDefaultProvider, setSelectedDefaultProvider] = useState('');
 
-  const [localProviders, setLocalProviders] = useState<AIProviderConfig[]>(providers);
   const [providerForms, setProviderForms] = useState<Record<string, ProviderFormState>>({});
   const [modelDialogOpen, setModelDialogOpen] = useState(false);
   const [currentProvider, setCurrentProvider] = useState<string | null>(null);
@@ -62,7 +62,6 @@ export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps
 
   // Update local providers and initialize form states
   useEffect(() => {
-    setLocalProviders(providers);
     const forms: Record<string, ProviderFormState> = {};
     providers.forEach(provider => {
       forms[provider.provider] = {
@@ -77,12 +76,12 @@ export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps
 
   // Update available default providers
   useEffect(() => {
-    const currentProviderNames = new Set(localProviders.map(p => p.provider));
+    const currentProviderNames = new Set(providers.map(p => p.provider));
     const filteredDefaultProviders = defaultProvidersConfig.providers.filter(
       p => !currentProviderNames.has(p.provider),
     ) as AIProviderConfig[];
     setAvailableDefaultProviders(filteredDefaultProviders);
-  }, [localProviders]);
+  }, [providers]);
 
   const showMessage = (message: string, severity: 'success' | 'error' | 'info') => {
     setSnackbarMessage(message);
@@ -123,7 +122,7 @@ export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps
 
   const handleProviderEnabledChange = async (providerName: string, enabled: boolean) => {
     try {
-      setLocalProviders(previous => previous.map(p => p.provider === providerName ? { ...p, enabled } : p));
+      setProviders(previous => previous.map(p => p.provider === providerName ? { ...p, enabled } : p));
       await window.service.externalAPI.updateProvider(providerName, { enabled });
       showMessage(enabled ? t('Preference.ProviderEnabled') : t('Preference.ProviderDisabled'), 'success');
     } catch (error) {
@@ -141,7 +140,7 @@ export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps
     if (provider) {
       setAvailableDefaultModels(provider.models.filter(m => !currentModelNames.has(m.name)));
     } else {
-      const localProvider = localProviders.find(p => p.provider === providerName);
+      const localProvider = providers.find(p => p.provider === providerName);
       if (localProvider) {
         const similarProviders = defaultProvidersConfig.providers.filter(
           p => p.providerClass === localProvider.providerClass,
@@ -241,21 +240,21 @@ export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps
         },
       }));
 
-      const provider = localProviders.find(p => p.provider === currentProvider);
+      const provider = providers.find(p => p.provider === currentProvider);
       if (provider) {
         await window.service.externalAPI.updateProvider(currentProvider, {
           models: updatedModels,
         });
 
-        setLocalProviders(previous => previous.map(p => p.provider === currentProvider ? { ...p, models: updatedModels } : p));
+        setProviders(previous => previous.map(p => p.provider === currentProvider ? { ...p, models: updatedModels } : p));
 
         try {
           // Get current default configuration
           const defaultConfig = await window.service.externalAPI.getAIConfig();
           // If default configuration doesn't have a model or provider set, or this is the first model,
-          // set the newly added model as default using the onModelChange function
-          if ((!defaultConfig.api.model || !defaultConfig.api.provider || provider.models.length === 0) && onModelChange) {
-            await onModelChange(currentProvider, newModel.name);
+          // set the newly added model as default using the changeDefaultModel function
+          if ((!defaultConfig.api.model || !defaultConfig.api.provider || provider.models.length === 0) && changeDefaultModel) {
+            await changeDefaultModel(currentProvider, newModel.name);
           }
         } catch (configError) {
           console.error('Failed to update default model config:', configError);
@@ -287,7 +286,7 @@ export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps
         models: updatedModels,
       });
 
-      setLocalProviders(previous => previous.map(p => p.provider === providerName ? { ...p, models: updatedModels } : p));
+      setProviders(previous => previous.map(p => p.provider === providerName ? { ...p, models: updatedModels } : p));
 
       showMessage(t('Preference.ModelRemovedSuccessfully'), 'success');
     } catch (error) {
@@ -323,15 +322,8 @@ export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps
       };
 
       await window.service.externalAPI.updateProvider(newProviderForm.provider, newProvider);
-      // DEBUG: console localProviders
-      console.log(`localProviders`, localProviders);
-      // DEBUG: console newProvider
-      console.log(`newProvider`, newProvider);
-      const updatedProviders = [...localProviders, newProvider];
-      // DEBUG: console updatedProviders
-      console.log(`updatedProviders`, updatedProviders);
-      setLocalProviders(updatedProviders);
-
+      const updatedProviders = [...providers, newProvider];
+      setProviders(updatedProviders);
       setProviderForms(previous => ({
         ...previous,
         [newProvider.provider]: {
@@ -345,7 +337,6 @@ export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps
           },
         },
       }));
-
       setSelectedTabIndex(updatedProviders.length - 1);
       setNewProviderForm({ provider: '', providerClass: 'openAICompatible', baseURL: '' });
       setShowAddProviderForm(false);
@@ -399,7 +390,7 @@ export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps
     </>
   );
 
-  if (localProviders.length === 0) {
+  if (providers.length === 0) {
     return (
       <ListItemVertical>
         <ListItemText
@@ -432,7 +423,7 @@ export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps
             '& .MuiTab-root': { alignItems: 'flex-start', textAlign: 'left', paddingLeft: 2 },
           }}
         >
-          {localProviders.map((provider, index) => (
+          {providers.map((provider, index) => (
             <Tab
               key={provider.provider}
               label={provider.provider}
@@ -444,7 +435,7 @@ export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps
             />
           ))}
         </Tabs>
-        {localProviders.map((provider, index) => {
+        {providers.map((provider, index) => {
           const formState = providerForms[provider.provider];
           if (!formState) {
             return (

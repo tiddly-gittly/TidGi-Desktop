@@ -17,8 +17,6 @@ export function mainBindings(): void {
   ipcMain.handle(I18NChannels.readFileRequest, (_event: IpcMainInvokeEvent, readFileArguments: IReadFileRequest) => {
     const localeFilePath = path.join(LOCALIZATION_FOLDER, readFileArguments.filename);
     const windowService = container.get<IWindowService>(serviceIdentifier.Window);
-    // DEBUG: console localeFilePath
-    console.log(`localeFilePath`, localeFilePath);
     fs.readFile(localeFilePath, 'utf8', (error, data) => {
       void windowService.sendToAllWindows(I18NChannels.readFileResponse, {
         key: readFileArguments.key,
@@ -43,7 +41,6 @@ export function mainBindings(): void {
         });
       }
     } catch (directoryCreationError) {
-      // eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
       if (directoryCreationError) {
         console.error(directoryCreationError);
       }
