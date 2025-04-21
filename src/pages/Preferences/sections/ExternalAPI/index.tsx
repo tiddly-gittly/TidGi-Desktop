@@ -34,7 +34,10 @@ export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
                 />
               </ListItemVertical>
 
-              <ProviderConfig providers={providers} />
+              <ProviderConfig
+                providers={providers}
+                onModelChange={handleModelChange}
+              />
             </>
           )}
         </List>

@@ -8,13 +8,14 @@ import { ListItemText } from '@/components/ListItem';
 import defaultProvidersConfig from '@services/externalAPI/defaultProviders.json';
 import { AIProviderConfig, ModelFeature, ModelInfo } from '@services/externalAPI/interface';
 import { ListItemVertical } from '../../../PreferenceComponents';
-import { ModelDialog } from './ModelDialog';
+import { NewModelDialog } from './NewModelDialog';
 import { NewProviderForm } from './NewProviderForm';
 import { ProviderPanel } from './ProviderPanel';
 import { a11yProps, TabPanel } from './TabPanel';
 
 interface ProviderConfigProps {
   providers: AIProviderConfig[];
+  onModelChange?: (provider: string, model: string) => Promise<void>;
 }
 
 // Add provider button styling
@@ -35,7 +36,7 @@ interface ProviderFormState {
   };
 }
 
-export function ProviderConfig({ providers }: ProviderConfigProps) {
+export function ProviderConfig({ providers, onModelChange }: ProviderConfigProps) {
   const { t } = useTranslation('agent');
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
@@ -148,7 +149,7 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
         const allModels: ModelInfo[] = [];
         similarProviders.forEach(p => {
           p.models.forEach(m => {
-            if (!currentModelNames.has(m.name)) allModels.push(m);
+            if (!currentModelNames.has(m.name)) allModels.push(m as ModelInfo);
           });
         });
         setAvailableDefaultModels(allModels);
@@ -248,6 +249,18 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
 
         setLocalProviders(previous => previous.map(p => p.provider === currentProvider ? { ...p, models: updatedModels } : p));
 
+        try {
+          // Get current default configuration
+          const defaultConfig = await window.service.externalAPI.getAIConfig();
+          // If default configuration doesn't have a model or provider set, or this is the first model,
+          // set the newly added model as default using the onModelChange function
+          if ((!defaultConfig.api.model || !defaultConfig.api.provider || provider.models.length === 0) && onModelChange) {
+            await onModelChange(currentProvider, newModel.name);
+          }
+        } catch (configError) {
+          console.error('Failed to update default model config:', configError);
+        }
+
         showMessage(t('Preference.ModelAddedSuccessfully'), 'success');
         closeModelDialog();
       }
@@ -310,7 +323,14 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
       };
 
       await window.service.externalAPI.updateProvider(newProviderForm.provider, newProvider);
-      setLocalProviders(previous => [...previous, newProvider]);
+      // DEBUG: console localProviders
+      console.log(`localProviders`, localProviders);
+      // DEBUG: console newProvider
+      console.log(`newProvider`, newProvider);
+      const updatedProviders = [...localProviders, newProvider];
+      // DEBUG: console updatedProviders
+      console.log(`updatedProviders`, updatedProviders);
+      setLocalProviders(updatedProviders);
 
       setProviderForms(previous => ({
         ...previous,
@@ -326,7 +346,7 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
         },
       }));
 
-      setSelectedTabIndex(localProviders.length);
+      setSelectedTabIndex(updatedProviders.length - 1);
       setNewProviderForm({ provider: '', providerClass: 'openAICompatible', baseURL: '' });
       setShowAddProviderForm(false);
       showMessage(t('Preference.ProviderAddedSuccessfully'), 'success');
@@ -379,7 +399,7 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
     </>
   );
 
-  if (providers.length === 0) {
+  if (localProviders.length === 0) {
     return (
       <ListItemVertical>
         <ListItemText
@@ -449,7 +469,7 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
           );
         })}
       </Box>
-      <ModelDialog
+      <NewModelDialog
         open={modelDialogOpen}
         onClose={closeModelDialog}
         onAddModel={handleAddModel}
@@ -471,7 +491,7 @@ export function ProviderConfig({ providers }: ProviderConfigProps) {
         open={snackbarOpen}
         autoHideDuration={2000}
         onClose={handleSnackbarClose}
-        anchorOrigin={{ vertical: 'bottom', horizontal: 'left' }}
+        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
       >
         <Alert onClose={handleSnackbarClose} severity={snackbarSeverity} sx={{ width: '100%' }}>
           {snackbarMessage}

@@ -52,7 +52,7 @@ export const useTaskConfigManagement = ({ taskId }: UseAIConfigManagementProps =
         api: {
           provider,
           model,
-        }
+        },
       };
 
       // Update local state

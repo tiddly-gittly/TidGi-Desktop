@@ -37,7 +37,7 @@ interface ModelDialogProps {
   onFeatureChange: (feature: ModelFeature, checked: boolean) => void;
 }
 
-export function ModelDialog({
+export function NewModelDialog({
   open,
   onClose,
   onAddModel,
@@ -47,7 +47,7 @@ export function ModelDialog({
   selectedDefaultModel,
   onSelectDefaultModel,
   onModelFormChange,
-  onFeatureChange
+  onFeatureChange,
 }: ModelDialogProps) {
   const { t } = useTranslation('agent');
 
