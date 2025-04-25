@@ -2,7 +2,7 @@ import React, { useCallback, useEffect } from 'react';
 import { ChatSessionUI } from './ChatSessionUI';
 import { useAgentStore, useAgentStoreInitialization } from './store';
 
-export function AgentSessions(): React.JSX.Element {
+export function AgentTabs(): React.JSX.Element {
   // 初始化store
   useAgentStoreInitialization();
 

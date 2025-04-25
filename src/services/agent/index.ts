@@ -9,11 +9,12 @@ import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { IWikiService } from '@services/wiki/interface';
 
-import { echoHandler } from './defaultAgents/echo';
+// Import from the new centralized location
+import { registerDefaultAgents } from './defaultAgents';
 import type { Agent, AgentServiceConfig, AgentTask, IAgentService } from './interface';
 import * as schema from './server/schema';
 
-// Import the new manager classes
+// Import the manager classes
 import { AgentConfigManager } from './AgentConfigManager';
 import { AgentDatabaseManager } from './AgentDatabaseManager';
 import { AgentServerManager } from './AgentServerManager';
@@ -60,70 +61,12 @@ export class AgentService implements IAgentService {
       this.serverManager = new AgentServerManager(dataSource);
       this.configManager = new AgentConfigManager(this.dbManager, this.externalAPIService);
 
-      // Register default agents
-      await this.registerDefaultAgents();
+      // Register default agents using the refactored function
+      await registerDefaultAgents(this.agents, this.dbManager);
 
       this.initialized = true;
     } catch (error) {
       logger.error('Failed to initialize agent service:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * Register default agents
-   */
-  private async registerDefaultAgents(): Promise<void> {
-    try {
-      logger.info('Registering default agents');
-
-      // Example: Register a simple echo agent
-      const echoAgent: Agent = {
-        id: 'echo-agent',
-        name: 'Echo Agent',
-        description: 'Simple echo agent that returns user messages',
-        avatarUrl: 'https://example.com/echo-agent.png',
-        handler: echoHandler,
-        card: {
-          name: 'Echo Agent',
-          description: 'Simple echo agent',
-          url: 'http://localhost:41241/echo-agent',
-          version: '1.0.0',
-          capabilities: {
-            streaming: true,
-          },
-          skills: [
-            {
-              id: 'echo',
-              name: 'Echo',
-              description: 'Echo user input',
-            },
-          ],
-        },
-      };
-
-      // Store agent in memory
-      this.agents.set(echoAgent.id, echoAgent);
-
-      // Store agent in database
-      if (this.dbManager) {
-        await this.dbManager.saveAgent({
-          id: echoAgent.id,
-          name: echoAgent.name,
-          description: echoAgent.description,
-          avatarUrl: echoAgent.avatarUrl,
-          card: echoAgent.card,
-        });
-      }
-
-      // Create server instance
-      if (this.serverManager) {
-        await this.serverManager.getOrCreateServer(echoAgent);
-      }
-
-      logger.info('Registered default agent:', echoAgent.id);
-    } catch (error) {
-      logger.error('Error registering default agents:', error);
       throw error;
     }
   }
