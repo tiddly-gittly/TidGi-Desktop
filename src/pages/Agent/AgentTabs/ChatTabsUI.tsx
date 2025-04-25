@@ -50,7 +50,7 @@ interface ChatProps {
   onSelectAgent?: (agentId: string) => void;
 }
 
-export const ChatSessionUI: React.FC<ChatProps> = ({
+export const ChatTabsUI: React.FC<ChatProps> = ({
   tasks,
   activeTaskId,
   isLoading,

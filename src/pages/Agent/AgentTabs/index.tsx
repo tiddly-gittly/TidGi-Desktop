@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { ChatSessionUI } from './ChatSessionUI';
+import { ChatTabsUI } from './ChatTabsUI';
 import { useAgentStore, useAgentStoreInitialization } from './store';
 
 export function AgentTabs(): React.JSX.Element {
@@ -90,7 +90,7 @@ export function AgentTabs(): React.JSX.Element {
   }, [activeTaskId, cancelRequest]);
 
   return (
-    <ChatSessionUI
+    <ChatTabsUI
       tasks={tasks}
       activeTaskId={activeTaskId}
       availableAgents={availableAgents}
