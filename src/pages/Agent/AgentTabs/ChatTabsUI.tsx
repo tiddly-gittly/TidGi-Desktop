@@ -12,7 +12,6 @@ import { TaskMessages } from './components/TaskMessages';
 import { TaskMessagesHeader } from './components/TaskMessagesHeader';
 import { TasksGroup } from './components/TasksGroup';
 import { TasksList } from './components/TasksList';
-import { TasksListHeader } from './components/TasksListHeader';
 import { useAgentStore } from './store';
 
 const ChatContainer = styled.div`
@@ -124,7 +123,6 @@ export const ChatTabsUI: React.FC<ChatProps> = ({
   return (
     <ChatContainer>
       <TasksList>
-        <TasksListHeader onNewSession={onNewTask} />
         {groupTasks().map(group => (
           <TasksGroup key={group.heading} heading={group.heading}>
             {group.sessions.map(task => (

@@ -1,5 +1,7 @@
-import React, { useCallback, useEffect } from 'react';
-import { ChatTabsUI } from './ChatTabsUI';
+import React, { useCallback } from 'react';
+import { useLocation } from 'wouter';
+import { TaskListItem } from './components/TaskListItem';
+import { TasksList } from './components/TasksList';
 import { useAgentStore, useAgentStoreInitialization } from './store';
 
 export function AgentTabs(): React.JSX.Element {
@@ -8,101 +10,83 @@ export function AgentTabs(): React.JSX.Element {
 
   const tasks = useAgentStore(state => state.tasks);
   const activeTaskId = useAgentStore(state => state.activeTaskId);
-  const availableAgents = useAgentStore(state => state.availableAgents);
-  const selectedAgentId = useAgentStore(state => state.selectedAgentId);
-  const createNewTask = useAgentStore(state => state.createNewTask);
-  const selectTask = useAgentStore(state => state.selectTask);
   const deleteTask = useAgentStore(state => state.deleteTask);
-  const sendMessage = useAgentStore(state => state.sendMessageToAI);
-  const cancelRequest = useAgentStore(state => state.cancelAIRequest);
-  const selectAgent = useAgentStore(state => state.selectAgent);
-  const isTaskLoading = useAgentStore(state => state.isTaskLoading);
-  const isTaskStreaming = useAgentStore(state => state.isTaskStreaming);
-  const isCreatingTask = useAgentStore(state => state.creatingTask);
 
-  // 获取当前活跃任务的状态
-  const isLoading = activeTaskId ? isTaskLoading(activeTaskId) : false;
-  const isStreaming = activeTaskId ? isTaskStreaming(activeTaskId) : false;
+  const [, setLocation] = useLocation();
 
   // 处理任务选择
   const handleSelectTask = useCallback((id: string) => {
-    selectTask(id);
-  }, [selectTask]);
+    setLocation(`/session/${id}`);
+  }, [setLocation]);
 
-  // 处理智能体选择
-  const handleSelectAgent = useCallback((agentId: string) => {
-    selectAgent(agentId);
-  }, [selectAgent]);
+  // 根据创建日期对任务进行分组
+  const groupTasks = () => {
+    const today: Array<typeof tasks[0]> = [];
+    const yesterday: Array<typeof tasks[0]> = [];
+    const older: Array<typeof tasks[0]> = [];
 
-  // 包装创建任务方法，使用async/await处理
-  const handleNewTask = useCallback(async () => {
-    try {
-      // 检查是否有选定的智能体
-      const currentAgentId = selectedAgentId;
-      if (!currentAgentId && availableAgents.length > 0) {
-        // 如果没有选定智能体但有可用智能体，先选择第一个
-        selectAgent(availableAgents[0].id);
-      }
-      
-      // 检查是否正在创建任务，避免重复点击
-      if (isCreatingTask) {
-        console.log('Already creating a task, please wait...');
+    const now = new Date();
+    const todayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+    const yesterdayDate = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1).getTime();
+
+    tasks.forEach(task => {
+      if (!task.createdAt) {
+        today.push(task);
         return;
       }
-      
-      const taskId = await createNewTask();
-      console.log('Created new task with ID:', taskId);
-      
-      if (!taskId) {
-        console.error('Failed to create task: Empty task ID returned');
-      }
-    } catch (error) {
-      console.error('Failed to create new task:', error);
-    }
-  }, [createNewTask, selectedAgentId, availableAgents, selectAgent, isCreatingTask]);
 
-  // 包装sendMessage方法，带错误处理
-  const handleSendMessage = useCallback(async (message: string) => {
-    try {
-      if (!activeTaskId) {
-        // 如果没有活跃任务，先创建一个
-        const newTaskId = await createNewTask();
-        if (newTaskId) {
-          await sendMessage(message, newTaskId);
-        }
+      const taskDate = new Date(task.createdAt).getTime();
+
+      if (taskDate >= todayDate) {
+        today.push(task);
+      } else if (taskDate >= yesterdayDate) {
+        yesterday.push(task);
       } else {
-        await sendMessage(message, activeTaskId);
+        older.push(task);
       }
-    } catch (error) {
-      console.error('发送消息失败:', error);
-    }
-  }, [activeTaskId, createNewTask, sendMessage]);
+    });
 
-  // 包装cancelRequest方法，带错误处理
-  const handleCancelRequest = useCallback(async () => {
-    try {
-      if (activeTaskId) {
-        await cancelRequest(activeTaskId);
-      }
-    } catch (error) {
-      console.error('Failed to cancel request:', error);
+    const sortTasksByDate = (tasks: Array<typeof tasks[0]>) => {
+      return [...tasks].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const dateB = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return dateB - dateA; // 倒序排列
+      });
+    };
+
+    // 返回分组
+    const result = [];
+
+    if (today.length > 0) {
+      result.push({ heading: '今天', sessions: sortTasksByDate(today) });
     }
-  }, [activeTaskId, cancelRequest]);
+
+    if (yesterday.length > 0) {
+      result.push({ heading: '昨天', sessions: sortTasksByDate(yesterday) });
+    }
+
+    if (older.length > 0) {
+      result.push({ heading: '更早', sessions: sortTasksByDate(older) });
+    }
+
+    return result;
+  };
 
   return (
-    <ChatTabsUI
-      tasks={tasks}
-      activeTaskId={activeTaskId}
-      availableAgents={availableAgents}
-      selectedAgentId={selectedAgentId}
-      onNewTask={handleNewTask}
-      onSelectTask={handleSelectTask}
-      onDeleteTask={deleteTask}
-      onSendMessage={handleSendMessage}
-      onCancelRequest={handleCancelRequest}
-      onSelectAgent={handleSelectAgent}
-      isLoading={isLoading || isCreatingTask}
-      isStreaming={isStreaming}
-    />
+    <TasksList>
+      {groupTasks().map(group => (
+        <TasksGroup key={group.heading} heading={group.heading}>
+          {group.sessions.map(task => (
+            <TaskListItem
+              key={task.id || ''}
+              task={task}
+              isActive={task.id === activeTaskId}
+              onSelect={handleSelectTask}
+              onDelete={deleteTask}
+            />
+          ))}
+        </TasksGroup>
+      ))}
+    </TasksList>
   );
 }
