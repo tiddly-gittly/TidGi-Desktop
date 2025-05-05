@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/strict-boolean-expressions */
 /* eslint-disable @typescript-eslint/require-await */
 import { app, dialog, ipcMain, MessageBoxOptions, shell } from 'electron';
 import fs from 'fs-extra';
@@ -275,6 +274,21 @@ ${message.message}
       default: {
         break;
       }
+    }
+  }
+
+  public async moveToTrash(filePath: string): Promise<boolean> {
+    if (!filePath) {
+      logger.error('NativeService.moveToTrash() filePath is empty', { filePath });
+      return false;
+    }
+    logger.debug(`NativeService.moveToTrash() Moving to trash: ${filePath}`);
+    try {
+      await shell.trashItem(filePath);
+      return true;
+    } catch (error) {
+      logger.error('NativeService.moveToTrash() failed', { error, filePath });
+      return false;
     }
   }
 

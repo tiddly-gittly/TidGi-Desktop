@@ -70,6 +70,12 @@ export interface INativeService {
   path(method: 'basename' | 'dirname' | 'join', pathString: string | undefined, ...paths: string[]): Promise<string | undefined>;
   pickDirectory(defaultPath?: string, options?: IPickDirectoryOptions): Promise<string[]>;
   pickFile(filters?: Electron.OpenDialogOptions['filters']): Promise<string[]>;
+  /**
+   * Move a file or directory to the trash bin.
+   * @param filePath The absolute path of the file or directory to move to the trash.
+   * @returns A promise that resolves to true if the operation was successful, false otherwise.
+   */
+  moveToTrash(filePath: string): Promise<boolean>;
   quit(): void;
   showElectronMessageBox(options: Electron.MessageBoxOptions, windowName?: WindowNames): Promise<Electron.MessageBoxReturnValue | undefined>;
   /**
@@ -92,6 +98,7 @@ export const NativeServiceIPCDescriptor = {
     log: ProxyPropertyType.Function,
     mkdir: ProxyPropertyType.Function,
     movePath: ProxyPropertyType.Function,
+    moveToTrash: ProxyPropertyType.Function,
     open: ProxyPropertyType.Function,
     openInEditor: ProxyPropertyType.Function,
     openInGitGuiApp: ProxyPropertyType.Function,
