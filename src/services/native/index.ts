@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 /* eslint-disable @typescript-eslint/require-await */
 import { app, dialog, ipcMain, MessageBoxOptions, shell } from 'electron';
 import fs from 'fs-extra';
@@ -278,7 +279,7 @@ ${message.message}
   }
 
   public async moveToTrash(filePath: string): Promise<boolean> {
-    if (!filePath) {
+    if (!filePath?.trim?.()) {
       logger.error('NativeService.moveToTrash() filePath is empty', { filePath });
       return false;
     }
@@ -286,8 +287,16 @@ ${message.message}
     try {
       await shell.trashItem(filePath);
       return true;
-    } catch (error) {
-      logger.error('NativeService.moveToTrash() failed', { error, filePath });
+    } catch {
+      logger.debug('NativeService.moveToTrash() failed with original path, trying with decoded path');
+      try {
+        const decodedPath = decodeURIComponent(filePath);
+        logger.debug(`NativeService.moveToTrash() Moving to trash with decoded path: ${decodedPath}`);
+        await shell.trashItem(decodedPath);
+        return true;
+      } catch (error) {
+        logger.error('NativeService.moveToTrash() failed with decoded path', { error, filePath });
+      }
       return false;
     }
   }

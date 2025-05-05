@@ -52,8 +52,8 @@ export interface INativeService {
    * @returns false if failed. If success, returns the absolute path of the copied file or directory.
    */
   movePath(fromFilePath: string, toFilePath: string, options?: { fileToDir?: boolean }): Promise<false | string>;
-  openInEditor(filePath: string, editorName?: string | undefined): Promise<boolean>;
-  openInGitGuiApp(filePath: string, editorName?: string | undefined): Promise<boolean>;
+  openInEditor(filePath: string, editorName?: string): Promise<boolean>;
+  openInGitGuiApp(filePath: string, editorName?: string): Promise<boolean>;
   openNewGitHubIssue(error: Error): Promise<void>;
   /**
    * Open a file path, if is a relative path from wiki folder in the wiki folder, it will open it too.
