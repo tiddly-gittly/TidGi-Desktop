@@ -1,0 +1,176 @@
+import AddIcon from '@mui/icons-material/Add';
+import AppsIcon from '@mui/icons-material/Apps';
+import ChatIcon from '@mui/icons-material/Chat';
+import CloseIcon from '@mui/icons-material/Close';
+import PushPinIcon from '@mui/icons-material/PushPin';
+import WebIcon from '@mui/icons-material/Web';
+import { ButtonBase, Tooltip, Typography } from '@mui/material';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
+
+import { useTabStore } from '../../store/tabStore';
+import { TabItem as TabItemType, TabType } from '../../types/tab';
+
+interface TabItemProps {
+  tab: TabItemType;
+  isActive: boolean;
+  onClick: () => void;
+  isNewTabButton?: boolean; // 是否是新标签页按钮
+}
+
+interface StyledTabProps {
+  $isActive: boolean;
+  $isPinned?: boolean;
+}
+
+const TabButton = styled(ButtonBase)<StyledTabProps>`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 40px;
+  border-radius: 12px;
+  position: relative;
+  transition: all 0.2s ease;
+  padding: 0 12px;
+  background-color: ${props => props.$isActive ? props.theme.palette.primary.main : 'transparent'};
+  
+  &:hover {
+    background-color: ${props =>
+  props.$isActive
+    ? props.theme.palette.primary.main
+    : props.theme.palette.action.hover};
+  }
+  
+  &:hover .tab-actions {
+    opacity: 1;
+  }
+`;
+
+const TabIcon = styled.div<StyledTabProps>`
+  color: ${props => props.$isActive ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
+  font-size: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 8px;
+  flex-shrink: 0;
+`;
+
+const TabLabel = styled(Typography)<StyledTabProps>`
+  font-size: 12px;
+  text-align: left;
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: ${props => props.$isActive ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
+`;
+
+const TabActions = styled.div`
+  position: absolute;
+  top: 50%;
+  right: 8px;
+  transform: translateY(-50%);
+  display: flex;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.2s;
+`;
+
+const ActionIcon = styled.div`
+  font-size: 14px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.1);
+  
+  &:hover {
+    color: ${props => props.theme.palette.primary.main};
+    background-color: rgba(0, 0, 0, 0.2);
+  }
+`;
+
+const PinIndicator = styled.div`
+  position: absolute;
+  left: 4px;
+  bottom: 4px;
+  font-size: 12px;
+  color: ${props => props.theme.palette.text.secondary};
+`;
+
+export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewTabButton = false }) => {
+  const { t } = useTranslation('agent');
+  const { closeTab, addTab } = useTabStore();
+
+  const handleClose = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!isNewTabButton) {
+      closeTab(tab.id);
+    }
+  };
+
+  const handleClick = () => {
+    if (isNewTabButton) {
+      // 如果是新标签页按钮，则创建新标签页
+      addTab(TabType.NEW_TAB);
+    } else {
+      // 普通标签页，切换激活状态
+      onClick();
+    }
+  };
+
+  const getTabIcon = () => {
+    if (isNewTabButton) {
+      return <AddIcon fontSize='inherit' />;
+    }
+    switch (tab.type) {
+      case TabType.WEB:
+        return <WebIcon fontSize='inherit' />;
+      case TabType.CHAT:
+        return <ChatIcon fontSize='inherit' />;
+      case TabType.NEW_TAB:
+        return <AppsIcon fontSize='inherit' />;
+      default:
+        return <AppsIcon fontSize='inherit' />;
+    }
+  };
+
+  const tabTitle = isNewTabButton ? 'agent.tabTitle.newTab' : tab.title;
+
+  return (
+    <Tooltip title={t(tabTitle)} placement='right'>
+      <TabButton
+        $isActive={isActive}
+        onClick={handleClick}
+        data-tab-id={isNewTabButton ? 'new-tab-button' : tab.id}
+        $isPinned={!isNewTabButton && tab.isPinned}
+      >
+        <TabIcon $isActive={isActive}>
+          {getTabIcon()}
+        </TabIcon>
+        <TabLabel $isActive={isActive} variant='caption'>
+          {t(tabTitle)}
+        </TabLabel>
+
+        {!isNewTabButton && (
+          <TabActions className='tab-actions'>
+            <ActionIcon onClick={handleClose}>
+              <CloseIcon fontSize='inherit' />
+            </ActionIcon>
+          </TabActions>
+        )}
+
+        {!isNewTabButton && tab.isPinned && (
+          <PinIndicator>
+            <PushPinIcon fontSize='inherit' />
+          </PinIndicator>
+        )}
+      </TabButton>
+    </Tooltip>
+  );
+};

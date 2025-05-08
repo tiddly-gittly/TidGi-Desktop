@@ -1,0 +1,192 @@
+import React, { useState } from 'react';
+import styled from 'styled-components';
+import { Box, TextField, Button, Typography, Avatar, IconButton } from '@mui/material';
+import { useTranslation } from 'react-i18next';
+import SendIcon from '@mui/icons-material/Send';
+import DeleteIcon from '@mui/icons-material/Delete';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import PersonIcon from '@mui/icons-material/Person';
+import { nanoid } from 'nanoid';
+
+import { IChatTab } from '../../../types/tab';
+import { useTabStore } from '../../../store/tabStore';
+
+interface ChatTabContentProps {
+  tab: IChatTab;
+}
+
+const Container = styled(Box)`
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+`;
+
+const ChatHeader = styled(Box)`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid ${props => props.theme.palette.divider};
+`;
+
+const Title = styled(Typography)`
+  font-weight: 600;
+`;
+
+const MessagesContainer = styled(Box)`
+  flex: 1;
+  padding: 16px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  background-color: ${props => props.theme.palette.background.default};
+`;
+
+const MessageBubble = styled(Box)<{ $isUser: boolean }>`
+  display: flex;
+  gap: 12px;
+  max-width: 80%;
+  align-self: ${props => props.$isUser ? 'flex-end' : 'flex-start'};
+`;
+
+const MessageAvatar = styled(Avatar)<{ $isUser: boolean }>`
+  background-color: ${props => props.$isUser ? props.theme.palette.primary.main : props.theme.palette.secondary.main};
+  color: ${props => props.$isUser ? props.theme.palette.primary.contrastText : props.theme.palette.secondary.contrastText};
+`;
+
+const MessageContent = styled(Box)<{ $isUser: boolean }>`
+  background-color: ${props => props.$isUser ? props.theme.palette.primary.light : props.theme.palette.background.paper};
+  color: ${props => props.$isUser ? props.theme.palette.primary.contrastText : props.theme.palette.text.primary};
+  padding: 12px 16px;
+  border-radius: 12px;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+  position: relative;
+`;
+
+const InputContainer = styled(Box)`
+  display: flex;
+  padding: 12px 16px;
+  gap: 12px;
+  border-top: 1px solid ${props => props.theme.palette.divider};
+  background-color: ${props => props.theme.palette.background.paper};
+`;
+
+const InputField = styled(TextField)`
+  flex: 1;
+  .MuiOutlinedInput-root {
+    border-radius: 20px;
+    padding-right: 12px;
+  }
+`;
+
+const ClearButton = styled(IconButton)`
+  align-self: flex-end;
+`;
+
+export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
+  const { t } = useTranslation('agent');
+  const { updateTabData } = useTabStore();
+  const [inputMessage, setInputMessage] = useState('');
+  
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setInputMessage(e.target.value);
+  };
+  
+  const handleSendMessage = () => {
+    if (!inputMessage.trim()) return;
+    
+    const newMessage = {
+      id: nanoid(),
+      role: 'user' as const,
+      content: inputMessage,
+      timestamp: Date.now(),
+    };
+    
+    const updatedMessages = [...tab.messages, newMessage];
+    
+    // 添加一个简单的AI回复
+    const aiReply = {
+      id: nanoid(),
+      role: 'assistant' as const,
+      content: t('agent.chat.aiReplyPlaceholder'),
+      timestamp: Date.now() + 1,
+    };
+    
+    updateTabData(tab.id, { 
+      messages: [...updatedMessages, aiReply]
+    });
+    
+    setInputMessage('');
+  };
+  
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
+    }
+  };
+  
+  const handleClearChat = () => {
+    updateTabData(tab.id, { messages: [] });
+  };
+  
+  return (
+    <Container>
+      <ChatHeader>
+        <Title variant="h6">{t(tab.title)}</Title>
+        <ClearButton onClick={handleClearChat} size="small">
+          <DeleteIcon />
+        </ClearButton>
+      </ChatHeader>
+      
+      <MessagesContainer>
+        {tab.messages.length === 0 ? (
+          <Box sx={{ textAlign: 'center', color: 'text.secondary', mt: 4 }}>
+            <SmartToyIcon sx={{ fontSize: 48, opacity: 0.5 }} />
+            <Typography variant="body1" sx={{ mt: 2 }}>
+              {t('agent.chat.startConversation')}
+            </Typography>
+          </Box>
+        ) : (
+          tab.messages.map(message => (
+            <MessageBubble key={message.id} $isUser={message.role === 'user'}>
+              <MessageAvatar $isUser={message.role === 'user'}>
+                {message.role === 'user' ? <PersonIcon /> : <SmartToyIcon />}
+              </MessageAvatar>
+              <MessageContent $isUser={message.role === 'user'}>
+                <Typography variant="body1">{message.content}</Typography>
+              </MessageContent>
+            </MessageBubble>
+          ))
+        )}
+      </MessagesContainer>
+      
+      <InputContainer>
+        <InputField
+          fullWidth
+          multiline
+          maxRows={4}
+          variant="outlined"
+          placeholder={t('agent.chat.typePlaceholder')}
+          value={inputMessage}
+          onChange={handleInputChange}
+          onKeyPress={handleKeyPress}
+          InputProps={{
+            endAdornment: (
+              <Button
+                color="primary"
+                disabled={!inputMessage.trim()}
+                onClick={handleSendMessage}
+                sx={{ minWidth: 'auto' }}
+              >
+                <SendIcon />
+              </Button>
+            ),
+          }}
+        />
+      </InputContainer>
+    </Container>
+  );
+};

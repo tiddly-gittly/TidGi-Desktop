@@ -4,12 +4,12 @@ import { useTranslation } from 'react-i18next';
 import { List } from '@mui/material';
 
 import { ListItemText } from '@/components/ListItem';
-import { useTaskConfigManagement } from '@/pages/Agent/AgentTabs/components/useAIConfigManagement';
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import { ListItemVertical, Paper, SectionTitle } from '../../PreferenceComponents';
 import type { ISectionProps } from '../../useSections';
 import { ModelSelector } from './components/ModelSelector';
 import { ProviderConfig } from './components/ProviderConfig';
+import { useTaskConfigManagement } from './useAIConfigManagement';
 
 export function ExternalAPI(props: Partial<ISectionProps>): React.JSX.Element {
   const { t } = useTranslation('agent');
