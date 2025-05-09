@@ -2,16 +2,16 @@ import AddIcon from '@mui/icons-material/Add';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import ChatIcon from '@mui/icons-material/Chat';
 import CodeIcon from '@mui/icons-material/Code';
-import SearchIcon from '@mui/icons-material/Search';
 import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import WebIcon from '@mui/icons-material/Web';
-import { Box, Card, Grid, IconButton, InputAdornment, TextField, Typography } from '@mui/material';
+import { Box, Card, Grid, IconButton, Typography } from '@mui/material';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
 import { useTabStore } from '../../../store/tabStore';
 import { INewTab, TabType } from '../../../types/tab';
+import { Search } from '../../Search/Search';
 
 interface NewTabContentProps {
   tab: INewTab;
@@ -123,19 +123,7 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
   return (
     <Container>
       <SearchContainer>
-        <TextField
-          fullWidth
-          placeholder={t('agent.newTab.searchPlaceholder')}
-          variant='outlined'
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position='start'>
-                <SearchIcon />
-              </InputAdornment>
-            ),
-          }}
-          sx={{ borderRadius: 4 }}
-        />
+        <Search placeholder={t('agent.newTab.searchPlaceholder')} />
       </SearchContainer>
 
       <Box mb={6}>
