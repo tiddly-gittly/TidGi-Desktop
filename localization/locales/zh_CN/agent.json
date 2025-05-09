@@ -1,6 +1,17 @@
 {
   "Add": "添加",
+  "Browser": {
+    "Back": "后退",
+    "Bookmark": "收藏",
+    "CurrentUrl": "当前 URL",
+    "EnterUrlPlaceholder": "输入网址",
+    "Forward": "前进",
+    "Home": "主页",
+    "Refresh": "刷新",
+    "RenderPlaceholder": "这是网页渲染区域"
+  },
   "Chat": {
+    "AiReplyPlaceholder": "我正在处理您的请求...",
     "Cancel": "取消",
     "ChangeMetadata": "修改元数据",
     "ConfigError": {
@@ -25,11 +36,27 @@
       "Today": "今天",
       "Yesterday": "昨天"
     },
+    "StartConversation": "开始新对话",
     "StartNewConversation": "开始一个新的对话",
     "Thinking": "正在思考...",
+    "TypePlaceholder": "输入消息...",
     "Typing": "正在输入中...",
     "Use": "使用",
     "WaitingForResponse": "等待响应中..."
+  },
+  "ContextMenu": {
+    "AddToSplitView": "添加到并排视图",
+    "Close": "关闭",
+    "CloseAbove": "关闭上方标签页",
+    "CloseBelow": "关闭下方标签页",
+    "CloseOther": "关闭其他标签页",
+    "CloseTabs": "关闭多个标签页",
+    "Duplicate": "复制",
+    "NewTabBelow": "在下方新建标签页",
+    "Pin": "固定标签页",
+    "Refresh": "刷新",
+    "RestoreClosed": "恢复关闭的标签页",
+    "Unpin": "取消固定"
   },
   "ModelFeature": {
     "Embedding": "嵌入",
@@ -38,6 +65,16 @@
     "Reasoning": "推理",
     "ToolCalling": "工具调用",
     "Vision": "视觉"
+  },
+  "NewTab": {
+    "CodeTools": "代码工具",
+    "Explore": "探索",
+    "Favorites": "收藏夹",
+    "NewChat": "新建对话",
+    "NewTab": "新建标签页",
+    "NewWebTab": "新建网页",
+    "QuickAccess": "快速访问",
+    "SearchPlaceholder": "搜索标签页或智能体..."
   },
   "Preference": {
     "AIModelSelection": "AI 模型选择",

@@ -123,12 +123,12 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
   return (
     <Container>
       <SearchContainer>
-        <Search placeholder={t('agent.newTab.searchPlaceholder')} />
+        <Search placeholder={t('NewTab.SearchPlaceholder')} />
       </SearchContainer>
 
       <Box mb={6}>
         <SectionTitle variant='h5'>
-          {t('agent.newTab.quickAccess')}
+          {t('NewTab.QuickAccess')}
         </SectionTitle>
 
         <QuickAccessGrid container spacing={3}>
@@ -137,7 +137,7 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
               <ShortcutIcon>
                 <WebIcon fontSize='inherit' />
               </ShortcutIcon>
-              <Typography variant='subtitle1'>{t('agent.newTab.newWebTab')}</Typography>
+              <Typography variant='subtitle1'>{t('NewTab.NewWebTab')}</Typography>
             </ShortcutCard>
           </Grid>
 
@@ -146,7 +146,7 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
               <ShortcutIcon>
                 <ChatIcon fontSize='inherit' />
               </ShortcutIcon>
-              <Typography variant='subtitle1'>{t('agent.newTab.newChat')}</Typography>
+              <Typography variant='subtitle1'>{t('NewTab.NewChat')}</Typography>
             </ShortcutCard>
           </Grid>
 
@@ -155,7 +155,7 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
               <ShortcutIcon>
                 <TravelExploreIcon fontSize='inherit' />
               </ShortcutIcon>
-              <Typography variant='subtitle1'>{t('agent.newTab.explore')}</Typography>
+              <Typography variant='subtitle1'>{t('NewTab.Explore')}</Typography>
             </ShortcutCard>
           </Grid>
 
@@ -164,7 +164,7 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
               <ShortcutIcon>
                 <CodeIcon fontSize='inherit' />
               </ShortcutIcon>
-              <Typography variant='subtitle1'>{t('agent.newTab.codeTools')}</Typography>
+              <Typography variant='subtitle1'>{t('NewTab.CodeTools')}</Typography>
             </ShortcutCard>
           </Grid>
         </QuickAccessGrid>
@@ -173,7 +173,7 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
       <Box>
         <Box display='flex' justifyContent='space-between' alignItems='center' mb={2}>
           <SectionTitle variant='h5'>
-            {t('agent.newTab.favorites')}
+            {t('NewTab.Favorites')}
           </SectionTitle>
 
           <IconButton color='primary' size='small'>

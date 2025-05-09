@@ -68,12 +68,12 @@ export const WebTabContent: React.FC<WebTabContentProps> = ({ tab }) => {
   const { updateTabData } = useTabStore();
   const [inputUrl, setInputUrl] = useState(tab.url);
 
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputUrl(e.target.value);
+  const handleUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setInputUrl(event.target.value);
   };
 
-  const handleUrlSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleUrlSubmit = (event: React.FormEvent) => {
+    event.preventDefault();
     updateTabData(tab.id, { url: inputUrl });
   };
 
@@ -85,25 +85,25 @@ export const WebTabContent: React.FC<WebTabContentProps> = ({ tab }) => {
   return (
     <Container>
       <AddressBar>
-        <Tooltip title={t('agent.browser.back')}>
+        <Tooltip title={t('Browser.Back')}>
           <NavigationButton size='small'>
             <ArrowBackIcon />
           </NavigationButton>
         </Tooltip>
 
-        <Tooltip title={t('agent.browser.forward')}>
+        <Tooltip title={t('Browser.Forward')}>
           <NavigationButton size='small'>
             <ArrowForwardIcon />
           </NavigationButton>
         </Tooltip>
 
-        <Tooltip title={t('agent.browser.refresh')}>
+        <Tooltip title={t('Browser.Refresh')}>
           <NavigationButton size='small' onClick={handleRefresh}>
             <RefreshIcon />
           </NavigationButton>
         </Tooltip>
 
-        <Tooltip title={t('agent.browser.home')}>
+        <Tooltip title={t('Browser.Home')}>
           <NavigationButton size='small'>
             <HomeIcon />
           </NavigationButton>
@@ -116,11 +116,11 @@ export const WebTabContent: React.FC<WebTabContentProps> = ({ tab }) => {
             size='small'
             value={inputUrl}
             onChange={handleUrlChange}
-            placeholder={t('agent.browser.enterUrlPlaceholder')}
+            placeholder={t('Browser.EnterUrlPlaceholder')}
           />
         </form>
 
-        <Tooltip title={t('agent.browser.bookmark')}>
+        <Tooltip title={t('Browser.Bookmark')}>
           <NavigationButton size='small'>
             <BookmarkIcon />
           </NavigationButton>
@@ -129,10 +129,10 @@ export const WebTabContent: React.FC<WebTabContentProps> = ({ tab }) => {
 
       <WebContent>
         <UrlDisplay>
-          {t('agent.browser.currentUrl')}: {tab.url}
+          {t('Browser.CurrentUrl')}: {tab.url}
           <br />
           <br />
-          {t('agent.browser.renderPlaceholder')}
+          {t('Browser.RenderPlaceholder')}
         </UrlDisplay>
       </WebContent>
     </Container>

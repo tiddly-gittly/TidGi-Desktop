@@ -10,10 +10,10 @@ import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
 import { useTabStore } from '../../store/tabStore';
-import { TabItem as TabItemType, TabType } from '../../types/tab';
+import { INewTabButton, TabItem as TabItemType, TabType } from '../../types/tab';
 
 interface TabItemProps {
-  tab: TabItemType;
+  tab: TabItemType | INewTabButton;
   isActive: boolean;
   onClick: () => void;
   isNewTabButton?: boolean; // 是否是新标签页按钮
@@ -107,8 +107,8 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewT
   const { t } = useTranslation('agent');
   const { closeTab, addTab } = useTabStore();
 
-  const handleClose = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const handleClose = (event: React.MouseEvent) => {
+    event.stopPropagation();
     if (!isNewTabButton) {
       closeTab(tab.id);
     }
@@ -140,21 +140,19 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewT
     }
   };
 
-  const tabTitle = isNewTabButton ? 'agent.tabTitle.newTab' : tab.title;
-
   return (
-    <Tooltip title={t(tabTitle)} placement='right'>
+    <Tooltip title={tab.title} placement='right'>
       <TabButton
         $isActive={isActive}
         onClick={handleClick}
         data-tab-id={isNewTabButton ? 'new-tab-button' : tab.id}
-        $isPinned={!isNewTabButton && tab.isPinned}
+        $isPinned={!isNewTabButton && (tab as TabItemType).isPinned}
       >
         <TabIcon $isActive={isActive}>
           {getTabIcon()}
         </TabIcon>
         <TabLabel $isActive={isActive} variant='caption'>
-          {t(tabTitle)}
+          {tab.title}
         </TabLabel>
 
         {!isNewTabButton && (
@@ -165,7 +163,7 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewT
           </TabActions>
         )}
 
-        {!isNewTabButton && tab.isPinned && (
+        {!isNewTabButton && (tab as TabItemType).isPinned && (
           <PinIndicator>
             <PushPinIcon fontSize='inherit' />
           </PinIndicator>

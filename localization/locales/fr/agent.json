@@ -1,6 +1,16 @@
 {
-  "Add": "Ajouter",
+  "Browser": {
+    "Back": "reculer",
+    "Bookmark": "collection",
+    "CurrentUrl": "URL actuelle",
+    "EnterUrlPlaceholder": "entrer l'URL",
+    "Forward": "avancer",
+    "Home": "Page d'accueil",
+    "Refresh": "rafraîchir",
+    "RenderPlaceholder": "Voici la zone de rendu de la page web."
+  },
   "Chat": {
+    "AiReplyPlaceholder": "Je suis en train de traiter votre demande...",
     "Cancel": "Annuler",
     "ChangeMetadata": "Modifier les métadonnées",
     "ConfigError": {
@@ -25,15 +35,27 @@
       "Today": "Aujourd'hui",
       "Yesterday": "Hier"
     },
+    "StartConversation": "Commencer une nouvelle conversation",
     "StartNewConversation": "Commencer une nouvelle conversation",
     "Thinking": "En réflexion...",
+    "TypePlaceholder": "Entrer un message...",
     "Typing": "En train d'écrire...",
     "Use": "Utiliser",
     "WaitingForResponse": "En attente de réponse..."
   },
-  "Dialog": {
-    "FocusedTiddlerNotFoundTitle": "",
-    "FocusedTiddlerNotFoundTitleDetail": ""
+  "ContextMenu": {
+    "AddToSplitView": "Ajouter à la vue côte à côte",
+    "Close": "fermer",
+    "CloseAbove": "Fermer l'onglet ci-dessus",
+    "CloseBelow": "Fermer l'onglet ci-dessous",
+    "CloseOther": "Fermer les autres onglets",
+    "CloseTabs": "Fermer plusieurs onglets",
+    "Duplicate": "copier",
+    "NewTabBelow": "ouvrir un nouvel onglet ci-dessous",
+    "Pin": "Onglet fixe",
+    "Refresh": "rafraîchir",
+    "RestoreClosed": "récupérer l'onglet fermé",
+    "Unpin": "désépingler"
   },
   "ModelFeature": {
     "Embedding": "Intégration",
@@ -42,6 +64,16 @@
     "Reasoning": "Raisonnement",
     "ToolCalling": "Appel d'outils",
     "Vision": "Vision"
+  },
+  "NewTab": {
+    "CodeTools": "outil de code",
+    "Explore": "explorer",
+    "Favorites": "favoris",
+    "NewChat": "Nouvelle conversation",
+    "NewTab": "Nouvel onglet",
+    "NewWebTab": "nouvelle page web",
+    "QuickAccess": "accès rapide",
+    "SearchPlaceholder": "Rechercher un onglet ou un agent intelligent..."
   },
   "Preference": {
     "AIModelSelection": "Sélection du modèle AI",
@@ -105,7 +137,7 @@
     "ProviderName": "Nom du fournisseur",
     "ProviderNameRequired": "Le nom du fournisseur est requis",
     "SaveProviderConfig": "Enregistrer la configuration du fournisseur",
-    "SelectDefaultProvider": "",
+    "SelectDefaultProvider": "choisir le fournisseur par défaut",
     "SelectFromPresets": "Sélectionner parmi les modèles prédéfinis",
     "SelectModel": "Sélectionner un modèle",
     "SelectProvider": "Sélectionner un fournisseur",

@@ -78,9 +78,9 @@ export const TabContentArea: React.FC = () => {
     let startX = 0;
     let startRatio = splitRatio;
 
-    const handleMouseDown = (e: MouseEvent) => {
-      e.preventDefault();
-      startX = e.clientX;
+    const handleMouseDown = (event: MouseEvent) => {
+      event.preventDefault();
+      startX = event.clientX;
       startRatio = splitRatio;
       setIsDragging(true);
       document.body.style.cursor = 'col-resize';

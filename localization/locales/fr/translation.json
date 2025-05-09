@@ -1,4 +1,5 @@
 {
+  "Add": "Ajouter",
   "AddWorkspace": {
     "AddFileSystemPath": "Ajout de chemins de système de fichiers pour le sous-wiki",
     "AddWorkspace": "Ajouter un espace de travail",
@@ -117,6 +118,8 @@
   "Delete": "Supprimer",
   "Description": "Description",
   "Dialog": {
+    "FocusedTiddlerNotFoundTitle": "Impossible de trouver l'entrée actuellement ciblée",
+    "FocusedTiddlerNotFoundTitleDetail": "Vous pouvez installer le plugin FocusedTiddler sur CPL.",
     "CantFindWorkspaceFolderRemoveWorkspace": "Impossible de trouver le dossier de l'espace de travail qui était encore là avant ! \nLes dossiers qui devraient exister ici ont peut-être été supprimés, ou il n'y a pas de wiki dans ce dossier ! \nVoulez-vous supprimer l'espace de travail ?",
     "DoNotCare": "Non, peu importe",
     "Later": "Plus tard",

@@ -65,6 +65,12 @@ export interface INewTab extends ITab {
   }>;
 }
 
+export type INewTabButton = {
+  id: string;
+  title: string;
+  type: TabType.NEW_TAB;
+};
+
 /**
  * 任意类型的标签页
  */

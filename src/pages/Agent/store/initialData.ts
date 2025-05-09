@@ -12,7 +12,7 @@ export const createInitialTabs = (): TabItem[] => {
     {
       id: nanoid(),
       type: TabType.NEW_TAB,
-      title: 'agent.tabTitle.newTab',
+      title: '默认新标签页测试',
       state: TabState.ACTIVE,
       isPinned: false,
       createdAt: timestamp,
@@ -28,7 +28,7 @@ export const createInitialTabs = (): TabItem[] => {
     {
       id: nanoid(),
       type: TabType.WEB,
-      title: 'agent.tabTitle.google',
+      title: '默认网页标签页测试',
       state: TabState.INACTIVE,
       isPinned: true,
       createdAt: timestamp - 1000,
@@ -41,7 +41,7 @@ export const createInitialTabs = (): TabItem[] => {
     {
       id: nanoid(),
       type: TabType.CHAT,
-      title: 'agent.tabTitle.aiChat',
+      title: '默认聊天标签页测试',
       state: TabState.INACTIVE,
       isPinned: false,
       createdAt: timestamp - 2000,
@@ -50,13 +50,13 @@ export const createInitialTabs = (): TabItem[] => {
         {
           id: nanoid(),
           role: 'user',
-          content: 'agent.chat.exampleUserMessage',
+          content: '默认用户消息',
           timestamp: timestamp - 2000,
         },
         {
           id: nanoid(),
           role: 'assistant',
-          content: 'agent.chat.exampleAiMessage',
+          content: '默认AI消息',
           timestamp: timestamp - 1800,
         },
       ],

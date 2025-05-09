@@ -4,6 +4,8 @@ import ContentCopyIcon from '@mui/icons-material/ContentCopy';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
+import PushPinIcon from '@mui/icons-material/PushPin';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import RestoreIcon from '@mui/icons-material/Restore';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import { Collapse, Divider, List, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
@@ -20,19 +22,6 @@ interface TabContextMenuState {
   position: { top: number; left: number };
   targetTabId: string | null;
 }
-
-// 嵌套菜单样式
-const NestedMenuItem = styled(MenuItem)`
-  position: relative;
-  padding-right: 24px;
-`;
-
-const NestedMenuArrow = styled.div`
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-`;
 
 export const TabContextMenu = () => {
   const { t } = useTranslation('agent');
@@ -62,18 +51,18 @@ export const TabContextMenu = () => {
   // 注册全局右键点击事件
   React.useEffect(() => {
     // 监听标签项的右键点击事件
-    const handleContextMenu = (e: MouseEvent) => {
-      e.preventDefault();
+    const handleContextMenu = (event: MouseEvent) => {
+      event.preventDefault();
 
       // 查找点击的是哪个标签项，通过查找最近的带有 data-tab-id 属性的元素
-      const tabElement = (e.target as HTMLElement).closest('[data-tab-id]');
+      const tabElement = (event.target as HTMLElement).closest('[data-tab-id]');
       if (!tabElement) return;
 
       const tabId = tabElement.getAttribute('data-tab-id');
       if (tabId) {
         setContextMenu({
           isOpen: true,
-          position: { top: e.clientY, left: e.clientX },
+          position: { top: event.clientY, left: event.clientX },
           targetTabId: tabId,
         });
 
@@ -198,7 +187,7 @@ export const TabContextMenu = () => {
           {targetTab.isPinned ? <PushPinOutlinedIcon fontSize='small' /> : <PushPinIcon fontSize='small' />}
         </ListItemIcon>
         <ListItemText>
-          {targetTab.isPinned ? t('agent.contextMenu.unpin') : t('agent.contextMenu.pin')}
+          {targetTab.isPinned ? t('ContextMenu.Unpin') : t('ContextMenu.Pin')}
         </ListItemText>
       </MenuItem>
 
@@ -206,7 +195,7 @@ export const TabContextMenu = () => {
         <ListItemIcon>
           <AddIcon fontSize='small' />
         </ListItemIcon>
-        <ListItemText>{t('agent.contextMenu.newTabBelow')}</ListItemText>
+        <ListItemText>{t('ContextMenu.NewTabBelow')}</ListItemText>
       </MenuItem>
 
       {canAddToSplitView && (
@@ -214,7 +203,7 @@ export const TabContextMenu = () => {
           <ListItemIcon>
             <SplitscreenIcon fontSize='small' />
           </ListItemIcon>
-          <ListItemText>{t('agent.contextMenu.addToSplitView')}</ListItemText>
+          <ListItemText>{t('ContextMenu.AddToSplitView')}</ListItemText>
         </MenuItem>
       )}
 
@@ -223,7 +212,7 @@ export const TabContextMenu = () => {
           <ListItemIcon>
             <RefreshIcon fontSize='small' />
           </ListItemIcon>
-          <ListItemText>{t('agent.contextMenu.refresh')}</ListItemText>
+          <ListItemText>{t('ContextMenu.Refresh')}</ListItemText>
         </MenuItem>
       )}
 
@@ -231,7 +220,7 @@ export const TabContextMenu = () => {
         <ListItemIcon>
           <ContentCopyIcon fontSize='small' />
         </ListItemIcon>
-        <ListItemText>{t('agent.contextMenu.duplicate')}</ListItemText>
+        <ListItemText>{t('ContextMenu.Duplicate')}</ListItemText>
       </MenuItem>
 
       <Divider />
@@ -240,27 +229,27 @@ export const TabContextMenu = () => {
         <ListItemIcon>
           <CloseIcon fontSize='small' />
         </ListItemIcon>
-        <ListItemText>{t('agent.contextMenu.close')}</ListItemText>
+        <ListItemText>{t('ContextMenu.Close')}</ListItemText>
       </MenuItem>
 
       <MenuItem onClick={handleCloseMenuToggle}>
         <ListItemIcon>
           <CloseIcon fontSize='small' />
         </ListItemIcon>
-        <ListItemText>{t('agent.contextMenu.closeTabs')}</ListItemText>
+        <ListItemText>{t('ContextMenu.CloseTabs')}</ListItemText>
         {closeMenuOpen ? <ExpandLessIcon fontSize='small' /> : <ExpandMoreIcon fontSize='small' />}
       </MenuItem>
 
       <Collapse in={closeMenuOpen} timeout='auto' unmountOnExit>
         <List disablePadding sx={{ pl: 2 }}>
           <MenuItem onClick={handleCloseAboveTabs}>
-            <ListItemText sx={{ pl: 2 }}>{t('agent.contextMenu.closeAbove')}</ListItemText>
+            <ListItemText sx={{ pl: 2 }}>{t('ContextMenu.CloseAbove')}</ListItemText>
           </MenuItem>
           <MenuItem onClick={handleCloseBelowTabs}>
-            <ListItemText sx={{ pl: 2 }}>{t('agent.contextMenu.closeBelow')}</ListItemText>
+            <ListItemText sx={{ pl: 2 }}>{t('ContextMenu.CloseBelow')}</ListItemText>
           </MenuItem>
           <MenuItem onClick={handleCloseOtherTabs}>
-            <ListItemText sx={{ pl: 2 }}>{t('agent.contextMenu.closeOther')}</ListItemText>
+            <ListItemText sx={{ pl: 2 }}>{t('ContextMenu.CloseOther')}</ListItemText>
           </MenuItem>
         </List>
       </Collapse>
@@ -270,7 +259,7 @@ export const TabContextMenu = () => {
           <ListItemIcon>
             <RestoreIcon fontSize='small' />
           </ListItemIcon>
-          <ListItemText>{t('agent.contextMenu.restoreClosed')}</ListItemText>
+          <ListItemText>{t('ContextMenu.RestoreClosed')}</ListItemText>
         </MenuItem>
       )}
     </Menu>

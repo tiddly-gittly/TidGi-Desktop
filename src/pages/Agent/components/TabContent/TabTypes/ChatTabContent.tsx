@@ -90,8 +90,8 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
   const { updateTabData } = useTabStore();
   const [inputMessage, setInputMessage] = useState('');
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setInputMessage(e.target.value);
+  const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setInputMessage(event.target.value);
   };
 
   const handleSendMessage = () => {
@@ -110,7 +110,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     const aiReply = {
       id: nanoid(),
       role: 'assistant' as const,
-      content: t('agent.chat.aiReplyPlaceholder'),
+      content: t('Chat.AiReplyPlaceholder'),
       timestamp: Date.now() + 1,
     };
 
@@ -121,9 +121,9 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
     setInputMessage('');
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
+  const handleKeyPress = (event: React.KeyboardEvent) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
       handleSendMessage();
     }
   };
@@ -147,7 +147,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
             <Box sx={{ textAlign: 'center', color: 'text.secondary', mt: 4 }}>
               <SmartToyIcon sx={{ fontSize: 48, opacity: 0.5 }} />
               <Typography variant='body1' sx={{ mt: 2 }}>
-                {t('agent.chat.startConversation')}
+                {t('Chat.StartConversation')}
               </Typography>
             </Box>
           )
@@ -171,7 +171,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
           multiline
           maxRows={4}
           variant='outlined'
-          placeholder={t('agent.chat.typePlaceholder')}
+          placeholder={t('Chat.TypePlaceholder')}
           value={inputMessage}
           onChange={handleInputChange}
           onKeyPress={handleKeyPress}

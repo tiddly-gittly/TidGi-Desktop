@@ -1,6 +1,17 @@
 {
   "Add": "Add",
+  "Browser": {
+    "Back": "Step back",
+    "Bookmark": "Collection",
+    "CurrentUrl": "Current URL",
+    "EnterUrlPlaceholder": "Enter URL",
+    "Forward": "forward",
+    "Home": "Homepage",
+    "Refresh": "refresh",
+    "RenderPlaceholder": "This is the webpage rendering area."
+  },
   "Chat": {
+    "AiReplyPlaceholder": "I am processing your request...",
     "Cancel": "Cancel",
     "ChangeMetadata": "Change Metadata",
     "ConfigError": {
@@ -25,11 +36,27 @@
       "Today": "Today",
       "Yesterday": "Yesterday"
     },
+    "StartConversation": "Start a new conversation",
     "StartNewConversation": "Start a new conversation",
     "Thinking": "Thinking...",
+    "TypePlaceholder": "Enter message...",
     "Typing": "Typing...",
     "Use": "Use",
     "WaitingForResponse": "Waiting for response..."
+  },
+  "ContextMenu": {
+    "AddToSplitView": "Add to side-by-side view",
+    "Close": "Close",
+    "CloseAbove": "Close the tab above",
+    "CloseBelow": "Close the tab below",
+    "CloseOther": "Close other tabs",
+    "CloseTabs": "Close multiple tabs",
+    "Duplicate": "copy",
+    "NewTabBelow": "Open a new tab below",
+    "Pin": "Pinned Tab",
+    "Refresh": "refresh",
+    "RestoreClosed": "Restore closed tab",
+    "Unpin": "Unpin"
   },
   "ModelFeature": {
     "Embedding": "Embedding",
@@ -38,6 +65,16 @@
     "Reasoning": "Reasoning",
     "ToolCalling": "Tool Calling",
     "Vision": "Vision"
+  },
+  "NewTab": {
+    "CodeTools": "code tool",
+    "Explore": "explore",
+    "Favorites": "Favorites",
+    "NewChat": "New Conversation",
+    "NewTab": "New Tab",
+    "NewWebTab": "Create a new webpage",
+    "QuickAccess": "quick access",
+    "SearchPlaceholder": "Search for tabs or agents..."
   },
   "Preference": {
     "AIModelSelection": "AI Model Selection",
@@ -101,7 +138,7 @@
     "ProviderName": "Provider Name",
     "ProviderNameRequired": "Provider name is required",
     "SaveProviderConfig": "Save Provider Configuration",
-    "SelectDefaultProvider": "",
+    "SelectDefaultProvider": "Select default provider",
     "SelectFromPresets": "Select from Preset Models",
     "SelectModel": "Select Model",
     "SelectProvider": "Select Provider",

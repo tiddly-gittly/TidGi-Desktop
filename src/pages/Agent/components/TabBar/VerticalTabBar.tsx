@@ -73,7 +73,7 @@ export const VerticalTabBar = () => {
       {/* 新标签页按钮 - 永远位于顶部 */}
       <NewTabButton>
         <TabItem
-          tab={{ id: 'new-tab-button', title: 'agent.tabTitle.addNewTab', type: TabType.NEW_TAB } as any}
+          tab={{ id: 'new-tab-button', title: t('NewTab.NewTab'), type: TabType.NEW_TAB }}
           isActive={false}
           onClick={() => {}}
           isNewTabButton={true}
