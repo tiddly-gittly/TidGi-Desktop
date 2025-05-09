@@ -13,7 +13,7 @@ const TabBarContainer = styled(Box)`
   flex-direction: column;
   width: 200px;
   height: 100%;
-  background-color: ${props => props.theme.palette.secondary.main};
+  background-color: ${props => props.theme.palette.background.default};
   border-right: 1px solid ${props => props.theme.palette.divider};
   padding: 12px 8px;
   overflow-y: auto;

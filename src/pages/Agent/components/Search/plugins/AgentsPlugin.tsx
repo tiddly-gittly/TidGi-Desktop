@@ -1,12 +1,13 @@
 import { AutocompletePlugin } from '@algolia/autocomplete-js';
 import type { Agent } from '@services/agent/interface';
-import { TabType } from '../../../types/tab';
+import { nanoid } from 'nanoid';
+import { TabItem, TabType } from '../../../types/tab';
 
 // 定义 BaseItem 类型
 type BaseItem = Record<string, unknown>;
 
 interface AgentsPluginProps {
-  onAgentSelect: (tabType: TabType, data: unknown) => void;
+  onAgentSelect: (tabType: TabType, initialData?: Partial<TabItem> & { insertPosition?: number | undefined }) => TabItem;
 }
 
 // 创建前端显示用的智能体类型，不包含handler
@@ -123,13 +124,35 @@ export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): Autoco
           },
           onSelect: async ({ item }) => {
             try {
-              // 创建一个和此智能体聊天的新标签页
               const task = await window.service.agent.createTask(item.id);
+              const messages = (task.messages || []).map(message => {
+                // 提取文本内容
+                let textContent = '';
+                for (const part of message.parts) {
+                  if (part && typeof part === 'object' && 'text' in part) {
+                    const textPart = part as { text: string };
+                    if (textPart.text) textContent += textPart.text;
+                  }
+                }
 
-              onAgentSelect(TabType.CHAT, {
-                title: item.name,
-                messages: task.messages || [],
+                // 映射消息角色
+                let role: 'user' | 'assistant' | 'system';
+                if (message.role === 'agent') role = 'assistant';
+                else if (message.role === 'user') role = 'user';
+                else role = 'system';
+
+                const id = message.metadata?.id && typeof message.metadata.id === 'string'
+                  ? message.metadata.id
+                  : nanoid();
+
+                const timestamp = message.metadata?.created && typeof message.metadata.created === 'string'
+                  ? new Date(message.metadata.created).getTime()
+                  : Date.now();
+
+                return { id, role, content: textContent, timestamp };
               });
+
+              onAgentSelect(TabType.CHAT, { title: item.name, messages });
             } catch (error) {
               console.error('Failed to create chat with agent:', error);
             }
@@ -151,13 +174,30 @@ function highlightHits({
   attribute: string;
   query: string;
 }): string {
-  // 将值安全地转换为字符串
-  const value = typeof hit[attribute] === 'string'
-    ? hit[attribute]
-    : String(hit[attribute] ?? '');
+  // 获取属性值并转换为字符串
+  const attributeValue = hit[attribute];
+  let value = '';
 
-  if (!query) return value;
+  if (typeof attributeValue === 'string') {
+    value = attributeValue;
+  } else if (attributeValue === null || attributeValue === undefined) {
+    // 空值处理
+  } else {
+    // 尝试安全地转换为字符串
+    try {
+      const stringValue = String(attributeValue);
+      if (stringValue !== '[object Object]') {
+        value = stringValue;
+      }
+    } catch {
+      // 转换失败，保持空字符串
+    }
+  }
 
+  // 如果没有查询或值为空，直接返回值
+  if (!query || !value) return value;
+
+  // 执行搜索和高亮
   const lowerCaseValue = value.toLowerCase();
   const lowerCaseQuery = query.toLowerCase();
   const startIndex = lowerCaseValue.indexOf(lowerCaseQuery);
