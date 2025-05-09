@@ -1,6 +1,6 @@
+import { Box } from '@mui/material';
 import React from 'react';
 import styled from 'styled-components';
-import { Box } from '@mui/material';
 
 interface AgentLayoutProps {
   children: React.ReactNode;

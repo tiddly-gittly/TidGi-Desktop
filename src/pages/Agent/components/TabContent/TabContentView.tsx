@@ -1,13 +1,13 @@
+import CloseIcon from '@mui/icons-material/Close';
+import { Box, IconButton } from '@mui/material';
 import React from 'react';
 import styled from 'styled-components';
-import { Box, IconButton } from '@mui/material';
-import CloseIcon from '@mui/icons-material/Close';
 
-import { TabItem, TabType } from '../../types/tab';
 import { useTabStore } from '../../store/tabStore';
-import { WebTabContent } from './TabTypes/WebTabContent';
+import { TabItem, TabType } from '../../types/tab';
 import { ChatTabContent } from './TabTypes/ChatTabContent';
 import { NewTabContent } from './TabTypes/NewTabContent';
+import { WebTabContent } from './TabTypes/WebTabContent';
 
 interface TabContentViewProps {
   tab: TabItem;
@@ -35,7 +35,7 @@ const SplitViewHeader = styled(Box)`
 
 export const TabContentView: React.FC<TabContentViewProps> = ({ tab, isSplitView }) => {
   const { removeFromSplitView } = useTabStore();
-  
+
   // 根据标签页类型渲染不同的内容组件
   const renderContent = () => {
     switch (tab.type) {
@@ -59,8 +59,8 @@ export const TabContentView: React.FC<TabContentViewProps> = ({ tab, isSplitView
     <ContentContainer $isSplitView={isSplitView}>
       {isSplitView && (
         <SplitViewHeader>
-          <IconButton size="small" onClick={handleRemoveFromSplitView}>
-            <CloseIcon fontSize="small" />
+          <IconButton size='small' onClick={handleRemoveFromSplitView}>
+            <CloseIcon fontSize='small' />
           </IconButton>
         </SplitViewHeader>
       )}

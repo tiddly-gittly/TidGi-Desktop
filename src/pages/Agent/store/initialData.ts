@@ -6,7 +6,7 @@ import { TabItem, TabState, TabType } from '../types/tab';
  */
 export const createInitialTabs = (): TabItem[] => {
   const timestamp = Date.now();
-  
+
   return [
     // 新标签页
     {
@@ -23,7 +23,7 @@ export const createInitialTabs = (): TabItem[] => {
         { id: nanoid(), title: 'YouTube', url: 'https://www.youtube.com', favicon: 'YT' },
       ],
     },
-    
+
     // 网页标签页
     {
       id: nanoid(),
@@ -36,7 +36,7 @@ export const createInitialTabs = (): TabItem[] => {
       url: 'https://www.google.com',
       favicon: 'G',
     },
-    
+
     // 聊天标签页
     {
       id: nanoid(),

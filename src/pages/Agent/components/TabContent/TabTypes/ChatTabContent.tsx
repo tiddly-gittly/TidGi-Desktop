@@ -1,15 +1,15 @@
-import React, { useState } from 'react';
-import styled from 'styled-components';
-import { Box, TextField, Button, Typography, Avatar, IconButton } from '@mui/material';
-import { useTranslation } from 'react-i18next';
-import SendIcon from '@mui/icons-material/Send';
 import DeleteIcon from '@mui/icons-material/Delete';
-import SmartToyIcon from '@mui/icons-material/SmartToy';
 import PersonIcon from '@mui/icons-material/Person';
+import SendIcon from '@mui/icons-material/Send';
+import SmartToyIcon from '@mui/icons-material/SmartToy';
+import { Avatar, Box, Button, IconButton, TextField, Typography } from '@mui/material';
 import { nanoid } from 'nanoid';
+import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
 
-import { IChatTab } from '../../../types/tab';
 import { useTabStore } from '../../../store/tabStore';
+import { IChatTab } from '../../../types/tab';
 
 interface ChatTabContentProps {
   tab: IChatTab;
@@ -89,23 +89,23 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
   const { t } = useTranslation('agent');
   const { updateTabData } = useTabStore();
   const [inputMessage, setInputMessage] = useState('');
-  
+
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setInputMessage(e.target.value);
   };
-  
+
   const handleSendMessage = () => {
     if (!inputMessage.trim()) return;
-    
+
     const newMessage = {
       id: nanoid(),
       role: 'user' as const,
       content: inputMessage,
       timestamp: Date.now(),
     };
-    
+
     const updatedMessages = [...tab.messages, newMessage];
-    
+
     // 添加一个简单的AI回复
     const aiReply = {
       id: nanoid(),
@@ -113,62 +113,64 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
       content: t('agent.chat.aiReplyPlaceholder'),
       timestamp: Date.now() + 1,
     };
-    
-    updateTabData(tab.id, { 
-      messages: [...updatedMessages, aiReply]
+
+    updateTabData(tab.id, {
+      messages: [...updatedMessages, aiReply],
     });
-    
+
     setInputMessage('');
   };
-  
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       handleSendMessage();
     }
   };
-  
+
   const handleClearChat = () => {
     updateTabData(tab.id, { messages: [] });
   };
-  
+
   return (
     <Container>
       <ChatHeader>
-        <Title variant="h6">{t(tab.title)}</Title>
-        <ClearButton onClick={handleClearChat} size="small">
+        <Title variant='h6'>{t(tab.title)}</Title>
+        <ClearButton onClick={handleClearChat} size='small'>
           <DeleteIcon />
         </ClearButton>
       </ChatHeader>
-      
+
       <MessagesContainer>
-        {tab.messages.length === 0 ? (
-          <Box sx={{ textAlign: 'center', color: 'text.secondary', mt: 4 }}>
-            <SmartToyIcon sx={{ fontSize: 48, opacity: 0.5 }} />
-            <Typography variant="body1" sx={{ mt: 2 }}>
-              {t('agent.chat.startConversation')}
-            </Typography>
-          </Box>
-        ) : (
-          tab.messages.map(message => (
-            <MessageBubble key={message.id} $isUser={message.role === 'user'}>
-              <MessageAvatar $isUser={message.role === 'user'}>
-                {message.role === 'user' ? <PersonIcon /> : <SmartToyIcon />}
-              </MessageAvatar>
-              <MessageContent $isUser={message.role === 'user'}>
-                <Typography variant="body1">{message.content}</Typography>
-              </MessageContent>
-            </MessageBubble>
-          ))
-        )}
+        {tab.messages.length === 0
+          ? (
+            <Box sx={{ textAlign: 'center', color: 'text.secondary', mt: 4 }}>
+              <SmartToyIcon sx={{ fontSize: 48, opacity: 0.5 }} />
+              <Typography variant='body1' sx={{ mt: 2 }}>
+                {t('agent.chat.startConversation')}
+              </Typography>
+            </Box>
+          )
+          : (
+            tab.messages.map(message => (
+              <MessageBubble key={message.id} $isUser={message.role === 'user'}>
+                <MessageAvatar $isUser={message.role === 'user'}>
+                  {message.role === 'user' ? <PersonIcon /> : <SmartToyIcon />}
+                </MessageAvatar>
+                <MessageContent $isUser={message.role === 'user'}>
+                  <Typography variant='body1'>{message.content}</Typography>
+                </MessageContent>
+              </MessageBubble>
+            ))
+          )}
       </MessagesContainer>
-      
+
       <InputContainer>
         <InputField
           fullWidth
           multiline
           maxRows={4}
-          variant="outlined"
+          variant='outlined'
           placeholder={t('agent.chat.typePlaceholder')}
           value={inputMessage}
           onChange={handleInputChange}
@@ -176,7 +178,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
           InputProps={{
             endAdornment: (
               <Button
-                color="primary"
+                color='primary'
                 disabled={!inputMessage.trim()}
                 onClick={handleSendMessage}
                 sx={{ minWidth: 'auto' }}

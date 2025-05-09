@@ -1,7 +1,7 @@
+import { Box, Button, Typography } from '@mui/material';
 import React from 'react';
-import styled from 'styled-components';
-import { Box, Typography, Button } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
 import { useTabStore } from '../../store/tabStore';
 import { TabType } from '../../types/tab';
 
@@ -43,19 +43,19 @@ const ActionButton = styled(Button)`
 export const EmptyState: React.FC<EmptyStateProps> = ({ title, description, actionLabel }) => {
   const { t } = useTranslation('agent');
   const { addTab } = useTabStore();
-  
+
   const handleAction = () => {
     addTab(TabType.NEW_TAB);
   };
-  
+
   return (
     <EmptyContainer>
-      <Title variant="h4">{t(title)}</Title>
-      <Description variant="body1">{t(description)}</Description>
+      <Title variant='h4'>{t(title)}</Title>
+      <Description variant='body1'>{t(description)}</Description>
       {actionLabel && (
-        <ActionButton 
-          variant="contained" 
-          color="primary"
+        <ActionButton
+          variant='contained'
+          color='primary'
           onClick={handleAction}
         >
           {t(actionLabel)}

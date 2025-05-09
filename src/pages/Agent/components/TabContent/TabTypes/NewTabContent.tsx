@@ -1,17 +1,17 @@
-import React from 'react';
-import styled from 'styled-components';
-import { Box, Typography, Card, CardContent, TextField, InputAdornment, Grid, IconButton } from '@mui/material';
-import { useTranslation } from 'react-i18next';
-import SearchIcon from '@mui/icons-material/Search';
-import WebIcon from '@mui/icons-material/Web';
-import ChatIcon from '@mui/icons-material/Chat';
-import TravelExploreIcon from '@mui/icons-material/TravelExplore';
-import CodeIcon from '@mui/icons-material/Code';
-import BookmarkIcon from '@mui/icons-material/Bookmark';
 import AddIcon from '@mui/icons-material/Add';
+import BookmarkIcon from '@mui/icons-material/Bookmark';
+import ChatIcon from '@mui/icons-material/Chat';
+import CodeIcon from '@mui/icons-material/Code';
+import SearchIcon from '@mui/icons-material/Search';
+import TravelExploreIcon from '@mui/icons-material/TravelExplore';
+import WebIcon from '@mui/icons-material/Web';
+import { Box, Card, Grid, IconButton, InputAdornment, TextField, Typography } from '@mui/material';
+import React from 'react';
+import { useTranslation } from 'react-i18next';
+import styled from 'styled-components';
 
-import { INewTab, TabType } from '../../../types/tab';
 import { useTabStore } from '../../../store/tabStore';
+import { INewTab, TabType } from '../../../types/tab';
 
 interface NewTabContentProps {
   tab: INewTab;
@@ -107,29 +107,29 @@ const defaultFavorites = [
 export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
   const { t } = useTranslation('agent');
   const { addTab } = useTabStore();
-  
-  const favorites = tab.favorites && tab.favorites.length > 0 
-    ? tab.favorites 
+
+  const favorites = tab.favorites && tab.favorites.length > 0
+    ? tab.favorites
     : defaultFavorites;
-  
+
   const handleOpenWebTab = (url: string, title: string) => {
     addTab(TabType.WEB, { url, title });
   };
-  
+
   const handleOpenChatTab = () => {
     addTab(TabType.CHAT);
   };
-  
+
   return (
     <Container>
       <SearchContainer>
         <TextField
           fullWidth
           placeholder={t('agent.newTab.searchPlaceholder')}
-          variant="outlined"
+          variant='outlined'
           InputProps={{
             startAdornment: (
-              <InputAdornment position="start">
+              <InputAdornment position='start'>
                 <SearchIcon />
               </InputAdornment>
             ),
@@ -137,74 +137,78 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
           sx={{ borderRadius: 4 }}
         />
       </SearchContainer>
-      
+
       <Box mb={6}>
-        <SectionTitle variant="h5">
+        <SectionTitle variant='h5'>
           {t('agent.newTab.quickAccess')}
         </SectionTitle>
-        
+
         <QuickAccessGrid container spacing={3}>
           <Grid item xs={6} sm={3} md={2}>
             <ShortcutCard onClick={() => addTab(TabType.WEB)}>
               <ShortcutIcon>
-                <WebIcon fontSize="inherit" />
+                <WebIcon fontSize='inherit' />
               </ShortcutIcon>
-              <Typography variant="subtitle1">{t('agent.newTab.newWebTab')}</Typography>
+              <Typography variant='subtitle1'>{t('agent.newTab.newWebTab')}</Typography>
             </ShortcutCard>
           </Grid>
-          
+
           <Grid item xs={6} sm={3} md={2}>
             <ShortcutCard onClick={handleOpenChatTab}>
               <ShortcutIcon>
-                <ChatIcon fontSize="inherit" />
+                <ChatIcon fontSize='inherit' />
               </ShortcutIcon>
-              <Typography variant="subtitle1">{t('agent.newTab.newChat')}</Typography>
+              <Typography variant='subtitle1'>{t('agent.newTab.newChat')}</Typography>
             </ShortcutCard>
           </Grid>
-          
+
           <Grid item xs={6} sm={3} md={2}>
             <ShortcutCard>
               <ShortcutIcon>
-                <TravelExploreIcon fontSize="inherit" />
+                <TravelExploreIcon fontSize='inherit' />
               </ShortcutIcon>
-              <Typography variant="subtitle1">{t('agent.newTab.explore')}</Typography>
+              <Typography variant='subtitle1'>{t('agent.newTab.explore')}</Typography>
             </ShortcutCard>
           </Grid>
-          
+
           <Grid item xs={6} sm={3} md={2}>
             <ShortcutCard>
               <ShortcutIcon>
-                <CodeIcon fontSize="inherit" />
+                <CodeIcon fontSize='inherit' />
               </ShortcutIcon>
-              <Typography variant="subtitle1">{t('agent.newTab.codeTools')}</Typography>
+              <Typography variant='subtitle1'>{t('agent.newTab.codeTools')}</Typography>
             </ShortcutCard>
           </Grid>
         </QuickAccessGrid>
       </Box>
-      
+
       <Box>
-        <Box display="flex" justifyContent="space-between" alignItems="center" mb={2}>
-          <SectionTitle variant="h5">
+        <Box display='flex' justifyContent='space-between' alignItems='center' mb={2}>
+          <SectionTitle variant='h5'>
             {t('agent.newTab.favorites')}
           </SectionTitle>
-          
-          <IconButton color="primary" size="small">
+
+          <IconButton color='primary' size='small'>
             <AddIcon />
           </IconButton>
         </Box>
-        
+
         <FavoriteGrid container spacing={2}>
           {favorites.map(item => (
             <Grid item xs={12} sm={6} md={4} key={item.id}>
-              <FavoriteItem onClick={() => handleOpenWebTab(item.url, item.title)}>
+              <FavoriteItem
+                onClick={() => {
+                  handleOpenWebTab(item.url, item.title);
+                }}
+              >
                 <FavoriteIcon>
                   {item.favicon || <BookmarkIcon />}
                 </FavoriteIcon>
                 <Box>
-                  <Typography variant="body1" fontWeight={500}>
+                  <Typography variant='body1' fontWeight={500}>
                     {item.title}
                   </Typography>
-                  <Typography variant="caption" color="text.secondary">
+                  <Typography variant='caption' color='text.secondary'>
                     {item.url}
                   </Typography>
                 </Box>
