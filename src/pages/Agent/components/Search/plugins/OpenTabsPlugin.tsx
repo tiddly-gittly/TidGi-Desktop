@@ -1,4 +1,6 @@
 import { AutocompletePlugin } from '@algolia/autocomplete-js';
+import { getI18n } from 'react-i18next';
+
 import { useTabStore } from '../../../store/tabStore';
 import { TabState, TabType } from '../../../types/tab';
 
@@ -10,6 +12,7 @@ type TabSource = {
 };
 
 export const createOpenTabsPlugin = (): AutocompletePlugin<TabSource, unknown> => {
+  const { t } = getI18n();
   const plugin = {
     getSources({ query }) {
       return [
@@ -17,6 +20,7 @@ export const createOpenTabsPlugin = (): AutocompletePlugin<TabSource, unknown> =
           sourceId: 'openTabsSource',
           getItems() {
             const { tabs } = useTabStore.getState();
+            // Filter out error tabs and those without titles
             const openTabs = tabs.filter(
               (tab) => tab.state !== TabState.ERROR && tab.title,
             );
@@ -30,6 +34,7 @@ export const createOpenTabsPlugin = (): AutocompletePlugin<TabSource, unknown> =
               }));
             }
 
+            // Filter tabs by the search query
             const lowerCaseQuery = query.toLowerCase();
             return openTabs
               .filter((tab) => tab.title.toLowerCase().includes(lowerCaseQuery))
@@ -44,7 +49,7 @@ export const createOpenTabsPlugin = (): AutocompletePlugin<TabSource, unknown> =
             header() {
               return (
                 <div className='aa-SourceHeader'>
-                  <div className='aa-SourceHeaderTitle'>打开的标签页</div>
+                  <div className='aa-SourceHeaderTitle'>{t('Search.OpenTabs', { ns: 'agent' })}</div>
                 </div>
               );
             },
@@ -106,7 +111,7 @@ export const createOpenTabsPlugin = (): AutocompletePlugin<TabSource, unknown> =
             noResults() {
               return (
                 <div className='aa-ItemWrapper'>
-                  <div className='aa-ItemContent'>没有找到标签页</div>
+                  <div className='aa-ItemContent'>{t('Search.NoTabsFound', { ns: 'agent' })}</div>
                 </div>
               );
             },

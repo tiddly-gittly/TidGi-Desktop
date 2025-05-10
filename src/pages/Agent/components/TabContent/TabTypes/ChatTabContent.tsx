@@ -106,7 +106,7 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
 
     const updatedMessages = [...tab.messages, newMessage];
 
-    // 添加一个简单的AI回复
+    // Add a simple AI reply
     const aiReply = {
       id: nanoid(),
       role: 'assistant' as const,
@@ -174,18 +174,20 @@ export const ChatTabContent: React.FC<ChatTabContentProps> = ({ tab }) => {
           placeholder={t('Chat.TypePlaceholder')}
           value={inputMessage}
           onChange={handleInputChange}
-          onKeyPress={handleKeyPress}
-          InputProps={{
-            endAdornment: (
-              <Button
-                color='primary'
-                disabled={!inputMessage.trim()}
-                onClick={handleSendMessage}
-                sx={{ minWidth: 'auto' }}
-              >
-                <SendIcon />
-              </Button>
-            ),
+          onKeyDown={handleKeyPress}
+          slotProps={{
+            input: {
+              endAdornment: (
+                <Button
+                  color='primary'
+                  disabled={!inputMessage.trim()}
+                  onClick={handleSendMessage}
+                  sx={{ minWidth: 'auto' }}
+                >
+                  <SendIcon />
+                </Button>
+              ),
+            },
           }}
         />
       </InputContainer>

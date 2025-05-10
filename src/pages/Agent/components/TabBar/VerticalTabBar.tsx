@@ -40,11 +40,11 @@ export const VerticalTabBar = () => {
   const { t } = useTranslation('agent');
   const { tabs, activeTabId, setActiveTab } = useTabStore();
 
-  // 将标签页分为固定和非固定两组
+  // Divide tabs into pinned and unpinned groups
   const pinnedTabs = tabs.filter(tab => tab.isPinned);
   const unpinnedTabs = tabs.filter(tab => !tab.isPinned);
 
-  // 保留非NEW_TAB类型的标签页，并按创建时间排序（新的在前）
+  // Keep non-NEW_TAB type tabs and sort by creation time (newest first)
   const sortedUnpinnedTabs = unpinnedTabs.sort((a, b) => b.createdAt - a.createdAt);
 
   return (

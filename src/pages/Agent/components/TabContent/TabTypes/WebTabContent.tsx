@@ -4,16 +4,19 @@ import BookmarkIcon from '@mui/icons-material/Bookmark';
 import HomeIcon from '@mui/icons-material/Home';
 import RefreshIcon from '@mui/icons-material/Refresh';
 import { Box, IconButton, TextField, Tooltip } from '@mui/material';
-import React, { useState } from 'react';
+import React, { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 import { useTabStore } from '../../../store/tabStore';
 import { IWebTab } from '../../../types/tab';
 
+/** Props for the web tab content component */
 interface WebTabContentProps {
+  /** Web tab data */
   tab: IWebTab;
 }
 
+/** Container component */
 const Container = styled(Box)`
   display: flex;
   flex-direction: column;
@@ -21,6 +24,7 @@ const Container = styled(Box)`
   width: 100%;
 `;
 
+/** Address bar container */
 const AddressBar = styled(Box)`
   display: flex;
   align-items: center;
@@ -29,11 +33,13 @@ const AddressBar = styled(Box)`
   gap: 8px;
 `;
 
+/** Navigation button styles */
 const NavigationButton = styled(IconButton)`
   width: 36px;
   height: 36px;
 `;
 
+/** Address input field */
 const AddressInput = styled(TextField)`
   flex: 1;
   .MuiOutlinedInput-root {
@@ -42,6 +48,7 @@ const AddressInput = styled(TextField)`
   }
 `;
 
+/** Web content area */
 const WebContent = styled(Box)`
   flex: 1;
   display: flex;
@@ -52,6 +59,7 @@ const WebContent = styled(Box)`
   overflow: auto;
 `;
 
+/** URL display box */
 const UrlDisplay = styled(Box)`
   width: 100%;
   text-align: center;
@@ -63,38 +71,55 @@ const UrlDisplay = styled(Box)`
   border: 1px dashed ${props => props.theme.palette.divider};
 `;
 
+/**
+ * Web Tab Content Component
+ * Displays a browser-like interface with navigation controls
+ */
 export const WebTabContent: React.FC<WebTabContentProps> = ({ tab }) => {
   const { t } = useTranslation('agent');
   const { updateTabData } = useTabStore();
   const [inputUrl, setInputUrl] = useState(tab.url);
 
-  const handleUrlChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  /** Handle address bar input changes */
+  const handleUrlChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
     setInputUrl(event.target.value);
-  };
+  }, []);
 
-  const handleUrlSubmit = (event: React.FormEvent) => {
+  /** Handle address bar form submission */
+  const handleUrlSubmit = useCallback((event: React.FormEvent) => {
     event.preventDefault();
     updateTabData(tab.id, { url: inputUrl });
-  };
+  }, [tab.id, inputUrl, updateTabData]);
 
-  const handleRefresh = () => {
-    // 模拟刷新行为
-    console.log('刷新页面', tab.url);
-  };
+  /** Handle page refresh */
+  const handleRefresh = useCallback(() => {
+    updateTabData(tab.id, { url: tab.url });
+  }, [tab.id, tab.url, updateTabData]);
+
+  /** Navigate to home page */
+  const handleHome = useCallback(() => {
+    const homeUrl = 'about:home';
+    setInputUrl(homeUrl);
+    updateTabData(tab.id, { url: homeUrl });
+  }, [tab.id, updateTabData]);
 
   return (
     <Container>
       <AddressBar>
         <Tooltip title={t('Browser.Back')}>
-          <NavigationButton size='small'>
-            <ArrowBackIcon />
-          </NavigationButton>
+          <span>
+            <NavigationButton size='small' disabled>
+              <ArrowBackIcon />
+            </NavigationButton>
+          </span>
         </Tooltip>
 
         <Tooltip title={t('Browser.Forward')}>
-          <NavigationButton size='small'>
-            <ArrowForwardIcon />
-          </NavigationButton>
+          <span>
+            <NavigationButton size='small' disabled>
+              <ArrowForwardIcon />
+            </NavigationButton>
+          </span>
         </Tooltip>
 
         <Tooltip title={t('Browser.Refresh')}>
@@ -104,7 +129,7 @@ export const WebTabContent: React.FC<WebTabContentProps> = ({ tab }) => {
         </Tooltip>
 
         <Tooltip title={t('Browser.Home')}>
-          <NavigationButton size='small'>
+          <NavigationButton size='small' onClick={handleHome}>
             <HomeIcon />
           </NavigationButton>
         </Tooltip>
@@ -121,9 +146,11 @@ export const WebTabContent: React.FC<WebTabContentProps> = ({ tab }) => {
         </form>
 
         <Tooltip title={t('Browser.Bookmark')}>
-          <NavigationButton size='small'>
-            <BookmarkIcon />
-          </NavigationButton>
+          <span>
+            <NavigationButton size='small' disabled>
+              <BookmarkIcon />
+            </NavigationButton>
+          </span>
         </Tooltip>
       </AddressBar>
 

@@ -1,24 +1,24 @@
 /**
- * 标签页类型枚举
+ * Tab type enumeration
  */
 export enum TabType {
-  WEB = 'web', // 网页类型标签
-  CHAT = 'chat', // AI聊天类型标签
-  NEW_TAB = 'new_tab', // 新标签页
+  WEB = 'web', // Web page type tab
+  CHAT = 'chat', // AI chat type tab
+  NEW_TAB = 'new_tab', // New tab
 }
 
 /**
- * 标签页状态
+ * Tab state
  */
 export enum TabState {
-  ACTIVE = 'active', // 激活状态
-  INACTIVE = 'inactive', // 非激活状态
-  LOADING = 'loading', // 加载中
-  ERROR = 'error', // 错误状态
+  ACTIVE = 'active', // Active state
+  INACTIVE = 'inactive', // Inactive state
+  LOADING = 'loading', // Loading state
+  ERROR = 'error', // Error state
 }
 
 /**
- * 基础标签页接口
+ * Base tab interface
  */
 export interface ITab {
   id: string;
@@ -31,7 +31,7 @@ export interface ITab {
 }
 
 /**
- * 网页类型标签页
+ * Web type tab
  */
 export interface IWebTab extends ITab {
   type: TabType.WEB;
@@ -40,7 +40,7 @@ export interface IWebTab extends ITab {
 }
 
 /**
- * AI聊天类型标签页
+ * AI chat type tab
  */
 export interface IChatTab extends ITab {
   type: TabType.CHAT;
@@ -53,7 +53,7 @@ export interface IChatTab extends ITab {
 }
 
 /**
- * 新标签页类型
+ * New tab type
  */
 export interface INewTab extends ITab {
   type: TabType.NEW_TAB;
@@ -72,6 +72,6 @@ export type INewTabButton = {
 };
 
 /**
- * 任意类型的标签页
+ * Union type for any type of tab
  */
 export type TabItem = IWebTab | IChatTab | INewTab;

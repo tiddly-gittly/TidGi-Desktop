@@ -1,22 +1,21 @@
 import AddIcon from '@mui/icons-material/Add';
 import CloseIcon from '@mui/icons-material/Close';
 import ContentCopyIcon from '@mui/icons-material/ContentCopy';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import PushPinIcon from '@mui/icons-material/PushPin';
 import PushPinOutlinedIcon from '@mui/icons-material/PushPinOutlined';
 import RefreshIcon from '@mui/icons-material/Refresh';
-import PushPinIcon from '@mui/icons-material/PushPin';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
 import RestoreIcon from '@mui/icons-material/Restore';
 import SplitscreenIcon from '@mui/icons-material/Splitscreen';
 import { Collapse, Divider, List, ListItemIcon, ListItemText, Menu, MenuItem } from '@mui/material';
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import styled from 'styled-components';
 
 import { useTabStore } from '../../store/tabStore';
 import { TabType } from '../../types/tab';
 
-// 创建全局上下文菜单状态
+// Create global context menu state
 interface TabContextMenuState {
   isOpen: boolean;
   position: { top: number; left: number };
@@ -38,23 +37,23 @@ export const TabContextMenu = () => {
     hasClosedTabs,
   } = useTabStore();
 
-  // 嵌套菜单状态
+  // Nested menu state
   const [closeMenuOpen, setCloseMenuOpen] = useState(false);
 
-  // 上下文菜单状态
+  // Context menu state
   const [contextMenu, setContextMenu] = useState<TabContextMenuState>({
     isOpen: false,
     position: { top: 0, left: 0 },
     targetTabId: null,
   });
 
-  // 注册全局右键点击事件
+  // Register global right-click event
   React.useEffect(() => {
-    // 监听标签项的右键点击事件
+    // Listen for right-click events on tab items
     const handleContextMenu = (event: MouseEvent) => {
       event.preventDefault();
 
-      // 查找点击的是哪个标签项，通过查找最近的带有 data-tab-id 属性的元素
+      // Find which tab item was clicked by looking for the closest element with data-tab-id attribute
       const tabElement = (event.target as HTMLElement).closest('[data-tab-id]');
       if (!tabElement) return;
 
@@ -66,27 +65,25 @@ export const TabContextMenu = () => {
           targetTabId: tabId,
         });
 
-        // 重置嵌套菜单状态
+        // Reset nested menu state
         setCloseMenuOpen(false);
       }
-    };
-
-    // 添加右键菜单事件监听
+    };            // Add context menu event listener
     document.addEventListener('contextmenu', handleContextMenu);
 
-    // 清理函数
+    // Cleanup function
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu);
     };
   }, []);
 
-  // 关闭上下文菜单
+  // Close context menu
   const handleClose = () => {
     setContextMenu({ ...contextMenu, isOpen: false });
     setCloseMenuOpen(false);
   };
 
-  // 获取当前目标标签
+  // Get current target tab
   const targetTab = contextMenu.targetTabId
     ? tabs.find(tab => tab.id === contextMenu.targetTabId)
     : null;
@@ -95,22 +92,22 @@ export const TabContextMenu = () => {
     return null;
   }
 
-  // 获取标签页在列表中的位置
+  // Get tab position in the list
   const tabIndex = getTabIndex(targetTab.id);
 
-  // 处理固定/取消固定标签页
+  // Handle pin/unpin tab
   const handlePinTab = () => {
     pinTab(targetTab.id, !targetTab.isPinned);
     handleClose();
   };
 
-  // 处理关闭标签页
+  // Handle closing tab
   const handleCloseTab = () => {
     closeTab(targetTab.id);
     handleClose();
   };
 
-  // 复制当前标签页
+  // Duplicate current tab
   const handleDuplicateTab = () => {
     switch (targetTab.type) {
       case TabType.WEB:
@@ -131,25 +128,25 @@ export const TabContextMenu = () => {
     handleClose();
   };
 
-  // 处理添加到并排视图
+  // Handle add to split view
   const handleAddToSplitView = () => {
     addToSplitView(targetTab.id);
     handleClose();
   };
 
-  // 在下方新建标签页
+  // Create new tab below
   const handleNewTabBelow = () => {
     addTab(TabType.NEW_TAB, { insertPosition: tabIndex + 1 });
     handleClose();
   };
 
-  // 恢复最近关闭的标签页
+  // Restore recently closed tab
   const handleRestoreClosedTab = () => {
     restoreClosedTab();
     handleClose();
   };
 
-  // 批量关闭标签页
+  // Batch close tabs
   const handleCloseAboveTabs = () => {
     closeTabs('above', targetTab.id);
     handleClose();
@@ -165,10 +162,10 @@ export const TabContextMenu = () => {
     handleClose();
   };
 
-  // 判断是否能添加到并排视图
+  // Determine if tab can be added to split view
   const canAddToSplitView = splitViewIds.length < 2 && !splitViewIds.includes(targetTab.id);
 
-  // 关闭标签页嵌套菜单
+  // Toggle close tabs nested menu
   const handleCloseMenuToggle = () => {
     setCloseMenuOpen(!closeMenuOpen);
   };

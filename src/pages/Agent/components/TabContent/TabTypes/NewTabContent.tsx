@@ -1,10 +1,12 @@
+/* eslint-disable @typescript-eslint/no-confusing-void-expression */
 import AddIcon from '@mui/icons-material/Add';
 import BookmarkIcon from '@mui/icons-material/Bookmark';
 import ChatIcon from '@mui/icons-material/Chat';
 import CodeIcon from '@mui/icons-material/Code';
 import TravelExploreIcon from '@mui/icons-material/TravelExplore';
 import WebIcon from '@mui/icons-material/Web';
-import { Box, Card, Grid, IconButton, Typography } from '@mui/material';
+import { Box, Card, IconButton, Typography } from '@mui/material';
+import Grid2 from '@mui/material/Grid2';
 import React from 'react';
 import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
@@ -37,7 +39,7 @@ const SectionTitle = styled(Typography)`
   font-weight: 600;
 `;
 
-const QuickAccessGrid = styled(Grid)`
+const QuickAccessGrid = styled(Box)`
   margin-bottom: 40px;
 `;
 
@@ -66,7 +68,7 @@ const ShortcutIcon = styled(Box)`
   justify-content: center;
 `;
 
-const FavoriteGrid = styled(Grid)`
+const FavoriteGrid = styled(Box)`
   margin-bottom: 24px;
 `;
 
@@ -94,7 +96,7 @@ const FavoriteIcon = styled(Box)`
   justify-content: center;
 `;
 
-// 默认收藏夹内容
+// Default favorites list
 const defaultFavorites = [
   { id: '1', title: 'Google', url: 'https://www.google.com', favicon: 'G' },
   { id: '2', title: 'GitHub', url: 'https://github.com', favicon: 'GH' },
@@ -106,18 +108,20 @@ const defaultFavorites = [
 
 export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
   const { t } = useTranslation('agent');
-  const { addTab } = useTabStore();
+  const { transformTabType } = useTabStore();
 
   const favorites = tab.favorites && tab.favorites.length > 0
     ? tab.favorites
     : defaultFavorites;
 
   const handleOpenWebTab = (url: string, title: string) => {
-    addTab(TabType.WEB, { url, title });
+    // Transform current tab to web tab
+    transformTabType(tab.id, TabType.WEB, { url, title });
   };
 
   const handleOpenChatTab = () => {
-    addTab(TabType.CHAT);
+    // Transform current tab to chat tab
+    transformTabType(tab.id, TabType.CHAT);
   };
 
   return (
@@ -131,42 +135,44 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
           {t('NewTab.QuickAccess')}
         </SectionTitle>
 
-        <QuickAccessGrid container spacing={3}>
-          <Grid item xs={6} sm={3} md={2}>
-            <ShortcutCard onClick={() => addTab(TabType.WEB)}>
-              <ShortcutIcon>
-                <WebIcon fontSize='inherit' />
-              </ShortcutIcon>
-              <Typography variant='subtitle1'>{t('NewTab.NewWebTab')}</Typography>
-            </ShortcutCard>
-          </Grid>
+        <QuickAccessGrid>
+          <Grid2 container spacing={3}>
+            <Grid2 width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
+              <ShortcutCard onClick={() => transformTabType(tab.id, TabType.WEB)}>
+                <ShortcutIcon>
+                  <WebIcon fontSize='inherit' />
+                </ShortcutIcon>
+                <Typography variant='subtitle1'>{t('NewTab.NewWebTab')}</Typography>
+              </ShortcutCard>
+            </Grid2>
 
-          <Grid item xs={6} sm={3} md={2}>
-            <ShortcutCard onClick={handleOpenChatTab}>
-              <ShortcutIcon>
-                <ChatIcon fontSize='inherit' />
-              </ShortcutIcon>
-              <Typography variant='subtitle1'>{t('NewTab.NewChat')}</Typography>
-            </ShortcutCard>
-          </Grid>
+            <Grid2 width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
+              <ShortcutCard onClick={handleOpenChatTab}>
+                <ShortcutIcon>
+                  <ChatIcon fontSize='inherit' />
+                </ShortcutIcon>
+                <Typography variant='subtitle1'>{t('NewTab.NewChat')}</Typography>
+              </ShortcutCard>
+            </Grid2>
 
-          <Grid item xs={6} sm={3} md={2}>
-            <ShortcutCard>
-              <ShortcutIcon>
-                <TravelExploreIcon fontSize='inherit' />
-              </ShortcutIcon>
-              <Typography variant='subtitle1'>{t('NewTab.Explore')}</Typography>
-            </ShortcutCard>
-          </Grid>
+            <Grid2 width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
+              <ShortcutCard>
+                <ShortcutIcon>
+                  <TravelExploreIcon fontSize='inherit' />
+                </ShortcutIcon>
+                <Typography variant='subtitle1'>{t('NewTab.Explore')}</Typography>
+              </ShortcutCard>
+            </Grid2>
 
-          <Grid item xs={6} sm={3} md={2}>
-            <ShortcutCard>
-              <ShortcutIcon>
-                <CodeIcon fontSize='inherit' />
-              </ShortcutIcon>
-              <Typography variant='subtitle1'>{t('NewTab.CodeTools')}</Typography>
-            </ShortcutCard>
-          </Grid>
+            <Grid2 width={{ xs: '50%', sm: '25%', md: '16.66%' }}>
+              <ShortcutCard>
+                <ShortcutIcon>
+                  <CodeIcon fontSize='inherit' />
+                </ShortcutIcon>
+                <Typography variant='subtitle1'>{t('NewTab.CodeTools')}</Typography>
+              </ShortcutCard>
+            </Grid2>
+          </Grid2>
         </QuickAccessGrid>
       </Box>
 
@@ -181,28 +187,30 @@ export const NewTabContent: React.FC<NewTabContentProps> = ({ tab }) => {
           </IconButton>
         </Box>
 
-        <FavoriteGrid container spacing={2}>
-          {favorites.map(item => (
-            <Grid item xs={12} sm={6} md={4} key={item.id}>
-              <FavoriteItem
-                onClick={() => {
-                  handleOpenWebTab(item.url, item.title);
-                }}
-              >
-                <FavoriteIcon>
-                  {item.favicon || <BookmarkIcon />}
-                </FavoriteIcon>
-                <Box>
-                  <Typography variant='body1' fontWeight={500}>
-                    {item.title}
-                  </Typography>
-                  <Typography variant='caption' color='text.secondary'>
-                    {item.url}
-                  </Typography>
-                </Box>
-              </FavoriteItem>
-            </Grid>
-          ))}
+        <FavoriteGrid>
+          <Grid2 container spacing={2}>
+            {favorites.map(item => (
+              <Grid2 width={{ xs: '100%', sm: '50%', md: '33.33%' }} key={item.id}>
+                <FavoriteItem
+                  onClick={() => {
+                    handleOpenWebTab(item.url, item.title);
+                  }}
+                >
+                  <FavoriteIcon>
+                    {item.favicon || <BookmarkIcon />}
+                  </FavoriteIcon>
+                  <Box>
+                    <Typography variant='body1' fontWeight={500}>
+                      {item.title}
+                    </Typography>
+                    <Typography variant='caption' color='text.secondary'>
+                      {item.url}
+                    </Typography>
+                  </Box>
+                </FavoriteItem>
+              </Grid2>
+            ))}
+          </Grid2>
         </FavoriteGrid>
       </Box>
     </Container>

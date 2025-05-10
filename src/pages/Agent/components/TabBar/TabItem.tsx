@@ -6,21 +6,26 @@ import PushPinIcon from '@mui/icons-material/PushPin';
 import WebIcon from '@mui/icons-material/Web';
 import { ButtonBase, Tooltip, Typography } from '@mui/material';
 import React from 'react';
-import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
 import { useTabStore } from '../../store/tabStore';
 import { INewTabButton, TabItem as TabItemType, TabType } from '../../types/tab';
 
 interface TabItemProps {
+  /** Tab data */
   tab: TabItemType | INewTabButton;
+  /** Whether this is the currently active tab */
   isActive: boolean;
+  /** Callback when the tab is clicked */
   onClick: () => void;
-  isNewTabButton?: boolean; // 是否是新标签页按钮
+  /** Whether this is the new tab button */
+  isNewTabButton?: boolean;
 }
 
 interface StyledTabProps {
+  /** Whether this is the currently active tab */
   $isActive: boolean;
+  /** Whether the tab is pinned to the sidebar */
   $isPinned?: boolean;
 }
 
@@ -104,9 +109,9 @@ const PinIndicator = styled.div`
 `;
 
 export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewTabButton = false }) => {
-  const { t } = useTranslation('agent');
   const { closeTab, addTab } = useTabStore();
 
+  /** Handle tab close click event */
   const handleClose = (event: React.MouseEvent) => {
     event.stopPropagation();
     if (!isNewTabButton) {
@@ -114,16 +119,16 @@ export const TabItem: React.FC<TabItemProps> = ({ tab, isActive, onClick, isNewT
     }
   };
 
+  /** Handle tab click event - create new tab if new tab button, otherwise switch to tab */
   const handleClick = () => {
     if (isNewTabButton) {
-      // 如果是新标签页按钮，则创建新标签页
       addTab(TabType.NEW_TAB);
     } else {
-      // 普通标签页，切换激活状态
       onClick();
     }
   };
 
+  /** Return icon component based on tab type */
   const getTabIcon = () => {
     if (isNewTabButton) {
       return <AddIcon fontSize='inherit' />;

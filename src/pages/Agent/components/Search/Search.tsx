@@ -3,6 +3,7 @@ import { autocomplete } from '@algolia/autocomplete-js';
 import { Box } from '@mui/material';
 import React, { createElement, Fragment, useEffect, useRef } from 'react';
 import { createRoot } from 'react-dom/client';
+import { useTranslation } from 'react-i18next';
 import styled from 'styled-components';
 
 import { useTabStore } from '../../store/tabStore';
@@ -12,6 +13,7 @@ import { createOpenTabsPlugin } from './plugins/OpenTabsPlugin';
 import { autocompleteStyles } from './styles';
 
 interface SearchProps {
+  /** Custom placeholder text for search input */
   placeholder?: string;
 }
 
@@ -21,10 +23,12 @@ const SearchContainer = styled(Box)`
   ${autocompleteStyles}
 `;
 
-export function Search({ placeholder = '搜索标签页或智能体...' }: SearchProps) {
+export function Search({ placeholder }: SearchProps) {
   const containerReference = useRef<HTMLDivElement | null>(null);
   const panelRootReference = useRef<ReturnType<typeof createRoot> | null>(null);
   const { addTab } = useTabStore();
+  const { t } = useTranslation('agent');
+  const searchPlaceholder = placeholder || t('SideBar.SearchPlaceholder');
 
   useEffect(() => {
     if (!containerReference.current) {
@@ -40,7 +44,7 @@ export function Search({ placeholder = '搜索标签页或智能体...' }: Searc
         }
         panelRootReference.current.render(children);
       },
-      placeholder,
+      placeholder: searchPlaceholder,
       openOnFocus: true,
       plugins: [
         createOpenTabsPlugin(),
@@ -52,7 +56,7 @@ export function Search({ placeholder = '搜索标签页或智能体...' }: Searc
     return () => {
       search.destroy();
     };
-  }, [addTab, placeholder]);
+  }, [addTab, searchPlaceholder]);
 
   return <SearchContainer ref={containerReference} />;
 }

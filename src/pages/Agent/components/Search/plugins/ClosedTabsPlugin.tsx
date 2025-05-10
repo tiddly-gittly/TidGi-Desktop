@@ -1,4 +1,5 @@
 import { AutocompletePlugin } from '@algolia/autocomplete-js';
+import { getI18n } from 'react-i18next';
 import { useTabStore } from '../../../store/tabStore';
 import { TabType } from '../../../types/tab';
 
@@ -10,6 +11,7 @@ type TabSource = {
 };
 
 export const createClosedTabsPlugin = (): AutocompletePlugin<TabSource, unknown> => {
+  const { t } = getI18n();
   const plugin = {
     getSources({ query }) {
       return [
@@ -41,7 +43,7 @@ export const createClosedTabsPlugin = (): AutocompletePlugin<TabSource, unknown>
             header() {
               return (
                 <div className='aa-SourceHeader'>
-                  <div className='aa-SourceHeaderTitle'>最近关闭的标签页</div>
+                  <div className='aa-SourceHeaderTitle'>{t('Search.RecentlyClosedTabs', { ns: 'agent' })}</div>
                 </div>
               );
             },
@@ -103,13 +105,13 @@ export const createClosedTabsPlugin = (): AutocompletePlugin<TabSource, unknown>
             noResults() {
               return (
                 <div className='aa-ItemWrapper'>
-                  <div className='aa-ItemContent'>没有最近关闭的标签页</div>
+                  <div className='aa-ItemContent'>{t('Search.NoClosedTabsFound', { ns: 'agent' })}</div>
                 </div>
               );
             },
           },
-          onSelect({ item }) {
-            // 恢复已关闭的标签页
+          onSelect() {
+            // Restore closed tab
             const { restoreClosedTab } = useTabStore.getState();
             restoreClosedTab();
           },
@@ -121,6 +123,7 @@ export const createClosedTabsPlugin = (): AutocompletePlugin<TabSource, unknown>
   return plugin;
 };
 
+// Helper function to get icon based on tab type
 function getTabTypeIcon(type: TabType): string {
   switch (type) {
     case TabType.CHAT:
@@ -134,6 +137,7 @@ function getTabTypeIcon(type: TabType): string {
   }
 }
 
+// Helper function to highlight search matches
 function highlightHits({
   hit,
   attribute,

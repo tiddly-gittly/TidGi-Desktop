@@ -2,17 +2,17 @@ import { nanoid } from 'nanoid';
 import { TabItem, TabState, TabType } from '../types/tab';
 
 /**
- * 创建默认的标签页数据
+ * Create default tab data
  */
 export const createInitialTabs = (): TabItem[] => {
   const timestamp = Date.now();
 
   return [
-    // 新标签页
+    // New tab
     {
       id: nanoid(),
       type: TabType.NEW_TAB,
-      title: '默认新标签页测试',
+      title: 'Default New Tab Test',
       state: TabState.ACTIVE,
       isPinned: false,
       createdAt: timestamp,
@@ -24,11 +24,11 @@ export const createInitialTabs = (): TabItem[] => {
       ],
     },
 
-    // 网页标签页
+    // Web tab
     {
       id: nanoid(),
       type: TabType.WEB,
-      title: '默认网页标签页测试',
+      title: 'Default Web Tab Test',
       state: TabState.INACTIVE,
       isPinned: true,
       createdAt: timestamp - 1000,
@@ -37,11 +37,11 @@ export const createInitialTabs = (): TabItem[] => {
       favicon: 'G',
     },
 
-    // 聊天标签页
+    // Chat tab
     {
       id: nanoid(),
       type: TabType.CHAT,
-      title: '默认聊天标签页测试',
+      title: 'Default Chat Tab Test',
       state: TabState.INACTIVE,
       isPinned: false,
       createdAt: timestamp - 2000,
@@ -50,13 +50,13 @@ export const createInitialTabs = (): TabItem[] => {
         {
           id: nanoid(),
           role: 'user',
-          content: '默认用户消息',
+          content: 'Default user message',
           timestamp: timestamp - 2000,
         },
         {
           id: nanoid(),
           role: 'assistant',
-          content: '默认AI消息',
+          content: 'Default AI message',
           timestamp: timestamp - 1800,
         },
       ],

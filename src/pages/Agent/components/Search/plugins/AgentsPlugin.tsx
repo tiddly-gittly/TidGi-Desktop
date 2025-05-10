@@ -1,33 +1,34 @@
 import { AutocompletePlugin } from '@algolia/autocomplete-js';
 import type { Agent } from '@services/agent/interface';
 import { nanoid } from 'nanoid';
+import { getI18n } from 'react-i18next';
 import { TabItem, TabType } from '../../../types/tab';
 
-// 定义 BaseItem 类型
+// Define BaseItem type
 type BaseItem = Record<string, unknown>;
 
 interface AgentsPluginProps {
   onAgentSelect: (tabType: TabType, initialData?: Partial<TabItem> & { insertPosition?: number | undefined }) => TabItem;
 }
 
-// 创建前端显示用的智能体类型，不包含handler
+// Create agent type for frontend display, excluding handler
 type AgentDisplay = Omit<Agent, 'handler'> & BaseItem;
 
 export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): AutocompletePlugin<AgentDisplay, unknown> => {
+  const { t } = getI18n();
   const plugin = {
     getSources({ query }) {
       return [
         {
           sourceId: 'agentsSource',
           getItems: async () => {
-            try {
-              // 使用 window.service.agent.getAgents 获取智能体列表
+            try { // Get agents list using window.service.agent.getAgents
               const agents = await window.service.agent.getAgents();
 
-              // 确保返回符合AgentDisplay类型的对象
+              // Ensure returned objects conform to AgentDisplay type
               const agentItems = agents.map(agent => ({
                 ...agent,
-                // 不包含handler属性
+                // handler property excluded
               }));
 
               if (!query) {
@@ -41,7 +42,7 @@ export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): Autoco
                   (agent.description && agent.description.toLowerCase().includes(lowerCaseQuery))
                 ) as AgentDisplay[];
             } catch (error) {
-              console.error('Failed to fetch agents:', error);
+              console.error(t('Search.FailedToFetchAgents', { ns: 'agent' }), error);
               return [];
             }
           },
@@ -49,7 +50,7 @@ export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): Autoco
             header() {
               return (
                 <div className='aa-SourceHeader'>
-                  <div className='aa-SourceHeaderTitle'>可用的智能体</div>
+                  <div className='aa-SourceHeaderTitle'>{t('Search.AvailableAgents', { ns: 'agent' })}</div>
                 </div>
               );
             },
@@ -117,7 +118,7 @@ export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): Autoco
             noResults() {
               return (
                 <div className='aa-ItemWrapper'>
-                  <div className='aa-ItemContent'>没有找到智能体</div>
+                  <div className='aa-ItemContent'>{t('Search.NoAgentsFound', { ns: 'agent' })}</div>
                 </div>
               );
             },
@@ -126,7 +127,7 @@ export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): Autoco
             try {
               const task = await window.service.agent.createTask(item.id);
               const messages = (task.messages || []).map(message => {
-                // 提取文本内容
+                // Extract text content
                 let textContent = '';
                 for (const part of message.parts) {
                   if (part && typeof part === 'object' && 'text' in part) {
@@ -135,7 +136,7 @@ export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): Autoco
                   }
                 }
 
-                // 映射消息角色
+                // Map message roles
                 let role: 'user' | 'assistant' | 'system';
                 if (message.role === 'agent') role = 'assistant';
                 else if (message.role === 'user') role = 'user';
@@ -154,7 +155,7 @@ export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): Autoco
 
               onAgentSelect(TabType.CHAT, { title: item.name, messages });
             } catch (error) {
-              console.error('Failed to create chat with agent:', error);
+              console.error(t('Search.FailedToCreateChatWithAgent', { ns: 'agent' }), error);
             }
           },
         },
@@ -174,30 +175,33 @@ function highlightHits({
   attribute: string;
   query: string;
 }): string {
-  // 获取属性值并转换为字符串
+  // Get attribute value and convert to string
   const attributeValue = hit[attribute];
   let value = '';
 
   if (typeof attributeValue === 'string') {
     value = attributeValue;
   } else if (attributeValue === null || attributeValue === undefined) {
-    // 空值处理
+    // Handle empty value
   } else {
-    // 尝试安全地转换为字符串
+    // Try to safely convert to string
     try {
+      // eslint-disable-next-line @typescript-eslint/no-base-to-string
       const stringValue = String(attributeValue);
       if (stringValue !== '[object Object]') {
         value = stringValue;
+      } else {
+        value = JSON.stringify(attributeValue);
       }
     } catch {
-      // 转换失败，保持空字符串
+      // Conversion failed, keep empty string
     }
   }
 
-  // 如果没有查询或值为空，直接返回值
+  // If no query or value is empty, return value directly
   if (!query || !value) return value;
 
-  // 执行搜索和高亮
+  // Perform search and highlighting
   const lowerCaseValue = value.toLowerCase();
   const lowerCaseQuery = query.toLowerCase();
   const startIndex = lowerCaseValue.indexOf(lowerCaseQuery);

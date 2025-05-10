@@ -76,6 +76,16 @@
     "QuickAccess": "快速访问",
     "SearchPlaceholder": "搜索标签页或智能体..."
   },
+  "Search": {
+    "AvailableAgents": "可用的智能体",
+    "FailedToCreateChatWithAgent": "无法创建与智能体的对话",
+    "FailedToFetchAgents": "获取智能体列表失败",
+    "NoAgentsFound": "未找到智能体",
+    "NoClosedTabsFound": "没有最近关闭的标签页",
+    "NoTabsFound": "没有找到标签页",
+    "OpenTabs": "打开的标签页",
+    "RecentlyClosedTabs": "最近关闭的标签页"
+  },
   "Preference": {
     "AIModelSelection": "AI 模型选择",
     "AIModelSelectionDescription": "选择您想要使用的 AI 提供商和模型",

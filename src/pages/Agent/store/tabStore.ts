@@ -6,58 +6,59 @@ import { createInitialTabs } from './initialData';
 type TabCloseDirection = 'above' | 'below' | 'other';
 
 interface TabsState {
-  // 所有标签页
+  // All tabs
   tabs: TabItem[];
-  // 当前激活的标签页ID
+  // ID of the currently active tab
   activeTabId: string | null;
-  // 并排显示的标签页IDs
+  // IDs of tabs displayed side by side
   splitViewIds: string[];
-  // 并排视图分割比例 (20-80)
+  // Split ratio for side-by-side view (20-80)
   splitRatio: number;
-  // 最近关闭的标签页 (用于恢复)
+  // Recently closed tabs (for restoration)
   closedTabs: TabItem[];
 
-  // 操作方法
+  // Operation methods
   addTab: (tabType: TabType, initialData?: Partial<TabItem> & { insertPosition?: number }) => TabItem;
   closeTab: (tabId: string) => void;
   setActiveTab: (tabId: string) => void;
   pinTab: (tabId: string, isPinned: boolean) => void;
   updateTabData: (tabId: string, data: Partial<TabItem>) => void;
+  transformTabType: (tabId: string, newType: TabType, initialData?: Record<string, unknown>) => void;
 
-  // 并排标签页相关
+  // Side-by-side tabs related
   addToSplitView: (tabId: string) => void;
   removeFromSplitView: (tabId: string) => void;
   clearSplitView: () => void;
   updateSplitRatio: (ratio: number) => void;
 
-  // 批量关闭和恢复标签页功能
+  // Batch close and restore tab functions
   closeTabs: (direction: TabCloseDirection, fromTabId: string) => void;
   restoreClosedTab: () => void;
   hasClosedTabs: () => boolean;
 
-  // 工具方法
+  // Utility methods
   getTabIndex: (tabId: string) => number;
 }
 
-// 初始化标签页数据
+// Initialize tab data
 const initialTabs = createInitialTabs();
 const firstActiveTab = initialTabs.find(tab => tab.state === TabState.ACTIVE);
 
-// 最大保存的已关闭标签页数量
+// Maximum number of closed tabs to save
 const MAX_CLOSED_TABS = 10;
 
 export const useTabStore = create<TabsState>((set, get) => ({
   tabs: initialTabs,
   activeTabId: firstActiveTab?.id || null,
   splitViewIds: [],
-  splitRatio: 50, // 默认50%/50%的分割比例
-  closedTabs: [], // 已关闭的标签页
+  splitRatio: 50, // Default 50%/50% split ratio
+  closedTabs: [], // Closed tabs
 
-  // 添加新标签页
+  // Add new tab
   addTab: (tabType: TabType, initialData = {}) => {
     const timestamp = Date.now();
     const { insertPosition } = initialData;
-    delete initialData.insertPosition; // 从传递给标签页的数据中移除
+    delete initialData.insertPosition; // Remove from data passed to tab
 
     let newTab: TabItem;
 
@@ -149,7 +150,7 @@ export const useTabStore = create<TabsState>((set, get) => ({
       if (state.activeTabId === tabId) {
         if (newTabs.length > 0) {
           const nextTab = newTabs[tabIndex] || newTabs[tabIndex - 1];
-          newActiveTabId = nextTab ? nextTab.id : null;
+          newActiveTabId = nextTab.id;
 
           // 更新新的激活标签页状态
           if (newActiveTabId) {
@@ -199,14 +200,14 @@ export const useTabStore = create<TabsState>((set, get) => ({
 
         switch (direction) {
           case 'above':
-            if (index >= tabIndex || index < state.tabs.findIndex(t => !t.isPinned)) {
+            if (index <= tabIndex) {
               tabsToKeep.push(tab);
             } else {
               tabsToClose.push(tab);
             }
             break;
           case 'below':
-            if (index <= tabIndex) {
+            if (index >= tabIndex || index < state.tabs.findIndex(t => !t.isPinned)) {
               tabsToKeep.push(tab);
             } else {
               tabsToClose.push(tab);
@@ -325,14 +326,83 @@ export const useTabStore = create<TabsState>((set, get) => ({
 
   // 更新标签页数据
   updateTabData: (tabId: string, data: Partial<TabItem>) => {
-    set(state => {
-      const tabs = state.tabs.map(tab =>
-        tab.id === tabId
-          ? { ...tab, ...data, updatedAt: Date.now() }
-          : tab
-      );
+    set((state: TabsState): TabsState => {
+      const tabs = state.tabs.map(tab => {
+        if (tab.id === tabId) {
+          // 根据不同标签页类型进行处理
+          if (tab.type === TabType.WEB) {
+            return { ...tab, ...data, updatedAt: Date.now() } as IWebTab;
+          } else if (tab.type === TabType.CHAT) {
+            return { ...tab, ...data, updatedAt: Date.now() } as IChatTab;
+          } else {
+            return { ...tab, ...data, updatedAt: Date.now() } as INewTab;
+          }
+        }
+        return tab;
+      });
 
-      return { tabs };
+      return {
+        ...state,
+        tabs,
+      };
+    });
+  },
+
+  transformTabType: (tabId: string, newType: TabType, initialData: Record<string, unknown> = {}) => {
+    set((state: TabsState): TabsState => {
+      const tabIndex = state.tabs.findIndex(tab => tab.id === tabId);
+      if (tabIndex === -1) return state;
+
+      const oldTab = state.tabs[tabIndex];
+      const timestamp = Date.now();
+
+      // 创建新标签页的通用基础属性
+      const baseProps = {
+        id: oldTab.id,
+        state: oldTab.state,
+        isPinned: oldTab.isPinned,
+        createdAt: oldTab.createdAt,
+        updatedAt: timestamp,
+      };
+
+      // 安全地获取值
+      const getInitialValue = <T>(key: string, defaultValue: T): T => {
+        return (initialData[key] as T) ?? defaultValue;
+      };
+
+      // 创建新的标签页
+      const newTabs = [...state.tabs];
+
+      if (newType === TabType.WEB) {
+        const webTab: IWebTab = {
+          ...baseProps,
+          type: TabType.WEB,
+          title: getInitialValue<string>('title', 'agent.tabTitle.newWeb'),
+          url: getInitialValue<string>('url', 'about:blank'),
+        };
+        newTabs[tabIndex] = webTab;
+      } else if (newType === TabType.CHAT) {
+        const chatTab: IChatTab = {
+          ...baseProps,
+          type: TabType.CHAT,
+          title: getInitialValue<string>('title', 'agent.tabTitle.newChat'),
+          messages: getInitialValue<Array<{ id: string; role: 'user' | 'assistant' | 'system'; content: string; timestamp: number }>>('messages', []),
+        };
+        newTabs[tabIndex] = chatTab;
+      } else {
+        const newTab: INewTab = {
+          ...baseProps,
+          type: TabType.NEW_TAB,
+          title: getInitialValue<string>('title', 'agent.tabTitle.newTab'),
+          favorites: getInitialValue<Array<{ id: string; title: string; url: string; favicon?: string }>>('favorites', []),
+        };
+        newTabs[tabIndex] = newTab;
+      }
+
+      return {
+        ...state,
+        tabs: newTabs,
+      };
     });
   },
 

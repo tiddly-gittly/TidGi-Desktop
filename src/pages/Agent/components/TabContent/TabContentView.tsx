@@ -9,11 +9,15 @@ import { ChatTabContent } from './TabTypes/ChatTabContent';
 import { NewTabContent } from './TabTypes/NewTabContent';
 import { WebTabContent } from './TabTypes/WebTabContent';
 
+/** Props interface for tab content view component */
 interface TabContentViewProps {
+  /** Tab data */
   tab: TabItem;
+  /** Whether to display in split view mode */
   isSplitView?: boolean;
 }
 
+/** Content container styled component */
 const ContentContainer = styled(Box)<{ $isSplitView?: boolean }>`
   display: flex;
   flex-direction: column;
@@ -25,6 +29,7 @@ const ContentContainer = styled(Box)<{ $isSplitView?: boolean }>`
   box-shadow: ${props => props.$isSplitView ? '0 0 10px rgba(0,0,0,0.1)' : 'none'};
 `;
 
+/** Header bar for split view mode */
 const SplitViewHeader = styled(Box)`
   display: flex;
   justify-content: flex-end;
@@ -33,10 +38,14 @@ const SplitViewHeader = styled(Box)`
   border-bottom: 1px solid ${props => props.theme.palette.divider};
 `;
 
+/**
+ * Tab Content View Component
+ * Renders different content components based on tab type and handles split view mode
+ */
 export const TabContentView: React.FC<TabContentViewProps> = ({ tab, isSplitView }) => {
   const { removeFromSplitView } = useTabStore();
 
-  // 根据标签页类型渲染不同的内容组件
+  /** Render appropriate content component based on tab type */
   const renderContent = () => {
     switch (tab.type) {
       case TabType.WEB:
@@ -50,7 +59,7 @@ export const TabContentView: React.FC<TabContentViewProps> = ({ tab, isSplitView
     }
   };
 
-  // 处理从并排视图中移除
+  /** Handle removing tab from split view mode */
   const handleRemoveFromSplitView = () => {
     removeFromSplitView(tab.id);
   };
