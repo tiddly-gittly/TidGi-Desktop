@@ -12,7 +12,7 @@ export function getCurrentTimestamp(): string {
  * @returns True if the value is a plain object, false otherwise.
  */
 export function isObject(value: unknown): value is Record<string, any> {
-  return typeof value === "object" && value !== null && !Array.isArray(value);
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
 /**
@@ -20,10 +20,10 @@ export function isObject(value: unknown): value is Record<string, any> {
  * Used to differentiate yielded updates from the handler.
  */
 export function isTaskStatusUpdate(
-  update: any // eslint-disable-line @typescript-eslint/no-explicit-any
-): update is Omit<import("./schema").TaskStatus, "timestamp"> {
+  update: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+): update is Omit<import('./schema').TaskStatus, 'timestamp'> {
   // Check if it has 'state' and NOT 'parts' (which Artifacts have)
-  return isObject(update) && "state" in update && !("parts" in update);
+  return isObject(update) && 'state' in update && !('parts' in update);
 }
 
 /**
@@ -31,8 +31,8 @@ export function isTaskStatusUpdate(
  * Used to differentiate yielded updates from the handler.
  */
 export function isArtifactUpdate(
-  update: any // eslint-disable-line @typescript-eslint/no-explicit-any
-): update is import("./schema").Artifact {
+  update: any, // eslint-disable-line @typescript-eslint/no-explicit-any
+): update is import('./schema').Artifact {
   // Check if it has 'parts'
-  return isObject(update) && "parts" in update;
+  return isObject(update) && 'parts' in update;
 }

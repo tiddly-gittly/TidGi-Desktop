@@ -20,7 +20,8 @@ export default [
   {
     rules: {
       // allow Defensive programming
-      "@typescript-eslint/no-unnecessary-condition": "warn"
+      "@typescript-eslint/no-unnecessary-condition": "warn",
+      "@typescript-eslint/require-await": "off"
     }
   }
 ];

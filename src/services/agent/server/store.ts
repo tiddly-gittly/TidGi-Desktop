@@ -1,7 +1,7 @@
 import { AgentEntity, TaskEntity, TaskMessageEntity } from '@services/database/schema/agent';
+import { nanoid } from 'nanoid'; // 添加这一行导入
 import { DataSource, Repository } from 'typeorm';
 import * as schema from './schema';
-import { nanoid } from 'nanoid'; // 添加这一行导入
 
 // Helper type for the simplified store
 export interface TaskAndHistory {
@@ -174,7 +174,7 @@ export class SQLiteTaskStore implements TaskStore {
 
         // Check if task exists
         const existingTask = await transactionalEntityManager.findOne(TaskEntity, {
-          where: { id: task.id }
+          where: { id: task.id },
         });
 
         // Create task entity

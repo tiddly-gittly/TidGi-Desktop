@@ -1,6 +1,6 @@
+import { IAgentService } from '@services/agent/interface';
 import { container } from '@services/container';
 import { IExternalAPIService } from '@services/externalAPI/interface';
-import { IAgentService } from '@services/agent/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { TaskContext, TaskYieldUpdate } from '../server';
 import { TextPart } from '../server/schema';

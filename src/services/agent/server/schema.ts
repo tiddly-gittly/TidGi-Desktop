@@ -472,7 +472,7 @@ export interface Message {
    * Common metadata fields include:
    * - id: Unique identifier for the message
    * - created: Creation timestamp in ISO format (preferred)
-   * - timestamp: Alternative timestamp field 
+   * - timestamp: Alternative timestamp field
    * - time: Alternative field for timestamp
    * - updated: Last modification timestamp
    * @default null

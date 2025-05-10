@@ -116,11 +116,11 @@ export class AgentDatabaseManager {
   async updateAgentAIConfig(agentId: string, config: Partial<AgentPromptDescription>): Promise<void> {
     try {
       const agent = await this.agentRepository.findOne({ where: { id: agentId } });
-      
+
       if (!agent) {
         throw new Error(`Agent with ID ${agentId} not found`);
       }
-      
+
       // Parse existing configuration
       let currentConfig: Partial<AgentPromptDescription> = {};
       if (agent.aiConfig) {
@@ -132,7 +132,7 @@ export class AgentDatabaseManager {
           // Continue with empty config if parsing fails
         }
       }
-      
+
       // Merge configurations
       const mergedConfig = {
         ...currentConfig,
@@ -155,11 +155,11 @@ export class AgentDatabaseManager {
           ],
         },
       };
-      
+
       // Save updated configuration
       agent.aiConfig = JSON.stringify(mergedConfig);
       await this.agentRepository.save(agent);
-      
+
       logger.info(`Updated AI config for agent ${agentId}`);
     } catch (error) {
       logger.error(`Failed to update AI config for agent ${agentId}:`, error);
