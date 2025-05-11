@@ -29,7 +29,7 @@ export interface AgentDefinition {
 /**
  * Agent service to manage agent definitions
  */
-export interface IAgentService {
+export interface IAgentDefinitionService {
   /**
    * Initialize the service on application startup.
    */
@@ -60,7 +60,7 @@ export interface IAgentService {
   deleteAgentDef(id: string): Promise<void>;
 }
 
-export const AgentServiceIPCDescriptor = {
+export const AgentDefinitionServiceIPCDescriptor = {
   channel: AgentChannel.definition,
   properties: {
     createAgentDef: ProxyPropertyType.Function,

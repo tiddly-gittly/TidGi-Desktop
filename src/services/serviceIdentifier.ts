@@ -1,5 +1,5 @@
 export default {
-  Agent: Symbol.for('Agent'),
+  AgentDefinition: Symbol.for('AgentDefinition'),
   Authentication: Symbol.for('Authentication'),
   Context: Symbol.for('Context'),
   Database: Symbol.for('Database'),
@@ -21,4 +21,5 @@ export default {
   Window: Symbol.for('Window'),
   Workspace: Symbol.for('Workspace'),
   WorkspaceView: Symbol.for('WorkspaceView'),
+  AgentInstance: Symbol.for('AgentInstance'),
 };

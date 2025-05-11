@@ -1,5 +1,5 @@
-import { AgentInstanceLatestStatus } from '@services/agent/interface';
 import { nanoid } from 'nanoid';
+import { AgentInstanceLatestStatus } from '../interface';
 import { AgentHandlerContext } from './type';
 
 /**

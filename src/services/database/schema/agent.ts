@@ -1,5 +1,6 @@
-import { AiAPIConfig } from '@services/agent/buildinAgentHandlers/promptConcatUtils/promptConcatSchema';
-import { AgentDefinition, AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage } from '@services/agent/interface';
+import { AgentDefinition } from '@services/agentDefinition/interface';
+import { AiAPIConfig } from '@services/agentInstance/buildInAgentHandlers/promptConcatUtils/promptConcatSchema';
+import { AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage } from '@services/agentInstance/interface';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
 /**
@@ -80,7 +81,7 @@ export class AgentInstanceEntity implements Partial<AgentInstance> {
 
   @Column({ nullable: true })
   avatarUrl?: string;
-  
+
   @Column({ default: false })
   closed: boolean = false;
 

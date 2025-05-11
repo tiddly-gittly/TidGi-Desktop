@@ -2,7 +2,7 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { Observable } from 'rxjs';
 
 import { ExternalAPIChannel } from '@/constants/channels';
-import { AiAPIConfig } from '@services/agent/buildinAgentHandlers/promptConcatUtils/promptConcatSchema';
+import { AiAPIConfig } from '@services/agentInstance/buildInAgentHandlers/promptConcatUtils/promptConcatSchema';
 import { CoreMessage, Message } from 'ai';
 
 /**

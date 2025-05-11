@@ -1,5 +1,5 @@
 import { Autocomplete } from '@mui/material';
-import { AiAPIConfig } from '@services/agent/buildinAgentHandlers/promptConcatUtils/promptConcatSchema';
+import { AiAPIConfig } from '@services/agentInstance/buildInAgentHandlers/promptConcatUtils/promptConcatSchema';
 import { AIProviderConfig, ModelInfo } from '@services/externalAPI/interface';
 import React from 'react';
 import { useTranslation } from 'react-i18next';

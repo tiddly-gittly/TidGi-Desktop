@@ -1,5 +1,5 @@
 import { AutocompletePlugin } from '@algolia/autocomplete-js';
-import type { AgentDefinition } from '@services/agent/interface';
+import type { AgentDefinition } from '@services/agentDefinition/interface';
 import { nanoid } from 'nanoid';
 import { getI18n } from 'react-i18next';
 import { TabItem, TabType } from '../../../types/tab';
@@ -17,7 +17,7 @@ export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): Autoco
           sourceId: 'agentsSource',
           getItems: async () => {
             try { // Get agents list using window.service.agent.getAgents
-              const agents = await window.service.agent.getAgentDefs();
+              const agents = await window.service.agentDefinition.getAgentDefs();
               if (!query) {
                 return agents as (AgentDefinition & Record<string, unknown>)[];
               }
@@ -111,7 +111,7 @@ export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): Autoco
           },
           onSelect: async ({ item }) => {
             try {
-              const agent = await window.service.agent.createAgent(item.id);
+              const agent = await window.service.agentInstance.createAgent(item.id);
               const messages = (agent.messages || []).map(message => {
                 const textContent = message.content;
 

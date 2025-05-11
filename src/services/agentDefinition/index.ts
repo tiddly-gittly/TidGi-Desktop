@@ -1,4 +1,3 @@
-/* eslint-disable @typescript-eslint/use-unknown-in-catch-callback-variable */
 /* eslint-disable unicorn/prevent-abbreviations */
 import { injectable } from 'inversify';
 import { pick } from 'lodash';
@@ -11,49 +10,30 @@ import { AgentDefinitionEntity } from '@services/database/schema/agent';
 import { logger } from '@services/libs/log';
 import serviceIdentifier from '@services/serviceIdentifier';
 
-import { AgentHandler } from '../agentInstance/buildInAgentHandlers/type';
-import { AgentDefinition, IAgentService } from './interface';
+import { AgentDefinition, IAgentDefinitionService } from './interface';
 
 @injectable()
-export class AgentService implements IAgentService {
+export class AgentDefinitionService implements IAgentDefinitionService {
   @lazyInject(serviceIdentifier.Database)
   private readonly databaseService!: IDatabaseService;
 
   private dataSource: DataSource | null = null;
   private agentDefRepository: Repository<AgentDefinitionEntity> | null = null;
 
-  private agentHandlers: Map<string, AgentHandler> = new Map();
-
   public async initialize(): Promise<void> {
     try {
       // Initialize the database
       await this.databaseService.initializeDatabase('agent-default');
-      logger.info('Agent database initialized');
-
-      // Initialize managers
+      logger.debug('Agent database initialized');
       this.dataSource = await this.databaseService.getDatabase('agent-default');
-
-      // Initialize repositories
       this.agentDefRepository = this.dataSource.getRepository(AgentDefinitionEntity);
-
-      logger.info('Agent repositories initialized');
-
-      // Register built-in handlers
-      this.registerBuiltinHandlers();
-      logger.info('Agent handlers registered');
+      logger.debug('Agent repositories initialized');
+      logger.debug('Agent handlers registered');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : String(error);
       logger.error(`Failed to initialize agent service: ${errorMessage}`);
       throw error;
     }
-  }
-
-  /**
-   * Register built-in agent handlers
-   */
-  private registerBuiltinHandlers(): void {
-    // Register handlers here - these will be shared with AgentInstanceService
-    // Handlers are moved to a common location and imported by both services
   }
 
   /**

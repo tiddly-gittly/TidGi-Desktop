@@ -18,7 +18,7 @@ import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
-import { IAgentService } from '@services/agent/interface';
+import { IAgentDefinitionService } from '@services/agentDefinition/interface';
 import { IDatabaseService } from '@services/database/interface';
 import { IDeepLinkService } from '@services/deepLink/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
@@ -60,7 +60,7 @@ const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
-const agentService = container.get<IAgentService>(serviceIdentifier.Agent);
+const agentDefinitionService = container.get<IAgentDefinitionService>(serviceIdentifier.AgentDefinition);
 app.on('second-instance', async () => {
   // see also src/helpers/singleInstance.ts
   // Someone tried to run a second instance, for example, when `runOnBackground` is true, we should focus our window.
@@ -93,7 +93,7 @@ const commonInit = async (): Promise<void> => {
       }
     }),
     databaseService.initializeForApp().then(async () => {
-      await agentService.initialize();
+      await agentDefinitionService.initialize();
     }),
   ]);
   initializeObservables();

@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/no-invalid-void-type */
-import { AgentDefinition, AgentInstance, AgentInstanceLatestStatus } from '../interface';
+import { AgentDefinition } from '../../agentDefinition/interface';
+import { AgentInstance, AgentInstanceLatestStatus } from '../interface';
 
 export interface AgentHandlerContext {
   agent: AgentInstance;

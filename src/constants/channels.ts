@@ -151,7 +151,8 @@ export enum SyncChannel {
 }
 
 export enum AgentChannel {
-  name = 'AgentChannel',
+  definition = 'AgentDefinitionChannel',
+  instance = 'AgentInstanceChannel',
 }
 
 export enum ExternalAPIChannel {

@@ -1,4 +1,4 @@
-import { AiAPIConfig } from '@services/agent/buildinAgentHandlers/promptConcatUtils/promptConcatSchema';
+import { AiAPIConfig } from '@services/agentInstance/buildInAgentHandlers/promptConcatUtils/promptConcatSchema';
 import { AIProviderConfig } from '@services/externalAPI/interface';
 import { useEffect, useState } from 'react';
 

@@ -6,7 +6,8 @@
 import { createProxy } from 'electron-ipc-cat/client';
 import { AsyncifyProxy } from 'electron-ipc-cat/common';
 
-import { AgentServiceIPCDescriptor, IAgentService } from '@services/agent/interface';
+import { AgentDefinitionServiceIPCDescriptor, IAgentDefinitionService } from '@services/agentDefinition/interface';
+import { AgentInstanceServiceIPCDescriptor, IAgentInstanceService } from '@services/agentInstance/interface';
 import { AuthenticationServiceIPCDescriptor, IAuthenticationService } from '@services/auth/interface';
 import { ContextServiceIPCDescriptor, IContextService } from '@services/context/interface';
 import { DeepLinkServiceIPCDescriptor, IDeepLinkService } from '@services/deepLink/interface';
@@ -28,7 +29,8 @@ import { IWorkspaceService, WorkspaceServiceIPCDescriptor } from '@services/work
 import { IWorkspaceViewService, WorkspaceViewServiceIPCDescriptor } from '@services/workspacesView/interface';
 import { ExternalAPIServiceIPCDescriptor, IExternalAPIService } from '../../services/externalAPI/interface';
 
-export const agent = createProxy<AsyncifyProxy<IAgentService>>(AgentServiceIPCDescriptor);
+export const agentDefinition = createProxy<AsyncifyProxy<IAgentDefinitionService>>(AgentDefinitionServiceIPCDescriptor);
+export const agentInstance = createProxy<IAgentInstanceService>(AgentInstanceServiceIPCDescriptor);
 export const auth = createProxy<IAuthenticationService>(AuthenticationServiceIPCDescriptor);
 export const context = createProxy<IContextService>(ContextServiceIPCDescriptor);
 export const deepLink = createProxy<IDeepLinkService>(DeepLinkServiceIPCDescriptor);
@@ -51,7 +53,8 @@ export const workspace = createProxy<AsyncifyProxy<IWorkspaceService>>(Workspace
 export const workspaceView = createProxy<IWorkspaceViewService>(WorkspaceViewServiceIPCDescriptor);
 
 export const descriptors = {
-  agent: AgentServiceIPCDescriptor,
+  agentDefinition: AgentDefinitionServiceIPCDescriptor,
+  agentInstance: AgentInstanceServiceIPCDescriptor,
   auth: AuthenticationServiceIPCDescriptor,
   context: ContextServiceIPCDescriptor,
   deepLink: DeepLinkServiceIPCDescriptor,

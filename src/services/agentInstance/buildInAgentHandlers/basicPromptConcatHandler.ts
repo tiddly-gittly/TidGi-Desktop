@@ -2,6 +2,7 @@ import { container } from '@services/container';
 import { IExternalAPIService } from '@services/externalAPI/interface';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { promptConcat } from './promptConcatUtils/promptConcat';
+import { AiAPIConfig } from './promptConcatUtils/promptConcatSchema';
 import { canceled, completed, working } from './statusUtilities';
 import { AgentHandlerContext } from './type';
 
@@ -27,7 +28,7 @@ export async function* basicPromptConcatHandler(context: AgentHandlerContext) {
   }
 
   // Ensure AI configuration exists
-  const aiApiConfig = {
+  const aiApiConfig: AiAPIConfig = {
     ...await externalAPIService.getAIConfig(),
     ...context.agentDef.aiApiConfig,
     ...context.agent.aiApiConfig,
