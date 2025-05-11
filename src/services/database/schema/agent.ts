@@ -1,173 +1,138 @@
+import { AiAPIConfig } from '@services/agent/buildinAgentHandlers/promptConcatUtils/promptConcatSchema';
+import { AgentDefinition, AgentInstance, AgentInstanceLatestStatus, AgentInstanceMessage } from '@services/agent/interface';
 import { Column, CreateDateColumn, Entity, Index, JoinColumn, ManyToOne, OneToMany, PrimaryColumn, UpdateDateColumn } from 'typeorm';
 
 /**
- * Agent entity - stores information about available agents
+ * Database entity: Stores user modifications to predefined Agents
+ * Note: AgentDefinition typically comes from downloaded JSON or app-defined templates,
+ * we only store the user's customizations, not the complete definition
+ * This saves space and makes it easier to track user personalization
  */
-@Entity({ name: 'agents' })
-export class AgentEntity {
+@Entity('agent_definitions')
+export class AgentDefinitionEntity implements Partial<AgentDefinition> {
+  /** Unique identifier for the agent */
+  @PrimaryColumn()
+  id!: string;
+
+  /** Agent name, nullable indicates using default name */
+  @Column({ nullable: true })
+  name?: string;
+
+  /** Detailed agent description, nullable indicates using default description */
+  @Column({ type: 'text', nullable: true })
+  description?: string;
+
+  /** Agent avatar or icon URL, nullable indicates using default avatar */
+  @Column({ nullable: true })
+  avatarUrl?: string;
+
+  /** Agent handler function ID, nullable indicates using default handler */
+  @Column({ nullable: true })
+  handlerID?: string;
+
+  /** Agent handler configuration parameters, stored as JSON */
+  @Column({ type: 'simple-json', nullable: true })
+  handlerConfig?: Record<string, unknown>;
+
+  /** Agent's AI API configuration, can override global default config */
+  @Column({ type: 'simple-json', nullable: true })
+  aiApiConfig?: Partial<AiAPIConfig>;
+
+  /** Creation timestamp */
+  @CreateDateColumn()
+  createdAt!: Date;
+
+  /** Last update timestamp */
+  @UpdateDateColumn()
+  updatedAt!: Date;
+
+  // One AgentDefinition can have multiple AgentInstances
+  @OneToMany(() => AgentInstanceEntity, instance => instance.agentDefinition)
+  instances?: AgentInstanceEntity[];
+}
+
+/**
+ * Stores user chat sessions with Agents
+ */
+@Entity('agent_instances')
+export class AgentInstanceEntity implements Partial<AgentInstance> {
   @PrimaryColumn()
   id!: string;
 
   @Column()
-  name!: string;
+  @Index()
+  agentDefId!: string;
 
   @Column({ nullable: true })
-  description?: string;
+  name?: string;
+
+  @Column({ type: 'simple-json' })
+  status!: AgentInstanceLatestStatus;
+
+  @CreateDateColumn()
+  created!: Date;
+
+  @UpdateDateColumn()
+  modified?: Date;
+
+  @Column({ type: 'simple-json', nullable: true })
+  aiApiConfig?: Partial<AiAPIConfig>;
 
   @Column({ nullable: true })
   avatarUrl?: string;
+  
+  @Column({ default: false })
+  closed: boolean = false;
 
-  /**
-   * Agent card configuration (JSON)
-   */
-  @Column({ type: 'text', nullable: true })
-  card?: string;
+  // Relation to AgentDefinition
+  @ManyToOne(() => AgentDefinitionEntity, definition => definition.instances)
+  @JoinColumn({ name: 'agentDefId' })
+  agentDefinition?: AgentDefinitionEntity;
 
-  /**
-   * AI configuration for this agent (JSON)
-   * Contains provider, model, and model parameters (temperature, topP, etc.)
-   */
-  @Column({ type: 'text', nullable: true })
-  aiConfig?: string;
-
-  /**
-   * Creation timestamp
-   */
-  @CreateDateColumn({ type: 'datetime' })
-  createdAt!: Date;
-
-  /**
-   * Last update timestamp
-   */
-  @UpdateDateColumn({ type: 'datetime' })
-  updatedAt!: Date;
-
-  /**
-   * Tasks belonging to this agent
-   */
-  @OneToMany(() => TaskEntity, task => task.agent)
-  tasks!: TaskEntity[];
+  // One AgentInstance can have multiple Messages
+  @OneToMany(() => AgentInstanceMessageEntity, message => message.agentInstance, {
+    cascade: ['insert', 'update'],
+  })
+  messages?: AgentInstanceMessageEntity[];
 }
 
 /**
- * Task entity - stores information about agent tasks (formerly sessions)
+ * Stores conversation messages between users and Agents
  */
-@Entity({ name: 'tasks' })
-export class TaskEntity {
+@Entity('agent_instance_messages')
+export class AgentInstanceMessageEntity implements AgentInstanceMessage {
   @PrimaryColumn()
   id!: string;
 
-  /**
-   * Reference to the agent that owns this task
-   */
   @Column()
   @Index()
   agentId!: string;
 
-  /**
-   * Task state
-   */
-  @Column()
-  state!: string;
+  @Column({
+    type: 'varchar',
+    enum: ['user', 'assistant', 'agent'],
+    default: 'user',
+  })
+  role!: 'user' | 'assistant' | 'agent';
 
-  /**
-   * Task status (JSON)
-   */
   @Column({ type: 'text' })
-  status!: string;
+  content!: string;
 
-  /**
-   * Task artifacts (JSON)
-   */
-  @Column({ type: 'text', nullable: true })
-  artifacts?: string;
+  @Column({
+    type: 'varchar',
+    nullable: true,
+    default: 'text/plain',
+  })
+  contentType?: string;
 
-  /**
-   * Task metadata (JSON)
-   */
-  @Column({ type: 'text', nullable: true })
-  metadata?: string;
+  @UpdateDateColumn()
+  modified?: Date;
 
-  /**
-   * Task-specific AI configuration (JSON)
-   * Overrides agent-level configuration
-   */
-  @Column({ type: 'text', nullable: true })
-  aiConfig?: string;
+  @Column({ type: 'simple-json', nullable: true, name: 'meta_data' })
+  metadata?: Record<string, unknown>;
 
-  /**
-   * Creation timestamp
-   */
-  @CreateDateColumn({ type: 'datetime' })
-  createdAt!: Date;
-
-  /**
-   * Last update timestamp
-   */
-  @UpdateDateColumn({ type: 'datetime' })
-  updatedAt!: Date;
-
-  /**
-   * Agent this task belongs to
-   */
-  @ManyToOne(() => AgentEntity, agent => agent.tasks)
+  // Relation to AgentInstance
+  @ManyToOne(() => AgentInstanceEntity, instance => instance.messages)
   @JoinColumn({ name: 'agentId' })
-  agent!: AgentEntity;
-
-  /**
-   * Messages in this task
-   */
-  @OneToMany(() => TaskMessageEntity, message => message.task)
-  messages!: TaskMessageEntity[];
+  agentInstance?: AgentInstanceEntity;
 }
-
-/**
- * Task Message entity - stores message history
- */
-@Entity({ name: 'task_messages' })
-export class TaskMessageEntity {
-  @PrimaryColumn()
-  id!: string;
-
-  /**
-   * Reference to the task this message belongs to
-   */
-  @Column()
-  @Index()
-  taskId!: string;
-
-  /**
-   * Message role (user/agent)
-   */
-  @Column()
-  role!: string;
-
-  /**
-   * Message parts (JSON)
-   */
-  @Column({ type: 'text' })
-  parts!: string;
-
-  /**
-   * Message metadata (JSON)
-   */
-  @Column({ type: 'text', nullable: true })
-  metadata?: string;
-
-  /**
-   * Creation timestamp
-   */
-  @CreateDateColumn({ type: 'datetime' })
-  timestamp!: Date;
-
-  /**
-   * Task this message belongs to
-   */
-  @ManyToOne(() => TaskEntity, task => task.messages)
-  @JoinColumn({ name: 'taskId' })
-  task!: TaskEntity;
-}
-
-// Alias for backward compatibility
-export const SessionEntity = TaskEntity;
-export const SessionMessageEntity = TaskMessageEntity;

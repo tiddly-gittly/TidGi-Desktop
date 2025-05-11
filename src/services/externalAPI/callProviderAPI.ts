@@ -6,7 +6,7 @@ import { logger } from '@services/libs/log';
 import { CoreMessage, Message, streamText } from 'ai';
 import { createOllama } from 'ollama-ai-provider';
 
-import { AiAPIConfig } from '@services/agent/defaultAgents/schemas';
+import { AiAPIConfig } from '@services/agent/buildinAgentHandlers/promptConcatUtils/promptConcatSchema';
 import { AuthenticationError, MissingAPIKeyError, MissingBaseURLError, parseProviderError } from './errors';
 import type { AIProviderConfig } from './interface';
 

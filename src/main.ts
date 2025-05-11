@@ -1,5 +1,3 @@
-/* eslint-disable unicorn/prefer-top-level-await */
-/* eslint-disable @typescript-eslint/no-misused-promises */
 import { uninstall } from './helpers/installV8Cache';
 import 'source-map-support/register';
 import 'reflect-metadata';
@@ -20,6 +18,7 @@ import { bindServiceAndProxy } from '@services/libs/bindServiceAndProxy';
 import serviceIdentifier from '@services/serviceIdentifier';
 import { WindowNames } from '@services/windows/WindowProperties';
 
+import { IAgentService } from '@services/agent/interface';
 import { IDatabaseService } from '@services/database/interface';
 import { IDeepLinkService } from '@services/deepLink/interface';
 import { initializeObservables } from '@services/libs/initializeObservables';
@@ -61,6 +60,7 @@ const windowService = container.get<IWindowService>(serviceIdentifier.Window);
 const workspaceViewService = container.get<IWorkspaceViewService>(serviceIdentifier.WorkspaceView);
 const databaseService = container.get<IDatabaseService>(serviceIdentifier.Database);
 const deepLinkService = container.get<IDeepLinkService>(serviceIdentifier.DeepLink);
+const agentService = container.get<IAgentService>(serviceIdentifier.Agent);
 app.on('second-instance', async () => {
   // see also src/helpers/singleInstance.ts
   // Someone tried to run a second instance, for example, when `runOnBackground` is true, we should focus our window.
@@ -88,9 +88,13 @@ const commonInit = async (): Promise<void> => {
   await Promise.all([
     windowService.open(WindowNames.main),
     preferenceService.get('attachToMenubar').then(async (attachToMenubar) => {
-      attachToMenubar && await windowService.open(WindowNames.menuBar);
+      if (attachToMenubar) {
+        await windowService.open(WindowNames.menuBar);
+      }
     }),
-    databaseService.initializeForApp(),
+    databaseService.initializeForApp().then(async () => {
+      await agentService.initialize();
+    }),
   ]);
   initializeObservables();
   // perform wiki startup and git sync for each workspace
@@ -163,7 +167,6 @@ app.on(MainChannel.windowAllClosed, async () => {
 });
 app.on(
   'before-quit',
-  // eslint-disable-next-line @typescript-eslint/no-misused-promises
   async (): Promise<void> => {
     logger.info('App before-quit');
     await Promise.all([
@@ -190,7 +193,6 @@ if (!isTest) {
   });
 }
 
-// eslint-disable-next-line @typescript-eslint/strict-boolean-expressions
 if (require('electron-squirrel-startup')) {
   app.quit();
 }

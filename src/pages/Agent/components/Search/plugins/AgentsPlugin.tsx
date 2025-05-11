@@ -1,20 +1,14 @@
 import { AutocompletePlugin } from '@algolia/autocomplete-js';
-import type { Agent } from '@services/agent/interface';
+import type { AgentDefinition } from '@services/agent/interface';
 import { nanoid } from 'nanoid';
 import { getI18n } from 'react-i18next';
 import { TabItem, TabType } from '../../../types/tab';
-
-// Define BaseItem type
-type BaseItem = Record<string, unknown>;
 
 interface AgentsPluginProps {
   onAgentSelect: (tabType: TabType, initialData?: Partial<TabItem> & { insertPosition?: number | undefined }) => TabItem;
 }
 
-// Create agent type for frontend display, excluding handler
-type AgentDisplay = Omit<Agent, 'handler'> & BaseItem;
-
-export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): AutocompletePlugin<AgentDisplay, unknown> => {
+export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): AutocompletePlugin<AgentDefinition & Record<string, unknown>, unknown> => {
   const { t } = getI18n();
   const plugin = {
     getSources({ query }) {
@@ -23,24 +17,16 @@ export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): Autoco
           sourceId: 'agentsSource',
           getItems: async () => {
             try { // Get agents list using window.service.agent.getAgents
-              const agents = await window.service.agent.getAgents();
-
-              // Ensure returned objects conform to AgentDisplay type
-              const agentItems = agents.map(agent => ({
-                ...agent,
-                // handler property excluded
-              }));
-
+              const agents = await window.service.agent.getAgentDefs();
               if (!query) {
-                return agentItems as AgentDisplay[];
+                return agents as (AgentDefinition & Record<string, unknown>)[];
               }
 
               const lowerCaseQuery = query.toLowerCase();
-              return agentItems
-                .filter(agent =>
-                  agent.name.toLowerCase().includes(lowerCaseQuery) ||
-                  (agent.description && agent.description.toLowerCase().includes(lowerCaseQuery))
-                ) as AgentDisplay[];
+              return agents.filter(agent =>
+                agent.name.toLowerCase().includes(lowerCaseQuery) ||
+                (agent.description && agent.description.toLowerCase().includes(lowerCaseQuery))
+              ) as (AgentDefinition & Record<string, unknown>)[];
             } catch (error) {
               console.error(t('Search.FailedToFetchAgents', { ns: 'agent' }), error);
               return [];
@@ -125,16 +111,9 @@ export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): Autoco
           },
           onSelect: async ({ item }) => {
             try {
-              const task = await window.service.agent.createTask(item.id);
-              const messages = (task.messages || []).map(message => {
-                // Extract text content
-                let textContent = '';
-                for (const part of message.parts) {
-                  if (part && typeof part === 'object' && 'text' in part) {
-                    const textPart = part as { text: string };
-                    if (textPart.text) textContent += textPart.text;
-                  }
-                }
+              const agent = await window.service.agent.createAgent(item.id);
+              const messages = (agent.messages || []).map(message => {
+                const textContent = message.content;
 
                 // Map message roles
                 let role: 'user' | 'assistant' | 'system';
@@ -161,7 +140,7 @@ export const createAgentsPlugin = ({ onAgentSelect }: AgentsPluginProps): Autoco
         },
       ];
     },
-  } satisfies AutocompletePlugin<AgentDisplay, unknown>;
+  } satisfies AutocompletePlugin<AgentDefinition & Record<string, unknown>, unknown>;
 
   return plugin;
 };
@@ -171,7 +150,7 @@ function highlightHits({
   attribute,
   query,
 }: {
-  hit: AgentDisplay;
+  hit: AgentDefinition & Record<string, unknown>;
   attribute: string;
   query: string;
 }): string {

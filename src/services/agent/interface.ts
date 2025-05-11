@@ -1,15 +1,13 @@
 import { ProxyPropertyType } from 'electron-ipc-cat/common';
-import type { BehaviorSubject, Observable } from 'rxjs';
+import type { Observable } from 'rxjs';
 
 import { AgentChannel } from '@/constants/channels';
-import { AiAPIConfig } from './defaultAgents/schemas';
-import { TaskHandler } from './server/handler';
-import * as schema from './server/schema';
+import { AiAPIConfig } from './buildinAgentHandlers/promptConcatUtils/promptConcatSchema';
 
 /**
  * Agent definition, including basic information and processing logic
  */
-export interface Agent {
+export interface AgentDefinition {
   /** Unique identifier for the agent */
   id: string;
   /** Agent name */
@@ -18,170 +16,187 @@ export interface Agent {
   description?: string;
   /** Agent icon or avatar URL */
   avatarUrl?: string;
-  /** Agent handler function */
-  handler: TaskHandler;
-  /** Agent feature card */
-  card?: schema.AgentCard;
+  /** Agent handler function's id, we will find function by this id */
+  handlerID?: string;
+  /** Agent handler's config, specific to the handler. */
+  handlerConfig?: Record<string, unknown>;
+  /**
+   * Overwrite the default AI configuration for this agent.
+   * Priority is higher than the global default agent config.
+   */
+  aiApiConfig?: Partial<AiAPIConfig>;
 }
 
 /**
- * Agent service configuration
+ * Content of a session instance that user chat with an agent.
  */
-export interface AgentServiceConfig {
-  /** Whether to enable HTTP server */
-  enableHttpServer?: boolean;
-  /** HTTP server port */
-  httpServerPort?: number;
-  /** HTTP server base path */
-  httpServerBasePath?: string;
-}
-
-/**
- * Agent task information - adapted from schema.Task with UI-specific additions
- */
-export interface AgentTask extends Omit<schema.Task, 'artifacts'> {
-  /** Agent ID that owns this task */
-  agentId: string;
-  /** Task name */
+export interface AgentInstance {
+  id: string;
+  /** Agent description ID that generates this instance */
+  agentDefId: string;
+  /** Session name */
   name?: string;
-  /** Message history */
-  messages: schema.Message[];
-  /** Task creation time (converted from ISO string) */
-  createdAt: Date;
-  /** Last update time (converted from ISO string) */
-  updatedAt: Date;
-  /** Optional artifacts */
-  artifacts?: schema.Artifact[] | null;
+  /**
+   * Message history.
+   * latest on top, so it's easy to get first one as user's latest input, and rest as history.
+   */
+  messages: AgentInstanceMessage[];
+  status: AgentInstanceLatestStatus;
+  /** Session creation time (converted from ISO string) */
+  created: Date;
+  /**
+   * Last update time (converted from ISO string).
+   * We don't need `created` for message because it might be stream generated, we only care about its complete time.
+   */
+  modified?: Date;
+  /**
+   * Overwrite the default AI configuration for this agent instance.
+   * Priority is higher than agent definition, and higher than default agent config.
+   */
+  aiApiConfig?: Partial<AiAPIConfig>;
+  /**
+   * Overwrite the default avatar URL from the agent definition.
+   */
+  avatarUrl?: string;
+  /**
+   * Indicates whether this agent instance is closed. Closed instances are not deleted from database
+   * but are hidden from the default list and don't consume resources.
+   */
+  closed?: boolean;
 }
 
 /**
- * Agent request result
+ * Represents the state of a task within the A2A protocol.
+ * @description An enumeration.
  */
-export interface AgentRequestResult<T = any> {
-  data?: T;
-  error?: Error;
+export type AgentInstanceState =
+  | 'submitted'
+  | 'working'
+  | 'input-required'
+  | 'completed'
+  | 'canceled'
+  | 'failed'
+  | 'unknown';
+
+/**
+ * Represents the status of a task at a specific point in time.
+ */
+export interface AgentInstanceLatestStatus {
+  /**
+   * The current state of the task.
+   */
+  state: AgentInstanceState;
+
+  /**
+   * An optional message associated with the current status (e.g., progress update, final response).
+   * @default undefined
+   */
+  message?: AgentInstanceMessage;
+
+  /** Last update time (converted from ISO string) */
+  modified?: Date;
+}
+
+export interface AgentInstanceMessage {
+  /** Message nano ID */
+  id: string;
+  agentId: string;
+  /** Message role */
+  role: 'user' | 'assistant' | 'agent';
+  /** Message content */
+  content: string;
+  contentType?: string; // 'text/plain' | 'text/markdown' | 'text/html' | 'application/json' | 'application/json+ndjson';
+  /** Last update time (converted from ISO string) */
+  modified?: Date;
+  /** Message metadata */
+  metadata?: Record<string, unknown>;
 }
 
 /**
- * Agent service to manage chat agents and tasks
+ * Agent service to manage chat agents and chats
  */
 export interface IAgentService {
   /**
+   * Initialize the service on application startup.
+   */
+  initialize(): Promise<void>;
+  /**
+   * Create a new agent
+   * @param agent Agent definition
+   */
+  createAgentDef(agent: AgentDefinition): Promise<AgentDefinition>;
+  /**
+   * Update an existing agent
+   * @param agent Agent definition
+   */
+  updateAgentDef(agent: AgentDefinition): Promise<AgentDefinition>;
+  /**
    * Get all available agents (simplified, without handler)
    */
-  getAgents(): Promise<Omit<Agent, 'handler'>[]>;
-
+  getAgentDefs(options?: { searchName?: string }): Promise<AgentDefinition[]>;
   /**
-   * Get a specific agent
+   * Get a specific agent. No id means get default agent that config in the preference.
    * @param id Agent ID
    */
-  getAgent(id: string): Promise<Agent | undefined>;
+  getAgentDef(id?: string): Promise<AgentDefinition | undefined>;
+  deleteAgentDef(id: string): Promise<void>;
 
   /**
-   * Create a new task (session)
-   * @param agentId Agent ID
+   * Create a new agent instance from an agent definition
+   * @param agentDefinitionID Agent definition ID, if not provided, will use the default agent
    */
-  createTask(agentId: string): Promise<AgentTask>;
+  createAgent(agentDefinitionID?: string): Promise<AgentInstance>;
 
   /**
-   * Send a message to a task
+   * Send a message or file to an agent instance.
    * @param agentId Agent ID
-   * @param taskId Task ID
    * @param messageText Message text
+   * @param file File to upload
    */
-  sendMessage(agentId: string, taskId: string, messageText: string): Promise<schema.JSONRPCResponse>;
-
+  sendMsgToAgent(agentId: string, content: { text: string; file?: File }): Promise<void>;
   /**
-   * Stream a message to a task and subscribe to results
-   * @param agentId Agent ID
-   * @param taskId Task ID
-   * @param messageText Message text
+   * Subscribe to full streamed updates from an agent instance.
+   * On every token generated, this will send full agent data to the subscriber.
+   * @param agentId Agent instance ID
    */
-  handleStreamingRequest(agentId: string, taskId: string, messageText: string): Observable<schema.TaskStatusUpdateEvent | schema.TaskArtifactUpdateEvent>;
-
+  subscribeToAgentUpdates(agentId: string): Observable<AgentInstance | undefined>;
+  subscribeToAgentUpdates(agentId: string, messageId: string): Observable<AgentInstanceLatestStatus | undefined>;
   /**
-   * Get a specific task
-   * @param taskId Task ID
+   * Get latest data of an agent instance.
+   * @param agentId Agent instance ID
    */
-  getTask(taskId: string): Promise<AgentTask | undefined>;
-
+  getAgent(agentId: string): Promise<AgentInstance | undefined>;
+  updateAgent(agentId: string, data: Partial<AgentInstance>): Promise<AgentInstance>;
+  deleteAgent(agentId: string): Promise<void>;
+  cancelAgent(agentId: string): Promise<void>;
   /**
-   * Get all tasks for an agent
-   * @param agentId Agent ID
+   * Get all agent instances with pagination
+   * @param page Page number
+   * @param pageSize Number of items per page
    */
-  getAgentTasks(agentId: string): Promise<AgentTask[]>;
-
+  getAgents(page: number, pageSize: number, options?: { closed?: boolean; searchName?: string }): Promise<AgentInstance[]>;
   /**
-   * Delete a task
-   * @param agentId Agent ID
-   * @param taskId Task ID
+   * Clean up subscriptions and cancel the agent, not deleting it, simply free the in-memory resources it uses.
    */
-  deleteTask(agentId: string, taskId: string): Promise<void>;
-
-  /**
-   * Cancel a task without deleting it
-   * @param agentId Agent ID
-   * @param taskId Task ID
-   */
-  cancelTask(agentId: string, taskId: string): Promise<void>;
-
-  /**
-   * Start HTTP server
-   * @param config Server configuration
-   */
-  startHttpServer(config: AgentServiceConfig): Promise<void>;
-
-  /**
-   * Stop HTTP server
-   */
-  stopHttpServer(): Promise<void>;
-
-  /** Task updates stream - only includes changed tasks */
-  taskUpdates$: BehaviorSubject<Record<string, AgentTask | null>>;
-
-  /**
-   * Get default agent ID
-   */
-  getDefaultAgentId(): Promise<string | undefined>;
-
-  /**
-   * 根据任务ID和代理ID获取AI配置
-   * 级联获取: task -> agent -> global defaults
-   * @param taskId 可选的任务ID
-   * @param agentId 可选的代理ID（如果提供了taskId，可以不提供）
-   * @returns 合并后的AI配置
-   */
-  getAIConfigByIds(taskId?: string, agentId?: string): Promise<AiAPIConfig>;
-
-  /**
-   * Update agent-specific AI configuration
-   */
-  updateAgentAIConfig(agentId: string, config: Partial<AiAPIConfig>): Promise<void>;
-
-  /**
-   * Update task-specific AI configuration
-   */
-  updateTaskAIConfig(taskId: string, config: Partial<AiAPIConfig>): Promise<void>;
+  closeAgent(agentId: string): Promise<void>;
 }
 
 export const AgentServiceIPCDescriptor = {
   channel: AgentChannel.name,
   properties: {
-    getAgents: ProxyPropertyType.Function,
+    createAgentDef: ProxyPropertyType.Function,
+    updateAgentDef: ProxyPropertyType.Function,
+    getAgentDefs: ProxyPropertyType.Function,
+    getAgentDef: ProxyPropertyType.Function,
+    deleteAgentDef: ProxyPropertyType.Function,
+    createAgent: ProxyPropertyType.Function,
+    sendMsgToAgent: ProxyPropertyType.Function,
+    subscribeToAgentUpdates: ProxyPropertyType.Function$,
     getAgent: ProxyPropertyType.Function,
-    createTask: ProxyPropertyType.Function, // 原 createSession
-    sendMessage: ProxyPropertyType.Function,
-    handleStreamingRequest: ProxyPropertyType.Function$,
-    getTask: ProxyPropertyType.Function, // 原 getSession
-    getAgentTasks: ProxyPropertyType.Function, // 原 getAgentSessions
-    deleteTask: ProxyPropertyType.Function, // 原 deleteSession
-    cancelTask: ProxyPropertyType.Function,
-    startHttpServer: ProxyPropertyType.Function,
-    stopHttpServer: ProxyPropertyType.Function,
-    taskUpdates$: ProxyPropertyType.Value$, // 原 sessionUpdates$
-    getDefaultAgentId: ProxyPropertyType.Function,
-    getAIConfigByIds: ProxyPropertyType.Function,
-    updateAgentAIConfig: ProxyPropertyType.Function,
-    updateTaskAIConfig: ProxyPropertyType.Function,
+    updateAgent: ProxyPropertyType.Function,
+    deleteAgent: ProxyPropertyType.Function,
+    cancelAgent: ProxyPropertyType.Function,
+    getAgents: ProxyPropertyType.Function,
+    closeAgent: ProxyPropertyType.Function,
   },
 };

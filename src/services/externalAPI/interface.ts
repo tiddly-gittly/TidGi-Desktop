@@ -2,12 +2,8 @@ import { ProxyPropertyType } from 'electron-ipc-cat/common';
 import { Observable } from 'rxjs';
 
 import { ExternalAPIChannel } from '@/constants/channels';
-import { AiAPIConfig } from '@services/agent/defaultAgents/schemas';
-import * as schema from '@services/agent/server/schema';
+import { AiAPIConfig } from '@services/agent/buildinAgentHandlers/promptConcatUtils/promptConcatSchema';
 import { CoreMessage, Message } from 'ai';
-
-// We'll use schema.Message but need a simpler subset for API calls
-export type AIMessage = schema.Message;
 
 /**
  * AI streaming response status interface

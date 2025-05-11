@@ -1,17 +1,8 @@
+/* eslint-disable @typescript-eslint/no-unnecessary-condition */
 import { CoreMessage } from 'ai';
 import { cloneDeep } from 'lodash';
-import { Message } from '../server/schema';
-import { AgentPromptDescription, Prompt, PromptDynamicModification, PromptPart } from './schemas';
-
-/**
- * 提示词处理上下文接口
- */
-export interface PromptProcessingContext {
-  /** 历史消息记录 */
-  history?: Message[];
-  /** 用户最新消息 */
-  userMessage?: string;
-}
+import { AgentHandlerContext } from '../type';
+import { AgentPromptDescription, Prompt, PromptDynamicModification, PromptPart } from './promptConcatSchema';
 
 /**
  * 提示词动态修改处理器函数类型
@@ -19,7 +10,7 @@ export interface PromptProcessingContext {
 export type PromptDynamicModificationHandler = (
   prompts: Prompt[],
   modification: PromptDynamicModification,
-  context: PromptProcessingContext,
+  context: AgentHandlerContext,
 ) => Prompt[];
 
 /**
@@ -110,15 +101,14 @@ registerPromptDynamicModificationHandler('fullReplacement', (prompts, modificati
 
   // 根据源类型获取内容
   let content = '';
-  if (sourceType === 'historyOfSession' && context.history) {
+  const [_userMessage, ...history] = context.agent.messages;
+
+  if (sourceType === 'historyOfSession' && history) {
     // 将历史消息转换为文本
-    content = context.history
+    content = history
       .map(message => {
         const role = message.role === 'agent' ? 'assistant' : message.role;
-        const text = message.parts
-          .filter(part => 'text' in part && part.text)
-          .map(part => (part as any).text)
-          .join('\n');
+        const text = message.content;
         return `${role}: ${text}`;
       })
       .join('\n\n');
@@ -130,7 +120,7 @@ registerPromptDynamicModificationHandler('fullReplacement', (prompts, modificati
 });
 
 // 注册 dynamicPosition 处理器
-registerPromptDynamicModificationHandler('dynamicPosition', (prompts, modification, context) => {
+registerPromptDynamicModificationHandler('dynamicPosition', (prompts, modification, _context) => {
   if (!modification.dynamicPositionParam || !modification.content) return prompts;
 
   const { targetId, position } = modification.dynamicPositionParam;
@@ -168,19 +158,19 @@ registerPromptDynamicModificationHandler('dynamicPosition', (prompts, modificati
  * @param context 处理上下文，包含历史消息等
  * @returns 处理后的一维提示词数组
  */
-export function processPrompts(
+export function promptConcat(
   agentConfig: AgentPromptDescription,
-  context: PromptProcessingContext,
+  context: AgentHandlerContext,
 ): {
   flatPrompts: CoreMessage[];
   processedPrompts: Prompt[];
 } {
   // 1. 复制提示词配置，以便进行修改
-  const promptsCopy = cloneDeep(agentConfig.prompts);
+  const promptsCopy = cloneDeep(agentConfig.promptConfig.prompts);
 
   // 2. 应用所有提示词动态修改
   let modifiedPrompts = promptsCopy;
-  for (const modification of agentConfig.promptDynamicModification || []) {
+  for (const modification of agentConfig.promptConfig.promptDynamicModification || []) {
     const handler = promptDynamicModificationHandlers[modification.dynamicModificationType];
     if (handler) {
       modifiedPrompts = handler(modifiedPrompts, modification, context);
@@ -191,8 +181,10 @@ export function processPrompts(
   const flatPrompts = flattenPrompts(modifiedPrompts);
 
   // 4. 如果有用户消息，添加到提示词中
-  if (context.userMessage) {
-    flatPrompts.push({ role: 'user', content: context.userMessage });
+  const [userMessage] = context.agent.messages;
+
+  if (userMessage) {
+    flatPrompts.push({ role: 'user', content: userMessage.content });
   }
 
   return {
